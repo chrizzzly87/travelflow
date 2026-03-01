@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo, Suspense, lazy } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { AppLanguage, ITrip, ITimelineItem, IViewSettings, ShareMode } from '../types';
 import { GoogleMapsLoader } from './GoogleMapsLoader';
 import { BASE_PIXELS_PER_DAY, DEFAULT_CITY_COLOR_PALETTE_ID, DEFAULT_DISTANCE_UNIT, buildShareUrl, formatDistance, getTimelineBounds, getTripDistanceKm, isInternalMapColorModeControlEnabled, normalizeMapColorMode } from '../utils';
@@ -13,6 +14,9 @@ import { removeLocalStorageItem } from '../services/browserStorageService';
 import { useLoginModal } from '../hooks/useLoginModal';
 import { buildPathFromLocationParts } from '../services/authNavigationService';
 import { useAuth } from '../hooks/useAuth';
+import { useConnectivityStatus } from '../hooks/useConnectivityStatus';
+import { useSyncStatus } from '../hooks/useSyncStatus';
+import { getLatestConflictBackupForTrip } from '../services/offlineChangeQueue';
 import { loadLazyComponentWithRecovery } from '../services/lazyImportRecovery';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import { useDeferredMapBootstrap } from './tripview/useDeferredMapBootstrap';
@@ -43,6 +47,7 @@ import { useTripTitleEditorState } from './tripview/useTripTitleEditorState';
 import { useTripUpdateItemsHandler } from './tripview/useTripUpdateItemsHandler';
 import { useTripViewModeState } from './tripview/useTripViewModeState';
 import { useTimelinePinchZoom } from './tripview/useTimelinePinchZoom';
+import { TRIP_SYNC_TOAST_EVENT, type SyncToastEventDetail } from '../services/tripSyncManager';
 import {
     ChangeTone,
     getToneMeta,
@@ -126,6 +131,27 @@ const RESIZER_WIDTH = 4;
 const MIN_ZOOM_LEVEL = 0.2;
 const MAX_ZOOM_LEVEL = 3;
 const HORIZONTAL_TIMELINE_AUTO_FIT_PADDING = 72;
+const VERTICAL_TIMELINE_AUTO_FIT_PADDING = 56;
+const TIMELINE_ZOOM_LEVEL_PRESETS = [
+    0.2,
+    0.25,
+    0.3,
+    0.4,
+    0.5,
+    0.6,
+    0.75,
+    0.9,
+    1,
+    1.1,
+    1.25,
+    1.5,
+    1.75,
+    2,
+    2.25,
+    2.5,
+    2.75,
+    3,
+];
 const NEGATIVE_OFFSET_EPSILON = 0.001;
 const MOBILE_VIEWPORT_MAX_WIDTH = 767;
 const VIEW_TRANSITION_DEBUG_EVENT = 'tf:view-transition-debug';
@@ -279,6 +305,7 @@ interface TripViewProps {
     suppressToasts?: boolean;
     suppressReleaseNotice?: boolean;
     adminAccess?: DbTripAccessMetadata;
+    tripAccess?: DbTripAccessMetadata;
     exampleTripBanner?: {
         title: string;
         countries: string[];
@@ -396,6 +423,14 @@ interface TripViewModalLayerProps {
     onToggleFavorite: () => void;
     isExamplePreview: boolean;
     tripMeta: any;
+    ownerSummary: string | null;
+    ownerHint: string | null;
+    adminMeta: {
+        ownerUserId: string | null;
+        ownerUsername: string | null;
+        ownerEmail: string | null;
+        accessSource: string | null;
+    } | null;
     aiMeta: ITrip['aiMeta'];
     forkMeta: { label: string; url: string | null } | null;
     isTripInfoHistoryExpanded: boolean;
@@ -421,6 +456,8 @@ interface TripViewModalLayerProps {
     isGeneratingShare: boolean;
     isHistoryOpen: boolean;
     historyModalItems: any[];
+    pendingSyncCount: number;
+    failedSyncCount: number;
     onCloseHistory: () => void;
     onHistoryGo: (item: any) => void;
     shareStatus?: ShareMode;
@@ -465,6 +502,9 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
     onToggleFavorite,
     isExamplePreview,
     tripMeta,
+    ownerSummary,
+    ownerHint,
+    adminMeta,
     aiMeta,
     forkMeta,
     isTripInfoHistoryExpanded,
@@ -490,6 +530,8 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
     isGeneratingShare,
     isHistoryOpen,
     historyModalItems,
+    pendingSyncCount,
+    failedSyncCount,
     onCloseHistory,
     onHistoryGo,
     shareStatus,
@@ -546,6 +588,9 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
                     onToggleFavorite={onToggleFavorite}
                     isExamplePreview={isExamplePreview}
                     tripMeta={tripMeta}
+                    ownerSummary={ownerSummary}
+                    ownerHint={ownerHint}
+                    adminMeta={adminMeta}
                     aiMeta={aiMeta}
                     forkMeta={forkMeta}
                     isTripInfoHistoryExpanded={isTripInfoHistoryExpanded}
@@ -589,6 +634,8 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
                     isExamplePreview={isExamplePreview}
                     showAllHistory={showAllHistory}
                     items={historyModalItems}
+                    pendingSyncCount={pendingSyncCount}
+                    failedSyncCount={failedSyncCount}
                     onClose={onCloseHistory}
                     onUndo={onHistoryUndo}
                     onRedo={onHistoryRedo}
@@ -716,12 +763,16 @@ const useTripViewRender = ({
     suppressToasts = false,
     suppressReleaseNotice = false,
     adminAccess,
+    tripAccess,
     exampleTripBanner,
 }: TripViewProps): React.ReactElement => {
     const navigate = useNavigate();
     const location = useLocation();
+    const { t } = useTranslation('common');
     const { openLoginModal } = useLoginModal();
-    const { isAuthenticated, isAnonymous, isAdmin, logout } = useAuth();
+    const { access, profile, isAuthenticated, isAnonymous, isAdmin, logout } = useAuth();
+    const { snapshot: connectivitySnapshot } = useConnectivityStatus();
+    const { snapshot: syncSnapshot, retrySyncNow } = useSyncStatus();
     const isTripDetailRoute = location.pathname.startsWith('/trip/');
     const locationState = location.state as ExampleTransitionLocationState | null;
     const useExampleSharedTransition = trip.isExample && (locationState?.useExampleSharedTransition ?? true);
@@ -861,6 +912,8 @@ const useTripViewRender = ({
     const {
         layoutMode,
         setLayoutMode,
+        timelineMode,
+        setTimelineMode,
         timelineView,
         setTimelineView,
         mapStyle,
@@ -881,6 +934,13 @@ const useTripViewRender = ({
         initialViewSettings,
         defaultDetailsWidth: DEFAULT_DETAILS_WIDTH,
     });
+    const [isZoomDirty, setIsZoomDirty] = useState(false);
+    const markZoomDirty = useCallback(() => {
+        setIsZoomDirty(true);
+    }, []);
+    useEffect(() => {
+        setIsZoomDirty(false);
+    }, [trip.id]);
     const clampZoomLevel = useCallback((value: number) => {
         if (!Number.isFinite(value)) return 1;
         return Math.max(MIN_ZOOM_LEVEL, Math.min(MAX_ZOOM_LEVEL, value));
@@ -899,6 +959,7 @@ const useTripViewRender = ({
         zoomLevel,
         clampZoomLevel,
         setZoomLevel,
+        onUserZoomChange: markZoomDirty,
     });
 
     const showToast = useCallback((message: string, options?: {
@@ -928,6 +989,65 @@ const useTripViewRender = ({
         tripId: trip.id,
         showToast,
     });
+
+    useEffect(() => {
+        const handleSyncToast = (event: Event) => {
+            const detail = (event as CustomEvent<SyncToastEventDetail | undefined>).detail;
+            if (!detail) return;
+            if (detail.type === 'sync_started') {
+                const messageKey = detail.pendingCount === 1
+                    ? 'connectivity.toast.syncStartedOne'
+                    : 'connectivity.toast.syncStartedMany';
+                showToast(t(messageKey, { count: detail.pendingCount }), {
+                    tone: 'info',
+                    title: t('connectivity.toast.title'),
+                });
+                return;
+            }
+            if (detail.type === 'sync_completed') {
+                showToast(t('connectivity.toast.syncCompleted'), {
+                    tone: 'add',
+                    title: t('connectivity.toast.title'),
+                });
+                return;
+            }
+            if (detail.type === 'sync_partial_failure') {
+                const messageKey = detail.failedCount === 1
+                    ? 'connectivity.toast.syncPartialFailureOne'
+                    : 'connectivity.toast.syncPartialFailureMany';
+                showToast(t(messageKey, { count: detail.failedCount }), {
+                    tone: 'neutral',
+                    title: t('connectivity.toast.title'),
+                });
+            }
+        };
+
+        window.addEventListener(TRIP_SYNC_TOAST_EVENT, handleSyncToast as EventListener);
+        return () => {
+            window.removeEventListener(TRIP_SYNC_TOAST_EVENT, handleSyncToast as EventListener);
+        };
+    }, [showToast, t]);
+
+    const handleRestoreServerBackup = useCallback(() => {
+        const conflictBackup = getLatestConflictBackupForTrip(trip.id);
+        if (!conflictBackup) return;
+        const restoredTrip: ITrip = {
+            ...conflictBackup.serverTripSnapshot,
+            updatedAt: Date.now(),
+        };
+        onUpdateTrip(restoredTrip);
+        if (onCommitState) {
+            onCommitState(
+                restoredTrip,
+                restoredTrip.defaultView ?? initialViewSettings ?? trip.defaultView,
+                { label: 'Data: Restored server backup' }
+            );
+        }
+        showToast(t('connectivity.toast.serverBackupRestored'), {
+            tone: 'neutral',
+            title: t('connectivity.toast.title'),
+        });
+    }, [initialViewSettings, onCommitState, onUpdateTrip, showToast, t, trip.defaultView, trip.id]);
 
     const requireEdit = useCallback(() => {
         if (isTripLockedByArchive) {
@@ -1026,6 +1146,7 @@ const useTripViewRender = ({
 
     const currentViewSettings: IViewSettings = useMemo(() => ({
         layoutMode,
+        timelineMode,
         timelineView,
         mapStyle,
         routeMode,
@@ -1033,10 +1154,11 @@ const useTripViewRender = ({
         zoomLevel,
         sidebarWidth,
         timelineHeight
-    }), [layoutMode, timelineView, mapStyle, routeMode, showCityNames, zoomLevel, sidebarWidth, timelineHeight]);
+    }), [layoutMode, timelineMode, timelineView, mapStyle, routeMode, showCityNames, zoomLevel, sidebarWidth, timelineHeight]);
 
     useTripViewSettingsSync({
         layoutMode,
+        timelineMode,
         timelineView,
         mapStyle,
         routeMode,
@@ -1051,6 +1173,7 @@ const useTripViewRender = ({
         setMapStyle,
         setRouteMode,
         setLayoutMode,
+        setTimelineMode,
         setTimelineView,
         setZoomLevel,
         setSidebarWidth,
@@ -1230,6 +1353,7 @@ const useTripViewRender = ({
         if (prev.routeMode !== routeMode) changes.push(`Route view: ${prev.routeMode} → ${routeMode}`);
         if (prev.showCityNames !== showCityNames) changes.push(`City names: ${prev.showCityNames ? 'on' : 'off'} → ${showCityNames ? 'on' : 'off'}`);
         if (prev.layoutMode !== layoutMode) changes.push(`Map layout: ${prev.layoutMode} → ${layoutMode}`);
+        if ((prev.timelineMode || 'calendar') !== timelineMode) changes.push(`Timeline mode: ${prev.timelineMode || 'calendar'} → ${timelineMode}`);
         if (prev.timelineView !== timelineView) changes.push(`Timeline layout: ${prev.timelineView} → ${timelineView}`);
         if (prev.zoomLevel !== zoomLevel) changes.push(zoomLevel > prev.zoomLevel ? 'Zoomed in' : 'Zoomed out');
 
@@ -1242,7 +1366,7 @@ const useTripViewRender = ({
         }
 
         prevViewRef.current = currentViewSettings;
-    }, [currentViewSettings, layoutMode, mapStyle, routeMode, showCityNames, timelineView, zoomLevel, setPendingLabel, scheduleCommit]);
+    }, [currentViewSettings, layoutMode, mapStyle, routeMode, showCityNames, timelineMode, timelineView, zoomLevel, setPendingLabel, scheduleCommit]);
 
     const { handleToggleFavorite } = useTripFavoriteHandler({
         trip,
@@ -1398,8 +1522,11 @@ const useTripViewRender = ({
         handleTimelineResizeKeyDown,
     } = useTripResizeControls({
         layoutMode,
+        timelineMode,
         timelineView,
         horizontalTimelineDayCount,
+        zoomLevel,
+        isZoomDirty,
         clampZoomLevel,
         setZoomLevel,
         sidebarWidth,
@@ -1419,6 +1546,8 @@ const useTripViewRender = ({
         resizerWidth: RESIZER_WIDTH,
         resizeKeyboardStep: RESIZE_KEYBOARD_STEP,
         horizontalTimelineAutoFitPadding: HORIZONTAL_TIMELINE_AUTO_FIT_PADDING,
+        verticalTimelineAutoFitPadding: VERTICAL_TIMELINE_AUTO_FIT_PADDING,
+        zoomLevelPresets: TIMELINE_ZOOM_LEVEL_PRESETS,
         basePixelsPerDay: BASE_PIXELS_PER_DAY,
     });
 
@@ -1435,9 +1564,75 @@ const useTripViewRender = ({
         isMobileMapExpanded,
     });
     const canManageTripMetadata = canEdit && !shareStatus && !isExamplePreview;
+    const showOwnedTripConnectivityStatus = !shareStatus && !isExamplePreview && !isAdminFallbackView;
+    const latestConflictBackupEntry = useMemo(() => {
+        if (!showOwnedTripConnectivityStatus) return null;
+        return getLatestConflictBackupForTrip(trip.id);
+    }, [showOwnedTripConnectivityStatus, syncSnapshot.hasConflictBackups, syncSnapshot.lastRunAt, trip.id]);
+    const isAdminSession = access?.role === 'admin';
+    const ownerSummary = useMemo(() => {
+        const ownerUsername = tripAccess?.ownerUsername?.trim() || null;
+        const ownerEmail = tripAccess?.ownerEmail?.trim() || null;
+        const ownerId = tripAccess?.ownerId?.trim() || null;
+        const currentUserId = access?.userId?.trim() || null;
+        const currentUsername = profile?.username?.trim() || null;
+        const isOwner = Boolean(
+            tripAccess?.source === 'owner'
+            || (ownerId && currentUserId && ownerId === currentUserId)
+        );
+
+        if (ownerUsername) {
+            const normalizedHandle = ownerUsername.startsWith('@') ? ownerUsername : `@${ownerUsername}`;
+            return `${normalizedHandle}${isOwner ? ' (you)' : ''}`;
+        }
+        if (ownerEmail) {
+            return `${ownerEmail}${isOwner ? ' (you)' : ''}`;
+        }
+        if (ownerId && isAdminSession) {
+            return `${ownerId}${isOwner ? ' (you)' : ''}`;
+        }
+        if (isOwner && currentUsername) {
+            const normalizedHandle = currentUsername.startsWith('@') ? currentUsername : `@${currentUsername}`;
+            return `${normalizedHandle} (you)`;
+        }
+        if (isOwner) return 'You';
+        if (ownerId) return 'Traveler';
+        return null;
+    }, [
+        isAdminSession,
+        access?.userId,
+        profile?.username,
+        tripAccess?.ownerEmail,
+        tripAccess?.ownerId,
+        tripAccess?.ownerUsername,
+        tripAccess?.source,
+    ]);
+    const tripOwnerAdminMeta = useMemo(() => {
+        if (!isAdminSession) return null;
+        const ownerUserId = (tripAccess?.ownerId?.trim() || access?.userId?.trim() || null);
+        const ownerUsername = (tripAccess?.ownerUsername?.trim() || profile?.username?.trim() || null);
+        const ownerEmail = (tripAccess?.ownerEmail?.trim() || access?.email?.trim() || null);
+        const accessSource = tripAccess?.source || (ownerUserId ? 'owner' : null);
+        return {
+            ownerUserId,
+            ownerUsername,
+            ownerEmail,
+            accessSource,
+        };
+    }, [isAdminSession, tripAccess?.ownerId, tripAccess?.ownerUsername, tripAccess?.ownerEmail, tripAccess?.source, access?.userId, access?.email, profile?.username]);
+    const ownerHint = useMemo(() => {
+        if (tripAccess?.source === 'public_read') {
+            return 'You are viewing a public trip owned by another account. Archive and edit actions are disabled.';
+        }
+        if (tripAccess?.source === 'admin_fallback' && !adminOverrideEnabled) {
+            return 'This is an admin fallback view. Enable admin override above to edit as an admin.';
+        }
+        return null;
+    }, [adminOverrideEnabled, tripAccess?.source]);
 
     const timelineCanvas = (
         <TripTimelineCanvas
+            timelineMode={timelineMode}
             timelineView={timelineView}
             trip={displayTrip}
             onUpdateItems={handleUpdateItems}
@@ -1584,6 +1779,19 @@ const useTripViewRender = ({
                     expirationRelativeLabel={expirationRelativeLabel}
                     onPaywallLoginClick={handlePaywallLoginClick}
                     tripId={trip.id}
+                    connectivityState={showOwnedTripConnectivityStatus ? connectivitySnapshot.state : undefined}
+                    connectivityReason={showOwnedTripConnectivityStatus ? connectivitySnapshot.reason : null}
+                    connectivityForced={showOwnedTripConnectivityStatus ? connectivitySnapshot.isForced : false}
+                    pendingSyncCount={showOwnedTripConnectivityStatus ? syncSnapshot.pendingCount : 0}
+                    failedSyncCount={showOwnedTripConnectivityStatus ? syncSnapshot.failedCount : 0}
+                    isSyncingQueue={showOwnedTripConnectivityStatus ? syncSnapshot.isSyncing : false}
+                    onRetrySyncQueue={showOwnedTripConnectivityStatus
+                        ? (() => {
+                            void retrySyncNow();
+                        })
+                        : undefined}
+                    hasConflictBackupForTrip={showOwnedTripConnectivityStatus ? Boolean(latestConflictBackupEntry) : false}
+                    onRestoreConflictBackup={showOwnedTripConnectivityStatus && latestConflictBackupEntry ? handleRestoreServerBackup : undefined}
                     exampleTripBanner={exampleTripBanner}
                 />
 
@@ -1599,9 +1807,42 @@ const useTripViewRender = ({
                         onTimelineTouchStart={handleTimelineTouchStart}
                         onTimelineTouchMove={handleTimelineTouchMove}
                         onTimelineTouchEnd={handleTimelineTouchEnd}
-                        onZoomOut={() => setZoomLevel((value) => clampZoomLevel(value - 0.1))}
-                        onZoomIn={() => setZoomLevel((value) => clampZoomLevel(value + 0.1))}
-                        onToggleTimelineView={() => setTimelineView((value) => (value === 'horizontal' ? 'vertical' : 'horizontal'))}
+                        onZoomOut={() => {
+                            trackEvent('trip_view__zoom', {
+                                direction: 'out',
+                                trip_id: trip.id,
+                                timeline_mode: timelineMode,
+                            });
+                            markZoomDirty();
+                            setZoomLevel((value) => clampZoomLevel(value - 0.1));
+                        }}
+                        onZoomIn={() => {
+                            trackEvent('trip_view__zoom', {
+                                direction: 'in',
+                                trip_id: trip.id,
+                                timeline_mode: timelineMode,
+                            });
+                            markZoomDirty();
+                            setZoomLevel((value) => clampZoomLevel(value + 0.1));
+                        }}
+                        onTimelineModeChange={(mode) => {
+                            if (mode === timelineMode) return;
+                            trackEvent(mode === 'calendar' ? 'trip_view__mode--calendar' : 'trip_view__mode--timeline', {
+                                trip_id: trip.id,
+                            });
+                            setTimelineMode(mode);
+                        }}
+                        onTimelineViewChange={(view) => {
+                            if (view === timelineView) return;
+                            trackEvent(
+                                view === 'horizontal'
+                                    ? 'trip_view__layout_direction--horizontal'
+                                    : 'trip_view__layout_direction--vertical',
+                                { trip_id: trip.id, target: 'timeline' }
+                            );
+                            setTimelineView(view);
+                        }}
+                        timelineMode={timelineMode}
                         timelineView={timelineView}
                         mapViewportRef={mapViewportRef}
                         isMapBootstrapEnabled={isMapBootstrapEnabled}
@@ -1612,7 +1853,16 @@ const useTripViewRender = ({
                         selectedItemId={selectedItemId}
                         layoutMode={layoutMode}
                         effectiveLayoutMode={effectiveLayoutMode}
-                        onLayoutModeChange={setLayoutMode}
+                        onLayoutModeChange={(mode) => {
+                            if (mode === layoutMode) return;
+                            trackEvent(
+                                mode === 'horizontal'
+                                    ? 'trip_view__layout_direction--horizontal'
+                                    : 'trip_view__layout_direction--vertical',
+                                { trip_id: trip.id, target: 'map' }
+                            );
+                            setLayoutMode(mode);
+                        }}
                         mapStyle={mapStyle}
                         onMapStyleChange={setMapStyle}
                         routeMode={routeMode}
@@ -1663,6 +1913,9 @@ const useTripViewRender = ({
                         onToggleFavorite={handleToggleFavorite}
                         isExamplePreview={isExamplePreview}
                         tripMeta={tripMeta}
+                        ownerSummary={ownerSummary}
+                        ownerHint={ownerHint}
+                        adminMeta={tripOwnerAdminMeta}
                         aiMeta={displayTrip.aiMeta}
                         forkMeta={forkMeta}
                         isTripInfoHistoryExpanded={isTripInfoHistoryExpanded}
@@ -1695,6 +1948,8 @@ const useTripViewRender = ({
                         isGeneratingShare={isGeneratingShare}
                         isHistoryOpen={isHistoryOpen}
                         historyModalItems={historyModalItems}
+                        pendingSyncCount={showOwnedTripConnectivityStatus ? syncSnapshot.pendingCount : 0}
+                        failedSyncCount={showOwnedTripConnectivityStatus ? syncSnapshot.failedCount : 0}
                         onCloseHistory={() => setIsHistoryOpen(false)}
                         onHistoryGo={(item) => {
                             setIsHistoryOpen(false);

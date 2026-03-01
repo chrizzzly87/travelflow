@@ -157,7 +157,8 @@ export type DeleteStrategy = 'extend-prev' | 'extend-next' | 'move-rest';
 
 export interface IViewSettings {
     layoutMode: 'vertical' | 'horizontal';
-    timelineView: 'horizontal' | 'vertical'; // Dashboard vs List
+    timelineMode?: 'calendar' | 'timeline';
+    timelineView: 'horizontal' | 'vertical'; // Calendar orientation
     mapStyle: MapStyle;
     zoomLevel: number;
     routeMode?: RouteMode;
@@ -190,6 +191,7 @@ export interface IUserSettings {
     mapStyle?: MapStyle;
     routeMode?: RouteMode;
     layoutMode?: 'vertical' | 'horizontal';
+    timelineMode?: 'calendar' | 'timeline';
     timelineView?: 'horizontal' | 'vertical';
     showCityNames?: boolean;
     zoomLevel?: number;

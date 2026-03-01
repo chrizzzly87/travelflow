@@ -41,6 +41,7 @@ export type RouteKey =
     | 'adminTiers'
     | 'adminAudit'
     | 'adminAiBenchmark'
+    | 'adminDesignSystemPlayground'
     | 'profile'
     | 'profileStamps'
     | 'profileSettings'
@@ -200,6 +201,8 @@ export const buildPath = <K extends RouteKey>(
             return '/admin/audit';
         case 'adminAiBenchmark':
             return '/admin/ai-benchmark';
+        case 'adminDesignSystemPlayground':
+            return '/admin/design-system-playground';
         case 'profile':
             return '/profile';
         case 'profileStamps':

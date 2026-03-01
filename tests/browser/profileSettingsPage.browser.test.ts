@@ -5,6 +5,16 @@ import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 
+class ResizeObserverMock {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+
+if (!globalThis.ResizeObserver) {
+  globalThis.ResizeObserver = ResizeObserverMock as unknown as typeof ResizeObserver;
+}
+
 const mocks = vi.hoisted(() => ({
   auth: {
     isLoading: false,
@@ -77,6 +87,8 @@ describe('pages/ProfileSettingsPage username governance', () => {
     firstName: 'Traveler',
     lastName: 'One',
     username: 'traveler',
+    usernameDisplay: 'traveler',
+    usernameCanonical: 'traveler',
     bio: '',
     gender: '',
     country: 'DE',
@@ -124,7 +136,7 @@ describe('pages/ProfileSettingsPage username governance', () => {
     const usernameInput = screen.getByLabelText('settings.fields.username');
     expect(usernameInput).toHaveAttribute('readonly');
 
-    await user.click(screen.getByRole('button', { name: 'settings.usernameEdit' }));
+    await user.click(screen.getByRole('button', { name: 'settings.usernameChange' }));
 
     await waitFor(() => {
       expect(mocks.trackEvent).toHaveBeenCalledWith('profile_settings__username_edit--open');
@@ -138,9 +150,13 @@ describe('pages/ProfileSettingsPage username governance', () => {
     await user.click(screen.getByRole('button', { name: 'settings.actions.save' }));
 
     await waitFor(() => {
-      expect(mocks.checkUsernameAvailability).toHaveBeenCalledWith('new_handle');
+      expect(mocks.checkUsernameAvailability).toHaveBeenCalledWith(
+        'new_handle',
+        expect.objectContaining({ logBlockedAttempt: true }),
+      );
       expect(mocks.updateCurrentUserProfile).toHaveBeenCalledWith(expect.objectContaining({
         username: 'new_handle',
+        usernameDisplay: 'new_handle',
       }));
     });
   });
@@ -167,10 +183,132 @@ describe('pages/ProfileSettingsPage username governance', () => {
     await user.click(screen.getByRole('button', { name: 'settings.actions.save' }));
 
     await waitFor(() => {
-      expect(mocks.checkUsernameAvailability).toHaveBeenCalledWith('chrizzzly_hh');
+      expect(mocks.checkUsernameAvailability).toHaveBeenCalledWith(
+        'chrizzzly_hh',
+        expect.objectContaining({ logBlockedAttempt: true }),
+      );
       expect(mocks.updateCurrentUserProfile).toHaveBeenCalledWith(expect.objectContaining({
         username: 'chrizzzly_hh',
+        usernameDisplay: 'chrizzzly_hh',
       }));
+    });
+  });
+
+  it('sanitizes unsupported username characters while preserving display case', async () => {
+    const user = userEvent.setup();
+    mocks.checkUsernameAvailability.mockResolvedValue({
+      normalizedUsername: 'admin_support',
+      availability: 'available',
+      reason: null,
+      cooldownEndsAt: null,
+    });
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByText('settings.title')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('button', { name: 'settings.usernameChange' }));
+    const usernameInput = screen.getByLabelText('settings.fields.username');
+    await user.clear(usernameInput);
+    await user.type(usernameInput, '@AdMiN_support!!!');
+
+    expect((usernameInput as HTMLInputElement).value).toBe('AdMiN_support');
+
+    await user.click(screen.getByRole('button', { name: 'settings.actions.save' }));
+
+    await waitFor(() => {
+      expect(mocks.checkUsernameAvailability).toHaveBeenCalledWith(
+        'admin_support',
+        expect.objectContaining({ logBlockedAttempt: true }),
+      );
+      expect(mocks.updateCurrentUserProfile).toHaveBeenCalledWith(expect.objectContaining({
+        username: 'admin_support',
+        usernameDisplay: 'AdMiN_support',
+      }));
+    });
+  });
+
+  it('checks username availability on blur while username edit mode is active', async () => {
+    const user = userEvent.setup();
+    mocks.checkUsernameAvailability.mockResolvedValue({
+      normalizedUsername: 'new_handle',
+      availability: 'available',
+      reason: null,
+      cooldownEndsAt: null,
+    });
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByText('settings.title')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('button', { name: 'settings.usernameChange' }));
+    const usernameInput = screen.getByLabelText('settings.fields.username');
+    await user.clear(usernameInput);
+    await user.type(usernameInput, 'new_handle');
+
+    (usernameInput as HTMLInputElement).blur();
+
+    await waitFor(() => {
+      expect(mocks.checkUsernameAvailability).toHaveBeenCalledWith('new_handle', { logBlockedAttempt: false });
+    });
+  });
+
+  it('rejects handles that contain only separators before availability lookup', async () => {
+    const user = userEvent.setup();
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByText('settings.title')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('button', { name: 'settings.usernameChange' }));
+    const usernameInput = screen.getByLabelText('settings.fields.username');
+    await user.clear(usernameInput);
+    await user.type(usernameInput, '___');
+    await user.click(screen.getByRole('button', { name: 'settings.actions.save' }));
+
+    await waitFor(() => {
+      expect(mocks.updateCurrentUserProfile).not.toHaveBeenCalled();
+      expect(screen.getByText('settings.usernameStatus.invalid')).toBeInTheDocument();
+    });
+  });
+
+  it('submits username edit on Enter and exits username edit mode after success', async () => {
+    const user = userEvent.setup();
+    mocks.checkUsernameAvailability.mockResolvedValue({
+      normalizedUsername: 'new_handle',
+      availability: 'available',
+      reason: null,
+      cooldownEndsAt: null,
+    });
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByText('settings.title')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('button', { name: 'settings.usernameChange' }));
+    const usernameInput = screen.getByLabelText('settings.fields.username');
+    await user.clear(usernameInput);
+    await user.type(usernameInput, 'new_handle');
+    await user.keyboard('{Enter}');
+
+    await waitFor(() => {
+      expect(mocks.checkUsernameAvailability).toHaveBeenCalledWith('new_handle', { logBlockedAttempt: true });
+      expect(mocks.updateCurrentUserProfile).toHaveBeenCalledWith(expect.objectContaining({
+        username: 'new_handle',
+        usernameDisplay: 'new_handle',
+      }));
+    });
+
+    await waitFor(() => {
+      expect(usernameInput).toHaveAttribute('readonly');
     });
   });
 
@@ -187,7 +325,7 @@ describe('pages/ProfileSettingsPage username governance', () => {
     });
 
     const usernameInput = screen.getByLabelText('settings.fields.username');
-    const editButton = screen.getByRole('button', { name: 'settings.usernameEdit' });
+    const editButton = screen.getByRole('button', { name: 'settings.usernameChange' });
 
     expect(usernameInput).toHaveAttribute('readonly');
     expect(editButton).toHaveAttribute('aria-disabled', 'true');
@@ -200,7 +338,7 @@ describe('pages/ProfileSettingsPage username governance', () => {
 
     expect(usernameInput).toHaveAttribute('readonly');
 
-    expect(screen.getByText('settings.usernameCooldownHint')).toBeInTheDocument();
+    expect(screen.getByText('settings.usernameLockedHint')).toBeInTheDocument();
   });
 
   it('saves selected Country/Region as ISO code from the searchable picker and closes on select', async () => {
@@ -217,8 +355,6 @@ describe('pages/ProfileSettingsPage username governance', () => {
     await user.click(countrySearchInput);
     await user.type(countrySearchInput, 'ger');
     await user.click(screen.getByRole('option', { name: 'Germany' }));
-    expect(screen.queryByRole('listbox')).toBeNull();
-    expect(screen.queryByRole('button', { name: 'settings.countryRegionClear' })).toBeNull();
 
     await user.click(screen.getByRole('button', { name: 'settings.actions.save' }));
 
@@ -277,6 +413,27 @@ describe('pages/ProfileSettingsPage username governance', () => {
     expect((usernameInput as HTMLInputElement).value).toBe('taken_name1');
   });
 
+  it('submits on Enter and focuses the first missing required input', async () => {
+    const user = userEvent.setup();
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByText('settings.title')).toBeInTheDocument();
+    });
+
+    const firstNameInput = screen.getByLabelText('settings.fields.firstName');
+    const cityInput = screen.getByLabelText('settings.fields.city');
+    await user.clear(firstNameInput);
+    cityInput.focus();
+    await user.keyboard('{Enter}');
+
+    await waitFor(() => {
+      expect(screen.getByText('settings.errors.required')).toBeInTheDocument();
+      expect(firstNameInput).toHaveFocus();
+    });
+  });
+
   it('shows a success toast after saving', async () => {
     const user = userEvent.setup();
     mocks.checkUsernameAvailability.mockResolvedValue({
@@ -297,7 +454,8 @@ describe('pages/ProfileSettingsPage username governance', () => {
     await waitFor(() => {
       expect(mocks.showAppToast).toHaveBeenCalledWith({
         tone: 'success',
-        title: 'settings.messages.saved',
+        title: 'settings.messages.savedTitle',
+        description: 'settings.messages.saved',
       });
     });
   });

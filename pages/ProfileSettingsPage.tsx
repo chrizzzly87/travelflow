@@ -69,13 +69,30 @@ const REQUIRED_FIELDS: Array<keyof Pick<ProfileFormState, 'firstName' | 'lastNam
     'preferredLanguage',
 ];
 
+type RequiredFieldKey = typeof REQUIRED_FIELDS[number];
+type RequiredFieldErrors = Record<RequiredFieldKey, boolean>;
+
 const USERNAME_COOLDOWN_DAYS = 90;
-const USERNAME_ALLOWED_PATTERN = /^[a-z0-9_-]{3,30}$/;
+const USERNAME_ALLOWED_PATTERN = /^[A-Za-z0-9_-]{3,40}$/;
+const USERNAME_CANONICAL_PATTERN = /^[a-z0-9_-]{3,40}$/;
 const normalizeUsernameInput = (value: string): string => value.trim().toLowerCase().replace(/^@+/, '');
+const normalizeUsernameDisplayInput = (value: string): string => value.trim().replace(/^@+/, '');
+const sanitizeUsernameInput = (value: string): string => (
+    value
+        .replace(/\s+/g, '')
+        .replace(/^@+/, '')
+        .replace(/[^A-Za-z0-9_-]/g, '')
+);
+const usernameHasAlphaNumeric = (value: string): boolean => /[a-z0-9]/.test(value);
 const clampBio = (value: string): string => value.slice(0, 160);
 
-const hasMissingRequiredField = (form: ProfileFormState): boolean =>
-    REQUIRED_FIELDS.some((key) => !String(form[key] || '').trim());
+const EMPTY_REQUIRED_FIELD_ERRORS: RequiredFieldErrors = {
+    firstName: false,
+    lastName: false,
+    country: false,
+    city: false,
+    preferredLanguage: false,
+};
 
 const PROFILE_GENDER_UNSPECIFIED = 'unspecified';
 type ProfileGenderSelectValue = Exclude<ProfileGender, ''> | typeof PROFILE_GENDER_UNSPECIFIED;
@@ -124,11 +141,18 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
     const [usernameSuggestions, setUsernameSuggestions] = useState<string[]>([]);
     const [hasHydratedForm, setHasHydratedForm] = useState(false);
     const usernameInputRef = useRef<HTMLInputElement>(null);
+    const firstNameInputRef = useRef<HTMLInputElement>(null);
+    const lastNameInputRef = useRef<HTMLInputElement>(null);
+    const countryFieldRef = useRef<HTMLDivElement>(null);
+    const cityInputRef = useRef<HTMLInputElement>(null);
+    const preferredLanguageTriggerRef = useRef<HTMLButtonElement>(null);
+    const usernameCheckRequestRef = useRef(0);
     const [usernameCheck, setUsernameCheck] = useState<UsernameCheckState>({
         loading: false,
         result: null,
         error: null,
     });
+    const [requiredFieldErrors, setRequiredFieldErrors] = useState<RequiredFieldErrors>(EMPTY_REQUIRED_FIELD_ERRORS);
 
     const appLocale = useMemo(
         () => normalizeLocale(i18n.resolvedLanguage ?? i18n.language ?? 'en'),
@@ -153,7 +177,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
         setForm({
             firstName: cachedProfile.firstName || '',
             lastName: cachedProfile.lastName || '',
-            username: cachedProfile.username || '',
+            username: cachedProfile.usernameDisplay || cachedProfile.username || '',
             bio: clampBio(cachedProfile.bio || ''),
             gender: cachedProfile.gender || '',
             country: cachedProfile.country || '',
@@ -168,10 +192,10 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
 
     const isProfileLoading = isAuthProfileLoading || !hasHydratedForm;
 
-    const isMissingRequired = useMemo(() => hasMissingRequiredField(form), [form]);
     const normalizedUsername = useMemo(() => normalizeUsernameInput(form.username), [form.username]);
+    const normalizedUsernameDisplay = useMemo(() => normalizeUsernameDisplayInput(form.username), [form.username]);
 
-    const currentUsername = (profile?.username || '').trim().toLowerCase();
+    const currentUsername = (profile?.usernameCanonical || profile?.username || '').trim().toLowerCase();
     const publicProfilePath = normalizedUsername
         ? buildPath('publicProfile', { username: normalizedUsername })
         : null;
@@ -206,8 +230,9 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
             return t('settings.usernameStatus.cooldown');
         }
 
+        if (isUsernameLocked) return t('settings.usernameLockedHint');
         return t('settings.usernameStatus.idle');
-    }, [appLocale, t, usernameCheck]);
+    }, [appLocale, isUsernameLocked, t, usernameCheck]);
 
     const usernameStatusTone = useMemo(() => {
         if (usernameCheck.loading) return 'text-slate-500';
@@ -219,22 +244,62 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
         return 'text-slate-500';
     }, [usernameCheck]);
 
-    const usernameRecoveryHint = useMemo(() => {
-        const availability = usernameCheck.result?.availability;
-        if (availability === 'taken') return t('settings.usernameRecoveryHint.taken');
-        if (availability === 'reserved') return t('settings.usernameRecoveryHint.reserved');
-        if (availability === 'invalid') return t('settings.usernameRecoveryHint.invalid');
-        if (availability === 'cooldown') return t('settings.usernameRecoveryHint.cooldown');
-        if (isUsernameLocked) return t('settings.usernameLockedHint');
-        return null;
-    }, [isUsernameLocked, t, usernameCheck.result?.availability]);
-
     if (!isLoading && !isAuthenticated) {
         return <Navigate to="/login" replace />;
     }
 
     const updateField = <K extends keyof ProfileFormState>(key: K, value: ProfileFormState[K]) => {
         setForm((current) => ({ ...current, [key]: value }));
+        if (REQUIRED_FIELDS.includes(key as RequiredFieldKey)) {
+            const nextValue = typeof value === 'string' ? value.trim() : String(value || '').trim();
+            if (nextValue) {
+                setRequiredFieldErrors((current) => (
+                    current[key as RequiredFieldKey]
+                        ? { ...current, [key]: false }
+                        : current
+                ));
+            }
+        }
+    };
+
+    const focusRequiredField = (field: RequiredFieldKey) => {
+        if (field === 'firstName') {
+            firstNameInputRef.current?.focus();
+            return;
+        }
+        if (field === 'lastName') {
+            lastNameInputRef.current?.focus();
+            return;
+        }
+        if (field === 'country') {
+            const countryInput = countryFieldRef.current?.querySelector('input[role="combobox"]') as HTMLInputElement | null;
+            countryInput?.focus();
+            return;
+        }
+        if (field === 'city') {
+            cityInputRef.current?.focus();
+            return;
+        }
+        preferredLanguageTriggerRef.current?.focus();
+    };
+
+    const validateRequiredFields = (): { valid: boolean; firstMissing: RequiredFieldKey | null } => {
+        const missing = REQUIRED_FIELDS.filter((key) => !String(form[key] || '').trim()) as RequiredFieldKey[];
+        if (missing.length === 0) {
+            if (Object.values(requiredFieldErrors).some(Boolean)) {
+                setRequiredFieldErrors(EMPTY_REQUIRED_FIELD_ERRORS);
+            }
+            return { valid: true, firstMissing: null };
+        }
+
+        setRequiredFieldErrors({
+            firstName: missing.includes('firstName'),
+            lastName: missing.includes('lastName'),
+            country: missing.includes('country'),
+            city: missing.includes('city'),
+            preferredLanguage: missing.includes('preferredLanguage'),
+        });
+        return { valid: false, firstMissing: missing[0] || null };
     };
 
     const buildUsernameSuggestionCandidates = (input: string): string[] => {
@@ -274,7 +339,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
         return Array.from(new Set(
             rawCandidates
                 .map((candidate) => sanitize(candidate))
-                .filter((candidate) => candidate.length >= 3 && candidate.length <= 30 && USERNAME_ALLOWED_PATTERN.test(candidate))
+                .filter((candidate) => candidate.length >= 3 && candidate.length <= 40 && USERNAME_CANONICAL_PATTERN.test(candidate))
                 .filter((candidate) => candidate !== current)
         ));
     };
@@ -296,7 +361,8 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
         return Array.from(new Set(results.filter((candidate): candidate is string => Boolean(candidate)))).slice(0, 4);
     };
 
-    const resolveLocalUsernameValidation = (candidate: string): UsernameAvailabilityResult | null => {
+    const resolveLocalUsernameValidation = (candidateDisplay: string): UsernameAvailabilityResult | null => {
+        const candidate = normalizeUsernameInput(candidateDisplay);
         if (!candidate) {
             return {
                 normalizedUsername: '',
@@ -305,7 +371,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                 cooldownEndsAt: null,
             };
         }
-        if (!USERNAME_ALLOWED_PATTERN.test(candidate)) {
+        if (!USERNAME_ALLOWED_PATTERN.test(candidateDisplay) || !USERNAME_CANONICAL_PATTERN.test(candidate) || !usernameHasAlphaNumeric(candidate)) {
             return {
                 normalizedUsername: candidate,
                 availability: 'invalid',
@@ -314,6 +380,136 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
             };
         }
         return null;
+    };
+
+    const runUsernameAvailabilityCheck = async (
+        candidateDisplay: string,
+        options: { logBlockedAttempt?: boolean; includeSuggestions?: boolean } = {}
+    ): Promise<{ allowed: boolean; result: UsernameAvailabilityResult | null }> => {
+        const normalizedCandidate = normalizeUsernameInput(candidateDisplay);
+        const localValidation = resolveLocalUsernameValidation(candidateDisplay);
+        if (localValidation) {
+            setUsernameCheck({
+                loading: false,
+                result: localValidation,
+                error: null,
+            });
+            if (options.includeSuggestions) {
+                setUsernameSuggestions(await fetchUsernameSuggestions(normalizedCandidate));
+            }
+            return {
+                allowed: false,
+                result: localValidation,
+            };
+        }
+
+        const requestId = usernameCheckRequestRef.current + 1;
+        usernameCheckRequestRef.current = requestId;
+        setUsernameCheck({
+            loading: true,
+            result: null,
+            error: null,
+        });
+
+        try {
+            const checkResult = await checkUsernameAvailability(normalizedCandidate, {
+                logBlockedAttempt: options.logBlockedAttempt === true,
+            });
+            if (requestId !== usernameCheckRequestRef.current) {
+                return { allowed: false, result: null };
+            }
+
+            setUsernameCheck({
+                loading: false,
+                result: checkResult,
+                error: null,
+            });
+            trackEvent(`profile_settings__username_check--${checkResult.availability}`, {
+                username: checkResult.normalizedUsername,
+            });
+
+            const isAllowed = checkResult.availability === 'available' || checkResult.availability === 'unchanged';
+            if (!isAllowed && options.includeSuggestions) {
+                if (checkResult.availability === 'taken' || checkResult.availability === 'reserved' || checkResult.availability === 'invalid') {
+                    setUsernameSuggestions(await fetchUsernameSuggestions(normalizedCandidate));
+                }
+            }
+
+            return {
+                allowed: isAllowed,
+                result: checkResult,
+            };
+        } catch (error) {
+            if (requestId !== usernameCheckRequestRef.current) {
+                return { allowed: false, result: null };
+            }
+            setUsernameCheck({
+                loading: false,
+                result: null,
+                error: error instanceof Error ? error.message : t('settings.errors.usernameUnavailable'),
+            });
+            return { allowed: false, result: null };
+        }
+    };
+
+    const commitUsernameEdit = async (): Promise<boolean> => {
+        if (!profile) return false;
+
+        const usernameChanged = normalizedUsername !== currentUsername;
+        if (!usernameChanged) {
+            setIsUsernameEditing(false);
+            setErrorMessage(null);
+            setUsernameSuggestions([]);
+            setUsernameCheck({
+                loading: false,
+                result: {
+                    normalizedUsername,
+                    availability: 'unchanged',
+                    reason: null,
+                    cooldownEndsAt: null,
+                },
+                error: null,
+            });
+            return true;
+        }
+
+        const checkAttempt = await runUsernameAvailabilityCheck(normalizedUsernameDisplay, {
+            logBlockedAttempt: true,
+            includeSuggestions: true,
+        });
+        if (!checkAttempt.allowed) {
+            setErrorMessage(t('settings.errors.usernameUnavailable'));
+            return false;
+        }
+
+        const updated = await updateCurrentUserProfile({
+            firstName: profile.firstName,
+            lastName: profile.lastName,
+            username: normalizedUsername,
+            usernameDisplay: normalizedUsernameDisplay,
+            bio: profile.bio,
+            gender: profile.gender,
+            country: profile.country,
+            city: profile.city,
+            preferredLanguage: profile.preferredLanguage,
+            publicProfileEnabled: profile.publicProfileEnabled,
+            defaultPublicTripVisibility: profile.defaultPublicTripVisibility,
+            markOnboardingComplete: false,
+        });
+
+        setProfile(updated);
+        setForm((current) => ({
+            ...current,
+            username: updated.usernameDisplay || updated.username || current.username,
+        }));
+        setIsUsernameEditing(mode === 'onboarding' || !updated.username);
+        await refreshAccess();
+        showAppToast({
+            tone: 'success',
+            title: t('settings.messages.savedTitle'),
+            description: t('settings.messages.saved'),
+        });
+        return true;
     };
 
     const handleUnlockUsernameEditing = () => {
@@ -328,8 +524,12 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
     };
 
     const handleSave = async () => {
-        if (isMissingRequired) {
+        const requiredValidation = validateRequiredFields();
+        if (!requiredValidation.valid) {
             setErrorMessage(t('settings.errors.required'));
+            if (requiredValidation.firstMissing) {
+                window.requestAnimationFrame(() => focusRequiredField(requiredValidation.firstMissing as RequiredFieldKey));
+            }
             return;
         }
 
@@ -345,40 +545,19 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
         setUsernameSuggestions([]);
 
         try {
+            if (hasUsernameLock && isUsernameEditing) {
+                const committed = await commitUsernameEdit();
+                if (!committed) return;
+                return;
+            }
+
             if (normalizedUsername !== currentUsername) {
-                const localValidation = resolveLocalUsernameValidation(normalizedUsername);
-                if (localValidation) {
-                    setUsernameCheck({
-                        loading: false,
-                        result: localValidation,
-                        error: null,
-                    });
+                const checkAttempt = await runUsernameAvailabilityCheck(normalizedUsernameDisplay, {
+                    logBlockedAttempt: true,
+                    includeSuggestions: true,
+                });
+                if (!checkAttempt.allowed) {
                     setErrorMessage(t('settings.errors.usernameUnavailable'));
-                    setUsernameSuggestions(await fetchUsernameSuggestions(normalizedUsername));
-                    return;
-                }
-
-                setUsernameCheck({
-                    loading: true,
-                    result: null,
-                    error: null,
-                });
-
-                const checkResult = await checkUsernameAvailability(normalizedUsername);
-                setUsernameCheck({
-                    loading: false,
-                    result: checkResult,
-                    error: null,
-                });
-                trackEvent(`profile_settings__username_check--${checkResult.availability}`, {
-                    username: checkResult.normalizedUsername,
-                });
-
-                if (checkResult.availability !== 'available' && checkResult.availability !== 'unchanged') {
-                    setErrorMessage(t('settings.errors.usernameUnavailable'));
-                    if (checkResult.availability === 'taken' || checkResult.availability === 'reserved' || checkResult.availability === 'invalid') {
-                        setUsernameSuggestions(await fetchUsernameSuggestions(normalizedUsername));
-                    }
                     return;
                 }
             }
@@ -387,6 +566,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                 firstName: form.firstName,
                 lastName: form.lastName,
                 username: normalizedUsername,
+                usernameDisplay: normalizedUsernameDisplay,
                 bio: form.bio,
                 gender: form.gender,
                 country: form.country,
@@ -400,11 +580,12 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
             setProfile(updated);
             setForm((current) => ({
                 ...current,
-                username: updated.username || current.username,
+                username: updated.usernameDisplay || updated.username || current.username,
                 bio: clampBio(updated.bio || ''),
                 publicProfileEnabled: updated.publicProfileEnabled !== false,
                 defaultPublicTripVisibility: updated.defaultPublicTripVisibility !== false,
             }));
+            setRequiredFieldErrors(EMPTY_REQUIRED_FIELD_ERRORS);
             setIsUsernameEditing(mode === 'onboarding' || !updated.username);
 
             await refreshAccess();
@@ -429,6 +610,24 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
         } finally {
             setIsSaving(false);
         }
+    };
+
+    const handleProfileFormSubmit: React.FormEventHandler<HTMLFormElement> = (event) => {
+        event.preventDefault();
+        void handleSave();
+    };
+
+    const handleProfileFormKeyDown: React.KeyboardEventHandler<HTMLFormElement> = (event) => {
+        if (event.defaultPrevented) return;
+        if (event.key !== 'Enter' || event.shiftKey || event.nativeEvent.isComposing) return;
+        const target = event.target as HTMLElement | null;
+        if (!target) return;
+        const tagName = target.tagName.toLowerCase();
+        const role = target.getAttribute('role');
+        const isSubmitCandidate = tagName === 'input' || tagName === 'textarea' || role === 'combobox';
+        if (!isSubmitCandidate) return;
+        event.preventDefault();
+        event.currentTarget.requestSubmit();
     };
 
     return (
@@ -461,7 +660,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                     {errorMessage}
                                 </div>
                             )}
-                            <div className="space-y-4">
+                            <form className="space-y-4" onSubmit={handleProfileFormSubmit} onKeyDown={handleProfileFormKeyDown}>
                                 <div className="grid gap-4 md:grid-cols-[minmax(0,0.55fr)_minmax(0,1fr)_minmax(0,1fr)]">
                                     <label className="space-y-1">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.fields.gender')}</span>
@@ -487,22 +686,34 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                     <label className="space-y-1">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.fields.firstName')}</span>
                                         <input
+                                            ref={firstNameInputRef}
                                             value={form.firstName}
                                             onChange={(event) => updateField('firstName', event.target.value)}
-                                            className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
+                                            aria-invalid={requiredFieldErrors.firstName}
+                                            className={`h-10 w-full rounded-lg border px-3 text-sm outline-none focus:ring-2 ${
+                                                requiredFieldErrors.firstName
+                                                    ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100'
+                                                    : 'border-slate-300 focus:border-accent-400 focus:ring-accent-200'
+                                            }`}
                                         />
                                     </label>
                                     <label className="space-y-1">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.fields.lastName')}</span>
                                         <input
+                                            ref={lastNameInputRef}
                                             value={form.lastName}
                                             onChange={(event) => updateField('lastName', event.target.value)}
-                                            className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
+                                            aria-invalid={requiredFieldErrors.lastName}
+                                            className={`h-10 w-full rounded-lg border px-3 text-sm outline-none focus:ring-2 ${
+                                                requiredFieldErrors.lastName
+                                                    ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100'
+                                                    : 'border-slate-300 focus:border-accent-400 focus:ring-accent-200'
+                                            }`}
                                         />
                                     </label>
                                 </div>
 
-                                <label className="space-y-1">
+                                <label className="max-w-xl space-y-1">
                                     <span className="flex items-center justify-between gap-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
                                         <span>{t('settings.fields.username')}</span>
                                         {hasUsernameLock && isUsernameLocked && (
@@ -528,32 +739,42 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                         aria-label={t('settings.fields.username')}
                                         value={form.username}
                                         onChange={(event) => {
-                                            updateField('username', event.target.value);
+                                            const sanitized = sanitizeUsernameInput(event.target.value);
+                                            updateField('username', sanitized);
                                             setUsernameSuggestions([]);
+                                            const localValidation = resolveLocalUsernameValidation(sanitized);
                                             setUsernameCheck({
                                                 loading: false,
-                                                result: null,
+                                                result: localValidation,
                                                 error: null,
                                             });
                                         }}
+                                        onBlur={() => {
+                                            if (isUsernameLocked) return;
+                                            if (!normalizedUsernameDisplay) return;
+                                            if (normalizedUsername === currentUsername) return;
+                                            void runUsernameAvailabilityCheck(normalizedUsernameDisplay, {
+                                                logBlockedAttempt: false,
+                                                includeSuggestions: true,
+                                            });
+                                        }}
+                                        onKeyDown={(event) => {
+                                            if (event.key !== 'Enter' || event.shiftKey || event.nativeEvent.isComposing) return;
+                                            if (!(hasUsernameLock && isUsernameEditing)) return;
+                                            event.preventDefault();
+                                            void handleSave();
+                                        }}
+                                        pattern="[A-Za-z0-9_-]{3,40}"
+                                        autoCapitalize="none"
+                                        spellCheck={false}
                                         readOnly={isUsernameLocked}
-                                        className={`h-10 w-full rounded-lg border px-3 text-sm outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-200 ${
+                                        className={`h-9 w-full rounded-lg border px-3 text-sm outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-200 ${
                                             isUsernameLocked
                                                 ? 'border-slate-200 bg-slate-100 text-slate-600'
                                             : 'border-slate-300 bg-white text-slate-900'
                                         }`}
                                     />
                                     <p className={`text-xs font-medium ${usernameStatusTone}`}>{usernameStatus}</p>
-                                    {usernameRecoveryHint && (
-                                        <p className="text-xs text-slate-500">{usernameRecoveryHint}</p>
-                                    )}
-                                    {cooldownEndsAt && (
-                                        <p className="text-xs text-amber-700">
-                                            {t('settings.usernameCooldownHint', {
-                                                date: formatDateLabel(cooldownEndsAt, appLocale),
-                                            })}
-                                        </p>
-                                    )}
                                     {usernameSuggestions.length > 0 && (
                                         <div className="space-y-1">
                                             <p className="text-xs text-slate-500">{t('settings.usernameSuggestionsTitle')}</p>
@@ -580,7 +801,6 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                             </div>
                                         </div>
                                     )}
-                                    <p className="text-xs text-slate-500">{t('settings.usernameHelp')}</p>
                                 </label>
 
                                 <label className="space-y-1">
@@ -596,13 +816,17 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                     <p className="text-xs text-slate-400">{form.bio.length}/160</p>
                                 </label>
                                 <div className="grid gap-3 md:grid-cols-3">
-                                    <label className="space-y-1">
+                                    <div ref={countryFieldRef} className="space-y-1">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.fields.country')}</span>
                                         <ProfileCountryRegionSelect
                                             value={form.country}
                                             locale={appLocale}
                                             disabled={isSaving}
-                                            inputClassName="h-9 rounded-md text-xs"
+                                            inputClassName={`h-9 rounded-md text-xs ${
+                                                requiredFieldErrors.country
+                                                    ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100'
+                                                    : ''
+                                            }`}
                                             placeholder={t('settings.countryRegionSearchPlaceholder')}
                                             emptyLabel={t('settings.countryRegionEmpty')}
                                             toggleLabel={t('settings.countryRegionToggle')}
@@ -611,13 +835,19 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                                 trackEvent('profile_settings__country_region--select', { country_code: nextCode });
                                             }}
                                         />
-                                    </label>
+                                    </div>
                                     <label className="space-y-1">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.fields.city')}</span>
                                         <input
+                                            ref={cityInputRef}
                                             value={form.city}
                                             onChange={(event) => updateField('city', event.target.value)}
-                                            className="h-9 w-full rounded-md border border-slate-300 px-2.5 text-xs outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
+                                            aria-invalid={requiredFieldErrors.city}
+                                            className={`h-9 w-full rounded-md border px-2.5 text-xs outline-none focus:ring-2 ${
+                                                requiredFieldErrors.city
+                                                    ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100'
+                                                    : 'border-slate-300 focus:border-accent-400 focus:ring-accent-200'
+                                            }`}
                                         />
                                     </label>
                                     <label htmlFor="profile-language-select" className="space-y-1">
@@ -626,7 +856,16 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                             value={form.preferredLanguage}
                                             onValueChange={(value) => updateField('preferredLanguage', value as AppLanguage)}
                                         >
-                                            <SelectTrigger id="profile-language-select" className="h-9 w-full rounded-md border-slate-300 text-xs focus:border-accent-400 focus:ring-accent-200">
+                                            <SelectTrigger
+                                                id="profile-language-select"
+                                                ref={preferredLanguageTriggerRef}
+                                                aria-invalid={requiredFieldErrors.preferredLanguage}
+                                                className={`h-9 w-full rounded-md text-xs ${
+                                                    requiredFieldErrors.preferredLanguage
+                                                        ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100'
+                                                        : 'border-slate-300 focus:border-accent-400 focus:ring-accent-200'
+                                                }`}
+                                            >
                                                 <span className="inline-flex items-center gap-2">
                                                     <FlagIcon code={LOCALE_FLAGS[form.preferredLanguage]} size="sm" className="shrink-0" />
                                                     <span>{LOCALE_LABELS[form.preferredLanguage]}</span>
@@ -645,7 +884,6 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                         </Select>
                                     </label>
                                 </div>
-                            </div>
 
                             <div className="mt-5 grid gap-3 md:grid-cols-2">
                                 <article className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
@@ -700,8 +938,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
 
                             <div className="mt-6 flex flex-wrap items-center gap-3">
                                 <button
-                                    type="button"
-                                    onClick={() => void handleSave()}
+                                    type="submit"
                                     disabled={isSaving}
                                     className="inline-flex h-10 items-center gap-2 rounded-lg bg-accent-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-accent-700 disabled:cursor-not-allowed disabled:opacity-60"
                                     {...getAnalyticsDebugAttributes(mode === 'onboarding' ? 'profile__onboarding--submit' : 'profile__settings--save')}
@@ -709,12 +946,13 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                     {isSaving ? <SpinnerGap size={15} className="animate-spin" /> : null}
                                     {mode === 'onboarding' ? t('settings.actions.saveAndContinue') : t('settings.actions.save')}
                                 </button>
-                                {isMissingRequired && (
+                                {Object.values(requiredFieldErrors).some(Boolean) && (
                                     <span className="text-xs font-semibold text-amber-700">
                                         {t('settings.requiredHint')}
                                     </span>
                                 )}
                             </div>
+                            </form>
                         </>
                     )}
                 </section>

@@ -1,5 +1,6 @@
 import type { PlanTierKey } from '../types';
-import { dbGetAccessToken, ensureDbSession } from './dbService';
+import type { AdminForensicsReplayBundle } from './adminForensicsService';
+import { dbGetAccessToken, ensureExistingDbSession } from './dbService';
 import { normalizeProfileCountryCode } from './profileCountryService';
 import { isSimulatedLoggedIn } from './simulatedLoginService';
 import { supabase } from './supabaseClient';
@@ -16,6 +17,8 @@ export interface AdminUserRecord {
     first_name?: string | null;
     last_name?: string | null;
     username?: string | null;
+    username_display?: string | null;
+    username_changed_at?: string | null;
     gender?: string | null;
     country?: string | null;
     city?: string | null;
@@ -59,6 +62,51 @@ export interface AdminAuditRecord {
     created_at: string;
 }
 
+export interface AdminUserChangeRecord {
+    id: string;
+    owner_user_id: string;
+    owner_email: string | null;
+    action: string;
+    source: string | null;
+    target_type: string;
+    target_id: string | null;
+    before_data: Record<string, unknown> | null;
+    after_data: Record<string, unknown> | null;
+    metadata: Record<string, unknown> | null;
+    created_at: string;
+}
+
+export interface AdminTripVersionSnapshotRecord {
+    trip_id: string;
+    before_version_id: string | null;
+    after_version_id: string | null;
+    before_snapshot: Record<string, unknown> | null;
+    after_snapshot: Record<string, unknown> | null;
+    before_view_settings: Record<string, unknown> | null;
+    after_view_settings: Record<string, unknown> | null;
+    before_label: string | null;
+    after_label: string | null;
+    before_created_at: string | null;
+    after_created_at: string | null;
+}
+
+export interface AdminAuditReplayExportRequest {
+    search?: string | null;
+    dateRange?: '24h' | '7d' | '30d' | 'all' | 'custom' | null;
+    customStartDate?: string | null;
+    customEndDate?: string | null;
+    actionFilters?: string[] | null;
+    targetFilters?: string[] | null;
+    actorFilters?: Array<'admin' | 'user'> | null;
+    selectedEventIds?: string[] | null;
+    sourceLimit?: number | null;
+}
+
+export interface AdminAuditReplayExportResponse {
+    exportAuditId: string | null;
+    bundle: AdminForensicsReplayBundle;
+}
+
 export interface AdminTierReapplyPreview {
     affected_users: number;
     affected_trips: number;
@@ -86,7 +134,7 @@ const normalizeProfileGender = (value: string | null | undefined): string | null
 
 const normalizeUsernameHandle = (value: string | null | undefined): string | null => {
     if (typeof value !== 'string') return null;
-    const normalized = value.trim().toLowerCase().replace(/^@+/, '');
+    const normalized = value.trim().replace(/^@+/, '');
     return normalized || null;
 };
 
@@ -116,6 +164,9 @@ export const adminListUsers = async (
             entitlements_override: null,
             first_name: `TestName${i}`,
             last_name: `LastName${i}`,
+            username: `test_user_${i}`,
+            username_display: `TestUser${i}`,
+            username_changed_at: null,
         }));
         return mockUsers;
     }
@@ -211,6 +262,22 @@ export const adminUpdateUserProfile = async (
     if (error) throw new Error(error.message || 'Could not update user profile.');
 };
 
+export const adminResetUserUsernameCooldown = async (
+    userId: string,
+    reason: string | null = 'admin.manual_reset'
+): Promise<void> => {
+    if (shouldUseAdminMockData()) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        return;
+    }
+    const client = requireSupabase();
+    const { error } = await client.rpc('admin_reset_user_username_cooldown', {
+        p_user_id: userId,
+        p_reason: reason,
+    });
+    if (error) throw new Error(error.message || 'Could not reset username cooldown.');
+};
+
 export const adminGetUserProfile = async (userId: string): Promise<AdminUserRecord | null> => {
     if (shouldUseAdminMockData()) {
         const now = new Date();
@@ -226,6 +293,9 @@ export const adminGetUserProfile = async (userId: string): Promise<AdminUserReco
             entitlements_override: null,
             first_name: `MockUser`,
             last_name: `Profile`,
+            username: 'mockuserprofile',
+            username_display: 'MockUserProfile',
+            username_changed_at: null,
         };
     }
     const client = requireSupabase();
@@ -330,6 +400,50 @@ export const adminUpdateTrip = async (
     if (error) throw new Error(error.message || 'Could not update trip.');
 };
 
+export const adminOverrideTripCommit = async (payload: {
+    tripId: string;
+    data: Record<string, unknown>;
+    viewSettings?: Record<string, unknown> | null;
+    title?: string | null;
+    startDate?: string | null;
+    isFavorite?: boolean | null;
+    label?: string | null;
+    metadata?: Record<string, unknown> | null;
+}): Promise<void> => {
+    if (shouldUseAdminMockData()) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        return;
+    }
+    const client = requireSupabase();
+    const normalizedStartDate = typeof payload.startDate === 'string'
+        ? payload.startDate.trim().slice(0, 10) || null
+        : null;
+    const rpcPayload = {
+        p_trip_id: payload.tripId,
+        p_data: payload.data,
+        p_view: payload.viewSettings ?? null,
+        p_title: payload.title ?? null,
+        p_start_date: normalizedStartDate,
+        p_is_favorite: typeof payload.isFavorite === 'boolean' ? payload.isFavorite : null,
+        p_label: payload.label ?? null,
+        p_metadata: payload.metadata ?? null,
+    };
+    let { error } = await client.rpc('admin_override_trip_commit', rpcPayload);
+    if (error && /function/i.test(error.message || '') && /admin_override_trip_commit/i.test(error.message || '')) {
+        const fallback = await client.rpc('admin_override_trip_commit', {
+            p_trip_id: payload.tripId,
+            p_data: payload.data,
+            p_view: payload.viewSettings ?? null,
+            p_title: payload.title ?? null,
+            p_start_date: normalizedStartDate,
+            p_is_favorite: typeof payload.isFavorite === 'boolean' ? payload.isFavorite : null,
+            p_label: payload.label ?? null,
+        });
+        error = fallback.error;
+    }
+    if (error) throw new Error(error.message || 'Could not create admin override commit.');
+};
+
 export const adminHardDeleteTrip = async (tripId: string): Promise<void> => {
     if (shouldUseAdminMockData()) {
         await new Promise((resolve) => setTimeout(resolve, 500));
@@ -427,16 +541,83 @@ export const adminListAuditLogs = async (
     return (Array.isArray(data) ? data : []) as AdminAuditRecord[];
 };
 
-const callAdminIdentityApi = async (
+export const adminListUserChangeLogs = async (
+    options: {
+        limit?: number;
+        offset?: number;
+        action?: string;
+        ownerUserId?: string;
+    } = {}
+): Promise<AdminUserChangeRecord[]> => {
+    const client = requireSupabase();
+    const { data, error } = await client.rpc('admin_list_user_change_logs', {
+        p_limit: options.limit ?? 200,
+        p_offset: options.offset ?? 0,
+        p_action: options.action ?? null,
+        p_owner_user_id: options.ownerUserId ?? null,
+    });
+    if (error) throw new Error(error.message || 'Could not load user change logs.');
+    return (Array.isArray(data) ? data : []) as AdminUserChangeRecord[];
+};
+
+export const adminGetUserChangeLog = async (eventId: string): Promise<AdminUserChangeRecord | null> => {
+    const client = requireSupabase();
+    const { data, error } = await client.rpc('admin_get_user_change_log', {
+        p_event_id: eventId,
+    });
+    if (error) throw new Error(error.message || 'Could not load user change log.');
+    const row = Array.isArray(data) ? data[0] : data;
+    return row ? (row as AdminUserChangeRecord) : null;
+};
+
+export const adminGetTripVersionSnapshots = async (
+    payload: {
+        tripId: string;
+        afterVersionId?: string | null;
+        beforeVersionId?: string | null;
+    }
+): Promise<AdminTripVersionSnapshotRecord | null> => {
+    const tripId = payload.tripId.trim();
+    if (!tripId) return null;
+
+    if (shouldUseAdminMockData()) {
+        return {
+            trip_id: tripId,
+            before_version_id: payload.beforeVersionId ?? 'mock-before',
+            after_version_id: payload.afterVersionId ?? 'mock-after',
+            before_snapshot: { id: tripId, title: 'Before snapshot', items: [] },
+            after_snapshot: { id: tripId, title: 'After snapshot', items: [] },
+            before_view_settings: { mapStyle: 'minimal', timelineView: 'vertical' },
+            after_view_settings: { mapStyle: 'clean', timelineView: 'horizontal' },
+            before_label: 'Mock before',
+            after_label: 'Mock after',
+            before_created_at: new Date(Date.now() - 60_000).toISOString(),
+            after_created_at: new Date().toISOString(),
+        };
+    }
+
+    const client = requireSupabase();
+    const { data, error } = await client.rpc('admin_get_trip_version_snapshots', {
+        p_trip_id: tripId,
+        p_after_version_id: payload.afterVersionId ?? null,
+        p_before_version_id: payload.beforeVersionId ?? null,
+    });
+    if (error) throw new Error(error.message || 'Could not load trip version snapshots.');
+    const row = Array.isArray(data) ? data[0] : data;
+    return row ? (row as AdminTripVersionSnapshotRecord) : null;
+};
+
+const callAdminInternalApi = async <T extends Record<string, unknown>>(
+    path: string,
     body: Record<string, unknown>
-): Promise<{ ok: boolean; error?: string; data?: Record<string, unknown> }> => {
-    await ensureDbSession();
+): Promise<T> => {
+    await ensureExistingDbSession();
     const token = await dbGetAccessToken();
     if (!token) {
         throw new Error('No active access token found for admin operation.');
     }
 
-    const response = await fetch('/api/internal/admin/iam', {
+    const response = await fetch(path, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -468,26 +649,35 @@ const callAdminIdentityApi = async (
                         : null;
         const fallbackText = responseText.trim();
         const normalizedFallback = fallbackText && fallbackText.length <= 280 ? fallbackText : null;
+        const isIdentityPath = path === '/api/internal/admin/iam';
         const devNotFoundMessage = looksLikeViteNotFoundPage && import.meta.env.DEV
-            ? 'Admin identity route is unavailable in Vite-only dev. Run `npm run dev:netlify` (or run it in a second terminal while `npm run dev` is active) to test admin delete/invite/create actions.'
+            ? (
+                isIdentityPath
+                    ? 'Admin identity route is unavailable in Vite-only dev. Run `pnpm dev:netlify` (or run it in a second terminal while `pnpm dev` is active) to test admin delete/invite/create actions.'
+                    : 'Admin audit export route is unavailable in Vite-only dev. Run `pnpm dev:netlify` (or run it in a second terminal while `pnpm dev` is active) to test replay exports.'
+            )
             : null;
         const looksLikeViteProxyFailure = import.meta.env.DEV
             && response.status === 500
             && !payloadError
             && (!normalizedFallback || normalizedFallback === 'Internal Server Error');
         const devProxyFailureMessage = looksLikeViteProxyFailure
-            ? 'Vite could not reach Netlify dev for admin identity actions (connection refused on localhost:8888). Start `npm run dev:netlify` before testing delete/invite/create.'
+            ? (
+                isIdentityPath
+                    ? 'Vite could not reach Netlify dev for admin identity actions (connection refused on localhost:8888). Start `pnpm dev:netlify` before testing delete/invite/create.'
+                    : 'Vite could not reach Netlify dev for admin audit export actions (connection refused on localhost:8888). Start `pnpm dev:netlify` before testing replay export.'
+            )
             : null;
         const reason = payloadError
             || devNotFoundMessage
             || devProxyFailureMessage
             || normalizedFallback
             || response.statusText
-            || 'Admin identity API request failed.';
-        const errorMessage = `Admin identity API request failed (${response.status}): ${reason}`;
+            || 'Admin internal API request failed.';
+        const errorMessage = `Admin internal API request failed (${response.status}): ${reason}`;
         throw new Error(errorMessage);
     }
-    return payload as { ok: boolean; error?: string; data?: Record<string, unknown> };
+    return payload as T;
 };
 
 export const adminCreateUserInvite = async (payload: {
@@ -501,7 +691,7 @@ export const adminCreateUserInvite = async (payload: {
         await new Promise((resolve) => setTimeout(resolve, 500));
         return;
     }
-    await callAdminIdentityApi({
+    await callAdminInternalApi<{ ok: boolean }>('/api/internal/admin/iam', {
         action: 'invite',
         email: payload.email,
         firstName: payload.firstName ?? null,
@@ -522,7 +712,7 @@ export const adminCreateUserDirect = async (payload: {
         await new Promise((resolve) => setTimeout(resolve, 500));
         return;
     }
-    await callAdminIdentityApi({
+    await callAdminInternalApi<{ ok: boolean }>('/api/internal/admin/iam', {
         action: 'create',
         email: payload.email,
         password: payload.password,
@@ -537,8 +727,65 @@ export const adminHardDeleteUser = async (userId: string): Promise<void> => {
         await new Promise((resolve) => setTimeout(resolve, 500));
         return;
     }
-    await callAdminIdentityApi({
+    await callAdminInternalApi<{ ok: boolean }>('/api/internal/admin/iam', {
         action: 'delete',
         userId,
     });
+};
+
+export const adminExportAuditReplay = async (
+    payload: AdminAuditReplayExportRequest
+): Promise<AdminAuditReplayExportResponse> => {
+    if (shouldUseAdminMockData()) {
+        const generatedAt = new Date().toISOString();
+        return {
+            exportAuditId: null,
+            bundle: {
+                schema: 'admin_forensics_replay_v1',
+                generated_at: generatedAt,
+                filters: {
+                    search: payload.search ?? null,
+                    date_range: payload.dateRange ?? '30d',
+                    action_filters: payload.actionFilters ?? [],
+                    target_filters: payload.targetFilters ?? [],
+                    actor_filters: payload.actorFilters ?? [],
+                    source_limit: payload.sourceLimit ?? 500,
+                },
+                totals: {
+                    event_count: 0,
+                    correlation_count: 0,
+                },
+                events: [],
+                correlations: [],
+            },
+        };
+    }
+
+    const response = await callAdminInternalApi<{
+        ok: boolean;
+        data?: {
+            exportAuditId?: string | null;
+            bundle?: AdminForensicsReplayBundle;
+        };
+    }>('/api/internal/admin/audit/replay-export', {
+        search: payload.search ?? null,
+        dateRange: payload.dateRange ?? '30d',
+        customStartDate: payload.customStartDate ?? null,
+        customEndDate: payload.customEndDate ?? null,
+        actionFilters: payload.actionFilters ?? [],
+        targetFilters: payload.targetFilters ?? [],
+        actorFilters: payload.actorFilters ?? [],
+        selectedEventIds: payload.selectedEventIds ?? [],
+        sourceLimit: payload.sourceLimit ?? 500,
+    });
+
+    const bundle = response?.data?.bundle;
+    if (!bundle || bundle.schema !== 'admin_forensics_replay_v1') {
+        throw new Error('Admin replay export returned an invalid bundle.');
+    }
+
+    return {
+        exportAuditId: response?.data?.exportAuditId ?? null,
+        bundle,
+    };
 };

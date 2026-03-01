@@ -12,6 +12,10 @@ import {
     type AdminTripRecord,
     type AdminUserRecord,
 } from '../services/adminService';
+import {
+    buildDangerConfirmDialog,
+    buildTransferTargetPromptDialog,
+} from '../services/appDialogPresets';
 import { dbGetTrip, dbUpsertTrip } from '../services/dbService';
 import { getTripCityStops, buildMiniMapUrl } from '../components/TripManager';
 import type { ITrip } from '../types';
@@ -81,6 +85,7 @@ const getUserDisplayName = (user: AdminUserRecord): string => {
     const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ').trim();
     if (fullName) return fullName;
     if (user.display_name?.trim()) return user.display_name.trim();
+    if (user.username_display?.trim()) return user.username_display.trim();
     if (user.username?.trim()) return user.username.trim();
     if (user.email?.trim()) return user.email.trim();
     return user.user_id;
@@ -493,16 +498,12 @@ export const AdminTripsPage: React.FC = () => {
     };
 
     const handleTransferTrip = async (trip: AdminTripRecord) => {
-        const transferTargetInput = await promptDialog({
+        const transferTargetInput = await promptDialog(buildTransferTargetPromptDialog({
             title: 'Transfer trip owner',
             message: 'Enter the target user email or UUID for this trip.',
-            label: 'Target owner (email or UUID)',
-            placeholder: 'name@example.com or user UUID',
             confirmLabel: 'Continue',
-            cancelLabel: 'Cancel',
-            tone: 'danger',
-            inputType: 'text',
-        });
+            label: 'Target owner (email or UUID)',
+        }));
         if (transferTargetInput === null) return;
 
         setIsSaving(true);
@@ -518,13 +519,11 @@ export const AdminTripsPage: React.FC = () => {
                 throw new Error('Target user must be an active account.');
             }
 
-            const confirmed = await confirmDialog({
+            const confirmed = await confirmDialog(buildDangerConfirmDialog({
                 title: 'Confirm transfer',
                 message: `Transfer this trip to ${getUserReferenceText(targetUser)}?`,
                 confirmLabel: 'Transfer',
-                cancelLabel: 'Cancel',
-                tone: 'danger',
-            });
+            }));
             if (!confirmed) return;
 
             await adminUpdateTrip(trip.trip_id, { ownerId: targetUser.user_id });
@@ -538,17 +537,14 @@ export const AdminTripsPage: React.FC = () => {
     };
 
     const handleDuplicateTrip = async (trip: AdminTripRecord) => {
-        const transferTargetInput = await promptDialog({
+        const transferTargetInput = await promptDialog(buildTransferTargetPromptDialog({
             title: 'Duplicate trip',
             message: 'Optionally enter a target user email or UUID for the duplicated trip. Leave blank to keep ownership unchanged.',
             label: 'Target owner (optional)',
-            placeholder: 'name@example.com or user UUID',
             defaultValue: '',
             confirmLabel: 'Duplicate',
-            cancelLabel: 'Cancel',
             tone: 'default',
-            inputType: 'text',
-        });
+        }));
         if (transferTargetInput === null) return;
 
         setIsSaving(true);
@@ -641,13 +637,11 @@ export const AdminTripsPage: React.FC = () => {
     const handleSoftDeleteTrip = async (trip: AdminTripRecord) => {
         const nextStatus: TripStatus = trip.status === 'archived' ? 'active' : 'archived';
         if (nextStatus === 'archived') {
-            const confirmed = await confirmDialog({
+            const confirmed = await confirmDialog(buildDangerConfirmDialog({
                 title: 'Soft delete trip',
                 message: `Archive ${trip.title || trip.trip_id}?`,
                 confirmLabel: 'Archive',
-                cancelLabel: 'Cancel',
-                tone: 'danger',
-            });
+            }));
             if (!confirmed) return;
         }
 
@@ -666,13 +660,11 @@ export const AdminTripsPage: React.FC = () => {
     };
 
     const handleHardDeleteTrip = async (trip: AdminTripRecord) => {
-        const confirmed = await confirmDialog({
+        const confirmed = await confirmDialog(buildDangerConfirmDialog({
             title: 'Hard delete trip',
             message: `Hard-delete ${trip.title || trip.trip_id}? This cannot be undone.`,
             confirmLabel: 'Hard delete',
-            cancelLabel: 'Cancel',
-            tone: 'danger',
-        });
+        }));
         if (!confirmed) return;
 
         setIsSaving(true);
@@ -735,13 +727,11 @@ export const AdminTripsPage: React.FC = () => {
 
     const handleBulkSoftDeleteTrips = async () => {
         if (selectedVisibleTrips.length === 0) return;
-        const confirmed = await confirmDialog({
+        const confirmed = await confirmDialog(buildDangerConfirmDialog({
             title: 'Soft delete selected trips',
             message: `Archive ${selectedVisibleTrips.length} selected trip${selectedVisibleTrips.length === 1 ? '' : 's'}?`,
             confirmLabel: 'Archive',
-            cancelLabel: 'Cancel',
-            tone: 'danger',
-        });
+        }));
         if (!confirmed) return;
         setIsSaving(true);
         setErrorMessage(null);
@@ -760,13 +750,11 @@ export const AdminTripsPage: React.FC = () => {
 
     const handleBulkHardDeleteTrips = async () => {
         if (selectedVisibleTrips.length === 0) return;
-        const confirmed = await confirmDialog({
+        const confirmed = await confirmDialog(buildDangerConfirmDialog({
             title: 'Hard delete selected trips',
             message: `Hard-delete ${selectedVisibleTrips.length} selected trip${selectedVisibleTrips.length === 1 ? '' : 's'}? This cannot be undone.`,
             confirmLabel: 'Hard delete',
-            cancelLabel: 'Cancel',
-            tone: 'danger',
-        });
+        }));
         if (!confirmed) return;
         setIsSaving(true);
         setErrorMessage(null);

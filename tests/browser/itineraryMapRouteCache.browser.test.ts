@@ -50,7 +50,7 @@ describe('components/ItineraryMap route cache helpers', () => {
     expect(getRouteOuterOutlineColor('satellite')).toBe('#f8fafc');
   });
 
-  it('expands route borders outward and slightly thickens the main line', () => {
+  it('keeps route outlines disabled while preserving the main stroke weight boost', () => {
     const { outerOutlineOptions, outlineOptions, mainOptions } = buildRoutePolylinePairOptions({
       geodesic: true,
       strokeColor: '#2563eb',
@@ -61,14 +61,18 @@ describe('components/ItineraryMap route cache helpers', () => {
     } as any, 'satellite');
 
     expect(mainOptions.strokeWeight).toBe(4);
-    expect(outlineOptions.strokeWeight).toBe(6);
-    expect(outerOutlineOptions.strokeWeight).toBe(9);
+    expect(outlineOptions.strokeWeight).toBe(4);
+    expect(outerOutlineOptions.strokeWeight).toBe(4);
+    expect(outlineOptions.strokeOpacity).toBe(0);
+    expect(outerOutlineOptions.strokeOpacity).toBe(0);
+    expect(outlineOptions.icons).toBeUndefined();
+    expect(outerOutlineOptions.icons).toBeUndefined();
     expect(mainOptions.zIndex).toBe(40);
     expect(outlineOptions.zIndex).toBe(39);
     expect(outerOutlineOptions.zIndex).toBe(38);
   });
 
-  it('keeps icon-only fallback routes dashed while still applying outline icons', () => {
+  it('keeps icon-only fallback routes dashed without rendering outline icons', () => {
     const dashedIcons = [{
       icon: { path: 'M 0,-1 0,1', strokeColor: '#22c55e', strokeOpacity: 0.9, scale: 2.5 },
       offset: '0',
@@ -91,20 +95,12 @@ describe('components/ItineraryMap route cache helpers', () => {
     expect(outlineOptions.strokeOpacity).toBe(0);
     expect(outerOutlineOptions.strokeOpacity).toBe(0);
     expect(outerOutlineOptions.strokeColor).toBe('#f8fafc');
-    expect(outerOutlineOptions.strokeWeight).toBe(8);
+    expect(outerOutlineOptions.strokeWeight).toBe(3);
     expect(outerOutlineOptions.zIndex).toBe(33);
     expect(outlineOptions.strokeColor).toBe('#0f172a');
-    expect(outlineOptions.strokeWeight).toBe(5);
+    expect(outlineOptions.strokeWeight).toBe(3);
     expect(outlineOptions.zIndex).toBe(34);
-
-    const outerOutlineIcon = outerOutlineOptions.icons?.[0]?.icon as { strokeColor?: string; scale?: number; strokeOpacity?: number; fillColor?: string } | undefined;
-    const outlineIcon = outlineOptions.icons?.[0]?.icon as { strokeColor?: string; scale?: number; strokeOpacity?: number } | undefined;
-    expect(outerOutlineIcon?.strokeColor).toBe('#f8fafc');
-    expect(outerOutlineIcon?.fillColor).toBe('#f8fafc');
-    expect(outerOutlineIcon?.scale).toBeCloseTo(4.3);
-    expect(outerOutlineIcon?.strokeOpacity).toBeGreaterThanOrEqual(0.85);
-    expect(outlineIcon?.strokeColor).toBe('#0f172a');
-    expect(outlineIcon?.scale).toBeCloseTo(3.6);
-    expect(outlineIcon?.strokeOpacity).toBeGreaterThanOrEqual(0.92);
+    expect(outerOutlineOptions.icons).toBeUndefined();
+    expect(outlineOptions.icons).toBeUndefined();
   });
 });

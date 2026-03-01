@@ -157,7 +157,7 @@
       "city": "도시 *",
       "preferredLanguage": "선호하는 언어 *"
     },
-    "usernameHelp": "3~30자의 문자, 숫자, 밑줄, 하이픈을 사용하세요. 공백이 없습니다.",
+    "usernameHelp": "3~40자의 문자, 숫자, 밑줄, 하이픈을 사용하세요. 공백이 없습니다.",
     "usernameCooldownHint": "{date}에 사용자 이름을 다시 변경할 수 있습니다.",
     "bioHelp": "여행자가 공개 프로필에서 볼 수 있는 짧은 소개를 공유하세요.",
     "publicProfileToggleTitle": "공개 프로필 활성화",
@@ -189,7 +189,7 @@
       "available": "좋습니다. 이 사용자 이름을 사용할 수 있습니다.",
       "taken": "이 사용자 이름은 이미 사용 중입니다.",
       "reserved": "이 사용자 이름은 예약되어 있습니다.",
-      "invalid": "3~30자의 문자, 숫자, 밑줄, 하이픈을 사용하세요.",
+      "invalid": "3~40자의 문자, 숫자, 밑줄, 하이픈을 사용하세요.",
       "unchanged": "현재 사용자 이름입니다.",
       "cooldown": "사용자 이름 변경은 현재 대기 중입니다.",
       "cooldownDate": "사용자 이름 변경은 {date}까지 휴지 상태입니다.",
@@ -204,7 +204,7 @@
     "usernameRecoveryHint": {
       "taken": "숫자나 밑줄을 추가해 보세요.",
       "reserved": "예약되지 않은 다른 핸들을 선택하세요.",
-      "invalid": "공백 없이 3~30자의 문자, 숫자, 밑줄 또는 하이픈을 사용하세요.",
+      "invalid": "공백 없이 3~40자의 문자, 숫자, 밑줄 또는 하이픈을 사용하세요.",
       "cooldown": "대기 시간 동안에는 사용자 이름 편집이 잠깁니다."
     },
     "countryRegionSearchPlaceholder": "국가 또는 지역 검색",

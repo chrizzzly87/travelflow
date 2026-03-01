@@ -24,7 +24,7 @@ import {
     dbAdminOverrideTripCommit,
     dbCanCreateTrip,
     dbCreateTripVersion,
-    dbUpsertTrip,
+    dbUpsertTripWithStatus,
     dbUpsertUserSettings,
     ensureDbSession,
 } from './services/dbApi';
@@ -39,6 +39,9 @@ import { useWarmupGate } from './app/bootstrap/useWarmupGate';
 import { AppProviderShell } from './app/bootstrap/AppProviderShell';
 import { AppRoutes } from './app/routes/AppRoutes';
 import { isFirstLoadCriticalPath } from './app/prefetch/isFirstLoadCriticalPath';
+import { useConnectivityStatus } from './hooks/useConnectivityStatus';
+import { enqueueTripCommitAndSync } from './services/tripSyncManager';
+import { GlobalConnectivityBadge } from './components/GlobalConnectivityBadge';
 const IS_DEV = Boolean((import.meta as any)?.env?.DEV);
 
 const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
@@ -210,6 +213,7 @@ const AppContent: React.FC = () => {
     const [appLanguage, setAppLanguage] = useState<AppLanguage>(() => getStoredAppLanguage());
     const navigate = useNavigate();
     const location = useLocation();
+    const { snapshot: connectivitySnapshot } = useConnectivityStatus();
     const userSettingsSaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const shouldLoadDebugger = useDebuggerBootstrap({ appName: APP_NAME, isDev: IS_DEV });
     const isFirstLoadCritical = useMemo(
@@ -348,6 +352,7 @@ const AppContent: React.FC = () => {
                 mapStyle: settings.mapStyle,
                 routeMode: settings.routeMode,
                 layoutMode: settings.layoutMode,
+                timelineMode: settings.timelineMode,
                 timelineView: settings.timelineView,
                 showCityNames: settings.showCityNames,
                 zoomLevel: settings.zoomLevel,
@@ -371,6 +376,48 @@ const AppContent: React.FC = () => {
         });
     }, []);
 
+    const enqueueTripCommitFallback = useCallback((updatedTrip: ITrip, view: IViewSettings | undefined, label: string) => {
+        enqueueTripCommitAndSync({
+            tripId: updatedTrip.id,
+            tripSnapshot: updatedTrip,
+            viewSnapshot: view ?? null,
+            label,
+        });
+    }, []);
+
+    const commitOwnedTripResilient = useCallback(async (
+        updatedTrip: ITrip,
+        view: IViewSettings | undefined,
+        label: string,
+    ): Promise<boolean> => {
+        const canAttemptRemote = DB_ENABLED && connectivitySnapshot.state === 'online';
+        if (!canAttemptRemote) {
+            enqueueTripCommitFallback(updatedTrip, view, label);
+            return false;
+        }
+
+        const sessionId = await ensureDbSession();
+        if (!sessionId) {
+            enqueueTripCommitFallback(updatedTrip, view, label);
+            return false;
+        }
+
+        const upsertResult = await dbUpsertTripWithStatus(updatedTrip, view);
+        if (!upsertResult.tripId) {
+            if (upsertResult.isPermissionError) {
+                return false;
+            }
+            enqueueTripCommitFallback(updatedTrip, view, label);
+            return false;
+        }
+        const versionId = await dbCreateTripVersion(updatedTrip, view, label);
+        if (!versionId) {
+            enqueueTripCommitFallback(updatedTrip, view, label);
+            return false;
+        }
+        return true;
+    }, [connectivitySnapshot.state, enqueueTripCommitFallback]);
+
     const handleCommitState = (updatedTrip: ITrip, view: IViewSettings | undefined, options?: { replace?: boolean; label?: string; adminOverride?: boolean }) => {
         const label = options?.label || 'Updated trip';
         const commitTs = Date.now();
@@ -383,16 +430,14 @@ const AppContent: React.FC = () => {
         createLocalHistoryEntry(navigate, updatedTrip, view, label, options, commitTs);
 
         const commit = async () => {
-            const sessionId = await ensureDbSession();
-            if (!sessionId) return;
             if (options?.adminOverride) {
+                const sessionId = await ensureDbSession();
+                if (!sessionId) return;
                 const overrideCommit = await dbAdminOverrideTripCommit(updatedTrip, view, label);
                 if (!overrideCommit?.tripId || !overrideCommit.versionId) return;
                 return;
             }
-            const upserted = await dbUpsertTrip(updatedTrip, view);
-            const versionId = await dbCreateTripVersion(updatedTrip, view, label);
-            if (!upserted || !versionId) return;
+            await commitOwnedTripResilient(updatedTrip, view, label);
         };
 
         void commit();
@@ -422,16 +467,12 @@ const AppContent: React.FC = () => {
                 createLocalHistoryEntry(navigate, updatedTrip, undefined, 'Data: Updated generated trip', { replace: true }, commitTs);
 
                 if (DB_ENABLED) {
-                    const sessionId = await ensureDbSession();
-                    if (!sessionId) return;
-                    const upserted = await dbUpsertTrip(updatedTrip, undefined);
-                    const versionId = await dbCreateTripVersion(updatedTrip, undefined, 'Data: Updated generated trip');
-                    if (!upserted || !versionId) return;
+                    await commitOwnedTripResilient(updatedTrip, undefined, 'Data: Updated generated trip');
                 }
                 return;
             }
 
-            if (DB_ENABLED) {
+            if (DB_ENABLED && connectivitySnapshot.state === 'online') {
                 const limit = await dbCanCreateTrip();
                 if (!limit.allowCreate) {
                     window.alert(`Trip limit reached (${limit.activeTripCount}/${limit.maxTripCount}). Archive a trip or upgrade to continue.`);
@@ -468,11 +509,7 @@ const AppContent: React.FC = () => {
             }
 
             createLocalHistoryEntry(navigate, preparedTrip, undefined, 'Data: Created trip', undefined, createdTs);
-            const sessionId = await ensureDbSession();
-            if (!sessionId) return;
-            const upserted = await dbUpsertTrip(preparedTrip, undefined);
-            const versionId = await dbCreateTripVersion(preparedTrip, undefined, 'Data: Created trip');
-            if (!upserted || !versionId) return;
+            await commitOwnedTripResilient(preparedTrip, undefined, 'Data: Created trip');
         };
 
         void create();
@@ -495,6 +532,7 @@ const AppContent: React.FC = () => {
 
     return (
         <TripManagerProvider openTripManager={openTripManager} prewarmTripManager={prewarmTripManager}>
+            <GlobalConnectivityBadge />
             <ViewTransitionHandler enabled={isWarmupEnabled} />
             {isWarmupEnabled && (
                 <Suspense fallback={null}>

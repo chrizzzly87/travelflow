@@ -144,6 +144,9 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 | `admin__menu--{target}` | `dashboard`, `ai_benchmark`, `access` | — | `AdminMenu.tsx` |
 | `admin__menu--brand` | — | — | `AdminMenu.tsx` |
 | `admin__menu--back_to_platform` | — | — | `AdminMenu.tsx` |
+| `admin__design_playground--open` | — | — | `AdminDesignSystemPlaygroundPage.tsx` |
+| `admin__design_playground_component_group--view` | — | `{ group_id }` | `AdminDesignSystemPlaygroundPage.tsx` |
+| `admin__design_playground_toast--trigger` | — | `{ scenario_id }` | `AdminDesignSystemPlaygroundPage.tsx` |
 
 ### Trip View
 | Event | Detail | Payload | File |
@@ -152,6 +155,14 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 | `trip_view__auth--logout` | — | `{ trip_id }` | `TripView.tsx` |
 | `trip_view__admin_override--toggle` | — | `{ trip_id, enabled }` | `TripView.tsx` |
 | `trip_view__admin_owner--open_users` | — | `{ trip_id, owner_id }` | `TripView.tsx` |
+| `trip_view__mode--calendar` | — | `{ trip_id }` | `TripView.tsx` |
+| `trip_view__mode--timeline` | — | `{ trip_id }` | `TripView.tsx` |
+| `trip_view__layout_direction--horizontal` | — | `{ trip_id, target }` | `TripView.tsx`, `ItineraryMap.tsx` |
+| `trip_view__layout_direction--vertical` | — | `{ trip_id, target }` | `TripView.tsx`, `ItineraryMap.tsx` |
+| `trip_view__zoom` | — | `{ trip_id, direction, timeline_mode }` | `TripView.tsx` |
+| `trip_view__timeline_city--open` | — | `{ trip_id, city_id }` | `TripTimelineListView.tsx` |
+| `trip_view__timeline_activity--open` | — | `{ trip_id, item_id, city_id }` | `TripTimelineListView.tsx` |
+| `trip_view__timeline_transfer--open` | — | `{ trip_id, item_id, city_id, mode }` | `TripTimelineListView.tsx` |
 
 ### Profile
 | Event | Detail | Payload | File |
@@ -187,6 +198,16 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 | `public_profile__summary--open_passport` | — | — | `PublicProfilePage.tsx` |
 | `trip_preview_card__creator_handle` | — | `{ creator_handle, trip_id }` | `ProfileTripCard.tsx` |
 | `example_trip__creator_handle` | — | `{ creator_handle }` | `ExampleTripCard.tsx` |
+
+### Trip Connectivity
+| Event | Detail | Payload | File |
+|-------|--------|---------|------|
+| `trip_connectivity__banner--dismiss` | — | `{ connectivity_state, pending_count }` | `ConnectivityStatusBanner.tsx` |
+| `trip_connectivity__banner--retry_sync` | — | `{ connectivity_state, pending_count, failed_count }` | `ConnectivityStatusBanner.tsx` |
+| `trip_connectivity__banner--contact` | — | `{ connectivity_state, pending_count }` | `ConnectivityStatusBanner.tsx` |
+| `trip_connectivity__banner--email` | — | `{ connectivity_state, pending_count }` | `ConnectivityStatusBanner.tsx` |
+| `trip_connectivity__trip_strip--retry_sync` | — | `{ trip_id, connectivity_state, pending_count, failed_count }` | `TripViewStatusBanners.tsx` |
+| `trip_connectivity__trip_strip--restore_backup` | — | `{ trip_id }` | `TripViewStatusBanners.tsx` |
 
 ### Not Found
 | Event | Detail | Payload | File |

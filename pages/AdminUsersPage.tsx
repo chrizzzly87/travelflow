@@ -19,6 +19,7 @@ import {
     Trash,
     X,
     UserPlus,
+    WarningCircle,
 } from '@phosphor-icons/react';
 import { createPortal } from 'react-dom';
 import { PLAN_CATALOG, PLAN_ORDER } from '../config/planCatalog';
@@ -29,16 +30,24 @@ import { isIsoDateInRange } from '../components/admin/adminDateRange';
 import {
     adminCreateUserDirect,
     adminCreateUserInvite,
+    adminGetTripVersionSnapshots,
     adminGetUserProfile,
     adminHardDeleteUser,
+    adminListUserChangeLogs,
     adminListUserTrips,
     adminListUsers,
+    adminResetUserUsernameCooldown,
     adminUpdateTrip,
     adminUpdateUserOverrides,
     adminUpdateUserProfile,
+    type AdminUserChangeRecord,
     type AdminTripRecord,
     type AdminUserRecord,
 } from '../services/adminService';
+import {
+    buildDangerConfirmDialog,
+    buildTransferTargetPromptDialog,
+} from '../services/appDialogPresets';
 import type { PlanTierKey } from '../types';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { Drawer, DrawerContent } from '../components/ui/drawer';
@@ -55,10 +64,18 @@ import {
 import { AdminReloadButton } from '../components/admin/AdminReloadButton';
 import { AdminFilterMenu, type AdminFilterMenuOption } from '../components/admin/AdminFilterMenu';
 import { AdminCountUpNumber } from '../components/admin/AdminCountUpNumber';
+import { AdminJsonDiffModal } from '../components/admin/AdminJsonDiffModal';
 import { CopyableUuid } from '../components/admin/CopyableUuid';
 import { ProfileCountryRegionSelect } from '../components/profile/ProfileCountryRegionSelect';
 import { readAdminCache, writeAdminCache } from '../components/admin/adminLocalCache';
 import { useAppDialog } from '../components/AppDialogProvider';
+import { showAppToast } from '../components/ui/appToast';
+import {
+    buildUserChangeDiffEntries,
+    formatUserChangeDiffValue,
+    resolveUserChangeActionPresentation,
+    resolveUserChangeSecondaryFacets,
+} from '../services/adminUserChangeLog';
 
 type SortKey = 'name' | 'email' | 'total_trips' | 'activation_status' | 'last_sign_in_at' | 'created_at' | 'tier_key' | 'system_role' | 'account_status';
 type SortDirection = 'asc' | 'desc';
@@ -70,8 +87,10 @@ type SocialProviderFilter = 'google' | 'facebook' | 'kakao' | 'apple' | 'github'
 type LoginPillKey = 'password' | SocialProviderFilter | 'anonymous' | 'unknown';
 
 const PAGE_SIZE = 25;
+const USER_CHANGE_LOG_DRAWER_LIMIT = 20;
 const GENDER_UNSET_VALUE = '__gender_unset__';
 const USERS_CACHE_KEY = 'admin.users.cache.v1';
+const USERNAME_CHANGE_COOLDOWN_DAYS = 90;
 const USER_ROLE_VALUES = ['admin', 'user'] as const;
 const USER_STATUS_VALUES: ReadonlyArray<UserAccountStatus> = ['active', 'disabled', 'deleted'];
 const USER_ACTIVATION_VALUES: ReadonlyArray<UserActivationStatus> = ['activated', 'invited', 'pending', 'anonymous'];
@@ -251,10 +270,84 @@ const formatTimestamp = (value: string | null | undefined): string => {
     return new Date(parsed).toLocaleString();
 };
 
+const formatOptionalTimestamp = (value: string | null | undefined): string => {
+    if (!value) return 'Not set';
+    const parsed = Date.parse(value);
+    if (!Number.isFinite(parsed)) return 'Unknown';
+    return new Date(parsed).toLocaleString();
+};
+
+const getUsernameCooldownMeta = (usernameChangedAt: string | null | undefined): {
+    isActive: boolean;
+    endsAt: string | null;
+} => {
+    const parsed = Date.parse(usernameChangedAt || '');
+    if (!Number.isFinite(parsed)) {
+        return {
+            isActive: false,
+            endsAt: null,
+        };
+    }
+    const endsDate = new Date(parsed + USERNAME_CHANGE_COOLDOWN_DAYS * 24 * 60 * 60 * 1000);
+    return {
+        isActive: Date.now() < endsDate.getTime(),
+        endsAt: endsDate.toISOString(),
+    };
+};
+
+const formatFieldLabel = (value: string): string => (
+    value
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, (char) => char.toUpperCase())
+);
+
+const formatChangeValue = (value: unknown): string => {
+    if (value === null || value === undefined) return '—';
+    if (typeof value === 'boolean') return value ? 'true' : 'false';
+    if (typeof value === 'number') return String(value);
+    if (typeof value === 'string') {
+        const trimmed = value.trim();
+        if (!trimmed) return '—';
+        const parsedDate = Date.parse(trimmed);
+        if (Number.isFinite(parsedDate) && /^\d{4}-\d{2}-\d{2}T/.test(trimmed)) {
+            return new Date(parsedDate).toLocaleString();
+        }
+        return trimmed;
+    }
+    return JSON.stringify(value);
+};
+
+const asRecord = (value: Record<string, unknown> | null | undefined): Record<string, unknown> => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+    return value;
+};
+
+const asString = (value: unknown): string | null => {
+    if (typeof value !== 'string') return null;
+    const trimmed = value.trim();
+    return trimmed || null;
+};
+
+const hasSnapshotData = (value: Record<string, unknown> | null | undefined): boolean => Object.keys(asRecord(value)).length > 0;
+
+const mergeTripSnapshotWithViewSettings = (
+    snapshot: Record<string, unknown> | null | undefined,
+    viewSettings: Record<string, unknown> | null | undefined
+): Record<string, unknown> => {
+    const normalizedSnapshot = asRecord(snapshot);
+    const normalizedViewSettings = asRecord(viewSettings);
+    if (Object.keys(normalizedViewSettings).length === 0) return normalizedSnapshot;
+    return {
+        ...normalizedSnapshot,
+        view_settings: normalizedViewSettings,
+    };
+};
+
 const getUserDisplayName = (user: AdminUserRecord): string => {
     const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ').trim();
     if (fullName) return fullName;
     if (user.display_name?.trim()) return user.display_name.trim();
+    if (user.username_display?.trim()) return user.username_display.trim();
     if (user.username?.trim()) return user.username.trim();
     return 'Unnamed user';
 };
@@ -435,46 +528,114 @@ const summarizeBulkDeleteFailures = (details: string[]): string => {
 };
 
 const buildSingleHardDeleteMessage = (
-    userRef: string,
+    userName: string,
     ownedTripCount: number
-): string => {
-    const tripLabel = `${ownedTripCount} owned trip${ownedTripCount === 1 ? '' : 's'}`;
-    return [
-        `Account: ${userRef}`,
-        '',
-        'Permanent delete impact',
-        '• Auth account',
-        '• Profile record',
-        `• ${tripLabel}`,
-        '• All related versions, share links, and collaborators for those trips',
-        '',
-        ownedTripCount > 0 ? 'Trip ownership choices before confirm' : '',
-        ownedTripCount > 0 ? '• Cancel and use "Transfer trips + hard delete" to preserve trip ownership' : '',
-        ownedTripCount > 0 ? '• Continue hard delete to permanently remove those trips' : '',
-        '',
-        'This cannot be undone.',
-    ].join('\n');
+): React.ReactNode => {
+    const tripSuffix = ownedTripCount > 0 ? ` (${ownedTripCount})` : '';
+    const tripLine = ownedTripCount > 0
+        ? `${ownedTripCount} owned trip${ownedTripCount === 1 ? '' : 's'} will be permanently deleted.`
+        : 'No owned trips were found for this user.';
+    return (
+        <div className="space-y-3">
+            <p>
+                Are you sure you want to hard-delete <strong>"{userName}"</strong>?
+            </p>
+            <p>
+                Hard delete permanently removes the <strong>auth account</strong>, <strong>profile data</strong>, and <strong>all owned trips{tripSuffix}</strong>.
+            </p>
+            <ul className="list-disc space-y-1 pl-5">
+                <li>Auth account and profile data are permanently removed.</li>
+                <li>{tripLine}</li>
+                <li>Use soft delete instead if you may need to restore this user later.</li>
+            </ul>
+            <p>
+                Use soft delete instead if you may need to restore this user later.
+            </p>
+            {ownedTripCount > 0 ? (
+                <p>
+                    To keep trips, cancel and use <strong>Transfer trips + hard delete</strong> first.
+                </p>
+            ) : null}
+            <div className="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-rose-800">
+                <WarningCircle size={16} className="mt-0.5 shrink-0" />
+                <span><strong>This action cannot be undone.</strong></span>
+            </div>
+        </div>
+    );
+};
+
+const buildSingleSoftDeleteMessage = (userName: string): React.ReactNode => {
+    return (
+        <div className="space-y-3">
+            <p>
+                Are you sure you want to soft-delete <strong>"{userName}"</strong>?
+            </p>
+            <p>
+                Soft delete keeps the account and related data in the database so this user can be restored later.
+            </p>
+            <ul className="list-disc space-y-1 pl-5">
+                <li>The user cannot sign in while the account is soft-deleted.</li>
+                <li>An admin can restore the user later.</li>
+            </ul>
+            <p>
+                Use hard delete only for permanent removal.
+            </p>
+        </div>
+    );
 };
 
 const buildBulkHardDeleteMessage = (
     selectedUsers: number,
     selectedTrips: number
-): string => {
-    return [
-        `Selected users: ${selectedUsers}`,
-        '',
-        'Permanent delete impact',
-        `• Auth accounts + profiles for ${selectedUsers} user${selectedUsers === 1 ? '' : 's'}`,
-        `• ${selectedTrips} owned trip${selectedTrips === 1 ? '' : 's'} in total`,
-        '• All related versions, share links, and collaborators for those trips',
-        '',
-        selectedTrips > 0 ? 'Trip ownership choices before confirm' : '',
-        selectedTrips > 0 ? '• Cancel and transfer trips from each user drawer if you need to preserve data' : '',
-        selectedTrips > 0 ? '• Continue hard delete to permanently remove selected users and owned trips' : '',
-        '',
-        'This cannot be undone.',
-    ].join('\n');
+): React.ReactNode => {
+    return (
+        <div className="space-y-3">
+            <p>
+                Selected users: <strong>{selectedUsers}</strong>
+            </p>
+            <p>
+                Hard delete permanently removes auth accounts and profile data for <strong>{selectedUsers}</strong> user{selectedUsers === 1 ? '' : 's'}.
+            </p>
+            <p>
+                It also permanently removes <strong>{selectedTrips}</strong> owned trip{selectedTrips === 1 ? '' : 's'} in total.
+            </p>
+            <ul className="list-disc space-y-1 pl-5">
+                <li>Use soft delete if these users might need to be restored later.</li>
+                {selectedTrips > 0 ? (
+                    <li>Cancel and transfer trips from each user drawer if you need to preserve trip data.</li>
+                ) : null}
+                {selectedTrips > 0 ? (
+                    <li>Continue hard delete to permanently remove selected users and owned trips.</li>
+                ) : null}
+            </ul>
+            <div className="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-rose-800">
+                <WarningCircle size={16} className="mt-0.5 shrink-0" />
+                <span><strong>This action cannot be undone.</strong></span>
+            </div>
+        </div>
+    );
 };
+
+const buildTransferAndHardDeleteMessage = (
+    sourceUser: string,
+    targetUser: string,
+    transferCount: number
+): React.ReactNode => (
+    <div className="space-y-3">
+        <p>
+            Transfer <strong>{transferCount}</strong> trip{transferCount === 1 ? '' : 's'} from <strong>{sourceUser}</strong> to <strong>{targetUser}</strong>?
+        </p>
+        <ul className="list-disc space-y-1 pl-5">
+            <li>Step 1: Transfer all owned trips to the target account.</li>
+            <li>Step 2: Hard-delete the source user (auth + profile only).</li>
+            <li>Result: trips remain accessible under the new owner.</li>
+        </ul>
+        <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-amber-800">
+            <WarningCircle size={16} className="mt-0.5 shrink-0" />
+            <span><strong>Transfer first if you want to preserve trips before hard delete.</strong></span>
+        </div>
+    </div>
+);
 
 const formatOverrideDraft = (value: Record<string, unknown> | null | undefined): string => {
     if (!value || Object.keys(value).length === 0) return '';
@@ -961,6 +1122,18 @@ export const AdminUsersPage: React.FC = () => {
     });
     const [userTrips, setUserTrips] = useState<AdminTripRecord[]>([]);
     const [isLoadingTrips, setIsLoadingTrips] = useState(false);
+    const [userChangeLogs, setUserChangeLogs] = useState<AdminUserChangeRecord[]>([]);
+    const [isLoadingUserChangeLogs, setIsLoadingUserChangeLogs] = useState(false);
+    const [userChangeLogsError, setUserChangeLogsError] = useState<string | null>(null);
+    const [isDiffModalOpen, setIsDiffModalOpen] = useState(false);
+    const [isDiffModalLoading, setIsDiffModalLoading] = useState(false);
+    const [diffModalError, setDiffModalError] = useState<string | null>(null);
+    const [diffModalTitle, setDiffModalTitle] = useState('Full change diff');
+    const [diffModalDescription, setDiffModalDescription] = useState<string | undefined>(undefined);
+    const [diffModalBeforeLabel, setDiffModalBeforeLabel] = useState('Before snapshot');
+    const [diffModalAfterLabel, setDiffModalAfterLabel] = useState('After snapshot');
+    const [diffModalBeforeValue, setDiffModalBeforeValue] = useState<unknown>({});
+    const [diffModalAfterValue, setDiffModalAfterValue] = useState<unknown>({});
     const handledDeepLinkUserIdRef = useRef<string | null>(null);
     const deepLinkedUserId = useMemo(() => {
         const drawer = searchParams.get('drawer');
@@ -1062,6 +1235,10 @@ export const AdminUsersPage: React.FC = () => {
         () => users.find((user) => user.user_id === selectedUserId) || null,
         [selectedUserId, users]
     );
+    const selectedUserUsernameCooldown = useMemo(
+        () => getUsernameCooldownMeta(selectedUser?.username_changed_at),
+        [selectedUser?.username_changed_at]
+    );
     const selectedUserTripStats = useMemo(() => {
         const fallbackTotal = selectedUser ? getUserTotalTrips(selectedUser) : 0;
         const fallbackActive = selectedUser ? getUserActiveTrips(selectedUser) : 0;
@@ -1079,9 +1256,82 @@ export const AdminUsersPage: React.FC = () => {
     }, [selectedUser]);
     const selectedUserPublicProfilePath = useMemo(() => {
         const normalizedUsername = (selectedUser?.username || '').trim().toLowerCase();
-        if (!/^[a-z0-9_]{3,30}$/.test(normalizedUsername)) return null;
+        if (!/^[a-z0-9_-]{3,40}$/.test(normalizedUsername)) return null;
         return buildPath('publicProfile', { username: normalizedUsername });
     }, [selectedUser?.username]);
+    const selectedUserChangeEntries = useMemo(() => userChangeLogs.map((log) => {
+        const diffEntries = buildUserChangeDiffEntries(log);
+        const actionPresentation = resolveUserChangeActionPresentation(log, diffEntries);
+        const secondaryFacets = resolveUserChangeSecondaryFacets(log);
+        const visibleDiffEntries = diffEntries.slice(0, 4);
+        const hiddenDiffCount = Math.max(0, diffEntries.length - visibleDiffEntries.length);
+        return {
+            log,
+            actionPresentation,
+            secondaryFacets,
+            visibleDiffEntries,
+            hiddenDiffCount,
+        };
+    }), [userChangeLogs]);
+
+    const canOpenUserChangeFullDiffModal = (log: AdminUserChangeRecord): boolean => {
+        if (hasSnapshotData(log.before_data) || hasSnapshotData(log.after_data)) return true;
+        if (log.target_type !== 'trip' || !log.target_id) return false;
+        const metadata = asRecord(log.metadata);
+        return Boolean(asString(metadata.version_id));
+    };
+
+    const openUserChangeFullDiffModal = async (log: AdminUserChangeRecord) => {
+        const metadata = asRecord(log.metadata);
+        const versionId = asString(metadata.version_id);
+        const previousVersionId = asString(metadata.previous_version_id);
+        const ownerLabel = selectedUser?.email || selectedUser?.username || selectedUser?.user_id || log.owner_user_id;
+
+        setDiffModalError(null);
+        setDiffModalTitle(`${log.action} · user change`);
+        setDiffModalDescription([
+            `Owner: ${ownerLabel}`,
+            log.target_type === 'trip' && log.target_id ? `Trip ID: ${log.target_id}` : null,
+            versionId ? `Version: ${versionId}` : null,
+        ].filter(Boolean).join(' • '));
+        setDiffModalBeforeLabel('Before snapshot');
+        setDiffModalAfterLabel('After snapshot');
+        setDiffModalBeforeValue(hasSnapshotData(log.before_data) ? asRecord(log.before_data) : {});
+        setDiffModalAfterValue(hasSnapshotData(log.after_data) ? asRecord(log.after_data) : {});
+        setIsDiffModalOpen(true);
+
+        if (log.target_type !== 'trip' || !log.target_id || !versionId) {
+            setIsDiffModalLoading(false);
+            return;
+        }
+
+        setIsDiffModalLoading(true);
+        try {
+            const snapshots = await adminGetTripVersionSnapshots({
+                tripId: log.target_id,
+                afterVersionId: versionId,
+                beforeVersionId: previousVersionId,
+            });
+            if (!snapshots) {
+                setDiffModalError('Trip snapshots were not found for this event. Showing event snapshots when available.');
+                return;
+            }
+            setDiffModalBeforeValue(mergeTripSnapshotWithViewSettings(
+                snapshots.before_snapshot,
+                snapshots.before_view_settings
+            ));
+            setDiffModalAfterValue(mergeTripSnapshotWithViewSettings(
+                snapshots.after_snapshot,
+                snapshots.after_view_settings
+            ));
+            setDiffModalBeforeLabel(snapshots.before_label || 'Before version');
+            setDiffModalAfterLabel(snapshots.after_label || 'After version');
+        } catch (error) {
+            setDiffModalError(error instanceof Error ? error.message : 'Could not load trip snapshots.');
+        } finally {
+            setIsDiffModalLoading(false);
+        }
+    };
 
     const loadUsers = async (options: { preserveErrorMessage?: boolean } = {}) => {
         setIsLoadingUsers(true);
@@ -1123,7 +1373,7 @@ export const AdminUsersPage: React.FC = () => {
         setProfileDraft({
             firstName: selectedUser.first_name || '',
             lastName: selectedUser.last_name || '',
-            username: selectedUser.username || '',
+            username: selectedUser.username_display || selectedUser.username || '',
             gender: toProfileGenderDraft(selectedUser.gender),
             country: selectedUser.country || '',
             city: selectedUser.city || '',
@@ -1140,7 +1390,7 @@ export const AdminUsersPage: React.FC = () => {
                 setProfileDraft({
                     firstName: fullProfile.first_name || '',
                     lastName: fullProfile.last_name || '',
-                    username: fullProfile.username || '',
+                    username: fullProfile.username_display || fullProfile.username || '',
                     gender: toProfileGenderDraft(fullProfile.gender),
                     country: fullProfile.country || '',
                     city: fullProfile.city || '',
@@ -1156,10 +1406,36 @@ export const AdminUsersPage: React.FC = () => {
 
         setUserTrips([]);
         setIsLoadingTrips(true);
+        setUserChangeLogs([]);
+        setIsLoadingUserChangeLogs(true);
+        setUserChangeLogsError(null);
         void adminListUserTrips(selectedUser.user_id)
-            .then((rows) => setUserTrips(rows))
-            .catch((error) => setErrorMessage(error instanceof Error ? error.message : 'Could not load user trips.'))
-            .finally(() => setIsLoadingTrips(false));
+            .then((rows) => {
+                if (!active) return;
+                setUserTrips(rows);
+            })
+            .catch((error) => {
+                if (!active) return;
+                setErrorMessage(error instanceof Error ? error.message : 'Could not load user trips.');
+            })
+            .finally(() => {
+                if (!active) return;
+                setIsLoadingTrips(false);
+            });
+
+        void adminListUserChangeLogs({ ownerUserId: selectedUser.user_id, limit: USER_CHANGE_LOG_DRAWER_LIMIT })
+            .then((rows) => {
+                if (!active) return;
+                setUserChangeLogs(rows);
+            })
+            .catch((error) => {
+                if (!active) return;
+                setUserChangeLogsError(error instanceof Error ? error.message : 'Could not load user change logs.');
+            })
+            .finally(() => {
+                if (!active) return;
+                setIsLoadingUserChangeLogs(false);
+            });
 
         return () => {
             active = false;
@@ -1483,17 +1759,126 @@ export const AdminUsersPage: React.FC = () => {
         }
     };
 
-    const handleSoftDelete = async (user: AdminUserRecord) => {
-        const nextStatus = (user.account_status || 'active') === 'deleted' ? 'active' : 'deleted';
+    const handleResetUsernameCooldown = async () => {
+        if (!selectedUser) return;
+        const userName = getUserDisplayName(selectedUser);
         setIsSaving(true);
         setErrorMessage(null);
         setMessage(null);
+        const loadingToastId = showAppToast({
+            tone: 'loading',
+            title: 'Resetting username cooldown',
+            description: `Allowing "${userName}" to change username immediately.`,
+        });
+        try {
+            await adminResetUserUsernameCooldown(selectedUser.user_id, 'admin.manual_reset');
+            setMessage('Username cooldown reset. The user can change username immediately.');
+            await loadUsers();
+            showAppToast({
+                id: loadingToastId,
+                tone: 'success',
+                title: 'Username cooldown reset',
+                description: `"${userName}" can now change username immediately.`,
+            });
+        } catch (error) {
+            const reason = error instanceof Error ? error.message : 'Could not reset username cooldown.';
+            setErrorMessage(reason);
+            showAppToast({
+                id: loadingToastId,
+                tone: 'error',
+                title: 'Cooldown reset failed',
+                description: reason,
+            });
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleSoftDelete = async (user: AdminUserRecord) => {
+        const nextStatus = (user.account_status || 'active') === 'deleted' ? 'active' : 'deleted';
+        const userName = getUserDisplayName(user);
+        const quotedUserName = `"${userName}"`;
+        if (nextStatus === 'deleted') {
+            const confirmed = await confirmDialog(buildDangerConfirmDialog({
+                title: 'Soft delete user',
+                message: buildSingleSoftDeleteMessage(userName),
+                confirmLabel: 'Soft delete',
+            }));
+            if (!confirmed) return;
+        }
+        setIsSaving(true);
+        setErrorMessage(null);
+        setMessage(null);
+        const loadingToastId = showAppToast({
+            tone: 'loading',
+            title: nextStatus === 'deleted' ? 'Soft-deleting user' : 'Restoring user',
+            description: nextStatus === 'deleted'
+                ? `Applying soft-delete to ${quotedUserName}.`
+                : `Restoring ${quotedUserName}.`,
+        });
         try {
             await adminUpdateUserProfile(user.user_id, { accountStatus: nextStatus });
-            setMessage(nextStatus === 'deleted' ? 'User soft-deleted.' : 'User restored.');
             await loadUsers();
+            if (nextStatus === 'deleted') {
+                showAppToast({
+                    id: loadingToastId,
+                    tone: 'remove',
+                    title: 'User soft-deleted',
+                    description: `${quotedUserName} was soft-deleted. The user can be restored and cannot sign in while deleted.`,
+                    action: {
+                        label: 'Undo',
+                        onClick: () => {
+                            void (async () => {
+                                const undoLoadingToastId = showAppToast({
+                                    tone: 'loading',
+                                    title: 'Undo soft-delete',
+                                    description: `Restoring ${quotedUserName}.`,
+                                });
+                                setIsSaving(true);
+                                setErrorMessage(null);
+                                setMessage(null);
+                                try {
+                                    await adminUpdateUserProfile(user.user_id, { accountStatus: 'active' });
+                                    await loadUsers();
+                                    showAppToast({
+                                        id: undoLoadingToastId,
+                                        tone: 'success',
+                                        title: 'Soft-delete undone',
+                                        description: `${quotedUserName} was restored and can sign in again.`,
+                                    });
+                                } catch (undoError) {
+                                    const reason = undoError instanceof Error ? undoError.message : 'Could not restore user.';
+                                    showAppToast({
+                                        id: undoLoadingToastId,
+                                        tone: 'error',
+                                        title: 'Undo failed',
+                                        description: reason,
+                                    });
+                                    setErrorMessage(reason);
+                                } finally {
+                                    setIsSaving(false);
+                                }
+                            })();
+                        },
+                    },
+                });
+            } else {
+                showAppToast({
+                    id: loadingToastId,
+                    tone: 'success',
+                    title: 'User restored',
+                    description: `${quotedUserName} was restored and can sign in again.`,
+                });
+            }
         } catch (error) {
-            setErrorMessage(error instanceof Error ? error.message : 'Could not update user status.');
+            const reason = error instanceof Error ? error.message : 'Could not update user status.';
+            showAppToast({
+                id: loadingToastId,
+                tone: 'error',
+                title: 'Update failed',
+                description: reason,
+            });
+            setErrorMessage(reason);
         } finally {
             setIsSaving(false);
         }
@@ -1501,35 +1886,56 @@ export const AdminUsersPage: React.FC = () => {
 
     const handleHardDelete = async (user: AdminUserRecord) => {
         if (!isUserHardDeleteEligible(user)) {
-            setErrorMessage('Hard delete is unavailable for soft-deleted users.');
+            const reason = 'Hard delete is unavailable for soft-deleted users.';
+            setErrorMessage(reason);
+            showAppToast({
+                tone: 'warning',
+                title: 'Hard delete unavailable',
+                description: reason,
+            });
             return;
         }
+        const userName = getUserDisplayName(user);
+        const quotedUserName = `"${userName}"`;
         const sourceTripCount = selectedUser?.user_id === user.user_id
             ? selectedUserTripStats.total
             : getUserTotalTrips(user);
-        const confirmed = await confirmDialog({
+        const confirmed = await confirmDialog(buildDangerConfirmDialog({
             title: 'Hard delete user',
-            message: buildSingleHardDeleteMessage(getUserReferenceText(user), sourceTripCount),
+            message: buildSingleHardDeleteMessage(userName, sourceTripCount),
             confirmLabel: 'Hard delete',
-            cancelLabel: 'Cancel',
-            tone: 'danger',
-        });
+        }));
         if (!confirmed) return;
         setIsSaving(true);
         setErrorMessage(null);
         setMessage(null);
+        const loadingToastId = showAppToast({
+            tone: 'loading',
+            title: 'Hard-deleting user',
+            description: `Permanently deleting ${quotedUserName}.`,
+        });
         try {
             await adminHardDeleteUser(user.user_id);
-            setMessage(
-                sourceTripCount > 0
-                    ? `User permanently deleted. ${sourceTripCount} owned trip${sourceTripCount === 1 ? '' : 's'} were removed with this hard delete.`
-                    : 'User permanently deleted.'
-            );
             setIsDetailOpen(false);
             setSelectedUserId(null);
             await loadUsers();
+            showAppToast({
+                id: loadingToastId,
+                tone: 'remove',
+                title: 'User hard-deleted',
+                description: sourceTripCount > 0
+                    ? `${quotedUserName} and ${sourceTripCount} owned trip${sourceTripCount === 1 ? '' : 's'} were permanently deleted.`
+                    : `${quotedUserName} was permanently deleted.`,
+            });
         } catch (error) {
-            setErrorMessage(error instanceof Error ? error.message : 'Could not hard-delete user.');
+            const reason = error instanceof Error ? error.message : 'Could not hard-delete user.';
+            showAppToast({
+                id: loadingToastId,
+                tone: 'error',
+                title: 'Hard delete failed',
+                description: reason,
+            });
+            setErrorMessage(reason);
         } finally {
             setIsSaving(false);
         }
@@ -1537,24 +1943,44 @@ export const AdminUsersPage: React.FC = () => {
 
     const handleBulkSoftDeleteUsers = async () => {
         if (selectedVisibleUsers.length === 0) return;
-        const confirmed = await confirmDialog({
+        const isSingleSelection = selectedVisibleUsers.length === 1;
+        const selectedSingleUser = isSingleSelection ? selectedVisibleUsers[0] : null;
+        const confirmed = await confirmDialog(buildDangerConfirmDialog({
             title: 'Soft delete selected users',
-            message: `Soft-delete ${selectedVisibleUsers.length} selected user${selectedVisibleUsers.length === 1 ? '' : 's'}?`,
+            message: selectedSingleUser
+                ? buildSingleSoftDeleteMessage(getUserDisplayName(selectedSingleUser))
+                : `Soft-delete ${selectedVisibleUsers.length} selected users?\n\nSoft delete can be reverted later and prevents sign-in while deleted.`,
             confirmLabel: 'Soft delete',
-            cancelLabel: 'Cancel',
-            tone: 'danger',
-        });
+        }));
         if (!confirmed) return;
         setIsSaving(true);
         setErrorMessage(null);
         setMessage(null);
+        const loadingToastId = showAppToast({
+            tone: 'loading',
+            title: 'Soft-deleting users',
+            description: `Applying soft-delete to ${selectedVisibleUsers.length} selected user${selectedVisibleUsers.length === 1 ? '' : 's'}.`,
+        });
         try {
             await Promise.all(selectedVisibleUsers.map((user) => adminUpdateUserProfile(user.user_id, { accountStatus: 'deleted' })));
             setMessage(`${selectedVisibleUsers.length} user${selectedVisibleUsers.length === 1 ? '' : 's'} soft-deleted.`);
             setSelectedUserIds(new Set());
             await loadUsers();
+            showAppToast({
+                id: loadingToastId,
+                tone: 'remove',
+                title: 'Users soft-deleted',
+                description: `${selectedVisibleUsers.length} user${selectedVisibleUsers.length === 1 ? '' : 's'} were soft-deleted successfully.`,
+            });
         } catch (error) {
-            setErrorMessage(error instanceof Error ? error.message : 'Could not soft-delete selected users.');
+            const reason = error instanceof Error ? error.message : 'Could not soft-delete selected users.';
+            showAppToast({
+                id: loadingToastId,
+                tone: 'error',
+                title: 'Soft delete failed',
+                description: reason,
+            });
+            setErrorMessage(reason);
         } finally {
             setIsSaving(false);
         }
@@ -1565,21 +1991,34 @@ export const AdminUsersPage: React.FC = () => {
         const hardDeleteUsers = selectedVisibleUsers.filter((user) => isUserHardDeleteEligible(user));
         const skippedUsers = selectedVisibleUsers.length - hardDeleteUsers.length;
         if (hardDeleteUsers.length === 0) {
-            setErrorMessage('No eligible users selected for hard delete. Soft-deleted users are skipped.');
+            const reason = 'No eligible users selected for hard delete. Soft-deleted users are skipped.';
+            setErrorMessage(reason);
+            showAppToast({
+                tone: 'warning',
+                title: 'Hard delete unavailable',
+                description: reason,
+            });
             return;
         }
         const selectedTripCount = hardDeleteUsers.reduce((sum, user) => sum + getUserTotalTrips(user), 0);
-        const confirmed = await confirmDialog({
+        const isSingleSelection = hardDeleteUsers.length === 1;
+        const selectedSingleUser = isSingleSelection ? hardDeleteUsers[0] : null;
+        const confirmed = await confirmDialog(buildDangerConfirmDialog({
             title: 'Hard delete selected users',
-            message: buildBulkHardDeleteMessage(hardDeleteUsers.length, selectedTripCount),
+            message: selectedSingleUser
+                ? buildSingleHardDeleteMessage(getUserDisplayName(selectedSingleUser), selectedTripCount)
+                : buildBulkHardDeleteMessage(hardDeleteUsers.length, selectedTripCount),
             confirmLabel: 'Hard delete',
-            cancelLabel: 'Cancel',
-            tone: 'danger',
-        });
+        }));
         if (!confirmed) return;
         setIsSaving(true);
         setErrorMessage(null);
         setMessage(null);
+        const loadingToastId = showAppToast({
+            tone: 'loading',
+            title: 'Hard-deleting users',
+            description: `Permanently deleting ${hardDeleteUsers.length} selected user${hardDeleteUsers.length === 1 ? '' : 's'}.`,
+        });
         try {
             const results = await Promise.allSettled(hardDeleteUsers.map((user) => adminHardDeleteUser(user.user_id)));
             const failedIndexes: number[] = [];
@@ -1641,9 +2080,31 @@ export const AdminUsersPage: React.FC = () => {
             await loadUsers({ preserveErrorMessage: Boolean(bulkErrorMessage) });
             if (bulkErrorMessage) {
                 setErrorMessage(bulkErrorMessage);
+                showAppToast({
+                    id: loadingToastId,
+                    tone: deleted > 0 ? 'warning' : 'error',
+                    title: deleted > 0 ? 'Some users were not deleted' : 'Hard delete failed',
+                    description: deleted > 0
+                        ? `${deleted} user${deleted === 1 ? '' : 's'} were deleted, but ${failed} failed. Check the inline details for affected accounts.`
+                        : bulkErrorMessage,
+                });
+            } else {
+                showAppToast({
+                    id: loadingToastId,
+                    tone: 'remove',
+                    title: 'Users hard-deleted',
+                    description: `${deleted} user${deleted === 1 ? '' : 's'} were permanently deleted.`,
+                });
             }
         } catch (error) {
-            setErrorMessage(error instanceof Error ? error.message : 'Could not hard-delete selected users.');
+            const reason = error instanceof Error ? error.message : 'Could not hard-delete selected users.';
+            showAppToast({
+                id: loadingToastId,
+                tone: 'error',
+                title: 'Hard delete failed',
+                description: reason,
+            });
+            setErrorMessage(reason);
         } finally {
             setIsSaving(false);
         }
@@ -1698,16 +2159,11 @@ export const AdminUsersPage: React.FC = () => {
             return;
         }
 
-        const transferTargetInput = await promptDialog({
+        const transferTargetInput = await promptDialog(buildTransferTargetPromptDialog({
             title: 'Transfer trips before hard delete',
             message: 'Enter the target user email or UUID. All owned trips will move to this account before hard delete.',
-            label: 'Target user (email or UUID)',
-            placeholder: 'name@example.com or user UUID',
             confirmLabel: 'Continue',
-            cancelLabel: 'Cancel',
-            tone: 'danger',
-            inputType: 'text',
-        });
+        }));
         if (transferTargetInput === null) return;
 
         setIsSaving(true);
@@ -1729,20 +2185,15 @@ export const AdminUsersPage: React.FC = () => {
                 throw new Error('No owned trips found to transfer. Reload and try again.');
             }
 
-            const confirmed = await confirmDialog({
+            const confirmed = await confirmDialog(buildDangerConfirmDialog({
                 title: 'Confirm transfer and hard delete',
-                message: [
-                    `Transfer ${sourceTrips.length} trip${sourceTrips.length === 1 ? '' : 's'} from ${getUserReferenceText(user)} to ${getUserReferenceText(targetUser)}?`,
-                    '',
-                    'Step 1: Transfer all owned trips to the target account.',
-                    'Step 2: Hard-delete the source user (auth + profile only).',
-                    '',
-                    'Result: trips remain accessible under the new owner.',
-                ].join('\n'),
+                message: buildTransferAndHardDeleteMessage(
+                    getUserReferenceText(user),
+                    getUserReferenceText(targetUser),
+                    sourceTrips.length
+                ),
                 confirmLabel: 'Transfer + hard delete',
-                cancelLabel: 'Cancel',
-                tone: 'danger',
-            });
+            }));
             if (!confirmed) return;
 
             const transferResults = await Promise.allSettled(
@@ -2471,6 +2922,23 @@ export const AdminUsersPage: React.FC = () => {
                 </DialogContent>
             </Dialog>
 
+            <AdminJsonDiffModal
+                isOpen={isDiffModalOpen}
+                onClose={() => {
+                    setIsDiffModalOpen(false);
+                    setDiffModalError(null);
+                    setIsDiffModalLoading(false);
+                }}
+                title={diffModalTitle}
+                description={diffModalDescription}
+                beforeLabel={diffModalBeforeLabel}
+                afterLabel={diffModalAfterLabel}
+                beforeValue={diffModalBeforeValue}
+                afterValue={diffModalAfterValue}
+                isLoading={isDiffModalLoading}
+                errorMessage={diffModalError}
+            />
+
             <Drawer
                 open={isDetailOpen}
                 onOpenChange={(open) => {
@@ -2567,6 +3035,15 @@ export const AdminUsersPage: React.FC = () => {
                                             className="h-9 w-full rounded-lg border border-slate-300 px-3 text-sm"
                                         />
                                     </label>
+                                    <div className="space-y-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] text-slate-600 sm:col-span-2">
+                                        <div>Self-service username changes are limited to once every {USERNAME_CHANGE_COOLDOWN_DAYS} days.</div>
+                                        <div>Last recorded username change: {formatOptionalTimestamp(selectedUser.username_changed_at)}.</div>
+                                        <div>
+                                            {selectedUserUsernameCooldown.isActive
+                                                ? `Cooldown ends: ${formatOptionalTimestamp(selectedUserUsernameCooldown.endsAt)}.`
+                                                : 'Cooldown is currently not active.'}
+                                        </div>
+                                    </div>
                                     <label className="space-y-1">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Gender</span>
                                         <Select
@@ -2701,6 +3178,14 @@ export const AdminUsersPage: React.FC = () => {
                                 </button>
                                 <button
                                     type="button"
+                                    onClick={() => void handleResetUsernameCooldown()}
+                                    disabled={isSaving}
+                                    className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                                >
+                                    Reset username cooldown
+                                </button>
+                                <button
+                                    type="button"
                                     onClick={() => void handleSoftDelete(selectedUser)}
                                     disabled={isSaving}
                                     className="rounded-lg border border-amber-300 px-3 py-2 text-xs font-semibold text-amber-700 hover:bg-amber-50 disabled:opacity-50"
@@ -2799,6 +3284,107 @@ export const AdminUsersPage: React.FC = () => {
                                         ))}
                                     </div>
                                 )}
+                                </section>
+
+                                <section className="mt-4 space-y-3 rounded-xl border border-slate-200 p-3">
+                                    <div className="flex flex-wrap items-center justify-between gap-2">
+                                        <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">User change log</h3>
+                                        <a
+                                            href={`/admin/audit?q=${encodeURIComponent(selectedUser.user_id)}`}
+                                            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                        >
+                                            Open global audit
+                                            <ArrowSquareOut size={12} />
+                                        </a>
+                                    </div>
+                                    <p className="text-xs text-slate-500">Showing the latest {USER_CHANGE_LOG_DRAWER_LIMIT} entries for this user.</p>
+                                    {userChangeLogsError && (
+                                        <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                                            {userChangeLogsError}
+                                        </div>
+                                    )}
+                                    {isLoadingUserChangeLogs ? (
+                                        <div className="text-sm text-slate-500">Loading user change log...</div>
+                                    ) : selectedUserChangeEntries.length === 0 ? (
+                                        <div className="text-sm text-slate-500">No user-originated changes recorded for this account yet.</div>
+                                    ) : (
+                                        <div className="space-y-2">
+                                            {selectedUserChangeEntries.map(({ log, actionPresentation, secondaryFacets, visibleDiffEntries, hiddenDiffCount }) => (
+                                                <article key={log.id} className="rounded-lg border border-slate-200 p-3">
+                                                    <div className="flex flex-wrap items-center justify-between gap-2">
+                                                        <div className="text-[11px] font-semibold text-slate-500">
+                                                            {new Date(log.created_at).toLocaleString()}
+                                                        </div>
+                                                        <span className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold ${actionPresentation.className}`}>
+                                                            {actionPresentation.label}
+                                                        </span>
+                                                    </div>
+                                                    {secondaryFacets.length > 0 && (
+                                                        <div className="mt-1 flex flex-wrap items-center gap-1">
+                                                            {secondaryFacets.map((facet) => (
+                                                                <span
+                                                                    key={`${log.id}-${facet.code}`}
+                                                                    className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${facet.className}`}
+                                                                    title={facet.code}
+                                                                >
+                                                                    {facet.label}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                    <div className="mt-2 space-y-1 text-[11px] text-slate-600">
+                                                        <div><span className="font-semibold text-slate-700">Action:</span> <span className="font-mono">{log.action}</span></div>
+                                                        {log.source && (
+                                                            <div><span className="font-semibold text-slate-700">Source:</span> {log.source}</div>
+                                                        )}
+                                                        {log.target_type === 'trip' && log.target_id && (
+                                                            <div className="break-all">
+                                                                <span className="font-semibold text-slate-700">Trip:</span>{' '}
+                                                                <CopyableUuid value={log.target_id} textClassName="break-all text-[11px]" hintClassName="text-[9px]" />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    {visibleDiffEntries.length > 0 ? (
+                                                        <div className="mt-2 space-y-2">
+                                                            {visibleDiffEntries.map((entry) => (
+                                                                <article key={`${log.id}-${entry.key}`} className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1.5">
+                                                                    <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                                                                        {formatFieldLabel(entry.key)}
+                                                                    </p>
+                                                                    <div className="mt-1 grid gap-1 lg:grid-cols-2">
+                                                                        <div className="rounded border border-rose-200 bg-rose-50 px-1.5 py-1 text-[11px] text-rose-900">
+                                                                            <span className="font-semibold">Before: </span>
+                                                                            <span className="break-all">{formatUserChangeDiffValue(entry, entry.beforeValue)}</span>
+                                                                        </div>
+                                                                        <div className="rounded border border-emerald-200 bg-emerald-50 px-1.5 py-1 text-[11px] text-emerald-900">
+                                                                            <span className="font-semibold">After: </span>
+                                                                            <span className="break-all">{formatUserChangeDiffValue(entry, entry.afterValue)}</span>
+                                                                        </div>
+                                                                    </div>
+                                                                </article>
+                                                            ))}
+                                                            {hiddenDiffCount > 0 && (
+                                                                <p className="text-[11px] font-semibold text-slate-500">
+                                                                    +{hiddenDiffCount} more changed field{hiddenDiffCount === 1 ? '' : 's'}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    ) : (
+                                                        <p className="mt-2 text-xs text-slate-500">No field diff recorded.</p>
+                                                    )}
+                                                    {canOpenUserChangeFullDiffModal(log) && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => void openUserChangeFullDiffModal(log)}
+                                                            className="mt-2 inline-flex h-7 items-center rounded-md border border-slate-300 px-2.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50"
+                                                        >
+                                                            Show complete diff
+                                                        </button>
+                                                    )}
+                                                </article>
+                                            ))}
+                                        </div>
+                                    )}
                                 </section>
 
                                 <section className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">

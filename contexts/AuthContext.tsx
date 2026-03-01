@@ -68,14 +68,21 @@ export const shouldEnableDevAdminBypass = (
     return isDevRuntime && bypassEnvValue === 'true' && !bypassDisabled && isAdminRoute;
 };
 
-export const shouldAutoClearSimulatedLoginOnRealAdminSession = (
+export const shouldAutoClearSimulatedLoginOnRealSession = (
     access: Pick<UserAccessContext, 'role' | 'isAnonymous'> | null,
     sessionUserId: string | null | undefined
 ): boolean => (
     Boolean(sessionUserId)
-    && access?.role === 'admin'
     && access?.isAnonymous !== true
     && sessionUserId !== DEV_ADMIN_BYPASS_USER_ID
+);
+
+export const shouldUseDevAdminBypassSession = (
+    bypassEnabled: boolean,
+    sessionUserId: string | null | undefined
+): boolean => (
+    bypassEnabled
+    && (!sessionUserId || sessionUserId === DEV_ADMIN_BYPASS_USER_ID)
 );
 
 interface AuthContextValue {
@@ -105,6 +112,41 @@ interface AuthContextValue {
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
+
+let hasWarnedMissingAuthProvider = false;
+
+const buildMissingAuthProviderResult = <T,>(): T => ({
+    data: null,
+    error: new Error('Auth provider unavailable.'),
+} as unknown as T);
+
+const MISSING_AUTH_PROVIDER_FALLBACK: AuthContextValue = {
+    session: null,
+    access: null,
+    profile: null,
+    isLoading: false,
+    isProfileLoading: false,
+    isAuthenticated: false,
+    isAnonymous: false,
+    isAdmin: false,
+    refreshAccess: async () => undefined,
+    refreshProfile: async () => undefined,
+    loginWithPassword: async () => buildMissingAuthProviderResult<Awaited<ReturnType<AuthServiceModule['signInWithEmailPassword']>>>(),
+    registerWithPassword: async () => buildMissingAuthProviderResult<Awaited<ReturnType<AuthServiceModule['signUpWithEmailPassword']>>>(),
+    loginWithOAuth: async () => buildMissingAuthProviderResult<Awaited<ReturnType<AuthServiceModule['signInWithOAuth']>>>(),
+    sendPasswordResetEmail: async () => buildMissingAuthProviderResult<Awaited<ReturnType<AuthServiceModule['requestPasswordResetEmail']>>>(),
+    updatePassword: async () => buildMissingAuthProviderResult<Awaited<ReturnType<AuthServiceModule['updateCurrentUserPassword']>>>(),
+    logout: async () => undefined,
+};
+
+export const resolveAuthContextValue = (context: AuthContextValue | null): AuthContextValue => {
+    if (context) return context;
+    if (!hasWarnedMissingAuthProvider) {
+        hasWarnedMissingAuthProvider = true;
+        console.error('useAuthContext was used without an AuthProvider. Falling back to anonymous-safe auth context.');
+    }
+    return MISSING_AUTH_PROVIDER_FALLBACK;
+};
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const location = useLocation();
@@ -148,7 +190,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     useEffect(() => {
         const sessionUserId = session?.user?.id;
-        if (!shouldAutoClearSimulatedLoginOnRealAdminSession(access, sessionUserId)) return;
+        if (!shouldAutoClearSimulatedLoginOnRealSession(access, sessionUserId)) return;
         if (!isSimulatedLoggedIn()) return;
         setSimulatedLoggedIn(false);
     }, [access, session?.user?.id]);
@@ -215,6 +257,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const isAnonymousSession = (value: Session | null): boolean => {
             const user = value?.user as (Session['user'] & { is_anonymous?: boolean }) | undefined;
             if (!user) return false;
+            const email = typeof user.email === 'string' ? user.email.trim() : '';
+            const phone = typeof user.phone === 'string' ? user.phone.trim() : '';
+            if (email || phone) return false;
             if (user.is_anonymous === true) return true;
             const metadata = user.app_metadata as Record<string, unknown> | undefined;
             const provider = typeof metadata?.provider === 'string' ? metadata.provider.trim().toLowerCase() : '';
@@ -475,8 +520,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, [location.pathname, resetProfileState]);
 
     const value = useMemo<AuthContextValue>(() => {
+        const bypassEnabled = shouldEnableDevAdminBypass(
+            import.meta.env.DEV,
+            import.meta.env.VITE_DEV_ADMIN_BYPASS,
+            isDevAdminBypassDisabled,
+            location.pathname
+        );
+        const useDevAdminBypass = shouldUseDevAdminBypassSession(bypassEnabled, session?.user?.id);
         // Development bypass for local admin testing.
-        if (shouldEnableDevAdminBypass(import.meta.env.DEV, import.meta.env.VITE_DEV_ADMIN_BYPASS, isDevAdminBypassDisabled, location.pathname)) {
+        if (useDevAdminBypass) {
             return {
                 session: {
                     access_token: 'dev-bypass-token',
@@ -574,9 +626,5 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 };
 
 export const useAuthContext = (): AuthContextValue => {
-    const context = useContext(AuthContext);
-    if (!context) {
-        throw new Error('useAuthContext must be used within AuthProvider.');
-    }
-    return context;
+    return resolveAuthContextValue(useContext(AuthContext));
 };

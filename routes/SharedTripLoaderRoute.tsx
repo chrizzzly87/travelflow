@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { useAuth } from '../hooks/useAuth';
 import { useDbSync } from '../hooks/useDbSync';
+import { useConnectivityStatus } from '../hooks/useConnectivityStatus';
 import { DB_ENABLED } from '../config/db';
 import { ANONYMOUS_TRIP_EXPIRATION_DAYS, buildTripExpiryIso } from '../config/productLimits';
 import { getTripLifecycleState } from '../config/paywall';
@@ -14,7 +15,6 @@ import {
     dbGetTripVersion,
     dbUpdateSharedTrip,
     dbUpsertTrip,
-    ensureDbSession,
 } from '../services/dbApi';
 import { appendHistoryEntry, findHistoryEntryByUrl } from '../services/historyService';
 import { saveTrip } from '../services/storageService';
@@ -76,6 +76,7 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
     const location = useLocation();
     const navigate = useNavigate();
     const { access } = useAuth();
+    const { snapshot: connectivitySnapshot } = useConnectivityStatus();
     const lastLoadRef = useRef<string | null>(null);
     const [routeState, setRouteState] = useState<SharedTripRouteState>(() => createInitialSharedTripRouteState());
     const {
@@ -116,20 +117,29 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
 
     useEffect(() => {
         if (!token) return;
-        const loadKey = `${token}:${location.search}`;
+        const loadKey = `${token}:${location.search}:${connectivitySnapshot.state}`;
         if (lastLoadRef.current === loadKey) return;
         lastLoadRef.current = loadKey;
 
         const load = async () => {
+            const connectivityState = connectivitySnapshot.state;
             if (!DB_ENABLED) {
                 navigate('/share-unavailable', { replace: true });
                 return;
             }
 
+            if (connectivityState === 'offline') {
+                navigate('/share-unavailable?reason=offline', { replace: true });
+                return;
+            }
+
             resetRouteState();
-            await ensureDbSession();
             const shared = await dbGetSharedTrip(token);
             if (!shared) {
+                if (connectivityState !== 'online') {
+                    navigate('/share-unavailable?reason=offline', { replace: true });
+                    return;
+                }
                 navigate('/share-unavailable', { replace: true });
                 return;
             }
@@ -216,7 +226,7 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
         };
 
         void load();
-    }, [applyRouteState, token, versionId, location.search, navigate, onTripLoaded, resetRouteState]);
+    }, [applyRouteState, connectivitySnapshot.state, token, versionId, location.search, navigate, onTripLoaded, resetRouteState]);
 
     const handleCommitShared = (updatedTrip: ITrip, view: IViewSettings | undefined, options?: CommitOptions) => {
         if (shareMode !== 'edit' || !token) return;
@@ -225,8 +235,6 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
         createLocalHistoryEntry(navigate, updatedTrip, view, label, options, commitTs, buildShareUrl(token));
 
         const commit = async () => {
-            const sessionId = await ensureDbSession();
-            if (!sessionId) return;
             const version = await dbUpdateSharedTrip(token, updatedTrip, view, label);
             if (!version) return;
         };

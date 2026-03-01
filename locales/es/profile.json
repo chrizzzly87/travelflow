@@ -157,7 +157,7 @@
       "city": "Ciudad *",
       "preferredLanguage": "Idioma preferido *"
     },
-    "usernameHelp": "Utilice entre 3 y 30 letras, números, guiones bajos o guiones. Sin espacios.",
+    "usernameHelp": "Utilice entre 3 y 40 letras, números, guiones bajos o guiones. Sin espacios.",
     "usernameCooldownHint": "Puedes cambiar tu nombre de usuario nuevamente el {date}.",
     "bioHelp": "Comparta una breve introducción que los viajeros puedan ver en su perfil público.",
     "publicProfileToggleTitle": "Habilitar perfil público",
@@ -189,7 +189,7 @@
       "available": "Genial, este nombre de usuario está disponible.",
       "taken": "Este nombre de usuario ya está en uso.",
       "reserved": "Este nombre de usuario está reservado.",
-      "invalid": "Utilice entre 3 y 30 letras, números, guiones bajos o guiones.",
+      "invalid": "Utilice entre 3 y 40 letras, números, guiones bajos o guiones.",
       "unchanged": "Este es su nombre de usuario actual.",
       "cooldown": "Los cambios de nombre de usuario están actualmente en tiempo de espera.",
       "cooldownDate": "Los cambios de nombre de usuario están en espera hasta el {date}.",
@@ -204,7 +204,7 @@
     "usernameRecoveryHint": {
       "taken": "Intente agregar un número o un guión bajo.",
       "reserved": "Elija otro identificador que no esté reservado.",
-      "invalid": "Utilice entre 3 y 30 letras, números, guiones bajos o guiones sin espacios.",
+      "invalid": "Utilice entre 3 y 40 letras, números, guiones bajos o guiones sin espacios.",
       "cooldown": "Las ediciones de nombres de usuario están bloqueadas durante la ventana de recuperación."
     },
     "countryRegionSearchPlaceholder": "Buscar país o región",

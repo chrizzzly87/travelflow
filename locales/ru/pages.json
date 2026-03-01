@@ -96,7 +96,8 @@
     "title": "Этот общий маршрут больше недоступен",
     "description": "Ссылка могла истечь или быть отключена владельцем маршрута. Попросите новую ссылку или создайте свою поездку.",
     "backToHomepage": "На главную",
-    "createNewTrip": "Создать новую поездку"
+    "createNewTrip": "Создать новую поездку",
+    "offlineDescription": "This trip cannot be fetched right now because Supabase is unavailable. If you opened it before, local cached data may still load in planner routes."
   },
   "notFound": {
     "headline": "Похоже, эта страница уже укатила в отпуск!",

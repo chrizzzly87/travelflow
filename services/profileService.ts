@@ -19,6 +19,8 @@ export interface UserProfileRecord {
     firstName: string;
     lastName: string;
     username: string;
+    usernameDisplay: string;
+    usernameCanonical: string;
     bio: string;
     gender: ProfileGender;
     country: string;
@@ -37,6 +39,7 @@ export interface UpdateUserProfilePayload {
     firstName: string;
     lastName: string;
     username: string;
+    usernameDisplay?: string;
     bio?: string;
     gender: ProfileGender;
     country: string;
@@ -67,17 +70,69 @@ export interface PublicTripsPageResult {
     nextOffset: number;
 }
 
-const USERNAME_PATTERN = /^[a-z0-9_-]{3,30}$/;
+const USERNAME_PATTERN = /^[a-z0-9_-]{3,40}$/;
+const USERNAME_DISPLAY_PATTERN = /^[A-Za-z0-9_-]{3,40}$/;
 const USERNAME_RESERVED = new Set([
     'admin',
+    'administrator',
+    'admins',
+    'owner',
+    'team',
+    'staff',
     'support',
+    'help',
+    'helpdesk',
+    'help-desk',
+    'helpcenter',
+    'help-center',
+    'supportteam',
+    'support-team',
+    'customersupport',
+    'customer-support',
+    'service',
+    'security',
+    'safety',
+    'trust',
+    'trustandsafety',
+    'trust-safety',
+    'compliance',
+    'official',
+    'officialteam',
+    'official-team',
+    'verification',
+    'verify',
+    'verified',
+    'adminsupport',
+    'admin-support',
+    'moderator',
+    'mod',
+    'system',
+    'noreply',
+    'no-reply',
+    'billing',
+    'payments',
+    'refund',
+    'status',
+    'statuspage',
     'settings',
     'profile',
     'profiles',
+    'account',
+    'accounts',
     'login',
     'logout',
     'signup',
+    'signin',
+    'register',
+    'auth',
+    'oauth',
     'api',
+    'www',
+    'about',
+    'contact',
+    'careers',
+    'jobs',
+    'blog',
     'trip',
     'trips',
     'create',
@@ -85,12 +140,31 @@ const USERNAME_RESERVED = new Set([
     'terms',
     'cookies',
     'imprint',
-    'u',
+    'tamtam',
+    'tamtamapp',
+    'tamtam_admin',
+    'tamtam-admin',
+    'admin_tamtam',
+    'admin-tamtam',
+    'tamtam_support',
+    'tamtam-support',
+    'support_tamtam',
+    'support-tamtam',
+    'tamtam_help',
+    'tamtam-help',
+    'help_tamtam',
+    'help-tamtam',
+    'tamtam_helpdesk',
+    'tamtam-helpdesk',
+    'travelflow',
+    'travelflowapp',
+    'travelplanner',
+    'tripplanner',
 ]);
 const USERNAME_COOLDOWN_DAYS = 90;
 const DEFAULT_PUBLIC_TRIPS_PAGE_LIMIT = 12;
-const PROFILE_SELECT_FULL = 'id, display_name, first_name, last_name, username, bio, gender, country, city, preferred_language, onboarding_completed_at, account_status, public_profile_enabled, default_public_trip_visibility, username_changed_at, passport_sticker_positions, passport_sticker_selection';
-const PROFILE_SELECT_LEGACY = 'id, display_name, first_name, last_name, username, bio, gender, country, city, preferred_language, onboarding_completed_at, account_status, public_profile_enabled, default_public_trip_visibility, username_changed_at';
+const PROFILE_SELECT_FULL = 'id, display_name, first_name, last_name, username, username_display, bio, gender, country, city, preferred_language, onboarding_completed_at, account_status, public_profile_enabled, default_public_trip_visibility, username_changed_at, passport_sticker_positions, passport_sticker_selection';
+const PROFILE_SELECT_LEGACY = 'id, display_name, first_name, last_name, username, username_display, bio, gender, country, city, preferred_language, onboarding_completed_at, account_status, public_profile_enabled, default_public_trip_visibility, username_changed_at';
 const PROFILE_SELECT_MINIMAL = 'id, display_name, first_name, last_name, username, bio, gender, country, city, preferred_language, onboarding_completed_at, account_status';
 type ProfileSelectTier = 'full' | 'legacy' | 'minimal';
 let profileSelectTierHint: ProfileSelectTier = 'full';
@@ -142,8 +216,23 @@ const normalizeUsername = (value: unknown): string => (
         : ''
 );
 
+const normalizeUsernameDisplay = (value: unknown): string => (
+    typeof value === 'string'
+        ? value.trim().replace(/^@+/, '')
+        : ''
+);
+
+const usernameHasAlphaNumeric = (value: string): boolean => /[a-z0-9]/.test(value);
+
+const toProfileUsernameDisplay = (value: unknown): string => {
+    const display = normalizeUsernameDisplay(value);
+    if (!display) return '';
+    if (!USERNAME_DISPLAY_PATTERN.test(display)) return '';
+    return display;
+};
+
 const isProfileColumnMissing = (message: string): boolean =>
-    /column/i.test(message) && /(first_name|last_name|username|bio|gender|country|city|preferred_language|onboarding_completed_at|account_status|public_profile_enabled|default_public_trip_visibility|username_changed_at|passport_sticker_positions|passport_sticker_selection)/i.test(message);
+    /column/i.test(message) && /(first_name|last_name|username|username_display|bio|gender|country|city|preferred_language|onboarding_completed_at|account_status|public_profile_enabled|default_public_trip_visibility|username_changed_at|passport_sticker_positions|passport_sticker_selection)/i.test(message);
 
 interface ProfileSelectResult {
     data: unknown;
@@ -208,26 +297,32 @@ const normalizePassportStickerPositions = (value: unknown): Record<string, Passp
 const mapProfileRow = (
     row: Record<string, unknown> | null,
     emailFallback: string | null
-): UserProfileRecord => ({
-    id: toSafeText(row?.id) || '',
-    email: toSafeText(row?.email) || emailFallback,
-    displayName: toSafeText(row?.display_name) || null,
-    firstName: toSafeText(row?.first_name),
-    lastName: toSafeText(row?.last_name),
-    username: normalizeUsername(row?.username),
-    bio: toSafeText(row?.bio),
-    gender: normalizeGender(row?.gender),
-    country: normalizeProfileCountryCode(row?.country),
-    city: toSafeText(row?.city),
-    preferredLanguage: normalizeLanguage(row?.preferred_language),
-    onboardingCompletedAt: typeof row?.onboarding_completed_at === 'string' ? row.onboarding_completed_at : null,
-    accountStatus: row?.account_status === 'disabled' || row?.account_status === 'deleted' ? row.account_status : 'active',
-    publicProfileEnabled: toBooleanWithDefault(row?.public_profile_enabled, true),
-    defaultPublicTripVisibility: toBooleanWithDefault(row?.default_public_trip_visibility, true),
-    usernameChangedAt: typeof row?.username_changed_at === 'string' ? row.username_changed_at : null,
-    passportStickerPositions: normalizePassportStickerPositions(row?.passport_sticker_positions),
-    passportStickerSelection: normalizePassportStickerSelection(row?.passport_sticker_selection),
-});
+): UserProfileRecord => {
+    const usernameCanonical = normalizeUsername(row?.username);
+    const usernameDisplay = toProfileUsernameDisplay(row?.username_display) || usernameCanonical;
+    return {
+        id: toSafeText(row?.id) || '',
+        email: toSafeText(row?.email) || emailFallback,
+        displayName: toSafeText(row?.display_name) || null,
+        firstName: toSafeText(row?.first_name),
+        lastName: toSafeText(row?.last_name),
+        username: usernameCanonical,
+        usernameDisplay,
+        usernameCanonical,
+        bio: toSafeText(row?.bio),
+        gender: normalizeGender(row?.gender),
+        country: normalizeProfileCountryCode(row?.country),
+        city: toSafeText(row?.city),
+        preferredLanguage: normalizeLanguage(row?.preferred_language),
+        onboardingCompletedAt: typeof row?.onboarding_completed_at === 'string' ? row.onboarding_completed_at : null,
+        accountStatus: row?.account_status === 'disabled' || row?.account_status === 'deleted' ? row.account_status : 'active',
+        publicProfileEnabled: toBooleanWithDefault(row?.public_profile_enabled, true),
+        defaultPublicTripVisibility: toBooleanWithDefault(row?.default_public_trip_visibility, true),
+        usernameChangedAt: typeof row?.username_changed_at === 'string' ? row.username_changed_at : null,
+        passportStickerPositions: normalizePassportStickerPositions(row?.passport_sticker_positions),
+        passportStickerSelection: normalizePassportStickerSelection(row?.passport_sticker_selection),
+    };
+};
 
 const maskPrivateProfileForPublicPreview = (profile: UserProfileRecord): UserProfileRecord => {
     const firstName = profile.firstName.trim();
@@ -313,6 +408,15 @@ const validateUsername = (candidate: string): UsernameAvailabilityResult | null 
     }
 
     if (!USERNAME_PATTERN.test(candidate)) {
+        return {
+            normalizedUsername: candidate,
+            availability: 'invalid',
+            reason: 'format',
+            cooldownEndsAt: null,
+        };
+    }
+
+    if (!usernameHasAlphaNumeric(candidate)) {
         return {
             normalizedUsername: candidate,
             availability: 'invalid',
@@ -412,7 +516,8 @@ export const updateCurrentUserProfile = async (
 
     const firstName = payload.firstName.trim();
     const lastName = payload.lastName.trim();
-    const username = normalizeUsername(payload.username);
+    const usernameDisplay = normalizeUsernameDisplay(payload.usernameDisplay ?? payload.username);
+    const username = normalizeUsername(usernameDisplay);
     const bio = toSafeText(payload.bio);
     const rawCountry = typeof payload.country === 'string' ? payload.country.trim() : '';
     const country = normalizeProfileCountryCode(rawCountry);
@@ -427,6 +532,7 @@ export const updateCurrentUserProfile = async (
         first_name: firstName || null,
         last_name: lastName || null,
         username: username || null,
+        username_display: usernameDisplay || null,
         bio: bio || null,
         gender: payload.gender || null,
         country: country || null,
@@ -438,10 +544,22 @@ export const updateCurrentUserProfile = async (
         onboarding_completed_at: payload.markOnboardingComplete ? new Date().toISOString() : undefined,
     };
 
-    const { error } = await supabase
+    let { error } = await supabase
         .from('profiles')
         .update(patch)
         .eq('id', authData.user.id);
+
+    if (error && /column/i.test(error.message || '') && /username_display/i.test(error.message || '')) {
+        const fallback = await supabase
+            .from('profiles')
+            .update({
+                ...patch,
+                username_display: undefined,
+            })
+            .eq('id', authData.user.id);
+        error = fallback.error;
+    }
+
     if (error) {
         throw new Error(error.message || 'Could not update profile.');
     }
@@ -503,7 +621,10 @@ export const updateCurrentUserPassportStickerSelection = async (
     }
 };
 
-export const checkUsernameAvailability = async (candidateRaw: string): Promise<UsernameAvailabilityResult> => {
+export const checkUsernameAvailability = async (
+    candidateRaw: string,
+    options: { logBlockedAttempt?: boolean } = {}
+): Promise<UsernameAvailabilityResult> => {
     const normalizedUsername = normalizeUsername(candidateRaw);
     const validationFailure = validateUsername(normalizedUsername);
     if (validationFailure) return validationFailure;
@@ -542,6 +663,7 @@ export const checkUsernameAvailability = async (candidateRaw: string): Promise<U
 
     const rpcAttempt = await supabase.rpc('profile_check_username_availability', {
         p_username: normalizedUsername,
+        p_log_attempt: options.logBlockedAttempt === true,
     });
 
     if (!rpcAttempt.error) {

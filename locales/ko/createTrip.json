@@ -169,11 +169,13 @@
   },
   "cta": {
     "label": "내 여행 만들기",
-    "loading": "만드는 중..."
+    "loading": "만드는 중...",
+    "offline": "Offline"
   },
   "errors": {
     "destinationRequired": "여행을 만들기 전에 여행지를 하나 이상 추가해 주세요.",
-    "genericGenerate": "여행 생성에 실패했습니다. 다시 시도해 주세요."
+    "genericGenerate": "여행 생성에 실패했습니다. 다시 시도해 주세요.",
+    "offlineCreateDisabled": "Trip creation is unavailable while offline. Reconnect and try again."
   },
   "prefillBadge": "자동 입력 출처: {label}",
   "labsBanner": {

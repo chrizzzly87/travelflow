@@ -1,10 +1,13 @@
 import React from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { AppLanguage, ITrip, ITimelineItem } from '../types';
 import { X, Trash2, Star, Search, ChevronDown, ChevronRight, MapPin, CalendarDays, History } from 'lucide-react';
 import { readLocalStorageItem, writeLocalStorageItem } from '../services/browserStorageService';
 import { getAllTrips, deleteTrip, saveTrip } from '../services/storageService';
 import { COUNTRIES, DEFAULT_APP_LANGUAGE, DEFAULT_DISTANCE_UNIT, formatDistance, getGoogleMapsApiKey, getTripDistanceKm } from '../utils';
 import { DB_ENABLED, dbArchiveTrip, dbUpsertTrip, syncTripsFromDb } from '../services/dbService';
+import { getConnectivitySnapshot } from '../services/supabaseHealthMonitor';
+import { enqueueTripCommitAndSync } from '../services/tripSyncManager';
 import { useAppDialog } from './AppDialogProvider';
 import { buildPaywalledTripDisplay, getTripLifecycleState, TRIP_EXPIRY_DEBUG_EVENT } from '../config/paywall';
 import { FlagIcon } from './flags/FlagIcon';
@@ -699,6 +702,7 @@ export const TripManager: React.FC<TripManagerProps> = ({
   appLanguage = DEFAULT_APP_LANGUAGE,
 }) => {
   const { confirm } = useAppDialog();
+  const { t } = useTranslation('common');
   const { isAuthenticated } = useAuth();
   const [trips, setTrips] = React.useState<ITrip[]>([]);
   const [searchQuery, setSearchQuery] = React.useState('');
@@ -963,10 +967,20 @@ export const TripManager: React.FC<TripManagerProps> = ({
     if (!tripToArchive) return;
 
     const shouldDelete = await confirm({
-      title: 'Archive Trip?',
-      message: 'This trip will be removed from your list and can be restored later.',
-      confirmLabel: 'Archive Trip',
-      cancelLabel: 'Cancel',
+      title: t('appDialog.tripArchive.title'),
+      message: (
+        <div className="space-y-2">
+          <p><Trans
+            ns="common"
+            i18nKey="appDialog.tripArchive.messageQuestion"
+            values={{ title: tripToArchive.title }}
+            components={{ strong: <strong /> }}
+          /></p>
+          <p>{t('appDialog.tripArchive.messageDetail')}</p>
+        </div>
+      ),
+      confirmLabel: t('appDialog.tripArchive.confirmLabel'),
+      cancelLabel: t('appDialog.tripArchive.cancelLabel'),
       tone: 'danger',
     });
     if (!shouldDelete) return;
@@ -978,19 +992,41 @@ export const TripManager: React.FC<TripManagerProps> = ({
       dismissible: false,
     });
 
+    const archivedSnapshot: ITrip = {
+      ...tripToArchive,
+      status: 'archived',
+      updatedAt: Date.now(),
+    };
+
+    let archivedRemotely = !DB_ENABLED;
+    let queuedForReplay = false;
+
     if (DB_ENABLED) {
-      const archived = await dbArchiveTrip(id, {
-        source: 'my_trips',
-        metadata: { surface: 'trip_manager' },
-      });
-      if (!archived) {
-        showAppToast({
-          id: toastId,
-          tone: 'error',
-          title: 'Archive failed',
-          description: 'Could not archive this trip right now.',
+      const connectivityState = getConnectivitySnapshot().state;
+      if (connectivityState !== 'online') {
+        enqueueTripCommitAndSync({
+          tripId: archivedSnapshot.id,
+          tripSnapshot: archivedSnapshot,
+          viewSnapshot: archivedSnapshot.defaultView ?? null,
+          label: 'Data: Archived trip',
         });
-        return;
+        queuedForReplay = true;
+      } else {
+        const archived = await dbArchiveTrip(id, {
+          source: 'my_trips',
+          metadata: { surface: 'trip_manager' },
+        });
+        if (archived) {
+          archivedRemotely = true;
+        } else {
+          enqueueTripCommitAndSync({
+            tripId: archivedSnapshot.id,
+            tripSnapshot: archivedSnapshot,
+            viewSnapshot: archivedSnapshot.defaultView ?? null,
+            label: 'Data: Archived trip',
+          });
+          queuedForReplay = true;
+        }
       }
     }
 
@@ -1002,7 +1038,11 @@ export const TripManager: React.FC<TripManagerProps> = ({
       id: toastId,
       tone: 'remove',
       title: 'Trip archived',
-      description: `Your trip "${tripToArchive.title}" was archived successfully.`,
+      description: queuedForReplay
+        ? `Your trip "${tripToArchive.title}" was archived locally and will sync when connection is restored.`
+        : (archivedRemotely
+          ? `Your trip "${tripToArchive.title}" was archived successfully.`
+          : `Your trip "${tripToArchive.title}" was archived locally.`),
       action: {
         label: 'Undo',
         onClick: () => {
@@ -1037,7 +1077,7 @@ export const TripManager: React.FC<TripManagerProps> = ({
     });
   };
 
-  const handleToggleFavorite = (trip: ITrip) => {
+  const handleToggleFavorite = async (trip: ITrip) => {
     const updatedTrip: ITrip = {
       ...trip,
       isFavorite: !trip.isFavorite,
@@ -1046,7 +1086,25 @@ export const TripManager: React.FC<TripManagerProps> = ({
 
     saveTrip(updatedTrip);
     if (DB_ENABLED) {
-      void dbUpsertTrip(updatedTrip);
+      const connectivityState = getConnectivitySnapshot().state;
+      if (connectivityState !== 'online') {
+        enqueueTripCommitAndSync({
+          tripId: updatedTrip.id,
+          tripSnapshot: updatedTrip,
+          viewSnapshot: updatedTrip.defaultView ?? null,
+          label: 'Data: Updated trip favorite',
+        });
+      } else {
+        const upserted = await dbUpsertTrip(updatedTrip);
+        if (!upserted) {
+          enqueueTripCommitAndSync({
+            tripId: updatedTrip.id,
+            tripSnapshot: updatedTrip,
+            viewSnapshot: updatedTrip.defaultView ?? null,
+            label: 'Data: Updated trip favorite',
+          });
+        }
+      }
     }
     if (onUpdateTrip && currentTripId === updatedTrip.id) {
       onUpdateTrip(updatedTrip);

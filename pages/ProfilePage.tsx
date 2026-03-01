@@ -33,7 +33,7 @@ import {
 import { useAuth } from '../hooks/useAuth';
 import { getProfileCountryDisplayName } from '../services/profileCountryService';
 import { deleteTrip, getAllTrips, saveTrip } from '../services/storageService';
-import { DB_ENABLED, dbArchiveTrip, dbUpsertTrip } from '../services/dbService';
+import { DB_ENABLED, dbArchiveTrip, dbUpsertTrip, syncTripsFromDb } from '../services/dbService';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
 import {
     formatDisplayNameForGreeting,
@@ -111,7 +111,7 @@ const isEditableEventTarget = (target: EventTarget | null): boolean => {
 export const ProfilePage: React.FC = () => {
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
-    const { t, i18n } = useTranslation('profile');
+    const { t, i18n } = useTranslation(['profile', 'common']);
     const { confirm: confirmDialog } = useAppDialog();
     const {
         isLoading,
@@ -216,6 +216,23 @@ export const ProfilePage: React.FC = () => {
             window.removeEventListener('tf:trips-updated', refreshFromStorage);
         };
     }, [refreshTrips]);
+
+    useEffect(() => {
+        if (!DB_ENABLED) return;
+        if (!isAuthenticated) return;
+        let active = true;
+        void syncTripsFromDb()
+            .then(() => {
+                if (!active) return;
+                setTrips(getAllTrips());
+            })
+            .catch(() => {
+                // Keep existing local snapshot when DB sync fails.
+            });
+        return () => {
+            active = false;
+        };
+    }, [isAuthenticated]);
 
     useEffect(() => {
         const next = new URLSearchParams(searchParams);
@@ -431,6 +448,10 @@ export const ProfilePage: React.FC = () => {
                 }),
             })));
             archivedIds = results.filter((result) => result.archived).map((result) => result.tripId);
+            if (archivedIds.length === 0) {
+                await syncTripsFromDb();
+                setTrips(getAllTrips());
+            }
         }
 
         if (archivedIds.length === 0) return [];
@@ -489,7 +510,9 @@ export const ProfilePage: React.FC = () => {
     const handleArchiveTrip = useCallback(async (trip: ITrip) => {
         const confirmed = await confirmDialog({
             title: t('archive.confirmSingleTitle'),
-            message: t('archive.confirmSingleMessage', { title: trip.title }),
+            message: (
+                <p>{t('archive.confirmSingleMessage', { title: trip.title })}</p>
+            ),
             confirmLabel: t('archive.confirmSingleButton'),
             cancelLabel: t('archive.cancel'),
             tone: 'danger',
@@ -560,7 +583,9 @@ export const ProfilePage: React.FC = () => {
         if (selectedTripIds.length === 0) return;
         const confirmed = await confirmDialog({
             title: t('archive.confirmBatchTitle'),
-            message: t('archive.confirmBatchMessage', { count: selectedTripIds.length }),
+            message: (
+                <p>{t('archive.confirmBatchMessage', { count: selectedTripIds.length })}</p>
+            ),
             confirmLabel: t('archive.confirmBatchButton', { count: selectedTripIds.length }),
             cancelLabel: t('archive.cancel'),
             tone: 'danger',
@@ -805,7 +830,7 @@ export const ProfilePage: React.FC = () => {
     if (isProfileLoading && !profile) {
         return (
             <div className="flex min-h-screen flex-col bg-slate-50">
-                <SiteHeader hideCreateTrip />
+                <SiteHeader />
                 <main className="mx-auto w-full max-w-7xl flex-1 px-5 pb-14 pt-12 md:px-8 md:pt-14">
                     <div className="h-24" aria-hidden="true" />
                 </main>
@@ -816,7 +841,7 @@ export const ProfilePage: React.FC = () => {
 
     return (
         <div className="flex min-h-screen flex-col bg-slate-50">
-            <SiteHeader hideCreateTrip />
+            <SiteHeader />
             <main data-testid="profile-page-container" className="mx-auto w-full max-w-7xl flex-1 space-y-8 px-5 pb-14 pt-12 md:px-8 md:pt-14">
                 <ProfileHero
                     greeting={greeting.greeting}
@@ -848,7 +873,7 @@ export const ProfilePage: React.FC = () => {
 
                 <ProfileOwnerSummary
                     displayName={displayName}
-                    username={profile?.username || ''}
+                    username={profile?.usernameDisplay || profile?.username || ''}
                     initials={initialsFrom(profile, access?.email || null)}
                     status={profileStatus}
                     memberSince={memberSince}
@@ -936,7 +961,7 @@ export const ProfilePage: React.FC = () => {
                             {...getAnalyticsDebugAttributes('profile__shortcut--planner')}
                         >
                             <IdentificationCard size={16} />
-                            {t('actions.planner')}
+                            {t('common:createTrip')}
                         </NavLink>
                         <button
                             type="button"

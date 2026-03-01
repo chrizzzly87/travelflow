@@ -1,0 +1,205 @@
+# User, Profile, Trip Ownership, and Audit Logging
+
+## Purpose
+This document is the operational source of truth for:
+- who owns trips and what is allowed to be shown on user/profile surfaces,
+- how authenticated vs anonymous sessions are handled,
+- which user/admin actions are persisted as logs,
+- where those logs are shown in admin UI.
+
+## Ownership and Visibility Model
+- `trips.owner_id` is the canonical ownership field.
+- Authenticated profile surfaces must only render trips where `trips.owner_id = current_user_id`.
+- Public/profile read access does not imply ownership and must never be persisted into personal local trip storage.
+- Admin fallback access can read non-owned trips for support/debug, but is read-only unless explicit admin override is enabled.
+
+## Session and Sync Rules
+- Read/bootstrap flows use `ensureExistingDbSession()` (no anonymous auto-sign-in side effects).
+- Write flows (`upsert`, `archive`, `create version`, etc.) still require an authenticated DB session.
+- Simulated-login debug mode is auto-cleared when a real non-anonymous session is present.
+- Authenticated profile sync replaces local trip cache with DB-owned rows (no local merge precedence for authenticated users).
+
+## Anonymous to Registered Ownership
+- Anonymous OAuth upgrades use one-time asset claim transfer flow:
+  - create claim in anonymous session,
+  - consume claim after real authenticated callback,
+  - transfer trip ownership and user-event ownership to the target account,
+  - expire stale claims and purge claimed anonymous users later.
+
+## Logging Data Model
+- `public.admin_audit_logs`
+  - immutable admin actor actions (admin-side operations).
+  - includes replay export actions (`admin.audit.export`) for forensic traceability.
+- `public.profile_user_events`
+  - user profile-level actions (for example `profile.updated`, `trip.archive_failed`).
+- `public.trip_user_events`
+  - user trip-level lifecycle/actions (for example `trip.created`, `trip.updated`, `trip.archived`, `trip.share_created`).
+  - includes per-operation `metadata.correlation_id` for event tracing across audit surfaces.
+
+## Admin Surfaces and Limits
+- Admin Users drawer (`/admin/users`):
+  - user change log shows latest 20 entries.
+- Admin Audit page (`/admin/audit`):
+  - mixed timeline (admin + user actions),
+  - page size 50 with offset paging,
+  - actor filters (`admin`, `user`),
+  - target/action filters and time filtering (`24h`, `7d`, `30d`, `all`, `custom` date-range picker),
+  - resizable table columns + show/hide column filter,
+  - replay export for:
+    - current filtered timeline,
+    - selected table rows,
+    - single row export from row actions,
+  - replay export writes `admin.audit.export` rows via `/api/internal/admin/audit/replay-export`.
+
+## Admin Undo/Revert Model
+- Audit row actions provide confirm-based undo for supported entries.
+- Undo writes a fresh admin audit event (append-only model).
+- Supported user-originated undo targets:
+  - `trip.created` (safe archive-based revert),
+  - `trip.updated` (snapshot rollback through `admin_override_trip_commit`),
+  - `trip.archived` (status restore via `admin_update_trip`),
+  - `profile.updated` (field rollback via `admin_update_user_profile` for supported profile fields).
+- Supported admin-originated undo targets:
+  - `admin.trip.override_commit`,
+  - `admin.trip.update`,
+  - `admin.user.update_profile`,
+  - `admin.user.update_tier`,
+  - `admin.user.update_overrides`,
+  - `admin.tier.update_entitlements`.
+- Non-supported actions remain non-destructive/read-only in row actions.
+- Undo rows for trip rollback resolve source event IDs and render inverted fine-grained diff entries (for example `transport_mode`) instead of only full JSON snapshots.
+- Chained undos (undoing a prior undo row) preserve fine-grained diff rendering by recursively resolving source events with parity-safe inversion.
+- New undo rows now persist explicit linkage metadata (`undo_source_event_id`, `undo_root_source_event_id`, `undo_parity`) so rendering does not depend on label parsing.
+- Admin audit UI also performs by-id lookup for missing source user-change events (out-of-window/history cases) before falling back to snapshot-only rendering.
+
+## Current User Action Taxonomy
+- Primary trip actions:
+  - `trip.created`
+  - `trip.updated`
+  - `trip.archived`
+  - `trip.share_created`
+  - `trip.archive_failed`
+- Profile actions:
+  - `profile.updated`
+- Admin actions remain in `admin_audit_logs` with `admin.*` action namespace.
+
+## Trip Update Diff Semantics
+- Lifecycle-style trip updates use before/after metadata pairs (status/title/public visibility/source kind/expiry).
+- Version-commit trip updates (itinerary edits) write typed timeline metadata under `timeline_diff_v1`:
+  - `transport_mode_changes`
+  - `deleted_items`
+  - `added_items`
+  - `updated_items`
+  - `visual_changes` (map/timeline/route and other view-level commits)
+  - `counts`
+  - `secondary_action_codes` (compact typed facets for filtering and future secondary pills)
+- Legacy `timeline_diff` compatibility has been retired; admin rendering reads `timeline_diff_v1` only.
+- Timeline controls on trip view (`calendar`/`timeline` mode switch, timeline direction, zoom, map/layout toggles) are logged as `trip.updated` events with `timeline_diff_v1.visual_changes` entries (for example `timeline_mode`, `timeline_layout`, `zoom_level`).
+- Admin diff builders ignore noisy after-only fields for update events to prevent misleading “Before: —” rows.
+- See `docs/TIMELINE_DIFF_EVENT_CONTRACT.md` for the canonical producer/consumer contract, schema, and migration rules.
+
+## Snapshot vs Diff Strategy
+- Canonical history remains snapshot-based in `trip_versions.data` (immutable per version row).
+- Audit timelines store compact typed diff metadata (`timeline_diff_v1`) for fast table rendering and filtering.
+- Full forensic compare should not duplicate large snapshots inside event rows.
+- Admin full-diff modal resolves snapshots on demand:
+  - reads `version_id` + `previous_version_id` from event metadata,
+  - fetches `before_snapshot` and `after_snapshot` from `trip_versions`,
+  - renders line-level JSON diff side-by-side (before on left, after on right).
+- This keeps event logs small while preserving exact snapshot compare fidelity.
+
+## Full Diff Modal Data Contract
+- New admin RPC: `admin_get_trip_version_snapshots(p_trip_id, p_after_version_id, p_before_version_id)`.
+- Output:
+  - `before_snapshot`, `after_snapshot`,
+  - `before_view_settings`, `after_view_settings`,
+  - `before_version_id`, `after_version_id`,
+  - `before_label`, `after_label`,
+  - version timestamps.
+- Fallback behavior:
+  - if no version IDs exist, admin UI compares event `before_data` vs `after_data`,
+  - if neither source exists, UI shows an explicit “snapshot unavailable” notice.
+
+## Auth Provider Crash Hardening
+- Problem:
+  - a rare route recovery/back-navigation sequence could render a consumer before provider context was mounted, throwing:
+    - `useAuthContext must be used within AuthProvider`.
+- Hardening:
+  - `useAuthContext` now returns an anonymous-safe fallback value when provider context is missing,
+  - logs a one-time console error for diagnostics.
+- Impact:
+  - prevents white-screen crash,
+  - keeps auth-gated UI stable while provider tree settles.
+- This was surfaced during auth/anonymous flow hardening but is primarily a React provider-tree timing safeguard.
+
+## Supabase Anonymous Session Setting
+- Recommended with current product flow: keep Supabase anonymous sign-in **enabled**.
+- Reason:
+  - guest journey + anonymous creation + claim-transfer to registered accounts depends on anonymous sessions.
+- Guardrails in code:
+  - anonymous sessions are not auto-created for read-only/profile settings sync paths,
+  - ownership claim-transfer + purge tooling cleans up anonymous identities,
+  - authenticated user surfaces are owner-filtered.
+- If anonymous sign-in is disabled, guest-to-account migration flows must be reworked first.
+
+## Admin Reset/Cleanup Controls
+- One-shot reset function for test environments:
+  - `public.admin_reset_anonymous_users_and_logs(...)`
+- It can:
+  - delete anonymous auth users,
+  - clear user/admin log tables,
+  - optionally clear trip version snapshots.
+- See runbook:
+  - `docs/ADMIN_LOG_AND_ANON_RESET_RUNBOOK.md`.
+
+## Debugging Playbook
+- User sees foreign trips:
+  - verify `dbListTrips` owner filter,
+  - verify profile sync replaced local cache post-auth,
+  - verify no simulated-login merge remained active.
+- Archive fails with ownership error:
+  - validate `trip_id` owner in `trips`,
+  - inspect `profile_user_events` for `trip.archive_failed` metadata.
+- User trip changes missing in admin:
+  - check `trip_user_events` inserts for `trip.updated`/`trip.created`/`trip.archived`,
+  - confirm `admin_list_user_change_logs` returns trip union rows.
+- Implementation checklist for future changes:
+  - see `docs/USER_TRIP_LOGGING_IMPLEMENTATION_PLAYBOOK.md`.
+
+## Logging Roadmap Status (as of 2026-02-28)
+- [x] Ownership hardening shipped (authenticated profile views only DB-owned trips).
+- [x] Anonymous-to-registered claim transfer shipped (including OAuth callback claim handoff).
+- [x] Failure logging shipped (`trip.archive_failed`) and visible in admin user drawer + global audit.
+- [x] Snapshot-aware diff UX shipped with focused diff rows and full side-by-side snapshot modal.
+- [x] Typed trip timeline envelope introduced (`timeline_diff_v1`) with visual-change support and backward compatibility.
+- [x] `timeline_diff_v1` is now the active write format for trip update event metadata.
+- [x] Deterministic correlation identifiers are propagated across upsert/version/archive paths.
+- [x] Client fallback event writers now attach event envelope fields (`event_schema_version`, `event_id`, `event_kind`, `correlation_id`, `causation_id`, `source_surface`).
+
+## Remaining Implementation Plan
+
+### Phase 1 (remaining)
+- [x] Remove legacy `timeline_diff` compatibility reads once all active environments have no legacy event rows.
+- [x] Replace any residual raw JSON fallback rendering paths with typed field renderers only (including any remaining legacy update surfaces).
+- [x] Add deterministic correlation IDs between upsert/version/archive operations.
+
+### Phase 2
+- Introduce secondary domain event writers per operation class:
+  - [x] `trip.city.updated`,
+  - [x] `trip.activity.updated`,
+  - [x] `trip.activity.deleted`,
+  - [x] `trip.transport.updated`,
+  - [x] `trip.segment.deleted`,
+  - [x] `trip.trip_dates.updated`,
+  - [x] `trip.visibility.updated`.
+- Keep primary pill compact (`trip.updated`) and render secondary action facets from typed metadata.
+
+### Phase 3
+- Add immutable append-only event envelope with:
+  - [x] schema version,
+  - [x] actor/target IDs,
+  - [x] causation ID,
+  - [x] correlation ID,
+  - [x] source surface,
+  - [x] redaction policy for sensitive fields.
+- [x] Add async replay/forensics export pipeline for support incidents.

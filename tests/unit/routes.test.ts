@@ -65,6 +65,7 @@ describe('config/routes', () => {
       buildPath('adminTiers'),
       buildPath('adminAudit'),
       buildPath('adminAiBenchmark'),
+      buildPath('adminDesignSystemPlayground'),
       buildPath('profile'),
       buildPath('profileStamps'),
       buildPath('profileSettings'),

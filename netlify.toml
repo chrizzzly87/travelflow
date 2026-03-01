@@ -63,6 +63,10 @@
   function = "admin-iam"
 
 [[edge_functions]]
+  path = "/api/internal/admin/audit/replay-export"
+  function = "admin-audit-export"
+
+[[edge_functions]]
   path = "/api/trip-map-preview"
   function = "trip-map-preview"
 
