@@ -49,6 +49,7 @@ summary: "Admin overview and trip operations now stay on live records, with expa
 - [ ] [Improved] 📤 Admin replay export now supports full-filter exports, selected-row exports, and single-row exports directly from table row actions.
 - [ ] [Improved] 🔁 Added confirm-based undo actions in admin audit rows for supported user-originated changes (`trip.updated`, `trip.archived`, `profile.updated`) with new audit entries for each revert.
 - [ ] [Improved] 🔔 Replay export and undo success paths now use app toasts instead of persistent top-page banners.
+- [x] [Fixed] 📱 On mobile, the signed-in profile button is now hidden in the header to keep layout spacing stable, with account actions available in the menu.
 - [x] [Improved] ✉️ Login now better supports saved email autofill with stronger form accessibility labeling.
 - [ ] [Internal] 🧪 Added regression coverage for the admin mock-mode guard to prevent production mock-data leakage.
 - [ ] [Internal] 🗃️ Added DB-backed profile user-event capture and a unified admin query path for user change logs.
