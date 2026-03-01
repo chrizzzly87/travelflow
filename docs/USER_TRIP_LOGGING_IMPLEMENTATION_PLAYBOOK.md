@@ -58,6 +58,12 @@ Use this as the mandatory implementation checklist whenever code changes user, p
 - Admin audit undo actions must remain append-only:
   - use admin RPCs (`admin_update_trip`, `admin_override_trip_commit`, `admin_update_user_profile`) to create a new audited revert operation,
   - never mutate or delete historical event rows.
+- Undo rows that originate from trip rollback commits must carry source-event linkage metadata (for example `Audit undo <event_id>` label or explicit source id) so admin UI can resolve and render inverted fine-grained diff rows.
+- Preferred undo linkage metadata contract for new writes:
+  - `undo_source_event_id` (direct reverted event id),
+  - `undo_root_source_event_id` (original root user-change event id),
+  - `undo_parity` (0/1 parity relative to root event; 1 means inverted view).
+- Keep `public.admin_get_user_change_log(uuid)` available and granted; admin audit uses it to resolve source events that are outside the currently loaded timeline window.
 
 ## Tests required for behavioral changes
 - Add/adjust browser tests for event writer payloads in:
@@ -69,6 +75,9 @@ Use this as the mandatory implementation checklist whenever code changes user, p
   - `tests/unit/adminForensicsService.test.ts`
 - Add/adjust edge filter tests for replay export filtering in:
   - `tests/unit/adminAuditReplayExportEdge.test.ts`
+- Add/adjust undo diff regression tests in:
+  - `tests/unit/adminAuditUndoDiff.test.ts`
+- Add/adjust admin audit source-lookup regression coverage when lookup behavior changes.
 - Run `pnpm test:core` before merge.
 
 ## Related source-of-truth docs

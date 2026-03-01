@@ -48,6 +48,9 @@ summary: "Admin overview and trip operations now stay on live records, with expa
 - [ ] [Improved] ⏱️ Admin audit filters now include `Last 24 hours`, `Last 7 days`, `Last 30 days`, `All time`, and a custom date-range picker for faster incident slicing.
 - [ ] [Improved] 📤 Admin replay export now supports full-filter exports, selected-row exports, and single-row exports directly from table row actions.
 - [ ] [Improved] 🔁 Added confirm-based undo actions in admin audit rows for supported user-originated changes (`trip.updated`, `trip.archived`, `profile.updated`) with new audit entries for each revert.
+- [ ] [Improved] 🧭 Undo-generated trip rows now render inverted fine-grained `timeline_diff_v1` style details (for example transport mode changes) instead of only full snapshot blobs.
+- [ ] [Fixed] 🔁 Chained undo rows (undoing a previous undo) now keep fine-grained diff details instead of degrading to snapshot-only output.
+- [ ] [Improved] 🧩 Extended undo coverage to additional actions, including `trip.created`, `admin.user.update_overrides`, and `admin.tier.update_entitlements`.
 - [ ] [Improved] 🔔 Replay export and undo success paths now use app toasts instead of persistent top-page banners.
 - [x] [Fixed] 📱 On mobile, the signed-in profile button is now hidden in the header to keep layout spacing stable, with account actions available in the menu.
 - [x] [Improved] ✉️ Login now better supports saved email autofill with stronger form accessibility labeling.
@@ -62,9 +65,11 @@ summary: "Admin overview and trip operations now stay on live records, with expa
 - [ ] [Internal] 🔗 Correlation IDs now follow deterministic conventions for upsert/version events and archive flows now preserve caller-provided correlation IDs.
 - [ ] [Internal] 🧾 Client fallback event writers now add the full immutable event envelope (`event_schema_version`, `event_id`, `event_kind`, `correlation_id`, `causation_id`, `source_surface`) for parity with DB event writers.
 - [ ] [Internal] 🧷 Immutable fallback event envelopes now include actor/target IDs and a redaction policy field for complete Phase 3 metadata.
+- [ ] [Internal] 🔁 Undo override commits now persist explicit source/root/parity metadata and use by-id source lookup fallback so out-of-window undo rows can still render fine-grained diffs.
 - [ ] [Internal] 📦 Admin audit replay export now runs via a server endpoint and persists `admin.audit.export` entries, while still downloading `admin_forensics_replay_v1` bundles with correlation-group summaries and redaction-aware payload shaping.
 - [ ] [Internal] 🧩 User change-table diff rows now use typed structured-value formatters (instead of raw JSON blobs) across admin audit and user drawer surfaces.
 - [ ] [Internal] 🧪 Hardened long-running admin browser tests with explicit timeouts to stabilize `pnpm test:core` runs in CI-like load.
 - [ ] [Internal] 🧱 Added admin snapshot lookup RPC for version-based trip updates so full diff modals resolve canonical before/after snapshots on demand.
 - [ ] [Internal] 🧹 Added admin reset/cleanup SQL controls to purge anonymous users and clear audit/user log tables for clean test passes.
 - [ ] [Internal] 📚 Added architecture docs for auth/session ownership, profile trip visibility rules, and audit/log event taxonomy.
+- [ ] [Internal] ✅ Added `supabase:validate` + `supabase:check-main-sync` guardrails and runbook instructions so `docs/supabase.sql` stays complete and main-synced before merges.
