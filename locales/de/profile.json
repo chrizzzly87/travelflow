@@ -157,7 +157,7 @@
       "city": "Stadt *",
       "preferredLanguage": "Bevorzugte Sprache *"
     },
-    "usernameHelp": "Verwenden Sie 3–30 Buchstaben, Zahlen, Unterstriche oder Bindestriche. Keine Leerzeichen.",
+    "usernameHelp": "Verwenden Sie 3–20 Buchstaben, Zahlen, Unterstriche oder Bindestriche. Keine Leerzeichen.",
     "usernameCooldownHint": "Sie können Ihren Benutzernamen am {date} erneut ändern.",
     "bioHelp": "Teilen Sie eine kurze Einführung, die Reisende in Ihrem öffentlichen Profil sehen können.",
     "publicProfileToggleTitle": "Öffentliches Profil aktivieren",

@@ -157,7 +157,7 @@
       "city": "Cidade *",
       "preferredLanguage": "Idioma preferido *"
     },
-    "usernameHelp": "Use de 3 a 30 letras, números, sublinhados ou hifens. Sem espaços.",
+    "usernameHelp": "Use de 3 a 20 letras, números, sublinhados ou hifens. Sem espaços.",
     "usernameCooldownHint": "Você pode alterar seu nome de usuário novamente em {date}.",
     "bioHelp": "Compartilhe uma breve introdução que os viajantes podem ver em seu perfil público.",
     "publicProfileToggleTitle": "Ativar perfil público",

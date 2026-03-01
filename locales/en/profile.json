@@ -155,7 +155,7 @@
       "city": "City *",
       "preferredLanguage": "Preferred language *"
     },
-    "usernameHelp": "Use 3-30 letters, numbers, underscores, or hyphens. No spaces.",
+    "usernameHelp": "Use 3-20 letters, numbers, underscores, or hyphens. No spaces.",
     "usernameCooldownHint": "You can change your username again on {date}.",
     "bioHelp": "Share a short intro travelers can see on your public profile.",
     "publicProfileToggleTitle": "Enable public profile",

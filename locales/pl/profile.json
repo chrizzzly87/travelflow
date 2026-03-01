@@ -157,7 +157,7 @@
       "city": "Miasto *",
       "preferredLanguage": "Preferowany język *"
     },
-    "usernameHelp": "Użyj od 3 do 30 liter, cyfr, podkreśleń i łączników. Brak spacji.",
+    "usernameHelp": "Użyj od 3 do 20 liter, cyfr, podkreśleń i łączników. Brak spacji.",
     "usernameCooldownHint": "Możesz ponownie zmienić swoją nazwę użytkownika na {date}.",
     "bioHelp": "Udostępnij krótkie wprowadzenie, które podróżni mogą zobaczyć w Twoim profilu publicznym.",
     "publicProfileToggleTitle": "Włącz profil publiczny",

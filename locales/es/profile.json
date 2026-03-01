@@ -157,7 +157,7 @@
       "city": "Ciudad *",
       "preferredLanguage": "Idioma preferido *"
     },
-    "usernameHelp": "Utilice entre 3 y 30 letras, números, guiones bajos o guiones. Sin espacios.",
+    "usernameHelp": "Utilice entre 3 y 20 letras, números, guiones bajos o guiones. Sin espacios.",
     "usernameCooldownHint": "Puedes cambiar tu nombre de usuario nuevamente el {date}.",
     "bioHelp": "Comparta una breve introducción que los viajeros puedan ver en su perfil público.",
     "publicProfileToggleTitle": "Habilitar perfil público",

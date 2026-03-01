@@ -157,7 +157,7 @@
       "city": "도시 *",
       "preferredLanguage": "선호하는 언어 *"
     },
-    "usernameHelp": "3~30자의 문자, 숫자, 밑줄, 하이픈을 사용하세요. 공백이 없습니다.",
+    "usernameHelp": "3~20자의 문자, 숫자, 밑줄, 하이픈을 사용하세요. 공백이 없습니다.",
     "usernameCooldownHint": "{date}에 사용자 이름을 다시 변경할 수 있습니다.",
     "bioHelp": "여행자가 공개 프로필에서 볼 수 있는 짧은 소개를 공유하세요.",
     "publicProfileToggleTitle": "공개 프로필 활성화",

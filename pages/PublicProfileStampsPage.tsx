@@ -79,9 +79,15 @@ export const PublicProfileStampsPage: React.FC = () => {
   useEffect(() => {
     if (isAuthLoading) return;
 
-    const handle = normalizeUsername(username);
+    const rawHandle = typeof username === 'string' ? username.trim() : '';
+    const handle = normalizeUsername(rawHandle);
     if (!handle) {
       setState({ status: 'not_found', profile: null, trips: [] });
+      return;
+    }
+
+    if (rawHandle !== handle) {
+      navigate(buildPath('publicProfileStamps', { username: handle }), { replace: true });
       return;
     }
 
@@ -94,7 +100,7 @@ export const PublicProfileStampsPage: React.FC = () => {
 
         if (result.status === 'redirect' && result.canonicalUsername) {
           const canonicalPath = buildPath('publicProfileStamps', { username: result.canonicalUsername });
-          const currentPath = buildPath('publicProfileStamps', { username: handle });
+          const currentPath = buildPath('publicProfileStamps', { username: rawHandle });
           if (canonicalPath !== currentPath) {
             navigate(canonicalPath, { replace: true });
             return;
@@ -162,6 +168,7 @@ export const PublicProfileStampsPage: React.FC = () => {
 
   const displayName = state.profile?.displayName
     || [state.profile?.firstName || '', state.profile?.lastName || ''].filter(Boolean).join(' ')
+    || state.profile?.usernameDisplay
     || state.profile?.username
     || t('fallback.displayName');
 

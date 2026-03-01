@@ -70,8 +70,17 @@ const REQUIRED_FIELDS: Array<keyof Pick<ProfileFormState, 'firstName' | 'lastNam
 ];
 
 const USERNAME_COOLDOWN_DAYS = 90;
-const USERNAME_ALLOWED_PATTERN = /^[a-z0-9_-]{3,30}$/;
+const USERNAME_ALLOWED_PATTERN = /^[A-Za-z0-9_-]{3,20}$/;
+const USERNAME_CANONICAL_PATTERN = /^[a-z0-9_-]{3,20}$/;
 const normalizeUsernameInput = (value: string): string => value.trim().toLowerCase().replace(/^@+/, '');
+const normalizeUsernameDisplayInput = (value: string): string => value.trim().replace(/^@+/, '');
+const sanitizeUsernameInput = (value: string): string => (
+    value
+        .replace(/\s+/g, '')
+        .replace(/^@+/, '')
+        .replace(/[^A-Za-z0-9_-]/g, '')
+);
+const usernameHasAlphaNumeric = (value: string): boolean => /[a-z0-9]/.test(value);
 const clampBio = (value: string): string => value.slice(0, 160);
 
 const hasMissingRequiredField = (form: ProfileFormState): boolean =>
@@ -153,7 +162,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
         setForm({
             firstName: cachedProfile.firstName || '',
             lastName: cachedProfile.lastName || '',
-            username: cachedProfile.username || '',
+            username: cachedProfile.usernameDisplay || cachedProfile.username || '',
             bio: clampBio(cachedProfile.bio || ''),
             gender: cachedProfile.gender || '',
             country: cachedProfile.country || '',
@@ -170,8 +179,9 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
 
     const isMissingRequired = useMemo(() => hasMissingRequiredField(form), [form]);
     const normalizedUsername = useMemo(() => normalizeUsernameInput(form.username), [form.username]);
+    const normalizedUsernameDisplay = useMemo(() => normalizeUsernameDisplayInput(form.username), [form.username]);
 
-    const currentUsername = (profile?.username || '').trim().toLowerCase();
+    const currentUsername = (profile?.usernameCanonical || profile?.username || '').trim().toLowerCase();
     const publicProfilePath = normalizedUsername
         ? buildPath('publicProfile', { username: normalizedUsername })
         : null;
@@ -274,7 +284,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
         return Array.from(new Set(
             rawCandidates
                 .map((candidate) => sanitize(candidate))
-                .filter((candidate) => candidate.length >= 3 && candidate.length <= 30 && USERNAME_ALLOWED_PATTERN.test(candidate))
+                .filter((candidate) => candidate.length >= 3 && candidate.length <= 20 && USERNAME_CANONICAL_PATTERN.test(candidate))
                 .filter((candidate) => candidate !== current)
         ));
     };
@@ -296,7 +306,8 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
         return Array.from(new Set(results.filter((candidate): candidate is string => Boolean(candidate)))).slice(0, 4);
     };
 
-    const resolveLocalUsernameValidation = (candidate: string): UsernameAvailabilityResult | null => {
+    const resolveLocalUsernameValidation = (candidateDisplay: string): UsernameAvailabilityResult | null => {
+        const candidate = normalizeUsernameInput(candidateDisplay);
         if (!candidate) {
             return {
                 normalizedUsername: '',
@@ -305,7 +316,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                 cooldownEndsAt: null,
             };
         }
-        if (!USERNAME_ALLOWED_PATTERN.test(candidate)) {
+        if (!USERNAME_ALLOWED_PATTERN.test(candidateDisplay) || !USERNAME_CANONICAL_PATTERN.test(candidate) || !usernameHasAlphaNumeric(candidate)) {
             return {
                 normalizedUsername: candidate,
                 availability: 'invalid',
@@ -346,7 +357,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
 
         try {
             if (normalizedUsername !== currentUsername) {
-                const localValidation = resolveLocalUsernameValidation(normalizedUsername);
+                const localValidation = resolveLocalUsernameValidation(normalizedUsernameDisplay);
                 if (localValidation) {
                     setUsernameCheck({
                         loading: false,
@@ -387,6 +398,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                 firstName: form.firstName,
                 lastName: form.lastName,
                 username: normalizedUsername,
+                usernameDisplay: normalizedUsernameDisplay,
                 bio: form.bio,
                 gender: form.gender,
                 country: form.country,
@@ -400,7 +412,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
             setProfile(updated);
             setForm((current) => ({
                 ...current,
-                username: updated.username || current.username,
+                username: updated.usernameDisplay || updated.username || current.username,
                 bio: clampBio(updated.bio || ''),
                 publicProfileEnabled: updated.publicProfileEnabled !== false,
                 defaultPublicTripVisibility: updated.defaultPublicTripVisibility !== false,
@@ -528,14 +540,19 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                         aria-label={t('settings.fields.username')}
                                         value={form.username}
                                         onChange={(event) => {
-                                            updateField('username', event.target.value);
+                                            const sanitized = sanitizeUsernameInput(event.target.value);
+                                            updateField('username', sanitized);
                                             setUsernameSuggestions([]);
+                                            const localValidation = resolveLocalUsernameValidation(sanitized);
                                             setUsernameCheck({
                                                 loading: false,
-                                                result: null,
+                                                result: localValidation,
                                                 error: null,
                                             });
                                         }}
+                                        pattern="[A-Za-z0-9_-]{3,20}"
+                                        autoCapitalize="none"
+                                        spellCheck={false}
                                         readOnly={isUsernameLocked}
                                         className={`h-10 w-full rounded-lg border px-3 text-sm outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-200 ${
                                             isUsernameLocked

@@ -157,7 +157,7 @@
       "city": "Ville *",
       "preferredLanguage": "Langue préférée *"
     },
-    "usernameHelp": "Utilisez 3 à 30 lettres, chiffres, traits de soulignement ou traits d'union. Pas d'espaces.",
+    "usernameHelp": "Utilisez 3 à 20 lettres, chiffres, traits de soulignement ou traits d'union. Pas d'espaces.",
     "usernameCooldownHint": "Vous pourrez à nouveau modifier votre nom d'utilisateur le {date}.",
     "bioHelp": "Partagez une courte introduction que les voyageurs peuvent voir sur votre profil public.",
     "publicProfileToggleTitle": "Activer le profil public",
