@@ -219,5 +219,38 @@
         "online": "Connection is healthy and sync is up to date."
       }
     }
+  },
+  "tripPaywall": {
+    "strip": {
+      "directSinceDate": "Die Trip-Vorschau ist seit {date} pausiert. Reaktiviere jetzt, um den vollen Planungsmodus freizuschalten.",
+      "directNoDate": "Die Trip-Vorschau ist pausiert. Reaktiviere jetzt, um den vollen Planungsmodus freizuschalten.",
+      "loginSinceDate": "Die Trip-Vorschau ist seit {date} pausiert. Melde dich an, um zu reaktivieren und den vollen Planungsmodus freizuschalten.",
+      "loginNoDate": "Die Trip-Vorschau ist pausiert. Melde dich an, um zu reaktivieren und den vollen Planungsmodus freizuschalten."
+    },
+    "overlay": {
+      "eyebrow": "Trip-Vorschau pausiert",
+      "title": {
+        "direct": "Reaktiviere diesen Trip, um weiterzuplanen",
+        "login": "Melde dich an, um diesen Trip zu reaktivieren"
+      },
+      "description": {
+        "direct": "Du bist angemeldet. Reaktiviere jetzt, um Bearbeitung, Zielnamen und Kartenrouten wiederherzustellen.",
+        "login": "Melde dich an, um Bearbeitung, Zielnamen und Kartenrouten wiederherzustellen."
+      },
+      "footer": {
+        "withDate": "Abgelaufen am {date}. Der Vorschaumodus bleibt sichtbar, bis du reaktivierst.",
+        "noDate": "Der Vorschaumodus bleibt sichtbar, bis du reaktivierst."
+      }
+    },
+    "reactivate": {
+      "actions": {
+        "direct": "Trip reaktivieren",
+        "login": "Anmelden zum Reaktivieren"
+      },
+      "toast": {
+        "title": "Trip reaktiviert",
+        "description": "Der volle Planungsmodus ist wieder freigeschaltet."
+      }
+    }
   }
 }

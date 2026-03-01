@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
-  buildPaywalledTripDisplay,
-  getTripLifecycleState,
-  shouldShowTripPaywall,
+    buildPaywalledTripDisplay,
+    getTripLifecycleState,
+    resolveTripPaywallActivationMode,
+    shouldShowTripPaywall,
 } from '../../config/paywall';
 import { makeActivityItem, makeCityItem, makeTrip, makeTravelItem } from '../helpers/tripFixtures';
 
@@ -34,6 +35,32 @@ describe('config/paywall', () => {
 
     const active = makeTrip({ status: 'active' });
     expect(shouldShowTripPaywall(active)).toBe(false);
+  });
+
+  it('resolves paywall activation mode from auth and route context', () => {
+    expect(resolveTripPaywallActivationMode({
+      isAuthenticated: false,
+      isAnonymous: false,
+      isTripDetailRoute: true,
+    })).toBe('login_modal');
+
+    expect(resolveTripPaywallActivationMode({
+      isAuthenticated: true,
+      isAnonymous: true,
+      isTripDetailRoute: true,
+    })).toBe('login_modal');
+
+    expect(resolveTripPaywallActivationMode({
+      isAuthenticated: true,
+      isAnonymous: false,
+      isTripDetailRoute: false,
+    })).toBe('login_modal');
+
+    expect(resolveTripPaywallActivationMode({
+      isAuthenticated: true,
+      isAnonymous: false,
+      isTripDetailRoute: true,
+    })).toBe('direct_reactivate');
   });
 
   it('builds deterministic paywalled trip masking', () => {

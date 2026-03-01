@@ -8,7 +8,10 @@ import { getExampleMapViewTransitionName, getExampleTitleViewTransitionName } fr
 import { type DbTripAccessMetadata } from '../services/dbApi';
 import {
     buildPaywalledTripDisplay,
+    resolveTripPaywallActivationMode,
+    type TripPaywallActivationMode,
 } from '../config/paywall';
+import { resolveTripExpiryFromEntitlements } from '../config/productLimits';
 import { trackEvent } from '../services/analyticsService';
 import { removeLocalStorageItem } from '../services/browserStorageService';
 import { useLoginModal } from '../hooks/useLoginModal';
@@ -464,7 +467,8 @@ interface TripViewModalLayerProps {
     onCopyTrip?: () => void;
     expirationLabel: string | null;
     tripId: string;
-    onPaywallLoginClick: (
+    paywallActivationMode: TripPaywallActivationMode;
+    onPaywallActivateClick: (
         event: React.MouseEvent<HTMLAnchorElement>,
         analyticsEvent: 'trip_paywall__strip--activate' | 'trip_paywall__overlay--activate',
         source: 'trip_paywall_strip' | 'trip_paywall_overlay'
@@ -538,7 +542,8 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
     onCopyTrip,
     expirationLabel,
     tripId,
-    onPaywallLoginClick,
+    paywallActivationMode,
+    onPaywallActivateClick,
     showGenerationOverlay,
     generationProgressMessage,
     loadingDestinationSummary,
@@ -651,7 +656,8 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
             isPaywallLocked={isPaywallLocked}
             expirationLabel={expirationLabel}
             tripId={tripId}
-            onPaywallLoginClick={onPaywallLoginClick}
+            paywallActivationMode={paywallActivationMode}
+            onPaywallActivateClick={onPaywallActivateClick}
             showGenerationOverlay={showGenerationOverlay}
             generationProgressMessage={generationProgressMessage}
             loadingDestinationSummary={loadingDestinationSummary}
@@ -812,15 +818,48 @@ const useTripViewRender = ({
         return `/admin/trips?user=${encodeURIComponent(adminAccess.ownerId)}&drawer=user`;
     }, [adminAccess?.ownerId, isAdminFallbackView]);
 
-    const handlePaywallLoginClick = useCallback((
+    const paywallActivationMode = useMemo<TripPaywallActivationMode>(
+        () => resolveTripPaywallActivationMode({
+            isAuthenticated,
+            isAnonymous,
+            isTripDetailRoute,
+        }),
+        [isAnonymous, isAuthenticated, isTripDetailRoute]
+    );
+
+    const handlePaywallActivateClick = useCallback((
         event: React.MouseEvent<HTMLAnchorElement>,
         analyticsEvent: 'trip_paywall__strip--activate' | 'trip_paywall__overlay--activate',
         source: 'trip_paywall_strip' | 'trip_paywall_overlay'
     ) => {
-        trackEvent(analyticsEvent, { trip_id: trip.id });
+        trackEvent(analyticsEvent, {
+            trip_id: trip.id,
+            activation_mode: paywallActivationMode,
+        });
         if (!isPlainLeftClick(event)) return;
 
         event.preventDefault();
+        if (paywallActivationMode === 'direct_reactivate') {
+            const now = Date.now();
+            const reactivatedTrip: ITrip = {
+                ...tripRef.current,
+                status: 'active',
+                tripExpiresAt: resolveTripExpiryFromEntitlements(
+                    now,
+                    undefined,
+                    access?.entitlements.tripExpirationDays
+                ),
+                updatedAt: now,
+            };
+            onUpdateTrip(reactivatedTrip);
+            showAppToast({
+                tone: 'add',
+                title: t('tripPaywall.reactivate.toast.title'),
+                description: t('tripPaywall.reactivate.toast.description'),
+            });
+            return;
+        }
+
         openLoginModal({
             source,
             nextPath: buildPathFromLocationParts({
@@ -830,7 +869,17 @@ const useTripViewRender = ({
             }),
             reloadOnSuccess: true,
         });
-    }, [location.hash, location.pathname, location.search, openLoginModal, trip.id]);
+    }, [
+        access?.entitlements.tripExpirationDays,
+        location.hash,
+        location.pathname,
+        location.search,
+        onUpdateTrip,
+        openLoginModal,
+        paywallActivationMode,
+        t,
+        trip.id,
+    ]);
 
     const {
         canUseAuthenticatedSession,
@@ -1777,7 +1826,8 @@ const useTripViewRender = ({
                     isPaywallLocked={isPaywallLocked}
                     expirationLabel={expirationLabel}
                     expirationRelativeLabel={expirationRelativeLabel}
-                    onPaywallLoginClick={handlePaywallLoginClick}
+                    paywallActivationMode={paywallActivationMode}
+                    onPaywallActivateClick={handlePaywallActivateClick}
                     tripId={trip.id}
                     connectivityState={showOwnedTripConnectivityStatus ? connectivitySnapshot.state : undefined}
                     connectivityReason={showOwnedTripConnectivityStatus ? connectivitySnapshot.reason : null}
@@ -1961,7 +2011,8 @@ const useTripViewRender = ({
                         onCopyTrip={onCopyTrip}
                         expirationLabel={expirationLabel}
                         tripId={trip.id}
-                        onPaywallLoginClick={handlePaywallLoginClick}
+                        paywallActivationMode={paywallActivationMode}
+                        onPaywallActivateClick={handlePaywallActivateClick}
                         showGenerationOverlay={showGenerationOverlay}
                         generationProgressMessage={generationProgressMessage}
                         loadingDestinationSummary={loadingDestinationSummary}

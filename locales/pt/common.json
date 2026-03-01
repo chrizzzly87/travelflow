@@ -219,5 +219,38 @@
         "online": "Connection is healthy and sync is up to date."
       }
     }
+  },
+  "tripPaywall": {
+    "strip": {
+      "directSinceDate": "A pré-visualização da viagem está em pausa desde {date}. Reative agora para desbloquear o modo de planeamento completo.",
+      "directNoDate": "A pré-visualização da viagem está em pausa. Reative agora para desbloquear o modo de planeamento completo.",
+      "loginSinceDate": "A pré-visualização da viagem está em pausa desde {date}. Inicie sessão para reativar e desbloquear o modo de planeamento completo.",
+      "loginNoDate": "A pré-visualização da viagem está em pausa. Inicie sessão para reativar e desbloquear o modo de planeamento completo."
+    },
+    "overlay": {
+      "eyebrow": "Pré-visualização em pausa",
+      "title": {
+        "direct": "Reative esta viagem para continuar a planear",
+        "login": "Inicie sessão para reativar esta viagem"
+      },
+      "description": {
+        "direct": "Já tem sessão iniciada. Reative agora para restaurar edição, nomes dos destinos e rotas no mapa.",
+        "login": "Inicie sessão para restaurar edição, nomes dos destinos e rotas no mapa."
+      },
+      "footer": {
+        "withDate": "Expirou em {date}. O modo de pré-visualização continua visível até reativar.",
+        "noDate": "O modo de pré-visualização continua visível até reativar."
+      }
+    },
+    "reactivate": {
+      "actions": {
+        "direct": "Reativar viagem",
+        "login": "Iniciar sessão para reativar"
+      },
+      "toast": {
+        "title": "Viagem reativada",
+        "description": "O modo de planeamento completo voltou a estar disponível."
+      }
+    }
   }
 }

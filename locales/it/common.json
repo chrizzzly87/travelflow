@@ -219,5 +219,38 @@
         "online": "Connection is healthy and sync is up to date."
       }
     }
+  },
+  "tripPaywall": {
+    "strip": {
+      "directSinceDate": "L’anteprima del viaggio è in pausa dal {date}. Riattiva ora per sbloccare la modalità di pianificazione completa.",
+      "directNoDate": "L’anteprima del viaggio è in pausa. Riattiva ora per sbloccare la modalità di pianificazione completa.",
+      "loginSinceDate": "L’anteprima del viaggio è in pausa dal {date}. Accedi per riattivare e sbloccare la modalità di pianificazione completa.",
+      "loginNoDate": "L’anteprima del viaggio è in pausa. Accedi per riattivare e sbloccare la modalità di pianificazione completa."
+    },
+    "overlay": {
+      "eyebrow": "Anteprima viaggio in pausa",
+      "title": {
+        "direct": "Riattiva questo viaggio per continuare a pianificare",
+        "login": "Accedi per riattivare questo viaggio"
+      },
+      "description": {
+        "direct": "Hai già effettuato l’accesso. Riattiva ora per ripristinare modifica, nomi delle destinazioni e percorsi sulla mappa.",
+        "login": "Accedi per ripristinare modifica, nomi delle destinazioni e percorsi sulla mappa."
+      },
+      "footer": {
+        "withDate": "Scaduto il {date}. La modalità anteprima resta visibile finché non riattivi.",
+        "noDate": "La modalità anteprima resta visibile finché non riattivi."
+      }
+    },
+    "reactivate": {
+      "actions": {
+        "direct": "Riattiva viaggio",
+        "login": "Accedi per riattivare"
+      },
+      "toast": {
+        "title": "Viaggio riattivato",
+        "description": "La modalità di pianificazione completa è di nuovo disponibile."
+      }
+    }
   }
 }

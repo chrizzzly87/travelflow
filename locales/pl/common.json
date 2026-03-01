@@ -217,5 +217,38 @@
         "online": "Connection is healthy and sync is up to date."
       }
     }
+  },
+  "tripPaywall": {
+    "strip": {
+      "directSinceDate": "Podgląd podróży jest wstrzymany od {date}. Aktywuj ponownie teraz, aby odblokować pełny tryb planowania.",
+      "directNoDate": "Podgląd podróży jest wstrzymany. Aktywuj ponownie teraz, aby odblokować pełny tryb planowania.",
+      "loginSinceDate": "Podgląd podróży jest wstrzymany od {date}. Zaloguj się, aby aktywować ponownie i odblokować pełny tryb planowania.",
+      "loginNoDate": "Podgląd podróży jest wstrzymany. Zaloguj się, aby aktywować ponownie i odblokować pełny tryb planowania."
+    },
+    "overlay": {
+      "eyebrow": "Podgląd podróży wstrzymany",
+      "title": {
+        "direct": "Aktywuj ponownie tę podróż, aby dalej planować",
+        "login": "Zaloguj się, aby aktywować ponownie tę podróż"
+      },
+      "description": {
+        "direct": "Jesteś zalogowany. Aktywuj ponownie teraz, aby przywrócić edycję, nazwy miejsc i trasy na mapie.",
+        "login": "Zaloguj się, aby przywrócić edycję, nazwy miejsc i trasy na mapie."
+      },
+      "footer": {
+        "withDate": "Wygasło {date}. Tryb podglądu pozostaje widoczny do ponownej aktywacji.",
+        "noDate": "Tryb podglądu pozostaje widoczny do ponownej aktywacji."
+      }
+    },
+    "reactivate": {
+      "actions": {
+        "direct": "Aktywuj podróż",
+        "login": "Zaloguj się, aby aktywować"
+      },
+      "toast": {
+        "title": "Podróż aktywowana",
+        "description": "Pełny tryb planowania jest ponownie dostępny."
+      }
+    }
   }
 }
