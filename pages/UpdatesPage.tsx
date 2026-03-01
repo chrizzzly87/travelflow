@@ -4,6 +4,7 @@ import remarkGfm from 'remark-gfm';
 import { useTranslation } from 'react-i18next';
 import { MarketingLayout } from '../components/marketing/MarketingLayout';
 import { ReleasePill } from '../components/marketing/ReleasePill';
+import { useAuth } from '../hooks/useAuth';
 import { getPublishedReleaseNotes, getWebsiteVisibleItems, groupReleaseItemsByType } from '../services/releaseNotesService';
 import { readLocalStorageItem } from '../services/browserStorageService';
 
@@ -68,10 +69,11 @@ const readInitialSimulatedLogin = (): boolean => {
 
 export const UpdatesPage: React.FC = () => {
     const { t } = useTranslation('pages');
+    const { isAdmin } = useAuth();
     const releases = useMemo(() => getPublishedReleaseNotes(), []);
     const [isDebuggerOpen, setIsDebuggerOpen] = useState<boolean>(() => readInitialDebuggerOpen());
     const [isSimulatedLoggedIn, setIsSimulatedLoggedIn] = useState<boolean>(() => readInitialSimulatedLogin());
-    const showInternalNews = isDebuggerOpen || isSimulatedLoggedIn;
+    const showInternalNews = isAdmin || isDebuggerOpen || isSimulatedLoggedIn;
 
     useEffect(() => {
         const syncFromHost = () => {
