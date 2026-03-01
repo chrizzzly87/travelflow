@@ -4731,7 +4731,7 @@ begin
     if exists (
       select 1
       from public.username_blocked_terms ubt
-      where v_new_username like ('%' || lower(ubt.term) || '%')
+      where lower(v_new_username) ~ ('(^|[-_])' || lower(ubt.term) || '($|[-_])')
         and ubt.active = true
     ) then
       raise exception 'Username is blocked';
@@ -4991,7 +4991,7 @@ begin
   if exists (
     select 1
     from public.username_blocked_terms ubt
-    where v_username like ('%' || lower(ubt.term) || '%')
+    where lower(v_username) ~ ('(^|[-_])' || lower(ubt.term) || '($|[-_])')
       and ubt.active = true
   ) then
     v_log_reason := 'blocked';
