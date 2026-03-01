@@ -17,6 +17,8 @@ export interface AdminUserRecord {
     first_name?: string | null;
     last_name?: string | null;
     username?: string | null;
+    username_display?: string | null;
+    username_changed_at?: string | null;
     gender?: string | null;
     country?: string | null;
     city?: string | null;
@@ -132,7 +134,7 @@ const normalizeProfileGender = (value: string | null | undefined): string | null
 
 const normalizeUsernameHandle = (value: string | null | undefined): string | null => {
     if (typeof value !== 'string') return null;
-    const normalized = value.trim().toLowerCase().replace(/^@+/, '');
+    const normalized = value.trim().replace(/^@+/, '');
     return normalized || null;
 };
 
@@ -162,6 +164,9 @@ export const adminListUsers = async (
             entitlements_override: null,
             first_name: `TestName${i}`,
             last_name: `LastName${i}`,
+            username: `test_user_${i}`,
+            username_display: `TestUser${i}`,
+            username_changed_at: null,
         }));
         return mockUsers;
     }
@@ -257,6 +262,22 @@ export const adminUpdateUserProfile = async (
     if (error) throw new Error(error.message || 'Could not update user profile.');
 };
 
+export const adminResetUserUsernameCooldown = async (
+    userId: string,
+    reason: string | null = 'admin.manual_reset'
+): Promise<void> => {
+    if (shouldUseAdminMockData()) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        return;
+    }
+    const client = requireSupabase();
+    const { error } = await client.rpc('admin_reset_user_username_cooldown', {
+        p_user_id: userId,
+        p_reason: reason,
+    });
+    if (error) throw new Error(error.message || 'Could not reset username cooldown.');
+};
+
 export const adminGetUserProfile = async (userId: string): Promise<AdminUserRecord | null> => {
     if (shouldUseAdminMockData()) {
         const now = new Date();
@@ -272,6 +293,9 @@ export const adminGetUserProfile = async (userId: string): Promise<AdminUserReco
             entitlements_override: null,
             first_name: `MockUser`,
             last_name: `Profile`,
+            username: 'mockuserprofile',
+            username_display: 'MockUserProfile',
+            username_changed_at: null,
         };
     }
     const client = requireSupabase();
@@ -384,6 +408,7 @@ export const adminOverrideTripCommit = async (payload: {
     startDate?: string | null;
     isFavorite?: boolean | null;
     label?: string | null;
+    metadata?: Record<string, unknown> | null;
 }): Promise<void> => {
     if (shouldUseAdminMockData()) {
         await new Promise((resolve) => setTimeout(resolve, 500));
@@ -393,7 +418,7 @@ export const adminOverrideTripCommit = async (payload: {
     const normalizedStartDate = typeof payload.startDate === 'string'
         ? payload.startDate.trim().slice(0, 10) || null
         : null;
-    const { error } = await client.rpc('admin_override_trip_commit', {
+    const rpcPayload = {
         p_trip_id: payload.tripId,
         p_data: payload.data,
         p_view: payload.viewSettings ?? null,
@@ -401,7 +426,21 @@ export const adminOverrideTripCommit = async (payload: {
         p_start_date: normalizedStartDate,
         p_is_favorite: typeof payload.isFavorite === 'boolean' ? payload.isFavorite : null,
         p_label: payload.label ?? null,
-    });
+        p_metadata: payload.metadata ?? null,
+    };
+    let { error } = await client.rpc('admin_override_trip_commit', rpcPayload);
+    if (error && /function/i.test(error.message || '') && /admin_override_trip_commit/i.test(error.message || '')) {
+        const fallback = await client.rpc('admin_override_trip_commit', {
+            p_trip_id: payload.tripId,
+            p_data: payload.data,
+            p_view: payload.viewSettings ?? null,
+            p_title: payload.title ?? null,
+            p_start_date: normalizedStartDate,
+            p_is_favorite: typeof payload.isFavorite === 'boolean' ? payload.isFavorite : null,
+            p_label: payload.label ?? null,
+        });
+        error = fallback.error;
+    }
     if (error) throw new Error(error.message || 'Could not create admin override commit.');
 };
 
@@ -519,6 +558,16 @@ export const adminListUserChangeLogs = async (
     });
     if (error) throw new Error(error.message || 'Could not load user change logs.');
     return (Array.isArray(data) ? data : []) as AdminUserChangeRecord[];
+};
+
+export const adminGetUserChangeLog = async (eventId: string): Promise<AdminUserChangeRecord | null> => {
+    const client = requireSupabase();
+    const { data, error } = await client.rpc('admin_get_user_change_log', {
+        p_event_id: eventId,
+    });
+    if (error) throw new Error(error.message || 'Could not load user change log.');
+    const row = Array.isArray(data) ? data[0] : data;
+    return row ? (row as AdminUserChangeRecord) : null;
 };
 
 export const adminGetTripVersionSnapshots = async (

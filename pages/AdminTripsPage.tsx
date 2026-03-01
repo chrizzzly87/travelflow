@@ -85,6 +85,7 @@ const getUserDisplayName = (user: AdminUserRecord): string => {
     const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ').trim();
     if (fullName) return fullName;
     if (user.display_name?.trim()) return user.display_name.trim();
+    if (user.username_display?.trim()) return user.username_display.trim();
     if (user.username?.trim()) return user.username.trim();
     if (user.email?.trim()) return user.email.trim();
     return user.user_id;

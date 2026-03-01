@@ -55,6 +55,7 @@ This document is the operational source of truth for:
 - Audit row actions provide confirm-based undo for supported entries.
 - Undo writes a fresh admin audit event (append-only model).
 - Supported user-originated undo targets:
+  - `trip.created` (safe archive-based revert),
   - `trip.updated` (snapshot rollback through `admin_override_trip_commit`),
   - `trip.archived` (status restore via `admin_update_trip`),
   - `profile.updated` (field rollback via `admin_update_user_profile` for supported profile fields).
@@ -62,8 +63,14 @@ This document is the operational source of truth for:
   - `admin.trip.override_commit`,
   - `admin.trip.update`,
   - `admin.user.update_profile`,
-  - `admin.user.update_tier`.
+  - `admin.user.update_tier`,
+  - `admin.user.update_overrides`,
+  - `admin.tier.update_entitlements`.
 - Non-supported actions remain non-destructive/read-only in row actions.
+- Undo rows for trip rollback resolve source event IDs and render inverted fine-grained diff entries (for example `transport_mode`) instead of only full JSON snapshots.
+- Chained undos (undoing a prior undo row) preserve fine-grained diff rendering by recursively resolving source events with parity-safe inversion.
+- New undo rows now persist explicit linkage metadata (`undo_source_event_id`, `undo_root_source_event_id`, `undo_parity`) so rendering does not depend on label parsing.
+- Admin audit UI also performs by-id lookup for missing source user-change events (out-of-window/history cases) before falling back to snapshot-only rendering.
 
 ## Current User Action Taxonomy
 - Primary trip actions:

@@ -63,7 +63,7 @@ const formatPrivateDisplayName = (profile: UserProfileRecord | null, fallback: s
     const firstName = profile?.firstName?.trim() || '';
     const lastInitial = profile?.lastName?.trim().charAt(0) || '';
     if (firstName) return `${firstName}${lastInitial ? ` ${lastInitial}.` : ''}`;
-    return profile?.displayName || profile?.username || fallback;
+    return profile?.displayName || profile?.usernameDisplay || profile?.username || fallback;
 };
 
 const upsertPublicProfileRobotsMeta = (content: string | null): void => {
@@ -122,9 +122,15 @@ export const PublicProfilePage: React.FC = () => {
     useEffect(() => {
         if (isAuthLoading) return;
 
-        const handle = (username || '').trim().toLowerCase();
+        const rawHandle = (username || '').trim();
+        const handle = rawHandle.toLowerCase();
         if (!handle) {
             setState({ status: 'not_found', profile: null });
+            return;
+        }
+
+        if (rawHandle !== handle) {
+            navigate(buildPath('publicProfile', { username: handle }), { replace: true });
             return;
         }
 
@@ -171,8 +177,8 @@ export const PublicProfilePage: React.FC = () => {
 
                 if (result.status === 'redirect' && result.canonicalUsername) {
                     const canonicalPath = buildPath('publicProfile', { username: result.canonicalUsername });
-                    const normalizedCurrent = buildPath('publicProfile', { username: handle });
-                    if (canonicalPath !== normalizedCurrent) {
+                    const currentPath = buildPath('publicProfile', { username: rawHandle });
+                    if (canonicalPath !== currentPath) {
                         navigate(canonicalPath, { replace: true });
                         return;
                     }
@@ -250,6 +256,7 @@ export const PublicProfilePage: React.FC = () => {
         : (
             state.profile?.displayName
             || [state.profile?.firstName || '', state.profile?.lastName || ''].filter(Boolean).join(' ')
+            || state.profile?.usernameDisplay
             || state.profile?.username
             || t('fallback.displayName')
         );
@@ -383,7 +390,7 @@ export const PublicProfilePage: React.FC = () => {
                     <section className="flex justify-center">
                         <ProfileVisitorSummary
                             displayName={displayName}
-                            username={state.profile?.username || ''}
+                            username={state.profile?.usernameDisplay || state.profile?.username || ''}
                             initials={initialsFromProfile(state.profile)}
                             status={profileStatus}
                             bio=""
@@ -455,7 +462,7 @@ export const PublicProfilePage: React.FC = () => {
                     <>
                         <ProfileVisitorSummary
                             displayName={displayName}
-                            username={state.profile.username || ''}
+                            username={state.profile.usernameDisplay || state.profile.username || ''}
                             initials={initialsFromProfile(state.profile)}
                             status={profileStatus}
                             bio={state.profile.bio || ''}
