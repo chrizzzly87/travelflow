@@ -44,6 +44,7 @@ summary: "Admin overview and trip operations now stay on live records, with expa
 - [ ] [Fixed] 🚫 Trip creation-limit checks no longer create anonymous DB accounts during read-only eligibility checks.
 - [ ] [Fixed] 🧯 Added a safe auth-context fallback so rare route recovery states no longer crash with “useAuthContext must be used within AuthProvider.”
 - [ ] [Improved] ➕ Profile now keeps the top-right navigation “Create Trip” action visible for signed-in users on `/profile` for consistent access.
+- [x] [Fixed] 📱 On mobile, the signed-in profile button is now hidden in the header to keep layout spacing stable, with account actions available in the menu.
 - [x] [Improved] ✉️ Login now better supports saved email autofill with stronger form accessibility labeling.
 - [ ] [Internal] 🧪 Added regression coverage for the admin mock-mode guard to prevent production mock-data leakage.
 - [ ] [Internal] 🗃️ Added DB-backed profile user-event capture and a unified admin query path for user change logs.
