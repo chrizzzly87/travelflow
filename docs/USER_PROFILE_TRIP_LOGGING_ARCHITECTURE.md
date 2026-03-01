@@ -68,6 +68,7 @@ This document is the operational source of truth for:
   - `admin.tier.update_entitlements`.
 - Non-supported actions remain non-destructive/read-only in row actions.
 - Undo rows for trip rollback resolve source event IDs and render inverted fine-grained diff entries (for example `transport_mode`) instead of only full JSON snapshots.
+- Chained undos (undoing a prior undo row) preserve fine-grained diff rendering by recursively resolving source events with parity-safe inversion.
 
 ## Current User Action Taxonomy
 - Primary trip actions:
