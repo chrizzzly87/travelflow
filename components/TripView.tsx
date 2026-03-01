@@ -300,6 +300,7 @@ interface TripViewProps {
     suppressToasts?: boolean;
     suppressReleaseNotice?: boolean;
     adminAccess?: DbTripAccessMetadata;
+    tripAccess?: DbTripAccessMetadata;
     exampleTripBanner?: {
         title: string;
         countries: string[];
@@ -417,6 +418,14 @@ interface TripViewModalLayerProps {
     onToggleFavorite: () => void;
     isExamplePreview: boolean;
     tripMeta: any;
+    ownerSummary: string | null;
+    ownerHint: string | null;
+    adminMeta: {
+        ownerUserId: string | null;
+        ownerUsername: string | null;
+        ownerEmail: string | null;
+        accessSource: string | null;
+    } | null;
     aiMeta: ITrip['aiMeta'];
     forkMeta: { label: string; url: string | null } | null;
     isTripInfoHistoryExpanded: boolean;
@@ -486,6 +495,9 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
     onToggleFavorite,
     isExamplePreview,
     tripMeta,
+    ownerSummary,
+    ownerHint,
+    adminMeta,
     aiMeta,
     forkMeta,
     isTripInfoHistoryExpanded,
@@ -567,6 +579,9 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
                     onToggleFavorite={onToggleFavorite}
                     isExamplePreview={isExamplePreview}
                     tripMeta={tripMeta}
+                    ownerSummary={ownerSummary}
+                    ownerHint={ownerHint}
+                    adminMeta={adminMeta}
                     aiMeta={aiMeta}
                     forkMeta={forkMeta}
                     isTripInfoHistoryExpanded={isTripInfoHistoryExpanded}
@@ -737,12 +752,13 @@ const useTripViewRender = ({
     suppressToasts = false,
     suppressReleaseNotice = false,
     adminAccess,
+    tripAccess,
     exampleTripBanner,
 }: TripViewProps): React.ReactElement => {
     const navigate = useNavigate();
     const location = useLocation();
     const { openLoginModal } = useLoginModal();
-    const { isAuthenticated, isAnonymous, isAdmin, logout } = useAuth();
+    const { access, profile, isAuthenticated, isAnonymous, isAdmin, logout } = useAuth();
     const isTripDetailRoute = location.pathname.startsWith('/trip/');
     const locationState = location.state as ExampleTransitionLocationState | null;
     const useExampleSharedTransition = trip.isExample && (locationState?.useExampleSharedTransition ?? true);
@@ -882,6 +898,8 @@ const useTripViewRender = ({
     const {
         layoutMode,
         setLayoutMode,
+        timelineMode,
+        setTimelineMode,
         timelineView,
         setTimelineView,
         mapStyle,
@@ -1055,6 +1073,7 @@ const useTripViewRender = ({
 
     const currentViewSettings: IViewSettings = useMemo(() => ({
         layoutMode,
+        timelineMode,
         timelineView,
         mapStyle,
         routeMode,
@@ -1062,10 +1081,11 @@ const useTripViewRender = ({
         zoomLevel,
         sidebarWidth,
         timelineHeight
-    }), [layoutMode, timelineView, mapStyle, routeMode, showCityNames, zoomLevel, sidebarWidth, timelineHeight]);
+    }), [layoutMode, timelineMode, timelineView, mapStyle, routeMode, showCityNames, zoomLevel, sidebarWidth, timelineHeight]);
 
     useTripViewSettingsSync({
         layoutMode,
+        timelineMode,
         timelineView,
         mapStyle,
         routeMode,
@@ -1080,6 +1100,7 @@ const useTripViewRender = ({
         setMapStyle,
         setRouteMode,
         setLayoutMode,
+        setTimelineMode,
         setTimelineView,
         setZoomLevel,
         setSidebarWidth,
@@ -1259,6 +1280,7 @@ const useTripViewRender = ({
         if (prev.routeMode !== routeMode) changes.push(`Route view: ${prev.routeMode} → ${routeMode}`);
         if (prev.showCityNames !== showCityNames) changes.push(`City names: ${prev.showCityNames ? 'on' : 'off'} → ${showCityNames ? 'on' : 'off'}`);
         if (prev.layoutMode !== layoutMode) changes.push(`Map layout: ${prev.layoutMode} → ${layoutMode}`);
+        if ((prev.timelineMode || 'calendar') !== timelineMode) changes.push(`Timeline mode: ${prev.timelineMode || 'calendar'} → ${timelineMode}`);
         if (prev.timelineView !== timelineView) changes.push(`Timeline layout: ${prev.timelineView} → ${timelineView}`);
         if (prev.zoomLevel !== zoomLevel) changes.push(zoomLevel > prev.zoomLevel ? 'Zoomed in' : 'Zoomed out');
 
@@ -1271,7 +1293,7 @@ const useTripViewRender = ({
         }
 
         prevViewRef.current = currentViewSettings;
-    }, [currentViewSettings, layoutMode, mapStyle, routeMode, showCityNames, timelineView, zoomLevel, setPendingLabel, scheduleCommit]);
+    }, [currentViewSettings, layoutMode, mapStyle, routeMode, showCityNames, timelineMode, timelineView, zoomLevel, setPendingLabel, scheduleCommit]);
 
     const { handleToggleFavorite } = useTripFavoriteHandler({
         trip,
@@ -1427,6 +1449,7 @@ const useTripViewRender = ({
         handleTimelineResizeKeyDown,
     } = useTripResizeControls({
         layoutMode,
+        timelineMode,
         timelineView,
         horizontalTimelineDayCount,
         zoomLevel,
@@ -1468,9 +1491,70 @@ const useTripViewRender = ({
         isMobileMapExpanded,
     });
     const canManageTripMetadata = canEdit && !shareStatus && !isExamplePreview;
+    const isAdminSession = access?.role === 'admin';
+    const ownerSummary = useMemo(() => {
+        const ownerUsername = tripAccess?.ownerUsername?.trim() || null;
+        const ownerEmail = tripAccess?.ownerEmail?.trim() || null;
+        const ownerId = tripAccess?.ownerId?.trim() || null;
+        const currentUserId = access?.userId?.trim() || null;
+        const currentUsername = profile?.username?.trim() || null;
+        const isOwner = Boolean(
+            tripAccess?.source === 'owner'
+            || (ownerId && currentUserId && ownerId === currentUserId)
+        );
+
+        if (ownerUsername) {
+            const normalizedHandle = ownerUsername.startsWith('@') ? ownerUsername : `@${ownerUsername}`;
+            return `${normalizedHandle}${isOwner ? ' (you)' : ''}`;
+        }
+        if (ownerEmail) {
+            return `${ownerEmail}${isOwner ? ' (you)' : ''}`;
+        }
+        if (ownerId && isAdminSession) {
+            return `${ownerId}${isOwner ? ' (you)' : ''}`;
+        }
+        if (isOwner && currentUsername) {
+            const normalizedHandle = currentUsername.startsWith('@') ? currentUsername : `@${currentUsername}`;
+            return `${normalizedHandle} (you)`;
+        }
+        if (isOwner) return 'You';
+        if (ownerId) return 'Traveler';
+        return null;
+    }, [
+        isAdminSession,
+        access?.userId,
+        profile?.username,
+        tripAccess?.ownerEmail,
+        tripAccess?.ownerId,
+        tripAccess?.ownerUsername,
+        tripAccess?.source,
+    ]);
+    const tripOwnerAdminMeta = useMemo(() => {
+        if (!isAdminSession) return null;
+        const ownerUserId = (tripAccess?.ownerId?.trim() || access?.userId?.trim() || null);
+        const ownerUsername = (tripAccess?.ownerUsername?.trim() || profile?.username?.trim() || null);
+        const ownerEmail = (tripAccess?.ownerEmail?.trim() || access?.email?.trim() || null);
+        const accessSource = tripAccess?.source || (ownerUserId ? 'owner' : null);
+        return {
+            ownerUserId,
+            ownerUsername,
+            ownerEmail,
+            accessSource,
+        };
+    }, [isAdminSession, tripAccess?.ownerId, tripAccess?.ownerUsername, tripAccess?.ownerEmail, tripAccess?.source, access?.userId, access?.email, profile?.username]);
+    const ownerHint = useMemo(() => {
+        if (tripAccess?.source === 'public_read') {
+            return 'You are viewing a public trip owned by another account. Archive and edit actions are disabled.';
+        }
+        if (tripAccess?.source === 'admin_fallback' && !adminOverrideEnabled) {
+            return 'This is an admin fallback view. Enable admin override above to edit as an admin.';
+        }
+        return null;
+    }, [adminOverrideEnabled, tripAccess?.source]);
 
     const timelineCanvas = (
         <TripTimelineCanvas
+            timelineMode={timelineMode}
             timelineView={timelineView}
             trip={displayTrip}
             onUpdateItems={handleUpdateItems}
@@ -1633,14 +1717,41 @@ const useTripViewRender = ({
                         onTimelineTouchMove={handleTimelineTouchMove}
                         onTimelineTouchEnd={handleTimelineTouchEnd}
                         onZoomOut={() => {
+                            trackEvent('trip_view__zoom', {
+                                direction: 'out',
+                                trip_id: trip.id,
+                                timeline_mode: timelineMode,
+                            });
                             markZoomDirty();
                             setZoomLevel((value) => clampZoomLevel(value - 0.1));
                         }}
                         onZoomIn={() => {
+                            trackEvent('trip_view__zoom', {
+                                direction: 'in',
+                                trip_id: trip.id,
+                                timeline_mode: timelineMode,
+                            });
                             markZoomDirty();
                             setZoomLevel((value) => clampZoomLevel(value + 0.1));
                         }}
-                        onToggleTimelineView={() => setTimelineView((value) => (value === 'horizontal' ? 'vertical' : 'horizontal'))}
+                        onTimelineModeChange={(mode) => {
+                            if (mode === timelineMode) return;
+                            trackEvent(mode === 'calendar' ? 'trip_view__mode--calendar' : 'trip_view__mode--timeline', {
+                                trip_id: trip.id,
+                            });
+                            setTimelineMode(mode);
+                        }}
+                        onTimelineViewChange={(view) => {
+                            if (view === timelineView) return;
+                            trackEvent(
+                                view === 'horizontal'
+                                    ? 'trip_view__layout_direction--horizontal'
+                                    : 'trip_view__layout_direction--vertical',
+                                { trip_id: trip.id, target: 'timeline' }
+                            );
+                            setTimelineView(view);
+                        }}
+                        timelineMode={timelineMode}
                         timelineView={timelineView}
                         mapViewportRef={mapViewportRef}
                         isMapBootstrapEnabled={isMapBootstrapEnabled}
@@ -1651,7 +1762,16 @@ const useTripViewRender = ({
                         selectedItemId={selectedItemId}
                         layoutMode={layoutMode}
                         effectiveLayoutMode={effectiveLayoutMode}
-                        onLayoutModeChange={setLayoutMode}
+                        onLayoutModeChange={(mode) => {
+                            if (mode === layoutMode) return;
+                            trackEvent(
+                                mode === 'horizontal'
+                                    ? 'trip_view__layout_direction--horizontal'
+                                    : 'trip_view__layout_direction--vertical',
+                                { trip_id: trip.id, target: 'map' }
+                            );
+                            setLayoutMode(mode);
+                        }}
                         mapStyle={mapStyle}
                         onMapStyleChange={setMapStyle}
                         routeMode={routeMode}
@@ -1702,6 +1822,9 @@ const useTripViewRender = ({
                         onToggleFavorite={handleToggleFavorite}
                         isExamplePreview={isExamplePreview}
                         tripMeta={tripMeta}
+                        ownerSummary={ownerSummary}
+                        ownerHint={ownerHint}
+                        adminMeta={tripOwnerAdminMeta}
                         aiMeta={displayTrip.aiMeta}
                         forkMeta={forkMeta}
                         isTripInfoHistoryExpanded={isTripInfoHistoryExpanded}

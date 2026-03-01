@@ -174,12 +174,17 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
                             <Suspense
                                 fallback={(
                                     <span
-                                        className="hidden h-9 w-9 rounded-full border border-slate-200 bg-slate-100 sm:inline-flex"
+                                        className="hidden h-9 w-9 rounded-full border border-slate-200 bg-slate-100 lg:inline-flex"
                                         aria-hidden="true"
                                     />
                                 )}
                             >
-                                <AccountMenu email={access?.email || null} userId={access?.userId || null} isAdmin={isAdmin} />
+                                <AccountMenu
+                                    email={access?.email || null}
+                                    userId={access?.userId || null}
+                                    isAdmin={isAdmin}
+                                    className="hidden lg:block"
+                                />
                             </Suspense>
                         ) : isLoading ? (
                             <span

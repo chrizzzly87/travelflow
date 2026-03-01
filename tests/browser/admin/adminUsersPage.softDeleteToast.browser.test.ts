@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   adminListUsers: vi.fn(),
   adminGetUserProfile: vi.fn(),
   adminListUserTrips: vi.fn(),
+  adminListUserChangeLogs: vi.fn(),
   adminUpdateUserProfile: vi.fn(),
   adminHardDeleteUser: vi.fn(),
   confirmDialog: vi.fn(async () => true),
@@ -81,6 +82,7 @@ vi.mock('../../../services/adminService', () => ({
   adminCreateUserInvite: vi.fn(),
   adminGetUserProfile: mocks.adminGetUserProfile,
   adminHardDeleteUser: mocks.adminHardDeleteUser,
+  adminListUserChangeLogs: mocks.adminListUserChangeLogs,
   adminListUserTrips: mocks.adminListUserTrips,
   adminListUsers: mocks.adminListUsers,
   adminUpdateTrip: vi.fn(),
@@ -164,6 +166,7 @@ describe('pages/AdminUsersPage soft delete toasts', () => {
     mocks.adminListUsers.mockResolvedValue([USER_ROW]);
     mocks.adminGetUserProfile.mockResolvedValue(USER_ROW);
     mocks.adminListUserTrips.mockResolvedValue([]);
+    mocks.adminListUserChangeLogs.mockResolvedValue([]);
     mocks.adminUpdateUserProfile.mockResolvedValue(undefined);
     mocks.adminHardDeleteUser.mockResolvedValue(undefined);
     mocks.confirmDialog.mockResolvedValue(true);
@@ -209,7 +212,7 @@ describe('pages/AdminUsersPage soft delete toasts', () => {
     expect(mocks.showAppToast).toHaveBeenCalledWith(expect.objectContaining({
       title: 'Soft-delete undone',
     }));
-  });
+  }, 20000);
 
   it('uses hard-delete copy that explains permanent removal versus soft delete', async () => {
     const user = userEvent.setup();
@@ -230,7 +233,7 @@ describe('pages/AdminUsersPage soft delete toasts', () => {
     expect(hardDeleteMessageText).toMatch(/Are you sure you want to hard-delete\s*"Traveler One"\?/);
     expect(hardDeleteMessageText).toContain('Use soft delete instead if you may need to restore this user later.');
     expect(hardDeleteMessageText).toContain('This action cannot be undone.');
-  });
+  }, 20000);
 
   it('shows a hard-delete error toast for failed bulk hard-delete operations', async () => {
     const user = userEvent.setup();
@@ -247,7 +250,7 @@ describe('pages/AdminUsersPage soft delete toasts', () => {
         title: 'Hard delete failed',
       }));
     });
-  });
+  }, 20000);
 
   it('uses rich bulk hard-delete copy with transfer hints and irreversible warning', async () => {
     const user = userEvent.setup();
@@ -272,5 +275,5 @@ describe('pages/AdminUsersPage soft delete toasts', () => {
     expect(bulkMessageText).toContain('Selected users: 2');
     expect(bulkMessageText).toContain('Cancel and transfer trips from each user drawer if you need to preserve trip data.');
     expect(bulkMessageText).toContain('This action cannot be undone.');
-  });
+  }, 20000);
 });

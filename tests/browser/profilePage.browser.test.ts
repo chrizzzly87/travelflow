@@ -6,6 +6,8 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import { makeTrip } from '../helpers/tripFixtures';
 
+const siteHeaderSpy = vi.hoisted(() => vi.fn());
+
 const mocks = vi.hoisted(() => ({
   auth: {
     isLoading: false,
@@ -32,12 +34,19 @@ const mocks = vi.hoisted(() => ({
   deleteTrip: vi.fn(),
   dbUpsertTrip: vi.fn(),
   dbArchiveTrip: vi.fn(),
+  syncTripsFromDb: vi.fn(),
   confirmDialog: vi.fn(),
   showAppToast: vi.fn(() => 'toast-id'),
 }));
 
 vi.mock('../../components/navigation/SiteHeader', () => ({
-  SiteHeader: () => React.createElement('div', { 'data-testid': 'site-header' }),
+  SiteHeader: (props: { hideCreateTrip?: boolean }) => {
+    siteHeaderSpy(props);
+    return React.createElement('div', {
+      'data-testid': 'site-header',
+      'data-hide-create-trip': String(Boolean(props?.hideCreateTrip)),
+    });
+  },
 }));
 
 vi.mock('../../hooks/useAuth', () => ({
@@ -58,6 +67,7 @@ vi.mock('../../services/dbService', () => ({
   DB_ENABLED: false,
   dbUpsertTrip: mocks.dbUpsertTrip,
   dbArchiveTrip: mocks.dbArchiveTrip,
+  syncTripsFromDb: mocks.syncTripsFromDb,
 }));
 
 vi.mock('../../components/AppDialogProvider', () => ({
@@ -109,6 +119,7 @@ describe('pages/ProfilePage query-driven tabs and sort', () => {
   beforeEach(() => {
     cleanup();
     vi.clearAllMocks();
+    siteHeaderSpy.mockClear();
     mocks.auth.isLoading = false;
     mocks.auth.isAuthenticated = true;
     mocks.auth.isAdmin = false;
@@ -234,6 +245,24 @@ describe('pages/ProfilePage query-driven tabs and sort', () => {
     expect(container.className).toContain('max-w-7xl');
     expect(container.className).toContain('px-5');
     expect(container.className).toContain('md:px-8');
+  });
+
+  it('keeps header create-trip CTA enabled on profile route', async () => {
+    renderProfilePage('/profile');
+
+    await waitFor(() => {
+      expect(screen.getByTestId('site-header')).toBeInTheDocument();
+    });
+    expect(siteHeaderSpy).toHaveBeenCalled();
+    expect(siteHeaderSpy.mock.calls.every(([props]) => props?.hideCreateTrip !== true)).toBe(true);
+  });
+
+  it('shows a clear create-trip shortcut on profile home', async () => {
+    renderProfilePage('/profile');
+
+    await waitFor(() => {
+      expect(screen.getAllByRole('link', { name: /common:createTrip/i }).length).toBeGreaterThan(0);
+    });
   });
 
   it('copies the public profile URL from the share action', async () => {

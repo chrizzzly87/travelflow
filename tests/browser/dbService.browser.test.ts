@@ -12,6 +12,7 @@ describe('services/dbService applyUserSettingsToLocalStorage', () => {
       mapStyle: 'clean',
       routeMode: 'realistic',
       layoutMode: 'vertical',
+      timelineMode: 'timeline',
       timelineView: 'vertical',
       showCityNames: false,
       zoomLevel: 2.5,
@@ -22,6 +23,7 @@ describe('services/dbService applyUserSettingsToLocalStorage', () => {
     expect(window.localStorage.getItem('tf_map_style')).toBe('clean');
     expect(window.localStorage.getItem('tf_route_mode')).toBe('realistic');
     expect(window.localStorage.getItem('tf_layout_mode')).toBe('vertical');
+    expect(window.localStorage.getItem('tf_timeline_mode')).toBe('timeline');
     expect(window.localStorage.getItem('tf_timeline_view')).toBe('vertical');
     expect(window.localStorage.getItem('tf_city_names')).toBe('false');
     expect(window.localStorage.getItem('tf_zoom_level')).toBe('2.50');
