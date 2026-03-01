@@ -3,7 +3,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { useAuth } from '../hooks/useAuth';
 import { DB_ENABLED } from '../config/db';
-import { ANONYMOUS_TRIP_EXPIRATION_DAYS, buildTripExpiryIso } from '../config/productLimits';
+import { resolveTripExpiryFromEntitlements } from '../config/productLimits';
 import { trackEvent } from '../services/analyticsService';
 import {
     dbCanCreateTrip,
@@ -91,16 +91,6 @@ export const ExampleTripLoaderRoute: React.FC<ExampleTripLoaderRouteProps> = ({
             templateFactory: undefined,
         }));
     }, []);
-
-    const resolveTripExpiry = (createdAtMs: number, existingTripExpiry?: string | null): string | null => {
-        if (typeof existingTripExpiry === 'string' && existingTripExpiry) return existingTripExpiry;
-        const expirationDays = access?.entitlements.tripExpirationDays;
-        if (expirationDays === null) return null;
-        if (typeof expirationDays === 'number' && expirationDays > 0) {
-            return buildTripExpiryIso(createdAtMs, expirationDays);
-        }
-        return buildTripExpiryIso(createdAtMs, ANONYMOUS_TRIP_EXPIRATION_DAYS);
-    };
 
     useEffect(() => {
         if (!templateId) {
@@ -239,7 +229,11 @@ export const ExampleTripLoaderRoute: React.FC<ExampleTripLoaderRouteProps> = ({
             isFavorite: false,
             isExample: false,
             status: 'active',
-            tripExpiresAt: resolveTripExpiry(now),
+            tripExpiresAt: resolveTripExpiryFromEntitlements(
+                now,
+                undefined,
+                access?.entitlements.tripExpirationDays
+            ),
             sourceKind: 'duplicate_trip',
             sourceTemplateId: templateId,
             sourceOwnerType: 'system_catalog',

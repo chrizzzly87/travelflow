@@ -17,6 +17,9 @@ export interface UserChangeSecondaryFacet {
     className: string;
 }
 
+type DiffEntryLike = Pick<UserChangeDiffEntry, 'key'>;
+type SecondaryFacetLike = Pick<UserChangeSecondaryFacet, 'code'>;
+
 const SECONDARY_FACET_MAP: Record<string, UserChangeSecondaryFacet> = {
     'trip.transport.updated': {
         code: 'trip.transport.updated',
@@ -506,3 +509,13 @@ export const resolveUserChangeSecondaryFacets = (
         .map((code) => SECONDARY_FACET_MAP[code] ?? null)
         .filter((facet): facet is UserChangeSecondaryFacet => Boolean(facet));
 };
+
+export const buildDiffEntryRenderKey = (
+    entry: DiffEntryLike,
+    index: number
+): string => `${entry.key}::${index}`;
+
+export const buildSecondaryFacetRenderKey = (
+    facet: SecondaryFacetLike,
+    index: number
+): string => `${facet.code}::${index}`;

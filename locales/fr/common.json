@@ -219,5 +219,38 @@
         "online": "Connection is healthy and sync is up to date."
       }
     }
+  },
+  "tripPaywall": {
+    "strip": {
+      "directSinceDate": "L’aperçu du voyage est en pause depuis le {date}. Réactivez-le maintenant pour débloquer le mode planification complet.",
+      "directNoDate": "L’aperçu du voyage est en pause. Réactivez-le maintenant pour débloquer le mode planification complet.",
+      "loginSinceDate": "L’aperçu du voyage est en pause depuis le {date}. Connectez-vous pour le réactiver et débloquer le mode planification complet.",
+      "loginNoDate": "L’aperçu du voyage est en pause. Connectez-vous pour le réactiver et débloquer le mode planification complet."
+    },
+    "overlay": {
+      "eyebrow": "Aperçu du voyage en pause",
+      "title": {
+        "direct": "Réactivez ce voyage pour continuer à planifier",
+        "login": "Connectez-vous pour réactiver ce voyage"
+      },
+      "description": {
+        "direct": "Vous êtes connecté. Réactivez maintenant pour rétablir l’édition, les noms de destinations et le routage sur la carte.",
+        "login": "Connectez-vous pour rétablir l’édition, les noms de destinations et le routage sur la carte."
+      },
+      "footer": {
+        "withDate": "Expiré le {date}. Le mode aperçu reste visible jusqu’à la réactivation.",
+        "noDate": "Le mode aperçu reste visible jusqu’à la réactivation."
+      }
+    },
+    "reactivate": {
+      "actions": {
+        "direct": "Réactiver le voyage",
+        "login": "Se connecter pour réactiver"
+      },
+      "toast": {
+        "title": "Voyage réactivé",
+        "description": "Le mode planification complet est de nouveau disponible."
+      }
+    }
   }
 }

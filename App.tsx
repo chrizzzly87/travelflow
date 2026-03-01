@@ -10,7 +10,7 @@ import { buildTripUrl, generateVersionId, getStoredAppLanguage, setStoredAppLang
 import { DB_ENABLED } from './config/db';
 import { GlobalTooltipLayer } from './components/GlobalTooltipLayer';
 import { trackEvent } from './services/analyticsService';
-import { ANONYMOUS_TRIP_EXPIRATION_DAYS, buildTripExpiryIso } from './config/productLimits';
+import { resolveTripExpiryFromEntitlements } from './config/productLimits';
 import { applyDocumentLocale, DEFAULT_LOCALE, normalizeLocale } from './config/locales';
 import {
     extractLocaleFromPath,
@@ -238,16 +238,6 @@ const AppContent: React.FC = () => {
         }
     }, [access, isAuthLoading, isAuthenticated, location.pathname, location.search, logout, navigate]);
 
-    const resolveTripExpiry = (createdAtMs: number, existingTripExpiry?: string | null): string | null => {
-        if (typeof existingTripExpiry === 'string' && existingTripExpiry) return existingTripExpiry;
-        const expirationDays = access?.entitlements.tripExpirationDays;
-        if (expirationDays === null) return null;
-        if (typeof expirationDays === 'number' && expirationDays > 0) {
-            return buildTripExpiryIso(createdAtMs, expirationDays);
-        }
-        return buildTripExpiryIso(createdAtMs, ANONYMOUS_TRIP_EXPIRATION_DAYS);
-    };
-
     const resolvedRouteLocale = useMemo<AppLanguage>(() => {
         const localeFromPath = extractLocaleFromPath(location.pathname);
         if (isToolRoute(location.pathname)) {
@@ -457,7 +447,11 @@ const AppContent: React.FC = () => {
                     updatedAt: now,
                     isFavorite: existingTrip.isFavorite ?? newTrip.isFavorite ?? false,
                     status: newTrip.status || existingTrip.status || 'active',
-                    tripExpiresAt: newTrip.tripExpiresAt || existingTrip.tripExpiresAt || buildTripExpiryIso(now),
+                    tripExpiresAt: resolveTripExpiryFromEntitlements(
+                        now,
+                        newTrip.tripExpiresAt || existingTrip.tripExpiresAt,
+                        access?.entitlements.tripExpirationDays
+                    ),
                     sourceKind: newTrip.sourceKind || existingTrip.sourceKind || 'created',
                 };
 
@@ -487,7 +481,11 @@ const AppContent: React.FC = () => {
                 createdAt: typeof newTrip.createdAt === 'number' ? newTrip.createdAt : now,
                 updatedAt: now,
                 status: 'active',
-                tripExpiresAt: resolveTripExpiry(now, newTrip.tripExpiresAt),
+                tripExpiresAt: resolveTripExpiryFromEntitlements(
+                    now,
+                    newTrip.tripExpiresAt,
+                    access?.entitlements.tripExpirationDays
+                ),
                 sourceKind: newTrip.sourceKind || 'created',
             };
             const cityCount = newTrip.items.filter((item) => item.type === 'city').length;

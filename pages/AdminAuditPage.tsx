@@ -38,6 +38,8 @@ import {
     downloadAdminForensicsReplayBundle,
 } from '../services/adminForensicsService';
 import {
+    buildDiffEntryRenderKey,
+    buildSecondaryFacetRenderKey,
     buildUserChangeDiffEntries,
     formatUserChangeDiffValue,
     resolveUserChangeActionPresentation,
@@ -1744,9 +1746,9 @@ export const AdminAuditPage: React.FC = () => {
                                             </div>
                                             {secondaryFacets.length > 0 && (
                                                 <div className="mt-1 flex flex-wrap items-center gap-1">
-                                                    {secondaryFacets.map((facet) => (
+                                                    {secondaryFacets.map((facet, facetIndex) => (
                                                         <span
-                                                            key={`${timelineEntry.kind}-${log.id}-${facet.code}`}
+                                                            key={`${timelineEntry.kind}-${log.id}-${buildSecondaryFacetRenderKey(facet, facetIndex)}`}
                                                             className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${facet.className}`}
                                                             title={facet.code}
                                                         >
@@ -1807,8 +1809,8 @@ export const AdminAuditPage: React.FC = () => {
                                             <td className="px-3 py-2">
                                             {visibleDiffEntries.length > 0 ? (
                                                 <div className="space-y-2">
-                                                    {visibleDiffEntries.map((entry) => (
-                                                        <article key={`${timelineEntry.kind}-${log.id}-${entry.key}`} className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5">
+                                                    {visibleDiffEntries.map((entry, entryIndex) => (
+                                                        <article key={`${timelineEntry.kind}-${log.id}-${buildDiffEntryRenderKey(entry, entryIndex)}`} className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5">
                                                             <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
                                                                 {formatFieldLabel(entry.key)}
                                                             </p>

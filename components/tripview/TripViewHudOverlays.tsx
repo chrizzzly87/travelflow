@@ -2,7 +2,9 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Article, RocketLaunch, WarningCircle } from '@phosphor-icons/react';
 import { Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
+import type { TripPaywallActivationMode } from '../../config/paywall';
 import type { ShareMode } from '../../types';
 import { trackEvent } from '../../services/analyticsService';
 
@@ -12,7 +14,8 @@ interface TripViewHudOverlaysProps {
     isPaywallLocked: boolean;
     expirationLabel: string | null;
     tripId: string;
-    onPaywallLoginClick: (
+    paywallActivationMode: TripPaywallActivationMode;
+    onPaywallActivateClick: (
         event: React.MouseEvent<HTMLAnchorElement>,
         analyticsEvent: 'trip_paywall__strip--activate' | 'trip_paywall__overlay--activate',
         source: 'trip_paywall_strip' | 'trip_paywall_overlay'
@@ -30,13 +33,17 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
     isPaywallLocked,
     expirationLabel,
     tripId,
-    onPaywallLoginClick,
+    paywallActivationMode,
+    onPaywallActivateClick,
     showGenerationOverlay,
     generationProgressMessage,
     loadingDestinationSummary,
     tripDateRange,
     tripTotalDaysLabel,
 }) => {
+    const { t } = useTranslation('common');
+    const paywallRequiresLogin = paywallActivationMode === 'login_modal';
+
     return (
         <>
             {shareStatus === 'view' && onCopyTrip && (
@@ -69,13 +76,16 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
 
                             <div className="relative flex items-start gap-3.5">
                                 <div className="min-w-0 flex-1">
-                                    <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-accent-700">Trip preview paused</p>
+                                    <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-accent-700">{t('tripPaywall.overlay.eyebrow')}</p>
                                     <div className="mt-1 text-lg font-semibold leading-tight text-slate-900">
-                                        Keep this plan alive and unlock every detail
+                                        {paywallRequiresLogin
+                                            ? t('tripPaywall.overlay.title.login')
+                                            : t('tripPaywall.overlay.title.direct')}
                                     </div>
                                     <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                                        Continue where you left off with a free TravelFlow account.
-                                        You will regain full editing, destination names, and map routing instantly.
+                                        {paywallRequiresLogin
+                                            ? t('tripPaywall.overlay.description.login')
+                                            : t('tripPaywall.overlay.description.direct')}
                                     </p>
                                 </div>
                                 <span className="mt-0.5 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-accent-200 bg-accent-50 text-accent-700">
@@ -93,18 +103,21 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                                 </Link>
                                 <Link
                                     to="/login"
-                                    onClick={(event) => onPaywallLoginClick(event, 'trip_paywall__overlay--activate', 'trip_paywall_overlay')}
+                                    onClick={(event) => onPaywallActivateClick(event, 'trip_paywall__overlay--activate', 'trip_paywall_overlay')}
                                     className="inline-flex h-9 items-center gap-1.5 rounded-md bg-accent-600 px-3 text-xs font-semibold text-white hover:bg-accent-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
                                 >
                                     <RocketLaunch size={14} weight="duotone" />
-                                    Reactivate trip
+                                    {paywallRequiresLogin
+                                        ? t('tripPaywall.reactivate.actions.login')
+                                        : t('tripPaywall.reactivate.actions.direct')}
                                 </Link>
                             </div>
 
                             <div className="relative mt-4 border-t border-slate-200 pt-3">
                                 <p className="text-[11px] leading-relaxed text-slate-500">
-                                    {expirationLabel ? `Expired on ${expirationLabel}. ` : ''}
-                                    Preview mode stays visible, while advanced planning controls unlock after activation.
+                                    {expirationLabel
+                                        ? t('tripPaywall.overlay.footer.withDate', { date: expirationLabel })
+                                        : t('tripPaywall.overlay.footer.noDate')}
                                 </p>
                             </div>
                         </div>

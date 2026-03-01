@@ -219,5 +219,38 @@
         "online": "Connection is healthy and sync is up to date."
       }
     }
+  },
+  "tripPaywall": {
+    "strip": {
+      "directSinceDate": "Trip preview paused since {date}. Reactivate now to unlock full planning mode.",
+      "directNoDate": "Trip preview paused. Reactivate now to unlock full planning mode.",
+      "loginSinceDate": "Trip preview paused since {date}. Sign in to reactivate and unlock full planning mode.",
+      "loginNoDate": "Trip preview paused. Sign in to reactivate and unlock full planning mode."
+    },
+    "overlay": {
+      "eyebrow": "Trip preview paused",
+      "title": {
+        "direct": "Reactivate this trip to keep planning",
+        "login": "Sign in to reactivate this trip"
+      },
+      "description": {
+        "direct": "You are signed in. Reactivate now to restore editing, destination names, and map routing.",
+        "login": "Sign in to restore editing, destination names, and map routing."
+      },
+      "footer": {
+        "withDate": "Expired on {date}. Preview mode stays visible until you reactivate.",
+        "noDate": "Preview mode stays visible until you reactivate."
+      }
+    },
+    "reactivate": {
+      "actions": {
+        "direct": "Reactivate trip",
+        "login": "Sign in to reactivate"
+      },
+      "toast": {
+        "title": "Trip reactivated",
+        "description": "Full planning mode is unlocked again."
+      }
+    }
   }
 }

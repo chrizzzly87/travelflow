@@ -88,8 +88,8 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 ### Trip Paywall
 | Event | Detail | Payload | File |
 |-------|--------|---------|------|
-| `trip_paywall__strip--activate` | — | `{ trip_id }` | `TripView.tsx` |
-| `trip_paywall__overlay--activate` | — | `{ trip_id }` | `TripView.tsx` |
+| `trip_paywall__strip--activate` | — | `{ trip_id, activation_mode }` | `TripView.tsx` |
+| `trip_paywall__overlay--activate` | — | `{ trip_id, activation_mode }` | `TripView.tsx` |
 | `trip_paywall__overlay--faq` | — | `{ trip_id }` | `TripView.tsx` |
 
 ### Consent

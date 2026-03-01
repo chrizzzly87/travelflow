@@ -71,6 +71,8 @@ import { readAdminCache, writeAdminCache } from '../components/admin/adminLocalC
 import { useAppDialog } from '../components/AppDialogProvider';
 import { showAppToast } from '../components/ui/appToast';
 import {
+    buildDiffEntryRenderKey,
+    buildSecondaryFacetRenderKey,
     buildUserChangeDiffEntries,
     formatUserChangeDiffValue,
     resolveUserChangeActionPresentation,
@@ -3321,9 +3323,9 @@ export const AdminUsersPage: React.FC = () => {
                                                     </div>
                                                     {secondaryFacets.length > 0 && (
                                                         <div className="mt-1 flex flex-wrap items-center gap-1">
-                                                            {secondaryFacets.map((facet) => (
+                                                            {secondaryFacets.map((facet, facetIndex) => (
                                                                 <span
-                                                                    key={`${log.id}-${facet.code}`}
+                                                                    key={`${log.id}-${buildSecondaryFacetRenderKey(facet, facetIndex)}`}
                                                                     className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${facet.className}`}
                                                                     title={facet.code}
                                                                 >
@@ -3346,8 +3348,8 @@ export const AdminUsersPage: React.FC = () => {
                                                     </div>
                                                     {visibleDiffEntries.length > 0 ? (
                                                         <div className="mt-2 space-y-2">
-                                                            {visibleDiffEntries.map((entry) => (
-                                                                <article key={`${log.id}-${entry.key}`} className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1.5">
+                                                            {visibleDiffEntries.map((entry, entryIndex) => (
+                                                                <article key={`${log.id}-${buildDiffEntryRenderKey(entry, entryIndex)}`} className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1.5">
                                                                     <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
                                                                         {formatFieldLabel(entry.key)}
                                                                     </p>

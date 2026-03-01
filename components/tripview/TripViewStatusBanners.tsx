@@ -1,9 +1,11 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { CopySimple, Sparkle } from '@phosphor-icons/react';
 import { AlertTriangle, WifiOff } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { normalizeLocale } from '../../config/locales';
+import type { TripPaywallActivationMode } from '../../config/paywall';
 import { buildLocalizedMarketingPath } from '../../config/routes';
 import type { ShareMode } from '../../types';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
@@ -36,7 +38,8 @@ interface TripViewStatusBannersProps {
     isPaywallLocked: boolean;
     expirationLabel: string | null;
     expirationRelativeLabel: string | null;
-    onPaywallLoginClick: (
+    paywallActivationMode: TripPaywallActivationMode;
+    onPaywallActivateClick: (
         event: React.MouseEvent<HTMLAnchorElement>,
         analyticsEvent: 'trip_paywall__strip--activate' | 'trip_paywall__overlay--activate',
         source: 'trip_paywall_strip' | 'trip_paywall_overlay'
@@ -79,7 +82,8 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
     isPaywallLocked,
     expirationLabel,
     expirationRelativeLabel,
-    onPaywallLoginClick,
+    paywallActivationMode,
+    onPaywallActivateClick,
     tripId,
     connectivityState,
     connectivityReason,
@@ -98,6 +102,7 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
     const showSyncStatusStrip = shouldShowConnectivityStrip || shouldShowSyncStrip;
     const syncCountVariant = pendingSyncCount === 1 ? 'One' : 'Many';
     const isBrowserOffline = connectivityReason === 'browser_offline';
+    const paywallRequiresLogin = paywallActivationMode === 'login_modal';
     const activeLocale = normalizeLocale(i18n?.resolvedLanguage ?? i18n?.language ?? 'en');
     const supportContactPath = buildLocalizedMarketingPath('contact', activeLocale);
     const stripMessage = shouldShowConnectivityStrip ? (
@@ -341,7 +346,13 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
                 >
                     <span>
                         {isPaywallLocked
-                            ? `Trip preview paused${expirationLabel ? ` since ${expirationLabel}` : ''}. Reactivate to unlock full planning mode.`
+                            ? (paywallRequiresLogin
+                                ? (expirationLabel
+                                    ? t('tripPaywall.strip.loginSinceDate', { date: expirationLabel })
+                                    : t('tripPaywall.strip.loginNoDate'))
+                                : (expirationLabel
+                                    ? t('tripPaywall.strip.directSinceDate', { date: expirationLabel })
+                                    : t('tripPaywall.strip.directNoDate')))
                             : isTripLockedByExpiry
                                 ? `Trip expired${expirationLabel ? ` since ${expirationLabel}` : ''}. It stays read-only until reactivated.`
                                 : `${expirationRelativeLabel || 'Trip access is time-limited'}${expirationLabel ? ` · Ends ${expirationLabel}` : ''}.`}
@@ -349,10 +360,12 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
                     {isPaywallLocked && (
                         <Link
                             to="/login"
-                            onClick={(event) => onPaywallLoginClick(event, 'trip_paywall__strip--activate', 'trip_paywall_strip')}
+                            onClick={(event) => onPaywallActivateClick(event, 'trip_paywall__strip--activate', 'trip_paywall_strip')}
                             className="px-3 py-1 rounded-md bg-rose-100 text-rose-900 text-xs font-semibold hover:bg-rose-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
                         >
-                            Reactivate trip
+                            {paywallRequiresLogin
+                                ? t('tripPaywall.reactivate.actions.login')
+                                : t('tripPaywall.reactivate.actions.direct')}
                         </Link>
                     )}
                 </div>
