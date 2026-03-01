@@ -252,7 +252,7 @@ export const COOKIE_REGISTRY: CookieRegistry = {
     },
     {
       name: 'tf_map_preview_state_v1',
-      purpose: 'Persists floating map preview mode, snapped position, and size preset.',
+      purpose: 'Persists floating map preview mode, snapped position, size preset, and orientation.',
       duration: 'Persistent',
       provider: 'TravelFlow',
       storage: 'localStorage',

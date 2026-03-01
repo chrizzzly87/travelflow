@@ -1,11 +1,13 @@
 import { readLocalStorageItem, writeLocalStorageItem } from '../../services/browserStorageService';
 
 export type FloatingMapSizePreset = 'sm' | 'md' | 'lg';
+export type FloatingMapOrientation = 'portrait' | 'landscape';
 
 export interface FloatingMapPreviewState {
     mode?: 'docked' | 'floating';
     position?: { x: number; y: number };
     sizePreset?: FloatingMapSizePreset;
+    orientation?: FloatingMapOrientation;
 }
 
 export const FLOATING_MAP_PREVIEW_STORAGE_KEY = 'tf_map_preview_state_v1';
@@ -19,6 +21,9 @@ const isValidDockMode = (value: unknown): value is 'docked' | 'floating' =>
 const isValidSizePreset = (value: unknown): value is FloatingMapSizePreset =>
     value === 'sm' || value === 'md' || value === 'lg';
 
+const isValidOrientation = (value: unknown): value is FloatingMapOrientation =>
+    value === 'portrait' || value === 'landscape';
+
 export const readFloatingMapPreviewState = (): FloatingMapPreviewState => {
     try {
         const raw = readLocalStorageItem(FLOATING_MAP_PREVIEW_STORAGE_KEY);
@@ -31,6 +36,9 @@ export const readFloatingMapPreviewState = (): FloatingMapPreviewState => {
         }
         if (isValidSizePreset(parsed.sizePreset)) {
             nextState.sizePreset = parsed.sizePreset;
+        }
+        if (isValidOrientation(parsed.orientation)) {
+            nextState.orientation = parsed.orientation;
         }
 
         const position = parsed.position as Record<string, unknown> | null | undefined;

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import React from 'react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 
 import { TripViewPlannerWorkspace } from '../../../components/tripview/TripViewPlannerWorkspace';
@@ -61,8 +61,13 @@ const baseProps = (): PlannerProps => ({
 });
 
 describe('components/tripview/TripViewPlannerWorkspace', () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+  });
+
   afterEach(() => {
     cleanup();
+    window.localStorage.clear();
   });
 
   it('renders calendar controls in calendar mode', () => {
@@ -127,11 +132,13 @@ describe('components/tripview/TripViewPlannerWorkspace', () => {
     const floatingMap = screen.getByTestId('floating-map-container');
     const dragHandle = screen.getByTestId('floating-map-drag-handle');
     const resizeHandle = screen.getByTestId('floating-map-resize-handle');
+    const orientationToggle = screen.getByTestId('floating-map-orientation-toggle');
 
     expect(floatingMap).toBeInTheDocument();
     expect(dragHandle).toHaveAttribute('aria-label', 'Move floating map preview');
     expect(dragHandle).toHaveAttribute('data-floating-map-control', 'true');
-    expect(resizeHandle).toHaveAttribute('aria-label', 'Resize floating map preview');
+    expect(resizeHandle).toHaveAttribute('aria-label', 'Use compact floating map size');
+    expect(orientationToggle).toHaveAttribute('aria-label', 'Switch floating map preview to landscape');
   });
 
   it('keeps the map component mounted while toggling dock mode', () => {

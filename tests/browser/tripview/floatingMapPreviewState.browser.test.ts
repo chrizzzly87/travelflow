@@ -16,17 +16,19 @@ describe('components/tripview/floatingMapPreviewState', () => {
     window.localStorage.clear();
   });
 
-  it('persists and merges floating map preview mode, position, and size preset', () => {
+  it('persists and merges floating map preview mode, position, size preset, and orientation', () => {
     const firstWrite = writeFloatingMapPreviewState({
       mode: 'floating',
       position: { x: 120, y: 180 },
       sizePreset: 'lg',
+      orientation: 'landscape',
     });
     expect(firstWrite).toBe(true);
     expect(readFloatingMapPreviewState()).toEqual({
       mode: 'floating',
       position: { x: 120, y: 180 },
       sizePreset: 'lg',
+      orientation: 'landscape',
     });
 
     const secondWrite = writeFloatingMapPreviewState({
@@ -37,6 +39,7 @@ describe('components/tripview/floatingMapPreviewState', () => {
       mode: 'docked',
       position: { x: 120, y: 180 },
       sizePreset: 'lg',
+      orientation: 'landscape',
     });
   });
 

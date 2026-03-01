@@ -356,6 +356,9 @@ const isMapStyleValue = (value: unknown): value is IViewSettings['mapStyle'] =>
 const isRouteModeValue = (value: unknown): value is NonNullable<IViewSettings['routeMode']> =>
     value === 'simple' || value === 'realistic';
 
+const isMapDockModeValue = (value: unknown): value is NonNullable<IViewSettings['mapDockMode']> =>
+    value === 'docked' || value === 'floating';
+
 const normalizeFiniteNumber = (value: unknown): number | undefined =>
     typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 
@@ -368,6 +371,7 @@ const normalizeViewSettingsPayload = (value: unknown): IViewSettings | null => {
         timelineView: isTimelineViewValue(view.timelineView) ? view.timelineView : 'horizontal',
         mapStyle: isMapStyleValue(view.mapStyle) ? view.mapStyle : 'standard',
         zoomLevel: normalizeFiniteNumber(view.zoomLevel) ?? 1,
+        mapDockMode: isMapDockModeValue(view.mapDockMode) ? view.mapDockMode : undefined,
         routeMode: isRouteModeValue(view.routeMode) ? view.routeMode : undefined,
         showCityNames: typeof view.showCityNames === 'boolean' ? view.showCityNames : undefined,
         sidebarWidth: normalizeFiniteNumber(view.sidebarWidth),

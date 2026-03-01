@@ -9,6 +9,7 @@ const BASE_VIEW_SETTINGS: IViewSettings = {
   layoutMode: 'horizontal',
   timelineMode: 'calendar',
   timelineView: 'horizontal',
+  mapDockMode: 'docked',
   mapStyle: 'standard',
   routeMode: 'simple',
   showCityNames: true,
@@ -21,6 +22,7 @@ const makeHookProps = (): Parameters<typeof useTripViewSettingsSync>[0] => ({
   layoutMode: 'horizontal',
   timelineMode: 'calendar',
   timelineView: 'horizontal',
+  mapDockMode: 'docked',
   mapStyle: 'standard',
   routeMode: 'simple',
   showCityNames: true,
@@ -36,6 +38,7 @@ const makeHookProps = (): Parameters<typeof useTripViewSettingsSync>[0] => ({
   setLayoutMode: vi.fn(),
   setTimelineMode: vi.fn(),
   setTimelineView: vi.fn(),
+  setMapDockMode: vi.fn(),
   setZoomLevel: vi.fn(),
   setSidebarWidth: vi.fn(),
   setTimelineHeight: vi.fn(),
@@ -103,6 +106,7 @@ describe('components/tripview/useTripViewSettingsSync', () => {
       layoutMode: 'horizontal',
       timelineMode: 'calendar',
       timelineView: 'horizontal',
+      mapDockMode: 'docked',
       mapStyle: 'standard',
       routeMode: 'simple',
       showCityNames: true,
@@ -122,6 +126,7 @@ describe('components/tripview/useTripViewSettingsSync', () => {
       layoutMode: 'vertical',
       timelineMode: 'timeline',
       timelineView: 'vertical',
+      mapDockMode: 'floating',
       mapStyle: 'dark',
       routeMode: 'realistic',
       zoomLevel: 2.5,
@@ -144,6 +149,7 @@ describe('components/tripview/useTripViewSettingsSync', () => {
     expect(props.setLayoutMode).toHaveBeenCalledWith('vertical');
     expect(props.setTimelineMode).toHaveBeenCalledWith('timeline');
     expect(props.setTimelineView).toHaveBeenCalledWith('vertical');
+    expect(props.setMapDockMode).toHaveBeenCalledWith('floating');
     expect(props.setZoomLevel).toHaveBeenCalledWith(2.5);
     expect(props.setSidebarWidth).toHaveBeenCalledWith(640);
     expect(props.setTimelineHeight).toHaveBeenCalledWith(420);

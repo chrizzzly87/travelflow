@@ -252,5 +252,14 @@
         "description": "Full planning mode is unlocked again."
       }
     }
+  },
+  "tripView": {
+    "visualHistory": {
+      "mapPreviewState": "Map preview: {from} -> {to}",
+      "mapPreviewStateValue": {
+        "docked": "docked",
+        "floating": "floating"
+      }
+    }
   }
 }

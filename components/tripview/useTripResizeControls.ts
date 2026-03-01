@@ -32,6 +32,7 @@ interface UseTripResizeControlsOptions {
     verticalTimelineAutoFitPadding: number;
     zoomLevelPresets: number[];
     basePixelsPerDay: number;
+    onAutoFitZoomApplied?: () => void;
 }
 
 const MIN_AUTO_FIT_TIMELINE_WIDTH = 160;
@@ -96,6 +97,7 @@ export const useTripResizeControls = ({
     verticalTimelineAutoFitPadding,
     zoomLevelPresets,
     basePixelsPerDay,
+    onAutoFitZoomApplied,
 }: UseTripResizeControlsOptions) => {
     const verticalLayoutTimelineRef = useRef<HTMLDivElement | null>(null);
     const isResizingRef = useRef<'sidebar' | 'details' | 'timeline-h' | null>(null);
@@ -171,6 +173,10 @@ export const useTripResizeControls = ({
         );
         if (!Number.isFinite(nextZoom)) return false;
 
+        if (Math.abs(zoomLevel - nextZoom) < 0.01) {
+            return false;
+        }
+        onAutoFitZoomApplied?.();
         setZoomLevel((previous) => (Math.abs(previous - nextZoom) < 0.01 ? previous : nextZoom));
         return true;
     }, [
@@ -179,6 +185,7 @@ export const useTripResizeControls = ({
         horizontalTimelineAutoFitPadding,
         horizontalTimelineDayCount,
         isZoomDirty,
+        onAutoFitZoomApplied,
         setZoomLevel,
         verticalTimelineAutoFitPadding,
         zoomLevel,

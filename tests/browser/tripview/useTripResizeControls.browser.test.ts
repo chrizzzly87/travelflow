@@ -100,8 +100,10 @@ describe('components/tripview/useTripResizeControls', () => {
 
   it('auto-fits vertical timeline zoom to the closest preset on timeline-view toggle', () => {
     const setZoomLevel = vi.fn();
+    const onAutoFitZoomApplied = vi.fn();
     const initialProps = makeHookOptions({
       setZoomLevel,
+      onAutoFitZoomApplied,
       timelineView: 'horizontal',
       layoutMode: 'horizontal',
       horizontalTimelineDayCount: 10,
@@ -122,8 +124,39 @@ describe('components/tripview/useTripResizeControls', () => {
     });
 
     expect(setZoomLevel).toHaveBeenCalledTimes(1);
+    expect(onAutoFitZoomApplied).toHaveBeenCalledTimes(1);
     const zoomUpdater = setZoomLevel.mock.calls[0][0] as (value: number) => number;
     expect(zoomUpdater(1)).toBe(1.5);
+  });
+
+  it('does not emit auto-fit zoom callback when computed zoom equals current zoom', () => {
+    const setZoomLevel = vi.fn();
+    const onAutoFitZoomApplied = vi.fn();
+    const initialProps = makeHookOptions({
+      setZoomLevel,
+      onAutoFitZoomApplied,
+      timelineView: 'horizontal',
+      layoutMode: 'horizontal',
+      horizontalTimelineDayCount: 10,
+      zoomLevel: 1.5,
+    });
+    const { result, rerender } = renderHook((props: Parameters<typeof useTripResizeControls>[0]) => useTripResizeControls(props), {
+      initialProps,
+    });
+
+    attachTimelineViewport(result, { width: 1000, height: 640 });
+    setZoomLevel.mockClear();
+    onAutoFitZoomApplied.mockClear();
+
+    act(() => {
+      rerender({
+        ...initialProps,
+        timelineView: 'vertical',
+      });
+    });
+
+    expect(setZoomLevel).not.toHaveBeenCalled();
+    expect(onAutoFitZoomApplied).not.toHaveBeenCalled();
   });
 
   it('auto-fits horizontal timeline only when content is underfilling the viewport width', () => {

@@ -252,5 +252,14 @@
         "description": "Der volle Planungsmodus ist wieder freigeschaltet."
       }
     }
+  },
+  "tripView": {
+    "visualHistory": {
+      "mapPreviewState": "Kartenvorschau: {from} -> {to}",
+      "mapPreviewStateValue": {
+        "docked": "angedockt",
+        "floating": "schwebend"
+      }
+    }
   }
 }
