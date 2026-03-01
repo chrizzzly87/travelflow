@@ -989,12 +989,17 @@ const useTripViewRender = ({
         defaultDetailsWidth: DEFAULT_DETAILS_WIDTH,
     });
     const [isZoomDirty, setIsZoomDirty] = useState(false);
+    const [mapDockMode, setMapDockMode] = useState<'docked' | 'floating'>('docked');
     const markZoomDirty = useCallback(() => {
         setIsZoomDirty(true);
     }, []);
     useEffect(() => {
         setIsZoomDirty(false);
     }, [trip.id]);
+    useEffect(() => {
+        if (!isMobileViewport || mapDockMode === 'docked') return;
+        setMapDockMode('docked');
+    }, [isMobileViewport, mapDockMode]);
     const clampZoomLevel = useCallback((value: number) => {
         if (!Number.isFinite(value)) return 1;
         return Math.max(MIN_ZOOM_LEVEL, Math.min(MAX_ZOOM_LEVEL, value));
@@ -1576,6 +1581,7 @@ const useTripViewRender = ({
         handleTimelineResizeKeyDown,
     } = useTripResizeControls({
         layoutMode,
+        mapDockMode,
         timelineMode,
         timelineView,
         horizontalTimelineDayCount,
@@ -1896,6 +1902,20 @@ const useTripViewRender = ({
                                 { trip_id: trip.id, target: 'timeline' }
                             );
                             setTimelineView(view);
+                        }}
+                        mapDockMode={mapDockMode}
+                        onMapDockModeChange={(mode) => {
+                            if (mode === mapDockMode) return;
+                            trackEvent(
+                                mode === 'floating'
+                                    ? 'trip_view__map_preview--minimize'
+                                    : 'trip_view__map_preview--maximize',
+                                {
+                                    trip_id: trip.id,
+                                    layout_mode: layoutMode,
+                                }
+                            );
+                            setMapDockMode(mode);
                         }}
                         timelineMode={timelineMode}
                         timelineView={timelineView}

@@ -1,6 +1,6 @@
-import React, { Suspense } from 'react';
-import { ArrowLeftRight, ArrowUpDown, CalendarDays, Focus, Layers, List, ZoomIn, ZoomOut } from 'lucide-react';
-import { getAnalyticsDebugAttributes } from '../../services/analyticsService';
+import React, { Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import { ArrowLeftRight, ArrowUpDown, CalendarDays, Focus, Layers, List, Maximize2, Minimize2, Move, ZoomIn, ZoomOut } from 'lucide-react';
+import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 
 import type { ITimelineItem, MapColorMode, MapStyle, RouteMode, RouteStatus } from '../../types';
 
@@ -18,6 +18,8 @@ interface TripViewPlannerWorkspaceProps {
     onZoomIn: () => void;
     onTimelineModeChange: (mode: 'calendar' | 'timeline') => void;
     onTimelineViewChange: (view: 'horizontal' | 'vertical') => void;
+    mapDockMode: 'docked' | 'floating';
+    onMapDockModeChange: (mode: 'docked' | 'floating') => void;
     timelineMode: 'calendar' | 'timeline';
     timelineView: 'horizontal' | 'vertical';
     mapViewportRef: React.RefObject<HTMLDivElement | null>;
@@ -55,6 +57,25 @@ interface TripViewPlannerWorkspaceProps {
     onTimelineResizeKeyDown: (event: React.KeyboardEvent<HTMLButtonElement>) => void;
 }
 
+const FLOATING_MAP_MARGIN = 24;
+const FLOATING_MAP_MIN_WIDTH = 220;
+const FLOATING_MAP_MAX_WIDTH = 360;
+const FLOATING_MAP_VIEWPORT_RATIO = 0.24;
+
+const clampFloatingMapPosition = (
+    nextPosition: { x: number; y: number },
+    panelWidth: number,
+    panelHeight: number,
+): { x: number; y: number } => {
+    if (typeof window === 'undefined') return nextPosition;
+    const maxX = Math.max(FLOATING_MAP_MARGIN, window.innerWidth - panelWidth - FLOATING_MAP_MARGIN);
+    const maxY = Math.max(FLOATING_MAP_MARGIN, window.innerHeight - panelHeight - FLOATING_MAP_MARGIN);
+    return {
+        x: Math.min(maxX, Math.max(FLOATING_MAP_MARGIN, nextPosition.x)),
+        y: Math.min(maxY, Math.max(FLOATING_MAP_MARGIN, nextPosition.y)),
+    };
+};
+
 export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> = ({
     isPaywallLocked,
     isMobile,
@@ -69,6 +90,8 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
     onZoomIn,
     onTimelineModeChange,
     onTimelineViewChange,
+    mapDockMode,
+    onMapDockModeChange,
     timelineMode,
     timelineView,
     mapViewportRef,
@@ -105,6 +128,130 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
     onDetailsResizeKeyDown,
     onTimelineResizeKeyDown,
 }) => {
+    const floatingMapRef = useRef<HTMLDivElement | null>(null);
+    const dragCleanupRef = useRef<(() => void) | null>(null);
+    const [floatingMapPosition, setFloatingMapPosition] = useState<{ x: number; y: number } | null>(null);
+    const floatingMapWidth = typeof window === 'undefined'
+        ? FLOATING_MAP_MIN_WIDTH
+        : Math.max(
+            FLOATING_MAP_MIN_WIDTH,
+            Math.min(FLOATING_MAP_MAX_WIDTH, window.innerWidth * FLOATING_MAP_VIEWPORT_RATIO),
+        );
+    const floatingMapFallbackPosition = typeof window === 'undefined'
+        ? { x: FLOATING_MAP_MARGIN, y: FLOATING_MAP_MARGIN }
+        : clampFloatingMapPosition(
+            {
+                x: window.innerWidth - floatingMapWidth - FLOATING_MAP_MARGIN,
+                y: window.innerHeight - ((floatingMapWidth * 3) / 2) - FLOATING_MAP_MARGIN,
+            },
+            floatingMapWidth,
+            (floatingMapWidth * 3) / 2,
+        );
+
+    const stopDraggingFloatingMap = useCallback(() => {
+        if (!dragCleanupRef.current) return;
+        dragCleanupRef.current();
+        dragCleanupRef.current = null;
+    }, []);
+
+    const beginFloatingMapDrag = useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
+        if (event.button !== 0) return;
+        const panel = floatingMapRef.current;
+        if (!panel) return;
+
+        event.preventDefault();
+        stopDraggingFloatingMap();
+        trackEvent('trip_view__map_preview--reposition', {
+            trip_id: tripId,
+        });
+
+        const panelRect = panel.getBoundingClientRect();
+        const pointerOffsetX = event.clientX - panelRect.left;
+        const pointerOffsetY = event.clientY - panelRect.top;
+
+        const handlePointerMove = (moveEvent: PointerEvent) => {
+            const nextPosition = clampFloatingMapPosition(
+                {
+                    x: moveEvent.clientX - pointerOffsetX,
+                    y: moveEvent.clientY - pointerOffsetY,
+                },
+                panelRect.width,
+                panelRect.height,
+            );
+            setFloatingMapPosition(nextPosition);
+        };
+
+        const handlePointerUp = () => {
+            stopDraggingFloatingMap();
+        };
+
+        window.addEventListener('pointermove', handlePointerMove);
+        window.addEventListener('pointerup', handlePointerUp);
+        window.addEventListener('pointercancel', handlePointerUp);
+
+        dragCleanupRef.current = () => {
+            window.removeEventListener('pointermove', handlePointerMove);
+            window.removeEventListener('pointerup', handlePointerUp);
+            window.removeEventListener('pointercancel', handlePointerUp);
+        };
+    }, [stopDraggingFloatingMap, tripId]);
+
+    useEffect(() => {
+        return () => {
+            stopDraggingFloatingMap();
+        };
+    }, [stopDraggingFloatingMap]);
+
+    useEffect(() => {
+        if (isMobile || mapDockMode !== 'floating') return;
+        const resolvePosition = () => {
+            const panel = floatingMapRef.current;
+            if (!panel) return;
+            const panelRect = panel.getBoundingClientRect();
+            setFloatingMapPosition((previous) => {
+                if (previous) {
+                    return clampFloatingMapPosition(previous, panelRect.width, panelRect.height);
+                }
+                return clampFloatingMapPosition(
+                    {
+                        x: window.innerWidth - panelRect.width - FLOATING_MAP_MARGIN,
+                        y: window.innerHeight - panelRect.height - FLOATING_MAP_MARGIN,
+                    },
+                    panelRect.width,
+                    panelRect.height,
+                );
+            });
+        };
+
+        const rafId = window.requestAnimationFrame(resolvePosition);
+        return () => window.cancelAnimationFrame(rafId);
+    }, [isMobile, mapDockMode, floatingMapWidth]);
+
+    useEffect(() => {
+        if (isMobile || mapDockMode !== 'floating') return;
+        const handleResize = () => {
+            const panel = floatingMapRef.current;
+            if (!panel) return;
+            const panelRect = panel.getBoundingClientRect();
+            setFloatingMapPosition((previous) => {
+                if (!previous) {
+                    return clampFloatingMapPosition(
+                        {
+                            x: window.innerWidth - panelRect.width - FLOATING_MAP_MARGIN,
+                            y: window.innerHeight - panelRect.height - FLOATING_MAP_MARGIN,
+                        },
+                        panelRect.width,
+                        panelRect.height,
+                    );
+                }
+                return clampFloatingMapPosition(previous, panelRect.width, panelRect.height);
+            });
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, [isMobile, mapDockMode]);
+
     const timelineControls = (
         <div className="flex flex-wrap items-center justify-end gap-2 pointer-events-auto">
             {timelineMode === 'calendar' && (
@@ -161,7 +308,22 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                     </div>
                 </>
             )}
-            <div className="ms-auto inline-flex items-center rounded-lg border border-gray-200 bg-white/90 p-1 shadow-sm backdrop-blur">
+            {!isMobile && (
+                <button
+                    type="button"
+                    onClick={() => onMapDockModeChange(mapDockMode === 'docked' ? 'floating' : 'docked')}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white/90 px-2.5 py-1.5 text-xs font-semibold text-gray-700 shadow-sm transition-colors hover:bg-gray-50 backdrop-blur"
+                    aria-label={mapDockMode === 'docked' ? 'Minimize map preview' : 'Maximize map preview'}
+                    {...getAnalyticsDebugAttributes(
+                        mapDockMode === 'docked' ? 'trip_view__map_preview--minimize' : 'trip_view__map_preview--maximize',
+                        { surface: 'timeline_controls' },
+                    )}
+                >
+                    {mapDockMode === 'docked' ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+                    <span>{mapDockMode === 'docked' ? 'Minimize map' : 'Maximize map'}</span>
+                </button>
+            )}
+            <div className="inline-flex items-center rounded-lg border border-gray-200 bg-white/90 p-1 shadow-sm backdrop-blur">
                 <button
                     type="button"
                     onClick={() => onTimelineModeChange('calendar')}
@@ -308,67 +470,23 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                         </div>
                     </div>
                 ) : (
-                    <div className={`w-full h-full flex ${effectiveLayoutMode === 'horizontal' ? 'flex-row' : 'flex-col'}`}>
-                        {effectiveLayoutMode === 'horizontal' ? (
-                            <>
-                                <div style={{ width: sidebarWidth }} className="h-full flex flex-col items-center bg-white border-r border-gray-200 z-20 shrink-0 relative">
-                                    <div className="w-full flex-1 overflow-hidden relative flex flex-col min-w-0">
-                                        <div ref={verticalLayoutTimelineRef} className="flex-1 w-full overflow-hidden relative min-w-0">
-                                            {timelineCanvas}
-                                            <div className="absolute top-4 end-4 z-[60] pointer-events-auto">
-                                                {timelineControls}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <button
-                                    type="button"
-                                    className="w-1 bg-gray-100 hover:bg-accent-500 cursor-col-resize transition-colors z-30 flex items-center justify-center group appearance-none border-0 p-0"
-                                    onMouseDown={() => onStartResizing('sidebar')}
-                                    onKeyDown={onSidebarResizeKeyDown}
-                                    aria-label="Resize timeline and map panels"
-                                >
-                                    <div className="h-8 w-1 group-hover:bg-accent-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
-                                </button>
-
-                                {detailsPanelVisible && (
-                                    <div style={{ width: detailsWidth }} className="h-full bg-white border-r border-gray-200 z-20 shrink-0 relative overflow-hidden">
-                                        {detailsPanelContent}
-                                        <button
-                                            type="button"
-                                            className="absolute top-0 right-0 h-full w-2 cursor-col-resize z-30 flex items-center justify-center group hover:bg-accent-50/60 transition-colors appearance-none border-0 bg-transparent p-0"
-                                            onMouseDown={(event) => onStartResizing('details', event.clientX)}
-                                            onKeyDown={onDetailsResizeKeyDown}
-                                            title="Resize details panel"
-                                            aria-label="Resize details panel"
+                    <>
+                        <div className={`w-full h-full flex ${
+                            mapDockMode === 'floating'
+                                ? 'flex-row'
+                                : (effectiveLayoutMode === 'horizontal' ? 'flex-row' : 'flex-col')
+                        }`}>
+                            {mapDockMode === 'floating' ? (
+                                <>
+                                    <div data-testid="planner-timeline-pane" className="flex-1 min-w-0 h-full relative bg-white border-r border-gray-100">
+                                        <div
+                                            ref={verticalLayoutTimelineRef}
+                                            className="w-full h-full relative overflow-hidden"
+                                            onTouchStart={timelineMode === 'calendar' ? onTimelineTouchStart : undefined}
+                                            onTouchMove={timelineMode === 'calendar' ? onTimelineTouchMove : undefined}
+                                            onTouchEnd={timelineMode === 'calendar' ? onTimelineTouchEnd : undefined}
+                                            onTouchCancel={timelineMode === 'calendar' ? onTimelineTouchEnd : undefined}
                                         >
-                                            <div className="h-10 w-0.5 rounded-full bg-gray-200 group-hover:bg-accent-400 transition-colors" />
-                                        </button>
-                                    </div>
-                                )}
-
-                                <div ref={mapViewportRef} className="flex-1 h-full relative bg-gray-100 min-w-0">
-                                    {renderMap(layoutMode, true)}
-                                </div>
-                            </>
-                        ) : (
-                            <>
-                                <div ref={mapViewportRef} className="flex-1 relative bg-gray-100 min-h-0 w-full">
-                                    {renderMap(layoutMode, true)}
-                                </div>
-                                <button
-                                    type="button"
-                                    className="h-1 bg-gray-100 hover:bg-accent-500 cursor-row-resize transition-colors z-30 flex justify-center items-center group w-full appearance-none border-0 p-0"
-                                    onMouseDown={() => onStartResizing('timeline-h')}
-                                    onKeyDown={onTimelineResizeKeyDown}
-                                    aria-label="Resize timeline panel"
-                                >
-                                    <div className="w-12 h-1 group-hover:bg-accent-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
-                                </button>
-                                <div style={{ height: timelineHeight }} className="w-full bg-white border-t border-gray-200 z-20 shrink-0 relative flex flex-row">
-                                    <div ref={verticalLayoutTimelineRef} className="flex-1 h-full relative border-r border-gray-100 min-w-0">
-                                        <div className="w-full h-full relative min-w-0">
                                             {timelineCanvas}
                                             <div className="absolute top-4 end-4 z-[60] pointer-events-auto">
                                                 {timelineControls}
@@ -376,11 +494,40 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                                         </div>
                                     </div>
                                     {detailsPanelVisible && (
-                                        <div style={{ width: detailsWidth }} className="h-full bg-white border-l border-gray-200 overflow-hidden relative">
+                                        <div style={{ width: detailsWidth }} className="h-full bg-white border-s border-gray-200 z-20 shrink-0 relative overflow-hidden">
+                                            {detailsPanelContent}
+                                        </div>
+                                    )}
+                                </>
+                            ) : effectiveLayoutMode === 'horizontal' ? (
+                                <>
+                                    <div style={{ width: sidebarWidth }} className="h-full flex flex-col items-center bg-white border-r border-gray-200 z-20 shrink-0 relative">
+                                        <div className="w-full flex-1 overflow-hidden relative flex flex-col min-w-0">
+                                            <div ref={verticalLayoutTimelineRef} className="flex-1 w-full overflow-hidden relative min-w-0">
+                                                {timelineCanvas}
+                                                <div className="absolute top-4 end-4 z-[60] pointer-events-auto">
+                                                    {timelineControls}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <button
+                                        type="button"
+                                        className="w-1 bg-gray-100 hover:bg-accent-500 cursor-col-resize transition-colors z-30 flex items-center justify-center group appearance-none border-0 p-0"
+                                        onMouseDown={() => onStartResizing('sidebar')}
+                                        onKeyDown={onSidebarResizeKeyDown}
+                                        aria-label="Resize timeline and map panels"
+                                    >
+                                        <div className="h-8 w-1 group-hover:bg-accent-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    </button>
+
+                                    {detailsPanelVisible && (
+                                        <div style={{ width: detailsWidth }} className="h-full bg-white border-r border-gray-200 z-20 shrink-0 relative overflow-hidden">
                                             {detailsPanelContent}
                                             <button
                                                 type="button"
-                                                className="absolute top-0 right-0 h-full w-2 cursor-col-resize z-30 flex items-center justify-center group hover:bg-accent-50/60 transition-colors appearance-none border-0 bg-transparent p-0"
+                                                className="absolute top-0 end-0 h-full w-2 cursor-col-resize z-30 flex items-center justify-center group hover:bg-accent-50/60 transition-colors appearance-none border-0 bg-transparent p-0"
                                                 onMouseDown={(event) => onStartResizing('details', event.clientX)}
                                                 onKeyDown={onDetailsResizeKeyDown}
                                                 title="Resize details panel"
@@ -390,10 +537,81 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                                             </button>
                                         </div>
                                     )}
+
+                                    <div ref={mapViewportRef} className="flex-1 h-full relative bg-gray-100 min-w-0">
+                                        {renderMap(layoutMode, true)}
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    <div ref={mapViewportRef} className="flex-1 relative bg-gray-100 min-h-0 w-full">
+                                        {renderMap(layoutMode, true)}
+                                    </div>
+                                    <button
+                                        type="button"
+                                        className="h-1 bg-gray-100 hover:bg-accent-500 cursor-row-resize transition-colors z-30 flex justify-center items-center group w-full appearance-none border-0 p-0"
+                                        onMouseDown={() => onStartResizing('timeline-h')}
+                                        onKeyDown={onTimelineResizeKeyDown}
+                                        aria-label="Resize timeline panel"
+                                    >
+                                        <div className="w-12 h-1 group-hover:bg-accent-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    </button>
+                                    <div style={{ height: timelineHeight }} className="w-full bg-white border-t border-gray-200 z-20 shrink-0 relative flex flex-row">
+                                        <div ref={verticalLayoutTimelineRef} className="flex-1 h-full relative border-r border-gray-100 min-w-0">
+                                            <div className="w-full h-full relative min-w-0">
+                                                {timelineCanvas}
+                                                <div className="absolute top-4 end-4 z-[60] pointer-events-auto">
+                                                    {timelineControls}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {detailsPanelVisible && (
+                                            <div style={{ width: detailsWidth }} className="h-full bg-white border-l border-gray-200 overflow-hidden relative">
+                                                {detailsPanelContent}
+                                                <button
+                                                    type="button"
+                                                    className="absolute top-0 end-0 h-full w-2 cursor-col-resize z-30 flex items-center justify-center group hover:bg-accent-50/60 transition-colors appearance-none border-0 bg-transparent p-0"
+                                                    onMouseDown={(event) => onStartResizing('details', event.clientX)}
+                                                    onKeyDown={onDetailsResizeKeyDown}
+                                                    title="Resize details panel"
+                                                    aria-label="Resize details panel"
+                                                >
+                                                    <div className="h-10 w-0.5 rounded-full bg-gray-200 group-hover:bg-accent-400 transition-colors" />
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                        {mapDockMode === 'floating' && (
+                            <div
+                                ref={mapViewportRef}
+                                data-testid="floating-map-container"
+                                className="fixed z-[1400] overflow-hidden bg-gray-100 border-4 border-white rounded-[2.25rem] shadow-[0_18px_50px_-22px_rgba(15,23,42,0.6),0_8px_22px_-12px_rgba(15,23,42,0.4)]"
+                                style={{
+                                    width: `${floatingMapWidth}px`,
+                                    aspectRatio: '2 / 3',
+                                    left: (floatingMapPosition?.x ?? floatingMapFallbackPosition.x),
+                                    top: (floatingMapPosition?.y ?? floatingMapFallbackPosition.y),
+                                }}
+                            >
+                                <div className="pointer-events-none absolute top-3 inset-x-0 z-[80] flex justify-center">
+                                    <button
+                                        type="button"
+                                        onPointerDown={beginFloatingMapDrag}
+                                        className="pointer-events-auto inline-flex items-center gap-1.5 rounded-full border border-white/80 bg-black/45 px-3 py-1 text-[11px] font-semibold tracking-wide text-white shadow-lg backdrop-blur cursor-grab active:cursor-grabbing"
+                                        aria-label="Move floating map"
+                                        {...getAnalyticsDebugAttributes('trip_view__map_preview--reposition', { surface: 'floating_map' })}
+                                    >
+                                        <Move size={12} />
+                                        <span>Move</span>
+                                    </button>
                                 </div>
-                            </>
+                                {renderMap(layoutMode, false)}
+                            </div>
                         )}
-                    </div>
+                    </>
                 )}
             </div>
         </>

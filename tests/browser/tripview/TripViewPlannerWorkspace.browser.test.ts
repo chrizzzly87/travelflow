@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 
 import { TripViewPlannerWorkspace } from '../../../components/tripview/TripViewPlannerWorkspace';
 
@@ -21,6 +21,8 @@ const baseProps = (): PlannerProps => ({
   onZoomIn: vi.fn(),
   onTimelineModeChange: vi.fn(),
   onTimelineViewChange: vi.fn(),
+  mapDockMode: 'docked',
+  onMapDockModeChange: vi.fn(),
   timelineMode: 'calendar',
   timelineView: 'horizontal',
   mapViewportRef: { current: null },
@@ -92,5 +94,25 @@ describe('components/tripview/TripViewPlannerWorkspace', () => {
     expect(screen.queryByLabelText('Vertical timeline direction')).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Zoom out timeline')).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Zoom in timeline')).not.toBeInTheDocument();
+  });
+
+  it('minimizes map into floating mode when toggle is clicked', () => {
+    const props = baseProps();
+    render(React.createElement(TripViewPlannerWorkspace, props));
+
+    fireEvent.click(screen.getByLabelText('Minimize map preview'));
+
+    expect(props.onMapDockModeChange).toHaveBeenCalledWith('floating');
+  });
+
+  it('renders floating map container in floating dock mode', () => {
+    const props = baseProps();
+    props.mapDockMode = 'floating';
+
+    render(React.createElement(TripViewPlannerWorkspace, props));
+
+    expect(screen.getByTestId('floating-map-container')).toBeInTheDocument();
+    expect(screen.getByTestId('planner-timeline-pane')).toBeInTheDocument();
+    expect(screen.getByLabelText('Maximize map preview')).toBeInTheDocument();
   });
 });

@@ -9,6 +9,7 @@ const makeHookOptions = (
   overrides: Partial<Parameters<typeof useTripResizeControls>[0]> = {},
 ): Parameters<typeof useTripResizeControls>[0] => ({
   layoutMode: 'horizontal',
+  mapDockMode: 'docked',
   timelineMode: 'calendar',
   timelineView: 'horizontal',
   horizontalTimelineDayCount: 10,
@@ -202,5 +203,33 @@ describe('components/tripview/useTripResizeControls', () => {
     });
 
     expect(setZoomLevel).not.toHaveBeenCalled();
+  });
+
+  it('auto-fits timeline zoom when map dock mode changes', () => {
+    const setZoomLevel = vi.fn();
+    const initialProps = makeHookOptions({
+      setZoomLevel,
+      timelineView: 'horizontal',
+      timelineMode: 'calendar',
+      mapDockMode: 'docked',
+      isZoomDirty: false,
+      horizontalTimelineDayCount: 8,
+      zoomLevel: 1,
+    });
+    const { result, rerender } = renderHook((props: Parameters<typeof useTripResizeControls>[0]) => useTripResizeControls(props), {
+      initialProps,
+    });
+
+    attachTimelineViewport(result, { width: 1120, height: 620 });
+    setZoomLevel.mockClear();
+
+    act(() => {
+      rerender({
+        ...initialProps,
+        mapDockMode: 'floating',
+      });
+    });
+
+    expect(setZoomLevel).toHaveBeenCalledTimes(1);
   });
 });
