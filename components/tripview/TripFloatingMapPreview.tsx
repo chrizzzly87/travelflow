@@ -7,6 +7,7 @@ interface TripFloatingMapPreviewProps {
     mapDockMode: 'docked' | 'floating';
     mapViewportRef: React.RefObject<HTMLDivElement | null>;
     dockedMapAnchorRef: React.RefObject<HTMLDivElement | null>;
+    dockedGeometryKey: string;
     tripId: string;
     children: React.ReactNode;
 }
@@ -130,6 +131,7 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
     mapDockMode,
     mapViewportRef,
     dockedMapAnchorRef,
+    dockedGeometryKey,
     tripId,
     children,
 }) => {
@@ -250,6 +252,14 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
     }, [hasResolvedInitialGeometry, syncSurfaceGeometry, mapDockMode]);
 
     useEffect(() => {
+        if (mapDockMode !== 'docked' || typeof window === 'undefined') return;
+        const rafId = window.requestAnimationFrame(() => {
+            syncSurfaceGeometry(false);
+        });
+        return () => window.cancelAnimationFrame(rafId);
+    }, [dockedGeometryKey, mapDockMode, syncSurfaceGeometry]);
+
+    useEffect(() => {
         if (typeof window === 'undefined') return;
         const handleResize = () => {
             setFloatingMapWidth(resolveFloatingMapWidth());
@@ -273,7 +283,7 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
 
         observer.observe(anchor);
         return () => observer.disconnect();
-    }, [applySurfaceGeometry, dockedMapAnchorRef, mapDockMode]);
+    }, [applySurfaceGeometry, dockedGeometryKey, dockedMapAnchorRef, mapDockMode]);
 
     useEffect(() => {
         if (!isHandlePressed) return;

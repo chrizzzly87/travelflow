@@ -115,6 +115,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
     const dockedMapAnchorRef = useRef<HTMLDivElement | null>(null);
     const isFloatingMapPreviewEnabled = !isMobile && TRIP_FLOATING_MAP_PREVIEW_BETA_ENABLED;
     const effectiveMapDockMode: 'docked' | 'floating' = isFloatingMapPreviewEnabled ? mapDockMode : 'docked';
+    const dockedGeometryKey = `${effectiveLayoutMode}:${layoutMode}:${sidebarWidth}:${detailsWidth}:${timelineHeight}:${detailsPanelVisible ? '1' : '0'}`;
 
     const toggleMapDockMode = useCallback(() => {
         if (!isFloatingMapPreviewEnabled) return;
@@ -457,6 +458,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                             mapDockMode={effectiveMapDockMode}
                             mapViewportRef={mapViewportRef}
                             dockedMapAnchorRef={dockedMapAnchorRef}
+                            dockedGeometryKey={dockedGeometryKey}
                             tripId={tripId}
                         >
                             {renderMap(layoutMode, effectiveMapDockMode !== 'floating')}
