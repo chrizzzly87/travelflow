@@ -103,4 +103,95 @@ describe('netlify/edge-functions/admin-audit-export filterTimelineEntriesForExpo
 
     expect(filtered.map((entry) => entry.id)).toEqual(['u-1', 'a-1']);
   });
+
+  it('supports custom date range filtering with inclusive bounds', () => {
+    const entries = [
+      {
+        source: 'user',
+        id: 'in-range',
+        created_at: '2026-02-14T12:00:00.000Z',
+        action: 'trip.updated',
+        target_type: 'trip',
+        target_id: 'trip-10',
+        actor_user_id: 'user-10',
+        actor_email: 'user10@example.com',
+        metadata: null,
+        before_data: null,
+        after_data: null,
+      },
+      {
+        source: 'user',
+        id: 'out-of-range',
+        created_at: '2026-01-10T12:00:00.000Z',
+        action: 'trip.updated',
+        target_type: 'trip',
+        target_id: 'trip-11',
+        actor_user_id: 'user-11',
+        actor_email: 'user11@example.com',
+        metadata: null,
+        before_data: null,
+        after_data: null,
+      },
+    ] as const;
+
+    const filtered = filterTimelineEntriesForExport(entries as any, {
+      searchToken: '',
+      dateRange: 'custom',
+      customStartTs: Date.parse('2026-02-10T00:00:00.000Z'),
+      customEndTs: Date.parse('2026-02-20T23:59:59.999Z'),
+      actionFilters: [],
+      targetFilters: [],
+      actorFilters: [],
+      selectedEventIds: [],
+      sourceLimit: 500,
+    } as any);
+
+    expect(filtered.map((entry) => entry.id)).toEqual(['in-range']);
+  });
+
+  it('supports selected event id filtering with source-prefixed keys', () => {
+    const entries = [
+      {
+        source: 'admin',
+        id: 'evt-1',
+        created_at: '2026-02-20T10:00:00.000Z',
+        action: 'admin.trip.update',
+        target_type: 'trip',
+        target_id: 'trip-1',
+        actor_user_id: 'admin-1',
+        actor_email: 'admin@example.com',
+        metadata: null,
+        before_data: null,
+        after_data: null,
+      },
+      {
+        source: 'user',
+        id: 'evt-2',
+        created_at: '2026-02-20T11:00:00.000Z',
+        action: 'trip.updated',
+        target_type: 'trip',
+        target_id: 'trip-2',
+        actor_user_id: 'user-2',
+        actor_email: 'user@example.com',
+        metadata: null,
+        before_data: null,
+        after_data: null,
+      },
+    ] as const;
+
+    const filtered = filterTimelineEntriesForExport(entries as any, {
+      searchToken: '',
+      dateRange: 'all',
+      customStartTs: null,
+      customEndTs: null,
+      actionFilters: [],
+      targetFilters: [],
+      actorFilters: [],
+      selectedEventIds: ['user:evt-2'],
+      sourceLimit: 500,
+    } as any);
+
+    expect(filtered).toHaveLength(1);
+    expect(filtered[0]?.id).toBe('evt-2');
+  });
 });
