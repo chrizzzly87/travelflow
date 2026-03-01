@@ -17,5 +17,6 @@ summary: "Expanded username hardening with 3-40 handle limits, stricter DB-backe
 - [ ] [Internal] 🧱 Added DB-managed denylist and reserved-handle governance with category metadata and owner-assignable protected names.
 - [ ] [Internal] 🧾 Added optional blocked-attempt event logging during submit-time username availability checks for audit visibility.
 - [ ] [Internal] 🛠️ Fixed admin username editing to hydrate and persist mixed-case display usernames instead of reverting the field to lowercase canonical values.
+- [ ] [Internal] 🧰 Added an admin one-click username cooldown reset action with drawer visibility into last username-change timestamp and cooldown end state.
 - [ ] [Internal] 🧪 Added regression coverage for mixed-case canonical routing, frontend username validation feedback/sanitization, and canonical/display mapping.
 - [ ] [Internal] 🐙 Created and linked GitHub issue #208 to keep the tracked spec and issue workflow aligned.

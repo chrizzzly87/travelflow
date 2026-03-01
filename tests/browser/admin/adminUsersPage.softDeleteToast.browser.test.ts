@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
   adminListUserTrips: vi.fn(),
   adminListUserChangeLogs: vi.fn(),
   adminUpdateUserProfile: vi.fn(),
+  adminResetUserUsernameCooldown: vi.fn(),
   adminHardDeleteUser: vi.fn(),
   confirmDialog: vi.fn(async () => true),
   promptDialog: vi.fn(async () => null),
@@ -85,6 +86,7 @@ vi.mock('../../../services/adminService', () => ({
   adminListUserChangeLogs: mocks.adminListUserChangeLogs,
   adminListUserTrips: mocks.adminListUserTrips,
   adminListUsers: mocks.adminListUsers,
+  adminResetUserUsernameCooldown: mocks.adminResetUserUsernameCooldown,
   adminUpdateTrip: vi.fn(),
   adminUpdateUserOverrides: vi.fn(),
   adminUpdateUserProfile: mocks.adminUpdateUserProfile,
@@ -100,6 +102,7 @@ const USER_ROW = {
   display_name: 'Traveler One',
   username: 'traveler_one',
   username_display: 'TravelerOne',
+  username_changed_at: '2026-02-20T00:00:00.000Z',
   gender: null,
   country: null,
   city: null,
@@ -129,6 +132,7 @@ const USER_ROW_2 = {
   display_name: 'Traveler Two',
   username: 'traveler_two',
   username_display: 'TravelerTwo',
+  username_changed_at: '2026-02-20T00:00:00.000Z',
   total_trips: 3,
   active_trips: 3,
 } as const;
@@ -170,6 +174,7 @@ describe('pages/AdminUsersPage soft delete toasts', () => {
     mocks.adminListUserTrips.mockResolvedValue([]);
     mocks.adminListUserChangeLogs.mockResolvedValue([]);
     mocks.adminUpdateUserProfile.mockResolvedValue(undefined);
+    mocks.adminResetUserUsernameCooldown.mockResolvedValue(undefined);
     mocks.adminHardDeleteUser.mockResolvedValue(undefined);
     mocks.confirmDialog.mockResolvedValue(true);
     mocks.promptDialog.mockResolvedValue(null);
@@ -310,6 +315,25 @@ describe('pages/AdminUsersPage soft delete toasts', () => {
         'user-1',
         expect.objectContaining({ username: 'NeWMiXeDcAsE' }),
       );
+    });
+  }, 20000);
+
+  it('resets username cooldown from the admin drawer with one click', async () => {
+    const user = userEvent.setup();
+
+    renderPage();
+
+    await screen.findAllByRole('button', { name: /Traveler One/i });
+    const openDetailButtons = screen.getAllByRole('button', { name: /Traveler One/i });
+    await user.click(openDetailButtons[0]);
+
+    expect(await screen.findByText(/Self-service username changes are limited to once every 90 days\./i)).toBeInTheDocument();
+    expect(screen.getByText(/Cooldown ends:/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Reset username cooldown' }));
+
+    await waitFor(() => {
+      expect(mocks.adminResetUserUsernameCooldown).toHaveBeenCalledWith('user-1', 'admin.manual_reset');
     });
   }, 20000);
 });

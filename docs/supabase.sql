@@ -2892,6 +2892,7 @@ returns table(
   last_name text,
   username text,
   username_display text,
+  username_changed_at timestamptz,
   gender text,
   country text,
   city text,
@@ -2961,6 +2962,7 @@ begin
     p.last_name,
     p.username,
     p.username_display,
+    p.username_changed_at,
     p.gender,
     p.country,
     p.city,
@@ -3026,6 +3028,7 @@ returns table(
   last_name text,
   username text,
   username_display text,
+  username_changed_at timestamptz,
   gender text,
   country text,
   city text,
@@ -3095,6 +3098,7 @@ begin
     p.last_name,
     p.username,
     p.username_display,
+    p.username_changed_at,
     p.gender,
     p.country,
     p.city,
@@ -3278,6 +3282,74 @@ begin
     p.updated_at
   from public.profiles p
   left join auth.users u on u.id = p.id
+  where p.id = p_user_id;
+end;
+$$;
+
+drop function if exists public.admin_reset_user_username_cooldown(uuid, text);
+create or replace function public.admin_reset_user_username_cooldown(
+  p_user_id uuid,
+  p_reason text default null
+)
+returns table(
+  user_id uuid,
+  username text,
+  username_display text,
+  username_changed_at timestamptz,
+  updated_at timestamptz
+)
+language plpgsql
+security definer
+set search_path = public, auth
+set row_security = off
+as $$
+declare
+  v_before jsonb;
+  v_after jsonb;
+begin
+  if not public.has_admin_permission('users.write') then
+    raise exception 'Not allowed';
+  end if;
+
+  select to_jsonb(p)
+    into v_before
+    from public.profiles p
+   where p.id = p_user_id;
+
+  if v_before is null then
+    raise exception 'User profile not found';
+  end if;
+
+  update public.profiles p
+     set username_changed_at = null,
+         updated_at = now()
+   where p.id = p_user_id;
+
+  select to_jsonb(p)
+    into v_after
+    from public.profiles p
+   where p.id = p_user_id;
+
+  perform public.admin_write_audit(
+    'admin.user.reset_username_cooldown',
+    'user',
+    p_user_id::text,
+    v_before,
+    v_after,
+    jsonb_build_object(
+      'reason', nullif(btrim(coalesce(p_reason, '')), ''),
+      'updated_by', auth.uid()
+    )
+  );
+
+  return query
+  select
+    p.id,
+    p.username,
+    p.username_display,
+    p.username_changed_at,
+    p.updated_at
+  from public.profiles p
   where p.id = p_user_id;
 end;
 $$;
@@ -4227,6 +4299,7 @@ grant execute on function public.admin_write_audit(text, text, text, jsonb, json
 grant execute on function public.admin_list_users(integer, integer, text) to authenticated;
 grant execute on function public.admin_get_user_profile(uuid) to authenticated;
 grant execute on function public.admin_update_user_profile(uuid, text, text, text, text, text, text, text, text, text, text, boolean) to authenticated;
+grant execute on function public.admin_reset_user_username_cooldown(uuid, text) to authenticated;
 grant execute on function public.admin_update_user_tier(uuid, text) to authenticated;
 grant execute on function public.admin_update_user_overrides(uuid, jsonb) to authenticated;
 grant execute on function public.admin_update_plan_entitlements(text, jsonb) to authenticated;

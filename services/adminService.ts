@@ -18,6 +18,7 @@ export interface AdminUserRecord {
     last_name?: string | null;
     username?: string | null;
     username_display?: string | null;
+    username_changed_at?: string | null;
     gender?: string | null;
     country?: string | null;
     city?: string | null;
@@ -165,6 +166,7 @@ export const adminListUsers = async (
             last_name: `LastName${i}`,
             username: `test_user_${i}`,
             username_display: `TestUser${i}`,
+            username_changed_at: null,
         }));
         return mockUsers;
     }
@@ -260,6 +262,22 @@ export const adminUpdateUserProfile = async (
     if (error) throw new Error(error.message || 'Could not update user profile.');
 };
 
+export const adminResetUserUsernameCooldown = async (
+    userId: string,
+    reason: string | null = 'admin.manual_reset'
+): Promise<void> => {
+    if (shouldUseAdminMockData()) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        return;
+    }
+    const client = requireSupabase();
+    const { error } = await client.rpc('admin_reset_user_username_cooldown', {
+        p_user_id: userId,
+        p_reason: reason,
+    });
+    if (error) throw new Error(error.message || 'Could not reset username cooldown.');
+};
+
 export const adminGetUserProfile = async (userId: string): Promise<AdminUserRecord | null> => {
     if (shouldUseAdminMockData()) {
         const now = new Date();
@@ -277,6 +295,7 @@ export const adminGetUserProfile = async (userId: string): Promise<AdminUserReco
             last_name: `Profile`,
             username: 'mockuserprofile',
             username_display: 'MockUserProfile',
+            username_changed_at: null,
         };
     }
     const client = requireSupabase();
