@@ -12,7 +12,7 @@ summary: "Trip planner now includes an experimental map minimize mode with a dra
 
 ## Changes
 - [x] [New feature] 🗺️ Trip planning now includes a map minimize control that can switch the map into a floating preview and restore it back to the main planner layout.
-- [x] [Improved] 🪟 The minimized map now appears as a draggable floating card with a tall 2:3 preview shape, squircle corners, a reinforced top frame drag handle, a strong white frame, and soft depth shadow.
+- [x] [Improved] 🪟 The minimized map now appears as a draggable floating card with a tall 2:3 preview shape, squircle corners, a reinforced top frame drag handle, springy snap motion, a strong white frame, and soft depth shadow.
 - [x] [Improved] 📅 When the map is minimized, the calendar workspace now expands to use the full planner area and triggers an automatic timeline fit for easier editing.
 - [ ] [Internal] 📊 Map preview minimize, maximize, and reposition interactions now emit dedicated trip-view analytics events.
 - [ ] [Internal] ✅ Added regression coverage for floating map dock mode behavior and resize auto-fit triggers.

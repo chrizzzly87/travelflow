@@ -1,5 +1,6 @@
 import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeftRight, ArrowUpDown, CalendarDays, Focus, Layers, List, Maximize2, Minimize2, ZoomIn, ZoomOut } from 'lucide-react';
+import { LazyMotion, animate, domAnimation, m, useDragControls, useMotionValue, type PanInfo } from 'framer-motion';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 
 import type { ITimelineItem, MapColorMode, MapStyle, RouteMode, RouteStatus } from '../../types';
@@ -63,7 +64,7 @@ const FLOATING_MAP_MAX_WIDTH = 360;
 const FLOATING_MAP_VIEWPORT_RATIO = 0.24;
 const FLOATING_MAP_DRAG_THRESHOLD = 4;
 const FLOATING_MAP_MAX_ROTATION = 11;
-const FLOATING_MAP_ROTATION_VELOCITY_FACTOR = 20;
+const FLOATING_MAP_ROTATION_VELOCITY_FACTOR = 0.015;
 const FLOATING_MAP_SETTLE_DURATION_MS = 380;
 const FLOATING_MAP_SQUIRCLE_RADIUS = '24% / 16%';
 
@@ -182,12 +183,10 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
     onDetailsResizeKeyDown,
     onTimelineResizeKeyDown,
 }) => {
-    const dragCleanupRef = useRef<(() => void) | null>(null);
     const dragSettleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const floatingMapPositionRef = useRef<{ x: number; y: number } | null>(null);
-    const floatingMapRotationRef = useRef(0);
-    const [floatingMapPosition, setFloatingMapPosition] = useState<{ x: number; y: number } | null>(null);
-    const [floatingMapRotationDeg, setFloatingMapRotationDeg] = useState(0);
+    const didMoveFloatingMapRef = useRef(false);
+    const didTrackFloatingMapRepositionRef = useRef(false);
     const [isFloatingMapDragging, setIsFloatingMapDragging] = useState(false);
     const [isFloatingMapSettling, setIsFloatingMapSettling] = useState(false);
     const floatingMapWidth = typeof window === 'undefined'
@@ -208,12 +207,10 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                 (floatingMapWidth * 3) / 2,
             )
     ), [floatingMapWidth]);
-
-    const stopDraggingFloatingMap = useCallback(() => {
-        if (!dragCleanupRef.current) return;
-        dragCleanupRef.current();
-        dragCleanupRef.current = null;
-    }, []);
+    const floatingMapDragControls = useDragControls();
+    const floatingMapX = useMotionValue(floatingMapFallbackPosition.x);
+    const floatingMapY = useMotionValue(floatingMapFallbackPosition.y);
+    const floatingMapRotation = useMotionValue(0);
 
     const clearFloatingMapSettleTimer = useCallback(() => {
         if (!dragSettleTimerRef.current) return;
@@ -223,143 +220,151 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
 
     const beginFloatingMapDrag = useCallback((event: React.PointerEvent<HTMLElement>) => {
         if (isMobile || mapDockMode !== 'floating') return;
-        const panel = mapViewportRef.current;
-        if (!panel) return;
         event.preventDefault();
+        floatingMapDragControls.start(event, { snapToCursor: false });
+    }, [floatingMapDragControls, isMobile, mapDockMode]);
 
-        stopDraggingFloatingMap();
+    const applyFloatingMapPosition = useCallback((
+        nextPosition: { x: number; y: number },
+        panelWidth: number,
+        panelHeight: number,
+        animateToPosition = false,
+    ) => {
+        const clampedPosition = clampFloatingMapPosition(nextPosition, panelWidth, panelHeight);
+        floatingMapPositionRef.current = clampedPosition;
+        if (animateToPosition) {
+            animate(floatingMapX, clampedPosition.x, {
+                type: 'spring',
+                stiffness: 430,
+                damping: 35,
+                mass: 0.84,
+            });
+            animate(floatingMapY, clampedPosition.y, {
+                type: 'spring',
+                stiffness: 430,
+                damping: 35,
+                mass: 0.84,
+            });
+            return;
+        }
+        floatingMapX.set(clampedPosition.x);
+        floatingMapY.set(clampedPosition.y);
+    }, [floatingMapX, floatingMapY]);
+
+    const handleFloatingMapDragStart = useCallback(() => {
+        didMoveFloatingMapRef.current = false;
+        didTrackFloatingMapRepositionRef.current = false;
         clearFloatingMapSettleTimer();
         setIsFloatingMapDragging(true);
         setIsFloatingMapSettling(false);
+    }, [clearFloatingMapSettleTimer]);
+
+    const handleFloatingMapDrag = useCallback((
+        _event: MouseEvent | TouchEvent | PointerEvent,
+        info: PanInfo,
+    ) => {
+        const panel = mapViewportRef.current;
+        if (!panel) return;
+        const panelRect = panel.getBoundingClientRect();
+        const currentPosition = {
+            x: floatingMapX.get(),
+            y: floatingMapY.get(),
+        };
+        const clampedPosition = clampFloatingMapPosition(currentPosition, panelRect.width, panelRect.height);
+        if (clampedPosition.x !== currentPosition.x) floatingMapX.set(clampedPosition.x);
+        if (clampedPosition.y !== currentPosition.y) floatingMapY.set(clampedPosition.y);
+        floatingMapPositionRef.current = clampedPosition;
+
+        const movement = Math.hypot(info.offset.x, info.offset.y);
+        if (movement >= FLOATING_MAP_DRAG_THRESHOLD) {
+            didMoveFloatingMapRef.current = true;
+            if (!didTrackFloatingMapRepositionRef.current) {
+                trackEvent('trip_view__map_preview--reposition', {
+                    trip_id: tripId,
+                });
+                didTrackFloatingMapRepositionRef.current = true;
+            }
+        }
+
+        const targetRotation = clampValue(
+            info.velocity.x * FLOATING_MAP_ROTATION_VELOCITY_FACTOR,
+            -FLOATING_MAP_MAX_ROTATION,
+            FLOATING_MAP_MAX_ROTATION,
+        );
+        const nextRotation = (floatingMapRotation.get() * 0.2) + (targetRotation * 0.8);
+        floatingMapRotation.set(nextRotation);
+    }, [floatingMapRotation, floatingMapX, floatingMapY, mapViewportRef, tripId]);
+
+    const handleFloatingMapDragEnd = useCallback(() => {
+        setIsFloatingMapDragging(false);
+        const panel = mapViewportRef.current;
+        if (!panel) {
+            setIsFloatingMapSettling(false);
+            return;
+        }
+        if (!didMoveFloatingMapRef.current) {
+            animate(floatingMapRotation, 0, {
+                type: 'spring',
+                stiffness: 260,
+                damping: 22,
+                mass: 0.76,
+            });
+            setIsFloatingMapSettling(false);
+            return;
+        }
 
         const panelRect = panel.getBoundingClientRect();
-        const basePosition = floatingMapPositionRef.current ?? floatingMapFallbackPosition;
-        const startClientX = event.clientX;
-        const startClientY = event.clientY;
-        const velocitySample = {
-            x: event.clientX,
-            time: performance.now(),
-        };
-        let didActivateDrag = false;
-        let didTrackReposition = false;
+        const currentPosition = clampFloatingMapPosition(
+            { x: floatingMapX.get(), y: floatingMapY.get() },
+            panelRect.width,
+            panelRect.height,
+        );
+        const snapTarget = resolveNearestFloatingMapSnapTarget(currentPosition, panelRect.width, panelRect.height);
+        const releaseRotation = clampValue(floatingMapRotation.get() * 0.52, -7, 7);
 
-        const handlePointerMove = (moveEvent: PointerEvent) => {
-            const deltaX = moveEvent.clientX - startClientX;
-            const deltaY = moveEvent.clientY - startClientY;
-            if (!didActivateDrag && Math.hypot(deltaX, deltaY) < FLOATING_MAP_DRAG_THRESHOLD) return;
-            if (!didActivateDrag) {
-                didActivateDrag = true;
-                setIsFloatingMapDragging(true);
-                if (!didTrackReposition) {
-                    trackEvent('trip_view__map_preview--reposition', {
-                        trip_id: tripId,
-                    });
-                    didTrackReposition = true;
-                }
-            }
-            moveEvent.preventDefault();
+        setIsFloatingMapSettling(true);
+        floatingMapPositionRef.current = snapTarget;
+        floatingMapRotation.set(releaseRotation);
 
-            const nextPosition = clampFloatingMapPosition(
-                {
-                    x: basePosition.x + deltaX,
-                    y: basePosition.y + deltaY,
-                },
-                panelRect.width,
-                panelRect.height,
-            );
-            floatingMapPositionRef.current = nextPosition;
-            setFloatingMapPosition(nextPosition);
+        animate(floatingMapX, snapTarget.x, {
+            type: 'spring',
+            stiffness: 420,
+            damping: 33,
+            mass: 0.82,
+        });
+        animate(floatingMapY, snapTarget.y, {
+            type: 'spring',
+            stiffness: 420,
+            damping: 33,
+            mass: 0.82,
+        });
+        animate(floatingMapRotation, 0, {
+            type: 'spring',
+            stiffness: 250,
+            damping: 19,
+            mass: 0.74,
+        });
 
-            const now = performance.now();
-            const deltaTime = Math.max(1, now - velocitySample.time);
-            const velocityX = (moveEvent.clientX - velocitySample.x) / deltaTime;
-            const targetRotation = clampValue(
-                velocityX * FLOATING_MAP_ROTATION_VELOCITY_FACTOR,
-                -FLOATING_MAP_MAX_ROTATION,
-                FLOATING_MAP_MAX_ROTATION,
-            );
-            const nextRotation = (floatingMapRotationRef.current * 0.25) + (targetRotation * 0.75);
-            floatingMapRotationRef.current = nextRotation;
-            setFloatingMapRotationDeg(nextRotation);
-
-            velocitySample.x = moveEvent.clientX;
-            velocitySample.time = now;
-        };
-
-        const handlePointerUp = () => {
-            stopDraggingFloatingMap();
-            if (!didActivateDrag) {
-                setIsFloatingMapDragging(false);
-                setIsFloatingMapSettling(false);
-                return;
-            }
-            const resolvedPanel = mapViewportRef.current;
-            const panelWidth = resolvedPanel?.offsetWidth ?? panelRect.width;
-            const panelHeight = resolvedPanel?.offsetHeight ?? panelRect.height;
-            const currentPosition = floatingMapPositionRef.current ?? basePosition;
-            const snapTarget = resolveNearestFloatingMapSnapTarget(currentPosition, panelWidth, panelHeight);
-            const releaseRotation = clampValue(floatingMapRotationRef.current * 0.55, -7, 7);
-
-            setIsFloatingMapSettling(true);
-            floatingMapRotationRef.current = releaseRotation;
-            setFloatingMapRotationDeg(releaseRotation);
-            floatingMapPositionRef.current = snapTarget;
-            setFloatingMapPosition(snapTarget);
-
-            requestAnimationFrame(() => {
-                floatingMapRotationRef.current = 0;
-                setFloatingMapRotationDeg(0);
-            });
-
-            clearFloatingMapSettleTimer();
-            dragSettleTimerRef.current = setTimeout(() => {
-                setIsFloatingMapDragging(false);
-                setIsFloatingMapSettling(false);
-                dragSettleTimerRef.current = null;
-            }, FLOATING_MAP_SETTLE_DURATION_MS);
-        };
-
-        window.addEventListener('pointermove', handlePointerMove);
-        window.addEventListener('pointerup', handlePointerUp);
-        window.addEventListener('pointercancel', handlePointerUp);
-
-        dragCleanupRef.current = () => {
-            window.removeEventListener('pointermove', handlePointerMove);
-            window.removeEventListener('pointerup', handlePointerUp);
-            window.removeEventListener('pointercancel', handlePointerUp);
-        };
-    }, [
-        clearFloatingMapSettleTimer,
-        floatingMapFallbackPosition,
-        isMobile,
-        mapDockMode,
-        stopDraggingFloatingMap,
-        tripId,
-    ]);
+        clearFloatingMapSettleTimer();
+        dragSettleTimerRef.current = setTimeout(() => {
+            setIsFloatingMapSettling(false);
+            dragSettleTimerRef.current = null;
+        }, FLOATING_MAP_SETTLE_DURATION_MS);
+    }, [clearFloatingMapSettleTimer, floatingMapRotation, floatingMapX, floatingMapY, mapViewportRef]);
 
     useEffect(() => {
         return () => {
-            stopDraggingFloatingMap();
             clearFloatingMapSettleTimer();
         };
-    }, [clearFloatingMapSettleTimer, stopDraggingFloatingMap]);
+    }, [clearFloatingMapSettleTimer]);
 
     useEffect(() => {
         if (mapDockMode === 'floating') return;
-        stopDraggingFloatingMap();
         clearFloatingMapSettleTimer();
         setIsFloatingMapDragging(false);
         setIsFloatingMapSettling(false);
-        setFloatingMapRotationDeg(0);
-    }, [clearFloatingMapSettleTimer, mapDockMode, stopDraggingFloatingMap]);
-
-    useEffect(() => {
-        floatingMapPositionRef.current = floatingMapPosition;
-    }, [floatingMapPosition]);
-
-    useEffect(() => {
-        floatingMapRotationRef.current = floatingMapRotationDeg;
-    }, [floatingMapRotationDeg]);
+        floatingMapRotation.set(0);
+    }, [clearFloatingMapSettleTimer, floatingMapRotation, mapDockMode]);
 
     useEffect(() => {
         if (isMobile || mapDockMode !== 'floating') return;
@@ -367,24 +372,22 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
             const panel = mapViewportRef.current;
             if (!panel) return;
             const panelRect = panel.getBoundingClientRect();
-            setFloatingMapPosition((previous) => {
-                if (previous) {
-                    return clampFloatingMapPosition(previous, panelRect.width, panelRect.height);
-                }
-                return clampFloatingMapPosition(
-                    {
-                        x: window.innerWidth - panelRect.width - FLOATING_MAP_MARGIN,
-                        y: window.innerHeight - panelRect.height - FLOATING_MAP_MARGIN,
-                    },
-                    panelRect.width,
-                    panelRect.height,
-                );
-            });
+            const previous = floatingMapPositionRef.current ?? {
+                x: floatingMapX.get(),
+                y: floatingMapY.get(),
+            };
+            const nextPosition = Number.isFinite(previous.x) && Number.isFinite(previous.y)
+                ? previous
+                : {
+                    x: window.innerWidth - panelRect.width - FLOATING_MAP_MARGIN,
+                    y: window.innerHeight - panelRect.height - FLOATING_MAP_MARGIN,
+                };
+            applyFloatingMapPosition(nextPosition, panelRect.width, panelRect.height);
         };
 
         const rafId = window.requestAnimationFrame(resolvePosition);
         return () => window.cancelAnimationFrame(rafId);
-    }, [isMobile, mapDockMode, floatingMapWidth]);
+    }, [applyFloatingMapPosition, floatingMapWidth, floatingMapX, floatingMapY, isMobile, mapDockMode, mapViewportRef]);
 
     useEffect(() => {
         if (isMobile || mapDockMode !== 'floating') return;
@@ -392,35 +395,21 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
             const panel = mapViewportRef.current;
             if (!panel) return;
             const panelRect = panel.getBoundingClientRect();
-            setFloatingMapPosition((previous) => {
-                if (!previous) {
-                    return clampFloatingMapPosition(
-                        {
-                            x: window.innerWidth - panelRect.width - FLOATING_MAP_MARGIN,
-                            y: window.innerHeight - panelRect.height - FLOATING_MAP_MARGIN,
-                        },
-                        panelRect.width,
-                        panelRect.height,
-                    );
-                }
-                return clampFloatingMapPosition(previous, panelRect.width, panelRect.height);
-            });
+            const previous = floatingMapPositionRef.current ?? {
+                x: floatingMapX.get(),
+                y: floatingMapY.get(),
+            };
+            applyFloatingMapPosition(previous, panelRect.width, panelRect.height, true);
         };
 
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
-    }, [isMobile, mapDockMode]);
+    }, [applyFloatingMapPosition, floatingMapX, floatingMapY, isMobile, mapDockMode, mapViewportRef]);
 
     const toggleMapDockMode = useCallback(() => {
         onMapDockModeChange(mapDockMode === 'docked' ? 'floating' : 'docked');
     }, [mapDockMode, onMapDockModeChange]);
     const effectiveMapViewTransitionName = mapViewTransitionName ?? 'trip-map-dock-preview';
-    const floatingMapTransform = `translateZ(0) rotate(${floatingMapRotationDeg.toFixed(2)}deg) scale(${isFloatingMapDragging ? 1.02 : 1})`;
-    const floatingMapTransition = isFloatingMapDragging
-        ? 'left 0ms linear, top 0ms linear, transform 0ms linear, box-shadow 140ms ease'
-        : isFloatingMapSettling
-            ? 'left 280ms cubic-bezier(0.22, 1, 0.36, 1), top 280ms cubic-bezier(0.22, 1, 0.36, 1), transform 420ms cubic-bezier(0.2, 1.25, 0.32, 1), box-shadow 220ms ease'
-            : 'left 220ms cubic-bezier(0.22, 1, 0.36, 1), top 220ms cubic-bezier(0.22, 1, 0.36, 1), transform 220ms ease-out, box-shadow 200ms ease-out';
 
     const timelineControls = (
         <div className="flex flex-wrap items-center justify-end gap-2 pointer-events-auto">
@@ -759,44 +748,64 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                             )}
                         </div>
                         {mapDockMode === 'floating' && (
-                            <div
-                                ref={mapViewportRef}
-                                data-testid="floating-map-container"
-                                className={`tf-floating-map-enter fixed z-[1400] overflow-hidden bg-gray-100 border-[4px] border-t-[10px] border-white ${
-                                    isFloatingMapDragging
-                                        ? 'shadow-[0_34px_70px_-28px_rgba(15,23,42,0.72),0_14px_30px_-16px_rgba(15,23,42,0.45)]'
-                                        : 'shadow-[0_18px_50px_-22px_rgba(15,23,42,0.6),0_8px_22px_-12px_rgba(15,23,42,0.4)]'
-                                }`}
-                                style={{
-                                    width: `${floatingMapWidth}px`,
-                                    aspectRatio: '2 / 3',
-                                    left: (floatingMapPosition?.x ?? floatingMapFallbackPosition.x),
-                                    top: (floatingMapPosition?.y ?? floatingMapFallbackPosition.y),
-                                    transform: floatingMapTransform,
-                                    transformOrigin: '50% 0%',
-                                    transition: floatingMapTransition,
-                                    borderRadius: FLOATING_MAP_SQUIRCLE_RADIUS,
-                                }}
-                            >
-                                <div className="pointer-events-none absolute top-0 inset-x-0 z-[90] flex justify-center pt-2">
-                                    <button
-                                        type="button"
-                                        data-testid="floating-map-drag-handle"
-                                        data-floating-map-control="true"
-                                        onPointerDown={beginFloatingMapDrag}
-                                        className={`pointer-events-auto inline-flex h-8 w-24 items-center justify-center rounded-full border border-white/80 bg-white/90 shadow-sm backdrop-blur-md touch-none ${
-                                            isFloatingMapDragging ? 'cursor-grabbing scale-[1.04]' : 'cursor-grab'
-                                        } transition-transform`}
-                                        aria-label="Move floating map preview"
-                                    >
-                                        <span className="inline-block h-1.5 w-14 rounded-full bg-slate-400/60 shadow-[inset_0_1px_0_rgba(255,255,255,0.35)]" />
-                                        <span className="sr-only">Move floating map preview</span>
-                                    </button>
-                                </div>
-                                <div className="h-full w-full overflow-hidden" style={{ borderRadius: 'inherit' }}>
-                                    {renderMap(layoutMode, false)}
-                                </div>
-                            </div>
+                            <LazyMotion features={domAnimation}>
+                                <m.div
+                                    ref={mapViewportRef}
+                                    data-testid="floating-map-container"
+                                    drag
+                                    dragControls={floatingMapDragControls}
+                                    dragListener={false}
+                                    dragElastic={0.06}
+                                    dragMomentum={false}
+                                    onDragStart={handleFloatingMapDragStart}
+                                    onDrag={handleFloatingMapDrag}
+                                    onDragEnd={handleFloatingMapDragEnd}
+                                    animate={{
+                                        scale: isFloatingMapDragging ? 1.02 : 1,
+                                    }}
+                                    transition={{
+                                        type: 'spring',
+                                        stiffness: 380,
+                                        damping: 30,
+                                        mass: 0.82,
+                                    }}
+                                    className={`tf-floating-map-enter fixed z-[1400] overflow-hidden bg-gray-100 border-[4px] border-t-[10px] border-white ${
+                                        isFloatingMapDragging
+                                            ? 'shadow-[0_34px_70px_-28px_rgba(15,23,42,0.72),0_14px_30px_-16px_rgba(15,23,42,0.45)]'
+                                            : 'shadow-[0_18px_50px_-22px_rgba(15,23,42,0.6),0_8px_22px_-12px_rgba(15,23,42,0.4)]'
+                                    }`}
+                                    style={{
+                                        width: `${floatingMapWidth}px`,
+                                        aspectRatio: '2 / 3',
+                                        top: 0,
+                                        left: 0,
+                                        x: floatingMapX,
+                                        y: floatingMapY,
+                                        rotate: floatingMapRotation,
+                                        transformOrigin: '50% 0%',
+                                        borderRadius: FLOATING_MAP_SQUIRCLE_RADIUS,
+                                    }}
+                                >
+                                    <div className="pointer-events-none absolute top-0 inset-x-0 z-[90] flex justify-center pt-2">
+                                        <button
+                                            type="button"
+                                            data-testid="floating-map-drag-handle"
+                                            data-floating-map-control="true"
+                                            onPointerDown={beginFloatingMapDrag}
+                                            className={`pointer-events-auto inline-flex h-8 w-24 items-center justify-center rounded-full border border-white/80 bg-white/90 shadow-sm backdrop-blur-md touch-none ${
+                                                isFloatingMapDragging ? 'cursor-grabbing scale-[1.04]' : 'cursor-grab'
+                                            } transition-transform`}
+                                            aria-label="Move floating map preview"
+                                        >
+                                            <span className="inline-block h-1.5 w-14 rounded-full bg-slate-400/60 shadow-[inset_0_1px_0_rgba(255,255,255,0.35)]" />
+                                            <span className="sr-only">Move floating map preview</span>
+                                        </button>
+                                    </div>
+                                    <div className="h-full w-full overflow-hidden" style={{ borderRadius: 'inherit' }}>
+                                        {renderMap(layoutMode, false)}
+                                    </div>
+                                </m.div>
+                            </LazyMotion>
                         )}
                     </>
                 )}
