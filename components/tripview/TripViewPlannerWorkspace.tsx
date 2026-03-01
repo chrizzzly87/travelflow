@@ -1,6 +1,6 @@
 import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeftRight, ArrowUpDown, CalendarDays, Focus, Layers, List, Maximize2, Minimize2, ZoomIn, ZoomOut } from 'lucide-react';
-import { LazyMotion, animate, domAnimation, m, useDragControls, useMotionValue, type PanInfo } from 'framer-motion';
+import { LazyMotion, animate, domMax, m, useDragControls, useMotionValue, type PanInfo } from 'framer-motion';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 
 import type { ITimelineItem, MapColorMode, MapStyle, RouteMode, RouteStatus } from '../../types';
@@ -66,7 +66,7 @@ const FLOATING_MAP_DRAG_THRESHOLD = 4;
 const FLOATING_MAP_MAX_ROTATION = 11;
 const FLOATING_MAP_ROTATION_VELOCITY_FACTOR = 0.015;
 const FLOATING_MAP_SETTLE_DURATION_MS = 380;
-const FLOATING_MAP_SQUIRCLE_RADIUS = '24% / 16%';
+const FLOATING_MAP_BORDER_RADIUS = '1.125rem';
 
 const clampValue = (value: number, min: number, max: number): number => Math.max(min, Math.min(max, value));
 
@@ -748,7 +748,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                             )}
                         </div>
                         {mapDockMode === 'floating' && (
-                            <LazyMotion features={domAnimation}>
+                            <LazyMotion features={domMax}>
                                 <m.div
                                     ref={mapViewportRef}
                                     data-testid="floating-map-container"
@@ -783,7 +783,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                                         y: floatingMapY,
                                         rotate: floatingMapRotation,
                                         transformOrigin: '50% 0%',
-                                        borderRadius: FLOATING_MAP_SQUIRCLE_RADIUS,
+                                        borderRadius: FLOATING_MAP_BORDER_RADIUS,
                                     }}
                                 >
                                     <div className="pointer-events-none absolute top-0 inset-x-0 z-[90] flex justify-center pt-2">
