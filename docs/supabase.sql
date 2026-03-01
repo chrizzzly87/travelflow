@@ -4869,6 +4869,7 @@ begin
 end;
 $$;
 
+drop function if exists public.profile_resolve_public_handle(text);
 create or replace function public.profile_resolve_public_handle(p_handle text)
 returns table(
   status text,
