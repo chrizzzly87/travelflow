@@ -2,6 +2,11 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { LazyMotion, animate, domMax, m, useDragControls, useMotionValue, useSpring, type PanInfo } from 'framer-motion';
 
 import { trackEvent } from '../../services/analyticsService';
+import {
+    type FloatingMapSizePreset,
+    readFloatingMapPreviewState,
+    writeFloatingMapPreviewState,
+} from './floatingMapPreviewState';
 
 interface TripFloatingMapPreviewProps {
     mapDockMode: 'docked' | 'floating';
@@ -22,6 +27,32 @@ const FLOATING_MAP_ROTATION_VELOCITY_FACTOR = 0.015;
 const FLOATING_MAP_SETTLE_DURATION_MS = 380;
 const FLOATING_MAP_BORDER_RADIUS = '1rem';
 const FLOATING_MAP_NAV_TOP_OFFSET = 92;
+const FLOATING_MAP_ASPECT_RATIO = 2 / 3;
+const FLOATING_MAP_PRESET_ORDER: FloatingMapSizePreset[] = ['sm', 'md', 'lg'];
+const clampValue = (value: number, min: number, max: number): number => Math.max(min, Math.min(max, value));
+
+const resolveFloatingMapPresetWidths = (baseWidth: number): Record<FloatingMapSizePreset, number> => ({
+    sm: Math.round(clampValue(baseWidth * 0.86, FLOATING_MAP_MIN_WIDTH, FLOATING_MAP_MAX_WIDTH)),
+    md: Math.round(clampValue(baseWidth, FLOATING_MAP_MIN_WIDTH, FLOATING_MAP_MAX_WIDTH)),
+    lg: Math.round(clampValue(baseWidth * 1.16, FLOATING_MAP_MIN_WIDTH, FLOATING_MAP_MAX_WIDTH)),
+});
+
+const resolveWidthForPreset = (baseWidth: number, preset: FloatingMapSizePreset): number =>
+    resolveFloatingMapPresetWidths(baseWidth)[preset];
+
+const resolveNearestSizePreset = (
+    candidateWidth: number,
+    baseWidth: number,
+    fallback: FloatingMapSizePreset,
+): FloatingMapSizePreset => {
+    const presets = resolveFloatingMapPresetWidths(baseWidth);
+    return FLOATING_MAP_PRESET_ORDER.reduce((closest, preset) => {
+        const closestDistance = Math.abs(presets[closest] - candidateWidth);
+        const presetDistance = Math.abs(presets[preset] - candidateWidth);
+        if (presetDistance < closestDistance) return preset;
+        return closest;
+    }, fallback);
+};
 
 const resolveFloatingMapTopBoundary = (): number => {
     if (typeof window === 'undefined' || typeof document === 'undefined') {
@@ -35,8 +66,6 @@ const resolveFloatingMapTopBoundary = (): number => {
     }
     return Math.max(FLOATING_MAP_NAV_TOP_OFFSET, Math.ceil(rect.bottom + 12));
 };
-
-const clampValue = (value: number, min: number, max: number): number => Math.max(min, Math.min(max, value));
 
 const resolveFloatingMapWidth = (): number => {
     if (typeof window === 'undefined') return FLOATING_MAP_MIN_WIDTH;
@@ -135,21 +164,40 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
     tripId,
     children,
 }) => {
-    const [floatingMapWidth, setFloatingMapWidth] = useState(() => resolveFloatingMapWidth());
+    const initialPersistedStateRef = useRef(readFloatingMapPreviewState());
+    const [floatingMapBaseWidth, setFloatingMapBaseWidth] = useState(() => resolveFloatingMapWidth());
+    const [floatingMapSizePreset, setFloatingMapSizePreset] = useState<FloatingMapSizePreset>(() => (
+        initialPersistedStateRef.current.sizePreset ?? 'md'
+    ));
+    const floatingMapSizePresetRef = useRef<FloatingMapSizePreset>(floatingMapSizePreset);
     const [isFloatingMapDragging, setIsFloatingMapDragging] = useState(false);
+    const [isFloatingMapResizing, setIsFloatingMapResizing] = useState(false);
     const [isFloatingMapSettling, setIsFloatingMapSettling] = useState(false);
     const [isHandlePressed, setIsHandlePressed] = useState(false);
     const [hasResolvedInitialGeometry, setHasResolvedInitialGeometry] = useState(false);
     const dragSettleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const resizeSessionRef = useRef<{
+        pointerId: number;
+        startClientX: number;
+        startClientY: number;
+        startX: number;
+        startY: number;
+        startWidth: number;
+        startHeight: number;
+    } | null>(null);
     const floatingMapDragControls = useDragControls();
     const floatingMapPositionRef = useRef<{ x: number; y: number } | null>(null);
+    const initialStoredPositionRef = useRef<{ x: number; y: number } | null>(
+        initialPersistedStateRef.current.position ?? null,
+    );
     const lastDockedMapRectRef = useRef<{ x: number; y: number; width: number; height: number } | null>(null);
     const didMoveFloatingMapRef = useRef(false);
     const didTrackFloatingMapRepositionRef = useRef(false);
+    const floatingMapWidth = resolveWidthForPreset(floatingMapBaseWidth, floatingMapSizePreset);
     const floatingMapX = useMotionValue(FLOATING_MAP_MARGIN);
     const floatingMapY = useMotionValue(FLOATING_MAP_MARGIN);
     const surfaceWidth = useMotionValue(floatingMapWidth);
-    const surfaceHeight = useMotionValue((floatingMapWidth * 3) / 2);
+    const surfaceHeight = useMotionValue(floatingMapWidth / FLOATING_MAP_ASPECT_RATIO);
     const floatingMapRotation = useMotionValue(0);
     const floatingMapVisualRotation = useSpring(floatingMapRotation, {
         stiffness: 330,
@@ -209,15 +257,19 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
             applySurfaceGeometry(dockedRect, animateToPosition);
             floatingMapRotation.set(0);
             setIsFloatingMapDragging(false);
+            setIsFloatingMapResizing(false);
             setIsFloatingMapSettling(false);
             setIsHandlePressed(false);
             return true;
         }
 
-        const floatingMapHeight = (floatingMapWidth * 3) / 2;
-        const currentPosition = floatingMapPositionRef.current ?? resolveDefaultFloatingMapPosition(floatingMapWidth, floatingMapHeight);
+        const floatingMapHeight = floatingMapWidth / FLOATING_MAP_ASPECT_RATIO;
+        const currentPosition = floatingMapPositionRef.current
+            ?? initialStoredPositionRef.current
+            ?? resolveDefaultFloatingMapPosition(floatingMapWidth, floatingMapHeight);
         const clampedPosition = clampFloatingMapPosition(currentPosition, floatingMapWidth, floatingMapHeight);
         floatingMapPositionRef.current = clampedPosition;
+        initialStoredPositionRef.current = clampedPosition;
         applySurfaceGeometry(
             {
                 x: clampedPosition.x,
@@ -229,6 +281,10 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
         );
         return true;
     }, [applySurfaceGeometry, dockedMapAnchorRef, floatingMapRotation, floatingMapWidth, mapDockMode]);
+
+    useEffect(() => {
+        floatingMapSizePresetRef.current = floatingMapSizePreset;
+    }, [floatingMapSizePreset]);
 
     useEffect(() => {
         return () => {
@@ -262,7 +318,7 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
     useEffect(() => {
         if (typeof window === 'undefined') return;
         const handleResize = () => {
-            setFloatingMapWidth(resolveFloatingMapWidth());
+            setFloatingMapBaseWidth(resolveFloatingMapWidth());
             syncSurfaceGeometry(true);
         };
         window.addEventListener('resize', handleResize);
@@ -296,13 +352,106 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
         };
     }, [isHandlePressed]);
 
-    const beginFloatingMapDrag = useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
+    const persistFloatingMapState = useCallback((position: { x: number; y: number }, sizePreset: FloatingMapSizePreset) => {
+        writeFloatingMapPreviewState({
+            position,
+            sizePreset,
+        });
+    }, []);
+
+    const handleFloatingMapResizeEnd = useCallback((pointerId: number) => {
+        if (!resizeSessionRef.current || resizeSessionRef.current.pointerId !== pointerId) return;
+        resizeSessionRef.current = null;
+        setIsFloatingMapResizing(false);
+        const finalPosition = floatingMapPositionRef.current ?? {
+            x: floatingMapX.get(),
+            y: floatingMapY.get(),
+        };
+        persistFloatingMapState(finalPosition, floatingMapSizePresetRef.current);
+    }, [floatingMapX, floatingMapY, persistFloatingMapState]);
+
+    const handleFloatingMapResizeMove = useCallback((event: PointerEvent) => {
+        const session = resizeSessionRef.current;
+        if (!session || session.pointerId !== event.pointerId) return;
+
+        const horizontalDelta = event.clientX - session.startClientX;
+        const verticalDelta = event.clientY - session.startClientY;
+        const widthFromX = session.startWidth - horizontalDelta;
+        const widthFromY = (session.startHeight - verticalDelta) * FLOATING_MAP_ASPECT_RATIO;
+        const candidateWidth = Math.abs(horizontalDelta) >= Math.abs(verticalDelta) ? widthFromX : widthFromY;
+        const nextPreset = resolveNearestSizePreset(
+            candidateWidth,
+            floatingMapBaseWidth,
+            floatingMapSizePresetRef.current,
+        );
+        const nextWidth = resolveWidthForPreset(floatingMapBaseWidth, nextPreset);
+        const nextHeight = nextWidth / FLOATING_MAP_ASPECT_RATIO;
+        const fixedRight = session.startX + session.startWidth;
+        const fixedBottom = session.startY + session.startHeight;
+        const desiredPosition = {
+            x: fixedRight - nextWidth,
+            y: fixedBottom - nextHeight,
+        };
+        const clampedPosition = clampFloatingMapPosition(desiredPosition, nextWidth, nextHeight);
+        floatingMapX.set(clampedPosition.x);
+        floatingMapY.set(clampedPosition.y);
+        surfaceWidth.set(nextWidth);
+        surfaceHeight.set(nextHeight);
+        floatingMapPositionRef.current = clampedPosition;
+
+        if (nextPreset !== floatingMapSizePresetRef.current) {
+            floatingMapSizePresetRef.current = nextPreset;
+            setFloatingMapSizePreset(nextPreset);
+        }
+    }, [floatingMapBaseWidth, floatingMapX, floatingMapY, surfaceHeight, surfaceWidth]);
+
+    useEffect(() => {
+        if (!isFloatingMapResizing) return;
+        const handlePointerMove = (event: PointerEvent) => {
+            handleFloatingMapResizeMove(event);
+        };
+        const handlePointerUp = (event: PointerEvent) => {
+            handleFloatingMapResizeEnd(event.pointerId);
+        };
+
+        window.addEventListener('pointermove', handlePointerMove, true);
+        window.addEventListener('pointerup', handlePointerUp, true);
+        window.addEventListener('pointercancel', handlePointerUp, true);
+        return () => {
+            window.removeEventListener('pointermove', handlePointerMove, true);
+            window.removeEventListener('pointerup', handlePointerUp, true);
+            window.removeEventListener('pointercancel', handlePointerUp, true);
+        };
+    }, [handleFloatingMapResizeEnd, handleFloatingMapResizeMove, isFloatingMapResizing]);
+
+    const beginFloatingMapResize = useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
         if (mapDockMode !== 'floating') return;
+        event.preventDefault();
+        event.stopPropagation();
+        clearFloatingMapSettleTimer();
+        setIsFloatingMapDragging(false);
+        setIsFloatingMapSettling(false);
+        setIsHandlePressed(false);
+        setIsFloatingMapResizing(true);
+        floatingMapRotation.set(0);
+        resizeSessionRef.current = {
+            pointerId: event.pointerId,
+            startClientX: event.clientX,
+            startClientY: event.clientY,
+            startX: floatingMapX.get(),
+            startY: floatingMapY.get(),
+            startWidth: surfaceWidth.get(),
+            startHeight: surfaceHeight.get(),
+        };
+    }, [clearFloatingMapSettleTimer, floatingMapRotation, floatingMapX, floatingMapY, mapDockMode, surfaceHeight, surfaceWidth]);
+
+    const beginFloatingMapDrag = useCallback((event: React.PointerEvent<HTMLButtonElement>) => {
+        if (mapDockMode !== 'floating' || isFloatingMapResizing) return;
         setIsHandlePressed(true);
         event.preventDefault();
         event.stopPropagation();
         floatingMapDragControls.start(event, { snapToCursor: false });
-    }, [floatingMapDragControls, mapDockMode]);
+    }, [floatingMapDragControls, isFloatingMapResizing, mapDockMode]);
 
     const handleFloatingMapDragStart = useCallback(() => {
         didMoveFloatingMapRef.current = false;
@@ -399,14 +548,16 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
             setIsFloatingMapSettling(false);
             dragSettleTimerRef.current = null;
         }, FLOATING_MAP_SETTLE_DURATION_MS);
-    }, [clearFloatingMapSettleTimer, floatingMapRotation, floatingMapX, floatingMapY, surfaceHeight, surfaceWidth]);
+
+        persistFloatingMapState(snapTarget, floatingMapSizePresetRef.current);
+    }, [clearFloatingMapSettleTimer, floatingMapRotation, floatingMapX, floatingMapY, persistFloatingMapState, surfaceHeight, surfaceWidth]);
 
     return (
         <LazyMotion features={domMax}>
             <m.div
                 ref={mapViewportRef}
                 data-testid={mapDockMode === 'floating' ? 'floating-map-container' : undefined}
-                drag={mapDockMode === 'floating'}
+                drag={mapDockMode === 'floating' && !isFloatingMapResizing}
                 dragControls={floatingMapDragControls}
                 dragListener={false}
                 dragElastic={0.06}
@@ -415,7 +566,7 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
                 onDrag={handleFloatingMapDrag}
                 onDragEnd={handleFloatingMapDragEnd}
                 animate={{
-                    scale: isFloatingMapDragging ? 1.018 : 1,
+                    scale: isFloatingMapDragging || isFloatingMapResizing ? 1.018 : 1,
                 }}
                 transition={{
                     type: 'spring',
@@ -426,7 +577,7 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
                 className={`fixed overflow-hidden bg-gray-100 transition-[border-radius,box-shadow,border-width] duration-300 ease-out ${
                     mapDockMode === 'floating'
                         ? `z-[1400] border-[4px] border-white ${
-                            isFloatingMapDragging
+                            isFloatingMapDragging || isFloatingMapResizing
                                 ? 'shadow-[0_34px_70px_-28px_rgba(15,23,42,0.72),0_14px_30px_-16px_rgba(15,23,42,0.45)]'
                                 : 'shadow-[0_20px_50px_-22px_rgba(15,23,42,0.58),0_10px_24px_-12px_rgba(15,23,42,0.38)]'
                         }`
@@ -458,6 +609,24 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
                         >
                             <span className="inline-block h-1.5 w-14 rounded-full bg-slate-400/65 shadow-[inset_0_1px_0_rgba(255,255,255,0.35)] transition-colors group-hover:bg-accent-500" />
                             <span className="sr-only">Move floating map preview</span>
+                        </button>
+                    </div>
+                )}
+                {mapDockMode === 'floating' && (
+                    <div className="pointer-events-none absolute top-0 start-0 z-[92]">
+                        <button
+                            type="button"
+                            data-testid="floating-map-resize-handle"
+                            data-floating-map-control="true"
+                            onPointerDown={beginFloatingMapResize}
+                            className="group pointer-events-auto relative flex h-8 w-8 items-start justify-start rounded-br-xl border-[4px] border-s-0 border-t-0 border-white bg-white/92 ps-1 pt-1 shadow-sm backdrop-blur-md transition-colors hover:bg-white cursor-nwse-resize touch-none"
+                            aria-label="Resize floating map preview"
+                        >
+                            <span className="sr-only">Resize floating map preview</span>
+                            <span className="relative inline-block h-3.5 w-3.5 text-slate-400 transition-colors group-hover:text-accent-500">
+                                <span className="absolute end-0 top-0 h-0.5 w-3 rotate-45 rounded-full bg-current" />
+                                <span className="absolute end-[-1px] top-[5px] h-0.5 w-3 rotate-45 rounded-full bg-current" />
+                            </span>
                         </button>
                     </div>
                 )}

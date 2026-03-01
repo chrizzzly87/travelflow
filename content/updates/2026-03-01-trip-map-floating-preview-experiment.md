@@ -18,6 +18,8 @@ summary: "Trip planner now includes an experimental map minimize mode with a dra
 - [x] [Fixed] 🧲 Floating preview drag now keeps the grab cursor active from mouse-down and responds more smoothly while moving.
 - [x] [Fixed] 🧭 Floating preview snap points now stay at viewport corners while respecting the top navigation offset.
 - [x] [Fixed] 🧯 Switching map layout direction no longer auto-zooms the calendar, which reduces noisy history entries and delayed save toasts.
+- [x] [Improved] 💾 Floating map preview now restores your last dock mode, snapped position, and chosen preview size after refresh.
+- [x] [Improved] ↘️ Floating map now has a top-left resize handle with snapped size presets for faster, stable resizing.
 - [ ] [Internal] 📊 Map preview minimize, maximize, and reposition interactions now emit dedicated trip-view analytics events.
 - [ ] [Internal] ✅ Added regression coverage for persistent dock transitions, floating handle styling, and resize auto-fit guardrails.
 - [ ] [Internal] 🧱 Floating map preview behavior is now isolated in a dedicated beta component with removal notes for quick rollback.

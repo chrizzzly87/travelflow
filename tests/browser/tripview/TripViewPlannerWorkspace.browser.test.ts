@@ -126,10 +126,12 @@ describe('components/tripview/TripViewPlannerWorkspace', () => {
 
     const floatingMap = screen.getByTestId('floating-map-container');
     const dragHandle = screen.getByTestId('floating-map-drag-handle');
+    const resizeHandle = screen.getByTestId('floating-map-resize-handle');
 
     expect(floatingMap).toBeInTheDocument();
     expect(dragHandle).toHaveAttribute('aria-label', 'Move floating map preview');
     expect(dragHandle).toHaveAttribute('data-floating-map-control', 'true');
+    expect(resizeHandle).toHaveAttribute('aria-label', 'Resize floating map preview');
   });
 
   it('keeps the map component mounted while toggling dock mode', () => {

@@ -50,6 +50,7 @@ import { useTripTitleEditorState } from './tripview/useTripTitleEditorState';
 import { useTripUpdateItemsHandler } from './tripview/useTripUpdateItemsHandler';
 import { useTripViewModeState } from './tripview/useTripViewModeState';
 import { useTimelinePinchZoom } from './tripview/useTimelinePinchZoom';
+import { readFloatingMapPreviewState, writeFloatingMapPreviewState } from './tripview/floatingMapPreviewState';
 import { TRIP_SYNC_TOAST_EVENT, type SyncToastEventDetail } from '../services/tripSyncManager';
 import {
     ChangeTone,
@@ -1012,7 +1013,11 @@ const useTripViewRender = ({
         defaultDetailsWidth: DEFAULT_DETAILS_WIDTH,
     });
     const [isZoomDirty, setIsZoomDirty] = useState(false);
-    const [mapDockMode, setMapDockMode] = useState<'docked' | 'floating'>('docked');
+    const skipPersistMapDockModeRef = useRef(false);
+    const [mapDockMode, setMapDockMode] = useState<'docked' | 'floating'>(() => {
+        const persisted = readFloatingMapPreviewState().mode;
+        return persisted === 'floating' || persisted === 'docked' ? persisted : 'docked';
+    });
     const markZoomDirty = useCallback(() => {
         setIsZoomDirty(true);
     }, []);
@@ -1021,8 +1026,16 @@ const useTripViewRender = ({
     }, [trip.id]);
     useEffect(() => {
         if (!isMobileViewport || mapDockMode === 'docked') return;
+        skipPersistMapDockModeRef.current = true;
         setMapDockMode('docked');
     }, [isMobileViewport, mapDockMode]);
+    useEffect(() => {
+        if (skipPersistMapDockModeRef.current) {
+            skipPersistMapDockModeRef.current = false;
+            return;
+        }
+        writeFloatingMapPreviewState({ mode: mapDockMode });
+    }, [mapDockMode]);
     const clampZoomLevel = useCallback((value: number) => {
         if (!Number.isFinite(value)) return 1;
         return Math.max(MIN_ZOOM_LEVEL, Math.min(MAX_ZOOM_LEVEL, value));

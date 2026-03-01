@@ -9,12 +9,14 @@ This experiment keeps the planner map mounted once on desktop and animates the s
 
 - Prevents Google Map remount flicker during dock/undock transitions.
 - Keeps drag interactions isolated from map pan/zoom gestures by using a dedicated top grab handle.
+- Persists dock mode, snapped position, and snapped size preset via `tf_map_preview_state_v1`.
 - Makes rollback simple by isolating behavior in one component.
 
 ## Key files
 
 - `/Users/chrizzzly/.codex/worktrees/12f5/travelflow-codex/components/tripview/TripFloatingMapPreview.tsx`
 - `/Users/chrizzzly/.codex/worktrees/12f5/travelflow-codex/components/tripview/TripViewPlannerWorkspace.tsx`
+- `/Users/chrizzzly/.codex/worktrees/12f5/travelflow-codex/components/tripview/floatingMapPreviewState.ts`
 - `/Users/chrizzzly/.codex/worktrees/12f5/travelflow-codex/components/tripview/useTripResizeControls.ts`
 
 ## Fast disable / removal path
