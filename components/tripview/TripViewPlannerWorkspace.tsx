@@ -223,11 +223,10 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
 
     const beginFloatingMapDrag = useCallback((event: React.PointerEvent<HTMLElement>) => {
         if (event.button !== 0 || isMobile || mapDockMode !== 'floating') return;
-        const target = event.target as HTMLElement | null;
-        if (target?.closest('[data-floating-map-control="true"]')) return;
         const panel = floatingMapRef.current;
         if (!panel) return;
 
+        event.preventDefault();
         stopDraggingFloatingMap();
         clearFloatingMapSettleTimer();
         setIsFloatingMapDragging(true);
@@ -421,6 +420,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
         : isFloatingMapSettling
             ? 'left 280ms cubic-bezier(0.22, 1, 0.36, 1), top 280ms cubic-bezier(0.22, 1, 0.36, 1), transform 420ms cubic-bezier(0.2, 1.25, 0.32, 1), box-shadow 220ms ease'
             : 'left 220ms cubic-bezier(0.22, 1, 0.36, 1), top 220ms cubic-bezier(0.22, 1, 0.36, 1), transform 220ms ease-out, box-shadow 200ms ease-out';
+    const effectiveMapViewTransitionName = !isMobile ? (mapViewTransitionName ?? 'trip-map-dock') : mapViewTransitionName;
 
     const timelineControls = (
         <div className="flex flex-wrap items-center justify-end gap-2 pointer-events-auto">
@@ -605,7 +605,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                     onRouteStatus={onRouteStatus}
                     fitToRouteKey={tripId}
                     isPaywalled={isPaywallLocked}
-                    viewTransitionName={mapViewTransitionName}
+                    viewTransitionName={effectiveMapViewTransitionName}
                 />
             </Suspense>
         );
@@ -762,8 +762,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                             <div
                                 ref={mapViewportRef}
                                 data-testid="floating-map-container"
-                                onPointerDown={beginFloatingMapDrag}
-                                className={`fixed z-[1400] overflow-hidden bg-gray-100 border-4 border-white rounded-[2.25rem] ${
+                                className={`fixed z-[1400] overflow-hidden bg-gray-100 border-[5px] border-white ${
                                     isFloatingMapDragging
                                         ? 'shadow-[0_34px_70px_-28px_rgba(15,23,42,0.72),0_14px_30px_-16px_rgba(15,23,42,0.45)]'
                                         : 'shadow-[0_18px_50px_-22px_rgba(15,23,42,0.6),0_8px_22px_-12px_rgba(15,23,42,0.4)]'
@@ -776,11 +775,21 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                                     transform: floatingMapTransform,
                                     transformOrigin: '50% 0%',
                                     transition: floatingMapTransition,
+                                    borderTopWidth: '14px',
+                                    borderRadius: '24% / 16%',
                                 }}
                             >
-                                <div className="pointer-events-none absolute top-2 inset-x-0 z-[90] flex justify-center">
-                                    <span className="inline-block h-1.5 w-14 rounded-full bg-white/75 shadow-sm backdrop-blur" />
-                                </div>
+                                <button
+                                    type="button"
+                                    data-floating-map-drag-handle="true"
+                                    className="absolute inset-x-0 top-0 z-[95] h-4 touch-none cursor-grab active:cursor-grabbing appearance-none border-0 bg-transparent p-0"
+                                    onPointerDown={beginFloatingMapDrag}
+                                    aria-label="Reposition map preview"
+                                >
+                                    <div className="pointer-events-none flex justify-center pt-[5px]">
+                                        <span className="inline-block h-1 w-14 rounded-full bg-white/80 shadow-sm backdrop-blur" />
+                                    </div>
+                                </button>
                                 {renderMap(layoutMode, false)}
                             </div>
                         )}
