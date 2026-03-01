@@ -5,6 +5,16 @@ import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 
+class ResizeObserverMock {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+
+if (!globalThis.ResizeObserver) {
+  globalThis.ResizeObserver = ResizeObserverMock as unknown as typeof ResizeObserver;
+}
+
 const mocks = vi.hoisted(() => ({
   auth: {
     isLoading: false,
@@ -140,7 +150,10 @@ describe('pages/ProfileSettingsPage username governance', () => {
     await user.click(screen.getByRole('button', { name: 'settings.actions.save' }));
 
     await waitFor(() => {
-      expect(mocks.checkUsernameAvailability).toHaveBeenCalledWith('new_handle', { logBlockedAttempt: true });
+      expect(mocks.checkUsernameAvailability).toHaveBeenCalledWith(
+        'new_handle',
+        expect.objectContaining({ logBlockedAttempt: true }),
+      );
       expect(mocks.updateCurrentUserProfile).toHaveBeenCalledWith(expect.objectContaining({
         username: 'new_handle',
         usernameDisplay: 'new_handle',
@@ -170,7 +183,10 @@ describe('pages/ProfileSettingsPage username governance', () => {
     await user.click(screen.getByRole('button', { name: 'settings.actions.save' }));
 
     await waitFor(() => {
-      expect(mocks.checkUsernameAvailability).toHaveBeenCalledWith('chrizzzly_hh', { logBlockedAttempt: true });
+      expect(mocks.checkUsernameAvailability).toHaveBeenCalledWith(
+        'chrizzzly_hh',
+        expect.objectContaining({ logBlockedAttempt: true }),
+      );
       expect(mocks.updateCurrentUserProfile).toHaveBeenCalledWith(expect.objectContaining({
         username: 'chrizzzly_hh',
         usernameDisplay: 'chrizzzly_hh',
@@ -203,11 +219,41 @@ describe('pages/ProfileSettingsPage username governance', () => {
     await user.click(screen.getByRole('button', { name: 'settings.actions.save' }));
 
     await waitFor(() => {
-      expect(mocks.checkUsernameAvailability).toHaveBeenCalledWith('admin_support', { logBlockedAttempt: true });
+      expect(mocks.checkUsernameAvailability).toHaveBeenCalledWith(
+        'admin_support',
+        expect.objectContaining({ logBlockedAttempt: true }),
+      );
       expect(mocks.updateCurrentUserProfile).toHaveBeenCalledWith(expect.objectContaining({
         username: 'admin_support',
         usernameDisplay: 'AdMiN_support',
       }));
+    });
+  });
+
+  it('checks username availability on blur while username edit mode is active', async () => {
+    const user = userEvent.setup();
+    mocks.checkUsernameAvailability.mockResolvedValue({
+      normalizedUsername: 'new_handle',
+      availability: 'available',
+      reason: null,
+      cooldownEndsAt: null,
+    });
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByText('settings.title')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('button', { name: 'settings.usernameChange' }));
+    const usernameInput = screen.getByLabelText('settings.fields.username');
+    await user.clear(usernameInput);
+    await user.type(usernameInput, 'new_handle');
+
+    (usernameInput as HTMLInputElement).blur();
+
+    await waitFor(() => {
+      expect(mocks.checkUsernameAvailability).toHaveBeenCalledWith('new_handle', { logBlockedAttempt: false });
     });
   });
 
@@ -229,6 +275,40 @@ describe('pages/ProfileSettingsPage username governance', () => {
     await waitFor(() => {
       expect(mocks.updateCurrentUserProfile).not.toHaveBeenCalled();
       expect(screen.getByText('settings.usernameStatus.invalid')).toBeInTheDocument();
+    });
+  });
+
+  it('submits username edit on Enter and exits username edit mode after success', async () => {
+    const user = userEvent.setup();
+    mocks.checkUsernameAvailability.mockResolvedValue({
+      normalizedUsername: 'new_handle',
+      availability: 'available',
+      reason: null,
+      cooldownEndsAt: null,
+    });
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByText('settings.title')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('button', { name: 'settings.usernameChange' }));
+    const usernameInput = screen.getByLabelText('settings.fields.username');
+    await user.clear(usernameInput);
+    await user.type(usernameInput, 'new_handle');
+    await user.keyboard('{Enter}');
+
+    await waitFor(() => {
+      expect(mocks.checkUsernameAvailability).toHaveBeenCalledWith('new_handle', { logBlockedAttempt: true });
+      expect(mocks.updateCurrentUserProfile).toHaveBeenCalledWith(expect.objectContaining({
+        username: 'new_handle',
+        usernameDisplay: 'new_handle',
+      }));
+    });
+
+    await waitFor(() => {
+      expect(usernameInput).toHaveAttribute('readonly');
     });
   });
 
@@ -258,7 +338,7 @@ describe('pages/ProfileSettingsPage username governance', () => {
 
     expect(usernameInput).toHaveAttribute('readonly');
 
-    expect(screen.getByText('settings.usernameCooldownHint')).toBeInTheDocument();
+    expect(screen.getByText('settings.usernameLockedHint')).toBeInTheDocument();
   });
 
   it('saves selected Country/Region as ISO code from the searchable picker and closes on select', async () => {
@@ -331,6 +411,27 @@ describe('pages/ProfileSettingsPage username governance', () => {
 
     await user.click(screen.getByRole('button', { name: 'taken_name1' }));
     expect((usernameInput as HTMLInputElement).value).toBe('taken_name1');
+  });
+
+  it('submits on Enter and focuses the first missing required input', async () => {
+    const user = userEvent.setup();
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByText('settings.title')).toBeInTheDocument();
+    });
+
+    const firstNameInput = screen.getByLabelText('settings.fields.firstName');
+    const cityInput = screen.getByLabelText('settings.fields.city');
+    await user.clear(firstNameInput);
+    cityInput.focus();
+    await user.keyboard('{Enter}');
+
+    await waitFor(() => {
+      expect(screen.getByText('settings.errors.required')).toBeInTheDocument();
+      expect(firstNameInput).toHaveFocus();
+    });
   });
 
   it('shows a success toast after saving', async () => {
