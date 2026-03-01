@@ -208,6 +208,46 @@ describe('pages/PublicProfilePage', () => {
     });
   });
 
+  it('canonicalizes mixed-case public profile URLs to lowercase', async () => {
+    mocks.resolvePublicProfileByHandle.mockResolvedValue({
+      status: 'found',
+      canonicalUsername: 'traveler',
+      redirectFromUsername: null,
+      profile: {
+        id: 'user-1',
+        email: 'traveler@example.com',
+        displayName: 'Traveler One',
+        firstName: 'Traveler',
+        lastName: 'One',
+        username: 'traveler',
+        usernameDisplay: 'TrAvElEr',
+        usernameCanonical: 'traveler',
+        bio: '',
+        gender: '',
+        country: '',
+        city: '',
+        preferredLanguage: 'en',
+        onboardingCompletedAt: null,
+        accountStatus: 'active',
+        publicProfileEnabled: true,
+        defaultPublicTripVisibility: true,
+        usernameChangedAt: null,
+        passportStickerPositions: {},
+        passportStickerSelection: [],
+      },
+    });
+
+    renderPublicProfilePage('/u/TrAvElEr');
+
+    await waitFor(() => {
+      expect(screen.getByTestId('location-probe').textContent).toBe('/u/traveler');
+    });
+
+    await waitFor(() => {
+      expect(mocks.resolvePublicProfileByHandle).toHaveBeenCalledWith('traveler');
+    });
+  });
+
   it.skip('loads public trips in paged batches and appends next pages', async () => {
     mocks.resolvePublicProfileByHandle.mockResolvedValue({
       status: 'found',

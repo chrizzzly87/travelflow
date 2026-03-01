@@ -134,6 +134,8 @@ describe('services/profileService username cooldown fallback', () => {
     expect(profile?.usernameChangedAt).toBe('2026-01-15T00:00:00Z');
     expect(profile?.publicProfileEnabled).toBe(false);
     expect(profile?.defaultPublicTripVisibility).toBe(false);
+    expect(profile?.usernameDisplay).toBe('traveler');
+    expect(profile?.usernameCanonical).toBe('traveler');
   });
 
   it('normalizes legacy visibility values to booleans', async () => {
@@ -210,6 +212,7 @@ describe('services/profileService username cooldown fallback', () => {
               first_name: 'Chris',
               last_name: 'W',
               username: 'traveler',
+              username_display: 'TrAvElEr',
               bio: '',
               country: 'DE',
               city: 'Hamburg',
@@ -234,6 +237,8 @@ describe('services/profileService username cooldown fallback', () => {
     expect(result.status).toBe('found');
     expect(result.profile?.id).toBe('user-1');
     expect(result.profile?.username).toBe('traveler');
+    expect(result.profile?.usernameDisplay).toBe('TrAvElEr');
+    expect(result.profile?.usernameCanonical).toBe('traveler');
     expect(result.canonicalUsername).toBe('traveler');
   });
 });

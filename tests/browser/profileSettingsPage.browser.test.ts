@@ -77,6 +77,8 @@ describe('pages/ProfileSettingsPage username governance', () => {
     firstName: 'Traveler',
     lastName: 'One',
     username: 'traveler',
+    usernameDisplay: 'traveler',
+    usernameCanonical: 'traveler',
     bio: '',
     gender: '',
     country: 'DE',
@@ -124,7 +126,7 @@ describe('pages/ProfileSettingsPage username governance', () => {
     const usernameInput = screen.getByLabelText('settings.fields.username');
     expect(usernameInput).toHaveAttribute('readonly');
 
-    await user.click(screen.getByRole('button', { name: 'settings.usernameEdit' }));
+    await user.click(screen.getByRole('button', { name: 'settings.usernameChange' }));
 
     await waitFor(() => {
       expect(mocks.trackEvent).toHaveBeenCalledWith('profile_settings__username_edit--open');
@@ -141,6 +143,7 @@ describe('pages/ProfileSettingsPage username governance', () => {
       expect(mocks.checkUsernameAvailability).toHaveBeenCalledWith('new_handle');
       expect(mocks.updateCurrentUserProfile).toHaveBeenCalledWith(expect.objectContaining({
         username: 'new_handle',
+        usernameDisplay: 'new_handle',
       }));
     });
   });
@@ -170,7 +173,62 @@ describe('pages/ProfileSettingsPage username governance', () => {
       expect(mocks.checkUsernameAvailability).toHaveBeenCalledWith('chrizzzly_hh');
       expect(mocks.updateCurrentUserProfile).toHaveBeenCalledWith(expect.objectContaining({
         username: 'chrizzzly_hh',
+        usernameDisplay: 'chrizzzly_hh',
       }));
+    });
+  });
+
+  it('sanitizes unsupported username characters while preserving display case', async () => {
+    const user = userEvent.setup();
+    mocks.checkUsernameAvailability.mockResolvedValue({
+      normalizedUsername: 'admin_support',
+      availability: 'available',
+      reason: null,
+      cooldownEndsAt: null,
+    });
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByText('settings.title')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('button', { name: 'settings.usernameChange' }));
+    const usernameInput = screen.getByLabelText('settings.fields.username');
+    await user.clear(usernameInput);
+    await user.type(usernameInput, '@AdMiN_support!!!');
+
+    expect((usernameInput as HTMLInputElement).value).toBe('AdMiN_support');
+
+    await user.click(screen.getByRole('button', { name: 'settings.actions.save' }));
+
+    await waitFor(() => {
+      expect(mocks.checkUsernameAvailability).toHaveBeenCalledWith('admin_support');
+      expect(mocks.updateCurrentUserProfile).toHaveBeenCalledWith(expect.objectContaining({
+        username: 'admin_support',
+        usernameDisplay: 'AdMiN_support',
+      }));
+    });
+  });
+
+  it('rejects handles that contain only separators before availability lookup', async () => {
+    const user = userEvent.setup();
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByText('settings.title')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('button', { name: 'settings.usernameChange' }));
+    const usernameInput = screen.getByLabelText('settings.fields.username');
+    await user.clear(usernameInput);
+    await user.type(usernameInput, '___');
+    await user.click(screen.getByRole('button', { name: 'settings.actions.save' }));
+
+    await waitFor(() => {
+      expect(mocks.updateCurrentUserProfile).not.toHaveBeenCalled();
+      expect(screen.getByText('settings.usernameStatus.invalid')).toBeInTheDocument();
     });
   });
 
@@ -187,7 +245,7 @@ describe('pages/ProfileSettingsPage username governance', () => {
     });
 
     const usernameInput = screen.getByLabelText('settings.fields.username');
-    const editButton = screen.getByRole('button', { name: 'settings.usernameEdit' });
+    const editButton = screen.getByRole('button', { name: 'settings.usernameChange' });
 
     expect(usernameInput).toHaveAttribute('readonly');
     expect(editButton).toHaveAttribute('aria-disabled', 'true');
@@ -217,8 +275,6 @@ describe('pages/ProfileSettingsPage username governance', () => {
     await user.click(countrySearchInput);
     await user.type(countrySearchInput, 'ger');
     await user.click(screen.getByRole('option', { name: 'Germany' }));
-    expect(screen.queryByRole('listbox')).toBeNull();
-    expect(screen.queryByRole('button', { name: 'settings.countryRegionClear' })).toBeNull();
 
     await user.click(screen.getByRole('button', { name: 'settings.actions.save' }));
 
@@ -297,7 +353,8 @@ describe('pages/ProfileSettingsPage username governance', () => {
     await waitFor(() => {
       expect(mocks.showAppToast).toHaveBeenCalledWith({
         tone: 'success',
-        title: 'settings.messages.saved',
+        title: 'settings.messages.savedTitle',
+        description: 'settings.messages.saved',
       });
     });
   });

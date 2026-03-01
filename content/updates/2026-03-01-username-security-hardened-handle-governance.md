@@ -11,6 +11,9 @@ summary: "Defined a full implementation issue for secure username governance, ca
 ---
 
 ## Changes
+- [x] [Improved] 🛡️ Username setup now enforces stricter handle safety rules (3-20 characters, only letters/numbers/`_`/`-`, and stronger blocked-name protection).
+- [x] [Improved] 🔁 Public profile links now auto-canonicalize to lowercase URLs while your chosen username casing is still shown in profile UI.
 - [ ] [Internal] 🧭 Added an implementation-ready open-issue spec for username security hardening, canonical lowercase URLs, and display-casing preservation.
-- [ ] [Internal] 🧱 Added a dedicated username denylist source-of-truth document with pinned baseline package metadata and custom reserved/security overlays.
+- [ ] [Internal] 🧱 Added DB-managed denylist and reserved-handle governance with category metadata and owner-assignable protected names.
+- [ ] [Internal] 🧪 Added regression coverage for mixed-case canonical routing, frontend username validation feedback/sanitization, and canonical/display mapping.
 - [ ] [Internal] 🐙 Created and linked GitHub issue #208 to keep the tracked spec and issue workflow aligned.
