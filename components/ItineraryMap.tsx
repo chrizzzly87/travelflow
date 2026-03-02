@@ -3,7 +3,7 @@ import { Map as GoogleMap, useMap } from '@vis.gl/react-google-maps';
 import { ITimelineItem, MapColorMode, MapStyle, RouteMode, RouteStatus } from '../types';
 import { ArrowLeftRight, ArrowUpDown, Focus, Layers, Maximize2, Minimize2 } from 'lucide-react';
 import { readLocalStorageItem, writeLocalStorageItem } from '../services/browserStorageService';
-import { buildRouteCacheKey, DEFAULT_MAP_COLOR_MODE, findTravelBetweenCities, getContrastTextColor, getHexFromColorClass, getNormalizedCityName } from '../utils';
+import { buildRouteCacheKey, DEFAULT_MAP_COLOR_MODE, findTravelBetweenCities, getHexFromColorClass, getNormalizedCityName } from '../utils';
 import { getAnalyticsDebugAttributes } from '../services/analyticsService';
 import { useGoogleMaps } from './GoogleMapsLoader';
 import { normalizeTransportMode } from '../shared/transportModes';
@@ -11,6 +11,7 @@ import { normalizeTransportMode } from '../shared/transportModes';
 interface ItineraryMapProps {
     items: ITimelineItem[];
     selectedItemId?: string | null;
+    onCityMarkerSelect?: (cityId: string) => void;
     layoutMode?: 'horizontal' | 'vertical';
     onLayoutChange?: (mode: 'horizontal' | 'vertical') => void;
     showLayoutControls?: boolean;
@@ -180,6 +181,74 @@ let routeCacheHydrated = false;
 const ROUTE_INNER_OUTLINE_COLOR = '#0f172a';
 const ROUTE_OUTER_OUTLINE_COLOR = '#f8fafc';
 
+const TRANSPORT_ICON_PATHS: Record<string, string> = {
+    plane: 'M240,136v32a8,8,0,0,1-8,8,7.61,7.61,0,0,1-1.57-.16L156,161v23.73l17.66,17.65A8,8,0,0,1,176,208v24a8,8,0,0,1-11,7.43l-37-14.81L91,239.43A8,8,0,0,1,80,232V208a8,8,0,0,1,2.34-5.66L100,184.69V161L25.57,175.84A7.61,7.61,0,0,1,24,176a8,8,0,0,1-8-8V136a8,8,0,0,1,4.42-7.16L100,89.06V44a28,28,0,0,1,56,0V89.06l79.58,39.78A8,8,0,0,1,240,136Z',
+    bus: 'M254.07,106.79,208.53,53.73A16,16,0,0,0,196.26,48H32A16,16,0,0,0,16,64V176a16,16,0,0,0,16,16H49a32,32,0,0,0,62,0h50a32,32,0,0,0,62,0h17a16,16,0,0,0,16-16V112A8,8,0,0,0,254.07,106.79ZM32,104V64H88v40Zm48,96a16,16,0,1,1,16-16A16,16,0,0,1,80,200Zm80-96H104V64h56Zm32,96a16,16,0,1,1,16-16A16,16,0,0,1,192,200Zm-16-96V64h20.26l34.33,40Z',
+    car: 'M240,112H211.31L168,68.69A15.86,15.86,0,0,0,156.69,64H44.28A16,16,0,0,0,31,71.12L1.34,115.56A8.07,8.07,0,0,0,0,120v48a16,16,0,0,0,16,16H33a32,32,0,0,0,62,0h66a32,32,0,0,0,62,0h17a16,16,0,0,0,16-16V128A16,16,0,0,0,240,112ZM44.28,80H156.69l32,32H23ZM64,192a16,16,0,1,1,16-16A16,16,0,0,1,64,192Zm128,0a16,16,0,1,1,16-16A16,16,0,0,1,192,192Z',
+    train: 'M184,24H72A32,32,0,0,0,40,56V184a32,32,0,0,0,32,32h8L65.6,235.2a8,8,0,1,0,12.8,9.6L100,216h56l21.6,28.8a8,8,0,1,0,12.8-9.6L176,216h8a32,32,0,0,0,32-32V56A32,32,0,0,0,184,24ZM84,184a12,12,0,1,1,12-12A12,12,0,0,1,84,184Zm36-64H56V80h64Zm52,64a12,12,0,1,1,12-12A12,12,0,0,1,172,184Zm28-64H136V80h64Z',
+    bicycle: 'M136,52a28,28,0,1,1,28,28A28,28,0,0,1,136,52ZM240,176a40,40,0,1,1-40-40A40,40,0,0,1,240,176Zm-16,0a24,24,0,1,0-24,24A24,24,0,0,0,224,176Zm-24-64a8,8,0,0,0-8-8H155.31L125.66,74.34a8,8,0,0,0-11.32,0l-32,32a8,8,0,0,0,0,11.32L120,155.31V200a8,8,0,0,0,16,0V152a8,8,0,0,0-2.34-5.66L99.31,112,120,91.31l26.34,26.35A8,8,0,0,0,152,120h40A8,8,0,0,0,200,112ZM96,176a40,40,0,1,1-40-40A40,40,0,0,1,96,176Zm-16,0a24,24,0,1,0-24,24A24,24,0,0,0,80,176Z',
+    boat: 'M160,140V72.85a4,4,0,0,1,7-2.69l55,60.46a8,8,0,0,1,.43,10.26,8.24,8.24,0,0,1-6.58,3.12H164A4,4,0,0,1,160,140Zm87.21,32.53A8,8,0,0,0,240,168H144V8a8,8,0,0,0-14.21-5l-104,128A8,8,0,0,0,32,144h96v24H16a8,8,0,0,0-6.25,13l29.6,37a15.93,15.93,0,0,0,12.49,6H204.16a15.93,15.93,0,0,0,12.49-6l29.6-37A8,8,0,0,0,247.21,172.53Z',
+    walk: 'M216.06,192v12A36,36,0,0,1,144,204V192a8,8,0,0,1,8-8h56A8,8,0,0,1,216.06,192ZM104,160h-56a8,8,0,0,0-8,8v12A36,36,0,0,0,112,180V168A8,8,0,0,0,104,160ZM76,16C64.36,16,53.07,26.31,44.2,45c-13.93,29.38-18.56,73,.29,96a8,8,0,0,0,6.2,2.93h50.55a8,8,0,0,0,6.2-2.93c18.85-23,14.22-66.65.29-96C98.85,26.31,87.57,16,76,16Zm78.8,152h50.55a8,8,0,0,0,6.2-2.93c18.85-23,14.22-66.65.29-96C202.93,50.31,191.64,40,180,40s-22.89,10.31-31.77,29c-13.93,29.38-18.56,73,.29,96A8,8,0,0,0,154.76,168Z',
+};
+
+const resolveTransportIconPath = (mode?: string): string => {
+    const normalized = normalizeTransportMode(mode);
+    if (normalized === 'na' || !normalized) return TRANSPORT_ICON_PATHS.walk;
+    if (normalized === 'bike') return TRANSPORT_ICON_PATHS.bicycle;
+    if (normalized in TRANSPORT_ICON_PATHS) {
+        return TRANSPORT_ICON_PATHS[normalized as keyof typeof TRANSPORT_ICON_PATHS];
+    }
+    return TRANSPORT_ICON_PATHS.walk;
+};
+
+const CITY_PIN_SELECTED_OUTLINE_FALLBACK = '#3b82f6';
+const CITY_PIN_SELECTED_RING_FALLBACK = '#bfdbfe';
+const TRANSPORT_MARKER_BADGE_SIZE = 40;
+const TRANSPORT_MARKER_ICON_SCALE = 0.46;
+const TRANSPORT_MARKER_VIEWBOX_SIZE = 256;
+const TRANSPORT_MARKER_ICON_INSET = (TRANSPORT_MARKER_VIEWBOX_SIZE * (1 - TRANSPORT_MARKER_ICON_SCALE)) / 2;
+
+const resolveCssColorVar = (name: string, fallback: string): string => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return fallback;
+    const value = window.getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    return value || fallback;
+};
+
+const buildCityMarkerIcon = (
+    maps: typeof google.maps,
+    color: string,
+    isSelected: boolean,
+): google.maps.Icon => {
+    const size = isSelected ? 54 : 44;
+    const pinStroke = isSelected ? resolveCssColorVar('--tf-accent-500', CITY_PIN_SELECTED_OUTLINE_FALLBACK) : '#ffffff';
+    const ringStroke = isSelected ? resolveCssColorVar('--tf-accent-200', CITY_PIN_SELECTED_RING_FALLBACK) : '#dbe3ee';
+    const halo = isSelected ? 0.24 : 0.1;
+    const svg = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 32 32">
+            <g transform="translate(4 2)">
+                <ellipse cx="12" cy="26.2" rx="6.4" ry="2.8" fill="#0f172a" opacity="0.16" />
+                <path d="M12 0.9c-5.9 0-10.7 4.8-10.7 10.7 0 7.9 10.7 17.8 10.7 17.8s10.7-9.9 10.7-17.8C22.7 5.7 17.9 0.9 12 0.9z" fill="${color}" stroke="${pinStroke}" stroke-width="${isSelected ? 1.9 : 1.5}" />
+                <circle cx="12" cy="11.6" r="${isSelected ? '8.5' : '7.8'}" fill="${color}" opacity="${halo}" />
+                <circle cx="12" cy="11.6" r="${isSelected ? '6.3' : '5.8'}" fill="#ffffff" stroke="${ringStroke}" stroke-width="${isSelected ? '1.55' : '1.25'}" />
+            </g>
+        </svg>
+    `;
+    const url = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+    return {
+        url,
+        scaledSize: new maps.Size(size, size),
+        anchor: new maps.Point(size / 2, size),
+        labelOrigin: new maps.Point(size / 2, size * 0.44),
+    };
+};
+
+const buildCityMarkerLabel = (index: number, isSelected: boolean): google.maps.MarkerLabel => ({
+    text: `${index + 1}`,
+    color: '#0f172a',
+    fontWeight: '800',
+    fontSize: isSelected ? '13px' : '12px',
+});
+
 export const getRouteOutlineColor = (_style: MapStyle = 'standard'): string => {
     return ROUTE_INNER_OUTLINE_COLOR;
 };
@@ -202,12 +271,13 @@ export const buildRoutePolylinePairOptions = (
     const mainStrokeWeight = baseWeight + 1;
     const innerOutlineColor = getRouteOutlineColor(style);
     const outerOutlineColor = getRouteOuterOutlineColor(style);
+    const showDarkStyleOuterOutline = style === 'dark';
 
     const outerOutlineOptions: google.maps.PolylineOptions = {
         ...options,
         strokeColor: outerOutlineColor,
-        strokeOpacity: 0,
-        strokeWeight: mainStrokeWeight,
+        strokeOpacity: showDarkStyleOuterOutline ? 0.95 : 0,
+        strokeWeight: showDarkStyleOuterOutline ? mainStrokeWeight + 2 : mainStrokeWeight,
         icons: undefined,
         zIndex: baseZIndex - 2,
     };
@@ -216,7 +286,7 @@ export const buildRoutePolylinePairOptions = (
         ...options,
         strokeColor: innerOutlineColor,
         strokeOpacity: 0,
-        strokeWeight: mainStrokeWeight,
+        strokeWeight: showDarkStyleOuterOutline ? mainStrokeWeight + 1 : mainStrokeWeight,
         icons: undefined,
         zIndex: baseZIndex - 1,
     };
@@ -400,6 +470,7 @@ const ItineraryMapInstanceBridge: React.FC<ItineraryMapInstanceBridgeProps> = ({
 export const ItineraryMap: React.FC<ItineraryMapProps> = ({ 
     items, 
     selectedItemId, 
+    onCityMarkerSelect,
     layoutMode, 
     onLayoutChange, 
     showLayoutControls = true,
@@ -426,6 +497,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     const mapInstanceId = mapInstanceIdRef.current;
     const googleMapRef = useRef<any>(null); // google.maps.Map
     const markersRef = useRef<any[]>([]); // google.maps.Marker[]
+    const cityMarkerMetaRef = useRef<Array<{ id: string; color: string; index: number; marker: google.maps.Marker }>>([]);
     const routesRef = useRef<any[]>([]); // stored polylines/renderers
     const transportMarkersRef = useRef<any[]>([]); // google.maps.Marker[]
     const cityLabelOverlaysRef = useRef<any[]>([]);
@@ -436,6 +508,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     const resizeObserverRafRef = useRef<number | null>(null);
     const onRouteMetricsRef = useRef<typeof onRouteMetrics>(onRouteMetrics);
     const onRouteStatusRef = useRef<typeof onRouteStatus>(onRouteStatus);
+    const onCityMarkerSelectRef = useRef<typeof onCityMarkerSelect>(onCityMarkerSelect);
     
     const { isLoaded, loadError } = useGoogleMaps();
     const [mapInitialized, setMapInitialized] = useState(false);
@@ -478,6 +551,10 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     useEffect(() => {
         onRouteStatusRef.current = onRouteStatus;
     }, [onRouteStatus]);
+
+    useEffect(() => {
+        onCityMarkerSelectRef.current = onCityMarkerSelect;
+    }, [onCityMarkerSelect]);
 
     const handleMapInstanceChange = useCallback((map: google.maps.Map | null) => {
         if (googleMapRef.current === map) return;
@@ -553,115 +630,17 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         transportMarkersRef.current = [];
         cityLabelOverlaysRef.current.forEach(o => o.setMap(null));
         cityLabelOverlaysRef.current = [];
-
-        const buildPinIcon = (color: string, isSelected: boolean) => {
-            const size = isSelected ? 52 : 42;
-            const pinStroke = isSelected ? '#0f172a' : '#ffffff';
-            const ringStroke = isSelected ? '#ffffff' : '#e2e8f0';
-            const halo = isSelected ? 0.26 : 0.12;
-            const shadowOpacity = isSelected ? 0.28 : 0.22;
-            const svg = `
-                <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 32 32">
-                    <g transform="translate(4 2)">
-                        <ellipse cx="12" cy="26.2" rx="6.4" ry="2.8" fill="#0f172a" opacity="0.16" />
-                        <path d="M12 0.9c-5.9 0-10.7 4.8-10.7 10.7 0 7.9 10.7 17.8 10.7 17.8s10.7-9.9 10.7-17.8C22.7 5.7 17.9 0.9 12 0.9z" fill="${color}" stroke="${pinStroke}" stroke-width="${isSelected ? 1.9 : 1.5}" />
-                        <circle cx="12" cy="11.6" r="${isSelected ? '6.4' : '5.8'}" fill="#ffffff" stroke="${ringStroke}" stroke-width="${isSelected ? '1.55' : '1.25'}" />
-                        <circle cx="12" cy="11.6" r="${isSelected ? '8.5' : '7.8'}" fill="${color}" opacity="${halo}" />
-                        <circle cx="12" cy="11.6" r="${isSelected ? '5.0' : '4.6'}" fill="#0f172a" opacity="${shadowOpacity}" />
-                    </g>
-                </svg>
-            `;
-            const url = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
-            return {
-                url,
-                scaledSize: new window.google.maps.Size(size, size),
-                anchor: new window.google.maps.Point(size / 2, size),
-                labelOrigin: new window.google.maps.Point(size / 2, size * 0.34),
-            };
-        };
-
-        const getTransportSvgBody = (mode?: string) => {
-            switch (mode) {
-                case 'na':
-                case undefined:
-                    return `<path d="M8 6h8" /><path d="M8 10h8" /><path d="M8 14h5" />`;
-                case 'train':
-                    return `
-                        <rect width="16" height="16" x="4" y="3" rx="2" />
-                        <path d="M4 11h16" />
-                        <path d="M12 3v8" />
-                        <path d="m8 19-2 3" />
-                        <path d="m18 22-2-3" />
-                        <path d="M8 15h.01" />
-                        <path d="M16 15h.01" />
-                    `;
-                case 'bus':
-                    return `
-                        <path d="M8 6v6" />
-                        <path d="M15 6v6" />
-                        <path d="M2 12h19.6" />
-                        <path d="M18 18h3s.5-1.7.8-2.8c.1-.4.2-.8.2-1.2 0-.4-.1-.8-.2-1.2l-1.4-5C20.1 6.8 19.1 6 18 6H4a2 2 0 0 0-2 2v10h3" />
-                        <circle cx="7" cy="18" r="2" />
-                        <path d="M9 18h5" />
-                        <circle cx="16" cy="18" r="2" />
-                    `;
-                case 'boat':
-                    return `
-                        <path d="M2 21c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1 .6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1" />
-                        <path d="M19.38 20A11.6 11.6 0 0 0 21 14l-9-4-9 4c0 2.9.94 5.34 2.81 7.76" />
-                        <path d="M19 13V7a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v6" />
-                        <path d="M12 10v4" />
-                        <path d="M12 2v3" />
-                    `;
-                case 'car':
-                    return `
-                        <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2" />
-                        <circle cx="7" cy="17" r="2" />
-                        <path d="M9 17h6" />
-                        <circle cx="17" cy="17" r="2" />
-                    `;
-                case 'motorcycle':
-                    return `
-                        <circle cx="6" cy="17" r="3" />
-                        <circle cx="18" cy="17" r="3" />
-                        <path d="M6 17l4-5h6l2 5" />
-                        <path d="M10 12h5" />
-                        <path d="M12 9l3-2" />
-                        <path d="M15 7h3" />
-                    `;
-                case 'bicycle':
-                    return `
-                        <circle cx="6" cy="17" r="3" />
-                        <circle cx="18" cy="17" r="3" />
-                        <path d="M6 17l4-7h5l3 7" />
-                        <path d="M10 10l-2-3" />
-                        <path d="M15 10l2-2" />
-                        <path d="M11 10h4" />
-                    `;
-                case 'walk':
-                    return `
-                        <ellipse cx="8" cy="17" rx="2.6" ry="3.6" />
-                        <ellipse cx="16.5" cy="9.5" rx="2.2" ry="3.1" />
-                        <circle cx="15.6" cy="5.7" r="0.7" />
-                        <circle cx="17" cy="5.4" r="0.6" />
-                        <circle cx="18.2" cy="5.9" r="0.55" />
-                    `;
-                case 'plane':
-                    return `<path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z" />`;
-                default:
-                    return '';
-            }
-        };
+        cityMarkerMetaRef.current = [];
 
         const buildTransportIcon = (mode?: string, color?: string) => {
-            const size = 30;
-            const stroke = color || '#0f172a';
+            const size = TRANSPORT_MARKER_BADGE_SIZE;
+            const badgeColor = color || '#1f2937';
+            const iconPath = resolveTransportIconPath(mode);
             const svg = `
-                <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 30 30">
-                    <circle cx="15" cy="15" r="10.8" fill="#ffffff" stroke="${stroke}" stroke-width="1.9" />
-                    <circle cx="15" cy="15" r="11.6" fill="${stroke}" opacity="0.14" />
-                    <g transform="translate(3 3)" fill="none" stroke="${stroke}" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
-                        ${getTransportSvgBody(mode)}
+                <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${TRANSPORT_MARKER_VIEWBOX_SIZE} ${TRANSPORT_MARKER_VIEWBOX_SIZE}">
+                    <circle cx="128" cy="128" r="112" fill="${badgeColor}" />
+                    <g transform="translate(${TRANSPORT_MARKER_ICON_INSET} ${TRANSPORT_MARKER_ICON_INSET}) scale(${TRANSPORT_MARKER_ICON_SCALE})">
+                        <path d="${iconPath}" fill="#ffffff" />
                     </g>
                 </svg>
             `;
@@ -673,18 +652,47 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             };
         };
 
-        const getOffsetPosition = (start: google.maps.LatLngLiteral, end: google.maps.LatLngLiteral, mid: google.maps.LatLngLiteral) => {
+        const getPointAlongPath = (
+            path: google.maps.LatLngLiteral[],
+            fraction: number,
+        ): google.maps.LatLngLiteral | null => {
+            if (path.length === 0) return null;
+            if (path.length === 1) return path[0];
+            const clampedFraction = Math.max(0, Math.min(1, fraction));
             const geometry = window.google?.maps?.geometry?.spherical;
-            if (!geometry) return mid;
-            const startLatLng = new window.google.maps.LatLng(start.lat, start.lng);
-            const endLatLng = new window.google.maps.LatLng(end.lat, end.lng);
-            const midLatLng = new window.google.maps.LatLng(mid.lat, mid.lng);
-            const distance = geometry.computeDistanceBetween(startLatLng, endLatLng);
-            const offset = Math.min(Math.max(distance * 0.05, 2000), 20000);
-            const heading = geometry.computeHeading(startLatLng, endLatLng);
-            const offsetHeading = heading + 90;
-            const result = geometry.computeOffset(midLatLng, offset, offsetHeading);
-            return { lat: result.lat(), lng: result.lng() };
+            if (!geometry) {
+                const fallbackIndex = Math.round((path.length - 1) * clampedFraction);
+                return path[Math.max(0, Math.min(path.length - 1, fallbackIndex))];
+            }
+
+            const toLatLng = (point: google.maps.LatLngLiteral) => new window.google.maps.LatLng(point.lat, point.lng);
+            const segments = path.slice(1).map((point, index) => {
+                const from = path[index];
+                return {
+                    from,
+                    to: point,
+                    distance: geometry.computeDistanceBetween(toLatLng(from), toLatLng(point)),
+                };
+            });
+            const totalDistance = segments.reduce((sum, segment) => sum + segment.distance, 0);
+            if (totalDistance <= 0) return path[Math.floor(path.length / 2)];
+
+            let targetDistance = totalDistance * clampedFraction;
+            for (const segment of segments) {
+                if (targetDistance <= segment.distance) {
+                    if (segment.distance <= 0) return segment.to;
+                    const localFraction = targetDistance / segment.distance;
+                    const interpolated = geometry.interpolate(
+                        toLatLng(segment.from),
+                        toLatLng(segment.to),
+                        localFraction,
+                    );
+                    return { lat: interpolated.lat(), lng: interpolated.lng() };
+                }
+                targetDistance -= segment.distance;
+            }
+
+            return path[path.length - 1];
         };
 
         const createRoutePolylinePair = (options: google.maps.PolylineOptions) => {
@@ -717,6 +725,15 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         };
 
         const drawRoutePath = (path: google.maps.LatLngLiteral[], color: string, weight = 3) => {
+            const arrowIcon = {
+                path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                fillColor: color,
+                fillOpacity: 1,
+                strokeColor: color,
+                strokeOpacity: 1,
+                strokeWeight: 0.1,
+                scale: 3.2
+            };
             return createRoutePolylinePair({
                 path,
                 geodesic: true,
@@ -724,15 +741,10 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 strokeOpacity: 0.7,
                 strokeWeight: weight,
                 clickable: false,
-                icons: [{
-                    icon: {
-                        path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-                        strokeColor: color,
-                        strokeOpacity: 0.9,
-                        scale: 2.5
-                    },
-                    offset: '50%'
-                }],
+                icons: [
+                    { icon: arrowIcon, offset: '25%' },
+                    { icon: arrowIcon, offset: '75%' }
+                ],
                 zIndex: 40,
             });
         };
@@ -748,21 +760,23 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 
                 const isSelected = city.id === selectedCityId;
                 const cityMarkerColor = resolveMapColor(city.color);
-                const cityMarkerLabelColor = getContrastTextColor(cityMarkerColor);
                 const marker = new window.google.maps.Marker({
                     map: googleMapRef.current,
                     position: { lat: city.coordinates.lat, lng: city.coordinates.lng },
                     title: city.title,
-                    label: { 
-                        text: `${index + 1}`, 
-                        color: cityMarkerLabelColor,
-                        fontWeight: '700', 
-                        fontSize: isSelected ? '14px' : '12px' 
-                    },
-                    icon: buildPinIcon(cityMarkerColor, isSelected),
+                    label: buildCityMarkerLabel(index, isSelected),
+                    icon: buildCityMarkerIcon(window.google.maps, cityMarkerColor, isSelected),
                     zIndex: isSelected ? 100 : 10,
+                    optimized: false,
                 });
+                marker.addListener('click', () => onCityMarkerSelectRef.current?.(city.id));
                 
+                cityMarkerMetaRef.current.push({
+                    id: city.id,
+                    color: cityMarkerColor,
+                    index,
+                    marker,
+                });
                 markersRef.current.push(marker);
             });
         }
@@ -933,18 +947,15 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                          drawRoutePath(cached.path, startColor, 3);
 
                          if (mode !== 'na') {
-                             const midPoint = cached.path[Math.floor(cached.path.length / 2)];
-                             const offsetPos = getOffsetPosition(
-                                 { lat: start.coordinates.lat, lng: start.coordinates.lng },
-                                 { lat: end.coordinates.lat, lng: end.coordinates.lng },
-                                 midPoint
-                             );
+                             const midPoint = getPointAlongPath(cached.path, 0.5);
+                             if (!midPoint) continue;
                              const transportMarker = new window.google.maps.Marker({
                                  map: googleMapRef.current,
-                                 position: offsetPos,
+                                 position: midPoint,
                                  icon: buildTransportIcon(mode, startColor),
                                  clickable: false,
-                                 zIndex: 50
+                                 zIndex: 50,
+                                 optimized: false,
                              });
                              transportMarkersRef.current.push(transportMarker);
                          }
@@ -1047,20 +1058,18 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                              drawRoutePath(path, startColor, 3);
 
                              if (mode !== 'na') {
-                                 const midPoint = path[Math.floor(path.length / 2)];
-                                 const offsetPos = getOffsetPosition(
-                                     { lat: start.coordinates.lat, lng: start.coordinates.lng },
-                                     { lat: end.coordinates.lat, lng: end.coordinates.lng },
-                                     midPoint
-                                 );
-                                 const transportMarker = new window.google.maps.Marker({
-                                     map: googleMapRef.current,
-                                     position: offsetPos,
-                                     icon: buildTransportIcon(mode, startColor),
-                                     clickable: false,
-                                     zIndex: 50
-                                 });
-                                 transportMarkersRef.current.push(transportMarker);
+                                 const midPoint = getPointAlongPath(path, 0.5);
+                                 if (midPoint) {
+                                     const transportMarker = new window.google.maps.Marker({
+                                         map: googleMapRef.current,
+                                         position: midPoint,
+                                         icon: buildTransportIcon(mode, startColor),
+                                         clickable: false,
+                                         zIndex: 50,
+                                         optimized: false,
+                                     });
+                                     transportMarkersRef.current.push(transportMarker);
+                                 }
                              }
 
                              const legs = result.routes?.[0]?.legs ?? [];
@@ -1108,11 +1117,14 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
 
                  // Fallback / Flight: Draw Geodesic Polyline
                  const isDashedFallback = mode !== 'plane';
-                 const arrowIcon = { 
+                 const arrowIcon = {
                      path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW, 
-                     strokeColor: startColor, 
-                     strokeOpacity: 0.9,
-                     scale: 2.5 
+                     fillColor: startColor,
+                     fillOpacity: 1,
+                     strokeColor: startColor,
+                     strokeOpacity: 1,
+                     strokeWeight: 0.1,
+                     scale: 3.2
                  };
                  const icons = isDashedFallback
                      ? [
@@ -1121,9 +1133,13 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                              offset: '0',
                              repeat: '12px'
                          },
-                         { icon: arrowIcon, offset: '50%' }
+                         { icon: arrowIcon, offset: '25%' },
+                         { icon: arrowIcon, offset: '75%' }
                        ]
-                     : [{ icon: arrowIcon, offset: '50%' }];
+                     : [
+                         { icon: arrowIcon, offset: '25%' },
+                         { icon: arrowIcon, offset: '75%' },
+                     ];
                  createRoutePolylinePair({
                      path: [
                          { lat: start.coordinates.lat, lng: start.coordinates.lng },
@@ -1138,22 +1154,19 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                      zIndex: 35,
                  });
 
-                 const mid = {
-                     lat: (start.coordinates.lat + end.coordinates.lat) / 2,
-                     lng: (start.coordinates.lng + end.coordinates.lng) / 2
-                 };
+                 const mid = getPointAlongPath([
+                     { lat: start.coordinates.lat, lng: start.coordinates.lng },
+                     { lat: end.coordinates.lat, lng: end.coordinates.lng },
+                 ], 0.5);
                  if (mode !== 'na') {
-                     const offsetPos = getOffsetPosition(
-                         { lat: start.coordinates.lat, lng: start.coordinates.lng },
-                         { lat: end.coordinates.lat, lng: end.coordinates.lng },
-                         mid
-                     );
+                     if (!mid) continue;
                      const transportMarker = new window.google.maps.Marker({
                          map: googleMapRef.current,
-                         position: offsetPos,
+                         position: mid,
                          icon: buildTransportIcon(mode, startColor),
                          clickable: false,
-                         zIndex: 50
+                         zIndex: 50,
+                         optimized: false,
                      });
                      transportMarkersRef.current.push(transportMarker);
                  }
@@ -1164,7 +1177,18 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             drawRoutes();
         }
 
-    }, [mapInitialized, mapRenderSignature, selectedCityId, routeMode, showCityNames, isPaywalled, activeStyle]); 
+    }, [mapInitialized, mapRenderSignature, routeMode, showCityNames, isPaywalled, activeStyle]); 
+
+    useEffect(() => {
+        if (!mapInitialized || !window.google?.maps?.Marker) return;
+
+        cityMarkerMetaRef.current.forEach(({ id, color, index, marker }) => {
+            const isSelected = id === selectedCityId;
+            marker.setIcon(buildCityMarkerIcon(window.google.maps, color, isSelected));
+            marker.setLabel(buildCityMarkerLabel(index, isSelected));
+            marker.setZIndex(isSelected ? 100 : 10);
+        });
+    }, [mapInitialized, selectedCityId]);
 
     // Fit Bounds
     const handleFit = useCallback(() => {

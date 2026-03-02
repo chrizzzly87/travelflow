@@ -249,5 +249,9 @@ export const buildMiniMapUrl = (
     params.set('legColors', legColors.join('|'));
   }
 
-  return `/api/trip-map-preview?${params.toString()}`;
+  const previewPath = `/api/trip-map-preview?${params.toString()}`;
+  if (typeof window !== 'undefined' && window.location.hostname === 'localhost' && window.location.port === '5173') {
+    return `http://localhost:8888${previewPath}`;
+  }
+  return previewPath;
 };

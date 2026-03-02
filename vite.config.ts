@@ -21,6 +21,11 @@ export default defineConfig(({ mode }) => {
                     changeOrigin: true,
                     secure: false,
                 },
+                '/api/trip-map-preview': {
+                    target: 'http://localhost:8888',
+                    changeOrigin: true,
+                    secure: false,
+                },
             },
         },
         plugins: [react(), tailwindcss()],

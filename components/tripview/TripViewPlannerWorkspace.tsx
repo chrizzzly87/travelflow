@@ -30,6 +30,7 @@ interface TripViewPlannerWorkspaceProps {
     mapDeferredFallback: React.ReactNode;
     displayItems: ITimelineItem[];
     selectedItemId: string | null;
+    onMapCitySelect?: (cityId: string) => void;
     layoutMode: 'vertical' | 'horizontal';
     effectiveLayoutMode: 'vertical' | 'horizontal';
     onLayoutModeChange: (mode: 'vertical' | 'horizontal') => void;
@@ -85,6 +86,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
     mapDeferredFallback,
     displayItems,
     selectedItemId,
+    onMapCitySelect,
     layoutMode,
     effectiveLayoutMode,
     onLayoutModeChange,
@@ -286,6 +288,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                 <ItineraryMapComponent
                     items={displayItems}
                     selectedItemId={selectedItemId}
+                    onCityMarkerSelect={onMapCitySelect}
                     layoutMode={mapLayoutMode}
                     onLayoutChange={showLayoutControls ? onLayoutModeChange : undefined}
                     showLayoutControls={showLayoutControls}

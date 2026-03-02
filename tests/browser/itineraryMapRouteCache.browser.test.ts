@@ -55,7 +55,7 @@ describe('components/ItineraryMap route cache helpers', () => {
     expect(getRouteOuterOutlineColor('satellite')).toBe('#f8fafc');
   });
 
-  it('keeps route outlines disabled while preserving the main stroke weight boost', () => {
+  it('keeps non-dark route outlines disabled while preserving the main stroke weight boost', () => {
     const { outerOutlineOptions, outlineOptions, mainOptions } = buildRoutePolylinePairOptions({
       geodesic: true,
       strokeColor: '#2563eb',
@@ -70,6 +70,29 @@ describe('components/ItineraryMap route cache helpers', () => {
     expect(outerOutlineOptions.strokeWeight).toBe(4);
     expect(outlineOptions.strokeOpacity).toBe(0);
     expect(outerOutlineOptions.strokeOpacity).toBe(0);
+    expect(outlineOptions.icons).toBeUndefined();
+    expect(outerOutlineOptions.icons).toBeUndefined();
+    expect(mainOptions.zIndex).toBe(40);
+    expect(outlineOptions.zIndex).toBe(39);
+    expect(outerOutlineOptions.zIndex).toBe(38);
+  });
+
+  it('renders a visible outer white route outline for dark style', () => {
+    const { outerOutlineOptions, outlineOptions, mainOptions } = buildRoutePolylinePairOptions({
+      geodesic: true,
+      strokeColor: '#2563eb',
+      strokeOpacity: 0.7,
+      strokeWeight: 3,
+      clickable: false,
+      zIndex: 40,
+    } as any, 'dark');
+
+    expect(mainOptions.strokeWeight).toBe(4);
+    expect(outlineOptions.strokeWeight).toBe(5);
+    expect(outerOutlineOptions.strokeWeight).toBe(6);
+    expect(outlineOptions.strokeOpacity).toBe(0);
+    expect(outerOutlineOptions.strokeOpacity).toBe(0.95);
+    expect(outerOutlineOptions.strokeColor).toBe('#f8fafc');
     expect(outlineOptions.icons).toBeUndefined();
     expect(outerOutlineOptions.icons).toBeUndefined();
     expect(mainOptions.zIndex).toBe(40);
