@@ -136,6 +136,7 @@ describe('components/tripview/TripFloatingMapPreview', () => {
   });
 
   it('keeps bottom-right edge anchoring when viewport grows after resize', () => {
+    vi.useFakeTimers();
     const originalInnerWidth = window.innerWidth;
     const originalInnerHeight = window.innerHeight;
     const mapViewportRef = { current: null as HTMLDivElement | null };
@@ -162,6 +163,7 @@ describe('components/tripview/TripFloatingMapPreview', () => {
       Object.defineProperty(window, 'innerHeight', { configurable: true, value: nextInnerHeight });
       act(() => {
         window.dispatchEvent(new Event('resize'));
+        vi.advanceTimersByTime(180);
       });
 
       const state = readFloatingMapPreviewState();
@@ -180,10 +182,12 @@ describe('components/tripview/TripFloatingMapPreview', () => {
     } finally {
       Object.defineProperty(window, 'innerWidth', { configurable: true, value: originalInnerWidth });
       Object.defineProperty(window, 'innerHeight', { configurable: true, value: originalInnerHeight });
+      vi.useRealTimers();
     }
   });
 
   it('keeps bottom-center anchoring when viewport grows after resize', () => {
+    vi.useFakeTimers();
     const originalInnerWidth = window.innerWidth;
     const originalInnerHeight = window.innerHeight;
     const mapViewportRef = { current: null as HTMLDivElement | null };
@@ -223,6 +227,7 @@ describe('components/tripview/TripFloatingMapPreview', () => {
       Object.defineProperty(window, 'innerHeight', { configurable: true, value: nextInnerHeight });
       act(() => {
         window.dispatchEvent(new Event('resize'));
+        vi.advanceTimersByTime(180);
       });
 
       const state = readFloatingMapPreviewState();
@@ -244,6 +249,80 @@ describe('components/tripview/TripFloatingMapPreview', () => {
     } finally {
       Object.defineProperty(window, 'innerWidth', { configurable: true, value: originalInnerWidth });
       Object.defineProperty(window, 'innerHeight', { configurable: true, value: originalInnerHeight });
+      vi.useRealTimers();
+    }
+  });
+
+  it('debounces floating resize persistence during rapid viewport resize bursts', () => {
+    vi.useFakeTimers();
+    const originalInnerWidth = window.innerWidth;
+    const originalInnerHeight = window.innerHeight;
+    const mapViewportRef = { current: null as HTMLDivElement | null };
+    const dockedMapAnchorRef = { current: null as HTMLDivElement | null };
+
+    try {
+      render(
+        React.createElement(
+          TripFloatingMapPreview,
+          {
+            mapDockMode: 'floating',
+            mapViewportRef,
+            dockedMapAnchorRef,
+            dockedGeometryKey: 'floating',
+            tripId: 'trip-resize-debounce',
+          },
+          React.createElement('div', { 'data-testid': 'map-content' }, 'map'),
+        ),
+      );
+
+      const startState = readFloatingMapPreviewState();
+      const firstInnerWidth = originalInnerWidth + 180;
+      const firstInnerHeight = originalInnerHeight + 120;
+      Object.defineProperty(window, 'innerWidth', { configurable: true, value: firstInnerWidth });
+      Object.defineProperty(window, 'innerHeight', { configurable: true, value: firstInnerHeight });
+      act(() => {
+        window.dispatchEvent(new Event('resize'));
+      });
+
+      const secondInnerWidth = originalInnerWidth + 260;
+      const secondInnerHeight = originalInnerHeight + 200;
+      Object.defineProperty(window, 'innerWidth', { configurable: true, value: secondInnerWidth });
+      Object.defineProperty(window, 'innerHeight', { configurable: true, value: secondInnerHeight });
+      act(() => {
+        window.dispatchEvent(new Event('resize'));
+        vi.advanceTimersByTime(60);
+      });
+
+      const beforeSettle = readFloatingMapPreviewState();
+      expect(beforeSettle.position?.x).toBe(startState.position?.x);
+      expect(beforeSettle.position?.y).toBe(startState.position?.y);
+
+      act(() => {
+        vi.advanceTimersByTime(180);
+        vi.runOnlyPendingTimers();
+      });
+
+      const afterSettle = readFloatingMapPreviewState();
+      expect(afterSettle.position).toBeTruthy();
+      expect(afterSettle.sizePreset).toBe('lg');
+      expect(afterSettle.orientation).toBe('portrait');
+
+      const nextBaseWidth = Math.max(180, Math.min(420, secondInnerWidth * 0.26));
+      const nextShortEdge = resolveFloatingMapPresetWidths(nextBaseWidth).lg;
+      const nextWidth = nextShortEdge;
+      const nextHeight = nextShortEdge * 1.5;
+      const minX = 24;
+      const maxX = Math.max(24, secondInnerWidth - nextWidth - 24);
+      const minY = 92;
+      const maxY = Math.max(92, secondInnerHeight - nextHeight - 24);
+      expect(afterSettle.position?.x).toBeGreaterThanOrEqual(minX);
+      expect(afterSettle.position?.x).toBeLessThanOrEqual(maxX);
+      expect(afterSettle.position?.y).toBeGreaterThanOrEqual(minY);
+      expect(afterSettle.position?.y).toBeLessThanOrEqual(maxY);
+    } finally {
+      Object.defineProperty(window, 'innerWidth', { configurable: true, value: originalInnerWidth });
+      Object.defineProperty(window, 'innerHeight', { configurable: true, value: originalInnerHeight });
+      vi.useRealTimers();
     }
   });
 });
