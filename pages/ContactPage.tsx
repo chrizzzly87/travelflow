@@ -540,7 +540,7 @@ export const ContactPage: React.FC = () => {
                                     key={label}
                                     type="button"
                                     disabled
-                                    aria-label={`${label} (coming soon)`}
+                                    aria-label={label}
                                     className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white text-slate-500 shadow-sm ring-1 ring-slate-200"
                                 >
                                     <Icon size={18} weight="duotone" />
