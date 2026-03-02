@@ -76,7 +76,7 @@
       "reasonLabel": "Motivo",
       "reasonPlaceholder": "Seleziona un motivo",
       "reasonOptions": {
-        "bugReport": "Segnala un bug",
+        "bugReport": "Problema con il sito o l'app",
         "featureRequest": "Richiesta funzionalità",
         "billingAccount": "Fatturazione / account",
         "dataPrivacy": "Richiesta dati/privacy",
@@ -103,7 +103,56 @@
       "validationReason": "Seleziona un motivo.",
       "validationEmail": "Inserisci un indirizzo email valido.",
       "validationMessage": "Inserisci un messaggio.",
-      "validationMessageLength": "Il tuo messaggio è troppo lungo. Massimo {max} caratteri."
+      "validationMessageLength": "Il tuo messaggio è troppo lungo. Massimo {max} caratteri.",
+      "subReasonLabel": "Argomento (facoltativo)",
+      "subReasonPlaceholder": "Seleziona un argomento (facoltativo)",
+      "subReasonEmptyOption": "Nessun argomento specifico",
+      "subReasonOptions": {
+        "bugReport": {
+          "pageNotLoadingWorking": "La pagina non carica o non funziona",
+          "translationWrongMisleading": "Traduzioni errate o fuorvianti",
+          "actionNotWorking": "Un pulsante o un’azione non funziona",
+          "layoutVisualIssue": "Problema di layout o visivo",
+          "mapRoutingIssue": "Problema di mappa o percorso",
+          "performanceIssue": "Prestazioni lente o instabili"
+        },
+        "featureRequest": {
+          "newFeature": "Funzionalità completamente nuova",
+          "improveFeature": "Migliorare una funzionalità esistente",
+          "workflowAutomation": "Miglioramento di flusso o automazione",
+          "mobileExperience": "Miglioramento esperienza mobile",
+          "accessibility": "Miglioramento accessibilità"
+        },
+        "billingAccount": {
+          "subscriptionChange": "Modificare o annullare l’abbonamento",
+          "invoiceReceipt": "Domanda su fattura o ricevuta",
+          "paymentFailed": "Pagamento non riuscito",
+          "refundQuestion": "Domanda sul rimborso",
+          "accountAccess": "Problema di accesso account"
+        },
+        "dataPrivacy": {
+          "dataExport": "Richiedere l’esportazione dei miei dati",
+          "dataDeletion": "Richiedere la cancellazione dei dati",
+          "consentCookies": "Domanda su cookie/consenso",
+          "legalQuestion": "Domanda legale/privacy",
+          "securityConcern": "Segnalazione di sicurezza"
+        },
+        "partnership": {
+          "affiliateInfluencer": "Collaborazione affiliate o creator",
+          "brandCampaign": "Partnership per campagna brand",
+          "mediaPress": "Richiesta media o stampa",
+          "integrationPartner": "Partnership di integrazione",
+          "educationNonProfit": "Collaborazione education o nonprofit"
+        },
+        "other": {
+          "generalFeedback": "Feedback generale",
+          "productQuestion": "Domanda sul prodotto",
+          "careerOpportunity": "Opportunità di carriera",
+          "responsibleDisclosure": "Segnalazione di sicurezza",
+          "somethingElse": "Altro"
+        }
+      },
+      "requiredFieldsNote": "* Campi obbligatori."
     }
   },
   "appDialog": {

@@ -74,7 +74,7 @@
       "reasonLabel": "Powód",
       "reasonPlaceholder": "Wybierz powód",
       "reasonOptions": {
-        "bugReport": "Zgłoszenie błędu",
+        "bugReport": "Problem z witryną lub aplikacją",
         "featureRequest": "Prośba o funkcję",
         "billingAccount": "Płatności / konto",
         "dataPrivacy": "Wniosek o dane/prywatność",
@@ -101,7 +101,56 @@
       "validationReason": "Wybierz powód kontaktu.",
       "validationEmail": "Wpisz poprawny adres e-mail.",
       "validationMessage": "Wpisz wiadomość.",
-      "validationMessageLength": "Twoja wiadomość jest za długa. Maksymalnie {max} znaków."
+      "validationMessageLength": "Twoja wiadomość jest za długa. Maksymalnie {max} znaków.",
+      "subReasonLabel": "Temat (opcjonalnie)",
+      "subReasonPlaceholder": "Wybierz temat (opcjonalnie)",
+      "subReasonEmptyOption": "Brak konkretnego tematu",
+      "subReasonOptions": {
+        "bugReport": {
+          "pageNotLoadingWorking": "Strona nie ładuje się lub nie działa",
+          "translationWrongMisleading": "Tłumaczenia są błędne lub mylące",
+          "actionNotWorking": "Przycisk lub akcja nie działa",
+          "layoutVisualIssue": "Problem z układem lub wyglądem",
+          "mapRoutingIssue": "Problem z mapą lub trasą",
+          "performanceIssue": "Wolne lub niestabilne działanie"
+        },
+        "featureRequest": {
+          "newFeature": "Całkowicie nowa funkcja",
+          "improveFeature": "Ulepszenie istniejącej funkcji",
+          "workflowAutomation": "Ulepszenie procesu lub automatyzacji",
+          "mobileExperience": "Ulepszenie doświadczenia mobilnego",
+          "accessibility": "Ulepszenie dostępności"
+        },
+        "billingAccount": {
+          "subscriptionChange": "Zmiana lub anulowanie subskrypcji",
+          "invoiceReceipt": "Pytanie o fakturę lub rachunek",
+          "paymentFailed": "Nieudana płatność",
+          "refundQuestion": "Pytanie o zwrot",
+          "accountAccess": "Problem z dostępem do konta"
+        },
+        "dataPrivacy": {
+          "dataExport": "Prośba o eksport moich danych",
+          "dataDeletion": "Prośba o usunięcie danych",
+          "consentCookies": "Pytanie o cookies/zgodę",
+          "legalQuestion": "Pytanie prawne/prywatność",
+          "securityConcern": "Obawy dotyczące bezpieczeństwa"
+        },
+        "partnership": {
+          "affiliateInfluencer": "Współpraca afiliacyjna lub twórcza",
+          "brandCampaign": "Partnerstwo w kampanii marki",
+          "mediaPress": "Zapytanie medialne lub prasowe",
+          "integrationPartner": "Partnerstwo integracyjne",
+          "educationNonProfit": "Współpraca edukacyjna lub non-profit"
+        },
+        "other": {
+          "generalFeedback": "Ogólna opinia",
+          "productQuestion": "Pytanie o produkt",
+          "careerOpportunity": "Możliwość kariery",
+          "responsibleDisclosure": "Zgłoszenie bezpieczeństwa",
+          "somethingElse": "Coś innego"
+        }
+      },
+      "requiredFieldsNote": "* Pola wymagane."
     }
   },
   "appDialog": {
