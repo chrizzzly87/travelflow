@@ -16,7 +16,10 @@ summary: "Trip planner map rendering is now more stable, with clearer markers an
 - [x] [Improved] 🧭 Trip preview maps on profile, trip manager, and admin surfaces now render more consistently with shared map styling.
 - [x] [Improved] 🧱 Dark map route legs now use stronger light-edge contrast so paths stay visible against dark basemaps.
 - [x] [Improved] 🎯 Clicking a map city pin now selects that stop, opens its details, and auto-scrolls to it in the active planner view.
+- [x] [Improved] ♻️ Transport route changes now refresh without stale previous-mode overlays lingering on the map.
+- [x] [Improved] 🔁 Round-trip start/end city pins now offset overlapping markers so both stop numbers stay readable.
 - [x] [Fixed] 🧩 Single-city trip previews now render reliably instead of failing route-only preview assumptions.
 - [ ] [Internal] 🛣️ Switched realistic route checks to the newer Google Routes API path with legacy fallback support.
 - [ ] [Internal] 🧠 Added distance-based mode eligibility and bounded transit retry policy to improve route success while reducing wasted checks.
+- [ ] [Internal] 🚉 Transit retries now stay in transit mode with a broader second pass instead of silently substituting driving routes.
 - [ ] [Internal] 🧪 Added regression coverage for proxy-based trip preview URL generation and single-city preview behavior.

@@ -5,7 +5,8 @@ import {
   MAX_DRIVING_ROUTE_CHECK_KM,
   MAX_TRANSIT_ROUTE_CHECK_KM,
   MAX_WALK_ROUTE_CHECK_KM,
-  TRANSIT_DRIVING_RETRY_MAX_KM,
+  TRANSIT_SECOND_PASS_MAX_KM,
+  buildOverlappingMarkerPosition,
   buildRouteAttemptPolicy,
   ROUTE_FAILURE_TTL_MS,
   ROUTE_PERSIST_TTL_MS,
@@ -20,6 +21,7 @@ import {
   shouldIgnoreManualViewportEventTarget,
   shouldRecordManualViewportChange,
   shouldRefitItineraryOnResize,
+  offsetLatLngByMeters,
 } from '../../components/ItineraryMap';
 
 describe('components/ItineraryMap route cache helpers', () => {
@@ -178,11 +180,11 @@ describe('components/ItineraryMap route cache helpers', () => {
       shouldAttempt: true,
       modes: ['BICYCLING'],
     });
-    expect(buildRouteAttemptPolicy('train', TRANSIT_DRIVING_RETRY_MAX_KM - 1)).toEqual({
+    expect(buildRouteAttemptPolicy('train', TRANSIT_SECOND_PASS_MAX_KM - 1)).toEqual({
       shouldAttempt: true,
-      modes: ['TRANSIT', 'DRIVING'],
+      modes: ['TRANSIT', 'TRANSIT'],
     });
-    expect(buildRouteAttemptPolicy('bus', TRANSIT_DRIVING_RETRY_MAX_KM + 1)).toEqual({
+    expect(buildRouteAttemptPolicy('bus', TRANSIT_SECOND_PASS_MAX_KM + 1)).toEqual({
       shouldAttempt: true,
       modes: ['TRANSIT'],
     });
@@ -312,5 +314,21 @@ describe('components/ItineraryMap route cache helpers', () => {
     expect(shouldIgnoreManualViewportEventTarget(mapControlButton)).toBe(true);
     expect(shouldIgnoreManualViewportEventTarget(outsideButton)).toBe(false);
     expect(shouldIgnoreManualViewportEventTarget(null)).toBe(false);
+  });
+
+  it('offsets coordinates by meter deltas for overlapping markers', () => {
+    const origin = { lat: 52.52, lng: 13.405 };
+    const shifted = offsetLatLngByMeters(origin, 500, 500);
+    expect(shifted.lat).toBeGreaterThan(origin.lat);
+    expect(shifted.lng).toBeGreaterThan(origin.lng);
+  });
+
+  it('spreads overlapping markers around the origin', () => {
+    const origin = { lat: 34.5553, lng: 69.2075 };
+    const first = buildOverlappingMarkerPosition(origin, 0, 2);
+    const second = buildOverlappingMarkerPosition(origin, 1, 2);
+    expect(first).not.toEqual(second);
+    expect(first.lat).toBeLessThan(origin.lat);
+    expect(second.lat).toBeGreaterThan(origin.lat);
   });
 });

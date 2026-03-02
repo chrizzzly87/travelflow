@@ -181,11 +181,14 @@ let routeCacheHydrated = false;
 const ROUTE_INNER_OUTLINE_COLOR = '#0f172a';
 const ROUTE_OUTER_OUTLINE_COLOR = '#f8fafc';
 const EARTH_RADIUS_KM = 6371;
+const MARKER_OVERLAP_RADIUS_METERS = 420;
+const MARKER_COORDINATE_GROUP_PRECISION = 5;
 export const MAX_WALK_ROUTE_CHECK_KM = 60;
 export const MAX_BICYCLE_ROUTE_CHECK_KM = 160;
 export const MAX_TRANSIT_ROUTE_CHECK_KM = 1400;
 export const MAX_DRIVING_ROUTE_CHECK_KM = 3000;
-export const TRANSIT_DRIVING_RETRY_MAX_KM = 320;
+export const TRANSIT_SECOND_PASS_MAX_KM = 320;
+export const TRANSIT_DRIVING_RETRY_MAX_KM = TRANSIT_SECOND_PASS_MAX_KM;
 export type RouteApiMode = 'DRIVING' | 'WALKING' | 'BICYCLING' | 'TRANSIT';
 export type RouteAttemptPolicy = {
     shouldAttempt: boolean;
@@ -295,6 +298,48 @@ export const estimateGreatCircleDistanceKm = (
     return EARTH_RADIUS_KM * angularDistance;
 };
 
+export const offsetLatLngByMeters = (
+    origin: google.maps.LatLngLiteral,
+    eastMeters: number,
+    northMeters: number,
+): google.maps.LatLngLiteral => {
+    const metersPerDegreeLat = 111_320;
+    const safeCosine = Math.max(0.01, Math.cos((origin.lat * Math.PI) / 180));
+    const metersPerDegreeLng = metersPerDegreeLat * safeCosine;
+    return {
+        lat: origin.lat + (northMeters / metersPerDegreeLat),
+        lng: origin.lng + (eastMeters / metersPerDegreeLng),
+    };
+};
+
+export const buildOverlappingMarkerPosition = (
+    origin: google.maps.LatLngLiteral,
+    overlapIndex: number,
+    overlapCount: number,
+    radiusMeters = MARKER_OVERLAP_RADIUS_METERS,
+): google.maps.LatLngLiteral => {
+    if (overlapCount <= 1 || overlapIndex < 0 || overlapIndex >= overlapCount) {
+        return origin;
+    }
+    const angle = (-Math.PI / 2) + ((2 * Math.PI * overlapIndex) / overlapCount);
+    const eastMeters = Math.cos(angle) * radiusMeters;
+    const northMeters = Math.sin(angle) * radiusMeters;
+    return offsetLatLngByMeters(origin, eastMeters, northMeters);
+};
+
+const buildCoordinateGroupKey = (coordinates: google.maps.LatLngLiteral): string => (
+    `${coordinates.lat.toFixed(MARKER_COORDINATE_GROUP_PRECISION)},${coordinates.lng.toFixed(MARKER_COORDINATE_GROUP_PRECISION)}`
+);
+
+const getTransitFallbackDepartureTime = (): Date => {
+    const nextWindow = new Date();
+    nextWindow.setHours(12, 0, 0, 0);
+    if (nextWindow.getTime() <= Date.now()) {
+        nextWindow.setDate(nextWindow.getDate() + 1);
+    }
+    return nextWindow;
+};
+
 export const buildRouteAttemptPolicy = (
     mode: string,
     straightDistanceKm: number,
@@ -317,8 +362,9 @@ export const buildRouteAttemptPolicy = (
             if (straightDistanceKm > MAX_TRANSIT_ROUTE_CHECK_KM) {
                 return { shouldAttempt: false, modes: [], reason: 'distance_cap_exceeded' };
             }
-            if (straightDistanceKm <= TRANSIT_DRIVING_RETRY_MAX_KM) {
-                return { shouldAttempt: true, modes: ['TRANSIT', 'DRIVING'] };
+            if (straightDistanceKm <= TRANSIT_SECOND_PASS_MAX_KM) {
+                // Second pass stays in TRANSIT mode but drops strict train/bus submode filters.
+                return { shouldAttempt: true, modes: ['TRANSIT', 'TRANSIT'] };
             }
             return { shouldAttempt: true, modes: ['TRANSIT'] };
         case 'car':
@@ -705,6 +751,8 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         cityLabelOverlaysRef.current.forEach(o => o.setMap(null));
         cityLabelOverlaysRef.current = [];
         cityMarkerMetaRef.current = [];
+        let isEffectDisposed = false;
+        const isEffectActive = () => !isEffectDisposed;
 
         const buildTransportIcon = (mode?: string, color?: string, rotationDegrees?: number) => {
             const size = TRANSPORT_MARKER_BADGE_SIZE;
@@ -861,7 +909,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         };
 
         const createRoutePolylinePair = (options: google.maps.PolylineOptions) => {
-            if (!googleMapRef.current || !window.google?.maps?.Polyline) return null;
+            if (!isEffectActive() || !googleMapRef.current || !window.google?.maps?.Polyline) return null;
             const { outerOutlineOptions, outlineOptions, mainOptions } = buildRoutePolylinePairOptions(options, activeStyle);
             const shouldRenderOuterOutline = (outerOutlineOptions.strokeOpacity ?? 0) > 0 || ((outerOutlineOptions.icons?.length ?? 0) > 0);
             const shouldRenderInnerOutline = (outlineOptions.strokeOpacity ?? 0) > 0 || ((outlineOptions.icons?.length ?? 0) > 0);
@@ -890,6 +938,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         };
 
         const drawRoutePath = (path: google.maps.LatLngLiteral[], color: string, weight = 3) => {
+            if (!isEffectActive()) return null;
             const arrowIcon = {
                 path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
                 fillColor: color,
@@ -917,17 +966,39 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         const brandRouteColor = '#4f46e5';
         const resolveMapColor = (colorToken: string): string =>
             mapColorMode === 'brand' ? brandRouteColor : getHexFromColorClass(colorToken);
+        const coordinateMarkerGroups = new Map<string, number[]>();
+
+        cities.forEach((city, index) => {
+            if (!city.coordinates) return;
+            const key = buildCoordinateGroupKey(city.coordinates);
+            const grouped = coordinateMarkerGroups.get(key) ?? [];
+            grouped.push(index);
+            coordinateMarkerGroups.set(key, grouped);
+        });
+
+        const resolveCityMarkerPosition = (city: ITimelineItem, index: number): google.maps.LatLngLiteral | null => {
+            if (!city.coordinates) return null;
+            const key = buildCoordinateGroupKey(city.coordinates);
+            const grouped = coordinateMarkerGroups.get(key);
+            if (!grouped || grouped.length <= 1) return city.coordinates;
+            const overlapIndex = grouped.indexOf(index);
+            if (overlapIndex < 0) return city.coordinates;
+            return buildOverlappingMarkerPosition(city.coordinates, overlapIndex, grouped.length);
+        };
 
         if (!isPaywalled) {
             // 2. Add Markers
             cities.forEach((city, index) => {
+                if (!isEffectActive()) return;
                 if (!city.coordinates) return;
+                const markerPosition = resolveCityMarkerPosition(city, index);
+                if (!markerPosition) return;
                 
                 const isSelected = city.id === selectedCityId;
                 const cityMarkerColor = resolveMapColor(city.color);
                 const marker = new window.google.maps.Marker({
                     map: googleMapRef.current,
-                    position: { lat: city.coordinates.lat, lng: city.coordinates.lng },
+                    position: markerPosition,
                     title: city.title,
                     label: buildCityMarkerLabel(index, isSelected),
                     icon: buildCityMarkerIcon(window.google.maps, cityMarkerColor, isSelected),
@@ -1054,6 +1125,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
 
         // 3. Draw Routes
         const drawRoutes = async () => {
+             if (!isEffectActive()) return;
              hydrateRouteCache();
              const importLibrary = window.google?.maps?.importLibrary;
              let computeRoutes: ((request: unknown) => Promise<unknown>) | null = null;
@@ -1068,10 +1140,12 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                      console.warn('Failed to load Routes library, falling back to DirectionsService', error);
                  }
              }
+             if (!isEffectActive()) return;
 
              const directionsService = computeRoutes ? null : new window.google.maps.DirectionsService();
 
              for (let i = 0; i < cities.length - 1; i++) {
+                 if (!isEffectActive()) return;
                  const start = cities[i];
                  const end = cities[i+1];
                  if (!start.coordinates || !end.coordinates) continue;
@@ -1109,6 +1183,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                      const isCachedFailureFresh = cached?.status === 'failed' && (Date.now() - cached.updatedAt) < ROUTE_FAILURE_TTL_MS;
 
                      if (cached?.status === 'ok' && cached.path?.length) {
+                         if (!isEffectActive()) return;
                          routingAttempted = true;
                          drawRoutePath(cached.path, startColor, 3);
 
@@ -1153,11 +1228,19 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                              onRouteStatusRef.current(travelItem.id, 'calculating', { mode, routeKey: cacheKey });
                          }
                          const tryRoute = async (travelMode: google.maps.TravelMode, attemptIndex: number) => {
+                             if (!isEffectActive()) {
+                                 throw new Error('Route draw cancelled');
+                             }
                              const origin = { lat: start.coordinates.lat, lng: start.coordinates.lng };
                              const destination = { lat: end.coordinates.lat, lng: end.coordinates.lng };
                              let path: google.maps.LatLngLiteral[] = [];
                              let distanceKm: number | undefined;
                              let durationHours: number | undefined;
+                             const isTransitMode = (
+                                 travelMode === travelModes.TRANSIT ||
+                                 travelMode === 'TRANSIT'
+                             );
+                             const transitDepartureTime = getTransitFallbackDepartureTime();
 
                              if (computeRoutes) {
                                  const routeRequest: Record<string, unknown> = {
@@ -1165,6 +1248,9 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                                      destination,
                                      travelMode,
                                  };
+                                 if (isTransitMode) {
+                                     routeRequest.departureTime = transitDepartureTime.toISOString();
+                                 }
 
                                  const routesResult = await computeRoutes(routeRequest) as {
                                      routes?: Array<{
@@ -1179,6 +1265,9 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                                          }>;
                                      }>;
                                  };
+                                 if (!isEffectActive()) {
+                                     throw new Error('Route draw cancelled');
+                                 }
 
                                  const route = routesResult.routes?.[0];
                                  path = normalizeRoutePathPoints(route?.path);
@@ -1235,7 +1324,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                                  } else if (isBicycling) {
                                      request.avoidTolls = true;
                                  }
-                                 if (travelMode === travelModes.TRANSIT || travelMode === 'TRANSIT') {
+                                 if (isTransitMode) {
                                      const transitModeValues: google.maps.TransitMode[] = [];
                                      const isPrimaryTransitAttempt = attemptIndex === 0;
                                      if (isPrimaryTransitAttempt && mode === 'train') {
@@ -1249,12 +1338,15 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                                      if (isPrimaryTransitAttempt && mode === 'bus' && window.google.maps.TransitMode?.BUS) {
                                          transitModeValues.push(window.google.maps.TransitMode.BUS);
                                      }
-                                     if (transitModeValues.length > 0) {
-                                         request.transitOptions = { modes: transitModeValues };
-                                     }
+                                     request.transitOptions = transitModeValues.length > 0
+                                         ? { modes: transitModeValues, departureTime: transitDepartureTime }
+                                         : { departureTime: transitDepartureTime };
                                  }
 
                                  const result = await directionsService.route(request);
+                                 if (!isEffectActive()) {
+                                     throw new Error('Route draw cancelled');
+                                 }
                                  const rawPath = result.routes?.[0]?.overview_path;
                                  path = rawPath?.map((point) => ({ lat: point.lat(), lng: point.lng() })) ?? [];
                                  const legs = result.routes?.[0]?.legs ?? [];
@@ -1287,6 +1379,9 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                                  }
                              } else if (path.length <= 2) {
                                  throw new Error('Route path is straight');
+                             }
+                             if (!isEffectActive()) {
+                                 throw new Error('Route draw cancelled');
                              }
 
                              drawRoutePath(path, startColor, 3);
@@ -1332,12 +1427,14 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                          let lastRouteError: unknown = null;
                          let routeResolved = false;
                          for (let attemptIndex = 0; attemptIndex < routeAttemptModes.length; attemptIndex++) {
+                             if (!isEffectActive()) return;
                              const attemptMode = routeAttemptModes[attemptIndex];
                              try {
                                  await tryRoute(attemptMode, attemptIndex);
                                  routeResolved = true;
                                  break;
                              } catch (error) {
+                                 if (!isEffectActive()) return;
                                  lastRouteError = error;
                              }
                          }
@@ -1345,6 +1442,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                          if (routeResolved) {
                              continue;
                          }
+                         if (!isEffectActive()) return;
 
                          routingFailed = true;
                          ROUTE_CACHE.set(cacheKey, { status: 'failed', updatedAt: Date.now() });
@@ -1381,6 +1479,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                          { icon: arrowIcon, offset: '25%' },
                          { icon: arrowIcon, offset: '75%' },
                      ];
+                 if (!isEffectActive()) return;
                  createRoutePolylinePair({
                      path: [
                          { lat: start.coordinates.lat, lng: start.coordinates.lng },
@@ -1400,6 +1499,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                      { lat: end.coordinates.lat, lng: end.coordinates.lng },
                  ], 0.5);
                  if (mode !== 'na') {
+                     if (!isEffectActive()) return;
                      if (!mid) continue;
                      const markerHeading = mode === 'plane'
                          ? getHeadingBetweenPoints(start.coordinates, end.coordinates)
@@ -1418,8 +1518,11 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         };
 
         if (!isPaywalled) {
-            drawRoutes();
+            void drawRoutes();
         }
+        return () => {
+            isEffectDisposed = true;
+        };
 
     }, [mapInitialized, mapRenderSignature, routeMode, showCityNames, isPaywalled, activeStyle]); 
 
