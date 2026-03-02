@@ -16,4 +16,5 @@ summary: "Contact submissions now include last-page context and guided reason/to
 - [x] [Improved] 🌍 Translation-banner contact links now preselect the website/app problem reason and translation-specific topic automatically.
 - [x] [Improved] ✅ Contact now clearly marks required fields and opens the topic picker right after selecting a main reason to speed up submissions.
 - [x] [New feature] ❓ Contact now includes a focused FAQ preview with quick links to the full FAQ page and deep-topic answers.
+- [x] [Improved] 🎨 Contact and FAQ pages now use a cleaner, more readable layout with better spacing and streamlined question sections.
 - [ ] [Internal] 🗂️ Added session-based navigation context capture and regression coverage for contact form metadata.
