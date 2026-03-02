@@ -1,10 +1,10 @@
 ---
 id: rel-2026-03-02-husum-weekend-blog-guide
-version: v0.0.0
+version: v0.80.0
 title: "German Husum weekend guide with interactive map and festival itinerary"
 date: 2026-03-02
-published_at: 2026-03-02T14:40:00Z
-status: draft
+published_at: 2026-03-02T20:48:15Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Added a German-only Husum weekend guide featuring Krokusblütenfest tips, embedded visuals, an interactive map card, and a linked festival itinerary example."
