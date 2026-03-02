@@ -1087,6 +1087,7 @@ const useTripViewRender = ({
         const action = resolveTripToastUndoAction({
             action: options?.action,
             disableDefaultUndo: options?.disableDefaultUndo,
+            iconVariant: options?.iconVariant,
             onUndo: () => navigateHistoryRef.current?.('undo') ?? false,
         });
         showAppToast({
