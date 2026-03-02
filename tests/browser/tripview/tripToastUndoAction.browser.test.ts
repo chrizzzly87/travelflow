@@ -46,21 +46,4 @@ describe('components/tripview/tripToastUndoAction', () => {
     expect(resolved).toBeUndefined();
   });
 
-  it('does not add default undo action for undo feedback toasts', () => {
-    const resolved = resolveTripToastUndoAction({
-      iconVariant: 'undo',
-      onUndo: vi.fn(() => true),
-    });
-
-    expect(resolved).toBeUndefined();
-  });
-
-  it('does not add default undo action for redo feedback toasts', () => {
-    const resolved = resolveTripToastUndoAction({
-      iconVariant: 'redo',
-      onUndo: vi.fn(() => true),
-    });
-
-    expect(resolved).toBeUndefined();
-  });
 });

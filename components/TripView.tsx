@@ -1087,7 +1087,6 @@ const useTripViewRender = ({
         const action = resolveTripToastUndoAction({
             action: options?.action,
             disableDefaultUndo: options?.disableDefaultUndo,
-            iconVariant: options?.iconVariant,
             onUndo: () => navigateHistoryRef.current?.('undo') ?? false,
         });
         showAppToast({
@@ -1637,6 +1636,7 @@ const useTripViewRender = ({
                     tone: 'add',
                     title: 'Undo',
                     iconVariant: 'undo',
+                    disableDefaultUndo: true,
                 });
                 return;
             }
@@ -1648,6 +1648,7 @@ const useTripViewRender = ({
                         tone: 'add',
                         title: 'Undo',
                         iconVariant: 'undo',
+                        disableDefaultUndo: true,
                     });
                     return;
                 }
@@ -1658,6 +1659,7 @@ const useTripViewRender = ({
                     tone: 'add',
                     title: 'Undo',
                     iconVariant: 'undo',
+                    disableDefaultUndo: true,
                 });
             }, 200);
         },
