@@ -8,6 +8,8 @@ import {
   filterHydratedRouteCacheEntries,
   getRouteOuterOutlineColor,
   getRouteOutlineColor,
+  resolveItineraryCenter,
+  resolveMapResizeCameraStrategy,
 } from '../../components/ItineraryMap';
 
 describe('components/ItineraryMap route cache helpers', () => {
@@ -102,5 +104,59 @@ describe('components/ItineraryMap route cache helpers', () => {
     expect(outlineOptions.zIndex).toBe(34);
     expect(outerOutlineOptions.icons).toBeUndefined();
     expect(outlineOptions.icons).toBeUndefined();
+  });
+
+  it('uses preserve-camera strategy while a city is actively focused or the map was manually moved', () => {
+    expect(resolveMapResizeCameraStrategy({
+      hasSelectedCity: true,
+      hasManualViewportChange: false,
+    })).toBe('preserve_camera');
+    expect(resolveMapResizeCameraStrategy({
+      hasSelectedCity: false,
+      hasManualViewportChange: true,
+    })).toBe('preserve_camera');
+  });
+
+  it('centers the itinerary on resize only when no active city is selected and no manual viewport changes exist', () => {
+    expect(resolveMapResizeCameraStrategy({
+      hasSelectedCity: false,
+      hasManualViewportChange: false,
+    })).toBe('center_itinerary');
+  });
+
+  it('resolves itinerary center from available city coordinates', () => {
+    const center = resolveItineraryCenter([
+      {
+        id: 'city-a',
+        type: 'city',
+        title: 'A',
+        location: 'A',
+        startDateOffset: 0,
+        duration: 1,
+        color: 'bg-blue-500',
+        coordinates: { lat: 10, lng: 20 },
+      } as any,
+      {
+        id: 'city-b',
+        type: 'city',
+        title: 'B',
+        location: 'B',
+        startDateOffset: 2,
+        duration: 1,
+        color: 'bg-pink-500',
+        coordinates: { lat: 20, lng: 40 },
+      } as any,
+    ]);
+
+    expect(center).toEqual({ lat: 15, lng: 30 });
+    expect(resolveItineraryCenter([] as any)).toBeNull();
+    expect(resolveItineraryCenter([{
+      id: 'x',
+      type: 'activity',
+      title: 'X',
+      location: 'X',
+      startDateOffset: 0,
+      duration: 1,
+    }] as any)).toBeNull();
   });
 });
