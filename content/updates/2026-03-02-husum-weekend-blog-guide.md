@@ -19,5 +19,6 @@ summary: "Added a German-only Husum weekend guide featuring Krokusblütenfest ti
 - [x] [Improved] 🎨 Refined the global blog calendar card with localized copy, a toast-style icon badge, and a desktop pop-out layout treatment.
 - [x] [Improved] 🧭 Stabilized the blog sidebar as a true right-rail sticky navigation (viewport-capped on desktop) so chapter highlighting reliably follows reading progress.
 - [x] [New feature] 🧭 Added a linked Husum Krokusblütenfest 2026 weekend example itinerary so readers can open and reuse the trip structure directly.
+- [x] [Fixed] 📱 Reduced the Husum social preview image weight so WhatsApp link previews load more reliably.
 - [x] [Improved] ✨ Added a warmer norddeutsch sign-off section at the end of the Husum guide.
 - [ ] [Internal] 🧩 Added markdown `tf-map`/`tf-calendar` parsing support, analytics tracking hooks for map/calendar interactions, docs for custom markdown components, and regression tests for parser and example-template runtime loading.
