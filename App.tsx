@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState, Suspense, lazy } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { AppLanguage, ITrip, IViewSettings } from './types';
+import { AppLanguage, ITrip, ITimelineItem, IViewSettings } from './types';
 import { TripManagerProvider } from './contexts/TripManagerContext';
 import { CookieConsentBanner } from './components/marketing/CookieConsentBanner';
 import { saveTrip, getTripById } from './services/storageService';
@@ -43,6 +43,7 @@ import { isFirstLoadCriticalPath } from './app/prefetch/isFirstLoadCriticalPath'
 import { useConnectivityStatus } from './hooks/useConnectivityStatus';
 import { enqueueTripCommitAndSync } from './services/tripSyncManager';
 import { GlobalConnectivityBadge } from './components/GlobalConnectivityBadge';
+import { normalizeTransportMode } from './shared/transportModes';
 const IS_DEV = Boolean((import.meta as any)?.env?.DEV);
 
 const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
@@ -71,6 +72,41 @@ const SpeculationRulesManager = lazyWithRecovery(
     () => import('./components/SpeculationRulesManager').then((module) => ({ default: module.SpeculationRulesManager }))
 );
 const TRIP_MANAGER_FALLBACK_ROWS = [0, 1, 2, 3, 4, 5];
+
+const normalizeTripForRuntimeLoad = (trip: ITrip): ITrip => {
+    let didChange = false;
+
+    const normalizedItems = trip.items.map((item) => {
+        if (item.type !== 'travel' && item.type !== 'travel-empty') return item;
+
+        const nextMode = normalizeTransportMode(item.transportMode);
+        const nextType: ITimelineItem['type'] = nextMode === 'na' ? 'travel-empty' : 'travel';
+        const modeChanged = item.transportMode !== nextMode;
+        const typeChanged = item.type !== nextType;
+        const shouldClearRouteMetrics = (
+            modeChanged || nextMode === 'na'
+        ) && (
+            item.routeDistanceKm !== undefined || item.routeDurationHours !== undefined
+        );
+
+        if (!modeChanged && !typeChanged && !shouldClearRouteMetrics) return item;
+
+        didChange = true;
+        return {
+            ...item,
+            type: nextType,
+            transportMode: nextMode,
+            routeDistanceKm: shouldClearRouteMetrics ? undefined : item.routeDistanceKm,
+            routeDurationHours: shouldClearRouteMetrics ? undefined : item.routeDurationHours,
+        };
+    });
+
+    if (!didChange) return trip;
+    return {
+        ...trip,
+        items: normalizedItems,
+    };
+};
 
 const TripManagerLoadingFallback: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => (
     <>
@@ -515,8 +551,12 @@ const AppContent: React.FC = () => {
         void create();
     };
 
+    const handleRouteTripLoaded = useCallback((loadedTrip: ITrip) => {
+        setTrip(normalizeTripForRuntimeLoad(loadedTrip));
+    }, []);
+
     const handleLoadTrip = (loadedTrip: ITrip) => {
-        setTrip(loadedTrip);
+        setTrip(normalizeTripForRuntimeLoad(loadedTrip));
         setIsManagerOpen(false);
         navigate(buildTripUrl(loadedTrip.id));
     };
@@ -545,7 +585,7 @@ const AppContent: React.FC = () => {
                 appLanguage={appLanguage}
                 onAppLanguageLoaded={setAppLanguage}
                 onTripGenerated={handleTripGenerated}
-                onTripLoaded={setTrip}
+                onTripLoaded={handleRouteTripLoaded}
                 onUpdateTrip={handleUpdateTrip}
                 onCommitState={handleCommitState}
                 onViewSettingsChange={handleViewSettingsChange}

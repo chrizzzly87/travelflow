@@ -4,7 +4,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { act, render, waitFor } from '@testing-library/react';
 
 import type { IViewSettings } from '../../../types';
-import { makeTrip } from '../../helpers/tripFixtures';
+import { makeTravelItem, makeTrip } from '../../helpers/tripFixtures';
 
 const mocks = vi.hoisted(() => ({
   dbEnabled: false,
@@ -206,6 +206,44 @@ describe('routes/TripLoaderRoute', () => {
     });
     expect(mocks.dbGetTrip).not.toHaveBeenCalled();
     expect(mocks.navigate).not.toHaveBeenCalledWith('/share-unavailable?reason=offline', { replace: true });
+  });
+
+  it('normalizes legacy transport modes when loading local trips', async () => {
+    mocks.dbEnabled = true;
+    mocks.connectivityState = 'offline';
+    mocks.route.tripId = 'trip-local-legacy';
+    mocks.route.pathname = '/trip/trip-local-legacy';
+    const legacyTransportItem = {
+      ...makeTravelItem('travel-legacy', 1, 'Rail segment'),
+      transportMode: 'rail' as any,
+      routeDistanceKm: 420,
+      routeDurationHours: 6.5,
+    };
+    const localTrip = makeTrip({
+      id: 'trip-local-legacy',
+      title: 'Legacy trip',
+      items: [legacyTransportItem],
+    });
+    mocks.getTripById.mockReturnValue(localTrip);
+
+    const props = makeRouteProps();
+    render(React.createElement(TripLoaderRoute, props));
+
+    await waitFor(() => {
+      expect(props.onTripLoaded).toHaveBeenCalledTimes(1);
+    });
+
+    const [loadedTrip] = props.onTripLoaded.mock.calls[0];
+    const loadedTravel = loadedTrip.items.find((item: any) => item.id === 'travel-legacy');
+
+    expect(loadedTravel).toBeDefined();
+    expect(loadedTravel.transportMode).toBe('train');
+    expect(loadedTravel.type).toBe('travel');
+    expect(loadedTravel.routeDistanceKm).toBeUndefined();
+    expect(loadedTravel.routeDurationHours).toBeUndefined();
+    expect(mocks.saveTrip).toHaveBeenCalledWith(expect.objectContaining({
+      id: 'trip-local-legacy',
+    }), { preserveUpdatedAt: true });
   });
 
   it('redirects to offline fallback when trip is missing and connectivity is offline', async () => {
@@ -473,6 +511,6 @@ describe('routes/TripLoaderRoute', () => {
     });
 
     expect(mocks.saveTrip).toHaveBeenCalledTimes(1);
-    expect(mocks.saveTrip).toHaveBeenCalledWith(dbTrip);
+    expect(mocks.saveTrip).toHaveBeenCalledWith(dbTrip, { preserveUpdatedAt: true });
   });
 });

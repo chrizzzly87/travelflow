@@ -21,7 +21,8 @@ import {
     buildPathFromLocationParts,
     rememberAuthReturnPath,
 } from '../services/authNavigationService';
-import type { ITrip, IViewSettings } from '../types';
+import type { ITrip, ITimelineItem, IViewSettings } from '../types';
+import { normalizeTransportMode } from '../shared/transportModes';
 import type { TripLoaderRouteProps } from './tripRouteTypes';
 import { TripView } from '../components/TripView';
 
@@ -33,6 +34,41 @@ const resolveTripInitialMapFocusQuery = (trip: ITrip): string | undefined => {
     const uniqueLocations = Array.from(new Set(locations));
     if (uniqueLocations.length === 0) return undefined;
     return uniqueLocations.join(' || ');
+};
+
+const normalizeTripForRouteLoad = (trip: ITrip): ITrip => {
+    let didChange = false;
+
+    const normalizedItems = trip.items.map((item) => {
+        if (item.type !== 'travel' && item.type !== 'travel-empty') return item;
+
+        const nextMode = normalizeTransportMode(item.transportMode);
+        const nextType: ITimelineItem['type'] = nextMode === 'na' ? 'travel-empty' : 'travel';
+        const modeChanged = item.transportMode !== nextMode;
+        const typeChanged = item.type !== nextType;
+        const shouldClearRouteMetrics = (
+            modeChanged || nextMode === 'na'
+        ) && (
+            item.routeDistanceKm !== undefined || item.routeDurationHours !== undefined
+        );
+
+        if (!modeChanged && !typeChanged && !shouldClearRouteMetrics) return item;
+
+        didChange = true;
+        return {
+            ...item,
+            type: nextType,
+            transportMode: nextMode,
+            routeDistanceKm: shouldClearRouteMetrics ? undefined : item.routeDistanceKm,
+            routeDurationHours: shouldClearRouteMetrics ? undefined : item.routeDurationHours,
+        };
+    });
+
+    if (!didChange) return trip;
+    return {
+        ...trip,
+        items: normalizedItems,
+    };
 };
 
 const resolveSharedTripPathByTripId = async (tripId: string, versionId?: string | null): Promise<string | null> => {
@@ -135,9 +171,10 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
                     ...loadedTrip,
                     isFavorite: localTrip?.isFavorite ?? loadedTrip.isFavorite ?? false,
                 };
-                const effectiveView = resolveEffectiveView(view, mergedTrip.defaultView);
+                const normalizedTrip = normalizeTripForRouteLoad(mergedTrip);
+                const effectiveView = resolveEffectiveView(view, normalizedTrip.defaultView);
                 setViewSettings(effectiveView);
-                onTripLoaded(mergedTrip, effectiveView);
+                onTripLoaded(normalizedTrip, effectiveView);
                 return;
             }
 
@@ -147,9 +184,10 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
             if (versionId) {
                 const localEntry = findHistoryEntryByUrl(tripId, buildTripUrl(tripId, versionId));
                 if (localEntry?.snapshot?.trip) {
-                    saveTrip(localEntry.snapshot.trip);
-                    localResolvedTrip = localEntry.snapshot.trip;
-                    localResolvedView = resolveEffectiveView(localEntry.snapshot.view, localEntry.snapshot.trip.defaultView);
+                    const normalizedLocalSnapshotTrip = normalizeTripForRouteLoad(localEntry.snapshot.trip);
+                    saveTrip(normalizedLocalSnapshotTrip, { preserveUpdatedAt: true });
+                    localResolvedTrip = normalizedLocalSnapshotTrip;
+                    localResolvedView = resolveEffectiveView(localEntry.snapshot.view, normalizedLocalSnapshotTrip.defaultView);
                     setViewSettings(localResolvedView);
                     onTripLoaded(localResolvedTrip, localResolvedView);
                     return;
@@ -158,10 +196,14 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
 
             const localTrip = getTripById(tripId);
             if (!localResolvedTrip && localTrip && connectivityState !== 'online') {
-                localResolvedTrip = localTrip;
-                localResolvedView = resolveEffectiveView(localTrip.defaultView, localTrip.defaultView);
+                const normalizedLocalTrip = normalizeTripForRouteLoad(localTrip);
+                if (normalizedLocalTrip !== localTrip) {
+                    saveTrip(normalizedLocalTrip, { preserveUpdatedAt: true });
+                }
+                localResolvedTrip = normalizedLocalTrip;
+                localResolvedView = resolveEffectiveView(normalizedLocalTrip.defaultView, normalizedLocalTrip.defaultView);
                 setViewSettings(localResolvedView);
-                onTripLoaded(localTrip, localResolvedView);
+                onTripLoaded(normalizedLocalTrip, localResolvedView);
                 if (connectivityState === 'offline') return;
             }
 
@@ -169,29 +211,31 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
                 if (versionId && isUuid(versionId)) {
                     const version = await dbGetTripVersion(tripId, versionId);
                     if (version?.trip) {
-                        saveTrip(version.trip);
-                        const resolvedView = resolveEffectiveView(version.view, version.trip.defaultView);
+                        const normalizedVersionTrip = normalizeTripForRouteLoad(version.trip);
+                        saveTrip(normalizedVersionTrip, { preserveUpdatedAt: true });
+                        const resolvedView = resolveEffectiveView(version.view, normalizedVersionTrip.defaultView);
                         const localUpdatedAt = localResolvedTrip?.updatedAt ?? 0;
-                        const dbUpdatedAt = version.trip.updatedAt ?? 0;
+                        const dbUpdatedAt = normalizedVersionTrip.updatedAt ?? 0;
                         if (!localResolvedTrip || dbUpdatedAt >= localUpdatedAt) {
                             setViewSettings(resolvedView);
-                            onTripLoaded(version.trip, resolvedView);
+                            onTripLoaded(normalizedVersionTrip, resolvedView);
                         }
                         return;
                     }
                 }
                 const dbTrip = await dbGetTrip(tripId);
                 if (dbTrip?.trip) {
+                    const normalizedDbTrip = normalizeTripForRouteLoad(dbTrip.trip);
                     if (dbTrip.access.source === 'owner') {
-                        saveTrip(dbTrip.trip);
+                        saveTrip(normalizedDbTrip, { preserveUpdatedAt: true });
                     }
-                    const resolvedView = resolveEffectiveView(dbTrip.view, dbTrip.trip.defaultView);
+                    const resolvedView = resolveEffectiveView(dbTrip.view, normalizedDbTrip.defaultView);
                     const localUpdatedAt = localResolvedTrip?.updatedAt ?? 0;
-                    const dbUpdatedAt = dbTrip.trip.updatedAt ?? 0;
+                    const dbUpdatedAt = normalizedDbTrip.updatedAt ?? 0;
                     if (!localResolvedTrip || dbUpdatedAt >= localUpdatedAt) {
                         setTripAccess(dbTrip.access);
                         setViewSettings(resolvedView);
-                        onTripLoaded(dbTrip.trip, resolvedView);
+                        onTripLoaded(normalizedDbTrip, resolvedView);
                     }
                     return;
                 }

@@ -25,6 +25,14 @@ summary: "Trip planner map rendering is now more stable, with clearer markers an
 - [ ] [Internal] 🧠 Added distance-based mode eligibility and bounded transit retry policy to improve route success while reducing wasted checks.
 - [ ] [Internal] 🚉 Transit retries now stay in transit mode with a broader second pass instead of silently substituting driving routes.
 - [ ] [Internal] 🧰 Added an explicit field mask for Routes API calls and fallback to legacy directions when Routes requests fail.
+- [ ] [Internal] 🧯 Added a field-mask compatibility retry and lazy Directions fallback initialization to reduce routing warning noise.
+- [ ] [Internal] 🧹 Normalized legacy transport values when loading saved trips so reopened plans use canonical travel modes.
+- [ ] [Internal] 🧷 Ignored no-op transport reselection updates to reduce redundant route refreshes and history churn.
+- [ ] [Internal] 🧭 Replaced deprecated map marker constructors with OverlayView-based markers to remove legacy marker API warnings.
+- [ ] [Internal] 🏨 Migrated city-panel hotel lookup from deprecated PlacesService text search to Place.searchByText.
+- [ ] [Internal] 🧭 Removed legacy DirectionsService fallback and now use Routes API-only checks before straight-line fallback.
+- [ ] [Internal] 🏙️ Migrated city lookup flows away from deprecated Places Autocomplete to searchByText + geocoder fallback suggestions.
 - [ ] [Internal] 🧪 Local `pnpm dev` map previews now build a valid direct Static Maps URL (paths + markers) when the edge runtime is unavailable.
 - [ ] [Internal] 🧪 Added regression coverage for proxy-based trip preview URL generation and single-city preview behavior.
 - [ ] [Internal] 🧪 Added viewport-readiness guards and resize-triggered map sync before fit-bounds calls.
+- [ ] [Internal] 🧭 Added `docs/MAPS_INTEGRATION_WORKFLOW.md` and linked agent/LLM guidance for future map features.

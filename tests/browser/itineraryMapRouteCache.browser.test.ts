@@ -217,11 +217,7 @@ describe('components/ItineraryMap route cache helpers', () => {
     expect(ROUTES_COMPUTE_FIELDS).toEqual([
       'path',
       'distanceMeters',
-      'duration',
       'durationMillis',
-      'legs.distanceMeters',
-      'legs.duration',
-      'legs.durationMillis',
     ]);
   });
 
