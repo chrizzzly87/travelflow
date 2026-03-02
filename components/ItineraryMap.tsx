@@ -266,6 +266,14 @@ export const buildPersistedRouteCachePayload = (
 
 export type MapResizeCameraStrategy = 'preserve_camera' | 'center_itinerary';
 
+export const shouldRecordManualViewportChange = ({
+    nowMs,
+    suppressUntilMs,
+}: {
+    nowMs: number;
+    suppressUntilMs: number;
+}): boolean => nowMs > suppressUntilMs;
+
 export const resolveMapResizeCameraStrategy = ({
     hasSelectedCity,
     hasManualViewportChange,
@@ -408,6 +416,19 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     const suppressManualViewportTracking = useCallback((durationMs = 220) => {
         if (typeof performance === 'undefined') return;
         suppressManualViewportTrackingUntilRef.current = performance.now() + durationMs;
+    }, []);
+
+    const markManualViewportChange = useCallback(() => {
+        const nowMs = typeof performance !== 'undefined'
+            ? performance.now()
+            : Number.POSITIVE_INFINITY;
+        if (!shouldRecordManualViewportChange({
+            nowMs,
+            suppressUntilMs: suppressManualViewportTrackingUntilRef.current,
+        })) {
+            return;
+        }
+        hasManualViewportChangeRef.current = true;
     }, []);
 
     useEffect(() => {
@@ -1123,21 +1144,22 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     }, [cities, suppressManualViewportTracking]);
 
     useEffect(() => {
-        if (!mapInitialized || !googleMapRef.current) return;
+        if (!mapInitialized || !googleMapRef.current || !mapRef.current) return;
         const mapInstance = googleMapRef.current;
-        const markManualViewportChange = () => {
-            if (typeof performance !== 'undefined' && performance.now() <= suppressManualViewportTrackingUntilRef.current) {
-                return;
-            }
-            hasManualViewportChangeRef.current = true;
-        };
         const dragListener = mapInstance.addListener?.('dragstart', markManualViewportChange);
-        const zoomListener = mapInstance.addListener?.('zoom_changed', markManualViewportChange);
+        const mapElement = mapRef.current;
+        mapElement.addEventListener('wheel', markManualViewportChange, { passive: true });
+        mapElement.addEventListener('pointerdown', markManualViewportChange, { passive: true });
+        mapElement.addEventListener('touchstart', markManualViewportChange, { passive: true });
+        mapElement.addEventListener('dblclick', markManualViewportChange, { passive: true });
         return () => {
             dragListener?.remove?.();
-            zoomListener?.remove?.();
+            mapElement.removeEventListener('wheel', markManualViewportChange);
+            mapElement.removeEventListener('pointerdown', markManualViewportChange);
+            mapElement.removeEventListener('touchstart', markManualViewportChange);
+            mapElement.removeEventListener('dblclick', markManualViewportChange);
         };
-    }, [mapInitialized]);
+    }, [mapInitialized, markManualViewportChange]);
 
     // Pan to selected
     useEffect(() => {

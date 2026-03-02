@@ -10,6 +10,7 @@ import {
   getRouteOutlineColor,
   resolveItineraryCenter,
   resolveMapResizeCameraStrategy,
+  shouldRecordManualViewportChange,
   shouldRefitItineraryOnResize,
 } from '../../components/ItineraryMap';
 
@@ -186,5 +187,16 @@ describe('components/ItineraryMap route cache helpers', () => {
       nextWidth: 326,
       nextHeight: 478,
     })).toBe(false);
+  });
+
+  it('ignores manual-viewport recording while suppression window is active', () => {
+    expect(shouldRecordManualViewportChange({
+      nowMs: 100,
+      suppressUntilMs: 160,
+    })).toBe(false);
+    expect(shouldRecordManualViewportChange({
+      nowMs: 200,
+      suppressUntilMs: 160,
+    })).toBe(true);
   });
 });
