@@ -14,6 +14,7 @@ export { NEW_ZEALAND_TEMPLATE, createNewZealandTrip } from './newZealand';
 export { MOROCCO_TEMPLATE, createMoroccoTrip } from './morocco';
 export { ICELAND_TEMPLATE, createIcelandTrip } from './iceland';
 export { EUROPE_FLEXIBLE_TEMPLATE, createEuropeFlexibleTrip } from './europeFlexible';
+export { HUSUM_KROKUS_WEEKEND_TEMPLATE, createHusumKrokusWeekendTrip } from './husumKrokusWeekend';
 export {
     SOUTHEAST_ASIA_BACKPACKING_TEMPLATE,
     createSoutheastAsiaBackpackingTrip,
@@ -29,6 +30,7 @@ import { NEW_ZEALAND_TEMPLATE, createNewZealandTrip } from './newZealand';
 import { MOROCCO_TEMPLATE, createMoroccoTrip } from './morocco';
 import { ICELAND_TEMPLATE, createIcelandTrip } from './iceland';
 import { EUROPE_FLEXIBLE_TEMPLATE, createEuropeFlexibleTrip } from './europeFlexible';
+import { HUSUM_KROKUS_WEEKEND_TEMPLATE, createHusumKrokusWeekendTrip } from './husumKrokusWeekend';
 import {
     SOUTHEAST_ASIA_BACKPACKING_TEMPLATE,
     createSoutheastAsiaBackpackingTrip,
@@ -41,6 +43,7 @@ interface ExampleTripTemplateConfig {
     mapColorMode: MapColorMode;
     roundTrip?: boolean;
     layoutMode?: 'vertical' | 'horizontal';
+    timelineMode?: 'calendar' | 'timeline';
     timelineView?: 'vertical' | 'horizontal';
     zoomLevel?: number;
     showCityNames?: boolean;
@@ -54,6 +57,7 @@ const DEFAULT_EXAMPLE_TEMPLATE_CONFIG: ExampleTripTemplateConfig = {
     mapStyle: 'clean',
     routeMode: 'realistic',
     mapColorMode: 'trip',
+    timelineMode: 'calendar',
 };
 
 export const EXAMPLE_TRIP_TEMPLATE_CONFIGS: Record<string, ExampleTripTemplateConfig> = {
@@ -114,6 +118,17 @@ export const EXAMPLE_TRIP_TEMPLATE_CONFIGS: Record<string, ExampleTripTemplateCo
         routeMode: 'simple',
         mapColorMode: 'trip',
     },
+    'husum-krokus-weekend': {
+        paletteId: 'nordic',
+        mapStyle: 'clean',
+        routeMode: 'simple',
+        mapColorMode: 'trip',
+        roundTrip: true,
+        layoutMode: 'horizontal',
+        timelineMode: 'timeline',
+        timelineView: 'horizontal',
+        zoomLevel: 1.15,
+    },
     'southeast-asia-backpacking': {
         paletteId: 'classic',
         mapStyle: 'minimal',
@@ -142,6 +157,7 @@ const buildDefaultView = (config: ExampleTripTemplateConfig) => {
 
     return {
         layoutMode: config.layoutMode ?? 'horizontal',
+        timelineMode: config.timelineMode ?? 'calendar',
         timelineView: config.timelineView ?? 'horizontal',
         mapStyle: config.mapStyle,
         routeMode: config.routeMode,
@@ -191,6 +207,7 @@ export const TRIP_TEMPLATES: Record<string, Partial<ITrip>> = {
     'morocco-medina': applyTemplateConfigToPartial('morocco-medina', MOROCCO_TEMPLATE),
     'iceland-ring': applyTemplateConfigToPartial('iceland-ring', ICELAND_TEMPLATE),
     'europe-flex-options': applyTemplateConfigToPartial('europe-flex-options', EUROPE_FLEXIBLE_TEMPLATE),
+    'husum-krokus-weekend': applyTemplateConfigToPartial('husum-krokus-weekend', HUSUM_KROKUS_WEEKEND_TEMPLATE),
     'southeast-asia-backpacking': applyTemplateConfigToPartial(
         'southeast-asia-backpacking',
         SOUTHEAST_ASIA_BACKPACKING_TEMPLATE
@@ -208,6 +225,8 @@ export const TRIP_FACTORIES: Record<string, (startDate: string) => ITrip> = {
     'morocco-medina': (startDate) => applyTemplateConfigToTrip('morocco-medina', createMoroccoTrip(startDate)),
     'iceland-ring': (startDate) => applyTemplateConfigToTrip('iceland-ring', createIcelandTrip(startDate)),
     'europe-flex-options': (startDate) => applyTemplateConfigToTrip('europe-flex-options', createEuropeFlexibleTrip(startDate)),
+    'husum-krokus-weekend': (startDate) =>
+        applyTemplateConfigToTrip('husum-krokus-weekend', createHusumKrokusWeekendTrip(startDate)),
     'southeast-asia-backpacking': (startDate) =>
         applyTemplateConfigToTrip('southeast-asia-backpacking', createSoutheastAsiaBackpackingTrip(startDate)),
 };

@@ -5,16 +5,18 @@ import { TranslationNoticeBanner } from './TranslationNoticeBanner';
 import { SiteHeader } from '../navigation/SiteHeader';
 import { LanguageSuggestionBanner } from '../navigation/LanguageSuggestionBanner';
 import { useTripManager } from '../../contexts/TripManagerContext';
+import { cn } from '../../lib/utils';
 
 interface MarketingLayoutProps {
     children: React.ReactNode;
+    rootClassName?: string;
 }
 
-export const MarketingLayout: React.FC<MarketingLayoutProps> = ({ children }) => {
+export const MarketingLayout: React.FC<MarketingLayoutProps> = ({ children, rootClassName }) => {
     const { openTripManager, prewarmTripManager } = useTripManager();
 
     return (
-        <div className="min-h-screen scroll-smooth bg-slate-50 text-slate-900 flex flex-col overflow-x-hidden">
+        <div className={cn('min-h-screen scroll-smooth bg-slate-50 text-slate-900 flex flex-col overflow-x-hidden', rootClassName)}>
             <SiteHeader onMyTripsClick={openTripManager} onMyTripsIntent={prewarmTripManager} />
             <EarlyAccessBanner />
             <LanguageSuggestionBanner />
