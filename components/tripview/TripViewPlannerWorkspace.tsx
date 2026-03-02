@@ -123,7 +123,9 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
         if (!isFloatingMapPreviewEnabled) return;
         onMapDockModeChange(effectiveMapDockMode === 'docked' ? 'floating' : 'docked');
     }, [effectiveMapDockMode, isFloatingMapPreviewEnabled, onMapDockModeChange]);
-    const effectiveMapViewTransitionName = mapViewTransitionName ?? 'trip-map-dock-preview';
+    const effectiveMapViewTransitionName = mapViewTransitionName && mapViewTransitionName.trim().length > 0
+        ? mapViewTransitionName
+        : undefined;
 
     const timelineControls = (
         <div className="flex flex-wrap items-center justify-end gap-2 pointer-events-auto">

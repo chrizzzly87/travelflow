@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { makeCityItem, makeTrip } from '../helpers/tripFixtures';
 
-import { buildMiniMapUrl } from '../../components/profile/tripPreviewUtils';
+import { buildDirectStaticMapPreviewUrlWithKey, buildMiniMapUrl } from '../../components/profile/tripPreviewUtils';
 
 describe('components/profile/tripPreviewUtils buildMiniMapUrl', () => {
   it('uses city colors for markers and route legs when color data is available', () => {
@@ -116,5 +116,63 @@ describe('components/profile/tripPreviewUtils buildMiniMapUrl', () => {
     expect(params.get('startMarkerColor')).toBe('2563eb');
     expect(params.get('endMarkerColor')).toBe('2563eb');
     expect(params.get('language')).toBe('de');
+  });
+
+  it('builds a valid direct Static Maps URL with paths and markers for local fallback', () => {
+    const params = new URLSearchParams();
+    params.set('coords', '34.693700,135.502300|35.011600,135.768100|35.676200,139.650300');
+    params.set('style', 'standard');
+    params.set('routeMode', 'simple');
+    params.set('colorMode', 'trip');
+    params.set('pathColor', '16a34a');
+    params.set('startMarkerColor', '16a34a');
+    params.set('endMarkerColor', '2563eb');
+    params.set('waypointColor', 'f97316');
+    params.set('legColors', 'dc2626|2563eb');
+    params.set('w', '640');
+    params.set('h', '360');
+    params.set('scale', '2');
+    params.set('language', 'en');
+
+    const url = buildDirectStaticMapPreviewUrlWithKey(params, 'test-key');
+    expect(url).toBeTruthy();
+
+    const query = new URL(url!, 'https://travelflow.local').searchParams;
+    expect(query.get('size')).toBe('640x360');
+    expect(query.get('scale')).toBe('2');
+    expect(query.get('maptype')).toBe('roadmap');
+    expect(query.get('language')).toBe('en');
+    expect(query.get('key')).toBe('test-key');
+    expect(query.getAll('path')).toEqual([
+      'color:0xdc2626|weight:4|34.693700,135.502300|35.011600,135.768100',
+      'color:0x2563eb|weight:4|35.011600,135.768100|35.676200,139.650300',
+    ]);
+    expect(query.getAll('markers')).toEqual([
+      'size:mid|color:0x16a34a|label:S|34.693700,135.502300',
+      'size:mid|color:0x2563eb|label:E|35.676200,139.650300',
+      'size:tiny|color:0x2563eb|35.011600,135.768100',
+    ]);
+  });
+
+  it('builds a direct Static Maps URL for one-city previews without path params', () => {
+    const params = new URLSearchParams();
+    params.set('coords', '52.520000,13.405000');
+    params.set('style', 'dark');
+    params.set('colorMode', 'trip');
+    params.set('pathColor', '2563eb');
+    params.set('startMarkerColor', '2563eb');
+    params.set('w', '640');
+    params.set('h', '360');
+    params.set('scale', '2');
+
+    const url = buildDirectStaticMapPreviewUrlWithKey(params, 'test-key');
+    expect(url).toBeTruthy();
+
+    const query = new URL(url!, 'https://travelflow.local').searchParams;
+    expect(query.getAll('path')).toHaveLength(0);
+    expect(query.getAll('markers')).toEqual([
+      'size:mid|color:0x2563eb|label:S|52.520000,13.405000',
+    ]);
+    expect(query.getAll('style').length).toBeGreaterThan(0);
   });
 });
