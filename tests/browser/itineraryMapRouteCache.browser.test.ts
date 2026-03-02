@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
 import {
+  MAP_VIEWPORT_READY_MIN_DIMENSION_PX,
   MAX_BICYCLE_ROUTE_CHECK_KM,
   MAX_DRIVING_ROUTE_CHECK_KM,
   MAX_TRANSIT_ROUTE_CHECK_KM,
@@ -17,11 +18,7 @@ import {
   filterHydratedRouteCacheEntries,
   getRouteOuterOutlineColor,
   getRouteOutlineColor,
-  resolveItineraryCenter,
-  resolveMapResizeCameraStrategy,
-  shouldIgnoreManualViewportEventTarget,
-  shouldRecordManualViewportChange,
-  shouldRefitItineraryOnResize,
+  isMapViewportReady,
   offsetLatLngByMeters,
 } from '../../components/ItineraryMap';
 
@@ -200,123 +197,6 @@ describe('components/ItineraryMap route cache helpers', () => {
     });
   });
 
-  it('uses preserve-camera strategy while a city is actively focused or the map was manually moved', () => {
-    expect(resolveMapResizeCameraStrategy({
-      hasSelectedCity: true,
-      hasManualViewportChange: false,
-    })).toBe('preserve_camera');
-    expect(resolveMapResizeCameraStrategy({
-      hasSelectedCity: false,
-      hasManualViewportChange: true,
-    })).toBe('preserve_camera');
-  });
-
-  it('centers the itinerary on resize only when no active city is selected and no manual viewport changes exist', () => {
-    expect(resolveMapResizeCameraStrategy({
-      hasSelectedCity: false,
-      hasManualViewportChange: false,
-    })).toBe('center_itinerary');
-  });
-
-  it('resolves itinerary center from available city coordinates', () => {
-    const center = resolveItineraryCenter([
-      {
-        id: 'city-a',
-        type: 'city',
-        title: 'A',
-        location: 'A',
-        startDateOffset: 0,
-        duration: 1,
-        color: 'bg-blue-500',
-        coordinates: { lat: 10, lng: 20 },
-      } as any,
-      {
-        id: 'city-b',
-        type: 'city',
-        title: 'B',
-        location: 'B',
-        startDateOffset: 2,
-        duration: 1,
-        color: 'bg-pink-500',
-        coordinates: { lat: 20, lng: 40 },
-      } as any,
-    ]);
-
-    expect(center).toEqual({ lat: 15, lng: 30 });
-    expect(resolveItineraryCenter([] as any)).toBeNull();
-    expect(resolveItineraryCenter([{
-      id: 'x',
-      type: 'activity',
-      title: 'X',
-      location: 'X',
-      startDateOffset: 0,
-      duration: 1,
-    }] as any)).toBeNull();
-  });
-
-  it('triggers itinerary refit when viewport area shrinks significantly', () => {
-    expect(shouldRefitItineraryOnResize({
-      previousWidth: 300,
-      previousHeight: 450,
-      nextWidth: 220,
-      nextHeight: 330,
-    })).toBe(true);
-  });
-
-  it('triggers itinerary refit when viewport area grows significantly', () => {
-    expect(shouldRefitItineraryOnResize({
-      previousWidth: 220,
-      previousHeight: 330,
-      nextWidth: 300,
-      nextHeight: 450,
-    })).toBe(true);
-  });
-
-  it('triggers itinerary refit when viewport aspect ratio changes heavily (portrait/landscape flip)', () => {
-    expect(shouldRefitItineraryOnResize({
-      previousWidth: 220,
-      previousHeight: 360,
-      nextWidth: 360,
-      nextHeight: 220,
-    })).toBe(true);
-  });
-
-  it('does not refit on minor resize deltas', () => {
-    expect(shouldRefitItineraryOnResize({
-      previousWidth: 320,
-      previousHeight: 480,
-      nextWidth: 326,
-      nextHeight: 478,
-    })).toBe(false);
-  });
-
-  it('ignores manual-viewport recording while suppression window is active', () => {
-    expect(shouldRecordManualViewportChange({
-      nowMs: 100,
-      suppressUntilMs: 160,
-    })).toBe(false);
-    expect(shouldRecordManualViewportChange({
-      nowMs: 200,
-      suppressUntilMs: 160,
-    })).toBe(true);
-  });
-
-  it('ignores manual intent detection when interaction starts from map controls', () => {
-    const wrapper = document.createElement('div');
-    wrapper.innerHTML = `
-      <div data-floating-map-control="true">
-        <button id="map-control-btn">Resize</button>
-      </div>
-      <button id="outside-btn">Outside</button>
-    `;
-    const mapControlButton = wrapper.querySelector('#map-control-btn');
-    const outsideButton = wrapper.querySelector('#outside-btn');
-
-    expect(shouldIgnoreManualViewportEventTarget(mapControlButton)).toBe(true);
-    expect(shouldIgnoreManualViewportEventTarget(outsideButton)).toBe(false);
-    expect(shouldIgnoreManualViewportEventTarget(null)).toBe(false);
-  });
-
   it('offsets coordinates by meter deltas for overlapping markers', () => {
     const origin = { lat: 52.52, lng: 13.405 };
     const shifted = offsetLatLngByMeters(origin, 500, 500);
@@ -343,5 +223,15 @@ describe('components/ItineraryMap route cache helpers', () => {
       'legs.duration',
       'legs.durationMillis',
     ]);
+  });
+
+  it('detects when the map viewport is large enough for reliable fit bounds', () => {
+    expect(isMapViewportReady(null)).toBe(false);
+    expect(isMapViewportReady({ width: MAP_VIEWPORT_READY_MIN_DIMENSION_PX - 1, height: 220 })).toBe(false);
+    expect(isMapViewportReady({ width: 240, height: MAP_VIEWPORT_READY_MIN_DIMENSION_PX - 1 })).toBe(false);
+    expect(isMapViewportReady({
+      width: MAP_VIEWPORT_READY_MIN_DIMENSION_PX,
+      height: MAP_VIEWPORT_READY_MIN_DIMENSION_PX,
+    })).toBe(true);
   });
 });

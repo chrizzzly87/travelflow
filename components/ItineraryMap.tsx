@@ -183,6 +183,7 @@ const ROUTE_OUTER_OUTLINE_COLOR = '#f8fafc';
 const EARTH_RADIUS_KM = 6371;
 const MARKER_OVERLAP_RADIUS_METERS = 420;
 const MARKER_COORDINATE_GROUP_PRECISION = 5;
+export const MAP_VIEWPORT_READY_MIN_DIMENSION_PX = 80;
 export const MAX_WALK_ROUTE_CHECK_KM = 60;
 export const MAX_BICYCLE_ROUTE_CHECK_KM = 160;
 export const MAX_TRANSIT_ROUTE_CHECK_KM = 1400;
@@ -349,6 +350,11 @@ const getTransitFallbackDepartureTime = (): Date => {
     return nextWindow;
 };
 
+export const isMapViewportReady = (rect: { width: number; height: number } | null | undefined): boolean => {
+    if (!rect) return false;
+    return rect.width >= MAP_VIEWPORT_READY_MIN_DIMENSION_PX && rect.height >= MAP_VIEWPORT_READY_MIN_DIMENSION_PX;
+};
+
 export const buildRouteAttemptPolicy = (
     mode: string,
     straightDistanceKm: number,
@@ -464,89 +470,6 @@ export const buildPersistedRouteCachePayload = (
     return payload;
 };
 
-export type MapResizeCameraStrategy = 'preserve_camera' | 'center_itinerary';
-
-export const shouldRecordManualViewportChange = ({
-    nowMs,
-    suppressUntilMs,
-}: {
-    nowMs: number;
-    suppressUntilMs: number;
-}): boolean => nowMs > suppressUntilMs;
-
-export const shouldIgnoreManualViewportEventTarget = (
-    target: EventTarget | null,
-): boolean => {
-    if (!target || !(target instanceof Element)) return false;
-    return Boolean(target.closest('[data-floating-map-control="true"]'));
-};
-
-export const resolveMapResizeCameraStrategy = ({
-    hasSelectedCity,
-    hasManualViewportChange,
-}: {
-    hasSelectedCity: boolean;
-    hasManualViewportChange: boolean;
-}): MapResizeCameraStrategy => {
-    if (hasSelectedCity || hasManualViewportChange) {
-        return 'preserve_camera';
-    }
-    return 'center_itinerary';
-};
-
-export const resolveItineraryCenter = (
-    items: ITimelineItem[],
-): google.maps.LatLngLiteral | null => {
-    const coordinateItems = items.filter(
-        (item): item is ITimelineItem & { coordinates: google.maps.LatLngLiteral } =>
-            item.type === 'city'
-            && Boolean(item.coordinates)
-            && Number.isFinite(item.coordinates.lat)
-            && Number.isFinite(item.coordinates.lng),
-    );
-    if (coordinateItems.length === 0) return null;
-    const bounds = coordinateItems.reduce((accumulator, city) => {
-        return {
-            minLat: Math.min(accumulator.minLat, city.coordinates.lat),
-            maxLat: Math.max(accumulator.maxLat, city.coordinates.lat),
-            minLng: Math.min(accumulator.minLng, city.coordinates.lng),
-            maxLng: Math.max(accumulator.maxLng, city.coordinates.lng),
-        };
-    }, {
-        minLat: Number.POSITIVE_INFINITY,
-        maxLat: Number.NEGATIVE_INFINITY,
-        minLng: Number.POSITIVE_INFINITY,
-        maxLng: Number.NEGATIVE_INFINITY,
-    });
-
-    return {
-        lat: (bounds.minLat + bounds.maxLat) / 2,
-        lng: (bounds.minLng + bounds.maxLng) / 2,
-    };
-};
-
-export const shouldRefitItineraryOnResize = ({
-    previousWidth,
-    previousHeight,
-    nextWidth,
-    nextHeight,
-}: {
-    previousWidth: number;
-    previousHeight: number;
-    nextWidth: number;
-    nextHeight: number;
-}): boolean => {
-    if (previousWidth <= 0 || previousHeight <= 0 || nextWidth <= 0 || nextHeight <= 0) return false;
-    const previousArea = previousWidth * previousHeight;
-    const nextArea = nextWidth * nextHeight;
-    const areaDeltaRatio = Math.abs(nextArea - previousArea) / previousArea;
-    const didAreaChangeSignificantly = areaDeltaRatio > 0.03;
-    const previousAspectRatio = previousWidth / previousHeight;
-    const nextAspectRatio = nextWidth / nextHeight;
-    const didAspectShift = Math.abs(previousAspectRatio - nextAspectRatio) > 0.35;
-    return didAreaChangeSignificantly || didAspectShift;
-};
-
 const hydrateRouteCache = () => {
     if (routeCacheHydrated) return;
     if (typeof window === 'undefined') return;
@@ -624,6 +547,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
 }) => {
     const mapInstanceIdRef = useRef(`tf-itinerary-map-${Math.random().toString(36).slice(2, 10)}`);
     const mapInstanceId = mapInstanceIdRef.current;
+    const mapContainerRef = useRef<HTMLDivElement | null>(null);
     const googleMapRef = useRef<any>(null); // google.maps.Map
     const markersRef = useRef<any[]>([]); // google.maps.Marker[]
     const cityMarkerMetaRef = useRef<Array<{ id: string; color: string; index: number; marker: google.maps.Marker }>>([]);
@@ -632,9 +556,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     const cityLabelOverlaysRef = useRef<any[]>([]);
     const lastFocusQueryRef = useRef<string | null>(null);
     const lastFitToRouteKeyRef = useRef<string | null>(null);
-    const suppressManualViewportTrackingUntilRef = useRef(0);
-    const hasManualViewportChangeRef = useRef(false);
-    const resizeObserverRafRef = useRef<number | null>(null);
+    const fitRafRef = useRef<number | null>(null);
     const onRouteMetricsRef = useRef<typeof onRouteMetrics>(onRouteMetrics);
     const onRouteStatusRef = useRef<typeof onRouteStatus>(onRouteStatus);
     const onCityMarkerSelectRef = useRef<typeof onCityMarkerSelect>(onCityMarkerSelect);
@@ -646,32 +568,58 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     // Internal state for menu, but style comes from props (or defaults to standard if not provided)
     const [isStyleMenuOpen, setIsStyleMenuOpen] = useState(false);
     const shouldRenderMapCanvas = isLoaded && !loadError;
+    const cities = useMemo(() => 
+        items
+            .filter(i => i.type === 'city' && i.coordinates)
+            .sort((a, b) => a.startDateOffset - b.startDateOffset),
+    [items]);
+    const selectedCityId = useMemo(
+        () => (selectedItemId && cities.some(city => city.id === selectedItemId) ? selectedItemId : null),
+        [selectedItemId, cities]
+    );
 
-    const suppressManualViewportTracking = useCallback((durationMs = 220) => {
-        if (typeof performance === 'undefined') return;
-        suppressManualViewportTrackingUntilRef.current = performance.now() + durationMs;
+    const cancelScheduledFit = useCallback(() => {
+        if (fitRafRef.current === null || typeof window === 'undefined') return;
+        window.cancelAnimationFrame(fitRafRef.current);
+        fitRafRef.current = null;
     }, []);
 
-    const markManualViewportChange = useCallback((event?: Event | { domEvent?: Event }) => {
-        const nativeEvent = event instanceof Event
-            ? event
-            : (event && typeof event === 'object' && 'domEvent' in event && event.domEvent instanceof Event)
-                ? event.domEvent
-                : null;
-        if (shouldIgnoreManualViewportEventTarget(nativeEvent?.target ?? null)) {
-            return;
-        }
-        const nowMs = typeof performance !== 'undefined'
-            ? performance.now()
-            : Number.POSITIVE_INFINITY;
-        if (!shouldRecordManualViewportChange({
-            nowMs,
-            suppressUntilMs: suppressManualViewportTrackingUntilRef.current,
-        })) {
-            return;
-        }
-        hasManualViewportChangeRef.current = true;
-    }, []);
+    const runFitBounds = useCallback(() => {
+        if (!googleMapRef.current || cities.length === 0) return;
+
+        const bounds = new window.google.maps.LatLngBounds();
+        cities.forEach(city => {
+            if (city.coordinates) {
+                bounds.extend({ lat: city.coordinates.lat, lng: city.coordinates.lng });
+            }
+        });
+        googleMapRef.current.fitBounds(bounds, { top: 50, right: 50, bottom: 50, left: 50 });
+    }, [cities]);
+
+    const scheduleFitWhenViewportReady = useCallback((maxAttempts = 14) => {
+        if (!googleMapRef.current || cities.length === 0 || typeof window === 'undefined') return;
+        cancelScheduledFit();
+
+        let attemptCount = 0;
+        const tryFit = () => {
+            fitRafRef.current = null;
+            if (!googleMapRef.current || cities.length === 0) return;
+
+            const rect = mapContainerRef.current?.getBoundingClientRect();
+            if (!isMapViewportReady(rect) && attemptCount < maxAttempts) {
+                attemptCount += 1;
+                fitRafRef.current = window.requestAnimationFrame(tryFit);
+                return;
+            }
+
+            if (window.google?.maps?.event?.trigger) {
+                window.google.maps.event.trigger(googleMapRef.current, 'resize');
+            }
+            runFitBounds();
+        };
+
+        fitRafRef.current = window.requestAnimationFrame(tryFit);
+    }, [cancelScheduledFit, cities.length, runFitBounds]);
 
     useEffect(() => {
         onRouteMetricsRef.current = onRouteMetrics;
@@ -715,20 +663,6 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             }
         }
     }, [activeStyle, mapInitialized]);
-
-    const cities = useMemo(() => 
-        items
-            .filter(i => i.type === 'city' && i.coordinates)
-            .sort((a, b) => a.startDateOffset - b.startDateOffset),
-    [items]);
-    const selectedCityId = useMemo(
-        () => (selectedItemId && cities.some(city => city.id === selectedItemId) ? selectedItemId : null),
-        [selectedItemId, cities]
-    );
-    const itineraryCenter = useMemo(() => resolveItineraryCenter(cities), [cities]);
-    const itineraryCenterKey = itineraryCenter
-        ? `${itineraryCenter.lat.toFixed(6)}:${itineraryCenter.lng.toFixed(6)}`
-        : 'none';
 
     const mapRenderSignature = useMemo(() => {
         const citySignature = cities
@@ -1553,126 +1487,31 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         });
     }, [mapInitialized, selectedCityId]);
 
-    // Fit Bounds
-    const handleFit = useCallback(() => {
-        if (!googleMapRef.current || cities.length === 0) return;
-
-        const bounds = new window.google.maps.LatLngBounds();
-        cities.forEach(city => {
-            if (city.coordinates) {
-                bounds.extend({ lat: city.coordinates.lat, lng: city.coordinates.lng });
-            }
-        });
-        suppressManualViewportTracking();
-        hasManualViewportChangeRef.current = false;
-        googleMapRef.current.fitBounds(bounds, { top: 50, right: 50, bottom: 50, left: 50 });
-    }, [cities, suppressManualViewportTracking]);
-
-    useEffect(() => {
-        if (!mapInitialized || !googleMapRef.current || !mapRef.current) return;
-        const mapInstance = googleMapRef.current;
-        const dragListener = mapInstance.addListener?.('dragstart', markManualViewportChange);
-        const mapElement = mapRef.current;
-        mapElement.addEventListener('wheel', markManualViewportChange, { passive: true });
-        mapElement.addEventListener('pointerdown', markManualViewportChange, { passive: true });
-        mapElement.addEventListener('touchstart', markManualViewportChange, { passive: true });
-        mapElement.addEventListener('dblclick', markManualViewportChange, { passive: true });
-        return () => {
-            dragListener?.remove?.();
-            mapElement.removeEventListener('wheel', markManualViewportChange);
-            mapElement.removeEventListener('pointerdown', markManualViewportChange);
-            mapElement.removeEventListener('touchstart', markManualViewportChange);
-            mapElement.removeEventListener('dblclick', markManualViewportChange);
-        };
-    }, [mapInitialized, markManualViewportChange]);
-
     // Pan to selected
     useEffect(() => {
         if (!googleMapRef.current || !selectedCityId) return;
-
+        
         const t = setTimeout(() => {
             const selectedCity = cities.find(i => i.id === selectedCityId);
             if (selectedCity && selectedCity.coordinates) {
-                suppressManualViewportTracking();
                 googleMapRef.current.panTo({ lat: selectedCity.coordinates.lat, lng: selectedCity.coordinates.lng });
                 googleMapRef.current.setZoom(10);
             }
         }, 100);
         return () => clearTimeout(t);
-    }, [selectedCityId, mapInitialized, cities, suppressManualViewportTracking]);
+    }, [selectedCityId, mapInitialized, cities]);
+
+    // Fit Bounds
+    const handleFit = () => {
+        scheduleFitWhenViewportReady();
+    };
 
     // Auto fit on load
     useEffect(() => {
         if (mapInitialized && cities.length > 0) {
-           setTimeout(handleFit, 200);
+            scheduleFitWhenViewportReady();
         }
-    }, [mapInitialized, cities.length, handleFit]);
-
-    useEffect(() => {
-        if (!mapInitialized || !mapRef.current || !googleMapRef.current || typeof ResizeObserver !== 'function' || !window.google?.maps?.event) return;
-        const mapElement = mapRef.current;
-        const mapInstance = googleMapRef.current;
-        let lastWidth = mapElement.clientWidth;
-        let lastHeight = mapElement.clientHeight;
-
-        const syncCameraAfterResize = () => {
-            resizeObserverRafRef.current = null;
-            const nextWidth = mapElement.clientWidth;
-            const nextHeight = mapElement.clientHeight;
-            if (nextWidth <= 0 || nextHeight <= 0) return;
-            if (nextWidth === lastWidth && nextHeight === lastHeight) return;
-            const previousWidth = lastWidth;
-            const previousHeight = lastHeight;
-            lastWidth = nextWidth;
-            lastHeight = nextHeight;
-
-            const currentCenter = mapInstance.getCenter?.();
-            const currentZoom = mapInstance.getZoom?.();
-            suppressManualViewportTracking();
-            window.google.maps.event.trigger(mapInstance, 'resize');
-
-            const strategy = resolveMapResizeCameraStrategy({
-                hasSelectedCity: Boolean(selectedCityId),
-                hasManualViewportChange: hasManualViewportChangeRef.current,
-            });
-            if (strategy === 'center_itinerary') {
-                const shouldRefit = shouldRefitItineraryOnResize({
-                    previousWidth,
-                    previousHeight,
-                    nextWidth,
-                    nextHeight,
-                });
-                if (shouldRefit) {
-                    handleFit();
-                    return;
-                }
-                if (itineraryCenter) {
-                    mapInstance.setCenter(itineraryCenter);
-                } else if (currentCenter) {
-                    mapInstance.setCenter(currentCenter);
-                }
-            } else if (currentCenter) {
-                mapInstance.setCenter(currentCenter);
-            }
-
-            if (typeof currentZoom === 'number' && Number.isFinite(currentZoom)) {
-                mapInstance.setZoom(currentZoom);
-            }
-        };
-
-        const observer = new ResizeObserver(() => {
-            if (resizeObserverRafRef.current !== null) return;
-            resizeObserverRafRef.current = window.requestAnimationFrame(syncCameraAfterResize);
-        });
-        observer.observe(mapElement);
-        return () => {
-            observer.disconnect();
-            if (resizeObserverRafRef.current !== null) {
-                window.cancelAnimationFrame(resizeObserverRafRef.current);
-                resizeObserverRafRef.current = null;
-            }
-        };
-    }, [handleFit, itineraryCenterKey, mapInitialized, selectedCityId, suppressManualViewportTracking]);
+    }, [mapInitialized, cities.length, scheduleFitWhenViewportReady]);
 
     // Re-center when an external "active route" key changes (e.g., opening a different saved plan).
     useEffect(() => {
@@ -1680,9 +1519,40 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         if (lastFitToRouteKeyRef.current === fitToRouteKey) return;
 
         lastFitToRouteKeyRef.current = fitToRouteKey;
-        const timer = setTimeout(handleFit, 200);
-        return () => clearTimeout(timer);
-    }, [fitToRouteKey, mapInitialized, cities.length, handleFit]);
+        scheduleFitWhenViewportReady();
+    }, [fitToRouteKey, mapInitialized, cities.length, scheduleFitWhenViewportReady]);
+
+    useEffect(() => {
+        if (!mapInitialized || !googleMapRef.current || typeof ResizeObserver === 'undefined') return;
+        const container = mapContainerRef.current;
+        if (!container) return;
+
+        let resizeRafId: number | null = null;
+        const observer = new ResizeObserver(() => {
+            if (resizeRafId !== null || !googleMapRef.current) return;
+            resizeRafId = window.requestAnimationFrame(() => {
+                resizeRafId = null;
+                if (!googleMapRef.current) return;
+                if (window.google?.maps?.event?.trigger) {
+                    window.google.maps.event.trigger(googleMapRef.current, 'resize');
+                }
+            });
+        });
+        observer.observe(container);
+
+        return () => {
+            observer.disconnect();
+            if (resizeRafId !== null) {
+                window.cancelAnimationFrame(resizeRafId);
+            }
+        };
+    }, [mapInitialized]);
+
+    useEffect(() => (
+        () => {
+            cancelScheduledFit();
+        }
+    ), [cancelScheduledFit]);
 
     // If we don't have city coordinates yet, center the map on the selected country/location.
     // Supports one or multiple focus queries separated by "||".
@@ -1709,12 +1579,10 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             pending -= 1;
             if (pending > 0 || cancelled || !googleMapRef.current || successCount === 0) return;
             if (successCount === 1 && singleLocation && !singleHasViewport) {
-                suppressManualViewportTracking();
                 googleMapRef.current.setCenter(singleLocation);
                 googleMapRef.current.setZoom(5);
                 return;
             }
-            suppressManualViewportTracking();
             googleMapRef.current.fitBounds(bounds, { top: 50, right: 50, bottom: 50, left: 50 });
         };
 
@@ -1743,10 +1611,11 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         return () => {
             cancelled = true;
         };
-    }, [focusLocationQuery, mapInitialized, cities.length, suppressManualViewportTracking]);
+    }, [focusLocationQuery, mapInitialized, cities.length]);
 
     return (
         <div
+            ref={mapContainerRef}
             className="relative w-full h-full group bg-gray-100"
             style={viewTransitionName ? ({ viewTransitionName } as React.CSSProperties) : undefined}
         >

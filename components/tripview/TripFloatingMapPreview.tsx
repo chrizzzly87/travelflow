@@ -287,6 +287,8 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
         initialPersistedStateRef.current.position ?? null,
     );
     const lastDockedMapRectRef = useRef<{ x: number; y: number; width: number; height: number } | null>(null);
+    const previousMapDockModeRef = useRef<'docked' | 'floating'>(mapDockMode);
+    const hasSkippedInitialDockedSettleAnimationRef = useRef(false);
     const didMoveFloatingMapRef = useRef(false);
     const didTrackFloatingMapRepositionRef = useRef(false);
     const floatingMapShortEdge = resolveWidthForPreset(floatingMapBaseWidth, floatingMapSizePreset);
@@ -425,19 +427,25 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
     }, [clearDockedResizeSettleTimer, clearFloatingMapSettleTimer, clearFloatingResizePersistTimer]);
 
     useEffect(() => {
-        const didResolve = syncSurfaceGeometry(hasResolvedInitialGeometry);
-        if (didResolve && !hasResolvedInitialGeometry) {
-            setHasResolvedInitialGeometry(true);
-        }
-    }, [hasResolvedInitialGeometry, mapDockMode, syncSurfaceGeometry]);
+        const modeChanged = previousMapDockModeRef.current !== mapDockMode;
 
-    useEffect(() => {
-        if (!hasResolvedInitialGeometry || typeof window === 'undefined') return;
-        const rafId = window.requestAnimationFrame(() => {
-            syncSurfaceGeometry(true);
-        });
-        return () => window.cancelAnimationFrame(rafId);
-    }, [hasResolvedInitialGeometry, syncSurfaceGeometry, mapDockMode]);
+        if (!hasResolvedInitialGeometry) {
+            const didResolve = syncSurfaceGeometry(false);
+            if (didResolve) {
+                setHasResolvedInitialGeometry(true);
+            }
+            previousMapDockModeRef.current = mapDockMode;
+            return;
+        }
+
+        const didSync = syncSurfaceGeometry(modeChanged);
+        if (!didSync) {
+            // Keep geometry in sync once the anchor has measurable size.
+            syncSurfaceGeometry(false);
+        }
+
+        previousMapDockModeRef.current = mapDockMode;
+    }, [hasResolvedInitialGeometry, mapDockMode, syncSurfaceGeometry]);
 
     useEffect(() => {
         if (mapDockMode !== 'docked' || typeof window === 'undefined') return;
@@ -544,6 +552,10 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
                 lastDockedMapRectRef.current = pendingDockedRect;
                 applySurfaceGeometry(pendingDockedRect, false);
                 clearDockedResizeSettleTimer();
+                if (!hasSkippedInitialDockedSettleAnimationRef.current) {
+                    hasSkippedInitialDockedSettleAnimationRef.current = true;
+                    return;
+                }
                 dockedResizeSettleTimerRef.current = setTimeout(() => {
                     const settledRect = pendingDockedResizeRectRef.current;
                     if (!settledRect) return;

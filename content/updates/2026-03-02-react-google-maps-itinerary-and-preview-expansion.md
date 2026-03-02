@@ -19,6 +19,7 @@ summary: "Trip planner map rendering is now more stable, with clearer markers an
 - [x] [Improved] ♻️ Transport route changes now refresh without stale previous-mode overlays lingering on the map.
 - [x] [Improved] 🔁 Round-trip start/end city pins now offset overlapping markers so both stop numbers stay readable.
 - [x] [Improved] 🧭 Initial planner map mount now appears in-place without the first-load morph transition.
+- [x] [Improved] 🎯 Fit-to-trip recenter now waits for map viewport sizing so reset zoom is more reliable after layout changes.
 - [x] [Fixed] 🧩 Single-city trip previews now render reliably instead of failing route-only preview assumptions.
 - [ ] [Internal] 🛣️ Switched realistic route checks to the newer Google Routes API path with legacy fallback support.
 - [ ] [Internal] 🧠 Added distance-based mode eligibility and bounded transit retry policy to improve route success while reducing wasted checks.
@@ -26,3 +27,4 @@ summary: "Trip planner map rendering is now more stable, with clearer markers an
 - [ ] [Internal] 🧰 Added an explicit field mask for Routes API calls and fallback to legacy directions when Routes requests fail.
 - [ ] [Internal] 🧪 Local `pnpm dev` map previews now build a valid direct Static Maps URL (paths + markers) when the edge runtime is unavailable.
 - [ ] [Internal] 🧪 Added regression coverage for proxy-based trip preview URL generation and single-city preview behavior.
+- [ ] [Internal] 🧪 Added viewport-readiness guards and resize-triggered map sync before fit-bounds calls.
