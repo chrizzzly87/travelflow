@@ -185,6 +185,7 @@ const TRANSPORT_ICON_PATHS: Record<string, string> = {
     plane: 'M240,136v32a8,8,0,0,1-8,8,7.61,7.61,0,0,1-1.57-.16L156,161v23.73l17.66,17.65A8,8,0,0,1,176,208v24a8,8,0,0,1-11,7.43l-37-14.81L91,239.43A8,8,0,0,1,80,232V208a8,8,0,0,1,2.34-5.66L100,184.69V161L25.57,175.84A7.61,7.61,0,0,1,24,176a8,8,0,0,1-8-8V136a8,8,0,0,1,4.42-7.16L100,89.06V44a28,28,0,0,1,56,0V89.06l79.58,39.78A8,8,0,0,1,240,136Z',
     bus: 'M254.07,106.79,208.53,53.73A16,16,0,0,0,196.26,48H32A16,16,0,0,0,16,64V176a16,16,0,0,0,16,16H49a32,32,0,0,0,62,0h50a32,32,0,0,0,62,0h17a16,16,0,0,0,16-16V112A8,8,0,0,0,254.07,106.79ZM32,104V64H88v40Zm48,96a16,16,0,1,1,16-16A16,16,0,0,1,80,200Zm80-96H104V64h56Zm32,96a16,16,0,1,1,16-16A16,16,0,0,1,192,200Zm-16-96V64h20.26l34.33,40Z',
     car: 'M240,112H211.31L168,68.69A15.86,15.86,0,0,0,156.69,64H44.28A16,16,0,0,0,31,71.12L1.34,115.56A8.07,8.07,0,0,0,0,120v48a16,16,0,0,0,16,16H33a32,32,0,0,0,62,0h66a32,32,0,0,0,62,0h17a16,16,0,0,0,16-16V128A16,16,0,0,0,240,112ZM44.28,80H156.69l32,32H23ZM64,192a16,16,0,1,1,16-16A16,16,0,0,1,64,192Zm128,0a16,16,0,1,1,16-16A16,16,0,0,1,192,192Z',
+    motorcycle: 'M216,120a41,41,0,0,0-6.6.55l-5.82-15.14A55.64,55.64,0,0,1,216,104a8,8,0,0,0,0-16H196.88L183.47,53.13A8,8,0,0,0,176,48H144a8,8,0,0,0,0,16h26.51l9.23,24H152c-18.5,0-33.5,4.31-43.37,12.46a16,16,0,0,1-16.76,2.07c-10.58-4.81-73.29-30.12-73.8-30.26a8,8,0,0,0-5,15.19S68.57,109.4,79.6,120.4A55.67,55.67,0,0,1,95.43,152H79.2a40,40,0,1,0,0,16h52.12a31.91,31.91,0,0,0,30.74-23.1,56,56,0,0,1,26.59-33.72l5.82,15.13A40,40,0,1,0,216,120ZM40,168H62.62a24,24,0,1,1,0-16H40a8,8,0,0,0,0,16Zm176,16a24,24,0,0,1-15.58-42.23l8.11,21.1a8,8,0,1,0,14.94-5.74L215.35,136l.65,0a24,24,0,0,1,0,48Z',
     train: 'M184,24H72A32,32,0,0,0,40,56V184a32,32,0,0,0,32,32h8L65.6,235.2a8,8,0,1,0,12.8,9.6L100,216h56l21.6,28.8a8,8,0,1,0,12.8-9.6L176,216h8a32,32,0,0,0,32-32V56A32,32,0,0,0,184,24ZM84,184a12,12,0,1,1,12-12A12,12,0,0,1,84,184Zm36-64H56V80h64Zm52,64a12,12,0,1,1,12-12A12,12,0,0,1,172,184Zm28-64H136V80h64Z',
     bicycle: 'M136,52a28,28,0,1,1,28,28A28,28,0,0,1,136,52ZM240,176a40,40,0,1,1-40-40A40,40,0,0,1,240,176Zm-16,0a24,24,0,1,0-24,24A24,24,0,0,0,224,176Zm-24-64a8,8,0,0,0-8-8H155.31L125.66,74.34a8,8,0,0,0-11.32,0l-32,32a8,8,0,0,0,0,11.32L120,155.31V200a8,8,0,0,0,16,0V152a8,8,0,0,0-2.34-5.66L99.31,112,120,91.31l26.34,26.35A8,8,0,0,0,152,120h40A8,8,0,0,0,200,112ZM96,176a40,40,0,1,1-40-40A40,40,0,0,1,96,176Zm-16,0a24,24,0,1,0-24,24A24,24,0,0,0,80,176Z',
     boat: 'M160,140V72.85a4,4,0,0,1,7-2.69l55,60.46a8,8,0,0,1,.43,10.26,8.24,8.24,0,0,1-6.58,3.12H164A4,4,0,0,1,160,140Zm87.21,32.53A8,8,0,0,0,240,168H144V8a8,8,0,0,0-14.21-5l-104,128A8,8,0,0,0,32,144h96v24H16a8,8,0,0,0-6.25,13l29.6,37a15.93,15.93,0,0,0,12.49,6H204.16a15.93,15.93,0,0,0,12.49-6l29.6-37A8,8,0,0,0,247.21,172.53Z',
@@ -195,6 +196,7 @@ const resolveTransportIconPath = (mode?: string): string => {
     const normalized = normalizeTransportMode(mode);
     if (normalized === 'na' || !normalized) return TRANSPORT_ICON_PATHS.walk;
     if (normalized === 'bike') return TRANSPORT_ICON_PATHS.bicycle;
+    if (normalized === 'motorcycle') return TRANSPORT_ICON_PATHS.motorcycle;
     if (normalized in TRANSPORT_ICON_PATHS) {
         return TRANSPORT_ICON_PATHS[normalized as keyof typeof TRANSPORT_ICON_PATHS];
     }
@@ -212,6 +214,12 @@ const resolveCssColorVar = (name: string, fallback: string): string => {
     if (typeof window === 'undefined' || typeof document === 'undefined') return fallback;
     const value = window.getComputedStyle(document.documentElement).getPropertyValue(name).trim();
     return value || fallback;
+};
+
+const normalizeRotationDegrees = (value?: number): number => {
+    if (!Number.isFinite(value)) return 0;
+    const normalized = (value as number) % 360;
+    return normalized < 0 ? normalized + 360 : normalized;
 };
 
 const buildCityMarkerIcon = (
@@ -632,15 +640,18 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         cityLabelOverlaysRef.current = [];
         cityMarkerMetaRef.current = [];
 
-        const buildTransportIcon = (mode?: string, color?: string) => {
+        const buildTransportIcon = (mode?: string, color?: string, rotationDegrees?: number) => {
             const size = TRANSPORT_MARKER_BADGE_SIZE;
             const badgeColor = color || '#1f2937';
             const iconPath = resolveTransportIconPath(mode);
+            const rotation = mode === 'plane' ? normalizeRotationDegrees(rotationDegrees) : 0;
             const svg = `
                 <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${TRANSPORT_MARKER_VIEWBOX_SIZE} ${TRANSPORT_MARKER_VIEWBOX_SIZE}">
                     <circle cx="128" cy="128" r="112" fill="${badgeColor}" />
-                    <g transform="translate(${TRANSPORT_MARKER_ICON_INSET} ${TRANSPORT_MARKER_ICON_INSET}) scale(${TRANSPORT_MARKER_ICON_SCALE})">
-                        <path d="${iconPath}" fill="#ffffff" />
+                    <g transform="rotate(${rotation} 128 128)">
+                        <g transform="translate(${TRANSPORT_MARKER_ICON_INSET} ${TRANSPORT_MARKER_ICON_INSET}) scale(${TRANSPORT_MARKER_ICON_SCALE})">
+                            <path d="${iconPath}" fill="#ffffff" />
+                        </g>
                     </g>
                 </svg>
             `;
@@ -650,6 +661,22 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 scaledSize: new window.google.maps.Size(size, size),
                 anchor: new window.google.maps.Point(size / 2, size / 2),
             };
+        };
+
+        const getHeadingBetweenPoints = (
+            from: google.maps.LatLngLiteral,
+            to: google.maps.LatLngLiteral,
+        ): number | undefined => {
+            if (from.lat === to.lat && from.lng === to.lng) return undefined;
+            const geometry = window.google?.maps?.geometry?.spherical;
+            if (geometry) {
+                return geometry.computeHeading(
+                    new window.google.maps.LatLng(from.lat, from.lng),
+                    new window.google.maps.LatLng(to.lat, to.lng),
+                );
+            }
+            const headingFromNorthRadians = Math.atan2(to.lng - from.lng, to.lat - from.lat);
+            return headingFromNorthRadians * (180 / Math.PI);
         };
 
         const getPointAlongPath = (
@@ -693,6 +720,78 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             }
 
             return path[path.length - 1];
+        };
+
+        const getHeadingAlongPath = (
+            path: google.maps.LatLngLiteral[],
+            fraction: number,
+        ): number | undefined => {
+            if (path.length < 2) return undefined;
+            const clampedFraction = Math.max(0, Math.min(1, fraction));
+            const upperIndex = Math.max(1, Math.min(path.length - 1, Math.round((path.length - 1) * clampedFraction)));
+            const from = path[upperIndex - 1];
+            const to = path[upperIndex];
+            return getHeadingBetweenPoints(from, to);
+        };
+
+        const normalizeRoutePathPoints = (rawPath: unknown): google.maps.LatLngLiteral[] => {
+            if (!Array.isArray(rawPath)) return [];
+            return rawPath
+                .map((point): google.maps.LatLngLiteral | null => {
+                    if (!point || typeof point !== 'object') return null;
+                    const latRaw = (point as { lat?: unknown }).lat;
+                    const lngRaw = (point as { lng?: unknown }).lng;
+
+                    if (typeof latRaw === 'number' && Number.isFinite(latRaw) && typeof lngRaw === 'number' && Number.isFinite(lngRaw)) {
+                        return { lat: latRaw, lng: lngRaw };
+                    }
+                    if (typeof latRaw === 'function' && typeof lngRaw === 'function') {
+                        const latValue = latRaw();
+                        const lngValue = lngRaw();
+                        if (Number.isFinite(latValue) && Number.isFinite(lngValue)) {
+                            return { lat: latValue, lng: lngValue };
+                        }
+                    }
+
+                    return null;
+                })
+                .filter((point): point is google.maps.LatLngLiteral => Boolean(point));
+        };
+
+        const computePathDistanceMeters = (path: google.maps.LatLngLiteral[]): number | undefined => {
+            if (path.length < 2) return undefined;
+            const geometry = window.google?.maps?.geometry?.spherical;
+            if (!geometry) return undefined;
+            let distanceMeters = 0;
+            for (let idx = 1; idx < path.length; idx++) {
+                distanceMeters += geometry.computeDistanceBetween(
+                    new window.google.maps.LatLng(path[idx - 1].lat, path[idx - 1].lng),
+                    new window.google.maps.LatLng(path[idx].lat, path[idx].lng),
+                );
+            }
+            return distanceMeters > 0 ? distanceMeters : undefined;
+        };
+
+        const parseDurationSeconds = (value: unknown): number | undefined => {
+            if (typeof value === 'number' && Number.isFinite(value)) {
+                return value > 10_000 ? value / 1000 : value;
+            }
+            if (typeof value === 'string') {
+                const secondsMatch = value.match(/^([0-9]+(?:\.[0-9]+)?)s$/);
+                if (secondsMatch) {
+                    const parsedSeconds = Number.parseFloat(secondsMatch[1]);
+                    return Number.isFinite(parsedSeconds) ? parsedSeconds : undefined;
+                }
+            }
+            if (value && typeof value === 'object') {
+                const secondsValue = (value as { seconds?: unknown }).seconds;
+                const nanosValue = (value as { nanos?: unknown }).nanos;
+                if (typeof secondsValue === 'number' && Number.isFinite(secondsValue)) {
+                    const nanosSeconds = typeof nanosValue === 'number' && Number.isFinite(nanosValue) ? nanosValue / 1_000_000_000 : 0;
+                    return secondsValue + nanosSeconds;
+                }
+            }
+            return undefined;
         };
 
         const createRoutePolylinePair = (options: google.maps.PolylineOptions) => {
@@ -890,7 +989,21 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         // 3. Draw Routes
         const drawRoutes = async () => {
              hydrateRouteCache();
-             const directionsService = new window.google.maps.DirectionsService();
+             const importLibrary = window.google?.maps?.importLibrary;
+             let computeRoutes: ((request: unknown) => Promise<unknown>) | null = null;
+
+             if (typeof importLibrary === 'function') {
+                 try {
+                     const routesLibrary = await importLibrary('routes' as never) as { Route?: { computeRoutes?: (request: unknown) => Promise<unknown> } };
+                     if (routesLibrary?.Route && typeof routesLibrary.Route.computeRoutes === 'function') {
+                         computeRoutes = routesLibrary.Route.computeRoutes.bind(routesLibrary.Route);
+                     }
+                 } catch (error) {
+                     console.warn('Failed to load Routes library, falling back to DirectionsService', error);
+                 }
+             }
+
+             const directionsService = computeRoutes ? null : new window.google.maps.DirectionsService();
 
              for (let i = 0; i < cities.length - 1; i++) {
                  const start = cities[i];
@@ -949,10 +1062,11 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                          if (mode !== 'na') {
                              const midPoint = getPointAlongPath(cached.path, 0.5);
                              if (!midPoint) continue;
+                             const markerHeading = mode === 'plane' ? getHeadingAlongPath(cached.path, 0.5) : undefined;
                              const transportMarker = new window.google.maps.Marker({
                                  map: googleMapRef.current,
                                  position: midPoint,
-                                 icon: buildTransportIcon(mode, startColor),
+                                 icon: buildTransportIcon(mode, startColor, markerHeading),
                                  clickable: false,
                                  zIndex: 50,
                                  optimized: false,
@@ -988,47 +1102,113 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                          const tryRoute = async (travelMode: google.maps.TravelMode) => {
                              const origin = { lat: start.coordinates.lat, lng: start.coordinates.lng };
                              const destination = { lat: end.coordinates.lat, lng: end.coordinates.lng };
-                             const request: google.maps.DirectionsRequest = {
-                                 origin,
-                                 destination,
-                                 travelMode
-                             };
+                             let path: google.maps.LatLngLiteral[] = [];
+                             let distanceKm: number | undefined;
+                             let durationHours: number | undefined;
 
-                             const isWalking = (
-                                 travelMode === travelModes.WALKING ||
-                                 travelMode === 'WALKING'
-                             );
-                             const isBicycling = (
-                                 travelMode === travelModes.BICYCLING ||
-                                 travelMode === 'BICYCLING'
-                             );
-                             if (isWalking) {
-                                 request.avoidHighways = true;
-                                 request.avoidTolls = true;
-                             } else if (isBicycling) {
-                                 request.avoidTolls = true;
-                             }
-                             if (travelMode === travelModes.TRANSIT || travelMode === 'TRANSIT') {
-                                 const transitModeValues: google.maps.TransitMode[] = [];
-                                 if (mode === 'train') {
-                                     if (window.google.maps.TransitMode?.TRAIN) {
-                                         transitModeValues.push(window.google.maps.TransitMode.TRAIN);
-                                     }
-                                     if (window.google.maps.TransitMode?.RAIL) {
-                                         transitModeValues.push(window.google.maps.TransitMode.RAIL);
-                                     }
-                                 }
-                                 if (mode === 'bus' && window.google.maps.TransitMode?.BUS) {
-                                     transitModeValues.push(window.google.maps.TransitMode.BUS);
-                                 }
-                                 if (transitModeValues.length > 0) {
-                                     request.transitOptions = { modes: transitModeValues };
-                                 }
-                             }
+                             if (computeRoutes) {
+                                 const routeRequest: Record<string, unknown> = {
+                                     origin,
+                                     destination,
+                                     travelMode,
+                                 };
 
-                             const result = await directionsService.route(request);
-                             const rawPath = result.routes?.[0]?.overview_path;
-                             const path = rawPath?.map((point) => ({ lat: point.lat(), lng: point.lng() }));
+                                 const routesResult = await computeRoutes(routeRequest) as {
+                                     routes?: Array<{
+                                         path?: unknown;
+                                         distanceMeters?: unknown;
+                                         duration?: unknown;
+                                         durationMillis?: unknown;
+                                         legs?: Array<{
+                                             distanceMeters?: unknown;
+                                             duration?: unknown;
+                                             durationMillis?: unknown;
+                                         }>;
+                                     }>;
+                                 };
+
+                                 const route = routesResult.routes?.[0];
+                                 path = normalizeRoutePathPoints(route?.path);
+                                 const routeDistanceMeters = typeof route?.distanceMeters === 'number' && Number.isFinite(route.distanceMeters)
+                                     ? route.distanceMeters
+                                     : undefined;
+                                 const legDistanceMeters = Array.isArray(route?.legs)
+                                     ? route.legs.reduce((sum, leg) => {
+                                         const distance = typeof leg.distanceMeters === 'number' && Number.isFinite(leg.distanceMeters)
+                                             ? leg.distanceMeters
+                                             : 0;
+                                         return sum + distance;
+                                     }, 0)
+                                     : 0;
+                                 const distanceMeters = routeDistanceMeters
+                                     ?? (legDistanceMeters > 0 ? legDistanceMeters : undefined)
+                                     ?? computePathDistanceMeters(path);
+                                 distanceKm = distanceMeters ? distanceMeters / 1000 : undefined;
+
+                                 const routeDurationSeconds = parseDurationSeconds(route?.duration)
+                                     ?? parseDurationSeconds(route?.durationMillis);
+                                 const legDurationSeconds = Array.isArray(route?.legs)
+                                     ? route.legs.reduce((sum, leg) => {
+                                         const durationSeconds = parseDurationSeconds(leg.duration)
+                                             ?? parseDurationSeconds(leg.durationMillis)
+                                             ?? 0;
+                                         return sum + durationSeconds;
+                                     }, 0)
+                                     : 0;
+                                 const durationSeconds = routeDurationSeconds
+                                     ?? (legDurationSeconds > 0 ? legDurationSeconds : undefined);
+                                 durationHours = durationSeconds ? durationSeconds / 3600 : undefined;
+                             } else {
+                                 if (!directionsService) {
+                                     throw new Error('Directions service unavailable');
+                                 }
+                                 const request: google.maps.DirectionsRequest = {
+                                     origin,
+                                     destination,
+                                     travelMode,
+                                 };
+
+                                 const isWalking = (
+                                     travelMode === travelModes.WALKING ||
+                                     travelMode === 'WALKING'
+                                 );
+                                 const isBicycling = (
+                                     travelMode === travelModes.BICYCLING ||
+                                     travelMode === 'BICYCLING'
+                                 );
+                                 if (isWalking) {
+                                     request.avoidHighways = true;
+                                     request.avoidTolls = true;
+                                 } else if (isBicycling) {
+                                     request.avoidTolls = true;
+                                 }
+                                 if (travelMode === travelModes.TRANSIT || travelMode === 'TRANSIT') {
+                                     const transitModeValues: google.maps.TransitMode[] = [];
+                                     if (mode === 'train') {
+                                         if (window.google.maps.TransitMode?.TRAIN) {
+                                             transitModeValues.push(window.google.maps.TransitMode.TRAIN);
+                                         }
+                                         if (window.google.maps.TransitMode?.RAIL) {
+                                             transitModeValues.push(window.google.maps.TransitMode.RAIL);
+                                         }
+                                     }
+                                     if (mode === 'bus' && window.google.maps.TransitMode?.BUS) {
+                                         transitModeValues.push(window.google.maps.TransitMode.BUS);
+                                     }
+                                     if (transitModeValues.length > 0) {
+                                         request.transitOptions = { modes: transitModeValues };
+                                     }
+                                 }
+
+                                 const result = await directionsService.route(request);
+                                 const rawPath = result.routes?.[0]?.overview_path;
+                                 path = rawPath?.map((point) => ({ lat: point.lat(), lng: point.lng() })) ?? [];
+                                 const legs = result.routes?.[0]?.legs ?? [];
+                                 const distanceMeters = legs.reduce((sum, leg) => sum + (leg.distance?.value ?? 0), 0);
+                                 const durationSeconds = legs.reduce((sum, leg) => sum + (leg.duration?.value ?? 0), 0);
+                                 distanceKm = distanceMeters > 0 ? distanceMeters / 1000 : undefined;
+                                 durationHours = durationSeconds > 0 ? durationSeconds / 3600 : undefined;
+                             }
 
                              if (!path || path.length === 0) {
                                  throw new Error('No route path returned');
@@ -1060,10 +1240,11 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                              if (mode !== 'na') {
                                  const midPoint = getPointAlongPath(path, 0.5);
                                  if (midPoint) {
+                                     const markerHeading = mode === 'plane' ? getHeadingAlongPath(path, 0.5) : undefined;
                                      const transportMarker = new window.google.maps.Marker({
                                          map: googleMapRef.current,
                                          position: midPoint,
-                                         icon: buildTransportIcon(mode, startColor),
+                                         icon: buildTransportIcon(mode, startColor, markerHeading),
                                          clickable: false,
                                          zIndex: 50,
                                          optimized: false,
@@ -1071,12 +1252,6 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                                      transportMarkersRef.current.push(transportMarker);
                                  }
                              }
-
-                             const legs = result.routes?.[0]?.legs ?? [];
-                             const distanceMeters = legs.reduce((sum, leg) => sum + (leg.distance?.value ?? 0), 0);
-                             const durationSeconds = legs.reduce((sum, leg) => sum + (leg.duration?.value ?? 0), 0);
-                             const distanceKm = distanceMeters > 0 ? distanceMeters / 1000 : undefined;
-                             const durationHours = durationSeconds > 0 ? durationSeconds / 3600 : undefined;
 
                              ROUTE_CACHE.set(cacheKey, {
                                  status: 'ok',
@@ -1160,10 +1335,13 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                  ], 0.5);
                  if (mode !== 'na') {
                      if (!mid) continue;
+                     const markerHeading = mode === 'plane'
+                         ? getHeadingBetweenPoints(start.coordinates, end.coordinates)
+                         : undefined;
                      const transportMarker = new window.google.maps.Marker({
                          map: googleMapRef.current,
                          position: mid,
-                         icon: buildTransportIcon(mode, startColor),
+                         icon: buildTransportIcon(mode, startColor, markerHeading),
                          clickable: false,
                          zIndex: 50,
                          optimized: false,

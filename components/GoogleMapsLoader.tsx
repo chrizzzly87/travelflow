@@ -38,7 +38,7 @@ interface GoogleMapsLoaderProps {
     enabled?: boolean;
 }
 
-const GOOGLE_MAPS_LIBRARIES = ['places', 'marker', 'geometry'];
+const GOOGLE_MAPS_LIBRARIES = ['places', 'marker', 'geometry', 'routes'];
 
 interface GoogleMapsLoadStateBridgeProps {
     onLoadedChange: (loaded: boolean) => void;
