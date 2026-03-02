@@ -88,6 +88,57 @@ Assumptions for comparable scenario math:
 - **RevenueCat/Superwall:** not first-choice billing backbone for this web-only phase.
 - **FastSpring:** MoR-capable, but transparency and integration predictability are less favorable for this phase.
 
+## Follow-Up Blueprint for #216 (Contract Freeze, No Code in #174)
+This section locks the implementation contract for [#216](https://github.com/chrizzzly87/travelflow/issues/216).
+
+### Stack Compatibility Snapshot
+- **Netlify:** webhook-style server logic fits existing edge-function patterns under `netlify/edge-functions/*`.
+- **Supabase:** a `subscriptions` table already exists in `docs/supabase.sql` and is a natural canonical billing-state store.
+- **Auth/entitlements read path:** `services/authService.ts` reads `get_current_user_access`; entitlements already drive planner behavior.
+- **Paywall decision layer:** `config/paywall.ts` remains the single point for lifecycle/paywall decisions.
+
+### 1) Provider-Agnostic Webhook Event Contract
+Each normalized webhook event record should contain:
+- `event_id`
+- `provider`
+- `event_type`
+- `occurred_at`
+- `customer_id`
+- `subscription_id`
+- `status`
+- `current_period_end`
+- `cancel_at`
+- `currency`
+- `amount`
+
+### 2) Supabase Persistence Contract
+- Keep one canonical subscription state per `user_id`.
+- Persist provider IDs (`provider_customer_id`, `provider_subscription_id`) plus normalized status timestamps.
+- Preserve lifecycle timestamps required for grace evaluation (`canceled_at`, `grace_ends_at`, `current_period_end`).
+
+### 3) Entitlement Mapping Contract
+- Map external provider plan/price identifiers to internal tier keys:
+  - `tier_free`
+  - `tier_mid`
+  - `tier_premium`
+- Mapping table/config must be explicit and versioned with rollout notes.
+
+### 4) Grace-Period Rule Contract
+- On paid-plan cancellation webhook, set:
+  - `canceled_at = occurred_at`
+  - `grace_ends_at = canceled_at + interval '7 days'`
+- While `now < grace_ends_at`, user remains entitlement-active for trip paywall decisions.
+- Once grace expires, lifecycle returns to expired/paywall behavior.
+
+### 5) Idempotency and Replay Safety Contract
+- Deduplicate webhook processing by `event_id`.
+- Re-processing the same event must not change state after first successful apply.
+- Out-of-order events should be ignored or reconciled using event time and status precedence rules.
+
+### 6) Analytics/Observability Contract
+- Keep existing paywall CTA triggers (`trip_paywall__strip--activate`, `trip_paywall__overlay--activate`) and extend payloads with subscription outcome fields in #216.
+- Add subscription lifecycle audit logs for: activation, cancellation, grace start, grace expiry.
+
 ## Notes and Constraints
 - This document is operational planning, not legal/tax advice.
 - German legal basis considered: UStG §19 (Kleinunternehmer) threshold framework [S16].

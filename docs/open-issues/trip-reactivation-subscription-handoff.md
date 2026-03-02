@@ -3,6 +3,7 @@
 ## Status
 - Open GitHub implementation issue: [#216](https://github.com/chrizzzly87/travelflow/issues/216)
 - Related payment-provider spike: [#174](https://github.com/chrizzzly87/travelflow/issues/174)
+- Payment-provider decision (2026-03-02): **Primary Paddle**, **secondary Lemon Squeezy** (see `docs/open-issues/payment-provider-analysis-174.md`).
 
 ## Current Temporary Contract
 1. Expired trip CTA uses `direct_reactivate` for authenticated non-anonymous users on `/trip/:id`.
