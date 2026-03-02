@@ -8,6 +8,7 @@ interface FaqAccordionListProps {
   onToggle: (item: FaqItemWithSection, nextOpen: boolean) => void;
   getItemButtonProps?: (item: FaqItemWithSection, isOpen: boolean) => Record<string, string | number | boolean | undefined>;
   renderPanelFooter?: (item: FaqItemWithSection) => React.ReactNode;
+  variant?: 'card' | 'plain';
   compact?: boolean;
 }
 
@@ -17,10 +18,13 @@ export const FaqAccordionList: React.FC<FaqAccordionListProps> = ({
   onToggle,
   getItemButtonProps,
   renderPanelFooter,
+  variant = 'card',
   compact = false,
 }) => {
+  const isPlain = variant === 'plain';
+
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white">
+    <div className={isPlain ? '' : 'rounded-2xl border border-slate-200 bg-white'}>
       {items.map((item, index) => {
         const isOpen = openItemIds.includes(item.id);
         const panelId = `faq-panel-${item.id}`;
@@ -30,7 +34,7 @@ export const FaqAccordionList: React.FC<FaqAccordionListProps> = ({
           <div
             key={item.id}
             id={item.id}
-            className={`scroll-mt-28 ${index !== items.length - 1 ? 'border-b border-slate-200' : ''}`}
+            className={`scroll-mt-28 border-b border-slate-200 ${index === items.length - 1 ? 'border-b-0' : ''}`}
           >
             <button
               id={triggerId}
@@ -38,9 +42,12 @@ export const FaqAccordionList: React.FC<FaqAccordionListProps> = ({
               aria-expanded={isOpen}
               aria-controls={panelId}
               onClick={() => onToggle(item, !isOpen)}
-              className={`flex w-full items-center justify-between gap-3 px-4 text-left text-slate-900 transition-colors hover:bg-slate-50 ${
+              className={`flex w-full items-center justify-between gap-3 text-left text-slate-900 transition-colors ${
+                isPlain ? 'hover:text-slate-700' : 'hover:bg-slate-50'
+              } ${
                 compact ? 'py-3' : 'py-4'
               }`}
+              style={isPlain ? { paddingInline: 0 } : undefined}
               {...(getItemButtonProps ? getItemButtonProps(item, isOpen) : {})}
             >
               <span className={`font-semibold ${compact ? 'text-sm' : 'text-[1.02rem]'}`}>{item.question}</span>
@@ -56,7 +63,8 @@ export const FaqAccordionList: React.FC<FaqAccordionListProps> = ({
                 id={panelId}
                 role="region"
                 aria-labelledby={triggerId}
-                className={`px-4 pb-4 text-slate-600 ${compact ? 'text-sm leading-6' : 'text-[0.95rem] leading-7'}`}
+                className={`pb-4 text-slate-600 ${compact ? 'text-sm leading-6' : 'text-[0.95rem] leading-7'}`}
+                style={isPlain ? { paddingInline: 0 } : { paddingInline: '1rem' }}
               >
                 <p>{item.answer}</p>
                 {renderPanelFooter ? (

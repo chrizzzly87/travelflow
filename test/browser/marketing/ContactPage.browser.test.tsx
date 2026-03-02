@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import React from 'react';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { type InitialEntry, MemoryRouter } from 'react-router-dom';
 
@@ -104,6 +104,11 @@ const renderContactPage = (initialEntries: InitialEntry[] = ['/contact']) => ren
   </MemoryRouter>
 );
 
+const selectReason = (labelKey: string) => {
+  const reasonSelect = screen.getByTestId('select-contact-reason');
+  fireEvent.click(within(reasonSelect).getByText(labelKey));
+};
+
 describe('pages/ContactPage', () => {
   beforeEach(() => {
     useAuthMock.mockReset();
@@ -151,7 +156,7 @@ describe('pages/ContactPage', () => {
   it('auto-opens the topic dropdown after selecting a reason', () => {
     renderContactPage();
 
-    fireEvent.click(screen.getAllByText('contact.form.reasonOptions.bugReport')[0]);
+    selectReason('contact.form.reasonOptions.bugReport');
 
     const subReasonSelect = screen.getByTestId('select-contact-subreason');
     expect(subReasonSelect).toHaveAttribute('data-open', 'true');
@@ -195,7 +200,7 @@ describe('pages/ContactPage', () => {
 
     renderContactPage();
 
-    fireEvent.click(screen.getAllByText('contact.form.reasonOptions.bugReport')[0]);
+    selectReason('contact.form.reasonOptions.bugReport');
     fireEvent.change(screen.getByLabelText(/^contact\.form\.emailLabel/), { target: { value: 'hello@example.com' } });
     fireEvent.change(screen.getByLabelText(/^contact\.form\.messageLabel/), { target: { value: 'Need help with a bug.' } });
 
@@ -253,7 +258,7 @@ describe('pages/ContactPage', () => {
 
     renderContactPage();
 
-    fireEvent.click(screen.getAllByText('contact.form.reasonOptions.bugReport')[0]);
+    selectReason('contact.form.reasonOptions.bugReport');
     fireEvent.change(screen.getByLabelText(/^contact\.form\.emailLabel/), { target: { value: 'hello@example.com' } });
     fireEvent.change(screen.getByLabelText(/^contact\.form\.messageLabel/), { target: { value: 'Need help with translation errors.' } });
 
@@ -274,7 +279,7 @@ describe('pages/ContactPage', () => {
 
     renderContactPage();
 
-    fireEvent.click(screen.getAllByText('contact.form.reasonOptions.partnership')[0]);
+    selectReason('contact.form.reasonOptions.partnership');
     fireEvent.change(screen.getByLabelText(/^contact\.form\.emailLabel/), { target: { value: 'partner@example.com' } });
     fireEvent.change(screen.getByLabelText(/^contact\.form\.messageLabel/), { target: { value: 'Partnership request.' } });
 
@@ -296,7 +301,7 @@ describe('pages/ContactPage', () => {
 
     renderContactPage();
 
-    fireEvent.click(screen.getAllByText('contact.form.reasonOptions.other')[0]);
+    selectReason('contact.form.reasonOptions.other');
     fireEvent.change(screen.getByLabelText(/^contact\.form\.emailLabel/), { target: { value: 'hello@example.com' } });
     fireEvent.change(screen.getByLabelText(/^contact\.form\.messageLabel/), { target: { value: 'Network failure repro.' } });
 

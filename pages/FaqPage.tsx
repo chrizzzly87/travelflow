@@ -117,7 +117,7 @@ export const FaqPage: React.FC = () => {
 
     return (
         <MarketingLayout>
-            <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm md:p-10">
+            <section className="pb-8 md:pb-12">
                 <h1 className="text-4xl font-black tracking-tight text-slate-900 md:text-6xl">
                     Frequently asked questions.
                 </h1>
@@ -125,13 +125,13 @@ export const FaqPage: React.FC = () => {
                     Find quick answers for support, billing, privacy, and planning questions.
                 </p>
 
-                <div className="mt-6 flex flex-wrap gap-2">
+                <div className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm font-semibold text-slate-700">
                     {faqSections.map((section) => (
                         <a
                             key={section.id}
                             href={`#${section.id}`}
                             onClick={() => handleSectionLinkClick(section.id)}
-                            className="rounded-full border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:border-slate-400 hover:text-slate-900 md:text-sm"
+                            className="underline decoration-transparent underline-offset-4 transition-colors hover:text-slate-900 hover:decoration-slate-500"
                             {...getAnalyticsDebugAttributes('faq__section_link', {
                                 section_id: section.id,
                                 source: 'toc',
@@ -143,23 +143,18 @@ export const FaqPage: React.FC = () => {
                 </div>
             </section>
 
-            <div className="mt-8 space-y-6">
+            <div className="border-t border-slate-200">
                 {faqSections.map((section) => (
-                    <section
-                        key={section.id}
-                        id={section.id}
-                        className="scroll-mt-28 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:p-8"
-                    >
-                        <div className="grid gap-6 lg:grid-cols-[220px,1fr] lg:gap-8">
-                            <div>
-                                <h2 className="text-2xl font-bold tracking-tight text-slate-900">
-                                    {section.title}
-                                </h2>
-                            </div>
+                    <section key={section.id} id={section.id} className="scroll-mt-28 border-b border-slate-200 py-10 md:py-12">
+                        <div className="grid gap-6 md:grid-cols-[220px,minmax(0,1fr)] md:gap-8">
+                            <h2 className="text-3xl font-bold tracking-tight text-slate-900 md:text-[2rem]">
+                                {section.title}
+                            </h2>
                             <FaqAccordionList
                                 items={section.itemsWithSection}
                                 openItemIds={openItemIds}
                                 onToggle={handleItemToggle}
+                                variant="plain"
                                 getItemButtonProps={(item) =>
                                     getAnalyticsDebugAttributes('faq__item--open', {
                                         item_id: item.id,
@@ -173,7 +168,7 @@ export const FaqPage: React.FC = () => {
                 ))}
             </div>
 
-            <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
+            <section className="pt-10 md:pt-12">
                 <h2 className="text-xl font-bold text-slate-900 md:text-2xl">Still need help?</h2>
                 <p className="mt-3 text-sm leading-6 text-slate-600">
                     Contact us with your question and we will route it to the right team.
