@@ -63,7 +63,7 @@ export interface BlogImageMedia {
 const BLOG_IMAGE_PREFIX = '/images/blog/';
 const DEFAULT_ACCENT_TINT = '#6366f1';
 // Increment when blog OG source images are regenerated and should invalidate cached /api/og/site renders.
-export const BLOG_OG_IMAGE_REVISION = '2026-02-10-01';
+export const BLOG_OG_IMAGE_REVISION = '2026-03-02-02';
 
 const createResponsiveSources = (slug: string, variant: 'card' | 'header'): BlogResponsiveImageSourceSet => ({
     xsmall: `${BLOG_IMAGE_PREFIX}${slug}-${variant}-480.webp`,
@@ -135,6 +135,13 @@ const BLOG_IMAGE_SEED_OVERRIDES: Record<string, BlogImageSeedOverride> = {
         scene: 'Two travelers on a weekend escape overlooking a seaside town with a compact day bag',
         subject: 'Short-trip mood with relaxed pacing, golden-hour light, and realistic urban-coastal setting',
         accentTint: '#f59e0b',
+    },
+    'husum-weekend-krokusbluetenfest': {
+        countries: ['Germany'],
+        keyLocation: 'Schloßpark Husum and the historic harbor quarter',
+        scene: 'Spring weekend atmosphere in Husum with crocus fields, harbor promenade, and North Sea light',
+        subject: 'Authentic Husum city-break mood with maritime details and seasonal flower scenery',
+        accentTint: '#a855f7',
     },
 };
 

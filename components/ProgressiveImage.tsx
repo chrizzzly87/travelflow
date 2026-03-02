@@ -48,8 +48,8 @@ const createBlurhashDataUrl = (hash: string, width: number, height: number): str
 export interface ProgressiveImageProps {
     src: string;
     alt: string;
-    width: number;
-    height: number;
+    width?: number;
+    height?: number;
     sizes?: string;
     srcSetWidths?: number[];
     placeholderKey?: string;
@@ -84,14 +84,16 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
         [placeholderKey, src]
     );
     const placeholderMeta = IMAGE_PLACEHOLDERS[normalizedKey];
+    const resolvedWidth = width ?? placeholderMeta?.width ?? 1536;
+    const resolvedHeight = height ?? placeholderMeta?.height ?? 1024;
     const blurhashValue = placeholderBlurhash || placeholderMeta?.blurhash || '';
     const placeholderDataUrl = useMemo(() => {
         if (!blurhashValue) return null;
         if (typeof document === 'undefined') return null;
-        const sourceWidth = placeholderMeta?.width ?? width;
-        const sourceHeight = placeholderMeta?.height ?? height;
+        const sourceWidth = placeholderMeta?.width ?? resolvedWidth;
+        const sourceHeight = placeholderMeta?.height ?? resolvedHeight;
         return createBlurhashDataUrl(blurhashValue, sourceWidth, sourceHeight);
-    }, [blurhashValue, placeholderMeta?.height, placeholderMeta?.width, width, height]);
+    }, [blurhashValue, placeholderMeta?.height, placeholderMeta?.width, resolvedWidth, resolvedHeight]);
 
     const avifSrcSet = useMemo(
         () => (isImageCdnEnabled() && !disableCdn ? buildImageSrcSet(src, srcSetWidths, { format: 'avif', quality: 52 }) : ''),
@@ -133,8 +135,8 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
                     loading={loading}
                     decoding="async"
                     {...fetchPriorityAttr}
-                    width={width}
-                    height={height}
+                    width={resolvedWidth}
+                    height={resolvedHeight}
                     className={`${className || 'h-full w-full object-cover'} transition-opacity duration-300 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
                     onLoad={() => setIsLoaded(true)}
                     onError={() => {

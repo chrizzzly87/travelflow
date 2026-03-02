@@ -3,6 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 import { TransportModeIcon } from '../TransportModeIcon';
+import { Checkbox } from '../ui/checkbox';
 import type { ITrip } from '../../types';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import { buildTimelineListModel } from './timelineListViewModel';
@@ -59,12 +60,37 @@ const MARKDOWN_COMPONENTS = {
             rel="noopener noreferrer"
         />
     ),
-    p: ({ node, ...props }: any) => <p {...props} className="my-0 leading-6" />,
-    ul: ({ node, ...props }: any) => <ul {...props} className="my-2 list-disc ps-5 space-y-1" />,
-    ol: ({ node, ...props }: any) => <ol {...props} className="my-2 list-decimal ps-5 space-y-1" />,
-    li: ({ node, ...props }: any) => <li {...props} className="leading-6" />,
+    p: ({ node, ...props }: any) => <p {...props} className="my-1 leading-6" />,
+    ul: ({ node, ...props }: any) => <ul {...props} className="my-2 list-disc ps-5 space-y-1.5" />,
+    ol: ({ node, ...props }: any) => <ol {...props} className="my-2 list-decimal ps-5 space-y-1.5" />,
+    li: ({ node, checked, ...props }: any) => (
+        <li
+            {...props}
+            className={`leading-6 ${typeof checked === 'boolean' ? 'list-none ps-0' : ''}`}
+        />
+    ),
+    input: ({ node, type, checked, ...props }: any) => {
+        if (type === 'checkbox') {
+            return (
+                <span className="me-2 inline-flex align-middle">
+                    <Checkbox
+                        checked={Boolean(checked)}
+                        disabled
+                        className="pointer-events-none mt-0.5 h-4 w-4"
+                        aria-label={checked ? 'Completed item' : 'Open item'}
+                    />
+                </span>
+            );
+        }
+        return <input type={type} {...props} />;
+    },
+    strong: ({ node, ...props }: any) => <strong {...props} className="font-semibold text-slate-900" />,
+    em: ({ node, ...props }: any) => <em {...props} className="italic text-slate-700" />,
+    del: ({ node, ...props }: any) => <del {...props} className="text-slate-400 line-through" />,
+    blockquote: ({ node, ...props }: any) => <blockquote {...props} className="my-2 border-s-2 border-slate-300 ps-3 text-slate-600 italic" />,
     code: ({ node, ...props }: any) => <code {...props} className="rounded bg-slate-100 px-1 py-0.5 text-[12px] text-slate-700" />,
     pre: ({ node, ...props }: any) => <pre {...props} className="my-2 overflow-x-auto rounded-md bg-slate-100 p-2 text-[12px] text-slate-700" />,
+    hr: () => <hr className="my-3 border-slate-200" />,
 };
 
 const TODAY_BADGE_CLASS = 'rounded-full border border-red-200 bg-red-50 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-[0.08em] text-red-700';
