@@ -76,7 +76,7 @@
       "reasonLabel": "Тема",
       "reasonPlaceholder": "Выберите тему",
       "reasonOptions": {
-        "bugReport": "Сообщить о баге",
+        "bugReport": "Проблема с сайтом или приложением",
         "featureRequest": "Запрос функции",
         "billingAccount": "Оплата / аккаунт",
         "dataPrivacy": "Запрос данных/конфиденциальности",
@@ -103,7 +103,56 @@
       "validationReason": "Пожалуйста, выберите тему.",
       "validationEmail": "Введите корректный e-mail.",
       "validationMessage": "Введите сообщение.",
-      "validationMessageLength": "Сообщение слишком длинное. Максимум: {max} символов."
+      "validationMessageLength": "Сообщение слишком длинное. Максимум: {max} символов.",
+      "subReasonLabel": "Тема (необязательно)",
+      "subReasonPlaceholder": "Выберите тему (необязательно)",
+      "subReasonEmptyOption": "Без конкретной темы",
+      "subReasonOptions": {
+        "bugReport": {
+          "pageNotLoadingWorking": "Страница не загружается или не работает",
+          "translationWrongMisleading": "Переводы неверные или вводят в заблуждение",
+          "actionNotWorking": "Кнопка или действие не работает",
+          "layoutVisualIssue": "Проблема с макетом или отображением",
+          "mapRoutingIssue": "Проблема с картой или маршрутом",
+          "performanceIssue": "Медленная или нестабильная работа"
+        },
+        "featureRequest": {
+          "newFeature": "Полностью новая функция",
+          "improveFeature": "Улучшить существующую функцию",
+          "workflowAutomation": "Улучшение процесса или автоматизации",
+          "mobileExperience": "Улучшение мобильного опыта",
+          "accessibility": "Улучшение доступности"
+        },
+        "billingAccount": {
+          "subscriptionChange": "Изменить или отменить подписку",
+          "invoiceReceipt": "Вопрос по счету или чеку",
+          "paymentFailed": "Платеж не прошел",
+          "refundQuestion": "Вопрос о возврате средств",
+          "accountAccess": "Проблема с доступом к аккаунту"
+        },
+        "dataPrivacy": {
+          "dataExport": "Запросить экспорт моих данных",
+          "dataDeletion": "Запросить удаление данных",
+          "consentCookies": "Вопрос по cookie/согласию",
+          "legalQuestion": "Юридический вопрос/конфиденциальность",
+          "securityConcern": "Вопрос по безопасности"
+        },
+        "partnership": {
+          "affiliateInfluencer": "Партнерство с аффилиатами или авторами",
+          "brandCampaign": "Партнерство для бренд-кампании",
+          "mediaPress": "Запрос от СМИ или прессы",
+          "integrationPartner": "Интеграционное партнерство",
+          "educationNonProfit": "Сотрудничество с образованием или НКО"
+        },
+        "other": {
+          "generalFeedback": "Общий отзыв",
+          "productQuestion": "Вопрос о продукте",
+          "careerOpportunity": "Карьерная возможность",
+          "responsibleDisclosure": "Сообщение о безопасности",
+          "somethingElse": "Другое"
+        }
+      },
+      "requiredFieldsNote": "* Обязательные поля."
     }
   },
   "appDialog": {

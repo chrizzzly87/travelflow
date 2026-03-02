@@ -222,10 +222,23 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 ### Contact
 | Event | Detail | Payload | File |
 |-------|--------|---------|------|
-| `contact__form--submit` | — | `{ reason, locale, has_user }` | `ContactPage.tsx` |
-| `contact__form--success` | — | `{ reason, locale, has_user, status }` | `ContactPage.tsx` |
-| `contact__form--failed` | — | `{ reason, locale, has_user, status, error_type }` | `ContactPage.tsx` |
-| `contact__fallback--email` | — | `{ reason, locale, has_user, status, error_type }` | `ContactPage.tsx` |
+| `contact__form--submit` | — | `{ reason, sub_reason, locale, has_user, source }` | `ContactPage.tsx` |
+| `contact__form--success` | — | `{ reason, sub_reason, locale, has_user, status, source }` | `ContactPage.tsx` |
+| `contact__form--failed` | — | `{ reason, sub_reason, locale, has_user, status, error_type, source }` | `ContactPage.tsx` |
+| `contact__fallback--email` | — | `{ reason, sub_reason, locale, has_user, status, error_type, source }` | `ContactPage.tsx` |
+| `contact__faq_item--open` | — | `{ item_id, section_id, source }` | `ContactPage.tsx` |
+| `contact__faq_item--close` | — | `{ item_id, section_id, source }` | `ContactPage.tsx` |
+| `contact__faq_link--item` | — | `{ item_id, section_id, source }` | `ContactPage.tsx` |
+| `contact__faq_link--full_page` | — | `{ source }` | `ContactPage.tsx` |
+
+### FAQ
+| Event | Detail | Payload | File |
+|-------|--------|---------|------|
+| `faq__view` | — | `{ locale, hash }` | `FaqPage.tsx` |
+| `faq__section_link` | — | `{ section_id, source }` | `FaqPage.tsx` |
+| `faq__item--open` | — | `{ item_id, section_id, source }` | `FaqPage.tsx` |
+| `faq__item--close` | — | `{ item_id, section_id, source }` | `FaqPage.tsx` |
+| `faq__cta--contact` | — | `{ source }` | `FaqPage.tsx` |
 
 ### Inspirations
 | Event | Detail | Payload | File |

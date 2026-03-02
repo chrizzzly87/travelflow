@@ -76,7 +76,7 @@
       "reasonLabel": "문의 유형",
       "reasonPlaceholder": "문의 유형 선택",
       "reasonOptions": {
-        "bugReport": "버그 제보",
+        "bugReport": "웹사이트/앱 문제",
         "featureRequest": "기능 요청",
         "billingAccount": "결제 / 계정",
         "dataPrivacy": "데이터/개인정보 요청",
@@ -103,7 +103,56 @@
       "validationReason": "문의 유형을 선택해 주세요.",
       "validationEmail": "유효한 이메일 주소를 입력해 주세요.",
       "validationMessage": "메시지를 입력해 주세요.",
-      "validationMessageLength": "메시지가 너무 깁니다. 최대 {max}자까지 가능합니다."
+      "validationMessageLength": "메시지가 너무 깁니다. 최대 {max}자까지 가능합니다.",
+      "subReasonLabel": "주제 (선택)",
+      "subReasonPlaceholder": "주제를 선택하세요 (선택)",
+      "subReasonEmptyOption": "특정 주제 없음",
+      "subReasonOptions": {
+        "bugReport": {
+          "pageNotLoadingWorking": "페이지가 로드되지 않거나 동작하지 않음",
+          "translationWrongMisleading": "번역이 잘못되었거나 오해를 유발함",
+          "actionNotWorking": "버튼 또는 동작이 작동하지 않음",
+          "layoutVisualIssue": "레이아웃 또는 시각적 문제",
+          "mapRoutingIssue": "지도 또는 경로 문제",
+          "performanceIssue": "느리거나 불안정한 성능"
+        },
+        "featureRequest": {
+          "newFeature": "완전히 새로운 기능",
+          "improveFeature": "기존 기능 개선",
+          "workflowAutomation": "워크플로 또는 자동화 개선",
+          "mobileExperience": "모바일 경험 개선",
+          "accessibility": "접근성 개선"
+        },
+        "billingAccount": {
+          "subscriptionChange": "구독 변경 또는 취소",
+          "invoiceReceipt": "청구서 또는 영수증 문의",
+          "paymentFailed": "결제 실패",
+          "refundQuestion": "환불 문의",
+          "accountAccess": "계정 접근 문제"
+        },
+        "dataPrivacy": {
+          "dataExport": "내 데이터 내보내기 요청",
+          "dataDeletion": "데이터 삭제 요청",
+          "consentCookies": "쿠키/동의 관련 문의",
+          "legalQuestion": "법률/개인정보 문의",
+          "securityConcern": "보안 우려"
+        },
+        "partnership": {
+          "affiliateInfluencer": "제휴 또는 크리에이터 협업",
+          "brandCampaign": "브랜드 캠페인 파트너십",
+          "mediaPress": "미디어 또는 보도 문의",
+          "integrationPartner": "통합 파트너십",
+          "educationNonProfit": "교육 또는 비영리 협업"
+        },
+        "other": {
+          "generalFeedback": "일반 피드백",
+          "productQuestion": "제품 문의",
+          "careerOpportunity": "채용/커리어 기회",
+          "responsibleDisclosure": "보안 제보",
+          "somethingElse": "기타"
+        }
+      },
+      "requiredFieldsNote": "* 필수 입력 항목입니다."
     }
   },
   "appDialog": {

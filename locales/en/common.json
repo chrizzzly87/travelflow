@@ -76,7 +76,7 @@
       "reasonLabel": "Reason",
       "reasonPlaceholder": "Select a reason",
       "reasonOptions": {
-        "bugReport": "Bug report",
+        "bugReport": "Problem with the website/app",
         "featureRequest": "Feature request",
         "billingAccount": "Billing / account",
         "dataPrivacy": "Data/privacy request",
@@ -103,7 +103,56 @@
       "validationReason": "Please choose a reason.",
       "validationEmail": "Please enter a valid email address.",
       "validationMessage": "Please enter a message.",
-      "validationMessageLength": "Your message is too long. Maximum is {max} characters."
+      "validationMessageLength": "Your message is too long. Maximum is {max} characters.",
+      "subReasonLabel": "Topic (optional)",
+      "subReasonPlaceholder": "Select a topic (optional)",
+      "subReasonEmptyOption": "No specific topic",
+      "subReasonOptions": {
+        "bugReport": {
+          "pageNotLoadingWorking": "Page not loading / not working",
+          "translationWrongMisleading": "Translations are wrong or misleading",
+          "actionNotWorking": "A button or action does not work",
+          "layoutVisualIssue": "Layout or visual issue",
+          "mapRoutingIssue": "Map or route issue",
+          "performanceIssue": "Slow or unstable performance"
+        },
+        "featureRequest": {
+          "newFeature": "Completely new feature",
+          "improveFeature": "Improve an existing feature",
+          "workflowAutomation": "Workflow or automation improvement",
+          "mobileExperience": "Mobile experience improvement",
+          "accessibility": "Accessibility improvement"
+        },
+        "billingAccount": {
+          "subscriptionChange": "Change or cancel subscription",
+          "invoiceReceipt": "Invoice or receipt question",
+          "paymentFailed": "Payment failed",
+          "refundQuestion": "Refund question",
+          "accountAccess": "Account access issue"
+        },
+        "dataPrivacy": {
+          "dataExport": "Request my data export",
+          "dataDeletion": "Request data deletion",
+          "consentCookies": "Cookie/consent question",
+          "legalQuestion": "Legal/privacy question",
+          "securityConcern": "Security concern"
+        },
+        "partnership": {
+          "affiliateInfluencer": "Affiliate or creator collaboration",
+          "brandCampaign": "Brand campaign partnership",
+          "mediaPress": "Media or press request",
+          "integrationPartner": "Integration partnership",
+          "educationNonProfit": "Education or nonprofit collaboration"
+        },
+        "other": {
+          "generalFeedback": "General feedback",
+          "productQuestion": "Product question",
+          "careerOpportunity": "Career opportunity",
+          "responsibleDisclosure": "Security disclosure",
+          "somethingElse": "Something else"
+        }
+      },
+      "requiredFieldsNote": "* Required fields."
     }
   },
   "appDialog": {

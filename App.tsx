@@ -35,6 +35,7 @@ import { setCanonicalDocumentTitle } from './services/tripGenerationTabFeedbackS
 import { useAnalyticsBootstrap } from './app/bootstrap/useAnalyticsBootstrap';
 import { useAuthNavigationBootstrap } from './app/bootstrap/useAuthNavigationBootstrap';
 import { useDebuggerBootstrap } from './app/bootstrap/useDebuggerBootstrap';
+import { useNavigationContextBootstrap } from './app/bootstrap/useNavigationContextBootstrap';
 import { useWarmupGate } from './app/bootstrap/useWarmupGate';
 import { AppProviderShell } from './app/bootstrap/AppProviderShell';
 import { AppRoutes } from './app/routes/AppRoutes';
@@ -224,6 +225,7 @@ const AppContent: React.FC = () => {
     const shouldSuppressSpeculationRules = isFirstLoadCritical;
 
     useAuthNavigationBootstrap();
+    useNavigationContextBootstrap();
     useAnalyticsBootstrap();
 
     useEffect(() => {

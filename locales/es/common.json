@@ -76,7 +76,7 @@
       "reasonLabel": "Motivo",
       "reasonPlaceholder": "Selecciona un motivo",
       "reasonOptions": {
-        "bugReport": "Reporte de error",
+        "bugReport": "Problema con el sitio web o la app",
         "featureRequest": "Solicitud de funcionalidad",
         "billingAccount": "Facturación / cuenta",
         "dataPrivacy": "Solicitud de datos/privacidad",
@@ -103,7 +103,56 @@
       "validationReason": "Selecciona un motivo.",
       "validationEmail": "Introduce un correo electrónico válido.",
       "validationMessage": "Introduce un mensaje.",
-      "validationMessageLength": "Tu mensaje es demasiado largo. El máximo es {max} caracteres."
+      "validationMessageLength": "Tu mensaje es demasiado largo. El máximo es {max} caracteres.",
+      "subReasonLabel": "Tema (opcional)",
+      "subReasonPlaceholder": "Selecciona un tema (opcional)",
+      "subReasonEmptyOption": "Sin tema específico",
+      "subReasonOptions": {
+        "bugReport": {
+          "pageNotLoadingWorking": "La página no carga o no funciona",
+          "translationWrongMisleading": "Las traducciones son incorrectas o confusas",
+          "actionNotWorking": "Un botón o acción no funciona",
+          "layoutVisualIssue": "Problema de diseño o visual",
+          "mapRoutingIssue": "Problema con mapa o rutas",
+          "performanceIssue": "Rendimiento lento o inestable"
+        },
+        "featureRequest": {
+          "newFeature": "Una función completamente nueva",
+          "improveFeature": "Mejorar una función existente",
+          "workflowAutomation": "Mejorar flujo de trabajo o automatización",
+          "mobileExperience": "Mejorar experiencia móvil",
+          "accessibility": "Mejora de accesibilidad"
+        },
+        "billingAccount": {
+          "subscriptionChange": "Cambiar o cancelar suscripción",
+          "invoiceReceipt": "Pregunta sobre factura o recibo",
+          "paymentFailed": "El pago falló",
+          "refundQuestion": "Pregunta sobre reembolso",
+          "accountAccess": "Problema de acceso a la cuenta"
+        },
+        "dataPrivacy": {
+          "dataExport": "Solicitar exportación de mis datos",
+          "dataDeletion": "Solicitar eliminación de datos",
+          "consentCookies": "Pregunta sobre cookies/consentimiento",
+          "legalQuestion": "Consulta legal o de privacidad",
+          "securityConcern": "Problema de seguridad"
+        },
+        "partnership": {
+          "affiliateInfluencer": "Colaboración de afiliados o creadores",
+          "brandCampaign": "Colaboración de campaña de marca",
+          "mediaPress": "Solicitud de prensa o medios",
+          "integrationPartner": "Colaboración de integración",
+          "educationNonProfit": "Colaboración educativa o sin ánimo de lucro"
+        },
+        "other": {
+          "generalFeedback": "Comentarios generales",
+          "productQuestion": "Pregunta sobre el producto",
+          "careerOpportunity": "Oportunidad laboral",
+          "responsibleDisclosure": "Divulgación de seguridad",
+          "somethingElse": "Otra cosa"
+        }
+      },
+      "requiredFieldsNote": "* Campos obligatorios."
     }
   },
   "appDialog": {
