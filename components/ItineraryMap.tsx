@@ -274,6 +274,13 @@ export const shouldRecordManualViewportChange = ({
     suppressUntilMs: number;
 }): boolean => nowMs > suppressUntilMs;
 
+export const shouldIgnoreManualViewportEventTarget = (
+    target: EventTarget | null,
+): boolean => {
+    if (!target || !(target instanceof Element)) return false;
+    return Boolean(target.closest('[data-floating-map-control="true"]'));
+};
+
 export const resolveMapResizeCameraStrategy = ({
     hasSelectedCity,
     hasManualViewportChange,
@@ -332,11 +339,12 @@ export const shouldRefitItineraryOnResize = ({
     if (previousWidth <= 0 || previousHeight <= 0 || nextWidth <= 0 || nextHeight <= 0) return false;
     const previousArea = previousWidth * previousHeight;
     const nextArea = nextWidth * nextHeight;
-    const didAreaShrink = nextArea < (previousArea * 0.97);
+    const areaDeltaRatio = Math.abs(nextArea - previousArea) / previousArea;
+    const didAreaChangeSignificantly = areaDeltaRatio > 0.03;
     const previousAspectRatio = previousWidth / previousHeight;
     const nextAspectRatio = nextWidth / nextHeight;
-    const didAspectShift = Math.abs(previousAspectRatio - nextAspectRatio) > 0.42;
-    return didAreaShrink || didAspectShift;
+    const didAspectShift = Math.abs(previousAspectRatio - nextAspectRatio) > 0.35;
+    return didAreaChangeSignificantly || didAspectShift;
 };
 
 const hydrateRouteCache = () => {
@@ -418,7 +426,15 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         suppressManualViewportTrackingUntilRef.current = performance.now() + durationMs;
     }, []);
 
-    const markManualViewportChange = useCallback(() => {
+    const markManualViewportChange = useCallback((event?: Event | { domEvent?: Event }) => {
+        const nativeEvent = event instanceof Event
+            ? event
+            : (event && typeof event === 'object' && 'domEvent' in event && event.domEvent instanceof Event)
+                ? event.domEvent
+                : null;
+        if (shouldIgnoreManualViewportEventTarget(nativeEvent?.target ?? null)) {
+            return;
+        }
         const nowMs = typeof performance !== 'undefined'
             ? performance.now()
             : Number.POSITIVE_INFINITY;

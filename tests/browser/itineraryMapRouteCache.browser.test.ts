@@ -10,6 +10,7 @@ import {
   getRouteOutlineColor,
   resolveItineraryCenter,
   resolveMapResizeCameraStrategy,
+  shouldIgnoreManualViewportEventTarget,
   shouldRecordManualViewportChange,
   shouldRefitItineraryOnResize,
 } from '../../components/ItineraryMap';
@@ -171,6 +172,15 @@ describe('components/ItineraryMap route cache helpers', () => {
     })).toBe(true);
   });
 
+  it('triggers itinerary refit when viewport area grows significantly', () => {
+    expect(shouldRefitItineraryOnResize({
+      previousWidth: 220,
+      previousHeight: 330,
+      nextWidth: 300,
+      nextHeight: 450,
+    })).toBe(true);
+  });
+
   it('triggers itinerary refit when viewport aspect ratio changes heavily (portrait/landscape flip)', () => {
     expect(shouldRefitItineraryOnResize({
       previousWidth: 220,
@@ -198,5 +208,21 @@ describe('components/ItineraryMap route cache helpers', () => {
       nowMs: 200,
       suppressUntilMs: 160,
     })).toBe(true);
+  });
+
+  it('ignores manual intent detection when interaction starts from map controls', () => {
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = `
+      <div data-floating-map-control="true">
+        <button id="map-control-btn">Resize</button>
+      </div>
+      <button id="outside-btn">Outside</button>
+    `;
+    const mapControlButton = wrapper.querySelector('#map-control-btn');
+    const outsideButton = wrapper.querySelector('#outside-btn');
+
+    expect(shouldIgnoreManualViewportEventTarget(mapControlButton)).toBe(true);
+    expect(shouldIgnoreManualViewportEventTarget(outsideButton)).toBe(false);
+    expect(shouldIgnoreManualViewportEventTarget(null)).toBe(false);
   });
 });
