@@ -11,5 +11,5 @@ summary: "Trip planner actions now avoid duplicate confirmation toasts when favo
 ---
 
 ## Changes
-- [x] [Fixed] 🔔 Trip planner now shows one clear confirmation toast when you favorite a trip or remove an activity.
+- [x] [Fixed] 🔔 Trip planner now shows one clear confirmation toast for favorite toggles and add/remove timeline actions.
 - [ ] [Internal] 🧪 Added regression tests to prevent duplicate planner toasts when action feedback and auto-save feedback overlap.

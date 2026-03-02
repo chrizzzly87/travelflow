@@ -73,4 +73,122 @@ describe('components/tripview/useTripItemMutationHandlers', () => {
 
     expect(onUndoDelete).toHaveBeenCalledWith(cityItem, { previousItems: trip.items });
   });
+
+  it('suppresses commit toast when adding an activity with immediate feedback', () => {
+    const cityItem = makeCityItem({
+      id: 'city-1',
+      title: 'Tirana',
+      startDateOffset: 0,
+      duration: 2,
+    });
+    const trip = makeTrip({
+      items: [cityItem],
+    });
+
+    const showToast = vi.fn();
+    const handleUpdateItems = vi.fn();
+
+    const { result } = renderHook(() => useTripItemMutationHandlers({
+      trip,
+      addActivityState: { isOpen: false, dayOffset: 0, location: 'Tirana' },
+      setAddActivityState: vi.fn(),
+      isAddCityModalOpen: false,
+      setIsAddCityModalOpen: vi.fn(),
+      isHistoryOpen: false,
+      selectedItemId: null,
+      setSelectedItemId: vi.fn(),
+      setSelectedCityIds: vi.fn(),
+      requireEdit: () => true,
+      markUserEdit: vi.fn(),
+      setPendingLabel: vi.fn(),
+      handleUpdateItems,
+      showToast,
+      pendingHistoryLabelRef: { current: null },
+    }));
+
+    act(() => {
+      result.current.handleAddActivityItem({
+        title: 'Museum',
+        startDateOffset: 0,
+        duration: 0.5,
+      });
+    });
+
+    expect(handleUpdateItems).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: 'activity',
+          title: 'Museum',
+          startDateOffset: 0,
+          duration: 0.5,
+        }),
+      ]),
+      { suppressCommitToast: true }
+    );
+    expect(showToast).toHaveBeenCalledWith('Activity "Museum" added', {
+      tone: 'add',
+      title: 'Added',
+    });
+  });
+
+  it('suppresses commit toast when adding a city with immediate feedback', () => {
+    const cityItem = makeCityItem({
+      id: 'city-1',
+      title: 'Tirana',
+      startDateOffset: 0,
+      duration: 2,
+    });
+    const trip = makeTrip({
+      items: [cityItem],
+    });
+
+    const showToast = vi.fn();
+    const handleUpdateItems = vi.fn();
+    const setSelectedItemId = vi.fn();
+    const setSelectedCityIds = vi.fn();
+
+    const { result } = renderHook(() => useTripItemMutationHandlers({
+      trip,
+      addActivityState: { isOpen: false, dayOffset: 0, location: '' },
+      setAddActivityState: vi.fn(),
+      isAddCityModalOpen: false,
+      setIsAddCityModalOpen: vi.fn(),
+      isHistoryOpen: false,
+      selectedItemId: null,
+      setSelectedItemId,
+      setSelectedCityIds,
+      requireEdit: () => true,
+      markUserEdit: vi.fn(),
+      setPendingLabel: vi.fn(),
+      handleUpdateItems,
+      showToast,
+      pendingHistoryLabelRef: { current: null },
+    }));
+
+    act(() => {
+      result.current.handleAddCityItem({
+        title: 'Durres',
+      });
+    });
+
+    expect(handleUpdateItems).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: 'city',
+          title: 'Durres',
+          startDateOffset: 2,
+        }),
+      ]),
+      { suppressCommitToast: true }
+    );
+    expect(setSelectedItemId).toHaveBeenCalledTimes(1);
+    const selectedId = setSelectedItemId.mock.calls[0]?.[0];
+    expect(typeof selectedId).toBe('string');
+    expect(selectedId).toBeTruthy();
+    expect(setSelectedCityIds).toHaveBeenCalledWith([selectedId]);
+    expect(showToast).toHaveBeenCalledWith('City "Durres" added', {
+      tone: 'add',
+      title: 'Added',
+    });
+  });
 });

@@ -179,7 +179,7 @@ export const useTripItemMutationHandlers = ({
 
         onResetSuppressedCommit?.();
         setPendingLabel(`Data: Added activity "${newItem.title}"`);
-        handleUpdateItems([...trip.items, newItem]);
+        handleUpdateItems([...trip.items, newItem], { suppressCommitToast: true });
         showToast(`Activity "${newItem.title}" added`, { tone: 'add', title: 'Added' });
     }, [
         addActivityState.dayOffset,
@@ -214,7 +214,7 @@ export const useTripItemMutationHandlers = ({
 
         onResetSuppressedCommit?.();
         setPendingLabel(`Data: Added city "${newItem.title}"`);
-        handleUpdateItems([...trip.items, newItem]);
+        handleUpdateItems([...trip.items, newItem], { suppressCommitToast: true });
         setSelectedItemId(newItem.id);
         setSelectedCityIds([newItem.id]);
         showToast(`City "${newItem.title}" added`, { tone: 'add', title: 'Added' });

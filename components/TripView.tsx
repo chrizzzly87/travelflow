@@ -1652,7 +1652,7 @@ const useTripViewRender = ({
                 }
 
                 setPendingLabel(`Data: Restored ${deletedEntityLabel}`);
-                handleUpdateItems(context.previousItems);
+                handleUpdateItems(context.previousItems, { suppressCommitToast: true });
                 showToast(`Restored ${deletedEntityLabel}`, {
                     tone: 'add',
                     title: 'Undo',
