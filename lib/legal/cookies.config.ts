@@ -88,6 +88,13 @@ export const COOKIE_REGISTRY: CookieRegistry = {
       storage: 'localStorage',
     },
     {
+      name: 'tf_navigation_context_v1',
+      purpose: 'Stores current and previous in-app routes to prefill support context fields.',
+      duration: 'Session',
+      provider: 'TravelFlow',
+      storage: 'sessionStorage',
+    },
+    {
       name: 'tf_auth_last_oauth_provider_v1',
       purpose: 'Stores the last OAuth provider to simplify repeated sign-ins.',
       duration: 'Persistent',

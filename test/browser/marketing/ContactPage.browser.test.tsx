@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 import React from 'react';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { MemoryRouter } from 'react-router-dom';
+import { type InitialEntry, MemoryRouter } from 'react-router-dom';
 
 const useAuthMock = vi.fn();
 const getCurrentAccessContextMock = vi.fn();
@@ -29,10 +29,27 @@ vi.mock('../../../components/marketing/MarketingLayout', () => ({
 vi.mock('../../../components/ui/select', async () => {
   const React = await import('react');
 
-  const SelectContext = React.createContext<{ onValueChange?: (value: string) => void }>({});
+  const SelectContext = React.createContext<{
+    onValueChange?: (value: string) => void;
+    onOpenChange?: (nextOpen: boolean) => void;
+  }>({});
 
-  const Select = ({ children, onValueChange }: { children: React.ReactNode; onValueChange?: (value: string) => void }) => (
-    <SelectContext.Provider value={{ onValueChange }}>{children}</SelectContext.Provider>
+  const Select = ({
+    children,
+    onValueChange,
+    onOpenChange,
+    open,
+    name,
+  }: {
+    children: React.ReactNode;
+    onValueChange?: (value: string) => void;
+    onOpenChange?: (nextOpen: boolean) => void;
+    open?: boolean;
+    name?: string;
+  }) => (
+    <div data-testid={name ? `select-${name}` : undefined} data-open={typeof open === 'boolean' ? String(open) : undefined}>
+      <SelectContext.Provider value={{ onValueChange, onOpenChange }}>{children}</SelectContext.Provider>
+    </div>
   );
 
   const SelectTrigger = React.forwardRef<HTMLButtonElement, React.ComponentPropsWithoutRef<'button'>>((props, ref) => (
@@ -45,7 +62,13 @@ vi.mock('../../../components/ui/select', async () => {
   const SelectItem = ({ value, children }: { value: string; children: React.ReactNode }) => {
     const context = React.useContext(SelectContext);
     return (
-      <button type="button" onClick={() => context.onValueChange?.(value)}>
+      <button
+        type="button"
+        onClick={() => {
+          context.onValueChange?.(value);
+          context.onOpenChange?.(false);
+        }}
+      >
         {children}
       </button>
     );
@@ -75,11 +98,16 @@ vi.mock('../../../services/analyticsService', () => ({
 
 import { ContactPage } from '../../../pages/ContactPage';
 
-const renderContactPage = () => render(
-  <MemoryRouter initialEntries={['/contact']}>
+const renderContactPage = (initialEntries: InitialEntry[] = ['/contact']) => render(
+  <MemoryRouter initialEntries={initialEntries}>
     <ContactPage />
   </MemoryRouter>
 );
+
+const selectReason = (labelKey: string) => {
+  const reasonSelect = screen.getByTestId('select-contact-reason');
+  fireEvent.click(within(reasonSelect).getByText(labelKey));
+};
 
 describe('pages/ContactPage', () => {
   beforeEach(() => {
@@ -107,14 +135,34 @@ describe('pages/ContactPage', () => {
 
     expect(screen.getByText('contact.title')).toBeInTheDocument();
     expect(screen.getByLabelText('contact.form.nameLabel')).toBeInTheDocument();
-    expect(screen.getByLabelText('contact.form.emailLabel')).toBeInTheDocument();
-    expect(screen.getByLabelText('contact.form.messageLabel')).toBeInTheDocument();
+    expect(screen.getByLabelText(/^contact\.form\.emailLabel/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^contact\.form\.messageLabel/)).toBeInTheDocument();
 
     const hiddenFormName = document.querySelector('input[name="form-name"]') as HTMLInputElement | null;
     expect(hiddenFormName?.value).toBe('contact');
+    const hiddenSubReason = document.querySelector('input[name="subReason"]') as HTMLInputElement | null;
+    expect(hiddenSubReason?.value).toBe('');
+    const hiddenLastVisitedPath = document.querySelector('input[name="lastVisitedPath"]') as HTMLInputElement | null;
+    expect(hiddenLastVisitedPath?.value).toBe('');
+    const hiddenContactSource = document.querySelector('input[name="contactSource"]') as HTMLInputElement | null;
+    expect(hiddenContactSource).toBeNull();
 
     const primaryEmail = screen.getByText('contact@wizz.art');
     expect(primaryEmail.closest('a')?.getAttribute('href')).toBe('mailto:contact@wizz.art');
+    expect(screen.queryByText('contact.backHome')).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Browse all FAQs' }).getAttribute('href')).toBe('/faq');
+  });
+
+  it('auto-opens the topic dropdown after selecting a reason', () => {
+    renderContactPage();
+
+    selectReason('contact.form.reasonOptions.bugReport');
+
+    const subReasonSelect = screen.getByTestId('select-contact-subreason');
+    expect(subReasonSelect).toHaveAttribute('data-open', 'true');
+
+    fireEvent.click(screen.getByText('contact.form.subReasonOptions.bugReport.translationWrongMisleading'));
+    expect(subReasonSelect).toHaveAttribute('data-open', 'false');
   });
 
   it('prefills name and email for authenticated users', async () => {
@@ -141,7 +189,7 @@ describe('pages/ContactPage', () => {
     renderContactPage();
 
     await waitFor(() => {
-      expect((screen.getByLabelText('contact.form.emailLabel') as HTMLInputElement).value).toBe('prefilled@example.com');
+      expect((screen.getByLabelText(/^contact\.form\.emailLabel/) as HTMLInputElement).value).toBe('prefilled@example.com');
     });
 
     expect((screen.getByLabelText('contact.form.nameLabel') as HTMLInputElement).value).toBe('Casey Rivera');
@@ -152,9 +200,9 @@ describe('pages/ContactPage', () => {
 
     renderContactPage();
 
-    fireEvent.click(screen.getAllByText('contact.form.reasonOptions.bugReport')[0]);
-    fireEvent.change(screen.getByLabelText('contact.form.emailLabel'), { target: { value: 'hello@example.com' } });
-    fireEvent.change(screen.getByLabelText('contact.form.messageLabel'), { target: { value: 'Need help with a bug.' } });
+    selectReason('contact.form.reasonOptions.bugReport');
+    fireEvent.change(screen.getByLabelText(/^contact\.form\.emailLabel/), { target: { value: 'hello@example.com' } });
+    fireEvent.change(screen.getByLabelText(/^contact\.form\.messageLabel/), { target: { value: 'Need help with a bug.' } });
 
     fireEvent.click(screen.getByRole('button', { name: 'contact.form.submit' }));
 
@@ -166,14 +214,74 @@ describe('pages/ContactPage', () => {
     expect(screen.getByText('contact.form.successTitle')).toBeInTheDocument();
   });
 
+  it('prefills reason and topic from route state (translation banner flow)', async () => {
+    renderContactPage([{
+      pathname: '/contact',
+      state: {
+        reason: 'bug_report',
+        subReason: 'translation_wrong_misleading',
+        source: 'translation_notice_banner',
+      },
+    }]);
+
+    const hiddenReason = document.querySelector('input[name="reason"]') as HTMLInputElement | null;
+    const hiddenSubReason = document.querySelector('input[name="subReason"]') as HTMLInputElement | null;
+    const hiddenContactSource = document.querySelector('input[name="contactSource"]') as HTMLInputElement | null;
+
+    expect(hiddenReason?.value).toBe('bug_report');
+    expect(hiddenSubReason?.value).toBe('translation_wrong_misleading');
+    expect(hiddenContactSource?.value).toBe('translation_notice_banner');
+
+    (global.fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ ok: true, status: 200 });
+    fireEvent.change(screen.getByLabelText(/^contact\.form\.emailLabel/), { target: { value: 'hello@example.com' } });
+    fireEvent.change(screen.getByLabelText(/^contact\.form\.messageLabel/), { target: { value: 'Translation issue details.' } });
+    fireEvent.click(screen.getByRole('button', { name: 'contact.form.submit' }));
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledTimes(1);
+    });
+
+    const requestInit = (global.fetch as unknown as ReturnType<typeof vi.fn>).mock.calls[0]?.[1] as RequestInit;
+    const payload = new URLSearchParams(String(requestInit.body || ''));
+    expect(payload.get('reason')).toBe('bug_report');
+    expect(payload.get('subReason')).toBe('translation_wrong_misleading');
+    expect(payload.get('contactSource')).toBe('translation_notice_banner');
+  });
+
+  it('submits the stored last visited path as hidden context', async () => {
+    (global.fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ ok: true, status: 200 });
+    window.sessionStorage.setItem('tf_navigation_context_v1', JSON.stringify({
+      currentPath: '/features?section=translation-errors',
+      previousPath: '/blog',
+      updatedAt: Date.now(),
+    }));
+
+    renderContactPage();
+
+    selectReason('contact.form.reasonOptions.bugReport');
+    fireEvent.change(screen.getByLabelText(/^contact\.form\.emailLabel/), { target: { value: 'hello@example.com' } });
+    fireEvent.change(screen.getByLabelText(/^contact\.form\.messageLabel/), { target: { value: 'Need help with translation errors.' } });
+
+    fireEvent.click(screen.getByRole('button', { name: 'contact.form.submit' }));
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledTimes(1);
+    });
+
+    const requestInit = (global.fetch as unknown as ReturnType<typeof vi.fn>).mock.calls[0]?.[1] as RequestInit;
+    const payload = new URLSearchParams(String(requestInit.body || ''));
+    expect(payload.get('lastVisitedPath')).toBe('/features?section=translation-errors');
+    expect(payload.get('subReason')).toBe('');
+  });
+
   it('shows fallback mailto on failed submit and tracks failure + fallback click', async () => {
     (global.fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ ok: false, status: 429 });
 
     renderContactPage();
 
-    fireEvent.click(screen.getAllByText('contact.form.reasonOptions.partnership')[0]);
-    fireEvent.change(screen.getByLabelText('contact.form.emailLabel'), { target: { value: 'partner@example.com' } });
-    fireEvent.change(screen.getByLabelText('contact.form.messageLabel'), { target: { value: 'Partnership request.' } });
+    selectReason('contact.form.reasonOptions.partnership');
+    fireEvent.change(screen.getByLabelText(/^contact\.form\.emailLabel/), { target: { value: 'partner@example.com' } });
+    fireEvent.change(screen.getByLabelText(/^contact\.form\.messageLabel/), { target: { value: 'Partnership request.' } });
 
     fireEvent.click(screen.getByRole('button', { name: 'contact.form.submit' }));
 
@@ -193,9 +301,9 @@ describe('pages/ContactPage', () => {
 
     renderContactPage();
 
-    fireEvent.click(screen.getAllByText('contact.form.reasonOptions.other')[0]);
-    fireEvent.change(screen.getByLabelText('contact.form.emailLabel'), { target: { value: 'hello@example.com' } });
-    fireEvent.change(screen.getByLabelText('contact.form.messageLabel'), { target: { value: 'Network failure repro.' } });
+    selectReason('contact.form.reasonOptions.other');
+    fireEvent.change(screen.getByLabelText(/^contact\.form\.emailLabel/), { target: { value: 'hello@example.com' } });
+    fireEvent.change(screen.getByLabelText(/^contact\.form\.messageLabel/), { target: { value: 'Network failure repro.' } });
 
     fireEvent.click(screen.getByRole('button', { name: 'contact.form.submit' }));
 
