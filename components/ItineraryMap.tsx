@@ -310,6 +310,27 @@ export const resolveItineraryCenter = (
     };
 };
 
+export const shouldRefitItineraryOnResize = ({
+    previousWidth,
+    previousHeight,
+    nextWidth,
+    nextHeight,
+}: {
+    previousWidth: number;
+    previousHeight: number;
+    nextWidth: number;
+    nextHeight: number;
+}): boolean => {
+    if (previousWidth <= 0 || previousHeight <= 0 || nextWidth <= 0 || nextHeight <= 0) return false;
+    const previousArea = previousWidth * previousHeight;
+    const nextArea = nextWidth * nextHeight;
+    const didAreaShrink = nextArea < (previousArea * 0.97);
+    const previousAspectRatio = previousWidth / previousHeight;
+    const nextAspectRatio = nextWidth / nextHeight;
+    const didAspectShift = Math.abs(previousAspectRatio - nextAspectRatio) > 0.42;
+    return didAreaShrink || didAspectShift;
+};
+
 const hydrateRouteCache = () => {
     if (routeCacheHydrated) return;
     if (typeof window === 'undefined') return;
@@ -1153,6 +1174,8 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             const nextHeight = mapElement.clientHeight;
             if (nextWidth <= 0 || nextHeight <= 0) return;
             if (nextWidth === lastWidth && nextHeight === lastHeight) return;
+            const previousWidth = lastWidth;
+            const previousHeight = lastHeight;
             lastWidth = nextWidth;
             lastHeight = nextHeight;
 
@@ -1166,6 +1189,16 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 hasManualViewportChange: hasManualViewportChangeRef.current,
             });
             if (strategy === 'center_itinerary') {
+                const shouldRefit = shouldRefitItineraryOnResize({
+                    previousWidth,
+                    previousHeight,
+                    nextWidth,
+                    nextHeight,
+                });
+                if (shouldRefit) {
+                    handleFit();
+                    return;
+                }
                 if (itineraryCenter) {
                     mapInstance.setCenter(itineraryCenter);
                 } else if (currentCenter) {
@@ -1192,7 +1225,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 resizeObserverRafRef.current = null;
             }
         };
-    }, [itineraryCenterKey, mapInitialized, selectedCityId, suppressManualViewportTracking]);
+    }, [handleFit, itineraryCenterKey, mapInitialized, selectedCityId, suppressManualViewportTracking]);
 
     // Re-center when an external "active route" key changes (e.g., opening a different saved plan).
     useEffect(() => {

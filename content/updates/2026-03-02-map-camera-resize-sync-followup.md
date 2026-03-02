@@ -12,6 +12,6 @@ summary: "Planner map camera behavior is now kept consistent when switching betw
 
 ## Changes
 - [x] [Improved] 🧭 Switching between docked and floating map modes now keeps the camera stable after size transitions.
-- [x] [Improved] 🔎 Floating map size and orientation changes now preserve zoom level for a more consistent view.
+- [x] [Improved] 🔎 Floating map size and orientation changes now trigger a controlled rezoom on major shrink/flip transitions while preserving manual focus behavior.
 - [x] [Improved] 🎯 Automatic resize centering now runs only when no city is actively focused and the map has not been manually moved.
 - [ ] [Internal] 🧪 Added regression coverage for resize camera strategy and itinerary-center resolution.

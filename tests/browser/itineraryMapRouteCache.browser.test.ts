@@ -10,6 +10,7 @@ import {
   getRouteOutlineColor,
   resolveItineraryCenter,
   resolveMapResizeCameraStrategy,
+  shouldRefitItineraryOnResize,
 } from '../../components/ItineraryMap';
 
 describe('components/ItineraryMap route cache helpers', () => {
@@ -158,5 +159,32 @@ describe('components/ItineraryMap route cache helpers', () => {
       startDateOffset: 0,
       duration: 1,
     }] as any)).toBeNull();
+  });
+
+  it('triggers itinerary refit when viewport area shrinks significantly', () => {
+    expect(shouldRefitItineraryOnResize({
+      previousWidth: 300,
+      previousHeight: 450,
+      nextWidth: 220,
+      nextHeight: 330,
+    })).toBe(true);
+  });
+
+  it('triggers itinerary refit when viewport aspect ratio changes heavily (portrait/landscape flip)', () => {
+    expect(shouldRefitItineraryOnResize({
+      previousWidth: 220,
+      previousHeight: 360,
+      nextWidth: 360,
+      nextHeight: 220,
+    })).toBe(true);
+  });
+
+  it('does not refit on minor resize deltas', () => {
+    expect(shouldRefitItineraryOnResize({
+      previousWidth: 320,
+      previousHeight: 480,
+      nextWidth: 326,
+      nextHeight: 478,
+    })).toBe(false);
   });
 });
