@@ -495,7 +495,7 @@ export const ContactPage: React.FC = () => {
 
     return (
         <MarketingLayout>
-            <section className="grid gap-10 lg:grid-cols-[minmax(0,1fr),minmax(0,640px)] lg:gap-14">
+            <section className="grid gap-10 lg:grid-cols-2 lg:items-start lg:gap-12">
                 <div className="max-w-2xl">
                     <h1 className="text-4xl font-black tracking-tight text-slate-900 md:text-5xl">
                         {t('contact.title')}
@@ -519,21 +519,6 @@ export const ContactPage: React.FC = () => {
                     </div>
 
                     <div className="mt-8">
-                        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                            {t('contact.form.reasonLabel')}
-                        </p>
-                        <ul className="mt-3 grid gap-2 text-sm text-slate-600 sm:grid-cols-2">
-                            {CONTACT_REASON_OPTIONS.map((entry) => (
-                                <li key={entry.value} className="inline-flex items-center gap-2">
-                                    <span aria-hidden="true" className="inline-block h-1.5 w-1.5 rounded-full bg-slate-400" />
-                                    {t(entry.labelKey)}
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-
-                    <div className="mt-8">
-                        <p className="text-sm leading-6 text-slate-600">{t('contact.form.privacyNote')}</p>
                         <div className="mt-4 flex flex-wrap items-center gap-2">
                             {CONTACT_SOCIAL_CHANNELS.map(({ label, Icon }) => (
                                 <button
@@ -541,7 +526,7 @@ export const ContactPage: React.FC = () => {
                                     type="button"
                                     disabled
                                     aria-label={label}
-                                    className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white text-slate-500 shadow-sm ring-1 ring-slate-200"
+                                    className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white text-slate-500 shadow-sm ring-1 ring-slate-200 transition-colors hover:bg-accent-50 hover:text-accent-700 disabled:cursor-not-allowed"
                                 >
                                     <Icon size={18} weight="duotone" />
                                 </button>
@@ -550,7 +535,7 @@ export const ContactPage: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8">
+                <div className="self-start rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
                     <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                         {t('contact.form.title')}
                     </p>

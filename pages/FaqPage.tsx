@@ -121,7 +121,7 @@ export const FaqPage: React.FC = () => {
                 <h1 className="text-4xl font-black tracking-tight text-slate-900 md:text-6xl">
                     Frequently asked questions.
                 </h1>
-                <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-600 md:text-base">
+                <p className="mt-4 max-w-[100ch] text-sm leading-7 text-slate-600 md:text-base">
                     Find quick answers for support, billing, privacy, and planning questions.
                 </p>
 
@@ -170,7 +170,7 @@ export const FaqPage: React.FC = () => {
 
             <section className="pt-10 md:pt-12">
                 <h2 className="text-xl font-bold text-slate-900 md:text-2xl">Still need help?</h2>
-                <p className="mt-3 text-sm leading-6 text-slate-600">
+                <p className="mt-3 max-w-[100ch] text-sm leading-6 text-slate-600">
                     Contact us with your question and we will route it to the right team.
                 </p>
                 <Link

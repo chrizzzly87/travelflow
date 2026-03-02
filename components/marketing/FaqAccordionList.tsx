@@ -50,7 +50,9 @@ export const FaqAccordionList: React.FC<FaqAccordionListProps> = ({
               style={isPlain ? { paddingInline: 0 } : undefined}
               {...(getItemButtonProps ? getItemButtonProps(item, isOpen) : {})}
             >
-              <span className={`font-semibold ${compact ? 'text-sm' : 'text-[1.02rem]'}`}>{item.question}</span>
+              <span className={`max-w-[100ch] font-semibold ${isOpen ? 'text-accent-700' : ''} ${compact ? 'text-sm' : 'text-[1.02rem]'}`}>
+                {item.question}
+              </span>
               <CaretDown
                 size={18}
                 weight="bold"
@@ -63,7 +65,7 @@ export const FaqAccordionList: React.FC<FaqAccordionListProps> = ({
                 id={panelId}
                 role="region"
                 aria-labelledby={triggerId}
-                className={`pb-4 text-slate-600 ${compact ? 'text-sm leading-6' : 'text-[0.95rem] leading-7'}`}
+                className={`max-w-[100ch] pb-4 text-slate-600 ${compact ? 'text-sm leading-6' : 'text-[0.95rem] leading-7'}`}
                 style={isPlain ? { paddingInline: 0 } : { paddingInline: '1rem' }}
               >
                 <p>{item.answer}</p>
