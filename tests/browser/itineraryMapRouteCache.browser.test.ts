@@ -1,10 +1,17 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
 import {
+  MAX_BICYCLE_ROUTE_CHECK_KM,
+  MAX_DRIVING_ROUTE_CHECK_KM,
+  MAX_TRANSIT_ROUTE_CHECK_KM,
+  MAX_WALK_ROUTE_CHECK_KM,
+  TRANSIT_DRIVING_RETRY_MAX_KM,
+  buildRouteAttemptPolicy,
   ROUTE_FAILURE_TTL_MS,
   ROUTE_PERSIST_TTL_MS,
   buildRoutePolylinePairOptions,
   buildPersistedRouteCachePayload,
+  estimateGreatCircleDistanceKm,
   filterHydratedRouteCacheEntries,
   getRouteOuterOutlineColor,
   getRouteOutlineColor,
@@ -130,6 +137,64 @@ describe('components/ItineraryMap route cache helpers', () => {
     expect(outlineOptions.zIndex).toBe(34);
     expect(outerOutlineOptions.icons).toBeUndefined();
     expect(outlineOptions.icons).toBeUndefined();
+  });
+
+  it('estimates great-circle distance between two points', () => {
+    const berlin = { lat: 52.52, lng: 13.405 };
+    const munich = { lat: 48.137154, lng: 11.576124 };
+    const km = estimateGreatCircleDistanceKm(berlin, munich);
+    expect(Math.round(km)).toBe(504);
+  });
+
+  it('skips impossible route checks by mode and distance caps', () => {
+    expect(buildRouteAttemptPolicy('walk', MAX_WALK_ROUTE_CHECK_KM + 1)).toEqual({
+      shouldAttempt: false,
+      modes: [],
+      reason: 'distance_cap_exceeded',
+    });
+    expect(buildRouteAttemptPolicy('bicycle', MAX_BICYCLE_ROUTE_CHECK_KM + 1)).toEqual({
+      shouldAttempt: false,
+      modes: [],
+      reason: 'distance_cap_exceeded',
+    });
+    expect(buildRouteAttemptPolicy('train', MAX_TRANSIT_ROUTE_CHECK_KM + 1)).toEqual({
+      shouldAttempt: false,
+      modes: [],
+      reason: 'distance_cap_exceeded',
+    });
+    expect(buildRouteAttemptPolicy('car', MAX_DRIVING_ROUTE_CHECK_KM + 1)).toEqual({
+      shouldAttempt: false,
+      modes: [],
+      reason: 'distance_cap_exceeded',
+    });
+  });
+
+  it('returns retry order by mode for better quality at bounded cost', () => {
+    expect(buildRouteAttemptPolicy('walk', 12)).toEqual({
+      shouldAttempt: true,
+      modes: ['WALKING'],
+    });
+    expect(buildRouteAttemptPolicy('bicycle', 45)).toEqual({
+      shouldAttempt: true,
+      modes: ['BICYCLING'],
+    });
+    expect(buildRouteAttemptPolicy('train', TRANSIT_DRIVING_RETRY_MAX_KM - 1)).toEqual({
+      shouldAttempt: true,
+      modes: ['TRANSIT', 'DRIVING'],
+    });
+    expect(buildRouteAttemptPolicy('bus', TRANSIT_DRIVING_RETRY_MAX_KM + 1)).toEqual({
+      shouldAttempt: true,
+      modes: ['TRANSIT'],
+    });
+    expect(buildRouteAttemptPolicy('motorcycle', 120)).toEqual({
+      shouldAttempt: true,
+      modes: ['DRIVING'],
+    });
+    expect(buildRouteAttemptPolicy('plane', 120)).toEqual({
+      shouldAttempt: false,
+      modes: [],
+      reason: 'unsupported_mode',
+    });
   });
 
   it('uses preserve-camera strategy while a city is actively focused or the map was manually moved', () => {

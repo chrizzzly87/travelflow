@@ -18,4 +18,5 @@ summary: "Trip planner map rendering is now more stable, with clearer markers an
 - [x] [Improved] 🎯 Clicking a map city pin now selects that stop, opens its details, and auto-scrolls to it in the active planner view.
 - [x] [Fixed] 🧩 Single-city trip previews now render reliably instead of failing route-only preview assumptions.
 - [ ] [Internal] 🛣️ Switched realistic route checks to the newer Google Routes API path with legacy fallback support.
+- [ ] [Internal] 🧠 Added distance-based mode eligibility and bounded transit retry policy to improve route success while reducing wasted checks.
 - [ ] [Internal] 🧪 Added regression coverage for proxy-based trip preview URL generation and single-city preview behavior.

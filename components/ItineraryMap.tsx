@@ -180,6 +180,18 @@ let routeCacheHydrated = false;
 
 const ROUTE_INNER_OUTLINE_COLOR = '#0f172a';
 const ROUTE_OUTER_OUTLINE_COLOR = '#f8fafc';
+const EARTH_RADIUS_KM = 6371;
+export const MAX_WALK_ROUTE_CHECK_KM = 60;
+export const MAX_BICYCLE_ROUTE_CHECK_KM = 160;
+export const MAX_TRANSIT_ROUTE_CHECK_KM = 1400;
+export const MAX_DRIVING_ROUTE_CHECK_KM = 3000;
+export const TRANSIT_DRIVING_RETRY_MAX_KM = 320;
+export type RouteApiMode = 'DRIVING' | 'WALKING' | 'BICYCLING' | 'TRANSIT';
+export type RouteAttemptPolicy = {
+    shouldAttempt: boolean;
+    modes: RouteApiMode[];
+    reason?: 'unsupported_mode' | 'invalid_distance' | 'distance_cap_exceeded';
+};
 
 const TRANSPORT_ICON_PATHS: Record<string, string> = {
     plane: 'M240,136v32a8,8,0,0,1-8,8,7.61,7.61,0,0,1-1.57-.16L156,161v23.73l17.66,17.65A8,8,0,0,1,176,208v24a8,8,0,0,1-11,7.43l-37-14.81L91,239.43A8,8,0,0,1,80,232V208a8,8,0,0,1,2.34-5.66L100,184.69V161L25.57,175.84A7.61,7.61,0,0,1,24,176a8,8,0,0,1-8-8V136a8,8,0,0,1,4.42-7.16L100,89.06V44a28,28,0,0,1,56,0V89.06l79.58,39.78A8,8,0,0,1,240,136Z',
@@ -263,6 +275,60 @@ export const getRouteOutlineColor = (_style: MapStyle = 'standard'): string => {
 
 export const getRouteOuterOutlineColor = (_style: MapStyle = 'standard'): string => {
     return ROUTE_OUTER_OUTLINE_COLOR;
+};
+
+export const estimateGreatCircleDistanceKm = (
+    start: google.maps.LatLngLiteral,
+    end: google.maps.LatLngLiteral,
+): number => {
+    const toRadians = (value: number) => value * (Math.PI / 180);
+    const dLat = toRadians(end.lat - start.lat);
+    const dLng = toRadians(end.lng - start.lng);
+    const startLat = toRadians(start.lat);
+    const endLat = toRadians(end.lat);
+
+    const haversine = (
+        Math.sin(dLat / 2) * Math.sin(dLat / 2)
+        + Math.cos(startLat) * Math.cos(endLat) * Math.sin(dLng / 2) * Math.sin(dLng / 2)
+    );
+    const angularDistance = 2 * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
+    return EARTH_RADIUS_KM * angularDistance;
+};
+
+export const buildRouteAttemptPolicy = (
+    mode: string,
+    straightDistanceKm: number,
+): RouteAttemptPolicy => {
+    if (!Number.isFinite(straightDistanceKm) || straightDistanceKm <= 0) {
+        return { shouldAttempt: false, modes: [], reason: 'invalid_distance' };
+    }
+
+    switch (mode) {
+        case 'walk':
+            return straightDistanceKm <= MAX_WALK_ROUTE_CHECK_KM
+                ? { shouldAttempt: true, modes: ['WALKING'] }
+                : { shouldAttempt: false, modes: [], reason: 'distance_cap_exceeded' };
+        case 'bicycle':
+            return straightDistanceKm <= MAX_BICYCLE_ROUTE_CHECK_KM
+                ? { shouldAttempt: true, modes: ['BICYCLING'] }
+                : { shouldAttempt: false, modes: [], reason: 'distance_cap_exceeded' };
+        case 'train':
+        case 'bus':
+            if (straightDistanceKm > MAX_TRANSIT_ROUTE_CHECK_KM) {
+                return { shouldAttempt: false, modes: [], reason: 'distance_cap_exceeded' };
+            }
+            if (straightDistanceKm <= TRANSIT_DRIVING_RETRY_MAX_KM) {
+                return { shouldAttempt: true, modes: ['TRANSIT', 'DRIVING'] };
+            }
+            return { shouldAttempt: true, modes: ['TRANSIT'] };
+        case 'car':
+        case 'motorcycle':
+            return straightDistanceKm <= MAX_DRIVING_ROUTE_CHECK_KM
+                ? { shouldAttempt: true, modes: ['DRIVING'] }
+                : { shouldAttempt: false, modes: [], reason: 'distance_cap_exceeded' };
+        default:
+            return { shouldAttempt: false, modes: [], reason: 'unsupported_mode' };
+    }
 };
 
 export const buildRoutePolylinePairOptions = (
@@ -1016,34 +1082,21 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                  const cacheKey = start.coordinates && end.coordinates
                      ? buildRouteCacheKey(start.coordinates, end.coordinates, mode)
                      : null;
+                 const straightDistanceKm = estimateGreatCircleDistanceKm(start.coordinates, end.coordinates);
+                 const routeAttemptPolicy = buildRouteAttemptPolicy(mode, straightDistanceKm);
                  let routingAttempted = false;
                  let routingFailed = false;
 
                  const travelModes = window.google.maps.TravelMode;
 
-                 const getDirectionsMode = (transportMode: string): google.maps.TravelMode | null => {
-                     switch (transportMode) {
-                         case 'train':
-                         case 'bus':
-                             return (travelModes.TRANSIT ?? 'TRANSIT') as google.maps.TravelMode;
-                         case 'walk':
-                             return (travelModes.WALKING ?? 'WALKING') as google.maps.TravelMode;
-                         case 'bicycle':
-                             return (travelModes.BICYCLING ?? 'BICYCLING') as google.maps.TravelMode;
-                         case 'motorcycle':
-                         case 'car':
-                             return (travelModes.DRIVING ?? 'DRIVING') as google.maps.TravelMode;
-                         default:
-                             return null;
-                     }
-                 };
-
                  const wantsRealRoute = routeMode === 'realistic';
-                 const primaryMode = getDirectionsMode(mode);
-                 const useRealRoute = wantsRealRoute && !!primaryMode;
+                 const routeAttemptModes = routeAttemptPolicy.modes.map((modeKey) =>
+                     (travelModes[modeKey] ?? modeKey) as google.maps.TravelMode
+                 );
+                 const useRealRoute = wantsRealRoute && routeAttemptModes.length > 0;
 
                  const requiresDirections = mode !== 'plane' && mode !== 'boat' && mode !== 'na';
-                 if (wantsRealRoute && requiresDirections && !primaryMode) {
+                 if (wantsRealRoute && requiresDirections && !routeAttemptPolicy.shouldAttempt) {
                      routingAttempted = true;
                      routingFailed = true;
                      if (travelItem && onRouteStatusRef.current) {
@@ -1051,7 +1104,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                      }
                  }
 
-                 if (useRealRoute && primaryMode && cacheKey) {
+                 if (useRealRoute && cacheKey) {
                      const cached = ROUTE_CACHE.get(cacheKey);
                      const isCachedFailureFresh = cached?.status === 'failed' && (Date.now() - cached.updatedAt) < ROUTE_FAILURE_TTL_MS;
 
@@ -1099,7 +1152,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                          if (travelItem && onRouteStatusRef.current) {
                              onRouteStatusRef.current(travelItem.id, 'calculating', { mode, routeKey: cacheKey });
                          }
-                         const tryRoute = async (travelMode: google.maps.TravelMode) => {
+                         const tryRoute = async (travelMode: google.maps.TravelMode, attemptIndex: number) => {
                              const origin = { lat: start.coordinates.lat, lng: start.coordinates.lng };
                              const destination = { lat: end.coordinates.lat, lng: end.coordinates.lng };
                              let path: google.maps.LatLngLiteral[] = [];
@@ -1184,7 +1237,8 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                                  }
                                  if (travelMode === travelModes.TRANSIT || travelMode === 'TRANSIT') {
                                      const transitModeValues: google.maps.TransitMode[] = [];
-                                     if (mode === 'train') {
+                                     const isPrimaryTransitAttempt = attemptIndex === 0;
+                                     if (isPrimaryTransitAttempt && mode === 'train') {
                                          if (window.google.maps.TransitMode?.TRAIN) {
                                              transitModeValues.push(window.google.maps.TransitMode.TRAIN);
                                          }
@@ -1192,7 +1246,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                                              transitModeValues.push(window.google.maps.TransitMode.RAIL);
                                          }
                                      }
-                                     if (mode === 'bus' && window.google.maps.TransitMode?.BUS) {
+                                     if (isPrimaryTransitAttempt && mode === 'bus' && window.google.maps.TransitMode?.BUS) {
                                          transitModeValues.push(window.google.maps.TransitMode.BUS);
                                      }
                                      if (transitModeValues.length > 0) {
@@ -1275,18 +1329,30 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                              }
                          };
 
-                         try {
-                             await tryRoute(primaryMode);
-                             continue;
-                         } catch (e) {
-                             routingFailed = true;
-                             ROUTE_CACHE.set(cacheKey, { status: 'failed', updatedAt: Date.now() });
-                             persistRouteCache();
-                             if (travelItem && onRouteStatusRef.current) {
-                                 onRouteStatusRef.current(travelItem.id, 'failed', { mode, routeKey: cacheKey });
+                         let lastRouteError: unknown = null;
+                         let routeResolved = false;
+                         for (let attemptIndex = 0; attemptIndex < routeAttemptModes.length; attemptIndex++) {
+                             const attemptMode = routeAttemptModes[attemptIndex];
+                             try {
+                                 await tryRoute(attemptMode, attemptIndex);
+                                 routeResolved = true;
+                                 break;
+                             } catch (error) {
+                                 lastRouteError = error;
                              }
-                             console.warn(`Routing failed for ${mode}, falling back to line`, e);
                          }
+
+                         if (routeResolved) {
+                             continue;
+                         }
+
+                         routingFailed = true;
+                         ROUTE_CACHE.set(cacheKey, { status: 'failed', updatedAt: Date.now() });
+                         persistRouteCache();
+                         if (travelItem && onRouteStatusRef.current) {
+                             onRouteStatusRef.current(travelItem.id, 'failed', { mode, routeKey: cacheKey });
+                         }
+                         console.warn(`Routing failed for ${mode}, falling back to line`, lastRouteError);
                      }
                  }
 
