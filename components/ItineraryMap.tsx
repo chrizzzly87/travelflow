@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState, useMemo, useRef } from 'react';
+import { Map as GoogleMap, useMap } from '@vis.gl/react-google-maps';
 import { ITimelineItem, MapColorMode, MapStyle, RouteMode, RouteStatus } from '../types';
 import { ArrowLeftRight, ArrowUpDown, Focus, Layers, Maximize2, Minimize2 } from 'lucide-react';
 import { readLocalStorageItem, writeLocalStorageItem } from '../services/browserStorageService';
@@ -375,6 +376,27 @@ const persistRouteCache = () => {
     }
 };
 
+interface ItineraryMapInstanceBridgeProps {
+    mapId: string;
+    onMapInstanceChange: (map: google.maps.Map | null) => void;
+}
+
+const ItineraryMapInstanceBridge: React.FC<ItineraryMapInstanceBridgeProps> = ({ mapId, onMapInstanceChange }) => {
+    const map = useMap(mapId);
+
+    useEffect(() => {
+        onMapInstanceChange(map);
+    }, [map, onMapInstanceChange]);
+
+    useEffect(() => (
+        () => {
+            onMapInstanceChange(null);
+        }
+    ), [onMapInstanceChange]);
+
+    return null;
+};
+
 export const ItineraryMap: React.FC<ItineraryMapProps> = ({ 
     items, 
     selectedItemId, 
@@ -400,7 +422,8 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     isPaywalled = false,
     viewTransitionName
 }) => {
-    const mapRef = useRef<HTMLDivElement>(null);
+    const mapInstanceIdRef = useRef(`tf-itinerary-map-${Math.random().toString(36).slice(2, 10)}`);
+    const mapInstanceId = mapInstanceIdRef.current;
     const googleMapRef = useRef<any>(null); // google.maps.Map
     const markersRef = useRef<any[]>([]); // google.maps.Marker[]
     const routesRef = useRef<any[]>([]); // stored polylines/renderers
@@ -420,6 +443,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     
     // Internal state for menu, but style comes from props (or defaults to standard if not provided)
     const [isStyleMenuOpen, setIsStyleMenuOpen] = useState(false);
+    const shouldRenderMapCanvas = isLoaded && !loadError;
 
     const suppressManualViewportTracking = useCallback((durationMs = 220) => {
         if (typeof performance === 'undefined') return;
@@ -455,23 +479,11 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         onRouteStatusRef.current = onRouteStatus;
     }, [onRouteStatus]);
 
-    // Initial Map Setup
-    useEffect(() => {
-        if (!isLoaded || !mapRef.current || googleMapRef.current || !window.google?.maps?.Map) return;
-
-        try {
-            googleMapRef.current = new window.google.maps.Map(mapRef.current, {
-                center: { lat: 20, lng: 0 },
-                zoom: 2,
-                disableDefaultUI: true,
-                gestureHandling: 'cooperative',
-                styles: null
-            });
-            setMapInitialized(true);
-        } catch (e) {
-            console.error("Failed to init map", e);
-        }
-    }, [isLoaded]);
+    const handleMapInstanceChange = useCallback((map: google.maps.Map | null) => {
+        if (googleMapRef.current === map) return;
+        googleMapRef.current = map;
+        setMapInitialized(Boolean(map));
+    }, []);
 
     useEffect(() => {
         if (!mapActionsDisabled) return;
@@ -543,12 +555,20 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         cityLabelOverlaysRef.current = [];
 
         const buildPinIcon = (color: string, isSelected: boolean) => {
-            const size = isSelected ? 44 : 34;
-            const stroke = isSelected ? '#111827' : '#ffffff';
-            const strokeWidth = isSelected ? 2.5 : 1.5;
+            const size = isSelected ? 52 : 42;
+            const pinStroke = isSelected ? '#0f172a' : '#ffffff';
+            const ringStroke = isSelected ? '#ffffff' : '#e2e8f0';
+            const halo = isSelected ? 0.26 : 0.12;
+            const shadowOpacity = isSelected ? 0.28 : 0.22;
             const svg = `
-                <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24">
-                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="${color}" stroke="${stroke}" stroke-width="${strokeWidth}"/>
+                <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 32 32">
+                    <g transform="translate(4 2)">
+                        <ellipse cx="12" cy="26.2" rx="6.4" ry="2.8" fill="#0f172a" opacity="0.16" />
+                        <path d="M12 0.9c-5.9 0-10.7 4.8-10.7 10.7 0 7.9 10.7 17.8 10.7 17.8s10.7-9.9 10.7-17.8C22.7 5.7 17.9 0.9 12 0.9z" fill="${color}" stroke="${pinStroke}" stroke-width="${isSelected ? 1.9 : 1.5}" />
+                        <circle cx="12" cy="11.6" r="${isSelected ? '6.4' : '5.8'}" fill="#ffffff" stroke="${ringStroke}" stroke-width="${isSelected ? '1.55' : '1.25'}" />
+                        <circle cx="12" cy="11.6" r="${isSelected ? '8.5' : '7.8'}" fill="${color}" opacity="${halo}" />
+                        <circle cx="12" cy="11.6" r="${isSelected ? '5.0' : '4.6'}" fill="#0f172a" opacity="${shadowOpacity}" />
+                    </g>
                 </svg>
             `;
             const url = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
@@ -556,7 +576,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 url,
                 scaledSize: new window.google.maps.Size(size, size),
                 anchor: new window.google.maps.Point(size / 2, size),
-                labelOrigin: new window.google.maps.Point(size / 2, size / 2 - 2),
+                labelOrigin: new window.google.maps.Point(size / 2, size * 0.34),
             };
         };
 
@@ -634,11 +654,13 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         };
 
         const buildTransportIcon = (mode?: string, color?: string) => {
-            const size = 22;
-            const stroke = color || '#111827';
+            const size = 30;
+            const stroke = color || '#0f172a';
             const svg = `
-                <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24">
-                    <g fill="none" stroke="${stroke}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 30 30">
+                    <circle cx="15" cy="15" r="10.8" fill="#ffffff" stroke="${stroke}" stroke-width="1.9" />
+                    <circle cx="15" cy="15" r="11.6" fill="${stroke}" opacity="0.14" />
+                    <g transform="translate(3 3)" fill="none" stroke="${stroke}" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
                         ${getTransportSvgBody(mode)}
                     </g>
                 </svg>
@@ -1341,7 +1363,19 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             className="relative w-full h-full group bg-gray-100"
             style={viewTransitionName ? ({ viewTransitionName } as React.CSSProperties) : undefined}
         >
-            <div ref={mapRef} className="w-full h-full" />
+            {shouldRenderMapCanvas && (
+                <GoogleMap
+                    id={mapInstanceId}
+                    defaultCenter={{ lat: 20, lng: 0 }}
+                    defaultZoom={2}
+                    disableDefaultUI
+                    gestureHandling="cooperative"
+                    reuseMaps
+                    className="h-full w-full"
+                >
+                    <ItineraryMapInstanceBridge mapId={mapInstanceId} onMapInstanceChange={handleMapInstanceChange} />
+                </GoogleMap>
+            )}
             {!mapInitialized && !loadError && (
                 <div className="absolute inset-0 flex items-center justify-center text-sm text-gray-500 bg-gray-100">
                     Loading Map...

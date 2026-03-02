@@ -2,7 +2,6 @@ import type { AppLanguage, ITrip, ITimelineItem } from '../../types';
 import {
   DEFAULT_DISTANCE_UNIT,
   formatDistance,
-  getGoogleMapsApiKey,
   getHexFromColorClass,
   getTripDistanceKm,
 } from '../../utils';
@@ -24,25 +23,6 @@ type TripMapPreviewVariant = 'standard' | 'accent';
 interface MiniMapOptions {
   variant?: TripMapPreviewVariant;
 }
-
-const TOOLTIP_CLEAN_STYLE = [
-  'style=element:geometry|color:0xf9f9f9',
-  'style=element:labels.icon|visibility:off',
-  'style=element:labels.text.fill|color:0x757575',
-  'style=element:labels.text.stroke|color:0xf9f9f9|weight:2',
-  'style=feature:administrative|element:geometry|visibility:off',
-  'style=feature:administrative.country|element:geometry.stroke|color:0xa8a8a8|weight:1.6|visibility:on',
-  'style=feature:administrative.province|element:geometry|visibility:off',
-  'style=feature:administrative.province|element:labels|visibility:off',
-  'style=feature:administrative.land_parcel|element:labels.text.fill|color:0xbdbdbd',
-  'style=feature:poi|visibility:off',
-  'style=feature:road|visibility:off',
-  'style=feature:transit|visibility:off',
-  'style=feature:water|element:geometry|color:0xdcefff',
-  'style=feature:water|element:geometry.stroke|color:0x8fb6d9|weight:2.2|visibility:on',
-  'style=feature:landscape.natural|element:geometry.stroke|color:0xa7c9e6|weight:1.4|visibility:on',
-  'style=feature:water|element:labels.text.fill|color:0x9e9e9e',
-].join('&');
 
 const stripColorPrefix = (value: string): string => value.replace(/^0x/i, '').replace(/^#/, '').trim();
 
@@ -228,8 +208,6 @@ export const buildMiniMapUrl = (
   mapLanguage: AppLanguage,
   options?: MiniMapOptions
 ): string | null => {
-  const apiKey = getGoogleMapsApiKey();
-  if (!apiKey) return null;
   const variant = options?.variant || 'standard';
 
   const coordinates = getTripCityItems(trip)
@@ -245,51 +223,31 @@ export const buildMiniMapUrl = (
 
   const routeCoordinates = coordinates.slice(0, 30);
   const formatCoord = (coord: { lat: number; lng: number }) => `${coord.lat.toFixed(6)},${coord.lng.toFixed(6)}`;
-
-  const markerParams: string[] = [];
-  const visibleParams: string[] = [];
   const start = routeCoordinates[0];
   const end = routeCoordinates[routeCoordinates.length - 1];
   const mapColors = variant === 'accent' ? resolveMapColors() : STANDARD_MAP_COLORS;
-  const startMarkerColor = start.colorHex || mapColors.start;
-  const endMarkerColor = end.colorHex || mapColors.end;
+  const pathColor = start.colorHex || mapColors.route;
+  const legColors = routeCoordinates
+    .slice(1)
+    .map((coord) => coord.colorHex || mapColors.route);
 
-  markerParams.push(`markers=${encodeURIComponent(`size:mid|color:0x${startMarkerColor}|label:S|${formatCoord(start.coordinates)}`)}`);
-  if (routeCoordinates.length > 1) {
-    markerParams.push(`markers=${encodeURIComponent(`size:mid|color:0x${endMarkerColor}|label:E|${formatCoord(end.coordinates)}`)}`);
+  const params = new URLSearchParams();
+  params.set('coords', routeCoordinates.map((coord) => formatCoord(coord.coordinates)).join('|'));
+  params.set('style', variant === 'accent' ? 'clean' : 'standard');
+  params.set('routeMode', 'simple');
+  params.set('colorMode', 'trip');
+  params.set('pathColor', pathColor);
+  params.set('startMarkerColor', start.colorHex || mapColors.start);
+  params.set('endMarkerColor', end.colorHex || mapColors.end);
+  params.set('waypointColor', mapColors.waypoint);
+  params.set('w', '640');
+  params.set('h', '360');
+  params.set('scale', '2');
+  params.set('language', mapLanguage);
+
+  if (legColors.length > 0) {
+    params.set('legColors', legColors.join('|'));
   }
 
-  routeCoordinates.slice(1, -1).slice(0, 18).forEach((coord) => {
-    const waypointColor = coord.colorHex || mapColors.waypoint;
-    markerParams.push(`markers=${encodeURIComponent(`size:tiny|color:0x${waypointColor}|${formatCoord(coord.coordinates)}`)}`);
-  });
-
-  routeCoordinates.forEach((coord) => {
-    visibleParams.push(`visible=${encodeURIComponent(formatCoord(coord.coordinates))}`);
-  });
-
-  const pathParams: string[] = [];
-  if (routeCoordinates.length > 1) {
-    if (variant === 'standard') {
-      for (let index = 0; index < routeCoordinates.length - 1; index += 1) {
-        const from = routeCoordinates[index];
-        const to = routeCoordinates[index + 1];
-        const segmentColor = to.colorHex || mapColors.route;
-        pathParams.push(
-          `path=${encodeURIComponent(`color:0x${segmentColor}|weight:4|${formatCoord(from.coordinates)}|${formatCoord(to.coordinates)}`)}`
-        );
-      }
-    } else {
-      pathParams.push(
-        `path=${encodeURIComponent(`color:0x${mapColors.route}|weight:4|${routeCoordinates.map((coord) => formatCoord(coord.coordinates)).join('|')}`)}`
-      );
-    }
-  }
-
-  const markerQuery = markerParams.join('&');
-  const visibleQuery = visibleParams.join('&');
-  const pathQuery = pathParams.length > 0 ? `&${pathParams.join('&')}` : '';
-  const mapStyleQuery = variant === 'accent' ? `&${TOOLTIP_CLEAN_STYLE}` : '';
-
-  return `https://maps.googleapis.com/maps/api/staticmap?size=640x360&scale=2&maptype=roadmap${mapStyleQuery}&language=${encodeURIComponent(mapLanguage)}&${visibleQuery}&${markerQuery}${pathQuery}&key=${encodeURIComponent(apiKey)}`;
+  return `/api/trip-map-preview?${params.toString()}`;
 };

@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { APIProvider, useApiIsLoaded } from '@vis.gl/react-google-maps';
 import { AppLanguage } from '../types';
 import { getGoogleMapsApiKey, getStoredAppLanguage, normalizeAppLanguage } from '../utils';
 
@@ -37,11 +38,31 @@ interface GoogleMapsLoaderProps {
     enabled?: boolean;
 }
 
+const GOOGLE_MAPS_LIBRARIES = ['places', 'marker', 'geometry'];
+
+interface GoogleMapsLoadStateBridgeProps {
+    onLoadedChange: (loaded: boolean) => void;
+}
+
+const GoogleMapsLoadStateBridge: React.FC<GoogleMapsLoadStateBridgeProps> = ({ onLoadedChange }) => {
+    const apiIsLoaded = useApiIsLoaded();
+
+    useEffect(() => {
+        onLoadedChange(apiIsLoaded);
+    }, [apiIsLoaded, onLoadedChange]);
+
+    return null;
+};
+
 export const GoogleMapsLoader: React.FC<GoogleMapsLoaderProps> = ({ children, language, enabled = true }) => {
     const [isLoaded, setIsLoaded] = useState(false);
     const [loadError, setLoadError] = useState<Error | null>(null);
     const requestedLanguage = normalizeAppLanguage(language ?? getStoredAppLanguage());
     const requestedMapLanguage = MAPS_LANGUAGE_MAP[requestedLanguage] ?? 'en';
+    const apiKey = getGoogleMapsApiKey().trim();
+    const isApiKeyValid = GOOGLE_MAPS_KEY_PATTERN.test(apiKey);
+    const shouldMountProvider = enabled && isApiKeyValid;
+    const providerKey = `${requestedMapLanguage}:${apiKey}`;
 
     useEffect(() => {
         if (!enabled) {
@@ -49,107 +70,70 @@ export const GoogleMapsLoader: React.FC<GoogleMapsLoaderProps> = ({ children, la
             setLoadError(null);
             return;
         }
-
-        const mapsWindow = window as GoogleMapsWindow;
-        const isGoogleMapsReady = () => Boolean(window.google?.maps?.Map && typeof window.google.maps.Map === 'function');
-        const settleLoaded = () => {
-            setIsLoaded(true);
-            setLoadError(null);
-        };
-        let readyCheckLoop: number | null = null;
-        let readyCheckTimeout: number | null = null;
-        const previousAuthFailure = mapsWindow.gm_authFailure;
-
-        if (isGoogleMapsReady()) {
-            settleLoaded();
-            return;
-        }
-
-        const apiKey = getGoogleMapsApiKey().trim();
-        if (!GOOGLE_MAPS_KEY_PATTERN.test(apiKey)) {
+        if (!isApiKeyValid) {
+            setIsLoaded(false);
             setLoadError(new Error('Google Maps API key is missing or invalid for this deploy context'));
             return;
         }
+        setIsLoaded(false);
+        setLoadError(null);
+    }, [enabled, isApiKeyValid, providerKey]);
 
+    useEffect(() => {
+        if (!shouldMountProvider || typeof window === 'undefined') return;
+        const mapsWindow = window as GoogleMapsWindow;
+        const previousAuthFailure = mapsWindow.gm_authFailure;
         mapsWindow.gm_authFailure = () => {
+            setIsLoaded(false);
             setLoadError(new Error('Google Maps authentication failed (invalid API key or referrer restriction)'));
         };
 
-        const scriptId = 'google-maps-script';
-        const existingScript = document.getElementById(scriptId);
-        if (existingScript) {
-            // Script already exists; poll until constructors are ready.
-            const checkLoop = window.setInterval(() => {
-                if (isGoogleMapsReady()) {
-                    window.clearInterval(checkLoop);
-                    settleLoaded();
-                }
-            }, 50);
-            return () => {
-                window.clearInterval(checkLoop);
-                mapsWindow.gm_authFailure = previousAuthFailure;
-            };
-        }
-
-        const script = document.createElement('script');
-        script.id = scriptId;
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places,marker,geometry&language=${encodeURIComponent(requestedMapLanguage)}&loading=async`;
-        script.dataset.language = requestedMapLanguage;
-        script.async = true;
-        script.defer = true;
-        
-        script.onload = () => {
-            if (isGoogleMapsReady()) {
-                settleLoaded();
-                return;
-            }
-
-            // Some environments expose `google.maps` before constructors are fully ready.
-            readyCheckLoop = window.setInterval(() => {
-                if (isGoogleMapsReady()) {
-                    if (readyCheckLoop !== null) {
-                        window.clearInterval(readyCheckLoop);
-                        readyCheckLoop = null;
-                    }
-                    if (readyCheckTimeout !== null) {
-                        window.clearTimeout(readyCheckTimeout);
-                        readyCheckTimeout = null;
-                    }
-                    settleLoaded();
-                }
-            }, 50);
-
-            readyCheckTimeout = window.setTimeout(() => {
-                if (readyCheckLoop !== null) {
-                    window.clearInterval(readyCheckLoop);
-                    readyCheckLoop = null;
-                }
-                readyCheckTimeout = null;
-                if (!isGoogleMapsReady()) {
-                    setLoadError(new Error('Google Maps constructors did not initialize in time'));
-                }
-            }, 10000);
-        };
-        script.onerror = () => setLoadError(new Error("Failed to load Google Maps script"));
-
-        document.head.appendChild(script);
-
         return () => {
-            if (readyCheckLoop !== null) {
-                window.clearInterval(readyCheckLoop);
-                readyCheckLoop = null;
-            }
-            if (readyCheckTimeout !== null) {
-                window.clearTimeout(readyCheckTimeout);
-                readyCheckTimeout = null;
-            }
             mapsWindow.gm_authFailure = previousAuthFailure;
         };
-    }, [requestedMapLanguage, enabled]);
+    }, [shouldMountProvider]);
+
+    const handleLoadedChange = useCallback((loaded: boolean) => {
+        if (!loaded) return;
+        setIsLoaded(true);
+        setLoadError(null);
+    }, []);
+
+    const handleProviderLoad = useCallback(() => {
+        setIsLoaded(true);
+        setLoadError(null);
+    }, []);
+
+    const handleProviderError = useCallback((error: unknown) => {
+        setIsLoaded(false);
+        if (error instanceof Error) {
+            setLoadError(error);
+            return;
+        }
+        setLoadError(new Error('Failed to load Google Maps script'));
+    }, []);
+
+    if (!shouldMountProvider) {
+        return (
+            <GoogleMapsContext.Provider value={{ isLoaded, loadError }}>
+                {children}
+            </GoogleMapsContext.Provider>
+        );
+    }
 
     return (
         <GoogleMapsContext.Provider value={{ isLoaded, loadError }}>
-            {children}
+            <APIProvider
+                key={providerKey}
+                apiKey={apiKey}
+                language={requestedMapLanguage}
+                libraries={GOOGLE_MAPS_LIBRARIES}
+                onLoad={handleProviderLoad}
+                onError={handleProviderError}
+            >
+                <GoogleMapsLoadStateBridge onLoadedChange={handleLoadedChange} />
+                {children}
+            </APIProvider>
         </GoogleMapsContext.Provider>
     );
 };

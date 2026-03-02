@@ -1,13 +1,5 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { makeCityItem, makeTrip } from '../helpers/tripFixtures';
-
-vi.mock('../../utils', async () => {
-  const actual = await vi.importActual<typeof import('../../utils')>('../../utils');
-  return {
-    ...actual,
-    getGoogleMapsApiKey: () => 'maps-key',
-  };
-});
 
 import { buildMiniMapUrl } from '../../components/profile/tripPreviewUtils';
 
@@ -44,18 +36,20 @@ describe('components/profile/tripPreviewUtils buildMiniMapUrl', () => {
 
     const url = buildMiniMapUrl(trip, 'en');
     expect(url).toBeTruthy();
+    expect(url).toContain('/api/trip-map-preview?');
 
-    const params = new URL(url!).searchParams;
-    const markers = params.getAll('markers');
-    const paths = params.getAll('path');
+    const params = new URL(url!, 'https://travelflow.local').searchParams;
 
-    expect(markers[0]).toContain('size:mid|color:0x16a34a|label:S');
-    expect(markers[1]).toContain('size:mid|color:0x2563eb|label:E');
-    expect(markers.some((marker) => marker.includes('size:tiny|color:0xdc2626|'))).toBe(true);
-
-    expect(paths).toHaveLength(2);
-    expect(paths[0]).toContain('color:0xdc2626|weight:4');
-    expect(paths[1]).toContain('color:0x2563eb|weight:4');
+    expect(params.get('coords')).toBe('34.693700,135.502300|35.011600,135.768100|35.676200,139.650300');
+    expect(params.get('style')).toBe('standard');
+    expect(params.get('routeMode')).toBe('simple');
+    expect(params.get('colorMode')).toBe('trip');
+    expect(params.get('pathColor')).toBe('16a34a');
+    expect(params.get('legColors')).toBe('dc2626|2563eb');
+    expect(params.get('startMarkerColor')).toBe('16a34a');
+    expect(params.get('endMarkerColor')).toBe('2563eb');
+    expect(params.get('waypointColor')).toBe('f97316');
+    expect(params.get('language')).toBe('en');
   });
 
   it('falls back to orange-red map colors when trip city colors are unavailable', () => {
@@ -88,13 +82,39 @@ describe('components/profile/tripPreviewUtils buildMiniMapUrl', () => {
     const url = buildMiniMapUrl(trip, 'en');
     expect(url).toBeTruthy();
 
-    const params = new URL(url!).searchParams;
-    const markers = params.getAll('markers');
-    const paths = params.getAll('path');
+    const params = new URL(url!, 'https://travelflow.local').searchParams;
 
-    expect(markers[0]).toContain('size:mid|color:0xf97316|label:S');
-    expect(markers[1]).toContain('size:mid|color:0xef4444|label:E');
-    expect(markers.some((marker) => marker.includes('size:tiny|color:0xf97316|'))).toBe(true);
-    expect(paths.every((path) => path.includes('color:0xf97316|weight:4'))).toBe(true);
+    expect(params.get('pathColor')).toBe('f97316');
+    expect(params.get('legColors')).toBe('f97316|f97316');
+    expect(params.get('startMarkerColor')).toBe('f97316');
+    expect(params.get('endMarkerColor')).toBe('ef4444');
+    expect(params.get('waypointColor')).toBe('f97316');
+  });
+
+  it('supports one-city trips via edge proxy fallback params', () => {
+    const trip = makeTrip({
+      items: [
+        makeCityItem({
+          id: 'city-only',
+          title: 'Berlin',
+          startDateOffset: 0,
+          duration: 2,
+          color: '#2563eb',
+          coordinates: { lat: 52.52, lng: 13.405 },
+        }),
+      ],
+    });
+
+    const url = buildMiniMapUrl(trip, 'de');
+    expect(url).toBeTruthy();
+
+    const params = new URL(url!, 'https://travelflow.local').searchParams;
+
+    expect(params.get('coords')).toBe('52.520000,13.405000');
+    expect(params.get('legColors')).toBeNull();
+    expect(params.get('pathColor')).toBe('2563eb');
+    expect(params.get('startMarkerColor')).toBe('2563eb');
+    expect(params.get('endMarkerColor')).toBe('2563eb');
+    expect(params.get('language')).toBe('de');
   });
 });
