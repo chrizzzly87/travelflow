@@ -5,6 +5,7 @@ import {
   MAX_DRIVING_ROUTE_CHECK_KM,
   MAX_TRANSIT_ROUTE_CHECK_KM,
   MAX_WALK_ROUTE_CHECK_KM,
+  ROUTES_COMPUTE_FIELDS,
   TRANSIT_SECOND_PASS_MAX_KM,
   buildOverlappingMarkerPosition,
   buildRouteAttemptPolicy,
@@ -330,5 +331,17 @@ describe('components/ItineraryMap route cache helpers', () => {
     expect(first).not.toEqual(second);
     expect(first.lat).toBeLessThan(origin.lat);
     expect(second.lat).toBeGreaterThan(origin.lat);
+  });
+
+  it('provides an explicit field mask for computeRoutes requests', () => {
+    expect(ROUTES_COMPUTE_FIELDS).toEqual([
+      'path',
+      'distanceMeters',
+      'duration',
+      'durationMillis',
+      'legs.distanceMeters',
+      'legs.duration',
+      'legs.durationMillis',
+    ]);
   });
 });

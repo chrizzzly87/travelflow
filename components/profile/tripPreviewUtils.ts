@@ -191,6 +191,18 @@ const formatTripMonths = (trip: ITrip, locale: AppLanguage): string => {
   return names.join('/');
 };
 
+const buildDirectStaticMapPreviewUrl = (params: URLSearchParams): string | null => {
+  const rawMapsApiKey = typeof import.meta !== 'undefined'
+    ? (import.meta.env?.VITE_GOOGLE_MAPS_API_KEY as string | undefined)
+    : undefined;
+  const mapsApiKey = typeof rawMapsApiKey === 'string' ? rawMapsApiKey.trim() : '';
+  if (!mapsApiKey) return null;
+
+  const directParams = new URLSearchParams(params);
+  directParams.set('key', mapsApiKey);
+  return `https://maps.googleapis.com/maps/api/staticmap?${directParams.toString()}`;
+};
+
 export const formatTripSummaryLine = (trip: ITrip, locale: AppLanguage = 'en'): string => {
   const days = getTripDurationDays(trip);
   const cityCount = getTripCityItems(trip).length;
@@ -250,8 +262,13 @@ export const buildMiniMapUrl = (
   }
 
   const previewPath = `/api/trip-map-preview?${params.toString()}`;
-  if (typeof window !== 'undefined' && window.location.hostname === 'localhost' && window.location.port === '5173') {
-    return `http://localhost:8888${previewPath}`;
+  if (typeof window !== 'undefined') {
+    const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    if (isLocalHost && window.location.port === '5173') {
+      // `pnpm dev` does not guarantee a local Netlify edge runtime.
+      // Fall back to a direct Static Maps URL for local-only preview reliability.
+      return buildDirectStaticMapPreviewUrl(params) || previewPath;
+    }
   }
   return previewPath;
 };

@@ -189,6 +189,15 @@ export const MAX_TRANSIT_ROUTE_CHECK_KM = 1400;
 export const MAX_DRIVING_ROUTE_CHECK_KM = 3000;
 export const TRANSIT_SECOND_PASS_MAX_KM = 320;
 export const TRANSIT_DRIVING_RETRY_MAX_KM = TRANSIT_SECOND_PASS_MAX_KM;
+export const ROUTES_COMPUTE_FIELDS = [
+    'path',
+    'distanceMeters',
+    'duration',
+    'durationMillis',
+    'legs.distanceMeters',
+    'legs.duration',
+    'legs.durationMillis',
+] as const;
 export type RouteApiMode = 'DRIVING' | 'WALKING' | 'BICYCLING' | 'TRANSIT';
 export type RouteAttemptPolicy = {
     shouldAttempt: boolean;
@@ -1142,7 +1151,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
              }
              if (!isEffectActive()) return;
 
-             const directionsService = computeRoutes ? null : new window.google.maps.DirectionsService();
+             const directionsService = new window.google.maps.DirectionsService();
 
              for (let i = 0; i < cities.length - 1; i++) {
                  if (!isEffectActive()) return;
@@ -1243,64 +1252,71 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                              const transitDepartureTime = getTransitFallbackDepartureTime();
 
                              if (computeRoutes) {
-                                 const routeRequest: Record<string, unknown> = {
-                                     origin,
-                                     destination,
-                                     travelMode,
-                                 };
-                                 if (isTransitMode) {
-                                     routeRequest.departureTime = transitDepartureTime.toISOString();
-                                 }
+                                 try {
+                                     const routeRequest: Record<string, unknown> = {
+                                         origin,
+                                         destination,
+                                         travelMode,
+                                         fields: ROUTES_COMPUTE_FIELDS,
+                                     };
+                                     if (isTransitMode) {
+                                         routeRequest.departureTime = transitDepartureTime;
+                                     }
 
-                                 const routesResult = await computeRoutes(routeRequest) as {
-                                     routes?: Array<{
-                                         path?: unknown;
-                                         distanceMeters?: unknown;
-                                         duration?: unknown;
-                                         durationMillis?: unknown;
-                                         legs?: Array<{
+                                     const routesResult = await computeRoutes(routeRequest) as {
+                                         routes?: Array<{
+                                             path?: unknown;
                                              distanceMeters?: unknown;
                                              duration?: unknown;
                                              durationMillis?: unknown;
+                                             legs?: Array<{
+                                                 distanceMeters?: unknown;
+                                                 duration?: unknown;
+                                                 durationMillis?: unknown;
+                                             }>;
                                          }>;
-                                     }>;
-                                 };
-                                 if (!isEffectActive()) {
-                                     throw new Error('Route draw cancelled');
+                                     };
+                                     if (!isEffectActive()) {
+                                         throw new Error('Route draw cancelled');
+                                     }
+
+                                     const route = routesResult.routes?.[0];
+                                     path = normalizeRoutePathPoints(route?.path);
+                                     const routeDistanceMeters = typeof route?.distanceMeters === 'number' && Number.isFinite(route.distanceMeters)
+                                         ? route.distanceMeters
+                                         : undefined;
+                                     const legDistanceMeters = Array.isArray(route?.legs)
+                                         ? route.legs.reduce((sum, leg) => {
+                                             const distance = typeof leg.distanceMeters === 'number' && Number.isFinite(leg.distanceMeters)
+                                                 ? leg.distanceMeters
+                                                 : 0;
+                                             return sum + distance;
+                                         }, 0)
+                                         : 0;
+                                     const distanceMeters = routeDistanceMeters
+                                         ?? (legDistanceMeters > 0 ? legDistanceMeters : undefined)
+                                         ?? computePathDistanceMeters(path);
+                                     distanceKm = distanceMeters ? distanceMeters / 1000 : undefined;
+
+                                     const routeDurationSeconds = parseDurationSeconds(route?.duration)
+                                         ?? parseDurationSeconds(route?.durationMillis);
+                                     const legDurationSeconds = Array.isArray(route?.legs)
+                                         ? route.legs.reduce((sum, leg) => {
+                                             const durationSeconds = parseDurationSeconds(leg.duration)
+                                                 ?? parseDurationSeconds(leg.durationMillis)
+                                                 ?? 0;
+                                             return sum + durationSeconds;
+                                         }, 0)
+                                         : 0;
+                                     const durationSeconds = routeDurationSeconds
+                                         ?? (legDurationSeconds > 0 ? legDurationSeconds : undefined);
+                                     durationHours = durationSeconds ? durationSeconds / 3600 : undefined;
+                                 } catch (computeRoutesError) {
+                                     console.warn(`Routes API failed for ${mode}, falling back to DirectionsService`, computeRoutesError);
                                  }
+                             }
 
-                                 const route = routesResult.routes?.[0];
-                                 path = normalizeRoutePathPoints(route?.path);
-                                 const routeDistanceMeters = typeof route?.distanceMeters === 'number' && Number.isFinite(route.distanceMeters)
-                                     ? route.distanceMeters
-                                     : undefined;
-                                 const legDistanceMeters = Array.isArray(route?.legs)
-                                     ? route.legs.reduce((sum, leg) => {
-                                         const distance = typeof leg.distanceMeters === 'number' && Number.isFinite(leg.distanceMeters)
-                                             ? leg.distanceMeters
-                                             : 0;
-                                         return sum + distance;
-                                     }, 0)
-                                     : 0;
-                                 const distanceMeters = routeDistanceMeters
-                                     ?? (legDistanceMeters > 0 ? legDistanceMeters : undefined)
-                                     ?? computePathDistanceMeters(path);
-                                 distanceKm = distanceMeters ? distanceMeters / 1000 : undefined;
-
-                                 const routeDurationSeconds = parseDurationSeconds(route?.duration)
-                                     ?? parseDurationSeconds(route?.durationMillis);
-                                 const legDurationSeconds = Array.isArray(route?.legs)
-                                     ? route.legs.reduce((sum, leg) => {
-                                         const durationSeconds = parseDurationSeconds(leg.duration)
-                                             ?? parseDurationSeconds(leg.durationMillis)
-                                             ?? 0;
-                                         return sum + durationSeconds;
-                                     }, 0)
-                                     : 0;
-                                 const durationSeconds = routeDurationSeconds
-                                     ?? (legDurationSeconds > 0 ? legDurationSeconds : undefined);
-                                 durationHours = durationSeconds ? durationSeconds / 3600 : undefined;
-                             } else {
+                             if (!path.length) {
                                  if (!directionsService) {
                                      throw new Error('Directions service unavailable');
                                  }
