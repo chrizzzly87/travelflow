@@ -176,6 +176,21 @@ describe('components/tripview/TripViewPlannerWorkspace', () => {
     expect(unmounts).toHaveBeenCalledTimes(0);
   });
 
+  it('does not apply a default view transition name when none is provided', () => {
+    const capturedViewTransitionNames: Array<string | undefined> = [];
+    const props = baseProps();
+    props.isMapBootstrapEnabled = true;
+    props.mapViewTransitionName = null;
+    props.ItineraryMapComponent = ({ viewTransitionName }: { viewTransitionName?: string }) => {
+      capturedViewTransitionNames.push(viewTransitionName);
+      return React.createElement('div', { 'data-testid': 'map-component' }, 'map');
+    };
+
+    render(React.createElement(TripViewPlannerWorkspace, props));
+
+    expect(capturedViewTransitionNames.at(-1)).toBeUndefined();
+  });
+
   it('uses fused top grab-handle styling with uniform floating border thickness', () => {
     const props = baseProps();
     props.mapDockMode = 'floating';

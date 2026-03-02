@@ -30,6 +30,7 @@ interface TripViewPlannerWorkspaceProps {
     mapDeferredFallback: React.ReactNode;
     displayItems: ITimelineItem[];
     selectedItemId: string | null;
+    onMapCitySelect?: (cityId: string) => void;
     layoutMode: 'vertical' | 'horizontal';
     effectiveLayoutMode: 'vertical' | 'horizontal';
     onLayoutModeChange: (mode: 'vertical' | 'horizontal') => void;
@@ -85,6 +86,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
     mapDeferredFallback,
     displayItems,
     selectedItemId,
+    onMapCitySelect,
     layoutMode,
     effectiveLayoutMode,
     onLayoutModeChange,
@@ -121,7 +123,9 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
         if (!isFloatingMapPreviewEnabled) return;
         onMapDockModeChange(effectiveMapDockMode === 'docked' ? 'floating' : 'docked');
     }, [effectiveMapDockMode, isFloatingMapPreviewEnabled, onMapDockModeChange]);
-    const effectiveMapViewTransitionName = mapViewTransitionName ?? 'trip-map-dock-preview';
+    const effectiveMapViewTransitionName = mapViewTransitionName && mapViewTransitionName.trim().length > 0
+        ? mapViewTransitionName
+        : undefined;
 
     const timelineControls = (
         <div className="flex flex-wrap items-center justify-end gap-2 pointer-events-auto">
@@ -286,6 +290,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                 <ItineraryMapComponent
                     items={displayItems}
                     selectedItemId={selectedItemId}
+                    onCityMarkerSelect={onMapCitySelect}
                     layoutMode={mapLayoutMode}
                     onLayoutChange={showLayoutControls ? onLayoutModeChange : undefined}
                     showLayoutControls={showLayoutControls}

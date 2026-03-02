@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useState, useMemo, useRef } from 'react';
+import { Map as GoogleMap, useMap } from '@vis.gl/react-google-maps';
 import { ITimelineItem, MapColorMode, MapStyle, RouteMode, RouteStatus } from '../types';
 import { ArrowLeftRight, ArrowUpDown, Focus, Layers, Maximize2, Minimize2 } from 'lucide-react';
 import { readLocalStorageItem, writeLocalStorageItem } from '../services/browserStorageService';
-import { buildRouteCacheKey, DEFAULT_MAP_COLOR_MODE, findTravelBetweenCities, getContrastTextColor, getHexFromColorClass, getNormalizedCityName } from '../utils';
+import { buildRouteCacheKey, DEFAULT_MAP_COLOR_MODE, findTravelBetweenCities, getHexFromColorClass, getNormalizedCityName } from '../utils';
 import { getAnalyticsDebugAttributes } from '../services/analyticsService';
 import { useGoogleMaps } from './GoogleMapsLoader';
 import { normalizeTransportMode } from '../shared/transportModes';
@@ -10,6 +11,7 @@ import { normalizeTransportMode } from '../shared/transportModes';
 interface ItineraryMapProps {
     items: ITimelineItem[];
     selectedItemId?: string | null;
+    onCityMarkerSelect?: (cityId: string) => void;
     layoutMode?: 'horizontal' | 'vertical';
     onLayoutChange?: (mode: 'horizontal' | 'vertical') => void;
     showLayoutControls?: boolean;
@@ -170,6 +172,17 @@ type RouteCacheEntry = {
     durationHours?: number;
 };
 
+type OverlayMarkerUpdate = {
+    html?: string;
+    position?: google.maps.LatLngLiteral;
+    zIndex?: number;
+};
+
+type OverlayMarkerHandle = {
+    setMap: (map: google.maps.Map | null) => void;
+    update: (updates: OverlayMarkerUpdate) => void;
+};
+
 const ROUTE_CACHE = new Map<string, RouteCacheEntry>();
 export const ROUTE_FAILURE_TTL_MS = 5 * 60 * 1000;
 const ROUTE_STORAGE_KEY = 'tf_route_cache_v1';
@@ -178,6 +191,135 @@ let routeCacheHydrated = false;
 
 const ROUTE_INNER_OUTLINE_COLOR = '#0f172a';
 const ROUTE_OUTER_OUTLINE_COLOR = '#f8fafc';
+const EARTH_RADIUS_KM = 6371;
+const MARKER_OVERLAP_RADIUS_METERS = 420;
+const MARKER_COORDINATE_GROUP_PRECISION = 5;
+export const MAP_VIEWPORT_READY_MIN_DIMENSION_PX = 80;
+export const MAX_WALK_ROUTE_CHECK_KM = 60;
+export const MAX_BICYCLE_ROUTE_CHECK_KM = 160;
+export const MAX_TRANSIT_ROUTE_CHECK_KM = 1400;
+export const MAX_DRIVING_ROUTE_CHECK_KM = 3000;
+export const TRANSIT_SECOND_PASS_MAX_KM = 320;
+export const TRANSIT_DRIVING_RETRY_MAX_KM = TRANSIT_SECOND_PASS_MAX_KM;
+export const ROUTES_COMPUTE_FIELDS = [
+    'path',
+    'distanceMeters',
+    'durationMillis',
+] as const;
+const ROUTES_COMPUTE_MINIMAL_FIELDS = ['path'] as const;
+export type RouteApiMode = 'DRIVING' | 'WALKING' | 'BICYCLING' | 'TRANSIT';
+export type RouteAttemptPolicy = {
+    shouldAttempt: boolean;
+    modes: RouteApiMode[];
+    reason?: 'unsupported_mode' | 'invalid_distance' | 'distance_cap_exceeded';
+};
+
+const TRANSPORT_ICON_PATHS: Record<string, string> = {
+    plane: 'M240,136v32a8,8,0,0,1-8,8,7.61,7.61,0,0,1-1.57-.16L156,161v23.73l17.66,17.65A8,8,0,0,1,176,208v24a8,8,0,0,1-11,7.43l-37-14.81L91,239.43A8,8,0,0,1,80,232V208a8,8,0,0,1,2.34-5.66L100,184.69V161L25.57,175.84A7.61,7.61,0,0,1,24,176a8,8,0,0,1-8-8V136a8,8,0,0,1,4.42-7.16L100,89.06V44a28,28,0,0,1,56,0V89.06l79.58,39.78A8,8,0,0,1,240,136Z',
+    bus: 'M254.07,106.79,208.53,53.73A16,16,0,0,0,196.26,48H32A16,16,0,0,0,16,64V176a16,16,0,0,0,16,16H49a32,32,0,0,0,62,0h50a32,32,0,0,0,62,0h17a16,16,0,0,0,16-16V112A8,8,0,0,0,254.07,106.79ZM32,104V64H88v40Zm48,96a16,16,0,1,1,16-16A16,16,0,0,1,80,200Zm80-96H104V64h56Zm32,96a16,16,0,1,1,16-16A16,16,0,0,1,192,200Zm-16-96V64h20.26l34.33,40Z',
+    car: 'M240,112H211.31L168,68.69A15.86,15.86,0,0,0,156.69,64H44.28A16,16,0,0,0,31,71.12L1.34,115.56A8.07,8.07,0,0,0,0,120v48a16,16,0,0,0,16,16H33a32,32,0,0,0,62,0h66a32,32,0,0,0,62,0h17a16,16,0,0,0,16-16V128A16,16,0,0,0,240,112ZM44.28,80H156.69l32,32H23ZM64,192a16,16,0,1,1,16-16A16,16,0,0,1,64,192Zm128,0a16,16,0,1,1,16-16A16,16,0,0,1,192,192Z',
+    motorcycle: 'M216,120a41,41,0,0,0-6.6.55l-5.82-15.14A55.64,55.64,0,0,1,216,104a8,8,0,0,0,0-16H196.88L183.47,53.13A8,8,0,0,0,176,48H144a8,8,0,0,0,0,16h26.51l9.23,24H152c-18.5,0-33.5,4.31-43.37,12.46a16,16,0,0,1-16.76,2.07c-10.58-4.81-73.29-30.12-73.8-30.26a8,8,0,0,0-5,15.19S68.57,109.4,79.6,120.4A55.67,55.67,0,0,1,95.43,152H79.2a40,40,0,1,0,0,16h52.12a31.91,31.91,0,0,0,30.74-23.1,56,56,0,0,1,26.59-33.72l5.82,15.13A40,40,0,1,0,216,120ZM40,168H62.62a24,24,0,1,1,0-16H40a8,8,0,0,0,0,16Zm176,16a24,24,0,0,1-15.58-42.23l8.11,21.1a8,8,0,1,0,14.94-5.74L215.35,136l.65,0a24,24,0,0,1,0,48Z',
+    train: 'M184,24H72A32,32,0,0,0,40,56V184a32,32,0,0,0,32,32h8L65.6,235.2a8,8,0,1,0,12.8,9.6L100,216h56l21.6,28.8a8,8,0,1,0,12.8-9.6L176,216h8a32,32,0,0,0,32-32V56A32,32,0,0,0,184,24ZM84,184a12,12,0,1,1,12-12A12,12,0,0,1,84,184Zm36-64H56V80h64Zm52,64a12,12,0,1,1,12-12A12,12,0,0,1,172,184Zm28-64H136V80h64Z',
+    bicycle: 'M136,52a28,28,0,1,1,28,28A28,28,0,0,1,136,52ZM240,176a40,40,0,1,1-40-40A40,40,0,0,1,240,176Zm-16,0a24,24,0,1,0-24,24A24,24,0,0,0,224,176Zm-24-64a8,8,0,0,0-8-8H155.31L125.66,74.34a8,8,0,0,0-11.32,0l-32,32a8,8,0,0,0,0,11.32L120,155.31V200a8,8,0,0,0,16,0V152a8,8,0,0,0-2.34-5.66L99.31,112,120,91.31l26.34,26.35A8,8,0,0,0,152,120h40A8,8,0,0,0,200,112ZM96,176a40,40,0,1,1-40-40A40,40,0,0,1,96,176Zm-16,0a24,24,0,1,0-24,24A24,24,0,0,0,80,176Z',
+    boat: 'M160,140V72.85a4,4,0,0,1,7-2.69l55,60.46a8,8,0,0,1,.43,10.26,8.24,8.24,0,0,1-6.58,3.12H164A4,4,0,0,1,160,140Zm87.21,32.53A8,8,0,0,0,240,168H144V8a8,8,0,0,0-14.21-5l-104,128A8,8,0,0,0,32,144h96v24H16a8,8,0,0,0-6.25,13l29.6,37a15.93,15.93,0,0,0,12.49,6H204.16a15.93,15.93,0,0,0,12.49-6l29.6-37A8,8,0,0,0,247.21,172.53Z',
+    walk: 'M216.06,192v12A36,36,0,0,1,144,204V192a8,8,0,0,1,8-8h56A8,8,0,0,1,216.06,192ZM104,160h-56a8,8,0,0,0-8,8v12A36,36,0,0,0,112,180V168A8,8,0,0,0,104,160ZM76,16C64.36,16,53.07,26.31,44.2,45c-13.93,29.38-18.56,73,.29,96a8,8,0,0,0,6.2,2.93h50.55a8,8,0,0,0,6.2-2.93c18.85-23,14.22-66.65.29-96C98.85,26.31,87.57,16,76,16Zm78.8,152h50.55a8,8,0,0,0,6.2-2.93c18.85-23,14.22-66.65.29-96C202.93,50.31,191.64,40,180,40s-22.89,10.31-31.77,29c-13.93,29.38-18.56,73,.29,96A8,8,0,0,0,154.76,168Z',
+};
+
+const resolveTransportIconPath = (mode?: string): string => {
+    const normalized = normalizeTransportMode(mode);
+    if (normalized === 'na' || !normalized) return TRANSPORT_ICON_PATHS.walk;
+    if (normalized === 'bike') return TRANSPORT_ICON_PATHS.bicycle;
+    if (normalized === 'motorcycle') return TRANSPORT_ICON_PATHS.motorcycle;
+    if (normalized in TRANSPORT_ICON_PATHS) {
+        return TRANSPORT_ICON_PATHS[normalized as keyof typeof TRANSPORT_ICON_PATHS];
+    }
+    return TRANSPORT_ICON_PATHS.walk;
+};
+
+const CITY_PIN_SELECTED_OUTLINE_FALLBACK = '#3b82f6';
+const CITY_PIN_SELECTED_RING_FALLBACK = '#bfdbfe';
+const TRANSPORT_MARKER_BADGE_SIZE = 40;
+const TRANSPORT_MARKER_ICON_SCALE = 0.46;
+const TRANSPORT_MARKER_VIEWBOX_SIZE = 256;
+const TRANSPORT_MARKER_ICON_INSET = (TRANSPORT_MARKER_VIEWBOX_SIZE * (1 - TRANSPORT_MARKER_ICON_SCALE)) / 2;
+
+const resolveCssColorVar = (name: string, fallback: string): string => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return fallback;
+    const value = window.getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    return value || fallback;
+};
+
+const normalizeRotationDegrees = (value?: number): number => {
+    if (!Number.isFinite(value)) return 0;
+    const normalized = (value as number) % 360;
+    return normalized < 0 ? normalized + 360 : normalized;
+};
+
+const isRoutesFieldMaskError = (error: unknown): boolean => {
+    const message = error instanceof Error
+        ? error.message
+        : typeof error === 'string'
+            ? error
+            : '';
+    return /property fields/i.test(message) || /contains invalid fields/i.test(message) || /field mask/i.test(message);
+};
+
+const buildCityMarkerSvgDataUrl = (
+    color: string,
+    isSelected: boolean,
+): { url: string; size: number } => {
+    const size = isSelected ? 54 : 44;
+    const pinStroke = isSelected ? resolveCssColorVar('--tf-accent-500', CITY_PIN_SELECTED_OUTLINE_FALLBACK) : '#ffffff';
+    const ringStroke = isSelected ? resolveCssColorVar('--tf-accent-200', CITY_PIN_SELECTED_RING_FALLBACK) : '#dbe3ee';
+    const halo = isSelected ? 0.24 : 0.1;
+    const svg = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 32 32">
+            <g transform="translate(4 2)">
+                <ellipse cx="12" cy="26.2" rx="6.4" ry="2.8" fill="#0f172a" opacity="0.16" />
+                <path d="M12 0.9c-5.9 0-10.7 4.8-10.7 10.7 0 7.9 10.7 17.8 10.7 17.8s10.7-9.9 10.7-17.8C22.7 5.7 17.9 0.9 12 0.9z" fill="${color}" stroke="${pinStroke}" stroke-width="${isSelected ? 1.9 : 1.5}" />
+                <circle cx="12" cy="11.6" r="${isSelected ? '8.5' : '7.8'}" fill="${color}" opacity="${halo}" />
+                <circle cx="12" cy="11.6" r="${isSelected ? '6.3' : '5.8'}" fill="#ffffff" stroke="${ringStroke}" stroke-width="${isSelected ? '1.55' : '1.25'}" />
+            </g>
+        </svg>
+    `;
+    const url = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+    return { url, size };
+};
+
+const buildCityMarkerHtml = (index: number, color: string, isSelected: boolean): string => {
+    const { url, size } = buildCityMarkerSvgDataUrl(color, isSelected);
+    const fontSize = isSelected ? 13 : 12;
+    const numberTopPercent = isSelected ? 45 : 45.3;
+    return `
+        <div style="position:relative;width:${size}px;height:${size}px;line-height:1;user-select:none;">
+            <img src="${url}" alt="" draggable="false" style="display:block;width:${size}px;height:${size}px;pointer-events:none;" />
+            <span style="position:absolute;left:50%;top:${numberTopPercent}%;transform:translate(-50%,-50%);color:#0f172a;font-weight:800;font-size:${fontSize}px;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;pointer-events:none;">${index + 1}</span>
+        </div>
+    `;
+};
+
+const buildTransportMarkerHtml = (mode?: string, color?: string, rotationDegrees?: number): string => {
+    const size = TRANSPORT_MARKER_BADGE_SIZE;
+    const badgeColor = color || '#1f2937';
+    const iconPath = resolveTransportIconPath(mode);
+    const rotation = mode === 'plane' ? normalizeRotationDegrees(rotationDegrees) : 0;
+    const svg = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${TRANSPORT_MARKER_VIEWBOX_SIZE} ${TRANSPORT_MARKER_VIEWBOX_SIZE}">
+            <circle cx="128" cy="128" r="112" fill="${badgeColor}" />
+            <g transform="rotate(${rotation} 128 128)">
+                <g transform="translate(${TRANSPORT_MARKER_ICON_INSET} ${TRANSPORT_MARKER_ICON_INSET}) scale(${TRANSPORT_MARKER_ICON_SCALE})">
+                    <path d="${iconPath}" fill="#ffffff" />
+                </g>
+            </g>
+        </svg>
+    `;
+    const url = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+    return `
+        <div style="width:${size}px;height:${size}px;line-height:1;user-select:none;">
+            <img src="${url}" alt="" draggable="false" style="display:block;width:${size}px;height:${size}px;pointer-events:none;" />
+        </div>
+    `;
+};
 
 export const getRouteOutlineColor = (_style: MapStyle = 'standard'): string => {
     return ROUTE_INNER_OUTLINE_COLOR;
@@ -185,6 +327,108 @@ export const getRouteOutlineColor = (_style: MapStyle = 'standard'): string => {
 
 export const getRouteOuterOutlineColor = (_style: MapStyle = 'standard'): string => {
     return ROUTE_OUTER_OUTLINE_COLOR;
+};
+
+export const estimateGreatCircleDistanceKm = (
+    start: google.maps.LatLngLiteral,
+    end: google.maps.LatLngLiteral,
+): number => {
+    const toRadians = (value: number) => value * (Math.PI / 180);
+    const dLat = toRadians(end.lat - start.lat);
+    const dLng = toRadians(end.lng - start.lng);
+    const startLat = toRadians(start.lat);
+    const endLat = toRadians(end.lat);
+
+    const haversine = (
+        Math.sin(dLat / 2) * Math.sin(dLat / 2)
+        + Math.cos(startLat) * Math.cos(endLat) * Math.sin(dLng / 2) * Math.sin(dLng / 2)
+    );
+    const angularDistance = 2 * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
+    return EARTH_RADIUS_KM * angularDistance;
+};
+
+export const offsetLatLngByMeters = (
+    origin: google.maps.LatLngLiteral,
+    eastMeters: number,
+    northMeters: number,
+): google.maps.LatLngLiteral => {
+    const metersPerDegreeLat = 111_320;
+    const safeCosine = Math.max(0.01, Math.cos((origin.lat * Math.PI) / 180));
+    const metersPerDegreeLng = metersPerDegreeLat * safeCosine;
+    return {
+        lat: origin.lat + (northMeters / metersPerDegreeLat),
+        lng: origin.lng + (eastMeters / metersPerDegreeLng),
+    };
+};
+
+export const buildOverlappingMarkerPosition = (
+    origin: google.maps.LatLngLiteral,
+    overlapIndex: number,
+    overlapCount: number,
+    radiusMeters = MARKER_OVERLAP_RADIUS_METERS,
+): google.maps.LatLngLiteral => {
+    if (overlapCount <= 1 || overlapIndex < 0 || overlapIndex >= overlapCount) {
+        return origin;
+    }
+    const angle = (-Math.PI / 2) + ((2 * Math.PI * overlapIndex) / overlapCount);
+    const eastMeters = Math.cos(angle) * radiusMeters;
+    const northMeters = Math.sin(angle) * radiusMeters;
+    return offsetLatLngByMeters(origin, eastMeters, northMeters);
+};
+
+const buildCoordinateGroupKey = (coordinates: google.maps.LatLngLiteral): string => (
+    `${coordinates.lat.toFixed(MARKER_COORDINATE_GROUP_PRECISION)},${coordinates.lng.toFixed(MARKER_COORDINATE_GROUP_PRECISION)}`
+);
+
+const getTransitFallbackDepartureTime = (): Date => {
+    const nextWindow = new Date();
+    nextWindow.setHours(12, 0, 0, 0);
+    if (nextWindow.getTime() <= Date.now()) {
+        nextWindow.setDate(nextWindow.getDate() + 1);
+    }
+    return nextWindow;
+};
+
+export const isMapViewportReady = (rect: { width: number; height: number } | null | undefined): boolean => {
+    if (!rect) return false;
+    return rect.width >= MAP_VIEWPORT_READY_MIN_DIMENSION_PX && rect.height >= MAP_VIEWPORT_READY_MIN_DIMENSION_PX;
+};
+
+export const buildRouteAttemptPolicy = (
+    mode: string,
+    straightDistanceKm: number,
+): RouteAttemptPolicy => {
+    if (!Number.isFinite(straightDistanceKm) || straightDistanceKm <= 0) {
+        return { shouldAttempt: false, modes: [], reason: 'invalid_distance' };
+    }
+
+    switch (mode) {
+        case 'walk':
+            return straightDistanceKm <= MAX_WALK_ROUTE_CHECK_KM
+                ? { shouldAttempt: true, modes: ['WALKING'] }
+                : { shouldAttempt: false, modes: [], reason: 'distance_cap_exceeded' };
+        case 'bicycle':
+            return straightDistanceKm <= MAX_BICYCLE_ROUTE_CHECK_KM
+                ? { shouldAttempt: true, modes: ['BICYCLING'] }
+                : { shouldAttempt: false, modes: [], reason: 'distance_cap_exceeded' };
+        case 'train':
+        case 'bus':
+            if (straightDistanceKm > MAX_TRANSIT_ROUTE_CHECK_KM) {
+                return { shouldAttempt: false, modes: [], reason: 'distance_cap_exceeded' };
+            }
+            if (straightDistanceKm <= TRANSIT_SECOND_PASS_MAX_KM) {
+                // Second pass stays in TRANSIT mode but drops strict train/bus submode filters.
+                return { shouldAttempt: true, modes: ['TRANSIT', 'TRANSIT'] };
+            }
+            return { shouldAttempt: true, modes: ['TRANSIT'] };
+        case 'car':
+        case 'motorcycle':
+            return straightDistanceKm <= MAX_DRIVING_ROUTE_CHECK_KM
+                ? { shouldAttempt: true, modes: ['DRIVING'] }
+                : { shouldAttempt: false, modes: [], reason: 'distance_cap_exceeded' };
+        default:
+            return { shouldAttempt: false, modes: [], reason: 'unsupported_mode' };
+    }
 };
 
 export const buildRoutePolylinePairOptions = (
@@ -201,12 +445,13 @@ export const buildRoutePolylinePairOptions = (
     const mainStrokeWeight = baseWeight + 1;
     const innerOutlineColor = getRouteOutlineColor(style);
     const outerOutlineColor = getRouteOuterOutlineColor(style);
+    const showDarkStyleOuterOutline = style === 'dark';
 
     const outerOutlineOptions: google.maps.PolylineOptions = {
         ...options,
         strokeColor: outerOutlineColor,
-        strokeOpacity: 0,
-        strokeWeight: mainStrokeWeight,
+        strokeOpacity: showDarkStyleOuterOutline ? 0.95 : 0,
+        strokeWeight: showDarkStyleOuterOutline ? mainStrokeWeight + 2 : mainStrokeWeight,
         icons: undefined,
         zIndex: baseZIndex - 2,
     };
@@ -215,7 +460,7 @@ export const buildRoutePolylinePairOptions = (
         ...options,
         strokeColor: innerOutlineColor,
         strokeOpacity: 0,
-        strokeWeight: mainStrokeWeight,
+        strokeWeight: showDarkStyleOuterOutline ? mainStrokeWeight + 1 : mainStrokeWeight,
         icons: undefined,
         zIndex: baseZIndex - 1,
     };
@@ -264,89 +509,6 @@ export const buildPersistedRouteCachePayload = (
     return payload;
 };
 
-export type MapResizeCameraStrategy = 'preserve_camera' | 'center_itinerary';
-
-export const shouldRecordManualViewportChange = ({
-    nowMs,
-    suppressUntilMs,
-}: {
-    nowMs: number;
-    suppressUntilMs: number;
-}): boolean => nowMs > suppressUntilMs;
-
-export const shouldIgnoreManualViewportEventTarget = (
-    target: EventTarget | null,
-): boolean => {
-    if (!target || !(target instanceof Element)) return false;
-    return Boolean(target.closest('[data-floating-map-control="true"]'));
-};
-
-export const resolveMapResizeCameraStrategy = ({
-    hasSelectedCity,
-    hasManualViewportChange,
-}: {
-    hasSelectedCity: boolean;
-    hasManualViewportChange: boolean;
-}): MapResizeCameraStrategy => {
-    if (hasSelectedCity || hasManualViewportChange) {
-        return 'preserve_camera';
-    }
-    return 'center_itinerary';
-};
-
-export const resolveItineraryCenter = (
-    items: ITimelineItem[],
-): google.maps.LatLngLiteral | null => {
-    const coordinateItems = items.filter(
-        (item): item is ITimelineItem & { coordinates: google.maps.LatLngLiteral } =>
-            item.type === 'city'
-            && Boolean(item.coordinates)
-            && Number.isFinite(item.coordinates.lat)
-            && Number.isFinite(item.coordinates.lng),
-    );
-    if (coordinateItems.length === 0) return null;
-    const bounds = coordinateItems.reduce((accumulator, city) => {
-        return {
-            minLat: Math.min(accumulator.minLat, city.coordinates.lat),
-            maxLat: Math.max(accumulator.maxLat, city.coordinates.lat),
-            minLng: Math.min(accumulator.minLng, city.coordinates.lng),
-            maxLng: Math.max(accumulator.maxLng, city.coordinates.lng),
-        };
-    }, {
-        minLat: Number.POSITIVE_INFINITY,
-        maxLat: Number.NEGATIVE_INFINITY,
-        minLng: Number.POSITIVE_INFINITY,
-        maxLng: Number.NEGATIVE_INFINITY,
-    });
-
-    return {
-        lat: (bounds.minLat + bounds.maxLat) / 2,
-        lng: (bounds.minLng + bounds.maxLng) / 2,
-    };
-};
-
-export const shouldRefitItineraryOnResize = ({
-    previousWidth,
-    previousHeight,
-    nextWidth,
-    nextHeight,
-}: {
-    previousWidth: number;
-    previousHeight: number;
-    nextWidth: number;
-    nextHeight: number;
-}): boolean => {
-    if (previousWidth <= 0 || previousHeight <= 0 || nextWidth <= 0 || nextHeight <= 0) return false;
-    const previousArea = previousWidth * previousHeight;
-    const nextArea = nextWidth * nextHeight;
-    const areaDeltaRatio = Math.abs(nextArea - previousArea) / previousArea;
-    const didAreaChangeSignificantly = areaDeltaRatio > 0.03;
-    const previousAspectRatio = previousWidth / previousHeight;
-    const nextAspectRatio = nextWidth / nextHeight;
-    const didAspectShift = Math.abs(previousAspectRatio - nextAspectRatio) > 0.35;
-    return didAreaChangeSignificantly || didAspectShift;
-};
-
 const hydrateRouteCache = () => {
     if (routeCacheHydrated) return;
     if (typeof window === 'undefined') return;
@@ -375,9 +537,31 @@ const persistRouteCache = () => {
     }
 };
 
+interface ItineraryMapInstanceBridgeProps {
+    mapId: string;
+    onMapInstanceChange: (map: google.maps.Map | null) => void;
+}
+
+const ItineraryMapInstanceBridge: React.FC<ItineraryMapInstanceBridgeProps> = ({ mapId, onMapInstanceChange }) => {
+    const map = useMap(mapId);
+
+    useEffect(() => {
+        onMapInstanceChange(map);
+    }, [map, onMapInstanceChange]);
+
+    useEffect(() => (
+        () => {
+            onMapInstanceChange(null);
+        }
+    ), [onMapInstanceChange]);
+
+    return null;
+};
+
 export const ItineraryMap: React.FC<ItineraryMapProps> = ({ 
     items, 
     selectedItemId, 
+    onCityMarkerSelect,
     layoutMode, 
     onLayoutChange, 
     showLayoutControls = true,
@@ -400,19 +584,21 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     isPaywalled = false,
     viewTransitionName
 }) => {
-    const mapRef = useRef<HTMLDivElement>(null);
+    const mapInstanceIdRef = useRef(`tf-itinerary-map-${Math.random().toString(36).slice(2, 10)}`);
+    const mapInstanceId = mapInstanceIdRef.current;
+    const mapContainerRef = useRef<HTMLDivElement | null>(null);
     const googleMapRef = useRef<any>(null); // google.maps.Map
-    const markersRef = useRef<any[]>([]); // google.maps.Marker[]
+    const markersRef = useRef<OverlayMarkerHandle[]>([]);
+    const cityMarkerMetaRef = useRef<Array<{ id: string; color: string; index: number; marker: OverlayMarkerHandle }>>([]);
     const routesRef = useRef<any[]>([]); // stored polylines/renderers
-    const transportMarkersRef = useRef<any[]>([]); // google.maps.Marker[]
+    const transportMarkersRef = useRef<OverlayMarkerHandle[]>([]);
     const cityLabelOverlaysRef = useRef<any[]>([]);
     const lastFocusQueryRef = useRef<string | null>(null);
     const lastFitToRouteKeyRef = useRef<string | null>(null);
-    const suppressManualViewportTrackingUntilRef = useRef(0);
-    const hasManualViewportChangeRef = useRef(false);
-    const resizeObserverRafRef = useRef<number | null>(null);
+    const fitRafRef = useRef<number | null>(null);
     const onRouteMetricsRef = useRef<typeof onRouteMetrics>(onRouteMetrics);
     const onRouteStatusRef = useRef<typeof onRouteStatus>(onRouteStatus);
+    const onCityMarkerSelectRef = useRef<typeof onCityMarkerSelect>(onCityMarkerSelect);
     
     const { isLoaded, loadError } = useGoogleMaps();
     const [mapInitialized, setMapInitialized] = useState(false);
@@ -420,32 +606,59 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     
     // Internal state for menu, but style comes from props (or defaults to standard if not provided)
     const [isStyleMenuOpen, setIsStyleMenuOpen] = useState(false);
+    const shouldRenderMapCanvas = isLoaded && !loadError;
+    const cities = useMemo(() => 
+        items
+            .filter(i => i.type === 'city' && i.coordinates)
+            .sort((a, b) => a.startDateOffset - b.startDateOffset),
+    [items]);
+    const selectedCityId = useMemo(
+        () => (selectedItemId && cities.some(city => city.id === selectedItemId) ? selectedItemId : null),
+        [selectedItemId, cities]
+    );
 
-    const suppressManualViewportTracking = useCallback((durationMs = 220) => {
-        if (typeof performance === 'undefined') return;
-        suppressManualViewportTrackingUntilRef.current = performance.now() + durationMs;
+    const cancelScheduledFit = useCallback(() => {
+        if (fitRafRef.current === null || typeof window === 'undefined') return;
+        window.cancelAnimationFrame(fitRafRef.current);
+        fitRafRef.current = null;
     }, []);
 
-    const markManualViewportChange = useCallback((event?: Event | { domEvent?: Event }) => {
-        const nativeEvent = event instanceof Event
-            ? event
-            : (event && typeof event === 'object' && 'domEvent' in event && event.domEvent instanceof Event)
-                ? event.domEvent
-                : null;
-        if (shouldIgnoreManualViewportEventTarget(nativeEvent?.target ?? null)) {
-            return;
-        }
-        const nowMs = typeof performance !== 'undefined'
-            ? performance.now()
-            : Number.POSITIVE_INFINITY;
-        if (!shouldRecordManualViewportChange({
-            nowMs,
-            suppressUntilMs: suppressManualViewportTrackingUntilRef.current,
-        })) {
-            return;
-        }
-        hasManualViewportChangeRef.current = true;
-    }, []);
+    const runFitBounds = useCallback(() => {
+        if (!googleMapRef.current || cities.length === 0) return;
+
+        const bounds = new window.google.maps.LatLngBounds();
+        cities.forEach(city => {
+            if (city.coordinates) {
+                bounds.extend({ lat: city.coordinates.lat, lng: city.coordinates.lng });
+            }
+        });
+        googleMapRef.current.fitBounds(bounds, { top: 50, right: 50, bottom: 50, left: 50 });
+    }, [cities]);
+
+    const scheduleFitWhenViewportReady = useCallback((maxAttempts = 14) => {
+        if (!googleMapRef.current || cities.length === 0 || typeof window === 'undefined') return;
+        cancelScheduledFit();
+
+        let attemptCount = 0;
+        const tryFit = () => {
+            fitRafRef.current = null;
+            if (!googleMapRef.current || cities.length === 0) return;
+
+            const rect = mapContainerRef.current?.getBoundingClientRect();
+            if (!isMapViewportReady(rect) && attemptCount < maxAttempts) {
+                attemptCount += 1;
+                fitRafRef.current = window.requestAnimationFrame(tryFit);
+                return;
+            }
+
+            if (window.google?.maps?.event?.trigger) {
+                window.google.maps.event.trigger(googleMapRef.current, 'resize');
+            }
+            runFitBounds();
+        };
+
+        fitRafRef.current = window.requestAnimationFrame(tryFit);
+    }, [cancelScheduledFit, cities.length, runFitBounds]);
 
     useEffect(() => {
         onRouteMetricsRef.current = onRouteMetrics;
@@ -455,23 +668,15 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         onRouteStatusRef.current = onRouteStatus;
     }, [onRouteStatus]);
 
-    // Initial Map Setup
     useEffect(() => {
-        if (!isLoaded || !mapRef.current || googleMapRef.current || !window.google?.maps?.Map) return;
+        onCityMarkerSelectRef.current = onCityMarkerSelect;
+    }, [onCityMarkerSelect]);
 
-        try {
-            googleMapRef.current = new window.google.maps.Map(mapRef.current, {
-                center: { lat: 20, lng: 0 },
-                zoom: 2,
-                disableDefaultUI: true,
-                gestureHandling: 'cooperative',
-                styles: null
-            });
-            setMapInitialized(true);
-        } catch (e) {
-            console.error("Failed to init map", e);
-        }
-    }, [isLoaded]);
+    const handleMapInstanceChange = useCallback((map: google.maps.Map | null) => {
+        if (googleMapRef.current === map) return;
+        googleMapRef.current = map;
+        setMapInitialized(Boolean(map));
+    }, []);
 
     useEffect(() => {
         if (!mapActionsDisabled) return;
@@ -498,20 +703,6 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         }
     }, [activeStyle, mapInitialized]);
 
-    const cities = useMemo(() => 
-        items
-            .filter(i => i.type === 'city' && i.coordinates)
-            .sort((a, b) => a.startDateOffset - b.startDateOffset),
-    [items]);
-    const selectedCityId = useMemo(
-        () => (selectedItemId && cities.some(city => city.id === selectedItemId) ? selectedItemId : null),
-        [selectedItemId, cities]
-    );
-    const itineraryCenter = useMemo(() => resolveItineraryCenter(cities), [cities]);
-    const itineraryCenterKey = itineraryCenter
-        ? `${itineraryCenter.lat.toFixed(6)}:${itineraryCenter.lng.toFixed(6)}`
-        : 'none';
-
     const mapRenderSignature = useMemo(() => {
         const citySignature = cities
             .map(city => `${city.id}|${city.title}|${city.color}|${city.coordinates?.lat},${city.coordinates?.lng}`)
@@ -530,7 +721,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
 
     // Update Markers & Routes
     useEffect(() => {
-        if (!mapInitialized || !googleMapRef.current || !window.google?.maps?.Marker) return;
+        if (!mapInitialized || !googleMapRef.current || !window.google?.maps?.OverlayView) return;
 
         // 1. Clear existing markers & routes
         markersRef.current.forEach(m => m.setMap(null));
@@ -541,132 +732,228 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         transportMarkersRef.current = [];
         cityLabelOverlaysRef.current.forEach(o => o.setMap(null));
         cityLabelOverlaysRef.current = [];
+        cityMarkerMetaRef.current = [];
+        let isEffectDisposed = false;
+        const isEffectActive = () => !isEffectDisposed;
 
-        const buildPinIcon = (color: string, isSelected: boolean) => {
-            const size = isSelected ? 44 : 34;
-            const stroke = isSelected ? '#111827' : '#ffffff';
-            const strokeWidth = isSelected ? 2.5 : 1.5;
-            const svg = `
-                <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24">
-                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="${color}" stroke="${stroke}" stroke-width="${strokeWidth}"/>
-                </svg>
-            `;
-            const url = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+        const createOverlayMarker = ({
+            position,
+            html,
+            zIndex,
+            clickable = false,
+            centerAnchor = false,
+            onClick,
+        }: {
+            position: google.maps.LatLngLiteral;
+            html: string;
+            zIndex: number;
+            clickable?: boolean;
+            centerAnchor?: boolean;
+            onClick?: () => void;
+        }): OverlayMarkerHandle => {
+            const overlay = new window.google.maps.OverlayView();
+            let markerDiv: HTMLDivElement | null = null;
+            let currentPosition = position;
+            let currentHtml = html;
+            let currentZIndex = zIndex;
+            const clickHandler = (event: MouseEvent) => {
+                event.stopPropagation();
+                onClick?.();
+            };
+
+            overlay.onAdd = function onAdd() {
+                markerDiv = document.createElement('div');
+                markerDiv.style.position = 'absolute';
+                markerDiv.style.transform = centerAnchor ? 'translate(-50%, -50%)' : 'translate(-50%, -100%)';
+                markerDiv.style.pointerEvents = clickable ? 'auto' : 'none';
+                markerDiv.style.cursor = clickable ? 'pointer' : 'default';
+                markerDiv.style.zIndex = `${currentZIndex}`;
+                markerDiv.innerHTML = currentHtml;
+                if (clickable) {
+                    markerDiv.addEventListener('click', clickHandler);
+                }
+                const panes = this.getPanes();
+                const targetPane = clickable ? panes.overlayMouseTarget : panes.overlayLayer;
+                targetPane.appendChild(markerDiv);
+            };
+
+            overlay.draw = function draw() {
+                if (!markerDiv) return;
+                const projection = this.getProjection();
+                if (!projection) return;
+                const point = projection.fromLatLngToDivPixel(new window.google.maps.LatLng(currentPosition.lat, currentPosition.lng));
+                if (!point) return;
+                markerDiv.style.left = `${point.x}px`;
+                markerDiv.style.top = `${point.y}px`;
+            };
+
+            overlay.onRemove = function onRemove() {
+                if (!markerDiv) return;
+                if (clickable) {
+                    markerDiv.removeEventListener('click', clickHandler);
+                }
+                markerDiv.remove();
+                markerDiv = null;
+            };
+
+            overlay.setMap(googleMapRef.current);
+
             return {
-                url,
-                scaledSize: new window.google.maps.Size(size, size),
-                anchor: new window.google.maps.Point(size / 2, size),
-                labelOrigin: new window.google.maps.Point(size / 2, size / 2 - 2),
+                setMap: (map: google.maps.Map | null) => overlay.setMap(map),
+                update: (updates: OverlayMarkerUpdate) => {
+                    if (updates.position) {
+                        currentPosition = updates.position;
+                    }
+                    if (updates.zIndex !== undefined) {
+                        currentZIndex = updates.zIndex;
+                    }
+                    if (updates.html !== undefined) {
+                        currentHtml = updates.html;
+                    }
+                    if (markerDiv) {
+                        markerDiv.style.zIndex = `${currentZIndex}`;
+                        if (updates.html !== undefined) {
+                            markerDiv.innerHTML = currentHtml;
+                        }
+                    }
+                    overlay.draw();
+                },
             };
         };
 
-        const getTransportSvgBody = (mode?: string) => {
-            switch (mode) {
-                case 'na':
-                case undefined:
-                    return `<path d="M8 6h8" /><path d="M8 10h8" /><path d="M8 14h5" />`;
-                case 'train':
-                    return `
-                        <rect width="16" height="16" x="4" y="3" rx="2" />
-                        <path d="M4 11h16" />
-                        <path d="M12 3v8" />
-                        <path d="m8 19-2 3" />
-                        <path d="m18 22-2-3" />
-                        <path d="M8 15h.01" />
-                        <path d="M16 15h.01" />
-                    `;
-                case 'bus':
-                    return `
-                        <path d="M8 6v6" />
-                        <path d="M15 6v6" />
-                        <path d="M2 12h19.6" />
-                        <path d="M18 18h3s.5-1.7.8-2.8c.1-.4.2-.8.2-1.2 0-.4-.1-.8-.2-1.2l-1.4-5C20.1 6.8 19.1 6 18 6H4a2 2 0 0 0-2 2v10h3" />
-                        <circle cx="7" cy="18" r="2" />
-                        <path d="M9 18h5" />
-                        <circle cx="16" cy="18" r="2" />
-                    `;
-                case 'boat':
-                    return `
-                        <path d="M2 21c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1 .6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1" />
-                        <path d="M19.38 20A11.6 11.6 0 0 0 21 14l-9-4-9 4c0 2.9.94 5.34 2.81 7.76" />
-                        <path d="M19 13V7a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v6" />
-                        <path d="M12 10v4" />
-                        <path d="M12 2v3" />
-                    `;
-                case 'car':
-                    return `
-                        <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2" />
-                        <circle cx="7" cy="17" r="2" />
-                        <path d="M9 17h6" />
-                        <circle cx="17" cy="17" r="2" />
-                    `;
-                case 'motorcycle':
-                    return `
-                        <circle cx="6" cy="17" r="3" />
-                        <circle cx="18" cy="17" r="3" />
-                        <path d="M6 17l4-5h6l2 5" />
-                        <path d="M10 12h5" />
-                        <path d="M12 9l3-2" />
-                        <path d="M15 7h3" />
-                    `;
-                case 'bicycle':
-                    return `
-                        <circle cx="6" cy="17" r="3" />
-                        <circle cx="18" cy="17" r="3" />
-                        <path d="M6 17l4-7h5l3 7" />
-                        <path d="M10 10l-2-3" />
-                        <path d="M15 10l2-2" />
-                        <path d="M11 10h4" />
-                    `;
-                case 'walk':
-                    return `
-                        <ellipse cx="8" cy="17" rx="2.6" ry="3.6" />
-                        <ellipse cx="16.5" cy="9.5" rx="2.2" ry="3.1" />
-                        <circle cx="15.6" cy="5.7" r="0.7" />
-                        <circle cx="17" cy="5.4" r="0.6" />
-                        <circle cx="18.2" cy="5.9" r="0.55" />
-                    `;
-                case 'plane':
-                    return `<path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z" />`;
-                default:
-                    return '';
-            }
-        };
-
-        const buildTransportIcon = (mode?: string, color?: string) => {
-            const size = 22;
-            const stroke = color || '#111827';
-            const svg = `
-                <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24">
-                    <g fill="none" stroke="${stroke}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                        ${getTransportSvgBody(mode)}
-                    </g>
-                </svg>
-            `;
-            const url = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
-            return {
-                url,
-                scaledSize: new window.google.maps.Size(size, size),
-                anchor: new window.google.maps.Point(size / 2, size / 2),
-            };
-        };
-
-        const getOffsetPosition = (start: google.maps.LatLngLiteral, end: google.maps.LatLngLiteral, mid: google.maps.LatLngLiteral) => {
+        const getHeadingBetweenPoints = (
+            from: google.maps.LatLngLiteral,
+            to: google.maps.LatLngLiteral,
+        ): number | undefined => {
+            if (from.lat === to.lat && from.lng === to.lng) return undefined;
             const geometry = window.google?.maps?.geometry?.spherical;
-            if (!geometry) return mid;
-            const startLatLng = new window.google.maps.LatLng(start.lat, start.lng);
-            const endLatLng = new window.google.maps.LatLng(end.lat, end.lng);
-            const midLatLng = new window.google.maps.LatLng(mid.lat, mid.lng);
-            const distance = geometry.computeDistanceBetween(startLatLng, endLatLng);
-            const offset = Math.min(Math.max(distance * 0.05, 2000), 20000);
-            const heading = geometry.computeHeading(startLatLng, endLatLng);
-            const offsetHeading = heading + 90;
-            const result = geometry.computeOffset(midLatLng, offset, offsetHeading);
-            return { lat: result.lat(), lng: result.lng() };
+            if (geometry) {
+                return geometry.computeHeading(
+                    new window.google.maps.LatLng(from.lat, from.lng),
+                    new window.google.maps.LatLng(to.lat, to.lng),
+                );
+            }
+            const headingFromNorthRadians = Math.atan2(to.lng - from.lng, to.lat - from.lat);
+            return headingFromNorthRadians * (180 / Math.PI);
+        };
+
+        const getPointAlongPath = (
+            path: google.maps.LatLngLiteral[],
+            fraction: number,
+        ): google.maps.LatLngLiteral | null => {
+            if (path.length === 0) return null;
+            if (path.length === 1) return path[0];
+            const clampedFraction = Math.max(0, Math.min(1, fraction));
+            const geometry = window.google?.maps?.geometry?.spherical;
+            if (!geometry) {
+                const fallbackIndex = Math.round((path.length - 1) * clampedFraction);
+                return path[Math.max(0, Math.min(path.length - 1, fallbackIndex))];
+            }
+
+            const toLatLng = (point: google.maps.LatLngLiteral) => new window.google.maps.LatLng(point.lat, point.lng);
+            const segments = path.slice(1).map((point, index) => {
+                const from = path[index];
+                return {
+                    from,
+                    to: point,
+                    distance: geometry.computeDistanceBetween(toLatLng(from), toLatLng(point)),
+                };
+            });
+            const totalDistance = segments.reduce((sum, segment) => sum + segment.distance, 0);
+            if (totalDistance <= 0) return path[Math.floor(path.length / 2)];
+
+            let targetDistance = totalDistance * clampedFraction;
+            for (const segment of segments) {
+                if (targetDistance <= segment.distance) {
+                    if (segment.distance <= 0) return segment.to;
+                    const localFraction = targetDistance / segment.distance;
+                    const interpolated = geometry.interpolate(
+                        toLatLng(segment.from),
+                        toLatLng(segment.to),
+                        localFraction,
+                    );
+                    return { lat: interpolated.lat(), lng: interpolated.lng() };
+                }
+                targetDistance -= segment.distance;
+            }
+
+            return path[path.length - 1];
+        };
+
+        const getHeadingAlongPath = (
+            path: google.maps.LatLngLiteral[],
+            fraction: number,
+        ): number | undefined => {
+            if (path.length < 2) return undefined;
+            const clampedFraction = Math.max(0, Math.min(1, fraction));
+            const upperIndex = Math.max(1, Math.min(path.length - 1, Math.round((path.length - 1) * clampedFraction)));
+            const from = path[upperIndex - 1];
+            const to = path[upperIndex];
+            return getHeadingBetweenPoints(from, to);
+        };
+
+        const normalizeRoutePathPoints = (rawPath: unknown): google.maps.LatLngLiteral[] => {
+            if (!Array.isArray(rawPath)) return [];
+            return rawPath
+                .map((point): google.maps.LatLngLiteral | null => {
+                    if (!point || typeof point !== 'object') return null;
+                    const latRaw = (point as { lat?: unknown }).lat;
+                    const lngRaw = (point as { lng?: unknown }).lng;
+
+                    if (typeof latRaw === 'number' && Number.isFinite(latRaw) && typeof lngRaw === 'number' && Number.isFinite(lngRaw)) {
+                        return { lat: latRaw, lng: lngRaw };
+                    }
+                    if (typeof latRaw === 'function' && typeof lngRaw === 'function') {
+                        const latValue = latRaw();
+                        const lngValue = lngRaw();
+                        if (Number.isFinite(latValue) && Number.isFinite(lngValue)) {
+                            return { lat: latValue, lng: lngValue };
+                        }
+                    }
+
+                    return null;
+                })
+                .filter((point): point is google.maps.LatLngLiteral => Boolean(point));
+        };
+
+        const computePathDistanceMeters = (path: google.maps.LatLngLiteral[]): number | undefined => {
+            if (path.length < 2) return undefined;
+            const geometry = window.google?.maps?.geometry?.spherical;
+            if (!geometry) return undefined;
+            let distanceMeters = 0;
+            for (let idx = 1; idx < path.length; idx++) {
+                distanceMeters += geometry.computeDistanceBetween(
+                    new window.google.maps.LatLng(path[idx - 1].lat, path[idx - 1].lng),
+                    new window.google.maps.LatLng(path[idx].lat, path[idx].lng),
+                );
+            }
+            return distanceMeters > 0 ? distanceMeters : undefined;
+        };
+
+        const parseDurationSeconds = (value: unknown): number | undefined => {
+            if (typeof value === 'number' && Number.isFinite(value)) {
+                return value > 10_000 ? value / 1000 : value;
+            }
+            if (typeof value === 'string') {
+                const secondsMatch = value.match(/^([0-9]+(?:\.[0-9]+)?)s$/);
+                if (secondsMatch) {
+                    const parsedSeconds = Number.parseFloat(secondsMatch[1]);
+                    return Number.isFinite(parsedSeconds) ? parsedSeconds : undefined;
+                }
+            }
+            if (value && typeof value === 'object') {
+                const secondsValue = (value as { seconds?: unknown }).seconds;
+                const nanosValue = (value as { nanos?: unknown }).nanos;
+                if (typeof secondsValue === 'number' && Number.isFinite(secondsValue)) {
+                    const nanosSeconds = typeof nanosValue === 'number' && Number.isFinite(nanosValue) ? nanosValue / 1_000_000_000 : 0;
+                    return secondsValue + nanosSeconds;
+                }
+            }
+            return undefined;
         };
 
         const createRoutePolylinePair = (options: google.maps.PolylineOptions) => {
-            if (!googleMapRef.current || !window.google?.maps?.Polyline) return null;
+            if (!isEffectActive() || !googleMapRef.current || !window.google?.maps?.Polyline) return null;
             const { outerOutlineOptions, outlineOptions, mainOptions } = buildRoutePolylinePairOptions(options, activeStyle);
             const shouldRenderOuterOutline = (outerOutlineOptions.strokeOpacity ?? 0) > 0 || ((outerOutlineOptions.icons?.length ?? 0) > 0);
             const shouldRenderInnerOutline = (outlineOptions.strokeOpacity ?? 0) > 0 || ((outlineOptions.icons?.length ?? 0) > 0);
@@ -695,6 +982,16 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         };
 
         const drawRoutePath = (path: google.maps.LatLngLiteral[], color: string, weight = 3) => {
+            if (!isEffectActive()) return null;
+            const arrowIcon = {
+                path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                fillColor: color,
+                fillOpacity: 1,
+                strokeColor: color,
+                strokeOpacity: 1,
+                strokeWeight: 0.1,
+                scale: 3.2
+            };
             return createRoutePolylinePair({
                 path,
                 geodesic: true,
@@ -702,15 +999,10 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 strokeOpacity: 0.7,
                 strokeWeight: weight,
                 clickable: false,
-                icons: [{
-                    icon: {
-                        path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-                        strokeColor: color,
-                        strokeOpacity: 0.9,
-                        scale: 2.5
-                    },
-                    offset: '50%'
-                }],
+                icons: [
+                    { icon: arrowIcon, offset: '25%' },
+                    { icon: arrowIcon, offset: '75%' }
+                ],
                 zIndex: 40,
             });
         };
@@ -718,29 +1010,50 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         const brandRouteColor = '#4f46e5';
         const resolveMapColor = (colorToken: string): string =>
             mapColorMode === 'brand' ? brandRouteColor : getHexFromColorClass(colorToken);
+        const coordinateMarkerGroups = new Map<string, number[]>();
+
+        cities.forEach((city, index) => {
+            if (!city.coordinates) return;
+            const key = buildCoordinateGroupKey(city.coordinates);
+            const grouped = coordinateMarkerGroups.get(key) ?? [];
+            grouped.push(index);
+            coordinateMarkerGroups.set(key, grouped);
+        });
+
+        const resolveCityMarkerPosition = (city: ITimelineItem, index: number): google.maps.LatLngLiteral | null => {
+            if (!city.coordinates) return null;
+            const key = buildCoordinateGroupKey(city.coordinates);
+            const grouped = coordinateMarkerGroups.get(key);
+            if (!grouped || grouped.length <= 1) return city.coordinates;
+            const overlapIndex = grouped.indexOf(index);
+            if (overlapIndex < 0) return city.coordinates;
+            return buildOverlappingMarkerPosition(city.coordinates, overlapIndex, grouped.length);
+        };
 
         if (!isPaywalled) {
             // 2. Add Markers
             cities.forEach((city, index) => {
+                if (!isEffectActive()) return;
                 if (!city.coordinates) return;
+                const markerPosition = resolveCityMarkerPosition(city, index);
+                if (!markerPosition) return;
                 
                 const isSelected = city.id === selectedCityId;
                 const cityMarkerColor = resolveMapColor(city.color);
-                const cityMarkerLabelColor = getContrastTextColor(cityMarkerColor);
-                const marker = new window.google.maps.Marker({
-                    map: googleMapRef.current,
-                    position: { lat: city.coordinates.lat, lng: city.coordinates.lng },
-                    title: city.title,
-                    label: { 
-                        text: `${index + 1}`, 
-                        color: cityMarkerLabelColor,
-                        fontWeight: '700', 
-                        fontSize: isSelected ? '14px' : '12px' 
-                    },
-                    icon: buildPinIcon(cityMarkerColor, isSelected),
+                const marker = createOverlayMarker({
+                    position: markerPosition,
+                    html: buildCityMarkerHtml(index, cityMarkerColor, isSelected),
                     zIndex: isSelected ? 100 : 10,
+                    clickable: true,
+                    onClick: () => onCityMarkerSelectRef.current?.(city.id),
                 });
                 
+                cityMarkerMetaRef.current.push({
+                    id: city.id,
+                    color: cityMarkerColor,
+                    index,
+                    marker,
+                });
                 markersRef.current.push(marker);
             });
         }
@@ -853,10 +1166,32 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
 
         // 3. Draw Routes
         const drawRoutes = async () => {
+             if (!isEffectActive()) return;
              hydrateRouteCache();
-             const directionsService = new window.google.maps.DirectionsService();
+             const importLibrary = window.google?.maps?.importLibrary;
+             let computeRoutes: ((request: unknown) => Promise<unknown>) | null = null;
+             let routesTransitModes: Record<string, unknown> | null = null;
+
+             if (typeof importLibrary === 'function') {
+                 try {
+                     const routesLibrary = await importLibrary('routes' as never) as {
+                         Route?: { computeRoutes?: (request: unknown) => Promise<unknown> };
+                         TransitMode?: Record<string, unknown>;
+                     };
+                     if (routesLibrary?.Route && typeof routesLibrary.Route.computeRoutes === 'function') {
+                         computeRoutes = routesLibrary.Route.computeRoutes.bind(routesLibrary.Route);
+                     }
+                     if (routesLibrary?.TransitMode && typeof routesLibrary.TransitMode === 'object') {
+                         routesTransitModes = routesLibrary.TransitMode;
+                     }
+                 } catch (error) {
+                     console.warn('Failed to load Routes library; route checks will fall back to straight-line rendering', error);
+                 }
+             }
+             if (!isEffectActive()) return;
 
              for (let i = 0; i < cities.length - 1; i++) {
+                 if (!isEffectActive()) return;
                  const start = cities[i];
                  const end = cities[i+1];
                  if (!start.coordinates || !end.coordinates) continue;
@@ -867,34 +1202,21 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                  const cacheKey = start.coordinates && end.coordinates
                      ? buildRouteCacheKey(start.coordinates, end.coordinates, mode)
                      : null;
+                 const straightDistanceKm = estimateGreatCircleDistanceKm(start.coordinates, end.coordinates);
+                 const routeAttemptPolicy = buildRouteAttemptPolicy(mode, straightDistanceKm);
                  let routingAttempted = false;
                  let routingFailed = false;
 
                  const travelModes = window.google.maps.TravelMode;
 
-                 const getDirectionsMode = (transportMode: string): google.maps.TravelMode | null => {
-                     switch (transportMode) {
-                         case 'train':
-                         case 'bus':
-                             return (travelModes.TRANSIT ?? 'TRANSIT') as google.maps.TravelMode;
-                         case 'walk':
-                             return (travelModes.WALKING ?? 'WALKING') as google.maps.TravelMode;
-                         case 'bicycle':
-                             return (travelModes.BICYCLING ?? 'BICYCLING') as google.maps.TravelMode;
-                         case 'motorcycle':
-                         case 'car':
-                             return (travelModes.DRIVING ?? 'DRIVING') as google.maps.TravelMode;
-                         default:
-                             return null;
-                     }
-                 };
-
                  const wantsRealRoute = routeMode === 'realistic';
-                 const primaryMode = getDirectionsMode(mode);
-                 const useRealRoute = wantsRealRoute && !!primaryMode;
+                 const routeAttemptModes = routeAttemptPolicy.modes.map((modeKey) =>
+                     (travelModes[modeKey] ?? modeKey) as google.maps.TravelMode
+                 );
+                 const useRealRoute = wantsRealRoute && routeAttemptModes.length > 0;
 
                  const requiresDirections = mode !== 'plane' && mode !== 'boat' && mode !== 'na';
-                 if (wantsRealRoute && requiresDirections && !primaryMode) {
+                 if (wantsRealRoute && requiresDirections && !routeAttemptPolicy.shouldAttempt) {
                      routingAttempted = true;
                      routingFailed = true;
                      if (travelItem && onRouteStatusRef.current) {
@@ -902,27 +1224,24 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                      }
                  }
 
-                 if (useRealRoute && primaryMode && cacheKey) {
+                 if (useRealRoute && cacheKey) {
                      const cached = ROUTE_CACHE.get(cacheKey);
                      const isCachedFailureFresh = cached?.status === 'failed' && (Date.now() - cached.updatedAt) < ROUTE_FAILURE_TTL_MS;
 
                      if (cached?.status === 'ok' && cached.path?.length) {
+                         if (!isEffectActive()) return;
                          routingAttempted = true;
                          drawRoutePath(cached.path, startColor, 3);
 
                          if (mode !== 'na') {
-                             const midPoint = cached.path[Math.floor(cached.path.length / 2)];
-                             const offsetPos = getOffsetPosition(
-                                 { lat: start.coordinates.lat, lng: start.coordinates.lng },
-                                 { lat: end.coordinates.lat, lng: end.coordinates.lng },
-                                 midPoint
-                             );
-                             const transportMarker = new window.google.maps.Marker({
-                                 map: googleMapRef.current,
-                                 position: offsetPos,
-                                 icon: buildTransportIcon(mode, startColor),
-                                 clickable: false,
-                                 zIndex: 50
+                             const midPoint = getPointAlongPath(cached.path, 0.5);
+                             if (!midPoint) continue;
+                             const markerHeading = mode === 'plane' ? getHeadingAlongPath(cached.path, 0.5) : undefined;
+                             const transportMarker = createOverlayMarker({
+                                 position: midPoint,
+                                 html: buildTransportMarkerHtml(mode, startColor, markerHeading),
+                                 zIndex: 50,
+                                 centerAnchor: true,
                              });
                              transportMarkersRef.current.push(transportMarker);
                          }
@@ -952,50 +1271,101 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                          if (travelItem && onRouteStatusRef.current) {
                              onRouteStatusRef.current(travelItem.id, 'calculating', { mode, routeKey: cacheKey });
                          }
-                         const tryRoute = async (travelMode: google.maps.TravelMode) => {
+                         const tryRoute = async (travelMode: google.maps.TravelMode, attemptIndex: number) => {
+                             if (!isEffectActive()) {
+                                 throw new Error('Route draw cancelled');
+                             }
                              const origin = { lat: start.coordinates.lat, lng: start.coordinates.lng };
                              const destination = { lat: end.coordinates.lat, lng: end.coordinates.lng };
-                             const request: google.maps.DirectionsRequest = {
-                                 origin,
-                                 destination,
-                                 travelMode
+                             let path: google.maps.LatLngLiteral[] = [];
+                             let distanceKm: number | undefined;
+                             let durationHours: number | undefined;
+                             const isTransitMode = (
+                                 travelMode === travelModes.TRANSIT ||
+                                 travelMode === 'TRANSIT'
+                             );
+                             const transitDepartureTime = getTransitFallbackDepartureTime();
+
+                             if (!computeRoutes) {
+                                 throw new Error('Routes API unavailable');
+                             }
+
+                             const buildRouteRequest = (fields: readonly string[]): Record<string, unknown> => {
+                                 const routeRequest: Record<string, unknown> = {
+                                     origin,
+                                     destination,
+                                     travelMode,
+                                     fields,
+                                 };
+                                 if (isTransitMode) {
+                                     routeRequest.departureTime = transitDepartureTime;
+                                     const allowedTransitModes: unknown[] = [];
+                                     const isPrimaryTransitAttempt = attemptIndex === 0;
+                                     if (isPrimaryTransitAttempt && mode === 'train') {
+                                         if (routesTransitModes?.TRAIN) {
+                                             allowedTransitModes.push(routesTransitModes.TRAIN);
+                                         } else {
+                                             allowedTransitModes.push('TRAIN');
+                                         }
+                                         if (routesTransitModes?.RAIL) {
+                                             allowedTransitModes.push(routesTransitModes.RAIL);
+                                         }
+                                     }
+                                     if (isPrimaryTransitAttempt && mode === 'bus') {
+                                         if (routesTransitModes?.BUS) {
+                                             allowedTransitModes.push(routesTransitModes.BUS);
+                                         } else {
+                                             allowedTransitModes.push('BUS');
+                                         }
+                                     }
+                                     if (allowedTransitModes.length > 0) {
+                                         routeRequest.transitPreference = {
+                                             allowedTransitModes,
+                                         };
+                                     }
+                                 }
+                                 return routeRequest;
+                             };
+                             const applyRoutesResult = (routesResult: unknown) => {
+                                 const parsedResult = routesResult as {
+                                     routes?: Array<{
+                                         path?: unknown;
+                                         distanceMeters?: unknown;
+                                         durationMillis?: unknown;
+                                     }>;
+                                 };
+                                 const route = parsedResult.routes?.[0];
+                                 path = normalizeRoutePathPoints(route?.path);
+                                 const distanceMeters = typeof route?.distanceMeters === 'number' && Number.isFinite(route.distanceMeters)
+                                     ? route.distanceMeters
+                                     : computePathDistanceMeters(path);
+                                 distanceKm = distanceMeters ? distanceMeters / 1000 : undefined;
+
+                                 const durationSeconds = parseDurationSeconds(route?.durationMillis);
+                                 durationHours = durationSeconds ? durationSeconds / 3600 : undefined;
                              };
 
-                             const isWalking = (
-                                 travelMode === travelModes.WALKING ||
-                                 travelMode === 'WALKING'
-                             );
-                             const isBicycling = (
-                                 travelMode === travelModes.BICYCLING ||
-                                 travelMode === 'BICYCLING'
-                             );
-                             if (isWalking) {
-                                 request.avoidHighways = true;
-                                 request.avoidTolls = true;
-                             } else if (isBicycling) {
-                                 request.avoidTolls = true;
-                             }
-                             if (travelMode === travelModes.TRANSIT || travelMode === 'TRANSIT') {
-                                 const transitModeValues: google.maps.TransitMode[] = [];
-                                 if (mode === 'train') {
-                                     if (window.google.maps.TransitMode?.TRAIN) {
-                                         transitModeValues.push(window.google.maps.TransitMode.TRAIN);
-                                     }
-                                     if (window.google.maps.TransitMode?.RAIL) {
-                                         transitModeValues.push(window.google.maps.TransitMode.RAIL);
-                                     }
+                             try {
+                                 const routesResult = await computeRoutes(buildRouteRequest(ROUTES_COMPUTE_FIELDS));
+                                 if (!isEffectActive()) {
+                                     throw new Error('Route draw cancelled');
                                  }
-                                 if (mode === 'bus' && window.google.maps.TransitMode?.BUS) {
-                                     transitModeValues.push(window.google.maps.TransitMode.BUS);
+                                 applyRoutesResult(routesResult);
+                             } catch (computeRoutesError) {
+                                 if (!isEffectActive()) {
+                                     throw new Error('Route draw cancelled');
                                  }
-                                 if (transitModeValues.length > 0) {
-                                     request.transitOptions = { modes: transitModeValues };
-                                 }
-                             }
 
-                             const result = await directionsService.route(request);
-                             const rawPath = result.routes?.[0]?.overview_path;
-                             const path = rawPath?.map((point) => ({ lat: point.lat(), lng: point.lng() }));
+                                 if (isRoutesFieldMaskError(computeRoutesError)) {
+                                     const fallbackResult = await computeRoutes(buildRouteRequest(ROUTES_COMPUTE_MINIMAL_FIELDS));
+                                     if (!isEffectActive()) {
+                                         throw new Error('Route draw cancelled');
+                                     }
+                                     applyRoutesResult(fallbackResult);
+                                 } else {
+                                     throw computeRoutesError;
+                                 }
+                             }
 
                              if (!path || path.length === 0) {
                                  throw new Error('No route path returned');
@@ -1021,31 +1391,25 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                              } else if (path.length <= 2) {
                                  throw new Error('Route path is straight');
                              }
+                             if (!isEffectActive()) {
+                                 throw new Error('Route draw cancelled');
+                             }
 
                              drawRoutePath(path, startColor, 3);
 
                              if (mode !== 'na') {
-                                 const midPoint = path[Math.floor(path.length / 2)];
-                                 const offsetPos = getOffsetPosition(
-                                     { lat: start.coordinates.lat, lng: start.coordinates.lng },
-                                     { lat: end.coordinates.lat, lng: end.coordinates.lng },
-                                     midPoint
-                                 );
-                                 const transportMarker = new window.google.maps.Marker({
-                                     map: googleMapRef.current,
-                                     position: offsetPos,
-                                     icon: buildTransportIcon(mode, startColor),
-                                     clickable: false,
-                                     zIndex: 50
-                                 });
-                                 transportMarkersRef.current.push(transportMarker);
+                                 const midPoint = getPointAlongPath(path, 0.5);
+                                 if (midPoint) {
+                                     const markerHeading = mode === 'plane' ? getHeadingAlongPath(path, 0.5) : undefined;
+                                     const transportMarker = createOverlayMarker({
+                                         position: midPoint,
+                                         html: buildTransportMarkerHtml(mode, startColor, markerHeading),
+                                         zIndex: 50,
+                                         centerAnchor: true,
+                                     });
+                                     transportMarkersRef.current.push(transportMarker);
+                                 }
                              }
-
-                             const legs = result.routes?.[0]?.legs ?? [];
-                             const distanceMeters = legs.reduce((sum, leg) => sum + (leg.distance?.value ?? 0), 0);
-                             const durationSeconds = legs.reduce((sum, leg) => sum + (leg.duration?.value ?? 0), 0);
-                             const distanceKm = distanceMeters > 0 ? distanceMeters / 1000 : undefined;
-                             const durationHours = durationSeconds > 0 ? durationSeconds / 3600 : undefined;
 
                              ROUTE_CACHE.set(cacheKey, {
                                  status: 'ok',
@@ -1069,28 +1433,46 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                              }
                          };
 
-                         try {
-                             await tryRoute(primaryMode);
-                             continue;
-                         } catch (e) {
-                             routingFailed = true;
-                             ROUTE_CACHE.set(cacheKey, { status: 'failed', updatedAt: Date.now() });
-                             persistRouteCache();
-                             if (travelItem && onRouteStatusRef.current) {
-                                 onRouteStatusRef.current(travelItem.id, 'failed', { mode, routeKey: cacheKey });
+                         let lastRouteError: unknown = null;
+                         let routeResolved = false;
+                         for (let attemptIndex = 0; attemptIndex < routeAttemptModes.length; attemptIndex++) {
+                             if (!isEffectActive()) return;
+                             const attemptMode = routeAttemptModes[attemptIndex];
+                             try {
+                                 await tryRoute(attemptMode, attemptIndex);
+                                 routeResolved = true;
+                                 break;
+                             } catch (error) {
+                                 if (!isEffectActive()) return;
+                                 lastRouteError = error;
                              }
-                             console.warn(`Routing failed for ${mode}, falling back to line`, e);
                          }
+
+                         if (routeResolved) {
+                             continue;
+                         }
+                         if (!isEffectActive()) return;
+
+                         routingFailed = true;
+                         ROUTE_CACHE.set(cacheKey, { status: 'failed', updatedAt: Date.now() });
+                         persistRouteCache();
+                         if (travelItem && onRouteStatusRef.current) {
+                             onRouteStatusRef.current(travelItem.id, 'failed', { mode, routeKey: cacheKey });
+                         }
+                         console.warn(`Routing failed for ${mode}, falling back to line`, lastRouteError);
                      }
                  }
 
                  // Fallback / Flight: Draw Geodesic Polyline
                  const isDashedFallback = mode !== 'plane';
-                 const arrowIcon = { 
+                 const arrowIcon = {
                      path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW, 
-                     strokeColor: startColor, 
-                     strokeOpacity: 0.9,
-                     scale: 2.5 
+                     fillColor: startColor,
+                     fillOpacity: 1,
+                     strokeColor: startColor,
+                     strokeOpacity: 1,
+                     strokeWeight: 0.1,
+                     scale: 3.2
                  };
                  const icons = isDashedFallback
                      ? [
@@ -1099,9 +1481,14 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                              offset: '0',
                              repeat: '12px'
                          },
-                         { icon: arrowIcon, offset: '50%' }
+                         { icon: arrowIcon, offset: '25%' },
+                         { icon: arrowIcon, offset: '75%' }
                        ]
-                     : [{ icon: arrowIcon, offset: '50%' }];
+                     : [
+                         { icon: arrowIcon, offset: '25%' },
+                         { icon: arrowIcon, offset: '75%' },
+                     ];
+                 if (!isEffectActive()) return;
                  createRoutePolylinePair({
                      path: [
                          { lat: start.coordinates.lat, lng: start.coordinates.lng },
@@ -1116,22 +1503,21 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                      zIndex: 35,
                  });
 
-                 const mid = {
-                     lat: (start.coordinates.lat + end.coordinates.lat) / 2,
-                     lng: (start.coordinates.lng + end.coordinates.lng) / 2
-                 };
+                 const mid = getPointAlongPath([
+                     { lat: start.coordinates.lat, lng: start.coordinates.lng },
+                     { lat: end.coordinates.lat, lng: end.coordinates.lng },
+                 ], 0.5);
                  if (mode !== 'na') {
-                     const offsetPos = getOffsetPosition(
-                         { lat: start.coordinates.lat, lng: start.coordinates.lng },
-                         { lat: end.coordinates.lat, lng: end.coordinates.lng },
-                         mid
-                     );
-                     const transportMarker = new window.google.maps.Marker({
-                         map: googleMapRef.current,
-                         position: offsetPos,
-                         icon: buildTransportIcon(mode, startColor),
-                         clickable: false,
-                         zIndex: 50
+                     if (!isEffectActive()) return;
+                     if (!mid) continue;
+                     const markerHeading = mode === 'plane'
+                         ? getHeadingBetweenPoints(start.coordinates, end.coordinates)
+                         : undefined;
+                     const transportMarker = createOverlayMarker({
+                         position: mid,
+                         html: buildTransportMarkerHtml(mode, startColor, markerHeading),
+                         zIndex: 50,
+                         centerAnchor: true,
                      });
                      transportMarkersRef.current.push(transportMarker);
                  }
@@ -1139,131 +1525,51 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         };
 
         if (!isPaywalled) {
-            drawRoutes();
+            void drawRoutes();
         }
+        return () => {
+            isEffectDisposed = true;
+        };
 
-    }, [mapInitialized, mapRenderSignature, selectedCityId, routeMode, showCityNames, isPaywalled, activeStyle]); 
-
-    // Fit Bounds
-    const handleFit = useCallback(() => {
-        if (!googleMapRef.current || cities.length === 0) return;
-
-        const bounds = new window.google.maps.LatLngBounds();
-        cities.forEach(city => {
-            if (city.coordinates) {
-                bounds.extend({ lat: city.coordinates.lat, lng: city.coordinates.lng });
-            }
-        });
-        suppressManualViewportTracking();
-        hasManualViewportChangeRef.current = false;
-        googleMapRef.current.fitBounds(bounds, { top: 50, right: 50, bottom: 50, left: 50 });
-    }, [cities, suppressManualViewportTracking]);
+    }, [mapInitialized, mapRenderSignature, routeMode, showCityNames, isPaywalled, activeStyle]); 
 
     useEffect(() => {
-        if (!mapInitialized || !googleMapRef.current || !mapRef.current) return;
-        const mapInstance = googleMapRef.current;
-        const dragListener = mapInstance.addListener?.('dragstart', markManualViewportChange);
-        const mapElement = mapRef.current;
-        mapElement.addEventListener('wheel', markManualViewportChange, { passive: true });
-        mapElement.addEventListener('pointerdown', markManualViewportChange, { passive: true });
-        mapElement.addEventListener('touchstart', markManualViewportChange, { passive: true });
-        mapElement.addEventListener('dblclick', markManualViewportChange, { passive: true });
-        return () => {
-            dragListener?.remove?.();
-            mapElement.removeEventListener('wheel', markManualViewportChange);
-            mapElement.removeEventListener('pointerdown', markManualViewportChange);
-            mapElement.removeEventListener('touchstart', markManualViewportChange);
-            mapElement.removeEventListener('dblclick', markManualViewportChange);
-        };
-    }, [mapInitialized, markManualViewportChange]);
+        if (!mapInitialized || !window.google?.maps?.OverlayView) return;
+
+        cityMarkerMetaRef.current.forEach(({ id, color, index, marker }) => {
+            const isSelected = id === selectedCityId;
+            marker.update({
+                html: buildCityMarkerHtml(index, color, isSelected),
+                zIndex: isSelected ? 100 : 10,
+            });
+        });
+    }, [mapInitialized, selectedCityId]);
 
     // Pan to selected
     useEffect(() => {
         if (!googleMapRef.current || !selectedCityId) return;
-
+        
         const t = setTimeout(() => {
             const selectedCity = cities.find(i => i.id === selectedCityId);
             if (selectedCity && selectedCity.coordinates) {
-                suppressManualViewportTracking();
                 googleMapRef.current.panTo({ lat: selectedCity.coordinates.lat, lng: selectedCity.coordinates.lng });
                 googleMapRef.current.setZoom(10);
             }
         }, 100);
         return () => clearTimeout(t);
-    }, [selectedCityId, mapInitialized, cities, suppressManualViewportTracking]);
+    }, [selectedCityId, mapInitialized, cities]);
+
+    // Fit Bounds
+    const handleFit = () => {
+        scheduleFitWhenViewportReady();
+    };
 
     // Auto fit on load
     useEffect(() => {
         if (mapInitialized && cities.length > 0) {
-           setTimeout(handleFit, 200);
+            scheduleFitWhenViewportReady();
         }
-    }, [mapInitialized, cities.length, handleFit]);
-
-    useEffect(() => {
-        if (!mapInitialized || !mapRef.current || !googleMapRef.current || typeof ResizeObserver !== 'function' || !window.google?.maps?.event) return;
-        const mapElement = mapRef.current;
-        const mapInstance = googleMapRef.current;
-        let lastWidth = mapElement.clientWidth;
-        let lastHeight = mapElement.clientHeight;
-
-        const syncCameraAfterResize = () => {
-            resizeObserverRafRef.current = null;
-            const nextWidth = mapElement.clientWidth;
-            const nextHeight = mapElement.clientHeight;
-            if (nextWidth <= 0 || nextHeight <= 0) return;
-            if (nextWidth === lastWidth && nextHeight === lastHeight) return;
-            const previousWidth = lastWidth;
-            const previousHeight = lastHeight;
-            lastWidth = nextWidth;
-            lastHeight = nextHeight;
-
-            const currentCenter = mapInstance.getCenter?.();
-            const currentZoom = mapInstance.getZoom?.();
-            suppressManualViewportTracking();
-            window.google.maps.event.trigger(mapInstance, 'resize');
-
-            const strategy = resolveMapResizeCameraStrategy({
-                hasSelectedCity: Boolean(selectedCityId),
-                hasManualViewportChange: hasManualViewportChangeRef.current,
-            });
-            if (strategy === 'center_itinerary') {
-                const shouldRefit = shouldRefitItineraryOnResize({
-                    previousWidth,
-                    previousHeight,
-                    nextWidth,
-                    nextHeight,
-                });
-                if (shouldRefit) {
-                    handleFit();
-                    return;
-                }
-                if (itineraryCenter) {
-                    mapInstance.setCenter(itineraryCenter);
-                } else if (currentCenter) {
-                    mapInstance.setCenter(currentCenter);
-                }
-            } else if (currentCenter) {
-                mapInstance.setCenter(currentCenter);
-            }
-
-            if (typeof currentZoom === 'number' && Number.isFinite(currentZoom)) {
-                mapInstance.setZoom(currentZoom);
-            }
-        };
-
-        const observer = new ResizeObserver(() => {
-            if (resizeObserverRafRef.current !== null) return;
-            resizeObserverRafRef.current = window.requestAnimationFrame(syncCameraAfterResize);
-        });
-        observer.observe(mapElement);
-        return () => {
-            observer.disconnect();
-            if (resizeObserverRafRef.current !== null) {
-                window.cancelAnimationFrame(resizeObserverRafRef.current);
-                resizeObserverRafRef.current = null;
-            }
-        };
-    }, [handleFit, itineraryCenterKey, mapInitialized, selectedCityId, suppressManualViewportTracking]);
+    }, [mapInitialized, cities.length, scheduleFitWhenViewportReady]);
 
     // Re-center when an external "active route" key changes (e.g., opening a different saved plan).
     useEffect(() => {
@@ -1271,9 +1577,40 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         if (lastFitToRouteKeyRef.current === fitToRouteKey) return;
 
         lastFitToRouteKeyRef.current = fitToRouteKey;
-        const timer = setTimeout(handleFit, 200);
-        return () => clearTimeout(timer);
-    }, [fitToRouteKey, mapInitialized, cities.length, handleFit]);
+        scheduleFitWhenViewportReady();
+    }, [fitToRouteKey, mapInitialized, cities.length, scheduleFitWhenViewportReady]);
+
+    useEffect(() => {
+        if (!mapInitialized || !googleMapRef.current || typeof ResizeObserver === 'undefined') return;
+        const container = mapContainerRef.current;
+        if (!container) return;
+
+        let resizeRafId: number | null = null;
+        const observer = new ResizeObserver(() => {
+            if (resizeRafId !== null || !googleMapRef.current) return;
+            resizeRafId = window.requestAnimationFrame(() => {
+                resizeRafId = null;
+                if (!googleMapRef.current) return;
+                if (window.google?.maps?.event?.trigger) {
+                    window.google.maps.event.trigger(googleMapRef.current, 'resize');
+                }
+            });
+        });
+        observer.observe(container);
+
+        return () => {
+            observer.disconnect();
+            if (resizeRafId !== null) {
+                window.cancelAnimationFrame(resizeRafId);
+            }
+        };
+    }, [mapInitialized]);
+
+    useEffect(() => (
+        () => {
+            cancelScheduledFit();
+        }
+    ), [cancelScheduledFit]);
 
     // If we don't have city coordinates yet, center the map on the selected country/location.
     // Supports one or multiple focus queries separated by "||".
@@ -1300,12 +1637,10 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             pending -= 1;
             if (pending > 0 || cancelled || !googleMapRef.current || successCount === 0) return;
             if (successCount === 1 && singleLocation && !singleHasViewport) {
-                suppressManualViewportTracking();
                 googleMapRef.current.setCenter(singleLocation);
                 googleMapRef.current.setZoom(5);
                 return;
             }
-            suppressManualViewportTracking();
             googleMapRef.current.fitBounds(bounds, { top: 50, right: 50, bottom: 50, left: 50 });
         };
 
@@ -1334,14 +1669,27 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         return () => {
             cancelled = true;
         };
-    }, [focusLocationQuery, mapInitialized, cities.length, suppressManualViewportTracking]);
+    }, [focusLocationQuery, mapInitialized, cities.length]);
 
     return (
         <div
+            ref={mapContainerRef}
             className="relative w-full h-full group bg-gray-100"
             style={viewTransitionName ? ({ viewTransitionName } as React.CSSProperties) : undefined}
         >
-            <div ref={mapRef} className="w-full h-full" />
+            {shouldRenderMapCanvas && (
+                <GoogleMap
+                    id={mapInstanceId}
+                    defaultCenter={{ lat: 20, lng: 0 }}
+                    defaultZoom={2}
+                    disableDefaultUI
+                    gestureHandling="cooperative"
+                    reuseMaps
+                    className="h-full w-full"
+                >
+                    <ItineraryMapInstanceBridge mapId={mapInstanceId} onMapInstanceChange={handleMapInstanceChange} />
+                </GoogleMap>
+            )}
             {!mapInitialized && !loadError && (
                 <div className="absolute inset-0 flex items-center justify-center text-sm text-gray-500 bg-gray-100">
                     Loading Map...

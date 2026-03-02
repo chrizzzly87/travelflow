@@ -1562,6 +1562,10 @@ const useTripViewRender = ({
         handleUpdateItems,
     });
 
+    const handleMapCitySelect = useCallback((cityId: string) => {
+        handleTimelineSelect(cityId, { isCity: true });
+    }, [handleTimelineSelect]);
+
     const {
         routeStatusById,
         handleRouteMetrics,
@@ -2024,6 +2028,7 @@ const useTripViewRender = ({
                         mapDeferredFallback={<MapDeferredFallback onLoadNow={enableMapBootstrap} />}
                         displayItems={displayTrip.items}
                         selectedItemId={selectedItemId}
+                        onMapCitySelect={handleMapCitySelect}
                         layoutMode={layoutMode}
                         effectiveLayoutMode={effectiveLayoutMode}
                         onLayoutModeChange={(mode) => {
