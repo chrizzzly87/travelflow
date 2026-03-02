@@ -14,7 +14,7 @@ interface UseTripItemUpdateHandlersOptions {
     handleUpdateItems: (items: ITimelineItem[], options?: { deferCommit?: boolean; skipPendingLabel?: boolean }) => void;
     clearRouteStatusForItem: (itemId: string) => void;
     safeUpdateTrip: (updatedTrip: ITrip, options?: { persist?: boolean }) => void;
-    scheduleCommit: (updatedTrip?: ITrip, view?: IViewSettings) => void;
+    scheduleCommit: (updatedTrip?: ITrip, view?: IViewSettings, options?: { skipToast?: boolean }) => void;
 }
 
 export const useTripItemUpdateHandlers = ({

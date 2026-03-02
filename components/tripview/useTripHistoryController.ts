@@ -19,6 +19,7 @@ interface HistoryToastOptions {
     tone?: HistoryToastTone;
     title?: string;
     iconVariant?: 'undo' | 'redo';
+    disableDefaultUndo?: boolean;
 }
 
 interface UseTripHistoryControllerOptions {
@@ -110,6 +111,7 @@ export const useTripHistoryController = ({
                     tone: 'neutral',
                     title: action === 'undo' ? 'Undo' : 'Redo',
                     iconVariant: action,
+                    disableDefaultUndo: true,
                 });
             }
             return false;
@@ -122,6 +124,7 @@ export const useTripHistoryController = ({
                 tone: 'neutral',
                 title: action === 'undo' ? 'Undo' : 'Redo',
                 iconVariant: action,
+                disableDefaultUndo: true,
             });
         }
         return true;
@@ -230,6 +233,7 @@ export const useTripHistoryController = ({
                     tone: 'neutral',
                     title: inferredAction === 'redo' ? 'Redo' : 'Undo',
                     iconVariant: inferredAction === 'redo' ? 'redo' : 'undo',
+                    disableDefaultUndo: true,
                 });
             }
         };

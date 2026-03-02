@@ -69,4 +69,70 @@ describe('components/tripview/useTripUpdateItemsHandler', () => {
     }), { persist: true });
     expect(scheduleCommit).toHaveBeenCalled();
   });
+
+  it('forwards commit-toast suppression when requested by callers', () => {
+    const cityA = makeCityItem({
+      id: 'city-a',
+      title: 'Tirana',
+      startDateOffset: 0,
+      duration: 2,
+    });
+    const cityB = makeCityItem({
+      id: 'city-b',
+      title: 'Durres',
+      startDateOffset: 2,
+      duration: 2,
+    });
+    const trip = makeTrip({
+      id: 'trip-1',
+      startDate: '2026-04-01',
+      items: [cityA, cityB],
+    });
+
+    const markUserEdit = vi.fn();
+    const safeUpdateTrip = vi.fn();
+    const setPendingLabel = vi.fn();
+    const scheduleCommit = vi.fn();
+    const normalizeOffsetsForTrip = vi.fn((items) => ({
+      items,
+      startDate: trip.startDate,
+      shiftedDays: 0,
+    }));
+
+    const { result } = renderHook(() => useTripUpdateItemsHandler({
+      trip,
+      currentViewSettings: {
+        layoutMode: 'vertical',
+        timelineView: 'vertical',
+        mapStyle: 'standard',
+        routeMode: 'driving',
+        showCityNames: true,
+        zoomLevel: 1,
+      },
+      markUserEdit,
+      safeUpdateTrip,
+      setPendingLabel,
+      pendingHistoryLabelRef: { current: null },
+      scheduleCommit,
+      normalizeOffsetsForTrip,
+    }));
+
+    const updatedItems = [
+      { ...cityA, duration: 3 },
+      cityB,
+    ];
+
+    act(() => {
+      result.current(updatedItems, { suppressCommitToast: true });
+    });
+
+    expect(scheduleCommit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        items: updatedItems,
+        startDate: trip.startDate,
+      }),
+      expect.anything(),
+      { skipToast: true }
+    );
+  });
 });

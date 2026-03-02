@@ -341,6 +341,10 @@ interface TripViewProps {
     };
 }
 
+interface CommitScheduleOptions {
+    skipToast?: boolean;
+}
+
 interface ExampleTransitionLocationState {
     useExampleSharedTransition?: boolean;
 }
@@ -982,7 +986,7 @@ const useTripViewRender = ({
     const editTitleInputRef = useRef<HTMLInputElement | null>(null);
     const pendingHistoryLabelRef = useRef<string | null>(null);
     const commitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const pendingCommitRef = useRef<{ trip: ITrip; view: IViewSettings } | null>(null);
+    const pendingCommitRef = useRef<{ trip: ITrip; view: IViewSettings; skipToast?: boolean } | null>(null);
     const suppressCommitRef = useRef(false);
     const navigateHistoryRef = useRef<((action: 'undo' | 'redo', options?: { silent?: boolean }) => boolean) | null>(null);
     const skipViewDiffRef = useRef(false);
@@ -1408,7 +1412,11 @@ const useTripViewRender = ({
         trackOpenHistory: (source) => trackEvent('app__trip_history--open', { source }),
     });
 
-    const scheduleCommit = useCallback((nextTrip?: ITrip, nextView?: IViewSettings) => {
+    const scheduleCommit = useCallback((
+        nextTrip?: ITrip,
+        nextView?: IViewSettings,
+        options?: CommitScheduleOptions,
+    ) => {
         if (!canEdit) return;
         if (isExamplePreview) return;
         if (suppressCommitRef.current) {
@@ -1418,14 +1426,14 @@ const useTripViewRender = ({
         }
         const tripToCommit = nextTrip || trip;
         const viewToCommit = nextView || currentViewSettings;
-        pendingCommitRef.current = { trip: tripToCommit, view: viewToCommit };
+        pendingCommitRef.current = { trip: tripToCommit, view: viewToCommit, skipToast: options?.skipToast };
         debugHistory('Scheduled commit', { label: pendingHistoryLabelRef.current || 'Data: Updated trip' });
 
         if (commitTimerRef.current) clearTimeout(commitTimerRef.current);
         const pendingLabel = pendingHistoryLabelRef.current || 'Data: Updated trip';
         const commitDelay = /^Data:\s+/i.test(pendingLabel) ? 150 : 700;
         commitTimerRef.current = setTimeout(() => {
-            const payload = pendingCommitRef.current || { trip: tripToCommit, view: viewToCommit };
+            const payload = pendingCommitRef.current || { trip: tripToCommit, view: viewToCommit, skipToast: options?.skipToast };
             const label = pendingHistoryLabelRef.current || 'Data: Updated trip';
             debugHistory('Committing', { label });
             if (onCommitState) {
@@ -1439,7 +1447,9 @@ const useTripViewRender = ({
             if (onCommitState) {
                 refreshHistory();
             }
-            showSavedToastForLabel(label);
+            if (!payload.skipToast) {
+                showSavedToastForLabel(label);
+            }
             if (typeof window !== 'undefined') {
                 (window as any).__tfLastCommit = { label, ts: Date.now() };
                 const hook = (window as any).__tfOnCommit;
@@ -1626,6 +1636,7 @@ const useTripViewRender = ({
                     tone: 'add',
                     title: 'Undo',
                     iconVariant: 'undo',
+                    disableDefaultUndo: true,
                 });
                 return;
             }
@@ -1637,16 +1648,18 @@ const useTripViewRender = ({
                         tone: 'add',
                         title: 'Undo',
                         iconVariant: 'undo',
+                        disableDefaultUndo: true,
                     });
                     return;
                 }
 
                 setPendingLabel(`Data: Restored ${deletedEntityLabel}`);
-                handleUpdateItems(context.previousItems);
+                handleUpdateItems(context.previousItems, { suppressCommitToast: true });
                 showToast(`Restored ${deletedEntityLabel}`, {
                     tone: 'add',
                     title: 'Undo',
                     iconVariant: 'undo',
+                    disableDefaultUndo: true,
                 });
             }, 200);
         },

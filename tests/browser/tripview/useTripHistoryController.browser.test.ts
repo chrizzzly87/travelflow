@@ -109,4 +109,71 @@ describe('components/tripview/useTripHistoryController', () => {
     expect(navigate).toHaveBeenCalledWith('/trip/trip-1?version=v1', { replace: true });
     expect(showToast).not.toHaveBeenCalled();
   });
+
+  it('shows undo feedback without recursive undo action when navigating history', () => {
+    const navigate = vi.fn();
+    const showToast = vi.fn();
+    const suppressCommitRef = { current: false };
+    historyServiceMocks.getHistoryEntries.mockReturnValue([
+      {
+        id: 'history-1',
+        tripId: 'trip-1',
+        url: '/trip/trip-1?version=v1',
+        label: 'Data: Removed activity "Museum"',
+        ts: Date.now() - 1_000,
+      },
+    ]);
+
+    const { result } = renderHook(() => useTripHistoryController({
+      tripId: 'trip-1',
+      tripUpdatedAt: Date.now(),
+      locationPathname: '/trip/trip-1',
+      currentUrl: '/trip/trip-1',
+      isExamplePreview: false,
+      navigate,
+      suppressCommitRef,
+      stripHistoryPrefix: (label) => label.replace(/^Data:\s*/i, ''),
+      showToast,
+    }));
+
+    act(() => {
+      result.current.navigateHistory('undo');
+    });
+
+    expect(showToast).toHaveBeenCalledWith('Removed activity "Museum"', {
+      tone: 'neutral',
+      title: 'Undo',
+      iconVariant: 'undo',
+      disableDefaultUndo: true,
+    });
+  });
+
+  it('shows boundary undo feedback without recursive undo action', () => {
+    const navigate = vi.fn();
+    const showToast = vi.fn();
+    const suppressCommitRef = { current: false };
+
+    const { result } = renderHook(() => useTripHistoryController({
+      tripId: 'trip-1',
+      tripUpdatedAt: Date.now(),
+      locationPathname: '/trip/trip-1',
+      currentUrl: '/trip/trip-1',
+      isExamplePreview: false,
+      navigate,
+      suppressCommitRef,
+      stripHistoryPrefix: (label) => label,
+      showToast,
+    }));
+
+    act(() => {
+      result.current.navigateHistory('undo');
+    });
+
+    expect(showToast).toHaveBeenCalledWith('No earlier history', {
+      tone: 'neutral',
+      title: 'Undo',
+      iconVariant: 'undo',
+      disableDefaultUndo: true,
+    });
+  });
 });

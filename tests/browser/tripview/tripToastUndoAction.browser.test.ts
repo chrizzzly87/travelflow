@@ -45,4 +45,5 @@ describe('components/tripview/tripToastUndoAction', () => {
 
     expect(resolved).toBeUndefined();
   });
+
 });
