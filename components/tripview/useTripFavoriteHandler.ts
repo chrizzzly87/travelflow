@@ -9,7 +9,7 @@ interface UseTripFavoriteHandlerOptions {
     markUserEdit: () => void;
     setPendingLabel: (label: string) => void;
     safeUpdateTrip: (updatedTrip: ITrip, options?: { persist?: boolean }) => void;
-    scheduleCommit: (updatedTrip?: ITrip, view?: IViewSettings) => void;
+    scheduleCommit: (updatedTrip?: ITrip, view?: IViewSettings, options?: { skipToast?: boolean }) => void;
     showToast: (message: string, options?: { tone?: 'add' | 'remove' | 'neutral' | 'info'; title?: string }) => void;
 }
 
@@ -36,7 +36,7 @@ export const useTripFavoriteHandler = ({
 
         setPendingLabel(nextFavorite ? 'Data: Added to favorites' : 'Data: Removed from favorites');
         safeUpdateTrip(updatedTrip, { persist: true });
-        scheduleCommit(updatedTrip, currentViewSettings);
+        scheduleCommit(updatedTrip, currentViewSettings, { skipToast: true });
         showToast(nextFavorite ? 'Trip added to favorites' : 'Trip removed from favorites', {
             tone: nextFavorite ? 'add' : 'remove',
             title: nextFavorite ? 'Added' : 'Removed',

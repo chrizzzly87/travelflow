@@ -58,7 +58,7 @@ describe('components/tripview/useTripItemMutationHandlers', () => {
       result.current.handleDeleteItem(cityItem.id);
     });
 
-    expect(handleUpdateItems).toHaveBeenCalledWith([activityItem]);
+    expect(handleUpdateItems).toHaveBeenCalledWith([activityItem], { suppressCommitToast: true });
     expect(showToast).toHaveBeenCalledWith('Removed city "Albanian Heritage & Riviera Loop"', expect.objectContaining({
       tone: 'remove',
       title: 'Removed',

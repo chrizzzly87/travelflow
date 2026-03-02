@@ -30,7 +30,7 @@ interface UseTripItemMutationHandlersOptions {
     requireEdit: () => boolean;
     markUserEdit: () => void;
     setPendingLabel: (label: string) => void;
-    handleUpdateItems: (items: ITimelineItem[]) => void;
+    handleUpdateItems: (items: ITimelineItem[], options?: { suppressCommitToast?: boolean }) => void;
     showToast: (message: string, options?: ToastOptions) => void;
     pendingHistoryLabelRef: React.MutableRefObject<string | null>;
     onResetSuppressedCommit?: () => void;
@@ -72,7 +72,7 @@ export const useTripItemMutationHandlers = ({
 
         const previousItems = trip.items;
         const nextItems = previousItems.filter((candidate) => candidate.id !== id);
-        handleUpdateItems(nextItems);
+        handleUpdateItems(nextItems, { suppressCommitToast: true });
 
         if (item) {
             const entityLabel = item.type === 'city'
