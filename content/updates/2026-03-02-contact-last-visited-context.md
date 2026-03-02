@@ -3,11 +3,11 @@ id: rel-2026-03-02-contact-last-visited-context
 version: v0.79.0
 title: "Contact context and guided reporting"
 date: 2026-03-02
-published_at: 2026-03-02T16:10:00Z
-status: draft
+published_at: 2026-03-02T17:37:26Z
+status: published
 notify_in_app: false
 in_app_hours: 24
-summary: "Contact submissions now include last-page context and guided reason/topic options, with translation-banner reports prefilled automatically."
+summary: "Contact and FAQ now provide better context capture, clearer reporting paths, and a cleaner support experience."
 ---
 
 ## Changes
