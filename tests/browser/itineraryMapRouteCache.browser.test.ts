@@ -24,6 +24,7 @@ import {
   getRouteOuterOutlineColor,
   getRouteOutlineColor,
   getMapLabelCityName,
+  resolveMarkerRenderProfile,
   resolveActivityMarkerPositions,
   resolveSelectedMapFocusPosition,
   resolveCityLabelAnchor,
@@ -249,6 +250,25 @@ describe('components/ItineraryMap route cache helpers', () => {
 
     expect(computeMaxPathDeviationMeters(straightPath, start, end)).toBe(0);
     expect(computeMaxPathDeviationMeters(bentPath, start, end)).toBeGreaterThan(1000);
+  });
+
+  it('uses compact marker rendering profile in floating map mode', () => {
+    const dockedProfile = resolveMarkerRenderProfile({ mapDockMode: 'docked' });
+    const profile = resolveMarkerRenderProfile({ mapDockMode: 'floating' });
+    expect(profile.city.shape).toBe('circle');
+    expect(profile.city.size).toBeLessThan(dockedProfile.city.size);
+    expect(profile.activity.size).toBeLessThan(dockedProfile.activity.size);
+    expect(profile.transport.size).toBeLessThan(dockedProfile.transport.size);
+    expect(profile.transport.show).toBe(true);
+  });
+
+  it('hides transport markers and shrinks markers further in compact floating mode', () => {
+    const floatingProfile = resolveMarkerRenderProfile({ mapDockMode: 'floating' });
+    const compactProfile = resolveMarkerRenderProfile({ mapDockMode: 'floating', isCompactFloating: true });
+    expect(compactProfile.city.shape).toBe('circle');
+    expect(compactProfile.city.size).toBeLessThan(floatingProfile.city.size);
+    expect(compactProfile.activity.size).toBeLessThan(floatingProfile.activity.size);
+    expect(compactProfile.transport.show).toBe(false);
   });
 
   it('flags low-fidelity transit paths as straight-like', () => {

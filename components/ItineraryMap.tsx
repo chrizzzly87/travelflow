@@ -268,17 +268,119 @@ const resolveTransportIconPath = (mode?: string): string => {
 
 const CITY_PIN_SELECTED_OUTLINE_FALLBACK = '#3b82f6';
 const CITY_PIN_SELECTED_RING_FALLBACK = '#bfdbfe';
-const TRANSPORT_MARKER_BADGE_SIZE = 40;
-const ACTIVITY_MARKER_BADGE_SIZE = 34;
-const ACTIVITY_MARKER_ICON_SIZE = 15;
-const TRANSPORT_MARKER_ICON_SCALE = 0.46;
 const TRANSPORT_MARKER_VIEWBOX_SIZE = 256;
-const TRANSPORT_MARKER_ICON_INSET = (TRANSPORT_MARKER_VIEWBOX_SIZE * (1 - TRANSPORT_MARKER_ICON_SCALE)) / 2;
 const CITY_MARKER_Z_INDEX = 320;
 const CITY_MARKER_SELECTED_Z_INDEX = 340;
 const ACTIVITY_MARKER_Z_INDEX = 240;
 const ACTIVITY_MARKER_SELECTED_Z_INDEX = 260;
 export const ACTIVITY_MARKERS_MIN_ZOOM = 9;
+
+type MarkerRenderProfile = {
+    city: {
+        shape: 'pin' | 'circle';
+        size: number;
+        selectedSize: number;
+        fontSize: number;
+        selectedFontSize: number;
+    };
+    activity: {
+        size: number;
+        selectedBoost: number;
+        iconSize: number;
+        tooltipFontSize: number;
+        tooltipPaddingX: number;
+        tooltipPaddingY: number;
+    };
+    transport: {
+        show: boolean;
+        size: number;
+        iconScale: number;
+    };
+};
+
+const FLOATING_COMPACT_MARKER_SHORT_EDGE_MAX_PX = 250;
+
+const DOCKED_MARKER_RENDER_PROFILE: MarkerRenderProfile = {
+    city: {
+        shape: 'pin',
+        size: 44,
+        selectedSize: 54,
+        fontSize: 12,
+        selectedFontSize: 13,
+    },
+    activity: {
+        size: 34,
+        selectedBoost: 4,
+        iconSize: 15,
+        tooltipFontSize: 11,
+        tooltipPaddingX: 10,
+        tooltipPaddingY: 6,
+    },
+    transport: {
+        show: true,
+        size: 40,
+        iconScale: 0.46,
+    },
+};
+
+const FLOATING_MARKER_RENDER_PROFILE: MarkerRenderProfile = {
+    city: {
+        shape: 'circle',
+        size: 30,
+        selectedSize: 34,
+        fontSize: 11,
+        selectedFontSize: 12,
+    },
+    activity: {
+        size: 28,
+        selectedBoost: 3,
+        iconSize: 12,
+        tooltipFontSize: 10,
+        tooltipPaddingX: 8,
+        tooltipPaddingY: 5,
+    },
+    transport: {
+        show: true,
+        size: 30,
+        iconScale: 0.42,
+    },
+};
+
+const FLOATING_COMPACT_MARKER_RENDER_PROFILE: MarkerRenderProfile = {
+    city: {
+        shape: 'circle',
+        size: 24,
+        selectedSize: 28,
+        fontSize: 10,
+        selectedFontSize: 10,
+    },
+    activity: {
+        size: 22,
+        selectedBoost: 2,
+        iconSize: 10,
+        tooltipFontSize: 10,
+        tooltipPaddingX: 8,
+        tooltipPaddingY: 4,
+    },
+    transport: {
+        show: false,
+        size: 26,
+        iconScale: 0.4,
+    },
+};
+
+export const resolveMarkerRenderProfile = (
+    options?: {
+        mapDockMode?: 'docked' | 'floating';
+        isCompactFloating?: boolean;
+    },
+): MarkerRenderProfile => {
+    const mapDockMode = options?.mapDockMode;
+    const isCompactFloating = options?.isCompactFloating ?? false;
+    if (mapDockMode !== 'floating') return DOCKED_MARKER_RENDER_PROFILE;
+    if (isCompactFloating) return FLOATING_COMPACT_MARKER_RENDER_PROFILE;
+    return FLOATING_MARKER_RENDER_PROFILE;
+};
 
 const resolveCssColorVar = (name: string, fallback: string): string => {
     if (typeof window === 'undefined' || typeof document === 'undefined') return fallback;
@@ -356,8 +458,9 @@ export const shouldLogRouteFailureWarning = ({
 const buildCityMarkerSvgDataUrl = (
     color: string,
     isSelected: boolean,
+    profile: MarkerRenderProfile['city'],
 ): { url: string; size: number } => {
-    const size = isSelected ? 54 : 44;
+    const size = isSelected ? profile.selectedSize : profile.size;
     const pinStroke = isSelected ? resolveCssColorVar('--tf-accent-500', CITY_PIN_SELECTED_OUTLINE_FALLBACK) : '#ffffff';
     const ringStroke = isSelected ? resolveCssColorVar('--tf-accent-200', CITY_PIN_SELECTED_RING_FALLBACK) : '#dbe3ee';
     const halo = isSelected ? 0.24 : 0.1;
@@ -375,9 +478,43 @@ const buildCityMarkerSvgDataUrl = (
     return { url, size };
 };
 
-const buildCityMarkerHtml = (index: number, color: string, isSelected: boolean): string => {
-    const { url, size } = buildCityMarkerSvgDataUrl(color, isSelected);
-    const fontSize = isSelected ? 13 : 12;
+const buildCityCircleMarkerHtml = (
+    index: number,
+    color: string,
+    isSelected: boolean,
+    profile: MarkerRenderProfile['city'],
+): string => {
+    const size = isSelected ? profile.selectedSize : profile.size;
+    const fontSize = isSelected ? profile.selectedFontSize : profile.fontSize;
+    const ringColor = '#ffffff';
+    const accentRing = resolveCssColorVar('--tf-accent-500', CITY_PIN_SELECTED_OUTLINE_FALLBACK);
+    const shadow = isSelected
+        ? `0 0 0 2px ${accentRing}, 0 6px 16px rgba(15,23,42,0.24)`
+        : '0 3px 10px rgba(15,23,42,0.15)';
+    const innerDotSize = Math.max(11, Math.round(size * 0.54));
+    return `
+        <div style="position:relative;width:${size}px;height:${size}px;line-height:1;user-select:none;">
+            <div style="width:${size}px;height:${size}px;border-radius:9999px;background:${color};border:2px solid ${ringColor};box-shadow:${shadow};display:flex;align-items:center;justify-content:center;">
+                <div style="width:${innerDotSize}px;height:${innerDotSize}px;border-radius:9999px;background:#ffffff;display:flex;align-items:center;justify-content:center;">
+                    <span style="color:#0f172a;font-weight:800;font-size:${fontSize}px;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;pointer-events:none;">${index + 1}</span>
+                </div>
+            </div>
+        </div>
+    `;
+};
+
+const buildCityMarkerHtml = (
+    index: number,
+    color: string,
+    isSelected: boolean,
+    profile: MarkerRenderProfile,
+): string => {
+    if (profile.city.shape === 'circle') {
+        return buildCityCircleMarkerHtml(index, color, isSelected, profile.city);
+    }
+
+    const { url, size } = buildCityMarkerSvgDataUrl(color, isSelected, profile.city);
+    const fontSize = isSelected ? profile.city.selectedFontSize : profile.city.fontSize;
     const numberTopPercent = isSelected ? 45 : 45.3;
     return `
         <div style="position:relative;width:${size}px;height:${size}px;line-height:1;user-select:none;">
@@ -387,16 +524,22 @@ const buildCityMarkerHtml = (index: number, color: string, isSelected: boolean):
     `;
 };
 
-const buildTransportMarkerHtml = (mode?: string, color?: string, rotationDegrees?: number): string => {
-    const size = TRANSPORT_MARKER_BADGE_SIZE;
+const buildTransportMarkerHtml = (
+    mode: string | undefined,
+    color: string | undefined,
+    rotationDegrees: number | undefined,
+    profile: MarkerRenderProfile,
+): string => {
+    const size = profile.transport.size;
     const badgeColor = color || '#1f2937';
     const iconPath = resolveTransportIconPath(mode);
     const rotation = mode === 'plane' ? normalizeRotationDegrees(rotationDegrees) : 0;
+    const iconInset = (TRANSPORT_MARKER_VIEWBOX_SIZE * (1 - profile.transport.iconScale)) / 2;
     const svg = `
         <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${TRANSPORT_MARKER_VIEWBOX_SIZE} ${TRANSPORT_MARKER_VIEWBOX_SIZE}">
             <circle cx="128" cy="128" r="112" fill="${badgeColor}" />
             <g transform="rotate(${rotation} 128 128)">
-                <g transform="translate(${TRANSPORT_MARKER_ICON_INSET} ${TRANSPORT_MARKER_ICON_INSET}) scale(${TRANSPORT_MARKER_ICON_SCALE})">
+                <g transform="translate(${iconInset} ${iconInset}) scale(${profile.transport.iconScale})">
                     <path d="${iconPath}" fill="#ffffff" />
                 </g>
             </g>
@@ -546,7 +689,7 @@ const buildCoordinateGroupKey = (coordinates: google.maps.LatLngLiteral): string
     `${coordinates.lat.toFixed(MARKER_COORDINATE_GROUP_PRECISION)},${coordinates.lng.toFixed(MARKER_COORDINATE_GROUP_PRECISION)}`
 );
 
-const ACTIVITY_ICON_MARKUP_CACHE = new Map<ActivityType, string>();
+const ACTIVITY_ICON_MARKUP_CACHE = new Map<string, string>();
 
 const escapeHtml = (value: string): string => (
     value
@@ -557,30 +700,38 @@ const escapeHtml = (value: string): string => (
         .replace(/'/g, '&#039;')
 );
 
-const buildActivityIconMarkup = (type: ActivityType): string => {
-    const cached = ACTIVITY_ICON_MARKUP_CACHE.get(type);
+const buildActivityIconMarkup = (type: ActivityType, iconSize: number): string => {
+    const cacheKey = `${type}:${iconSize}`;
+    const cached = ACTIVITY_ICON_MARKUP_CACHE.get(cacheKey);
     if (cached) return cached;
     const markup = renderToStaticMarkup(
-        <ActivityTypeIcon type={type} size={ACTIVITY_MARKER_ICON_SIZE} />
+        <ActivityTypeIcon type={type} size={iconSize} />
     );
     const styled = markup.replace(
         '<svg',
-        `<svg style="width:${ACTIVITY_MARKER_ICON_SIZE}px;height:${ACTIVITY_MARKER_ICON_SIZE}px;display:block;stroke:currentColor;stroke-width:2.3;color:currentColor;fill:none;"`,
+        `<svg style="width:${iconSize}px;height:${iconSize}px;display:block;stroke:currentColor;stroke-width:2.3;color:currentColor;fill:none;"`,
     );
-    ACTIVITY_ICON_MARKUP_CACHE.set(type, styled);
+    ACTIVITY_ICON_MARKUP_CACHE.set(cacheKey, styled);
     return styled;
 };
 
-const buildActivityMarkerHtml = (type: ActivityType, isSelected: boolean, title?: string): string => {
-    const size = isSelected ? ACTIVITY_MARKER_BADGE_SIZE + 4 : ACTIVITY_MARKER_BADGE_SIZE;
+const buildActivityMarkerHtml = (
+    type: ActivityType,
+    isSelected: boolean,
+    title: string | undefined,
+    profile: MarkerRenderProfile,
+): string => {
+    const size = isSelected
+        ? profile.activity.size + profile.activity.selectedBoost
+        : profile.activity.size;
     const palette = getActivityTypePaletteParts(type);
     const selectedOutlineColor = resolveCssColorVar('--tf-accent-500', '#2563eb');
-    const iconMarkup = buildActivityIconMarkup(type);
+    const iconMarkup = buildActivityIconMarkup(type, profile.activity.iconSize);
     const tooltipLabel = typeof title === 'string' && title.trim().length > 0
         ? escapeHtml(title.trim())
         : '';
     const tooltipMarkup = tooltipLabel
-        ? `<div data-role="activity-marker-tooltip" style="position:absolute;inset:auto auto 100% 50%;transform:translate(-50%, calc(-100% - 8px));pointer-events:none;opacity:0;transition:opacity 140ms ease, transform 140ms ease;z-index:30;white-space:nowrap;background:rgba(15,23,42,0.95);color:#f8fafc;border-radius:9999px;padding:6px 10px;font-size:11px;font-weight:600;letter-spacing:0.01em;box-shadow:0 8px 24px rgba(15,23,42,0.24);backdrop-filter:blur(6px);">${tooltipLabel}</div>`
+        ? `<div data-role="activity-marker-tooltip" style="position:absolute;inset:auto auto 100% 50%;transform:translate(-50%, calc(-100% - 8px));pointer-events:none;opacity:0;transition:opacity 140ms ease, transform 140ms ease;z-index:30;white-space:nowrap;background:rgba(15,23,42,0.95);color:#f8fafc;border-radius:9999px;padding:${profile.activity.tooltipPaddingY}px ${profile.activity.tooltipPaddingX}px;font-size:${profile.activity.tooltipFontSize}px;font-weight:600;letter-spacing:0.01em;box-shadow:0 8px 24px rgba(15,23,42,0.24);backdrop-filter:blur(6px);">${tooltipLabel}</div>`
         : '';
 
     return `
@@ -1042,7 +1193,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     const activityMarkerMetaRef = useRef<Array<{ id: string; title: string; type: ActivityType; marker: OverlayMarkerHandle; isVisible: boolean }>>([]);
     const activityMarkerPositionByIdRef = useRef<Map<string, google.maps.LatLngLiteral>>(new Map());
     const routesRef = useRef<any[]>([]); // stored polylines/renderers
-    const transportMarkersRef = useRef<OverlayMarkerHandle[]>([]);
+    const transportMarkerMetaRef = useRef<Array<{ mode?: string; color?: string; rotationDegrees?: number; marker: OverlayMarkerHandle }>>([]);
     const cityLabelOverlaysRef = useRef<any[]>([]);
     const lastFocusQueryRef = useRef<string | null>(null);
     const lastFitToRouteKeyRef = useRef<string | null>(null);
@@ -1059,6 +1210,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     const [mapInitialized, setMapInitialized] = useState(false);
     const [activityMarkersEnabled, setActivityMarkersEnabled] = useState(true);
     const [mapZoomLevel, setMapZoomLevel] = useState<number | null>(null);
+    const [mapViewportShortEdge, setMapViewportShortEdge] = useState<number | null>(null);
     const mapActionsDisabled = !mapInitialized || Boolean(loadError);
     const activityMarkersEnabledRef = useRef(activityMarkersEnabled);
     const mapZoomLevelRef = useRef<number | null>(mapZoomLevel);
@@ -1087,6 +1239,16 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     const selectedActivityIdRef = useRef<string | null>(selectedActivityId);
     const selectedCityIdRef = useRef<string | null>(selectedCityId);
     const selectionVersionRef = useRef(0);
+    const isCompactFloatingMarkerMode = mapDockMode === 'floating'
+        && Number.isFinite(mapViewportShortEdge)
+        && Number(mapViewportShortEdge) <= FLOATING_COMPACT_MARKER_SHORT_EDGE_MAX_PX;
+    const markerRenderProfile = useMemo(
+        () => resolveMarkerRenderProfile({
+            mapDockMode,
+            isCompactFloating: isCompactFloatingMarkerMode,
+        }),
+        [isCompactFloatingMarkerMode, mapDockMode],
+    );
     const normalizedSelectedItemId = selectedItemId ?? null;
     if (selectedItemIdRef.current !== normalizedSelectedItemId) {
         selectedItemIdRef.current = normalizedSelectedItemId;
@@ -1218,10 +1380,15 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         setMapInitialized(Boolean(map));
         if (!map) {
             setMapZoomLevel(null);
+            setMapViewportShortEdge(null);
             return;
         }
         const nextZoom = map.getZoom?.();
         setMapZoomLevel(Number.isFinite(nextZoom) ? Number(nextZoom) : null);
+        const containerRect = mapContainerRef.current?.getBoundingClientRect();
+        if (containerRect) {
+            setMapViewportShortEdge(Math.round(Math.min(containerRect.width, containerRect.height)));
+        }
     }, []);
 
     useEffect(() => {
@@ -1295,8 +1462,8 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         activityMarkerPositionByIdRef.current = new Map();
         routesRef.current.forEach(r => r.setMap(null));
         routesRef.current = [];
-        transportMarkersRef.current.forEach(m => m.setMap(null));
-        transportMarkersRef.current = [];
+        transportMarkerMetaRef.current.forEach(({ marker }) => marker.setMap(null));
+        transportMarkerMetaRef.current = [];
         cityLabelOverlaysRef.current.forEach(o => o.setMap(null));
         cityLabelOverlaysRef.current = [];
         cityMarkerMetaRef.current = [];
@@ -1637,7 +1804,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 const cityMarkerColor = resolveMapColor(city.color);
                 const marker = createOverlayMarker({
                     position: markerPosition,
-                    html: buildCityMarkerHtml(index, cityMarkerColor, isSelected),
+                    html: buildCityMarkerHtml(index, cityMarkerColor, isSelected, markerRenderProfile),
                     zIndex: isSelected ? CITY_MARKER_SELECTED_Z_INDEX : CITY_MARKER_Z_INDEX,
                     clickable: true,
                     onClick: () => onCityMarkerSelectRef.current?.(city.id),
@@ -1670,6 +1837,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                         activityMarker.type,
                         isSelected,
                         activityMarker.title,
+                        markerRenderProfile,
                     ),
                     zIndex: isSelected ? ACTIVITY_MARKER_SELECTED_Z_INDEX : ACTIVITY_MARKER_Z_INDEX,
                     clickable: true,
@@ -1928,17 +2096,22 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                          routingAttempted = true;
                          drawRoutePath(cached.path, startColor, 3);
 
-                         if (mode !== 'na') {
+                         if (mode !== 'na' && markerRenderProfile.transport.show) {
                              const midPoint = getPointAlongPath(cached.path, 0.5);
                              if (!midPoint) continue;
                              const markerHeading = mode === 'plane' ? getHeadingAlongPath(cached.path, 0.5) : undefined;
                              const transportMarker = createOverlayMarker({
                                  position: midPoint,
-                                 html: buildTransportMarkerHtml(mode, startColor, markerHeading),
+                                 html: buildTransportMarkerHtml(mode, startColor, markerHeading, markerRenderProfile),
                                  zIndex: 50,
                                  centerAnchor: true,
                              });
-                             transportMarkersRef.current.push(transportMarker);
+                             transportMarkerMetaRef.current.push({
+                                 mode,
+                                 color: startColor,
+                                 rotationDegrees: markerHeading,
+                                 marker: transportMarker,
+                             });
                          }
 
                          if (travelItem && onRouteMetricsRef.current) {
@@ -2079,17 +2252,22 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
 
                              drawRoutePath(path, startColor, 3);
 
-                             if (mode !== 'na') {
+                             if (mode !== 'na' && markerRenderProfile.transport.show) {
                                  const midPoint = getPointAlongPath(path, 0.5);
                                  if (midPoint) {
                                      const markerHeading = mode === 'plane' ? getHeadingAlongPath(path, 0.5) : undefined;
                                      const transportMarker = createOverlayMarker({
                                          position: midPoint,
-                                         html: buildTransportMarkerHtml(mode, startColor, markerHeading),
+                                         html: buildTransportMarkerHtml(mode, startColor, markerHeading, markerRenderProfile),
                                          zIndex: 50,
                                          centerAnchor: true,
                                      });
-                                     transportMarkersRef.current.push(transportMarker);
+                                     transportMarkerMetaRef.current.push({
+                                         mode,
+                                         color: startColor,
+                                         rotationDegrees: markerHeading,
+                                         marker: transportMarker,
+                                     });
                                  }
                              }
 
@@ -2200,7 +2378,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                      { lat: start.coordinates.lat, lng: start.coordinates.lng },
                      { lat: end.coordinates.lat, lng: end.coordinates.lng },
                  ], 0.5);
-                 if (mode !== 'na') {
+                 if (mode !== 'na' && markerRenderProfile.transport.show) {
                      if (!isEffectActive()) return;
                      if (!mid) continue;
                      const markerHeading = mode === 'plane'
@@ -2208,11 +2386,16 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                          : undefined;
                      const transportMarker = createOverlayMarker({
                          position: mid,
-                         html: buildTransportMarkerHtml(mode, startColor, markerHeading),
+                         html: buildTransportMarkerHtml(mode, startColor, markerHeading, markerRenderProfile),
                          zIndex: 50,
                          centerAnchor: true,
                      });
-                     transportMarkersRef.current.push(transportMarker);
+                     transportMarkerMetaRef.current.push({
+                         mode,
+                         color: startColor,
+                         rotationDegrees: markerHeading,
+                         marker: transportMarker,
+                     });
                  }
              }
         };
@@ -2224,7 +2407,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             isEffectDisposed = true;
         };
 
-    }, [mapInitialized, mapRenderSignature, routeMode, showCityNames, isPaywalled, activeStyle]); 
+    }, [mapInitialized, mapRenderSignature, routeMode, showCityNames, isPaywalled, activeStyle, markerRenderProfile]); 
 
     useEffect(() => {
         if (!mapInitialized || !window.google?.maps?.OverlayView) return;
@@ -2232,7 +2415,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         cityMarkerMetaRef.current.forEach(({ id, color, index, marker }) => {
             const isSelected = id === selectedCityId;
             marker.update({
-                html: buildCityMarkerHtml(index, color, isSelected),
+                html: buildCityMarkerHtml(index, color, isSelected, markerRenderProfile),
                 zIndex: isSelected ? CITY_MARKER_SELECTED_Z_INDEX : CITY_MARKER_Z_INDEX,
             });
         });
@@ -2245,11 +2428,21 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             meta.title = resolvedTitle;
             const isSelected = id === selectedActivityId;
             marker.update({
-                html: buildActivityMarkerHtml(resolvedType, isSelected, resolvedTitle),
+                html: buildActivityMarkerHtml(resolvedType, isSelected, resolvedTitle, markerRenderProfile),
                 zIndex: isSelected ? ACTIVITY_MARKER_SELECTED_Z_INDEX : ACTIVITY_MARKER_Z_INDEX,
             });
         });
-    }, [activityMarkerStylesById, mapInitialized, selectedActivityId, selectedCityId]);
+    }, [activityMarkerStylesById, mapInitialized, selectedActivityId, selectedCityId, markerRenderProfile]);
+
+    useEffect(() => {
+        if (!mapInitialized || !googleMapRef.current) return;
+        transportMarkerMetaRef.current.forEach((meta) => {
+            meta.marker.setMap(markerRenderProfile.transport.show ? googleMapRef.current : null);
+            meta.marker.update({
+                html: buildTransportMarkerHtml(meta.mode, meta.color, meta.rotationDegrees, markerRenderProfile),
+            });
+        });
+    }, [mapInitialized, markerRenderProfile]);
 
     useEffect(() => {
         if (!mapInitialized || !googleMapRef.current) return;
@@ -2354,6 +2547,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         if (!container) return;
 
         let previousViewportSize = container.getBoundingClientRect();
+        setMapViewportShortEdge(Math.round(Math.min(previousViewportSize.width, previousViewportSize.height)));
         let resizeRafId: number | null = null;
         const observer = new ResizeObserver(() => {
             if (resizeRafId !== null || !googleMapRef.current) return;
@@ -2364,13 +2558,16 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                     window.google.maps.event.trigger(googleMapRef.current, 'resize');
                 }
                 if (selectedActivityIdRef.current || selectedCityIdRef.current || cities.length === 0) {
-                    previousViewportSize = container.getBoundingClientRect();
+                    const currentViewportSize = container.getBoundingClientRect();
+                    previousViewportSize = currentViewportSize;
+                    setMapViewportShortEdge(Math.round(Math.min(currentViewportSize.width, currentViewportSize.height)));
                     return;
                 }
                 const nextViewportSize = container.getBoundingClientRect();
                 const widthDelta = Math.abs(nextViewportSize.width - previousViewportSize.width);
                 const heightDelta = Math.abs(nextViewportSize.height - previousViewportSize.height);
                 previousViewportSize = nextViewportSize;
+                setMapViewportShortEdge(Math.round(Math.min(nextViewportSize.width, nextViewportSize.height)));
                 if (widthDelta < 24 && heightDelta < 24) return;
                 cancelResizeAutoFitTimer();
                 resizeAutoFitTimerRef.current = window.setTimeout(() => {
