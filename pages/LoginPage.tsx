@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ArrowRight, SpinnerGap as Loader2 } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { Checkbox } from '../components/ui/checkbox';
 import { MarketingLayout } from '../components/marketing/MarketingLayout';
 import { useAuth } from '../hooks/useAuth';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
@@ -19,6 +20,10 @@ import {
     rememberAuthReturnPath,
     resolvePreferredNextPath,
 } from '../services/authNavigationService';
+import {
+    isRememberLoginEnabled,
+    setRememberLoginEnabled,
+} from '../services/authSessionPersistenceService';
 import {
     clearPendingOAuthProvider,
     getLastUsedOAuthProvider,
@@ -90,6 +95,7 @@ const buildLoginRedirectUrl = (claimRequestId: string | null, nextPath: string):
 };
 const LOGIN_PAGE_EMAIL_INPUT_ID = 'login-page-email';
 const LOGIN_PAGE_SECONDARY_INPUT_ID = 'login-page-secondary';
+const LOGIN_PAGE_REMEMBER_CHECKBOX_ID = 'login-page-remember-login';
 
 export const LoginPage: React.FC = () => {
     const { t, i18n } = useTranslation('auth');
@@ -114,6 +120,7 @@ export const LoginPage: React.FC = () => {
     const [hasPostAuthAttempted, setHasPostAuthAttempted] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [infoMessage, setInfoMessage] = useState<string | null>(null);
+    const [rememberLogin, setRememberLogin] = useState<boolean>(() => isRememberLoginEnabled());
     const [lastUsedProvider, setLastUsedProvider] = useState<OAuthProviderId | null>(() => getLastUsedOAuthProvider());
 
     const oauthButtons = useMemo(() => getOAuthButtons(i18n.language), [i18n.language]);
@@ -250,6 +257,7 @@ export const LoginPage: React.FC = () => {
             setErrorMessage(t('errors.default'));
             return;
         }
+        setRememberLoginEnabled(rememberLogin);
         clearPendingOAuthProvider();
 
         setIsSubmitting(true);
@@ -287,6 +295,7 @@ export const LoginPage: React.FC = () => {
     const handleOAuthLogin = async (provider: OAuthProviderId) => {
         setErrorMessage(null);
         setInfoMessage(null);
+        setRememberLoginEnabled(rememberLogin);
         setPendingOAuthProvider(provider);
         trackEvent('auth__method--select', { method: provider });
         const response = await loginWithOAuth(provider, oauthRedirectTo);
@@ -335,6 +344,12 @@ export const LoginPage: React.FC = () => {
         if (!(event.target instanceof HTMLInputElement)) return;
         event.preventDefault();
         event.currentTarget.requestSubmit();
+    };
+
+    const handleRememberLoginToggle = (checked: boolean) => {
+        setRememberLogin(checked);
+        setRememberLoginEnabled(checked);
+        trackEvent('auth__remember_login--toggle', { remember_login: checked });
     };
 
     return (
@@ -417,6 +432,20 @@ export const LoginPage: React.FC = () => {
                         </div>
                         {mode === 'login' && (
                             <div className="space-y-2">
+                                <label
+                                    htmlFor={LOGIN_PAGE_REMEMBER_CHECKBOX_ID}
+                                    className="inline-flex cursor-pointer items-center gap-2 text-sm font-semibold text-slate-800"
+                                >
+                                    <Checkbox
+                                        id={LOGIN_PAGE_REMEMBER_CHECKBOX_ID}
+                                        checked={rememberLogin}
+                                        onCheckedChange={(checked) => handleRememberLoginToggle(checked === true)}
+                                        disabled={isSubmitting || isPostAuthProcessing}
+                                        aria-label={t('labels.rememberLogin')}
+                                        {...getAnalyticsDebugAttributes('auth__remember_login--toggle')}
+                                    />
+                                    <span>{t('labels.rememberLogin')}</span>
+                                </label>
                                 <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
                                     <button
                                         type="button"

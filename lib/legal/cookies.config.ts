@@ -74,6 +74,21 @@ export const COOKIE_REGISTRY: CookieRegistry = {
       notes: 'May be stored in sessionStorage by Supabase internals during OAuth handshakes.',
     },
     {
+      name: 'tf_localhost_supabase_auth_bridge_*',
+      purpose: 'Localhost-only cookie bridge for sharing Supabase auth sessions across local dev ports.',
+      duration: 'Up to 30 days',
+      provider: 'TravelFlow',
+      storage: 'cookie',
+      notes: 'Used only on localhost for development workflows; not set in production environments.',
+    },
+    {
+      name: 'tf_auth_session_persistence_v1',
+      purpose: 'Stores whether login sessions should persist across browser restarts.',
+      duration: 'Persistent',
+      provider: 'TravelFlow',
+      storage: 'localStorage',
+    },
+    {
       name: 'tf_auth_return_path_v1',
       purpose: 'Remembers the intended in-app path after successful login.',
       duration: 'Until consumed or cleared',
