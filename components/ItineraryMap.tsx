@@ -547,6 +547,13 @@ export const isMapViewportReady = (rect: { width: number; height: number } | nul
     return rect.width >= MAP_VIEWPORT_READY_MIN_DIMENSION_PX && rect.height >= MAP_VIEWPORT_READY_MIN_DIMENSION_PX;
 };
 
+export const getMapLabelCityName = (value?: string): string => {
+    const raw = typeof value === 'string' ? value.trim() : '';
+    if (!raw) return '';
+    const firstSegment = raw.split(',')[0]?.trim();
+    return firstSegment || raw;
+};
+
 export const buildRouteAttemptPolicy = (
     mode: string,
     straightDistanceKm: number,
@@ -1302,12 +1309,13 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             cities.forEach((city) => {
                 if (!city.coordinates) return;
                 const cityKey = getNormalizedCityName(city.title);
+                const labelName = getMapLabelCityName(city.title || city.location) || city.title || city.location || '';
                 if (isRoundTrip && cityKey && cityKey === startCityKey) {
                     if (shownRoundTripLabel.has(cityKey)) return;
                     shownRoundTripLabel.add(cityKey);
                     const overlay = createCityLabelOverlay(
                         { lat: city.coordinates.lat, lng: city.coordinates.lng },
-                        city.title,
+                        labelName,
                         'START • END'
                     );
                     cityLabelOverlaysRef.current.push(overlay);
@@ -1321,14 +1329,14 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 if (subLabel) {
                     const overlay = createCityLabelOverlay(
                         { lat: city.coordinates.lat, lng: city.coordinates.lng },
-                        city.title,
+                        labelName,
                         subLabel
                     );
                     cityLabelOverlaysRef.current.push(overlay);
                 } else {
                     const overlay = createCityLabelOverlay(
                         { lat: city.coordinates.lat, lng: city.coordinates.lng },
-                        city.title
+                        labelName
                     );
                     cityLabelOverlaysRef.current.push(overlay);
                 }

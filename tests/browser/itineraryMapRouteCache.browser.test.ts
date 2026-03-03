@@ -22,6 +22,7 @@ import {
   filterHydratedRouteCacheEntries,
   getRouteOuterOutlineColor,
   getRouteOutlineColor,
+  getMapLabelCityName,
   isRoutePathLikelyStraight,
   isMapViewportReady,
   offsetLatLngByMeters,
@@ -87,6 +88,12 @@ describe('components/ItineraryMap route cache helpers', () => {
     expect(shouldLogRouteFailureWarning({ ...params, nowMs: 1_000 })).toBe(true);
     expect(shouldLogRouteFailureWarning({ ...params, nowMs: 61_000 })).toBe(false);
     expect(shouldLogRouteFailureWarning({ ...params, nowMs: 121_000 })).toBe(true);
+  });
+
+  it('uses city-only names for map labels when titles include country segments', () => {
+    expect(getMapLabelCityName('Bangkok, Thailand')).toBe('Bangkok');
+    expect(getMapLabelCityName('Hoi An')).toBe('Hoi An');
+    expect(getMapLabelCityName('')).toBe('');
   });
 
   it('uses dual-contrast outline colors', () => {
