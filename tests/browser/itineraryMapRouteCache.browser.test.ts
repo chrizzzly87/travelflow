@@ -22,6 +22,7 @@ import {
   filterHydratedRouteCacheEntries,
   getRouteOuterOutlineColor,
   getRouteOutlineColor,
+  isRoutePathLikelyStraight,
   isMapViewportReady,
   offsetLatLngByMeters,
 } from '../../components/ItineraryMap';
@@ -220,6 +221,34 @@ describe('components/ItineraryMap route cache helpers', () => {
 
     expect(computeMaxPathDeviationMeters(straightPath, start, end)).toBe(0);
     expect(computeMaxPathDeviationMeters(bentPath, start, end)).toBeGreaterThan(1000);
+  });
+
+  it('flags low-fidelity transit paths as straight-like', () => {
+    const start = { lat: 13.7563, lng: 100.5018 };
+    const end = { lat: 13.3633, lng: 103.8564 };
+    const nearStraightTransitPath = [
+      start,
+      { lat: 13.62, lng: 101.65 },
+      { lat: 13.53, lng: 102.72 },
+      end,
+    ];
+
+    expect(isRoutePathLikelyStraight([start, end], start, end, 'bus')).toBe(true);
+    expect(isRoutePathLikelyStraight(nearStraightTransitPath, start, end, 'bus')).toBe(true);
+  });
+
+  it('accepts sufficiently curved transit paths', () => {
+    const start = { lat: 13.7563, lng: 100.5018 };
+    const end = { lat: 13.3633, lng: 103.8564 };
+    const curvedTransitPath = [
+      start,
+      { lat: 14.48, lng: 101.05 },
+      { lat: 14.61, lng: 102.24 },
+      { lat: 14.16, lng: 103.18 },
+      end,
+    ];
+
+    expect(isRoutePathLikelyStraight(curvedTransitPath, start, end, 'bus')).toBe(false);
   });
 
   it('skips impossible route checks by mode and distance caps', () => {

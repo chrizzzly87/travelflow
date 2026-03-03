@@ -461,6 +461,37 @@ export const computeMaxPathDeviationMeters = (
     return maxDeviation;
 };
 
+export const isRoutePathLikelyStraight = (
+    path: google.maps.LatLngLiteral[],
+    start: google.maps.LatLngLiteral,
+    end: google.maps.LatLngLiteral,
+    mode: string,
+): boolean => {
+    const modeRequiresHigherShapeFidelity = mode === 'bus' || mode === 'train';
+    const minimumPathPointCount = modeRequiresHigherShapeFidelity ? 4 : 3;
+    if (path.length < minimumPathPointCount) return true;
+
+    const straightMeters = estimateGreatCircleDistanceKm(start, end) * 1000;
+    if (!Number.isFinite(straightMeters) || straightMeters <= 0) return true;
+
+    let pathMeters = 0;
+    for (let idx = 1; idx < path.length; idx++) {
+        pathMeters += estimateGreatCircleDistanceKm(path[idx - 1], path[idx]) * 1000;
+    }
+
+    const ratio = pathMeters / straightMeters;
+    const minimumDetourRatio = modeRequiresHigherShapeFidelity ? 1.05 : 1.015;
+    const minimumDeviationMeters = Math.max(
+        modeRequiresHigherShapeFidelity ? 550 : 450,
+        Math.min(modeRequiresHigherShapeFidelity ? 8_500 : 3_500, straightMeters * (modeRequiresHigherShapeFidelity ? 0.022 : 0.015)),
+    );
+    const maxDeviationMeters = computeMaxPathDeviationMeters(path, start, end);
+
+    const hasStraightLikeDetour = ratio > 0 && ratio < minimumDetourRatio;
+    const hasStraightLikeShape = maxDeviationMeters < minimumDeviationMeters;
+    return hasStraightLikeDetour || hasStraightLikeShape;
+};
+
 export const offsetLatLngByMeters = (
     origin: google.maps.LatLngLiteral,
     eastMeters: number,
@@ -1358,6 +1389,16 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                      const isCachedFailureFresh = cached?.status === 'failed' && (Date.now() - cached.updatedAt) < ROUTE_FAILURE_TTL_MS;
 
                      if (cached?.status === 'ok' && cached.path?.length) {
+                         const cachedPathIsStraightLike = isRoutePathLikelyStraight(
+                             cached.path,
+                             start.coordinates,
+                             end.coordinates,
+                             mode,
+                         );
+                         if (cachedPathIsStraightLike) {
+                             ROUTE_CACHE.delete(cacheKey);
+                             persistRouteCache();
+                         } else {
                          if (!isEffectActive()) return;
                          routingAttempted = true;
                          drawRoutePath(cached.path, startColor, 3);
@@ -1387,6 +1428,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                              onRouteStatusRef.current(travelItem.id, 'ready', { mode, routeKey: cacheKey });
                          }
                          continue;
+                         }
                      }
 
                      if (isCachedFailureFresh) {
@@ -1503,34 +1545,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                              if (!path || path.length === 0) {
                                  throw new Error('No route path returned');
                              }
-                             const geometry = window.google?.maps?.geometry?.spherical;
-                             if (geometry) {
-                                 const toLatLng = (point: google.maps.LatLngLiteral) => new window.google.maps.LatLng(point.lat, point.lng);
-                                 const straightMeters = geometry.computeDistanceBetween(
-                                     new window.google.maps.LatLng(origin.lat, origin.lng),
-                                     new window.google.maps.LatLng(destination.lat, destination.lng)
-                                 );
-                                 let pathMeters = 0;
-                                 for (let idx = 1; idx < path.length; idx++) {
-                                     pathMeters += geometry.computeDistanceBetween(
-                                         toLatLng(path[idx - 1]),
-                                         toLatLng(path[idx])
-                                     );
-                                 }
-                                 const ratio = straightMeters > 0 ? pathMeters / straightMeters : 0;
-                                 const modeRequiresHigherShapeFidelity = mode === 'bus' || mode === 'train';
-                                 const minimumDetourRatio = modeRequiresHigherShapeFidelity ? 1.03 : 1.015;
-                                 const minimumDeviationMeters = Math.max(
-                                     450,
-                                     Math.min(modeRequiresHigherShapeFidelity ? 5_500 : 3_500, straightMeters * 0.015),
-                                 );
-                                 const maxDeviationMeters = computeMaxPathDeviationMeters(path, origin, destination);
-                                 const hasStraightLikeDetour = ratio > 0 && ratio < minimumDetourRatio;
-                                 const hasStraightLikeShape = maxDeviationMeters < minimumDeviationMeters;
-                                 if (path.length <= 2 || hasStraightLikeDetour || hasStraightLikeShape) {
-                                     throw new Error('Route path is straight');
-                                 }
-                             } else if (path.length <= 2) {
+                             if (isRoutePathLikelyStraight(path, origin, destination, mode)) {
                                  throw new Error('Route path is straight');
                              }
                              if (!isEffectActive()) {
@@ -1930,9 +1945,9 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                                   <button onClick={() => { onStyleChange('minimal'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'minimal' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Minimal</button>
                                   <button onClick={() => { onStyleChange('standard'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'standard' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Standard</button>
                                   <button onClick={() => { onStyleChange('dark'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'dark' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Dark</button>
-                                  <button onClick={() => { onStyleChange('cleanDark'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'cleanDark' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Clean (Dark)</button>
+                                  <button onClick={() => { onStyleChange('clean'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'clean' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Clean (light)</button>
+                                  <button onClick={() => { onStyleChange('cleanDark'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'cleanDark' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Clean (dark)</button>
                                   <button onClick={() => { onStyleChange('satellite'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'satellite' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Satellite</button>
-                                  <button onClick={() => { onStyleChange('clean'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'clean' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Clean</button>
                                   {!isPaywalled && onRouteModeChange && (
                                       <>
                                           <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400 border-t border-gray-100">Routes</div>
