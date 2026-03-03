@@ -125,6 +125,14 @@ vi.mock('react-i18next', () => ({
 
 import { LoginPage } from '../../pages/LoginPage';
 
+const setNativeInputValue = (input: HTMLInputElement, value: string): void => {
+  const valueSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+  if (!valueSetter) {
+    throw new Error('Missing HTMLInputElement value setter');
+  }
+  valueSetter.call(input, value);
+};
+
 describe('pages/LoginPage keyboard submit', () => {
   beforeEach(() => {
     cleanup();
@@ -205,5 +213,23 @@ describe('pages/LoginPage keyboard submit', () => {
       mocks.processQueuedTripGenerationAfterAuth.mock.invocationCallOrder[0],
     );
     expect(mocks.navigate).toHaveBeenCalledWith('/trip/trip-123', { replace: true });
+  });
+
+  it('submits browser-autofilled credentials even when React state was not updated by input events', async () => {
+    const user = userEvent.setup();
+    render(React.createElement(LoginPage));
+
+    const emailInput = screen.getByLabelText('labels.email') as HTMLInputElement;
+    const passwordInput = screen.getByLabelText('labels.password') as HTMLInputElement;
+    const submitButton = screen.getByRole('button', { name: 'actions.submitLogin' });
+
+    setNativeInputValue(emailInput, 'autofill@example.com');
+    setNativeInputValue(passwordInput, 'autofill-password');
+
+    await user.click(submitButton);
+
+    await waitFor(() => {
+      expect(mocks.auth.loginWithPassword).toHaveBeenCalledWith('autofill@example.com', 'autofill-password');
+    });
   });
 });
