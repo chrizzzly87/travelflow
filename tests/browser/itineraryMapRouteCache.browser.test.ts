@@ -404,7 +404,7 @@ describe('components/ItineraryMap route cache helpers', () => {
 
     expect(focusTarget).toEqual({
       position: { lat: 50.11, lng: 8.67 },
-      zoom: 12,
+      zoom: 13,
     });
   });
 

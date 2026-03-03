@@ -273,6 +273,10 @@ const ACTIVITY_MARKER_ICON_SIZE = 15;
 const TRANSPORT_MARKER_ICON_SCALE = 0.46;
 const TRANSPORT_MARKER_VIEWBOX_SIZE = 256;
 const TRANSPORT_MARKER_ICON_INSET = (TRANSPORT_MARKER_VIEWBOX_SIZE * (1 - TRANSPORT_MARKER_ICON_SCALE)) / 2;
+const CITY_MARKER_Z_INDEX = 220;
+const CITY_MARKER_SELECTED_Z_INDEX = 240;
+const ACTIVITY_MARKER_Z_INDEX = 260;
+const ACTIVITY_MARKER_SELECTED_Z_INDEX = 280;
 
 const resolveCssColorVar = (name: string, fallback: string): string => {
     if (typeof window === 'undefined' || typeof document === 'undefined') return fallback;
@@ -689,7 +693,7 @@ export const resolveSelectedMapFocusPosition = ({
     if (selectedActivityId) {
         const activityPosition = activityMarkerPositions.get(selectedActivityId);
         if (activityPosition) {
-            return { position: activityPosition, zoom: 12 };
+            return { position: activityPosition, zoom: 13 };
         }
     }
     if (selectedCityId) {
@@ -1020,6 +1024,17 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         () => (selectedItemId && items.some(item => item.id === selectedItemId && item.type === 'activity') ? selectedItemId : null),
         [items, selectedItemId]
     );
+    const activityMarkerStylesById = useMemo(() => {
+        const styles = new Map<string, { type: ActivityType; title: string }>();
+        items.forEach((item) => {
+            if (item.type !== 'activity') return;
+            styles.set(item.id, {
+                type: pickPrimaryActivityType(item.activityType),
+                title: item.title || '',
+            });
+        });
+        return styles;
+    }, [items]);
 
     const cancelScheduledFit = useCallback(() => {
         if (fitRafRef.current === null || typeof window === 'undefined') return;
@@ -1117,7 +1132,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             .join('||');
         const activitySignature = items
             .filter((item) => item.type === 'activity')
-            .map((item) => `${item.id}|${item.title}|${item.startDateOffset}|${item.duration}|${item.coordinates?.lat},${item.coordinates?.lng}|${JSON.stringify(item.activityType || [])}`)
+            .map((item) => `${item.id}|${item.startDateOffset}|${item.duration}|${item.coordinates?.lat},${item.coordinates?.lng}`)
             .join('||');
         const routeSignature = cities
             .slice(0, -1)
@@ -1206,7 +1221,9 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                     markerDiv.addEventListener('mouseleave', hideTooltipHandler);
                 }
                 const panes = this.getPanes();
-                const targetPane = clickable ? panes.overlayMouseTarget : panes.overlayLayer;
+                const targetPane = clickable
+                    ? (panes.floatPane ?? panes.overlayMouseTarget ?? panes.overlayLayer)
+                    : panes.overlayLayer;
                 targetPane.appendChild(markerDiv);
             };
 
@@ -1252,6 +1269,9 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                         markerDiv.style.zIndex = `${currentZIndex}`;
                         if (updates.html !== undefined) {
                             markerDiv.innerHTML = currentHtml;
+                            if (tooltipText) {
+                                tooltipNode = markerDiv.querySelector('[data-role="activity-marker-tooltip"]');
+                            }
                         }
                     }
                     overlay.draw();
@@ -1481,7 +1501,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 const marker = createOverlayMarker({
                     position: markerPosition,
                     html: buildCityMarkerHtml(index, cityMarkerColor, isSelected),
-                    zIndex: isSelected ? 100 : 10,
+                    zIndex: isSelected ? CITY_MARKER_SELECTED_Z_INDEX : CITY_MARKER_Z_INDEX,
                     clickable: true,
                     onClick: () => onCityMarkerSelectRef.current?.(city.id),
                 });
@@ -1506,7 +1526,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                         isSelected,
                         activityMarker.title,
                     ),
-                    zIndex: isSelected ? 92 : 24,
+                    zIndex: isSelected ? ACTIVITY_MARKER_SELECTED_Z_INDEX : ACTIVITY_MARKER_Z_INDEX,
                     clickable: true,
                     onClick: () => onActivityMarkerSelectRef.current?.(activityMarker.id),
                     tooltipText: activityMarker.title,
@@ -2064,35 +2084,59 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             const isSelected = id === selectedCityId;
             marker.update({
                 html: buildCityMarkerHtml(index, color, isSelected),
-                zIndex: isSelected ? 100 : 10,
+                zIndex: isSelected ? CITY_MARKER_SELECTED_Z_INDEX : CITY_MARKER_Z_INDEX,
             });
         });
-        activityMarkerMetaRef.current.forEach(({ id, title, type, marker }) => {
+        activityMarkerMetaRef.current.forEach((meta) => {
+            const { id, marker } = meta;
+            const latestMarkerStyle = activityMarkerStylesById.get(id);
+            const resolvedType = latestMarkerStyle?.type ?? meta.type;
+            const resolvedTitle = latestMarkerStyle?.title ?? meta.title;
+            meta.type = resolvedType;
+            meta.title = resolvedTitle;
             const isSelected = id === selectedActivityId;
             marker.update({
-                html: buildActivityMarkerHtml(type, isSelected, title),
-                zIndex: isSelected ? 92 : 24,
+                html: buildActivityMarkerHtml(resolvedType, isSelected, resolvedTitle),
+                zIndex: isSelected ? ACTIVITY_MARKER_SELECTED_Z_INDEX : ACTIVITY_MARKER_Z_INDEX,
             });
         });
-    }, [mapInitialized, selectedActivityId, selectedCityId]);
+    }, [activityMarkerStylesById, mapInitialized, selectedActivityId, selectedCityId]);
 
     // Pan to selected
     useEffect(() => {
-        if (!googleMapRef.current) return;
+        if (!googleMapRef.current || !window.google?.maps) return;
         
         const t = setTimeout(() => {
+            if (!googleMapRef.current) return;
             const focusTarget = resolveSelectedMapFocusPosition({
                 selectedActivityId,
                 selectedCityId,
                 activityMarkerPositions: activityMarkerPositionByIdRef.current,
                 cities,
             });
-            if (focusTarget) {
-                googleMapRef.current.panTo({
+            if (!focusTarget) return;
+
+            const mapInstance = googleMapRef.current;
+            const currentBounds = mapInstance.getBounds?.();
+            const currentZoomValue = mapInstance.getZoom?.();
+            const currentZoom = Number.isFinite(currentZoomValue) ? Number(currentZoomValue) : null;
+            const targetLatLng = new window.google.maps.LatLng(
+                focusTarget.position.lat,
+                focusTarget.position.lng,
+            );
+            const isTargetVisible = Boolean(currentBounds?.contains?.(targetLatLng));
+            const shouldPan = !isTargetVisible;
+            const shouldZoom = currentZoom === null || currentZoom < focusTarget.zoom;
+
+            if (!shouldPan && !shouldZoom) return;
+            if (shouldPan) {
+                mapInstance.panTo({
                     lat: focusTarget.position.lat,
                     lng: focusTarget.position.lng,
                 });
-                googleMapRef.current.setZoom(focusTarget.zoom);
+            }
+            if (shouldZoom) {
+                mapInstance.setZoom(Math.max(currentZoom ?? focusTarget.zoom, focusTarget.zoom));
             }
         }, 100);
         return () => clearTimeout(t);

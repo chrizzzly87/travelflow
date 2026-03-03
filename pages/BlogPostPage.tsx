@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, Link, useLocation, Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Clock, User, Tag, ArrowRight, Compass, Article, ArrowSquareOut, MapPinLine } from '@phosphor-icons/react';
+import { ArrowLeft, Clock, User, Tag, ArrowRight, Compass, Article, ArrowSquareOut } from '@phosphor-icons/react';
 import { Map as GoogleMap, useMap } from '@vis.gl/react-google-maps';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -9,7 +9,7 @@ import { MarketingLayout } from '../components/marketing/MarketingLayout';
 import { AddToCalendarCard } from '../components/AddToCalendarCard';
 import { GoogleMapsLoader, useGoogleMaps } from '../components/GoogleMapsLoader';
 import { ProgressiveImage } from '../components/ProgressiveImage';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/ui/tabs';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../components/ui/accordion';
 import { FlagIcon } from '../components/flags/FlagIcon';
 import { getBlogPostBySlugWithFallback, getPublishedBlogPostsForLocales } from '../services/blogService';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
@@ -91,6 +91,15 @@ const extractMarkdownCodeBlockPayload = (children: React.ReactNode): MarkdownCod
 
 const BLOG_MAP_OVERLAP_RADIUS_METERS = 26;
 const BLOG_MAP_OVERLAP_COORDINATE_PRECISION = 5;
+const BLOG_MAP_MARKER_BORDER_FALLBACK = '#6366f1';
+const BLOG_MAP_MARKER_BG_FALLBACK = '#eef2ff';
+const BLOG_MAP_MARKER_TEXT_FALLBACK = '#312e81';
+
+const resolveCssColorVar = (name: string, fallback: string): string => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return fallback;
+    const value = window.getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    return value || fallback;
+};
 
 const buildBlogMapCoordinateKey = (coordinates: google.maps.LatLngLiteral): string => (
     `${coordinates.lat.toFixed(BLOG_MAP_OVERLAP_COORDINATE_PRECISION)},${coordinates.lng.toFixed(BLOG_MAP_OVERLAP_COORDINATE_PRECISION)}`
@@ -252,6 +261,10 @@ const BlogMapCanvas: React.FC<BlogMapCanvasProps> = ({
         markerOverlaysRef.current.forEach((overlay) => overlay.setMap(null));
         markerOverlaysRef.current = [];
         if (!mapInstance || !window.google?.maps?.OverlayView) return;
+        const markerBorderColor = resolveCssColorVar('--tf-accent-400', BLOG_MAP_MARKER_BORDER_FALLBACK);
+        const markerBackgroundColor = resolveCssColorVar('--tf-accent-50', BLOG_MAP_MARKER_BG_FALLBACK);
+        const markerTextColor = resolveCssColorVar('--tf-accent-700', BLOG_MAP_MARKER_TEXT_FALLBACK);
+        const markerBadgeTextColor = resolveCssColorVar('--tf-accent-50', '#ffffff');
 
         markerSpots.forEach(({ spot, position }, markerIndex) => {
             const overlay = new window.google.maps.OverlayView();
@@ -279,9 +292,9 @@ const BlogMapCanvas: React.FC<BlogMapCanvasProps> = ({
                 markerNode.style.width = '30px';
                 markerNode.style.height = '30px';
                 markerNode.style.borderRadius = '9999px';
-                markerNode.style.border = '1.5px solid #0f172a';
-                markerNode.style.background = '#ffffff';
-                markerNode.style.color = '#0f172a';
+                markerNode.style.border = `1.5px solid ${markerBorderColor}`;
+                markerNode.style.background = markerBackgroundColor;
+                markerNode.style.color = markerTextColor;
                 markerNode.style.display = 'flex';
                 markerNode.style.alignItems = 'center';
                 markerNode.style.justifyContent = 'center';
@@ -290,7 +303,7 @@ const BlogMapCanvas: React.FC<BlogMapCanvasProps> = ({
                 markerNode.style.padding = '0';
                 markerNode.style.fontSize = '13px';
                 markerNode.style.fontWeight = '700';
-                markerNode.style.boxShadow = '0 2px 6px rgba(15,23,42,0.16)';
+                markerNode.style.boxShadow = '0 2px 6px rgba(15,23,42,0.1)';
                 markerNode.style.zIndex = '25';
                 markerNode.textContent = activeCategory.icon || `${markerIndex + 1}`;
                 markerNode.setAttribute('aria-label', spot.name);
@@ -304,8 +317,8 @@ const BlogMapCanvas: React.FC<BlogMapCanvasProps> = ({
                 indexBadge.style.width = '14px';
                 indexBadge.style.height = '14px';
                 indexBadge.style.borderRadius = '9999px';
-                indexBadge.style.background = '#0f172a';
-                indexBadge.style.color = '#f8fafc';
+                indexBadge.style.background = markerBorderColor;
+                indexBadge.style.color = markerBadgeTextColor;
                 indexBadge.style.fontSize = '9px';
                 indexBadge.style.fontWeight = '700';
                 indexBadge.style.display = 'flex';
@@ -436,11 +449,6 @@ const BlogMapCard: React.FC<BlogMapCardProps> = ({ config, locale, postSlug }) =
         center: config.mapCenter,
         zoom: config.mapZoom,
     });
-    const categoriesLabel = locale === 'de' ? 'Kategorien' : 'Categories';
-    const spotsLabel = locale === 'de' ? 'Orte' : 'Places';
-    const markerHintLabel = locale === 'de'
-        ? 'Die Karte zeigt alle Spots der aktiven Kategorie.'
-        : 'The map shows every spot from the active category.';
 
     return (
         <section className="my-12 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
@@ -448,11 +456,10 @@ const BlogMapCard: React.FC<BlogMapCardProps> = ({ config, locale, postSlug }) =
                 {config.title}
             </h3>
             {config.description && <p className="mt-2 text-sm text-slate-600">{config.description}</p>}
-            <p className="mt-1 text-xs font-medium uppercase tracking-wide text-slate-500">{markerHintLabel}</p>
 
-            <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
-                <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
-                    <div className="aspect-[16/10] w-full md:aspect-[18/9] lg:aspect-[20/9]">
+            <div className="mt-5 grid gap-5 xl:grid-cols-2 xl:items-stretch">
+                <div className="order-2 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 min-h-[380px] xl:order-2 xl:h-full">
+                    <div className="h-full min-h-[380px] xl:min-h-full">
                         <GoogleMapsLoader language={normalizeAppLanguage(locale)}>
                             <BlogMapCanvas
                                 mapId={mapId}
@@ -466,45 +473,35 @@ const BlogMapCard: React.FC<BlogMapCardProps> = ({ config, locale, postSlug }) =
                     </div>
                 </div>
 
-                <Tabs
+                <Accordion
+                    type="single"
                     value={activeCategory.id}
                     onValueChange={(nextCategoryId) => {
+                        if (!nextCategoryId || nextCategoryId === activeCategory.id) return;
                         setActiveCategoryId(nextCategoryId);
                         trackEvent('blog__map_card--category', {
                             slug: postSlug,
                             category: nextCategoryId,
                         });
                     }}
-                    className="min-w-0 gap-4"
+                    className="order-1 min-w-0 rounded-xl border border-slate-200 bg-white"
                 >
-                    <div>
-                        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">{categoriesLabel}</p>
-                        <TabsList
-                            variant="line"
-                            className="h-auto w-full flex-wrap justify-start rounded-xl border border-slate-200 bg-slate-50 p-1"
-                        >
-                            {config.categories.map((category) => (
-                                <TabsTrigger
-                                    key={category.id}
-                                    value={category.id}
-                                    className="rounded-lg px-3 py-1.5 text-sm font-medium data-[state=active]:border-slate-200 data-[state=active]:bg-white data-[state=active]:text-slate-900"
-                                    {...getAnalyticsDebugAttributes('blog__map_card--category', {
-                                        slug: postSlug,
-                                        category: category.id,
-                                    })}
-                                >
-                                    {category.icon ? <span aria-hidden="true">{category.icon}</span> : null}
-                                    <span>{category.label}</span>
-                                </TabsTrigger>
-                            ))}
-                        </TabsList>
-                    </div>
-
                     {config.categories.map((category) => (
-                        <TabsContent key={category.id} value={category.id}>
-                            <div>
-                                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">{spotsLabel}</p>
-                                <div className="grid gap-2">
+                        <AccordionItem key={category.id} value={category.id} className="border-b border-slate-200 last:border-b-0">
+                            <AccordionTrigger
+                                className="px-4 py-3 text-sm font-semibold text-slate-800 hover:text-slate-900"
+                                {...getAnalyticsDebugAttributes('blog__map_card--category', {
+                                    slug: postSlug,
+                                    category: category.id,
+                                })}
+                            >
+                                <span className="inline-flex min-w-0 items-center gap-2">
+                                    {category.icon ? <span aria-hidden="true">{category.icon}</span> : null}
+                                    <span className="truncate">{category.label}</span>
+                                </span>
+                            </AccordionTrigger>
+                            <AccordionContent className="px-2 pb-2">
+                                <div className="divide-y divide-slate-200/80">
                                     {category.spots.map((spot) => {
                                         const mapsSearchUrl = buildGoogleMapsSearchUrl(spot.query);
                                         return (
@@ -520,29 +517,36 @@ const BlogMapCard: React.FC<BlogMapCardProps> = ({ config, locale, postSlug }) =
                                                         spot: spot.id,
                                                     });
                                                 }}
-                                                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-left transition-colors hover:border-accent-200 hover:bg-accent-50/40"
+                                                className="group flex w-full items-start justify-between gap-3 rounded-lg px-2 py-2 text-left transition-colors hover:bg-accent-50/60"
                                                 {...getAnalyticsDebugAttributes('blog__map_card--spot', {
                                                     slug: postSlug,
                                                     category: category.id,
                                                     spot: spot.id,
                                                 })}
                                             >
-                                                <div className="flex items-start justify-between gap-2">
-                                                    <p className="min-w-0 break-words text-sm font-semibold text-slate-800">{spot.name}</p>
-                                                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-accent-700">
-                                                        <MapPinLine size={12} weight="duotone" />
-                                                        <ArrowSquareOut size={12} weight="bold" />
+                                                <span className="min-w-0">
+                                                    <span className="block min-w-0 break-words text-sm font-semibold text-slate-800 transition-colors group-hover:text-accent-800">
+                                                        {spot.name}
                                                     </span>
-                                                </div>
-                                                {spot.note && <p className="mt-0.5 text-xs text-slate-500">{spot.note}</p>}
+                                                    {spot.note && (
+                                                        <span className="mt-0.5 block text-xs text-slate-500 transition-colors group-hover:text-slate-600">
+                                                            {spot.note}
+                                                        </span>
+                                                    )}
+                                                </span>
+                                                <ArrowSquareOut
+                                                    size={14}
+                                                    weight="bold"
+                                                    className="mt-0.5 shrink-0 text-accent-700 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+                                                />
                                             </a>
                                         );
                                     })}
                                 </div>
-                            </div>
-                        </TabsContent>
+                            </AccordionContent>
+                        </AccordionItem>
                     ))}
-                </Tabs>
+                </Accordion>
             </div>
         </section>
     );
