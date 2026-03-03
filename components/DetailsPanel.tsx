@@ -6,6 +6,7 @@ import { X, MapPin, Clock, Trash2, Hotel, Search, AlertTriangle, ExternalLink, S
 import type { CityNotesEnhancementMode } from '../services/aiService';
 import { HexColorPicker } from 'react-colorful';
 import { ALL_ACTIVITY_TYPES, TRAVEL_COLOR, addDays, applyCityPaletteToItems, CITY_COLOR_PALETTES, DEFAULT_CITY_COLOR_PALETTE_ID, formatDate, getContrastTextColor, getHexFromColorClass, getStoredAppLanguage, getActivityColorByTypes, getCityColorPalette, isTailwindCityColorValue, normalizeActivityTypes, normalizeCityColorInput, DEFAULT_DISTANCE_UNIT, estimateTravelHours, formatDistance, formatDurationHours, getTravelLegMetricsForItem, getNormalizedCityName, COUNTRIES, shiftHexColor } from '../utils';
+import { getAnalyticsDebugAttributes } from '../services/analyticsService';
 import { useGoogleMaps } from './GoogleMapsLoader';
 import type { MarkdownAiAction } from './MarkdownEditor';
 import { ActivityTypeIcon, formatActivityTypeLabel, getActivityTypeButtonClass } from './ActivityTypeVisuals';
@@ -38,6 +39,7 @@ interface DetailsPanelProps {
   readOnly?: boolean;
   cityColorPaletteId?: string;
   onCityColorPaletteChange?: (paletteId: string, options: { applyToCities: boolean }) => void;
+  onExportActivityCalendar?: (itemId: string) => void;
 }
 
 interface RouteDistanceTextInput {
@@ -197,7 +199,8 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
     variant = 'overlay',
     readOnly = false,
     cityColorPaletteId = DEFAULT_CITY_COLOR_PALETTE_ID,
-    onCityColorPaletteChange
+    onCityColorPaletteChange,
+    onExportActivityCalendar
 }) => {
   const canEdit = !readOnly;
   const [loading, setLoading] = useState(false);
@@ -1747,6 +1750,24 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
 
              {isActivity && (
                  <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                     <div className="mb-4 flex justify-end">
+                         <button
+                             type="button"
+                             onClick={() => onExportActivityCalendar?.(displayItem.id)}
+                             disabled={!onExportActivityCalendar}
+                             className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                                 onExportActivityCalendar
+                                     ? 'border-accent-200 bg-accent-50 text-accent-700 hover:bg-accent-100 hover:border-accent-300'
+                                     : 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
+                             }`}
+                             {...getAnalyticsDebugAttributes('trip_view__calendar_export--activity', {
+                                 source: 'details_panel',
+                                 item_id: displayItem.id,
+                             })}
+                         >
+                             Export to calendar (.ics)
+                         </button>
+                     </div>
                      <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Activity Types</h3>
                      <div className="flex flex-wrap gap-2 mb-6">
                         {ALL_ACTIVITY_TYPES.map(type => {

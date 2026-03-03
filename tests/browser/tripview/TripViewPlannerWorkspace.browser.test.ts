@@ -191,6 +191,30 @@ describe('components/tripview/TripViewPlannerWorkspace', () => {
     expect(capturedViewTransitionNames.at(-1)).toBeUndefined();
   });
 
+  it('forwards activity marker selection callbacks from map overlays', () => {
+    const props = baseProps();
+    props.isMapBootstrapEnabled = true;
+    props.onMapActivitySelect = vi.fn();
+    props.ItineraryMapComponent = ({
+      onActivityMarkerSelect,
+    }: {
+      onActivityMarkerSelect?: (activityId: string) => void;
+    }) => React.createElement(
+      'button',
+      {
+        type: 'button',
+        'data-testid': 'map-activity-select',
+        onClick: () => onActivityMarkerSelect?.('activity-42'),
+      },
+      'select activity',
+    );
+
+    render(React.createElement(TripViewPlannerWorkspace, props));
+    fireEvent.click(screen.getByTestId('map-activity-select'));
+
+    expect(props.onMapActivitySelect).toHaveBeenCalledWith('activity-42');
+  });
+
   it('uses fused top grab-handle styling with uniform floating border thickness', () => {
     const props = baseProps();
     props.mapDockMode = 'floating';

@@ -3,6 +3,7 @@ import { ChevronDown, ChevronRight, Pencil, Star } from 'lucide-react';
 import { ICountryInfo } from '../types';
 import { CountryInfo } from './CountryInfo';
 import { AppModal } from './ui/app-modal';
+import { getAnalyticsDebugAttributes } from '../services/analyticsService';
 
 interface TripMetaSummary {
     dateRange: string;
@@ -69,6 +70,9 @@ export interface TripInfoModalProps {
     ownerSummary?: string | null;
     ownerHint?: string | null;
     adminMeta?: TripInfoAdminMeta | null;
+    onExportActivitiesCalendar?: () => void;
+    onExportCitiesCalendar?: () => void;
+    onExportAllCalendar?: () => void;
 }
 
 export const TripInfoModal: React.FC<TripInfoModalProps> = ({
@@ -103,6 +107,9 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
     ownerSummary,
     ownerHint,
     adminMeta,
+    onExportActivitiesCalendar,
+    onExportCitiesCalendar,
+    onExportAllCalendar,
 }) => {
     const editTitleInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -231,6 +238,51 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                 {ownerHint && (
                     <p className="mt-2 text-[11px] text-gray-600">{ownerHint}</p>
                 )}
+            </section>
+
+            <section className="rounded-xl border border-gray-200 p-3">
+                <h4 className="mb-2 text-sm font-semibold text-gray-800">Calendar exports</h4>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                    <button
+                        type="button"
+                        onClick={onExportActivitiesCalendar}
+                        disabled={!onExportActivitiesCalendar}
+                        className={`rounded-lg border px-3 py-2 text-xs font-semibold transition-colors ${
+                            onExportActivitiesCalendar
+                                ? 'border-accent-200 bg-accent-50 text-accent-700 hover:bg-accent-100 hover:border-accent-300'
+                                : 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
+                        }`}
+                        {...getAnalyticsDebugAttributes('trip_view__calendar_export--activities', { source: 'trip_info_modal' })}
+                    >
+                        Export activities (.ics)
+                    </button>
+                    <button
+                        type="button"
+                        onClick={onExportCitiesCalendar}
+                        disabled={!onExportCitiesCalendar}
+                        className={`rounded-lg border px-3 py-2 text-xs font-semibold transition-colors ${
+                            onExportCitiesCalendar
+                                ? 'border-accent-200 bg-accent-50 text-accent-700 hover:bg-accent-100 hover:border-accent-300'
+                                : 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
+                        }`}
+                        {...getAnalyticsDebugAttributes('trip_view__calendar_export--cities', { source: 'trip_info_modal' })}
+                    >
+                        Export cities (.ics)
+                    </button>
+                    <button
+                        type="button"
+                        onClick={onExportAllCalendar}
+                        disabled={!onExportAllCalendar}
+                        className={`rounded-lg border px-3 py-2 text-xs font-semibold transition-colors ${
+                            onExportAllCalendar
+                                ? 'border-accent-200 bg-accent-50 text-accent-700 hover:bg-accent-100 hover:border-accent-300'
+                                : 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
+                        }`}
+                        {...getAnalyticsDebugAttributes('trip_view__calendar_export--all', { source: 'trip_info_modal' })}
+                    >
+                        Download everything (.ics)
+                    </button>
+                </div>
             </section>
 
             {aiMeta && (

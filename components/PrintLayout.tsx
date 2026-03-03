@@ -6,12 +6,16 @@ import { ItineraryMap } from './ItineraryMap';
 import { CountryInfo } from './CountryInfo';
 import { TransportModeIcon } from './TransportModeIcon';
 import { loadLazyComponentWithRecovery } from '../services/lazyImportRecovery';
+import { getAnalyticsDebugAttributes } from '../services/analyticsService';
 
 interface PrintLayoutProps {
   trip: ITrip;
   onClose: () => void;
   onUpdateTrip: (items: ITimelineItem[]) => void;
   isPaywalled?: boolean;
+  onExportActivitiesCalendar?: () => void;
+  onExportCitiesCalendar?: () => void;
+  onExportAllCalendar?: () => void;
 }
 
 const LazyMarkdownEditor = lazy(() =>
@@ -238,7 +242,15 @@ const CalendarView: React.FC<{ trip: ITrip; onScrollTo: (id: string) => void }> 
     );
 };
 
-export const PrintLayout: React.FC<PrintLayoutProps> = ({ trip, onClose, onUpdateTrip, isPaywalled = false }) => {
+export const PrintLayout: React.FC<PrintLayoutProps> = ({
+    trip,
+    onClose,
+    onUpdateTrip,
+    isPaywalled = false,
+    onExportActivitiesCalendar,
+    onExportCitiesCalendar,
+    onExportAllCalendar,
+}) => {
   const tripStartDate = parseLocalDate(trip.startDate);
   const cities = trip.items.filter(i => i.type === 'city').sort((a, b) => a.startDateOffset - b.startDateOffset);
   const totalDistanceKm = getTripDistanceKm(trip.items);
@@ -271,6 +283,45 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({ trip, onClose, onUpdat
             <div className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 shadow-sm flex items-center justify-between px-8 print:hidden z-50">
                 <h1 className="font-bold text-lg text-gray-700">Trip List View</h1>
                 <div className="flex gap-4">
+                    <button
+                        type="button"
+                        onClick={onExportActivitiesCalendar}
+                        disabled={!onExportActivitiesCalendar}
+                        className={`px-3 py-2 rounded-lg text-xs font-semibold border transition-colors ${
+                            onExportActivitiesCalendar
+                                ? 'border-accent-200 bg-accent-50 text-accent-700 hover:bg-accent-100'
+                                : 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
+                        }`}
+                        {...getAnalyticsDebugAttributes('trip_view__calendar_export--activities', { source: 'print_view' })}
+                    >
+                        Export activities (.ics)
+                    </button>
+                    <button
+                        type="button"
+                        onClick={onExportCitiesCalendar}
+                        disabled={!onExportCitiesCalendar}
+                        className={`px-3 py-2 rounded-lg text-xs font-semibold border transition-colors ${
+                            onExportCitiesCalendar
+                                ? 'border-accent-200 bg-accent-50 text-accent-700 hover:bg-accent-100'
+                                : 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
+                        }`}
+                        {...getAnalyticsDebugAttributes('trip_view__calendar_export--cities', { source: 'print_view' })}
+                    >
+                        Export cities (.ics)
+                    </button>
+                    <button
+                        type="button"
+                        onClick={onExportAllCalendar}
+                        disabled={!onExportAllCalendar}
+                        className={`px-3 py-2 rounded-lg text-xs font-semibold border transition-colors ${
+                            onExportAllCalendar
+                                ? 'border-accent-200 bg-accent-50 text-accent-700 hover:bg-accent-100'
+                                : 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
+                        }`}
+                        {...getAnalyticsDebugAttributes('trip_view__calendar_export--all', { source: 'print_view' })}
+                    >
+                        Download everything (.ics)
+                    </button>
                     <button 
                         onClick={onClose} 
                         className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg text-sm font-medium"

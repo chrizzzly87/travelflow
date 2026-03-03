@@ -31,6 +31,7 @@ interface TripViewPlannerWorkspaceProps {
     displayItems: ITimelineItem[];
     selectedItemId: string | null;
     onMapCitySelect?: (cityId: string) => void;
+    onMapActivitySelect?: (activityId: string) => void;
     layoutMode: 'vertical' | 'horizontal';
     effectiveLayoutMode: 'vertical' | 'horizontal';
     onLayoutModeChange: (mode: 'vertical' | 'horizontal') => void;
@@ -87,6 +88,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
     displayItems,
     selectedItemId,
     onMapCitySelect,
+    onMapActivitySelect,
     layoutMode,
     effectiveLayoutMode,
     onLayoutModeChange,
@@ -291,6 +293,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                     items={displayItems}
                     selectedItemId={selectedItemId}
                     onCityMarkerSelect={onMapCitySelect}
+                    onActivityMarkerSelect={onMapActivitySelect}
                     layoutMode={mapLayoutMode}
                     onLayoutChange={showLayoutControls ? onLayoutModeChange : undefined}
                     showLayoutControls={showLayoutControls}
