@@ -24,7 +24,10 @@ import {
   getRouteOuterOutlineColor,
   getRouteOutlineColor,
   getMapLabelCityName,
+  estimateRoutePixelSpan,
+  estimateNearestMarkerGapPx,
   resolveMarkerRenderProfile,
+  resolveMarkerRenderTier,
   resolveActivityMarkerPositions,
   resolveSelectedMapFocusPosition,
   resolveCityLabelAnchor,
@@ -252,9 +255,9 @@ describe('components/ItineraryMap route cache helpers', () => {
     expect(computeMaxPathDeviationMeters(bentPath, start, end)).toBeGreaterThan(1000);
   });
 
-  it('uses compact marker rendering profile in floating map mode', () => {
+  it('uses compact marker rendering profile in compact tier', () => {
     const dockedProfile = resolveMarkerRenderProfile({ mapDockMode: 'docked' });
-    const profile = resolveMarkerRenderProfile({ mapDockMode: 'floating' });
+    const profile = resolveMarkerRenderProfile({ mapDockMode: 'floating', markerTier: 'compact' });
     expect(profile.city.shape).toBe('circle');
     expect(profile.city.size).toBeLessThan(dockedProfile.city.size);
     expect(profile.activity.size).toBeLessThan(dockedProfile.activity.size);
@@ -262,13 +265,56 @@ describe('components/ItineraryMap route cache helpers', () => {
     expect(profile.transport.show).toBe(true);
   });
 
-  it('hides transport markers and shrinks markers further in compact floating mode', () => {
-    const floatingProfile = resolveMarkerRenderProfile({ mapDockMode: 'floating' });
-    const compactProfile = resolveMarkerRenderProfile({ mapDockMode: 'floating', isCompactFloating: true });
-    expect(compactProfile.city.shape).toBe('circle');
-    expect(compactProfile.city.size).toBeLessThan(floatingProfile.city.size);
-    expect(compactProfile.activity.size).toBeLessThan(floatingProfile.activity.size);
-    expect(compactProfile.transport.show).toBe(false);
+  it('uses micro profile with condensed circles and no transport bubbles', () => {
+    const compactProfile = resolveMarkerRenderProfile({ mapDockMode: 'floating', markerTier: 'compact' });
+    const microProfile = resolveMarkerRenderProfile({ mapDockMode: 'floating', markerTier: 'micro' });
+    expect(microProfile.city.shape).toBe('circle');
+    expect(microProfile.city.showInnerDot).toBe(false);
+    expect(microProfile.city.numberColor).toBe('#ffffff');
+    expect(microProfile.city.size).toBeLessThan(compactProfile.city.size);
+    expect(microProfile.activity.size).toBeLessThan(compactProfile.activity.size);
+    expect(microProfile.transport.show).toBe(false);
+    expect(microProfile.routeStrokeScale).toBeLessThan(compactProfile.routeStrokeScale);
+  });
+
+  it('estimates route span and nearest marker gap in pixel space', () => {
+    const routeSpan = estimateRoutePixelSpan([
+      { lat: 50.1109, lng: 8.6821 },
+      { lat: 52.52, lng: 13.405 },
+    ], 8);
+    const markerGap = estimateNearestMarkerGapPx([
+      { lat: 50.1109, lng: 8.6821 },
+      { lat: 50.112, lng: 8.684 },
+      { lat: 50.13, lng: 8.69 },
+    ], 12);
+    expect(routeSpan).toBeGreaterThan(10);
+    expect(markerGap).toBeGreaterThan(0);
+  });
+
+  it('resolves marker tier from viewport, zoom, and route density signals', () => {
+    expect(resolveMarkerRenderTier({
+      viewportWidth: 190,
+      viewportHeight: 220,
+      zoom: 10,
+      routePixelSpan: 120,
+      nearestMarkerGapPx: 40,
+    })).toBe('micro');
+
+    expect(resolveMarkerRenderTier({
+      viewportWidth: 330,
+      viewportHeight: 300,
+      zoom: 9,
+      routePixelSpan: 420,
+      nearestMarkerGapPx: 22,
+    })).toBe('compact');
+
+    expect(resolveMarkerRenderTier({
+      viewportWidth: 900,
+      viewportHeight: 580,
+      zoom: 12,
+      routePixelSpan: 180,
+      nearestMarkerGapPx: 80,
+    })).toBe('default');
   });
 
   it('flags low-fidelity transit paths as straight-like', () => {

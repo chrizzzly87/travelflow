@@ -282,6 +282,8 @@ type MarkerRenderProfile = {
         selectedSize: number;
         fontSize: number;
         selectedFontSize: number;
+        showInnerDot: boolean;
+        numberColor: string;
     };
     activity: {
         size: number;
@@ -296,17 +298,20 @@ type MarkerRenderProfile = {
         size: number;
         iconScale: number;
     };
+    routeStrokeScale: number;
 };
 
-const FLOATING_COMPACT_MARKER_SHORT_EDGE_MAX_PX = 250;
+export type MarkerRenderTier = 'default' | 'compact' | 'micro';
 
-const DOCKED_MARKER_RENDER_PROFILE: MarkerRenderProfile = {
+const DOCKED_DEFAULT_MARKER_RENDER_PROFILE: MarkerRenderProfile = {
     city: {
         shape: 'pin',
         size: 44,
         selectedSize: 54,
         fontSize: 12,
         selectedFontSize: 13,
+        showInnerDot: true,
+        numberColor: '#0f172a',
     },
     activity: {
         size: 34,
@@ -321,15 +326,18 @@ const DOCKED_MARKER_RENDER_PROFILE: MarkerRenderProfile = {
         size: 40,
         iconScale: 0.46,
     },
+    routeStrokeScale: 1,
 };
 
-const FLOATING_MARKER_RENDER_PROFILE: MarkerRenderProfile = {
+const FLOATING_DEFAULT_MARKER_RENDER_PROFILE: MarkerRenderProfile = {
     city: {
         shape: 'circle',
         size: 30,
         selectedSize: 34,
         fontSize: 11,
         selectedFontSize: 12,
+        showInnerDot: true,
+        numberColor: '#0f172a',
     },
     activity: {
         size: 28,
@@ -344,42 +352,153 @@ const FLOATING_MARKER_RENDER_PROFILE: MarkerRenderProfile = {
         size: 30,
         iconScale: 0.42,
     },
+    routeStrokeScale: 0.9,
 };
 
-const FLOATING_COMPACT_MARKER_RENDER_PROFILE: MarkerRenderProfile = {
+const COMPACT_MARKER_RENDER_PROFILE: MarkerRenderProfile = {
     city: {
         shape: 'circle',
-        size: 24,
-        selectedSize: 28,
+        size: 22,
+        selectedSize: 26,
         fontSize: 10,
         selectedFontSize: 10,
+        showInnerDot: true,
+        numberColor: '#0f172a',
     },
     activity: {
-        size: 22,
+        size: 20,
         selectedBoost: 2,
-        iconSize: 10,
-        tooltipFontSize: 10,
-        tooltipPaddingX: 8,
+        iconSize: 9,
+        tooltipFontSize: 9,
+        tooltipPaddingX: 7,
         tooltipPaddingY: 4,
+    },
+    transport: {
+        show: true,
+        size: 24,
+        iconScale: 0.36,
+    },
+    routeStrokeScale: 0.82,
+};
+
+const MICRO_MARKER_RENDER_PROFILE: MarkerRenderProfile = {
+    city: {
+        shape: 'circle',
+        size: 18,
+        selectedSize: 21,
+        fontSize: 9,
+        selectedFontSize: 9,
+        showInnerDot: false,
+        numberColor: '#ffffff',
+    },
+    activity: {
+        size: 16,
+        selectedBoost: 2,
+        iconSize: 8,
+        tooltipFontSize: 9,
+        tooltipPaddingX: 6,
+        tooltipPaddingY: 3,
     },
     transport: {
         show: false,
         size: 26,
-        iconScale: 0.4,
+        iconScale: 0.34,
     },
+    routeStrokeScale: 0.64,
 };
 
 export const resolveMarkerRenderProfile = (
     options?: {
         mapDockMode?: 'docked' | 'floating';
-        isCompactFloating?: boolean;
+        markerTier?: MarkerRenderTier;
     },
 ): MarkerRenderProfile => {
     const mapDockMode = options?.mapDockMode;
-    const isCompactFloating = options?.isCompactFloating ?? false;
-    if (mapDockMode !== 'floating') return DOCKED_MARKER_RENDER_PROFILE;
-    if (isCompactFloating) return FLOATING_COMPACT_MARKER_RENDER_PROFILE;
-    return FLOATING_MARKER_RENDER_PROFILE;
+    const markerTier = options?.markerTier ?? 'default';
+    if (markerTier === 'micro') return MICRO_MARKER_RENDER_PROFILE;
+    if (markerTier === 'compact') return COMPACT_MARKER_RENDER_PROFILE;
+    return mapDockMode === 'floating'
+        ? FLOATING_DEFAULT_MARKER_RENDER_PROFILE
+        : DOCKED_DEFAULT_MARKER_RENDER_PROFILE;
+};
+
+const toWebMercatorPixel = (
+    coordinates: google.maps.LatLngLiteral,
+    zoom: number,
+): { x: number; y: number } => {
+    const scale = 256 * (2 ** zoom);
+    const clampedLat = Math.max(-85.05112878, Math.min(85.05112878, coordinates.lat));
+    const latRad = (clampedLat * Math.PI) / 180;
+    const x = ((coordinates.lng + 180) / 360) * scale;
+    const y = (0.5 - (Math.log((1 + Math.sin(latRad)) / (1 - Math.sin(latRad))) / (4 * Math.PI))) * scale;
+    return { x, y };
+};
+
+export const estimateRoutePixelSpan = (
+    coordinates: google.maps.LatLngLiteral[],
+    zoom: number | null,
+): number => {
+    if (!Number.isFinite(zoom)) return 0;
+    if (coordinates.length < 2) return 0;
+    const projected = coordinates.map((coordinate) => toWebMercatorPixel(coordinate, Number(zoom)));
+    const xs = projected.map((point) => point.x);
+    const ys = projected.map((point) => point.y);
+    const width = Math.max(...xs) - Math.min(...xs);
+    const height = Math.max(...ys) - Math.min(...ys);
+    return Math.hypot(width, height);
+};
+
+export const estimateNearestMarkerGapPx = (
+    coordinates: google.maps.LatLngLiteral[],
+    zoom: number | null,
+): number => {
+    if (!Number.isFinite(zoom)) return Number.POSITIVE_INFINITY;
+    if (coordinates.length < 2) return Number.POSITIVE_INFINITY;
+    const projected = coordinates.map((coordinate) => toWebMercatorPixel(coordinate, Number(zoom)));
+    let minDistance = Number.POSITIVE_INFINITY;
+    for (let i = 0; i < projected.length; i += 1) {
+        for (let j = i + 1; j < projected.length; j += 1) {
+            const distance = Math.hypot(projected[i].x - projected[j].x, projected[i].y - projected[j].y);
+            if (distance < minDistance) {
+                minDistance = distance;
+            }
+            if (minDistance <= 10) return minDistance;
+        }
+    }
+    return minDistance;
+};
+
+export const resolveMarkerRenderTier = ({
+    viewportWidth,
+    viewportHeight,
+    zoom,
+    routePixelSpan,
+    nearestMarkerGapPx,
+}: {
+    viewportWidth: number;
+    viewportHeight: number;
+    zoom: number | null;
+    routePixelSpan: number;
+    nearestMarkerGapPx: number;
+}): MarkerRenderTier => {
+    const shortEdge = Math.min(viewportWidth, viewportHeight);
+    if (!Number.isFinite(shortEdge) || shortEdge <= 0) return 'default';
+    const effectiveZoom = Number.isFinite(zoom) ? Number(zoom) : 11;
+    const crowded = Number.isFinite(nearestMarkerGapPx) && nearestMarkerGapPx < 24;
+    const veryCrowded = Number.isFinite(nearestMarkerGapPx) && nearestMarkerGapPx < 15;
+    const denseRoute = Number.isFinite(routePixelSpan) && routePixelSpan > (shortEdge * 1.15);
+    const veryDenseRoute = Number.isFinite(routePixelSpan) && routePixelSpan > (shortEdge * 1.65);
+
+    if (shortEdge <= 210) return 'micro';
+    if (shortEdge <= 280 && (effectiveZoom <= 8 || denseRoute || crowded)) return 'micro';
+    if (effectiveZoom <= 5) return 'micro';
+    if (effectiveZoom <= 6 && (denseRoute || crowded)) return 'micro';
+    if (veryDenseRoute || veryCrowded) return 'micro';
+
+    if (shortEdge <= 320) return 'compact';
+    if (effectiveZoom <= 8) return 'compact';
+    if (denseRoute || crowded) return 'compact';
+    return 'default';
 };
 
 const resolveCssColorVar = (name: string, fallback: string): string => {
@@ -492,12 +611,14 @@ const buildCityCircleMarkerHtml = (
         ? `0 0 0 2px ${accentRing}, 0 6px 16px rgba(15,23,42,0.24)`
         : '0 3px 10px rgba(15,23,42,0.15)';
     const innerDotSize = Math.max(11, Math.round(size * 0.54));
+    const numberMarkup = `<span style="color:${profile.numberColor};font-weight:800;font-size:${fontSize}px;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;pointer-events:none;">${index + 1}</span>`;
+    const centerMarkup = profile.showInnerDot
+        ? `<div style="width:${innerDotSize}px;height:${innerDotSize}px;border-radius:9999px;background:#ffffff;display:flex;align-items:center;justify-content:center;">${numberMarkup}</div>`
+        : numberMarkup;
     return `
         <div style="position:relative;width:${size}px;height:${size}px;line-height:1;user-select:none;">
             <div style="width:${size}px;height:${size}px;border-radius:9999px;background:${color};border:2px solid ${ringColor};box-shadow:${shadow};display:flex;align-items:center;justify-content:center;">
-                <div style="width:${innerDotSize}px;height:${innerDotSize}px;border-radius:9999px;background:#ffffff;display:flex;align-items:center;justify-content:center;">
-                    <span style="color:#0f172a;font-weight:800;font-size:${fontSize}px;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;pointer-events:none;">${index + 1}</span>
-                </div>
+                ${centerMarkup}
             </div>
         </div>
     `;
@@ -1210,7 +1331,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     const [mapInitialized, setMapInitialized] = useState(false);
     const [activityMarkersEnabled, setActivityMarkersEnabled] = useState(true);
     const [mapZoomLevel, setMapZoomLevel] = useState<number | null>(null);
-    const [mapViewportShortEdge, setMapViewportShortEdge] = useState<number | null>(null);
+    const [mapViewportSize, setMapViewportSize] = useState<{ width: number; height: number } | null>(null);
     const mapActionsDisabled = !mapInitialized || Boolean(loadError);
     const activityMarkersEnabledRef = useRef(activityMarkersEnabled);
     const mapZoomLevelRef = useRef<number | null>(mapZoomLevel);
@@ -1239,16 +1360,6 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     const selectedActivityIdRef = useRef<string | null>(selectedActivityId);
     const selectedCityIdRef = useRef<string | null>(selectedCityId);
     const selectionVersionRef = useRef(0);
-    const isCompactFloatingMarkerMode = mapDockMode === 'floating'
-        && Number.isFinite(mapViewportShortEdge)
-        && Number(mapViewportShortEdge) <= FLOATING_COMPACT_MARKER_SHORT_EDGE_MAX_PX;
-    const markerRenderProfile = useMemo(
-        () => resolveMarkerRenderProfile({
-            mapDockMode,
-            isCompactFloating: isCompactFloatingMarkerMode,
-        }),
-        [isCompactFloatingMarkerMode, mapDockMode],
-    );
     const normalizedSelectedItemId = selectedItemId ?? null;
     if (selectedItemIdRef.current !== normalizedSelectedItemId) {
         selectedItemIdRef.current = normalizedSelectedItemId;
@@ -1263,6 +1374,44 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         });
         return markerPositions;
     }, [items]);
+    const routePixelSpan = useMemo(
+        () => estimateRoutePixelSpan(
+            cities
+                .map((city) => city.coordinates)
+                .filter((coordinates): coordinates is google.maps.LatLngLiteral => Boolean(coordinates)),
+            mapZoomLevel,
+        ),
+        [cities, mapZoomLevel],
+    );
+    const nearestMarkerGapPx = useMemo(
+        () => estimateNearestMarkerGapPx(
+            [
+                ...cities
+                    .map((city) => city.coordinates)
+                    .filter((coordinates): coordinates is google.maps.LatLngLiteral => Boolean(coordinates)),
+                ...Array.from(resolvedActivityMarkerPositionById.values()),
+            ],
+            mapZoomLevel,
+        ),
+        [cities, mapZoomLevel, resolvedActivityMarkerPositionById],
+    );
+    const markerRenderTier = useMemo(
+        () => resolveMarkerRenderTier({
+            viewportWidth: mapViewportSize?.width ?? 0,
+            viewportHeight: mapViewportSize?.height ?? 0,
+            zoom: mapZoomLevel,
+            routePixelSpan,
+            nearestMarkerGapPx,
+        }),
+        [mapViewportSize, mapZoomLevel, nearestMarkerGapPx, routePixelSpan],
+    );
+    const markerRenderProfile = useMemo(
+        () => resolveMarkerRenderProfile({
+            mapDockMode,
+            markerTier: markerRenderTier,
+        }),
+        [mapDockMode, markerRenderTier],
+    );
     const activityMarkerStylesById = useMemo(() => {
         const styles = new Map<string, { type: ActivityType; title: string }>();
         items.forEach((item) => {
@@ -1380,14 +1529,17 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         setMapInitialized(Boolean(map));
         if (!map) {
             setMapZoomLevel(null);
-            setMapViewportShortEdge(null);
+            setMapViewportSize(null);
             return;
         }
         const nextZoom = map.getZoom?.();
         setMapZoomLevel(Number.isFinite(nextZoom) ? Number(nextZoom) : null);
         const containerRect = mapContainerRef.current?.getBoundingClientRect();
         if (containerRect) {
-            setMapViewportShortEdge(Math.round(Math.min(containerRect.width, containerRect.height)));
+            setMapViewportSize({
+                width: Math.round(containerRect.width),
+                height: Math.round(containerRect.height),
+            });
         }
     }, []);
 
@@ -1745,6 +1897,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
 
         const drawRoutePath = (path: google.maps.LatLngLiteral[], color: string, weight = 3) => {
             if (!isEffectActive()) return null;
+            const routeScale = Math.max(0.58, markerRenderProfile.routeStrokeScale);
             const arrowIcon = {
                 path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
                 fillColor: color,
@@ -1752,14 +1905,14 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 strokeColor: color,
                 strokeOpacity: 1,
                 strokeWeight: 0.1,
-                scale: 3.2
+                scale: 3.2 * Math.max(0.72, routeScale),
             };
             return createRoutePolylinePair({
                 path,
                 geodesic: true,
                 strokeColor: color,
                 strokeOpacity: 0.7,
-                strokeWeight: weight,
+                strokeWeight: Math.max(1.2, weight * routeScale),
                 clickable: false,
                 icons: [
                     { icon: arrowIcon, offset: '25%' },
@@ -2343,12 +2496,17 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                      strokeColor: startColor,
                      strokeOpacity: 1,
                      strokeWeight: 0.1,
-                     scale: 3.2
+                     scale: 3.2 * Math.max(0.72, markerRenderProfile.routeStrokeScale)
                  };
                  const icons = isDashedFallback
                      ? [
                          {
-                             icon: { path: 'M 0,-1 0,1', strokeColor: startColor, strokeOpacity: 0.9, scale: 2.5 },
+                             icon: {
+                                 path: 'M 0,-1 0,1',
+                                 strokeColor: startColor,
+                                 strokeOpacity: 0.9,
+                                 scale: 2.5 * Math.max(0.72, markerRenderProfile.routeStrokeScale),
+                             },
                              offset: '0',
                              repeat: '12px'
                          },
@@ -2368,7 +2526,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                      geodesic: true,
                      strokeColor: startColor,
                      strokeOpacity: isDashedFallback ? 0 : 0.6,
-                     strokeWeight: 2,
+                     strokeWeight: Math.max(1.05, 2 * markerRenderProfile.routeStrokeScale),
                      clickable: false,
                      icons,
                      zIndex: 35,
@@ -2547,7 +2705,10 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         if (!container) return;
 
         let previousViewportSize = container.getBoundingClientRect();
-        setMapViewportShortEdge(Math.round(Math.min(previousViewportSize.width, previousViewportSize.height)));
+        setMapViewportSize({
+            width: Math.round(previousViewportSize.width),
+            height: Math.round(previousViewportSize.height),
+        });
         let resizeRafId: number | null = null;
         const observer = new ResizeObserver(() => {
             if (resizeRafId !== null || !googleMapRef.current) return;
@@ -2560,14 +2721,20 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 if (selectedActivityIdRef.current || selectedCityIdRef.current || cities.length === 0) {
                     const currentViewportSize = container.getBoundingClientRect();
                     previousViewportSize = currentViewportSize;
-                    setMapViewportShortEdge(Math.round(Math.min(currentViewportSize.width, currentViewportSize.height)));
+                    setMapViewportSize({
+                        width: Math.round(currentViewportSize.width),
+                        height: Math.round(currentViewportSize.height),
+                    });
                     return;
                 }
                 const nextViewportSize = container.getBoundingClientRect();
                 const widthDelta = Math.abs(nextViewportSize.width - previousViewportSize.width);
                 const heightDelta = Math.abs(nextViewportSize.height - previousViewportSize.height);
                 previousViewportSize = nextViewportSize;
-                setMapViewportShortEdge(Math.round(Math.min(nextViewportSize.width, nextViewportSize.height)));
+                setMapViewportSize({
+                    width: Math.round(nextViewportSize.width),
+                    height: Math.round(nextViewportSize.height),
+                });
                 if (widthDelta < 24 && heightDelta < 24) return;
                 cancelResizeAutoFitTimer();
                 resizeAutoFitTimerRef.current = window.setTimeout(() => {
