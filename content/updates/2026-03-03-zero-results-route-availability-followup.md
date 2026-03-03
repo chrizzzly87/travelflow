@@ -19,6 +19,7 @@ summary: "Started follow-up work to make route failures more deterministic and r
 - [ ] [Internal] 📊 Added planner analytics events for calendar export actions across details, info, and print surfaces.
 - [ ] [Internal] 🎨 Tuned activity marker icon contrast and softened marker chrome for ongoing map-marker experimentation.
 - [ ] [Internal] 🧭 Tightened initial map-fit guards so first-time activity selection no longer jumps back to route center.
+- [ ] [Internal] 🧪 Rebalanced adaptive marker-tier thresholds so default/compact/micro transitions now respond predictably across docked/floating resize and zoom changes.
 - [ ] [Internal] 🧭 Added structured route-failure reason classification to support future leg-level transport availability UX.
 - [ ] [Internal] 🧠 Persisted failure reasons in route cache metadata and passed reason context through route-status updates.
 - [ ] [Internal] 🔕 Added short-window deduping for repeated route fallback warnings on identical legs/modes.

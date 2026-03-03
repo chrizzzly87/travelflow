@@ -287,8 +287,14 @@ describe('components/ItineraryMap route cache helpers', () => {
       { lat: 50.112, lng: 8.684 },
       { lat: 50.13, lng: 8.69 },
     ], 12);
+    const dedupedGap = estimateNearestMarkerGapPx([
+      { lat: 50.1109, lng: 8.6821 },
+      { lat: 50.1109, lng: 8.6821 },
+      { lat: 50.112, lng: 8.684 },
+    ], 12);
     expect(routeSpan).toBeGreaterThan(10);
     expect(markerGap).toBeGreaterThan(0);
+    expect(dedupedGap).toBeGreaterThan(0);
   });
 
   it('resolves marker tier from viewport, zoom, and route density signals', () => {
@@ -314,6 +320,14 @@ describe('components/ItineraryMap route cache helpers', () => {
       zoom: 12,
       routePixelSpan: 180,
       nearestMarkerGapPx: 80,
+    })).toBe('default');
+
+    expect(resolveMarkerRenderTier({
+      viewportWidth: 760,
+      viewportHeight: 480,
+      zoom: 12,
+      routePixelSpan: 2400,
+      nearestMarkerGapPx: 12,
     })).toBe('default');
   });
 

@@ -224,6 +224,8 @@ const MARKER_OVERLAP_RADIUS_METERS = 420;
 const ACTIVITY_MARKER_OVERLAP_RADIUS_METERS = 260;
 const ACTIVITY_CITY_FALLBACK_MIN_SLOTS = 4;
 const MARKER_COORDINATE_GROUP_PRECISION = 5;
+const MARKER_TIER_ROUTE_REFERENCE_ZOOM = 10;
+const MARKER_GAP_DEDUPE_PRECISION = 6;
 export const MAP_VIEWPORT_READY_MIN_DIMENSION_PX = 80;
 export const MAX_WALK_ROUTE_CHECK_KM = 60;
 export const MAX_BICYCLE_ROUTE_CHECK_KM = 160;
@@ -454,7 +456,18 @@ export const estimateNearestMarkerGapPx = (
 ): number => {
     if (!Number.isFinite(zoom)) return Number.POSITIVE_INFINITY;
     if (coordinates.length < 2) return Number.POSITIVE_INFINITY;
-    const projected = coordinates.map((coordinate) => toWebMercatorPixel(coordinate, Number(zoom)));
+
+    const uniqueCoordinates: google.maps.LatLngLiteral[] = [];
+    const seenCoordinateKeys = new Set<string>();
+    coordinates.forEach((coordinate) => {
+        const key = `${coordinate.lat.toFixed(MARKER_GAP_DEDUPE_PRECISION)},${coordinate.lng.toFixed(MARKER_GAP_DEDUPE_PRECISION)}`;
+        if (seenCoordinateKeys.has(key)) return;
+        seenCoordinateKeys.add(key);
+        uniqueCoordinates.push(coordinate);
+    });
+
+    if (uniqueCoordinates.length < 2) return Number.POSITIVE_INFINITY;
+    const projected = uniqueCoordinates.map((coordinate) => toWebMercatorPixel(coordinate, Number(zoom)));
     let minDistance = Number.POSITIVE_INFINITY;
     for (let i = 0; i < projected.length; i += 1) {
         for (let j = i + 1; j < projected.length; j += 1) {
@@ -484,20 +497,27 @@ export const resolveMarkerRenderTier = ({
     const shortEdge = Math.min(viewportWidth, viewportHeight);
     if (!Number.isFinite(shortEdge) || shortEdge <= 0) return 'default';
     const effectiveZoom = Number.isFinite(zoom) ? Number(zoom) : 11;
-    const crowded = Number.isFinite(nearestMarkerGapPx) && nearestMarkerGapPx < 24;
-    const veryCrowded = Number.isFinite(nearestMarkerGapPx) && nearestMarkerGapPx < 15;
-    const denseRoute = Number.isFinite(routePixelSpan) && routePixelSpan > (shortEdge * 1.15);
-    const veryDenseRoute = Number.isFinite(routePixelSpan) && routePixelSpan > (shortEdge * 1.65);
+    const zoomNormalizedRouteSpan = Number.isFinite(routePixelSpan)
+        ? routePixelSpan / (2 ** (effectiveZoom - MARKER_TIER_ROUTE_REFERENCE_ZOOM))
+        : 0;
+    const routeCoverage = shortEdge > 0 ? zoomNormalizedRouteSpan / shortEdge : 0;
+    const crowded = Number.isFinite(nearestMarkerGapPx) && nearestMarkerGapPx < 18;
+    const veryCrowded = Number.isFinite(nearestMarkerGapPx) && nearestMarkerGapPx < 11;
+    const denseRoute = Number.isFinite(routeCoverage) && routeCoverage > 1.45;
+    const veryDenseRoute = Number.isFinite(routeCoverage) && routeCoverage > 2.2;
+    const extremeDenseRoute = Number.isFinite(routeCoverage) && routeCoverage > 3.1;
 
     if (shortEdge <= 210) return 'micro';
-    if (shortEdge <= 280 && (effectiveZoom <= 8 || denseRoute || crowded)) return 'micro';
     if (effectiveZoom <= 5) return 'micro';
-    if (effectiveZoom <= 6 && (denseRoute || crowded)) return 'micro';
-    if (veryDenseRoute || veryCrowded) return 'micro';
+    if (shortEdge <= 250 && (effectiveZoom <= 7 || extremeDenseRoute)) return 'micro';
+    if (effectiveZoom <= 6 && (veryDenseRoute || veryCrowded)) return 'micro';
+    if (shortEdge <= 280 && veryDenseRoute && effectiveZoom <= 8) return 'micro';
 
-    if (shortEdge <= 320) return 'compact';
+    if (shortEdge <= 300) return 'compact';
     if (effectiveZoom <= 8) return 'compact';
-    if (denseRoute || crowded) return 'compact';
+    if (denseRoute && effectiveZoom <= 10) return 'compact';
+    if (crowded && effectiveZoom <= 10) return 'compact';
+    if ((veryDenseRoute || veryCrowded) && shortEdge <= 360) return 'compact';
     return 'default';
 };
 
@@ -1385,15 +1405,12 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     );
     const nearestMarkerGapPx = useMemo(
         () => estimateNearestMarkerGapPx(
-            [
-                ...cities
-                    .map((city) => city.coordinates)
-                    .filter((coordinates): coordinates is google.maps.LatLngLiteral => Boolean(coordinates)),
-                ...Array.from(resolvedActivityMarkerPositionById.values()),
-            ],
+            cities
+                .map((city) => city.coordinates)
+                .filter((coordinates): coordinates is google.maps.LatLngLiteral => Boolean(coordinates)),
             mapZoomLevel,
         ),
-        [cities, mapZoomLevel, resolvedActivityMarkerPositionById],
+        [cities, mapZoomLevel],
     );
     const markerRenderTier = useMemo(
         () => resolveMarkerRenderTier({
