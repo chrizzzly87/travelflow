@@ -1013,6 +1013,8 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     const lastFocusQueryRef = useRef<string | null>(null);
     const lastFitToRouteKeyRef = useRef<string | null>(null);
     const fitRafRef = useRef<number | null>(null);
+    const hasAutoFitCompletedRef = useRef(false);
+    const scheduleFitWhenViewportReadyRef = useRef<(maxAttempts?: number) => void>(() => {});
     const onRouteMetricsRef = useRef<typeof onRouteMetrics>(onRouteMetrics);
     const onRouteStatusRef = useRef<typeof onRouteStatus>(onRouteStatus);
     const onCityMarkerSelectRef = useRef<typeof onCityMarkerSelect>(onCityMarkerSelect);
@@ -1034,6 +1036,10 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             .filter(i => i.type === 'city' && i.coordinates)
             .sort((a, b) => a.startDateOffset - b.startDateOffset),
     [items]);
+    const cityMapSignature = useMemo(
+        () => cities.map((city) => `${city.id}|${city.coordinates?.lat},${city.coordinates?.lng}`).join('||'),
+        [cities],
+    );
     const selectedCityId = useMemo(
         () => (selectedItemId && cities.some(city => city.id === selectedItemId) ? selectedItemId : null),
         [selectedItemId, cities]
@@ -1096,6 +1102,10 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
 
         fitRafRef.current = window.requestAnimationFrame(tryFit);
     }, [cancelScheduledFit, cities.length, runFitBounds]);
+
+    useEffect(() => {
+        scheduleFitWhenViewportReadyRef.current = scheduleFitWhenViewportReady;
+    }, [scheduleFitWhenViewportReady]);
 
     useEffect(() => {
         onRouteMetricsRef.current = onRouteMetrics;
@@ -2211,7 +2221,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             }
         }, 100);
         return () => clearTimeout(t);
-    }, [selectedActivityId, selectedCityId, mapInitialized, cities]);
+    }, [selectedActivityId, selectedCityId, mapInitialized, cityMapSignature]);
 
     // Fit Bounds
     const handleFit = () => {
@@ -2220,10 +2230,16 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
 
     // Auto fit on load
     useEffect(() => {
-        if (mapInitialized && cities.length > 0) {
-            scheduleFitWhenViewportReady();
-        }
-    }, [mapInitialized, cities.length, scheduleFitWhenViewportReady]);
+        if (!mapInitialized || cities.length === 0) return;
+        if (hasAutoFitCompletedRef.current) return;
+        hasAutoFitCompletedRef.current = true;
+        scheduleFitWhenViewportReadyRef.current();
+    }, [mapInitialized, cities.length]);
+
+    useEffect(() => {
+        if (cities.length > 0) return;
+        hasAutoFitCompletedRef.current = false;
+    }, [cities.length]);
 
     // Re-center when an external "active route" key changes (e.g., opening a different saved plan).
     useEffect(() => {
@@ -2231,8 +2247,8 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         if (lastFitToRouteKeyRef.current === fitToRouteKey) return;
 
         lastFitToRouteKeyRef.current = fitToRouteKey;
-        scheduleFitWhenViewportReady();
-    }, [fitToRouteKey, mapInitialized, cities.length, scheduleFitWhenViewportReady]);
+        scheduleFitWhenViewportReadyRef.current();
+    }, [fitToRouteKey, mapInitialized, cities.length]);
 
     useEffect(() => {
         if (!mapInitialized || !googleMapRef.current || typeof ResizeObserver === 'undefined') return;
@@ -2401,30 +2417,6 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                         </button>
                     )}
 
-                    {!isPaywalled && (
-                        <button
-                            type="button"
-                            onClick={() => setActivityMarkersEnabled((current) => !current)}
-                            disabled={mapActionsDisabled}
-                            className={`p-2 rounded-lg shadow-md border transition-colors flex items-center justify-center ${
-                                mapActionsDisabled
-                                    ? 'bg-white border-gray-200 text-gray-300 cursor-not-allowed'
-                                    : activityMarkersEnabled
-                                        ? 'bg-accent-600 border-accent-700 text-white hover:bg-accent-700'
-                                        : 'bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50'
-                            }`}
-                            aria-label={activityMarkersEnabled ? 'Hide activity markers' : 'Show activity markers'}
-                            title={activityMarkersEnabled ? 'Hide activity markers' : 'Show activity markers'}
-                            {...getAnalyticsDebugAttributes('trip_view__map_activity_markers--toggle', {
-                                surface: 'map_controls',
-                                active: activityMarkersEnabled,
-                            })}
-                        >
-                            <MapPinArea size={18} weight="bold" />
-                            <span className="sr-only">{activityMarkersEnabled ? 'Hide activity markers' : 'Show activity markers'}</span>
-                        </button>
-                    )}
-                    
                     <button
                         onClick={handleFit}
                         disabled={mapActionsDisabled}
@@ -2496,6 +2488,29 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                               </div>
                           )}
                       </div>
+                    )}
+                    {!isPaywalled && (
+                        <button
+                            type="button"
+                            onClick={() => setActivityMarkersEnabled((current) => !current)}
+                            disabled={mapActionsDisabled}
+                            className={`p-2 rounded-lg shadow-md border transition-colors flex items-center justify-center ${
+                                mapActionsDisabled
+                                    ? 'bg-white border-gray-200 text-gray-300 cursor-not-allowed'
+                                    : activityMarkersEnabled
+                                        ? 'bg-accent-600 border-accent-700 text-white hover:bg-accent-700'
+                                        : 'bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50'
+                            }`}
+                            aria-label={activityMarkersEnabled ? 'Hide activity markers' : 'Show activity markers'}
+                            title={activityMarkersEnabled ? 'Hide activity markers' : 'Show activity markers'}
+                            {...getAnalyticsDebugAttributes('trip_view__map_activity_markers--toggle', {
+                                surface: 'map_controls',
+                                active: activityMarkersEnabled,
+                            })}
+                        >
+                            <MapPinArea size={18} weight="bold" />
+                            <span className="sr-only">{activityMarkersEnabled ? 'Hide activity markers' : 'Show activity markers'}</span>
+                        </button>
                     )}
                 </div>
             </div>
