@@ -12,6 +12,7 @@ import {
   buildRouteAttemptPolicy,
   classifyRouteComputationError,
   mapRouteAttemptPolicyReasonToFailureReason,
+  computeMaxPathDeviationMeters,
   ROUTE_FAILURE_TTL_MS,
   ROUTE_PERSIST_TTL_MS,
   shouldLogRouteFailureWarning,
@@ -91,7 +92,8 @@ describe('components/ItineraryMap route cache helpers', () => {
     expect(getRouteOutlineColor('standard')).toBe('#0f172a');
     expect(getRouteOutlineColor('minimal')).toBe('#0f172a');
     expect(getRouteOutlineColor('clean')).toBe('#0f172a');
-    expect(getRouteOutlineColor('dark')).toBe('#0f172a');
+    expect(getRouteOutlineColor('dark')).toBe('#1b2230');
+    expect(getRouteOutlineColor('cleanDark')).toBe('#1b2230');
     expect(getRouteOutlineColor('satellite')).toBe('#0f172a');
     expect(getRouteOuterOutlineColor('standard')).toBe('#f8fafc');
     expect(getRouteOuterOutlineColor('satellite')).toBe('#f8fafc');
@@ -130,10 +132,11 @@ describe('components/ItineraryMap route cache helpers', () => {
     } as any, 'dark');
 
     expect(mainOptions.strokeWeight).toBe(4);
-    expect(outlineOptions.strokeWeight).toBe(5);
-    expect(outerOutlineOptions.strokeWeight).toBe(6);
-    expect(outlineOptions.strokeOpacity).toBe(0);
+    expect(outlineOptions.strokeWeight).toBe(7);
+    expect(outerOutlineOptions.strokeWeight).toBe(9);
+    expect(outlineOptions.strokeOpacity).toBe(1);
     expect(outerOutlineOptions.strokeOpacity).toBe(0.95);
+    expect(outlineOptions.strokeColor).toBe('#1b2230');
     expect(outerOutlineOptions.strokeColor).toBe('#f8fafc');
     expect(outlineOptions.icons).toBeUndefined();
     expect(outerOutlineOptions.icons).toBeUndefined();
@@ -174,11 +177,49 @@ describe('components/ItineraryMap route cache helpers', () => {
     expect(outlineOptions.icons).toBeUndefined();
   });
 
+  it('keeps icon-only dark fallback routes dashed without forcing dark borders', () => {
+    const dashedIcons = [{
+      icon: { path: 'M 0,-1 0,1', strokeColor: '#f43f5e', strokeOpacity: 0.9, scale: 2.5 },
+      offset: '0',
+      repeat: '12px',
+    }];
+
+    const { outerOutlineOptions, outlineOptions, mainOptions } = buildRoutePolylinePairOptions({
+      geodesic: true,
+      strokeColor: '#f43f5e',
+      strokeOpacity: 0,
+      strokeWeight: 2,
+      clickable: false,
+      icons: dashedIcons,
+      zIndex: 35,
+    } as any, 'cleanDark');
+
+    expect(mainOptions.strokeOpacity).toBe(0);
+    expect(mainOptions.icons).toEqual(dashedIcons);
+    expect(outlineOptions.strokeOpacity).toBe(0);
+    expect(outerOutlineOptions.strokeOpacity).toBe(0);
+  });
+
   it('estimates great-circle distance between two points', () => {
     const berlin = { lat: 52.52, lng: 13.405 };
     const munich = { lat: 48.137154, lng: 11.576124 };
     const km = estimateGreatCircleDistanceKm(berlin, munich);
     expect(Math.round(km)).toBe(504);
+  });
+
+  it('measures path deviation from a straight leg', () => {
+    const start = { lat: 13.7563, lng: 100.5018 };
+    const end = { lat: 13.3633, lng: 103.8564 };
+    const straightPath = [start, end];
+    const bentPath = [
+      start,
+      { lat: 13.95, lng: 101.7 },
+      { lat: 13.7, lng: 102.8 },
+      end,
+    ];
+
+    expect(computeMaxPathDeviationMeters(straightPath, start, end)).toBe(0);
+    expect(computeMaxPathDeviationMeters(bentPath, start, end)).toBeGreaterThan(1000);
   });
 
   it('skips impossible route checks by mode and distance caps', () => {

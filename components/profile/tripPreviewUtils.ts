@@ -24,7 +24,7 @@ interface MiniMapOptions {
   variant?: TripMapPreviewVariant;
 }
 
-type TripMapPreviewStyle = 'clean' | 'minimal' | 'standard' | 'dark' | 'satellite';
+type TripMapPreviewStyle = 'clean' | 'minimal' | 'standard' | 'dark' | 'cleanDark' | 'satellite';
 
 const stripColorPrefix = (value: string): string => value.replace(/^0x/i, '').replace(/^#/, '').trim();
 
@@ -149,6 +149,19 @@ const DIRECT_STATIC_MAP_STYLE_TOKENS: Record<Exclude<TripMapPreviewStyle, 'stand
     'feature:water|element:labels.text.fill|color:0xb7d5ea',
     'feature:water|element:labels.text.stroke|color:0x0b3f5f',
   ],
+  cleanDark: [
+    'element:geometry|color:0x1b2230',
+    'element:labels.icon|visibility:off',
+    'element:labels.text.fill|visibility:off',
+    'element:labels.text.stroke|visibility:off',
+    'feature:administrative|element:geometry|visibility:off',
+    'feature:administrative.country|element:geometry.stroke|color:0x8ea3b7|weight:1.2|visibility:on',
+    'feature:poi|visibility:off',
+    'feature:road|visibility:off',
+    'feature:transit|visibility:off',
+    'feature:water|element:geometry|color:0x0b3f5f',
+    'feature:water|element:labels|visibility:off',
+  ],
 };
 
 const clampInt = (value: number, min: number, max: number): number => {
@@ -157,7 +170,7 @@ const clampInt = (value: number, min: number, max: number): number => {
 };
 
 const parsePreviewStyle = (value: string | null): TripMapPreviewStyle => {
-  if (value === 'clean' || value === 'minimal' || value === 'standard' || value === 'dark' || value === 'satellite') {
+  if (value === 'clean' || value === 'minimal' || value === 'standard' || value === 'dark' || value === 'cleanDark' || value === 'satellite') {
     return value;
   }
   return 'standard';
@@ -236,7 +249,7 @@ export const buildDirectStaticMapPreviewUrlWithKey = (params: URLSearchParams, m
     directParams.set('language', language);
   }
 
-  if (style === 'clean' || style === 'minimal' || style === 'dark') {
+  if (style === 'clean' || style === 'minimal' || style === 'dark' || style === 'cleanDark') {
     DIRECT_STATIC_MAP_STYLE_TOKENS[style].forEach((token) => {
       directParams.append('style', token);
     });

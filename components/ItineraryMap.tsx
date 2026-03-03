@@ -161,6 +161,21 @@ const MAP_STYLES = {
         { "featureType": "water", "elementType": "geometry", "stylers": [{ "color": "#dcefff" }] }, // Higher-contrast water fill
         { "featureType": "landscape.natural", "elementType": "geometry.stroke", "stylers": [{ "color": "#a7c9e6" }, { "weight": 1.4 }, { "visibility": "on" }] },
         { "featureType": "water", "elementType": "labels.text.fill", "stylers": [{ "color": "#9e9e9e" }] }
+    ],
+    cleanDark: [
+        { "elementType": "geometry", "stylers": [{ "color": "#1b2230" }] },
+        { "elementType": "labels.icon", "stylers": [{ "visibility": "off" }] },
+        { "elementType": "labels.text.fill", "stylers": [{ "visibility": "off" }] },
+        { "elementType": "labels.text.stroke", "stylers": [{ "visibility": "off" }] },
+        { "featureType": "administrative", "elementType": "geometry", "stylers": [{ "visibility": "off" }] },
+        { "featureType": "administrative.country", "elementType": "geometry.stroke", "stylers": [{ "color": "#8ea3b7" }, { "weight": 1.2 }, { "visibility": "on" }] },
+        { "featureType": "administrative.province", "elementType": "geometry.stroke", "stylers": [{ "visibility": "off" }] },
+        { "featureType": "poi", "stylers": [{ "visibility": "off" }] },
+        { "featureType": "road", "stylers": [{ "visibility": "off" }] },
+        { "featureType": "transit", "stylers": [{ "visibility": "off" }] },
+        { "featureType": "water", "elementType": "geometry", "stylers": [{ "color": "#0b3f5f" }] },
+        { "featureType": "landscape.natural", "elementType": "geometry.stroke", "stylers": [{ "color": "#2d3f52" }, { "weight": 1.25 }, { "visibility": "on" }] },
+        { "featureType": "water", "elementType": "labels", "stylers": [{ "visibility": "off" }] }
     ]
 };
 
@@ -192,8 +207,9 @@ const ROUTE_FAILURE_WARNING_TTL_MS = 2 * 60 * 1000;
 const RECENT_ROUTE_FAILURE_WARNINGS = new Map<string, number>();
 let routeCacheHydrated = false;
 
-const ROUTE_INNER_OUTLINE_COLOR = '#0f172a';
 const ROUTE_OUTER_OUTLINE_COLOR = '#f8fafc';
+const ROUTE_DARK_GAP_COLOR = '#1b2230';
+const ROUTE_CLEAN_DARK_GAP_COLOR = '#1b2230';
 const EARTH_RADIUS_KM = 6371;
 const MARKER_OVERLAP_RADIUS_METERS = 420;
 const MARKER_COORDINATE_GROUP_PRECISION = 5;
@@ -377,12 +393,17 @@ const buildTransportMarkerHtml = (mode?: string, color?: string, rotationDegrees
 };
 
 export const getRouteOutlineColor = (_style: MapStyle = 'standard'): string => {
-    return ROUTE_INNER_OUTLINE_COLOR;
+    if (_style === 'dark') return ROUTE_DARK_GAP_COLOR;
+    if (_style === 'cleanDark') return ROUTE_CLEAN_DARK_GAP_COLOR;
+    return '#0f172a';
 };
 
 export const getRouteOuterOutlineColor = (_style: MapStyle = 'standard'): string => {
     return ROUTE_OUTER_OUTLINE_COLOR;
 };
+
+const isDarkMapStyle = (style: MapStyle): boolean =>
+    style === 'dark' || style === 'cleanDark';
 
 export const estimateGreatCircleDistanceKm = (
     start: google.maps.LatLngLiteral,
@@ -400,6 +421,44 @@ export const estimateGreatCircleDistanceKm = (
     );
     const angularDistance = 2 * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
     return EARTH_RADIUS_KM * angularDistance;
+};
+
+export const computeMaxPathDeviationMeters = (
+    path: google.maps.LatLngLiteral[],
+    start: google.maps.LatLngLiteral,
+    end: google.maps.LatLngLiteral,
+): number => {
+    if (path.length < 3) return 0;
+
+    const meanLatRadians = ((start.lat + end.lat) / 2) * (Math.PI / 180);
+    const metersPerDegreeLat = 111_320;
+    const metersPerDegreeLng = metersPerDegreeLat * Math.max(0.01, Math.cos(meanLatRadians));
+    const toProjected = (point: google.maps.LatLngLiteral) => ({
+        x: point.lng * metersPerDegreeLng,
+        y: point.lat * metersPerDegreeLat,
+    });
+
+    const startProjected = toProjected(start);
+    const endProjected = toProjected(end);
+    const dx = endProjected.x - startProjected.x;
+    const dy = endProjected.y - startProjected.y;
+    const denominator = (dx * dx) + (dy * dy);
+    if (denominator <= 0) return 0;
+
+    let maxDeviation = 0;
+    for (let index = 1; index < path.length - 1; index += 1) {
+        const point = toProjected(path[index]);
+        const projectionFactor = ((point.x - startProjected.x) * dx + (point.y - startProjected.y) * dy) / denominator;
+        const clampedFactor = Math.max(0, Math.min(1, projectionFactor));
+        const projectedX = startProjected.x + (clampedFactor * dx);
+        const projectedY = startProjected.y + (clampedFactor * dy);
+        const deviation = Math.hypot(point.x - projectedX, point.y - projectedY);
+        if (deviation > maxDeviation) {
+            maxDeviation = deviation;
+        }
+    }
+
+    return maxDeviation;
 };
 
 export const offsetLatLngByMeters = (
@@ -500,13 +559,15 @@ export const buildRoutePolylinePairOptions = (
     const mainStrokeWeight = baseWeight + 1;
     const innerOutlineColor = getRouteOutlineColor(style);
     const outerOutlineColor = getRouteOuterOutlineColor(style);
-    const showDarkStyleOuterOutline = style === 'dark';
+    const isDarkFamilyStyle = isDarkMapStyle(style);
+    const isIconOnlyRoute = baseOpacity <= 0 && (options.icons?.length ?? 0) > 0;
+    const shouldApplyDarkRouteBorders = isDarkFamilyStyle && !isIconOnlyRoute;
 
     const outerOutlineOptions: google.maps.PolylineOptions = {
         ...options,
         strokeColor: outerOutlineColor,
-        strokeOpacity: showDarkStyleOuterOutline ? 0.95 : 0,
-        strokeWeight: showDarkStyleOuterOutline ? mainStrokeWeight + 2 : mainStrokeWeight,
+        strokeOpacity: shouldApplyDarkRouteBorders ? 0.95 : 0,
+        strokeWeight: shouldApplyDarkRouteBorders ? mainStrokeWeight + 5 : mainStrokeWeight,
         icons: undefined,
         zIndex: baseZIndex - 2,
     };
@@ -514,8 +575,8 @@ export const buildRoutePolylinePairOptions = (
     const outlineOptions: google.maps.PolylineOptions = {
         ...options,
         strokeColor: innerOutlineColor,
-        strokeOpacity: 0,
-        strokeWeight: showDarkStyleOuterOutline ? mainStrokeWeight + 1 : mainStrokeWeight,
+        strokeOpacity: shouldApplyDarkRouteBorders ? 1 : 0,
+        strokeWeight: shouldApplyDarkRouteBorders ? mainStrokeWeight + 3 : mainStrokeWeight,
         icons: undefined,
         zIndex: baseZIndex - 1,
     };
@@ -1457,7 +1518,16 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                                      );
                                  }
                                  const ratio = straightMeters > 0 ? pathMeters / straightMeters : 0;
-                                 if (path.length <= 2 || (ratio > 0 && ratio < 1.01)) {
+                                 const modeRequiresHigherShapeFidelity = mode === 'bus' || mode === 'train';
+                                 const minimumDetourRatio = modeRequiresHigherShapeFidelity ? 1.03 : 1.015;
+                                 const minimumDeviationMeters = Math.max(
+                                     450,
+                                     Math.min(modeRequiresHigherShapeFidelity ? 5_500 : 3_500, straightMeters * 0.015),
+                                 );
+                                 const maxDeviationMeters = computeMaxPathDeviationMeters(path, origin, destination);
+                                 const hasStraightLikeDetour = ratio > 0 && ratio < minimumDetourRatio;
+                                 const hasStraightLikeShape = maxDeviationMeters < minimumDeviationMeters;
+                                 if (path.length <= 2 || hasStraightLikeDetour || hasStraightLikeShape) {
                                      throw new Error('Route path is straight');
                                  }
                              } else if (path.length <= 2) {
@@ -1856,10 +1926,11 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                               aria-label="Map style"
                           ><Layers size={18} /></button>
                           {isStyleMenuOpen && !mapActionsDisabled && (
-                              <div className="absolute top-0 right-full mr-2 bg-white rounded-lg shadow-xl border border-gray-100 w-36 overflow-hidden flex flex-col z-20">
+                              <div className="absolute top-0 right-full mr-2 bg-white rounded-lg shadow-xl border border-gray-100 w-40 overflow-hidden flex flex-col z-20">
                                   <button onClick={() => { onStyleChange('minimal'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'minimal' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Minimal</button>
                                   <button onClick={() => { onStyleChange('standard'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'standard' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Standard</button>
                                   <button onClick={() => { onStyleChange('dark'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'dark' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Dark</button>
+                                  <button onClick={() => { onStyleChange('cleanDark'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'cleanDark' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Clean (Dark)</button>
                                   <button onClick={() => { onStyleChange('satellite'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'satellite' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Satellite</button>
                                   <button onClick={() => { onStyleChange('clean'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'clean' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Clean</button>
                                   {!isPaywalled && onRouteModeChange && (

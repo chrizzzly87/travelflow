@@ -61,7 +61,12 @@ const isTimelineViewMode = (value: string | null): value is IViewSettings['timel
     value === 'vertical' || value === 'horizontal';
 
 const isMapStyleValue = (value: string | null): value is IViewSettings['mapStyle'] =>
-    value === 'minimal' || value === 'standard' || value === 'dark' || value === 'satellite' || value === 'clean';
+    value === 'minimal'
+    || value === 'standard'
+    || value === 'dark'
+    || value === 'satellite'
+    || value === 'clean'
+    || value === 'cleanDark';
 
 const isRouteModeValue = (value: string | null): value is NonNullable<IViewSettings['routeMode']> =>
     value === 'simple' || value === 'realistic';
