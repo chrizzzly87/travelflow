@@ -1218,6 +1218,12 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             const startCityKey = getNormalizedCityName(startCity?.title);
             const endCityKey = getNormalizedCityName(endCity?.title);
             const isRoundTrip = !!(startCityKey && endCityKey && startCityKey === endCityKey);
+            const isCleanDarkLabelStyle = activeStyle === 'cleanDark';
+            const labelTextColor = isCleanDarkLabelStyle ? '#f8fafc' : '#111827';
+            const labelSubTextColor = isCleanDarkLabelStyle ? '#f8fafc' : 'var(--tf-primary)';
+            const labelTextShadow = isCleanDarkLabelStyle
+                ? '0 1px 2px rgba(11,18,32,0.88)'
+                : '0 1px 2px rgba(255,255,255,0.8)';
 
             const createCityLabelOverlay = (position: google.maps.LatLngLiteral, name: string, subLabel?: string) => {
                 const overlay = new window.google.maps.OverlayView();
@@ -1237,8 +1243,8 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                     nameEl.textContent = name;
                     nameEl.style.fontSize = '13px';
                     nameEl.style.fontWeight = '700';
-                    nameEl.style.color = '#111827';
-                    nameEl.style.textShadow = '0 1px 2px rgba(255,255,255,0.8)';
+                    nameEl.style.color = labelTextColor;
+                    nameEl.style.textShadow = labelTextShadow;
 
                     div.appendChild(nameEl);
 
@@ -1247,10 +1253,10 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                         subEl.textContent = subLabel;
                         subEl.style.fontSize = '10px';
                         subEl.style.fontWeight = '600';
-                        subEl.style.color = 'var(--tf-primary)';
+                        subEl.style.color = labelSubTextColor;
                         subEl.style.textTransform = 'uppercase';
                         subEl.style.letterSpacing = '0.08em';
-                        subEl.style.textShadow = '0 1px 2px rgba(255,255,255,0.8)';
+                        subEl.style.textShadow = labelTextShadow;
                         div.appendChild(subEl);
                     }
 
