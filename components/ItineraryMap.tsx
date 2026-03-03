@@ -1131,6 +1131,16 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         mapZoomLevelRef.current = mapZoomLevel;
     }, [mapZoomLevel]);
 
+    useEffect(() => {
+        if (!fitToRouteKey) {
+            lastFitToRouteKeyRef.current = null;
+            return;
+        }
+        if (lastFitToRouteKeyRef.current === null) {
+            lastFitToRouteKeyRef.current = fitToRouteKey;
+        }
+    }, [fitToRouteKey]);
+
     const handleMapInstanceChange = useCallback((map: google.maps.Map | null) => {
         if (googleMapRef.current === map) return;
         googleMapRef.current = map;
@@ -2185,6 +2195,11 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
 
     // Pan to selected
     useEffect(() => {
+        if (!selectedActivityId && !selectedCityId) return;
+        cancelScheduledFit();
+    }, [cancelScheduledFit, selectedActivityId, selectedCityId]);
+
+    useEffect(() => {
         if (!googleMapRef.current || !window.google?.maps) return;
         
         const t = setTimeout(() => {
@@ -2231,10 +2246,11 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     // Auto fit on load
     useEffect(() => {
         if (!mapInitialized || cities.length === 0) return;
+        if (selectedActivityId || selectedCityId) return;
         if (hasAutoFitCompletedRef.current) return;
         hasAutoFitCompletedRef.current = true;
         scheduleFitWhenViewportReadyRef.current();
-    }, [mapInitialized, cities.length]);
+    }, [mapInitialized, cities.length, selectedActivityId, selectedCityId]);
 
     useEffect(() => {
         if (cities.length > 0) return;
@@ -2243,12 +2259,13 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
 
     // Re-center when an external "active route" key changes (e.g., opening a different saved plan).
     useEffect(() => {
+        if (selectedActivityId || selectedCityId) return;
         if (!fitToRouteKey || !mapInitialized || cities.length === 0) return;
         if (lastFitToRouteKeyRef.current === fitToRouteKey) return;
 
         lastFitToRouteKeyRef.current = fitToRouteKey;
         scheduleFitWhenViewportReadyRef.current();
-    }, [fitToRouteKey, mapInitialized, cities.length]);
+    }, [fitToRouteKey, mapInitialized, cities.length, selectedActivityId, selectedCityId]);
 
     useEffect(() => {
         if (!mapInitialized || !googleMapRef.current || typeof ResizeObserver === 'undefined') return;
