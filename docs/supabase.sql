@@ -119,6 +119,32 @@ create table if not exists public.subscriptions (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists public.legal_terms_versions (
+  version text primary key,
+  title text not null,
+  summary text,
+  binding_locale text not null default 'de',
+  content_de text not null default '',
+  content_en text not null default '',
+  last_updated date not null,
+  effective_at timestamptz not null default now(),
+  requires_reaccept boolean not null default true,
+  is_current boolean not null default false,
+  created_at timestamptz not null default now(),
+  created_by uuid references auth.users on delete set null
+);
+
+create table if not exists public.legal_terms_acceptance_events (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users on delete cascade,
+  terms_version text not null references public.legal_terms_versions(version) on delete restrict,
+  accepted_at timestamptz not null default now(),
+  accepted_locale text,
+  source text,
+  metadata jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+
 create table if not exists public.ai_benchmark_sessions (
   id uuid primary key default gen_random_uuid(),
   owner_id uuid not null references auth.users on delete cascade default auth.uid(),
@@ -200,6 +226,12 @@ alter table public.trips add column if not exists source_kind text;
 alter table public.trips add column if not exists source_template_id text;
 alter table public.profiles add column if not exists passport_sticker_positions jsonb not null default '{}'::jsonb;
 alter table public.profiles add column if not exists passport_sticker_selection jsonb not null default '[]'::jsonb;
+alter table public.profiles add column if not exists terms_accepted_version text;
+alter table public.profiles add column if not exists terms_accepted_at timestamptz;
+alter table public.profiles add column if not exists terms_accepted_locale text;
+alter table public.profiles add column if not exists terms_acceptance_source text;
+alter table public.legal_terms_versions add column if not exists content_de text not null default '';
+alter table public.legal_terms_versions add column if not exists content_en text not null default '';
 alter table public.ai_benchmark_runs add column if not exists satisfaction_rating text;
 alter table public.ai_benchmark_runs add column if not exists satisfaction_updated_at timestamptz;
 alter table public.ai_benchmark_runs add column if not exists run_comment text;
@@ -235,6 +267,134 @@ begin
 end;
 $$;
 
+insert into public.legal_terms_versions (
+  version,
+  title,
+  summary,
+  binding_locale,
+  content_de,
+  content_en,
+  last_updated,
+  effective_at,
+  requires_reaccept,
+  is_current
+)
+values (
+  '2026-03-03',
+  'Terms of Service / AGB',
+  'Initial production-ready Terms of Service for B2C/B2B launch with Merchant-of-Record billing model.',
+  'de',
+  $$## 1. Geltungsbereich
+Diese Allgemeinen Geschäftsbedingungen (AGB) gelten für sämtliche Verträge zwischen Ihnen und dem Betreiber von {appName} in der zum Zeitpunkt des Vertragsschlusses gültigen Fassung.
+
+Abweichende Bedingungen des Nutzers werden nicht Vertragsbestandteil, es sei denn, ihrer Geltung wurde ausdrücklich schriftlich zugestimmt.
+
+## 2. Leistungen von {appName}
+{appName} bietet eine digitale Plattform zur Reiseplanung und -organisation. Der konkrete Leistungsumfang ergibt sich aus den jeweils zum Buchungs- oder Nutzungszeitpunkt angezeigten Produktinformationen.
+
+Kostenlose und kostenpflichtige Funktionsumfänge können bestehen. Es besteht kein Anspruch auf bestimmte Funktionen, soweit diese nicht ausdrücklich als Vertragsbestandteil zugesagt wurden.
+
+## 3. Vertragsschluss und Nutzerkonto
+Der Vertrag über die Nutzung Ihres Kontos kommt mit erfolgreicher Registrierung bzw. Freischaltung zustande. Sie sind verpflichtet, bei der Registrierung zutreffende und vollständige Angaben zu machen.
+
+Zugangsdaten sind geheim zu halten und dürfen nicht an Dritte weitergegeben werden. Sie haften für missbräuchliche Nutzung, soweit Sie diese zu vertreten haben.
+
+## 4. Preise, Zahlung und Merchant-of-Record-Modell
+Angezeigte Preise verstehen sich als Endpreise inklusive gesetzlich geschuldeter Steuern, soweit nicht anders gekennzeichnet. Bei kostenpflichtigen Plänen erfolgt die Zahlungsabwicklung über einen Merchant of Record (MoR).
+
+Im MoR-Modell ist der jeweilige Zahlungsanbieter gegenüber dem Endkunden Verkäufer der digitalen Leistung für die Abrechnung und Rechnungsstellung. Der Nutzungsvertrag über die Plattformfunktionen besteht weiterhin mit dem Betreiber von {appName}.
+
+Rechnungen, Zahlungsbelege, Erstattungen und steuerliche Ausweise werden nach den Bedingungen des jeweils eingesetzten Zahlungsanbieters erstellt und bereitgestellt.
+
+## 5. Laufzeit, Kündigung und Beendigung
+Soweit ein laufendes Abonnement besteht, verlängert es sich entsprechend den im Checkout angezeigten Bedingungen, sofern es nicht fristgerecht gekündigt wird.
+
+Das Recht zur außerordentlichen Kündigung aus wichtigem Grund bleibt unberührt. Gesetzlich zwingende Rechte, insbesondere Verbraucherrechte, bleiben unberührt.
+
+## 6. Verbraucherrechte und Widerruf
+Verbrauchern stehen bei Fernabsatzverträgen gesetzliche Rechte, insbesondere Widerrufsrechte nach §§ 355 ff. BGB, zu, soweit diese nicht gesetzlich ausgeschlossen sind.
+
+Informationen zu Voraussetzungen, Fristen, Ausnahmen und einem Muster-Widerrufsformular werden im Rahmen des Bestellprozesses auf einem dauerhaften Datenträger bereitgestellt.
+
+## 7. Zulässige Nutzung
+Die Plattform darf ausschließlich rechtmäßig genutzt werden. Unzulässig sind insbesondere missbräuchliche, betrügerische, rechtswidrige oder sicherheitsgefährdende Handlungen.
+
+Bei Verstößen kann der Zugriff vorübergehend oder dauerhaft eingeschränkt werden, soweit dies erforderlich und verhältnismäßig ist.
+
+## 8. Haftung
+Es gilt die gesetzliche Haftung. Für leicht fahrlässige Pflichtverletzungen wird die Haftung auf vorhersehbare, vertragstypische Schäden begrenzt, soweit keine zwingenden gesetzlichen Vorschriften entgegenstehen.
+
+Die Haftungsbeschränkungen gelten nicht bei Vorsatz, grober Fahrlässigkeit, Verletzung von Leben, Körper oder Gesundheit sowie bei zwingender Produkthaftung.
+
+## 9. Änderungen dieser AGB
+Änderungen dieser AGB werden nur unter Beachtung der gesetzlichen Vorgaben vorgenommen. Wesentliche Änderungen werden vor Inkrafttreten in geeigneter Form angekündigt.
+
+Sofern eine erneute Zustimmung rechtlich erforderlich oder aus Compliance-Gründen vorgesehen ist, wird der weitere Zugriff auf geschützte Kontofunktionen von der Zustimmung zur jeweils aktuellen Fassung abhängig gemacht.
+
+## 10. Anwendbares Recht und Streitbeilegung
+Es gilt deutsches Recht unter Ausschluss des UN-Kaufrechts, soweit keine zwingenden Verbraucherschutzvorschriften entgegenstehen.
+
+Informationen zur Teilnahme an Verbraucherstreitbeilegungsverfahren finden Sie im Impressum.
+$$,
+  $$## 1. Scope
+These Terms apply to all agreements between you and the operator of {appName} at the time you enter into the contract.
+
+## 2. Service
+{appName} provides digital travel-planning functionality. Features can differ by plan and can evolve over time.
+
+## 3. Account
+You must provide accurate account data and keep credentials confidential.
+
+## 4. Pricing, payment, and MoR model
+Paid plans are processed through a Merchant of Record provider responsible for checkout and invoice issuance.
+
+Your platform-use agreement remains with the operator of {appName}.
+
+## 5. Term and cancellation
+Subscription term, renewal, and cancellation conditions are shown during checkout. Mandatory consumer rights remain unaffected.
+
+## 6. Consumer withdrawal rights
+Consumers may have statutory withdrawal rights under German/EU distance-selling rules, including digital-content/service rules where applicable.
+
+## 7. Acceptable use
+Illegal, abusive, fraudulent, or security-threatening use is prohibited and can lead to restriction or termination.
+
+## 8. Liability
+Liability follows mandatory law. For minor negligence, liability is limited to foreseeable, typical contractual damages where legally permissible.
+
+## 9. Terms updates
+Material changes are announced before they take effect. If required, continued use of protected account features requires accepting the current version.
+
+## 10. Governing law
+German law applies, subject to mandatory consumer protections.
+$$,
+  date '2026-03-03',
+  '2026-03-03T00:00:00Z'::timestamptz,
+  true,
+  true
+)
+on conflict (version) do update
+set
+  title = excluded.title,
+  summary = excluded.summary,
+  binding_locale = excluded.binding_locale,
+  content_de = excluded.content_de,
+  content_en = excluded.content_en,
+  last_updated = excluded.last_updated;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from public.legal_terms_versions ltv
+    where ltv.is_current = true
+  ) then
+    update public.legal_terms_versions ltv
+       set is_current = (ltv.version = '2026-03-03');
+  end if;
+end;
+$$;
+
 -- Indexes
 create index if not exists trips_owner_id_idx on public.trips(owner_id);
 create index if not exists trips_updated_at_idx on public.trips(updated_at desc);
@@ -259,6 +419,10 @@ create index if not exists ai_generation_events_created_idx on public.ai_generat
 create index if not exists ai_generation_events_source_created_idx on public.ai_generation_events(source, created_at desc);
 create index if not exists ai_generation_events_provider_created_idx on public.ai_generation_events(provider, created_at desc);
 create index if not exists ai_generation_events_status_created_idx on public.ai_generation_events(status, created_at desc);
+create index if not exists legal_terms_versions_effective_idx on public.legal_terms_versions(effective_at desc);
+create unique index if not exists legal_terms_versions_single_current_idx on public.legal_terms_versions((is_current)) where is_current;
+create index if not exists legal_terms_acceptance_user_created_idx on public.legal_terms_acceptance_events(user_id, accepted_at desc);
+create unique index if not exists legal_terms_acceptance_user_version_uidx on public.legal_terms_acceptance_events(user_id, terms_version);
 
 -- updated_at helpers
 create or replace function public.set_updated_at()
@@ -565,6 +729,8 @@ alter table public.profiles enable row level security;
 alter table public.user_settings enable row level security;
 alter table public.plans enable row level security;
 alter table public.subscriptions enable row level security;
+alter table public.legal_terms_versions enable row level security;
+alter table public.legal_terms_acceptance_events enable row level security;
 alter table public.ai_benchmark_sessions enable row level security;
 alter table public.ai_benchmark_runs enable row level security;
 alter table public.ai_benchmark_preferences enable row level security;
@@ -665,6 +831,19 @@ using (
 create policy "Profile user events owner insert"
 on public.profile_user_events for insert
 with check (owner_id = auth.uid());
+
+drop policy if exists "Legal terms versions public read" on public.legal_terms_versions;
+create policy "Legal terms versions public read"
+on public.legal_terms_versions for select
+using (true);
+
+drop policy if exists "Legal terms acceptance owner read" on public.legal_terms_acceptance_events;
+create policy "Legal terms acceptance owner read"
+on public.legal_terms_acceptance_events for select
+using (
+  user_id = auth.uid()
+  or public.is_admin(auth.uid())
+);
 
 -- Trip shares policies (owner only)
 drop policy if exists "Trip shares owner read" on public.trip_shares;
@@ -1447,6 +1626,10 @@ returns table(
   system_role text,
   tier_key text,
   entitlements_override jsonb,
+  terms_accepted_version text,
+  terms_accepted_at timestamptz,
+  terms_accepted_locale text,
+  terms_acceptance_source text,
   created_at timestamptz,
   updated_at timestamptz
 )
@@ -1467,6 +1650,10 @@ begin
     p.system_role,
     p.tier_key,
     p.entitlements_override,
+    p.terms_accepted_version,
+    p.terms_accepted_at,
+    p.terms_accepted_locale,
+    p.terms_acceptance_source,
     p.created_at,
     p.updated_at
   from public.profiles p
@@ -2815,7 +3002,13 @@ returns table(
   tier_key text,
   entitlements jsonb,
   account_status text,
-  onboarding_completed boolean
+  onboarding_completed boolean,
+  terms_current_version text,
+  terms_requires_reaccept boolean,
+  terms_accepted_version text,
+  terms_accepted_at timestamptz,
+  terms_acceptance_required boolean,
+  terms_notice_required boolean
 )
 language plpgsql
 security definer
@@ -2830,6 +3023,12 @@ declare
   v_is_anonymous boolean;
   v_account_status text;
   v_onboarding_completed boolean;
+  v_terms_current_version text;
+  v_terms_requires_reaccept boolean;
+  v_terms_accepted_version text;
+  v_terms_accepted_at timestamptz;
+  v_terms_acceptance_required boolean;
+  v_terms_notice_required boolean;
 begin
   v_uid := auth.uid();
   if v_uid is null then
@@ -2844,6 +3043,8 @@ begin
     p.system_role,
     p.tier_key,
     p.account_status,
+    p.terms_accepted_version,
+    p.terms_accepted_at,
     (
       p.onboarding_completed_at is not null
       and coalesce(btrim(p.first_name), '') <> ''
@@ -2852,11 +3053,37 @@ begin
       and coalesce(btrim(p.city), '') <> ''
       and coalesce(btrim(p.preferred_language), '') <> ''
     )
-    into v_role, v_tier, v_account_status, v_onboarding_completed
+    into v_role, v_tier, v_account_status, v_terms_accepted_version, v_terms_accepted_at, v_onboarding_completed
     from public.profiles p
    where p.id = v_uid;
 
   v_is_anonymous := coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false);
+
+  select
+    ltv.version,
+    ltv.requires_reaccept
+    into v_terms_current_version, v_terms_requires_reaccept
+    from public.legal_terms_versions ltv
+   where ltv.is_current = true
+   order by ltv.effective_at desc, ltv.created_at desc
+   limit 1;
+
+  v_terms_acceptance_required := (
+    v_terms_current_version is not null
+    and (
+      v_terms_accepted_version is null
+      or (
+        v_terms_accepted_version <> v_terms_current_version
+        and coalesce(v_terms_requires_reaccept, true)
+      )
+    )
+  );
+
+  v_terms_notice_required := (
+    v_terms_current_version is not null
+    and coalesce(v_terms_accepted_version, '') <> v_terms_current_version
+    and not coalesce(v_terms_requires_reaccept, true)
+  );
 
   return query
   select
@@ -2867,7 +3094,404 @@ begin
     coalesce(v_tier, 'tier_free'),
     public.get_effective_entitlements(v_uid),
     coalesce(v_account_status, 'active'),
-    coalesce(v_onboarding_completed, false);
+    coalesce(v_onboarding_completed, false),
+    v_terms_current_version,
+    coalesce(v_terms_requires_reaccept, true),
+    v_terms_accepted_version,
+    v_terms_accepted_at,
+    coalesce(v_terms_acceptance_required, false),
+    coalesce(v_terms_notice_required, false);
+end;
+$$;
+
+drop function if exists public.accept_current_terms(text, text);
+create or replace function public.accept_current_terms(
+  p_locale text default null,
+  p_source text default null
+)
+returns table(
+  terms_version text,
+  accepted_at timestamptz
+)
+language plpgsql
+security definer
+set search_path = public, auth
+set row_security = off
+as $$
+#variable_conflict use_column
+declare
+  v_uid uuid;
+  v_terms_version text;
+  v_terms_accepted_at timestamptz;
+  v_accepted_locale text;
+  v_acceptance_source text;
+  v_before_terms_version text;
+  v_before_terms_accepted_at timestamptz;
+  v_before_terms_locale text;
+  v_before_terms_source text;
+begin
+  v_uid := auth.uid();
+  if v_uid is null then
+    raise exception 'Not authenticated';
+  end if;
+
+  select ltv.version
+    into v_terms_version
+    from public.legal_terms_versions ltv
+   where ltv.is_current = true
+   order by ltv.effective_at desc, ltv.created_at desc
+   limit 1;
+
+  if v_terms_version is null then
+    raise exception 'Current terms version is not configured';
+  end if;
+
+  v_accepted_locale := nullif(btrim(coalesce(p_locale, '')), '');
+  v_acceptance_source := nullif(btrim(coalesce(p_source, '')), '');
+
+  begin
+    insert into public.legal_terms_acceptance_events (
+      user_id,
+      terms_version,
+      accepted_locale,
+      source
+    )
+    select
+      v_uid,
+      v_terms_version,
+      v_accepted_locale,
+      v_acceptance_source
+    where not exists (
+      select 1
+        from public.legal_terms_acceptance_events lta
+       where lta.user_id = v_uid
+         and lta.terms_version = v_terms_version
+    );
+  exception
+    when unique_violation then
+      -- Concurrent accept requests can race; unique index resolves the winner.
+      null;
+  end;
+
+  select lta.accepted_at
+    into v_terms_accepted_at
+    from public.legal_terms_acceptance_events lta
+   where lta.user_id = v_uid
+     and lta.terms_version = v_terms_version
+   order by lta.accepted_at desc
+   limit 1;
+
+  if v_terms_accepted_at is null then
+    v_terms_accepted_at := now();
+  end if;
+
+  select
+    p.terms_accepted_version,
+    p.terms_accepted_at,
+    p.terms_accepted_locale,
+    p.terms_acceptance_source
+    into
+      v_before_terms_version,
+      v_before_terms_accepted_at,
+      v_before_terms_locale,
+      v_before_terms_source
+  from public.profiles p
+  where p.id = v_uid;
+
+  update public.profiles p
+     set terms_accepted_version = v_terms_version,
+         terms_accepted_at = v_terms_accepted_at,
+         terms_accepted_locale = v_accepted_locale,
+         terms_acceptance_source = v_acceptance_source
+   where p.id = v_uid;
+
+  insert into public.profile_user_events (
+    owner_id,
+    action,
+    source,
+    before_data,
+    after_data,
+    metadata
+  )
+  values (
+    v_uid,
+    'legal.terms.accepted',
+    v_acceptance_source,
+    jsonb_build_object(
+      'terms_accepted_version', v_before_terms_version,
+      'terms_accepted_at', v_before_terms_accepted_at,
+      'terms_accepted_locale', v_before_terms_locale,
+      'terms_acceptance_source', v_before_terms_source
+    ),
+    jsonb_build_object(
+      'terms_accepted_version', v_terms_version,
+      'terms_accepted_at', v_terms_accepted_at,
+      'terms_accepted_locale', v_accepted_locale,
+      'terms_acceptance_source', v_acceptance_source
+    ),
+    jsonb_build_object(
+      'terms_version', v_terms_version,
+      'accepted_at', v_terms_accepted_at,
+      'locale', v_accepted_locale
+    )
+  );
+
+  return query
+  select
+    v_terms_version,
+    v_terms_accepted_at;
+end;
+$$;
+
+drop function if exists public.admin_publish_terms_version(text, text, text, text, date, timestamptz, boolean, text, text, boolean);
+create or replace function public.admin_publish_terms_version(
+  p_version text,
+  p_title text,
+  p_summary text default null,
+  p_binding_locale text default 'de',
+  p_last_updated date default current_date,
+  p_effective_at timestamptz default now(),
+  p_requires_reaccept boolean default true,
+  p_content_de text default null,
+  p_content_en text default null,
+  p_make_current boolean default true
+)
+returns table(
+  version text,
+  title text,
+  summary text,
+  binding_locale text,
+  last_updated date,
+  effective_at timestamptz,
+  requires_reaccept boolean,
+  is_current boolean,
+  content_de text,
+  content_en text,
+  created_at timestamptz,
+  created_by uuid
+)
+language plpgsql
+security definer
+set search_path = public, auth
+set row_security = off
+as $$
+#variable_conflict use_column
+declare
+  v_version text;
+  v_title text;
+  v_summary text;
+  v_binding_locale text;
+  v_content_de text;
+  v_content_en text;
+  v_before jsonb;
+  v_after jsonb;
+begin
+  if not public.has_admin_permission('users.write') then
+    raise exception 'Not allowed';
+  end if;
+
+  v_version := nullif(btrim(coalesce(p_version, '')), '');
+  v_title := nullif(btrim(coalesce(p_title, '')), '');
+  v_summary := nullif(btrim(coalesce(p_summary, '')), '');
+  v_binding_locale := coalesce(nullif(btrim(coalesce(p_binding_locale, '')), ''), 'de');
+  v_content_de := nullif(btrim(coalesce(p_content_de, '')), '');
+  v_content_en := nullif(btrim(coalesce(p_content_en, '')), '');
+
+  if v_version is null then
+    raise exception 'Version is required';
+  end if;
+  if v_title is null then
+    raise exception 'Title is required';
+  end if;
+  if v_content_de is null or v_content_en is null then
+    raise exception 'Both German and English terms content are required';
+  end if;
+
+  if exists (
+    select 1
+      from public.legal_terms_versions ltv
+     where ltv.version = v_version
+  ) then
+    raise exception 'Version "%" already exists. Publish a new version.', v_version;
+  end if;
+
+  select to_jsonb(ltv) into v_before
+    from public.legal_terms_versions ltv
+   where ltv.version = v_version;
+
+  if coalesce(p_make_current, true) then
+    update public.legal_terms_versions ltv
+       set is_current = false
+     where ltv.is_current = true
+       and ltv.version <> v_version;
+  end if;
+
+  insert into public.legal_terms_versions (
+    version,
+    title,
+    summary,
+    binding_locale,
+    content_de,
+    content_en,
+    last_updated,
+    effective_at,
+    requires_reaccept,
+    is_current,
+    created_by
+  )
+  values (
+    v_version,
+    v_title,
+    v_summary,
+    v_binding_locale,
+    v_content_de,
+    v_content_en,
+    coalesce(p_last_updated, current_date),
+    coalesce(p_effective_at, now()),
+    coalesce(p_requires_reaccept, true),
+    coalesce(p_make_current, true),
+    auth.uid()
+  )
+  ;
+
+  select to_jsonb(ltv) into v_after
+    from public.legal_terms_versions ltv
+   where ltv.version = v_version;
+
+  perform public.admin_write_audit(
+    'admin.terms.publish',
+    'legal_terms_version',
+    v_version,
+    coalesce(v_before, '{}'::jsonb),
+    coalesce(v_after, '{}'::jsonb),
+    jsonb_build_object(
+      'make_current', coalesce(p_make_current, true),
+      'requires_reaccept', coalesce(p_requires_reaccept, true),
+      'binding_locale', v_binding_locale
+    )
+  );
+
+  return query
+  select
+    ltv.version,
+    ltv.title,
+    ltv.summary,
+    ltv.binding_locale,
+    ltv.last_updated,
+    ltv.effective_at,
+    ltv.requires_reaccept,
+    ltv.is_current,
+    ltv.content_de,
+    ltv.content_en,
+    ltv.created_at,
+    ltv.created_by
+  from public.legal_terms_versions ltv
+  where ltv.version = v_version
+  limit 1;
+end;
+$$;
+
+drop function if exists public.admin_set_current_terms_version(text, timestamptz, boolean);
+create or replace function public.admin_set_current_terms_version(
+  p_version text,
+  p_effective_at timestamptz default now(),
+  p_requires_reaccept boolean default null
+)
+returns table(
+  version text,
+  title text,
+  summary text,
+  binding_locale text,
+  last_updated date,
+  effective_at timestamptz,
+  requires_reaccept boolean,
+  is_current boolean,
+  content_de text,
+  content_en text,
+  created_at timestamptz,
+  created_by uuid
+)
+language plpgsql
+security definer
+set search_path = public, auth
+set row_security = off
+as $$
+#variable_conflict use_column
+declare
+  v_version text;
+  v_target_before jsonb;
+  v_target_after jsonb;
+  v_previous_current text;
+begin
+  if not public.has_admin_permission('users.write') then
+    raise exception 'Not allowed';
+  end if;
+
+  v_version := nullif(btrim(coalesce(p_version, '')), '');
+  if v_version is null then
+    raise exception 'Version is required';
+  end if;
+
+  select to_jsonb(ltv) into v_target_before
+    from public.legal_terms_versions ltv
+   where ltv.version = v_version;
+
+  if v_target_before is null then
+    raise exception 'Unknown terms version';
+  end if;
+
+  select ltv.version
+    into v_previous_current
+    from public.legal_terms_versions ltv
+   where ltv.is_current = true
+   order by ltv.effective_at desc, ltv.created_at desc
+   limit 1;
+
+  update public.legal_terms_versions ltv
+     set is_current = false
+   where ltv.is_current = true
+     and ltv.version <> v_version;
+
+  update public.legal_terms_versions ltv
+     set is_current = true,
+         effective_at = coalesce(p_effective_at, ltv.effective_at),
+         requires_reaccept = coalesce(p_requires_reaccept, ltv.requires_reaccept)
+   where ltv.version = v_version;
+
+  select to_jsonb(ltv) into v_target_after
+    from public.legal_terms_versions ltv
+   where ltv.version = v_version;
+
+  perform public.admin_write_audit(
+    'admin.terms.set_current',
+    'legal_terms_version',
+    v_version,
+    coalesce(v_target_before, '{}'::jsonb),
+    coalesce(v_target_after, '{}'::jsonb),
+    jsonb_build_object(
+      'previous_current_version', v_previous_current,
+      'new_current_version', v_version,
+      'requires_reaccept_override', p_requires_reaccept
+    )
+  );
+
+  return query
+  select
+    ltv.version,
+    ltv.title,
+    ltv.summary,
+    ltv.binding_locale,
+    ltv.last_updated,
+    ltv.effective_at,
+    ltv.requires_reaccept,
+    ltv.is_current,
+    ltv.content_de,
+    ltv.content_en,
+    ltv.created_at,
+    ltv.created_by
+  from public.legal_terms_versions ltv
+  where ltv.version = v_version
+  limit 1;
 end;
 $$;
 
@@ -2906,6 +3530,10 @@ returns table(
   system_role text,
   tier_key text,
   entitlements_override jsonb,
+  terms_accepted_version text,
+  terms_accepted_at timestamptz,
+  terms_accepted_locale text,
+  terms_acceptance_source text,
   created_at timestamptz,
   updated_at timestamptz
 )
@@ -2976,6 +3604,10 @@ begin
     p.system_role,
     p.tier_key,
     p.entitlements_override,
+    p.terms_accepted_version,
+    p.terms_accepted_at,
+    p.terms_accepted_locale,
+    p.terms_acceptance_source,
     p.created_at,
     p.updated_at
   from public.profiles p
@@ -3042,6 +3674,10 @@ returns table(
   system_role text,
   tier_key text,
   entitlements_override jsonb,
+  terms_accepted_version text,
+  terms_accepted_at timestamptz,
+  terms_accepted_locale text,
+  terms_acceptance_source text,
   created_at timestamptz,
   updated_at timestamptz
 )
@@ -3112,6 +3748,10 @@ begin
     p.system_role,
     p.tier_key,
     p.entitlements_override,
+    p.terms_accepted_version,
+    p.terms_accepted_at,
+    p.terms_accepted_locale,
+    p.terms_acceptance_source,
     p.created_at,
     p.updated_at
   from public.profiles p
@@ -3306,18 +3946,30 @@ as $$
 declare
   v_before jsonb;
   v_after jsonb;
+  v_reason text;
+  v_before_username_changed_at timestamptz;
 begin
   if not public.has_admin_permission('users.write') then
     raise exception 'Not allowed';
   end if;
 
-  select to_jsonb(p)
-    into v_before
+  v_reason := nullif(btrim(coalesce(p_reason, '')), '');
+
+  select
+    to_jsonb(p),
+    p.username_changed_at
+    into
+      v_before,
+      v_before_username_changed_at
     from public.profiles p
    where p.id = p_user_id;
 
   if v_before is null then
     raise exception 'User profile not found';
+  end if;
+
+  if v_before_username_changed_at is null then
+    raise exception 'Username cooldown is not active for this user';
   end if;
 
   update public.profiles p
@@ -3337,7 +3989,31 @@ begin
     v_before,
     v_after,
     jsonb_build_object(
-      'reason', nullif(btrim(coalesce(p_reason, '')), ''),
+      'reason', v_reason,
+      'updated_by', auth.uid()
+    )
+  );
+
+  insert into public.profile_user_events (
+    owner_id,
+    action,
+    source,
+    before_data,
+    after_data,
+    metadata
+  )
+  values (
+    p_user_id,
+    'profile.username_cooldown.reset_by_admin',
+    'admin.user.reset_username_cooldown',
+    jsonb_build_object(
+      'username_changed_at', v_before_username_changed_at
+    ),
+    jsonb_build_object(
+      'username_changed_at', null
+    ),
+    jsonb_build_object(
+      'reason', v_reason,
       'updated_by', auth.uid()
     )
   );
@@ -3348,6 +4024,131 @@ begin
     p.username,
     p.username_display,
     p.username_changed_at,
+    p.updated_at
+  from public.profiles p
+  where p.id = p_user_id;
+end;
+$$;
+
+drop function if exists public.admin_reset_user_terms_acceptance(uuid, text);
+create or replace function public.admin_reset_user_terms_acceptance(
+  p_user_id uuid,
+  p_reason text default null
+)
+returns table(
+  user_id uuid,
+  terms_accepted_version text,
+  terms_accepted_at timestamptz,
+  terms_accepted_locale text,
+  terms_acceptance_source text,
+  updated_at timestamptz
+)
+language plpgsql
+security definer
+set search_path = public, auth
+set row_security = off
+as $$
+declare
+  v_before jsonb;
+  v_after jsonb;
+  v_reason text;
+  v_before_terms_version text;
+  v_before_terms_accepted_at timestamptz;
+  v_before_terms_locale text;
+  v_before_terms_source text;
+begin
+  if not public.has_admin_permission('users.write') then
+    raise exception 'Not allowed';
+  end if;
+
+  v_reason := nullif(btrim(coalesce(p_reason, '')), '');
+
+  select to_jsonb(p),
+         p.terms_accepted_version,
+         p.terms_accepted_at,
+         p.terms_accepted_locale,
+         p.terms_acceptance_source
+    into v_before,
+         v_before_terms_version,
+         v_before_terms_accepted_at,
+         v_before_terms_locale,
+         v_before_terms_source
+    from public.profiles p
+   where p.id = p_user_id;
+
+  if v_before is null then
+    raise exception 'User profile not found';
+  end if;
+
+  if v_before_terms_version is null
+    and v_before_terms_accepted_at is null
+    and v_before_terms_locale is null
+    and v_before_terms_source is null then
+    raise exception 'Terms acceptance is already empty for this user';
+  end if;
+
+  update public.profiles p
+     set terms_accepted_version = null,
+         terms_accepted_at = null,
+         terms_accepted_locale = null,
+         terms_acceptance_source = null,
+         updated_at = now()
+   where p.id = p_user_id;
+
+  select to_jsonb(p)
+    into v_after
+    from public.profiles p
+   where p.id = p_user_id;
+
+  perform public.admin_write_audit(
+    'admin.user.reset_terms_acceptance',
+    'user',
+    p_user_id::text,
+    v_before,
+    v_after,
+    jsonb_build_object(
+      'reason', v_reason,
+      'updated_by', auth.uid()
+    )
+  );
+
+  insert into public.profile_user_events (
+    owner_id,
+    action,
+    source,
+    before_data,
+    after_data,
+    metadata
+  )
+  values (
+    p_user_id,
+    'legal.terms.reset_by_admin',
+    'admin.user.reset_terms_acceptance',
+    jsonb_build_object(
+      'terms_accepted_version', v_before_terms_version,
+      'terms_accepted_at', v_before_terms_accepted_at,
+      'terms_accepted_locale', v_before_terms_locale,
+      'terms_acceptance_source', v_before_terms_source
+    ),
+    jsonb_build_object(
+      'terms_accepted_version', null,
+      'terms_accepted_at', null,
+      'terms_accepted_locale', null,
+      'terms_acceptance_source', null
+    ),
+    jsonb_build_object(
+      'reason', v_reason,
+      'updated_by', auth.uid()
+    )
+  );
+
+  return query
+  select
+    p.id,
+    p.terms_accepted_version,
+    p.terms_accepted_at,
+    p.terms_accepted_locale,
+    p.terms_acceptance_source,
     p.updated_at
   from public.profiles p
   where p.id = p_user_id;
@@ -4386,12 +5187,16 @@ end;
 $$;
 
 grant execute on function public.get_current_user_access() to anon, authenticated;
+grant execute on function public.accept_current_terms(text, text) to authenticated;
+grant execute on function public.admin_publish_terms_version(text, text, text, text, date, timestamptz, boolean, text, text, boolean) to authenticated;
+grant execute on function public.admin_set_current_terms_version(text, timestamptz, boolean) to authenticated;
 grant execute on function public.has_admin_permission(text, uuid) to authenticated;
 grant execute on function public.admin_write_audit(text, text, text, jsonb, jsonb, jsonb) to authenticated;
 grant execute on function public.admin_list_users(integer, integer, text) to authenticated;
 grant execute on function public.admin_get_user_profile(uuid) to authenticated;
 grant execute on function public.admin_update_user_profile(uuid, text, text, text, text, text, text, text, text, text, text, boolean) to authenticated;
 grant execute on function public.admin_reset_user_username_cooldown(uuid, text) to authenticated;
+grant execute on function public.admin_reset_user_terms_acceptance(uuid, text) to authenticated;
 grant execute on function public.admin_update_user_tier(uuid, text) to authenticated;
 grant execute on function public.admin_update_user_overrides(uuid, jsonb) to authenticated;
 grant execute on function public.admin_update_plan_entitlements(text, jsonb) to authenticated;
@@ -4418,6 +5223,10 @@ alter table public.profiles add column if not exists public_profile_enabled bool
 alter table public.profiles add column if not exists default_public_trip_visibility boolean not null default true;
 alter table public.profiles add column if not exists username_changed_at timestamptz;
 alter table public.profiles add column if not exists username_display text;
+alter table public.profiles add column if not exists terms_accepted_version text;
+alter table public.profiles add column if not exists terms_accepted_at timestamptz;
+alter table public.profiles add column if not exists terms_accepted_locale text;
+alter table public.profiles add column if not exists terms_acceptance_source text;
 
 update public.profiles p
 set username_display = p.username

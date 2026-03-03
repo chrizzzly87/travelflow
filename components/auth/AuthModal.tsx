@@ -5,11 +5,18 @@ import {
     X,
 } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { Checkbox } from '../ui/checkbox';
 import { useAuth } from '../../hooks/useAuth';
+import { buildLocalizedMarketingPath } from '../../config/routes';
 import type { OAuthProviderId } from '../../services/authService';
+import { acceptCurrentTerms } from '../../services/authService';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import { buildPasswordResetRedirectUrl } from '../../services/authNavigationService';
+import {
+    isRememberLoginEnabled,
+    setRememberLoginEnabled,
+} from '../../services/authSessionPersistenceService';
 import {
     clearPendingOAuthProvider,
     getLastUsedOAuthProvider,
@@ -115,8 +122,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [infoMessage, setInfoMessage] = useState<string | null>(null);
+    const [rememberLogin, setRememberLogin] = useState<boolean>(() => isRememberLoginEnabled());
     const [lastUsedProvider, setLastUsedProviderState] = useState<OAuthProviderId | null>(() => getLastUsedOAuthProvider());
     const [sessionRestoreState, setSessionRestoreState] = useState<'idle' | 'restoring' | 'restored'>('idle');
     const hasHandledSuccessRef = useRef(false);
@@ -132,8 +141,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     });
 
     const oauthButtons = useMemo(() => getOAuthButtons(i18n.language), [i18n.language]);
+    const authLocale = useMemo(() => normalizeAppLanguage(i18n.language), [i18n.language]);
+    const termsPath = useMemo(() => buildLocalizedMarketingPath('terms', authLocale), [authLocale]);
+    const privacyPath = useMemo(() => buildLocalizedMarketingPath('privacy', authLocale), [authLocale]);
     const emailInputId = 'auth-modal-email';
     const secondaryInputId = 'auth-modal-secondary';
+    const rememberLoginInputId = 'auth-modal-remember-login';
 
     const oauthRedirectTo = useMemo(() => {
         if (typeof window === 'undefined') return undefined;
@@ -197,6 +210,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             setSessionRestoreState('idle');
             hasHandledSuccessRef.current = false;
             hasInteractiveAttemptRef.current = false;
+            setHasAcceptedTerms(false);
             pendingRequestRef.current += 1;
             return;
         }
@@ -302,10 +316,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             setInfoMessage(null);
             return;
         }
-        if (!email.trim() || !password.trim()) {
+        const formData = new FormData(event.currentTarget);
+        const submittedEmail = (formData.get('email')?.toString() || email).trim();
+        const submittedPassword = formData.get('password')?.toString() || password;
+
+        if (!submittedEmail || !submittedPassword.trim()) {
             setErrorMessage(t('errors.default'));
             return;
         }
+        if (mode === 'register' && !hasAcceptedTerms) {
+            setErrorMessage(t('errors.terms_required'));
+            return;
+        }
+        if (submittedEmail !== email) setEmail(submittedEmail);
+        if (submittedPassword !== password) setPassword(submittedPassword);
+        setRememberLoginEnabled(rememberLogin);
         clearPendingOAuthProvider();
 
         const requestId = pendingRequestRef.current + 1;
@@ -320,7 +345,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         try {
             if (mode === 'login') {
                 const outcome = await runTimedRequest(
-                    () => loginWithPassword(email.trim(), password),
+                    () => loginWithPassword(submittedEmail, submittedPassword),
                     timeoutMs
                 );
                 if (pendingRequestRef.current !== requestId) return;
@@ -342,7 +367,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 }
             } else {
                 const outcome = await runTimedRequest(
-                    () => registerWithPassword(email.trim(), password, { emailRedirectTo: oauthRedirectTo }),
+                    () => registerWithPassword(submittedEmail, submittedPassword, { emailRedirectTo: oauthRedirectTo }),
                     timeoutMs
                 );
                 if (pendingRequestRef.current !== requestId) return;
@@ -362,6 +387,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 } else if (!outcome.value.data.session) {
                     setInfoMessage(t('states.emailConfirmationSent'));
                 } else {
+                    const acceptance = await acceptCurrentTerms({
+                        locale: authLocale,
+                        source: 'signup_auth_modal',
+                    });
+                    if (acceptance.error) {
+                        setInfoMessage(t('states.termsAcceptancePending'));
+                    }
                     setInfoMessage(t('states.alreadyAuthenticated'));
                 }
             }
@@ -386,6 +418,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         setIsSubmitting(true);
         setErrorMessage(null);
         setInfoMessage(isSlowConnection ? t('states.slowNetworkDetected') : null);
+        setRememberLoginEnabled(rememberLogin);
         setPendingOAuthProvider(provider);
         trackEvent('auth__method--select', { method: provider, source: 'modal' });
         const outcome = await runTimedRequest(
@@ -474,6 +507,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         if (!(event.target instanceof HTMLInputElement)) return;
         event.preventDefault();
         event.currentTarget.requestSubmit();
+    };
+
+    const handleRememberLoginToggle = (checked: boolean) => {
+        setRememberLogin(checked);
+        setRememberLoginEnabled(checked);
+        trackEvent('auth__remember_login--toggle', { source: 'modal', remember_login: checked });
     };
 
     return (
@@ -575,7 +614,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                                         id={emailInputId}
                                         name="email"
                                         type="email"
-                                        autoComplete="email"
+                                        autoComplete={mode === 'login' ? 'username' : 'email'}
                                         inputMode="email"
                                         autoCapitalize="none"
                                         autoCorrect="off"
@@ -609,6 +648,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                                 </div>
                                 {mode === 'login' && (
                                     <div className="space-y-2">
+                                        <label
+                                            htmlFor={rememberLoginInputId}
+                                            className="inline-flex cursor-pointer items-center gap-2 text-sm font-semibold text-slate-800"
+                                        >
+                                            <Checkbox
+                                                id={rememberLoginInputId}
+                                                checked={rememberLogin}
+                                                onCheckedChange={(checked) => handleRememberLoginToggle(checked === true)}
+                                                disabled={isSubmitting || isRestoreBlocked}
+                                                aria-label={t('labels.rememberLogin')}
+                                                {...getAnalyticsDebugAttributes('auth__remember_login--toggle', { source: 'modal' })}
+                                            />
+                                            <span>{t('labels.rememberLogin')}</span>
+                                        </label>
                                         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
                                             <button
                                                 type="button"
@@ -631,6 +684,31 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                                         </div>
                                         <p className="text-xs text-slate-500">{t('copy.passwordResetHint')}</p>
                                     </div>
+                                )}
+                                {mode === 'register' && (
+                                    <label className="flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
+                                        <input
+                                            type="checkbox"
+                                            checked={hasAcceptedTerms}
+                                            onChange={(event) => {
+                                                setHasAcceptedTerms(event.target.checked);
+                                                trackEvent(event.target.checked ? 'auth__terms_consent--accept' : 'auth__terms_consent--reject', { source: 'auth_modal' });
+                                            }}
+                                            className="mt-0.5 h-4 w-4 rounded border-slate-300"
+                                            {...getAnalyticsDebugAttributes('auth__terms_consent--accept', { source: 'auth_modal' })}
+                                        />
+                                        <span>
+                                            {t('copy.termsConsentPrefix')}{' '}
+                                            <Link className="font-semibold text-accent-700 hover:underline" to={termsPath} target="_blank" rel="noreferrer">
+                                                {t('copy.termsConsentTerms')}
+                                            </Link>{' '}
+                                            {t('copy.termsConsentJoiner')}{' '}
+                                            <Link className="font-semibold text-accent-700 hover:underline" to={privacyPath} target="_blank" rel="noreferrer">
+                                                {t('copy.termsConsentPrivacy')}
+                                            </Link>
+                                            .
+                                        </span>
+                                    </label>
                                 )}
 
                                 <button

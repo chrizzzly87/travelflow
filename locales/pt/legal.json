@@ -53,5 +53,32 @@
     "stateAll": "Aceitar tudo",
     "stateEssential": "Só essenciais",
     "stateUnset": "Não definido"
+  },
+  "termsPage": {
+    "heroEyebrow": "Termos de serviço · AGB",
+    "heroTitle": "Termos de serviço / Allgemeine Geschäftsbedingungen",
+    "heroIntro": "Estes termos regulam o uso de {appName}.",
+    "heroBindingNote": "O texto em alemão abaixo é a versão juridicamente vinculante. O texto em inglês é fornecido apenas como apoio.",
+    "versionLabel": "Versão",
+    "lastUpdatedLabel": "Última atualização",
+    "controllerInfoLead": "As informações do controlador estão disponíveis no",
+    "imprintLinkLabel": "Aviso legal",
+    "privacyInfoLead": "Os detalhes do tratamento de dados estão disponíveis na",
+    "privacyLinkLabel": "Política de privacidade",
+    "acceptRequiredTitle": "Ação necessária: aceite os termos atuais para continuar usando sua conta.",
+    "acceptRequiredDescription": "Você pode revisar as duas versões abaixo antes de confirmar.",
+    "acceptSubmit": "Aceitar termos atuais e continuar",
+    "acceptSubmitting": "Salvando aceitação...",
+    "acceptError": "Não foi possível salvar sua aceitação dos termos agora. Tente novamente.",
+    "bindingSectionTitle": "Versão vinculante (alemão)",
+    "helperSectionTitle": "Tradução de apoio (inglês, não vinculante)",
+    "globalForceTitle": "Ação necessária: os termos atualizados exigem sua aceitação.",
+    "globalForceDescription": "Revise a versão mais recente dos termos e confirme a aceitação para continuar usando recursos protegidos da conta.",
+    "globalInformTitle": "Termos atualizados: revise a versão legal mais recente.",
+    "globalInformDescription": "Esta atualização é apenas informativa (sem reaceitação obrigatória), mas você deve revisar o texto mais recente.",
+    "globalReviewAction": "Revisar termos",
+    "globalDismissAction": "Ocultar por enquanto",
+    "acceptOptionalTitle": "Confirmação opcional: reconheça a versão mais recente dos termos.",
+    "acceptOptionalDescription": "Você pode confirmar a aceitação agora para remover avisos desta versão."
   }
 }

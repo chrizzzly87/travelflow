@@ -53,5 +53,32 @@
     "stateAll": "Accept all",
     "stateEssential": "Essential only",
     "stateUnset": "Not set"
+  },
+  "termsPage": {
+    "heroEyebrow": "Termini di servizio · AGB",
+    "heroTitle": "Termini di servizio / Allgemeine Geschäftsbedingungen",
+    "heroIntro": "Questi termini regolano l’uso di {appName}.",
+    "heroBindingNote": "Il testo tedesco seguente è la versione legalmente vincolante. Il testo inglese è fornito solo come supporto.",
+    "versionLabel": "Versione",
+    "lastUpdatedLabel": "Ultimo aggiornamento",
+    "controllerInfoLead": "Le informazioni sul titolare sono disponibili nelle",
+    "imprintLinkLabel": "Note legali",
+    "privacyInfoLead": "I dettagli sul trattamento dei dati sono disponibili nella",
+    "privacyLinkLabel": "Informativa sulla privacy",
+    "acceptRequiredTitle": "Azione richiesta: accetta i termini correnti per continuare a usare il tuo account.",
+    "acceptRequiredDescription": "Puoi consultare entrambe le versioni qui sotto prima di confermare.",
+    "acceptSubmit": "Accetta i termini correnti e continua",
+    "acceptSubmitting": "Salvataggio accettazione...",
+    "acceptError": "Non è stato possibile salvare ora la tua accettazione dei termini. Riprova.",
+    "bindingSectionTitle": "Versione vincolante (tedesco)",
+    "helperSectionTitle": "Traduzione di supporto (inglese, non vincolante)",
+    "globalForceTitle": "Azione richiesta: i termini aggiornati richiedono la tua accettazione.",
+    "globalForceDescription": "Rivedi l’ultima versione dei termini e conferma l’accettazione per continuare a usare le funzionalità protette dell’account.",
+    "globalInformTitle": "Termini aggiornati: consulta l’ultima versione legale.",
+    "globalInformDescription": "Questo aggiornamento è solo informativo (senza nuova accettazione obbligatoria), ma dovresti rivedere il testo più recente.",
+    "globalReviewAction": "Rivedi termini",
+    "globalDismissAction": "Nascondi per ora",
+    "acceptOptionalTitle": "Conferma facoltativa: accetta l’ultima versione dei termini.",
+    "acceptOptionalDescription": "Puoi confermare ora per rimuovere gli avvisi di aggiornamento per questa versione."
   }
 }

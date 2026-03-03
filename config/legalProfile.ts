@@ -27,10 +27,13 @@ export interface LegalSupervisionProfile {
 export interface LegalReviewDates {
   privacyLastUpdated: string;
   cookiesLastUpdated: string;
+  termsLastUpdated: string;
+  termsVersion: string;
 }
 
 export interface LegalDisputeProfile {
-  odrUrl: string;
+  odrUrl?: string;
+  odrPlatformDiscontinuedAt?: string;
   participatesInConsumerArbitration: boolean;
 }
 
@@ -72,9 +75,11 @@ export const LEGAL_PROFILE: LegalProfile = {
   reviewDates: {
     privacyLastUpdated: '2026-02-24',
     cookiesLastUpdated: '2026-02-24',
+    termsLastUpdated: '2026-03-03',
+    termsVersion: '2026-03-03',
   },
   dispute: {
-    odrUrl: 'https://ec.europa.eu/consumers/odr',
+    odrPlatformDiscontinuedAt: '2025-07-20',
     participatesInConsumerArbitration: false,
   },
 };
