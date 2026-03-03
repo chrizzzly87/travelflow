@@ -1013,8 +1013,9 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     const lastFocusQueryRef = useRef<string | null>(null);
     const lastFitToRouteKeyRef = useRef<string | null>(null);
     const fitRafRef = useRef<number | null>(null);
+    const resizeAutoFitTimerRef = useRef<number | null>(null);
     const hasAutoFitCompletedRef = useRef(false);
-    const scheduleFitWhenViewportReadyRef = useRef<(maxAttempts?: number) => void>(() => {});
+    const scheduleFitWhenViewportReadyRef = useRef<(maxAttempts?: number, options?: { respectSelection?: boolean }) => void>(() => {});
     const onRouteMetricsRef = useRef<typeof onRouteMetrics>(onRouteMetrics);
     const onRouteStatusRef = useRef<typeof onRouteStatus>(onRouteStatus);
     const onCityMarkerSelectRef = useRef<typeof onCityMarkerSelect>(onCityMarkerSelect);
@@ -1048,6 +1049,15 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         () => (selectedItemId && items.some(item => item.id === selectedItemId && item.type === 'activity') ? selectedItemId : null),
         [items, selectedItemId]
     );
+    const selectedActivityIdRef = useRef<string | null>(selectedActivityId);
+    const selectedCityIdRef = useRef<string | null>(selectedCityId);
+    const resolvedActivityMarkerPositionById = useMemo(() => {
+        const markerPositions = new Map<string, google.maps.LatLngLiteral>();
+        resolveActivityMarkerPositions(items).forEach((marker) => {
+            markerPositions.set(marker.id, marker.position);
+        });
+        return markerPositions;
+    }, [items]);
     const activityMarkerStylesById = useMemo(() => {
         const styles = new Map<string, { type: ActivityType; title: string }>();
         items.forEach((item) => {
@@ -1066,6 +1076,12 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         fitRafRef.current = null;
     }, []);
 
+    const cancelResizeAutoFitTimer = useCallback(() => {
+        if (resizeAutoFitTimerRef.current === null || typeof window === 'undefined') return;
+        window.clearTimeout(resizeAutoFitTimerRef.current);
+        resizeAutoFitTimerRef.current = null;
+    }, []);
+
     const runFitBounds = useCallback(() => {
         if (!googleMapRef.current || cities.length === 0) return;
 
@@ -1078,8 +1094,9 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         googleMapRef.current.fitBounds(bounds, { top: 50, right: 50, bottom: 50, left: 50 });
     }, [cities]);
 
-    const scheduleFitWhenViewportReady = useCallback((maxAttempts = 14) => {
+    const scheduleFitWhenViewportReady = useCallback((maxAttempts = 14, options?: { respectSelection?: boolean }) => {
         if (!googleMapRef.current || cities.length === 0 || typeof window === 'undefined') return;
+        const respectSelection = options?.respectSelection ?? false;
         cancelScheduledFit();
 
         let attemptCount = 0;
@@ -1096,6 +1113,9 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
 
             if (window.google?.maps?.event?.trigger) {
                 window.google.maps.event.trigger(googleMapRef.current, 'resize');
+            }
+            if (respectSelection && (selectedActivityIdRef.current || selectedCityIdRef.current)) {
+                return;
             }
             runFitBounds();
         };
@@ -1130,6 +1150,14 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     useEffect(() => {
         mapZoomLevelRef.current = mapZoomLevel;
     }, [mapZoomLevel]);
+
+    useEffect(() => {
+        selectedActivityIdRef.current = selectedActivityId;
+    }, [selectedActivityId]);
+
+    useEffect(() => {
+        selectedCityIdRef.current = selectedCityId;
+    }, [selectedCityId]);
 
     useEffect(() => {
         if (!fitToRouteKey) {
@@ -2196,8 +2224,9 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     // Pan to selected
     useEffect(() => {
         if (!selectedActivityId && !selectedCityId) return;
+        cancelResizeAutoFitTimer();
         cancelScheduledFit();
-    }, [cancelScheduledFit, selectedActivityId, selectedCityId]);
+    }, [cancelResizeAutoFitTimer, cancelScheduledFit, selectedActivityId, selectedCityId]);
 
     useEffect(() => {
         if (!googleMapRef.current || !window.google?.maps) return;
@@ -2207,7 +2236,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             const focusTarget = resolveSelectedMapFocusPosition({
                 selectedActivityId,
                 selectedCityId,
-                activityMarkerPositions: activityMarkerPositionByIdRef.current,
+                activityMarkerPositions: resolvedActivityMarkerPositionById,
                 cities,
             });
             if (!focusTarget) return;
@@ -2236,7 +2265,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             }
         }, 100);
         return () => clearTimeout(t);
-    }, [selectedActivityId, selectedCityId, mapInitialized, cityMapSignature]);
+    }, [selectedActivityId, selectedCityId, mapInitialized, cityMapSignature, resolvedActivityMarkerPositionById]);
 
     // Fit Bounds
     const handleFit = () => {
@@ -2249,7 +2278,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         if (selectedActivityId || selectedCityId) return;
         if (hasAutoFitCompletedRef.current) return;
         hasAutoFitCompletedRef.current = true;
-        scheduleFitWhenViewportReadyRef.current();
+        scheduleFitWhenViewportReadyRef.current(14, { respectSelection: true });
     }, [mapInitialized, cities.length, selectedActivityId, selectedCityId]);
 
     useEffect(() => {
@@ -2264,14 +2293,21 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         if (lastFitToRouteKeyRef.current === fitToRouteKey) return;
 
         lastFitToRouteKeyRef.current = fitToRouteKey;
-        scheduleFitWhenViewportReadyRef.current();
+        scheduleFitWhenViewportReadyRef.current(14, { respectSelection: true });
     }, [fitToRouteKey, mapInitialized, cities.length, selectedActivityId, selectedCityId]);
+
+    useEffect(() => {
+        if (!mapInitialized || !mapDockMode || cities.length === 0) return;
+        if (selectedActivityId || selectedCityId) return;
+        scheduleFitWhenViewportReadyRef.current(14, { respectSelection: true });
+    }, [cities.length, mapDockMode, mapInitialized, selectedActivityId, selectedCityId]);
 
     useEffect(() => {
         if (!mapInitialized || !googleMapRef.current || typeof ResizeObserver === 'undefined') return;
         const container = mapContainerRef.current;
         if (!container) return;
 
+        let previousViewportSize = container.getBoundingClientRect();
         let resizeRafId: number | null = null;
         const observer = new ResizeObserver(() => {
             if (resizeRafId !== null || !googleMapRef.current) return;
@@ -2281,23 +2317,39 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 if (window.google?.maps?.event?.trigger) {
                     window.google.maps.event.trigger(googleMapRef.current, 'resize');
                 }
+                if (selectedActivityIdRef.current || selectedCityIdRef.current || cities.length === 0) {
+                    previousViewportSize = container.getBoundingClientRect();
+                    return;
+                }
+                const nextViewportSize = container.getBoundingClientRect();
+                const widthDelta = Math.abs(nextViewportSize.width - previousViewportSize.width);
+                const heightDelta = Math.abs(nextViewportSize.height - previousViewportSize.height);
+                previousViewportSize = nextViewportSize;
+                if (widthDelta < 24 && heightDelta < 24) return;
+                cancelResizeAutoFitTimer();
+                resizeAutoFitTimerRef.current = window.setTimeout(() => {
+                    resizeAutoFitTimerRef.current = null;
+                    scheduleFitWhenViewportReadyRef.current(14, { respectSelection: true });
+                }, 140);
             });
         });
         observer.observe(container);
 
         return () => {
             observer.disconnect();
+            cancelResizeAutoFitTimer();
             if (resizeRafId !== null) {
                 window.cancelAnimationFrame(resizeRafId);
             }
         };
-    }, [mapInitialized]);
+    }, [cancelResizeAutoFitTimer, cities.length, mapInitialized]);
 
     useEffect(() => (
         () => {
+            cancelResizeAutoFitTimer();
             cancelScheduledFit();
         }
-    ), [cancelScheduledFit]);
+    ), [cancelResizeAutoFitTimer, cancelScheduledFit]);
 
     // If we don't have city coordinates yet, center the map on the selected country/location.
     // Supports one or multiple focus queries separated by "||".
