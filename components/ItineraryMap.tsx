@@ -1,12 +1,14 @@
 import React, { useCallback, useEffect, useState, useMemo, useRef } from 'react';
 import { Map as GoogleMap, useMap } from '@vis.gl/react-google-maps';
-import { ITimelineItem, MapColorMode, MapStyle, RouteFailureReason, RouteMode, RouteStatus } from '../types';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { ActivityType, ITimelineItem, MapColorMode, MapStyle, RouteFailureReason, RouteMode, RouteStatus } from '../types';
 import { ArrowLeftRight, ArrowUpDown, Focus, Layers, Maximize2, Minimize2 } from 'lucide-react';
 import { readLocalStorageItem, writeLocalStorageItem } from '../services/browserStorageService';
-import { buildRouteCacheKey, DEFAULT_MAP_COLOR_MODE, findTravelBetweenCities, getHexFromColorClass, getNormalizedCityName } from '../utils';
+import { buildRouteCacheKey, DEFAULT_MAP_COLOR_MODE, findTravelBetweenCities, getActivityColorByTypes, getHexFromColorClass, getNormalizedCityName, pickPrimaryActivityType } from '../utils';
 import { getAnalyticsDebugAttributes } from '../services/analyticsService';
 import { useGoogleMaps } from './GoogleMapsLoader';
 import { normalizeTransportMode } from '../shared/transportModes';
+import { ActivityTypeIcon } from './ActivityTypeVisuals';
 
 interface ItineraryMapProps {
     items: ITimelineItem[];
@@ -217,6 +219,8 @@ const ROUTE_DARK_GAP_COLOR = '#1b2230';
 const ROUTE_CLEAN_DARK_GAP_COLOR = '#1b2230';
 const EARTH_RADIUS_KM = 6371;
 const MARKER_OVERLAP_RADIUS_METERS = 420;
+const ACTIVITY_MARKER_OVERLAP_RADIUS_METERS = 260;
+const ACTIVITY_CITY_FALLBACK_MIN_SLOTS = 4;
 const MARKER_COORDINATE_GROUP_PRECISION = 5;
 export const MAP_VIEWPORT_READY_MIN_DIMENSION_PX = 80;
 export const MAX_WALK_ROUTE_CHECK_KM = 60;
@@ -263,6 +267,8 @@ const resolveTransportIconPath = (mode?: string): string => {
 const CITY_PIN_SELECTED_OUTLINE_FALLBACK = '#3b82f6';
 const CITY_PIN_SELECTED_RING_FALLBACK = '#bfdbfe';
 const TRANSPORT_MARKER_BADGE_SIZE = 40;
+const ACTIVITY_MARKER_BADGE_SIZE = 34;
+const ACTIVITY_MARKER_ICON_SIZE = 15;
 const TRANSPORT_MARKER_ICON_SCALE = 0.46;
 const TRANSPORT_MARKER_VIEWBOX_SIZE = 256;
 const TRANSPORT_MARKER_ICON_INSET = (TRANSPORT_MARKER_VIEWBOX_SIZE * (1 - TRANSPORT_MARKER_ICON_SCALE)) / 2;
@@ -532,6 +538,154 @@ export const buildOverlappingMarkerPosition = (
 const buildCoordinateGroupKey = (coordinates: google.maps.LatLngLiteral): string => (
     `${coordinates.lat.toFixed(MARKER_COORDINATE_GROUP_PRECISION)},${coordinates.lng.toFixed(MARKER_COORDINATE_GROUP_PRECISION)}`
 );
+
+const ACTIVITY_ICON_MARKUP_CACHE = new Map<ActivityType, string>();
+
+const buildActivityIconMarkup = (type: ActivityType): string => {
+    const cached = ACTIVITY_ICON_MARKUP_CACHE.get(type);
+    if (cached) return cached;
+    const markup = renderToStaticMarkup(
+        <ActivityTypeIcon type={type} size={ACTIVITY_MARKER_ICON_SIZE} />
+    );
+    const styled = markup.replace(
+        '<svg',
+        `<svg style="width:${ACTIVITY_MARKER_ICON_SIZE}px;height:${ACTIVITY_MARKER_ICON_SIZE}px;display:block;stroke:#ffffff;stroke-width:2.2;color:#ffffff;fill:none;"`,
+    );
+    ACTIVITY_ICON_MARKUP_CACHE.set(type, styled);
+    return styled;
+};
+
+const buildActivityMarkerHtml = (type: ActivityType, color: string, isSelected: boolean): string => {
+    const size = isSelected ? ACTIVITY_MARKER_BADGE_SIZE + 4 : ACTIVITY_MARKER_BADGE_SIZE;
+    const borderColor = isSelected ? resolveCssColorVar('--tf-accent-500', '#2563eb') : '#ffffff';
+    const ringColor = isSelected ? resolveCssColorVar('--tf-accent-200', '#bfdbfe') : '#dbe3ee';
+    const iconMarkup = buildActivityIconMarkup(type);
+
+    return `
+        <div style="position:relative;width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;border-radius:9999px;background:${color};border:2px solid ${borderColor};box-shadow:0 6px 16px rgba(15,23,42,0.22);color:#ffffff;line-height:1;">
+            <div style="position:absolute;inset:3px;border-radius:9999px;border:1.5px solid ${ringColor};opacity:${isSelected ? '0.9' : '0.55'};"></div>
+            <div style="position:relative;z-index:1;display:flex;align-items:center;justify-content:center;">${iconMarkup}</div>
+        </div>
+    `;
+};
+
+type ResolvedActivityMarker = {
+    id: string;
+    colorHex: string;
+    type: ActivityType;
+    baseCoordinates: google.maps.LatLngLiteral;
+    position: google.maps.LatLngLiteral;
+    coordinateSource: 'activity' | 'city';
+};
+
+const resolveActivityOwnerCity = (
+    activity: ITimelineItem,
+    cityItems: ITimelineItem[],
+): ITimelineItem | null => {
+    const directOwner = cityItems.find((city) => (
+        activity.startDateOffset >= city.startDateOffset
+        && activity.startDateOffset < city.startDateOffset + Math.max(city.duration, 0)
+    ));
+    if (directOwner) return directOwner;
+
+    const previousCity = [...cityItems].reverse().find((city) => city.startDateOffset <= activity.startDateOffset);
+    if (previousCity) return previousCity;
+    return cityItems[0] || null;
+};
+
+export const resolveActivityMarkerPositions = (
+    items: ITimelineItem[],
+): ResolvedActivityMarker[] => {
+    const cityItems = items
+        .filter((item): item is ITimelineItem => item.type === 'city' && Boolean(item.coordinates))
+        .sort((left, right) => left.startDateOffset - right.startDateOffset);
+    const activities = items
+        .filter((item): item is ITimelineItem => item.type === 'activity')
+        .sort((left, right) => {
+            if (left.startDateOffset !== right.startDateOffset) return left.startDateOffset - right.startDateOffset;
+            return left.title.localeCompare(right.title);
+        });
+
+    const candidates = activities
+        .map((activity) => {
+            const activityCoordinates = activity.coordinates || null;
+            const ownerCity = activityCoordinates ? null : resolveActivityOwnerCity(activity, cityItems);
+            const baseCoordinates = activityCoordinates || ownerCity?.coordinates || null;
+            if (!baseCoordinates) return null;
+            const primaryType = pickPrimaryActivityType(activity.activityType);
+            const colorHex = getHexFromColorClass(getActivityColorByTypes(activity.activityType));
+            return {
+                id: activity.id,
+                type: primaryType,
+                colorHex,
+                baseCoordinates,
+                coordinateSource: activityCoordinates ? 'activity' as const : 'city' as const,
+            };
+        })
+        .filter((entry): entry is {
+            id: string;
+            type: ActivityType;
+            colorHex: string;
+            baseCoordinates: google.maps.LatLngLiteral;
+            coordinateSource: 'activity' | 'city';
+        } => Boolean(entry));
+
+    const groupedByCoordinates = new Map<string, number[]>();
+    candidates.forEach((candidate, index) => {
+        const key = buildCoordinateGroupKey(candidate.baseCoordinates);
+        const grouped = groupedByCoordinates.get(key) ?? [];
+        grouped.push(index);
+        groupedByCoordinates.set(key, grouped);
+    });
+
+    return candidates.map((candidate, index) => {
+        const key = buildCoordinateGroupKey(candidate.baseCoordinates);
+        const grouped = groupedByCoordinates.get(key) ?? [];
+        const overlapIndex = Math.max(0, grouped.indexOf(index));
+        const overlapCount = candidate.coordinateSource === 'city'
+            ? Math.max(ACTIVITY_CITY_FALLBACK_MIN_SLOTS, grouped.length)
+            : grouped.length;
+        const position = buildOverlappingMarkerPosition(
+            candidate.baseCoordinates,
+            overlapIndex,
+            overlapCount,
+            ACTIVITY_MARKER_OVERLAP_RADIUS_METERS,
+        );
+        return {
+            ...candidate,
+            position,
+        };
+    });
+};
+
+export const resolveSelectedMapFocusPosition = ({
+    selectedActivityId,
+    selectedCityId,
+    activityMarkerPositions,
+    cities,
+}: {
+    selectedActivityId?: string | null;
+    selectedCityId?: string | null;
+    activityMarkerPositions: Map<string, google.maps.LatLngLiteral>;
+    cities: ITimelineItem[];
+}): { position: google.maps.LatLngLiteral; zoom: number } | null => {
+    if (selectedActivityId) {
+        const activityPosition = activityMarkerPositions.get(selectedActivityId);
+        if (activityPosition) {
+            return { position: activityPosition, zoom: 12 };
+        }
+    }
+    if (selectedCityId) {
+        const selectedCity = cities.find((item) => item.id === selectedCityId);
+        if (selectedCity?.coordinates) {
+            return {
+                position: { lat: selectedCity.coordinates.lat, lng: selectedCity.coordinates.lng },
+                zoom: 10,
+            };
+        }
+    }
+    return null;
+};
 
 const getTransitFallbackDepartureTime = (): Date => {
     const nextWindow = new Date();
@@ -815,6 +969,8 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     const googleMapRef = useRef<any>(null); // google.maps.Map
     const markersRef = useRef<OverlayMarkerHandle[]>([]);
     const cityMarkerMetaRef = useRef<Array<{ id: string; color: string; index: number; marker: OverlayMarkerHandle }>>([]);
+    const activityMarkerMetaRef = useRef<Array<{ id: string; color: string; type: ActivityType; marker: OverlayMarkerHandle }>>([]);
+    const activityMarkerPositionByIdRef = useRef<Map<string, google.maps.LatLngLiteral>>(new Map());
     const routesRef = useRef<any[]>([]); // stored polylines/renderers
     const transportMarkersRef = useRef<OverlayMarkerHandle[]>([]);
     const cityLabelOverlaysRef = useRef<any[]>([]);
@@ -840,6 +996,10 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     const selectedCityId = useMemo(
         () => (selectedItemId && cities.some(city => city.id === selectedItemId) ? selectedItemId : null),
         [selectedItemId, cities]
+    );
+    const selectedActivityId = useMemo(
+        () => (selectedItemId && items.some(item => item.id === selectedItemId && item.type === 'activity') ? selectedItemId : null),
+        [items, selectedItemId]
     );
 
     const cancelScheduledFit = useCallback(() => {
@@ -932,6 +1092,10 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         const citySignature = cities
             .map(city => `${city.id}|${city.title}|${city.color}|${city.coordinates?.lat},${city.coordinates?.lng}`)
             .join('||');
+        const activitySignature = items
+            .filter((item) => item.type === 'activity')
+            .map((item) => `${item.id}|${item.title}|${item.startDateOffset}|${item.duration}|${item.coordinates?.lat},${item.coordinates?.lng}|${JSON.stringify(item.activityType || [])}`)
+            .join('||');
         const routeSignature = cities
             .slice(0, -1)
             .map((city, idx) => {
@@ -941,7 +1105,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 return `${city.id}->${nextCity.id}:${mode}`;
             })
             .join('||');
-        return `${citySignature}__${routeSignature}__${mapColorMode}`;
+        return `${citySignature}__${activitySignature}__${routeSignature}__${mapColorMode}`;
     }, [cities, items, mapColorMode]);
 
     // Update Markers & Routes
@@ -951,6 +1115,9 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         // 1. Clear existing markers & routes
         markersRef.current.forEach(m => m.setMap(null));
         markersRef.current = [];
+        activityMarkerMetaRef.current.forEach(({ marker }) => marker.setMap(null));
+        activityMarkerMetaRef.current = [];
+        activityMarkerPositionByIdRef.current = new Map();
         routesRef.current.forEach(r => r.setMap(null));
         routesRef.current = [];
         transportMarkersRef.current.forEach(m => m.setMap(null));
@@ -1280,6 +1447,29 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                     marker,
                 });
                 markersRef.current.push(marker);
+            });
+
+            const activityMarkers = resolveActivityMarkerPositions(items);
+            activityMarkers.forEach((activityMarker) => {
+                if (!isEffectActive()) return;
+                const isSelected = activityMarker.id === selectedActivityId;
+                const marker = createOverlayMarker({
+                    position: activityMarker.position,
+                    html: buildActivityMarkerHtml(
+                        activityMarker.type,
+                        activityMarker.colorHex || '#475569',
+                        isSelected,
+                    ),
+                    zIndex: isSelected ? 92 : 24,
+                });
+
+                activityMarkerMetaRef.current.push({
+                    id: activityMarker.id,
+                    color: activityMarker.colorHex || '#475569',
+                    type: activityMarker.type,
+                    marker,
+                });
+                activityMarkerPositionByIdRef.current.set(activityMarker.id, activityMarker.position);
             });
         }
 
@@ -1828,21 +2018,36 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 zIndex: isSelected ? 100 : 10,
             });
         });
-    }, [mapInitialized, selectedCityId]);
+        activityMarkerMetaRef.current.forEach(({ id, color, type, marker }) => {
+            const isSelected = id === selectedActivityId;
+            marker.update({
+                html: buildActivityMarkerHtml(type, color, isSelected),
+                zIndex: isSelected ? 92 : 24,
+            });
+        });
+    }, [mapInitialized, selectedActivityId, selectedCityId]);
 
     // Pan to selected
     useEffect(() => {
-        if (!googleMapRef.current || !selectedCityId) return;
+        if (!googleMapRef.current) return;
         
         const t = setTimeout(() => {
-            const selectedCity = cities.find(i => i.id === selectedCityId);
-            if (selectedCity && selectedCity.coordinates) {
-                googleMapRef.current.panTo({ lat: selectedCity.coordinates.lat, lng: selectedCity.coordinates.lng });
-                googleMapRef.current.setZoom(10);
+            const focusTarget = resolveSelectedMapFocusPosition({
+                selectedActivityId,
+                selectedCityId,
+                activityMarkerPositions: activityMarkerPositionByIdRef.current,
+                cities,
+            });
+            if (focusTarget) {
+                googleMapRef.current.panTo({
+                    lat: focusTarget.position.lat,
+                    lng: focusTarget.position.lng,
+                });
+                googleMapRef.current.setZoom(focusTarget.zoom);
             }
         }, 100);
         return () => clearTimeout(t);
-    }, [selectedCityId, mapInitialized, cities]);
+    }, [selectedActivityId, selectedCityId, mapInitialized, cities]);
 
     // Fit Bounds
     const handleFit = () => {
