@@ -3,6 +3,7 @@ import { getFreePlanEntitlements } from '../config/planCatalog';
 import type { PlanTierKey, SystemRole, UserAccessContext } from '../types';
 import { trackEvent } from './analyticsService';
 import { appendAuthTraceEntry } from './authTraceService';
+import { clearLocalhostSupabaseBridgeCookies } from './authSessionPersistenceService';
 import { appendClientErrorLog } from './clientErrorLogger';
 import {
     removeLocalStorageItem,
@@ -81,6 +82,7 @@ const reportAuthSupabaseSuccess = (operation: string): void => {
 
 export const clearSupabaseAuthStorage = (): void => {
     if (typeof window === 'undefined') return;
+    clearLocalhostSupabaseBridgeCookies();
     const shouldClear = (key: string): boolean => (
         key.startsWith('sb-') &&
         (

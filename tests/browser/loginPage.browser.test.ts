@@ -22,6 +22,8 @@ const mocks = vi.hoisted(() => ({
     loginWithOAuth: vi.fn().mockResolvedValue({ error: null }),
     sendPasswordResetEmail: vi.fn().mockResolvedValue({ error: null }),
   },
+  rememberLoginEnabled: true,
+  setRememberLoginEnabled: vi.fn(),
   runOpportunisticTripQueueCleanup: vi.fn().mockResolvedValue(undefined),
   processQueuedTripGenerationAfterAuth: vi.fn(),
   runOpportunisticAnonymousAssetClaimCleanup: vi.fn().mockResolvedValue(undefined),
@@ -38,6 +40,29 @@ vi.mock('react-router-dom', () => ({
 
 vi.mock('../../components/marketing/MarketingLayout', () => ({
   MarketingLayout: ({ children }: { children: React.ReactNode }) => React.createElement('div', null, children),
+}));
+
+vi.mock('../../components/ui/checkbox', () => ({
+  Checkbox: ({
+    id,
+    checked,
+    disabled,
+    onCheckedChange,
+    ...props
+  }: {
+    id?: string;
+    checked?: boolean;
+    disabled?: boolean;
+    onCheckedChange?: (value: boolean) => void;
+    [key: string]: unknown;
+  }) => React.createElement('input', {
+    ...props,
+    id,
+    type: 'checkbox',
+    checked: checked === true,
+    disabled,
+    onChange: (event: React.ChangeEvent<HTMLInputElement>) => onCheckedChange?.(event.currentTarget.checked),
+  }),
 }));
 
 vi.mock('../../hooks/useAuth', () => ({
@@ -74,6 +99,11 @@ vi.mock('../../services/authUiPreferencesService', () => ({
   setPendingOAuthProvider: vi.fn(),
 }));
 
+vi.mock('../../services/authSessionPersistenceService', () => ({
+  isRememberLoginEnabled: () => mocks.rememberLoginEnabled,
+  setRememberLoginEnabled: mocks.setRememberLoginEnabled,
+}));
+
 vi.mock('../../components/auth/SocialProviderIcon', () => ({
   SocialProviderIcon: () => React.createElement('span', null, 'icon'),
 }));
@@ -104,6 +134,7 @@ describe('pages/LoginPage keyboard submit', () => {
     mocks.auth.isLoading = false;
     mocks.auth.isAuthenticated = false;
     mocks.auth.isAnonymous = false;
+    mocks.rememberLoginEnabled = true;
   });
 
   it('submits credentials when Enter is pressed in the password field', async () => {
@@ -120,6 +151,26 @@ describe('pages/LoginPage keyboard submit', () => {
     await waitFor(() => {
       expect(mocks.auth.loginWithPassword).toHaveBeenCalledWith('traveler@example.com', 'password123');
     });
+    expect(mocks.setRememberLoginEnabled).toHaveBeenLastCalledWith(true);
+  });
+
+  it('switches to session-only persistence when remember login is unchecked', async () => {
+    const user = userEvent.setup();
+
+    render(React.createElement(LoginPage));
+
+    const rememberCheckbox = screen.getByRole('checkbox', { name: 'labels.rememberLogin' });
+    const emailInput = screen.getByLabelText('labels.email');
+    const passwordInput = screen.getByLabelText('labels.password');
+
+    await user.click(rememberCheckbox);
+    await user.type(emailInput, 'traveler@example.com');
+    await user.type(passwordInput, 'password123{enter}');
+
+    await waitFor(() => {
+      expect(mocks.auth.loginWithPassword).toHaveBeenCalledWith('traveler@example.com', 'password123');
+    });
+    expect(mocks.setRememberLoginEnabled).toHaveBeenLastCalledWith(false);
   });
 
   it('processes asset claim before queued generation claim after auth callback', async () => {

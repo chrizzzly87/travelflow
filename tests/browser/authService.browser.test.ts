@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from 'vitest';
 import { clearSupabaseAuthStorage } from '../../services/authService';
+import { createSupabaseAuthStorageAdapter, setAuthSessionPersistencePreference } from '../../services/authSessionPersistenceService';
 import {
   readLocalStorageItem,
   readSessionStorageItem,
@@ -15,6 +16,10 @@ describe('services/authService clearSupabaseAuthStorage', () => {
   });
 
   it('clears wildcard Supabase auth keys from both local and session storage', () => {
+    const storageAdapter = createSupabaseAuthStorageAdapter();
+    setAuthSessionPersistencePreference('persistent');
+    storageAdapter.setItem('sb-demo-auth-token', 'local-auth');
+
     expect(writeLocalStorageItem('sb-demo-auth-token', 'local-auth')).toBe(true);
     expect(writeLocalStorageItem('sb-demo-refresh-token', 'local-refresh')).toBe(true);
     expect(writeLocalStorageItem('sb-demo-code-verifier', 'local-code')).toBe(true);
@@ -34,5 +39,6 @@ describe('services/authService clearSupabaseAuthStorage', () => {
     expect(readSessionStorageItem('sb-demo-code-verifier')).toBeNull();
     expect(readLocalStorageItem('tf_map_style')).toBe('standard');
     expect(window.sessionStorage.getItem('sb-demo-provider-state')).toBe('keep');
+    expect(storageAdapter.getItem('sb-demo-auth-token')).toBeNull();
   });
 });

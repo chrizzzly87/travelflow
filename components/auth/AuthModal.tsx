@@ -6,10 +6,15 @@ import {
 } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { Checkbox } from '../ui/checkbox';
 import { useAuth } from '../../hooks/useAuth';
 import type { OAuthProviderId } from '../../services/authService';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import { buildPasswordResetRedirectUrl } from '../../services/authNavigationService';
+import {
+    isRememberLoginEnabled,
+    setRememberLoginEnabled,
+} from '../../services/authSessionPersistenceService';
 import {
     clearPendingOAuthProvider,
     getLastUsedOAuthProvider,
@@ -117,6 +122,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [infoMessage, setInfoMessage] = useState<string | null>(null);
+    const [rememberLogin, setRememberLogin] = useState<boolean>(() => isRememberLoginEnabled());
     const [lastUsedProvider, setLastUsedProviderState] = useState<OAuthProviderId | null>(() => getLastUsedOAuthProvider());
     const [sessionRestoreState, setSessionRestoreState] = useState<'idle' | 'restoring' | 'restored'>('idle');
     const hasHandledSuccessRef = useRef(false);
@@ -134,6 +140,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     const oauthButtons = useMemo(() => getOAuthButtons(i18n.language), [i18n.language]);
     const emailInputId = 'auth-modal-email';
     const secondaryInputId = 'auth-modal-secondary';
+    const rememberLoginInputId = 'auth-modal-remember-login';
 
     const oauthRedirectTo = useMemo(() => {
         if (typeof window === 'undefined') return undefined;
@@ -306,6 +313,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             setErrorMessage(t('errors.default'));
             return;
         }
+        setRememberLoginEnabled(rememberLogin);
         clearPendingOAuthProvider();
 
         const requestId = pendingRequestRef.current + 1;
@@ -386,6 +394,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         setIsSubmitting(true);
         setErrorMessage(null);
         setInfoMessage(isSlowConnection ? t('states.slowNetworkDetected') : null);
+        setRememberLoginEnabled(rememberLogin);
         setPendingOAuthProvider(provider);
         trackEvent('auth__method--select', { method: provider, source: 'modal' });
         const outcome = await runTimedRequest(
@@ -474,6 +483,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         if (!(event.target instanceof HTMLInputElement)) return;
         event.preventDefault();
         event.currentTarget.requestSubmit();
+    };
+
+    const handleRememberLoginToggle = (checked: boolean) => {
+        setRememberLogin(checked);
+        setRememberLoginEnabled(checked);
+        trackEvent('auth__remember_login--toggle', { source: 'modal', remember_login: checked });
     };
 
     return (
@@ -609,6 +624,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                                 </div>
                                 {mode === 'login' && (
                                     <div className="space-y-2">
+                                        <label
+                                            htmlFor={rememberLoginInputId}
+                                            className="inline-flex cursor-pointer items-center gap-2 text-sm font-semibold text-slate-800"
+                                        >
+                                            <Checkbox
+                                                id={rememberLoginInputId}
+                                                checked={rememberLogin}
+                                                onCheckedChange={(checked) => handleRememberLoginToggle(checked === true)}
+                                                disabled={isSubmitting || isRestoreBlocked}
+                                                aria-label={t('labels.rememberLogin')}
+                                                {...getAnalyticsDebugAttributes('auth__remember_login--toggle', { source: 'modal' })}
+                                            />
+                                            <span>{t('labels.rememberLogin')}</span>
+                                        </label>
                                         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
                                             <button
                                                 type="button"
