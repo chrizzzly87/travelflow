@@ -136,7 +136,7 @@ describe('components/ItineraryMap route cache helpers', () => {
     expect(outlineOptions.strokeWeight).toBe(7);
     expect(outerOutlineOptions.strokeWeight).toBe(9);
     expect(outlineOptions.strokeOpacity).toBe(1);
-    expect(outerOutlineOptions.strokeOpacity).toBe(0.95);
+    expect(outerOutlineOptions.strokeOpacity).toBe(0.5);
     expect(outlineOptions.strokeColor).toBe('#1b2230');
     expect(outerOutlineOptions.strokeColor).toBe('#2563eb');
     expect(outlineOptions.icons).toBeUndefined();
@@ -198,7 +198,7 @@ describe('components/ItineraryMap route cache helpers', () => {
     expect(mainOptions.strokeOpacity).toBe(0);
     expect(mainOptions.icons).toEqual(dashedIcons);
     expect(outlineOptions.strokeOpacity).toBe(1);
-    expect(outerOutlineOptions.strokeOpacity).toBe(0.95);
+    expect(outerOutlineOptions.strokeOpacity).toBe(0.5);
     expect(outlineOptions.strokeColor).toBe('#1b2230');
     expect(outerOutlineOptions.strokeColor).toBe('#f43f5e');
   });

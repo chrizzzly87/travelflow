@@ -21,7 +21,7 @@ summary: "Trip planner map rendering is now more stable, with clearer markers an
 - [x] [Improved] 🧭 Initial planner map mount now appears in-place without the first-load morph transition.
 - [x] [Improved] 🎯 Fit-to-trip recenter now waits for map viewport sizing so reset zoom is more reliable after layout changes.
 - [x] [Improved] 🌑 Added a new Clean (Dark) map style that keeps the low-noise map treatment while matching dark theme contrast.
-- [x] [Improved] 🧱 Dark map route legs now render with a layered gap + route-colored outer edge so paths pop more clearly from the basemap.
+- [x] [Improved] 🧱 Dark map route legs now render with a layered gap + route-colored outer edge at softer opacity so paths pop without overpowering the basemap.
 - [x] [Fixed] 🧩 Single-city trip previews now render reliably instead of failing route-only preview assumptions.
 - [ ] [Internal] 🛣️ Switched realistic route checks to the newer Google Routes API path with legacy fallback support.
 - [ ] [Internal] 🧠 Added distance-based mode eligibility and bounded transit retry policy to improve route success while reducing wasted checks.
