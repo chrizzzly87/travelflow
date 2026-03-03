@@ -40,6 +40,12 @@ interface DetailsPanelProps {
   onCityColorPaletteChange?: (paletteId: string, options: { applyToCities: boolean }) => void;
 }
 
+interface RouteDistanceTextInput {
+  routeDistanceLabel: string | null;
+  canRoute: boolean;
+  routeStatus?: 'calculating' | 'ready' | 'failed' | 'idle';
+}
+
 interface PendingCityNotesProposal {
     actionLabel: string;
     addition: string;
@@ -107,6 +113,17 @@ const loadAiService = async (): Promise<AiServiceModule> => {
 };
 
 const EMPTY_TRIP_ITEMS: ITimelineItem[] = [];
+
+export const getRouteDistanceText = ({
+    routeDistanceLabel,
+    canRoute,
+    routeStatus,
+}: RouteDistanceTextInput): string => {
+    if (routeDistanceLabel) return routeDistanceLabel;
+    if (!canRoute) return 'N/A';
+    if (routeStatus === 'calculating') return 'Calculating…';
+    return 'N/A';
+};
 
 const appendNotes = (existing: string, addition: string): string => {
     const trimmedExisting = existing.trim();
@@ -1116,15 +1133,15 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
   const routeDistanceLabel = routeDistanceDisplayKm
       ? formatDistance(routeDistanceDisplayKm, DEFAULT_DISTANCE_UNIT, { maximumFractionDigits: 1 })
       : null;
-  const routeDistanceText = (() => {
-      if (routeDistanceLabel) return routeDistanceLabel;
-      const canRoute =
-          routeMode === 'realistic' &&
-          !!travelLegMetrics?.distanceKm &&
-          !['plane', 'boat', 'na'].includes(normalizedTransportMode);
-      if (routeStatus === 'calculating' || (canRoute && routeStatus !== 'failed')) return 'Calculating…';
-      return 'N/A';
-  })();
+  const canRoute =
+      routeMode === 'realistic' &&
+      !!travelLegMetrics?.distanceKm &&
+      !['plane', 'boat', 'na'].includes(normalizedTransportMode);
+  const routeDistanceText = getRouteDistanceText({
+      routeDistanceLabel,
+      canRoute,
+      routeStatus,
+  });
   const effectiveDistanceKm = routeDistanceDisplayKm ?? travelLegMetrics?.distanceKm ?? null;
   const estimatedHours = effectiveDistanceKm ? estimateTravelHours(effectiveDistanceKm, normalizedTransportMode) : null;
   const estimatedLabel = formatDurationHours(estimatedHours);

@@ -14,3 +14,5 @@ summary: "Started follow-up work to make route failures more deterministic and r
 - [ ] [Internal] 🧭 Added structured route-failure reason classification to support future leg-level transport availability UX.
 - [ ] [Internal] 🧠 Persisted failure reasons in route cache metadata and passed reason context through route-status updates.
 - [ ] [Internal] 🔕 Added short-window deduping for repeated route fallback warnings on identical legs/modes.
+- [ ] [Internal] 🧮 Updated route-distance status rendering to avoid indefinite "Calculating…" when no active route computation is running.
+- [ ] [Internal] 🧪 Stabilized admin soft-delete browser regressions by making fixtures date-relative and extending async query timeouts under full-suite load.
