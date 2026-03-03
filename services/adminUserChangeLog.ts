@@ -459,6 +459,15 @@ export const resolveUserChangeActionPresentation = (
     if (normalizedAction === 'profile.updated') {
         return { label: 'Updated profile', className: 'border-indigo-300 bg-indigo-50 text-indigo-800' };
     }
+    if (normalizedAction === 'legal.terms.accepted') {
+        return { label: 'Accepted Terms', className: 'border-emerald-300 bg-emerald-50 text-emerald-800' };
+    }
+    if (normalizedAction === 'legal.terms.reset_by_admin') {
+        return { label: 'Reset Terms acceptance', className: 'border-amber-300 bg-amber-50 text-amber-800' };
+    }
+    if (normalizedAction === 'profile.username_cooldown.reset_by_admin') {
+        return { label: 'Revoked username cooldown', className: 'border-amber-300 bg-amber-50 text-amber-800' };
+    }
 
     return {
         label: normalizeActionLabel(record.action),

@@ -43,6 +43,28 @@ vi.mock('../../../services/analyticsService', () => ({
   getAnalyticsDebugAttributes: () => ({}),
 }));
 
+vi.mock('react-i18next', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('react-i18next')>();
+  return {
+    ...actual,
+    useTranslation: () => ({
+      t: (key: string) => {
+        if (key === 'footer.imprint') return 'Imprint';
+        if (key === 'footer.privacy') return 'Privacy';
+        if (key === 'footer.terms') return 'Terms';
+        if (key === 'footer.cookies') return 'Cookies';
+        if (key === 'nav.login') return 'Login';
+        return key;
+      },
+      i18n: {
+        language: 'en',
+        resolvedLanguage: 'en',
+        changeLanguage: vi.fn().mockResolvedValue(undefined),
+      },
+    }),
+  };
+});
+
 import { MobileMenu } from '../../../components/navigation/MobileMenu';
 
 describe('components/navigation/MobileMenu legal links', () => {

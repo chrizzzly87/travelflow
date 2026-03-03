@@ -304,6 +304,8 @@ export const AdminTripsPage: React.FC = () => {
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [message, setMessage] = useState<string | null>(null);
     const [dataSourceNotice, setDataSourceNotice] = useState<string | null>(null);
+    const tripsTableScrollRef = useRef<HTMLDivElement | null>(null);
+    const [isTripsTableScrolledHorizontally, setIsTripsTableScrolledHorizontally] = useState(false);
     const [selectedOwnerId, setSelectedOwnerId] = useState<string | null>(null);
     const [selectedOwnerProfile, setSelectedOwnerProfile] = useState<AdminUserRecord | null>(null);
     const [isOwnerDrawerOpen, setIsOwnerDrawerOpen] = useState(false);
@@ -1009,6 +1011,17 @@ export const AdminTripsPage: React.FC = () => {
         };
     }, [isOwnerDrawerOpen, selectedOwnerId]);
 
+    useEffect(() => {
+        const node = tripsTableScrollRef.current;
+        if (!node) return;
+        const handleScroll = () => {
+            setIsTripsTableScrolledHorizontally(node.scrollLeft > 4);
+        };
+        handleScroll();
+        node.addEventListener('scroll', handleScroll, { passive: true });
+        return () => node.removeEventListener('scroll', handleScroll);
+    }, [visibleTrips.length]);
+
     return (
         <AdminShell
             title="Trip Lifecycle Controls"
@@ -1121,18 +1134,30 @@ export const AdminTripsPage: React.FC = () => {
                     )}
                 </div>
 
-                <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-                    <Table>
+                <div ref={tripsTableScrollRef} className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+                    <Table className="min-w-[1160px]">
                         <TableHeader className="bg-slate-50">
                             <TableRow>
-                                <TableHead className="w-12 px-4 py-3">
+                                <TableHead
+                                    className={`sticky left-0 z-30 w-14 min-w-14 border-r border-slate-200 bg-slate-50 px-4 py-3 ${
+                                        isTripsTableScrolledHorizontally ? 'shadow-[1px_0_0_0_rgba(148,163,184,0.65)]' : ''
+                                    }`}
+                                >
                                     <Checkbox
                                         checked={areAllVisibleTripsSelected ? true : (isVisibleTripSelectionPartial ? 'indeterminate' : false)}
                                         onCheckedChange={(checked) => toggleSelectAllVisibleTrips(Boolean(checked))}
                                         aria-label="Select all visible trips"
                                     />
                                 </TableHead>
-                                <TableHead className="px-4 py-3 font-semibold text-slate-700">Trip</TableHead>
+                                <TableHead
+                                    className={`sticky left-14 z-30 w-[340px] min-w-[340px] border-r border-slate-200 bg-slate-50 px-4 py-3 font-semibold text-slate-700 ${
+                                        isTripsTableScrolledHorizontally
+                                            ? 'relative shadow-[6px_0_12px_-9px_rgba(15,23,42,0.45)] after:pointer-events-none after:absolute after:inset-y-0 after:-right-3 after:w-3 after:bg-gradient-to-r after:from-slate-900/10 after:to-transparent'
+                                            : ''
+                                    }`}
+                                >
+                                    Trip
+                                </TableHead>
                                 <TableHead className="px-4 py-3 font-semibold text-slate-700">Owner</TableHead>
                                 <TableHead className="px-4 py-3 font-semibold text-slate-700">Lifecycle</TableHead>
                                 <TableHead className="px-4 py-3 font-semibold text-slate-700">Generation</TableHead>
@@ -1147,14 +1172,24 @@ export const AdminTripsPage: React.FC = () => {
                                     key={trip.trip_id}
                                     data-state={selectedTripIds.has(trip.trip_id) ? "selected" : undefined}
                                 >
-                                    <TableCell className="px-4 py-3">
+                                    <TableCell
+                                        className={`sticky left-0 z-20 w-14 min-w-14 border-r border-slate-200 bg-white px-4 py-3 ${
+                                            isTripsTableScrolledHorizontally ? 'shadow-[1px_0_0_0_rgba(148,163,184,0.65)]' : ''
+                                        }`}
+                                    >
                                         <Checkbox
                                             checked={selectedTripIds.has(trip.trip_id)}
                                             onCheckedChange={(checked) => toggleTripSelection(trip.trip_id, Boolean(checked))}
                                             aria-label={`Select trip ${trip.title || trip.trip_id}`}
                                         />
                                     </TableCell>
-                                    <TableCell className="px-4 py-3 max-w-[280px]">
+                                    <TableCell
+                                        className={`sticky left-14 z-20 w-[340px] min-w-[340px] max-w-[340px] border-r border-slate-200 bg-white px-4 py-3 ${
+                                            isTripsTableScrolledHorizontally
+                                                ? 'relative shadow-[6px_0_12px_-9px_rgba(15,23,42,0.45)] after:pointer-events-none after:absolute after:inset-y-0 after:-right-3 after:w-3 after:bg-gradient-to-r after:from-slate-900/10 after:to-transparent'
+                                                : ''
+                                        }`}
+                                    >
                                         <button
                                             type="button"
                                             onClick={() => openTripDrawer(trip.trip_id)}

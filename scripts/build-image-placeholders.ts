@@ -1,4 +1,4 @@
-import { readdirSync, statSync, writeFileSync } from 'node:fs';
+import { readdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import sharp from 'sharp';
 import { encode } from 'blurhash';
@@ -19,18 +19,30 @@ const TRIP_MAPS_DIR = path.join(PUBLIC_DIR, 'images', 'trip-maps');
 
 const toPosixPath = (value: string): string => value.split(path.sep).join('/');
 
-const listFiles = (dir: string, matcher: (fileName: string) => boolean): string[] => {
+const listFilesRecursive = (dir: string, matcher: (fileName: string) => boolean): string[] => {
     try {
-        return readdirSync(dir)
-            .filter((fileName) => matcher(fileName))
-            .map((fileName) => path.join(dir, fileName))
-            .filter((absPath) => statSync(absPath).isFile());
+        const entries = readdirSync(dir, { withFileTypes: true });
+        const files: string[] = [];
+
+        for (const entry of entries) {
+            const absolutePath = path.join(dir, entry.name);
+            if (entry.isDirectory()) {
+                files.push(...listFilesRecursive(absolutePath, matcher));
+                continue;
+            }
+            if (entry.isFile() && matcher(entry.name)) {
+                files.push(absolutePath);
+            }
+        }
+
+        return files;
     } catch {
         return [];
     }
 };
 
-const isBlogBaseImage = (fileName: string): boolean => /-(card|header)\.webp$/i.test(fileName);
+const isBlogBaseImage = (fileName: string): boolean =>
+    /\.(webp|jpe?g|png)$/i.test(fileName) && !/-\d+\.webp$/i.test(fileName);
 const isInspirationBaseImage = (fileName: string): boolean => /\.webp$/i.test(fileName) && !/-\d+\.webp$/i.test(fileName);
 const isTripMapImage = (fileName: string): boolean => /\.png$/i.test(fileName);
 
@@ -79,9 +91,9 @@ const buildOutputSource = (entries: Record<string, ImagePlaceholderEntry>): stri
 
 const main = async () => {
     const files = [
-        ...listFiles(BLOG_DIR, isBlogBaseImage),
-        ...listFiles(INSPIRATIONS_DIR, isInspirationBaseImage),
-        ...listFiles(TRIP_MAPS_DIR, isTripMapImage),
+        ...listFilesRecursive(BLOG_DIR, isBlogBaseImage),
+        ...listFilesRecursive(INSPIRATIONS_DIR, isInspirationBaseImage),
+        ...listFilesRecursive(TRIP_MAPS_DIR, isTripMapImage),
     ];
 
     const entries: Record<string, ImagePlaceholderEntry> = {};

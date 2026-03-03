@@ -8,6 +8,7 @@ interface ExampleTripTemplateConfig {
     mapColorMode: MapColorMode;
     roundTrip?: boolean;
     layoutMode?: 'vertical' | 'horizontal';
+    timelineMode?: 'calendar' | 'timeline';
     timelineView?: 'vertical' | 'horizontal';
     zoomLevel?: number;
     showCityNames?: boolean;
@@ -28,6 +29,7 @@ const DEFAULT_EXAMPLE_TEMPLATE_CONFIG: ExampleTripTemplateConfig = {
     mapStyle: 'clean',
     routeMode: 'realistic',
     mapColorMode: 'trip',
+    timelineMode: 'calendar',
 };
 
 const EXAMPLE_TRIP_TEMPLATE_CONFIGS: Record<string, ExampleTripTemplateConfig> = {
@@ -88,6 +90,17 @@ const EXAMPLE_TRIP_TEMPLATE_CONFIGS: Record<string, ExampleTripTemplateConfig> =
         routeMode: 'simple',
         mapColorMode: 'trip',
     },
+    'husum-krokus-weekend': {
+        paletteId: 'nordic',
+        mapStyle: 'clean',
+        routeMode: 'simple',
+        mapColorMode: 'trip',
+        roundTrip: true,
+        layoutMode: 'horizontal',
+        timelineMode: 'timeline',
+        timelineView: 'horizontal',
+        zoomLevel: 1.15,
+    },
     'southeast-asia-backpacking': {
         paletteId: 'classic',
         mapStyle: 'minimal',
@@ -142,6 +155,10 @@ const EXAMPLE_TEMPLATE_SUMMARIES: Record<string, ExampleTripTemplateSummary> = {
             { name: 'Italy' },
         ],
     },
+    'husum-krokus-weekend': {
+        title: 'Husum Krokusblütenfest Wochenende',
+        countries: [{ name: 'Germany' }],
+    },
     'southeast-asia-backpacking': {
         title: 'Backpacking South East Asia',
         countries: [
@@ -167,6 +184,7 @@ const buildDefaultView = (config: ExampleTripTemplateConfig) => {
 
     return {
         layoutMode: config.layoutMode ?? 'horizontal',
+        timelineMode: config.timelineMode ?? 'calendar',
         timelineView: config.timelineView ?? 'horizontal',
         mapStyle: config.mapStyle,
         routeMode: config.routeMode,
@@ -233,6 +251,10 @@ export const loadExampleTemplateFactory = async (templateId: string): Promise<Ex
         case 'europe-flex-options': {
             const module = await import('./europeFlexible');
             return wrapFactory(templateId, module.createEuropeFlexibleTrip);
+        }
+        case 'husum-krokus-weekend': {
+            const module = await import('./husumKrokusWeekend');
+            return wrapFactory(templateId, module.createHusumKrokusWeekendTrip);
         }
         case 'southeast-asia-backpacking': {
             const module = await import('./southeastAsiaBackpacking');

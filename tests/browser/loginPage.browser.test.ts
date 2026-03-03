@@ -22,15 +22,24 @@ const mocks = vi.hoisted(() => ({
     loginWithOAuth: vi.fn().mockResolvedValue({ error: null }),
     sendPasswordResetEmail: vi.fn().mockResolvedValue({ error: null }),
   },
+  rememberLoginEnabled: true,
+  setRememberLoginEnabled: vi.fn(),
   runOpportunisticTripQueueCleanup: vi.fn().mockResolvedValue(undefined),
   processQueuedTripGenerationAfterAuth: vi.fn(),
   runOpportunisticAnonymousAssetClaimCleanup: vi.fn().mockResolvedValue(undefined),
   processAnonymousAssetClaimAfterAuth: vi.fn(),
   resolveAnonymousAssetClaimErrorCode: vi.fn().mockReturnValue('default'),
+  acceptCurrentTerms: vi.fn().mockResolvedValue({
+    data: { termsVersion: '2026-03-03', acceptedAt: '2026-03-03T10:00:00Z' },
+    error: null,
+  }),
   trackEvent: vi.fn(),
 }));
 
 vi.mock('react-router-dom', () => ({
+  Link: ({ to, children, ...props }: { to: string; children: React.ReactNode }) => (
+    React.createElement('a', { href: to, ...props }, children)
+  ),
   useNavigate: () => mocks.navigate,
   useLocation: () => mocks.location,
   useSearchParams: () => [mocks.searchParams, vi.fn()],
@@ -40,8 +49,35 @@ vi.mock('../../components/marketing/MarketingLayout', () => ({
   MarketingLayout: ({ children }: { children: React.ReactNode }) => React.createElement('div', null, children),
 }));
 
+vi.mock('../../components/ui/checkbox', () => ({
+  Checkbox: ({
+    id,
+    checked,
+    disabled,
+    onCheckedChange,
+    ...props
+  }: {
+    id?: string;
+    checked?: boolean;
+    disabled?: boolean;
+    onCheckedChange?: (value: boolean) => void;
+    [key: string]: unknown;
+  }) => React.createElement('input', {
+    ...props,
+    id,
+    type: 'checkbox',
+    checked: checked === true,
+    disabled,
+    onChange: (event: React.ChangeEvent<HTMLInputElement>) => onCheckedChange?.(event.currentTarget.checked),
+  }),
+}));
+
 vi.mock('../../hooks/useAuth', () => ({
   useAuth: () => mocks.auth,
+}));
+
+vi.mock('../../services/authService', () => ({
+  acceptCurrentTerms: mocks.acceptCurrentTerms,
 }));
 
 vi.mock('../../services/analyticsService', () => ({
@@ -82,6 +118,11 @@ vi.mock('../../services/authUiPreferencesService', () => ({
   setPendingOAuthProvider: vi.fn(),
 }));
 
+vi.mock('../../services/authSessionPersistenceService', () => ({
+  isRememberLoginEnabled: () => mocks.rememberLoginEnabled,
+  setRememberLoginEnabled: mocks.setRememberLoginEnabled,
+}));
+
 vi.mock('../../components/auth/SocialProviderIcon', () => ({
   SocialProviderIcon: () => React.createElement('span', null, 'icon'),
 }));
@@ -104,7 +145,13 @@ vi.mock('react-i18next', () => ({
 import { LoginPage } from '../../pages/LoginPage';
 import { QueuedTripGenerationError } from '../../services/tripGenerationQueueService';
 
-describe('pages/LoginPage keyboard submit', () => {
+const setNativeInputValue = (input: HTMLInputElement, value: string): void => {
+  const valueSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+  if (!valueSetter) throw new Error('Missing HTMLInputElement value setter');
+  valueSetter.call(input, value);
+};
+
+describe('pages/LoginPage auth flows', () => {
   beforeEach(() => {
     cleanup();
     vi.clearAllMocks();
@@ -113,22 +160,38 @@ describe('pages/LoginPage keyboard submit', () => {
     mocks.auth.isLoading = false;
     mocks.auth.isAuthenticated = false;
     mocks.auth.isAnonymous = false;
+    mocks.rememberLoginEnabled = true;
+    mocks.acceptCurrentTerms.mockResolvedValue({
+      data: { termsVersion: '2026-03-03', acceptedAt: '2026-03-03T10:00:00Z' },
+      error: null,
+    });
   });
 
   it('submits credentials when Enter is pressed in the password field', async () => {
     const user = userEvent.setup();
-
     render(React.createElement(LoginPage));
 
-    const emailInput = screen.getByLabelText('labels.email');
-    const passwordInput = screen.getByLabelText('labels.password');
-
-    await user.type(emailInput, 'traveler@example.com');
-    await user.type(passwordInput, 'password123{enter}');
+    await user.type(screen.getByLabelText('labels.email'), 'traveler@example.com');
+    await user.type(screen.getByLabelText('labels.password'), 'password123{enter}');
 
     await waitFor(() => {
       expect(mocks.auth.loginWithPassword).toHaveBeenCalledWith('traveler@example.com', 'password123');
     });
+    expect(mocks.setRememberLoginEnabled).toHaveBeenLastCalledWith(true);
+  });
+
+  it('switches to session-only persistence when remember login is unchecked', async () => {
+    const user = userEvent.setup();
+    render(React.createElement(LoginPage));
+
+    await user.click(screen.getByRole('checkbox', { name: 'labels.rememberLogin' }));
+    await user.type(screen.getByLabelText('labels.email'), 'traveler@example.com');
+    await user.type(screen.getByLabelText('labels.password'), 'password123{enter}');
+
+    await waitFor(() => {
+      expect(mocks.auth.loginWithPassword).toHaveBeenCalledWith('traveler@example.com', 'password123');
+    });
+    expect(mocks.setRememberLoginEnabled).toHaveBeenLastCalledWith(false);
   });
 
   it('processes asset claim before queued generation claim after auth callback', async () => {
@@ -181,5 +244,64 @@ describe('pages/LoginPage keyboard submit', () => {
       expect(mocks.processQueuedTripGenerationAfterAuth).toHaveBeenCalledWith('queue-claim-2');
     });
     expect(mocks.navigate).toHaveBeenCalledWith('/trip/trip-failed-77', { replace: true });
+  });
+
+  it('submits browser-autofilled credentials even when React state was not updated by input events', async () => {
+    const user = userEvent.setup();
+    render(React.createElement(LoginPage));
+
+    const emailInput = screen.getByLabelText('labels.email') as HTMLInputElement;
+    const passwordInput = screen.getByLabelText('labels.password') as HTMLInputElement;
+    setNativeInputValue(emailInput, 'autofill@example.com');
+    setNativeInputValue(passwordInput, 'autofill-password');
+
+    await user.click(screen.getByRole('button', { name: 'actions.submitLogin' }));
+
+    await waitFor(() => {
+      expect(mocks.auth.loginWithPassword).toHaveBeenCalledWith('autofill@example.com', 'autofill-password');
+    });
+  });
+
+  it('blocks register submit until terms consent checkbox is checked', async () => {
+    const user = userEvent.setup();
+    render(React.createElement(LoginPage));
+
+    await user.click(screen.getByRole('button', { name: 'tabs.register' }));
+    await user.type(screen.getByLabelText('labels.email'), 'new-user@example.com');
+    await user.type(screen.getByLabelText('labels.password'), 'password123');
+    await user.click(screen.getByRole('button', { name: 'actions.submitRegister' }));
+
+    expect(mocks.auth.registerWithPassword).not.toHaveBeenCalled();
+    expect(screen.getByText('errors.terms_required')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('checkbox'));
+    await user.click(screen.getByRole('button', { name: 'actions.submitRegister' }));
+
+    await waitFor(() => {
+      expect(mocks.auth.registerWithPassword).toHaveBeenCalledWith('new-user@example.com', 'password123', expect.any(Object));
+    });
+  });
+
+  it('records terms acceptance immediately for register flows with an active session', async () => {
+    const user = userEvent.setup();
+    mocks.auth.registerWithPassword.mockResolvedValueOnce({
+      error: null,
+      data: { session: { access_token: 'session-token' } },
+    });
+
+    render(React.createElement(LoginPage));
+
+    await user.click(screen.getByRole('button', { name: 'tabs.register' }));
+    await user.type(screen.getByLabelText('labels.email'), 'accepted@example.com');
+    await user.type(screen.getByLabelText('labels.password'), 'password123');
+    await user.click(screen.getByRole('checkbox'));
+    await user.click(screen.getByRole('button', { name: 'actions.submitRegister' }));
+
+    await waitFor(() => {
+      expect(mocks.acceptCurrentTerms).toHaveBeenCalledWith({
+        locale: 'en',
+        source: 'signup_login_page',
+      });
+    });
   });
 });

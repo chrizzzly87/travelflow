@@ -30,7 +30,7 @@ interface UseTripItemMutationHandlersOptions {
     requireEdit: () => boolean;
     markUserEdit: () => void;
     setPendingLabel: (label: string) => void;
-    handleUpdateItems: (items: ITimelineItem[]) => void;
+    handleUpdateItems: (items: ITimelineItem[], options?: { suppressCommitToast?: boolean }) => void;
     showToast: (message: string, options?: ToastOptions) => void;
     pendingHistoryLabelRef: React.MutableRefObject<string | null>;
     onResetSuppressedCommit?: () => void;
@@ -72,7 +72,7 @@ export const useTripItemMutationHandlers = ({
 
         const previousItems = trip.items;
         const nextItems = previousItems.filter((candidate) => candidate.id !== id);
-        handleUpdateItems(nextItems);
+        handleUpdateItems(nextItems, { suppressCommitToast: true });
 
         if (item) {
             const entityLabel = item.type === 'city'
@@ -179,7 +179,7 @@ export const useTripItemMutationHandlers = ({
 
         onResetSuppressedCommit?.();
         setPendingLabel(`Data: Added activity "${newItem.title}"`);
-        handleUpdateItems([...trip.items, newItem]);
+        handleUpdateItems([...trip.items, newItem], { suppressCommitToast: true });
         showToast(`Activity "${newItem.title}" added`, { tone: 'add', title: 'Added' });
     }, [
         addActivityState.dayOffset,
@@ -214,7 +214,7 @@ export const useTripItemMutationHandlers = ({
 
         onResetSuppressedCommit?.();
         setPendingLabel(`Data: Added city "${newItem.title}"`);
-        handleUpdateItems([...trip.items, newItem]);
+        handleUpdateItems([...trip.items, newItem], { suppressCommitToast: true });
         setSelectedItemId(newItem.id);
         setSelectedCityIds([newItem.id]);
         showToast(`City "${newItem.title}" added`, { tone: 'add', title: 'Added' });

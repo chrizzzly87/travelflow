@@ -41,8 +41,10 @@ describe('components/ItineraryMap map controls availability', () => {
 
     const fitButton = screen.getByLabelText('Fit to itinerary');
     const styleButton = screen.getByLabelText('Map style');
+    const activityToggleButton = screen.getByLabelText('Show activity markers');
     expect(fitButton).toBeDisabled();
     expect(styleButton).toBeDisabled();
+    expect(activityToggleButton).toBeDisabled();
 
     fireEvent.click(screen.getByLabelText('Vertical layout'));
     expect(onLayoutChange).toHaveBeenCalledWith('vertical');
@@ -65,5 +67,6 @@ describe('components/ItineraryMap map controls availability', () => {
     expect(screen.getByLabelText('Horizontal layout')).toBeInTheDocument();
     expect(screen.getByLabelText('Fit to itinerary')).toBeDisabled();
     expect(screen.getByLabelText('Map style')).toBeDisabled();
+    expect(screen.getByLabelText('Show activity markers')).toBeDisabled();
   });
 });

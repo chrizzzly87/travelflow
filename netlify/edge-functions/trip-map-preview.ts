@@ -9,6 +9,10 @@
  *   colorMode  — "brand" (default) | "trip"
  *   pathColor  — optional hex/rgb color (used when colorMode=trip)
  *   legColors  — optional pipe/comma-separated hex/rgb colors (used per route leg when colorMode=trip)
+ *   startMarkerColor — optional hex/rgb color override for the start marker
+ *   endMarkerColor — optional hex/rgb color override for the end marker
+ *   waypointColor — optional hex/rgb color override for waypoint markers
+ *   language  — optional map language code (e.g. "en", "de", "pt-BR")
  *   w          — width in pixels (default 680)
  *   h          — height in pixels (default 288)
  *   scale      — 1 or 2 (default 2)
@@ -142,6 +146,14 @@ const parseLegColors = (value: string | null): string[] => {
     .filter((entry): entry is string => typeof entry === "string" && entry.length > 0);
 };
 
+const parseMapLanguage = (value: string | null): string | null => {
+  if (!value) return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  if (!/^[a-z]{2,3}(?:-[A-Za-z]{2,4})?$/i.test(trimmed)) return null;
+  return trimmed;
+};
+
 const shiftColor = (hex: string, amount: number): string => {
   const normalized = normalizeColor(hex) || BRAND_ROUTE_COLOR;
   const channels = [0, 2, 4].map((index) => Number.parseInt(normalized.slice(index, index + 2), 16));
@@ -264,8 +276,8 @@ export default async (request: Request) => {
   }
 
   const coords = parseCoords(coordsParam);
-  if (coords.length < 2) {
-    return new Response("At least two valid coordinates are required", { status: 400 });
+  if (coords.length < 1) {
+    return new Response("At least one valid coordinate is required", { status: 400 });
   }
 
   const w = clampInt(Number.parseInt(url.searchParams.get("w") || "680", 10), 240, 1280);
@@ -289,13 +301,21 @@ export default async (request: Request) => {
       ? resolveLegColor(requestedLegColors, index, pathColor)
       : BRAND_ROUTE_COLOR
   );
-  const startMarkerColor = shiftColor(legColors[0] || pathColor, -24);
-  const endMarkerColor = shiftColor(legColors[legColors.length - 1] || pathColor, 38);
+  const requestedStartMarkerColor = normalizeColor(url.searchParams.get("startMarkerColor"));
+  const requestedEndMarkerColor = normalizeColor(url.searchParams.get("endMarkerColor"));
+  const requestedWaypointColor = normalizeColor(url.searchParams.get("waypointColor"));
+  const startMarkerColor = requestedStartMarkerColor || shiftColor(legColors[0] || pathColor, -24);
+  const endMarkerColor = requestedEndMarkerColor || shiftColor(legColors[legColors.length - 1] || pathColor, 38);
+  const waypointColor = requestedWaypointColor || pathColor;
+  const mapLanguage = parseMapLanguage(url.searchParams.get("language"));
 
   const params = new URLSearchParams();
   params.set("size", `${w}x${h}`);
   params.set("scale", String(scale));
   params.set("maptype", getMapType(style));
+  if (mapLanguage) {
+    params.set("language", mapLanguage);
+  }
 
   getStyleTokens(style).forEach((token) => {
     params.append("style", token);
@@ -321,11 +341,13 @@ export default async (request: Request) => {
   const end = coords[coords.length - 1];
 
   params.append("markers", `size:mid|color:0x${startMarkerColor}|label:S|${formatCoord(start)}`);
-  params.append("markers", `size:mid|color:0x${endMarkerColor}|label:E|${formatCoord(end)}`);
+  if (coords.length > 1) {
+    params.append("markers", `size:mid|color:0x${endMarkerColor}|label:E|${formatCoord(end)}`);
+  }
 
   coords.slice(1, -1).forEach((coord, index) => {
-    const waypointColor = legColors[Math.min(index + 1, legColors.length - 1)] || pathColor;
-    params.append("markers", `size:tiny|color:0x${waypointColor}|${formatCoord(coord)}`);
+    const legWaypointColor = legColors[Math.min(index + 1, legColors.length - 1)] || waypointColor;
+    params.append("markers", `size:tiny|color:0x${legWaypointColor}|${formatCoord(coord)}`);
   });
 
   params.set("key", apiKey);

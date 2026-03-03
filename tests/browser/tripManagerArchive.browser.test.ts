@@ -8,6 +8,8 @@ import { makeTrip } from '../helpers/tripFixtures';
 const mocks = vi.hoisted(() => ({
   readLocalStorageItem: vi.fn(),
   writeLocalStorageItem: vi.fn(),
+  readSessionStorageItem: vi.fn(),
+  writeSessionStorageItem: vi.fn(),
   getAllTrips: vi.fn(),
   deleteTrip: vi.fn(),
   saveTrip: vi.fn(),
@@ -23,6 +25,8 @@ const mocks = vi.hoisted(() => ({
 vi.mock('../../services/browserStorageService', () => ({
   readLocalStorageItem: mocks.readLocalStorageItem,
   writeLocalStorageItem: mocks.writeLocalStorageItem,
+  readSessionStorageItem: mocks.readSessionStorageItem,
+  writeSessionStorageItem: mocks.writeSessionStorageItem,
 }));
 
 vi.mock('../../services/storageService', () => ({

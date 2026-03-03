@@ -1,4 +1,14 @@
 import type { PlanTierKey, TripGenerationState } from '../types';
+import {
+    LEGAL_TERMS_BINDING_LOCALE,
+    LEGAL_TERMS_FALLBACK_CONTENT_DE,
+    LEGAL_TERMS_FALLBACK_CONTENT_EN,
+    LEGAL_TERMS_FALLBACK_LAST_UPDATED,
+    LEGAL_TERMS_FALLBACK_SUMMARY,
+    LEGAL_TERMS_FALLBACK_TITLE,
+    LEGAL_TERMS_FALLBACK_VERSION,
+} from '../config/legalTermsDefaults';
+import type { LegalTermsVersionRecord } from './legalTermsService';
 import type { AdminForensicsReplayBundle } from './adminForensicsService';
 import { dbGetAccessToken, ensureExistingDbSession } from './dbService';
 import { normalizeProfileCountryCode } from './profileCountryService';
@@ -31,6 +41,10 @@ export interface AdminUserRecord {
     system_role: 'admin' | 'user';
     tier_key: PlanTierKey;
     entitlements_override: Record<string, unknown> | null;
+    terms_accepted_version?: string | null;
+    terms_accepted_at?: string | null;
+    terms_accepted_locale?: string | null;
+    terms_acceptance_source?: string | null;
     created_at: string;
     updated_at: string;
     onboarding_completed_at?: string | null;
@@ -117,11 +131,33 @@ export interface AdminTierReapplyPreview {
     users_with_overrides: number;
 }
 
+export interface AdminPublishTermsVersionInput {
+    version: string;
+    title: string;
+    summary?: string | null;
+    bindingLocale?: string | null;
+    lastUpdated: string;
+    effectiveAt?: string | null;
+    requiresReaccept: boolean;
+    contentDe: string;
+    contentEn: string;
+    makeCurrent?: boolean;
+}
+
 const requireSupabase = () => {
     if (!supabase) {
         throw new Error('Supabase is not configured.');
     }
     return supabase;
+};
+
+const mapTermsRpcErrorMessage = (rawMessage: string | null | undefined, fallbackMessage: string): string => {
+    const message = (rawMessage || '').trim();
+    if (!message) return fallbackMessage;
+    if (/column reference "is_current" is ambiguous/i.test(message)) {
+        return `${message}. Please re-run the latest /docs/supabase.sql migration for Terms admin functions.`;
+    }
+    return message;
 };
 
 const VALID_PROFILE_GENDERS = new Set(['female', 'male', 'non-binary', 'prefer-not']);
@@ -277,6 +313,22 @@ export const adminResetUserUsernameCooldown = async (
         p_reason: reason,
     });
     if (error) throw new Error(error.message || 'Could not reset username cooldown.');
+};
+
+export const adminResetUserTermsAcceptance = async (
+    userId: string,
+    reason: string | null = 'admin.testing.reset_terms'
+): Promise<void> => {
+    if (shouldUseAdminMockData()) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        return;
+    }
+    const client = requireSupabase();
+    const { error } = await client.rpc('admin_reset_user_terms_acceptance', {
+        p_user_id: userId,
+        p_reason: reason,
+    });
+    if (error) throw new Error(error.message || 'Could not reset terms acceptance.');
 };
 
 export const adminGetUserProfile = async (userId: string): Promise<AdminUserRecord | null> => {
@@ -616,6 +668,164 @@ export const adminGetTripVersionSnapshots = async (
     if (error) throw new Error(error.message || 'Could not load trip version snapshots.');
     const row = Array.isArray(data) ? data[0] : data;
     return row ? (row as AdminTripVersionSnapshotRecord) : null;
+};
+
+const normalizeTermsVersionRecord = (row: Record<string, unknown> | null | undefined): LegalTermsVersionRecord | null => {
+    if (!row) return null;
+    const normalizeText = (value: unknown): string => (typeof value === 'string' ? value.trim() : '');
+    const normalizeOptionalText = (value: unknown): string | null => {
+        const normalized = normalizeText(value);
+        return normalized.length > 0 ? normalized : null;
+    };
+
+    const version = normalizeText(row.version);
+    const title = normalizeText(row.title);
+    const lastUpdated = normalizeText(row.last_updated);
+    const effectiveAt = normalizeText(row.effective_at);
+    const createdAt = normalizeText(row.created_at);
+    if (!version || !title || !lastUpdated || !effectiveAt || !createdAt) return null;
+
+    return {
+        version,
+        title,
+        summary: normalizeOptionalText(row.summary),
+        bindingLocale: normalizeText(row.binding_locale) || 'de',
+        lastUpdated,
+        effectiveAt,
+        requiresReaccept: Boolean(row.requires_reaccept),
+        isCurrent: Boolean(row.is_current),
+        contentDe: normalizeText(row.content_de),
+        contentEn: normalizeText(row.content_en),
+        createdAt,
+        createdBy: normalizeOptionalText(row.created_by),
+    };
+};
+
+export const adminListTermsVersions = async (): Promise<LegalTermsVersionRecord[]> => {
+    if (shouldUseAdminMockData()) {
+        const now = new Date().toISOString();
+        return [{
+            version: LEGAL_TERMS_FALLBACK_VERSION,
+            title: LEGAL_TERMS_FALLBACK_TITLE,
+            summary: LEGAL_TERMS_FALLBACK_SUMMARY,
+            bindingLocale: LEGAL_TERMS_BINDING_LOCALE,
+            lastUpdated: LEGAL_TERMS_FALLBACK_LAST_UPDATED,
+            effectiveAt: now,
+            requiresReaccept: true,
+            isCurrent: true,
+            contentDe: LEGAL_TERMS_FALLBACK_CONTENT_DE,
+            contentEn: LEGAL_TERMS_FALLBACK_CONTENT_EN,
+            createdAt: now,
+            createdBy: 'mock-admin',
+        }];
+    }
+
+    const client = requireSupabase();
+    const { data, error } = await client
+        .from('legal_terms_versions')
+        .select('version,title,summary,binding_locale,last_updated,effective_at,requires_reaccept,is_current,content_de,content_en,created_at,created_by')
+        .order('effective_at', { ascending: false });
+
+    if (error) throw new Error(error.message || 'Could not load terms versions.');
+    if (!Array.isArray(data)) return [];
+
+    return data
+        .map((row) => normalizeTermsVersionRecord(row as Record<string, unknown>))
+        .filter((row): row is LegalTermsVersionRecord => Boolean(row));
+};
+
+export const adminPublishTermsVersion = async (
+    payload: AdminPublishTermsVersionInput
+): Promise<LegalTermsVersionRecord> => {
+    const version = payload.version.trim();
+    const title = payload.title.trim();
+    const contentDe = payload.contentDe.trim();
+    const contentEn = payload.contentEn.trim();
+    const lastUpdated = payload.lastUpdated.trim();
+    const bindingLocale = (payload.bindingLocale || 'de').trim() || 'de';
+    const summary = typeof payload.summary === 'string' ? payload.summary.trim() : '';
+
+    if (!version) throw new Error('Version is required.');
+    if (!title) throw new Error('Title is required.');
+    if (!lastUpdated) throw new Error('Last updated date is required.');
+    if (!contentDe || !contentEn) throw new Error('Both DE and EN terms content are required.');
+
+    if (shouldUseAdminMockData()) {
+        const now = new Date().toISOString();
+        return {
+            version,
+            title,
+            summary: summary || null,
+            bindingLocale,
+            lastUpdated,
+            effectiveAt: payload.effectiveAt || now,
+            requiresReaccept: payload.requiresReaccept,
+            isCurrent: payload.makeCurrent ?? true,
+            contentDe,
+            contentEn,
+            createdAt: now,
+            createdBy: 'mock-admin',
+        };
+    }
+
+    const client = requireSupabase();
+    const { data, error } = await client.rpc('admin_publish_terms_version', {
+        p_version: version,
+        p_title: title,
+        p_summary: summary || null,
+        p_binding_locale: bindingLocale,
+        p_last_updated: lastUpdated,
+        p_effective_at: payload.effectiveAt || new Date().toISOString(),
+        p_requires_reaccept: payload.requiresReaccept,
+        p_content_de: contentDe,
+        p_content_en: contentEn,
+        p_make_current: payload.makeCurrent ?? true,
+    });
+
+    if (error) throw new Error(mapTermsRpcErrorMessage(error.message, 'Could not publish terms version.'));
+    const row = normalizeTermsVersionRecord((Array.isArray(data) ? data[0] : data) as Record<string, unknown> | null);
+    if (!row) throw new Error('Terms publish RPC returned no version payload.');
+    return row;
+};
+
+export const adminSetCurrentTermsVersion = async (
+    version: string,
+    options?: { requiresReaccept?: boolean | null; effectiveAt?: string | null }
+): Promise<LegalTermsVersionRecord> => {
+    const normalizedVersion = version.trim();
+    if (!normalizedVersion) throw new Error('Version is required.');
+
+    if (shouldUseAdminMockData()) {
+        const now = new Date().toISOString();
+        return {
+            version: normalizedVersion,
+            title: LEGAL_TERMS_FALLBACK_TITLE,
+            summary: LEGAL_TERMS_FALLBACK_SUMMARY,
+            bindingLocale: LEGAL_TERMS_BINDING_LOCALE,
+            lastUpdated: LEGAL_TERMS_FALLBACK_LAST_UPDATED,
+            effectiveAt: options?.effectiveAt || now,
+            requiresReaccept: typeof options?.requiresReaccept === 'boolean' ? options.requiresReaccept : true,
+            isCurrent: true,
+            contentDe: LEGAL_TERMS_FALLBACK_CONTENT_DE,
+            contentEn: LEGAL_TERMS_FALLBACK_CONTENT_EN,
+            createdAt: now,
+            createdBy: 'mock-admin',
+        };
+    }
+
+    const client = requireSupabase();
+    const { data, error } = await client.rpc('admin_set_current_terms_version', {
+        p_version: normalizedVersion,
+        p_effective_at: options?.effectiveAt || new Date().toISOString(),
+        p_requires_reaccept: typeof options?.requiresReaccept === 'boolean'
+            ? options.requiresReaccept
+            : null,
+    });
+
+    if (error) throw new Error(mapTermsRpcErrorMessage(error.message, 'Could not switch current terms version.'));
+    const row = normalizeTermsVersionRecord((Array.isArray(data) ? data[0] : data) as Record<string, unknown> | null);
+    if (!row) throw new Error('Terms version switch RPC returned no payload.');
+    return row;
 };
 
 const callAdminInternalApi = async <T extends Record<string, unknown>>(

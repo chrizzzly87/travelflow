@@ -7,6 +7,11 @@ import { BASE_PIXELS_PER_DAY, DEFAULT_CITY_COLOR_PALETTE_ID, DEFAULT_DISTANCE_UN
 import { getExampleMapViewTransitionName, getExampleTitleViewTransitionName } from '../shared/viewTransitionNames';
 import { type DbTripAccessMetadata } from '../services/dbApi';
 import {
+    buildTripCalendarExport,
+    downloadTripCalendarExport,
+    type TripCalendarExportScope,
+} from '../services/tripCalendarExportService';
+import {
     buildDirectReactivatedTrip,
     buildPaywalledTripDisplay,
     resolveTripPaywallActivationMode,
@@ -173,6 +178,15 @@ const GENERATION_PROGRESS_MESSAGES = [
     'Structuring your daily timeline...',
     'Finalizing logistics and details...',
 ];
+const TRIP_CALENDAR_EXPORT_EVENT_BY_SCOPE: Record<
+    TripCalendarExportScope,
+    'trip_view__calendar_export--activity' | 'trip_view__calendar_export--activities' | 'trip_view__calendar_export--cities' | 'trip_view__calendar_export--all'
+> = {
+    activity: 'trip_view__calendar_export--activity',
+    activities: 'trip_view__calendar_export--activities',
+    cities: 'trip_view__calendar_export--cities',
+    all: 'trip_view__calendar_export--all',
+};
 
 interface ViewTransitionDebugDetail {
     phase: string;
@@ -346,6 +360,10 @@ interface TripViewProps {
     };
 }
 
+interface CommitScheduleOptions {
+    skipToast?: boolean;
+}
+
 interface ExampleTransitionLocationState {
     useExampleSharedTransition?: boolean;
 }
@@ -484,6 +502,9 @@ interface TripViewModalLayerProps {
     formatHistoryTime: (value: number) => string;
     countryInfo: ITrip['countryInfo'];
     isPaywallLocked: boolean;
+    onExportActivitiesCalendar: () => void;
+    onExportCitiesCalendar: () => void;
+    onExportAllCalendar: () => void;
     shouldEnableReleaseNotice: boolean;
     isShareOpen: boolean;
     shareMode: ShareMode;
@@ -565,6 +586,9 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
     formatHistoryTime,
     countryInfo,
     isPaywallLocked,
+    onExportActivitiesCalendar,
+    onExportCitiesCalendar,
+    onExportAllCalendar,
     shouldEnableReleaseNotice,
     isShareOpen,
     shareMode,
@@ -658,6 +682,9 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
                     formatHistoryTime={formatHistoryTime}
                     countryInfo={countryInfo}
                     isPaywallLocked={isPaywallLocked}
+                    onExportActivitiesCalendar={onExportActivitiesCalendar}
+                    onExportCitiesCalendar={onExportCitiesCalendar}
+                    onExportAllCalendar={onExportAllCalendar}
                 />
             </Suspense>
         )}
@@ -737,6 +764,7 @@ interface RenderDetailsPanelContentOptions {
     selectedCityForceFillLabel?: string;
     cityColorPaletteId: string;
     onCityColorPaletteChange?: (paletteId: string, options: { applyToCities: boolean }) => void;
+    onExportActivityCalendar?: (itemId: string) => void;
 }
 
 const renderDetailsPanelContent = ({
@@ -761,6 +789,7 @@ const renderDetailsPanelContent = ({
     selectedCityForceFillLabel,
     cityColorPaletteId,
     onCityColorPaletteChange,
+    onExportActivityCalendar,
 }: RenderDetailsPanelContentOptions): React.ReactNode => (
     showSelectedCitiesPanel ? (
         <Suspense fallback={<div className="h-full flex items-center justify-center text-xs text-gray-500">Loading selection panel...</div>}>
@@ -793,6 +822,7 @@ const renderDetailsPanelContent = ({
                 readOnly={!canEdit}
                 cityColorPaletteId={cityColorPaletteId}
                 onCityColorPaletteChange={onCityColorPaletteChange}
+                onExportActivityCalendar={onExportActivityCalendar}
             />
         </Suspense>
     )
@@ -1014,7 +1044,7 @@ const useTripViewRender = ({
     const editTitleInputRef = useRef<HTMLInputElement | null>(null);
     const pendingHistoryLabelRef = useRef<string | null>(null);
     const commitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const pendingCommitRef = useRef<{ trip: ITrip; view: IViewSettings } | null>(null);
+    const pendingCommitRef = useRef<{ trip: ITrip; view: IViewSettings; skipToast?: boolean } | null>(null);
     const suppressCommitRef = useRef(false);
     const navigateHistoryRef = useRef<((action: 'undo' | 'redo', options?: { silent?: boolean }) => boolean) | null>(null);
     const skipViewDiffRef = useRef(false);
@@ -1532,7 +1562,11 @@ const useTripViewRender = ({
         trackOpenHistory: (source) => trackEvent('app__trip_history--open', { source }),
     });
 
-    const scheduleCommit = useCallback((nextTrip?: ITrip, nextView?: IViewSettings) => {
+    const scheduleCommit = useCallback((
+        nextTrip?: ITrip,
+        nextView?: IViewSettings,
+        options?: CommitScheduleOptions,
+    ) => {
         if (!canEdit) return;
         if (isExamplePreview) return;
         if (suppressCommitRef.current) {
@@ -1542,14 +1576,14 @@ const useTripViewRender = ({
         }
         const tripToCommit = nextTrip || trip;
         const viewToCommit = nextView || currentViewSettings;
-        pendingCommitRef.current = { trip: tripToCommit, view: viewToCommit };
+        pendingCommitRef.current = { trip: tripToCommit, view: viewToCommit, skipToast: options?.skipToast };
         debugHistory('Scheduled commit', { label: pendingHistoryLabelRef.current || 'Data: Updated trip' });
 
         if (commitTimerRef.current) clearTimeout(commitTimerRef.current);
         const pendingLabel = pendingHistoryLabelRef.current || 'Data: Updated trip';
         const commitDelay = /^Data:\s+/i.test(pendingLabel) ? 150 : 700;
         commitTimerRef.current = setTimeout(() => {
-            const payload = pendingCommitRef.current || { trip: tripToCommit, view: viewToCommit };
+            const payload = pendingCommitRef.current || { trip: tripToCommit, view: viewToCommit, skipToast: options?.skipToast };
             const label = pendingHistoryLabelRef.current || 'Data: Updated trip';
             debugHistory('Committing', { label });
             if (onCommitState) {
@@ -1563,7 +1597,9 @@ const useTripViewRender = ({
             if (onCommitState) {
                 refreshHistory();
             }
-            showSavedToastForLabel(label);
+            if (!payload.skipToast) {
+                showSavedToastForLabel(label);
+            }
             if (typeof window !== 'undefined') {
                 (window as any).__tfLastCommit = { label, ts: Date.now() };
                 const hook = (window as any).__tfOnCommit;
@@ -1676,6 +1712,14 @@ const useTripViewRender = ({
         handleUpdateItems,
     });
 
+    const handleMapCitySelect = useCallback((cityId: string) => {
+        handleTimelineSelect(cityId, { isCity: true });
+    }, [handleTimelineSelect]);
+
+    const handleMapActivitySelect = useCallback((activityId: string) => {
+        handleTimelineSelect(activityId, { isCity: false });
+    }, [handleTimelineSelect]);
+
     const {
         routeStatusById,
         handleRouteMetrics,
@@ -1750,6 +1794,7 @@ const useTripViewRender = ({
                     tone: 'add',
                     title: 'Undo',
                     iconVariant: 'undo',
+                    disableDefaultUndo: true,
                 });
                 return;
             }
@@ -1761,16 +1806,18 @@ const useTripViewRender = ({
                         tone: 'add',
                         title: 'Undo',
                         iconVariant: 'undo',
+                        disableDefaultUndo: true,
                     });
                     return;
                 }
 
                 setPendingLabel(`Data: Restored ${deletedEntityLabel}`);
-                handleUpdateItems(context.previousItems);
+                handleUpdateItems(context.previousItems, { suppressCommitToast: true });
                 showToast(`Restored ${deletedEntityLabel}`, {
                     tone: 'add',
                     title: 'Undo',
                     iconVariant: 'undo',
+                    disableDefaultUndo: true,
                 });
             }, 200);
         },
@@ -1942,6 +1989,44 @@ const useTripViewRender = ({
         () => (selectedItemId ? routeStatusById[selectedItemId] : undefined),
         [routeStatusById, selectedItemId]
     );
+    const handleTripCalendarExport = useCallback((
+        scope: TripCalendarExportScope,
+        source: 'details_panel' | 'trip_info_modal' | 'print_view',
+        activityId?: string,
+    ) => {
+        const bundle = buildTripCalendarExport({
+            trip: displayTrip,
+            scope,
+            activityId,
+        });
+        if (!bundle) return;
+        const downloaded = downloadTripCalendarExport(bundle);
+        if (!downloaded) return;
+
+        trackEvent(TRIP_CALENDAR_EXPORT_EVENT_BY_SCOPE[scope], {
+            trip_id: trip.id,
+            source,
+            event_count: bundle.eventCount,
+            ...(activityId ? { item_id: activityId } : {}),
+        });
+    }, [displayTrip, trip.id]);
+
+    const handleExportSelectedActivityCalendar = useCallback((itemId: string) => {
+        handleTripCalendarExport('activity', 'details_panel', itemId);
+    }, [handleTripCalendarExport]);
+
+    const handleExportActivitiesCalendar = useCallback((source: 'trip_info_modal' | 'print_view') => {
+        handleTripCalendarExport('activities', source);
+    }, [handleTripCalendarExport]);
+
+    const handleExportCitiesCalendar = useCallback((source: 'trip_info_modal' | 'print_view') => {
+        handleTripCalendarExport('cities', source);
+    }, [handleTripCalendarExport]);
+
+    const handleExportAllCalendar = useCallback((source: 'trip_info_modal' | 'print_view') => {
+        handleTripCalendarExport('all', source);
+    }, [handleTripCalendarExport]);
+
     const detailsPanelContent = renderDetailsPanelContent({
         showSelectedCitiesPanel,
         selectedCitiesInTimeline,
@@ -1964,6 +2049,7 @@ const useTripViewRender = ({
         selectedCityForceFillLabel: selectedCityForceFill?.label,
         cityColorPaletteId,
         onCityColorPaletteChange: canEdit ? handleCityColorPaletteChange : undefined,
+        onExportActivityCalendar: handleExportSelectedActivityCalendar,
     });
 
     if (viewMode === 'print') {
@@ -1975,6 +2061,9 @@ const useTripViewRender = ({
                         isPaywalled={isPaywallLocked}
                         onClose={() => setViewMode('planner')}
                         onUpdateTrip={handleUpdateItems}
+                        onExportActivitiesCalendar={() => handleExportActivitiesCalendar('print_view')}
+                        onExportCitiesCalendar={() => handleExportCitiesCalendar('print_view')}
+                        onExportAllCalendar={() => handleExportAllCalendar('print_view')}
                     />
                 </Suspense>
             </GoogleMapsLoader>
@@ -2142,6 +2231,8 @@ const useTripViewRender = ({
                         mapDeferredFallback={<MapDeferredFallback onLoadNow={enableMapBootstrap} />}
                         displayItems={displayTrip.items}
                         selectedItemId={selectedItemId}
+                        onMapCitySelect={handleMapCitySelect}
+                        onMapActivitySelect={handleMapActivitySelect}
                         layoutMode={layoutMode}
                         effectiveLayoutMode={effectiveLayoutMode}
                         onLayoutModeChange={(mode) => {
@@ -2234,6 +2325,9 @@ const useTripViewRender = ({
                         formatHistoryTime={formatHistoryTime}
                         countryInfo={displayTrip.countryInfo}
                         isPaywallLocked={isPaywallLocked}
+                        onExportActivitiesCalendar={() => handleExportActivitiesCalendar('trip_info_modal')}
+                        onExportCitiesCalendar={() => handleExportCitiesCalendar('trip_info_modal')}
+                        onExportAllCalendar={() => handleExportAllCalendar('trip_info_modal')}
                         shouldEnableReleaseNotice={shouldEnableReleaseNotice}
                         isShareOpen={isShareOpen}
                         shareMode={shareMode}

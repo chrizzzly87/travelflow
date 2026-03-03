@@ -6,6 +6,7 @@ This doc is a compact, structured overview of the app to help future agents make
 - UI and component styling rules: `docs/BRAND_CI_GUIDELINES.md`.
 - Paywall/lifecycle behavior rules: `docs/PAYWALL_GUIDELINES.md`.
 - Locale routing + translation workflow: `docs/I18N_PAGE_WORKFLOW.md`.
+- Google Maps integration workflow (`@vis.gl/react-google-maps`, routing/fallback policy, map previews): `docs/MAPS_INTEGRATION_WORKFLOW.md`.
 - UX writing and CTA/planner copy rules: `docs/UX_COPY_GUIDELINES.md`.
 - Analytics naming and instrumentation format: `docs/ANALYTICS_CONVENTION.md`.
 - Netlify PR preview and feature-branch deploy workflow: `docs/NETLIFY_FEATURE_BRANCH_DEPLOY.md`.
@@ -81,6 +82,7 @@ This doc is a compact, structured overview of the app to help future agents make
 - Pins are colored by city and highlight selected city.
 - Routes draw directional arrow and transport icon at midpoint.
 - Travel mode icons are consistent with timeline `transportMode`.
+- City labels should use `getMapLabelCityName(...)` (city-only) and `resolveCityLabelAnchor(...)` to reduce route overlap without heavy map geometry complexity.
 
 **Print/List View**
 - `components/PrintLayout.tsx` renders:

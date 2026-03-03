@@ -16,7 +16,7 @@ interface UseTripTitleEditHandlersOptions {
     markUserEdit: () => void;
     setPendingLabel: (label: string) => void;
     safeUpdateTrip: (updatedTrip: ITrip, options?: { persist?: boolean }) => void;
-    scheduleCommit: (updatedTrip?: ITrip, view?: IViewSettings) => void;
+    scheduleCommit: (updatedTrip?: ITrip, view?: IViewSettings, options?: { skipToast?: boolean }) => void;
 }
 
 export const useTripTitleEditHandlers = ({

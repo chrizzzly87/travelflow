@@ -36,7 +36,7 @@ describe('components/tripview/TripTimelineListView', () => {
 
     const heratCity = makeCityItem({ id: 'city-b', title: 'Herat', startDateOffset: 2.3, duration: 2, color: 'bg-amber-400' });
     heratCity.countryName = 'Iran';
-    heratCity.description = 'Historic center with **old citadel walls**.';
+    heratCity.description = 'Historic center with **old citadel walls**.\n- [x] Markt öffnen\n- [ ] Schlosspark besuchen\n~~Altprogramm~~';
     const kabulCity = makeCityItem({ id: 'city-a', title: 'Kabul', startDateOffset: 0, duration: 2, color: 'bg-rose-400' });
     kabulCity.countryName = 'Afghanistan';
 
@@ -97,6 +97,8 @@ describe('components/tripview/TripTimelineListView', () => {
 
     expect(screen.queryByText('From Kabul via Train')).not.toBeInTheDocument();
     expect(screen.getByText('old citadel walls', { exact: false })).toBeInTheDocument();
+    expect(screen.getAllByRole('checkbox')).toHaveLength(2);
+    expect(screen.getByText('Altprogramm')).toBeInTheDocument();
     expect(screen.queryByText('**Citadel**')).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'book ahead' })).toHaveAttribute('href', 'https://example.com');
 

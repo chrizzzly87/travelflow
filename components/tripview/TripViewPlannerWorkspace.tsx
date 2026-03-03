@@ -3,7 +3,7 @@ import { ArrowLeftRight, ArrowUpDown, CalendarDays, Focus, Layers, List, Maximiz
 import { getAnalyticsDebugAttributes } from '../../services/analyticsService';
 import { TripFloatingMapPreview } from './TripFloatingMapPreview';
 
-import type { ITimelineItem, MapColorMode, MapStyle, RouteMode, RouteStatus } from '../../types';
+import type { ITimelineItem, MapColorMode, MapStyle, RouteFailureReason, RouteMode, RouteStatus } from '../../types';
 
 interface TripViewPlannerWorkspaceProps {
     isPaywallLocked: boolean;
@@ -30,6 +30,8 @@ interface TripViewPlannerWorkspaceProps {
     mapDeferredFallback: React.ReactNode;
     displayItems: ITimelineItem[];
     selectedItemId: string | null;
+    onMapCitySelect?: (cityId: string) => void;
+    onMapActivitySelect?: (activityId: string) => void;
     layoutMode: 'vertical' | 'horizontal';
     effectiveLayoutMode: 'vertical' | 'horizontal';
     onLayoutModeChange: (mode: 'vertical' | 'horizontal') => void;
@@ -43,7 +45,7 @@ interface TripViewPlannerWorkspaceProps {
     onMapColorModeChange?: (mode: MapColorMode) => void;
     initialMapFocusQuery?: string;
     onRouteMetrics: (travelItemId: string, metrics: { routeDistanceKm?: number; routeDurationHours?: number; mode?: string; routeKey?: string }) => void;
-    onRouteStatus: (travelItemId: string, status: RouteStatus, meta?: { mode?: string; routeKey?: string }) => void;
+    onRouteStatus: (travelItemId: string, status: RouteStatus, meta?: { mode?: string; routeKey?: string; reason?: RouteFailureReason }) => void;
     tripId: string;
     mapViewTransitionName: string | null;
     sidebarWidth: number;
@@ -85,6 +87,8 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
     mapDeferredFallback,
     displayItems,
     selectedItemId,
+    onMapCitySelect,
+    onMapActivitySelect,
     layoutMode,
     effectiveLayoutMode,
     onLayoutModeChange,
@@ -121,7 +125,9 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
         if (!isFloatingMapPreviewEnabled) return;
         onMapDockModeChange(effectiveMapDockMode === 'docked' ? 'floating' : 'docked');
     }, [effectiveMapDockMode, isFloatingMapPreviewEnabled, onMapDockModeChange]);
-    const effectiveMapViewTransitionName = mapViewTransitionName ?? 'trip-map-dock-preview';
+    const effectiveMapViewTransitionName = mapViewTransitionName && mapViewTransitionName.trim().length > 0
+        ? mapViewTransitionName
+        : undefined;
 
     const timelineControls = (
         <div className="flex flex-wrap items-center justify-end gap-2 pointer-events-auto">
@@ -286,6 +292,8 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                 <ItineraryMapComponent
                     items={displayItems}
                     selectedItemId={selectedItemId}
+                    onCityMarkerSelect={onMapCitySelect}
+                    onActivityMarkerSelect={onMapActivitySelect}
                     layoutMode={mapLayoutMode}
                     onLayoutChange={showLayoutControls ? onLayoutModeChange : undefined}
                     showLayoutControls={showLayoutControls}
