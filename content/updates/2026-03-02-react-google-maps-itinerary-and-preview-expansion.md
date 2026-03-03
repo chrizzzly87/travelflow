@@ -1,13 +1,13 @@
 ---
 id: rel-2026-03-02-react-google-maps-itinerary-and-preview-expansion
-version: v0.78.0
-title: "React Google Maps itinerary migration and trip preview expansion"
-date: 2026-03-02
-published_at: 2026-03-02T13:30:00Z
-status: draft
+version: v0.82.0
+title: "Map experience polish: smarter labels, clearer routes, better dark-mode readability"
+date: 2026-03-03
+published_at: 2026-03-03T07:15:56Z
+status: published
 notify_in_app: true
 in_app_hours: 24
-summary: "Trip planner map rendering is now more stable, with clearer markers and expanded custom trip preview coverage across key surfaces."
+summary: "Trip maps now feel sharper and easier to read, with smarter city label placement, clearer route layering, and polished dark-mode legibility across planning surfaces."
 ---
 
 ## Changes

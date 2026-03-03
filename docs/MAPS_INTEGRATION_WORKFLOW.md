@@ -29,6 +29,19 @@ Use this guide whenever you add or change maps in planner, profile/admin cards, 
 3. If we adopt `AdvancedMarkerElement`, do it in a dedicated migration with map-id readiness and regression coverage.
 4. Marker deprecation warnings are runtime API warnings and are not caused by old trip data in DB records.
 
+## Label overlay policy
+1. Keep map text labels city-only (`getMapLabelCityName(...)`), not city+country strings.
+2. Use `resolveCityLabelAnchor(...)` to pick `right/left/below/above` label anchors from adjacent leg geometry; avoid hardcoding one side.
+3. Mount text overlays on high panes (`floatPane` fallback chain) so labels render above route polylines.
+4. For `cleanDark`, keep city labels high-contrast (white text + dark shadow) and START/END accents lighter (`--tf-accent-200` fallback).
+5. Keep `clean` label shadow/color behavior unchanged from legacy styling unless an issue explicitly asks for a visual redesign.
+
+## Route styling policy
+1. Keep dark route layering with a cutout approach: inner gap + softened outer edge.
+2. For dark styles, use route-colored outer edge with reduced opacity (currently `0.5`) for realistic routes.
+3. Do not apply the outer edge to dashed fallback routes; keep dashed legs visually distinct from realistic road-like routes.
+4. Tune non-dark cutout tones to the basemap background (`standard`/`clean`/`minimal`) instead of using one shared dark gap tone.
+
 ## Trip data compatibility
 1. Legacy trip entries must be normalized on load (transport aliases -> canonical mode, travel item/type alignment).
 2. Normalization should happen at route/app load boundaries, not via one-off DB migrations.
