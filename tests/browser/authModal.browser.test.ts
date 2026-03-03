@@ -191,7 +191,7 @@ describe('components/auth/AuthModal', () => {
     expect(mocks.auth.registerWithPassword).not.toHaveBeenCalled();
     expect(screen.getByText('errors.terms_required')).toBeInTheDocument();
 
-    await user.click(screen.getByRole('checkbox', { name: 'labels.acceptTermsAndPrivacy' }));
+    await user.click(screen.getByRole('checkbox'));
     await user.click(screen.getByRole('button', { name: 'actions.submitRegister' }));
 
     await waitFor(() => {
@@ -211,7 +211,7 @@ describe('components/auth/AuthModal', () => {
     await user.click(screen.getByRole('button', { name: 'tabs.register' }));
     await user.type(screen.getByLabelText('labels.email'), 'accepted@example.com');
     await user.type(screen.getByLabelText('labels.password'), 'password123');
-    await user.click(screen.getByRole('checkbox', { name: 'labels.acceptTermsAndPrivacy' }));
+    await user.click(screen.getByRole('checkbox'));
     await user.click(screen.getByRole('button', { name: 'actions.submitRegister' }));
 
     await waitFor(() => {
