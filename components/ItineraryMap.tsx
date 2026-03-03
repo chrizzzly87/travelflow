@@ -554,6 +554,62 @@ export const getMapLabelCityName = (value?: string): string => {
     return firstSegment || raw;
 };
 
+export type CityLabelAnchor = 'right' | 'left' | 'below' | 'above';
+
+const CITY_LABEL_ANCHOR_OFFSETS: Record<CityLabelAnchor, { x: number; y: number }> = {
+    right: { x: 22, y: 0 },
+    left: { x: -22, y: 0 },
+    below: { x: 0, y: 18 },
+    above: { x: 0, y: -18 },
+};
+
+export const resolveCityLabelAnchor = (
+    city: google.maps.LatLngLiteral,
+    previous?: google.maps.LatLngLiteral | null,
+    next?: google.maps.LatLngLiteral | null,
+): CityLabelAnchor => {
+    const metersPerDegreeLat = 111_320;
+    const metersPerDegreeLng = metersPerDegreeLat * Math.max(0.01, Math.cos((city.lat * Math.PI) / 180));
+    const segmentVectors: Array<{ x: number; y: number }> = [];
+
+    const pushVector = (point?: google.maps.LatLngLiteral | null) => {
+        if (!point) return;
+        const vector = {
+            x: (point.lng - city.lng) * metersPerDegreeLng,
+            y: (point.lat - city.lat) * metersPerDegreeLat,
+        };
+        if (Math.hypot(vector.x, vector.y) < 5) return;
+        segmentVectors.push(vector);
+    };
+
+    pushVector(previous);
+    pushVector(next);
+    if (segmentVectors.length === 0) return 'right';
+
+    const anchors: CityLabelAnchor[] = ['right', 'left', 'below', 'above'];
+    let bestAnchor: CityLabelAnchor = 'right';
+    let bestScore = Number.NEGATIVE_INFINITY;
+
+    anchors.forEach((anchor) => {
+        const candidate = CITY_LABEL_ANCHOR_OFFSETS[anchor];
+        let minDistance = Number.POSITIVE_INFINITY;
+
+        segmentVectors.forEach((vector) => {
+            const length = Math.hypot(vector.x, vector.y);
+            if (length <= 0) return;
+            const perpendicularDistance = Math.abs((vector.x * candidate.y) - (vector.y * candidate.x)) / length;
+            minDistance = Math.min(minDistance, perpendicularDistance);
+        });
+
+        if (minDistance > bestScore) {
+            bestScore = minDistance;
+            bestAnchor = anchor;
+        }
+    });
+
+    return bestAnchor;
+};
+
 export const buildRouteAttemptPolicy = (
     mode: string,
     straightDistanceKm: number,
@@ -1241,14 +1297,31 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             const cleanDarkLabelSubTextColor = resolveCssColorVar('--tf-accent-200', '#c7d2fe');
             const cleanDarkLabelTextShadow = '0 1px 2px rgba(11,18,32,0.88)';
 
-            const createCityLabelOverlay = (position: google.maps.LatLngLiteral, name: string, subLabel?: string) => {
+            const createCityLabelOverlay = (
+                position: google.maps.LatLngLiteral,
+                name: string,
+                subLabel?: string,
+                anchor: CityLabelAnchor = 'right',
+            ) => {
                 const overlay = new window.google.maps.OverlayView();
                 (overlay as any).div = null;
 
                 overlay.onAdd = function () {
                     const div = document.createElement('div');
                     div.style.position = 'absolute';
-                    div.style.transform = 'translate(12px, -50%)';
+                    if (anchor === 'left') {
+                        div.style.transform = 'translate(calc(-100% - 12px), -50%)';
+                        div.style.textAlign = 'right';
+                    } else if (anchor === 'below') {
+                        div.style.transform = 'translate(-50%, 12px)';
+                        div.style.textAlign = 'center';
+                    } else if (anchor === 'above') {
+                        div.style.transform = 'translate(-50%, calc(-100% - 12px))';
+                        div.style.textAlign = 'center';
+                    } else {
+                        div.style.transform = 'translate(12px, -50%)';
+                        div.style.textAlign = 'left';
+                    }
                     div.style.pointerEvents = 'none';
                     div.style.display = 'flex';
                     div.style.flexDirection = 'column';
@@ -1305,18 +1378,31 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             };
 
             const shownRoundTripLabel = new Set<string>();
+            const findNeighborCoordinates = (fromIndex: number, direction: -1 | 1): google.maps.LatLngLiteral | null => {
+                let cursor = fromIndex + direction;
+                while (cursor >= 0 && cursor < cities.length) {
+                    const candidate = cities[cursor]?.coordinates;
+                    if (candidate) return candidate;
+                    cursor += direction;
+                }
+                return null;
+            };
 
-            cities.forEach((city) => {
+            cities.forEach((city, cityIndex) => {
                 if (!city.coordinates) return;
                 const cityKey = getNormalizedCityName(city.title);
                 const labelName = getMapLabelCityName(city.title || city.location) || city.title || city.location || '';
+                const previousCoordinates = findNeighborCoordinates(cityIndex, -1);
+                const nextCoordinates = findNeighborCoordinates(cityIndex, 1);
+                const labelAnchor = resolveCityLabelAnchor(city.coordinates, previousCoordinates, nextCoordinates);
                 if (isRoundTrip && cityKey && cityKey === startCityKey) {
                     if (shownRoundTripLabel.has(cityKey)) return;
                     shownRoundTripLabel.add(cityKey);
                     const overlay = createCityLabelOverlay(
                         { lat: city.coordinates.lat, lng: city.coordinates.lng },
                         labelName,
-                        'START • END'
+                        'START • END',
+                        labelAnchor,
                     );
                     cityLabelOverlaysRef.current.push(overlay);
                     return;
@@ -1330,13 +1416,16 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                     const overlay = createCityLabelOverlay(
                         { lat: city.coordinates.lat, lng: city.coordinates.lng },
                         labelName,
-                        subLabel
+                        subLabel,
+                        labelAnchor,
                     );
                     cityLabelOverlaysRef.current.push(overlay);
                 } else {
                     const overlay = createCityLabelOverlay(
                         { lat: city.coordinates.lat, lng: city.coordinates.lng },
-                        labelName
+                        labelName,
+                        undefined,
+                        labelAnchor,
                     );
                     cityLabelOverlaysRef.current.push(overlay);
                 }

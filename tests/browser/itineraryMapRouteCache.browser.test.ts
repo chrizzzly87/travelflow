@@ -23,6 +23,7 @@ import {
   getRouteOuterOutlineColor,
   getRouteOutlineColor,
   getMapLabelCityName,
+  resolveCityLabelAnchor,
   isRoutePathLikelyStraight,
   isMapViewportReady,
   offsetLatLngByMeters,
@@ -94,6 +95,18 @@ describe('components/ItineraryMap route cache helpers', () => {
     expect(getMapLabelCityName('Bangkok, Thailand')).toBe('Bangkok');
     expect(getMapLabelCityName('Hoi An')).toBe('Hoi An');
     expect(getMapLabelCityName('')).toBe('');
+  });
+
+  it('chooses label anchors that reduce overlap with adjacent route segments', () => {
+    const city = { lat: 13.75, lng: 100.5 };
+    const west = { lat: 13.75, lng: 100.2 };
+    const east = { lat: 13.75, lng: 100.8 };
+    const north = { lat: 14.05, lng: 100.5 };
+    const south = { lat: 13.45, lng: 100.5 };
+
+    expect(resolveCityLabelAnchor(city, west, east)).toBe('below');
+    expect(resolveCityLabelAnchor(city, south, north)).toBe('right');
+    expect(resolveCityLabelAnchor(city, null, null)).toBe('right');
   });
 
   it('uses dual-contrast outline colors', () => {
