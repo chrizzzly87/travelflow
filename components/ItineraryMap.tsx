@@ -1220,7 +1220,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             const isRoundTrip = !!(startCityKey && endCityKey && startCityKey === endCityKey);
             const isCleanDarkLabelStyle = activeStyle === 'cleanDark';
             const labelTextColor = isCleanDarkLabelStyle ? '#f8fafc' : '#111827';
-            const labelSubTextColor = isCleanDarkLabelStyle ? '#f8fafc' : 'var(--tf-primary)';
+            const labelSubTextColor = 'var(--tf-primary)';
             const labelTextShadow = isCleanDarkLabelStyle
                 ? '0 1px 2px rgba(11,18,32,0.88)'
                 : '0 1px 2px rgba(255,255,255,0.8)';
@@ -1238,6 +1238,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                     div.style.flexDirection = 'column';
                     div.style.gap = '1px';
                     div.style.whiteSpace = 'nowrap';
+                    div.style.zIndex = '120';
 
                     const nameEl = document.createElement('div');
                     nameEl.textContent = name;
@@ -1262,7 +1263,8 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
 
                     (overlay as any).div = div;
                     const panes = this.getPanes();
-                    panes.overlayLayer.appendChild(div);
+                    const labelPane = panes.floatPane ?? panes.overlayMouseTarget ?? panes.overlayLayer;
+                    labelPane.appendChild(div);
                 };
 
                 overlay.draw = function () {
