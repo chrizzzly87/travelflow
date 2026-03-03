@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState, useMemo, useRef } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useState, useMemo, useRef } from 'react';
 import { Map as GoogleMap, useMap } from '@vis.gl/react-google-maps';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { ActivityType, ITimelineItem, MapColorMode, MapStyle, RouteFailureReason, RouteMode, RouteStatus } from '../types';
@@ -710,6 +710,26 @@ export const resolveSelectedMapFocusPosition = ({
     return null;
 };
 
+export const shouldSkipRouteFitForSelection = ({
+    respectSelection,
+    selectionVersionAtSchedule,
+    currentSelectionVersion,
+    selectedItemId,
+    selectedActivityId,
+    selectedCityId,
+}: {
+    respectSelection: boolean;
+    selectionVersionAtSchedule: number;
+    currentSelectionVersion: number;
+    selectedItemId?: string | null;
+    selectedActivityId?: string | null;
+    selectedCityId?: string | null;
+}): boolean => {
+    if (!respectSelection) return false;
+    if (selectionVersionAtSchedule !== currentSelectionVersion) return true;
+    return Boolean(selectedItemId || selectedActivityId || selectedCityId);
+};
+
 export const shouldDisplayActivityMarkers = ({
     isEnabled,
     zoom,
@@ -1049,8 +1069,17 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         () => (selectedItemId && items.some(item => item.id === selectedItemId && item.type === 'activity') ? selectedItemId : null),
         [items, selectedItemId]
     );
+    const selectedItemIdRef = useRef<string | null>(selectedItemId ?? null);
     const selectedActivityIdRef = useRef<string | null>(selectedActivityId);
     const selectedCityIdRef = useRef<string | null>(selectedCityId);
+    const selectionVersionRef = useRef(0);
+    const normalizedSelectedItemId = selectedItemId ?? null;
+    if (selectedItemIdRef.current !== normalizedSelectedItemId) {
+        selectedItemIdRef.current = normalizedSelectedItemId;
+        selectionVersionRef.current += 1;
+    }
+    selectedActivityIdRef.current = selectedActivityId;
+    selectedCityIdRef.current = selectedCityId;
     const resolvedActivityMarkerPositionById = useMemo(() => {
         const markerPositions = new Map<string, google.maps.LatLngLiteral>();
         resolveActivityMarkerPositions(items).forEach((marker) => {
@@ -1097,6 +1126,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     const scheduleFitWhenViewportReady = useCallback((maxAttempts = 14, options?: { respectSelection?: boolean }) => {
         if (!googleMapRef.current || cities.length === 0 || typeof window === 'undefined') return;
         const respectSelection = options?.respectSelection ?? false;
+        const selectionVersionAtSchedule = selectionVersionRef.current;
         cancelScheduledFit();
 
         let attemptCount = 0;
@@ -1114,7 +1144,14 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             if (window.google?.maps?.event?.trigger) {
                 window.google.maps.event.trigger(googleMapRef.current, 'resize');
             }
-            if (respectSelection && (selectedActivityIdRef.current || selectedCityIdRef.current)) {
+            if (shouldSkipRouteFitForSelection({
+                respectSelection,
+                selectionVersionAtSchedule,
+                currentSelectionVersion: selectionVersionRef.current,
+                selectedItemId: selectedItemIdRef.current,
+                selectedActivityId: selectedActivityIdRef.current,
+                selectedCityId: selectedCityIdRef.current,
+            })) {
                 return;
             }
             runFitBounds();
@@ -1150,14 +1187,6 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     useEffect(() => {
         mapZoomLevelRef.current = mapZoomLevel;
     }, [mapZoomLevel]);
-
-    useEffect(() => {
-        selectedActivityIdRef.current = selectedActivityId;
-    }, [selectedActivityId]);
-
-    useEffect(() => {
-        selectedCityIdRef.current = selectedCityId;
-    }, [selectedCityId]);
 
     useEffect(() => {
         if (!fitToRouteKey) {
@@ -2222,11 +2251,11 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     }, [activityMarkersEnabled, mapInitialized, mapZoomLevel]);
 
     // Pan to selected
-    useEffect(() => {
-        if (!selectedActivityId && !selectedCityId) return;
+    useLayoutEffect(() => {
+        if (!selectedItemIdRef.current) return;
         cancelResizeAutoFitTimer();
         cancelScheduledFit();
-    }, [cancelResizeAutoFitTimer, cancelScheduledFit, selectedActivityId, selectedCityId]);
+    }, [cancelResizeAutoFitTimer, cancelScheduledFit, selectedItemId]);
 
     useEffect(() => {
         if (!googleMapRef.current || !window.google?.maps) return;

@@ -30,6 +30,7 @@ import {
   isRoutePathLikelyStraight,
   isMapViewportReady,
   offsetLatLngByMeters,
+  shouldSkipRouteFitForSelection,
   shouldDisplayActivityMarkers,
 } from '../../components/ItineraryMap';
 
@@ -408,6 +409,48 @@ describe('components/ItineraryMap route cache helpers', () => {
       position: { lat: 50.11, lng: 8.67 },
       zoom: 13,
     });
+  });
+
+  it('skips a scheduled route-fit when selection changes before fit runs', () => {
+    expect(shouldSkipRouteFitForSelection({
+      respectSelection: true,
+      selectionVersionAtSchedule: 2,
+      currentSelectionVersion: 3,
+      selectedItemId: null,
+      selectedActivityId: null,
+      selectedCityId: null,
+    })).toBe(true);
+  });
+
+  it('skips route-fit while any map selection is active', () => {
+    expect(shouldSkipRouteFitForSelection({
+      respectSelection: true,
+      selectionVersionAtSchedule: 7,
+      currentSelectionVersion: 7,
+      selectedItemId: 'activity-1',
+      selectedActivityId: 'activity-1',
+      selectedCityId: null,
+    })).toBe(true);
+  });
+
+  it('allows route-fit when selection guard is disabled and no selection exists', () => {
+    expect(shouldSkipRouteFitForSelection({
+      respectSelection: false,
+      selectionVersionAtSchedule: 4,
+      currentSelectionVersion: 9,
+      selectedItemId: null,
+      selectedActivityId: null,
+      selectedCityId: null,
+    })).toBe(false);
+
+    expect(shouldSkipRouteFitForSelection({
+      respectSelection: true,
+      selectionVersionAtSchedule: 4,
+      currentSelectionVersion: 4,
+      selectedItemId: null,
+      selectedActivityId: null,
+      selectedCityId: null,
+    })).toBe(false);
   });
 
   it('shows activity markers only when toggle is enabled and zoom is high enough', () => {
