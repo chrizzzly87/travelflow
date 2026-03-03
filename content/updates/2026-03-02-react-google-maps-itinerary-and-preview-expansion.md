@@ -26,6 +26,7 @@ summary: "Trip planner map rendering is now more stable, with clearer markers an
 - [ ] [Internal] 🚉 Transit retries now stay in transit mode with a broader second pass instead of silently substituting driving routes.
 - [ ] [Internal] 🧰 Added an explicit field mask for Routes API calls and fallback to legacy directions when Routes requests fail.
 - [ ] [Internal] 🧯 Added a field-mask compatibility retry and lazy Directions fallback initialization to reduce routing warning noise.
+- [ ] [Internal] 🧵 Added an async draw-session guard so stale route responses cannot re-attach old transport overlays after mode changes.
 - [ ] [Internal] 🧹 Normalized legacy transport values when loading saved trips so reopened plans use canonical travel modes.
 - [ ] [Internal] 🧷 Ignored no-op transport reselection updates to reduce redundant route refreshes and history churn.
 - [ ] [Internal] 🧭 Replaced deprecated map marker constructors with OverlayView-based markers to remove legacy marker API warnings.

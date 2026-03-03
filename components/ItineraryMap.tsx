@@ -509,6 +509,29 @@ export const buildPersistedRouteCachePayload = (
     return payload;
 };
 
+export type MapDrawSessionGuard = {
+    isActive: () => boolean;
+    dispose: () => void;
+};
+
+export const beginMapDrawSession = (
+    tokenRef: { current: number },
+): MapDrawSessionGuard => {
+    const sessionToken = tokenRef.current + 1;
+    tokenRef.current = sessionToken;
+    let disposed = false;
+
+    return {
+        isActive: () => !disposed && tokenRef.current === sessionToken,
+        dispose: () => {
+            disposed = true;
+            if (tokenRef.current === sessionToken) {
+                tokenRef.current += 1;
+            }
+        },
+    };
+};
+
 const hydrateRouteCache = () => {
     if (routeCacheHydrated) return;
     if (typeof window === 'undefined') return;
@@ -599,6 +622,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     const onRouteMetricsRef = useRef<typeof onRouteMetrics>(onRouteMetrics);
     const onRouteStatusRef = useRef<typeof onRouteStatus>(onRouteStatus);
     const onCityMarkerSelectRef = useRef<typeof onCityMarkerSelect>(onCityMarkerSelect);
+    const mapDrawSessionTokenRef = useRef(0);
     
     const { isLoaded, loadError } = useGoogleMaps();
     const [mapInitialized, setMapInitialized] = useState(false);
@@ -733,8 +757,8 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         cityLabelOverlaysRef.current.forEach(o => o.setMap(null));
         cityLabelOverlaysRef.current = [];
         cityMarkerMetaRef.current = [];
-        let isEffectDisposed = false;
-        const isEffectActive = () => !isEffectDisposed;
+        const drawSessionGuard = beginMapDrawSession(mapDrawSessionTokenRef);
+        const isEffectActive = drawSessionGuard.isActive;
 
         const createOverlayMarker = ({
             position,
@@ -762,6 +786,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             };
 
             overlay.onAdd = function onAdd() {
+                if (!isEffectActive()) return;
                 markerDiv = document.createElement('div');
                 markerDiv.style.position = 'absolute';
                 markerDiv.style.transform = centerAnchor ? 'translate(-50%, -50%)' : 'translate(-50%, -100%)';
@@ -778,6 +803,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             };
 
             overlay.draw = function draw() {
+                if (!isEffectActive()) return;
                 if (!markerDiv) return;
                 const projection = this.getProjection();
                 if (!projection) return;
@@ -796,11 +822,14 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 markerDiv = null;
             };
 
-            overlay.setMap(googleMapRef.current);
+            if (isEffectActive()) {
+                overlay.setMap(googleMapRef.current);
+            }
 
             return {
                 setMap: (map: google.maps.Map | null) => overlay.setMap(map),
                 update: (updates: OverlayMarkerUpdate) => {
+                    if (!isEffectActive()) return;
                     if (updates.position) {
                         currentPosition = updates.position;
                     }
@@ -964,6 +993,10 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                     ...outerOutlineOptions,
                     map: googleMapRef.current,
                 });
+                if (!isEffectActive()) {
+                    outerOutline.setMap(null);
+                    return null;
+                }
                 routesRef.current.push(outerOutline);
             }
             if (shouldRenderInnerOutline) {
@@ -971,12 +1004,23 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                     ...outlineOptions,
                     map: googleMapRef.current,
                 });
+                if (!isEffectActive()) {
+                    outerOutline?.setMap(null);
+                    outline.setMap(null);
+                    return null;
+                }
                 routesRef.current.push(outline);
             }
             const main = new window.google.maps.Polyline({
                 ...mainOptions,
                 map: googleMapRef.current,
             });
+            if (!isEffectActive()) {
+                outerOutline?.setMap(null);
+                outline?.setMap(null);
+                main.setMap(null);
+                return null;
+            }
             routesRef.current.push(main);
             return { outerOutline, outline, main };
         };
@@ -1070,6 +1114,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 (overlay as any).div = null;
 
                 overlay.onAdd = function () {
+                    if (!isEffectActive()) return;
                     const div = document.createElement('div');
                     div.style.position = 'absolute';
                     div.style.transform = 'translate(12px, -50%)';
@@ -1106,6 +1151,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 };
 
                 overlay.draw = function () {
+                    if (!isEffectActive()) return;
                     const projection = this.getProjection();
                     if (!projection || !(overlay as any).div) return;
                     const point = projection.fromLatLngToDivPixel(new window.google.maps.LatLng(position.lat, position.lng));
@@ -1122,6 +1168,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                     }
                 };
 
+                if (!isEffectActive()) return overlay;
                 overlay.setMap(googleMapRef.current);
                 return overlay;
             };
@@ -1528,7 +1575,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             void drawRoutes();
         }
         return () => {
-            isEffectDisposed = true;
+            drawSessionGuard.dispose();
         };
 
     }, [mapInitialized, mapRenderSignature, routeMode, showCityNames, isPaywalled, activeStyle]); 
