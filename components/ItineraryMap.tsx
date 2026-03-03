@@ -518,23 +518,57 @@ export const resolveMarkerRenderTier = ({
     return 'default';
 };
 
+export const resolveZoomEnhancedCityMarkerProfile = ({
+    baseProfile,
+    markerTier,
+    zoom,
+}: {
+    baseProfile: CityMarkerRenderProfile;
+    markerTier: MarkerRenderTier;
+    zoom: number | null;
+}): CityMarkerRenderProfile => {
+    if (markerTier !== 'default') return baseProfile;
+    if (!Number.isFinite(zoom)) return baseProfile;
+    const effectiveZoom = Number(zoom);
+    if (effectiveZoom < 10) return baseProfile;
+
+    const scale = effectiveZoom >= 13
+        ? 1.2
+        : effectiveZoom >= 12
+            ? 1.14
+            : effectiveZoom >= 11
+                ? 1.1
+                : 1.06;
+
+    return {
+        ...baseProfile,
+        size: Math.round(baseProfile.size * scale),
+        selectedSize: Math.round(baseProfile.selectedSize * scale),
+        fontSize: Math.min(baseProfile.fontSize + 1, 15),
+        selectedFontSize: Math.min(baseProfile.selectedFontSize + 1, 16),
+    };
+};
+
 export const resolveCrowdedCityMarkerProfile = ({
     baseProfile,
     markerTier,
+    zoom,
     nearestMarkerGapPx,
 }: {
     baseProfile: CityMarkerRenderProfile;
     markerTier: MarkerRenderTier;
+    zoom: number | null;
     nearestMarkerGapPx: number;
 }): CityMarkerRenderProfile => {
     if (markerTier === 'micro') return baseProfile;
     if (!Number.isFinite(nearestMarkerGapPx)) return baseProfile;
+    if (Number.isFinite(zoom) && Number(zoom) >= 10) return baseProfile;
 
-    const veryCrowded = nearestMarkerGapPx < 12;
-    const crowded = nearestMarkerGapPx < 16;
+    const veryCrowded = nearestMarkerGapPx < 10;
+    const crowded = nearestMarkerGapPx < 13;
     if (!crowded) return baseProfile;
 
-    const scale = veryCrowded ? 0.75 : 0.85;
+    const scale = veryCrowded ? 0.8 : 0.9;
     const compactSize = Math.max(17, Math.round(baseProfile.size * scale));
     const compactSelectedSize = Math.max(compactSize + 2, Math.round(baseProfile.selectedSize * scale));
     const compactFontSize = Math.max(8, baseProfile.fontSize - 1);
@@ -1380,7 +1414,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     
     const { isLoaded, loadError } = useGoogleMaps();
     const [mapInitialized, setMapInitialized] = useState(false);
-    const [activityMarkersEnabled, setActivityMarkersEnabled] = useState(true);
+    const [activityMarkersEnabled, setActivityMarkersEnabled] = useState(false);
     const [mapZoomLevel, setMapZoomLevel] = useState<number | null>(null);
     const [mapViewportSize, setMapViewportSize] = useState<{ width: number; height: number } | null>(null);
     const mapActionsDisabled = !mapInitialized || Boolean(loadError);
@@ -1460,13 +1494,22 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         }),
         [mapDockMode, markerRenderTier],
     );
-    const crowdedCityProfile = useMemo(
-        () => resolveCrowdedCityMarkerProfile({
+    const zoomEnhancedCityProfile = useMemo(
+        () => resolveZoomEnhancedCityMarkerProfile({
             baseProfile: markerRenderProfile.city,
             markerTier: markerRenderTier,
+            zoom: mapZoomLevel,
+        }),
+        [mapZoomLevel, markerRenderProfile.city, markerRenderTier],
+    );
+    const crowdedCityProfile = useMemo(
+        () => resolveCrowdedCityMarkerProfile({
+            baseProfile: zoomEnhancedCityProfile,
+            markerTier: markerRenderTier,
+            zoom: mapZoomLevel,
             nearestMarkerGapPx,
         }),
-        [markerRenderProfile.city, markerRenderTier, nearestMarkerGapPx],
+        [zoomEnhancedCityProfile, markerRenderTier, mapZoomLevel, nearestMarkerGapPx],
     );
     const effectiveMarkerRenderProfile = useMemo(() => {
         if (crowdedCityProfile === markerRenderProfile.city) return markerRenderProfile;

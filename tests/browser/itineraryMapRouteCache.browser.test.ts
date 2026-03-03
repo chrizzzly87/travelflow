@@ -28,6 +28,7 @@ import {
   estimateNearestMarkerGapPx,
   resolveMarkerRenderProfile,
   resolveMarkerRenderTier,
+  resolveZoomEnhancedCityMarkerProfile,
   resolveCrowdedCityMarkerProfile,
   resolveActivityMarkerPositions,
   resolveSelectedMapFocusPosition,
@@ -337,18 +338,46 @@ describe('components/ItineraryMap route cache helpers', () => {
     const crowdedProfile = resolveCrowdedCityMarkerProfile({
       baseProfile,
       markerTier: 'default',
-      nearestMarkerGapPx: 15,
+      zoom: 8,
+      nearestMarkerGapPx: 12,
     });
     const veryCrowdedProfile = resolveCrowdedCityMarkerProfile({
       baseProfile,
       markerTier: 'default',
-      nearestMarkerGapPx: 10,
+      zoom: 8,
+      nearestMarkerGapPx: 9,
+    });
+    const highZoomProfile = resolveCrowdedCityMarkerProfile({
+      baseProfile,
+      markerTier: 'default',
+      zoom: 11,
+      nearestMarkerGapPx: 9,
     });
 
     expect(crowdedProfile.size).toBeLessThan(baseProfile.size);
     expect(crowdedProfile.shape).toBe('circle');
     expect(veryCrowdedProfile.showInnerDot).toBe(false);
     expect(veryCrowdedProfile.numberColor).toBe('#ffffff');
+    expect(highZoomProfile).toEqual(baseProfile);
+  });
+
+  it('boosts default city marker size on high zoom without affecting compact tiers', () => {
+    const defaultCityProfile = resolveMarkerRenderProfile({ mapDockMode: 'floating', markerTier: 'default' }).city;
+    const compactCityProfile = resolveMarkerRenderProfile({ mapDockMode: 'floating', markerTier: 'compact' }).city;
+    const zoomBoostedDefaultProfile = resolveZoomEnhancedCityMarkerProfile({
+      baseProfile: defaultCityProfile,
+      markerTier: 'default',
+      zoom: 12,
+    });
+    const compactUnchangedProfile = resolveZoomEnhancedCityMarkerProfile({
+      baseProfile: compactCityProfile,
+      markerTier: 'compact',
+      zoom: 12,
+    });
+
+    expect(zoomBoostedDefaultProfile.size).toBeGreaterThan(defaultCityProfile.size);
+    expect(zoomBoostedDefaultProfile.selectedSize).toBeGreaterThan(defaultCityProfile.selectedSize);
+    expect(compactUnchangedProfile).toEqual(compactCityProfile);
   });
 
   it('flags low-fidelity transit paths as straight-like', () => {
