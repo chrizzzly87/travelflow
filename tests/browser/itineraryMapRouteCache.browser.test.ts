@@ -10,14 +10,21 @@ import {
   TRANSIT_SECOND_PASS_MAX_KM,
   buildOverlappingMarkerPosition,
   buildRouteAttemptPolicy,
+  classifyRouteComputationError,
+  mapRouteAttemptPolicyReasonToFailureReason,
+  computeMaxPathDeviationMeters,
   ROUTE_FAILURE_TTL_MS,
   ROUTE_PERSIST_TTL_MS,
+  shouldLogRouteFailureWarning,
   buildRoutePolylinePairOptions,
   buildPersistedRouteCachePayload,
   estimateGreatCircleDistanceKm,
   filterHydratedRouteCacheEntries,
   getRouteOuterOutlineColor,
   getRouteOutlineColor,
+  getMapLabelCityName,
+  resolveCityLabelAnchor,
+  isRoutePathLikelyStraight,
   isMapViewportReady,
   offsetLatLngByMeters,
 } from '../../components/ItineraryMap';
@@ -38,25 +45,76 @@ describe('components/ItineraryMap route cache helpers', () => {
 
   it('serializes route cache payload with ttl-aware filtering', () => {
     const now = Date.now();
-    const routeCache = new Map<string, { status: 'ok' | 'failed'; updatedAt: number; path?: Array<{ lat: number; lng: number }> }>();
+    const routeCache = new Map<string, {
+      status: 'ok' | 'failed';
+      updatedAt: number;
+      path?: Array<{ lat: number; lng: number }>;
+      reason?: string;
+    }>();
     routeCache.set('freshOk', { status: 'ok', updatedAt: now - 2000, path: [{ lat: 1, lng: 2 }] });
     routeCache.set('staleOk', { status: 'ok', updatedAt: now - ROUTE_PERSIST_TTL_MS - 1, path: [{ lat: 2, lng: 3 }] });
-    routeCache.set('freshFailed', { status: 'failed', updatedAt: now - 1000, path: [{ lat: 3, lng: 4 }] });
+    routeCache.set('freshFailed', {
+      status: 'failed',
+      updatedAt: now - 1000,
+      path: [{ lat: 3, lng: 4 }],
+      reason: 'zero_results',
+    });
     routeCache.set('staleFailed', { status: 'failed', updatedAt: now - ROUTE_FAILURE_TTL_MS - 1 });
 
     const payload = buildPersistedRouteCachePayload(routeCache, now);
 
     expect(payload).toEqual({
       freshOk: { status: 'ok', updatedAt: now - 2000, path: [{ lat: 1, lng: 2 }] },
-      freshFailed: { status: 'failed', updatedAt: now - 1000 },
+      freshFailed: { status: 'failed', updatedAt: now - 1000, reason: 'zero_results' },
     });
   });
 
+  it('maps route-attempt policy reasons to route failure reasons', () => {
+    expect(mapRouteAttemptPolicyReasonToFailureReason('unsupported_mode')).toBe('unsupported_mode');
+    expect(mapRouteAttemptPolicyReasonToFailureReason('distance_cap_exceeded')).toBe('distance_cap_exceeded');
+    expect(mapRouteAttemptPolicyReasonToFailureReason('invalid_distance')).toBe('invalid_distance');
+    expect(mapRouteAttemptPolicyReasonToFailureReason(undefined)).toBe('request_error');
+  });
+
+  it('classifies route computation errors into stable failure reasons', () => {
+    expect(classifyRouteComputationError('MapsRequestError: ZERO_RESULTS')).toBe('zero_results');
+    expect(classifyRouteComputationError(new Error('No route path returned'))).toBe('no_route_path');
+    expect(classifyRouteComputationError(new Error('Route path is straight'))).toBe('straight_path');
+    expect(classifyRouteComputationError(new Error('Routes API unavailable'))).toBe('api_unavailable');
+    expect(classifyRouteComputationError(new Error('Something else'))).toBe('request_error');
+  });
+
+  it('deduplicates repeated route failure warnings per leg/mode/reason for a short window', () => {
+    const params = { routeKey: 'leg-a', mode: 'train', reason: 'zero_results' as const };
+    expect(shouldLogRouteFailureWarning({ ...params, nowMs: 1_000 })).toBe(true);
+    expect(shouldLogRouteFailureWarning({ ...params, nowMs: 61_000 })).toBe(false);
+    expect(shouldLogRouteFailureWarning({ ...params, nowMs: 121_000 })).toBe(true);
+  });
+
+  it('uses city-only names for map labels when titles include country segments', () => {
+    expect(getMapLabelCityName('Bangkok, Thailand')).toBe('Bangkok');
+    expect(getMapLabelCityName('Hoi An')).toBe('Hoi An');
+    expect(getMapLabelCityName('')).toBe('');
+  });
+
+  it('chooses label anchors that reduce overlap with adjacent route segments', () => {
+    const city = { lat: 13.75, lng: 100.5 };
+    const west = { lat: 13.75, lng: 100.2 };
+    const east = { lat: 13.75, lng: 100.8 };
+    const north = { lat: 14.05, lng: 100.5 };
+    const south = { lat: 13.45, lng: 100.5 };
+
+    expect(resolveCityLabelAnchor(city, west, east)).toBe('below');
+    expect(resolveCityLabelAnchor(city, south, north)).toBe('right');
+    expect(resolveCityLabelAnchor(city, null, null)).toBe('right');
+  });
+
   it('uses dual-contrast outline colors', () => {
-    expect(getRouteOutlineColor('standard')).toBe('#0f172a');
-    expect(getRouteOutlineColor('minimal')).toBe('#0f172a');
-    expect(getRouteOutlineColor('clean')).toBe('#0f172a');
-    expect(getRouteOutlineColor('dark')).toBe('#0f172a');
+    expect(getRouteOutlineColor('standard')).toBe('#eef2f7');
+    expect(getRouteOutlineColor('minimal')).toBe('#f5f5f5');
+    expect(getRouteOutlineColor('clean')).toBe('#ffffff');
+    expect(getRouteOutlineColor('dark')).toBe('#1b2230');
+    expect(getRouteOutlineColor('cleanDark')).toBe('#1b2230');
     expect(getRouteOutlineColor('satellite')).toBe('#0f172a');
     expect(getRouteOuterOutlineColor('standard')).toBe('#f8fafc');
     expect(getRouteOuterOutlineColor('satellite')).toBe('#f8fafc');
@@ -84,7 +142,7 @@ describe('components/ItineraryMap route cache helpers', () => {
     expect(outerOutlineOptions.zIndex).toBe(38);
   });
 
-  it('renders a visible outer white route outline for dark style', () => {
+  it('uses route-colored outer outlines for dark styles', () => {
     const { outerOutlineOptions, outlineOptions, mainOptions } = buildRoutePolylinePairOptions({
       geodesic: true,
       strokeColor: '#2563eb',
@@ -95,11 +153,12 @@ describe('components/ItineraryMap route cache helpers', () => {
     } as any, 'dark');
 
     expect(mainOptions.strokeWeight).toBe(4);
-    expect(outlineOptions.strokeWeight).toBe(5);
-    expect(outerOutlineOptions.strokeWeight).toBe(6);
-    expect(outlineOptions.strokeOpacity).toBe(0);
-    expect(outerOutlineOptions.strokeOpacity).toBe(0.95);
-    expect(outerOutlineOptions.strokeColor).toBe('#f8fafc');
+    expect(outlineOptions.strokeWeight).toBe(7);
+    expect(outerOutlineOptions.strokeWeight).toBe(9);
+    expect(outlineOptions.strokeOpacity).toBe(1);
+    expect(outerOutlineOptions.strokeOpacity).toBe(0.5);
+    expect(outlineOptions.strokeColor).toBe('#1b2230');
+    expect(outerOutlineOptions.strokeColor).toBe('#2563eb');
     expect(outlineOptions.icons).toBeUndefined();
     expect(outerOutlineOptions.icons).toBeUndefined();
     expect(mainOptions.zIndex).toBe(40);
@@ -132,11 +191,36 @@ describe('components/ItineraryMap route cache helpers', () => {
     expect(outerOutlineOptions.strokeColor).toBe('#f8fafc');
     expect(outerOutlineOptions.strokeWeight).toBe(3);
     expect(outerOutlineOptions.zIndex).toBe(33);
-    expect(outlineOptions.strokeColor).toBe('#0f172a');
+    expect(outlineOptions.strokeColor).toBe('#f5f5f5');
     expect(outlineOptions.strokeWeight).toBe(3);
     expect(outlineOptions.zIndex).toBe(34);
     expect(outerOutlineOptions.icons).toBeUndefined();
     expect(outlineOptions.icons).toBeUndefined();
+  });
+
+  it('keeps dashed dark fallback routes without an outer border', () => {
+    const dashedIcons = [{
+      icon: { path: 'M 0,-1 0,1', strokeColor: '#f43f5e', strokeOpacity: 0.9, scale: 2.5 },
+      offset: '0',
+      repeat: '12px',
+    }];
+
+    const { outerOutlineOptions, outlineOptions, mainOptions } = buildRoutePolylinePairOptions({
+      geodesic: true,
+      strokeColor: '#f43f5e',
+      strokeOpacity: 0,
+      strokeWeight: 2,
+      clickable: false,
+      icons: dashedIcons,
+      zIndex: 35,
+    } as any, 'cleanDark');
+
+    expect(mainOptions.strokeOpacity).toBe(0);
+    expect(mainOptions.icons).toEqual(dashedIcons);
+    expect(outlineOptions.strokeOpacity).toBe(1);
+    expect(outerOutlineOptions.strokeOpacity).toBe(0);
+    expect(outlineOptions.strokeColor).toBe('#1b2230');
+    expect(outerOutlineOptions.strokeColor).toBe('#f43f5e');
   });
 
   it('estimates great-circle distance between two points', () => {
@@ -144,6 +228,49 @@ describe('components/ItineraryMap route cache helpers', () => {
     const munich = { lat: 48.137154, lng: 11.576124 };
     const km = estimateGreatCircleDistanceKm(berlin, munich);
     expect(Math.round(km)).toBe(504);
+  });
+
+  it('measures path deviation from a straight leg', () => {
+    const start = { lat: 13.7563, lng: 100.5018 };
+    const end = { lat: 13.3633, lng: 103.8564 };
+    const straightPath = [start, end];
+    const bentPath = [
+      start,
+      { lat: 13.95, lng: 101.7 },
+      { lat: 13.7, lng: 102.8 },
+      end,
+    ];
+
+    expect(computeMaxPathDeviationMeters(straightPath, start, end)).toBe(0);
+    expect(computeMaxPathDeviationMeters(bentPath, start, end)).toBeGreaterThan(1000);
+  });
+
+  it('flags low-fidelity transit paths as straight-like', () => {
+    const start = { lat: 13.7563, lng: 100.5018 };
+    const end = { lat: 13.3633, lng: 103.8564 };
+    const nearStraightTransitPath = [
+      start,
+      { lat: 13.62, lng: 101.65 },
+      { lat: 13.53, lng: 102.72 },
+      end,
+    ];
+
+    expect(isRoutePathLikelyStraight([start, end], start, end, 'bus')).toBe(true);
+    expect(isRoutePathLikelyStraight(nearStraightTransitPath, start, end, 'bus')).toBe(true);
+  });
+
+  it('accepts sufficiently curved transit paths', () => {
+    const start = { lat: 13.7563, lng: 100.5018 };
+    const end = { lat: 13.3633, lng: 103.8564 };
+    const curvedTransitPath = [
+      start,
+      { lat: 14.48, lng: 101.05 },
+      { lat: 14.61, lng: 102.24 },
+      { lat: 14.16, lng: 103.18 },
+      end,
+    ];
+
+    expect(isRoutePathLikelyStraight(curvedTransitPath, start, end, 'bus')).toBe(false);
   });
 
   it('skips impossible route checks by mode and distance caps', () => {

@@ -82,6 +82,7 @@ This doc is a compact, structured overview of the app to help future agents make
 - Pins are colored by city and highlight selected city.
 - Routes draw directional arrow and transport icon at midpoint.
 - Travel mode icons are consistent with timeline `transportMode`.
+- City labels should use `getMapLabelCityName(...)` (city-only) and `resolveCityLabelAnchor(...)` to reduce route overlap without heavy map geometry complexity.
 
 **Print/List View**
 - `components/PrintLayout.tsx` renders:

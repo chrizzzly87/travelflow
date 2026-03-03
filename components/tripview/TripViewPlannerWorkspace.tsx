@@ -3,7 +3,7 @@ import { ArrowLeftRight, ArrowUpDown, CalendarDays, Focus, Layers, List, Maximiz
 import { getAnalyticsDebugAttributes } from '../../services/analyticsService';
 import { TripFloatingMapPreview } from './TripFloatingMapPreview';
 
-import type { ITimelineItem, MapColorMode, MapStyle, RouteMode, RouteStatus } from '../../types';
+import type { ITimelineItem, MapColorMode, MapStyle, RouteFailureReason, RouteMode, RouteStatus } from '../../types';
 
 interface TripViewPlannerWorkspaceProps {
     isPaywallLocked: boolean;
@@ -44,7 +44,7 @@ interface TripViewPlannerWorkspaceProps {
     onMapColorModeChange?: (mode: MapColorMode) => void;
     initialMapFocusQuery?: string;
     onRouteMetrics: (travelItemId: string, metrics: { routeDistanceKm?: number; routeDurationHours?: number; mode?: string; routeKey?: string }) => void;
-    onRouteStatus: (travelItemId: string, status: RouteStatus, meta?: { mode?: string; routeKey?: string }) => void;
+    onRouteStatus: (travelItemId: string, status: RouteStatus, meta?: { mode?: string; routeKey?: string; reason?: RouteFailureReason }) => void;
     tripId: string;
     mapViewTransitionName: string | null;
     sidebarWidth: number;

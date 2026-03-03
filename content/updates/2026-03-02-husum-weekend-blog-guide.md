@@ -1,6 +1,6 @@
 ---
 id: rel-2026-03-02-husum-weekend-blog-guide
-version: v0.80.0
+version: v0.81.0
 title: "German Husum weekend guide with interactive map and festival itinerary"
 date: 2026-03-02
 published_at: 2026-03-02T20:48:15Z
