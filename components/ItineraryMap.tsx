@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { ActivityType, ITimelineItem, MapColorMode, MapStyle, RouteFailureReason, RouteMode, RouteStatus } from '../types';
 import { ArrowLeftRight, ArrowUpDown, Focus, Layers, Maximize2, Minimize2 } from 'lucide-react';
 import { readLocalStorageItem, writeLocalStorageItem } from '../services/browserStorageService';
-import { buildRouteCacheKey, DEFAULT_MAP_COLOR_MODE, findTravelBetweenCities, getActivityColorByTypes, getHexFromColorClass, getNormalizedCityName, pickPrimaryActivityType } from '../utils';
+import { buildRouteCacheKey, DEFAULT_MAP_COLOR_MODE, findTravelBetweenCities, getActivityColorByTypes, getHexFromColorClass, getNormalizedCityName, pickPrimaryActivityType, shiftHexColor } from '../utils';
 import { getAnalyticsDebugAttributes } from '../services/analyticsService';
 import { useGoogleMaps } from './GoogleMapsLoader';
 import { normalizeTransportMode } from '../shared/transportModes';
@@ -549,7 +549,7 @@ const buildActivityIconMarkup = (type: ActivityType): string => {
     );
     const styled = markup.replace(
         '<svg',
-        `<svg style="width:${ACTIVITY_MARKER_ICON_SIZE}px;height:${ACTIVITY_MARKER_ICON_SIZE}px;display:block;stroke:#ffffff;stroke-width:2.2;color:#ffffff;fill:none;"`,
+        `<svg style="width:${ACTIVITY_MARKER_ICON_SIZE}px;height:${ACTIVITY_MARKER_ICON_SIZE}px;display:block;stroke:currentColor;stroke-width:2.3;color:currentColor;fill:none;"`,
     );
     ACTIVITY_ICON_MARKUP_CACHE.set(type, styled);
     return styled;
@@ -559,10 +559,11 @@ const buildActivityMarkerHtml = (type: ActivityType, color: string, isSelected: 
     const size = isSelected ? ACTIVITY_MARKER_BADGE_SIZE + 4 : ACTIVITY_MARKER_BADGE_SIZE;
     const borderColor = isSelected ? resolveCssColorVar('--tf-accent-500', '#2563eb') : '#ffffff';
     const ringColor = isSelected ? resolveCssColorVar('--tf-accent-200', '#bfdbfe') : '#dbe3ee';
+    const iconColor = shiftHexColor(color, -96);
     const iconMarkup = buildActivityIconMarkup(type);
 
     return `
-        <div style="position:relative;width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;border-radius:9999px;background:${color};border:2px solid ${borderColor};box-shadow:0 6px 16px rgba(15,23,42,0.22);color:#ffffff;line-height:1;">
+        <div style="position:relative;width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;border-radius:9999px;background:${color};border:2px solid ${borderColor};color:${iconColor};line-height:1;">
             <div style="position:absolute;inset:3px;border-radius:9999px;border:1.5px solid ${ringColor};opacity:${isSelected ? '0.9' : '0.55'};"></div>
             <div style="position:relative;z-index:1;display:flex;align-items:center;justify-content:center;">${iconMarkup}</div>
         </div>

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildGoogleMapsCategoryQuery,
   buildGoogleMapsEmbedUrl,
+  buildGoogleMapsSpotQuery,
   buildGoogleMapsSearchUrl,
   parseBlogMapCardConfig,
 } from '../../services/blogMapCardService';
@@ -93,5 +94,11 @@ describe('services/blogMapCardService', () => {
       { id: 'park', name: 'Schlosspark', query: 'Schlosspark Husum' },
     ], 'Husum, Nordfriesland');
     expect(query).toBe('(Husumer Hafen, Husum, Nordfriesland) OR (Schlosspark Husum, Husum, Nordfriesland)');
+  });
+
+  it('builds a spot query with optional region context', () => {
+    expect(buildGoogleMapsSpotQuery('Schlosspark Husum')).toBe('Schlosspark Husum');
+    expect(buildGoogleMapsSpotQuery('Schlosspark Husum', 'Husum, Nordfriesland')).toBe('Schlosspark Husum, Husum, Nordfriesland');
+    expect(buildGoogleMapsSpotQuery('   ', 'Husum')).toBe('');
   });
 });

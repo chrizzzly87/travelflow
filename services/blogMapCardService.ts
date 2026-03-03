@@ -194,14 +194,16 @@ export const buildGoogleMapsEmbedUrl = (query: string, locale: string, options: 
     return `https://maps.google.com/maps?${params.toString()}`;
 };
 
-export const buildGoogleMapsCategoryQuery = (spots: BlogMapSpot[], regionContext?: string): string => {
+export const buildGoogleMapsSpotQuery = (query: string, regionContext?: string): string => {
+    const baseQuery = query.trim();
+    if (!baseQuery) return '';
     const suffix = (regionContext || '').trim();
+    return suffix.length > 0 ? `${baseQuery}, ${suffix}` : baseQuery;
+};
+
+export const buildGoogleMapsCategoryQuery = (spots: BlogMapSpot[], regionContext?: string): string => {
     const spotQueries = spots
-        .map((spot) => {
-            const query = spot.query.trim();
-            if (!query) return '';
-            return suffix.length > 0 ? `${query}, ${suffix}` : query;
-        })
+        .map((spot) => buildGoogleMapsSpotQuery(spot.query, regionContext))
         .filter((query) => query.length > 0);
 
     if (spotQueries.length === 0) return '';
