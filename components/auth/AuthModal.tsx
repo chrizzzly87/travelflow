@@ -5,10 +5,12 @@ import {
     X,
 } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Checkbox } from '../ui/checkbox';
 import { useAuth } from '../../hooks/useAuth';
+import { buildLocalizedMarketingPath } from '../../config/routes';
 import type { OAuthProviderId } from '../../services/authService';
+import { acceptCurrentTerms } from '../../services/authService';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import { buildPasswordResetRedirectUrl } from '../../services/authNavigationService';
 import {
@@ -120,6 +122,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [infoMessage, setInfoMessage] = useState<string | null>(null);
     const [rememberLogin, setRememberLogin] = useState<boolean>(() => isRememberLoginEnabled());
@@ -138,6 +141,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     });
 
     const oauthButtons = useMemo(() => getOAuthButtons(i18n.language), [i18n.language]);
+    const authLocale = useMemo(() => normalizeAppLanguage(i18n.language), [i18n.language]);
+    const termsPath = useMemo(() => buildLocalizedMarketingPath('terms', authLocale), [authLocale]);
+    const privacyPath = useMemo(() => buildLocalizedMarketingPath('privacy', authLocale), [authLocale]);
     const emailInputId = 'auth-modal-email';
     const secondaryInputId = 'auth-modal-secondary';
     const rememberLoginInputId = 'auth-modal-remember-login';
@@ -204,6 +210,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             setSessionRestoreState('idle');
             hasHandledSuccessRef.current = false;
             hasInteractiveAttemptRef.current = false;
+            setHasAcceptedTerms(false);
             pendingRequestRef.current += 1;
             return;
         }
@@ -317,6 +324,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             setErrorMessage(t('errors.default'));
             return;
         }
+        if (mode === 'register' && !hasAcceptedTerms) {
+            setErrorMessage(t('errors.terms_required'));
+            return;
+        }
         if (submittedEmail !== email) setEmail(submittedEmail);
         if (submittedPassword !== password) setPassword(submittedPassword);
         setRememberLoginEnabled(rememberLogin);
@@ -376,6 +387,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 } else if (!outcome.value.data.session) {
                     setInfoMessage(t('states.emailConfirmationSent'));
                 } else {
+                    const acceptance = await acceptCurrentTerms({
+                        locale: authLocale,
+                        source: 'signup_auth_modal',
+                    });
+                    if (acceptance.error) {
+                        setInfoMessage(t('states.termsAcceptancePending'));
+                    }
                     setInfoMessage(t('states.alreadyAuthenticated'));
                 }
             }
@@ -666,6 +684,31 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                                         </div>
                                         <p className="text-xs text-slate-500">{t('copy.passwordResetHint')}</p>
                                     </div>
+                                )}
+                                {mode === 'register' && (
+                                    <label className="flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
+                                        <input
+                                            type="checkbox"
+                                            checked={hasAcceptedTerms}
+                                            onChange={(event) => {
+                                                setHasAcceptedTerms(event.target.checked);
+                                                trackEvent(event.target.checked ? 'auth__terms_consent--accept' : 'auth__terms_consent--reject', { source: 'auth_modal' });
+                                            }}
+                                            className="mt-0.5 h-4 w-4 rounded border-slate-300"
+                                            {...getAnalyticsDebugAttributes('auth__terms_consent--accept', { source: 'auth_modal' })}
+                                        />
+                                        <span>
+                                            {t('copy.termsConsentPrefix')}{' '}
+                                            <Link className="font-semibold text-accent-700 hover:underline" to={termsPath} target="_blank" rel="noreferrer">
+                                                {t('copy.termsConsentTerms')}
+                                            </Link>{' '}
+                                            {t('copy.termsConsentJoiner')}{' '}
+                                            <Link className="font-semibold text-accent-700 hover:underline" to={privacyPath} target="_blank" rel="noreferrer">
+                                                {t('copy.termsConsentPrivacy')}
+                                            </Link>
+                                            .
+                                        </span>
+                                    </label>
                                 )}
 
                                 <button

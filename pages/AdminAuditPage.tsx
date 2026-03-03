@@ -73,14 +73,14 @@ const AUDIT_COLUMN_WIDTH_DEFAULTS: Record<AuditResizableColumnId, number> = {
     when: 176,
     actor: 236,
     action: 296,
-    target: 250,
+    target: 220,
     diff: 620,
 };
 const AUDIT_COLUMN_WIDTH_MIN: Record<AuditResizableColumnId, number> = {
     when: 124,
     actor: 170,
     action: 190,
-    target: 180,
+    target: 160,
     diff: 360,
 };
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -97,6 +97,10 @@ const ACTION_FILTER_LABELS: Record<string, string> = {
     'admin.user.update_profile': 'Updated user',
     'admin.user.update_tier': 'Updated user tier',
     'admin.user.update_overrides': 'Updated user overrides',
+    'admin.user.reset_username_cooldown': 'Revoked username cooldown',
+    'admin.user.reset_terms_acceptance': 'Reset Terms acceptance',
+    'admin.terms.publish': 'Published Terms version',
+    'admin.terms.set_current': 'Set current Terms version',
     'admin.trip.hard_delete': 'Hard-deleted trip',
     'admin.trip.update': 'Updated trip',
     'admin.trip.override_commit': 'Overrode trip content',
@@ -353,6 +357,12 @@ const resolveAuditActionPresentation = (
     if (raw === 'admin.user.update_overrides') {
         return { label: 'Updated overrides', className: 'border-indigo-300 bg-indigo-50 text-indigo-800' };
     }
+    if (raw === 'admin.user.reset_username_cooldown') {
+        return { label: 'Revoked username cooldown', className: 'border-amber-300 bg-amber-50 text-amber-800' };
+    }
+    if (raw === 'admin.user.reset_terms_acceptance') {
+        return { label: 'Reset Terms acceptance', className: 'border-amber-300 bg-amber-50 text-amber-800' };
+    }
     if (raw === 'admin.trip.update') {
         if (diffEntries.some((entry) => entry.key === 'owner_id')) {
             return { label: 'Transferred trip owner', className: 'border-violet-300 bg-violet-50 text-violet-800' };
@@ -383,6 +393,12 @@ const resolveAuditActionPresentation = (
     }
     if (raw === 'admin.tier.reapply') {
         return { label: 'Reapplied tier', className: 'border-slate-300 bg-slate-100 text-slate-800' };
+    }
+    if (raw === 'admin.terms.publish') {
+        return { label: 'Published Terms version', className: 'border-sky-300 bg-sky-50 text-sky-800' };
+    }
+    if (raw === 'admin.terms.set_current') {
+        return { label: 'Set current Terms version', className: 'border-sky-300 bg-sky-50 text-sky-800' };
     }
     return { label: getActionFilterLabel(raw), className: 'border-slate-300 bg-slate-100 text-slate-800' };
 };
@@ -588,6 +604,7 @@ export const AdminAuditPage: React.FC = () => {
     const [isExportingReplay, setIsExportingReplay] = useState(false);
     const [revertingEntryKey, setRevertingEntryKey] = useState<string | null>(null);
     const requestedUndoSourceIdsRef = useRef<Set<string>>(new Set());
+    const initializedActionFiltersRef = useRef(false);
 
     useEffect(() => {
         const next = new URLSearchParams();
@@ -1032,6 +1049,21 @@ export const AdminAuditPage: React.FC = () => {
                 };
             });
     }, [logsInTimeRange]);
+    const allActionFilterValues = useMemo(
+        () => actionFilterOptions.map((option) => option.value),
+        [actionFilterOptions]
+    );
+
+    useEffect(() => {
+        if (initializedActionFiltersRef.current) return;
+        if (allActionFilterValues.length === 0) return;
+        if (searchParams.get('action')) {
+            initializedActionFiltersRef.current = true;
+            return;
+        }
+        setActionFilters(allActionFilterValues);
+        initializedActionFiltersRef.current = true;
+    }, [allActionFilterValues, searchParams]);
 
     const targetFilterOptions = useMemo<AdminFilterMenuOption[]>(() => {
         const counts = new Map<string, number>();
@@ -1488,6 +1520,20 @@ export const AdminAuditPage: React.FC = () => {
                     selectedValues={actionFilters}
                     onSelectedValuesChange={handleActionFiltersChange}
                 />
+                <button
+                    type="button"
+                    onClick={() => handleActionFiltersChange(allActionFilterValues)}
+                    className="inline-flex h-8 items-center rounded-md border border-slate-300 bg-white px-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                >
+                    Select all actions
+                </button>
+                <button
+                    type="button"
+                    onClick={() => handleActionFiltersChange([])}
+                    className="inline-flex h-8 items-center rounded-md border border-slate-300 bg-white px-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                >
+                    Deselect all actions
+                </button>
                 <AdminFilterMenu
                     label="Target"
                     icon={<Crosshair size={14} className="mr-2 shrink-0 text-slate-500" weight="duotone" />}
@@ -1511,7 +1557,7 @@ export const AdminAuditPage: React.FC = () => {
                 <button
                     type="button"
                     onClick={() => {
-                        setActionFilters([]);
+                        setActionFilters(allActionFilterValues);
                         setTargetFilters([]);
                         setActorFilters([]);
                         setTimePreset('30d');
@@ -1583,7 +1629,7 @@ export const AdminAuditPage: React.FC = () => {
                         </colgroup>
                         <thead>
                             <tr className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-                                <th className="px-2 py-2">
+                                <th className="bg-slate-50 px-2 py-2">
                                     <Checkbox
                                         checked={areAllPageRowsSelected ? true : hasSomePageRowsSelected ? 'indeterminate' : false}
                                         onCheckedChange={(checked) => togglePageSelection(Boolean(checked))}
@@ -1785,23 +1831,11 @@ export const AdminAuditPage: React.FC = () => {
                                                     ? (
                                                         <CopyableUuid
                                                             value={log.target_id}
-                                                            textClassName="max-w-[220px] truncate text-[11px]"
+                                                            textClassName="max-w-[150px] truncate text-[11px]"
                                                             hintClassName="text-[9px]"
                                                         />
                                                     )
-                                                    : <span className="max-w-[220px] truncate font-mono">n/a</span>}
-                                                {log.target_id && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => void copyToClipboard(log.target_id || '', `target-${timelineEntry.kind}-${log.id}`)}
-                                                        className="inline-flex items-center gap-1 rounded border border-slate-300 px-1.5 py-0.5 font-semibold text-slate-600 hover:bg-slate-100"
-                                                        title="Copy target id"
-                                                    >
-                                                        <CopySimple size={11} />
-                                                        Copy
-                                                    </button>
-                                                )}
-                                                {copiedToken === `target-${timelineEntry.kind}-${log.id}` && <span className="text-emerald-700">Copied</span>}
+                                                    : <span className="max-w-[150px] truncate font-mono">n/a</span>}
                                             </div>
                                             </td>
                                         )}

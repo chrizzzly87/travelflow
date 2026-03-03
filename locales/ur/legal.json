@@ -53,5 +53,32 @@
     "stateAll": "Accept all",
     "stateEssential": "Essential only",
     "stateUnset": "Not set"
+  },
+  "termsPage": {
+    "heroEyebrow": "سروس کی شرائط · AGB",
+    "heroTitle": "سروس کی شرائط / Allgemeine Geschäftsbedingungen",
+    "heroIntro": "یہ شرائط {appName} کے استعمال پر لاگو ہوتی ہیں۔",
+    "heroBindingNote": "نیچے دیا گیا جرمن متن قانونی طور پر پابند ورژن ہے۔ انگریزی متن صرف سہولت کے لیے ہے۔",
+    "versionLabel": "ورژن",
+    "lastUpdatedLabel": "آخری اپ ڈیٹ",
+    "controllerInfoLead": "ذمہ دار ادارے کی معلومات",
+    "imprintLinkLabel": "امپرنٹ",
+    "privacyInfoLead": "ڈیٹا پروسیسنگ کی تفصیل",
+    "privacyLinkLabel": "پرائیویسی پالیسی",
+    "acceptRequiredTitle": "ضروری کارروائی: اکاؤنٹ جاری رکھنے کے لیے موجودہ شرائط قبول کریں۔",
+    "acceptRequiredDescription": "تصدیق سے پہلے آپ نیچے دونوں ورژن دیکھ سکتے ہیں۔",
+    "acceptSubmit": "موجودہ شرائط قبول کریں اور آگے بڑھیں",
+    "acceptSubmitting": "قبولیت محفوظ کی جا رہی ہے...",
+    "acceptError": "اس وقت شرائط کی قبولیت محفوظ نہیں ہو سکی۔ براہ کرم دوبارہ کوشش کریں۔",
+    "bindingSectionTitle": "لازمی ورژن (جرمن)",
+    "helperSectionTitle": "مددگار ترجمہ (انگریزی، غیر پابند)",
+    "globalForceTitle": "کارروائی درکار: اپڈیٹ شدہ شرائط کی قبولیت ضروری ہے۔",
+    "globalForceDescription": "اکاؤنٹ کی محفوظ خصوصیات جاری رکھنے کے لیے تازہ ترین شرائط دیکھیں اور اپنی قبولیت کی تصدیق کریں۔",
+    "globalInformTitle": "شرائط اپڈیٹ ہو گئی ہیں: تازہ ترین قانونی ورژن دیکھیں۔",
+    "globalInformDescription": "یہ اپڈیٹ صرف اطلاع کے لیے ہے (زبردستی دوبارہ قبولیت نہیں)، لیکن تازہ ترین متن کا جائزہ لینا چاہیے۔",
+    "globalReviewAction": "شرائط دیکھیں",
+    "globalDismissAction": "فی الحال بند کریں",
+    "acceptOptionalTitle": "اختیاری تصدیق: شرائط کے تازہ ترین ورژن کو قبول کریں۔",
+    "acceptOptionalDescription": "آپ ابھی قبولیت کی تصدیق کر کے اس ورژن کی اپڈیٹ اطلاعیں ہٹا سکتے ہیں۔"
   }
 }

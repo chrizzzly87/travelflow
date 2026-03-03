@@ -45,6 +45,12 @@ export interface UserAccessContext {
     entitlements: Entitlements;
     onboardingCompleted: boolean;
     accountStatus: 'active' | 'disabled' | 'deleted';
+    termsCurrentVersion: string | null;
+    termsRequiresReaccept: boolean;
+    termsAcceptedVersion: string | null;
+    termsAcceptedAt: string | null;
+    termsAcceptanceRequired: boolean;
+    termsNoticeRequired: boolean;
 }
 
 export interface ICoordinates {

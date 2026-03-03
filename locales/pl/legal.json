@@ -53,5 +53,32 @@
     "stateAll": "Akceptuj wszystkie",
     "stateEssential": "Tylko niezbędne",
     "stateUnset": "Nie ustawiono"
+  },
+  "termsPage": {
+    "heroEyebrow": "Warunki korzystania · AGB",
+    "heroTitle": "Warunki korzystania / Allgemeine Geschäftsbedingungen",
+    "heroIntro": "Niniejsze warunki regulują korzystanie z {appName}.",
+    "heroBindingNote": "Poniższy tekst niemiecki jest wersją prawnie wiążącą. Tekst angielski jest udostępniony wyłącznie pomocniczo.",
+    "versionLabel": "Wersja",
+    "lastUpdatedLabel": "Ostatnia aktualizacja",
+    "controllerInfoLead": "Informacje o administratorze znajdują się w",
+    "imprintLinkLabel": "Impressum",
+    "privacyInfoLead": "Szczegóły przetwarzania danych znajdują się w",
+    "privacyLinkLabel": "Polityce prywatności",
+    "acceptRequiredTitle": "Wymagane działanie: zaakceptuj aktualne warunki, aby dalej korzystać z konta.",
+    "acceptRequiredDescription": "Przed potwierdzeniem możesz zapoznać się z obiema wersjami poniżej.",
+    "acceptSubmit": "Akceptuję aktualne warunki i kontynuuję",
+    "acceptSubmitting": "Zapisywanie akceptacji...",
+    "acceptError": "Nie udało się teraz zapisać akceptacji warunków. Spróbuj ponownie.",
+    "bindingSectionTitle": "Wersja wiążąca (niemiecka)",
+    "helperSectionTitle": "Tłumaczenie pomocnicze (angielski, niewiążące)",
+    "globalForceTitle": "Wymagane działanie: zaktualizowane warunki wymagają akceptacji.",
+    "globalForceDescription": "Sprawdź najnowszą wersję warunków i potwierdź akceptację, aby dalej korzystać z chronionych funkcji konta.",
+    "globalInformTitle": "Warunki zaktualizowane: sprawdź najnowszą wersję prawną.",
+    "globalInformDescription": "Ta aktualizacja ma wyłącznie charakter informacyjny (bez wymuszonej ponownej akceptacji), ale warto zapoznać się z najnowszym brzmieniem.",
+    "globalReviewAction": "Sprawdź warunki",
+    "globalDismissAction": "Ukryj na razie",
+    "acceptOptionalTitle": "Opcjonalne potwierdzenie: zaakceptuj najnowszą wersję warunków.",
+    "acceptOptionalDescription": "Możesz potwierdzić teraz, aby usunąć komunikaty o tej wersji."
   }
 }
