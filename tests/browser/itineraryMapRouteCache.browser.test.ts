@@ -143,7 +143,7 @@ describe('components/ItineraryMap route cache helpers', () => {
     expect(outlineOptions.icons).toBeUndefined();
   });
 
-  it('keeps icon-only dark fallback routes dashed without forcing dark borders', () => {
+  it('renders dark borders for icon-only fallback routes in dark themes', () => {
     const dashedIcons = [{
       icon: { path: 'M 0,-1 0,1', strokeColor: '#f43f5e', strokeOpacity: 0.9, scale: 2.5 },
       offset: '0',
@@ -162,8 +162,10 @@ describe('components/ItineraryMap route cache helpers', () => {
 
     expect(mainOptions.strokeOpacity).toBe(0);
     expect(mainOptions.icons).toEqual(dashedIcons);
-    expect(outlineOptions.strokeOpacity).toBe(0);
-    expect(outerOutlineOptions.strokeOpacity).toBe(0);
+    expect(outlineOptions.strokeOpacity).toBe(1);
+    expect(outerOutlineOptions.strokeOpacity).toBe(0.95);
+    expect(outlineOptions.strokeColor).toBe('#1b2230');
+    expect(outerOutlineOptions.strokeColor).toBe('#f8fafc');
   });
 
   it('estimates great-circle distance between two points', () => {
