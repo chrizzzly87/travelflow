@@ -30,6 +30,7 @@ import {
   isRoutePathLikelyStraight,
   isMapViewportReady,
   offsetLatLngByMeters,
+  resolveSelectionViewportActions,
   shouldSkipRouteFitForSelection,
   shouldDisplayActivityMarkers,
 } from '../../components/ItineraryMap';
@@ -451,6 +452,39 @@ describe('components/ItineraryMap route cache helpers', () => {
       selectedActivityId: null,
       selectedCityId: null,
     })).toBe(false);
+  });
+
+  it('recenters when zooming to a selected target even if it is already visible', () => {
+    expect(resolveSelectionViewportActions({
+      isTargetVisible: true,
+      currentZoom: 9,
+      targetZoom: 13,
+    })).toEqual({
+      shouldPan: true,
+      shouldZoom: true,
+    });
+  });
+
+  it('keeps viewport stable when selected target is visible and zoom is already sufficient', () => {
+    expect(resolveSelectionViewportActions({
+      isTargetVisible: true,
+      currentZoom: 13,
+      targetZoom: 13,
+    })).toEqual({
+      shouldPan: false,
+      shouldZoom: false,
+    });
+  });
+
+  it('pans without zoom when selected target is outside visible bounds', () => {
+    expect(resolveSelectionViewportActions({
+      isTargetVisible: false,
+      currentZoom: 14,
+      targetZoom: 13,
+    })).toEqual({
+      shouldPan: true,
+      shouldZoom: false,
+    });
   });
 
   it('shows activity markers only when toggle is enabled and zoom is high enough', () => {

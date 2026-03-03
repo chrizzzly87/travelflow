@@ -730,6 +730,20 @@ export const shouldSkipRouteFitForSelection = ({
     return Boolean(selectedItemId || selectedActivityId || selectedCityId);
 };
 
+export const resolveSelectionViewportActions = ({
+    isTargetVisible,
+    currentZoom,
+    targetZoom,
+}: {
+    isTargetVisible: boolean;
+    currentZoom: number | null;
+    targetZoom: number;
+}): { shouldPan: boolean; shouldZoom: boolean } => {
+    const shouldZoom = currentZoom === null || currentZoom < targetZoom;
+    const shouldPan = !isTargetVisible || shouldZoom;
+    return { shouldPan, shouldZoom };
+};
+
 export const shouldDisplayActivityMarkers = ({
     isEnabled,
     zoom,
@@ -2279,8 +2293,11 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 focusTarget.position.lng,
             );
             const isTargetVisible = Boolean(currentBounds?.contains?.(targetLatLng));
-            const shouldPan = !isTargetVisible;
-            const shouldZoom = currentZoom === null || currentZoom < focusTarget.zoom;
+            const { shouldPan, shouldZoom } = resolveSelectionViewportActions({
+                isTargetVisible,
+                currentZoom,
+                targetZoom: focusTarget.zoom,
+            });
 
             if (!shouldPan && !shouldZoom) return;
             if (shouldPan) {
