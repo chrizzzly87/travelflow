@@ -304,6 +304,7 @@ type MarkerRenderProfile = {
 };
 
 export type MarkerRenderTier = 'default' | 'compact' | 'micro';
+type CityMarkerRenderProfile = MarkerRenderProfile['city'];
 
 const DOCKED_DEFAULT_MARKER_RENDER_PROFILE: MarkerRenderProfile = {
     city: {
@@ -501,24 +502,54 @@ export const resolveMarkerRenderTier = ({
         ? routePixelSpan / (2 ** (effectiveZoom - MARKER_TIER_ROUTE_REFERENCE_ZOOM))
         : 0;
     const routeCoverage = shortEdge > 0 ? zoomNormalizedRouteSpan / shortEdge : 0;
-    const crowded = Number.isFinite(nearestMarkerGapPx) && nearestMarkerGapPx < 18;
-    const veryCrowded = Number.isFinite(nearestMarkerGapPx) && nearestMarkerGapPx < 11;
-    const denseRoute = Number.isFinite(routeCoverage) && routeCoverage > 1.45;
-    const veryDenseRoute = Number.isFinite(routeCoverage) && routeCoverage > 2.2;
-    const extremeDenseRoute = Number.isFinite(routeCoverage) && routeCoverage > 3.1;
+    const veryDenseRoute = Number.isFinite(routeCoverage) && routeCoverage > 2.8;
+    const extremeDenseRoute = Number.isFinite(routeCoverage) && routeCoverage > 3.8;
+    const lowZoom = effectiveZoom <= 6.75;
+    const veryLowZoom = effectiveZoom <= 5.25;
 
-    if (shortEdge <= 210) return 'micro';
-    if (effectiveZoom <= 5) return 'micro';
-    if (shortEdge <= 250 && (effectiveZoom <= 7 || extremeDenseRoute)) return 'micro';
-    if (effectiveZoom <= 6 && (veryDenseRoute || veryCrowded)) return 'micro';
-    if (shortEdge <= 280 && veryDenseRoute && effectiveZoom <= 8) return 'micro';
+    if (shortEdge <= 185) return 'micro';
+    if (veryLowZoom && shortEdge <= 230) return 'micro';
+    if (shortEdge <= 230 && extremeDenseRoute) return 'micro';
+    if (shortEdge <= 260 && veryLowZoom && veryDenseRoute) return 'micro';
 
-    if (shortEdge <= 300) return 'compact';
-    if (effectiveZoom <= 8) return 'compact';
-    if (denseRoute && effectiveZoom <= 10) return 'compact';
-    if (crowded && effectiveZoom <= 10) return 'compact';
-    if ((veryDenseRoute || veryCrowded) && shortEdge <= 360) return 'compact';
+    if (shortEdge <= 260) return 'compact';
+    if (lowZoom) return 'compact';
+    if (shortEdge <= 340 && veryDenseRoute && effectiveZoom <= 8.5) return 'compact';
     return 'default';
+};
+
+export const resolveCrowdedCityMarkerProfile = ({
+    baseProfile,
+    markerTier,
+    nearestMarkerGapPx,
+}: {
+    baseProfile: CityMarkerRenderProfile;
+    markerTier: MarkerRenderTier;
+    nearestMarkerGapPx: number;
+}): CityMarkerRenderProfile => {
+    if (markerTier === 'micro') return baseProfile;
+    if (!Number.isFinite(nearestMarkerGapPx)) return baseProfile;
+
+    const veryCrowded = nearestMarkerGapPx < 12;
+    const crowded = nearestMarkerGapPx < 16;
+    if (!crowded) return baseProfile;
+
+    const scale = veryCrowded ? 0.75 : 0.85;
+    const compactSize = Math.max(17, Math.round(baseProfile.size * scale));
+    const compactSelectedSize = Math.max(compactSize + 2, Math.round(baseProfile.selectedSize * scale));
+    const compactFontSize = Math.max(8, baseProfile.fontSize - 1);
+    const compactSelectedFontSize = Math.max(compactFontSize, baseProfile.selectedFontSize - 1);
+
+    return {
+        ...baseProfile,
+        shape: 'circle',
+        size: compactSize,
+        selectedSize: compactSelectedSize,
+        fontSize: compactFontSize,
+        selectedFontSize: compactSelectedFontSize,
+        showInnerDot: veryCrowded ? false : baseProfile.showInnerDot,
+        numberColor: veryCrowded ? '#ffffff' : baseProfile.numberColor,
+    };
 };
 
 const resolveCssColorVar = (name: string, fallback: string): string => {
@@ -1429,6 +1460,21 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         }),
         [mapDockMode, markerRenderTier],
     );
+    const crowdedCityProfile = useMemo(
+        () => resolveCrowdedCityMarkerProfile({
+            baseProfile: markerRenderProfile.city,
+            markerTier: markerRenderTier,
+            nearestMarkerGapPx,
+        }),
+        [markerRenderProfile.city, markerRenderTier, nearestMarkerGapPx],
+    );
+    const effectiveMarkerRenderProfile = useMemo(() => {
+        if (crowdedCityProfile === markerRenderProfile.city) return markerRenderProfile;
+        return {
+            ...markerRenderProfile,
+            city: crowdedCityProfile,
+        };
+    }, [crowdedCityProfile, markerRenderProfile]);
     const activityMarkerStylesById = useMemo(() => {
         const styles = new Map<string, { type: ActivityType; title: string }>();
         items.forEach((item) => {
@@ -1914,7 +1960,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
 
         const drawRoutePath = (path: google.maps.LatLngLiteral[], color: string, weight = 3) => {
             if (!isEffectActive()) return null;
-            const routeScale = Math.max(0.58, markerRenderProfile.routeStrokeScale);
+            const routeScale = Math.max(0.58, effectiveMarkerRenderProfile.routeStrokeScale);
             const arrowIcon = {
                 path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
                 fillColor: color,
@@ -1974,7 +2020,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 const cityMarkerColor = resolveMapColor(city.color);
                 const marker = createOverlayMarker({
                     position: markerPosition,
-                    html: buildCityMarkerHtml(index, cityMarkerColor, isSelected, markerRenderProfile),
+                    html: buildCityMarkerHtml(index, cityMarkerColor, isSelected, effectiveMarkerRenderProfile),
                     zIndex: isSelected ? CITY_MARKER_SELECTED_Z_INDEX : CITY_MARKER_Z_INDEX,
                     clickable: true,
                     onClick: () => onCityMarkerSelectRef.current?.(city.id),
@@ -2007,7 +2053,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                         activityMarker.type,
                         isSelected,
                         activityMarker.title,
-                        markerRenderProfile,
+                        effectiveMarkerRenderProfile,
                     ),
                     zIndex: isSelected ? ACTIVITY_MARKER_SELECTED_Z_INDEX : ACTIVITY_MARKER_Z_INDEX,
                     clickable: true,
@@ -2266,13 +2312,13 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                          routingAttempted = true;
                          drawRoutePath(cached.path, startColor, 3);
 
-                         if (mode !== 'na' && markerRenderProfile.transport.show) {
+                         if (mode !== 'na' && effectiveMarkerRenderProfile.transport.show) {
                              const midPoint = getPointAlongPath(cached.path, 0.5);
                              if (!midPoint) continue;
                              const markerHeading = mode === 'plane' ? getHeadingAlongPath(cached.path, 0.5) : undefined;
                              const transportMarker = createOverlayMarker({
                                  position: midPoint,
-                                 html: buildTransportMarkerHtml(mode, startColor, markerHeading, markerRenderProfile),
+                                 html: buildTransportMarkerHtml(mode, startColor, markerHeading, effectiveMarkerRenderProfile),
                                  zIndex: 50,
                                  centerAnchor: true,
                              });
@@ -2422,13 +2468,13 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
 
                              drawRoutePath(path, startColor, 3);
 
-                             if (mode !== 'na' && markerRenderProfile.transport.show) {
+                             if (mode !== 'na' && effectiveMarkerRenderProfile.transport.show) {
                                  const midPoint = getPointAlongPath(path, 0.5);
                                  if (midPoint) {
                                      const markerHeading = mode === 'plane' ? getHeadingAlongPath(path, 0.5) : undefined;
                                      const transportMarker = createOverlayMarker({
                                          position: midPoint,
-                                         html: buildTransportMarkerHtml(mode, startColor, markerHeading, markerRenderProfile),
+                                         html: buildTransportMarkerHtml(mode, startColor, markerHeading, effectiveMarkerRenderProfile),
                                          zIndex: 50,
                                          centerAnchor: true,
                                      });
@@ -2513,7 +2559,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                      strokeColor: startColor,
                      strokeOpacity: 1,
                      strokeWeight: 0.1,
-                     scale: 3.2 * Math.max(0.72, markerRenderProfile.routeStrokeScale)
+                     scale: 3.2 * Math.max(0.72, effectiveMarkerRenderProfile.routeStrokeScale)
                  };
                  const icons = isDashedFallback
                      ? [
@@ -2522,7 +2568,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                                  path: 'M 0,-1 0,1',
                                  strokeColor: startColor,
                                  strokeOpacity: 0.9,
-                                 scale: 2.5 * Math.max(0.72, markerRenderProfile.routeStrokeScale),
+                                 scale: 2.5 * Math.max(0.72, effectiveMarkerRenderProfile.routeStrokeScale),
                              },
                              offset: '0',
                              repeat: '12px'
@@ -2543,7 +2589,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                      geodesic: true,
                      strokeColor: startColor,
                      strokeOpacity: isDashedFallback ? 0 : 0.6,
-                     strokeWeight: Math.max(1.05, 2 * markerRenderProfile.routeStrokeScale),
+                     strokeWeight: Math.max(1.05, 2 * effectiveMarkerRenderProfile.routeStrokeScale),
                      clickable: false,
                      icons,
                      zIndex: 35,
@@ -2553,7 +2599,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                      { lat: start.coordinates.lat, lng: start.coordinates.lng },
                      { lat: end.coordinates.lat, lng: end.coordinates.lng },
                  ], 0.5);
-                 if (mode !== 'na' && markerRenderProfile.transport.show) {
+                 if (mode !== 'na' && effectiveMarkerRenderProfile.transport.show) {
                      if (!isEffectActive()) return;
                      if (!mid) continue;
                      const markerHeading = mode === 'plane'
@@ -2561,7 +2607,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                          : undefined;
                      const transportMarker = createOverlayMarker({
                          position: mid,
-                         html: buildTransportMarkerHtml(mode, startColor, markerHeading, markerRenderProfile),
+                         html: buildTransportMarkerHtml(mode, startColor, markerHeading, effectiveMarkerRenderProfile),
                          zIndex: 50,
                          centerAnchor: true,
                      });
@@ -2582,7 +2628,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             isEffectDisposed = true;
         };
 
-    }, [mapInitialized, mapRenderSignature, routeMode, showCityNames, isPaywalled, activeStyle, markerRenderProfile]); 
+    }, [mapInitialized, mapRenderSignature, routeMode, showCityNames, isPaywalled, activeStyle, effectiveMarkerRenderProfile]); 
 
     useEffect(() => {
         if (!mapInitialized || !window.google?.maps?.OverlayView) return;
@@ -2590,7 +2636,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         cityMarkerMetaRef.current.forEach(({ id, color, index, marker }) => {
             const isSelected = id === selectedCityId;
             marker.update({
-                html: buildCityMarkerHtml(index, color, isSelected, markerRenderProfile),
+                html: buildCityMarkerHtml(index, color, isSelected, effectiveMarkerRenderProfile),
                 zIndex: isSelected ? CITY_MARKER_SELECTED_Z_INDEX : CITY_MARKER_Z_INDEX,
             });
         });
@@ -2603,21 +2649,21 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             meta.title = resolvedTitle;
             const isSelected = id === selectedActivityId;
             marker.update({
-                html: buildActivityMarkerHtml(resolvedType, isSelected, resolvedTitle, markerRenderProfile),
+                html: buildActivityMarkerHtml(resolvedType, isSelected, resolvedTitle, effectiveMarkerRenderProfile),
                 zIndex: isSelected ? ACTIVITY_MARKER_SELECTED_Z_INDEX : ACTIVITY_MARKER_Z_INDEX,
             });
         });
-    }, [activityMarkerStylesById, mapInitialized, selectedActivityId, selectedCityId, markerRenderProfile]);
+    }, [activityMarkerStylesById, mapInitialized, selectedActivityId, selectedCityId, effectiveMarkerRenderProfile]);
 
     useEffect(() => {
         if (!mapInitialized || !googleMapRef.current) return;
         transportMarkerMetaRef.current.forEach((meta) => {
-            meta.marker.setMap(markerRenderProfile.transport.show ? googleMapRef.current : null);
+            meta.marker.setMap(effectiveMarkerRenderProfile.transport.show ? googleMapRef.current : null);
             meta.marker.update({
-                html: buildTransportMarkerHtml(meta.mode, meta.color, meta.rotationDegrees, markerRenderProfile),
+                html: buildTransportMarkerHtml(meta.mode, meta.color, meta.rotationDegrees, effectiveMarkerRenderProfile),
             });
         });
-    }, [mapInitialized, markerRenderProfile]);
+    }, [mapInitialized, effectiveMarkerRenderProfile]);
 
     useEffect(() => {
         if (!mapInitialized || !googleMapRef.current) return;
@@ -2722,6 +2768,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         if (!container) return;
 
         let previousViewportSize = container.getBoundingClientRect();
+        let lastAutoFitViewportSize = previousViewportSize;
         setMapViewportSize({
             width: Math.round(previousViewportSize.width),
             height: Math.round(previousViewportSize.height),
@@ -2745,18 +2792,19 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                     return;
                 }
                 const nextViewportSize = container.getBoundingClientRect();
-                const widthDelta = Math.abs(nextViewportSize.width - previousViewportSize.width);
-                const heightDelta = Math.abs(nextViewportSize.height - previousViewportSize.height);
+                const widthDeltaSinceLastAutoFit = Math.abs(nextViewportSize.width - lastAutoFitViewportSize.width);
+                const heightDeltaSinceLastAutoFit = Math.abs(nextViewportSize.height - lastAutoFitViewportSize.height);
                 previousViewportSize = nextViewportSize;
                 setMapViewportSize({
                     width: Math.round(nextViewportSize.width),
                     height: Math.round(nextViewportSize.height),
                 });
-                if (widthDelta < 24 && heightDelta < 24) return;
+                if (widthDeltaSinceLastAutoFit < 24 && heightDeltaSinceLastAutoFit < 24) return;
                 cancelResizeAutoFitTimer();
                 resizeAutoFitTimerRef.current = window.setTimeout(() => {
                     resizeAutoFitTimerRef.current = null;
                     scheduleFitWhenViewportReadyRef.current(14, { respectSelection: true });
+                    lastAutoFitViewportSize = container.getBoundingClientRect();
                 }, 140);
             });
         });
@@ -2769,7 +2817,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 window.cancelAnimationFrame(resizeRafId);
             }
         };
-    }, [cancelResizeAutoFitTimer, cities.length, mapInitialized]);
+    }, [cancelResizeAutoFitTimer, cities.length, mapDockMode, mapInitialized]);
 
     useEffect(() => (
         () => {

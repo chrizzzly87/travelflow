@@ -28,6 +28,7 @@ import {
   estimateNearestMarkerGapPx,
   resolveMarkerRenderProfile,
   resolveMarkerRenderTier,
+  resolveCrowdedCityMarkerProfile,
   resolveActivityMarkerPositions,
   resolveSelectedMapFocusPosition,
   resolveCityLabelAnchor,
@@ -299,7 +300,7 @@ describe('components/ItineraryMap route cache helpers', () => {
 
   it('resolves marker tier from viewport, zoom, and route density signals', () => {
     expect(resolveMarkerRenderTier({
-      viewportWidth: 190,
+      viewportWidth: 170,
       viewportHeight: 220,
       zoom: 10,
       routePixelSpan: 120,
@@ -309,7 +310,7 @@ describe('components/ItineraryMap route cache helpers', () => {
     expect(resolveMarkerRenderTier({
       viewportWidth: 330,
       viewportHeight: 300,
-      zoom: 9,
+      zoom: 8,
       routePixelSpan: 420,
       nearestMarkerGapPx: 22,
     })).toBe('compact');
@@ -329,6 +330,25 @@ describe('components/ItineraryMap route cache helpers', () => {
       routePixelSpan: 2400,
       nearestMarkerGapPx: 12,
     })).toBe('default');
+  });
+
+  it('applies city-only marker compaction when city coordinates are crowded', () => {
+    const baseProfile = resolveMarkerRenderProfile({ mapDockMode: 'floating', markerTier: 'default' }).city;
+    const crowdedProfile = resolveCrowdedCityMarkerProfile({
+      baseProfile,
+      markerTier: 'default',
+      nearestMarkerGapPx: 15,
+    });
+    const veryCrowdedProfile = resolveCrowdedCityMarkerProfile({
+      baseProfile,
+      markerTier: 'default',
+      nearestMarkerGapPx: 10,
+    });
+
+    expect(crowdedProfile.size).toBeLessThan(baseProfile.size);
+    expect(crowdedProfile.shape).toBe('circle');
+    expect(veryCrowdedProfile.showInnerDot).toBe(false);
+    expect(veryCrowdedProfile.numberColor).toBe('#ffffff');
   });
 
   it('flags low-fidelity transit paths as straight-like', () => {
