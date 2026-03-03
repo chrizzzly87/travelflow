@@ -3,6 +3,7 @@ import { Map as GoogleMap, useMap } from '@vis.gl/react-google-maps';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { ActivityType, ITimelineItem, MapColorMode, MapStyle, RouteFailureReason, RouteMode, RouteStatus } from '../types';
 import { ArrowLeftRight, ArrowUpDown, Focus, Layers, Maximize2, Minimize2 } from 'lucide-react';
+import { MapPinArea } from '@phosphor-icons/react';
 import { readLocalStorageItem, writeLocalStorageItem } from '../services/browserStorageService';
 import { buildRouteCacheKey, DEFAULT_MAP_COLOR_MODE, findTravelBetweenCities, getHexFromColorClass, getNormalizedCityName, pickPrimaryActivityType } from '../utils';
 import { getAnalyticsDebugAttributes } from '../services/analyticsService';
@@ -273,10 +274,11 @@ const ACTIVITY_MARKER_ICON_SIZE = 15;
 const TRANSPORT_MARKER_ICON_SCALE = 0.46;
 const TRANSPORT_MARKER_VIEWBOX_SIZE = 256;
 const TRANSPORT_MARKER_ICON_INSET = (TRANSPORT_MARKER_VIEWBOX_SIZE * (1 - TRANSPORT_MARKER_ICON_SCALE)) / 2;
-const CITY_MARKER_Z_INDEX = 220;
-const CITY_MARKER_SELECTED_Z_INDEX = 240;
-const ACTIVITY_MARKER_Z_INDEX = 260;
-const ACTIVITY_MARKER_SELECTED_Z_INDEX = 280;
+const CITY_MARKER_Z_INDEX = 320;
+const CITY_MARKER_SELECTED_Z_INDEX = 340;
+const ACTIVITY_MARKER_Z_INDEX = 240;
+const ACTIVITY_MARKER_SELECTED_Z_INDEX = 260;
+export const ACTIVITY_MARKERS_MIN_ZOOM = 9;
 
 const resolveCssColorVar = (name: string, fallback: string): string => {
     if (typeof window === 'undefined' || typeof document === 'undefined') return fallback;
@@ -708,6 +710,18 @@ export const resolveSelectedMapFocusPosition = ({
     return null;
 };
 
+export const shouldDisplayActivityMarkers = ({
+    isEnabled,
+    zoom,
+}: {
+    isEnabled: boolean;
+    zoom: number | null | undefined;
+}): boolean => {
+    if (!isEnabled) return false;
+    if (!Number.isFinite(zoom)) return false;
+    return Number(zoom) >= ACTIVITY_MARKERS_MIN_ZOOM;
+};
+
 const getTransitFallbackDepartureTime = (): Date => {
     const nextWindow = new Date();
     nextWindow.setHours(12, 0, 0, 0);
@@ -991,7 +1005,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     const googleMapRef = useRef<any>(null); // google.maps.Map
     const markersRef = useRef<OverlayMarkerHandle[]>([]);
     const cityMarkerMetaRef = useRef<Array<{ id: string; color: string; index: number; marker: OverlayMarkerHandle }>>([]);
-    const activityMarkerMetaRef = useRef<Array<{ id: string; title: string; type: ActivityType; marker: OverlayMarkerHandle }>>([]);
+    const activityMarkerMetaRef = useRef<Array<{ id: string; title: string; type: ActivityType; marker: OverlayMarkerHandle; isVisible: boolean }>>([]);
     const activityMarkerPositionByIdRef = useRef<Map<string, google.maps.LatLngLiteral>>(new Map());
     const routesRef = useRef<any[]>([]); // stored polylines/renderers
     const transportMarkersRef = useRef<OverlayMarkerHandle[]>([]);
@@ -1006,7 +1020,11 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     
     const { isLoaded, loadError } = useGoogleMaps();
     const [mapInitialized, setMapInitialized] = useState(false);
+    const [activityMarkersEnabled, setActivityMarkersEnabled] = useState(true);
+    const [mapZoomLevel, setMapZoomLevel] = useState<number | null>(null);
     const mapActionsDisabled = !mapInitialized || Boolean(loadError);
+    const activityMarkersEnabledRef = useRef(activityMarkersEnabled);
+    const mapZoomLevelRef = useRef<number | null>(mapZoomLevel);
     
     // Internal state for menu, but style comes from props (or defaults to standard if not provided)
     const [isStyleMenuOpen, setIsStyleMenuOpen] = useState(false);
@@ -1095,16 +1113,44 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         onActivityMarkerSelectRef.current = onActivityMarkerSelect;
     }, [onActivityMarkerSelect]);
 
+    useEffect(() => {
+        activityMarkersEnabledRef.current = activityMarkersEnabled;
+    }, [activityMarkersEnabled]);
+
+    useEffect(() => {
+        mapZoomLevelRef.current = mapZoomLevel;
+    }, [mapZoomLevel]);
+
     const handleMapInstanceChange = useCallback((map: google.maps.Map | null) => {
         if (googleMapRef.current === map) return;
         googleMapRef.current = map;
         setMapInitialized(Boolean(map));
+        if (!map) {
+            setMapZoomLevel(null);
+            return;
+        }
+        const nextZoom = map.getZoom?.();
+        setMapZoomLevel(Number.isFinite(nextZoom) ? Number(nextZoom) : null);
     }, []);
 
     useEffect(() => {
         if (!mapActionsDisabled) return;
         setIsStyleMenuOpen(false);
     }, [mapActionsDisabled]);
+
+    useEffect(() => {
+        if (!mapInitialized || !googleMapRef.current) return;
+        const mapInstance = googleMapRef.current as google.maps.Map;
+        const syncZoom = () => {
+            const nextZoom = mapInstance.getZoom?.();
+            setMapZoomLevel(Number.isFinite(nextZoom) ? Number(nextZoom) : null);
+        };
+        syncZoom();
+        const listener = mapInstance.addListener?.('zoom_changed', syncZoom);
+        return () => {
+            listener?.remove?.();
+        };
+    }, [mapInitialized]);
 
     // Handle Style Change
     useEffect(() => {
@@ -1515,6 +1561,14 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 markersRef.current.push(marker);
             });
 
+            const currentZoomValue = googleMapRef.current?.getZoom?.();
+            const resolvedZoomLevel = Number.isFinite(currentZoomValue)
+                ? Number(currentZoomValue)
+                : mapZoomLevelRef.current;
+            const shouldAttachActivityMarkers = shouldDisplayActivityMarkers({
+                isEnabled: activityMarkersEnabledRef.current,
+                zoom: resolvedZoomLevel,
+            });
             const activityMarkers = resolveActivityMarkerPositions(items);
             activityMarkers.forEach((activityMarker) => {
                 if (!isEffectActive()) return;
@@ -1531,12 +1585,16 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                     onClick: () => onActivityMarkerSelectRef.current?.(activityMarker.id),
                     tooltipText: activityMarker.title,
                 });
+                if (!shouldAttachActivityMarkers) {
+                    marker.setMap(null);
+                }
 
                 activityMarkerMetaRef.current.push({
                     id: activityMarker.id,
                     title: activityMarker.title,
                     type: activityMarker.type,
                     marker,
+                    isVisible: shouldAttachActivityMarkers,
                 });
                 activityMarkerPositionByIdRef.current.set(activityMarker.id, activityMarker.position);
             });
@@ -2102,6 +2160,19 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         });
     }, [activityMarkerStylesById, mapInitialized, selectedActivityId, selectedCityId]);
 
+    useEffect(() => {
+        if (!mapInitialized || !googleMapRef.current) return;
+        const shouldShow = shouldDisplayActivityMarkers({
+            isEnabled: activityMarkersEnabled,
+            zoom: mapZoomLevel,
+        });
+        activityMarkerMetaRef.current.forEach((meta) => {
+            if (meta.isVisible === shouldShow) return;
+            meta.marker.setMap(shouldShow ? googleMapRef.current : null);
+            meta.isVisible = shouldShow;
+        });
+    }, [activityMarkersEnabled, mapInitialized, mapZoomLevel]);
+
     // Pan to selected
     useEffect(() => {
         if (!googleMapRef.current || !window.google?.maps) return;
@@ -2327,6 +2398,30 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                             aria-label={isExpanded ? 'Shrink map' : 'Expand map'}
                         >
                             {isExpanded ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+                        </button>
+                    )}
+
+                    {!isPaywalled && (
+                        <button
+                            type="button"
+                            onClick={() => setActivityMarkersEnabled((current) => !current)}
+                            disabled={mapActionsDisabled}
+                            className={`p-2 rounded-lg shadow-md border transition-colors flex items-center justify-center ${
+                                mapActionsDisabled
+                                    ? 'bg-white border-gray-200 text-gray-300 cursor-not-allowed'
+                                    : activityMarkersEnabled
+                                        ? 'bg-accent-600 border-accent-700 text-white hover:bg-accent-700'
+                                        : 'bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50'
+                            }`}
+                            aria-label={activityMarkersEnabled ? 'Hide activity markers' : 'Show activity markers'}
+                            title={activityMarkersEnabled ? 'Hide activity markers' : 'Show activity markers'}
+                            {...getAnalyticsDebugAttributes('trip_view__map_activity_markers--toggle', {
+                                surface: 'map_controls',
+                                active: activityMarkersEnabled,
+                            })}
+                        >
+                            <MapPinArea size={18} weight="bold" />
+                            <span className="sr-only">{activityMarkersEnabled ? 'Hide activity markers' : 'Show activity markers'}</span>
                         </button>
                     )}
                     

@@ -94,6 +94,10 @@ const BLOG_MAP_OVERLAP_COORDINATE_PRECISION = 5;
 const BLOG_MAP_MARKER_BORDER_FALLBACK = '#6366f1';
 const BLOG_MAP_MARKER_BG_FALLBACK = '#eef2ff';
 const BLOG_MAP_MARKER_TEXT_FALLBACK = '#312e81';
+const BLOG_MAP_CANVAS_STYLES: google.maps.MapTypeStyle[] = [
+    { featureType: 'poi', stylers: [{ visibility: 'off' }] },
+    { featureType: 'transit.station', stylers: [{ visibility: 'off' }] },
+];
 
 const resolveCssColorVar = (name: string, fallback: string): string => {
     if (typeof window === 'undefined' || typeof document === 'undefined') return fallback;
@@ -286,7 +290,6 @@ const BlogMapCanvas: React.FC<BlogMapCanvasProps> = ({
             overlay.onAdd = function onAdd() {
                 markerNode = document.createElement('button');
                 markerNode.type = 'button';
-                markerNode.title = spot.name;
                 markerNode.style.position = 'absolute';
                 markerNode.style.transform = 'translate(-50%, -100%)';
                 markerNode.style.width = '30px';
@@ -399,6 +402,7 @@ const BlogMapCanvas: React.FC<BlogMapCanvasProps> = ({
                     disableDefaultUI
                     gestureHandling="cooperative"
                     clickableIcons={false}
+                    styles={BLOG_MAP_CANVAS_STYLES}
                     reuseMaps
                     className="h-full w-full"
                 >
@@ -431,9 +435,9 @@ const BlogMapCard: React.FC<BlogMapCardProps> = ({ config, locale, postSlug }) =
     const [activeCategoryId, setActiveCategoryId] = useState<string>(() => resolveInitialCategoryId(config));
 
     useEffect(() => {
-        const nextCategoryId = resolveInitialCategoryId(config);
-        setActiveCategoryId(nextCategoryId);
-    }, [config]);
+        if (config.categories.some((category) => category.id === activeCategoryId)) return;
+        setActiveCategoryId(resolveInitialCategoryId(config));
+    }, [activeCategoryId, config]);
 
     const activeCategory = useMemo(() => {
         return config.categories.find((category) => category.id === activeCategoryId) || config.categories[0];
@@ -489,7 +493,7 @@ const BlogMapCard: React.FC<BlogMapCardProps> = ({ config, locale, postSlug }) =
                     {config.categories.map((category) => (
                         <AccordionItem key={category.id} value={category.id} className="border-b border-slate-200 last:border-b-0">
                             <AccordionTrigger
-                                className="px-4 py-3 text-sm font-semibold text-slate-800 hover:text-slate-900"
+                                className="cursor-pointer px-4 py-3 text-sm font-semibold text-slate-800 hover:no-underline hover:text-accent-700 data-[state=open]:text-accent-700"
                                 {...getAnalyticsDebugAttributes('blog__map_card--category', {
                                     slug: postSlug,
                                     category: category.id,
@@ -502,7 +506,7 @@ const BlogMapCard: React.FC<BlogMapCardProps> = ({ config, locale, postSlug }) =
                             </AccordionTrigger>
                             <AccordionContent className="px-2 pb-2">
                                 <div className="divide-y divide-slate-200/80">
-                                    {category.spots.map((spot) => {
+                                    {category.spots.map((spot, spotIndex) => {
                                         const mapsSearchUrl = buildGoogleMapsSearchUrl(spot.query);
                                         return (
                                             <a
@@ -524,15 +528,20 @@ const BlogMapCard: React.FC<BlogMapCardProps> = ({ config, locale, postSlug }) =
                                                     spot: spot.id,
                                                 })}
                                             >
-                                                <span className="min-w-0">
-                                                    <span className="block min-w-0 break-words text-sm font-semibold text-slate-800 transition-colors group-hover:text-accent-800">
-                                                        {spot.name}
+                                                <span className="inline-flex min-w-0 items-start gap-2">
+                                                    <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-accent-300 bg-accent-50 text-[10px] font-bold text-accent-700">
+                                                        {spotIndex + 1}
                                                     </span>
-                                                    {spot.note && (
-                                                        <span className="mt-0.5 block text-xs text-slate-500 transition-colors group-hover:text-slate-600">
-                                                            {spot.note}
+                                                    <span className="min-w-0">
+                                                        <span className="block min-w-0 break-words text-sm font-semibold text-slate-800 transition-colors group-hover:text-accent-800">
+                                                            {spot.name}
                                                         </span>
-                                                    )}
+                                                        {spot.note && (
+                                                            <span className="mt-0.5 block text-xs text-slate-500 transition-colors group-hover:text-slate-600">
+                                                                {spot.note}
+                                                            </span>
+                                                        )}
+                                                    </span>
                                                 </span>
                                                 <ArrowSquareOut
                                                     size={14}

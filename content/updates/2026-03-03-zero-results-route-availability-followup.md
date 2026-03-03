@@ -12,7 +12,7 @@ summary: "Started follow-up work to make route failures more deterministic and r
 
 ## Changes
 - [x] [New feature] 📅 Added one-click calendar exports for single activities, full activity plans, city stays, and complete itineraries from planner details, trip info, and print view.
-- [x] [New feature] 🗺️ Activity markers now match activity-type chip colors/icons, support direct map selection, and show hover labels for faster scanning.
+- [x] [New feature] 🗺️ Activity markers now match activity-type chip colors/icons, support direct map selection, show hover labels, and can be toggled on/off with zoom-aware visibility.
 - [x] [Improved] 📍 The Husum blog’s interactive map now uses in-app markers with softer accent styling, a cleaner left-side category accordion, and a full-height right-side map panel.
 - [ ] [Internal] 🧱 Introduced a shared calendar file generator so all exports consistently include app attribution and canonical trip links.
 - [ ] [Internal] 📊 Added planner analytics events for calendar export actions across details, info, and print surfaces.

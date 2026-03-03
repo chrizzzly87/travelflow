@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
 import {
+  ACTIVITY_MARKERS_MIN_ZOOM,
   MAP_VIEWPORT_READY_MIN_DIMENSION_PX,
   MAX_BICYCLE_ROUTE_CHECK_KM,
   MAX_DRIVING_ROUTE_CHECK_KM,
@@ -29,6 +30,7 @@ import {
   isRoutePathLikelyStraight,
   isMapViewportReady,
   offsetLatLngByMeters,
+  shouldDisplayActivityMarkers,
 } from '../../components/ItineraryMap';
 
 describe('components/ItineraryMap route cache helpers', () => {
@@ -406,6 +408,14 @@ describe('components/ItineraryMap route cache helpers', () => {
       position: { lat: 50.11, lng: 8.67 },
       zoom: 13,
     });
+  });
+
+  it('shows activity markers only when toggle is enabled and zoom is high enough', () => {
+    expect(shouldDisplayActivityMarkers({ isEnabled: false, zoom: ACTIVITY_MARKERS_MIN_ZOOM + 4 })).toBe(false);
+    expect(shouldDisplayActivityMarkers({ isEnabled: true, zoom: null })).toBe(false);
+    expect(shouldDisplayActivityMarkers({ isEnabled: true, zoom: ACTIVITY_MARKERS_MIN_ZOOM - 1 })).toBe(false);
+    expect(shouldDisplayActivityMarkers({ isEnabled: true, zoom: ACTIVITY_MARKERS_MIN_ZOOM })).toBe(true);
+    expect(shouldDisplayActivityMarkers({ isEnabled: true, zoom: ACTIVITY_MARKERS_MIN_ZOOM + 3 })).toBe(true);
   });
 
   it('provides an explicit field mask for computeRoutes requests', () => {
