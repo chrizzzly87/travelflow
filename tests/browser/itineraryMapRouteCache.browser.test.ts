@@ -90,9 +90,9 @@ describe('components/ItineraryMap route cache helpers', () => {
   });
 
   it('uses dual-contrast outline colors', () => {
-    expect(getRouteOutlineColor('standard')).toBe('#0f172a');
-    expect(getRouteOutlineColor('minimal')).toBe('#0f172a');
-    expect(getRouteOutlineColor('clean')).toBe('#0f172a');
+    expect(getRouteOutlineColor('standard')).toBe('#eef2f7');
+    expect(getRouteOutlineColor('minimal')).toBe('#f5f5f5');
+    expect(getRouteOutlineColor('clean')).toBe('#ffffff');
     expect(getRouteOutlineColor('dark')).toBe('#1b2230');
     expect(getRouteOutlineColor('cleanDark')).toBe('#1b2230');
     expect(getRouteOutlineColor('satellite')).toBe('#0f172a');
@@ -171,7 +171,7 @@ describe('components/ItineraryMap route cache helpers', () => {
     expect(outerOutlineOptions.strokeColor).toBe('#f8fafc');
     expect(outerOutlineOptions.strokeWeight).toBe(3);
     expect(outerOutlineOptions.zIndex).toBe(33);
-    expect(outlineOptions.strokeColor).toBe('#0f172a');
+    expect(outlineOptions.strokeColor).toBe('#f5f5f5');
     expect(outlineOptions.strokeWeight).toBe(3);
     expect(outlineOptions.zIndex).toBe(34);
     expect(outerOutlineOptions.icons).toBeUndefined();

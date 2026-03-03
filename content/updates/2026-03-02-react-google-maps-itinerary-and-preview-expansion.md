@@ -27,6 +27,8 @@ summary: "Trip planner map rendering is now more stable, with clearer markers an
 - [x] [Improved] 🧷 Map text overlays now render above route lines, and START/END labels keep the accent highlight color in Clean (dark).
 - [x] [Improved] 🎨 Clean (dark) START/END labels now use a lighter accent tone for better readability on dark basemaps.
 - [x] [Improved] 🧩 Clean (light) pin-adjacent label shadows/colors remain on the legacy styling while Clean (dark) keeps the new contrast treatment.
+- [x] [Improved] 🗺️ Route cutout border tones now align better with map background colors so layered legs look cleaner across map styles.
+- [x] [Improved] 🌍 Clean (dark) now restores subtle country labels with low-contrast text for orientation without adding map noise.
 - [x] [Fixed] 🧩 Single-city trip previews now render reliably instead of failing route-only preview assumptions.
 - [ ] [Internal] 🛣️ Switched realistic route checks to the newer Google Routes API path with legacy fallback support.
 - [ ] [Internal] 🧠 Added distance-based mode eligibility and bounded transit retry policy to improve route success while reducing wasted checks.

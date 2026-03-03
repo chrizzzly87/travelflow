@@ -169,6 +169,8 @@ const MAP_STYLES = {
         { "elementType": "labels.text.stroke", "stylers": [{ "visibility": "off" }] },
         { "featureType": "administrative", "elementType": "geometry", "stylers": [{ "visibility": "off" }] },
         { "featureType": "administrative.country", "elementType": "geometry.stroke", "stylers": [{ "color": "#8ea3b7" }, { "weight": 1.2 }, { "visibility": "on" }] },
+        { "featureType": "administrative.country", "elementType": "labels.text.fill", "stylers": [{ "visibility": "on" }, { "color": "#6f8193" }] },
+        { "featureType": "administrative.country", "elementType": "labels.text.stroke", "stylers": [{ "visibility": "on" }, { "color": "#1b2230" }, { "weight": 1.25 }] },
         { "featureType": "administrative.province", "elementType": "geometry.stroke", "stylers": [{ "visibility": "off" }] },
         { "featureType": "poi", "stylers": [{ "visibility": "off" }] },
         { "featureType": "road", "stylers": [{ "visibility": "off" }] },
@@ -208,6 +210,9 @@ const RECENT_ROUTE_FAILURE_WARNINGS = new Map<string, number>();
 let routeCacheHydrated = false;
 
 const ROUTE_OUTER_OUTLINE_COLOR = '#f8fafc';
+const ROUTE_MINIMAL_GAP_COLOR = '#f5f5f5';
+const ROUTE_CLEAN_GAP_COLOR = '#ffffff';
+const ROUTE_STANDARD_GAP_COLOR = '#eef2f7';
 const ROUTE_DARK_GAP_COLOR = '#1b2230';
 const ROUTE_CLEAN_DARK_GAP_COLOR = '#1b2230';
 const EARTH_RADIUS_KM = 6371;
@@ -393,6 +398,9 @@ const buildTransportMarkerHtml = (mode?: string, color?: string, rotationDegrees
 };
 
 export const getRouteOutlineColor = (_style: MapStyle = 'standard'): string => {
+    if (_style === 'minimal') return ROUTE_MINIMAL_GAP_COLOR;
+    if (_style === 'clean') return ROUTE_CLEAN_GAP_COLOR;
+    if (_style === 'standard') return ROUTE_STANDARD_GAP_COLOR;
     if (_style === 'dark') return ROUTE_DARK_GAP_COLOR;
     if (_style === 'cleanDark') return ROUTE_CLEAN_DARK_GAP_COLOR;
     return '#0f172a';
