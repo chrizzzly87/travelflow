@@ -53,5 +53,32 @@
     "stateAll": "Accept all",
     "stateEssential": "Essential only",
     "stateUnset": "Not set"
+  },
+  "termsPage": {
+    "heroEyebrow": "Nutzungsbedingungen · AGB",
+    "heroTitle": "Nutzungsbedingungen / Allgemeine Geschäftsbedingungen",
+    "heroIntro": "Diese Bedingungen regeln die Nutzung von {appName}.",
+    "heroBindingNote": "Die nachstehende deutsche Fassung ist rechtlich verbindlich. Die englische Fassung dient nur der unverbindlichen Information.",
+    "versionLabel": "Version",
+    "lastUpdatedLabel": "Zuletzt aktualisiert",
+    "controllerInfoLead": "Informationen zum Verantwortlichen finden Sie im",
+    "imprintLinkLabel": "Impressum",
+    "privacyInfoLead": "Informationen zur Datenverarbeitung finden Sie in der",
+    "privacyLinkLabel": "Datenschutzerklärung",
+    "acceptRequiredTitle": "Aktion erforderlich: Bitte akzeptieren Sie die aktuelle Fassung, um Ihr Konto weiter zu nutzen.",
+    "acceptRequiredDescription": "Sie können beide Fassungen unten prüfen, bevor Sie bestätigen.",
+    "acceptSubmit": "Aktuelle Bedingungen akzeptieren und fortfahren",
+    "acceptSubmitting": "Zustimmung wird gespeichert...",
+    "acceptError": "Die Zustimmung zu den Bedingungen konnte aktuell nicht gespeichert werden. Bitte versuchen Sie es erneut.",
+    "bindingSectionTitle": "Verbindliche Fassung (Deutsch)",
+    "helperSectionTitle": "Hilfsübersetzung (Englisch, unverbindlich)",
+    "globalForceTitle": "Aktion erforderlich: Aktualisierte Bedingungen müssen akzeptiert werden.",
+    "globalForceDescription": "Bitte prüfen Sie die aktuelle Version und bestätigen Sie die Zustimmung, um geschützte Kontofunktionen weiter zu nutzen.",
+    "globalInformTitle": "Bedingungen aktualisiert: Bitte aktuelle Fassung prüfen.",
+    "globalInformDescription": "Dieses Update ist nur informativ (keine erzwungene erneute Zustimmung), sollte aber geprüft werden.",
+    "globalReviewAction": "Bedingungen prüfen",
+    "globalDismissAction": "Vorerst ausblenden",
+    "acceptOptionalTitle": "Optionale Bestätigung: Aktuelle Fassung akzeptieren.",
+    "acceptOptionalDescription": "Sie können die Zustimmung jetzt bestätigen, um Update-Hinweise für diese Version zu entfernen."
   }
 }

@@ -27,13 +27,14 @@ export const ImprintPage: React.FC = () => {
         <MarketingLayout>
             <div className="space-y-6">
                 <section className="rounded-3xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-6 shadow-sm md:p-10">
-                    <p className="text-xs font-semibold uppercase tracking-widest text-accent-600">§5 TMG · §18 Abs. 2 MStV</p>
+                    <p className="text-xs font-semibold uppercase tracking-widest text-accent-600">§5 DDG · §18 Abs. 2 MStV</p>
                     <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-900 md:text-4xl">
                         Impressum (Legal Notice)
                     </h1>
                     <p className="mt-4 text-base text-slate-700 md:text-lg">
                         This page provides all mandatory provider and contact information for {APP_NAME} in accordance with
-                        German Telemedia Act (Telemediengesetz) and the Interstate Media Treaty (Medienstaatsvertrag).
+                        the German Digital Services Act (Digitale-Dienste-Gesetz, DDG) and the Interstate Media Treaty
+                        (Medienstaatsvertrag).
                         Personal details below are loaded from a dedicated typed legal profile module.
                     </p>
                 </section>
@@ -135,10 +136,8 @@ export const ImprintPage: React.FC = () => {
                         </a>
                     </p>
                     <p className="mt-4">
-                        The European Commission provides a platform for Online Dispute Resolution (ODR):{' '}
-                        <a className="text-accent-700 hover:underline" href={dispute.odrUrl} target="_blank" rel="noreferrer">
-                            {dispute.odrUrl}
-                        </a>.
+                        The EU ODR platform under Regulation (EU) No 524/2013 has been discontinued
+                        {dispute.odrPlatformDiscontinuedAt ? ` (application end date: ${dispute.odrPlatformDiscontinuedAt})` : ''}.
                         {dispute.participatesInConsumerArbitration
                             ? ` ${APP_NAME} participates in dispute resolution procedures before a consumer arbitration board.`
                             : ` ${APP_NAME} is not obligated and currently not willing to participate in dispute resolution procedures before a consumer arbitration board.`}
@@ -149,7 +148,8 @@ export const ImprintPage: React.FC = () => {
                     <p>
                         All content on this website was created with great care. Nevertheless, no liability is assumed for the
                         accuracy, completeness, or timeliness of the information. As a service provider, {APP_NAME} is
-                        responsible for its own content on these pages according to § 7 Abs.1 TMG. Under §§ 8 to 10 TMG,
+                        responsible for its own content on these pages according to applicable statutory law. Under the
+                        liability privilege framework for intermediary services,
                         {APP_NAME} is not obligated to monitor transmitted or stored external information.
                     </p>
                 </Section>

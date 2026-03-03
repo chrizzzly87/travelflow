@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ArrowRight, SpinnerGap as Loader2 } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
-import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { Checkbox } from '../components/ui/checkbox';
 import { MarketingLayout } from '../components/marketing/MarketingLayout';
 import { useAuth } from '../hooks/useAuth';
+import { buildLocalizedMarketingPath } from '../config/routes';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
 import {
     processAnonymousAssetClaimAfterAuth,
@@ -29,6 +30,7 @@ import {
     getLastUsedOAuthProvider,
     setPendingOAuthProvider,
 } from '../services/authUiPreferencesService';
+import { acceptCurrentTerms } from '../services/authService';
 import { normalizeAppLanguage } from '../utils';
 import { SocialProviderIcon } from '../components/auth/SocialProviderIcon';
 
@@ -118,12 +120,16 @@ export const LoginPage: React.FC = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isPostAuthProcessing, setIsPostAuthProcessing] = useState(false);
     const [hasPostAuthAttempted, setHasPostAuthAttempted] = useState(false);
+    const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [infoMessage, setInfoMessage] = useState<string | null>(null);
     const [rememberLogin, setRememberLogin] = useState<boolean>(() => isRememberLoginEnabled());
     const [lastUsedProvider, setLastUsedProvider] = useState<OAuthProviderId | null>(() => getLastUsedOAuthProvider());
 
     const oauthButtons = useMemo(() => getOAuthButtons(i18n.language), [i18n.language]);
+    const authLocale = useMemo(() => normalizeAppLanguage(i18n.language), [i18n.language]);
+    const termsPath = useMemo(() => buildLocalizedMarketingPath('terms', authLocale), [authLocale]);
+    const privacyPath = useMemo(() => buildLocalizedMarketingPath('privacy', authLocale), [authLocale]);
 
     const claimRequestId = (searchParams.get('claim') || '').trim() || null;
     const assetClaimId = (searchParams.get('asset_claim') || '').trim() || null;
@@ -247,6 +253,9 @@ export const LoginPage: React.FC = () => {
         setMode(nextMode);
         setErrorMessage(null);
         setInfoMessage(null);
+        if (nextMode === 'login') {
+            setHasAcceptedTerms(false);
+        }
         trackEvent('auth__method--select', { method: nextMode });
     };
 
@@ -259,6 +268,10 @@ export const LoginPage: React.FC = () => {
 
         if (!submittedEmail || !submittedPassword.trim()) {
             setErrorMessage(t('errors.default'));
+            return;
+        }
+        if (mode === 'register' && !hasAcceptedTerms) {
+            setErrorMessage(t('errors.terms_required'));
             return;
         }
         if (submittedEmail !== email) setEmail(submittedEmail);
@@ -293,6 +306,13 @@ export const LoginPage: React.FC = () => {
         } else if (!response.data.session) {
             setInfoMessage(t('states.emailConfirmationSent'));
         } else {
+            const acceptance = await acceptCurrentTerms({
+                locale: authLocale,
+                source: 'signup_login_page',
+            });
+            if (acceptance.error) {
+                setInfoMessage(t('states.termsAcceptancePending'));
+            }
             setInfoMessage(t('states.alreadyAuthenticated'));
         }
         setIsSubmitting(false);
@@ -474,6 +494,31 @@ export const LoginPage: React.FC = () => {
                                 </div>
                                 <p className="text-xs text-slate-500">{t('copy.passwordResetHint')}</p>
                             </div>
+                        )}
+                        {mode === 'register' && (
+                            <label className="flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
+                                <input
+                                    type="checkbox"
+                                    checked={hasAcceptedTerms}
+                                    onChange={(event) => {
+                                        setHasAcceptedTerms(event.target.checked);
+                                        trackEvent(event.target.checked ? 'auth__terms_consent--accept' : 'auth__terms_consent--reject', { source: 'login_page' });
+                                    }}
+                                    className="mt-0.5 h-4 w-4 rounded border-slate-300"
+                                    {...getAnalyticsDebugAttributes('auth__terms_consent--accept', { source: 'login_page' })}
+                                />
+                                <span>
+                                    {t('copy.termsConsentPrefix')}{' '}
+                                    <Link className="font-semibold text-accent-700 hover:underline" to={termsPath} target="_blank" rel="noreferrer">
+                                        {t('copy.termsConsentTerms')}
+                                    </Link>{' '}
+                                    {t('copy.termsConsentJoiner')}{' '}
+                                    <Link className="font-semibold text-accent-700 hover:underline" to={privacyPath} target="_blank" rel="noreferrer">
+                                        {t('copy.termsConsentPrivacy')}
+                                    </Link>
+                                    .
+                                </span>
+                            </label>
                         )}
 
                         <button

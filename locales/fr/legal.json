@@ -53,5 +53,32 @@
     "stateAll": "Accept all",
     "stateEssential": "Essential only",
     "stateUnset": "Not set"
+  },
+  "termsPage": {
+    "heroEyebrow": "Conditions d’utilisation · AGB",
+    "heroTitle": "Conditions d’utilisation / Allgemeine Geschäftsbedingungen",
+    "heroIntro": "Ces conditions régissent l’utilisation de {appName}.",
+    "heroBindingNote": "Le texte allemand ci-dessous est la version juridiquement contraignante. Le texte anglais est fourni uniquement à titre informatif.",
+    "versionLabel": "Version",
+    "lastUpdatedLabel": "Dernière mise à jour",
+    "controllerInfoLead": "Les informations sur le responsable sont disponibles dans les",
+    "imprintLinkLabel": "Mentions légales",
+    "privacyInfoLead": "Les détails du traitement des données sont disponibles dans la",
+    "privacyLinkLabel": "Politique de confidentialité",
+    "acceptRequiredTitle": "Action requise : veuillez accepter les conditions actuelles pour continuer à utiliser votre compte.",
+    "acceptRequiredDescription": "Vous pouvez consulter les deux versions ci-dessous avant de confirmer.",
+    "acceptSubmit": "Accepter les conditions actuelles et continuer",
+    "acceptSubmitting": "Enregistrement de l’acceptation...",
+    "acceptError": "Nous n’avons pas pu enregistrer votre acceptation des conditions pour le moment. Veuillez réessayer.",
+    "bindingSectionTitle": "Version contraignante (allemand)",
+    "helperSectionTitle": "Traduction d’assistance (anglais, non contraignante)",
+    "globalForceTitle": "Action requise : les conditions mises à jour nécessitent votre acceptation.",
+    "globalForceDescription": "Consultez la dernière version des conditions et confirmez votre acceptation pour continuer à utiliser les fonctions de compte protégées.",
+    "globalInformTitle": "Conditions mises à jour : consultez la dernière version juridique.",
+    "globalInformDescription": "Cette mise à jour est uniquement informative (sans nouvelle acceptation forcée), mais vous devriez relire la version la plus récente.",
+    "globalReviewAction": "Consulter les conditions",
+    "globalDismissAction": "Masquer pour l’instant",
+    "acceptOptionalTitle": "Confirmation facultative : validez la dernière version des conditions.",
+    "acceptOptionalDescription": "Vous pouvez confirmer maintenant pour ne plus voir les avis de mise à jour pour cette version."
   }
 }
