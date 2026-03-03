@@ -122,7 +122,7 @@ describe('components/ItineraryMap route cache helpers', () => {
     expect(outerOutlineOptions.zIndex).toBe(38);
   });
 
-  it('renders a visible outer white route outline for dark style', () => {
+  it('uses route-colored outer outlines for dark styles', () => {
     const { outerOutlineOptions, outlineOptions, mainOptions } = buildRoutePolylinePairOptions({
       geodesic: true,
       strokeColor: '#2563eb',
@@ -138,7 +138,7 @@ describe('components/ItineraryMap route cache helpers', () => {
     expect(outlineOptions.strokeOpacity).toBe(1);
     expect(outerOutlineOptions.strokeOpacity).toBe(0.95);
     expect(outlineOptions.strokeColor).toBe('#1b2230');
-    expect(outerOutlineOptions.strokeColor).toBe('#f8fafc');
+    expect(outerOutlineOptions.strokeColor).toBe('#2563eb');
     expect(outlineOptions.icons).toBeUndefined();
     expect(outerOutlineOptions.icons).toBeUndefined();
     expect(mainOptions.zIndex).toBe(40);
@@ -200,7 +200,7 @@ describe('components/ItineraryMap route cache helpers', () => {
     expect(outlineOptions.strokeOpacity).toBe(1);
     expect(outerOutlineOptions.strokeOpacity).toBe(0.95);
     expect(outlineOptions.strokeColor).toBe('#1b2230');
-    expect(outerOutlineOptions.strokeColor).toBe('#f8fafc');
+    expect(outerOutlineOptions.strokeColor).toBe('#f43f5e');
   });
 
   it('estimates great-circle distance between two points', () => {

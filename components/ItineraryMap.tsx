@@ -589,8 +589,10 @@ export const buildRoutePolylinePairOptions = (
     const baseZIndex = options.zIndex ?? 30;
     const mainStrokeWeight = baseWeight + 1;
     const innerOutlineColor = getRouteOutlineColor(style);
-    const outerOutlineColor = getRouteOuterOutlineColor(style);
     const isDarkFamilyStyle = isDarkMapStyle(style);
+    const outerOutlineColor = isDarkFamilyStyle
+        ? (options.strokeColor ?? getRouteOuterOutlineColor(style))
+        : getRouteOuterOutlineColor(style);
     const shouldApplyDarkRouteBorders = isDarkFamilyStyle;
 
     const outerOutlineOptions: google.maps.PolylineOptions = {
