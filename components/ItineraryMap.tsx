@@ -4,16 +4,17 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { ActivityType, ITimelineItem, MapColorMode, MapStyle, RouteFailureReason, RouteMode, RouteStatus } from '../types';
 import { ArrowLeftRight, ArrowUpDown, Focus, Layers, Maximize2, Minimize2 } from 'lucide-react';
 import { readLocalStorageItem, writeLocalStorageItem } from '../services/browserStorageService';
-import { buildRouteCacheKey, DEFAULT_MAP_COLOR_MODE, findTravelBetweenCities, getActivityColorByTypes, getHexFromColorClass, getNormalizedCityName, pickPrimaryActivityType, shiftHexColor } from '../utils';
+import { buildRouteCacheKey, DEFAULT_MAP_COLOR_MODE, findTravelBetweenCities, getHexFromColorClass, getNormalizedCityName, pickPrimaryActivityType } from '../utils';
 import { getAnalyticsDebugAttributes } from '../services/analyticsService';
 import { useGoogleMaps } from './GoogleMapsLoader';
 import { normalizeTransportMode } from '../shared/transportModes';
-import { ActivityTypeIcon } from './ActivityTypeVisuals';
+import { ActivityTypeIcon, getActivityTypePaletteParts } from './ActivityTypeVisuals';
 
 interface ItineraryMapProps {
     items: ITimelineItem[];
     selectedItemId?: string | null;
     onCityMarkerSelect?: (cityId: string) => void;
+    onActivityMarkerSelect?: (activityId: string) => void;
     layoutMode?: 'horizontal' | 'vertical';
     onLayoutChange?: (mode: 'horizontal' | 'vertical') => void;
     showLayoutControls?: boolean;
@@ -541,6 +542,15 @@ const buildCoordinateGroupKey = (coordinates: google.maps.LatLngLiteral): string
 
 const ACTIVITY_ICON_MARKUP_CACHE = new Map<ActivityType, string>();
 
+const escapeHtml = (value: string): string => (
+    value
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;')
+);
+
 const buildActivityIconMarkup = (type: ActivityType): string => {
     const cached = ACTIVITY_ICON_MARKUP_CACHE.get(type);
     if (cached) return cached;
@@ -555,24 +565,31 @@ const buildActivityIconMarkup = (type: ActivityType): string => {
     return styled;
 };
 
-const buildActivityMarkerHtml = (type: ActivityType, color: string, isSelected: boolean): string => {
+const buildActivityMarkerHtml = (type: ActivityType, isSelected: boolean, title?: string): string => {
     const size = isSelected ? ACTIVITY_MARKER_BADGE_SIZE + 4 : ACTIVITY_MARKER_BADGE_SIZE;
-    const borderColor = isSelected ? resolveCssColorVar('--tf-accent-500', '#2563eb') : '#ffffff';
-    const ringColor = isSelected ? resolveCssColorVar('--tf-accent-200', '#bfdbfe') : '#dbe3ee';
-    const iconColor = shiftHexColor(color, -96);
+    const palette = getActivityTypePaletteParts(type);
+    const selectedOutlineColor = resolveCssColorVar('--tf-accent-500', '#2563eb');
     const iconMarkup = buildActivityIconMarkup(type);
+    const tooltipLabel = typeof title === 'string' && title.trim().length > 0
+        ? escapeHtml(title.trim())
+        : '';
+    const tooltipMarkup = tooltipLabel
+        ? `<div data-role="activity-marker-tooltip" style="position:absolute;inset:auto auto 100% 50%;transform:translate(-50%, calc(-100% - 8px));pointer-events:none;opacity:0;transition:opacity 140ms ease, transform 140ms ease;z-index:30;white-space:nowrap;background:rgba(15,23,42,0.95);color:#f8fafc;border-radius:9999px;padding:6px 10px;font-size:11px;font-weight:600;letter-spacing:0.01em;box-shadow:0 8px 24px rgba(15,23,42,0.24);backdrop-filter:blur(6px);">${tooltipLabel}</div>`
+        : '';
 
     return `
-        <div style="position:relative;width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;border-radius:9999px;background:${color};border:2px solid ${borderColor};color:${iconColor};line-height:1;">
-            <div style="position:absolute;inset:3px;border-radius:9999px;border:1.5px solid ${ringColor};opacity:${isSelected ? '0.9' : '0.55'};"></div>
-            <div style="position:relative;z-index:1;display:flex;align-items:center;justify-content:center;">${iconMarkup}</div>
+        <div style="position:relative;width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;line-height:1;user-select:none;">
+            <div class="${palette.bg} ${palette.border}" style="width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;border-radius:9999px;border-width:2px;border-style:solid;box-shadow:${isSelected ? `0 0 0 2px ${selectedOutlineColor}` : 'none'};">
+                <div class="${palette.text}" style="position:relative;z-index:1;display:flex;align-items:center;justify-content:center;">${iconMarkup}</div>
+            </div>
+            ${tooltipMarkup}
         </div>
     `;
 };
 
 type ResolvedActivityMarker = {
     id: string;
-    colorHex: string;
+    title: string;
     type: ActivityType;
     baseCoordinates: google.maps.LatLngLiteral;
     position: google.maps.LatLngLiteral;
@@ -614,19 +631,18 @@ export const resolveActivityMarkerPositions = (
             const baseCoordinates = activityCoordinates || ownerCity?.coordinates || null;
             if (!baseCoordinates) return null;
             const primaryType = pickPrimaryActivityType(activity.activityType);
-            const colorHex = getHexFromColorClass(getActivityColorByTypes(activity.activityType));
             return {
                 id: activity.id,
+                title: activity.title,
                 type: primaryType,
-                colorHex,
                 baseCoordinates,
                 coordinateSource: activityCoordinates ? 'activity' as const : 'city' as const,
             };
         })
         .filter((entry): entry is {
             id: string;
+            title: string;
             type: ActivityType;
-            colorHex: string;
             baseCoordinates: google.maps.LatLngLiteral;
             coordinateSource: 'activity' | 'city';
         } => Boolean(entry));
@@ -942,6 +958,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     items, 
     selectedItemId, 
     onCityMarkerSelect,
+    onActivityMarkerSelect,
     layoutMode, 
     onLayoutChange, 
     showLayoutControls = true,
@@ -970,7 +987,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     const googleMapRef = useRef<any>(null); // google.maps.Map
     const markersRef = useRef<OverlayMarkerHandle[]>([]);
     const cityMarkerMetaRef = useRef<Array<{ id: string; color: string; index: number; marker: OverlayMarkerHandle }>>([]);
-    const activityMarkerMetaRef = useRef<Array<{ id: string; color: string; type: ActivityType; marker: OverlayMarkerHandle }>>([]);
+    const activityMarkerMetaRef = useRef<Array<{ id: string; title: string; type: ActivityType; marker: OverlayMarkerHandle }>>([]);
     const activityMarkerPositionByIdRef = useRef<Map<string, google.maps.LatLngLiteral>>(new Map());
     const routesRef = useRef<any[]>([]); // stored polylines/renderers
     const transportMarkersRef = useRef<OverlayMarkerHandle[]>([]);
@@ -981,6 +998,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     const onRouteMetricsRef = useRef<typeof onRouteMetrics>(onRouteMetrics);
     const onRouteStatusRef = useRef<typeof onRouteStatus>(onRouteStatus);
     const onCityMarkerSelectRef = useRef<typeof onCityMarkerSelect>(onCityMarkerSelect);
+    const onActivityMarkerSelectRef = useRef<typeof onActivityMarkerSelect>(onActivityMarkerSelect);
     
     const { isLoaded, loadError } = useGoogleMaps();
     const [mapInitialized, setMapInitialized] = useState(false);
@@ -1057,6 +1075,10 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     useEffect(() => {
         onCityMarkerSelectRef.current = onCityMarkerSelect;
     }, [onCityMarkerSelect]);
+
+    useEffect(() => {
+        onActivityMarkerSelectRef.current = onActivityMarkerSelect;
+    }, [onActivityMarkerSelect]);
 
     const handleMapInstanceChange = useCallback((map: google.maps.Map | null) => {
         if (googleMapRef.current === map) return;
@@ -1136,6 +1158,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             clickable = false,
             centerAnchor = false,
             onClick,
+            tooltipText,
         }: {
             position: google.maps.LatLngLiteral;
             html: string;
@@ -1143,15 +1166,27 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             clickable?: boolean;
             centerAnchor?: boolean;
             onClick?: () => void;
+            tooltipText?: string;
         }): OverlayMarkerHandle => {
             const overlay = new window.google.maps.OverlayView();
             let markerDiv: HTMLDivElement | null = null;
             let currentPosition = position;
             let currentHtml = html;
             let currentZIndex = zIndex;
+            let tooltipNode: HTMLDivElement | null = null;
             const clickHandler = (event: MouseEvent) => {
                 event.stopPropagation();
                 onClick?.();
+            };
+            const showTooltipHandler = () => {
+                if (!tooltipNode) return;
+                tooltipNode.style.opacity = '1';
+                tooltipNode.style.transform = 'translate(-50%, calc(-100% - 14px))';
+            };
+            const hideTooltipHandler = () => {
+                if (!tooltipNode) return;
+                tooltipNode.style.opacity = '0';
+                tooltipNode.style.transform = 'translate(-50%, calc(-100% - 8px))';
             };
 
             overlay.onAdd = function onAdd() {
@@ -1164,6 +1199,11 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 markerDiv.innerHTML = currentHtml;
                 if (clickable) {
                     markerDiv.addEventListener('click', clickHandler);
+                }
+                if (tooltipText) {
+                    tooltipNode = markerDiv.querySelector('[data-role="activity-marker-tooltip"]');
+                    markerDiv.addEventListener('mouseenter', showTooltipHandler);
+                    markerDiv.addEventListener('mouseleave', hideTooltipHandler);
                 }
                 const panes = this.getPanes();
                 const targetPane = clickable ? panes.overlayMouseTarget : panes.overlayLayer;
@@ -1185,8 +1225,13 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 if (clickable) {
                     markerDiv.removeEventListener('click', clickHandler);
                 }
+                if (tooltipText) {
+                    markerDiv.removeEventListener('mouseenter', showTooltipHandler);
+                    markerDiv.removeEventListener('mouseleave', hideTooltipHandler);
+                }
                 markerDiv.remove();
                 markerDiv = null;
+                tooltipNode = null;
             };
 
             overlay.setMap(googleMapRef.current);
@@ -1458,15 +1503,18 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                     position: activityMarker.position,
                     html: buildActivityMarkerHtml(
                         activityMarker.type,
-                        activityMarker.colorHex || '#475569',
                         isSelected,
+                        activityMarker.title,
                     ),
                     zIndex: isSelected ? 92 : 24,
+                    clickable: true,
+                    onClick: () => onActivityMarkerSelectRef.current?.(activityMarker.id),
+                    tooltipText: activityMarker.title,
                 });
 
                 activityMarkerMetaRef.current.push({
                     id: activityMarker.id,
-                    color: activityMarker.colorHex || '#475569',
+                    title: activityMarker.title,
                     type: activityMarker.type,
                     marker,
                 });
@@ -2019,10 +2067,10 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 zIndex: isSelected ? 100 : 10,
             });
         });
-        activityMarkerMetaRef.current.forEach(({ id, color, type, marker }) => {
+        activityMarkerMetaRef.current.forEach(({ id, title, type, marker }) => {
             const isSelected = id === selectedActivityId;
             marker.update({
-                html: buildActivityMarkerHtml(type, color, isSelected),
+                html: buildActivityMarkerHtml(type, isSelected, title),
                 zIndex: isSelected ? 92 : 24,
             });
         });

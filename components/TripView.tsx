@@ -1592,6 +1592,10 @@ const useTripViewRender = ({
         handleTimelineSelect(cityId, { isCity: true });
     }, [handleTimelineSelect]);
 
+    const handleMapActivitySelect = useCallback((activityId: string) => {
+        handleTimelineSelect(activityId, { isCity: false });
+    }, [handleTimelineSelect]);
+
     const {
         routeStatusById,
         handleRouteMetrics,
@@ -2097,6 +2101,7 @@ const useTripViewRender = ({
                         displayItems={displayTrip.items}
                         selectedItemId={selectedItemId}
                         onMapCitySelect={handleMapCitySelect}
+                        onMapActivitySelect={handleMapActivitySelect}
                         layoutMode={layoutMode}
                         effectiveLayoutMode={effectiveLayoutMode}
                         onLayoutModeChange={(mode) => {

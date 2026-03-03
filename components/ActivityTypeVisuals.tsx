@@ -17,7 +17,13 @@ import {
     Utensils,
 } from 'lucide-react';
 
-const resolveColorParts = (type: ActivityType) => {
+export interface ActivityTypePaletteParts {
+    bg: string;
+    border: string;
+    text: string;
+}
+
+export const getActivityTypePaletteParts = (type: ActivityType): ActivityTypePaletteParts => {
     const base = ACTIVITY_TYPE_COLORS[type] || ACTIVITY_TYPE_COLORS.general;
     const classes = base.split(' ');
     const bg = classes.find(c => c.startsWith('bg-')) || 'bg-slate-100';
@@ -27,12 +33,12 @@ const resolveColorParts = (type: ActivityType) => {
 };
 
 export const getActivityTypePaletteClass = (type: ActivityType): string => {
-    const { bg, border, text } = resolveColorParts(type);
+    const { bg, border, text } = getActivityTypePaletteParts(type);
     return `${bg} ${border} ${text}`;
 };
 
 export const getActivityTypeButtonClass = (type: ActivityType, isSelected: boolean): string => {
-    const { bg, border, text } = resolveColorParts(type);
+    const { bg, border, text } = getActivityTypePaletteParts(type);
     if (isSelected) return `${bg} ${border} ${text} shadow-sm ring-1 ring-black/5`;
     return 'bg-white border-gray-200 text-gray-500 hover:border-gray-300';
 };
