@@ -1,3 +1,5 @@
+import { buildCalendarIcs, sanitizeCalendarFileName, toIcsUtcStamp } from './calendarIcsService';
+
 export interface BlogCalendarEvent {
     id: string;
     title: string;
@@ -32,16 +34,6 @@ const toOptionalString = (value: unknown): string | undefined => {
     return parsed ?? undefined;
 };
 
-const sanitizeFileName = (value: string | undefined): string => {
-    const base = (value || 'calendar-events')
-        .trim()
-        .toLowerCase()
-        .replace(/[^a-z0-9-]+/g, '-')
-        .replace(/-{2,}/g, '-')
-        .replace(/(^-|-$)/g, '');
-    return base || 'calendar-events';
-};
-
 const parseIsoDate = (value: unknown): Date | null => {
     const raw = toNonEmptyString(value);
     if (!raw) return null;
@@ -60,7 +52,7 @@ const parseEvent = (value: unknown, fallbackIndex: number): BlogCalendarEvent | 
     if (endDate.getTime() <= startDate.getTime()) return null;
 
     const explicitId = toOptionalString(value.id);
-    const id = sanitizeFileName(explicitId || `${title}-${fallbackIndex + 1}`);
+    const id = sanitizeCalendarFileName(explicitId || `${title}-${fallbackIndex + 1}`);
 
     return {
         id,
@@ -94,63 +86,17 @@ export const parseBlogCalendarCardConfig = (rawJson: string): BlogCalendarCardCo
     return {
         title,
         description: toOptionalString(parsed.description),
-        filename: sanitizeFileName(toOptionalString(parsed.filename)),
+        filename: sanitizeCalendarFileName(toOptionalString(parsed.filename)),
         timezone: toOptionalString(parsed.timezone),
         events,
     };
 };
 
-const toIcsUtcStamp = (isoString: string): string => {
-    const date = new Date(isoString);
-    return date
-        .toISOString()
-        .replace(/[-:]/g, '')
-        .replace(/\.\d{3}Z$/, 'Z');
-};
-
-const escapeIcsText = (value: string): string => {
-    return value
-        .replace(/\\/g, '\\\\')
-        .replace(/\n/g, '\\n')
-        .replace(/,/g, '\\,')
-        .replace(/;/g, '\\;');
-};
-
-const buildIcsEvent = (event: BlogCalendarEvent, index: number): string => {
-    const uid = `${event.id}-${index + 1}@travelflow.app`;
-    const nowStamp = toIcsUtcStamp(new Date().toISOString());
-    const lines = [
-        'BEGIN:VEVENT',
-        `UID:${uid}`,
-        `DTSTAMP:${nowStamp}`,
-        `DTSTART:${toIcsUtcStamp(event.start)}`,
-        `DTEND:${toIcsUtcStamp(event.end)}`,
-        `SUMMARY:${escapeIcsText(event.title)}`,
-    ];
-
-    if (event.location) {
-        lines.push(`LOCATION:${escapeIcsText(event.location)}`);
-    }
-    if (event.description) {
-        lines.push(`DESCRIPTION:${escapeIcsText(event.description)}`);
-    }
-
-    lines.push('END:VEVENT');
-    return lines.join('\r\n');
-};
-
 export const buildBlogCalendarIcs = (config: BlogCalendarCardConfig): string => {
-    const lines = [
-        'BEGIN:VCALENDAR',
-        'VERSION:2.0',
-        'PRODID:-//TravelFlow//Blog Calendar//EN',
-        'CALSCALE:GREGORIAN',
-        'METHOD:PUBLISH',
-        ...config.events.map((event, index) => buildIcsEvent(event, index)),
-        'END:VCALENDAR',
-        '',
-    ];
-    return lines.join('\r\n');
+    return buildCalendarIcs({
+        calendarLabel: 'Blog Calendar',
+        events: config.events,
+    });
 };
 
 const toGoogleDateRange = (startIso: string, endIso: string): string => {
