@@ -1220,7 +1220,9 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             const isRoundTrip = !!(startCityKey && endCityKey && startCityKey === endCityKey);
             const isCleanDarkLabelStyle = activeStyle === 'cleanDark';
             const labelTextColor = isCleanDarkLabelStyle ? '#f8fafc' : '#111827';
-            const labelSubTextColor = 'var(--tf-primary)';
+            const labelSubTextColor = isCleanDarkLabelStyle
+                ? resolveCssColorVar('--tf-accent-200', '#c7d2fe')
+                : 'var(--tf-primary)';
             const labelTextShadow = isCleanDarkLabelStyle
                 ? '0 1px 2px rgba(11,18,32,0.88)'
                 : '0 1px 2px rgba(255,255,255,0.8)';
