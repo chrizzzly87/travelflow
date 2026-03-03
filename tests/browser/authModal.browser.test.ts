@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 const mocks = vi.hoisted(() => ({
@@ -101,8 +101,17 @@ vi.mock('react-i18next', () => ({
 
 import { AuthModal } from '../../components/auth/AuthModal';
 
+const setNativeInputValue = (input: HTMLInputElement, value: string): void => {
+  const valueSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+  if (!valueSetter) {
+    throw new Error('Missing HTMLInputElement value setter');
+  }
+  valueSetter.call(input, value);
+};
+
 describe('components/auth/AuthModal remember login', () => {
   beforeEach(() => {
+    cleanup();
     vi.clearAllMocks();
     mocks.rememberLoginEnabled = true;
     mocks.auth.isLoading = false;
@@ -138,5 +147,31 @@ describe('components/auth/AuthModal remember login', () => {
     });
     expect(mocks.setRememberLoginEnabled).toHaveBeenLastCalledWith(false);
   });
-});
 
+  it('submits browser-autofilled credentials even when React state was not updated by input events', async () => {
+    const user = userEvent.setup();
+
+    render(
+      React.createElement(AuthModal, {
+        isOpen: true,
+        source: 'test',
+        nextPath: '/create-trip',
+        reloadOnSuccess: false,
+        onClose: mocks.onClose,
+      }),
+    );
+
+    const emailInput = screen.getByLabelText('labels.email') as HTMLInputElement;
+    const passwordInput = screen.getByLabelText('labels.password') as HTMLInputElement;
+    const submitButton = screen.getByRole('button', { name: 'actions.submitLogin' });
+
+    setNativeInputValue(emailInput, 'autofill@example.com');
+    setNativeInputValue(passwordInput, 'autofill-password');
+
+    await user.click(submitButton);
+
+    await waitFor(() => {
+      expect(mocks.auth.loginWithPassword).toHaveBeenCalledWith('autofill@example.com', 'autofill-password');
+    });
+  });
+});

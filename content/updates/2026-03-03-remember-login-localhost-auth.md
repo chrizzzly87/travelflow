@@ -12,5 +12,6 @@ summary: "Added a remember-login control in sign-in flows and improved local aut
 
 ## Changes
 - [x] [Improved] 🔐 Added a "Remember login" option in sign-in page and modal flows so you can choose whether your session persists on that browser.
+- [x] [Improved] ✍️ Improved sign-in autofill compatibility so browser-saved credentials submit reliably in both login page and modal flows.
 - [ ] [Internal] 🧪 Added localhost auth-bridge persistence so valid sessions can be reused across different local development ports.
 - [ ] [Internal] 🧹 Cleared localhost auth bridge cookies during auth recovery so stale local tokens cannot restore unexpectedly.

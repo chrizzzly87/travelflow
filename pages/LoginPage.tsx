@@ -253,10 +253,16 @@ export const LoginPage: React.FC = () => {
     const handlePasswordSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         if (isSubmitting || isPostAuthProcessing) return;
-        if (!email.trim() || !password.trim()) {
+        const formData = new FormData(event.currentTarget);
+        const submittedEmail = (formData.get('email')?.toString() || email).trim();
+        const submittedPassword = formData.get('password')?.toString() || password;
+
+        if (!submittedEmail || !submittedPassword.trim()) {
             setErrorMessage(t('errors.default'));
             return;
         }
+        if (submittedEmail !== email) setEmail(submittedEmail);
+        if (submittedPassword !== password) setPassword(submittedPassword);
         setRememberLoginEnabled(rememberLogin);
         clearPendingOAuthProvider();
 
@@ -265,7 +271,7 @@ export const LoginPage: React.FC = () => {
         setInfoMessage(null);
 
         if (mode === 'login') {
-            const response = await loginWithPassword(email.trim(), password);
+            const response = await loginWithPassword(submittedEmail, submittedPassword);
             if (response.error) {
                 const errorCode = normalizeErrorCode(response.error);
                 setErrorMessage(t(`errors.${errorCode}`, t('errors.default')));
@@ -277,8 +283,8 @@ export const LoginPage: React.FC = () => {
         }
 
         const response = await registerWithPassword(
-            email.trim(),
-            password,
+            submittedEmail,
+            submittedPassword,
             { emailRedirectTo: oauthRedirectTo }
         );
         if (response.error) {
@@ -400,7 +406,7 @@ export const LoginPage: React.FC = () => {
                                 id={LOGIN_PAGE_EMAIL_INPUT_ID}
                                 name="email"
                                 type="email"
-                                autoComplete="email"
+                                autoComplete={mode === 'login' ? 'username' : 'email'}
                                 inputMode="email"
                                 autoCapitalize="none"
                                 autoCorrect="off"

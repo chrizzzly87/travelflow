@@ -309,10 +309,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             setInfoMessage(null);
             return;
         }
-        if (!email.trim() || !password.trim()) {
+        const formData = new FormData(event.currentTarget);
+        const submittedEmail = (formData.get('email')?.toString() || email).trim();
+        const submittedPassword = formData.get('password')?.toString() || password;
+
+        if (!submittedEmail || !submittedPassword.trim()) {
             setErrorMessage(t('errors.default'));
             return;
         }
+        if (submittedEmail !== email) setEmail(submittedEmail);
+        if (submittedPassword !== password) setPassword(submittedPassword);
         setRememberLoginEnabled(rememberLogin);
         clearPendingOAuthProvider();
 
@@ -328,7 +334,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         try {
             if (mode === 'login') {
                 const outcome = await runTimedRequest(
-                    () => loginWithPassword(email.trim(), password),
+                    () => loginWithPassword(submittedEmail, submittedPassword),
                     timeoutMs
                 );
                 if (pendingRequestRef.current !== requestId) return;
@@ -350,7 +356,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 }
             } else {
                 const outcome = await runTimedRequest(
-                    () => registerWithPassword(email.trim(), password, { emailRedirectTo: oauthRedirectTo }),
+                    () => registerWithPassword(submittedEmail, submittedPassword, { emailRedirectTo: oauthRedirectTo }),
                     timeoutMs
                 );
                 if (pendingRequestRef.current !== requestId) return;
@@ -590,7 +596,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                                         id={emailInputId}
                                         name="email"
                                         type="email"
-                                        autoComplete="email"
+                                        autoComplete={mode === 'login' ? 'username' : 'email'}
                                         inputMode="email"
                                         autoCapitalize="none"
                                         autoCorrect="off"
