@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { normalizeLocale } from '../../config/locales';
 import type { TripPaywallActivationMode } from '../../config/paywall';
 import { buildLocalizedMarketingPath } from '../../config/routes';
-import type { ShareMode } from '../../types';
+import type { ShareMode, TripGenerationState } from '../../types';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import type { ConnectivityState } from '../../services/supabaseHealthMonitor';
 import { Spinner } from '../ui/spinner';
@@ -54,6 +54,11 @@ interface TripViewStatusBannersProps {
     onRetrySyncQueue?: () => void;
     hasConflictBackupForTrip?: boolean;
     onRestoreConflictBackup?: () => void;
+    generationState?: TripGenerationState | null;
+    generationFailureMessage?: string | null;
+    canRetryGeneration?: boolean;
+    isRetryingGeneration?: boolean;
+    onRetryGeneration?: () => void;
     exampleTripBanner?: {
         title: string;
         countries: string[];
@@ -94,6 +99,11 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
     onRetrySyncQueue,
     hasConflictBackupForTrip = false,
     onRestoreConflictBackup,
+    generationState = null,
+    generationFailureMessage = null,
+    canRetryGeneration = false,
+    isRetryingGeneration = false,
+    onRetryGeneration,
     exampleTripBanner,
 }) => {
     const { t, i18n } = useTranslation('common');
@@ -185,6 +195,47 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
                             </button>
                         )}
                     </div>
+                </div>
+            )}
+
+            {(generationState === 'failed' || generationState === 'running' || generationState === 'queued') && (
+                <div className={`px-4 py-2 text-xs sm:px-6 border-b flex items-center justify-between gap-3 ${
+                    generationState === 'failed'
+                        ? 'border-rose-200 bg-rose-50 text-rose-900'
+                        : 'border-amber-200 bg-amber-50 text-amber-900'
+                }`}>
+                    <span className="inline-flex items-center gap-2">
+                        {generationState === 'failed' ? (
+                            <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                        ) : (
+                            <Spinner className="h-3.5 w-3.5 shrink-0" />
+                        )}
+                        {generationState === 'failed'
+                            ? (generationFailureMessage || t('tripView.generation.strip.failedDefault'))
+                            : t('tripView.generation.strip.running')}
+                    </span>
+                    {generationState === 'failed' && canRetryGeneration && onRetryGeneration && (
+                        <button
+                            type="button"
+                            onClick={() => {
+                                trackEvent('trip_generation__trip_strip--retry', {
+                                    trip_id: tripId,
+                                    source: 'trip_strip',
+                                });
+                                onRetryGeneration();
+                            }}
+                            disabled={isRetryingGeneration}
+                            className="px-3 py-1 rounded-md bg-white text-xs font-semibold border border-current/20 hover:bg-white/80 disabled:cursor-not-allowed disabled:opacity-50"
+                            {...getAnalyticsDebugAttributes('trip_generation__trip_strip--retry', {
+                                trip_id: tripId,
+                                source: 'trip_strip',
+                            })}
+                        >
+                            {isRetryingGeneration
+                                ? t('tripView.generation.strip.retrying')
+                                : t('tripView.generation.strip.retry')}
+                        </button>
+                    )}
                 </div>
             )}
 

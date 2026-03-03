@@ -16,9 +16,9 @@ import {
     buildDangerConfirmDialog,
     buildTransferTargetPromptDialog,
 } from '../services/appDialogPresets';
-import { dbGetTrip, dbUpsertTrip } from '../services/dbService';
+import { dbAdminOverrideTripCommit, dbGetTrip, dbUpsertTrip } from '../services/dbService';
 import { getTripCityStops, buildMiniMapUrl } from '../components/TripManager';
-import type { ITrip } from '../types';
+import type { ITrip, TripGenerationAttemptSummary, TripGenerationState } from '../types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { AdminReloadButton } from '../components/admin/AdminReloadButton';
 import { AdminFilterMenu, type AdminFilterMenuOption } from '../components/admin/AdminFilterMenu';
@@ -37,6 +37,8 @@ import {
     TableRow,
 } from '../components/ui/table';
 import { generateTripId } from '../utils';
+import { getTripGenerationState, getLatestTripGenerationAttempt } from '../services/tripGenerationDiagnosticsService';
+import { retryTripGenerationWithDefaultModel } from '../services/tripGenerationRetryService';
 
 const toDateTimeInputValue = (value: string | null): string => {
     if (!value) return '';
@@ -61,6 +63,7 @@ type TripStatus = 'active' | 'archived' | 'expired';
 
 const TRIPS_CACHE_KEY = 'admin.trips.cache.v1';
 const TRIP_STATUS_VALUES: readonly TripStatus[] = ['active', 'archived', 'expired'];
+const TRIP_GENERATION_STATE_VALUES: readonly TripGenerationState[] = ['failed', 'running', 'queued', 'succeeded'];
 const USER_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
 
@@ -102,6 +105,38 @@ const formatAccountStatusLabel = (status: string | null | undefined): string => 
     if (normalized === 'disabled') return 'Suspended';
     if (normalized === 'deleted') return 'Deleted';
     return 'Active';
+};
+
+const getLifecyclePillClassName = (status: TripStatus): string => {
+    if (status === 'archived') return 'border-slate-300 bg-slate-100 text-slate-700';
+    if (status === 'expired') return 'border-amber-200 bg-amber-50 text-amber-700';
+    return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+};
+
+const getGenerationPillClassName = (state: TripGenerationState): string => {
+    if (state === 'failed') return 'border-rose-200 bg-rose-50 text-rose-700';
+    if (state === 'running' || state === 'queued') return 'border-amber-200 bg-amber-50 text-amber-700';
+    return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+};
+
+const getGenerationStateLabel = (state: TripGenerationState): string => {
+    if (state === 'failed') return 'Failed';
+    if (state === 'running') return 'Running';
+    if (state === 'queued') return 'Queued';
+    return 'Succeeded';
+};
+
+const resolveTripGenerationState = (trip: AdminTripRecord): TripGenerationState => {
+    const state = trip.generation_state;
+    if (state === 'failed' || state === 'running' || state === 'queued' || state === 'succeeded') return state;
+    return 'succeeded';
+};
+
+const formatExpirationMeta = (expiresAt: string | null): string => {
+    if (!expiresAt) return 'Not set';
+    const parsed = Date.parse(expiresAt);
+    if (!Number.isFinite(parsed)) return 'Invalid timestamp';
+    return new Date(parsed).toLocaleString();
 };
 
 const isLikelyUserId = (value: string): boolean => USER_ID_PATTERN.test(value.trim());
@@ -258,6 +293,9 @@ export const AdminTripsPage: React.FC = () => {
     const [statusFilters, setStatusFilters] = useState<TripStatus[]>(
         () => parseQueryMultiValue(searchParams.get('status'), TRIP_STATUS_VALUES)
     );
+    const [generationStateFilters, setGenerationStateFilters] = useState<TripGenerationState[]>(
+        () => parseQueryMultiValue(searchParams.get('generation'), TRIP_GENERATION_STATE_VALUES)
+    );
     const [dateRange, setDateRange] = useState<AdminDateRange>(() => {
         const value = searchParams.get('range');
         if (value === '7d' || value === '30d' || value === '90d' || value === 'all') return value;
@@ -272,6 +310,7 @@ export const AdminTripsPage: React.FC = () => {
     const [selectedTripDrawerId, setSelectedTripDrawerId] = useState<string | null>(null);
     const [isTripDrawerOpen, setIsTripDrawerOpen] = useState(false);
     const [selectedFullTrip, setSelectedFullTrip] = useState<ITrip | null>(null);
+    const [isRetryingGeneration, setIsRetryingGeneration] = useState(false);
     const [isLoadingFullTrip, setIsLoadingFullTrip] = useState(false);
     const [isLoadingOwnerProfile, setIsLoadingOwnerProfile] = useState(false);
     const handledDeepLinkedOwnerIdRef = useRef<string | null>(null);
@@ -296,6 +335,9 @@ export const AdminTripsPage: React.FC = () => {
         if (statusFilters.length > 0 && statusFilters.length < TRIP_STATUS_VALUES.length) {
             next.set('status', statusFilters.join(','));
         }
+        if (generationStateFilters.length > 0 && generationStateFilters.length < TRIP_GENERATION_STATE_VALUES.length) {
+            next.set('generation', generationStateFilters.join(','));
+        }
         if (dateRange !== '30d') next.set('range', dateRange);
         const drawerTripId = selectedTripDrawerId || deepLinkedTripId;
         const drawerOwnerId = selectedOwnerId || deepLinkedOwnerId;
@@ -312,6 +354,7 @@ export const AdminTripsPage: React.FC = () => {
         dateRange,
         deepLinkedOwnerId,
         deepLinkedTripId,
+        generationStateFilters,
         isOwnerDrawerOpen,
         isTripDrawerOpen,
         searchParams,
@@ -393,12 +436,49 @@ export const AdminTripsPage: React.FC = () => {
         return buildMiniMapUrl(selectedFullTrip, 'en');
     }, [selectedFullTrip]);
 
+    const selectedTripGenerationState = useMemo<TripGenerationState>(() => {
+        if (selectedFullTrip) {
+            return getTripGenerationState(selectedFullTrip);
+        }
+        if (selectedTripForDrawer) {
+            return resolveTripGenerationState(selectedTripForDrawer);
+        }
+        return 'succeeded';
+    }, [selectedFullTrip, selectedTripForDrawer]);
+
+    const selectedTripGenerationAttempts = useMemo<TripGenerationAttemptSummary[]>(() => {
+        if (!selectedFullTrip?.aiMeta?.generation?.attempts || !Array.isArray(selectedFullTrip.aiMeta.generation.attempts)) {
+            return [];
+        }
+        return [...selectedFullTrip.aiMeta.generation.attempts]
+            .filter((entry): entry is TripGenerationAttemptSummary => Boolean(entry))
+            .sort((left, right) => Date.parse(right.startedAt) - Date.parse(left.startedAt))
+            .slice(0, 8);
+    }, [selectedFullTrip]);
+
+    const selectedTripLatestAttempt = useMemo<TripGenerationAttemptSummary | null>(() => {
+        if (selectedFullTrip) {
+            return getLatestTripGenerationAttempt(selectedFullTrip);
+        }
+        return null;
+    }, [selectedFullTrip]);
+
+    const canRetryGenerationInDrawer = Boolean(
+        selectedTripForDrawer
+        && selectedFullTrip
+        && selectedFullTrip.aiMeta?.generation?.inputSnapshot
+        && selectedTripGenerationState !== 'running'
+        && selectedTripGenerationState !== 'queued'
+        && !isRetryingGeneration
+    );
+
 
     const visibleTrips = useMemo(() => {
         const token = searchValue.trim().toLowerCase();
         return trips.filter((trip) => {
             if (!isIsoDateInRange(trip.updated_at || trip.created_at, dateRange)) return false;
             if (statusFilters.length > 0 && !statusFilters.includes(trip.status)) return false;
+            if (generationStateFilters.length > 0 && !generationStateFilters.includes(resolveTripGenerationState(trip))) return false;
             if (!token) return true;
             return (
                 (trip.title || '').toLowerCase().includes(token)
@@ -407,7 +487,7 @@ export const AdminTripsPage: React.FC = () => {
                 || trip.owner_id.toLowerCase().includes(token)
             );
         });
-    }, [dateRange, searchValue, statusFilters, trips]);
+    }, [dateRange, generationStateFilters, searchValue, statusFilters, trips]);
 
     const tripsInDateRange = useMemo(
         () => trips.filter((trip) => isIsoDateInRange(trip.updated_at || trip.created_at, dateRange)),
@@ -419,6 +499,7 @@ export const AdminTripsPage: React.FC = () => {
         active: visibleTrips.filter((trip) => trip.status === 'active').length,
         expired: visibleTrips.filter((trip) => trip.status === 'expired').length,
         archived: visibleTrips.filter((trip) => trip.status === 'archived').length,
+        failedGeneration: visibleTrips.filter((trip) => resolveTripGenerationState(trip) === 'failed').length,
     }), [visibleTrips]);
     const selectedVisibleTrips = useMemo(
         () => visibleTrips.filter((trip) => selectedTripIds.has(trip.trip_id)),
@@ -432,6 +513,15 @@ export const AdminTripsPage: React.FC = () => {
             value,
             label: value.charAt(0).toUpperCase() + value.slice(1),
             count: tripsInDateRange.filter((trip) => trip.status === value).length,
+        })),
+        [tripsInDateRange]
+    );
+
+    const generationFilterOptions = useMemo<AdminFilterMenuOption[]>(
+        () => TRIP_GENERATION_STATE_VALUES.map((value) => ({
+            value,
+            label: getGenerationStateLabel(value),
+            count: tripsInDateRange.filter((trip) => resolveTripGenerationState(trip) === value).length,
         })),
         [tripsInDateRange]
     );
@@ -453,6 +543,45 @@ export const AdminTripsPage: React.FC = () => {
         } catch (error) {
             setErrorMessage(error instanceof Error ? error.message : 'Could not update trip.');
         } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleRetryTripGeneration = async () => {
+        if (!selectedTripForDrawer || !selectedFullTrip) return;
+        if (!selectedFullTrip.aiMeta?.generation?.inputSnapshot) {
+            setErrorMessage('Retry is unavailable because this trip has no generation input snapshot.');
+            return;
+        }
+
+        setIsRetryingGeneration(true);
+        setIsSaving(true);
+        setErrorMessage(null);
+        setMessage(null);
+
+        try {
+            const result = await retryTripGenerationWithDefaultModel(selectedFullTrip, {
+                source: 'admin_trip_drawer',
+                contextSource: 'admin_trip_drawer',
+                onTripUpdate: async (nextTrip) => {
+                    setSelectedFullTrip(nextTrip);
+                    const committed = await dbAdminOverrideTripCommit(nextTrip, nextTrip.defaultView ?? undefined, 'Data: Admin retried generation');
+                    if (!committed) {
+                        throw new Error('Could not persist retried trip via admin override.');
+                    }
+                },
+            });
+
+            if (result.state === 'succeeded') {
+                setMessage('Trip generation retry completed.');
+            } else {
+                setMessage('Trip generation retry failed. Diagnostics have been updated.');
+            }
+            await loadTrips();
+        } catch (error) {
+            setErrorMessage(error instanceof Error ? error.message : 'Could not retry generation.');
+        } finally {
+            setIsRetryingGeneration(false);
             setIsSaving(false);
         }
     };
@@ -687,6 +816,7 @@ export const AdminTripsPage: React.FC = () => {
 
     const resetTripFilters = () => {
         setStatusFilters([]);
+        setGenerationStateFilters([]);
     };
 
     const openOwnerDrawer = (ownerId: string) => {
@@ -882,7 +1012,7 @@ export const AdminTripsPage: React.FC = () => {
     return (
         <AdminShell
             title="Trip Lifecycle Controls"
-            description="Inspect and adjust trip status, ownership, and expiration metadata."
+            description="Inspect lifecycle, generation diagnostics, ownership, and expiration metadata."
             searchValue={searchValue}
             onSearchValueChange={setSearchValue}
             dateRange={dateRange}
@@ -911,7 +1041,7 @@ export const AdminTripsPage: React.FC = () => {
                 </section>
             )}
 
-            <section className="grid gap-3 md:grid-cols-4">
+            <section className="grid gap-3 md:grid-cols-5">
                 <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                     <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Total</p>
                     <p className="mt-2 text-2xl font-black text-slate-900"><AdminCountUpNumber value={summary.total} /></p>
@@ -928,6 +1058,10 @@ export const AdminTripsPage: React.FC = () => {
                     <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Archived</p>
                     <p className="mt-2 text-2xl font-black text-slate-700"><AdminCountUpNumber value={summary.archived} /></p>
                 </article>
+                <article className="rounded-2xl border border-rose-200 bg-rose-50 p-4 shadow-sm">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-rose-600">Failed generation</p>
+                    <p className="mt-2 text-2xl font-black text-rose-700"><AdminCountUpNumber value={summary.failedGeneration} /></p>
+                </article>
             </section>
 
             <section className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -939,6 +1073,12 @@ export const AdminTripsPage: React.FC = () => {
                             options={statusFilterOptions}
                             selectedValues={statusFilters}
                             onSelectedValuesChange={(next) => setStatusFilters(next as TripStatus[])}
+                        />
+                        <AdminFilterMenu
+                            label="Generation"
+                            options={generationFilterOptions}
+                            selectedValues={generationStateFilters}
+                            onSelectedValuesChange={(next) => setGenerationStateFilters(next as TripGenerationState[])}
                         />
                         <button
                             type="button"
@@ -994,8 +1134,9 @@ export const AdminTripsPage: React.FC = () => {
                                 </TableHead>
                                 <TableHead className="px-4 py-3 font-semibold text-slate-700">Trip</TableHead>
                                 <TableHead className="px-4 py-3 font-semibold text-slate-700">Owner</TableHead>
-                                <TableHead className="px-4 py-3 font-semibold text-slate-700">Status</TableHead>
-                                <TableHead className="px-4 py-3 font-semibold text-slate-700">Expires at</TableHead>
+                                <TableHead className="px-4 py-3 font-semibold text-slate-700">Lifecycle</TableHead>
+                                <TableHead className="px-4 py-3 font-semibold text-slate-700">Generation</TableHead>
+                                <TableHead className="px-4 py-3 font-semibold text-slate-700">Expires</TableHead>
                                 <TableHead className="px-4 py-3 font-semibold text-slate-700">Last update</TableHead>
                                 <TableHead className="px-4 py-3 text-right font-semibold text-slate-700">Actions</TableHead>
                             </TableRow>
@@ -1051,34 +1192,19 @@ export const AdminTripsPage: React.FC = () => {
                                         </button>
                                     </TableCell>
                                     <TableCell className="px-4 py-3">
-                                        <Select
-                                            value={trip.status}
-                                            onValueChange={(value) => {
-                                                void updateTripStatus(trip, { status: value as 'active' | 'archived' | 'expired' });
-                                            }}
-                                        >
-                                            <SelectTrigger className="h-8 w-[130px] text-xs font-medium">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="active">Active</SelectItem>
-                                                <SelectItem value="expired">Expired</SelectItem>
-                                                <SelectItem value="archived">Archived</SelectItem>
-                                            </SelectContent>
-                                        </Select>
+                                        <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${getLifecyclePillClassName(trip.status)}`}>
+                                            {trip.status}
+                                        </span>
                                     </TableCell>
                                     <TableCell className="px-4 py-3">
-                                        <input
-                                            key={`${trip.trip_id}-${trip.updated_at}`}
-                                            type="datetime-local"
-                                            defaultValue={toDateTimeInputValue(trip.trip_expires_at)}
-                                            onBlur={(event) => {
-                                                void updateTripStatus(trip, {
-                                                    tripExpiresAt: fromDateTimeInputValue(event.target.value),
-                                                });
-                                            }}
-                                            className="h-8 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm shadow-black/5"
-                                        />
+                                        <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${getGenerationPillClassName(resolveTripGenerationState(trip))}`}>
+                                            {getGenerationStateLabel(resolveTripGenerationState(trip))}
+                                        </span>
+                                    </TableCell>
+                                    <TableCell className="px-4 py-3">
+                                        <div className="text-xs text-slate-600">
+                                            {formatExpirationMeta(trip.trip_expires_at)}
+                                        </div>
                                     </TableCell>
                                     <TableCell className="px-4 py-3 text-sm text-slate-500">
                                         {new Date(trip.updated_at).toLocaleString()}
@@ -1109,14 +1235,14 @@ export const AdminTripsPage: React.FC = () => {
                             ))}
                             {visibleTrips.length === 0 && !isLoading && (
                                 <TableRow>
-                                    <TableCell className="px-4 py-8 text-center text-sm text-slate-500" colSpan={7}>
+                                    <TableCell className="px-4 py-8 text-center text-sm text-slate-500" colSpan={8}>
                                         No trips match the current filters.
                                     </TableCell>
                                 </TableRow>
                             )}
                             {isLoading && (
                                 <TableRow>
-                                    <TableCell className="px-4 py-8 text-center text-sm text-slate-500" colSpan={7}>
+                                    <TableCell className="px-4 py-8 text-center text-sm text-slate-500" colSpan={8}>
                                         <span className="inline-flex items-center gap-2 font-medium">
                                             <SpinnerGap size={16} className="animate-spin text-slate-400" />
                                             Loading trips...
@@ -1202,8 +1328,16 @@ export const AdminTripsPage: React.FC = () => {
                                                 </div>
                                             </div>
                                             <div className="flex flex-col gap-1 rounded-lg border border-slate-100 bg-slate-50 p-3">
-                                                <span className="text-xs font-semibold text-slate-500">Status</span>
-                                                <span className="text-sm font-medium text-slate-800">{selectedTripForDrawer.status}</span>
+                                                <span className="text-xs font-semibold text-slate-500">Lifecycle</span>
+                                                <span className={`inline-flex w-fit items-center rounded-full border px-2 py-0.5 text-xs font-semibold ${getLifecyclePillClassName(selectedTripForDrawer.status)}`}>
+                                                    {selectedTripForDrawer.status}
+                                                </span>
+                                            </div>
+                                            <div className="flex flex-col gap-1 rounded-lg border border-slate-100 bg-slate-50 p-3">
+                                                <span className="text-xs font-semibold text-slate-500">Generation</span>
+                                                <span className={`inline-flex w-fit items-center rounded-full border px-2 py-0.5 text-xs font-semibold ${getGenerationPillClassName(selectedTripGenerationState)}`}>
+                                                    {getGenerationStateLabel(selectedTripGenerationState)}
+                                                </span>
                                             </div>
                                             <div className="flex flex-col gap-1 rounded-lg border border-slate-100 bg-slate-50 p-3">
                                                 <span className="text-xs font-semibold text-slate-500">Source</span>
@@ -1219,8 +1353,46 @@ export const AdminTripsPage: React.FC = () => {
                                             </div>
                                             <div className="col-span-full flex flex-col gap-1 rounded-lg border border-slate-100 bg-slate-50 p-3">
                                                 <span className="text-xs font-semibold text-slate-500">Expires At</span>
-                                                <span className="text-sm font-medium text-slate-800">{selectedTripForDrawer.trip_expires_at ? new Date(selectedTripForDrawer.trip_expires_at).toLocaleString() : 'Not set'}</span>
+                                                <span className="text-sm font-medium text-slate-800">{formatExpirationMeta(selectedTripForDrawer.trip_expires_at)}</span>
                                             </div>
+                                        </div>
+                                    </section>
+
+                                    <section className="space-y-3 rounded-xl border border-slate-200 bg-white p-4">
+                                        <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Lifecycle Controls</h3>
+                                        <div className="grid gap-3 sm:grid-cols-2">
+                                            <label className="flex flex-col gap-1">
+                                                <span className="text-xs font-semibold text-slate-500">Lifecycle status</span>
+                                                <Select
+                                                    value={selectedTripForDrawer.status}
+                                                    onValueChange={(value) => {
+                                                        void updateTripStatus(selectedTripForDrawer, { status: value as TripStatus });
+                                                    }}
+                                                >
+                                                    <SelectTrigger className="h-9 text-sm font-medium">
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="active">Active</SelectItem>
+                                                        <SelectItem value="expired">Expired</SelectItem>
+                                                        <SelectItem value="archived">Archived</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </label>
+                                            <label className="flex flex-col gap-1">
+                                                <span className="text-xs font-semibold text-slate-500">Expiration timestamp</span>
+                                                <input
+                                                    key={`${selectedTripForDrawer.trip_id}-${selectedTripForDrawer.updated_at}`}
+                                                    type="datetime-local"
+                                                    defaultValue={toDateTimeInputValue(selectedTripForDrawer.trip_expires_at)}
+                                                    onBlur={(event) => {
+                                                        void updateTripStatus(selectedTripForDrawer, {
+                                                            tripExpiresAt: fromDateTimeInputValue(event.target.value),
+                                                        });
+                                                    }}
+                                                    className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm shadow-black/5"
+                                                />
+                                            </label>
                                         </div>
                                     </section>
                                     
@@ -1291,6 +1463,81 @@ export const AdminTripsPage: React.FC = () => {
                                             Trip preview is unavailable for this record.
                                         </div>
                                     )}
+
+                                    <section className="space-y-3 rounded-xl border border-slate-200 bg-white p-4">
+                                        <div className="flex items-center justify-between gap-3">
+                                            <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Generation Diagnostics</h3>
+                                            <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold ${getGenerationPillClassName(selectedTripGenerationState)}`}>
+                                                {getGenerationStateLabel(selectedTripGenerationState)}
+                                            </span>
+                                        </div>
+                                        {selectedTripLatestAttempt ? (
+                                            <dl className="grid gap-2 sm:grid-cols-2">
+                                                <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+                                                    <dt className="text-xs font-semibold text-slate-500">Provider</dt>
+                                                    <dd className="mt-1 text-sm font-medium text-slate-800">{selectedTripLatestAttempt.provider || 'n/a'}</dd>
+                                                </div>
+                                                <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+                                                    <dt className="text-xs font-semibold text-slate-500">Model</dt>
+                                                    <dd className="mt-1 break-all text-sm font-medium text-slate-800">{selectedTripLatestAttempt.model || 'n/a'}</dd>
+                                                </div>
+                                                <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+                                                    <dt className="text-xs font-semibold text-slate-500">Request ID</dt>
+                                                    <dd className="mt-1 break-all font-mono text-xs text-slate-700">{selectedTripLatestAttempt.requestId || 'n/a'}</dd>
+                                                </div>
+                                                <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+                                                    <dt className="text-xs font-semibold text-slate-500">Duration</dt>
+                                                    <dd className="mt-1 text-sm font-medium text-slate-800">
+                                                        {typeof selectedTripLatestAttempt.durationMs === 'number'
+                                                            ? `${Math.max(0, Math.round(selectedTripLatestAttempt.durationMs))} ms`
+                                                            : 'n/a'}
+                                                    </dd>
+                                                </div>
+                                                <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+                                                    <dt className="text-xs font-semibold text-slate-500">Failure kind</dt>
+                                                    <dd className="mt-1 text-sm font-medium text-slate-800">{selectedTripLatestAttempt.failureKind || 'n/a'}</dd>
+                                                </div>
+                                                <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+                                                    <dt className="text-xs font-semibold text-slate-500">Error code</dt>
+                                                    <dd className="mt-1 text-sm font-medium text-slate-800">{selectedTripLatestAttempt.errorCode || 'n/a'}</dd>
+                                                </div>
+                                                <div className="sm:col-span-2 rounded-lg border border-slate-100 bg-slate-50 p-3">
+                                                    <dt className="text-xs font-semibold text-slate-500">Error message</dt>
+                                                    <dd className="mt-1 break-words text-sm font-medium text-slate-800">{selectedTripLatestAttempt.errorMessage || 'n/a'}</dd>
+                                                </div>
+                                            </dl>
+                                        ) : (
+                                            <div className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+                                                No generation attempts captured yet.
+                                            </div>
+                                        )}
+                                        {selectedTripGenerationAttempts.length > 0 && (
+                                            <div className="space-y-1 rounded-lg border border-slate-100 bg-slate-50 p-2">
+                                                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Recent attempts</p>
+                                                {selectedTripGenerationAttempts.map((attempt) => (
+                                                    <div key={attempt.id} className="flex items-center justify-between gap-2 rounded-md border border-slate-100 bg-white px-2 py-1 text-[11px]">
+                                                        <span className="font-semibold text-slate-700">{attempt.state}</span>
+                                                        <span className="truncate text-slate-600">{attempt.model || 'n/a'}</span>
+                                                        <span className="shrink-0 text-slate-500">
+                                                            {typeof attempt.durationMs === 'number' ? `${Math.max(0, Math.round(attempt.durationMs))} ms` : 'n/a'}
+                                                        </span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                        <div>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    void handleRetryTripGeneration();
+                                                }}
+                                                disabled={!canRetryGenerationInDrawer}
+                                                className="inline-flex items-center rounded-lg border border-accent-300 bg-accent-50 px-3 py-2 text-xs font-semibold text-accent-800 transition-colors hover:bg-accent-100 disabled:cursor-not-allowed disabled:opacity-50"
+                                            >
+                                                {isRetryingGeneration ? 'Retrying with default model...' : 'Retry generation with default model'}
+                                            </button>
+                                        </div>
+                                    </section>
 
                                     <section className="space-y-3 rounded-xl border border-slate-200 bg-white p-4">
                                         <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Trip Actions</h3>

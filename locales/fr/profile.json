@@ -77,7 +77,8 @@
     },
     "expiredTag": "Expiré",
     "expiredFallbackTitle": "Brouillon de voyage expiré",
-    "hiddenTag": "Hidden"
+    "hiddenTag": "Hidden",
+    "generationFailedTag": "Generation failed"
   },
   "actions": {
     "title": "Actions rapides",

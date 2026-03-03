@@ -75,7 +75,8 @@
     },
     "hiddenTag": "Hidden",
     "expiredTag": "Expired",
-    "expiredFallbackTitle": "Expired trip draft"
+    "expiredFallbackTitle": "Expired trip draft",
+    "generationFailedTag": "Generation failed"
   },
   "actions": {
     "title": "Quick actions",

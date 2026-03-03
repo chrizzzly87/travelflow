@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { ChevronDown, ChevronRight, Pencil, Star } from 'lucide-react';
-import { ICountryInfo } from '../types';
+import { useTranslation } from 'react-i18next';
+import { ICountryInfo, ITripAiMeta, TripGenerationAttemptSummary, TripGenerationState } from '../types';
 import { CountryInfo } from './CountryInfo';
 import { AppModal } from './ui/app-modal';
 
@@ -9,12 +10,6 @@ interface TripMetaSummary {
     totalDaysLabel: string;
     cityCount: number;
     distanceLabel: string | null;
-}
-
-interface TripAiMeta {
-    provider: string;
-    model: string;
-    generatedAt?: string;
 }
 
 interface TripForkMeta {
@@ -52,7 +47,13 @@ export interface TripInfoModalProps {
     onToggleFavorite: () => void;
     isExamplePreview: boolean;
     tripMeta: TripMetaSummary;
-    aiMeta?: TripAiMeta | null;
+    aiMeta?: ITripAiMeta | null;
+    generationState?: TripGenerationState | null;
+    latestGenerationAttempt?: TripGenerationAttemptSummary | null;
+    canRetryGeneration?: boolean;
+    isRetryingGeneration?: boolean;
+    onRetryGeneration?: () => void;
+    retryAnalyticsAttributes?: Record<string, string>;
     forkMeta?: TripForkMeta | null;
     isTripInfoHistoryExpanded: boolean;
     onToggleTripInfoHistoryExpanded: () => void;
@@ -87,6 +88,12 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
     isExamplePreview,
     tripMeta,
     aiMeta,
+    generationState = null,
+    latestGenerationAttempt = null,
+    canRetryGeneration = false,
+    isRetryingGeneration = false,
+    onRetryGeneration,
+    retryAnalyticsAttributes,
     forkMeta,
     isTripInfoHistoryExpanded,
     onToggleTripInfoHistoryExpanded,
@@ -104,6 +111,7 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
     ownerHint,
     adminMeta,
 }) => {
+    const { t } = useTranslation('common');
     const editTitleInputRef = useRef<HTMLInputElement | null>(null);
 
     useEffect(() => {
@@ -115,6 +123,47 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
             window.cancelAnimationFrame(rafId);
         };
     }, [isEditingTitle, isOpen]);
+
+    const resolvedGenerationState = generationState || aiMeta?.generation?.state || null;
+    const attempts = Array.isArray(aiMeta?.generation?.attempts)
+        ? aiMeta?.generation?.attempts
+        : (latestGenerationAttempt ? [latestGenerationAttempt] : []);
+    const latestAttempt = latestGenerationAttempt || aiMeta?.generation?.latestAttempt || null;
+    const recentAttempts = [...attempts]
+        .filter((attempt): attempt is TripGenerationAttemptSummary => Boolean(attempt))
+        .sort((left, right) => Date.parse(right.startedAt) - Date.parse(left.startedAt))
+        .slice(0, 6);
+
+    const generationPill = (() => {
+        if (resolvedGenerationState === 'failed') {
+            return {
+                label: t('tripView.generation.tripInfo.state.failed'),
+                className: 'border-rose-200 bg-rose-50 text-rose-700',
+            };
+        }
+        if (resolvedGenerationState === 'running' || resolvedGenerationState === 'queued') {
+            return {
+                label: resolvedGenerationState === 'queued'
+                    ? t('tripView.generation.tripInfo.state.queued')
+                    : t('tripView.generation.tripInfo.state.running'),
+                className: 'border-amber-200 bg-amber-50 text-amber-700',
+            };
+        }
+        if (resolvedGenerationState === 'succeeded') {
+            return {
+                label: t('tripView.generation.tripInfo.state.succeeded'),
+                className: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+            };
+        }
+        return null;
+    })();
+
+    const formatDurationMs = (value: number | null | undefined): string => {
+        if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) return '—';
+        if (value < 1000) return `${Math.round(value)} ms`;
+        if (value < 60_000) return `${(value / 1000).toFixed(1)} s`;
+        return `${(value / 60_000).toFixed(1)} min`;
+    };
 
     return (
         <AppModal
@@ -233,25 +282,103 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                 )}
             </section>
 
-            {aiMeta && (
+            {(aiMeta || generationPill || latestAttempt) && (
                 <section className="rounded-xl border border-gray-200 p-3">
-                    <h4 className="mb-2 text-sm font-semibold text-gray-800">AI generation</h4>
+                    <div className="mb-2 flex items-center justify-between gap-2">
+                        <h4 className="text-sm font-semibold text-gray-800">{t('tripView.generation.tripInfo.title')}</h4>
+                        {generationPill && (
+                            <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${generationPill.className}`}>
+                                {generationPill.label}
+                            </span>
+                        )}
+                    </div>
                     <dl className="grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
                         <div className="rounded-lg border border-gray-100 bg-gray-50 p-2">
-                            <dt className="text-gray-500">Provider</dt>
-                            <dd className="mt-1 font-semibold text-gray-900">{aiMeta.provider}</dd>
+                            <dt className="text-gray-500">{t('tripView.generation.tripInfo.provider')}</dt>
+                            <dd className="mt-1 font-semibold text-gray-900">{latestAttempt?.provider || aiMeta?.provider || '—'}</dd>
                         </div>
                         <div className="rounded-lg border border-gray-100 bg-gray-50 p-2">
-                            <dt className="text-gray-500">Model</dt>
-                            <dd className="mt-1 break-all font-semibold text-gray-900">{aiMeta.model}</dd>
+                            <dt className="text-gray-500">{t('tripView.generation.tripInfo.model')}</dt>
+                            <dd className="mt-1 break-all font-semibold text-gray-900">{latestAttempt?.model || aiMeta?.model || '—'}</dd>
+                        </div>
+                        <div className="rounded-lg border border-gray-100 bg-gray-50 p-2">
+                            <dt className="text-gray-500">{t('tripView.generation.tripInfo.providerModel')}</dt>
+                            <dd className="mt-1 break-all font-semibold text-gray-900">{latestAttempt?.providerModel || '—'}</dd>
+                        </div>
+                        <div className="rounded-lg border border-gray-100 bg-gray-50 p-2">
+                            <dt className="text-gray-500">{t('tripView.generation.tripInfo.requestId')}</dt>
+                            <dd className="mt-1 break-all font-mono text-[11px] font-semibold text-gray-900">{latestAttempt?.requestId || '—'}</dd>
+                        </div>
+                        <div className="rounded-lg border border-gray-100 bg-gray-50 p-2">
+                            <dt className="text-gray-500">{t('tripView.generation.tripInfo.runTime')}</dt>
+                            <dd className="mt-1 font-semibold text-gray-900">{formatDurationMs(latestAttempt?.durationMs)}</dd>
+                        </div>
+                        <div className="rounded-lg border border-gray-100 bg-gray-50 p-2">
+                            <dt className="text-gray-500">{t('tripView.generation.tripInfo.httpStatus')}</dt>
+                            <dd className="mt-1 font-semibold text-gray-900">{latestAttempt?.statusCode ?? '—'}</dd>
+                        </div>
+                        <div className="rounded-lg border border-gray-100 bg-gray-50 p-2">
+                            <dt className="text-gray-500">{t('tripView.generation.tripInfo.started')}</dt>
+                            <dd className="mt-1 font-semibold text-gray-900">
+                                {latestAttempt?.startedAt ? new Date(latestAttempt.startedAt).toLocaleString() : '—'}
+                            </dd>
+                        </div>
+                        <div className="rounded-lg border border-gray-100 bg-gray-50 p-2">
+                            <dt className="text-gray-500">{t('tripView.generation.tripInfo.finished')}</dt>
+                            <dd className="mt-1 font-semibold text-gray-900">
+                                {latestAttempt?.finishedAt ? new Date(latestAttempt.finishedAt).toLocaleString() : '—'}
+                            </dd>
+                        </div>
+                        <div className="rounded-lg border border-gray-100 bg-gray-50 p-2">
+                            <dt className="text-gray-500">{t('tripView.generation.tripInfo.failureKind')}</dt>
+                            <dd className="mt-1 font-semibold text-gray-900">{latestAttempt?.failureKind || '—'}</dd>
+                        </div>
+                        <div className="rounded-lg border border-gray-100 bg-gray-50 p-2">
+                            <dt className="text-gray-500">{t('tripView.generation.tripInfo.errorCode')}</dt>
+                            <dd className="mt-1 break-all font-semibold text-gray-900">{latestAttempt?.errorCode || '—'}</dd>
                         </div>
                         <div className="rounded-lg border border-gray-100 bg-gray-50 p-2 sm:col-span-2">
-                            <dt className="text-gray-500">Generated at</dt>
+                            <dt className="text-gray-500">{t('tripView.generation.tripInfo.errorMessage')}</dt>
+                            <dd className="mt-1 break-words font-semibold text-gray-900">{latestAttempt?.errorMessage || '—'}</dd>
+                        </div>
+                        <div className="rounded-lg border border-gray-100 bg-gray-50 p-2 sm:col-span-2">
+                            <dt className="text-gray-500">{t('tripView.generation.tripInfo.generatedAt')}</dt>
                             <dd className="mt-1 font-semibold text-gray-900">
-                                {aiMeta.generatedAt ? new Date(aiMeta.generatedAt).toLocaleString() : '—'}
+                                {aiMeta?.generatedAt ? new Date(aiMeta.generatedAt).toLocaleString() : '—'}
                             </dd>
                         </div>
                     </dl>
+                    {recentAttempts.length > 1 && (
+                        <div className="mt-3 space-y-1.5 rounded-lg border border-gray-100 bg-gray-50 p-2">
+                            <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                                {t('tripView.generation.tripInfo.recentAttempts')}
+                            </p>
+                            <ul className="space-y-1">
+                                {recentAttempts.map((attempt) => (
+                                    <li key={attempt.id} className="flex items-center justify-between gap-2 rounded-md border border-gray-100 bg-white px-2 py-1 text-[11px] text-gray-600">
+                                        <span className="truncate font-semibold text-gray-800">{attempt.state}</span>
+                                        <span className="truncate">{attempt.model || t('tripView.generation.tripInfo.modelFallback')}</span>
+                                        <span className="shrink-0">{formatDurationMs(attempt.durationMs)}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+                    {canRetryGeneration && onRetryGeneration && (
+                        <div className="mt-3">
+                            <button
+                                type="button"
+                                onClick={onRetryGeneration}
+                                disabled={isRetryingGeneration}
+                                className="inline-flex items-center rounded-lg border border-accent-300 bg-accent-50 px-3 py-2 text-xs font-semibold text-accent-800 transition-colors hover:bg-accent-100 disabled:cursor-not-allowed disabled:opacity-50"
+                                {...(retryAnalyticsAttributes || {})}
+                            >
+                                {isRetryingGeneration
+                                    ? t('tripView.generation.tripInfo.retrying')
+                                    : t('tripView.generation.tripInfo.retry')}
+                            </button>
+                        </div>
+                    )}
                 </section>
             )}
 

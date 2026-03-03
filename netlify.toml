@@ -31,6 +31,10 @@
   function = "ai-generate"
 
 [[edge_functions]]
+  path = "/api/ai/generate/abort"
+  function = "ai-generate-abort"
+
+[[edge_functions]]
   path = "/api/internal/ai/benchmark"
   function = "ai-benchmark"
 

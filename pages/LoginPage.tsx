@@ -10,7 +10,11 @@ import {
     resolveAnonymousAssetClaimErrorCode,
     runOpportunisticAnonymousAssetClaimCleanup,
 } from '../services/anonymousAssetClaimService';
-import { processQueuedTripGenerationAfterAuth, runOpportunisticTripQueueCleanup } from '../services/tripGenerationQueueService';
+import {
+    processQueuedTripGenerationAfterAuth,
+    QueuedTripGenerationError,
+    runOpportunisticTripQueueCleanup,
+} from '../services/tripGenerationQueueService';
 import type { OAuthProviderId } from '../services/authService';
 import {
     buildPasswordResetRedirectUrl,
@@ -209,7 +213,16 @@ export const LoginPage: React.FC = () => {
             clearRememberedAuthReturnPath();
             navigate(nextPath, { replace: true });
         } catch (error) {
-            trackEvent('auth__queue--failed', { request_id: claimRequestId });
+            const failedTripId = error instanceof QueuedTripGenerationError ? error.tripId : null;
+            trackEvent('auth__queue--failed', {
+                request_id: claimRequestId,
+                has_trip_id: Boolean(failedTripId),
+            });
+            if (failedTripId) {
+                clearRememberedAuthReturnPath();
+                navigate(`/trip/${failedTripId}`, { replace: true });
+                return;
+            }
             setErrorMessage(t('errors.queue_claim_failed'));
         } finally {
             setIsPostAuthProcessing(false);

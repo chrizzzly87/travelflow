@@ -49,12 +49,56 @@ export interface IAiInsights {
     tips: string;
 }
 
+export type TripGenerationFlow = 'classic' | 'wizard' | 'surprise';
+export type TripGenerationState = 'queued' | 'running' | 'succeeded' | 'failed';
+export type TripGenerationFailureKind = 'timeout' | 'abort' | 'quality' | 'provider' | 'network' | 'unknown';
+
+export interface TripGenerationInputSnapshot {
+    flow: TripGenerationFlow;
+    destinationLabel?: string;
+    startDate?: string;
+    endDate?: string;
+    payload: Record<string, unknown>;
+    createdAt: string;
+}
+
+export interface TripGenerationAttemptSummary {
+    id: string;
+    flow: TripGenerationFlow;
+    source: string;
+    state: TripGenerationState;
+    startedAt: string;
+    finishedAt?: string | null;
+    durationMs?: number | null;
+    requestId?: string | null;
+    provider?: string | null;
+    model?: string | null;
+    providerModel?: string | null;
+    statusCode?: number | null;
+    failureKind?: TripGenerationFailureKind | null;
+    errorCode?: string | null;
+    errorMessage?: string | null;
+    metadata?: Record<string, unknown> | null;
+}
+
+export interface TripGenerationMeta {
+    state: TripGenerationState;
+    latestAttempt?: TripGenerationAttemptSummary | null;
+    attempts?: TripGenerationAttemptSummary[];
+    inputSnapshot?: TripGenerationInputSnapshot | null;
+    retryCount?: number;
+    retryRequestedAt?: string | null;
+    lastSucceededAt?: string | null;
+    lastFailedAt?: string | null;
+}
+
 export interface ITripAiMeta {
     provider: string;
     model: string;
     generatedAt: string;
     benchmarkSessionId?: string | null;
     benchmarkRunId?: string | null;
+    generation?: TripGenerationMeta;
 }
 
 export interface IHotel {

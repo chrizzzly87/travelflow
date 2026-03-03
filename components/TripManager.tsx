@@ -14,6 +14,7 @@ import { FlagIcon } from './flags/FlagIcon';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import { useAuth } from '../hooks/useAuth';
 import { trackEvent } from '../services/analyticsService';
+import { getTripGenerationState } from '../services/tripGenerationDiagnosticsService';
 import { showAppToast } from './ui/appToast';
 import {
   buildMiniMapUrl,
@@ -132,6 +133,25 @@ const formatCityStayLabel = (duration: number): string => {
 
 const getTripLifecycleStatus = (trip: ITrip): 'active' | 'expired' | 'archived' => {
   return getTripLifecycleState(trip);
+};
+
+const getGenerationPill = (trip: ITrip): { state: 'failed' | 'running' | 'queued'; className: string } | null => {
+  const hasGenerationMeta = Boolean(trip.aiMeta?.generation) || trip.items.some((item) => item.loading);
+  if (!hasGenerationMeta) return null;
+  const state = getTripGenerationState(trip);
+  if (state === 'failed') {
+    return {
+      state,
+      className: 'border-rose-200 bg-rose-50 text-rose-700',
+    };
+  }
+  if (state === 'running' || state === 'queued') {
+    return {
+      state,
+      className: 'border-amber-200 bg-amber-50 text-amber-700',
+    };
+  }
+  return null;
 };
 
 const getCountryFromToken = (token: string): CountryMatch | null => {
@@ -392,12 +412,23 @@ const TripRow: React.FC<TripRowProps> = ({
   onHoverEnd,
   secondaryInfo,
 }) => {
+  const { t } = useTranslation('common');
   const rowRef = React.useRef<HTMLDivElement | null>(null);
   const flagCodes = React.useMemo(() => getTripFlagCodes(trip), [trip]);
   const displayFlagCodes = flagCodes.slice(0, 3);
   const extraFlags = Math.max(0, flagCodes.length - 3);
   const showFavoriteByDefault = Boolean(trip.isFavorite);
   const lifecycleStatus = getTripLifecycleStatus(trip);
+  const generationPill = getGenerationPill(trip);
+  const generationLabel = generationPill
+    ? (
+      generationPill.state === 'failed'
+        ? t('tripView.generation.tripInfo.state.failed')
+        : generationPill.state === 'queued'
+          ? t('tripView.generation.tripInfo.state.queued')
+          : t('tripView.generation.tripInfo.state.running')
+    )
+    : null;
 
   const emitHoverAnchor = () => {
     if (!rowRef.current) return;
@@ -449,6 +480,13 @@ const TripRow: React.FC<TripRowProps> = ({
             Expired
           </span>
         )}
+        {generationPill && (
+          <span
+            className={`mr-1 shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${generationPill.className}`}
+          >
+            {generationLabel}
+          </span>
+        )}
         <button
           type="button"
           onClick={(e) => onDelete(e, trip.id)}
@@ -487,10 +525,21 @@ interface TripTooltipProps {
 }
 
 const TripTooltip: React.FC<TripTooltipProps> = ({ trip, position, onHoverStart, onHoverEnd, locale }) => {
+  const { t } = useTranslation('common');
   const [shouldLoadMap, setShouldLoadMap] = React.useState(false);
   const [mapLoaded, setMapLoaded] = React.useState(false);
   const [mapError, setMapError] = React.useState(false);
   const lifecycleStatus = React.useMemo(() => getTripLifecycleStatus(trip), [trip]);
+  const generationPill = React.useMemo(() => getGenerationPill(trip), [trip]);
+  const generationLabel = generationPill
+    ? (
+      generationPill.state === 'failed'
+        ? t('tripView.generation.tripInfo.state.failed')
+        : generationPill.state === 'queued'
+          ? t('tripView.generation.tripInfo.state.queued')
+          : t('tripView.generation.tripInfo.state.running')
+    )
+    : null;
   const displayTrip = React.useMemo(
     () => (lifecycleStatus === 'expired' ? buildPaywalledTripDisplay(trip) : trip),
     [lifecycleStatus, trip]
@@ -538,6 +587,11 @@ const TripTooltip: React.FC<TripTooltipProps> = ({ trip, position, onHoverStart,
                   Expired
                 </span>
               )}
+                {generationPill && (
+                  <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${generationPill.className}`}>
+                    {generationLabel}
+                  </span>
+                )}
               <div className="text-[10px] text-gray-400">{updatedAtLabel}</div>
             </div>
           </div>

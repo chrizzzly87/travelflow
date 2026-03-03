@@ -1,16 +1,27 @@
-import type { ITrip } from '../types';
+import type { ITrip, TripGenerationFlow, TripGenerationInputSnapshot } from '../types';
 import {
-    generateItinerary,
-    generateSurpriseItinerary,
-    generateWizardItinerary,
+    generateTripFromInputSnapshot,
     type GenerateOptions,
     type SurpriseGenerateOptions,
+    type TripGenerationRequestContext,
     type WizardGenerateOptions,
 } from './aiService';
+import { beginTripGenerationAbortTelemetry } from './tripGenerationAbortTelemetryService';
+import {
+    finishTripGenerationAttemptLog,
+    startTripGenerationAttemptLog,
+} from './tripGenerationAttemptLogService';
+import {
+    createTripGenerationInputSnapshot,
+    createTripGenerationRequestId,
+    markTripGenerationFailed,
+    markTripGenerationRunning,
+    markTripGenerationSucceeded,
+    mergeGeneratedTripIntoExisting,
+} from './tripGenerationDiagnosticsService';
 import { dbCreateTripVersion, dbUpsertTrip, ensureDbSession } from './dbService';
 import { supabase } from './supabaseClient';
-
-export type TripGenerationFlow = 'classic' | 'wizard' | 'surprise';
+import { generateTripId } from '../utils';
 
 interface BaseQueuedPayload {
     version: 1;
@@ -47,6 +58,18 @@ interface TripGenerationRequestRow {
     status: string;
     owner_user_id: string | null;
     expires_at: string;
+}
+
+export class QueuedTripGenerationError extends Error {
+    tripId: string | null;
+    causeError: unknown;
+
+    constructor(message: string, details?: { tripId?: string | null; cause?: unknown }) {
+        super(message);
+        this.name = 'QueuedTripGenerationError';
+        this.tripId = details?.tripId || null;
+        this.causeError = details?.cause;
+    }
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -143,14 +166,72 @@ const updateQueuedRequestStatus = async (
         .eq('id', requestId);
 };
 
-const runQueuedGeneration = async (payload: QueuedTripGenerationPayload): Promise<ITrip> => {
+const buildInputSnapshotFromQueuedPayload = (
+    payload: QueuedTripGenerationPayload,
+): TripGenerationInputSnapshot => {
     if (payload.flow === 'classic') {
-        return generateItinerary(payload.destinationPrompt, payload.startDate, payload.options);
+        return createTripGenerationInputSnapshot({
+            flow: 'classic',
+            destinationLabel: payload.destinationLabel,
+            startDate: payload.startDate,
+            endDate: payload.endDate,
+            payload: {
+                destinationPrompt: payload.destinationPrompt,
+                options: payload.options,
+            },
+        });
     }
-    if (payload.flow === 'wizard') {
-        return generateWizardItinerary(payload.options);
-    }
-    return generateSurpriseItinerary(payload.options);
+
+    return createTripGenerationInputSnapshot({
+        flow: payload.flow,
+        destinationLabel: payload.destinationLabel,
+        startDate: payload.startDate,
+        endDate: payload.endDate,
+        payload: {
+            options: payload.options,
+        },
+    });
+};
+
+const buildPlaceholderTrip = (
+    payload: QueuedTripGenerationPayload,
+    tripId: string,
+): ITrip => {
+    const now = Date.now();
+    const destinationLabel = payload.destinationLabel || 'Trip';
+    return {
+        id: tripId,
+        title: destinationLabel,
+        startDate: payload.startDate,
+        items: [
+            {
+                id: `queue-loading-city-${tripId}`,
+                type: 'city',
+                title: destinationLabel,
+                startDateOffset: 0,
+                duration: 1,
+                color: 'bg-slate-100 border-slate-200 text-slate-500',
+                description: 'Queued generation is preparing this trip.',
+                location: destinationLabel,
+                loading: true,
+            },
+        ],
+        createdAt: now,
+        updatedAt: now,
+        isFavorite: false,
+        sourceKind: 'created',
+        status: 'active',
+        tripExpiresAt: null,
+    };
+};
+
+const runQueuedGeneration = async (
+    snapshot: TripGenerationInputSnapshot,
+    context: TripGenerationRequestContext,
+): Promise<ITrip> => {
+    return generateTripFromInputSnapshot(snapshot, {
+        generationContext: context,
+    });
 };
 
 export const runOpportunisticTripQueueCleanup = async (): Promise<void> => {
@@ -217,19 +298,81 @@ export const processQueuedTripGenerationAfterAuth = async (
     }
 
     const parsedPayload = parseQueuedPayload(flow, row.payload);
+    const generationSnapshot = buildInputSnapshotFromQueuedPayload(parsedPayload);
+    const tripId = generateTripId();
+    const requestTraceId = createTripGenerationRequestId();
+
+    const placeholderTrip = buildPlaceholderTrip(parsedPayload, tripId);
+    const runningTrip = markTripGenerationRunning(placeholderTrip, {
+        flow,
+        source: 'queue_claim',
+        inputSnapshot: generationSnapshot,
+        provider: parsedPayload.options.aiTarget?.provider || 'gemini',
+        model: parsedPayload.options.aiTarget?.model || 'gemini-3-pro-preview',
+        requestId: requestTraceId,
+        state: 'running',
+    });
+    const runningAttempt = runningTrip.aiMeta?.generation?.latestAttempt || null;
+
+    await ensureDbSession();
+    await dbUpsertTrip(runningTrip, undefined);
+    await dbCreateTripVersion(runningTrip, undefined, 'Data: Queued generation started');
 
     await updateQueuedRequestStatus(requestId, {
         status: 'running',
+        result_trip_id: runningTrip.id,
         updated_at: new Date().toISOString(),
     });
 
+    const loggedAttempt = await startTripGenerationAttemptLog({
+        tripId: runningTrip.id,
+        flow,
+        source: 'queue_claim',
+        state: 'running',
+        provider: runningTrip.aiMeta?.provider,
+        model: runningTrip.aiMeta?.model,
+        requestId: requestTraceId,
+        startedAt: runningAttempt?.startedAt,
+        metadata: {
+            request_id: requestId,
+        },
+    });
+
+    const abortTelemetrySession = beginTripGenerationAbortTelemetry({
+        tripId: runningTrip.id,
+        attemptId: runningAttempt?.id || 'unknown-attempt',
+        requestId: requestTraceId,
+        flow,
+        source: 'queue_claim',
+        provider: runningTrip.aiMeta?.provider,
+        model: runningTrip.aiMeta?.model,
+        startedAt: runningAttempt?.startedAt || null,
+    });
+
     try {
-        const generated = await runQueuedGeneration(parsedPayload);
-        const preparedTrip = applyTripDefaults(generated);
+        const generated = await runQueuedGeneration(generationSnapshot, {
+            requestId: requestTraceId,
+            tripId: runningTrip.id,
+            attemptId: runningAttempt?.id,
+            flow,
+            source: 'queue_claim',
+        });
+        const mergedTrip = mergeGeneratedTripIntoExisting(runningTrip, applyTripDefaults(generated));
+        const preparedTrip = markTripGenerationSucceeded(mergedTrip, {
+            flow,
+            source: 'queue_claim',
+            provider: generated.aiMeta?.provider || runningTrip.aiMeta?.provider || 'gemini',
+            model: generated.aiMeta?.model || runningTrip.aiMeta?.model || 'gemini-3-pro-preview',
+            providerModel: generated.aiMeta?.generation?.latestAttempt?.providerModel || null,
+            requestId: generated.aiMeta?.generation?.latestAttempt?.requestId || requestTraceId,
+            durationMs: generated.aiMeta?.generation?.latestAttempt?.durationMs || null,
+            statusCode: 200,
+            attemptId: runningAttempt?.id,
+        });
 
         await ensureDbSession();
         await dbUpsertTrip(preparedTrip, undefined);
-        await dbCreateTripVersion(preparedTrip, undefined, 'Data: Created trip');
+        await dbCreateTripVersion(preparedTrip, undefined, 'Data: Queued generation completed');
 
         await updateQueuedRequestStatus(requestId, {
             status: 'completed',
@@ -239,16 +382,66 @@ export const processQueuedTripGenerationAfterAuth = async (
             updated_at: new Date().toISOString(),
         });
 
+        if (loggedAttempt?.id) {
+            await finishTripGenerationAttemptLog({
+                attemptId: loggedAttempt.id,
+                state: 'succeeded',
+                provider: preparedTrip.aiMeta?.provider,
+                model: preparedTrip.aiMeta?.model,
+                requestId: preparedTrip.aiMeta?.generation?.latestAttempt?.requestId || requestTraceId,
+                durationMs: preparedTrip.aiMeta?.generation?.latestAttempt?.durationMs || null,
+                finishedAt: preparedTrip.aiMeta?.generation?.latestAttempt?.finishedAt || undefined,
+            });
+        }
+
+        abortTelemetrySession.cancel();
+
         return {
             tripId: preparedTrip.id,
             trip: preparedTrip,
         };
     } catch (error) {
+        const failedTrip = markTripGenerationFailed(runningTrip, {
+            flow,
+            source: 'queue_claim',
+            error,
+            provider: runningTrip.aiMeta?.provider,
+            model: runningTrip.aiMeta?.model,
+            requestId: requestTraceId,
+            attemptId: runningAttempt?.id,
+        });
+
+        await ensureDbSession();
+        await dbUpsertTrip(failedTrip, undefined);
+        await dbCreateTripVersion(failedTrip, undefined, 'Data: Queued generation failed');
+
         await updateQueuedRequestStatus(requestId, {
             status: 'failed',
+            result_trip_id: failedTrip.id,
             error_message: truncateError(error),
             updated_at: new Date().toISOString(),
         });
-        throw error;
+
+        if (loggedAttempt?.id) {
+            await finishTripGenerationAttemptLog({
+                attemptId: loggedAttempt.id,
+                state: 'failed',
+                provider: failedTrip.aiMeta?.provider,
+                model: failedTrip.aiMeta?.model,
+                requestId: failedTrip.aiMeta?.generation?.latestAttempt?.requestId || requestTraceId,
+                durationMs: failedTrip.aiMeta?.generation?.latestAttempt?.durationMs || null,
+                statusCode: failedTrip.aiMeta?.generation?.latestAttempt?.statusCode || null,
+                failureKind: failedTrip.aiMeta?.generation?.latestAttempt?.failureKind || null,
+                errorCode: failedTrip.aiMeta?.generation?.latestAttempt?.errorCode || null,
+                errorMessage: failedTrip.aiMeta?.generation?.latestAttempt?.errorMessage || truncateError(error),
+                finishedAt: failedTrip.aiMeta?.generation?.latestAttempt?.finishedAt || undefined,
+            });
+        }
+
+        abortTelemetrySession.cancel();
+        throw new QueuedTripGenerationError('Queued trip generation failed.', {
+            tripId: failedTrip.id,
+            cause: error,
+        });
     }
 };

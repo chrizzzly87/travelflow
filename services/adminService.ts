@@ -1,4 +1,4 @@
-import type { PlanTierKey } from '../types';
+import type { PlanTierKey, TripGenerationState } from '../types';
 import type { AdminForensicsReplayBundle } from './adminForensicsService';
 import { dbGetAccessToken, ensureExistingDbSession } from './dbService';
 import { normalizeProfileCountryCode } from './profileCountryService';
@@ -42,6 +42,7 @@ export interface AdminTripRecord {
     owner_email: string | null;
     title: string | null;
     status: 'active' | 'archived' | 'expired';
+    generation_state: TripGenerationState | null;
     trip_expires_at: string | null;
     archived_at: string | null;
     source_kind: string | null;
@@ -314,6 +315,7 @@ export const adminListTrips = async (
         search?: string;
         ownerId?: string | null;
         status?: 'active' | 'archived' | 'expired' | 'all';
+        generationState?: TripGenerationState | 'all';
     } = {}
 ): Promise<AdminTripRecord[]> => {
     if (shouldUseAdminMockData()) {
@@ -324,6 +326,7 @@ export const adminListTrips = async (
             owner_email: `user${i % 15}@example.com`,
             title: `Mock Trip to ${['Paris', 'Tokyo', 'London', 'New York', 'Rome'][i % 5]}`,
             status: i % 10 === 0 ? 'expired' : i % 8 === 0 ? 'archived' : 'active',
+            generation_state: i % 9 === 0 ? 'failed' : i % 7 === 0 ? 'running' : 'succeeded',
             trip_expires_at: null,
             archived_at: null,
             source_kind: null,
@@ -340,6 +343,7 @@ export const adminListTrips = async (
         p_search: options.search ?? null,
         p_owner_id: options.ownerId ?? null,
         p_status: options.status && options.status !== 'all' ? options.status : null,
+        p_generation_state: options.generationState && options.generationState !== 'all' ? options.generationState : null,
     });
     if (error) throw new Error(error.message || 'Could not load trips.');
     return (Array.isArray(data) ? data : []) as AdminTripRecord[];
@@ -347,7 +351,12 @@ export const adminListTrips = async (
 
 export const adminListUserTrips = async (
     userId: string,
-    options: { limit?: number; offset?: number; status?: 'active' | 'archived' | 'expired' | 'all' } = {}
+    options: {
+        limit?: number;
+        offset?: number;
+        status?: 'active' | 'archived' | 'expired' | 'all';
+        generationState?: TripGenerationState | 'all';
+    } = {}
 ): Promise<AdminTripRecord[]> => {
     if (shouldUseAdminMockData()) {
         const now = new Date();
@@ -357,6 +366,7 @@ export const adminListUserTrips = async (
             owner_email: `user-mock@example.com`,
             title: `User's Mock Trip ${i}`,
             status: 'active',
+            generation_state: i === 0 ? 'failed' : 'succeeded',
             trip_expires_at: null,
             archived_at: null,
             source_kind: null,
@@ -370,6 +380,7 @@ export const adminListUserTrips = async (
         p_limit: options.limit ?? 200,
         p_offset: options.offset ?? 0,
         p_status: options.status && options.status !== 'all' ? options.status : null,
+        p_generation_state: options.generationState && options.generationState !== 'all' ? options.generationState : null,
     });
     if (error) throw new Error(error.message || 'Could not load user trips.');
     return (Array.isArray(data) ? data : []) as AdminTripRecord[];

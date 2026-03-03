@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { ICoordinates, ITimelineItem, ITrip } from "../types";
+import { ICoordinates, ITimelineItem, ITrip, TripGenerationAttemptSummary, TripGenerationFlow, TripGenerationFailureKind } from "../types";
 import type { AiProviderId } from "../config/aiProviderCatalog";
 import { buildDurationPromptGuidance, parseFlexibleDurationDays, parseFlexibleDurationHours } from "../shared/durationParsing";
 import { buildTransportModePromptGuidance, MODEL_TRANSPORT_MODE_VALUES, normalizeTransportMode } from "../shared/transportModes";
@@ -172,6 +172,7 @@ export interface GenerateOptions {
         model: string;
     };
     promptMode?: 'default' | 'benchmark_compact';
+    generationContext?: TripGenerationRequestContext;
 }
 
 export interface WizardGenerateOptions {
@@ -189,6 +190,11 @@ export interface WizardGenerateOptions {
     recommendedDurationDays?: number;
     selectedIslandNames?: string[];
     enforceIslandOnly?: boolean;
+    aiTarget?: {
+        provider: AiProviderId;
+        model: string;
+    };
+    generationContext?: TripGenerationRequestContext;
 }
 
 export interface SurpriseGenerateOptions {
@@ -200,6 +206,59 @@ export interface SurpriseGenerateOptions {
     durationWeeks?: number;
     seasonalEvents?: string[];
     notes?: string;
+    aiTarget?: {
+        provider: AiProviderId;
+        model: string;
+    };
+    generationContext?: TripGenerationRequestContext;
+}
+
+export interface TripGenerationRequestContext {
+    requestId?: string;
+    tripId?: string;
+    attemptId?: string;
+    flow?: TripGenerationFlow;
+    source?: string;
+    retryOfAttemptId?: string;
+}
+
+export class TripGenerationError extends Error {
+    code: string | null;
+    status: number | null;
+    details: string | null;
+    requestId: string | null;
+    durationMs: number | null;
+    provider: string | null;
+    model: string | null;
+    providerModel: string | null;
+    failureKind: TripGenerationFailureKind | null;
+    aborted: boolean;
+
+    constructor(message: string, details?: {
+        code?: string | null;
+        status?: number | null;
+        details?: string | null;
+        requestId?: string | null;
+        durationMs?: number | null;
+        provider?: string | null;
+        model?: string | null;
+        providerModel?: string | null;
+        failureKind?: TripGenerationFailureKind | null;
+        aborted?: boolean;
+    }) {
+        super(message);
+        this.name = 'TripGenerationError';
+        this.code = details?.code ?? null;
+        this.status = details?.status ?? null;
+        this.details = details?.details ?? null;
+        this.requestId = details?.requestId ?? null;
+        this.durationMs = details?.durationMs ?? null;
+        this.provider = details?.provider ?? null;
+        this.model = details?.model ?? null;
+        this.providerModel = details?.providerModel ?? null;
+        this.failureKind = details?.failureKind ?? null;
+        this.aborted = details?.aborted === true;
+    }
 }
 
 interface ParsedCityStop {
@@ -494,12 +553,44 @@ const buildTripFromModelData = (
 const generateItineraryFromPrompt = async (
     detailedPrompt: string,
     startDate?: string,
-    options?: Pick<GenerateOptions, 'roundTrip' | 'aiTarget'>
+    options?: Pick<GenerateOptions, 'roundTrip' | 'aiTarget' | 'generationContext'>
 ): Promise<ITrip> => {
   const requestStartedAtMs = Date.now();
   const selectedProvider = options?.aiTarget?.provider || 'gemini';
   const selectedModel = options?.aiTarget?.model || 'gemini-3-pro-preview';
+  const requestId = options?.generationContext?.requestId
+    || (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : `gen-${Date.now().toString(36)}`);
   let serverFailureTracked = false;
+
+  const createFailureKind = (
+    code: string | null,
+    status: number | null,
+    message: string,
+  ): TripGenerationFailureKind => {
+    const normalizedCode = (code || '').toLowerCase();
+    const normalizedMessage = message.toLowerCase();
+    if (status === 408 || status === 504 || normalizedCode.includes('timeout') || normalizedMessage.includes('timed out')) {
+        return 'timeout';
+    }
+    if (normalizedCode.includes('abort') || normalizedMessage.includes('abort')) {
+        return 'abort';
+    }
+    if (normalizedCode.includes('parse') || normalizedCode.includes('quality') || normalizedMessage.includes('quality')) {
+        return 'quality';
+    }
+    if (
+        normalizedCode.includes('provider')
+        || normalizedCode.includes('model_not_allowed')
+        || normalizedCode.includes('key_missing')
+        || normalizedCode.includes('request_failed')
+    ) {
+        return 'provider';
+    }
+    if (normalizedCode.includes('network') || normalizedMessage.includes('network') || normalizedMessage.includes('failed to fetch')) {
+        return 'network';
+    }
+    return 'unknown';
+  };
 
   try {
     const edgeResponse = await fetch('/api/ai/generate', {
@@ -509,9 +600,17 @@ const generateItineraryFromPrompt = async (
         },
         body: JSON.stringify({
             prompt: detailedPrompt,
+            requestId,
             target: options?.aiTarget ? {
                 provider: options.aiTarget.provider,
                 model: options.aiTarget.model,
+            } : undefined,
+            context: options?.generationContext ? {
+                tripId: options.generationContext.tripId,
+                attemptId: options.generationContext.attemptId,
+                flow: options.generationContext.flow,
+                source: options.generationContext.source,
+                retryOfAttemptId: options.generationContext.retryOfAttemptId,
             } : undefined,
         }),
     });
@@ -519,6 +618,12 @@ const generateItineraryFromPrompt = async (
     if (!edgeResponse.ok) {
         let message = 'Server-side generation failed.';
         let errorCode: string | null = null;
+        let errorDetails: string | null = null;
+        let failureRequestId: string | null = requestId;
+        let failureDurationMs: number | null = null;
+        let failureProvider: string | null = selectedProvider;
+        let failureModel: string | null = selectedModel;
+        let failureProviderModel: string | null = null;
         try {
             const payload = await edgeResponse.json();
             if (payload?.error && typeof payload.error === 'string') {
@@ -526,6 +631,25 @@ const generateItineraryFromPrompt = async (
             }
             if (payload?.code && typeof payload.code === 'string') {
                 errorCode = payload.code;
+            }
+            if (payload?.details && typeof payload.details === 'string') {
+                errorDetails = payload.details;
+            }
+            if (payload?.meta && typeof payload.meta === 'object') {
+                if (typeof payload.meta.requestId === 'string') {
+                    failureRequestId = payload.meta.requestId;
+                }
+                const parsedDuration = Number(payload.meta.durationMs);
+                failureDurationMs = Number.isFinite(parsedDuration) ? parsedDuration : null;
+                if (typeof payload.meta.provider === 'string') {
+                    failureProvider = payload.meta.provider;
+                }
+                if (typeof payload.meta.model === 'string') {
+                    failureModel = payload.meta.model;
+                }
+                if (typeof payload.meta.providerModel === 'string') {
+                    failureProviderModel = payload.meta.providerModel;
+                }
             }
         } catch {
             // noop
@@ -538,7 +662,17 @@ const generateItineraryFromPrompt = async (
             error_code: errorCode,
         });
         serverFailureTracked = true;
-        throw new Error(message);
+        throw new TripGenerationError(message, {
+            code: errorCode,
+            status: edgeResponse.status,
+            details: errorDetails,
+            requestId: failureRequestId,
+            durationMs: failureDurationMs ?? (Date.now() - requestStartedAtMs),
+            provider: failureProvider,
+            model: failureModel,
+            providerModel: failureProviderModel,
+            failureKind: createFailureKind(errorCode, edgeResponse.status, message),
+        });
     }
 
     const payload = await edgeResponse.json();
@@ -551,7 +685,7 @@ const generateItineraryFromPrompt = async (
         model,
         status: edgeResponse.status,
         duration_ms: Number.isFinite(responseDurationMs) ? responseDurationMs : Date.now() - requestStartedAtMs,
-        request_id: typeof payload?.meta?.requestId === 'string' ? payload.meta.requestId : null,
+        request_id: typeof payload?.meta?.requestId === 'string' ? payload.meta.requestId : requestId,
     });
 
     const normalizedProvider = provider === 'openai'
@@ -563,28 +697,87 @@ const generateItineraryFromPrompt = async (
         ? provider
         : 'gemini';
 
-    return buildTripFromModelData(data, startDate, {
+    const builtTrip = buildTripFromModelData(data, startDate, {
         roundTrip: options?.roundTrip,
         aiTarget: {
             provider: normalizedProvider,
             model,
         },
     });
+    const finishedAtIso = new Date().toISOString();
+    const generatedAttempt: TripGenerationAttemptSummary = {
+        id: options?.generationContext?.attemptId || (typeof payload?.meta?.requestId === 'string' ? payload.meta.requestId : requestId),
+        flow: options?.generationContext?.flow || 'classic',
+        source: options?.generationContext?.source || 'create_trip',
+        state: 'succeeded',
+        startedAt: new Date(requestStartedAtMs).toISOString(),
+        finishedAt: finishedAtIso,
+        durationMs: Number.isFinite(responseDurationMs) ? responseDurationMs : Math.max(0, Date.now() - requestStartedAtMs),
+        requestId: typeof payload?.meta?.requestId === 'string' ? payload.meta.requestId : requestId,
+        provider: normalizedProvider,
+        model,
+        providerModel: typeof payload?.meta?.providerModel === 'string' ? payload.meta.providerModel : null,
+        statusCode: edgeResponse.status,
+        metadata: {
+            source: options?.generationContext?.source || 'create_trip',
+        },
+    };
+
+    return {
+        ...builtTrip,
+        aiMeta: {
+            ...(builtTrip.aiMeta || {
+                provider: normalizedProvider,
+                model,
+                generatedAt: finishedAtIso,
+            }),
+            provider: normalizedProvider,
+            model,
+            generatedAt: finishedAtIso,
+            generation: {
+                state: 'succeeded',
+                latestAttempt: generatedAttempt,
+                attempts: [generatedAttempt],
+                inputSnapshot: builtTrip.aiMeta?.generation?.inputSnapshot || null,
+                retryCount: builtTrip.aiMeta?.generation?.retryCount || 0,
+                retryRequestedAt: builtTrip.aiMeta?.generation?.retryRequestedAt || null,
+                lastSucceededAt: finishedAtIso,
+                lastFailedAt: null,
+            },
+        },
+    };
   } catch (serverError) {
     if (!serverFailureTracked) {
+        const typedError = serverError as TripGenerationError;
         trackEvent('create_trip__ai_request--failed', {
             provider: selectedProvider,
             model: selectedModel,
-            status: 500,
+            status: typeof typedError?.status === 'number' ? typedError.status : 500,
             duration_ms: Date.now() - requestStartedAtMs,
-            error_code: serverError instanceof Error ? serverError.name : 'UNKNOWN_SERVER_ERROR',
+            error_code: typedError?.code || (serverError instanceof Error ? serverError.name : 'UNKNOWN_SERVER_ERROR'),
         });
     }
 
     const isGeminiFallbackAllowed = !options?.aiTarget || options.aiTarget.provider === 'gemini';
     if (!isGeminiFallbackAllowed) {
         console.error('AI Generation failed:', serverError);
-        throw serverError;
+        if (serverError instanceof TripGenerationError) {
+            throw serverError;
+        }
+        throw new TripGenerationError('AI generation failed.', {
+            code: serverError instanceof Error ? serverError.name : 'AI_GENERATION_ERROR',
+            status: 500,
+            details: serverError instanceof Error ? serverError.message : 'Unknown error',
+            requestId,
+            durationMs: Date.now() - requestStartedAtMs,
+            provider: selectedProvider,
+            model: selectedModel,
+            failureKind: createFailureKind(
+                serverError instanceof Error ? serverError.name : null,
+                500,
+                serverError instanceof Error ? serverError.message : 'Unknown error'
+            ),
+        });
     }
 
     const fallbackStartedAtMs = Date.now();
@@ -611,7 +804,50 @@ const generateItineraryFromPrompt = async (
             status: 200,
             duration_ms: Date.now() - fallbackStartedAtMs,
         });
-        return buildTripFromModelData(data, startDate, options);
+        const builtTrip = buildTripFromModelData(data, startDate, options);
+        const finishedAtIso = new Date().toISOString();
+        const durationMs = Math.max(0, Date.now() - fallbackStartedAtMs);
+        const generatedAttempt: TripGenerationAttemptSummary = {
+            id: options?.generationContext?.attemptId || requestId,
+            flow: options?.generationContext?.flow || 'classic',
+            source: options?.generationContext?.source || 'create_trip_fallback',
+            state: 'succeeded',
+            startedAt: new Date(fallbackStartedAtMs).toISOString(),
+            finishedAt: finishedAtIso,
+            durationMs,
+            requestId,
+            provider: 'gemini',
+            model: selectedModel,
+            providerModel: null,
+            statusCode: 200,
+            metadata: {
+                source: options?.generationContext?.source || 'create_trip_fallback',
+                fallback: true,
+            },
+        };
+        return {
+            ...builtTrip,
+            aiMeta: {
+                ...(builtTrip.aiMeta || {
+                    provider: 'gemini',
+                    model: selectedModel,
+                    generatedAt: finishedAtIso,
+                }),
+                provider: 'gemini',
+                model: selectedModel,
+                generatedAt: finishedAtIso,
+                generation: {
+                    state: 'succeeded',
+                    latestAttempt: generatedAttempt,
+                    attempts: [generatedAttempt],
+                    inputSnapshot: builtTrip.aiMeta?.generation?.inputSnapshot || null,
+                    retryCount: builtTrip.aiMeta?.generation?.retryCount || 0,
+                    retryRequestedAt: builtTrip.aiMeta?.generation?.retryRequestedAt || null,
+                    lastSucceededAt: finishedAtIso,
+                    lastFailedAt: null,
+                },
+            },
+        };
     } catch (fallbackError) {
         trackEvent('create_trip__ai_request--fallback_failed', {
             provider: 'gemini',
@@ -621,7 +857,23 @@ const generateItineraryFromPrompt = async (
             error_code: fallbackError instanceof Error ? fallbackError.name : 'UNKNOWN_FALLBACK_ERROR',
         });
         console.error('AI Generation failed (server and fallback):', { serverError, fallbackError });
-        throw fallbackError;
+        throw new TripGenerationError(
+            fallbackError instanceof Error ? fallbackError.message : 'AI generation fallback failed.',
+            {
+                code: fallbackError instanceof Error ? fallbackError.name : 'AI_GENERATION_FALLBACK_FAILED',
+                status: 500,
+                details: fallbackError instanceof Error ? fallbackError.message : 'Unknown fallback error',
+                requestId,
+                durationMs: Date.now() - requestStartedAtMs,
+                provider: 'gemini',
+                model: options?.aiTarget?.model || 'gemini-3-pro-preview',
+                failureKind: createFailureKind(
+                    fallbackError instanceof Error ? fallbackError.name : null,
+                    500,
+                    fallbackError instanceof Error ? fallbackError.message : 'Unknown fallback error'
+                ),
+            }
+        );
     }
   }
 };
@@ -745,7 +997,63 @@ export const generateSurpriseItinerary = async (options: SurpriseGenerateOptions
     `;
 
     detailedPrompt += BASE_ITINERARY_RULES_PROMPT;
-    return generateItineraryFromPrompt(detailedPrompt, options.startDate, { roundTrip: true });
+    return generateItineraryFromPrompt(detailedPrompt, options.startDate, {
+        roundTrip: true,
+        aiTarget: options.aiTarget,
+        generationContext: options.generationContext,
+    });
+};
+
+export const generateTripFromInputSnapshot = async (
+    snapshot: {
+        flow: TripGenerationFlow;
+        startDate?: string;
+        payload: Record<string, unknown>;
+    },
+    options?: {
+        aiTarget?: { provider: AiProviderId; model: string };
+        generationContext?: TripGenerationRequestContext;
+    },
+): Promise<ITrip> => {
+    const payload = snapshot.payload;
+    if (snapshot.flow === 'classic') {
+        const destinationPrompt = typeof payload.destinationPrompt === 'string' ? payload.destinationPrompt.trim() : '';
+        if (!destinationPrompt) {
+            throw new TripGenerationError('Retry payload is missing destination prompt.', {
+                code: 'GENERATION_INPUT_SNAPSHOT_INVALID',
+                status: 400,
+                failureKind: 'quality',
+            });
+        }
+        const classicOptions = (payload.options && typeof payload.options === 'object')
+            ? payload.options as GenerateOptions
+            : {} as GenerateOptions;
+        return generateItinerary(destinationPrompt, snapshot.startDate, {
+            ...classicOptions,
+            aiTarget: options?.aiTarget || classicOptions.aiTarget,
+            generationContext: options?.generationContext,
+        });
+    }
+
+    if (snapshot.flow === 'wizard') {
+        const wizardOptions = (payload.options && typeof payload.options === 'object')
+            ? payload.options as WizardGenerateOptions
+            : { countries: [] } as WizardGenerateOptions;
+        return generateWizardItinerary({
+            ...wizardOptions,
+            aiTarget: options?.aiTarget || wizardOptions.aiTarget,
+            generationContext: options?.generationContext,
+        });
+    }
+
+    const surpriseOptions = (payload.options && typeof payload.options === 'object')
+        ? payload.options as SurpriseGenerateOptions
+        : { country: '' } as SurpriseGenerateOptions;
+    return generateSurpriseItinerary({
+        ...surpriseOptions,
+        aiTarget: options?.aiTarget || surpriseOptions.aiTarget,
+        generationContext: options?.generationContext,
+    });
 };
 
 

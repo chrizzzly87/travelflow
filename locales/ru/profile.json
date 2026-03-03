@@ -77,7 +77,8 @@
     },
     "expiredTag": "Истекло",
     "expiredFallbackTitle": "Черновик поездки истек",
-    "hiddenTag": "Hidden"
+    "hiddenTag": "Hidden",
+    "generationFailedTag": "Generation failed"
   },
   "actions": {
     "title": "Быстрые действия",
