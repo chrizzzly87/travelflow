@@ -590,16 +590,18 @@ export const buildRoutePolylinePairOptions = (
     const mainStrokeWeight = baseWeight + 1;
     const innerOutlineColor = getRouteOutlineColor(style);
     const isDarkFamilyStyle = isDarkMapStyle(style);
+    const isIconOnlyRoute = baseOpacity <= 0 && (options.icons?.length ?? 0) > 0;
     const outerOutlineColor = isDarkFamilyStyle
         ? (options.strokeColor ?? getRouteOuterOutlineColor(style))
         : getRouteOuterOutlineColor(style);
     const shouldApplyDarkRouteBorders = isDarkFamilyStyle;
+    const shouldApplyDarkOuterRouteBorder = shouldApplyDarkRouteBorders && !isIconOnlyRoute;
 
     const outerOutlineOptions: google.maps.PolylineOptions = {
         ...options,
         strokeColor: outerOutlineColor,
-        strokeOpacity: shouldApplyDarkRouteBorders ? 0.5 : 0,
-        strokeWeight: shouldApplyDarkRouteBorders ? mainStrokeWeight + 5 : mainStrokeWeight,
+        strokeOpacity: shouldApplyDarkOuterRouteBorder ? 0.5 : 0,
+        strokeWeight: shouldApplyDarkOuterRouteBorder ? mainStrokeWeight + 5 : mainStrokeWeight,
         icons: undefined,
         zIndex: baseZIndex - 2,
     };
