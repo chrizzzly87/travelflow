@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState, useMemo, useRef } from 'react';
 import { Map as GoogleMap, useMap } from '@vis.gl/react-google-maps';
-import { ITimelineItem, MapColorMode, MapStyle, RouteMode, RouteStatus } from '../types';
+import { ITimelineItem, MapColorMode, MapStyle, RouteFailureReason, RouteMode, RouteStatus } from '../types';
 import { ArrowLeftRight, ArrowUpDown, Focus, Layers, Maximize2, Minimize2 } from 'lucide-react';
 import { readLocalStorageItem, writeLocalStorageItem } from '../services/browserStorageService';
 import { buildRouteCacheKey, DEFAULT_MAP_COLOR_MODE, findTravelBetweenCities, getHexFromColorClass, getNormalizedCityName } from '../utils';
@@ -28,7 +28,7 @@ interface ItineraryMapProps {
     focusLocationQuery?: string;
     fitToRouteKey?: string;
     onRouteMetrics?: (travelItemId: string, metrics: { routeDistanceKm?: number; routeDurationHours?: number; mode?: string; routeKey?: string }) => void;
-    onRouteStatus?: (travelItemId: string, status: RouteStatus, meta?: { mode?: string; routeKey?: string }) => void;
+    onRouteStatus?: (travelItemId: string, status: RouteStatus, meta?: { mode?: string; routeKey?: string; reason?: RouteFailureReason }) => void;
     mapColorMode?: MapColorMode;
     onMapColorModeChange?: (mode: MapColorMode) => void;
     isPaywalled?: boolean;
@@ -170,6 +170,7 @@ type RouteCacheEntry = {
     path?: google.maps.LatLngLiteral[];
     distanceKm?: number;
     durationHours?: number;
+    reason?: RouteFailureReason;
 };
 
 type OverlayMarkerUpdate = {
@@ -187,6 +188,8 @@ const ROUTE_CACHE = new Map<string, RouteCacheEntry>();
 export const ROUTE_FAILURE_TTL_MS = 5 * 60 * 1000;
 const ROUTE_STORAGE_KEY = 'tf_route_cache_v1';
 export const ROUTE_PERSIST_TTL_MS = 24 * 60 * 60 * 1000;
+const ROUTE_FAILURE_WARNING_TTL_MS = 2 * 60 * 1000;
+const RECENT_ROUTE_FAILURE_WARNINGS = new Map<string, number>();
 let routeCacheHydrated = false;
 
 const ROUTE_INNER_OUTLINE_COLOR = '#0f172a';
@@ -262,6 +265,58 @@ const isRoutesFieldMaskError = (error: unknown): boolean => {
             ? error
             : '';
     return /property fields/i.test(message) || /contains invalid fields/i.test(message) || /field mask/i.test(message);
+};
+
+export const mapRouteAttemptPolicyReasonToFailureReason = (
+    reason?: RouteAttemptPolicy['reason'],
+): RouteFailureReason => {
+    if (reason === 'unsupported_mode') return 'unsupported_mode';
+    if (reason === 'distance_cap_exceeded') return 'distance_cap_exceeded';
+    if (reason === 'invalid_distance') return 'invalid_distance';
+    return 'request_error';
+};
+
+export const classifyRouteComputationError = (error: unknown): RouteFailureReason => {
+    const message = error instanceof Error
+        ? error.message
+        : typeof error === 'string'
+            ? error
+            : '';
+    const normalized = message.toUpperCase();
+
+    if (normalized.includes('ZERO_RESULTS') || normalized.includes('NO ROUTE COULD BE FOUND')) {
+        return 'zero_results';
+    }
+    if (normalized.includes('NO ROUTE PATH RETURNED')) {
+        return 'no_route_path';
+    }
+    if (normalized.includes('ROUTE PATH IS STRAIGHT')) {
+        return 'straight_path';
+    }
+    if (normalized.includes('ROUTES API UNAVAILABLE')) {
+        return 'api_unavailable';
+    }
+    return 'request_error';
+};
+
+export const shouldLogRouteFailureWarning = ({
+    routeKey,
+    mode,
+    reason,
+    nowMs = Date.now(),
+}: {
+    routeKey: string;
+    mode: string;
+    reason: RouteFailureReason;
+    nowMs?: number;
+}): boolean => {
+    const warningKey = `${routeKey}::${mode}::${reason}`;
+    const previous = RECENT_ROUTE_FAILURE_WARNINGS.get(warningKey);
+    if (typeof previous === 'number' && nowMs - previous < ROUTE_FAILURE_WARNING_TTL_MS) {
+        return false;
+    }
+    RECENT_ROUTE_FAILURE_WARNINGS.set(warningKey, nowMs);
+    return true;
 };
 
 const buildCityMarkerSvgDataUrl = (
@@ -498,7 +553,11 @@ export const buildPersistedRouteCachePayload = (
         if (!entry || !entry.updatedAt || !entry.status) return;
         if (entry.status === 'failed') {
             if (now - entry.updatedAt <= ROUTE_FAILURE_TTL_MS) {
-                payload[key] = { status: 'failed', updatedAt: entry.updatedAt };
+                payload[key] = {
+                    status: 'failed',
+                    updatedAt: entry.updatedAt,
+                    reason: entry.reason,
+                };
             }
             return;
         }
@@ -1219,8 +1278,17 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                  if (wantsRealRoute && requiresDirections && !routeAttemptPolicy.shouldAttempt) {
                      routingAttempted = true;
                      routingFailed = true;
+                     const failureReason = mapRouteAttemptPolicyReasonToFailureReason(routeAttemptPolicy.reason);
+                     if (cacheKey) {
+                         ROUTE_CACHE.set(cacheKey, { status: 'failed', updatedAt: Date.now(), reason: failureReason });
+                         persistRouteCache();
+                     }
                      if (travelItem && onRouteStatusRef.current) {
-                         onRouteStatusRef.current(travelItem.id, 'failed', { mode, routeKey: cacheKey ?? undefined });
+                         onRouteStatusRef.current(travelItem.id, 'failed', {
+                             mode,
+                             routeKey: cacheKey ?? undefined,
+                             reason: failureReason,
+                         });
                      }
                  }
 
@@ -1264,7 +1332,11 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                          routingAttempted = true;
                          routingFailed = true;
                          if (travelItem && onRouteStatusRef.current) {
-                             onRouteStatusRef.current(travelItem.id, 'failed', { mode, routeKey: cacheKey });
+                             onRouteStatusRef.current(travelItem.id, 'failed', {
+                                 mode,
+                                 routeKey: cacheKey,
+                                 reason: cached.reason,
+                             });
                          }
                      } else {
                          routingAttempted = true;
@@ -1454,12 +1526,23 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                          if (!isEffectActive()) return;
 
                          routingFailed = true;
-                         ROUTE_CACHE.set(cacheKey, { status: 'failed', updatedAt: Date.now() });
+                         const failureReason = classifyRouteComputationError(lastRouteError);
+                         ROUTE_CACHE.set(cacheKey, {
+                             status: 'failed',
+                             updatedAt: Date.now(),
+                             reason: failureReason,
+                         });
                          persistRouteCache();
                          if (travelItem && onRouteStatusRef.current) {
-                             onRouteStatusRef.current(travelItem.id, 'failed', { mode, routeKey: cacheKey });
+                             onRouteStatusRef.current(travelItem.id, 'failed', {
+                                 mode,
+                                 routeKey: cacheKey,
+                                 reason: failureReason,
+                             });
                          }
-                         console.warn(`Routing failed for ${mode}, falling back to line`, lastRouteError);
+                         if (shouldLogRouteFailureWarning({ routeKey: cacheKey, mode, reason: failureReason })) {
+                             console.warn(`Routing failed for ${mode}, falling back to line`, lastRouteError);
+                         }
                      }
                  }
 

@@ -11,6 +11,15 @@ export type ActivityType =
 export type MapStyle = 'minimal' | 'standard' | 'dark' | 'satellite' | 'clean';
 export type RouteMode = 'simple' | 'realistic';
 export type RouteStatus = 'calculating' | 'ready' | 'failed' | 'idle';
+export type RouteFailureReason =
+  | 'unsupported_mode'
+  | 'invalid_distance'
+  | 'distance_cap_exceeded'
+  | 'zero_results'
+  | 'no_route_path'
+  | 'straight_path'
+  | 'api_unavailable'
+  | 'request_error';
 export type AppLanguage = 'en' | 'es' | 'de' | 'fr' | 'pt' | 'ru' | 'it' | 'pl' | 'ko' | 'fa' | 'ur';
 export type MapColorMode = 'brand' | 'trip';
 export type SystemRole = 'admin' | 'user';

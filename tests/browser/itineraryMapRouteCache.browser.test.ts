@@ -10,8 +10,11 @@ import {
   TRANSIT_SECOND_PASS_MAX_KM,
   buildOverlappingMarkerPosition,
   buildRouteAttemptPolicy,
+  classifyRouteComputationError,
+  mapRouteAttemptPolicyReasonToFailureReason,
   ROUTE_FAILURE_TTL_MS,
   ROUTE_PERSIST_TTL_MS,
+  shouldLogRouteFailureWarning,
   buildRoutePolylinePairOptions,
   buildPersistedRouteCachePayload,
   estimateGreatCircleDistanceKm,
@@ -38,18 +41,50 @@ describe('components/ItineraryMap route cache helpers', () => {
 
   it('serializes route cache payload with ttl-aware filtering', () => {
     const now = Date.now();
-    const routeCache = new Map<string, { status: 'ok' | 'failed'; updatedAt: number; path?: Array<{ lat: number; lng: number }> }>();
+    const routeCache = new Map<string, {
+      status: 'ok' | 'failed';
+      updatedAt: number;
+      path?: Array<{ lat: number; lng: number }>;
+      reason?: string;
+    }>();
     routeCache.set('freshOk', { status: 'ok', updatedAt: now - 2000, path: [{ lat: 1, lng: 2 }] });
     routeCache.set('staleOk', { status: 'ok', updatedAt: now - ROUTE_PERSIST_TTL_MS - 1, path: [{ lat: 2, lng: 3 }] });
-    routeCache.set('freshFailed', { status: 'failed', updatedAt: now - 1000, path: [{ lat: 3, lng: 4 }] });
+    routeCache.set('freshFailed', {
+      status: 'failed',
+      updatedAt: now - 1000,
+      path: [{ lat: 3, lng: 4 }],
+      reason: 'zero_results',
+    });
     routeCache.set('staleFailed', { status: 'failed', updatedAt: now - ROUTE_FAILURE_TTL_MS - 1 });
 
     const payload = buildPersistedRouteCachePayload(routeCache, now);
 
     expect(payload).toEqual({
       freshOk: { status: 'ok', updatedAt: now - 2000, path: [{ lat: 1, lng: 2 }] },
-      freshFailed: { status: 'failed', updatedAt: now - 1000 },
+      freshFailed: { status: 'failed', updatedAt: now - 1000, reason: 'zero_results' },
     });
+  });
+
+  it('maps route-attempt policy reasons to route failure reasons', () => {
+    expect(mapRouteAttemptPolicyReasonToFailureReason('unsupported_mode')).toBe('unsupported_mode');
+    expect(mapRouteAttemptPolicyReasonToFailureReason('distance_cap_exceeded')).toBe('distance_cap_exceeded');
+    expect(mapRouteAttemptPolicyReasonToFailureReason('invalid_distance')).toBe('invalid_distance');
+    expect(mapRouteAttemptPolicyReasonToFailureReason(undefined)).toBe('request_error');
+  });
+
+  it('classifies route computation errors into stable failure reasons', () => {
+    expect(classifyRouteComputationError('MapsRequestError: ZERO_RESULTS')).toBe('zero_results');
+    expect(classifyRouteComputationError(new Error('No route path returned'))).toBe('no_route_path');
+    expect(classifyRouteComputationError(new Error('Route path is straight'))).toBe('straight_path');
+    expect(classifyRouteComputationError(new Error('Routes API unavailable'))).toBe('api_unavailable');
+    expect(classifyRouteComputationError(new Error('Something else'))).toBe('request_error');
+  });
+
+  it('deduplicates repeated route failure warnings per leg/mode/reason for a short window', () => {
+    const params = { routeKey: 'leg-a', mode: 'train', reason: 'zero_results' as const };
+    expect(shouldLogRouteFailureWarning({ ...params, nowMs: 1_000 })).toBe(true);
+    expect(shouldLogRouteFailureWarning({ ...params, nowMs: 61_000 })).toBe(false);
+    expect(shouldLogRouteFailureWarning({ ...params, nowMs: 121_000 })).toBe(true);
   });
 
   it('uses dual-contrast outline colors', () => {
