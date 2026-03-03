@@ -1227,6 +1227,19 @@ const useTripViewRender = ({
         && generationState !== 'running'
         && generationState !== 'queued';
 
+    const currentViewSettings: IViewSettings = useMemo(() => ({
+        layoutMode,
+        timelineMode,
+        timelineView,
+        mapDockMode,
+        mapStyle,
+        routeMode,
+        showCityNames,
+        zoomLevel,
+        sidebarWidth,
+        timelineHeight
+    }), [layoutMode, timelineMode, timelineView, mapDockMode, mapStyle, routeMode, showCityNames, zoomLevel, sidebarWidth, timelineHeight]);
+
     const tripInfoRetryAnalyticsAttributes = useMemo(
         () => getAnalyticsDebugAttributes('trip_generation__trip_info--retry', {
             trip_id: trip.id,
@@ -1407,19 +1420,6 @@ const useTripViewRender = ({
         if (typeof window === 'undefined') return;
         removeLocalStorageItem('tf_country_info_expanded');
     }, []);
-
-    const currentViewSettings: IViewSettings = useMemo(() => ({
-        layoutMode,
-        timelineMode,
-        timelineView,
-        mapDockMode,
-        mapStyle,
-        routeMode,
-        showCityNames,
-        zoomLevel,
-        sidebarWidth,
-        timelineHeight
-    }), [layoutMode, timelineMode, timelineView, mapDockMode, mapStyle, routeMode, showCityNames, zoomLevel, sidebarWidth, timelineHeight]);
 
     useTripViewSettingsSync({
         layoutMode,
