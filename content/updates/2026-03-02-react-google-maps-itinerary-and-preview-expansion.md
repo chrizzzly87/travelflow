@@ -20,6 +20,8 @@ summary: "Trip planner map rendering is now more stable, with clearer markers an
 - [x] [Improved] 🔁 Round-trip start/end city pins now offset overlapping markers so both stop numbers stay readable.
 - [x] [Improved] 🧭 Initial planner map mount now appears in-place without the first-load morph transition.
 - [x] [Improved] 🎯 Fit-to-trip recenter now waits for map viewport sizing so reset zoom is more reliable after layout changes.
+- [x] [Improved] 🌑 Added a new Clean (Dark) map style that keeps the low-noise map treatment while matching dark theme contrast.
+- [x] [Improved] 🧱 Dark map route legs now render with a layered gap + white edge treatment so paths pop more clearly from the basemap.
 - [x] [Fixed] 🧩 Single-city trip previews now render reliably instead of failing route-only preview assumptions.
 - [ ] [Internal] 🛣️ Switched realistic route checks to the newer Google Routes API path with legacy fallback support.
 - [ ] [Internal] 🧠 Added distance-based mode eligibility and bounded transit retry policy to improve route success while reducing wasted checks.
@@ -27,6 +29,7 @@ summary: "Trip planner map rendering is now more stable, with clearer markers an
 - [ ] [Internal] 🧰 Added an explicit field mask for Routes API calls and fallback to legacy directions when Routes requests fail.
 - [ ] [Internal] 🧯 Added a field-mask compatibility retry and lazy Directions fallback initialization to reduce routing warning noise.
 - [ ] [Internal] 🧵 Added an async draw-session guard so stale route responses cannot re-attach old transport overlays after mode changes.
+- [ ] [Internal] 🧪 Tightened route-shape validation so straight-like transit responses are treated as fallback lines instead of misleading solid realistic paths.
 - [ ] [Internal] 🧹 Normalized legacy transport values when loading saved trips so reopened plans use canonical travel modes.
 - [ ] [Internal] 🧷 Ignored no-op transport reselection updates to reduce redundant route refreshes and history churn.
 - [ ] [Internal] 🧭 Replaced deprecated map marker constructors with OverlayView-based markers to remove legacy marker API warnings.

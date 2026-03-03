@@ -8,7 +8,7 @@ export type ActivityType =
     'general' | 'food' | 'culture' | 'sightseeing' | 'relaxation' | 'nightlife' | 
     'sports' | 'hiking' | 'wildlife' | 'shopping' | 'adventure' | 'beach' | 'nature';
 
-export type MapStyle = 'minimal' | 'standard' | 'dark' | 'satellite' | 'clean';
+export type MapStyle = 'minimal' | 'standard' | 'dark' | 'satellite' | 'clean' | 'cleanDark';
 export type RouteMode = 'simple' | 'realistic';
 export type RouteStatus = 'calculating' | 'ready' | 'failed' | 'idle';
 export type AppLanguage = 'en' | 'es' | 'de' | 'fr' | 'pt' | 'ru' | 'it' | 'pl' | 'ko' | 'fa' | 'ur';
