@@ -1219,13 +1219,12 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             const endCityKey = getNormalizedCityName(endCity?.title);
             const isRoundTrip = !!(startCityKey && endCityKey && startCityKey === endCityKey);
             const isCleanDarkLabelStyle = activeStyle === 'cleanDark';
-            const labelTextColor = isCleanDarkLabelStyle ? '#f8fafc' : '#111827';
-            const labelSubTextColor = isCleanDarkLabelStyle
-                ? resolveCssColorVar('--tf-accent-200', '#c7d2fe')
-                : 'var(--tf-primary)';
-            const labelTextShadow = isCleanDarkLabelStyle
-                ? '0 1px 2px rgba(11,18,32,0.88)'
-                : '0 1px 2px rgba(255,255,255,0.8)';
+            const defaultLabelTextColor = '#111827';
+            const defaultLabelSubTextColor = 'var(--tf-primary)';
+            const defaultLabelTextShadow = '0 1px 2px rgba(255,255,255,0.8)';
+            const cleanDarkLabelTextColor = '#f8fafc';
+            const cleanDarkLabelSubTextColor = resolveCssColorVar('--tf-accent-200', '#c7d2fe');
+            const cleanDarkLabelTextShadow = '0 1px 2px rgba(11,18,32,0.88)';
 
             const createCityLabelOverlay = (position: google.maps.LatLngLiteral, name: string, subLabel?: string) => {
                 const overlay = new window.google.maps.OverlayView();
@@ -1246,8 +1245,8 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                     nameEl.textContent = name;
                     nameEl.style.fontSize = '13px';
                     nameEl.style.fontWeight = '700';
-                    nameEl.style.color = labelTextColor;
-                    nameEl.style.textShadow = labelTextShadow;
+                    nameEl.style.color = isCleanDarkLabelStyle ? cleanDarkLabelTextColor : defaultLabelTextColor;
+                    nameEl.style.textShadow = isCleanDarkLabelStyle ? cleanDarkLabelTextShadow : defaultLabelTextShadow;
 
                     div.appendChild(nameEl);
 
@@ -1256,10 +1255,10 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                         subEl.textContent = subLabel;
                         subEl.style.fontSize = '10px';
                         subEl.style.fontWeight = '600';
-                        subEl.style.color = labelSubTextColor;
+                        subEl.style.color = isCleanDarkLabelStyle ? cleanDarkLabelSubTextColor : defaultLabelSubTextColor;
                         subEl.style.textTransform = 'uppercase';
                         subEl.style.letterSpacing = '0.08em';
-                        subEl.style.textShadow = labelTextShadow;
+                        subEl.style.textShadow = isCleanDarkLabelStyle ? cleanDarkLabelTextShadow : defaultLabelTextShadow;
                         div.appendChild(subEl);
                     }
 
