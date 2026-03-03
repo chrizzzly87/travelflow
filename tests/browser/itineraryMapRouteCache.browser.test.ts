@@ -23,6 +23,8 @@ import {
   getRouteOuterOutlineColor,
   getRouteOutlineColor,
   getMapLabelCityName,
+  resolveActivityMarkerPositions,
+  resolveSelectedMapFocusPosition,
   resolveCityLabelAnchor,
   isRoutePathLikelyStraight,
   isMapViewportReady,
@@ -338,6 +340,72 @@ describe('components/ItineraryMap route cache helpers', () => {
     expect(first).not.toEqual(second);
     expect(first.lat).toBeLessThan(origin.lat);
     expect(second.lat).toBeGreaterThan(origin.lat);
+  });
+
+  it('builds activity marker positions using city fallback coordinates with offsets', () => {
+    const items = [
+      {
+        id: 'city-1',
+        type: 'city',
+        title: 'Bangkok',
+        startDateOffset: 0,
+        duration: 2,
+        color: 'bg-blue-100 border-blue-300 text-blue-800',
+        coordinates: { lat: 13.7563, lng: 100.5018 },
+      },
+      {
+        id: 'activity-1',
+        type: 'activity',
+        title: 'Food walk',
+        startDateOffset: 0.3,
+        duration: 0.2,
+        color: 'bg-amber-100 border-amber-300 text-amber-800',
+        activityType: ['food'],
+      },
+      {
+        id: 'activity-2',
+        type: 'activity',
+        title: 'Temple stop',
+        startDateOffset: 0.6,
+        duration: 0.2,
+        color: 'bg-sky-100 border-sky-300 text-sky-800',
+        activityType: ['culture'],
+      },
+    ] as any;
+
+    const markers = resolveActivityMarkerPositions(items);
+    expect(markers).toHaveLength(2);
+    expect(markers[0].coordinateSource).toBe('city');
+    expect(markers[1].coordinateSource).toBe('city');
+    expect(markers[0].position).not.toEqual(markers[0].baseCoordinates);
+    expect(markers[1].position).not.toEqual(markers[1].baseCoordinates);
+    expect(markers[0].position).not.toEqual(markers[1].position);
+  });
+
+  it('prefers selected activity marker position over selected city position for map focus', () => {
+    const activityPositions = new Map<string, { lat: number; lng: number }>();
+    activityPositions.set('activity-1', { lat: 50.11, lng: 8.67 });
+    const cities = [{
+      id: 'city-1',
+      type: 'city',
+      title: 'Frankfurt',
+      startDateOffset: 0,
+      duration: 2,
+      color: 'bg-blue-100 border-blue-300 text-blue-800',
+      coordinates: { lat: 50.1109, lng: 8.6821 },
+    }] as any;
+
+    const focusTarget = resolveSelectedMapFocusPosition({
+      selectedActivityId: 'activity-1',
+      selectedCityId: 'city-1',
+      activityMarkerPositions: activityPositions as any,
+      cities,
+    });
+
+    expect(focusTarget).toEqual({
+      position: { lat: 50.11, lng: 8.67 },
+      zoom: 12,
+    });
   });
 
   it('provides an explicit field mask for computeRoutes requests', () => {

@@ -11,6 +11,10 @@ summary: "Started follow-up work to make route failures more deterministic and r
 ---
 
 ## Changes
+- [x] [New feature] 📅 Added one-click calendar exports for single activities, full activity plans, city stays, and complete itineraries from planner details, trip info, and print view.
+- [x] [New feature] 🗺️ Activity markers now appear on the itinerary map with matching category colors/icons and auto-focus when selected from calendar or timeline views.
+- [ ] [Internal] 🧱 Introduced a shared calendar file generator so all exports consistently include app attribution and canonical trip links.
+- [ ] [Internal] 📊 Added planner analytics events for calendar export actions across details, info, and print surfaces.
 - [ ] [Internal] 🧭 Added structured route-failure reason classification to support future leg-level transport availability UX.
 - [ ] [Internal] 🧠 Persisted failure reasons in route cache metadata and passed reason context through route-status updates.
 - [ ] [Internal] 🔕 Added short-window deduping for repeated route fallback warnings on identical legs/modes.
