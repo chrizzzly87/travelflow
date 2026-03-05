@@ -171,3 +171,29 @@ export const listTripGenerationJobsByTrip = async (
         return [];
     }
 };
+
+export const requeueTripGenerationJob = async (
+    jobId: string,
+    options?: {
+        reason?: string | null;
+        runAfter?: string | null;
+        resetRetryCount?: boolean;
+    },
+): Promise<boolean> => {
+    if (!supabase) return false;
+    const normalizedJobId = jobId.trim();
+    if (!normalizedJobId) return false;
+
+    try {
+        await ensureExistingDbSession();
+        const { error } = await supabase.rpc('trip_generation_job_requeue', {
+            p_job_id: normalizedJobId,
+            p_reason: options?.reason || null,
+            p_run_after: options?.runAfter || null,
+            p_reset_retry_count: options?.resetRetryCount === true,
+        });
+        return !error;
+    } catch {
+        return false;
+    }
+};

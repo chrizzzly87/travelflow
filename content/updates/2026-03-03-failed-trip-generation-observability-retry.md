@@ -45,6 +45,7 @@ summary: "Failed trip generations are now easier to spot, inspect, and retry on 
 - [ ] [Internal] ⚙️ Retry now supports flag-gated async server-owned enqueue, so the same trip can keep running after the browser request returns.
 - [ ] [Internal] ⚙️ Create-trip V1/V2/V3 submit flows now support flag-gated async worker enqueue paths so generation completion is no longer bound to an open browser tab.
 - [ ] [Internal] 🧯 Admin trip diagnostics now includes queue/dead-letter job history (state, retry budget, latest worker error) for faster worker incident triage.
+- [ ] [Internal] 🧯 Admin trip diagnostics now supports one-click requeue for dead/failed worker jobs to speed up manual recovery during incidents.
 - [ ] [Internal] 🔄 Trip view now polls owner-access DB snapshots while generation is queued/running so server-side async completions appear without manual refresh.
 - [ ] [Internal] 🛠️ Removed legacy admin trip-list RPC overloads and hardened generation-state RPC arguments to prevent PostgREST function ambiguity.
 - [ ] [Internal] 📡 Added best-effort tab-close abort beacons to improve abort classification during in-flight generation.

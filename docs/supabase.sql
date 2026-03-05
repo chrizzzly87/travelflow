@@ -2787,6 +2787,83 @@ begin
 end;
 $$;
 
+create or replace function public.trip_generation_job_requeue(
+  p_job_id uuid,
+  p_reason text default null,
+  p_run_after timestamptz default null,
+  p_reset_retry_count boolean default false
+)
+returns table(
+  id uuid,
+  state text,
+  retry_count integer,
+  run_after timestamptz,
+  updated_at timestamptz
+)
+language plpgsql
+security definer
+set search_path = public
+set row_security = off
+as $$
+declare
+  v_uid uuid;
+  v_user_id uuid;
+  v_job public.trip_generation_jobs%rowtype;
+begin
+  v_uid := auth.uid();
+  if coalesce(auth.role(), '') <> 'service_role' then
+    if v_uid is null then
+      raise exception 'Not authenticated';
+    end if;
+  end if;
+
+  select j.owner_id
+    into v_user_id
+    from public.trip_generation_jobs j
+   where j.id = p_job_id
+   limit 1;
+
+  if v_user_id is null then
+    raise exception 'Job not found';
+  end if;
+
+  if coalesce(auth.role(), '') <> 'service_role' then
+    if not public.is_admin(v_uid) and v_user_id <> v_uid then
+      raise exception 'Not allowed';
+    end if;
+  end if;
+
+  update public.trip_generation_jobs j
+     set state = 'queued',
+         run_after = coalesce(p_run_after, now()),
+         lease_expires_at = null,
+         leased_by = null,
+         finished_at = null,
+         retry_count = case when coalesce(p_reset_retry_count, false) then 0 else j.retry_count end,
+         last_error_code = case
+           when nullif(btrim(coalesce(p_reason, '')), '') is null then j.last_error_code
+           else nullif(left(btrim(p_reason), 1200), '')
+         end,
+         last_error_message = null,
+         updated_at = now()
+   where j.id = p_job_id
+     and j.state in ('dead', 'failed')
+   returning * into v_job;
+
+  if v_job.id is null then
+    raise exception 'Job is not requeueable';
+  end if;
+
+  return query
+  select
+    v_job.id,
+    v_job.state,
+    v_job.retry_count,
+    v_job.run_after,
+    v_job.updated_at;
+end;
+$$;
+
 create or replace function public.create_anonymous_asset_claim(
   p_expires_minutes integer default 60
 )
@@ -3564,6 +3641,8 @@ grant execute on function public.trip_generation_job_complete(uuid, text) to aut
 grant execute on function public.trip_generation_job_complete(uuid, text) to service_role;
 grant execute on function public.trip_generation_job_fail(uuid, text, text, text, integer, boolean) to authenticated;
 grant execute on function public.trip_generation_job_fail(uuid, text, text, text, integer, boolean) to service_role;
+grant execute on function public.trip_generation_job_requeue(uuid, text, timestamptz, boolean) to authenticated;
+grant execute on function public.trip_generation_job_requeue(uuid, text, timestamptz, boolean) to service_role;
 grant execute on function public.create_anonymous_asset_claim(integer) to authenticated;
 grant execute on function public.claim_anonymous_assets(uuid) to authenticated;
 grant execute on function public.expire_stale_anonymous_asset_claims() to anon, authenticated;
@@ -6179,6 +6258,8 @@ grant execute on function public.trip_generation_job_complete(uuid, text) to aut
 grant execute on function public.trip_generation_job_complete(uuid, text) to service_role;
 grant execute on function public.trip_generation_job_fail(uuid, text, text, text, integer, boolean) to authenticated;
 grant execute on function public.trip_generation_job_fail(uuid, text, text, text, integer, boolean) to service_role;
+grant execute on function public.trip_generation_job_requeue(uuid, text, timestamptz, boolean) to authenticated;
+grant execute on function public.trip_generation_job_requeue(uuid, text, timestamptz, boolean) to service_role;
 grant execute on function public.admin_list_trips(integer, integer, text, uuid, text, text) to authenticated;
 grant execute on function public.admin_list_user_trips(uuid, integer, integer, text, text) to authenticated;
 grant execute on function public.admin_get_trip_for_view(text) to authenticated;

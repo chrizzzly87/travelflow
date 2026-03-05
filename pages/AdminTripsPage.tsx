@@ -65,7 +65,7 @@ import {
 import { retryTripGenerationWithDefaultModel } from '../services/tripGenerationRetryService';
 import { listAdminTripGenerationAttempts } from '../services/tripGenerationAttemptLogService';
 import { buildBenchmarkScenarioImportUrl } from '../services/tripGenerationBenchmarkBridge';
-import { listTripGenerationJobsByTrip } from '../services/tripGenerationJobService';
+import { listTripGenerationJobsByTrip, requeueTripGenerationJob } from '../services/tripGenerationJobService';
 
 const toDateTimeInputValue = (value: string | null): string => {
     if (!value) return '';
@@ -544,6 +544,7 @@ export const AdminTripsPage: React.FC = () => {
     const [selectedTripGenerationJobRows, setSelectedTripGenerationJobRows] = useState<TripGenerationJobSummary[]>([]);
     const [isLoadingTripAttemptLogRows, setIsLoadingTripAttemptLogRows] = useState(false);
     const [isLoadingTripGenerationJobRows, setIsLoadingTripGenerationJobRows] = useState(false);
+    const [requeueingGenerationJobId, setRequeueingGenerationJobId] = useState<string | null>(null);
     const [isRetryingGeneration, setIsRetryingGeneration] = useState(false);
     const [generationNowMs, setGenerationNowMs] = useState(() => Date.now());
     const [drawerRetryModelId, setDrawerRetryModelId] = useState<string>(DEFAULT_RETRY_MODEL_ID);
@@ -1228,6 +1229,62 @@ export const AdminTripsPage: React.FC = () => {
         } finally {
             setIsRetryingGeneration(false);
             setIsSaving(false);
+        }
+    };
+
+    const handleRequeueGenerationJob = async (job: TripGenerationJobSummary) => {
+        if (!selectedTripForDrawer) return;
+        if (job.state !== 'dead' && job.state !== 'failed') return;
+
+        setRequeueingGenerationJobId(job.id);
+        setErrorMessage(null);
+        setMessage(null);
+
+        try {
+            const requeued = await requeueTripGenerationJob(job.id, {
+                reason: 'admin_trip_drawer_manual_requeue',
+                resetRetryCount: true,
+            });
+            if (!requeued) {
+                throw new Error('Could not requeue generation job.');
+            }
+
+            setMessage('Generation job requeued.');
+            showAppToast({
+                tone: 'success',
+                title: 'Generation job requeued',
+                description: 'The async worker queue will process this job again.',
+            });
+
+            const [tripResult, attemptRows, jobRows] = await Promise.all([
+                dbGetTrip(selectedTripForDrawer.trip_id),
+                listAdminTripGenerationAttempts(selectedTripForDrawer.trip_id, 24),
+                listTripGenerationJobsByTrip(selectedTripForDrawer.trip_id, { limit: 24 }),
+            ]);
+
+            setSelectedTripAttemptLogRows(attemptRows);
+            setSelectedTripGenerationJobRows(jobRows);
+
+            const refreshedTrip = tripResult?.trip || null;
+            if (refreshedTrip) {
+                setSelectedFullTrip(refreshedTrip);
+                const nextState = getTripGenerationState(refreshedTrip, Date.now());
+                setTrips((current) => current.map((trip) => (
+                    trip.trip_id === refreshedTrip.id
+                        ? {
+                            ...trip,
+                            generation_state: nextState,
+                            updated_at: new Date().toISOString(),
+                        }
+                        : trip
+                )));
+            } else {
+                await loadTrips();
+            }
+        } catch (error) {
+            setErrorMessage(error instanceof Error ? error.message : 'Could not requeue generation job.');
+        } finally {
+            setRequeueingGenerationJobId(null);
         }
     };
 
@@ -2582,7 +2639,7 @@ export const AdminTripsPage: React.FC = () => {
                                             <div className="space-y-1 rounded-lg border border-slate-100 bg-slate-50 p-2">
                                                 <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Queue jobs</p>
                                                 {selectedTripGenerationJobRows.map((job) => (
-                                                    <div key={job.id} className="grid gap-1 rounded-md border border-slate-100 bg-white px-2 py-1.5 text-[11px] sm:grid-cols-[auto,1fr,auto,auto] sm:items-center sm:gap-2">
+                                                    <div key={job.id} className="grid gap-1 rounded-md border border-slate-100 bg-white px-2 py-1.5 text-[11px] sm:grid-cols-[auto,1fr,auto,auto,auto] sm:items-center sm:gap-2">
                                                         <span className={`inline-flex w-fit items-center rounded-full border px-2 py-0.5 font-semibold ${getGenerationJobPillClassName(job.state)}`}>
                                                             {job.state}
                                                         </span>
@@ -2595,6 +2652,29 @@ export const AdminTripsPage: React.FC = () => {
                                                         <span className="shrink-0 text-slate-500">
                                                             {formatRelativeTimestamp(job.createdAt, 'n/a')}
                                                         </span>
+                                                        {(job.state === 'dead' || job.state === 'failed') ? (
+                                                            <button
+                                                                type="button"
+                                                                onClick={(event) => {
+                                                                    event.preventDefault();
+                                                                    event.stopPropagation();
+                                                                    void handleRequeueGenerationJob(job);
+                                                                }}
+                                                                disabled={requeueingGenerationJobId === job.id}
+                                                                className="inline-flex h-6 items-center justify-center rounded-md border border-slate-300 bg-white px-2 text-[10px] font-semibold text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+                                                            >
+                                                                {requeueingGenerationJobId === job.id ? (
+                                                                    <>
+                                                                        <SpinnerGap size={12} className="mr-1 animate-spin" />
+                                                                        Requeueing...
+                                                                    </>
+                                                                ) : (
+                                                                    'Requeue'
+                                                                )}
+                                                            </button>
+                                                        ) : (
+                                                            <span className="hidden sm:block" aria-hidden="true" />
+                                                        )}
                                                     </div>
                                                 ))}
                                             </div>

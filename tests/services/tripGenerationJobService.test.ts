@@ -24,6 +24,7 @@ import {
   claimTripGenerationJobs,
   enqueueTripGenerationJob,
   listTripGenerationJobsByTrip,
+  requeueTripGenerationJob,
 } from '../../services/tripGenerationJobService';
 
 describe('tripGenerationJobService', () => {
@@ -195,5 +196,28 @@ describe('tripGenerationJobService', () => {
     expect(inMock).toHaveBeenCalledWith('state', ['dead', 'failed']);
     expect(orderMock).toHaveBeenCalledWith('created_at', { ascending: false });
     expect(limitMock).toHaveBeenCalledWith(10);
+  });
+
+  it('requeues a dead-letter job for admin operations', async () => {
+    rpcMock.mockResolvedValueOnce({
+      data: [{
+        id: 'job-9',
+        state: 'queued',
+      }],
+      error: null,
+    });
+
+    const success = await requeueTripGenerationJob('job-9', {
+      reason: 'admin_drawer_manual_requeue',
+      resetRetryCount: true,
+    });
+
+    expect(success).toBe(true);
+    expect(rpcMock).toHaveBeenCalledWith('trip_generation_job_requeue', {
+      p_job_id: 'job-9',
+      p_reason: 'admin_drawer_manual_requeue',
+      p_run_after: null,
+      p_reset_retry_count: true,
+    });
   });
 });
