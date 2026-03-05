@@ -38,6 +38,10 @@ import {
     type BenchmarkPreferencesPayload,
     type BenchmarkPresetConfig,
 } from '../services/aiBenchmarkPreferencesService';
+import {
+    buildBenchmarkMaskScenarioFromImportedJson,
+    decodeBenchmarkScenarioImportPayload,
+} from '../services/tripGenerationBenchmarkBridge';
 import { dbGetAccessToken, ensureDbSession } from '../services/dbService';
 import { getDaysDifference, getDefaultTripDates } from '../utils';
 import {
@@ -187,6 +191,8 @@ interface ValidationCheckStats {
 }
 
 const DEFAULT_SESSION_NAME = 'AI benchmark session';
+const CUSTOM_JSON_PRESET_ID = '__custom_json__';
+const CUSTOM_JSON_PRESET_NAME = 'Custom JSON import';
 const BENCHMARK_PARALLEL_CONCURRENCY = 3;
 const BENCHMARK_TIMEOUT_MIN_SECONDS = 20;
 const BENCHMARK_TIMEOUT_MAX_SECONDS = 180;
@@ -505,6 +511,12 @@ export const AdminAiBenchmarkPage: React.FC = () => {
     const [modelModalOpen, setModelModalOpen] = useState(false);
     const [modelDraftIds, setModelDraftIds] = useState<string[]>([]);
     const [presetEditor, setPresetEditor] = useState<PresetEditorDraft | null>(null);
+    const [customScenarioJsonDraft, setCustomScenarioJsonDraft] = useState('');
+    const [customScenarioMeta, setCustomScenarioMeta] = useState<{
+        source: 'trip_info' | 'admin_trip_drawer' | 'manual';
+        flow: 'classic' | 'wizard' | 'surprise' | 'unknown';
+        tripId: string | null;
+    } | null>(null);
     const [preferencesLoaded, setPreferencesLoaded] = useState(false);
     const [hideFailedRuns, setHideFailedRuns] = useState(false);
     const [onlyWarningRuns, setOnlyWarningRuns] = useState(false);
@@ -541,6 +553,8 @@ export const AdminAiBenchmarkPage: React.FC = () => {
     const latestSessionBootstrapRef = useRef(false);
     const resultsSectionRef = useRef<HTMLElement | null>(null);
     const hasPendingRunsRef = useRef(false);
+    const handledImportTokenRef = useRef<string | null>(null);
+    const pendingImportedScenarioRef = useRef<ReturnType<typeof decodeBenchmarkScenarioImportPayload> | null>(null);
 
     const sortedModels = useMemo(() => sortAiModels(AI_MODEL_CATALOG), []);
     const activeModelIdSet = useMemo(() => new Set(sortedModels.filter((model) => model.availability === 'active').map((model) => model.id)), [sortedModels]);
@@ -589,10 +603,70 @@ export const AdminAiBenchmarkPage: React.FC = () => {
     );
     const allTargetsActive = selectedTargets.length > 0 && runnableTargets.length === selectedTargets.length;
     const allTargetsInactive = selectedTargets.length > 0 && runnableTargets.length === 0;
-    const selectedPreset = useMemo(
-        () => presetConfigs.find((preset) => preset.id === selectedPresetId) || null,
-        [presetConfigs, selectedPresetId]
-    );
+    const customScenarioDraftParse = useMemo(() => {
+        const flowHint = customScenarioMeta?.flow || 'unknown';
+        if (!customScenarioJsonDraft.trim()) {
+            return {
+                scenario: null as BenchmarkMaskScenario | null,
+                flow: flowHint,
+                error: null as string | null,
+            };
+        }
+
+        let parsed: unknown;
+        try {
+            parsed = JSON.parse(customScenarioJsonDraft);
+        } catch {
+            return {
+                scenario: null as BenchmarkMaskScenario | null,
+                flow: flowHint,
+                error: 'Custom JSON is not valid JSON.',
+            };
+        }
+
+        const mapped = buildBenchmarkMaskScenarioFromImportedJson(parsed, {
+            flowHint,
+            defaultStartDate: defaultDates.startDate,
+            defaultEndDate: defaultDates.endDate,
+        });
+        if (!mapped.scenario) {
+            return {
+                scenario: null as BenchmarkMaskScenario | null,
+                flow: mapped.flow,
+                error: 'Custom JSON could not be mapped to a benchmark mask. Use a scenario object or a trip generation payload.',
+            };
+        }
+        return {
+            scenario: mapped.scenario,
+            flow: mapped.flow,
+            error: null as string | null,
+        };
+    }, [customScenarioJsonDraft, customScenarioMeta?.flow, defaultDates.endDate, defaultDates.startDate]);
+
+    const selectedPreset = useMemo(() => {
+        if (selectedPresetId === CUSTOM_JSON_PRESET_ID) {
+            return {
+                id: CUSTOM_JSON_PRESET_ID,
+                kind: 'custom',
+                name: CUSTOM_JSON_PRESET_NAME,
+                description: customScenarioMeta
+                    ? `Imported from ${customScenarioMeta.source === 'trip_info' ? 'Trip Info' : customScenarioMeta.source === 'admin_trip_drawer' ? 'Admin Trip Drawer' : 'manual input'}`
+                    : 'Paste a benchmark scenario JSON payload and apply it to the mask.',
+                scenario: customScenarioDraftParse.scenario || normalizeBenchmarkMaskScenario({}, {
+                    defaultStartDate: defaultDates.startDate,
+                    defaultEndDate: defaultDates.endDate,
+                }),
+            } as BenchmarkPresetConfig;
+        }
+        return presetConfigs.find((preset) => preset.id === selectedPresetId) || null;
+    }, [
+        customScenarioDraftParse.scenario,
+        customScenarioMeta,
+        defaultDates.endDate,
+        defaultDates.startDate,
+        presetConfigs,
+        selectedPresetId,
+    ]);
 
     const providerOptions = useMemo(() => {
         const values = Array.from(new Set(runs.map((run) => run.provider).filter(Boolean)));
@@ -802,6 +876,53 @@ export const AdminAiBenchmarkPage: React.FC = () => {
         tripStyleMask,
     ]);
 
+    const loadCurrentMaskIntoCustomJson = useCallback((meta?: {
+        source: 'trip_info' | 'admin_trip_drawer' | 'manual';
+        flow: 'classic' | 'wizard' | 'surprise' | 'unknown';
+        tripId: string | null;
+    }) => {
+        const scenario = readMaskScenario();
+        setCustomScenarioJsonDraft(JSON.stringify(scenario, null, 2));
+        setCustomScenarioMeta(meta || {
+            source: 'manual',
+            flow: 'unknown',
+            tripId: null,
+        });
+    }, [readMaskScenario]);
+
+    const applyImportedScenario = useCallback((imported: NonNullable<ReturnType<typeof decodeBenchmarkScenarioImportPayload>>) => {
+        const sourcePayload = imported.inputSnapshot || imported.inputPayload || imported.scenario;
+        const mapped = buildBenchmarkMaskScenarioFromImportedJson(sourcePayload, {
+            flowHint: imported.flow,
+            defaultStartDate: defaultDates.startDate,
+            defaultEndDate: defaultDates.endDate,
+        });
+        const scenarioToApply = mapped.scenario || imported.scenario;
+        applyMaskScenario(scenarioToApply);
+        setCustomScenarioJsonDraft(JSON.stringify(sourcePayload, null, 2));
+        setCustomScenarioMeta({
+            source: imported.source,
+            flow: imported.flow,
+            tripId: imported.tripId || null,
+        });
+        setSelectedPresetId(CUSTOM_JSON_PRESET_ID);
+        setError(null);
+        const sourceLabel = imported.source === 'trip_info' ? 'Trip Info' : 'Admin Trip Drawer';
+        setMessage(
+            `Imported benchmark scenario (${imported.flow}) from ${sourceLabel}${imported.tripId ? ` for trip ${imported.tripId}` : ''}.`
+        );
+    }, [applyMaskScenario, defaultDates.endDate, defaultDates.startDate]);
+
+    const applyCustomJsonToMask = useCallback(() => {
+        if (!customScenarioDraftParse.scenario) {
+            setError(customScenarioDraftParse.error || 'Custom JSON could not be mapped to a benchmark mask.');
+            return;
+        }
+        applyMaskScenario(customScenarioDraftParse.scenario);
+        setError(null);
+        setMessage(`Custom JSON applied to benchmark mask (${customScenarioDraftParse.flow}).`);
+    }, [applyMaskScenario, customScenarioDraftParse.error, customScenarioDraftParse.flow, customScenarioDraftParse.scenario]);
+
     const normalizePreferencesForClient = useCallback((value: unknown): BenchmarkPreferencesPayload => {
         return normalizeBenchmarkPreferencesPayload(value, {
             fallbackPresets: defaultPresets,
@@ -870,11 +991,46 @@ export const AdminAiBenchmarkPage: React.FC = () => {
             };
         }
         if (!response.ok) {
+            if (response.status === 404 && path.startsWith('/api/internal/ai/benchmark')) {
+                throw new Error(
+                    'AI Benchmark API is unavailable (404). Start the app with `pnpm dev:netlify` and open the benchmark from http://localhost:8888.'
+                );
+            }
             throw new Error(payload.error || `Benchmark API request failed (${response.status})`);
         }
 
         return payload;
     }, [accessToken]);
+
+    useEffect(() => {
+        const encodedImport = (searchParams.get('import') || '').trim();
+        if (!encodedImport) return;
+        if (handledImportTokenRef.current === encodedImport) return;
+        handledImportTokenRef.current = encodedImport;
+
+        const imported = decodeBenchmarkScenarioImportPayload(encodedImport);
+        const nextParams = new URLSearchParams(searchParams);
+        nextParams.delete('import');
+        setSearchParams(nextParams, { replace: true });
+
+        if (!imported) {
+            setError('Could not import benchmark scenario from trip diagnostics. The payload is invalid.');
+            return;
+        }
+        if (!preferencesLoaded) {
+            pendingImportedScenarioRef.current = imported;
+            return;
+        }
+        applyImportedScenario(imported);
+    }, [applyImportedScenario, preferencesLoaded, searchParams, setSearchParams]);
+
+    useEffect(() => {
+        if (!preferencesLoaded) return;
+        const pendingImport = pendingImportedScenarioRef.current;
+        if (!pendingImport) return;
+        pendingImportedScenarioRef.current = null;
+        applyImportedScenario(pendingImport);
+    }, [applyImportedScenario, preferencesLoaded]);
 
     const savePreferences = useCallback(async (
         nextOverrides?: Partial<BenchmarkPreferencesPayload>,
@@ -883,10 +1039,14 @@ export const AdminAiBenchmarkPage: React.FC = () => {
         if (!accessToken) return null;
 
         try {
+            const requestedSelectedPresetId = nextOverrides?.selectedPresetId ?? selectedPresetId;
+            const persistedSelectedPresetId = requestedSelectedPresetId === CUSTOM_JSON_PRESET_ID
+                ? (presetConfigs[0]?.id || defaultPresets[0]?.id || '')
+                : requestedSelectedPresetId;
             const draft = normalizePreferencesForClient({
                 modelTargets: nextOverrides?.modelTargets ?? modelTargetIds,
                 presets: nextOverrides?.presets ?? presetConfigs,
-                selectedPresetId: nextOverrides?.selectedPresetId ?? selectedPresetId,
+                selectedPresetId: persistedSelectedPresetId,
             });
 
             const payload = await fetchBenchmarkApi('/api/internal/ai/benchmark/preferences', {
@@ -897,7 +1057,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
             const normalized = normalizePreferencesForClient(payload.preferences || draft);
             setModelTargetIds(normalized.modelTargets);
             setPresetConfigs(normalized.presets);
-            setSelectedPresetId(normalized.selectedPresetId);
+            setSelectedPresetId(requestedSelectedPresetId === CUSTOM_JSON_PRESET_ID ? CUSTOM_JSON_PRESET_ID : normalized.selectedPresetId);
             if (!options?.silent) {
                 setMessage('Benchmark preferences saved.');
             }
@@ -912,6 +1072,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
         modelTargetIds,
         normalizePreferencesForClient,
         presetConfigs,
+        defaultPresets,
         selectedPresetId,
     ]);
 
@@ -954,6 +1115,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
 
     useEffect(() => {
         if (preferencesLoaded) return;
+        if (selectedPresetId === CUSTOM_JSON_PRESET_ID) return;
         const preset = presetConfigs.find((entry) => entry.id === selectedPresetId) || presetConfigs[0];
         if (!preset) return;
         applyMaskScenario(preset.scenario);
@@ -1688,6 +1850,20 @@ export const AdminAiBenchmarkPage: React.FC = () => {
     }, [modelTargetIds, savePreferences]);
 
     const handlePresetSelection = useCallback(async (presetId: string) => {
+        if (presetId === CUSTOM_JSON_PRESET_ID) {
+            setSelectedPresetId(CUSTOM_JSON_PRESET_ID);
+            if (!customScenarioJsonDraft.trim()) {
+                loadCurrentMaskIntoCustomJson();
+            } else if (!customScenarioMeta) {
+                setCustomScenarioMeta({
+                    source: 'manual',
+                    flow: 'unknown',
+                    tripId: null,
+                });
+            }
+            setError(null);
+            return;
+        }
         const preset = presetConfigs.find((entry) => entry.id === presetId);
         if (!preset) return;
         setSelectedPresetId(preset.id);
@@ -1695,7 +1871,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
         await savePreferences({
             selectedPresetId: preset.id,
         }, { silent: true });
-    }, [applyMaskScenario, presetConfigs, savePreferences]);
+    }, [applyMaskScenario, customScenarioJsonDraft, customScenarioMeta, loadCurrentMaskIntoCustomJson, presetConfigs, savePreferences]);
 
     const openPresetEditor = useCallback((mode: 'edit' | 'create') => {
         if (mode === 'create') {
@@ -1941,6 +2117,9 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                                 {preset.name}
                                             </SelectItem>
                                         ))}
+                                        <SelectItem value={CUSTOM_JSON_PRESET_ID}>
+                                            {CUSTOM_JSON_PRESET_NAME}
+                                        </SelectItem>
                                     </SelectContent>
                                 </Select>
                             </label>
@@ -1966,12 +2145,65 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                     <span className="rounded-full border border-slate-300 bg-white px-2 py-0.5">{pace}</span>
                                 </div>
                             </div>
+                            {selectedPresetId === CUSTOM_JSON_PRESET_ID && (
+                                <div className="space-y-2 rounded-md border border-accent-200 bg-accent-50/50 p-3">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-accent-800">Custom JSON import</span>
+                                        <span className="rounded-full border border-accent-300 bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-accent-700">
+                                            mapped as {customScenarioDraftParse.flow}
+                                        </span>
+                                    </div>
+                                    <p className="text-[11px] text-slate-600">
+                                        Paste a trip generation payload or a benchmark scenario JSON. Apply it to prefill the benchmark mask.
+                                    </p>
+                                    <textarea
+                                        value={customScenarioJsonDraft}
+                                        onChange={(event) => {
+                                            setCustomScenarioJsonDraft(event.target.value);
+                                            setCustomScenarioMeta((current) => current || {
+                                                source: 'manual',
+                                                flow: 'unknown',
+                                                tripId: null,
+                                            });
+                                        }}
+                                        rows={10}
+                                        spellCheck={false}
+                                        className="min-h-[200px] w-full rounded-md border border-slate-300 bg-white px-3 py-2 font-mono text-[11px] text-slate-800 outline-none focus:ring-2 focus:ring-accent-500"
+                                        placeholder='{"destinationPrompt":"Berlin, Germany","options":{"budget":"Medium","pace":"Balanced"}}'
+                                    />
+                                    {customScenarioDraftParse.error ? (
+                                        <p className="text-[11px] font-medium text-rose-700">{customScenarioDraftParse.error}</p>
+                                    ) : (
+                                        <p className="text-[11px] text-slate-600">
+                                            Ready to apply. Destination preview: <span className="font-semibold text-slate-800">{customScenarioDraftParse.scenario?.destinations || 'n/a'}</span>
+                                        </p>
+                                    )}
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={applyCustomJsonToMask}
+                                            disabled={loading || cancelling || !customScenarioJsonDraft.trim() || Boolean(customScenarioDraftParse.error)}
+                                            className="inline-flex items-center gap-1 rounded-md border border-accent-300 bg-accent-100 px-2.5 py-1.5 text-xs font-semibold text-accent-800 hover:bg-accent-200 disabled:cursor-not-allowed disabled:opacity-60"
+                                        >
+                                            Apply JSON to mask
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => loadCurrentMaskIntoCustomJson()}
+                                            disabled={loading || cancelling}
+                                            className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                        >
+                                            Load current mask JSON
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
 
                             <div className="flex flex-wrap items-center gap-2">
                                 <button
                                     type="button"
                                     onClick={() => openPresetEditor('edit')}
-                                    disabled={loading || cancelling}
+                                    disabled={loading || cancelling || selectedPresetId === CUSTOM_JSON_PRESET_ID}
                                     className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                                 >
                                     Edit preset

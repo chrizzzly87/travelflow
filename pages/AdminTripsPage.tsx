@@ -3,6 +3,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowSquareOut, DotsThreeVertical, MapPin, SpinnerGap, Trash, X } from '@phosphor-icons/react';
 import { AdminShell, type AdminDateRange } from '../components/admin/AdminShell';
 import { isIsoDateInRange } from '../components/admin/adminDateRange';
+import { AI_MODEL_CATALOG, getDefaultCreateTripModel } from '../config/aiModelCatalog';
+import { getAiProviderMetadata } from '../config/aiProviderCatalog';
 import {
     adminGetUserProfile,
     adminHardDeleteTrip,
@@ -16,13 +18,15 @@ import {
     buildDangerConfirmDialog,
     buildTransferTargetPromptDialog,
 } from '../services/appDialogPresets';
-import { dbGetTrip, dbUpsertTrip } from '../services/dbService';
+import { dbAdminOverrideTripCommit, dbGetTrip, dbUpsertTrip } from '../services/dbService';
 import { getTripCityStops, buildMiniMapUrl } from '../components/TripManager';
-import type { ITrip } from '../types';
+import type { ITrip, TripGenerationAttemptSummary, TripGenerationState } from '../types';
 import {
     Select,
     SelectContent,
+    SelectGroup,
     SelectItem,
+    SelectLabel,
     SelectTrigger,
     SelectValue,
 } from '../components/ui/select';
@@ -30,6 +34,7 @@ import { AdminReloadButton } from '../components/admin/AdminReloadButton';
 import { AdminFilterMenu, type AdminFilterMenuOption } from '../components/admin/AdminFilterMenu';
 import { AdminCountUpNumber } from '../components/admin/AdminCountUpNumber';
 import { CopyableUuid } from '../components/admin/CopyableUuid';
+import { AiProviderLogo } from '../components/admin/AiProviderLogo';
 import { readAdminCache, writeAdminCache } from '../components/admin/adminLocalCache';
 import { Drawer, DrawerContent } from '../components/ui/drawer';
 import { Checkbox } from '../components/ui/checkbox';
@@ -52,6 +57,14 @@ import {
     TableRow,
 } from '../components/ui/table';
 import { generateTripId } from '../utils';
+import {
+    getLatestTripGenerationAttempt,
+    getTripGenerationState,
+    normalizeTripGenerationAttemptsForDisplay,
+} from '../services/tripGenerationDiagnosticsService';
+import { retryTripGenerationWithDefaultModel } from '../services/tripGenerationRetryService';
+import { listAdminTripGenerationAttempts } from '../services/tripGenerationAttemptLogService';
+import { buildBenchmarkScenarioImportUrl } from '../services/tripGenerationBenchmarkBridge';
 
 const toDateTimeInputValue = (value: string | null): string => {
     if (!value) return '';
@@ -73,7 +86,6 @@ const fromDateTimeInputValue = (value: string): string | null => {
 };
 
 type TripStatus = 'active' | 'archived' | 'expired';
-type TripGenerationState = 'failed' | 'running' | 'queued' | 'succeeded';
 type TripExpirationFilter = 'no_expiration' | 'already_expired' | 'expiring_24h' | 'expiring_7d' | 'scheduled';
 type TripVisibleColumnId = 'owner' | 'lifecycle' | 'generation' | 'source' | 'expires' | 'updated' | 'created' | 'archived';
 type TripSortColumn = 'trip' | 'owner' | 'lifecycle' | 'generation' | 'source' | 'expires' | 'updated' | 'created' | 'archived';
@@ -124,6 +136,16 @@ const DEFAULT_VISIBLE_TRIP_COLUMNS: TripVisibleColumnId[] = [
 const USER_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
 const relativeTimeFormatter = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
+const DEFAULT_RETRY_MODEL_ID = getDefaultCreateTripModel().id;
+const ACTIVE_RETRY_MODEL_OPTIONS = AI_MODEL_CATALOG
+    .filter((entry) => entry.availability === 'active')
+    .map((entry) => ({
+        id: entry.id,
+        provider: entry.provider,
+        providerLabel: getAiProviderMetadata(entry.provider).label,
+        model: entry.model,
+        label: `${getAiProviderMetadata(entry.provider).label} · ${entry.model}`,
+    }));
 
 const parseQueryMultiValue = <T extends string>(
     value: string | null,
@@ -225,6 +247,12 @@ const formatRelativeTimestamp = (value: string | null | undefined, fallback = 'N
     return relativeTimeFormatter.format(Math.round(diffMs / yearMs), 'year');
 };
 
+const formatDurationMs = (durationMs: number | null | undefined): string => {
+    if (typeof durationMs !== 'number' || !Number.isFinite(durationMs)) return 'n/a';
+    if (durationMs < 1_000) return `${Math.max(0, Math.round(durationMs))} ms`;
+    return `${(Math.max(0, durationMs) / 1_000).toFixed(2)} s`;
+};
+
 const normalizeIsoTimestamp = (value: string | null | undefined): string | null => {
     if (!value) return null;
     const parsed = Date.parse(value);
@@ -304,6 +332,15 @@ const resolveTripGenerationState = (trip: AdminTripRecord): TripGenerationState 
     const state = trip.generation_state;
     if (state === 'failed' || state === 'running' || state === 'queued' || state === 'succeeded') return state;
     return 'succeeded';
+};
+
+const resolveRetryModelIdFromAttempt = (attempt: TripGenerationAttemptSummary | null | undefined): string => {
+    if (!attempt) return DEFAULT_RETRY_MODEL_ID;
+    const matching = ACTIVE_RETRY_MODEL_OPTIONS.find((option) => (
+        option.provider === (attempt.provider || '')
+        && option.model === (attempt.model || '')
+    ));
+    return matching?.id || DEFAULT_RETRY_MODEL_ID;
 };
 
 const isLikelyUserId = (value: string): boolean => USER_ID_PATTERN.test(value.trim());
@@ -495,6 +532,11 @@ export const AdminTripsPage: React.FC = () => {
     const [selectedTripDrawerId, setSelectedTripDrawerId] = useState<string | null>(null);
     const [isTripDrawerOpen, setIsTripDrawerOpen] = useState(false);
     const [selectedFullTrip, setSelectedFullTrip] = useState<ITrip | null>(null);
+    const [selectedTripAttemptLogRows, setSelectedTripAttemptLogRows] = useState<TripGenerationAttemptSummary[]>([]);
+    const [isLoadingTripAttemptLogRows, setIsLoadingTripAttemptLogRows] = useState(false);
+    const [isRetryingGeneration, setIsRetryingGeneration] = useState(false);
+    const [generationNowMs, setGenerationNowMs] = useState(() => Date.now());
+    const [drawerRetryModelId, setDrawerRetryModelId] = useState<string>(DEFAULT_RETRY_MODEL_ID);
     const [isLoadingFullTrip, setIsLoadingFullTrip] = useState(false);
     const [isLoadingOwnerProfile, setIsLoadingOwnerProfile] = useState(false);
     const [drawerLifecycleDraft, setDrawerLifecycleDraft] = useState<TripStatus>('active');
@@ -610,6 +652,47 @@ export const AdminTripsPage: React.FC = () => {
         () => trips.find((trip) => trip.trip_id === selectedTripDrawerId) || null,
         [selectedTripDrawerId, trips]
     );
+    const selectedFullTripDerivedGenerationState = selectedFullTrip
+        ? getTripGenerationState(selectedFullTrip, generationNowMs)
+        : null;
+
+    const shouldPollSelectedTripGenerationState = (
+        isTripDrawerOpen
+        && (
+            selectedTripForDrawer?.generation_state === 'running'
+            || selectedTripForDrawer?.generation_state === 'queued'
+            || selectedFullTripDerivedGenerationState === 'running'
+            || selectedFullTripDerivedGenerationState === 'queued'
+        )
+    );
+
+    useEffect(() => {
+        if (!shouldPollSelectedTripGenerationState) return undefined;
+        const timer = window.setInterval(() => {
+            setGenerationNowMs(Date.now());
+        }, 1_000);
+        return () => window.clearInterval(timer);
+    }, [shouldPollSelectedTripGenerationState]);
+
+    useEffect(() => {
+        if (!selectedTripForDrawer || !selectedFullTrip) return;
+        const nextState = getTripGenerationState(selectedFullTrip, generationNowMs);
+        setTrips((current) => {
+            let changed = false;
+            const next = current.map((trip) => {
+                if (trip.trip_id !== selectedTripForDrawer.trip_id) return trip;
+                if (trip.generation_state === nextState) return trip;
+                changed = true;
+                return {
+                    ...trip,
+                    generation_state: nextState,
+                    updated_at: trip.updated_at || new Date(generationNowMs).toISOString(),
+                };
+            });
+            return changed ? next : current;
+        });
+    }, [generationNowMs, selectedFullTrip, selectedTripForDrawer]);
+
     useEffect(() => {
         if (!selectedTripForDrawer) {
             setDrawerLifecycleDraft('active');
@@ -648,6 +731,80 @@ export const AdminTripsPage: React.FC = () => {
         return () => { isMounted = false; };
     }, [isTripDrawerOpen, selectedTripDrawerId, selectedTripForDrawer]);
 
+    useEffect(() => {
+        if (!isTripDrawerOpen || !selectedTripDrawerId || !selectedTripForDrawer) {
+            setSelectedTripAttemptLogRows([]);
+            return;
+        }
+        let isMounted = true;
+        setIsLoadingTripAttemptLogRows(true);
+        void listAdminTripGenerationAttempts(selectedTripDrawerId, 24)
+            .then((rows) => {
+                if (!isMounted) return;
+                setSelectedTripAttemptLogRows(rows);
+            })
+            .catch(() => {
+                if (!isMounted) return;
+                setSelectedTripAttemptLogRows([]);
+            })
+            .finally(() => {
+                if (!isMounted) return;
+                setIsLoadingTripAttemptLogRows(false);
+            });
+        return () => {
+            isMounted = false;
+        };
+    }, [isTripDrawerOpen, selectedTripDrawerId, selectedTripForDrawer]);
+
+    useEffect(() => {
+        if (!shouldPollSelectedTripGenerationState || !selectedTripDrawerId) return undefined;
+
+        let cancelled = false;
+        const pollTripGenerationUpdates = async () => {
+            try {
+                const [tripResult, attemptRows] = await Promise.all([
+                    dbGetTrip(selectedTripDrawerId),
+                    listAdminTripGenerationAttempts(selectedTripDrawerId, 24),
+                ]);
+                if (cancelled) return;
+
+                if (Array.isArray(attemptRows)) {
+                    setSelectedTripAttemptLogRows(attemptRows);
+                }
+
+                const nextTrip = tripResult?.trip || null;
+                if (!nextTrip) return;
+                setSelectedFullTrip(nextTrip);
+                const nextState = getTripGenerationState(nextTrip, Date.now());
+                setTrips((current) => {
+                    let changed = false;
+                    const next = current.map((trip) => {
+                        if (trip.trip_id !== selectedTripDrawerId) return trip;
+                        if (trip.generation_state === nextState) return trip;
+                        changed = true;
+                        return {
+                            ...trip,
+                            generation_state: nextState,
+                        };
+                    });
+                    return changed ? next : current;
+                });
+            } catch {
+                // Keep the current state and continue polling; failures are transient.
+            }
+        };
+
+        void pollTripGenerationUpdates();
+        const timer = window.setInterval(() => {
+            void pollTripGenerationUpdates();
+        }, 5_000);
+        return () => {
+            cancelled = true;
+            window.clearInterval(timer);
+        };
+    }, [selectedTripDrawerId, shouldPollSelectedTripGenerationState]);
+
+
     const previewCityStops = useMemo(() => {
         if (!selectedFullTrip) return [];
         return getTripCityStops(selectedFullTrip);
@@ -659,11 +816,110 @@ export const AdminTripsPage: React.FC = () => {
     }, [selectedFullTrip]);
 
     const selectedTripGenerationState = useMemo<TripGenerationState>(() => {
+        if (selectedFullTripDerivedGenerationState) {
+            return selectedFullTripDerivedGenerationState;
+        }
         if (selectedTripForDrawer) {
             return resolveTripGenerationState(selectedTripForDrawer);
         }
         return 'succeeded';
-    }, [selectedTripForDrawer]);
+    }, [selectedFullTripDerivedGenerationState, selectedTripForDrawer]);
+
+    const selectedTripGenerationAttempts = useMemo<TripGenerationAttemptSummary[]>(() => {
+        const metaAttempts = Array.isArray(selectedFullTrip?.aiMeta?.generation?.attempts)
+            ? selectedFullTrip.aiMeta.generation.attempts
+            : [];
+        return normalizeTripGenerationAttemptsForDisplay(
+            [
+                ...selectedTripAttemptLogRows,
+                ...metaAttempts,
+            ],
+            {
+                nowMs: generationNowMs,
+                limit: 12,
+            },
+        );
+    }, [generationNowMs, selectedFullTrip, selectedTripAttemptLogRows]);
+
+    const selectedTripLatestAttempt = useMemo<TripGenerationAttemptSummary | null>(() => {
+        if (selectedTripGenerationAttempts.length > 0) return selectedTripGenerationAttempts[0];
+        if (selectedFullTrip) {
+            return getLatestTripGenerationAttempt(selectedFullTrip);
+        }
+        return null;
+    }, [selectedFullTrip, selectedTripGenerationAttempts]);
+
+    useEffect(() => {
+        if (!isTripDrawerOpen || !selectedTripForDrawer) {
+            setDrawerRetryModelId(DEFAULT_RETRY_MODEL_ID);
+            return;
+        }
+        setDrawerRetryModelId(resolveRetryModelIdFromAttempt(selectedTripLatestAttempt));
+    }, [
+        isTripDrawerOpen,
+        selectedTripForDrawer?.trip_id,
+        selectedTripLatestAttempt?.id,
+        selectedTripLatestAttempt?.model,
+        selectedTripLatestAttempt?.provider,
+    ]);
+
+    const selectedTripGenerationMeta = selectedFullTrip?.aiMeta?.generation || null;
+    const selectedTripRequestPayload = useMemo<Record<string, unknown> | null>(() => {
+        const metadata = selectedTripLatestAttempt?.metadata;
+        if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) return null;
+        const payload = (metadata as Record<string, unknown>).requestPayload;
+        if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return null;
+        return payload as Record<string, unknown>;
+    }, [selectedTripLatestAttempt?.metadata]);
+    const selectedTripInputSnapshot = useMemo(() => {
+        return selectedTripGenerationMeta?.inputSnapshot || null;
+    }, [selectedTripGenerationMeta?.inputSnapshot]);
+    const selectedTripRetryCount = useMemo(() => {
+        if (typeof selectedTripGenerationMeta?.retryCount === 'number') {
+            return Math.max(0, Math.round(selectedTripGenerationMeta.retryCount));
+        }
+        return Math.max(0, selectedTripGenerationAttempts.filter((attempt) => attempt.source.includes('retry')).length);
+    }, [selectedTripGenerationAttempts, selectedTripGenerationMeta?.retryCount]);
+
+    const groupedRetryModelOptions = useMemo(() => {
+        const groups = new Map<string, typeof ACTIVE_RETRY_MODEL_OPTIONS>();
+        ACTIVE_RETRY_MODEL_OPTIONS.forEach((option) => {
+            const key = option.providerLabel;
+            const existing = groups.get(key) || [];
+            existing.push(option);
+            groups.set(key, existing);
+        });
+        return Array.from(groups.entries()).map(([providerLabel, options]) => ({
+            providerLabel,
+            options,
+        }));
+    }, []);
+
+    const selectedDrawerRetryModelOption = useMemo(
+        () => ACTIVE_RETRY_MODEL_OPTIONS.find((option) => option.id === drawerRetryModelId) || null,
+        [drawerRetryModelId]
+    );
+
+    const canRetryGenerationInDrawer = Boolean(
+        selectedTripForDrawer
+        && selectedFullTrip
+        && selectedFullTrip.aiMeta?.generation?.inputSnapshot
+        && selectedTripGenerationState !== 'running'
+        && selectedTripGenerationState !== 'queued'
+        && !isRetryingGeneration
+    );
+
+    const drawerRetryDisabledReason = (
+        isRetryingGeneration
+            ? 'Retry is already in progress.'
+            : !selectedTripForDrawer
+                ? 'No trip selected.'
+                : !selectedFullTrip?.aiMeta?.generation?.inputSnapshot
+                    ? 'Retry is unavailable because no input snapshot was captured for this trip.'
+                    : (selectedTripGenerationState === 'running' || selectedTripGenerationState === 'queued')
+                        ? 'Retry is unavailable while generation is still running.'
+                        : null
+    );
 
 
     const visibleTrips = useMemo(() => {
@@ -884,6 +1140,62 @@ export const AdminTripsPage: React.FC = () => {
         }
         if (Object.keys(patch).length === 0) return;
         await updateTripStatus(selectedTripForDrawer, patch, 'Trip lifecycle settings saved.');
+    };
+
+    const handleRetryTripGeneration = async () => {
+        if (!selectedTripForDrawer || !selectedFullTrip) return;
+        if (!selectedFullTrip.aiMeta?.generation?.inputSnapshot) {
+            setErrorMessage('Retry is unavailable because this trip has no generation input snapshot.');
+            return;
+        }
+
+        setIsRetryingGeneration(true);
+        setIsSaving(true);
+        setErrorMessage(null);
+        setMessage(null);
+
+        try {
+            const result = await retryTripGenerationWithDefaultModel(selectedFullTrip, {
+                source: 'admin_trip_drawer',
+                contextSource: 'admin_trip_drawer',
+                modelId: drawerRetryModelId,
+                onTripUpdate: async (nextTrip) => {
+                    setSelectedFullTrip(nextTrip);
+                    const committed = await dbAdminOverrideTripCommit(nextTrip, nextTrip.defaultView ?? undefined, 'Data: Admin retried generation');
+                    if (!committed) {
+                        throw new Error('Could not persist retried trip via admin override.');
+                    }
+                },
+            });
+
+            if (result.state === 'succeeded') {
+                setMessage('Trip generation retry completed.');
+            } else {
+                setMessage('Trip generation retry failed. Diagnostics have been updated.');
+            }
+            await loadTrips();
+        } catch (error) {
+            setErrorMessage(error instanceof Error ? error.message : 'Could not retry generation.');
+        } finally {
+            setIsRetryingGeneration(false);
+            setIsSaving(false);
+        }
+    };
+
+    const handleOpenBenchmarkFromDrawer = () => {
+        if (!selectedTripForDrawer) return;
+        const snapshot = selectedFullTrip?.aiMeta?.generation?.inputSnapshot || null;
+        const importUrl = buildBenchmarkScenarioImportUrl({
+            snapshot,
+            source: 'admin_trip_drawer',
+            tripId: selectedTripForDrawer.trip_id,
+        });
+        if (!importUrl) {
+            setErrorMessage('No generation input snapshot available for benchmark import.');
+            return;
+        }
+        window.open(importUrl, '_blank', 'noopener,noreferrer');
+        setMessage('Opened AI Benchmark with imported trip generation mask.');
     };
 
     const resolveTransferTargetUser = async (rawInput: string): Promise<AdminUserRecord> => {
@@ -2070,6 +2382,222 @@ export const AdminTripsPage: React.FC = () => {
                                             Trip preview is unavailable for this record.
                                         </div>
                                     )}
+
+                                    <section className="space-y-3 rounded-xl border border-slate-200 bg-white p-4">
+                                        <div className="flex items-center justify-between gap-3">
+                                            <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Generation Diagnostics</h3>
+                                            <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold ${getGenerationPillClassName(selectedTripGenerationState)}`}>
+                                                {getGenerationStateLabel(selectedTripGenerationState)}
+                                            </span>
+                                        </div>
+                                        <dl className="grid gap-2 sm:grid-cols-2">
+                                            <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+                                                <dt className="text-xs font-semibold text-slate-500">Retries</dt>
+                                                <dd className="mt-1 text-sm font-medium text-slate-800">{selectedTripRetryCount}</dd>
+                                            </div>
+                                            <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+                                                <dt className="text-xs font-semibold text-slate-500">Latest state transition</dt>
+                                                <dd className="mt-1 text-sm font-medium text-slate-800">
+                                                    {selectedTripGenerationMeta?.lastFailedAt
+                                                        ? `${formatRelativeTimestamp(selectedTripGenerationMeta.lastFailedAt, 'n/a')} (${formatTimestamp(selectedTripGenerationMeta.lastFailedAt, 'n/a')})`
+                                                        : selectedTripGenerationMeta?.lastSucceededAt
+                                                            ? `${formatRelativeTimestamp(selectedTripGenerationMeta.lastSucceededAt, 'n/a')} (${formatTimestamp(selectedTripGenerationMeta.lastSucceededAt, 'n/a')})`
+                                                            : 'n/a'}
+                                                </dd>
+                                            </div>
+                                            <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+                                                <dt className="text-xs font-semibold text-slate-500">Retry requested at</dt>
+                                                <dd className="mt-1 text-sm font-medium text-slate-800">
+                                                    {selectedTripGenerationMeta?.retryRequestedAt
+                                                        ? `${formatRelativeTimestamp(selectedTripGenerationMeta.retryRequestedAt, 'n/a')} (${formatTimestamp(selectedTripGenerationMeta.retryRequestedAt, 'n/a')})`
+                                                        : 'n/a'}
+                                                </dd>
+                                            </div>
+                                            <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+                                                <dt className="text-xs font-semibold text-slate-500">Input snapshot</dt>
+                                                <dd className="mt-1 text-sm font-medium text-slate-800">
+                                                    {selectedTripGenerationMeta?.inputSnapshot
+                                                        ? `${selectedTripGenerationMeta.inputSnapshot.flow} (${formatTimestamp(selectedTripGenerationMeta.inputSnapshot.createdAt, 'n/a')})`
+                                                        : 'Unavailable'}
+                                                </dd>
+                                            </div>
+                                        </dl>
+                                        {isLoadingTripAttemptLogRows && (
+                                            <div className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+                                                Loading attempt history...
+                                            </div>
+                                        )}
+                                        {selectedTripLatestAttempt ? (
+                                            <dl className="grid gap-2 sm:grid-cols-2">
+                                                <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+                                                    <dt className="text-xs font-semibold text-slate-500">Flow</dt>
+                                                    <dd className="mt-1 text-sm font-medium text-slate-800">{selectedTripLatestAttempt.flow}</dd>
+                                                </div>
+                                                <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+                                                    <dt className="text-xs font-semibold text-slate-500">Attempt source</dt>
+                                                    <dd className="mt-1 text-sm font-medium text-slate-800">{selectedTripLatestAttempt.source}</dd>
+                                                </div>
+                                                <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+                                                    <dt className="text-xs font-semibold text-slate-500">Provider</dt>
+                                                    <dd className="mt-1 text-sm font-medium text-slate-800">{selectedTripLatestAttempt.provider || 'n/a'}</dd>
+                                                </div>
+                                                <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+                                                    <dt className="text-xs font-semibold text-slate-500">Model</dt>
+                                                    <dd className="mt-1 break-all text-sm font-medium text-slate-800">{selectedTripLatestAttempt.model || 'n/a'}</dd>
+                                                </div>
+                                                <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+                                                    <dt className="text-xs font-semibold text-slate-500">Provider model</dt>
+                                                    <dd className="mt-1 break-all text-sm font-medium text-slate-800">{selectedTripLatestAttempt.providerModel || 'n/a'}</dd>
+                                                </div>
+                                                <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+                                                    <dt className="text-xs font-semibold text-slate-500">HTTP status</dt>
+                                                    <dd className="mt-1 text-sm font-medium text-slate-800">
+                                                        {typeof selectedTripLatestAttempt.statusCode === 'number' ? selectedTripLatestAttempt.statusCode : 'n/a'}
+                                                    </dd>
+                                                </div>
+                                                <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+                                                    <dt className="text-xs font-semibold text-slate-500">Request ID</dt>
+                                                    <dd className="mt-1 break-all font-mono text-xs text-slate-700">{selectedTripLatestAttempt.requestId || 'n/a'}</dd>
+                                                </div>
+                                                <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+                                                    <dt className="text-xs font-semibold text-slate-500">Duration</dt>
+                                                    <dd className="mt-1 text-sm font-medium text-slate-800">
+                                                        {formatDurationMs(selectedTripLatestAttempt.durationMs)}
+                                                    </dd>
+                                                </div>
+                                                <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+                                                    <dt className="text-xs font-semibold text-slate-500">Started at</dt>
+                                                    <dd className="mt-1 text-sm font-medium text-slate-800">
+                                                        {formatRelativeTimestamp(selectedTripLatestAttempt.startedAt, 'n/a')} ({formatTimestamp(selectedTripLatestAttempt.startedAt, 'n/a')})
+                                                    </dd>
+                                                </div>
+                                                <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+                                                    <dt className="text-xs font-semibold text-slate-500">Finished at</dt>
+                                                    <dd className="mt-1 text-sm font-medium text-slate-800">
+                                                        {selectedTripLatestAttempt.finishedAt
+                                                            ? `${formatRelativeTimestamp(selectedTripLatestAttempt.finishedAt, 'n/a')} (${formatTimestamp(selectedTripLatestAttempt.finishedAt, 'n/a')})`
+                                                            : 'n/a'}
+                                                    </dd>
+                                                </div>
+                                                <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+                                                    <dt className="text-xs font-semibold text-slate-500">Failure kind</dt>
+                                                    <dd className="mt-1 text-sm font-medium text-slate-800">{selectedTripLatestAttempt.failureKind || 'n/a'}</dd>
+                                                </div>
+                                                <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+                                                    <dt className="text-xs font-semibold text-slate-500">Error code</dt>
+                                                    <dd className="mt-1 text-sm font-medium text-slate-800">{selectedTripLatestAttempt.errorCode || 'n/a'}</dd>
+                                                </div>
+                                                <div className="sm:col-span-2 rounded-lg border border-slate-100 bg-slate-50 p-3">
+                                                    <dt className="text-xs font-semibold text-slate-500">Error message</dt>
+                                                    <dd className="mt-1 break-words text-sm font-medium text-slate-800">{selectedTripLatestAttempt.errorMessage || 'n/a'}</dd>
+                                                </div>
+                                            </dl>
+                                        ) : (
+                                            <div className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+                                                No generation attempts captured yet.
+                                            </div>
+                                        )}
+                                        {selectedTripGenerationAttempts.length > 0 && (
+                                            <div className="space-y-1 rounded-lg border border-slate-100 bg-slate-50 p-2">
+                                                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Recent attempts</p>
+                                                {selectedTripGenerationAttempts.map((attempt) => (
+                                                    <div key={attempt.id} className="flex items-center justify-between gap-2 rounded-md border border-slate-100 bg-white px-2 py-1 text-[11px]">
+                                                        <span className="font-semibold text-slate-700">{attempt.state}</span>
+                                                        <span className="truncate text-slate-600">{attempt.model || attempt.providerModel || 'n/a'}</span>
+                                                        <span className="truncate text-slate-500">{formatRelativeTimestamp(attempt.startedAt, 'n/a')}</span>
+                                                        <span className="shrink-0 text-slate-500">
+                                                            {formatDurationMs(attempt.durationMs)}
+                                                        </span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                        {(selectedTripRequestPayload || selectedTripInputSnapshot) && (
+                                            <div className="space-y-2">
+                                                {selectedTripRequestPayload && (
+                                                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-2">
+                                                        <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Request payload JSON</p>
+                                                        <pre className="mt-1 max-h-48 overflow-auto rounded border border-slate-200 bg-slate-900 p-2 text-[10px] text-slate-100">
+                                                            {JSON.stringify(selectedTripRequestPayload, null, 2)}
+                                                        </pre>
+                                                    </div>
+                                                )}
+                                                {selectedTripInputSnapshot && (
+                                                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-2">
+                                                        <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Input snapshot JSON</p>
+                                                        <pre className="mt-1 max-h-48 overflow-auto rounded border border-slate-200 bg-slate-900 p-2 text-[10px] text-slate-100">
+                                                            {JSON.stringify(selectedTripInputSnapshot, null, 2)}
+                                                        </pre>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                        <div className="space-y-2">
+                                            {ACTIVE_RETRY_MODEL_OPTIONS.length > 0 && (
+                                                <div className="max-w-sm">
+                                                    <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Retry model</p>
+                                                    {selectedDrawerRetryModelOption && (
+                                                        <div className="mb-1.5 inline-flex items-center gap-1.5 rounded-full border border-accent-200 bg-accent-50 px-2 py-0.5 text-[11px] font-semibold text-accent-800">
+                                                            <AiProviderLogo provider={selectedDrawerRetryModelOption.provider} model={selectedDrawerRetryModelOption.model} size={12} />
+                                                            <span>{selectedDrawerRetryModelOption.providerLabel} · {selectedDrawerRetryModelOption.model}</span>
+                                                            <span className="rounded-full border border-accent-300 bg-white px-1.5 text-[10px] uppercase tracking-wide text-accent-700">current</span>
+                                                        </div>
+                                                    )}
+                                                    <Select
+                                                        value={drawerRetryModelId}
+                                                        onValueChange={setDrawerRetryModelId}
+                                                    >
+                                                        <SelectTrigger className="h-8 text-xs">
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            {groupedRetryModelOptions.map((group) => (
+                                                                <SelectGroup key={`drawer-model-group-${group.providerLabel}`}>
+                                                                    <SelectLabel>{group.providerLabel}</SelectLabel>
+                                                                    {group.options.map((option) => (
+                                                                        <SelectItem key={option.id} value={option.id}>
+                                                                            <span className="inline-flex items-center gap-2">
+                                                                                <AiProviderLogo provider={option.provider} model={option.model} size={14} />
+                                                                                <span className="font-medium text-slate-800">{option.model}</span>
+                                                                                {option.id === drawerRetryModelId && (
+                                                                                    <span className="rounded-full border border-accent-300 bg-accent-50 px-1.5 text-[10px] uppercase tracking-wide text-accent-700">
+                                                                                        current
+                                                                                    </span>
+                                                                                )}
+                                                                            </span>
+                                                                        </SelectItem>
+                                                                    ))}
+                                                                </SelectGroup>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                            )}
+                                            <span
+                                                className="inline-flex"
+                                                title={drawerRetryDisabledReason || 'Retry generation with the selected model'}
+                                            >
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        void handleRetryTripGeneration();
+                                                    }}
+                                                    disabled={!canRetryGenerationInDrawer}
+                                                    className="inline-flex items-center rounded-lg border border-accent-300 bg-accent-50 px-3 py-2 text-xs font-semibold text-accent-800 transition-colors hover:bg-accent-100 disabled:cursor-not-allowed disabled:opacity-50"
+                                                >
+                                                    {isRetryingGeneration ? 'Retrying generation...' : 'Retry generation'}
+                                                </button>
+                                            </span>
+                                            <button
+                                                type="button"
+                                                onClick={handleOpenBenchmarkFromDrawer}
+                                                disabled={!selectedTripGenerationMeta?.inputSnapshot}
+                                                className="ml-2 inline-flex items-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                            >
+                                                Open in AI Benchmark
+                                            </button>
+                                        </div>
+                                    </section>
 
                                     <section className="space-y-3 rounded-xl border border-slate-200 bg-white p-4">
                                         <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Trip Actions</h3>

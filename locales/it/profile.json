@@ -77,7 +77,8 @@
     },
     "expiredTag": "Scaduto",
     "expiredFallbackTitle": "Bozza di viaggio scaduta",
-    "hiddenTag": "Hidden"
+    "hiddenTag": "Hidden",
+    "generationFailedTag": "Generation failed"
   },
   "actions": {
     "title": "Azioni rapide",

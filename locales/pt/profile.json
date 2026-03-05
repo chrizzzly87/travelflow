@@ -77,7 +77,8 @@
     },
     "expiredTag": "Expirado",
     "expiredFallbackTitle": "Rascunho de viagem expirado",
-    "hiddenTag": "Hidden"
+    "hiddenTag": "Hidden",
+    "generationFailedTag": "Generation failed"
   },
   "actions": {
     "title": "Ações rápidas",

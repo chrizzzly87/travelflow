@@ -363,7 +363,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     const errorCode = normalizeErrorCode(outcome.value.error);
                     setErrorMessage(t(`errors.${errorCode}`, t('errors.default')));
                 } else {
-                    setInfoMessage(t('states.alreadyAuthenticated'));
+                    setInfoMessage(null);
                 }
             } else {
                 const outcome = await runTimedRequest(
@@ -393,8 +393,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     });
                     if (acceptance.error) {
                         setInfoMessage(t('states.termsAcceptancePending'));
+                    } else {
+                        setInfoMessage(null);
                     }
-                    setInfoMessage(t('states.alreadyAuthenticated'));
                 }
             }
         } finally {

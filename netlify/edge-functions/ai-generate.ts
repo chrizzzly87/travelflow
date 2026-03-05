@@ -13,6 +13,14 @@ interface GenerateTarget {
 interface GenerateRequestBody {
   prompt?: string;
   target?: GenerateTarget;
+  requestId?: string;
+  context?: {
+    tripId?: string;
+    attemptId?: string;
+    flow?: string;
+    source?: string;
+    retryOfAttemptId?: string;
+  };
 }
 
 const JSON_HEADERS = {
@@ -54,8 +62,13 @@ export default async (request: Request) => {
   const model = typeof body?.target?.model === "string" && body.target.model.trim()
     ? body.target.model.trim()
     : GEMINI_DEFAULT_MODEL;
-  const requestId = crypto.randomUUID();
+  const requestId = typeof body?.requestId === "string" && body.requestId.trim()
+    ? body.requestId.trim()
+    : crypto.randomUUID();
   const startedAtMs = Date.now();
+  const requestContext = body?.context && typeof body.context === "object"
+    ? body.context
+    : undefined;
 
   try {
     const result = await generateProviderItinerary({
@@ -80,9 +93,24 @@ export default async (request: Request) => {
         errorMessage: result.value.error,
         metadata: {
           endpoint: "/api/ai/generate",
+          trip_id: requestContext?.tripId || null,
+          attempt_id: requestContext?.attemptId || null,
+          flow: requestContext?.flow || null,
+          source: requestContext?.source || null,
+          retry_of_attempt_id: requestContext?.retryOfAttemptId || null,
         },
       });
-      return json(result.status, result.value);
+      return json(result.status, {
+        ...result.value,
+        meta: {
+          requestId,
+          durationMs,
+          provider,
+          model,
+          providerModel: result.value.providerModel || null,
+          status: result.status,
+        },
+      });
     }
 
     await persistAiGenerationTelemetry({
@@ -100,6 +128,11 @@ export default async (request: Request) => {
       totalTokens: result.value.meta.usage?.totalTokens,
       metadata: {
         endpoint: "/api/ai/generate",
+        trip_id: requestContext?.tripId || null,
+        attempt_id: requestContext?.attemptId || null,
+        flow: requestContext?.flow || null,
+        source: requestContext?.source || null,
+        retry_of_attempt_id: requestContext?.retryOfAttemptId || null,
       },
     });
 
@@ -125,12 +158,25 @@ export default async (request: Request) => {
       errorMessage: error instanceof Error ? error.message : "Unknown error",
       metadata: {
         endpoint: "/api/ai/generate",
+        trip_id: requestContext?.tripId || null,
+        attempt_id: requestContext?.attemptId || null,
+        flow: requestContext?.flow || null,
+        source: requestContext?.source || null,
+        retry_of_attempt_id: requestContext?.retryOfAttemptId || null,
       },
     });
     return json(500, {
       error: "Unexpected server error during AI generation.",
       code: "AI_GENERATION_UNEXPECTED_ERROR",
       details: error instanceof Error ? error.message : "Unknown error",
+      meta: {
+        requestId,
+        durationMs,
+        provider,
+        model,
+        providerModel: null,
+        status: 500,
+      },
     });
   }
 };

@@ -1320,6 +1320,29 @@ create table if not exists public.trip_generation_requests (
   completed_at timestamptz
 );
 
+create table if not exists public.trip_generation_attempts (
+  id uuid primary key default gen_random_uuid(),
+  trip_id text not null references public.trips(id) on delete cascade,
+  owner_id uuid not null references auth.users on delete cascade,
+  flow text not null check (flow in ('classic', 'wizard', 'surprise')),
+  source text not null,
+  state text not null check (state in ('queued', 'running', 'succeeded', 'failed')),
+  provider text,
+  model text,
+  provider_model text,
+  request_id text,
+  failure_kind text check (failure_kind in ('timeout', 'abort', 'quality', 'provider', 'network', 'unknown')),
+  error_code text,
+  error_message text,
+  status_code integer,
+  started_at timestamptz not null default now(),
+  finished_at timestamptz,
+  duration_ms integer,
+  metadata jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create table if not exists public.anonymous_asset_claims (
   id uuid primary key default gen_random_uuid(),
   anon_user_id uuid not null references auth.users on delete cascade,
@@ -1342,6 +1365,10 @@ create index if not exists trip_generation_requests_status_idx on public.trip_ge
 create index if not exists trip_generation_requests_expires_idx on public.trip_generation_requests(expires_at);
 create index if not exists trip_generation_requests_owner_idx on public.trip_generation_requests(owner_user_id, created_at desc);
 create index if not exists trip_generation_requests_anon_idx on public.trip_generation_requests(requested_by_anon_id, created_at desc);
+create index if not exists trip_generation_attempts_trip_started_idx on public.trip_generation_attempts(trip_id, started_at desc);
+create index if not exists trip_generation_attempts_owner_started_idx on public.trip_generation_attempts(owner_id, started_at desc);
+create index if not exists trip_generation_attempts_request_idx on public.trip_generation_attempts(request_id);
+create index if not exists trip_generation_attempts_state_started_idx on public.trip_generation_attempts(state, started_at desc);
 create index if not exists anonymous_asset_claims_anon_idx on public.anonymous_asset_claims(anon_user_id, created_at desc);
 create index if not exists anonymous_asset_claims_target_idx on public.anonymous_asset_claims(target_user_id, created_at desc);
 create index if not exists anonymous_asset_claims_status_idx on public.anonymous_asset_claims(status, created_at desc);
@@ -1350,6 +1377,11 @@ create index if not exists anonymous_asset_claims_expires_idx on public.anonymou
 drop trigger if exists set_trip_generation_requests_updated_at on public.trip_generation_requests;
 create trigger set_trip_generation_requests_updated_at
 before update on public.trip_generation_requests
+for each row execute function public.set_updated_at();
+
+drop trigger if exists set_trip_generation_attempts_updated_at on public.trip_generation_attempts;
+create trigger set_trip_generation_attempts_updated_at
+before update on public.trip_generation_attempts
 for each row execute function public.set_updated_at();
 
 drop trigger if exists set_anonymous_asset_claims_updated_at on public.anonymous_asset_claims;
@@ -1940,7 +1972,376 @@ begin
     from public.trip_generation_requests r
    where r.id = p_request_id
      and r.owner_user_id = v_user_id
+  limit 1;
+end;
+$$;
+
+create or replace function public.trip_generation_attempt_start(
+  p_trip_id text,
+  p_flow text,
+  p_source text,
+  p_state text default 'running',
+  p_provider text default null,
+  p_model text default null,
+  p_provider_model text default null,
+  p_request_id text default null,
+  p_started_at timestamptz default null,
+  p_metadata jsonb default null
+)
+returns table(
+  id uuid,
+  trip_id text,
+  flow text,
+  source text,
+  state text,
+  started_at timestamptz,
+  finished_at timestamptz,
+  duration_ms integer,
+  request_id text,
+  provider text,
+  model text,
+  provider_model text,
+  status_code integer,
+  failure_kind text,
+  error_code text,
+  error_message text,
+  metadata jsonb
+)
+language plpgsql
+security definer
+set search_path = public
+set row_security = off
+as $$
+declare
+  v_user_id uuid;
+  v_owner_id uuid;
+  v_attempt public.trip_generation_attempts%rowtype;
+begin
+  v_user_id := auth.uid();
+  if v_user_id is null then
+    raise exception 'Not authenticated';
+  end if;
+
+  select t.owner_id
+    into v_owner_id
+    from public.trips t
+   where t.id = p_trip_id
    limit 1;
+
+  if v_owner_id is null then
+    raise exception 'Trip not found';
+  end if;
+
+  if v_owner_id <> v_user_id and not public.is_admin(v_user_id) then
+    raise exception 'Not allowed';
+  end if;
+
+  if p_flow not in ('classic', 'wizard', 'surprise') then
+    raise exception 'Invalid flow';
+  end if;
+  if p_state not in ('queued', 'running', 'succeeded', 'failed') then
+    raise exception 'Invalid state';
+  end if;
+
+  insert into public.trip_generation_attempts (
+    trip_id,
+    owner_id,
+    flow,
+    source,
+    state,
+    provider,
+    model,
+    provider_model,
+    request_id,
+    started_at,
+    metadata
+  )
+  values (
+    p_trip_id,
+    v_owner_id,
+    p_flow,
+    coalesce(nullif(btrim(coalesce(p_source, '')), ''), 'unknown'),
+    p_state,
+    nullif(btrim(coalesce(p_provider, '')), ''),
+    nullif(btrim(coalesce(p_model, '')), ''),
+    nullif(btrim(coalesce(p_provider_model, '')), ''),
+    nullif(btrim(coalesce(p_request_id, '')), ''),
+    coalesce(p_started_at, now()),
+    coalesce(p_metadata, '{}'::jsonb)
+  )
+  returning * into v_attempt;
+
+  return query
+  select
+    v_attempt.id,
+    v_attempt.trip_id,
+    v_attempt.flow,
+    v_attempt.source,
+    v_attempt.state,
+    v_attempt.started_at,
+    v_attempt.finished_at,
+    v_attempt.duration_ms,
+    v_attempt.request_id,
+    v_attempt.provider,
+    v_attempt.model,
+    v_attempt.provider_model,
+    v_attempt.status_code,
+    v_attempt.failure_kind,
+    v_attempt.error_code,
+    v_attempt.error_message,
+    v_attempt.metadata;
+end;
+$$;
+
+create or replace function public.trip_generation_attempt_finish(
+  p_attempt_id uuid,
+  p_state text,
+  p_provider text default null,
+  p_model text default null,
+  p_provider_model text default null,
+  p_request_id text default null,
+  p_finished_at timestamptz default null,
+  p_duration_ms integer default null,
+  p_status_code integer default null,
+  p_failure_kind text default null,
+  p_error_code text default null,
+  p_error_message text default null,
+  p_metadata jsonb default null
+)
+returns table(
+  id uuid,
+  trip_id text,
+  flow text,
+  source text,
+  state text,
+  started_at timestamptz,
+  finished_at timestamptz,
+  duration_ms integer,
+  request_id text,
+  provider text,
+  model text,
+  provider_model text,
+  status_code integer,
+  failure_kind text,
+  error_code text,
+  error_message text,
+  metadata jsonb
+)
+language plpgsql
+security definer
+set search_path = public
+set row_security = off
+as $$
+declare
+  v_user_id uuid;
+  v_existing public.trip_generation_attempts%rowtype;
+  v_finished_at timestamptz;
+  v_duration_ms integer;
+begin
+  v_user_id := auth.uid();
+  if v_user_id is null then
+    raise exception 'Not authenticated';
+  end if;
+  if p_state not in ('succeeded', 'failed') then
+    raise exception 'Invalid state';
+  end if;
+  if p_failure_kind is not null and p_failure_kind not in ('timeout', 'abort', 'quality', 'provider', 'network', 'unknown') then
+    raise exception 'Invalid failure kind';
+  end if;
+
+  select a.*
+    into v_existing
+    from public.trip_generation_attempts a
+   where a.id = p_attempt_id
+   limit 1;
+
+  if v_existing.id is null then
+    raise exception 'Attempt not found';
+  end if;
+  if v_existing.owner_id <> v_user_id and not public.is_admin(v_user_id) then
+    raise exception 'Not allowed';
+  end if;
+
+  v_finished_at := coalesce(p_finished_at, now());
+  if p_duration_ms is not null then
+    v_duration_ms := greatest(p_duration_ms, 0);
+  else
+    v_duration_ms := greatest(
+      extract(epoch from (v_finished_at - coalesce(v_existing.started_at, v_finished_at)))::integer * 1000,
+      0
+    );
+  end if;
+
+  update public.trip_generation_attempts a
+     set state = p_state,
+         provider = coalesce(nullif(btrim(coalesce(p_provider, '')), ''), a.provider),
+         model = coalesce(nullif(btrim(coalesce(p_model, '')), ''), a.model),
+         provider_model = coalesce(nullif(btrim(coalesce(p_provider_model, '')), ''), a.provider_model),
+         request_id = coalesce(nullif(btrim(coalesce(p_request_id, '')), ''), a.request_id),
+         finished_at = v_finished_at,
+         duration_ms = v_duration_ms,
+         status_code = coalesce(p_status_code, a.status_code),
+         failure_kind = case
+           when p_state = 'failed' then coalesce(p_failure_kind, a.failure_kind, 'unknown')
+           else null
+         end,
+         error_code = case when p_state = 'failed' then coalesce(nullif(btrim(coalesce(p_error_code, '')), ''), a.error_code) else null end,
+         error_message = case when p_state = 'failed' then coalesce(nullif(btrim(coalesce(p_error_message, '')), ''), a.error_message) else null end,
+         metadata = coalesce(p_metadata, a.metadata),
+         updated_at = now()
+   where a.id = p_attempt_id
+   returning * into v_existing;
+
+  return query
+  select
+    v_existing.id,
+    v_existing.trip_id,
+    v_existing.flow,
+    v_existing.source,
+    v_existing.state,
+    v_existing.started_at,
+    v_existing.finished_at,
+    v_existing.duration_ms,
+    v_existing.request_id,
+    v_existing.provider,
+    v_existing.model,
+    v_existing.provider_model,
+    v_existing.status_code,
+    v_existing.failure_kind,
+    v_existing.error_code,
+    v_existing.error_message,
+    v_existing.metadata;
+end;
+$$;
+
+create or replace function public.trip_generation_attempt_list_owner(
+  p_trip_id text,
+  p_limit integer default 20
+)
+returns table(
+  id uuid,
+  trip_id text,
+  flow text,
+  source text,
+  state text,
+  started_at timestamptz,
+  finished_at timestamptz,
+  duration_ms integer,
+  request_id text,
+  provider text,
+  model text,
+  provider_model text,
+  status_code integer,
+  failure_kind text,
+  error_code text,
+  error_message text,
+  metadata jsonb
+)
+language plpgsql
+security definer
+set search_path = public
+set row_security = off
+as $$
+declare
+  v_user_id uuid;
+begin
+  v_user_id := auth.uid();
+  if v_user_id is null then
+    raise exception 'Not authenticated';
+  end if;
+
+  if not exists (
+    select 1
+      from public.trips t
+     where t.id = p_trip_id
+       and t.owner_id = v_user_id
+  ) then
+    raise exception 'Not allowed';
+  end if;
+
+  return query
+  select
+    a.id,
+    a.trip_id,
+    a.flow,
+    a.source,
+    a.state,
+    a.started_at,
+    a.finished_at,
+    a.duration_ms,
+    a.request_id,
+    a.provider,
+    a.model,
+    a.provider_model,
+    a.status_code,
+    a.failure_kind,
+    a.error_code,
+    a.error_message,
+    a.metadata
+  from public.trip_generation_attempts a
+  where a.trip_id = p_trip_id
+    and a.owner_id = v_user_id
+  order by a.started_at desc
+  limit greatest(coalesce(p_limit, 20), 1);
+end;
+$$;
+
+create or replace function public.trip_generation_attempt_list_admin(
+  p_trip_id text,
+  p_limit integer default 30
+)
+returns table(
+  id uuid,
+  trip_id text,
+  flow text,
+  source text,
+  state text,
+  started_at timestamptz,
+  finished_at timestamptz,
+  duration_ms integer,
+  request_id text,
+  provider text,
+  model text,
+  provider_model text,
+  status_code integer,
+  failure_kind text,
+  error_code text,
+  error_message text,
+  metadata jsonb
+)
+language plpgsql
+security definer
+set search_path = public
+set row_security = off
+as $$
+begin
+  if not public.is_admin(auth.uid()) then
+    raise exception 'Not allowed';
+  end if;
+
+  return query
+  select
+    a.id,
+    a.trip_id,
+    a.flow,
+    a.source,
+    a.state,
+    a.started_at,
+    a.finished_at,
+    a.duration_ms,
+    a.request_id,
+    a.provider,
+    a.model,
+    a.provider_model,
+    a.status_code,
+    a.failure_kind,
+    a.error_code,
+    a.error_message,
+    a.metadata
+  from public.trip_generation_attempts a
+  where a.trip_id = p_trip_id
+  order by a.started_at desc
+  limit greatest(coalesce(p_limit, 30), 1);
 end;
 $$;
 
@@ -2623,6 +3024,7 @@ $$;
 
 alter table public.auth_flow_logs enable row level security;
 alter table public.trip_generation_requests enable row level security;
+alter table public.trip_generation_attempts enable row level security;
 alter table public.anonymous_asset_claims enable row level security;
 alter table public.admin_allowlist enable row level security;
 
@@ -2646,6 +3048,22 @@ create policy "Trip generation requests owner update"
 on public.trip_generation_requests for update
 using (requested_by_anon_id = auth.uid() or owner_user_id = auth.uid())
 with check (requested_by_anon_id = auth.uid() or owner_user_id = auth.uid());
+
+drop policy if exists "Trip generation attempts owner or admin read" on public.trip_generation_attempts;
+create policy "Trip generation attempts owner or admin read"
+on public.trip_generation_attempts for select
+using (owner_id = auth.uid() or public.is_admin(auth.uid()));
+
+drop policy if exists "Trip generation attempts owner or admin insert" on public.trip_generation_attempts;
+create policy "Trip generation attempts owner or admin insert"
+on public.trip_generation_attempts for insert
+with check (owner_id = auth.uid() or public.is_admin(auth.uid()));
+
+drop policy if exists "Trip generation attempts owner or admin update" on public.trip_generation_attempts;
+create policy "Trip generation attempts owner or admin update"
+on public.trip_generation_attempts for update
+using (owner_id = auth.uid() or public.is_admin(auth.uid()))
+with check (owner_id = auth.uid() or public.is_admin(auth.uid()));
 
 drop policy if exists "Anonymous asset claims owner read" on public.anonymous_asset_claims;
 create policy "Anonymous asset claims owner read"
@@ -2671,6 +3089,10 @@ grant execute on function public.log_auth_flow(text, text, text, text, text, tex
 grant execute on function public.create_trip_generation_request(text, jsonb, integer) to anon, authenticated;
 grant execute on function public.claim_trip_generation_request(uuid) to authenticated;
 grant execute on function public.expire_stale_trip_generation_requests() to anon, authenticated;
+grant execute on function public.trip_generation_attempt_start(text, text, text, text, text, text, text, text, timestamptz, jsonb) to authenticated;
+grant execute on function public.trip_generation_attempt_finish(uuid, text, text, text, text, text, timestamptz, integer, integer, text, text, text, jsonb) to authenticated;
+grant execute on function public.trip_generation_attempt_list_owner(text, integer) to authenticated;
+grant execute on function public.trip_generation_attempt_list_admin(text, integer) to authenticated;
 grant execute on function public.create_anonymous_asset_claim(integer) to authenticated;
 grant execute on function public.claim_anonymous_assets(uuid) to authenticated;
 grant execute on function public.expire_stale_anonymous_asset_claims() to anon, authenticated;
@@ -4155,12 +4577,15 @@ begin
 end;
 $$;
 
+drop function if exists public.admin_list_trips(integer, integer, text, uuid, text);
+
 create or replace function public.admin_list_trips(
   p_limit integer default 200,
   p_offset integer default 0,
   p_search text default null,
   p_owner_id uuid default null,
-  p_status text default null
+  p_status text default null,
+  p_generation_state text default null
 )
 returns table(
   trip_id text,
@@ -4168,6 +4593,7 @@ returns table(
   owner_email text,
   title text,
   status text,
+  generation_state text,
   trip_expires_at timestamptz,
   archived_at timestamptz,
   source_kind text,
@@ -4185,43 +4611,77 @@ begin
   end if;
 
   return query
+  with base as (
+    select
+      t.id as trip_id,
+      t.owner_id,
+      u.email::text as owner_email,
+      t.title,
+      coalesce(t.status, 'active') as status,
+      case
+        when coalesce(t.data #>> '{aiMeta,generation,state}', '') in ('queued', 'running', 'succeeded', 'failed')
+          then t.data #>> '{aiMeta,generation,state}'
+        when exists (
+          select 1
+            from jsonb_array_elements(coalesce(t.data -> 'items', '[]'::jsonb)) as item
+           where lower(coalesce(item ->> 'loading', 'false')) = 'true'
+        )
+          then 'running'
+        else 'succeeded'
+      end as generation_state,
+      t.trip_expires_at,
+      t.archived_at,
+      t.source_kind,
+      t.created_at,
+      t.updated_at
+    from public.trips t
+    left join auth.users u on u.id = t.owner_id
+    where (
+      p_owner_id is null or t.owner_id = p_owner_id
+    )
+    and (
+      p_status is null or p_status = '' or coalesce(t.status, 'active') = p_status
+    )
+    and (
+      p_search is null
+      or p_search = ''
+      or coalesce(t.title, '') ilike ('%' || p_search || '%')
+      or t.id ilike ('%' || p_search || '%')
+      or coalesce(u.email, '') ilike ('%' || p_search || '%')
+    )
+  )
   select
-    t.id,
-    t.owner_id,
-    u.email::text,
-    t.title,
-    coalesce(t.status, 'active'),
-    t.trip_expires_at,
-    t.archived_at,
-    t.source_kind,
-    t.created_at,
-    t.updated_at
-  from public.trips t
-  left join auth.users u on u.id = t.owner_id
+    base.trip_id,
+    base.owner_id,
+    base.owner_email,
+    base.title,
+    base.status,
+    base.generation_state,
+    base.trip_expires_at,
+    base.archived_at,
+    base.source_kind,
+    base.created_at,
+    base.updated_at
+  from base
   where (
-    p_owner_id is null or t.owner_id = p_owner_id
+    p_generation_state is null
+    or p_generation_state = ''
+    or base.generation_state = p_generation_state
   )
-  and (
-    p_status is null or p_status = '' or coalesce(t.status, 'active') = p_status
-  )
-  and (
-    p_search is null
-    or p_search = ''
-    or coalesce(t.title, '') ilike ('%' || p_search || '%')
-    or t.id ilike ('%' || p_search || '%')
-    or coalesce(u.email, '') ilike ('%' || p_search || '%')
-  )
-  order by t.updated_at desc
+  order by base.updated_at desc
   limit greatest(coalesce(p_limit, 200), 1)
   offset greatest(coalesce(p_offset, 0), 0);
 end;
 $$;
 
+drop function if exists public.admin_list_user_trips(uuid, integer, integer, text);
+
 create or replace function public.admin_list_user_trips(
   p_user_id uuid,
   p_limit integer default 200,
   p_offset integer default 0,
-  p_status text default null
+  p_status text default null,
+  p_generation_state text default null
 )
 returns table(
   trip_id text,
@@ -4229,6 +4689,7 @@ returns table(
   owner_email text,
   title text,
   status text,
+  generation_state text,
   trip_expires_at timestamptz,
   archived_at timestamptz,
   source_kind text,
@@ -4246,22 +4707,53 @@ begin
   end if;
 
   return query
+  with base as (
+    select
+      t.id as trip_id,
+      t.owner_id,
+      u.email::text as owner_email,
+      t.title,
+      coalesce(t.status, 'active') as status,
+      case
+        when coalesce(t.data #>> '{aiMeta,generation,state}', '') in ('queued', 'running', 'succeeded', 'failed')
+          then t.data #>> '{aiMeta,generation,state}'
+        when exists (
+          select 1
+            from jsonb_array_elements(coalesce(t.data -> 'items', '[]'::jsonb)) as item
+           where lower(coalesce(item ->> 'loading', 'false')) = 'true'
+        )
+          then 'running'
+        else 'succeeded'
+      end as generation_state,
+      t.trip_expires_at,
+      t.archived_at,
+      t.source_kind,
+      t.created_at,
+      t.updated_at
+    from public.trips t
+    left join auth.users u on u.id = t.owner_id
+    where t.owner_id = p_user_id
+      and (p_status is null or p_status = '' or coalesce(t.status, 'active') = p_status)
+  )
   select
-    t.id,
-    t.owner_id,
-    u.email::text,
-    t.title,
-    coalesce(t.status, 'active'),
-    t.trip_expires_at,
-    t.archived_at,
-    t.source_kind,
-    t.created_at,
-    t.updated_at
-  from public.trips t
-  left join auth.users u on u.id = t.owner_id
-  where t.owner_id = p_user_id
-    and (p_status is null or p_status = '' or coalesce(t.status, 'active') = p_status)
-  order by t.updated_at desc
+    base.trip_id,
+    base.owner_id,
+    base.owner_email,
+    base.title,
+    base.status,
+    base.generation_state,
+    base.trip_expires_at,
+    base.archived_at,
+    base.source_kind,
+    base.created_at,
+    base.updated_at
+  from base
+  where (
+    p_generation_state is null
+    or p_generation_state = ''
+    or base.generation_state = p_generation_state
+  )
+  order by base.updated_at desc
   limit greatest(coalesce(p_limit, 200), 1)
   offset greatest(coalesce(p_offset, 0), 0);
 end;
@@ -5200,8 +5692,12 @@ grant execute on function public.admin_reset_user_terms_acceptance(uuid, text) t
 grant execute on function public.admin_update_user_tier(uuid, text) to authenticated;
 grant execute on function public.admin_update_user_overrides(uuid, jsonb) to authenticated;
 grant execute on function public.admin_update_plan_entitlements(text, jsonb) to authenticated;
-grant execute on function public.admin_list_trips(integer, integer, text, uuid, text) to authenticated;
-grant execute on function public.admin_list_user_trips(uuid, integer, integer, text) to authenticated;
+grant execute on function public.trip_generation_attempt_start(text, text, text, text, text, text, text, text, timestamptz, jsonb) to authenticated;
+grant execute on function public.trip_generation_attempt_finish(uuid, text, text, text, text, text, timestamptz, integer, integer, text, text, text, jsonb) to authenticated;
+grant execute on function public.trip_generation_attempt_list_owner(text, integer) to authenticated;
+grant execute on function public.trip_generation_attempt_list_admin(text, integer) to authenticated;
+grant execute on function public.admin_list_trips(integer, integer, text, uuid, text, text) to authenticated;
+grant execute on function public.admin_list_user_trips(uuid, integer, integer, text, text) to authenticated;
 grant execute on function public.admin_get_trip_for_view(text) to authenticated;
 grant execute on function public.admin_override_trip_commit(text, jsonb, jsonb, text, date, boolean, text, jsonb) to authenticated;
 grant execute on function public.admin_update_trip(text, text, timestamptz, uuid, boolean, boolean, boolean) to authenticated;

@@ -40,7 +40,7 @@ const OTF_SIGNATURE = "OTTO";
 const TTC_SIGNATURE = "ttcf";
 const FONT_FETCH_TIMEOUT_MS = 900;
 
-const withTimeout = async <T>(promise: Promise<T>, timeoutMs: number): Promise<T> => {
+const withTimeout = async <T,>(promise: Promise<T>, timeoutMs: number): Promise<T> => {
   const timeoutPromise = new Promise<never>((_resolve, reject) => {
     setTimeout(() => reject(new Error("font-fetch-timeout")), timeoutMs);
   });
