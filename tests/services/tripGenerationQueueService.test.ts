@@ -112,5 +112,6 @@ describe('processQueuedTripGenerationAfterAuth', () => {
     expect(failedPersistedTrip.title).toBe('Barcelona');
     expect(failedPersistedTrip.aiMeta?.generation?.state).toBe('failed');
     expect(failedPersistedTrip.aiMeta?.generation?.latestAttempt?.errorMessage).toContain('Provider timeout');
+    expect(failedPersistedTrip.items.some((item) => item.loading)).toBe(false);
   });
 });

@@ -82,6 +82,7 @@ import {
 import { retryTripGenerationWithDefaultModel } from '../services/tripGenerationRetryService';
 import { abortActiveTripGenerationRequest } from '../services/aiService';
 import { buildBenchmarkScenarioImportUrl } from '../services/tripGenerationBenchmarkBridge';
+import { beginTripGenerationTabFeedback, type TripGenerationTabFeedbackSession } from '../services/tripGenerationTabFeedbackService';
 
 const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
     moduleKey: string,
@@ -881,6 +882,7 @@ const useTripViewRender = ({
     const mapViewTransitionName = getExampleMapViewTransitionName(useExampleSharedTransition);
     const titleViewTransitionName = getExampleTitleViewTransitionName(useExampleSharedTransition);
     const tripRef = useRef(trip);
+    const retryGenerationTabFeedbackSessionRef = useRef<TripGenerationTabFeedbackSession | null>(null);
     tripRef.current = trip;
     const [generationNowMs, setGenerationNowMs] = useState(() => Date.now());
     const [retryModelId, setRetryModelId] = useState<string>(getDefaultCreateTripModel().id);
@@ -923,6 +925,10 @@ const useTripViewRender = ({
         }, 1_000);
         return () => window.clearInterval(timer);
     }, [shouldPollGenerationState, trip.id]);
+    useEffect(() => () => {
+        retryGenerationTabFeedbackSessionRef.current?.cancel();
+        retryGenerationTabFeedbackSessionRef.current = null;
+    }, []);
     const generationState = useMemo<TripGenerationState>(
         () => getTripGenerationState(trip, generationNowMs),
         [generationNowMs, trip]
@@ -1346,6 +1352,8 @@ const useTripViewRender = ({
         }
 
         setIsRetryingGeneration(true);
+        retryGenerationTabFeedbackSessionRef.current?.cancel();
+        retryGenerationTabFeedbackSessionRef.current = beginTripGenerationTabFeedback();
         try {
             const result = await retryTripGenerationWithDefaultModel(baseTrip, {
                 source: source === 'trip_info' ? 'trip_info_modal' : 'trip_status_strip',
@@ -1370,23 +1378,29 @@ const useTripViewRender = ({
             }
 
             if (result.state === 'succeeded') {
+                retryGenerationTabFeedbackSessionRef.current?.complete('success', {
+                    title: result.trip.title,
+                });
                 showToast(t('tripView.generation.retry.completed'), {
                     tone: 'add',
                     title: t('tripView.generation.retry.completedTitle'),
                 });
             } else {
+                retryGenerationTabFeedbackSessionRef.current?.complete('error');
                 showToast(t('tripView.generation.retry.failed'), {
                     tone: 'neutral',
                     title: t('tripView.generation.retry.failedTitle'),
                 });
             }
         } catch (error) {
+            retryGenerationTabFeedbackSessionRef.current?.complete('error');
             showToast(error instanceof Error ? error.message : t('tripView.generation.retry.unexpected'), {
                 tone: 'neutral',
                 title: t('tripView.generation.retry.failedTitle'),
             });
         } finally {
             setIsRetryingGeneration(false);
+            retryGenerationTabFeedbackSessionRef.current = null;
         }
     }, [
         adminOverrideEnabled,
@@ -1641,7 +1655,7 @@ const useTripViewRender = ({
 
     const tripMeta = useMemo(() => buildTripMetaSummary(trip), [trip.items, trip.startDate]);
     const tripSummary = tripMeta.summaryLine;
-    const isLoadingPreview = hasLoadingItems;
+    const isGenerationInFlight = generationState === 'running' || generationState === 'queued';
     const loadingDestinationSummary = useMemo(() => {
         const locations = displayTrip.items
             .filter((item) => item.type === 'city' && typeof item.location === 'string')
@@ -1654,7 +1668,7 @@ const useTripViewRender = ({
         return displayTrip.title.replace(/^Planning\s+/i, '').replace(/\.\.\.$/, '').trim() || 'Destination';
     }, [displayTrip.items, displayTrip.title]);
     const showGenerationOverlay = isTripDetailRoute
-        && isLoadingPreview
+        && isGenerationInFlight
         && !isAdminFallbackView
         && !isTripLockedByExpiry
         && !isTripLockedByArchive

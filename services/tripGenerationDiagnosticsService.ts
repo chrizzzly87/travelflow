@@ -629,6 +629,11 @@ export const markTripGenerationFailed = (trip: ITrip, params: TripGenerationFail
     const finishedAt = params.finishedAt || getNowIso();
     const classification = classifyTripGenerationFailure(params.error);
     const typedError = toErrorLike(params.error);
+    const nextItems = trip.items.some((item) => item.loading)
+        ? trip.items.map((item) => (
+            item.loading ? { ...item, loading: false } : item
+        ))
+        : trip.items;
 
     const existingAttempts = getGenerationAttemptHistory(trip);
     const attempts = withBoundedAttempts(updateAttemptById(existingAttempts, params.attemptId, (attempt) => {
@@ -667,6 +672,7 @@ export const markTripGenerationFailed = (trip: ITrip, params: TripGenerationFail
 
     return {
         ...trip,
+        items: nextItems,
         aiMeta: {
             ...aiMeta,
             provider: fallbackProvider,

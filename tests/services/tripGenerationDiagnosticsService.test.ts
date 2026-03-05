@@ -75,6 +75,48 @@ describe('tripGenerationDiagnosticsService', () => {
     expect(attempt?.state).toBe('failed');
   });
 
+  it('clears loading placeholders when generation fails', () => {
+    const baseTrip = buildTrip();
+    baseTrip.items = [
+      {
+        id: 'loading-city-1',
+        type: 'city',
+        title: 'Planning Rome',
+        startDateOffset: 0,
+        duration: 1,
+        color: 'bg-slate-100',
+        loading: true,
+      },
+    ];
+
+    const runningTrip = markTripGenerationRunning(baseTrip, {
+      flow: 'classic',
+      source: 'unit_test',
+      inputSnapshot: createTripGenerationInputSnapshot({
+        flow: 'classic',
+        destinationLabel: 'Rome',
+        startDate: '2026-03-01',
+        endDate: '2026-03-05',
+        payload: { destinationPrompt: 'Rome', options: {} },
+      }),
+      provider: 'gemini',
+      model: 'gemini-3-pro-preview',
+      requestId: 'request-clear-loading',
+      attemptId: 'attempt-clear-loading',
+    });
+
+    const failedTrip = markTripGenerationFailed(runningTrip, {
+      flow: 'classic',
+      source: 'unit_test',
+      requestId: 'request-clear-loading',
+      attemptId: 'attempt-clear-loading',
+      error: new Error('Provider error'),
+    });
+
+    expect(failedTrip.aiMeta?.generation?.state).toBe('failed');
+    expect(failedTrip.items.some((item) => item.loading)).toBe(false);
+  });
+
   it('treats running generation as failed when stale timeout window is exceeded', () => {
     const nowMs = Date.parse('2026-03-04T10:00:00.000Z');
     const startedAt = new Date(
