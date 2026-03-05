@@ -39,6 +39,9 @@ import {
     SelectValue,
 } from './ui/select';
 import {
+    buildClassicItineraryPrompt,
+    buildSurpriseItineraryPrompt,
+    buildWizardItineraryPrompt,
     generateItinerary,
     generateSurpriseItinerary,
     generateWizardItinerary,
@@ -91,6 +94,13 @@ import { useAuth } from '../hooks/useAuth';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import { createTripGenerationRequest, type QueuedTripGenerationPayload } from '../services/tripGenerationQueueService';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
+import {
+    isClassicAsyncGenerationEnabled,
+    isSurpriseAsyncGenerationEnabled,
+    isWizardAsyncGenerationEnabled,
+} from '../services/tripGenerationAsyncConfig';
+import { startClientAsyncTripGeneration } from '../services/tripGenerationClientAsyncService';
+import { createTripGenerationInputSnapshot } from '../services/tripGenerationDiagnosticsService';
 
 interface CreateTripFormProps {
     onTripGenerated: (trip: ITrip) => void;
@@ -643,6 +653,8 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
         startDate: string;
         endDate: string;
         requestedStops?: number;
+        tripId?: string;
+        title?: string;
     }): ITrip => {
         const now = Date.now();
         const totalDays = getDaysDifference(params.startDate, params.endDate);
@@ -672,8 +684,8 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
         });
 
         return {
-            id: `trip-preview-${now}`,
-            title: `Planning ${params.destination || 'Trip'}...`,
+            id: params.tripId || `trip-preview-${now}`,
+            title: params.title || params.destination || 'Trip draft',
             startDate: params.startDate,
             items,
             countryInfo: undefined,
@@ -762,6 +774,12 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
         recommendedDurationDays: wizardDurationRecommendation.recommended,
         selectedIslandNames,
         enforceIslandOnly: hasIslandSelection ? enforceIslandOnly : undefined,
+        aiTarget: selectedAiModel.availability === 'active'
+            ? {
+                provider: selectedAiModel.provider,
+                model: selectedAiModel.model,
+            }
+            : undefined,
     });
 
     const buildSurpriseGenerationOptions = (): SurpriseGenerateOptions | null => {
@@ -774,6 +792,12 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
             monthLabels: monthLabelsFromNumbers(surpriseMonths),
             durationWeeks: surpriseInputMode === 'month-duration' ? surpriseWeeks : undefined,
             seasonalEvents: selectedSurpriseOption.events.slice(0, 2).map((event) => `${event.name} (${event.monthLabel})`),
+            aiTarget: selectedAiModel.availability === 'active'
+                ? {
+                    provider: selectedAiModel.provider,
+                    model: selectedAiModel.model,
+                }
+                : undefined,
         };
     };
 
@@ -847,7 +871,11 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
     const handleClassicGenerate = async (event: React.FormEvent) => {
         event.preventDefault();
         const primaryDestination = selectedCountries[0] || destination;
+        const destinationLabel = primaryDestination || 'Trip';
         const classicOptions = buildClassicGenerationOptions();
+        const activeModel = selectedAiModel.availability === 'active'
+            ? selectedAiModel
+            : getDefaultCreateTripModel();
         clearGuestAuthTimer();
         setQueuedRequestId(null);
         setIsGuestAuthModalVisible(false);
@@ -863,7 +891,7 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
             await queueAnonymousGeneration('classic', {
                 version: 1,
                 flow: 'classic',
-                destinationLabel: primaryDestination,
+                destinationLabel,
                 startDate,
                 endDate,
                 destinationPrompt,
@@ -873,6 +901,45 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
         }
 
         try {
+            if (isClassicAsyncGenerationEnabled()) {
+                const snapshot = createTripGenerationInputSnapshot({
+                    flow: 'classic',
+                    destinationLabel,
+                    startDate,
+                    endDate,
+                    payload: {
+                        destinationPrompt,
+                        options: classicOptions,
+                    },
+                });
+                const prompt = buildClassicItineraryPrompt(destinationPrompt, classicOptions);
+                await startClientAsyncTripGeneration({
+                    flow: 'classic',
+                    source: 'create_trip_form_classic',
+                    jobSource: 'create_trip_form_classic_async',
+                    destinationLabel,
+                    startDate,
+                    roundTrip: Boolean(classicOptions.roundTrip),
+                    prompt,
+                    provider: activeModel.provider,
+                    model: activeModel.model,
+                    inputSnapshot: snapshot,
+                    buildOptimisticTrip: (tripId) => buildPreviewTrip({
+                        destination: destinationLabel,
+                        startDate,
+                        endDate,
+                        requestedStops: typeof numCities === 'number' ? numCities : undefined,
+                        tripId,
+                        title: destinationLabel,
+                    }),
+                    onTripUpdate: onTripGenerated,
+                    metadata: {
+                        mode: 'classic',
+                    },
+                });
+                setPreviewTrip(null);
+                return;
+            }
             const trip = await generateItinerary(destinationPrompt, startDate, classicOptions);
             setPreviewTrip(null);
             onTripGenerated(trip);
@@ -887,12 +954,16 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
     const handleWizardGenerate = async () => {
         if (!wizardCanGenerate) return;
         const wizardOptions = buildWizardGenerationOptions();
+        const destinationLabel = selectedCountries[0] || destination || 'Trip';
+        const activeModel = selectedAiModel.availability === 'active'
+            ? selectedAiModel
+            : getDefaultCreateTripModel();
         clearGuestAuthTimer();
         setQueuedRequestId(null);
         setIsGuestAuthModalVisible(false);
 
         setGenerationStart({
-            destination: selectedCountries[0] || destination,
+            destination: destinationLabel,
             startDate: wizardStartDate,
             endDate: wizardEndDate,
         });
@@ -901,7 +972,7 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
             await queueAnonymousGeneration('wizard', {
                 version: 1,
                 flow: 'wizard',
-                destinationLabel: selectedCountries[0] || destination,
+                destinationLabel,
                 startDate: wizardStartDate,
                 endDate: wizardEndDate,
                 options: wizardOptions,
@@ -910,6 +981,43 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
         }
 
         try {
+            if (isWizardAsyncGenerationEnabled()) {
+                const snapshot = createTripGenerationInputSnapshot({
+                    flow: 'wizard',
+                    destinationLabel,
+                    startDate: wizardStartDate,
+                    endDate: wizardEndDate,
+                    payload: {
+                        options: wizardOptions,
+                    },
+                });
+                const prompt = buildWizardItineraryPrompt(wizardOptions);
+                await startClientAsyncTripGeneration({
+                    flow: 'wizard',
+                    source: 'create_trip_form_wizard',
+                    jobSource: 'create_trip_form_wizard_async',
+                    destinationLabel,
+                    startDate: wizardStartDate,
+                    roundTrip: Boolean(wizardOptions.roundTrip),
+                    prompt,
+                    provider: activeModel.provider,
+                    model: activeModel.model,
+                    inputSnapshot: snapshot,
+                    buildOptimisticTrip: (tripId) => buildPreviewTrip({
+                        destination: destinationLabel,
+                        startDate: wizardStartDate,
+                        endDate: wizardEndDate,
+                        tripId,
+                        title: destinationLabel,
+                    }),
+                    onTripUpdate: onTripGenerated,
+                    metadata: {
+                        mode: 'wizard',
+                    },
+                });
+                setPreviewTrip(null);
+                return;
+            }
             const trip = await generateWizardItinerary(wizardOptions);
             setPreviewTrip(null);
             onTripGenerated(trip);
@@ -931,6 +1039,10 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
             setGenerationError('No recommendations are available for this timeframe.');
             return;
         }
+        const destinationLabel = selectedSurpriseOption.countryName || 'Trip';
+        const activeModel = selectedAiModel.availability === 'active'
+            ? selectedAiModel
+            : getDefaultCreateTripModel();
         clearGuestAuthTimer();
         setQueuedRequestId(null);
         setIsGuestAuthModalVisible(false);
@@ -938,7 +1050,7 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
         setSelectedCountries([selectedSurpriseOption.countryName]);
 
         setGenerationStart({
-            destination: selectedSurpriseOption.countryName,
+            destination: destinationLabel,
             startDate: surpriseRange.startDate,
             endDate: surpriseRange.endDate,
         });
@@ -947,7 +1059,7 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
             await queueAnonymousGeneration('surprise', {
                 version: 1,
                 flow: 'surprise',
-                destinationLabel: selectedSurpriseOption.countryName,
+                destinationLabel,
                 startDate: surpriseRange.startDate,
                 endDate: surpriseRange.endDate,
                 options: surpriseOptions,
@@ -956,6 +1068,43 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
         }
 
         try {
+            if (isSurpriseAsyncGenerationEnabled()) {
+                const snapshot = createTripGenerationInputSnapshot({
+                    flow: 'surprise',
+                    destinationLabel,
+                    startDate: surpriseRange.startDate,
+                    endDate: surpriseRange.endDate,
+                    payload: {
+                        options: surpriseOptions,
+                    },
+                });
+                const prompt = buildSurpriseItineraryPrompt(surpriseOptions);
+                await startClientAsyncTripGeneration({
+                    flow: 'surprise',
+                    source: 'create_trip_form_surprise',
+                    jobSource: 'create_trip_form_surprise_async',
+                    destinationLabel,
+                    startDate: surpriseRange.startDate,
+                    roundTrip: true,
+                    prompt,
+                    provider: activeModel.provider,
+                    model: activeModel.model,
+                    inputSnapshot: snapshot,
+                    buildOptimisticTrip: (tripId) => buildPreviewTrip({
+                        destination: destinationLabel,
+                        startDate: surpriseRange.startDate,
+                        endDate: surpriseRange.endDate,
+                        tripId,
+                        title: destinationLabel,
+                    }),
+                    onTripUpdate: onTripGenerated,
+                    metadata: {
+                        mode: 'surprise',
+                    },
+                });
+                setPreviewTrip(null);
+                return;
+            }
             const trip = await generateSurpriseItinerary(surpriseOptions);
             setPreviewTrip(null);
             onTripGenerated(trip);

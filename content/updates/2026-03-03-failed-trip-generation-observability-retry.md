@@ -44,6 +44,7 @@ summary: "Failed trip generations are now easier to spot, inspect, and retry on 
 - [ ] [Internal] ⚙️ Queue-claim wizard/surprise flows now support flag-gated async enqueue through the same worker path, with flow-aware prompt building and diagnostics metadata.
 - [ ] [Internal] ⚙️ Retry now supports flag-gated async server-owned enqueue, so the same trip can keep running after the browser request returns.
 - [ ] [Internal] ⚙️ Create-trip V1/V2/V3 submit flows now support flag-gated async worker enqueue paths so generation completion is no longer bound to an open browser tab.
+- [ ] [Internal] ⚙️ Main create-trip form (classic/wizard/surprise) now supports flag-gated async worker enqueue paths for authenticated generation flows.
 - [ ] [Internal] 🧯 Admin trip diagnostics now includes queue/dead-letter job history (state, retry budget, latest worker error) for faster worker incident triage.
 - [ ] [Internal] 🧯 Admin trip diagnostics now supports one-click requeue for dead/failed worker jobs to speed up manual recovery during incidents.
 - [ ] [Internal] 🔄 Trip view now polls owner-access DB snapshots while generation is queued/running so server-side async completions appear without manual refresh.
