@@ -1,10 +1,10 @@
 ---
 id: rel-2026-03-05-admin-dashboard-user-level-breakdown
-version: v0.0.0
+version: v0.84.0
 title: "Admin dashboard user-level breakdown in Total Users card"
 date: 2026-03-05
-published_at: 2026-03-05T12:00:00Z
-status: draft
+published_at: 2026-03-05T17:12:15Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Updated the admin dashboard Total Users card to show a clear breakdown by user level with total-share tooltips."
