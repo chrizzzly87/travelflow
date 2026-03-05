@@ -5,7 +5,7 @@ import { render, screen } from '@testing-library/react';
 import { Table } from '../../components/ui/table';
 
 describe('ui Table primitive', () => {
-  it('uses overscroll-behavior none on the scroll container', () => {
+  it('only contains horizontal overscroll so page vertical scroll can continue', () => {
     render(
       React.createElement(
         Table,
@@ -21,6 +21,6 @@ describe('ui Table primitive', () => {
     const tableNode = screen.getByRole('table');
     const container = tableNode.closest('[data-slot="table-container"]');
     expect(container).not.toBeNull();
-    expect(container?.className).toContain('overscroll-none');
+    expect(container?.className).toContain('overscroll-x-contain');
   });
 });

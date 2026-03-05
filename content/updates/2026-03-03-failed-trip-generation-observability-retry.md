@@ -26,6 +26,7 @@ summary: "Failed trip generations are now easier to spot, inspect, and retry on 
 - [x] [Improved] 🤖 Retry model selectors now group models by provider with logos and a clear “current” pill in trip diagnostics.
 - [x] [Fixed] 🔁 Retry attempt history now collapses duplicate in-flight entries and resolves stale running attempts to failed when timeout windows are exceeded.
 - [x] [Fixed] 🛑 Failed-generation trips no longer get stuck in an endless “Planning your trip” overlay; loading overlays now follow real generation state.
+- [x] [Fixed] 🚨 Legacy failed trip drafts now correctly show a failed AI-generation status instead of appearing as succeeded.
 - [x] [Improved] 🔁 Retrying generation now re-triggers tab feedback (title + favicon animation) so background progress is visible again.
 - [x] [Improved] 🧾 Trip diagnostics now show the full captured input snapshot JSON (flow, dates, and payload) for easier replay and debugging.
 - [x] [Improved] 🧩 Admin users/trips tables now use subtler, consistent row/column highlight states with corrected sticky-column alignment.

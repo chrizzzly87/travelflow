@@ -1,11 +1,20 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { AdminShell, type AdminDateRange } from '../components/admin/AdminShell';
-import { isIsoDateInRange } from '../components/admin/adminDateRange';
 import { adminListTrips, adminListUsers, type AdminTripRecord, type AdminUserRecord } from '../services/adminService';
 import { AdminReloadButton } from '../components/admin/AdminReloadButton';
 import { AdminCountUpNumber } from '../components/admin/AdminCountUpNumber';
-import { Card, Metric, Text, Flex, Grid, ProgressBar, BarChart, DonutChart, Title } from '@tremor/react';
+import { buildAdminDashboardUserLevelBreakdown } from '../components/admin/adminDashboardUserBreakdown';
+import {
+    ACTIVITY_STACKED_CATEGORIES,
+    buildTripStatusStackedChartData,
+    buildUserLevelCumulativeStackedChartData,
+    buildUsersVsTripsStackedChartData,
+    filterDashboardTripsByRange,
+    filterDashboardUsersByRange,
+    TRIP_STATUS_STACKED_CATEGORIES,
+} from '../components/admin/adminDashboardChartData';
+import { Card, Metric, Text, Flex, Grid, ProgressBar, BarChart, Title } from '@tremor/react';
 
 const formatValue = (value: number): string => new Intl.NumberFormat().format(value);
 
@@ -74,29 +83,25 @@ export const AdminDashboardPage: React.FC = () => {
     }, [dateRange, searchValue]);
 
     const scopedUsers = useMemo(
-        () => users.filter((user) => isIsoDateInRange(user.created_at, dateRange)),
+        () => filterDashboardUsersByRange(users, dateRange),
         [dateRange, users]
     );
 
     const scopedTrips = useMemo(
-        () => trips.filter((trip) => isIsoDateInRange(trip.updated_at || trip.created_at, dateRange)),
+        () => filterDashboardTripsByRange(trips, dateRange),
         [dateRange, trips]
     );
 
     const metrics = useMemo(() => {
         const totalUsers = scopedUsers.length;
-        const activeUsers = scopedUsers.filter((user) => (user.account_status || 'active') === 'active').length;
         const disabledUsers = scopedUsers.filter((user) => user.account_status === 'disabled').length;
-        const adminUsers = scopedUsers.filter((user) => user.system_role === 'admin').length;
         const totalTrips = scopedTrips.length;
         const activeTrips = scopedTrips.filter((trip) => trip.status === 'active').length;
         const expiredTrips = scopedTrips.filter((trip) => trip.status === 'expired').length;
         const archivedTrips = scopedTrips.filter((trip) => trip.status === 'archived').length;
         return {
             totalUsers,
-            activeUsers,
             disabledUsers,
-            adminUsers,
             totalTrips,
             activeTrips,
             expiredTrips,
@@ -104,6 +109,25 @@ export const AdminDashboardPage: React.FC = () => {
         };
     }, [scopedTrips, scopedUsers]);
 
+    const userLevelBreakdown = useMemo(
+        () => buildAdminDashboardUserLevelBreakdown(scopedUsers),
+        [scopedUsers]
+    );
+
+    const userLevelTrendStackedChartData = useMemo(
+        () => buildUserLevelCumulativeStackedChartData(users, scopedUsers, userLevelBreakdown, dateRange),
+        [dateRange, scopedUsers, userLevelBreakdown, users]
+    );
+
+    const tripStatusStackedChartData = useMemo(
+        () => buildTripStatusStackedChartData(scopedTrips),
+        [scopedTrips]
+    );
+
+    const usersVsTripsStackedChartData = useMemo(
+        () => buildUsersVsTripsStackedChartData(scopedUsers, scopedTrips),
+        [scopedTrips, scopedUsers]
+    );
 
 
     return (
@@ -132,11 +156,18 @@ export const AdminDashboardPage: React.FC = () => {
                 <Card decoration="top" decorationColor="indigo">
                     <Text>Total Users</Text>
                     <Metric><AdminCountUpNumber value={metrics.totalUsers} /></Metric>
-                    <Flex className="mt-4">
-                        <Text>Active / Total</Text>
-                        <Text>{formatValue(metrics.activeUsers)} / {formatValue(metrics.totalUsers)}</Text>
-                    </Flex>
-                    <ProgressBar value={metrics.totalUsers ? (metrics.activeUsers / metrics.totalUsers) * 100 : 0} color="indigo" className="mt-2" />
+                    <div className="mt-4 space-y-2">
+                        {userLevelBreakdown.map((level) => (
+                            <Flex
+                                key={`total-users-level-${level.key}`}
+                                className="rounded-md border border-slate-100 bg-slate-50 px-2 py-1.5"
+                                data-tooltip={level.tooltip}
+                            >
+                                <Text>{level.label}</Text>
+                                <Text>{formatValue(level.count)} ({level.shareLabel})</Text>
+                            </Flex>
+                        ))}
+                    </div>
                 </Card>
                 <Card decoration="top" decorationColor="emerald">
                     <Text>Total Trips</Text>
@@ -145,7 +176,7 @@ export const AdminDashboardPage: React.FC = () => {
                         <Text>Active / Total</Text>
                         <Text>{formatValue(metrics.activeTrips)} / {formatValue(metrics.totalTrips)}</Text>
                     </Flex>
-                    <ProgressBar value={metrics.totalTrips ? (metrics.activeTrips / metrics.totalTrips) * 100 : 0} color="emerald" className="mt-2" />
+                    <ProgressBar value={metrics.totalTrips ? (metrics.activeTrips / metrics.totalTrips) * 100 : 0} className="mt-2" />
                 </Card>
                 <Card decoration="top" decorationColor="amber">
                     <Text>Expired Trips</Text>
@@ -161,45 +192,46 @@ export const AdminDashboardPage: React.FC = () => {
 
             <Grid numItemsLg={2} className="gap-6 mt-6">
                 <Card>
-                    <Title>Trips Created Over Time</Title>
+                    <Title>User Levels Over Time</Title>
+                    <Text className="mt-1">Cumulative total users by level for each day in the selected range.</Text>
                     <BarChart
                         className="mt-6 h-72"
-                        data={(() => {
-                            const days: Record<string, number> = {};
-                            scopedTrips.forEach((t) => {
-                                const d = new Date(t.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-                                days[d] = (days[d] || 0) + 1;
-                            });
-                            return Object.entries(days).map(([date, count]) => ({ date, 'Trips Created': count })).reverse().slice(0, 14).reverse();
-                        })()}
+                        data={userLevelTrendStackedChartData}
                         index="date"
-                        categories={['Trips Created']}
-                        colors={['indigo']}
+                        categories={userLevelBreakdown.map((level) => level.label)}
+                        stack
                         yAxisWidth={48}
                     />
                 </Card>
 
                 <Card>
-                    <Title>User Login Providers</Title>
-                    <div className="mt-6 flex h-72 items-center justify-center">
-                        <DonutChart
-                            data={(() => {
-                                const counts: Record<string, number> = {};
-                                scopedUsers.forEach((u) => {
-                                    const label = getLoginLabel(u);
-                                    counts[label] = (counts[label] || 0) + 1;
-                                });
-                                return Object.entries(counts).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
-                            })()}
-                            category="value"
-                            index="name"
-                            colors={['indigo', 'cyan', 'amber', 'emerald', 'slate']}
-                            className="h-full w-full max-h-[240px]"
-                            showAnimation
-                        />
-                    </div>
+                    <Title>Trips by Status Over Time</Title>
+                    <Text className="mt-1">Single stacked view of active, expired, and archived trips by creation day.</Text>
+                    <BarChart
+                        className="mt-6 h-72"
+                        data={tripStatusStackedChartData}
+                        index="date"
+                        categories={[...TRIP_STATUS_STACKED_CATEGORIES]}
+                        stack
+                        yAxisWidth={48}
+                    />
                 </Card>
             </Grid>
+
+            <section className="mt-6">
+                <Card>
+                    <Title>New Users vs New Trips</Title>
+                    <Text className="mt-1">Acquisition and planning throughput trend within the selected date range.</Text>
+                    <BarChart
+                        className="mt-6 h-72"
+                        data={usersVsTripsStackedChartData}
+                        index="date"
+                        categories={[...ACTIVITY_STACKED_CATEGORIES]}
+                        stack
+                        yAxisWidth={48}
+                    />
+                </Card>
+            </section>
 
             <section className="mt-6">
                 <Card>
