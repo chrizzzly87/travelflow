@@ -40,6 +40,7 @@ summary: "Failed trip generations are now easier to spot, inspect, and retry on 
 - [ ] [Internal] 🧱 Added structured generation attempt diagnostics service and durable attempt-log RPC/table contracts for richer failure telemetry.
 - [ ] [Internal] 🧱 Started async-generation infrastructure rollout with server-side job queue schema, lease RPCs, and typed job service adapters for phased worker cutover.
 - [ ] [Internal] ⚙️ Added a flag-gated async generation worker path (edge worker endpoint + scheduled trigger) and queue-claim classic enqueue wiring for server-owned execution rollout.
+- [ ] [Internal] 🔄 Trip view now polls owner-access DB snapshots while generation is queued/running so server-side async completions appear without manual refresh.
 - [ ] [Internal] 🛠️ Removed legacy admin trip-list RPC overloads and hardened generation-state RPC arguments to prevent PostgREST function ambiguity.
 - [ ] [Internal] 📡 Added best-effort tab-close abort beacons to improve abort classification during in-flight generation.
 - [ ] [Internal] 🧩 Admin trips/users/audit tables now share sticky-column + sorting style primitives for consistent row/column highlighting.

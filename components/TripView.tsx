@@ -3,10 +3,11 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { AppLanguage, ITrip, ITimelineItem, IViewSettings, ShareMode, TripGenerationAttemptSummary, TripGenerationState } from '../types';
 import { getDefaultCreateTripModel } from '../config/aiModelCatalog';
+import { DB_ENABLED } from '../config/db';
 import { GoogleMapsLoader } from './GoogleMapsLoader';
 import { BASE_PIXELS_PER_DAY, DEFAULT_CITY_COLOR_PALETTE_ID, DEFAULT_DISTANCE_UNIT, buildShareUrl, formatDistance, getTimelineBounds, getTripDistanceKm, isInternalMapColorModeControlEnabled, normalizeMapColorMode } from '../utils';
 import { getExampleMapViewTransitionName, getExampleTitleViewTransitionName } from '../shared/viewTransitionNames';
-import { type DbTripAccessMetadata } from '../services/dbApi';
+import { dbGetTrip, type DbTripAccessMetadata } from '../services/dbApi';
 import {
     buildTripCalendarExport,
     downloadTripCalendarExport,
@@ -83,6 +84,7 @@ import { retryTripGenerationWithDefaultModel } from '../services/tripGenerationR
 import { abortActiveTripGenerationRequest } from '../services/aiService';
 import { buildBenchmarkScenarioImportUrl } from '../services/tripGenerationBenchmarkBridge';
 import { beginTripGenerationTabFeedback, type TripGenerationTabFeedbackSession } from '../services/tripGenerationTabFeedbackService';
+import { shouldApplyPolledTripUpdate } from '../services/tripGenerationPollingService';
 
 const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
     moduleKey: string,
@@ -185,6 +187,7 @@ const GENERATION_PROGRESS_MESSAGES = [
     'Structuring your daily timeline...',
     'Finalizing logistics and details...',
 ];
+const TRIP_GENERATION_POLL_INTERVAL_MS = 4_000;
 const TRIP_CALENDAR_EXPORT_EVENT_BY_SCOPE: Record<
     TripCalendarExportScope,
     'trip_view__calendar_export--activity' | 'trip_view__calendar_export--activities' | 'trip_view__calendar_export--cities' | 'trip_view__calendar_export--all'
@@ -925,6 +928,46 @@ const useTripViewRender = ({
         }, 1_000);
         return () => window.clearInterval(timer);
     }, [shouldPollGenerationState, trip.id]);
+    useEffect(() => {
+        if (!DB_ENABLED) return undefined;
+        if (!shouldPollGenerationState) return undefined;
+        if (connectivitySnapshot.state === 'offline') return undefined;
+        if (tripAccess?.source === 'public_read') return undefined;
+
+        let cancelled = false;
+        let inFlight = false;
+        const poll = async () => {
+            if (cancelled || inFlight) return;
+            inFlight = true;
+            try {
+                const remote = await dbGetTrip(trip.id);
+                if (cancelled || !remote?.trip) return;
+
+                const remoteTrip = remote.trip;
+                const localTrip = tripRef.current;
+                if (shouldApplyPolledTripUpdate(localTrip, remoteTrip, Date.now())) {
+                    onUpdateTrip(remoteTrip);
+                }
+            } finally {
+                inFlight = false;
+            }
+        };
+
+        void poll();
+        const timer = window.setInterval(() => {
+            void poll();
+        }, TRIP_GENERATION_POLL_INTERVAL_MS);
+        return () => {
+            cancelled = true;
+            window.clearInterval(timer);
+        };
+    }, [
+        connectivitySnapshot.state,
+        onUpdateTrip,
+        shouldPollGenerationState,
+        trip.id,
+        tripAccess?.source,
+    ]);
     useEffect(() => () => {
         retryGenerationTabFeedbackSessionRef.current?.cancel();
         retryGenerationTabFeedbackSessionRef.current = null;
