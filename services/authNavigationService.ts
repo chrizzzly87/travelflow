@@ -1,4 +1,5 @@
-import { stripLocalePrefix } from '../config/routes';
+import { buildLocalizedMarketingPath, extractLocaleFromPath, stripLocalePrefix } from '../config/routes';
+import { normalizeLocale } from '../config/locales';
 import {
     readLocalStorageItem,
     removeLocalStorageItem,
@@ -22,6 +23,37 @@ export const buildPathFromLocationParts = (parts: {
 }): string => {
     const { pathname, search = '', hash = '' } = parts;
     return `${pathname || '/'}${search || ''}${hash || ''}`;
+};
+
+export const buildLoginPathWithNext = (parts: {
+    pathname: string;
+    search?: string;
+    hash?: string;
+    language?: string | null;
+    resolvedLanguage?: string | null;
+}): {
+    nextPath: string;
+    loginPath: string;
+    loginTarget: string;
+} => {
+    const pathname = parts.pathname || '/';
+    const nextPathCandidate = buildPathFromLocationParts({
+        pathname,
+        search: parts.search,
+        hash: parts.hash,
+    });
+    const nextPath = isSafeAuthReturnPath(nextPathCandidate) ? nextPathCandidate : '/create-trip';
+    const routeLocale = extractLocaleFromPath(pathname);
+    const preferredLocale = normalizeLocale(parts.resolvedLanguage ?? parts.language ?? null);
+    const locale = routeLocale ?? preferredLocale;
+    const loginPath = buildLocalizedMarketingPath('login', locale);
+    const query = new URLSearchParams();
+    query.set('next', nextPath);
+    return {
+        nextPath,
+        loginPath,
+        loginTarget: `${loginPath}?${query.toString()}`,
+    };
 };
 
 export const isLoginPathname = (pathname: string): boolean => {

@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
 import {
+  buildLoginPathWithNext,
   buildPasswordResetRedirectUrl,
   buildPathFromLocationParts,
   clearPendingAuthRedirect,
@@ -19,6 +20,40 @@ describe('services/authNavigationService', () => {
   it('builds paths from location parts', () => {
     expect(buildPathFromLocationParts({ pathname: '/trip/1', search: '?v=2', hash: '#map' })).toBe('/trip/1?v=2#map');
     expect(buildPathFromLocationParts({ pathname: '' as unknown as string })).toBe('/');
+  });
+
+  it('builds localized login redirects with safe next paths', () => {
+    expect(buildLoginPathWithNext({
+      pathname: '/de/create-trip/wizard',
+      search: '?prefill=abc',
+      hash: '#draft',
+      language: 'en',
+      resolvedLanguage: 'en',
+    })).toEqual({
+      nextPath: '/de/create-trip/wizard?prefill=abc#draft',
+      loginPath: '/de/login',
+      loginTarget: '/de/login?next=%2Fde%2Fcreate-trip%2Fwizard%3Fprefill%3Dabc%23draft',
+    });
+
+    expect(buildLoginPathWithNext({
+      pathname: '/create-trip/wizard',
+      language: 'de',
+      resolvedLanguage: 'de',
+    })).toEqual({
+      nextPath: '/create-trip/wizard',
+      loginPath: '/de/login',
+      loginTarget: '/de/login?next=%2Fcreate-trip%2Fwizard',
+    });
+
+    expect(buildLoginPathWithNext({
+      pathname: '/login',
+      language: 'en',
+      resolvedLanguage: 'en',
+    })).toEqual({
+      nextPath: '/create-trip',
+      loginPath: '/login',
+      loginTarget: '/login?next=%2Fcreate-trip',
+    });
   });
 
   it('classifies login and safe auth return paths', () => {

@@ -46,6 +46,7 @@ summary: "Failed trip generations are now easier to spot, inspect, and retry on 
 - [ ] [Internal] ⚙️ Retry now always enqueues server-owned async jobs for the same trip instead of running generation in the browser session.
 - [ ] [Internal] ⚙️ Removed client-side async-flow feature flags/fallback branches so all active generation entry points use the worker queue lifecycle.
 - [x] [Fixed] 🧭 Create-trip generation now ensures an anonymous DB session before enqueueing worker jobs, preventing immediate enqueue failures for signed-out users.
+- [x] [Fixed] 🔐 Create-trip now redirects to login with the current draft path preserved when no DB session is available, avoiding dead enqueue attempts in strict-auth environments.
 - [ ] [Internal] 🧯 Admin trip diagnostics now includes queue/dead-letter job history (state, retry budget, latest worker error) for faster worker incident triage.
 - [ ] [Internal] 🧯 Admin trip diagnostics now supports one-click requeue for dead/failed worker jobs to speed up manual recovery during incidents.
 - [ ] [Internal] 🔄 Trip view now polls owner-access DB snapshots while generation is queued/running so server-side async completions appear without manual refresh.

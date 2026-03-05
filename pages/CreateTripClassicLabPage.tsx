@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import {
     AirplaneTilt,
     Bicycle,
@@ -58,8 +58,15 @@ import { useDbSync } from '../hooks/useDbSync';
 import { useConnectivityStatus } from '../hooks/useConnectivityStatus';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { useSyncStatus } from '../hooks/useSyncStatus';
+import { useAuth } from '../hooks/useAuth';
 import { buildClassicItineraryPrompt } from '../services/aiService';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
+import {
+    buildLoginPathWithNext,
+    rememberAuthReturnPath,
+    setPendingAuthRedirect,
+} from '../services/authNavigationService';
+import { ensureDbSession } from '../services/dbService';
 import {
     finishTripGenerationAttemptLog,
     startTripGenerationAttemptLog,
@@ -342,7 +349,10 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
     onLanguageLoaded,
 }) => {
     const { t, i18n } = useTranslation('createTrip');
+    const navigate = useNavigate();
+    const location = useLocation();
     const [searchParams] = useSearchParams();
+    const { isAuthenticated, isAnonymous } = useAuth();
     const { snapshot: connectivitySnapshot } = useConnectivityStatus();
     const { snapshot: syncSnapshot, retrySyncNow } = useSyncStatus();
     const { isOnline: isBrowserOnline } = useNetworkStatus({ probeWhileOffline: false });
@@ -1519,6 +1529,27 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
             provider: selectedAiModel.provider,
             model: selectedAiModel.model,
         });
+
+        const sessionUserId = await ensureDbSession();
+        if (!sessionUserId) {
+            const authRedirect = buildLoginPathWithNext({
+                pathname: location.pathname,
+                search: location.search,
+                hash: location.hash,
+                language: i18n.language,
+                resolvedLanguage: i18n.resolvedLanguage,
+            });
+            rememberAuthReturnPath(authRedirect.nextPath);
+            setPendingAuthRedirect(authRedirect.nextPath, 'create_trip_generate');
+            trackEvent('create_trip__cta--redirect_login', {
+                reason: 'missing_db_session',
+                has_authenticated_access: isAuthenticated,
+                is_anonymous_access: isAnonymous,
+            });
+            setIsSubmitting(false);
+            navigate(authRedirect.loginTarget);
+            return;
+        }
 
         const destinationPromptLabels = orderedDestinations.map((destination) => getDestinationPromptLabel(destination));
         const localizedDestinationLabels = orderedDestinations.map((destination) => getLocalizedDestinationLabel(destination));
