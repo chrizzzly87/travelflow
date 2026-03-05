@@ -91,6 +91,7 @@ import { buildBenchmarkScenarioImportUrl } from '../services/tripGenerationBench
 import { beginTripGenerationTabFeedback, type TripGenerationTabFeedbackSession } from '../services/tripGenerationTabFeedbackService';
 import { shouldApplyPolledTripUpdate } from '../services/tripGenerationPollingService';
 import { processQueuedTripGenerationAfterAuth } from '../services/tripGenerationQueueService';
+import { registerTripGenerationCompletionWatch } from '../services/tripGenerationCompletionWatchService';
 
 const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
     moduleKey: string,
@@ -1098,6 +1099,7 @@ const useTripViewRender = ({
             setIsResolvingPendingAuthGeneration(true);
             try {
                 const result = await processQueuedTripGenerationAfterAuth(pendingAuthQueueRequestId);
+                registerTripGenerationCompletionWatch(result.tripId, 'auth_queue_claim_trip_view');
                 showToast('Trip generation started and is running in the background.', {
                     tone: 'add',
                     title: 'Generation started',

@@ -26,6 +26,7 @@ import {
     dbAdminOverrideTripCommit,
     dbCanCreateTrip,
     dbCreateTripVersion,
+    dbGetTrip,
     dbUpsertTripWithStatus,
     dbUpsertUserSettings,
     ensureDbSession,
@@ -46,6 +47,13 @@ import { useConnectivityStatus } from './hooks/useConnectivityStatus';
 import { enqueueTripCommitAndSync } from './services/tripSyncManager';
 import { GlobalConnectivityBadge } from './components/GlobalConnectivityBadge';
 import { normalizeTransportMode } from './shared/transportModes';
+import { showAppToast } from './components/ui/appToast';
+import { getTripGenerationState } from './services/tripGenerationDiagnosticsService';
+import {
+    listTripGenerationCompletionWatches,
+    removeTripGenerationCompletionWatch,
+    subscribeTripGenerationCompletionWatches,
+} from './services/tripGenerationCompletionWatchService';
 import {
     buildPathFromLocationParts,
     isSafeAuthReturnPath,
@@ -293,7 +301,7 @@ export const resolveTermsNoticeState = (options: {
 };
 
 const AppContent: React.FC = () => {
-    const { i18n, t } = useTranslation(['common', 'pages', 'auth', 'wip', 'legal']);
+    const { i18n, t } = useTranslation(['common', 'pages', 'auth', 'wip', 'legal', 'profile']);
     const { access, isAuthenticated, isLoading: isAuthLoading, logout } = useAuth();
     const [trip, setTrip] = useState<ITrip | null>(null);
     const [isManagerOpen, setIsManagerOpen] = useState(false);
@@ -327,6 +335,94 @@ const AppContent: React.FC = () => {
             navigate('/login', { replace: true });
         }
     }, [access, isAuthLoading, isAuthenticated, location.pathname, location.search, logout, navigate]);
+
+    useEffect(() => {
+        if (!isAuthenticated || !access || access.isAnonymous) return;
+
+        const WATCH_STALE_AFTER_MS = 30 * 60 * 1000;
+        let isCancelled = false;
+        const inFlight = new Set<string>();
+
+        const pollCompletionWatches = async (): Promise<void> => {
+            if (isCancelled) return;
+            const watches = listTripGenerationCompletionWatches();
+            if (!watches.length) return;
+
+            const now = Date.now();
+            await Promise.all(watches.map(async (watch) => {
+                if (isCancelled || inFlight.has(watch.tripId)) return;
+
+                if ((now - watch.startedAt) > WATCH_STALE_AFTER_MS) {
+                    removeTripGenerationCompletionWatch(watch.tripId);
+                    return;
+                }
+
+                inFlight.add(watch.tripId);
+                try {
+                    const remoteTripResult = await dbGetTrip(watch.tripId);
+                    const remoteTrip = remoteTripResult?.trip;
+                    if (!remoteTrip) return;
+
+                    const state = getTripGenerationState(remoteTrip, Date.now());
+                    if (state === 'running' || state === 'queued') return;
+
+                    removeTripGenerationCompletionWatch(watch.tripId);
+                    const actionLabel = t('cards.actions.open', { ns: 'profile' });
+                    const action = {
+                        label: actionLabel,
+                        onClick: () => {
+                            trackEvent('trip_generation__background_completion_toast--open', {
+                                trip_id: watch.tripId,
+                                source: watch.source,
+                                state,
+                            });
+                            navigate(`/trip/${watch.tripId}`);
+                        },
+                    };
+
+                    trackEvent('trip_generation__background_completion_toast--shown', {
+                        trip_id: watch.tripId,
+                        source: watch.source,
+                        state,
+                    });
+
+                    if (state === 'succeeded') {
+                        showAppToast({
+                            tone: 'add',
+                            title: t('tripView.generation.retry.completedTitle'),
+                            description: t('tripView.generation.retry.completed'),
+                            action,
+                        });
+                    } else {
+                        showAppToast({
+                            tone: 'warning',
+                            title: t('tripView.generation.retry.failedTitle'),
+                            description: t('tripView.generation.strip.failedDefault'),
+                            action,
+                        });
+                    }
+                } catch {
+                    // Ignore transient fetch errors; next poll continues.
+                } finally {
+                    inFlight.delete(watch.tripId);
+                }
+            }));
+        };
+
+        const unsubscribe = subscribeTripGenerationCompletionWatches(() => {
+            void pollCompletionWatches();
+        });
+        void pollCompletionWatches();
+        const intervalId = window.setInterval(() => {
+            void pollCompletionWatches();
+        }, 5000);
+
+        return () => {
+            isCancelled = true;
+            unsubscribe();
+            window.clearInterval(intervalId);
+        };
+    }, [access, isAuthenticated, navigate, t]);
 
     useEffect(() => {
         if (!shouldRedirectToTermsAcceptance({
