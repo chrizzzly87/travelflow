@@ -6,6 +6,16 @@
 [context.production]
   command = "pnpm build"
 
+[context.deploy-preview]
+  # Temporarily skip deploy previews for this split PR stack to preserve Netlify minutes.
+  ignore = """
+if [ "$HEAD" = "codex/admin-table-audit-stabilization" ] || [ "$HEAD" = "codex/admin-playground-docs-table-guidance" ] || [ "$HEAD" = "codex/failed-generation-observability-retry-core-final" ]; then
+  echo "Skipping deploy preview for split PR branch: $HEAD"
+  exit 0
+fi
+exit 1
+"""
+
 [build.environment]
   NODE_VERSION = "20"
   # Vite exposes VITE_* vars to browser bundles by design.
