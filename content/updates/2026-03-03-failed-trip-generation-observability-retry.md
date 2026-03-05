@@ -38,6 +38,7 @@ summary: "Failed trip generations are now easier to spot, inspect, and retry on 
 - [x] [Fixed] 🧭 Checkbox + primary entity columns now behave as one sticky region in selectable admin tables, including correct width locking and horizontal scroll tracking.
 - [ ] [Internal] 🧩 Added an admin data-table component group in the design-system playground with sticky/sort/selection examples and documented the table pattern in brand/UI guidelines.
 - [ ] [Internal] 🧱 Added structured generation attempt diagnostics service and durable attempt-log RPC/table contracts for richer failure telemetry.
+- [ ] [Internal] 🧱 Started async-generation infrastructure rollout with server-side job queue schema, lease RPCs, and typed job service adapters for phased worker cutover.
 - [ ] [Internal] 🛠️ Removed legacy admin trip-list RPC overloads and hardened generation-state RPC arguments to prevent PostgREST function ambiguity.
 - [ ] [Internal] 📡 Added best-effort tab-close abort beacons to improve abort classification during in-flight generation.
 - [ ] [Internal] 🧩 Admin trips/users/audit tables now share sticky-column + sorting style primitives for consistent row/column highlighting.

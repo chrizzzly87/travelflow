@@ -1343,6 +1343,28 @@ create table if not exists public.trip_generation_attempts (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists public.trip_generation_jobs (
+  id uuid primary key default gen_random_uuid(),
+  trip_id text not null references public.trips(id) on delete cascade,
+  owner_id uuid not null references auth.users on delete cascade,
+  attempt_id uuid not null references public.trip_generation_attempts(id) on delete cascade,
+  state text not null default 'queued'
+    check (state in ('queued', 'leased', 'completed', 'failed', 'dead')),
+  priority integer not null default 100,
+  payload jsonb not null default '{}'::jsonb,
+  run_after timestamptz not null default now(),
+  lease_expires_at timestamptz,
+  leased_by text,
+  retry_count integer not null default 0,
+  max_retries integer not null default 3,
+  last_error_code text,
+  last_error_message text,
+  started_at timestamptz,
+  finished_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create table if not exists public.anonymous_asset_claims (
   id uuid primary key default gen_random_uuid(),
   anon_user_id uuid not null references auth.users on delete cascade,
@@ -1369,6 +1391,10 @@ create index if not exists trip_generation_attempts_trip_started_idx on public.t
 create index if not exists trip_generation_attempts_owner_started_idx on public.trip_generation_attempts(owner_id, started_at desc);
 create index if not exists trip_generation_attempts_request_idx on public.trip_generation_attempts(request_id);
 create index if not exists trip_generation_attempts_state_started_idx on public.trip_generation_attempts(state, started_at desc);
+create unique index if not exists trip_generation_jobs_attempt_uidx on public.trip_generation_jobs(attempt_id);
+create index if not exists trip_generation_jobs_state_run_after_idx on public.trip_generation_jobs(state, run_after, priority, created_at);
+create index if not exists trip_generation_jobs_owner_created_idx on public.trip_generation_jobs(owner_id, created_at desc);
+create index if not exists trip_generation_jobs_trip_created_idx on public.trip_generation_jobs(trip_id, created_at desc);
 create index if not exists anonymous_asset_claims_anon_idx on public.anonymous_asset_claims(anon_user_id, created_at desc);
 create index if not exists anonymous_asset_claims_target_idx on public.anonymous_asset_claims(target_user_id, created_at desc);
 create index if not exists anonymous_asset_claims_status_idx on public.anonymous_asset_claims(status, created_at desc);
@@ -1382,6 +1408,11 @@ for each row execute function public.set_updated_at();
 drop trigger if exists set_trip_generation_attempts_updated_at on public.trip_generation_attempts;
 create trigger set_trip_generation_attempts_updated_at
 before update on public.trip_generation_attempts
+for each row execute function public.set_updated_at();
+
+drop trigger if exists set_trip_generation_jobs_updated_at on public.trip_generation_jobs;
+create trigger set_trip_generation_jobs_updated_at
+before update on public.trip_generation_jobs
 for each row execute function public.set_updated_at();
 
 drop trigger if exists set_anonymous_asset_claims_updated_at on public.anonymous_asset_claims;
@@ -2345,6 +2376,409 @@ begin
 end;
 $$;
 
+create or replace function public.trip_generation_job_enqueue(
+  p_trip_id text,
+  p_attempt_id uuid,
+  p_payload jsonb default null,
+  p_priority integer default 100,
+  p_run_after timestamptz default null,
+  p_max_retries integer default 3
+)
+returns table(
+  id uuid,
+  trip_id text,
+  owner_id uuid,
+  attempt_id uuid,
+  state text,
+  priority integer,
+  retry_count integer,
+  max_retries integer,
+  run_after timestamptz,
+  lease_expires_at timestamptz,
+  leased_by text,
+  payload jsonb,
+  last_error_code text,
+  last_error_message text,
+  created_at timestamptz,
+  updated_at timestamptz
+)
+language plpgsql
+security definer
+set search_path = public
+set row_security = off
+as $$
+declare
+  v_user_id uuid;
+  v_owner_id uuid;
+  v_attempt_owner_id uuid;
+  v_attempt_trip_id text;
+  v_job public.trip_generation_jobs%rowtype;
+begin
+  v_user_id := auth.uid();
+  if coalesce(auth.role(), '') <> 'service_role' then
+    if v_user_id is null then
+      raise exception 'Not authenticated';
+    end if;
+  end if;
+
+  select t.owner_id
+    into v_owner_id
+    from public.trips t
+   where t.id = p_trip_id
+   limit 1;
+
+  if v_owner_id is null then
+    raise exception 'Trip not found';
+  end if;
+
+  select a.owner_id, a.trip_id
+    into v_attempt_owner_id, v_attempt_trip_id
+    from public.trip_generation_attempts a
+   where a.id = p_attempt_id
+   limit 1;
+
+  if v_attempt_owner_id is null then
+    raise exception 'Attempt not found';
+  end if;
+  if v_attempt_trip_id <> p_trip_id then
+    raise exception 'Attempt does not belong to trip';
+  end if;
+  if v_attempt_owner_id <> v_owner_id then
+    raise exception 'Attempt owner mismatch';
+  end if;
+
+  if coalesce(auth.role(), '') <> 'service_role' then
+    if v_owner_id <> v_user_id and not public.is_admin(v_user_id) then
+      raise exception 'Not allowed';
+    end if;
+  end if;
+
+  insert into public.trip_generation_jobs (
+    trip_id,
+    owner_id,
+    attempt_id,
+    state,
+    priority,
+    payload,
+    run_after,
+    retry_count,
+    max_retries
+  )
+  values (
+    p_trip_id,
+    v_owner_id,
+    p_attempt_id,
+    'queued',
+    greatest(coalesce(p_priority, 100), 0),
+    coalesce(p_payload, '{}'::jsonb),
+    coalesce(p_run_after, now()),
+    0,
+    greatest(coalesce(p_max_retries, 3), 0)
+  )
+  on conflict (attempt_id)
+  do update
+     set state = case
+       when public.trip_generation_jobs.state in ('completed', 'failed', 'dead')
+         then public.trip_generation_jobs.state
+       else 'queued'
+     end,
+         priority = excluded.priority,
+         payload = excluded.payload,
+         run_after = excluded.run_after,
+         max_retries = excluded.max_retries,
+         lease_expires_at = case
+           when public.trip_generation_jobs.state in ('completed', 'failed', 'dead')
+             then public.trip_generation_jobs.lease_expires_at
+           else null
+         end,
+         leased_by = case
+           when public.trip_generation_jobs.state in ('completed', 'failed', 'dead')
+             then public.trip_generation_jobs.leased_by
+           else null
+         end,
+         last_error_code = case
+           when public.trip_generation_jobs.state in ('completed', 'failed', 'dead')
+             then public.trip_generation_jobs.last_error_code
+           else null
+         end,
+         last_error_message = case
+           when public.trip_generation_jobs.state in ('completed', 'failed', 'dead')
+             then public.trip_generation_jobs.last_error_message
+           else null
+         end,
+         updated_at = now()
+  returning * into v_job;
+
+  return query
+  select
+    v_job.id,
+    v_job.trip_id,
+    v_job.owner_id,
+    v_job.attempt_id,
+    v_job.state,
+    v_job.priority,
+    v_job.retry_count,
+    v_job.max_retries,
+    v_job.run_after,
+    v_job.lease_expires_at,
+    v_job.leased_by,
+    v_job.payload,
+    v_job.last_error_code,
+    v_job.last_error_message,
+    v_job.created_at,
+    v_job.updated_at;
+end;
+$$;
+
+create or replace function public.trip_generation_job_claim(
+  p_worker_id text default null,
+  p_limit integer default 1,
+  p_lease_seconds integer default 120
+)
+returns table(
+  id uuid,
+  trip_id text,
+  owner_id uuid,
+  attempt_id uuid,
+  state text,
+  priority integer,
+  retry_count integer,
+  max_retries integer,
+  run_after timestamptz,
+  lease_expires_at timestamptz,
+  leased_by text,
+  payload jsonb,
+  last_error_code text,
+  last_error_message text,
+  created_at timestamptz,
+  updated_at timestamptz
+)
+language plpgsql
+security definer
+set search_path = public
+set row_security = off
+as $$
+declare
+  v_worker_id text;
+  v_limit integer;
+  v_lease_seconds integer;
+  v_uid uuid;
+begin
+  v_uid := auth.uid();
+  if coalesce(auth.role(), '') <> 'service_role' and not public.is_admin(v_uid) then
+    raise exception 'Not allowed';
+  end if;
+
+  v_worker_id := coalesce(nullif(btrim(coalesce(p_worker_id, '')), ''), concat('worker:', coalesce(v_uid::text, 'service-role')));
+  v_limit := greatest(least(coalesce(p_limit, 1), 25), 1);
+  v_lease_seconds := greatest(least(coalesce(p_lease_seconds, 120), 600), 30);
+
+  return query
+  with picked as (
+    select j.id
+      from public.trip_generation_jobs j
+     where j.state = 'queued'
+       and j.run_after <= now()
+       and (j.lease_expires_at is null or j.lease_expires_at <= now())
+     order by j.priority asc, j.created_at asc
+     limit v_limit
+     for update skip locked
+  )
+  update public.trip_generation_jobs j
+     set state = 'leased',
+         lease_expires_at = now() + make_interval(secs => v_lease_seconds),
+         leased_by = v_worker_id,
+         started_at = coalesce(j.started_at, now()),
+         updated_at = now()
+    from picked
+   where j.id = picked.id
+  returning
+    j.id,
+    j.trip_id,
+    j.owner_id,
+    j.attempt_id,
+    j.state,
+    j.priority,
+    j.retry_count,
+    j.max_retries,
+    j.run_after,
+    j.lease_expires_at,
+    j.leased_by,
+    j.payload,
+    j.last_error_code,
+    j.last_error_message,
+    j.created_at,
+    j.updated_at;
+end;
+$$;
+
+create or replace function public.trip_generation_job_heartbeat(
+  p_job_id uuid,
+  p_worker_id text,
+  p_lease_seconds integer default 120
+)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+set row_security = off
+as $$
+declare
+  v_uid uuid;
+begin
+  v_uid := auth.uid();
+  if coalesce(auth.role(), '') <> 'service_role' and not public.is_admin(v_uid) then
+    raise exception 'Not allowed';
+  end if;
+
+  update public.trip_generation_jobs j
+     set lease_expires_at = now() + make_interval(secs => greatest(least(coalesce(p_lease_seconds, 120), 600), 30)),
+         updated_at = now()
+   where j.id = p_job_id
+     and j.state = 'leased'
+     and j.leased_by = nullif(btrim(coalesce(p_worker_id, '')), '')
+     and (j.lease_expires_at is null or j.lease_expires_at > now());
+
+  return found;
+end;
+$$;
+
+create or replace function public.trip_generation_job_complete(
+  p_job_id uuid,
+  p_worker_id text
+)
+returns table(
+  id uuid,
+  state text,
+  updated_at timestamptz
+)
+language plpgsql
+security definer
+set search_path = public
+set row_security = off
+as $$
+declare
+  v_uid uuid;
+  v_worker_id text;
+  v_row public.trip_generation_jobs%rowtype;
+begin
+  v_uid := auth.uid();
+  if coalesce(auth.role(), '') <> 'service_role' and not public.is_admin(v_uid) then
+    raise exception 'Not allowed';
+  end if;
+  v_worker_id := nullif(btrim(coalesce(p_worker_id, '')), '');
+  if v_worker_id is null then
+    raise exception 'Worker id required';
+  end if;
+
+  update public.trip_generation_jobs j
+     set state = 'completed',
+         lease_expires_at = null,
+         leased_by = null,
+         finished_at = now(),
+         updated_at = now()
+   where j.id = p_job_id
+     and j.state = 'leased'
+     and j.leased_by = v_worker_id
+     and (j.lease_expires_at is null or j.lease_expires_at > now())
+   returning * into v_row;
+
+  if v_row.id is null then
+    raise exception 'Job not found or not currently leased by worker';
+  end if;
+
+  return query
+  select v_row.id, v_row.state, v_row.updated_at;
+end;
+$$;
+
+create or replace function public.trip_generation_job_fail(
+  p_job_id uuid,
+  p_worker_id text,
+  p_error_code text default null,
+  p_error_message text default null,
+  p_retry_delay_seconds integer default 15,
+  p_terminal boolean default false
+)
+returns table(
+  id uuid,
+  state text,
+  retry_count integer,
+  run_after timestamptz,
+  updated_at timestamptz
+)
+language plpgsql
+security definer
+set search_path = public
+set row_security = off
+as $$
+declare
+  v_uid uuid;
+  v_worker_id text;
+  v_row public.trip_generation_jobs%rowtype;
+  v_next_retry_count integer;
+  v_next_state text;
+  v_next_run_after timestamptz;
+begin
+  v_uid := auth.uid();
+  if coalesce(auth.role(), '') <> 'service_role' and not public.is_admin(v_uid) then
+    raise exception 'Not allowed';
+  end if;
+
+  v_worker_id := nullif(btrim(coalesce(p_worker_id, '')), '');
+  if v_worker_id is null then
+    raise exception 'Worker id required';
+  end if;
+
+  select j.*
+    into v_row
+    from public.trip_generation_jobs j
+   where j.id = p_job_id
+     and j.state = 'leased'
+     and j.leased_by = v_worker_id
+     and (j.lease_expires_at is null or j.lease_expires_at > now())
+   limit 1
+   for update;
+
+  if v_row.id is null then
+    raise exception 'Job not found or not currently leased by worker';
+  end if;
+
+  v_next_retry_count := coalesce(v_row.retry_count, 0) + 1;
+  if p_terminal then
+    v_next_state := 'failed';
+    v_next_run_after := v_row.run_after;
+  elsif v_next_retry_count > coalesce(v_row.max_retries, 0) then
+    v_next_state := 'dead';
+    v_next_run_after := v_row.run_after;
+  else
+    v_next_state := 'queued';
+    v_next_run_after := now() + make_interval(secs => greatest(coalesce(p_retry_delay_seconds, 15), 0));
+  end if;
+
+  update public.trip_generation_jobs j
+     set state = v_next_state,
+         retry_count = v_next_retry_count,
+         run_after = v_next_run_after,
+         lease_expires_at = null,
+         leased_by = null,
+         finished_at = case when v_next_state in ('failed', 'dead') then now() else null end,
+         last_error_code = nullif(btrim(coalesce(p_error_code, '')), ''),
+         last_error_message = nullif(left(coalesce(p_error_message, ''), 1200), ''),
+         updated_at = now()
+   where j.id = p_job_id
+   returning * into v_row;
+
+  return query
+  select
+    v_row.id,
+    v_row.state,
+    v_row.retry_count,
+    v_row.run_after,
+    v_row.updated_at;
+end;
+$$;
+
 create or replace function public.create_anonymous_asset_claim(
   p_expires_minutes integer default 60
 )
@@ -3025,6 +3459,7 @@ $$;
 alter table public.auth_flow_logs enable row level security;
 alter table public.trip_generation_requests enable row level security;
 alter table public.trip_generation_attempts enable row level security;
+alter table public.trip_generation_jobs enable row level security;
 alter table public.anonymous_asset_claims enable row level security;
 alter table public.admin_allowlist enable row level security;
 
@@ -3065,6 +3500,22 @@ on public.trip_generation_attempts for update
 using (owner_id = auth.uid() or public.is_admin(auth.uid()))
 with check (owner_id = auth.uid() or public.is_admin(auth.uid()));
 
+drop policy if exists "Trip generation jobs owner or admin read" on public.trip_generation_jobs;
+create policy "Trip generation jobs owner or admin read"
+on public.trip_generation_jobs for select
+using (owner_id = auth.uid() or public.is_admin(auth.uid()));
+
+drop policy if exists "Trip generation jobs owner or admin insert" on public.trip_generation_jobs;
+create policy "Trip generation jobs owner or admin insert"
+on public.trip_generation_jobs for insert
+with check (owner_id = auth.uid() or public.is_admin(auth.uid()));
+
+drop policy if exists "Trip generation jobs owner or admin update" on public.trip_generation_jobs;
+create policy "Trip generation jobs owner or admin update"
+on public.trip_generation_jobs for update
+using (owner_id = auth.uid() or public.is_admin(auth.uid()))
+with check (owner_id = auth.uid() or public.is_admin(auth.uid()));
+
 drop policy if exists "Anonymous asset claims owner read" on public.anonymous_asset_claims;
 create policy "Anonymous asset claims owner read"
 on public.anonymous_asset_claims for select
@@ -3093,6 +3544,11 @@ grant execute on function public.trip_generation_attempt_start(text, text, text,
 grant execute on function public.trip_generation_attempt_finish(uuid, text, text, text, text, text, timestamptz, integer, integer, text, text, text, jsonb) to authenticated;
 grant execute on function public.trip_generation_attempt_list_owner(text, integer) to authenticated;
 grant execute on function public.trip_generation_attempt_list_admin(text, integer) to authenticated;
+grant execute on function public.trip_generation_job_enqueue(text, uuid, jsonb, integer, timestamptz, integer) to authenticated;
+grant execute on function public.trip_generation_job_claim(text, integer, integer) to authenticated;
+grant execute on function public.trip_generation_job_heartbeat(uuid, text, integer) to authenticated;
+grant execute on function public.trip_generation_job_complete(uuid, text) to authenticated;
+grant execute on function public.trip_generation_job_fail(uuid, text, text, text, integer, boolean) to authenticated;
 grant execute on function public.create_anonymous_asset_claim(integer) to authenticated;
 grant execute on function public.claim_anonymous_assets(uuid) to authenticated;
 grant execute on function public.expire_stale_anonymous_asset_claims() to anon, authenticated;
@@ -5696,6 +6152,11 @@ grant execute on function public.trip_generation_attempt_start(text, text, text,
 grant execute on function public.trip_generation_attempt_finish(uuid, text, text, text, text, text, timestamptz, integer, integer, text, text, text, jsonb) to authenticated;
 grant execute on function public.trip_generation_attempt_list_owner(text, integer) to authenticated;
 grant execute on function public.trip_generation_attempt_list_admin(text, integer) to authenticated;
+grant execute on function public.trip_generation_job_enqueue(text, uuid, jsonb, integer, timestamptz, integer) to authenticated;
+grant execute on function public.trip_generation_job_claim(text, integer, integer) to authenticated;
+grant execute on function public.trip_generation_job_heartbeat(uuid, text, integer) to authenticated;
+grant execute on function public.trip_generation_job_complete(uuid, text) to authenticated;
+grant execute on function public.trip_generation_job_fail(uuid, text, text, text, integer, boolean) to authenticated;
 grant execute on function public.admin_list_trips(integer, integer, text, uuid, text, text) to authenticated;
 grant execute on function public.admin_list_user_trips(uuid, integer, integer, text, text) to authenticated;
 grant execute on function public.admin_get_trip_for_view(text) to authenticated;

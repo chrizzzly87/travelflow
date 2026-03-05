@@ -67,6 +67,7 @@ export interface IAiInsights {
 export type TripGenerationFlow = 'classic' | 'wizard' | 'surprise';
 export type TripGenerationState = 'queued' | 'running' | 'succeeded' | 'failed';
 export type TripGenerationFailureKind = 'timeout' | 'abort' | 'quality' | 'provider' | 'network' | 'unknown';
+export type TripGenerationJobState = 'queued' | 'leased' | 'completed' | 'failed' | 'dead';
 
 export interface TripGenerationInputSnapshot {
     flow: TripGenerationFlow;
@@ -105,6 +106,25 @@ export interface TripGenerationMeta {
     retryRequestedAt?: string | null;
     lastSucceededAt?: string | null;
     lastFailedAt?: string | null;
+}
+
+export interface TripGenerationJobSummary {
+    id: string;
+    tripId: string;
+    ownerId: string;
+    attemptId: string;
+    state: TripGenerationJobState;
+    priority: number;
+    retryCount: number;
+    maxRetries: number;
+    runAfter: string;
+    leaseExpiresAt?: string | null;
+    leasedBy?: string | null;
+    payload?: Record<string, unknown> | null;
+    lastErrorCode?: string | null;
+    lastErrorMessage?: string | null;
+    createdAt: string;
+    updatedAt: string;
 }
 
 export interface ITripAiMeta {
