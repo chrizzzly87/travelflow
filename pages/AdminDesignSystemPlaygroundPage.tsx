@@ -11,6 +11,14 @@ import { AppModal } from '../components/ui/app-modal';
 import { showAppToast } from '../components/ui/appToast';
 import { Checkbox } from '../components/ui/checkbox';
 import {
+    AdminSortHeaderButton,
+    ADMIN_TABLE_ROW_SURFACE_CLASS,
+    ADMIN_TABLE_SORTED_CELL_CLASS,
+    ADMIN_TABLE_SORTED_HEADER_CLASS,
+    getAdminStickyBodyCellClass,
+    getAdminStickyHeaderCellClass,
+} from '../components/admin/AdminDataTable';
+import {
     Dialog,
     DialogContent,
     DialogDescription,
@@ -28,6 +36,14 @@ import {
 } from '../components/ui/drawer';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Switch } from '../components/ui/switch';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '../components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
 import {
@@ -46,6 +62,7 @@ type ComponentGroupId =
     | 'tabs'
     | 'dialogs'
     | 'cards'
+    | 'tables'
     | 'tooltips';
 
 type ToastScenarioId =
@@ -72,6 +89,17 @@ interface ToastScenarioDefinition {
     id: ToastScenarioId;
     label: string;
     helperText: string;
+}
+
+type PlaygroundTableSortKey = 'trip' | 'owner' | 'generation' | 'updated';
+
+interface PlaygroundTableRow {
+    id: string;
+    trip: string;
+    owner: string;
+    generation: 'succeeded' | 'running' | 'failed';
+    updated: string;
+    uuid: string;
 }
 
 const COMPONENT_GROUPS: ComponentGroupDefinition[] = [
@@ -130,6 +158,13 @@ const COMPONENT_GROUPS: ComponentGroupDefinition[] = [
         description: 'Card containers and metadata badges used in admin and profile areas.',
         sourcePath: 'components/admin/AdminSurfaceCard.tsx',
         usagePaths: ['pages/AdminDashboardPage.tsx', 'components/profile/ProfileTripCard.tsx', 'pages/ProfileStampsPage.tsx'],
+    },
+    {
+        id: 'tables',
+        title: 'Data Tables',
+        description: 'Shared admin table patterns for sticky columns, sorted-state highlights, and stable fixed-width layouts.',
+        sourcePath: 'components/admin/AdminDataTable.tsx',
+        usagePaths: ['pages/AdminUsersPage.tsx', 'pages/AdminTripsPage.tsx', 'pages/AdminAuditPage.tsx'],
     },
     {
         id: 'tooltips',
@@ -196,6 +231,38 @@ const TOAST_SCENARIOS: ToastScenarioDefinition[] = [
 const usagePillClassName = 'rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-600';
 const previewPanelClassName = 'rounded-2xl border border-slate-200 bg-slate-50 p-4';
 const subtleHeadingClassName = 'text-xs font-semibold uppercase tracking-[0.12em] text-slate-500';
+const sampleAdminTableRows: PlaygroundTableRow[] = [
+    {
+        id: 'row-1',
+        trip: 'Historic Rhodes & Lindos Island Escape',
+        owner: 'owner@example.com',
+        generation: 'succeeded',
+        updated: '2026-03-03T09:42:00.000Z',
+        uuid: '0bdc8a25-f9a3-4729-92fb-5615d13a79a1',
+    },
+    {
+        id: 'row-2',
+        trip: 'European Camino Pilgrimage Loop',
+        owner: 'traveler@example.com',
+        generation: 'running',
+        updated: '2026-03-02T08:05:00.000Z',
+        uuid: '116e963d-0de9-4636-83fa-6c6ba59cd568',
+    },
+    {
+        id: 'row-3',
+        trip: 'Peruvian Gastronomy & Andean Adventure',
+        owner: 'planner@example.com',
+        generation: 'failed',
+        updated: '2026-03-01T16:18:00.000Z',
+        uuid: '1ebf6254-ef71-4ebb-be78-e6fb23e0a481',
+    },
+];
+
+const getPlaygroundGenerationPillClass = (value: PlaygroundTableRow['generation']): string => {
+    if (value === 'failed') return 'border-rose-300 bg-rose-50 text-rose-700';
+    if (value === 'running') return 'border-amber-300 bg-amber-50 text-amber-800';
+    return 'border-emerald-300 bg-emerald-50 text-emerald-700';
+};
 
 const ComponentUsageReferences: React.FC<{ definition: ComponentGroupDefinition }> = ({ definition }) => (
     <div className="space-y-2 rounded-xl border border-slate-200 bg-white px-3 py-3">
@@ -236,6 +303,10 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
     const [sampleCountryCode, setSampleCountryCode] = useState('DE');
     const [sampleStartDate, setSampleStartDate] = useState('2026-04-07');
     const [sampleEndDate, setSampleEndDate] = useState('2026-04-21');
+    const [sampleTableSortKey, setSampleTableSortKey] = useState<PlaygroundTableSortKey>('updated');
+    const [sampleTableSortDirection, setSampleTableSortDirection] = useState<'asc' | 'desc'>('desc');
+    const [sampleSelectedTableRows, setSampleSelectedTableRows] = useState<Set<string>>(() => new Set(['row-1']));
+    const [isSampleTableScrolledHorizontally, setIsSampleTableScrolledHorizontally] = useState(false);
 
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -245,6 +316,7 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
 
     const trackedGroupRef = useRef<ComponentGroupId | null>(null);
     const loadingToastTimerRef = useRef<number | null>(null);
+    const sampleTableScrollRef = useRef<HTMLDivElement | null>(null);
 
     const activeGroupDefinition = useMemo(
         () => COMPONENT_GROUPS.find((group) => group.id === activeGroup) ?? COMPONENT_GROUPS[0],
@@ -255,6 +327,55 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
         () => TOAST_SCENARIOS.find((scenario) => scenario.id === notificationScenarioId) ?? TOAST_SCENARIOS[0],
         [notificationScenarioId]
     );
+
+    const sortedSampleTableRows = useMemo(() => {
+        const compareText = (left: string, right: string): number => left.localeCompare(right, undefined, { sensitivity: 'base' });
+        const compareDate = (left: string, right: string): number => {
+            const leftMs = Date.parse(left);
+            const rightMs = Date.parse(right);
+            if (!Number.isFinite(leftMs) && !Number.isFinite(rightMs)) return 0;
+            if (!Number.isFinite(leftMs)) return 1;
+            if (!Number.isFinite(rightMs)) return -1;
+            return leftMs - rightMs;
+        };
+        const next = [...sampleAdminTableRows].sort((left, right) => {
+            let result = 0;
+            if (sampleTableSortKey === 'trip') result = compareText(left.trip, right.trip);
+            if (sampleTableSortKey === 'owner') result = compareText(left.owner, right.owner);
+            if (sampleTableSortKey === 'generation') result = compareText(left.generation, right.generation);
+            if (sampleTableSortKey === 'updated') result = compareDate(left.updated, right.updated);
+            if (result === 0) return left.id.localeCompare(right.id);
+            return sampleTableSortDirection === 'asc' ? result : -result;
+        });
+        return next;
+    }, [sampleTableSortDirection, sampleTableSortKey]);
+
+    const isSampleTableSorted = useCallback((key: PlaygroundTableSortKey) => sampleTableSortKey === key, [sampleTableSortKey]);
+
+    const toggleSampleTableSort = useCallback((key: PlaygroundTableSortKey) => {
+        if (sampleTableSortKey !== key) {
+            setSampleTableSortKey(key);
+            setSampleTableSortDirection(key === 'updated' ? 'desc' : 'asc');
+            return;
+        }
+        setSampleTableSortDirection((current) => (current === 'asc' ? 'desc' : 'asc'));
+    }, [sampleTableSortKey]);
+
+    const toggleSampleRowSelection = useCallback((rowId: string, checked: boolean) => {
+        setSampleSelectedTableRows((current) => {
+            const next = new Set(current);
+            if (checked) next.add(rowId);
+            else next.delete(rowId);
+            return next;
+        });
+    }, []);
+
+    const areAllSampleRowsSelected = sampleAdminTableRows.every((row) => sampleSelectedTableRows.has(row.id));
+    const isSampleSelectionPartial = sampleSelectedTableRows.size > 0 && !areAllSampleRowsSelected;
+
+    const toggleAllSampleRows = useCallback((checked: boolean) => {
+        setSampleSelectedTableRows(checked ? new Set(sampleAdminTableRows.map((row) => row.id)) : new Set());
+    }, []);
 
     const handleConfirmDefaultSample = useCallback(async () => {
         const confirmed = await confirmDialog(buildDecisionConfirmDialog({
@@ -343,6 +464,18 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
             loadingToastTimerRef.current = null;
         }
     }, []);
+
+    useEffect(() => {
+        const root = sampleTableScrollRef.current;
+        const node = root?.querySelector<HTMLElement>('[data-slot="table-container"]');
+        if (!node) return undefined;
+        const handleScroll = () => {
+            setIsSampleTableScrolledHorizontally(node.scrollLeft > 4);
+        };
+        handleScroll();
+        node.addEventListener('scroll', handleScroll, { passive: true });
+        return () => node.removeEventListener('scroll', handleScroll);
+    }, [activeGroup]);
 
     const triggerNotificationScenario = useCallback((scenarioId: ToastScenarioId) => {
         trackEvent('admin__design_playground_toast--trigger', { scenario_id: scenarioId });
@@ -850,6 +983,126 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
                             <span className="rounded-full border border-rose-200 bg-rose-50 px-2 py-1 text-[11px] font-semibold text-rose-800">Archived</span>
                             <span className="rounded-full border border-slate-200 bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-700">Private</span>
                         </div>
+                    </div>
+                </div>
+            );
+        }
+
+        if (activeGroup === 'tables') {
+            return (
+                <div className={`${previewPanelClassName} space-y-3`}>
+                    <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600">
+                        Reference wrapper: `Table` provides `overflow-x-auto` + `overscroll-behavior: none`; admin list tables keep explicit sticky key-column widths while non-sticky columns auto-size from content.
+                    </div>
+                    <div ref={sampleTableScrollRef} className="rounded-xl border border-slate-200 bg-white">
+                        <Table className="w-[max(100%,980px)]">
+                            <TableHeader className="bg-slate-50">
+                                <TableRow>
+                                    <TableHead
+                                        className={`sticky left-0 z-40 w-[56px] min-w-[56px] max-w-[56px] px-2 py-3 ${getAdminStickyHeaderCellClass({
+                                            isScrolled: isSampleTableScrolledHorizontally,
+                                            isFirst: true,
+                                        })}`}
+                                        style={{ width: 56, minWidth: 56, maxWidth: 56 }}
+                                    >
+                                        <Checkbox
+                                            checked={areAllSampleRowsSelected ? true : (isSampleSelectionPartial ? 'indeterminate' : false)}
+                                            onCheckedChange={(checked) => toggleAllSampleRows(Boolean(checked))}
+                                            aria-label="Select all sample rows"
+                                        />
+                                    </TableHead>
+                                    <TableHead
+                                        className={`sticky left-[56px] z-30 w-[320px] min-w-[320px] max-w-[320px] px-4 py-3 font-semibold text-slate-700 ${getAdminStickyHeaderCellClass({
+                                            isScrolled: isSampleTableScrolledHorizontally,
+                                            isFirst: false,
+                                            isSorted: isSampleTableSorted('trip'),
+                                        })}`}
+                                        style={{ width: 320, minWidth: 320, maxWidth: 320 }}
+                                    >
+                                        <AdminSortHeaderButton
+                                            label="Trip"
+                                            isActive={isSampleTableSorted('trip')}
+                                            direction={sampleTableSortDirection}
+                                            onClick={() => toggleSampleTableSort('trip')}
+                                        />
+                                    </TableHead>
+                                    <TableHead className={`px-4 py-3 font-semibold text-slate-700 ${isSampleTableSorted('owner') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                        <AdminSortHeaderButton
+                                            label="Owner"
+                                            isActive={isSampleTableSorted('owner')}
+                                            direction={sampleTableSortDirection}
+                                            onClick={() => toggleSampleTableSort('owner')}
+                                        />
+                                    </TableHead>
+                                    <TableHead className={`px-4 py-3 font-semibold text-slate-700 ${isSampleTableSorted('generation') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                        <AdminSortHeaderButton
+                                            label="Generation"
+                                            isActive={isSampleTableSorted('generation')}
+                                            direction={sampleTableSortDirection}
+                                            onClick={() => toggleSampleTableSort('generation')}
+                                        />
+                                    </TableHead>
+                                    <TableHead className={`px-4 py-3 font-semibold text-slate-700 ${isSampleTableSorted('updated') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                        <AdminSortHeaderButton
+                                            label="Last update"
+                                            isActive={isSampleTableSorted('updated')}
+                                            direction={sampleTableSortDirection}
+                                            onClick={() => toggleSampleTableSort('updated')}
+                                        />
+                                    </TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {sortedSampleTableRows.map((row) => {
+                                    const isSelected = sampleSelectedTableRows.has(row.id);
+                                    return (
+                                        <TableRow
+                                            key={row.id}
+                                            className={ADMIN_TABLE_ROW_SURFACE_CLASS}
+                                            data-state={isSelected ? 'selected' : undefined}
+                                        >
+                                            <TableCell
+                                                className={`sticky left-0 z-40 w-[56px] min-w-[56px] max-w-[56px] px-2 py-3 ${getAdminStickyBodyCellClass({
+                                                    isSelected,
+                                                    isScrolled: isSampleTableScrolledHorizontally,
+                                                    isFirst: true,
+                                                })}`}
+                                                style={{ width: 56, minWidth: 56, maxWidth: 56 }}
+                                            >
+                                                <Checkbox
+                                                    checked={isSelected}
+                                                    onCheckedChange={(checked) => toggleSampleRowSelection(row.id, Boolean(checked))}
+                                                    aria-label={`Select sample row ${row.trip}`}
+                                                />
+                                            </TableCell>
+                                            <TableCell
+                                                className={`sticky left-[56px] z-30 w-[320px] min-w-[320px] max-w-[320px] px-4 py-3 ${getAdminStickyBodyCellClass({
+                                                    isSelected,
+                                                    isScrolled: isSampleTableScrolledHorizontally,
+                                                    isFirst: false,
+                                                    isSorted: isSampleTableSorted('trip'),
+                                                })}`}
+                                                style={{ width: 320, minWidth: 320, maxWidth: 320 }}
+                                            >
+                                                <div className="truncate text-sm font-semibold text-slate-800">{row.trip}</div>
+                                                <div className="truncate text-xs text-slate-500">{row.uuid}</div>
+                                            </TableCell>
+                                            <TableCell className={`px-4 py-3 text-sm text-slate-700 ${isSampleTableSorted('owner') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
+                                                {row.owner}
+                                            </TableCell>
+                                            <TableCell className={`px-4 py-3 ${isSampleTableSorted('generation') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
+                                                <span className={`inline-flex rounded-full border px-2 py-0.5 text-xs font-semibold ${getPlaygroundGenerationPillClass(row.generation)}`}>
+                                                    {row.generation}
+                                                </span>
+                                            </TableCell>
+                                            <TableCell className={`px-4 py-3 text-sm text-slate-700 ${isSampleTableSorted('updated') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
+                                                {new Date(row.updated).toLocaleString()}
+                                            </TableCell>
+                                        </TableRow>
+                                    );
+                                })}
+                            </TableBody>
+                        </Table>
                     </div>
                 </div>
             );
