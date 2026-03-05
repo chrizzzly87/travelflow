@@ -1,6 +1,8 @@
 import type { ITrip, TripGenerationFlow, TripGenerationInputSnapshot } from '../types';
 import {
     buildClassicItineraryPrompt,
+    buildSurpriseItineraryPrompt,
+    buildWizardItineraryPrompt,
     generateTripFromInputSnapshot,
     type GenerateOptions,
     type SurpriseGenerateOptions,
@@ -24,8 +26,8 @@ import {
 import { dbCreateTripVersion, dbUpsertTrip, ensureDbSession } from './dbService';
 import { supabase } from './supabaseClient';
 import { generateTripId } from '../utils';
-import { isClassicAsyncGenerationEnabled } from './tripGenerationAsyncConfig';
-import { enqueueClassicAsyncTripGenerationJob } from './tripGenerationAsyncEnqueueService';
+import { isFlowAsyncGenerationEnabled } from './tripGenerationAsyncConfig';
+import { enqueueAsyncTripGenerationJob } from './tripGenerationAsyncEnqueueService';
 
 interface BaseQueuedPayload {
     version: 1;
@@ -240,26 +242,66 @@ const runQueuedGeneration = async (
 
 interface AsyncClaimParams {
     requestId: string;
-    payload: QueuedClassicPayload;
+    payload: QueuedTripGenerationPayload;
     snapshot: TripGenerationInputSnapshot;
 }
 
-const processQueuedTripGenerationClassicAsync = async (
+const resolveAsyncQueuedExecutionParams = (payload: QueuedTripGenerationPayload): {
+    flow: TripGenerationFlow;
+    provider: string;
+    model: string;
+    roundTrip: boolean;
+    prompt: string;
+} => {
+    if (payload.flow === 'classic') {
+        const provider = payload.options.aiTarget?.provider || 'gemini';
+        const model = payload.options.aiTarget?.model || 'gemini-3-pro-preview';
+        return {
+            flow: 'classic',
+            provider,
+            model,
+            roundTrip: Boolean(payload.options.roundTrip),
+            prompt: buildClassicItineraryPrompt(payload.destinationPrompt, payload.options),
+        };
+    }
+    if (payload.flow === 'wizard') {
+        const provider = payload.options.aiTarget?.provider || 'gemini';
+        const model = payload.options.aiTarget?.model || 'gemini-3-pro-preview';
+        return {
+            flow: 'wizard',
+            provider,
+            model,
+            roundTrip: Boolean(payload.options.roundTrip),
+            prompt: buildWizardItineraryPrompt(payload.options),
+        };
+    }
+
+    const provider = payload.options.aiTarget?.provider || 'gemini';
+    const model = payload.options.aiTarget?.model || 'gemini-3-pro-preview';
+    return {
+        flow: 'surprise',
+        provider,
+        model,
+        roundTrip: true,
+        prompt: buildSurpriseItineraryPrompt(payload.options),
+    };
+};
+
+const processQueuedTripGenerationAsync = async (
     params: AsyncClaimParams,
 ): Promise<{ tripId: string; trip: ITrip }> => {
     const requestTraceId = createTripGenerationRequestId();
     const tripId = generateTripId();
     const source = 'queue_claim_async';
-    const provider = params.payload.options.aiTarget?.provider || 'gemini';
-    const model = params.payload.options.aiTarget?.model || 'gemini-3-pro-preview';
+    const execution = resolveAsyncQueuedExecutionParams(params.payload);
 
     const placeholderTrip = buildPlaceholderTrip(params.payload, tripId);
     let queuedTrip = markTripGenerationRunning(placeholderTrip, {
-        flow: 'classic',
+        flow: execution.flow,
         source,
         inputSnapshot: params.snapshot,
-        provider,
-        model,
+        provider: execution.provider,
+        model: execution.model,
         requestId: requestTraceId,
         state: 'queued',
     });
@@ -272,11 +314,11 @@ const processQueuedTripGenerationClassicAsync = async (
 
     const loggedAttempt = await startTripGenerationAttemptLog({
         tripId,
-        flow: 'classic',
+        flow: execution.flow,
         source,
         state: 'queued',
-        provider,
-        model,
+        provider: execution.provider,
+        model: execution.model,
         requestId: requestTraceId,
         startedAt: queuedTrip.aiMeta?.generation?.latestAttempt?.startedAt,
         metadata: {
@@ -298,18 +340,18 @@ const processQueuedTripGenerationClassicAsync = async (
             throw new Error('Queued generation attempt id is missing.');
         }
 
-        const prompt = buildClassicItineraryPrompt(params.payload.destinationPrompt, params.payload.options);
-        const enqueueSucceeded = await enqueueClassicAsyncTripGenerationJob({
+        const enqueueSucceeded = await enqueueAsyncTripGenerationJob({
+            flow: execution.flow,
             tripId,
             attemptId,
             requestId: requestTraceId,
             source,
             queueRequestId: params.requestId,
             startDate: params.payload.startDate,
-            roundTrip: Boolean(params.payload.options.roundTrip),
-            prompt,
-            provider,
-            model,
+            roundTrip: execution.roundTrip,
+            prompt: execution.prompt,
+            provider: execution.provider,
+            model: execution.model,
             inputSnapshot: params.snapshot,
             maxRetries: 0,
         });
@@ -331,11 +373,11 @@ const processQueuedTripGenerationClassicAsync = async (
         };
     } catch (error) {
         const failedTrip = markTripGenerationFailed(queuedTrip, {
-            flow: 'classic',
+            flow: execution.flow,
             source,
             error,
-            provider,
-            model,
+            provider: execution.provider,
+            model: execution.model,
             requestId: requestTraceId,
             attemptId,
             metadata: {
@@ -444,10 +486,10 @@ export const processQueuedTripGenerationAfterAuth = async (
     const parsedPayload = parseQueuedPayload(flow, row.payload);
     const generationSnapshot = buildInputSnapshotFromQueuedPayload(parsedPayload);
 
-    if (flow === 'classic' && isClassicAsyncGenerationEnabled()) {
-        return processQueuedTripGenerationClassicAsync({
+    if (isFlowAsyncGenerationEnabled(flow)) {
+        return processQueuedTripGenerationAsync({
             requestId,
-            payload: parsedPayload as QueuedClassicPayload,
+            payload: parsedPayload,
             snapshot: generationSnapshot,
         });
     }

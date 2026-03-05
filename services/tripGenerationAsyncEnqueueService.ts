@@ -1,7 +1,8 @@
-import type { TripGenerationInputSnapshot } from '../types';
+import type { TripGenerationFlow, TripGenerationInputSnapshot } from '../types';
 import { enqueueTripGenerationJob } from './tripGenerationJobService';
 
-interface EnqueueClassicAsyncTripGenerationInput {
+interface EnqueueAsyncTripGenerationInput {
+    flow: TripGenerationFlow;
     tripId: string;
     attemptId: string;
     requestId: string;
@@ -16,8 +17,8 @@ interface EnqueueClassicAsyncTripGenerationInput {
     maxRetries?: number;
 }
 
-export const enqueueClassicAsyncTripGenerationJob = async (
-    input: EnqueueClassicAsyncTripGenerationInput,
+export const enqueueAsyncTripGenerationJob = async (
+    input: EnqueueAsyncTripGenerationInput,
 ): Promise<boolean> => {
     const enqueueResult = await enqueueTripGenerationJob({
         tripId: input.tripId,
@@ -25,7 +26,7 @@ export const enqueueClassicAsyncTripGenerationJob = async (
         maxRetries: input.maxRetries ?? 0,
         payload: {
             version: 1,
-            flow: 'classic',
+            flow: input.flow,
             source: input.source,
             requestId: input.requestId,
             queueRequestId: input.queueRequestId || null,
@@ -45,3 +46,13 @@ export const enqueueClassicAsyncTripGenerationJob = async (
     return Boolean(enqueueResult?.id);
 };
 
+type EnqueueClassicAsyncTripGenerationInput = Omit<EnqueueAsyncTripGenerationInput, 'flow'>;
+
+export const enqueueClassicAsyncTripGenerationJob = async (
+    input: EnqueueClassicAsyncTripGenerationInput,
+): Promise<boolean> => {
+    return enqueueAsyncTripGenerationJob({
+        ...input,
+        flow: 'classic',
+    });
+};

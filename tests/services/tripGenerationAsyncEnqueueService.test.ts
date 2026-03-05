@@ -6,7 +6,10 @@ vi.mock('../../services/tripGenerationJobService', () => ({
     enqueueTripGenerationJob: (...args: unknown[]) => enqueueTripGenerationJobMock(...args),
 }));
 
-import { enqueueClassicAsyncTripGenerationJob } from '../../services/tripGenerationAsyncEnqueueService';
+import {
+    enqueueAsyncTripGenerationJob,
+    enqueueClassicAsyncTripGenerationJob,
+} from '../../services/tripGenerationAsyncEnqueueService';
 
 describe('tripGenerationAsyncEnqueueService.enqueueClassicAsyncTripGenerationJob', () => {
     beforeEach(() => {
@@ -90,3 +93,50 @@ describe('tripGenerationAsyncEnqueueService.enqueueClassicAsyncTripGenerationJob
     });
 });
 
+describe('tripGenerationAsyncEnqueueService.enqueueAsyncTripGenerationJob', () => {
+    beforeEach(() => {
+        enqueueTripGenerationJobMock.mockReset();
+    });
+
+    it('forwards non-classic flow payloads', async () => {
+        enqueueTripGenerationJobMock.mockResolvedValue({ id: 'job-2' });
+
+        const success = await enqueueAsyncTripGenerationJob({
+            flow: 'wizard',
+            tripId: 'trip-2',
+            attemptId: 'attempt-2',
+            requestId: 'request-2',
+            source: 'queue_claim_async',
+            queueRequestId: 'queue-2',
+            startDate: '2026-05-01',
+            roundTrip: false,
+            prompt: 'Wizard prompt body',
+            provider: 'gemini',
+            model: 'gemini-3-pro-preview',
+            inputSnapshot: {
+                flow: 'wizard',
+                destinationLabel: 'Portugal',
+                startDate: '2026-05-01',
+                endDate: '2026-05-10',
+                payload: {
+                    options: {
+                        countries: ['Portugal'],
+                    },
+                },
+                createdAt: '2026-03-05T00:00:00.000Z',
+            },
+            maxRetries: 0,
+        });
+
+        expect(success).toBe(true);
+        expect(enqueueTripGenerationJobMock).toHaveBeenCalledWith(expect.objectContaining({
+            tripId: 'trip-2',
+            attemptId: 'attempt-2',
+            payload: expect.objectContaining({
+                flow: 'wizard',
+                requestId: 'request-2',
+                prompt: 'Wizard prompt body',
+            }),
+        }));
+    });
+});

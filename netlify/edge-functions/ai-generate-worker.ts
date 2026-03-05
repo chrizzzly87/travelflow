@@ -33,7 +33,7 @@ interface WorkerTripRow {
 
 interface WorkerJobPayload {
   version: number;
-  flow: "classic";
+  flow: "classic" | "wizard" | "surprise";
   source: string;
   requestId: string;
   queueRequestId: string | null;
@@ -405,6 +405,7 @@ const mergeAttempts = (
 const applyFailedGenerationState = (
   trip: Record<string, unknown>,
   params: {
+    flow: "classic" | "wizard" | "surprise";
     attemptId: string;
     requestId: string;
     provider: string;
@@ -426,7 +427,7 @@ const applyFailedGenerationState = (
   const attempt: Record<string, unknown> = {
     ...latestBefore,
     id: params.attemptId,
-    flow: asString(latestBefore.flow) || "classic",
+    flow: asString(latestBefore.flow) || params.flow,
     source: asString(latestBefore.source) || WORKER_SOURCE,
     state: "failed",
     startedAt: asString(latestBefore.startedAt) || new Date(Date.now() - Math.max(params.durationMs || 0, 0)).toISOString(),
@@ -483,6 +484,7 @@ const applySucceededGenerationState = (
   previousTrip: Record<string, unknown>,
   generatedTrip: Record<string, unknown>,
   params: {
+    flow: "classic" | "wizard" | "surprise";
     attemptId: string;
     requestId: string;
     provider: string;
@@ -501,7 +503,7 @@ const applySucceededGenerationState = (
   const attempt: Record<string, unknown> = {
     ...latestBefore,
     id: params.attemptId,
-    flow: asString(latestBefore.flow) || "classic",
+    flow: asString(latestBefore.flow) || params.flow,
     source: asString(latestBefore.source) || WORKER_SOURCE,
     state: "succeeded",
     startedAt: asString(latestBefore.startedAt) || new Date(Date.now() - Math.max(params.durationMs, 0)).toISOString(),
@@ -569,10 +571,13 @@ const parseWorkerPayload = (payload: unknown): WorkerJobPayload | null => {
   const model = asString(target?.model) || DEFAULT_MODEL;
   const queueRequestIdRaw = asString(record.queueRequestId);
   const queueRequestId = queueRequestIdRaw && UUID_REGEX.test(queueRequestIdRaw) ? queueRequestIdRaw : null;
-  if (version < 1 || flow !== "classic" || !requestId || !tripId || !attemptId || !startDate || !prompt) return null;
+  const normalizedFlow = flow === "classic" || flow === "wizard" || flow === "surprise"
+    ? flow
+    : null;
+  if (version < 1 || !normalizedFlow || !requestId || !tripId || !attemptId || !startDate || !prompt) return null;
   return {
     version,
-    flow: "classic",
+    flow: normalizedFlow,
     source,
     requestId,
     queueRequestId,
@@ -857,6 +862,7 @@ const processJob = async (
         message,
       });
       const failedTrip = applyFailedGenerationState(tripData, {
+        flow: payload.flow,
         attemptId: payload.attemptId,
         requestId: payload.requestId,
         provider,
@@ -949,6 +955,7 @@ const processJob = async (
       tripData,
       builtTrip,
       {
+        flow: payload.flow,
         attemptId: payload.attemptId,
         requestId: payload.requestId,
         provider: generation.value.meta.provider || provider,
@@ -1026,6 +1033,7 @@ const processJob = async (
       message,
     });
     const failedTrip = applyFailedGenerationState(tripData, {
+      flow: payload.flow,
       attemptId: payload.attemptId,
       requestId: payload.requestId,
       provider,

@@ -13,8 +13,10 @@ const dbCreateTripVersionMock = vi.fn().mockResolvedValue('version-1');
 
 const generateTripFromInputSnapshotMock = vi.fn();
 const buildClassicItineraryPromptMock = vi.fn().mockReturnValue('classic prompt');
-const enqueueTripGenerationJobMock = vi.fn().mockResolvedValue({ id: 'job-1' });
-const isClassicAsyncGenerationEnabledMock = vi.fn().mockReturnValue(false);
+const buildWizardItineraryPromptMock = vi.fn().mockReturnValue('wizard prompt');
+const buildSurpriseItineraryPromptMock = vi.fn().mockReturnValue('surprise prompt');
+const enqueueAsyncTripGenerationJobMock = vi.fn().mockResolvedValue(true);
+const isFlowAsyncGenerationEnabledMock = vi.fn().mockReturnValue(false);
 const startAttemptLogMock = vi.fn().mockResolvedValue({ id: 'attempt-log-1' });
 const finishAttemptLogMock = vi.fn().mockResolvedValue(undefined);
 const beginAbortTelemetryMock = vi.fn(() => ({ cancel: vi.fn() }));
@@ -35,6 +37,8 @@ vi.mock('../../services/dbService', () => ({
 vi.mock('../../services/aiService', () => ({
   generateTripFromInputSnapshot: (...args: unknown[]) => generateTripFromInputSnapshotMock(...args),
   buildClassicItineraryPrompt: (...args: unknown[]) => buildClassicItineraryPromptMock(...args),
+  buildWizardItineraryPrompt: (...args: unknown[]) => buildWizardItineraryPromptMock(...args),
+  buildSurpriseItineraryPrompt: (...args: unknown[]) => buildSurpriseItineraryPromptMock(...args),
 }));
 
 vi.mock('../../services/tripGenerationAttemptLogService', () => ({
@@ -42,12 +46,12 @@ vi.mock('../../services/tripGenerationAttemptLogService', () => ({
   finishTripGenerationAttemptLog: (...args: unknown[]) => finishAttemptLogMock(...args),
 }));
 
-vi.mock('../../services/tripGenerationJobService', () => ({
-  enqueueTripGenerationJob: (...args: unknown[]) => enqueueTripGenerationJobMock(...args),
+vi.mock('../../services/tripGenerationAsyncEnqueueService', () => ({
+  enqueueAsyncTripGenerationJob: (...args: unknown[]) => enqueueAsyncTripGenerationJobMock(...args),
 }));
 
 vi.mock('../../services/tripGenerationAsyncConfig', () => ({
-  isClassicAsyncGenerationEnabled: () => isClassicAsyncGenerationEnabledMock(),
+  isFlowAsyncGenerationEnabled: (...args: unknown[]) => isFlowAsyncGenerationEnabledMock(...args),
 }));
 
 vi.mock('../../services/tripGenerationAbortTelemetryService', () => ({
@@ -78,9 +82,11 @@ describe('processQueuedTripGenerationAfterAuth', () => {
     dbCreateTripVersionMock.mockClear();
     generateTripFromInputSnapshotMock.mockReset();
     buildClassicItineraryPromptMock.mockClear();
-    enqueueTripGenerationJobMock.mockReset();
-    isClassicAsyncGenerationEnabledMock.mockReset();
-    isClassicAsyncGenerationEnabledMock.mockReturnValue(false);
+    buildWizardItineraryPromptMock.mockClear();
+    buildSurpriseItineraryPromptMock.mockClear();
+    enqueueAsyncTripGenerationJobMock.mockReset();
+    isFlowAsyncGenerationEnabledMock.mockReset();
+    isFlowAsyncGenerationEnabledMock.mockReturnValue(false);
     startAttemptLogMock.mockClear();
     finishAttemptLogMock.mockClear();
     beginAbortTelemetryMock.mockClear();
@@ -132,35 +138,63 @@ describe('processQueuedTripGenerationAfterAuth', () => {
   });
 
   it('enqueues classic queue-claim work into async worker when async flag is enabled', async () => {
-    isClassicAsyncGenerationEnabledMock.mockReturnValue(true);
-    enqueueTripGenerationJobMock.mockResolvedValue({
-      id: 'job-1',
-      tripId: 'trip-queued-1',
-      ownerId: 'owner-1',
-      attemptId: 'attempt-log-1',
-      state: 'queued',
-      priority: 100,
-      retryCount: 0,
-      maxRetries: 0,
-      runAfter: new Date().toISOString(),
-      leaseExpiresAt: null,
-      leasedBy: null,
-      payload: {},
-      lastErrorCode: null,
-      lastErrorMessage: null,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    });
+    isFlowAsyncGenerationEnabledMock.mockReturnValue(true);
+    enqueueAsyncTripGenerationJobMock.mockResolvedValue(true);
 
     const result = await processQueuedTripGenerationAfterAuth('request-1');
 
     expect(result.tripId).toBe('trip-queued-1');
     expect(result.trip.aiMeta?.generation?.state).toBe('queued');
     expect(generateTripFromInputSnapshotMock).not.toHaveBeenCalled();
-    expect(enqueueTripGenerationJobMock).toHaveBeenCalledTimes(1);
+    expect(enqueueAsyncTripGenerationJobMock).toHaveBeenCalledTimes(1);
+    expect(enqueueAsyncTripGenerationJobMock).toHaveBeenCalledWith(expect.objectContaining({
+      flow: 'classic',
+      prompt: 'classic prompt',
+    }));
     expect(startAttemptLogMock).toHaveBeenCalledWith(expect.objectContaining({
       state: 'queued',
       source: 'queue_claim_async',
+    }));
+  });
+
+  it('enqueues wizard queue-claim work into async worker when wizard async is enabled', async () => {
+    claimRpcMock.mockImplementation((fn: string) => {
+      if (fn === 'claim_trip_generation_request') {
+        return Promise.resolve({
+          data: {
+            request_id: 'request-1',
+            flow: 'wizard',
+            payload: {
+              version: 1,
+              flow: 'wizard',
+              destinationLabel: 'Portugal',
+              startDate: '2026-04-10',
+              endDate: '2026-04-14',
+              options: {
+                countries: ['Portugal'],
+              },
+            },
+            status: 'queued',
+            owner_user_id: 'owner-1',
+            expires_at: new Date(Date.now() + 60_000).toISOString(),
+          },
+          error: null,
+        });
+      }
+      return Promise.resolve({ data: null, error: null });
+    });
+    isFlowAsyncGenerationEnabledMock.mockReturnValue(true);
+    enqueueAsyncTripGenerationJobMock.mockResolvedValue(true);
+
+    const result = await processQueuedTripGenerationAfterAuth('request-1');
+
+    expect(result.tripId).toBe('trip-queued-1');
+    expect(result.trip.aiMeta?.generation?.state).toBe('queued');
+    expect(generateTripFromInputSnapshotMock).not.toHaveBeenCalled();
+    expect(buildWizardItineraryPromptMock).toHaveBeenCalledTimes(1);
+    expect(enqueueAsyncTripGenerationJobMock).toHaveBeenCalledWith(expect.objectContaining({
+      flow: 'wizard',
+      prompt: 'wizard prompt',
     }));
   });
 });
