@@ -1,4 +1,4 @@
-import type { TripGenerationJobSummary } from '../types';
+import type { TripGenerationJobState, TripGenerationJobSummary } from '../types';
 import { ensureExistingDbSession } from './dbService';
 import { supabase } from './supabaseClient';
 
@@ -118,6 +118,50 @@ export const claimTripGenerationJobs = async (
             p_limit: options?.limit ?? 1,
             p_lease_seconds: options?.leaseSeconds ?? 120,
         });
+        if (error) return [];
+        const rows = Array.isArray(data) ? data : [];
+        return rows
+            .map((row) => parseJobSummary(row))
+            .filter((row): row is TripGenerationJobSummary => Boolean(row));
+    } catch {
+        return [];
+    }
+};
+
+export const listTripGenerationJobsByTrip = async (
+    tripId: string,
+    options?: { limit?: number; states?: TripGenerationJobState[] },
+): Promise<TripGenerationJobSummary[]> => {
+    if (!supabase) return [];
+    const normalizedTripId = tripId.trim();
+    if (!normalizedTripId) return [];
+
+    try {
+        await ensureExistingDbSession();
+        const requestedStates = Array.isArray(options?.states)
+            ? options.states.filter((state) => (
+                state === 'queued'
+                || state === 'leased'
+                || state === 'completed'
+                || state === 'failed'
+                || state === 'dead'
+            ))
+            : [];
+        const limit = Math.max(1, Math.min(options?.limit ?? 20, 100));
+
+        let query = supabase
+            .from('trip_generation_jobs')
+            .select('id,trip_id,owner_id,attempt_id,state,priority,retry_count,max_retries,run_after,lease_expires_at,leased_by,payload,last_error_code,last_error_message,created_at,updated_at')
+            .eq('trip_id', normalizedTripId);
+
+        if (requestedStates.length > 0) {
+            query = query.in('state', requestedStates);
+        }
+
+        const { data, error } = await query
+            .order('created_at', { ascending: false })
+            .limit(limit);
+
         if (error) return [];
         const rows = Array.isArray(data) ? data : [];
         return rows

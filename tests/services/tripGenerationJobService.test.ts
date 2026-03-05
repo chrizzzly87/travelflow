@@ -1,11 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const rpcMock = vi.fn();
+const fromMock = vi.fn();
+const selectMock = vi.fn();
+const eqMock = vi.fn();
+const inMock = vi.fn();
+const orderMock = vi.fn();
+const limitMock = vi.fn();
 const ensureExistingDbSessionMock = vi.fn().mockResolvedValue(undefined);
 
 vi.mock('../../services/supabaseClient', () => ({
   supabase: {
     rpc: (...args: unknown[]) => rpcMock(...args),
+    from: (...args: unknown[]) => fromMock(...args),
   },
 }));
 
@@ -13,12 +20,39 @@ vi.mock('../../services/dbService', () => ({
   ensureExistingDbSession: (...args: unknown[]) => ensureExistingDbSessionMock(...args),
 }));
 
-import { claimTripGenerationJobs, enqueueTripGenerationJob } from '../../services/tripGenerationJobService';
+import {
+  claimTripGenerationJobs,
+  enqueueTripGenerationJob,
+  listTripGenerationJobsByTrip,
+} from '../../services/tripGenerationJobService';
 
 describe('tripGenerationJobService', () => {
   beforeEach(() => {
     rpcMock.mockReset();
+    fromMock.mockReset();
+    selectMock.mockReset();
+    eqMock.mockReset();
+    inMock.mockReset();
+    orderMock.mockReset();
+    limitMock.mockReset();
     ensureExistingDbSessionMock.mockClear();
+
+    fromMock.mockReturnValue({
+      select: (...args: unknown[]) => selectMock(...args),
+    });
+    selectMock.mockReturnValue({
+      eq: (...args: unknown[]) => eqMock(...args),
+    });
+    eqMock.mockImplementation(() => ({
+      in: (...args: unknown[]) => inMock(...args),
+      order: (...args: unknown[]) => orderMock(...args),
+    }));
+    inMock.mockImplementation(() => ({
+      order: (...args: unknown[]) => orderMock(...args),
+    }));
+    orderMock.mockImplementation(() => ({
+      limit: (...args: unknown[]) => limitMock(...args),
+    }));
   });
 
   it('enqueues a generation job and returns normalized shape', async () => {
@@ -116,5 +150,50 @@ describe('tripGenerationJobService', () => {
       p_limit: 2,
       p_lease_seconds: 120,
     });
+  });
+
+  it('lists trip generation jobs for a trip and supports state filtering', async () => {
+    limitMock.mockResolvedValueOnce({
+      data: [
+        {
+          id: 'job-3',
+          trip_id: 'trip-3',
+          owner_id: 'owner-3',
+          attempt_id: 'attempt-3',
+          state: 'dead',
+          priority: 100,
+          retry_count: 3,
+          max_retries: 3,
+          run_after: '2026-03-05T10:00:00.000Z',
+          lease_expires_at: null,
+          leased_by: null,
+          payload: { flow: 'classic' },
+          last_error_code: 'ASYNC_WORKER_PROVIDER_FAILED',
+          last_error_message: 'Provider failed',
+          created_at: '2026-03-05T09:59:59.000Z',
+          updated_at: '2026-03-05T10:00:00.000Z',
+        },
+      ],
+      error: null,
+    });
+
+    const rows = await listTripGenerationJobsByTrip('trip-3', {
+      limit: 10,
+      states: ['dead', 'failed'],
+    });
+
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      id: 'job-3',
+      tripId: 'trip-3',
+      state: 'dead',
+      retryCount: 3,
+      lastErrorCode: 'ASYNC_WORKER_PROVIDER_FAILED',
+    });
+    expect(fromMock).toHaveBeenCalledWith('trip_generation_jobs');
+    expect(eqMock).toHaveBeenCalledWith('trip_id', 'trip-3');
+    expect(inMock).toHaveBeenCalledWith('state', ['dead', 'failed']);
+    expect(orderMock).toHaveBeenCalledWith('created_at', { ascending: false });
+    expect(limitMock).toHaveBeenCalledWith(10);
   });
 });
