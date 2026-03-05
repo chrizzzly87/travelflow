@@ -1,5 +1,5 @@
 import type { TripGenerationAttemptSummary, TripGenerationFlow } from '../types';
-import { ensureExistingDbSession } from './dbService';
+import { ensureDbSession } from './dbService';
 import { supabase } from './supabaseClient';
 
 interface TripGenerationAttemptStartInput {
@@ -67,7 +67,7 @@ export const startTripGenerationAttemptLog = async (
     if (!supabase) return null;
 
     try {
-        await ensureExistingDbSession();
+        await ensureDbSession();
         const { data, error } = await supabase.rpc('trip_generation_attempt_start', {
             p_trip_id: input.tripId,
             p_flow: input.flow,
@@ -92,7 +92,7 @@ export const finishTripGenerationAttemptLog = async (input: TripGenerationAttemp
     if (!supabase) return;
 
     try {
-        await ensureExistingDbSession();
+        await ensureDbSession();
         await supabase.rpc('trip_generation_attempt_finish', {
             p_attempt_id: input.attemptId,
             p_state: input.state,
@@ -120,7 +120,7 @@ export const listOwnerTripGenerationAttempts = async (
     if (!supabase) return [];
 
     try {
-        await ensureExistingDbSession();
+        await ensureDbSession();
         const { data, error } = await supabase.rpc('trip_generation_attempt_list_owner', {
             p_trip_id: tripId,
             p_limit: Math.max(1, Math.min(limit, 100)),
@@ -142,7 +142,7 @@ export const listAdminTripGenerationAttempts = async (
     if (!supabase) return [];
 
     try {
-        await ensureExistingDbSession();
+        await ensureDbSession();
         const { data, error } = await supabase.rpc('trip_generation_attempt_list_admin', {
             p_trip_id: tripId,
             p_limit: Math.max(1, Math.min(limit, 200)),

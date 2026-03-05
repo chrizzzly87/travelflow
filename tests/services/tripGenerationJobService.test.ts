@@ -7,7 +7,7 @@ const eqMock = vi.fn();
 const inMock = vi.fn();
 const orderMock = vi.fn();
 const limitMock = vi.fn();
-const ensureExistingDbSessionMock = vi.fn().mockResolvedValue(undefined);
+const ensureDbSessionMock = vi.fn().mockResolvedValue(undefined);
 
 vi.mock('../../services/supabaseClient', () => ({
   supabase: {
@@ -17,7 +17,7 @@ vi.mock('../../services/supabaseClient', () => ({
 }));
 
 vi.mock('../../services/dbService', () => ({
-  ensureExistingDbSession: (...args: unknown[]) => ensureExistingDbSessionMock(...args),
+  ensureDbSession: (...args: unknown[]) => ensureDbSessionMock(...args),
 }));
 
 import {
@@ -36,7 +36,7 @@ describe('tripGenerationJobService', () => {
     inMock.mockReset();
     orderMock.mockReset();
     limitMock.mockReset();
-    ensureExistingDbSessionMock.mockClear();
+    ensureDbSessionMock.mockClear();
 
     fromMock.mockReturnValue({
       select: (...args: unknown[]) => selectMock(...args),
@@ -102,6 +102,7 @@ describe('tripGenerationJobService', () => {
       p_priority: 80,
       p_max_retries: 3,
     }));
+    expect(ensureDbSessionMock).toHaveBeenCalled();
   });
 
   it('claims leased jobs and filters invalid rows', async () => {

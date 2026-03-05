@@ -1,5 +1,5 @@
 import type { TripGenerationJobState, TripGenerationJobSummary } from '../types';
-import { ensureExistingDbSession } from './dbService';
+import { ensureDbSession } from './dbService';
 import { supabase } from './supabaseClient';
 
 interface TripGenerationJobRow {
@@ -88,7 +88,7 @@ export const enqueueTripGenerationJob = async (
     if (!supabase) return null;
 
     try {
-        await ensureExistingDbSession();
+        await ensureDbSession();
         const { data, error } = await supabase.rpc('trip_generation_job_enqueue', {
             p_trip_id: input.tripId,
             p_attempt_id: input.attemptId,
@@ -112,7 +112,7 @@ export const claimTripGenerationJobs = async (
     if (!supabase) return [];
 
     try {
-        await ensureExistingDbSession();
+        await ensureDbSession();
         const { data, error } = await supabase.rpc('trip_generation_job_claim', {
             p_worker_id: workerId,
             p_limit: options?.limit ?? 1,
@@ -137,7 +137,7 @@ export const listTripGenerationJobsByTrip = async (
     if (!normalizedTripId) return [];
 
     try {
-        await ensureExistingDbSession();
+        await ensureDbSession();
         const requestedStates = Array.isArray(options?.states)
             ? options.states.filter((state) => (
                 state === 'queued'
@@ -185,7 +185,7 @@ export const requeueTripGenerationJob = async (
     if (!normalizedJobId) return false;
 
     try {
-        await ensureExistingDbSession();
+        await ensureDbSession();
         const { error } = await supabase.rpc('trip_generation_job_requeue', {
             p_job_id: normalizedJobId,
             p_reason: options?.reason || null,
