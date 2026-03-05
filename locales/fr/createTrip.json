@@ -179,8 +179,9 @@
   },
   "prefillBadge": "Prérempli depuis : {label}",
   "labsBanner": {
-    "title": "Besoin de tester d'autres concepts create-trip ?",
-    "description": "Routes labo directes pour les vérifications de régression et les comparaisons.",
+    "title": "Besoin d'aide pour votre prochain voyage ?",
+    "description": "Utilisez notre assistant guidé pour planifier étape par étape.",
+    "cta": "Essayer l'assistant",
     "links": {
       "legacy": "Formulaire Classic Legacy",
       "classicCard": "Route Classic Card",

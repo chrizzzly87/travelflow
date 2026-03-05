@@ -25,12 +25,7 @@ export type RouteKey =
     | 'cookies'
     | 'createTrip'
     | 'createTripClassicLab'
-    | 'createTripClassicLegacyLab'
-    | 'createTripSplitWorkspaceLab'
-    | 'createTripJourneyArchitectLab'
-    | 'createTripDesignV1Lab'
-    | 'createTripDesignV2Lab'
-    | 'createTripDesignV3Lab'
+    | 'createTripWizard'
     | 'tripDetail'
     | 'tripLegacy'
     | 'exampleTrip'
@@ -170,18 +165,8 @@ export const buildPath = <K extends RouteKey>(
             return '/create-trip';
         case 'createTripClassicLab':
             return '/create-trip/labs/classic-card';
-        case 'createTripClassicLegacyLab':
-            return '/create-trip/labs/classic-legacy';
-        case 'createTripSplitWorkspaceLab':
-            return '/create-trip/labs/split-workspace';
-        case 'createTripJourneyArchitectLab':
-            return '/create-trip/labs/journey-architect';
-        case 'createTripDesignV1Lab':
-            return '/create-trip/labs/design-v1';
-        case 'createTripDesignV2Lab':
-            return '/create-trip/labs/design-v2';
-        case 'createTripDesignV3Lab':
-            return '/create-trip/labs/design-v3';
+        case 'createTripWizard':
+            return '/create-trip/wizard';
         case 'tripDetail':
             return `/trip/${encodeSegment((params as RouteParamsByKey['tripDetail']).tripId)}`;
         case 'tripLegacy':

@@ -995,12 +995,10 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
 
             <div className="relative z-10 flex-1 flex flex-col items-center p-4 pt-6 sm:pt-8 md:pt-10 overflow-y-auto w-full">
                 <div className="mb-3 flex flex-wrap items-center justify-center gap-2 text-xs text-gray-400">
-                    <span>Variants:</span>
-                    <Link to={buildVariantUrl('/create-trip/v1')} className="underline hover:text-accent-600 transition-colors">V1 Polished Card</Link>
-                    <Link to={buildVariantUrl('/create-trip/v2')} className="underline hover:text-accent-600 transition-colors">V2 Split-Screen</Link>
-                    <span className="font-medium text-accent-600">V3</span>
+                    <span>Flow:</span>
+                    <span className="font-medium text-accent-600">Wizard</span>
                     <span className="text-gray-300">|</span>
-                    <Link to={buildVariantUrl('/create-trip')} className="underline hover:text-accent-600 transition-colors">Main</Link>
+                    <Link to={buildVariantUrl('/create-trip')} className="underline hover:text-accent-600 transition-colors">Classic</Link>
                 </div>
 
                 {/* Step dots */}

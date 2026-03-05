@@ -100,8 +100,8 @@ export const resolvePageTitle = ({
     if (normalizedPath === '/auth/reset-password') return titleWithAppName(labels.resetPassword, appName);
 
     if (normalizedPath === '/create-trip') return titleWithAppName(labels.createTrip, appName);
+    if (normalizedPath === '/create-trip/wizard') return titleWithAppName(labels.createTrip, appName);
     if (normalizedPath.startsWith('/create-trip/labs/')) return titleWithAppName(labels.createTripLab, appName);
-    if (normalizedPath.startsWith('/create-trip/v')) return titleWithAppName(labels.createTrip, appName);
 
     if (normalizedPath.startsWith('/trip/')) {
         const routeTripTitle = (tripTitle || '').trim();

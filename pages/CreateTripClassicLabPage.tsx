@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import {
     AirplaneTilt,
     Bicycle,
@@ -45,6 +45,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { SiteHeader } from '../components/navigation/SiteHeader';
 import { SiteFooter } from '../components/marketing/SiteFooter';
+import { CreateTripWizardCtaBanner } from '../components/create-trip/CreateTripWizardCtaBanner';
 import { useAppDialog } from '../components/AppDialogProvider';
 import { DateRangePicker } from '../components/DateRangePicker';
 import { IdealTravelTimeline } from '../components/IdealTravelTimeline';
@@ -84,7 +85,6 @@ import {
 import { isClassicAsyncGenerationEnabled } from '../services/tripGenerationAsyncConfig';
 import { enqueueClassicAsyncTripGenerationJob } from '../services/tripGenerationAsyncEnqueueService';
 import { getCountrySeasonByName } from '../data/countryTravelData';
-import { buildPath } from '../config/routes';
 import { AppLanguage, ITrip, TripPrefillData } from '../types';
 import {
     addDays,
@@ -1196,18 +1196,6 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
     const getFlexWindowOption = useCallback((value: FlexWindow) => (
         FLEX_WINDOW_OPTIONS.find((entry) => entry.id === value) ?? FLEX_WINDOW_OPTIONS[0]
     ), []);
-    const labRouteLinks = useMemo(
-        () => [
-            { key: 'legacy', path: buildPath('createTripClassicLegacyLab') },
-            { key: 'classicCard', path: buildPath('createTripClassicLab') },
-            { key: 'splitWorkspace', path: buildPath('createTripSplitWorkspaceLab') },
-            { key: 'journeyArchitect', path: buildPath('createTripJourneyArchitectLab') },
-            { key: 'designV1', path: buildPath('createTripDesignV1Lab') },
-            { key: 'designV2', path: buildPath('createTripDesignV2Lab') },
-            { key: 'designV3', path: buildPath('createTripDesignV3Lab') },
-        ] as const,
-        []
-    );
     const isLgbtqCoupleMode = settingsTraveler === 'couple' && coupleTravelerA !== '' && coupleTravelerB !== '' && (
         coupleTravelerA === 'non-binary'
         || coupleTravelerB === 'non-binary'
@@ -2602,26 +2590,12 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                         </aside>
                     </section>
 
-                    <section className="mt-6 rounded-2xl border border-sky-200 bg-sky-50/80 px-4 py-4 text-slate-700 shadow-sm sm:px-5">
-                        <div className="flex items-start gap-2">
-                            <Info size={16} weight="duotone" className="mt-0.5 shrink-0 text-sky-700" />
-                            <div className="min-w-0">
-                                <p className="text-sm font-semibold text-slate-900">{t('labsBanner.title')}</p>
-                                <p className="mt-1 text-xs text-slate-600">{t('labsBanner.description')}</p>
-                                <div className="mt-3 flex flex-wrap gap-2">
-                                    {labRouteLinks.map((entry) => (
-                                        <Link
-                                            key={entry.key}
-                                            to={entry.path}
-                                            className="inline-flex items-center rounded-lg border border-sky-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-sky-800 transition-colors hover:border-sky-300 hover:bg-sky-100"
-                                        >
-                                            {t(`labsBanner.links.${entry.key}`)}
-                                        </Link>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    </section>
+                    <CreateTripWizardCtaBanner
+                        className="mt-6"
+                        title={t('labsBanner.title')}
+                        description={t('labsBanner.description')}
+                        ctaLabel={t('labsBanner.cta')}
+                    />
                 </main>
 
                 <div

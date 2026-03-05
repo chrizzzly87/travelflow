@@ -1252,41 +1252,27 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                     <div className="rounded-2xl border border-accent-200 bg-white/80 px-4 py-3 shadow-sm">
                         <div className="flex flex-wrap items-center justify-between gap-2">
                             <div>
-                                <div className="text-xs font-bold uppercase tracking-[0.14em] text-accent-700">Design Labs</div>
-                                <p className="text-sm text-gray-600">Compare the default create-trip flow with all lab concepts and this legacy form.</p>
+                                <div className="text-xs font-bold uppercase tracking-[0.14em] text-accent-700">Guided planning</div>
+                                <p className="text-sm text-gray-600">Use the classic flow or switch to the guided wizard for step-by-step planning help.</p>
                             </div>
                             <span className="rounded-full border border-accent-200 bg-accent-50 px-2.5 py-1 text-[11px] font-semibold text-accent-700">
-                                Experimental
+                                Available
                             </span>
                         </div>
-                        <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                        <div className="mt-3 grid gap-2 sm:grid-cols-2">
                             <Link
                                 to="/create-trip"
                                 className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-left transition-colors hover:border-accent-300 hover:bg-accent-50/70"
                             >
-                                <div className="text-xs font-semibold uppercase tracking-[0.12em] text-gray-500">Default / Lab 1</div>
-                                <div className="text-sm font-semibold text-gray-800">Classic Card Overhaul</div>
+                                <div className="text-xs font-semibold uppercase tracking-[0.12em] text-gray-500">Default</div>
+                                <div className="text-sm font-semibold text-gray-800">Classic planner</div>
                             </Link>
                             <Link
-                                to="/create-trip/labs/split-workspace"
+                                to="/create-trip/wizard"
                                 className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-left transition-colors hover:border-accent-300 hover:bg-accent-50/70"
                             >
-                                <div className="text-xs font-semibold uppercase tracking-[0.12em] text-gray-500">Lab 2</div>
-                                <div className="text-sm font-semibold text-gray-800">Split Workspace 50/50</div>
-                            </Link>
-                            <Link
-                                to="/create-trip/labs/journey-architect"
-                                className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-left transition-colors hover:border-accent-300 hover:bg-accent-50/70"
-                            >
-                                <div className="text-xs font-semibold uppercase tracking-[0.12em] text-gray-500">Lab 3</div>
-                                <div className="text-sm font-semibold text-gray-800">Journey Architect</div>
-                            </Link>
-                            <Link
-                                to="/create-trip/labs/classic-legacy"
-                                className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-left transition-colors hover:border-accent-300 hover:bg-accent-50/70"
-                            >
-                                <div className="text-xs font-semibold uppercase tracking-[0.12em] text-gray-500">Legacy</div>
-                                <div className="text-sm font-semibold text-gray-800">Classic Form (current)</div>
+                                <div className="text-xs font-semibold uppercase tracking-[0.12em] text-gray-500">Wizard</div>
+                                <div className="text-sm font-semibold text-gray-800">Guided trip wizard</div>
                             </Link>
                         </div>
                     </div>

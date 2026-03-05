@@ -14,6 +14,7 @@ const TripLoaderRoute = lazyWithRecovery('TripLoaderRoute', () => import('../../
 const SharedTripLoaderRoute = lazyWithRecovery('SharedTripLoaderRoute', () => import('../../routes/SharedTripLoaderRoute').then((module) => ({ default: module.SharedTripLoaderRoute })));
 const ExampleTripLoaderRoute = lazyWithRecovery('ExampleTripLoaderRoute', () => import('../../routes/ExampleTripLoaderRoute').then((module) => ({ default: module.ExampleTripLoaderRoute })));
 const CreateTripClassicLabPage = lazyWithRecovery('CreateTripClassicLabPage', () => import('../../pages/CreateTripClassicLabPage').then((module) => ({ default: module.CreateTripClassicLabPage })));
+const CreateTripV3Page = lazyWithRecovery('CreateTripV3Page', () => import('../../pages/CreateTripV3Page').then((module) => ({ default: module.CreateTripV3Page })));
 const DeferredAppRoutes = lazyWithRecovery('DeferredAppRoutes', () => import('./DeferredAppRoutes').then((module) => ({ default: module.DeferredAppRoutes })));
 
 export const RouteLoadingFallback: React.FC = () => (
@@ -54,6 +55,19 @@ const CreateTripClassicRoute: React.FC<{
                 onOpenManager={onOpenManager}
                 onLanguageLoaded={onLanguageLoaded}
             />
+        </Suspense>
+    );
+};
+
+const CreateTripWizardRoute: React.FC<{
+    onTripGenerated: (t: ITrip) => void;
+    onOpenManager: () => void;
+    onLanguageLoaded?: (lang: AppLanguage) => void;
+}> = ({ onTripGenerated, onOpenManager, onLanguageLoaded }) => {
+    useDbSync(onLanguageLoaded);
+    return (
+        <Suspense fallback={<RouteLoadingFallback />}>
+            <CreateTripV3Page onTripGenerated={onTripGenerated} onOpenManager={onOpenManager} />
         </Suspense>
     );
 };
@@ -107,6 +121,29 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
                         path={`/${locale}/create-trip`}
                         element={
                             renderWithSuspense(<CreateTripClassicRoute
+                                onTripGenerated={onTripGenerated}
+                                onOpenManager={onOpenManager}
+                                onLanguageLoaded={onAppLanguageLoaded}
+                            />)
+                        }
+                    />
+                ))}
+                <Route
+                    path="/create-trip/wizard"
+                    element={
+                        renderWithSuspense(<CreateTripWizardRoute
+                            onTripGenerated={onTripGenerated}
+                            onOpenManager={onOpenManager}
+                            onLanguageLoaded={onAppLanguageLoaded}
+                        />)
+                    }
+                />
+                {LOCALIZED_TOOL_LOCALES.map((locale) => (
+                    <Route
+                        key={`tool:${locale}:create-trip-wizard`}
+                        path={`/${locale}/create-trip/wizard`}
+                        element={
+                            renderWithSuspense(<CreateTripWizardRoute
                                 onTripGenerated={onTripGenerated}
                                 onOpenManager={onOpenManager}
                                 onLanguageLoaded={onAppLanguageLoaded}

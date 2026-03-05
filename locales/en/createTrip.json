@@ -179,8 +179,9 @@
   },
   "prefillBadge": "Pre-filled from: {label}",
   "labsBanner": {
-    "title": "Need to test other create-trip concepts?",
-    "description": "Direct lab routes for regression checks and side-by-side experiments.",
+    "title": "Need some guidance on your next trip?",
+    "description": "Use our wizard for step-by-step planning support.",
+    "cta": "Try our wizard",
     "links": {
       "legacy": "Classic Legacy form",
       "classicCard": "Classic Card route",

@@ -179,8 +179,9 @@
   },
   "prefillBadge": "Wstępnie wypełniono z: {label}",
   "labsBanner": {
-    "title": "Chcesz przetestować inne koncepcje create-trip?",
-    "description": "Bezpośrednie trasy laboratoryjne do testów regresji i porównań eksperymentów.",
+    "title": "Potrzebujesz wsparcia przy następnej podróży?",
+    "description": "Skorzystaj z naszego kreatora krok po kroku.",
+    "cta": "Wypróbuj kreator",
     "links": {
       "legacy": "Formularz Classic Legacy",
       "classicCard": "Trasa Classic Card",
