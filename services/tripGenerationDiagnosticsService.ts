@@ -276,6 +276,18 @@ const mergeAttemptMetadata = (
     return Object.keys(merged).length > 0 ? merged : null;
 };
 
+const LEGACY_FAILED_PLACEHOLDER_PREFIX = 'loading-error-';
+
+const isLegacyFailedGenerationPlaceholderTrip = (trip: ITrip): boolean => {
+    if (trip.aiMeta?.generation?.state) return false;
+    return trip.items.some((item) => (
+        item.type === 'city'
+        && item.loading !== true
+        && typeof item.id === 'string'
+        && item.id.startsWith(LEGACY_FAILED_PLACEHOLDER_PREFIX)
+    ));
+};
+
 export const createTripGenerationAttemptId = (): string => randomUuid();
 export const createTripGenerationRequestId = (): string => randomUuid();
 
@@ -305,6 +317,7 @@ export const getTripGenerationState = (trip: ITrip, nowMs = Date.now()): TripGen
         return explicit;
     }
     if (trip.items.some((item) => item.loading)) return 'running';
+    if (isLegacyFailedGenerationPlaceholderTrip(trip)) return 'failed';
     return 'succeeded';
 };
 

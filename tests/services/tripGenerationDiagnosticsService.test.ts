@@ -146,6 +146,25 @@ describe('tripGenerationDiagnosticsService', () => {
     expect(getTripGenerationState(runningTrip, nowMs)).toBe('failed');
   });
 
+  it('treats legacy loading-error placeholders as failed without aiMeta state', () => {
+    const legacyFailedTrip = buildTrip();
+    legacyFailedTrip.title = 'Trip generation failed. Please try again.';
+    legacyFailedTrip.items = [
+      {
+        id: 'loading-error-trip-1',
+        type: 'city',
+        title: 'Trip generation failed. Please try again.',
+        startDateOffset: 0,
+        duration: 3,
+        color: 'bg-rose-100 border-rose-300 text-rose-700',
+        description: 'Provider error',
+        location: 'Albania',
+      },
+    ];
+
+    expect(getTripGenerationState(legacyFailedTrip)).toBe('failed');
+  });
+
   it('rewrites latest attempt id to canonical db id and keeps attempt history deduped', () => {
     const runningTrip = markTripGenerationRunning(buildTrip(), {
       flow: 'classic',
