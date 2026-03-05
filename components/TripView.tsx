@@ -984,6 +984,19 @@ const useTripViewRender = ({
         () => getTripGenerationElapsedMs(trip, generationNowMs),
         [generationNowMs, trip]
     );
+    useEffect(() => {
+        const session = retryGenerationTabFeedbackSessionRef.current;
+        if (!session) return;
+        if (generationState === 'succeeded') {
+            session.complete('success', { title: trip.title });
+            retryGenerationTabFeedbackSessionRef.current = null;
+            return;
+        }
+        if (generationState === 'failed') {
+            session.complete('error');
+            retryGenerationTabFeedbackSessionRef.current = null;
+        }
+    }, [generationState, trip.title]);
     const isGenerationSlow = (
         (generationState === 'running' || generationState === 'queued')
         && typeof generationElapsedMs === 'number'
@@ -1397,6 +1410,7 @@ const useTripViewRender = ({
         setIsRetryingGeneration(true);
         retryGenerationTabFeedbackSessionRef.current?.cancel();
         retryGenerationTabFeedbackSessionRef.current = beginTripGenerationTabFeedback();
+        let keepRetryFeedbackActive = false;
         try {
             const result = await retryTripGenerationWithDefaultModel(baseTrip, {
                 source: source === 'trip_info' ? 'trip_info_modal' : 'trip_status_strip',
@@ -1420,7 +1434,13 @@ const useTripViewRender = ({
                 );
             }
 
-            if (result.state === 'succeeded') {
+            if (result.state === 'queued') {
+                keepRetryFeedbackActive = true;
+                showToast(t('tripView.generation.retry.queued'), {
+                    tone: 'neutral',
+                    title: t('tripView.generation.retry.queuedTitle'),
+                });
+            } else if (result.state === 'succeeded') {
                 retryGenerationTabFeedbackSessionRef.current?.complete('success', {
                     title: result.trip.title,
                 });
@@ -1443,7 +1463,9 @@ const useTripViewRender = ({
             });
         } finally {
             setIsRetryingGeneration(false);
-            retryGenerationTabFeedbackSessionRef.current = null;
+            if (!keepRetryFeedbackActive) {
+                retryGenerationTabFeedbackSessionRef.current = null;
+            }
         }
     }, [
         adminOverrideEnabled,

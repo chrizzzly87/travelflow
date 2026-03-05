@@ -1168,7 +1168,9 @@ export const AdminTripsPage: React.FC = () => {
                 },
             });
 
-            if (result.state === 'succeeded') {
+            if (result.state === 'queued') {
+                setMessage('Trip generation retry queued. Processing in background.');
+            } else if (result.state === 'succeeded') {
                 setMessage('Trip generation retry completed.');
             } else {
                 setMessage('Trip generation retry failed. Diagnostics have been updated.');

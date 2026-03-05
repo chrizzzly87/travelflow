@@ -42,6 +42,7 @@ summary: "Failed trip generations are now easier to spot, inspect, and retry on 
 - [ ] [Internal] ⚙️ Added a flag-gated async generation worker path (edge worker endpoint + scheduled trigger) and queue-claim classic enqueue wiring for server-owned execution rollout.
 - [ ] [Internal] ⚙️ Classic create-trip now supports flag-gated async enqueue to the same worker pipeline instead of blocking on client-owned generation completion.
 - [ ] [Internal] ⚙️ Queue-claim wizard/surprise flows now support flag-gated async enqueue through the same worker path, with flow-aware prompt building and diagnostics metadata.
+- [ ] [Internal] ⚙️ Retry now supports flag-gated async server-owned enqueue, so the same trip can keep running after the browser request returns.
 - [ ] [Internal] 🔄 Trip view now polls owner-access DB snapshots while generation is queued/running so server-side async completions appear without manual refresh.
 - [ ] [Internal] 🛠️ Removed legacy admin trip-list RPC overloads and hardened generation-state RPC arguments to prevent PostgREST function ambiguity.
 - [ ] [Internal] 📡 Added best-effort tab-close abort beacons to improve abort classification during in-flight generation.

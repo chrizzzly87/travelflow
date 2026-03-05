@@ -1,8 +1,14 @@
 import { getAiModelById, getDefaultCreateTripModel } from '../config/aiModelCatalog';
 import type {
     TripGenerationRequestContext,
+    GenerateOptions,
+    SurpriseGenerateOptions,
+    WizardGenerateOptions,
 } from './aiService';
 import {
+    buildClassicItineraryPrompt,
+    buildSurpriseItineraryPrompt,
+    buildWizardItineraryPrompt,
     generateTripFromInputSnapshot,
 } from './aiService';
 import {
@@ -21,6 +27,8 @@ import {
     withLatestTripGenerationAttemptId,
 } from './tripGenerationDiagnosticsService';
 import type { ITrip, TripGenerationFlow, TripGenerationInputSnapshot } from '../types';
+import { isFlowAsyncGenerationEnabled } from './tripGenerationAsyncConfig';
+import { enqueueAsyncTripGenerationJob } from './tripGenerationAsyncEnqueueService';
 
 export interface RetryTripGenerationOptions {
     source: string;
@@ -31,7 +39,7 @@ export interface RetryTripGenerationOptions {
 
 export interface RetryTripGenerationResult {
     trip: ITrip;
-    state: 'succeeded' | 'failed';
+    state: 'queued' | 'succeeded' | 'failed';
     error?: unknown;
 }
 
@@ -59,6 +67,54 @@ const resolveRetryModelTarget = (modelId?: string | null) => {
     return getDefaultCreateTripModel();
 };
 
+const buildRetryPromptFromSnapshot = (
+    snapshot: TripGenerationInputSnapshot,
+): string => {
+    if (snapshot.flow === 'classic') {
+        const destinationPrompt = typeof snapshot.payload.destinationPrompt === 'string'
+            ? snapshot.payload.destinationPrompt.trim()
+            : '';
+        if (!destinationPrompt) {
+            throw new Error('Retry snapshot is missing destination prompt.');
+        }
+        const classicOptions = (snapshot.payload.options && typeof snapshot.payload.options === 'object')
+            ? snapshot.payload.options as GenerateOptions
+            : {} as GenerateOptions;
+        return buildClassicItineraryPrompt(destinationPrompt, classicOptions);
+    }
+
+    if (snapshot.flow === 'wizard') {
+        const wizardOptions = (snapshot.payload.options && typeof snapshot.payload.options === 'object')
+            ? snapshot.payload.options as WizardGenerateOptions
+            : { countries: [] } as WizardGenerateOptions;
+        return buildWizardItineraryPrompt(wizardOptions);
+    }
+
+    const surpriseOptions = (snapshot.payload.options && typeof snapshot.payload.options === 'object')
+        ? snapshot.payload.options as SurpriseGenerateOptions
+        : { country: '' } as SurpriseGenerateOptions;
+    return buildSurpriseItineraryPrompt(surpriseOptions);
+};
+
+const resolveRetryRoundTrip = (
+    snapshot: TripGenerationInputSnapshot,
+    trip: ITrip,
+): boolean => {
+    if (snapshot.flow === 'classic') {
+        const options = (snapshot.payload.options && typeof snapshot.payload.options === 'object')
+            ? snapshot.payload.options as GenerateOptions
+            : {} as GenerateOptions;
+        return Boolean(options.roundTrip || trip.roundTrip);
+    }
+    if (snapshot.flow === 'wizard') {
+        const options = (snapshot.payload.options && typeof snapshot.payload.options === 'object')
+            ? snapshot.payload.options as WizardGenerateOptions
+            : { countries: [] } as WizardGenerateOptions;
+        return Boolean(options.roundTrip || trip.roundTrip);
+    }
+    return true;
+};
+
 export const retryTripGenerationWithDefaultModel = async (
     trip: ITrip,
     options: RetryTripGenerationOptions,
@@ -70,6 +126,7 @@ export const retryTripGenerationWithDefaultModel = async (
 
     const requestId = createTripGenerationRequestId();
     const retryModel = resolveRetryModelTarget(options.modelId);
+    const useAsyncRetry = isFlowAsyncGenerationEnabled(snapshot.flow);
 
     const runningTrip = markTripGenerationRunning(trip, {
         flow: snapshot.flow,
@@ -78,11 +135,12 @@ export const retryTripGenerationWithDefaultModel = async (
         provider: retryModel.provider,
         model: retryModel.model,
         requestId,
-        state: 'running',
+        state: useAsyncRetry ? 'queued' : 'running',
         isRetry: true,
         metadata: {
             requestedModelId: options.modelId || null,
             resolvedModelId: retryModel.id,
+            orchestration: useAsyncRetry ? 'async_worker' : 'client_sync',
         },
     });
 
@@ -98,7 +156,7 @@ export const retryTripGenerationWithDefaultModel = async (
         tripId: trip.id,
         flow: snapshot.flow,
         source: options.source,
-        state: 'running',
+        state: useAsyncRetry ? 'queued' : 'running',
         provider: retryModel.provider,
         model: retryModel.model,
         requestId,
@@ -117,17 +175,48 @@ export const retryTripGenerationWithDefaultModel = async (
         }
     }
 
-    const telemetrySession = beginTripGenerationAbortTelemetry({
-        tripId: trip.id,
-        attemptId: attemptId || 'unknown-attempt',
-        requestId,
-        flow: snapshot.flow,
-        source: options.source,
-        provider: retryModel.provider,
-        model: retryModel.model,
-    });
+    let telemetrySession: ReturnType<typeof beginTripGenerationAbortTelemetry> | null = null;
 
     try {
+        if (useAsyncRetry) {
+            if (!attemptId) {
+                throw new Error('Retry attempt could not be initialized.');
+            }
+            const prompt = buildRetryPromptFromSnapshot(snapshot);
+            const enqueueSucceeded = await enqueueAsyncTripGenerationJob({
+                flow: snapshot.flow,
+                tripId: trip.id,
+                attemptId,
+                requestId,
+                source: options.source,
+                queueRequestId: null,
+                startDate: snapshot.startDate || trip.startDate,
+                roundTrip: resolveRetryRoundTrip(snapshot, trip),
+                prompt,
+                provider: retryModel.provider,
+                model: retryModel.model,
+                inputSnapshot: snapshot,
+                maxRetries: 0,
+            });
+            if (!enqueueSucceeded) {
+                throw new Error('Could not enqueue async generation retry.');
+            }
+            return {
+                state: 'queued',
+                trip: runningTripWithCanonicalAttempt,
+            };
+        }
+
+        telemetrySession = beginTripGenerationAbortTelemetry({
+            tripId: trip.id,
+            attemptId: attemptId || 'unknown-attempt',
+            requestId,
+            flow: snapshot.flow,
+            source: options.source,
+            provider: retryModel.provider,
+            model: retryModel.model,
+        });
+
         const generatedTrip = await generateFromSnapshot(snapshot, {
             requestId,
             tripId: trip.id,
@@ -213,7 +302,7 @@ export const retryTripGenerationWithDefaultModel = async (
             error,
         };
     } finally {
-        telemetrySession.cancel();
+        telemetrySession?.cancel();
     }
 };
 
