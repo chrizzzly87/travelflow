@@ -3,6 +3,7 @@ import { SpinnerGap } from '@phosphor-icons/react';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-json';
 import { AppModal } from '../ui/app-modal';
+import { Checkbox } from '../ui/checkbox';
 import {
     buildSideBySideJsonDiff,
     type JsonDiffLineType,
@@ -84,9 +85,14 @@ const highlightJsonLine = (value: string | null): string => {
     return Prism.highlight(value || ' ', Prism.languages.json, 'json');
 };
 
-const highlightJsonPayload = (value: string): string => (
-    Prism.highlight(value || '{}', Prism.languages.json, 'json')
-);
+const JSON_TOKEN_CLASSNAMES = [
+    '[&_.token.property]:!text-sky-700',
+    '[&_.token.string]:!text-emerald-700',
+    '[&_.token.number]:!text-fuchsia-700',
+    '[&_.token.boolean]:!text-amber-700',
+    '[&_.token.null]:!text-slate-500',
+    '[&_.token.punctuation]:!text-slate-500',
+].join(' ');
 
 export const AdminJsonDiffModal: React.FC<AdminJsonDiffModalProps> = ({
     isOpen,
@@ -101,22 +107,13 @@ export const AdminJsonDiffModal: React.FC<AdminJsonDiffModalProps> = ({
     errorMessage = null,
 }) => {
     const [focusedOnly, setFocusedOnly] = useState(true);
-    const [showFullSnapshots, setShowFullSnapshots] = useState(false);
-    const beforePaneRef = useRef<HTMLDivElement | null>(null);
-    const afterPaneRef = useRef<HTMLDivElement | null>(null);
-    const isSyncingRef = useRef(false);
+    const diffBeforePaneRef = useRef<HTMLDivElement | null>(null);
+    const diffAfterPaneRef = useRef<HTMLDivElement | null>(null);
+    const isDiffSyncingRef = useRef(false);
 
     const diff = useMemo(
         () => buildSideBySideJsonDiff(beforeValue, afterValue),
         [beforeValue, afterValue]
-    );
-    const highlightedBeforePayload = useMemo(
-        () => highlightJsonPayload(diff.beforeText),
-        [diff.beforeText]
-    );
-    const highlightedAfterPayload = useMemo(
-        () => highlightJsonPayload(diff.afterText),
-        [diff.afterText]
     );
     const focusedRenderEntries = useMemo(
         () => buildFocusedRenderEntries(diff.rows, 2),
@@ -126,24 +123,22 @@ export const AdminJsonDiffModal: React.FC<AdminJsonDiffModalProps> = ({
         ? focusedRenderEntries
         : diff.rows.map((row, index): FocusedRenderEntry => ({ kind: 'row', index, row }));
 
-    const syncScroll = (source: 'before' | 'after') => {
-        if (isSyncingRef.current) return;
-        const sourceEl = source === 'before' ? beforePaneRef.current : afterPaneRef.current;
-        const targetEl = source === 'before' ? afterPaneRef.current : beforePaneRef.current;
+    const syncDiffVerticalScroll = (source: 'before' | 'after') => {
+        if (isDiffSyncingRef.current) return;
+        const sourceEl = source === 'before' ? diffBeforePaneRef.current : diffAfterPaneRef.current;
+        const targetEl = source === 'before' ? diffAfterPaneRef.current : diffBeforePaneRef.current;
         if (!sourceEl || !targetEl) return;
 
-        isSyncingRef.current = true;
+        isDiffSyncingRef.current = true;
         targetEl.scrollTop = sourceEl.scrollTop;
-        targetEl.scrollLeft = sourceEl.scrollLeft;
         requestAnimationFrame(() => {
-            isSyncingRef.current = false;
+            isDiffSyncingRef.current = false;
         });
     };
 
     useEffect(() => {
         if (isOpen) return;
         setFocusedOnly(true);
-        setShowFullSnapshots(false);
     }, [isOpen]);
 
     return (
@@ -154,8 +149,8 @@ export const AdminJsonDiffModal: React.FC<AdminJsonDiffModalProps> = ({
             description={description}
             size="xl"
             mobileSheet={false}
-            contentClassName="sm:w-[min(96vw,1180px)]"
-            bodyClassName="space-y-3 overflow-hidden p-4"
+            contentClassName="sm:w-[min(98vw,1320px)]"
+            bodyClassName="space-y-3 overflow-y-auto p-4"
             closeLabel="Close diff modal"
         >
             {errorMessage && (
@@ -180,28 +175,14 @@ export const AdminJsonDiffModal: React.FC<AdminJsonDiffModalProps> = ({
                             </span>
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
-                            <button
-                                type="button"
-                                onClick={() => setFocusedOnly((current) => !current)}
-                                className={`inline-flex h-8 items-center rounded-md border px-3 text-xs font-semibold transition-colors ${
-                                    focusedOnly
-                                        ? 'border-accent-300 bg-accent-50 text-accent-900'
-                                        : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
-                                }`}
-                            >
-                                {focusedOnly ? 'Focused changes' : 'All lines'}
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setShowFullSnapshots((current) => !current)}
-                                className={`inline-flex h-8 items-center rounded-md border px-3 text-xs font-semibold transition-colors ${
-                                    showFullSnapshots
-                                        ? 'border-accent-300 bg-accent-50 text-accent-900'
-                                        : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
-                                }`}
-                            >
-                                {showFullSnapshots ? 'Hide full JSON' : 'Show full previous/current JSON'}
-                            </button>
+                            <div className="inline-flex h-8 items-center gap-2 rounded-md border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700">
+                                <Checkbox
+                                    checked={!focusedOnly}
+                                    onCheckedChange={(checked) => setFocusedOnly(!Boolean(checked))}
+                                    aria-label="Show full diff"
+                                />
+                                Show full diff
+                            </div>
                         </div>
                     </div>
 
@@ -211,92 +192,99 @@ export const AdminJsonDiffModal: React.FC<AdminJsonDiffModalProps> = ({
                         </span>
                     )}
 
-                    <div className="grid gap-3 lg:grid-cols-2">
-                        <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700">
-                            {beforeLabel}
-                        </div>
-                        <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700">
-                            {afterLabel}
-                        </div>
-                    </div>
+                    <div className="grid grid-cols-1 gap-1 lg:grid-cols-2">
+                        <section className="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white">
+                            <header className="border-b border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700">
+                                {beforeLabel}
+                            </header>
+                            <div
+                                ref={diffBeforePaneRef}
+                                onScroll={() => syncDiffVerticalScroll('before')}
+                                className="max-h-[62vh] overflow-auto"
+                            >
+                                <table className="w-max min-w-full border-collapse text-left text-xs">
+                                    <tbody>
+                                        {renderEntries.map((entry) => {
+                                            if (entry.kind === 'collapsed') {
+                                                return (
+                                                    <tr key={`before-${entry.key}`}>
+                                                        <td
+                                                            colSpan={2}
+                                                            className="border-y border-slate-200 bg-slate-100 px-3 py-1 text-center text-[11px] font-semibold text-slate-500"
+                                                        >
+                                                            {entry.hiddenCount} unchanged line{entry.hiddenCount === 1 ? '' : 's'} collapsed
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            }
 
-                    <div className="max-h-[62vh] overflow-auto rounded-xl border border-slate-200">
-                        <table className="min-w-full border-collapse text-left text-xs">
-                            <tbody>
-                                {renderEntries.map((entry) => {
-                                    if (entry.kind === 'collapsed') {
-                                        return (
-                                            <tr key={entry.key}>
-                                                <td
-                                                    colSpan={4}
-                                                    className="border-y border-slate-200 bg-slate-100 px-3 py-1 text-center text-[11px] font-semibold text-slate-500"
-                                                >
-                                                    {entry.hiddenCount} unchanged line{entry.hiddenCount === 1 ? '' : 's'} collapsed
-                                                </td>
-                                            </tr>
-                                        );
-                                    }
-
-                                    const row = entry.row;
-                                    const rowIndex = entry.index;
-                                    return (
-                                        <tr key={`json-diff-row-${rowIndex}`} className="align-top">
-                                            <td className={`w-12 border-r border-slate-100 px-2 py-0.5 text-right font-mono text-[10px] ${lineCellClassName(row.leftType)}`}>
-                                                {row.leftLineNumber ?? ''}
-                                            </td>
-                                            <td className={`w-1/2 border-r border-slate-100 px-2 py-0.5 font-mono ${lineCellClassName(row.leftType)} [&_.token.property]:text-sky-700 [&_.token.string]:text-emerald-700 [&_.token.number]:text-fuchsia-700 [&_.token.boolean]:text-amber-700 [&_.token.null]:text-slate-500 [&_.token.punctuation]:text-slate-500`}>
-                                                <code
-                                                    className="whitespace-pre"
-                                                    dangerouslySetInnerHTML={{ __html: highlightJsonLine(row.leftValue) }}
-                                                />
-                                            </td>
-                                            <td className={`w-12 border-r border-slate-100 px-2 py-0.5 text-right font-mono text-[10px] ${lineCellClassName(row.rightType)}`}>
-                                                {row.rightLineNumber ?? ''}
-                                            </td>
-                                            <td className={`w-1/2 px-2 py-0.5 font-mono ${lineCellClassName(row.rightType)} [&_.token.property]:text-sky-700 [&_.token.string]:text-emerald-700 [&_.token.number]:text-fuchsia-700 [&_.token.boolean]:text-amber-700 [&_.token.null]:text-slate-500 [&_.token.punctuation]:text-slate-500`}>
-                                                <code
-                                                    className="whitespace-pre"
-                                                    dangerouslySetInnerHTML={{ __html: highlightJsonLine(row.rightValue) }}
-                                                />
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    {showFullSnapshots && (
-                        <section className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
-                            <h4 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-600">Complete snapshots</h4>
-                            <div className="grid gap-3 lg:grid-cols-2">
-                                <article className="space-y-1">
-                                    <p className="text-xs font-semibold text-slate-700">{beforeLabel}</p>
-                                    <div
-                                        ref={beforePaneRef}
-                                        onScroll={() => syncScroll('before')}
-                                        className="max-h-[38vh] overflow-auto rounded-lg border border-slate-200 bg-white p-3 text-[11px] leading-5 [&_.token.property]:text-sky-700 [&_.token.string]:text-emerald-700 [&_.token.number]:text-fuchsia-700 [&_.token.boolean]:text-amber-700 [&_.token.null]:text-slate-500 [&_.token.punctuation]:text-slate-500"
-                                    >
-                                        <pre className="font-mono whitespace-pre-wrap break-all">
-                                            <code dangerouslySetInnerHTML={{ __html: highlightedBeforePayload }} />
-                                        </pre>
-                                    </div>
-                                </article>
-                                <article className="space-y-1">
-                                    <p className="text-xs font-semibold text-slate-700">{afterLabel}</p>
-                                    <div
-                                        ref={afterPaneRef}
-                                        onScroll={() => syncScroll('after')}
-                                        className="max-h-[38vh] overflow-auto rounded-lg border border-slate-200 bg-white p-3 text-[11px] leading-5 [&_.token.property]:text-sky-700 [&_.token.string]:text-emerald-700 [&_.token.number]:text-fuchsia-700 [&_.token.boolean]:text-amber-700 [&_.token.null]:text-slate-500 [&_.token.punctuation]:text-slate-500"
-                                    >
-                                        <pre className="font-mono whitespace-pre-wrap break-all">
-                                            <code dangerouslySetInnerHTML={{ __html: highlightedAfterPayload }} />
-                                        </pre>
-                                    </div>
-                                </article>
+                                            const row = entry.row;
+                                            const rowIndex = entry.index;
+                                            return (
+                                                <tr key={`json-diff-before-row-${rowIndex}`} className="align-top">
+                                                    <td className={`w-12 border-r border-slate-100 px-2 py-0.5 text-right font-mono text-[10px] ${lineCellClassName(row.leftType)}`}>
+                                                        {row.leftLineNumber ?? ''}
+                                                    </td>
+                                                    <td className={`min-w-[420px] px-2 py-0.5 font-mono ${lineCellClassName(row.leftType)} ${JSON_TOKEN_CLASSNAMES}`}>
+                                                        <code
+                                                            className="whitespace-pre"
+                                                            dangerouslySetInnerHTML={{ __html: highlightJsonLine(row.leftValue) }}
+                                                        />
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
                             </div>
                         </section>
-                    )}
+
+                        <section className="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white">
+                            <header className="border-b border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700">
+                                {afterLabel}
+                            </header>
+                            <div
+                                ref={diffAfterPaneRef}
+                                onScroll={() => syncDiffVerticalScroll('after')}
+                                className="max-h-[62vh] overflow-auto"
+                            >
+                                <table className="w-max min-w-full border-collapse text-left text-xs">
+                                    <tbody>
+                                        {renderEntries.map((entry) => {
+                                            if (entry.kind === 'collapsed') {
+                                                return (
+                                                    <tr key={`after-${entry.key}`}>
+                                                        <td
+                                                            colSpan={2}
+                                                            className="border-y border-slate-200 bg-slate-100 px-3 py-1 text-center text-[11px] font-semibold text-slate-500"
+                                                        >
+                                                            {entry.hiddenCount} unchanged line{entry.hiddenCount === 1 ? '' : 's'} collapsed
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            }
+
+                                            const row = entry.row;
+                                            const rowIndex = entry.index;
+                                            return (
+                                                <tr key={`json-diff-after-row-${rowIndex}`} className="align-top">
+                                                    <td className={`w-12 border-r border-slate-100 px-2 py-0.5 text-right font-mono text-[10px] ${lineCellClassName(row.rightType)}`}>
+                                                        {row.rightLineNumber ?? ''}
+                                                    </td>
+                                                    <td className={`min-w-[420px] px-2 py-0.5 font-mono ${lineCellClassName(row.rightType)} ${JSON_TOKEN_CLASSNAMES}`}>
+                                                        <code
+                                                            className="whitespace-pre"
+                                                            dangerouslySetInnerHTML={{ __html: highlightJsonLine(row.rightValue) }}
+                                                        />
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </section>
+                    </div>
                 </>
             )}
         </AppModal>

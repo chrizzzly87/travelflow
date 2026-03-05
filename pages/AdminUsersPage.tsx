@@ -3,8 +3,6 @@ import { useSearchParams } from 'react-router-dom';
 import {
     AppleLogo,
     ArrowSquareOut,
-    ArrowsDownUp,
-    CaretDown,
     ChatCircleDots,
     ChartBarHorizontal,
     DiscordLogo,
@@ -65,6 +63,14 @@ import {
 } from '../components/ui/table';
 import { AdminReloadButton } from '../components/admin/AdminReloadButton';
 import { AdminFilterMenu, type AdminFilterMenuOption } from '../components/admin/AdminFilterMenu';
+import {
+    AdminSortHeaderButton,
+    ADMIN_TABLE_ROW_SURFACE_CLASS,
+    ADMIN_TABLE_SORTED_CELL_CLASS,
+    ADMIN_TABLE_SORTED_HEADER_CLASS,
+    getAdminStickyBodyCellClass,
+    getAdminStickyHeaderCellClass,
+} from '../components/admin/AdminDataTable';
 import { AdminCountUpNumber } from '../components/admin/AdminCountUpNumber';
 import { AdminJsonDiffModal } from '../components/admin/AdminJsonDiffModal';
 import { CopyableUuid } from '../components/admin/CopyableUuid';
@@ -1323,7 +1329,8 @@ export const AdminUsersPage: React.FC = () => {
     }, [usersColumnsCacheKey, visibleColumns]);
 
     useEffect(() => {
-        const node = usersTableScrollRef.current;
+        const root = usersTableScrollRef.current;
+        const node = root?.querySelector<HTMLElement>('[data-slot="table-container"]');
         if (!node) return;
         const handleScroll = () => {
             setIsUsersTableScrolledHorizontally(node.scrollLeft > 4);
@@ -1907,6 +1914,7 @@ export const AdminUsersPage: React.FC = () => {
     const isVisibleUserSelectionPartial = selectedVisibleUsers.length > 0 && !areAllVisibleUsersSelected;
     const visibleUserColumnSet = useMemo(() => new Set<UserVisibleColumnId>(visibleColumns), [visibleColumns]);
     const isUserColumnVisible = (columnId: UserVisibleColumnId): boolean => visibleUserColumnSet.has(columnId);
+    const hasStickyUserColumnPair = isUserColumnVisible('user');
     const usersTableColumnCount = visibleColumns.length + 2;
 
     useEffect(() => {
@@ -1955,6 +1963,8 @@ export const AdminUsersPage: React.FC = () => {
         setSortKey(key);
         setSortDirection('asc');
     };
+
+    const isUserSortedColumn = (key: SortKey): boolean => sortKey === key;
 
     const openUserDetail = (userId: string) => {
         setSelectedUserId(userId);
@@ -2838,14 +2848,16 @@ export const AdminUsersPage: React.FC = () => {
                     )}
                 </div>
 
-                <div ref={usersTableScrollRef} className="mt-3 overflow-x-auto rounded-xl border border-slate-200 bg-white">
-                    <Table className="min-w-[1320px]">
+                <div ref={usersTableScrollRef} className="mt-3 rounded-xl border border-slate-200 bg-white">
+                    <Table className="w-[max(100%,1320px)]">
                         <TableHeader className="bg-slate-50">
                             <TableRow>
                                 <TableHead
-                                    className={`sticky left-0 z-30 w-14 min-w-14 border-r border-slate-200 bg-slate-50 px-2 py-3 ${
-                                        isUsersTableScrolledHorizontally ? 'shadow-[1px_0_0_0_rgba(148,163,184,0.65)]' : ''
-                                    }`}
+                                    className={`sticky left-0 z-40 w-[56px] min-w-[56px] max-w-[56px] px-2 py-3 ${getAdminStickyHeaderCellClass({
+                                        isScrolled: isUsersTableScrolledHorizontally,
+                                        isFirst: hasStickyUserColumnPair,
+                                    })}`}
+                                    style={{ width: 56, minWidth: 56, maxWidth: 56 }}
                                 >
                                     <Checkbox
                                         checked={areAllVisibleUsersSelected ? true : (isVisibleUserSelectionPartial ? 'indeterminate' : false)}
@@ -2855,85 +2867,119 @@ export const AdminUsersPage: React.FC = () => {
                                 </TableHead>
                                 {isUserColumnVisible('user') && (
                                     <TableHead
-                                        className={`sticky left-14 z-30 w-[340px] min-w-[340px] overflow-hidden border-r border-slate-200 bg-slate-50 px-4 py-3 font-semibold text-slate-700 ${
-                                            isUsersTableScrolledHorizontally
-                                                ? 'relative shadow-[6px_0_12px_-9px_rgba(15,23,42,0.45)] after:pointer-events-none after:absolute after:inset-y-0 after:-right-3 after:w-3 after:bg-gradient-to-r after:from-slate-900/10 after:to-transparent'
-                                                : ''
-                                        }`}
+                                        className={`sticky left-[56px] z-30 w-[340px] min-w-[340px] max-w-[340px] overflow-hidden px-4 py-3 font-semibold text-slate-700 ${getAdminStickyHeaderCellClass({
+                                            isScrolled: isUsersTableScrolledHorizontally,
+                                            isFirst: false,
+                                            isSorted: isUserSortedColumn('name'),
+                                        })}`}
+                                        style={{ width: 340, minWidth: 340, maxWidth: 340 }}
                                     >
-                                        <button type="button" className="inline-flex items-center gap-1 hover:text-accent-700" onClick={() => toggleSort('name')}>
-                                            User <ArrowsDownUp size={12} />
-                                        </button>
+                                        <AdminSortHeaderButton
+                                            label="User"
+                                            isActive={isUserSortedColumn('name')}
+                                            direction={sortDirection}
+                                            onClick={() => toggleSort('name')}
+                                        />
                                     </TableHead>
                                 )}
                                 {isUserColumnVisible('login') && (
-                                    <TableHead className="px-4 py-3 font-semibold text-slate-700">
-                                        <button type="button" className="inline-flex items-center gap-1 hover:text-accent-700" onClick={() => toggleSort('email')}>
-                                            Login <ArrowsDownUp size={12} />
-                                        </button>
+                                    <TableHead className={`px-4 py-3 font-semibold text-slate-700 ${isUserSortedColumn('email') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                        <AdminSortHeaderButton
+                                            label="Login"
+                                            isActive={isUserSortedColumn('email')}
+                                            direction={sortDirection}
+                                            onClick={() => toggleSort('email')}
+                                        />
                                     </TableHead>
                                 )}
                                 {isUserColumnVisible('trips') && (
-                                    <TableHead className="px-4 py-3 font-semibold text-slate-700">
-                                        <button type="button" className="inline-flex items-center gap-1 hover:text-accent-700" onClick={() => toggleSort('total_trips')}>
-                                            Trips <ArrowsDownUp size={12} />
-                                        </button>
+                                    <TableHead className={`px-4 py-3 font-semibold text-slate-700 ${isUserSortedColumn('total_trips') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                        <AdminSortHeaderButton
+                                            label="Trips"
+                                            isActive={isUserSortedColumn('total_trips')}
+                                            direction={sortDirection}
+                                            onClick={() => toggleSort('total_trips')}
+                                        />
                                     </TableHead>
                                 )}
                                 {isUserColumnVisible('activation') && (
-                                    <TableHead className="px-4 py-3 font-semibold text-slate-700">
-                                        <button type="button" className="inline-flex items-center gap-1 hover:text-accent-700" onClick={() => toggleSort('activation_status')}>
-                                            Activation <ArrowsDownUp size={12} />
-                                        </button>
+                                    <TableHead className={`px-4 py-3 font-semibold text-slate-700 ${isUserSortedColumn('activation_status') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                        <AdminSortHeaderButton
+                                            label="Activation"
+                                            isActive={isUserSortedColumn('activation_status')}
+                                            direction={sortDirection}
+                                            onClick={() => toggleSort('activation_status')}
+                                        />
                                     </TableHead>
                                 )}
                                 {isUserColumnVisible('role') && (
-                                    <TableHead className="px-4 py-3 font-semibold text-slate-700">
-                                        <button type="button" className="inline-flex items-center gap-1 hover:text-accent-700" onClick={() => toggleSort('system_role')}>
-                                            Role <ArrowsDownUp size={12} />
-                                        </button>
+                                    <TableHead className={`px-4 py-3 font-semibold text-slate-700 ${isUserSortedColumn('system_role') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                        <AdminSortHeaderButton
+                                            label="Role"
+                                            isActive={isUserSortedColumn('system_role')}
+                                            direction={sortDirection}
+                                            onClick={() => toggleSort('system_role')}
+                                        />
                                     </TableHead>
                                 )}
                                 {isUserColumnVisible('tier') && (
-                                    <TableHead className="px-4 py-3 font-semibold text-slate-700">
-                                        <button type="button" className="inline-flex items-center gap-1 hover:text-accent-700" onClick={() => toggleSort('tier_key')}>
-                                            Tier <ArrowsDownUp size={12} />
-                                        </button>
+                                    <TableHead className={`px-4 py-3 font-semibold text-slate-700 ${isUserSortedColumn('tier_key') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                        <AdminSortHeaderButton
+                                            label="Tier"
+                                            isActive={isUserSortedColumn('tier_key')}
+                                            direction={sortDirection}
+                                            onClick={() => toggleSort('tier_key')}
+                                        />
                                     </TableHead>
                                 )}
                                 {isUserColumnVisible('status') && (
-                                    <TableHead className="px-4 py-3 font-semibold text-slate-700">
-                                        <button type="button" className="inline-flex items-center gap-1 hover:text-accent-700" onClick={() => toggleSort('account_status')}>
-                                            Status <ArrowsDownUp size={12} />
-                                        </button>
+                                    <TableHead className={`px-4 py-3 font-semibold text-slate-700 ${isUserSortedColumn('account_status') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                        <AdminSortHeaderButton
+                                            label="Status"
+                                            isActive={isUserSortedColumn('account_status')}
+                                            direction={sortDirection}
+                                            onClick={() => toggleSort('account_status')}
+                                        />
                                     </TableHead>
                                 )}
                                 {isUserColumnVisible('toc') && (
-                                    <TableHead className="px-4 py-3 font-semibold text-slate-700">
-                                        <button type="button" className="inline-flex items-center gap-1 hover:text-accent-700" onClick={() => toggleSort('terms_accepted_version')}>
-                                            ToC <ArrowsDownUp size={12} />
-                                        </button>
+                                    <TableHead className={`px-4 py-3 font-semibold text-slate-700 ${isUserSortedColumn('terms_accepted_version') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                        <AdminSortHeaderButton
+                                            label="ToC"
+                                            isActive={isUserSortedColumn('terms_accepted_version')}
+                                            direction={sortDirection}
+                                            onClick={() => toggleSort('terms_accepted_version')}
+                                        />
                                     </TableHead>
                                 )}
                                 {isUserColumnVisible('last_visit') && (
-                                    <TableHead className="px-4 py-3 font-semibold text-slate-700">
-                                        <button type="button" className="inline-flex items-center gap-1 hover:text-accent-700" onClick={() => toggleSort('last_sign_in_at')}>
-                                            Last sign-in <ArrowsDownUp size={12} />
-                                        </button>
+                                    <TableHead className={`px-4 py-3 font-semibold text-slate-700 ${isUserSortedColumn('last_sign_in_at') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                        <AdminSortHeaderButton
+                                            label="Last sign-in"
+                                            isActive={isUserSortedColumn('last_sign_in_at')}
+                                            direction={sortDirection}
+                                            onClick={() => toggleSort('last_sign_in_at')}
+                                        />
                                     </TableHead>
                                 )}
                                 {isUserColumnVisible('last_log') && (
-                                    <TableHead className="px-4 py-3 font-semibold text-slate-700">
-                                        <button type="button" className="inline-flex items-center gap-1 hover:text-accent-700" onClick={() => toggleSort('updated_at')}>
-                                            Last log <ArrowsDownUp size={12} />
-                                        </button>
+                                    <TableHead className={`px-4 py-3 font-semibold text-slate-700 ${isUserSortedColumn('updated_at') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                        <AdminSortHeaderButton
+                                            label="Last log"
+                                            isActive={isUserSortedColumn('updated_at')}
+                                            direction={sortDirection}
+                                            onClick={() => toggleSort('updated_at')}
+                                        />
                                     </TableHead>
                                 )}
                                 {isUserColumnVisible('created') && (
-                                    <TableHead className="px-4 py-3 font-semibold text-slate-700">
-                                        <button type="button" className="inline-flex items-center gap-1 hover:text-accent-700" onClick={() => toggleSort('created_at')}>
-                                            Created <ArrowsDownUp size={12} />
-                                        </button>
+                                    <TableHead className={`px-4 py-3 font-semibold text-slate-700 ${isUserSortedColumn('created_at') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                        <AdminSortHeaderButton
+                                            label="Created"
+                                            isActive={isUserSortedColumn('created_at')}
+                                            direction={sortDirection}
+                                            onClick={() => toggleSort('created_at')}
+                                        />
                                     </TableHead>
                                 )}
                                 <TableHead className="px-4 py-3 text-right font-semibold text-slate-700">Actions</TableHead>
@@ -2951,12 +2997,16 @@ export const AdminUsersPage: React.FC = () => {
                                 return (
                                     <TableRow
                                         key={user.user_id}
+                                        className={ADMIN_TABLE_ROW_SURFACE_CLASS}
                                         data-state={isSelected ? 'selected' : undefined}
                                     >
                                         <TableCell
-                                            className={`sticky left-0 z-20 w-14 min-w-14 border-r border-slate-200 bg-white px-2 py-3 ${
-                                                isUsersTableScrolledHorizontally ? 'shadow-[1px_0_0_0_rgba(148,163,184,0.65)]' : ''
-                                            }`}
+                                            className={`sticky left-0 z-40 w-[56px] min-w-[56px] max-w-[56px] px-2 py-3 ${getAdminStickyBodyCellClass({
+                                                isSelected,
+                                                isScrolled: isUsersTableScrolledHorizontally,
+                                                isFirst: hasStickyUserColumnPair,
+                                            })}`}
+                                            style={{ width: 56, minWidth: 56, maxWidth: 56 }}
                                         >
                                             <Checkbox
                                                 checked={isSelected}
@@ -2967,11 +3017,13 @@ export const AdminUsersPage: React.FC = () => {
                                         </TableCell>
                                         {isUserColumnVisible('user') && (
                                             <TableCell
-                                                className={`sticky left-14 z-20 w-[340px] min-w-[340px] max-w-[340px] overflow-hidden border-r border-slate-200 bg-white px-4 py-3 ${
-                                                    isUsersTableScrolledHorizontally
-                                                        ? 'relative shadow-[6px_0_12px_-9px_rgba(15,23,42,0.45)] after:pointer-events-none after:absolute after:inset-y-0 after:-right-3 after:w-3 after:bg-gradient-to-r after:from-slate-900/10 after:to-transparent'
-                                                        : ''
-                                                }`}
+                                                className={`sticky left-[56px] z-30 w-[340px] min-w-[340px] max-w-[340px] overflow-hidden px-4 py-3 ${getAdminStickyBodyCellClass({
+                                                    isSelected,
+                                                    isScrolled: isUsersTableScrolledHorizontally,
+                                                    isFirst: false,
+                                                    isSorted: isUserSortedColumn('name'),
+                                                })}`}
+                                                style={{ width: 340, minWidth: 340, maxWidth: 340 }}
                                             >
                                                 <button
                                                     type="button"
@@ -2995,7 +3047,7 @@ export const AdminUsersPage: React.FC = () => {
                                             </TableCell>
                                         )}
                                         {isUserColumnVisible('login') && (
-                                            <TableCell className="px-4 py-3">
+                                            <TableCell className={`px-4 py-3 ${isUserSortedColumn('email') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
                                                 <div className="flex flex-wrap items-center gap-1.5">
                                                     {getLoginPills(user).map((pill) => {
                                                         const Icon = pill.icon;
@@ -3025,7 +3077,7 @@ export const AdminUsersPage: React.FC = () => {
                                             </TableCell>
                                         )}
                                         {isUserColumnVisible('trips') && (
-                                            <TableCell className="px-4 py-3 text-xs text-slate-600">
+                                            <TableCell className={`px-4 py-3 text-xs text-slate-600 ${isUserSortedColumn('total_trips') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
                                                 <div className="font-semibold text-slate-800 hover:text-accent-700">
                                                     {getUserTotalTrips(user)} total
                                                 </div>
@@ -3040,35 +3092,35 @@ export const AdminUsersPage: React.FC = () => {
                                             </TableCell>
                                         )}
                                         {isUserColumnVisible('activation') && (
-                                            <TableCell className="px-4 py-3">
+                                            <TableCell className={`px-4 py-3 ${isUserSortedColumn('activation_status') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
                                                 <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${activationPillClass(activationStatus)}`}>
                                                     {getActivationStatusLabel(activationStatus)}
                                                 </span>
                                             </TableCell>
                                         )}
                                         {isUserColumnVisible('role') && (
-                                            <TableCell className="px-4 py-3">
+                                            <TableCell className={`px-4 py-3 ${isUserSortedColumn('system_role') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
                                                 <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${rolePillClass(user.system_role)}`}>
                                                     {user.system_role === 'admin' ? 'Admin' : 'User'}
                                                 </span>
                                             </TableCell>
                                         )}
                                         {isUserColumnVisible('tier') && (
-                                            <TableCell className="px-4 py-3">
+                                            <TableCell className={`px-4 py-3 ${isUserSortedColumn('tier_key') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
                                                 <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${tierPillClass(user.tier_key)}`}>
                                                     {PLAN_CATALOG[user.tier_key]?.publicName || user.tier_key}
                                                 </span>
                                             </TableCell>
                                         )}
                                         {isUserColumnVisible('status') && (
-                                            <TableCell className="px-4 py-3">
+                                            <TableCell className={`px-4 py-3 ${isUserSortedColumn('account_status') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
                                                 <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${statusPillClass(accountStatus)}`}>
                                                     {formatAccountStatusLabel(accountStatus)}
                                                 </span>
                                             </TableCell>
                                         )}
                                         {isUserColumnVisible('toc') && (
-                                            <TableCell className="px-4 py-3">
+                                            <TableCell className={`px-4 py-3 ${isUserSortedColumn('terms_accepted_version') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
                                                 <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${getUserTermsStatePillClass(termsState)}`}>
                                                     {getUserTermsStateLabel(termsState)}
                                                 </span>
@@ -3078,7 +3130,7 @@ export const AdminUsersPage: React.FC = () => {
                                             </TableCell>
                                         )}
                                         {isUserColumnVisible('last_visit') && (
-                                            <TableCell className="max-w-[210px] px-4 py-3 text-xs text-slate-600">
+                                            <TableCell className={`max-w-[210px] px-4 py-3 text-xs text-slate-600 ${isUserSortedColumn('last_sign_in_at') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
                                                 <div className="space-y-0.5">
                                                     <span className="block font-medium text-slate-700" title={formatTimestamp(user.last_sign_in_at)}>
                                                         {formatRelativeTimestamp(user.last_sign_in_at, 'No visit yet')}
@@ -3090,7 +3142,7 @@ export const AdminUsersPage: React.FC = () => {
                                             </TableCell>
                                         )}
                                         {isUserColumnVisible('last_log') && (
-                                            <TableCell className="max-w-[210px] px-4 py-3 text-xs text-slate-600">
+                                            <TableCell className={`max-w-[210px] px-4 py-3 text-xs text-slate-600 ${isUserSortedColumn('updated_at') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
                                                 <div className="space-y-0.5">
                                                     <span className="block font-medium text-slate-700" title={formatOptionalTimestamp(user.updated_at)}>
                                                         {formatRelativeTimestamp(user.updated_at, 'No logs yet')}
@@ -3102,7 +3154,7 @@ export const AdminUsersPage: React.FC = () => {
                                             </TableCell>
                                         )}
                                         {isUserColumnVisible('created') && (
-                                            <TableCell className="max-w-[170px] px-4 py-3 text-xs text-slate-500">
+                                            <TableCell className={`max-w-[170px] px-4 py-3 text-xs text-slate-500 ${isUserSortedColumn('created_at') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
                                                 {formatOptionalTimestamp(user.created_at)}
                                             </TableCell>
                                         )}

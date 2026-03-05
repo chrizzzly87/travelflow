@@ -19,7 +19,13 @@ import {
 import { dbGetTrip, dbUpsertTrip } from '../services/dbService';
 import { getTripCityStops, buildMiniMapUrl } from '../components/TripManager';
 import type { ITrip } from '../types';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '../components/ui/select';
 import { AdminReloadButton } from '../components/admin/AdminReloadButton';
 import { AdminFilterMenu, type AdminFilterMenuOption } from '../components/admin/AdminFilterMenu';
 import { AdminCountUpNumber } from '../components/admin/AdminCountUpNumber';
@@ -28,6 +34,15 @@ import { readAdminCache, writeAdminCache } from '../components/admin/adminLocalC
 import { Drawer, DrawerContent } from '../components/ui/drawer';
 import { Checkbox } from '../components/ui/checkbox';
 import { useAppDialog } from '../components/AppDialogProvider';
+import { showAppToast } from '../components/ui/appToast';
+import {
+    AdminSortHeaderButton,
+    ADMIN_TABLE_ROW_SURFACE_CLASS,
+    ADMIN_TABLE_SORTED_CELL_CLASS,
+    ADMIN_TABLE_SORTED_HEADER_CLASS,
+    getAdminStickyBodyCellClass,
+    getAdminStickyHeaderCellClass,
+} from '../components/admin/AdminDataTable';
 import {
     Table,
     TableBody,
@@ -58,11 +73,57 @@ const fromDateTimeInputValue = (value: string): string | null => {
 };
 
 type TripStatus = 'active' | 'archived' | 'expired';
+type TripGenerationState = 'failed' | 'running' | 'queued' | 'succeeded';
+type TripExpirationFilter = 'no_expiration' | 'already_expired' | 'expiring_24h' | 'expiring_7d' | 'scheduled';
+type TripVisibleColumnId = 'owner' | 'lifecycle' | 'generation' | 'source' | 'expires' | 'updated' | 'created' | 'archived';
+type TripSortColumn = 'trip' | 'owner' | 'lifecycle' | 'generation' | 'source' | 'expires' | 'updated' | 'created' | 'archived';
+type TripSortDirection = 'asc' | 'desc';
 
+const TRIPS_PAGE_SIZE = 25;
 const TRIPS_CACHE_KEY = 'admin.trips.cache.v1';
+const DEFAULT_TRIP_SORT_COLUMN: TripSortColumn = 'updated';
+const DEFAULT_TRIP_SORT_DIRECTION: TripSortDirection = 'desc';
 const TRIP_STATUS_VALUES: readonly TripStatus[] = ['active', 'archived', 'expired'];
+const TRIP_GENERATION_STATE_VALUES: readonly TripGenerationState[] = ['failed', 'running', 'queued', 'succeeded'];
+const TRIP_EXPIRATION_FILTER_VALUES: readonly TripExpirationFilter[] = [
+    'already_expired',
+    'expiring_24h',
+    'expiring_7d',
+    'scheduled',
+    'no_expiration',
+];
+const TRIP_VISIBLE_COLUMN_IDS: readonly TripVisibleColumnId[] = [
+    'owner',
+    'lifecycle',
+    'generation',
+    'source',
+    'expires',
+    'updated',
+    'created',
+    'archived',
+];
+const TRIP_VISIBLE_COLUMN_OPTIONS: Array<{ value: TripVisibleColumnId; label: string }> = [
+    { value: 'owner', label: 'Owner' },
+    { value: 'lifecycle', label: 'Lifecycle' },
+    { value: 'generation', label: 'Generation' },
+    { value: 'source', label: 'Source' },
+    { value: 'expires', label: 'Expires' },
+    { value: 'updated', label: 'Last update' },
+    { value: 'created', label: 'Created' },
+    { value: 'archived', label: 'Archived at' },
+];
+const DEFAULT_VISIBLE_TRIP_COLUMNS: TripVisibleColumnId[] = [
+    'owner',
+    'lifecycle',
+    'generation',
+    'source',
+    'expires',
+    'updated',
+    'created',
+];
 const USER_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
+const relativeTimeFormatter = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
 
 const parseQueryMultiValue = <T extends string>(
     value: string | null,
@@ -79,6 +140,122 @@ const parseQueryMultiValue = <T extends string>(
             if (allowSet.has(chunk)) unique.add(chunk);
         });
     return allowedValues.filter((candidate) => unique.has(candidate));
+};
+
+const parseRawQueryMultiValue = (value: string | null): string[] => {
+    if (!value) return [];
+    return Array.from(new Set(
+        value
+            .split(',')
+            .map((chunk) => chunk.trim())
+            .filter(Boolean)
+    ));
+};
+
+const sanitizeTripVisibleColumns = (values: string[] | null | undefined): TripVisibleColumnId[] => {
+    if (!Array.isArray(values) || values.length === 0) return [...DEFAULT_VISIBLE_TRIP_COLUMNS];
+    const unique = new Set<string>();
+    values.forEach((value) => {
+        if (TRIP_VISIBLE_COLUMN_IDS.includes(value as TripVisibleColumnId)) {
+            unique.add(value);
+        }
+    });
+    const ordered = TRIP_VISIBLE_COLUMN_IDS.filter((columnId) => unique.has(columnId));
+    return ordered.length > 0 ? ordered : [...DEFAULT_VISIBLE_TRIP_COLUMNS];
+};
+
+const parseTripVisibleColumns = (value: string | null): TripVisibleColumnId[] => {
+    const parsed = parseRawQueryMultiValue(value);
+    return sanitizeTripVisibleColumns(parsed);
+};
+
+const parseTripSortColumn = (value: string | null): TripSortColumn => {
+    if (
+        value === 'trip'
+        || value === 'owner'
+        || value === 'lifecycle'
+        || value === 'generation'
+        || value === 'source'
+        || value === 'expires'
+        || value === 'updated'
+        || value === 'created'
+        || value === 'archived'
+    ) {
+        return value;
+    }
+    return DEFAULT_TRIP_SORT_COLUMN;
+};
+
+const parseTripSortDirection = (value: string | null): TripSortDirection => (
+    value === 'asc' ? 'asc' : 'desc'
+);
+
+const parsePositivePage = (value: string | null): number => {
+    if (!value) return 1;
+    const parsed = Number.parseInt(value, 10);
+    if (!Number.isFinite(parsed) || parsed < 1) return 1;
+    return parsed;
+};
+
+const formatTimestamp = (value: string | null | undefined, fallback = 'Not set'): string => {
+    if (!value) return fallback;
+    const parsed = Date.parse(value);
+    if (!Number.isFinite(parsed)) return fallback;
+    return new Date(parsed).toLocaleString();
+};
+
+const formatRelativeTimestamp = (value: string | null | undefined, fallback = 'No data'): string => {
+    if (!value) return fallback;
+    const parsed = Date.parse(value);
+    if (!Number.isFinite(parsed)) return fallback;
+    const diffMs = parsed - Date.now();
+    const absDiffMs = Math.abs(diffMs);
+    const minuteMs = 60_000;
+    const hourMs = 60 * minuteMs;
+    const dayMs = 24 * hourMs;
+    const weekMs = 7 * dayMs;
+    const monthMs = 30 * dayMs;
+    const yearMs = 365 * dayMs;
+    if (absDiffMs < minuteMs) return relativeTimeFormatter.format(Math.round(diffMs / 1000), 'second');
+    if (absDiffMs < hourMs) return relativeTimeFormatter.format(Math.round(diffMs / minuteMs), 'minute');
+    if (absDiffMs < dayMs) return relativeTimeFormatter.format(Math.round(diffMs / hourMs), 'hour');
+    if (absDiffMs < weekMs) return relativeTimeFormatter.format(Math.round(diffMs / dayMs), 'day');
+    if (absDiffMs < monthMs) return relativeTimeFormatter.format(Math.round(diffMs / weekMs), 'week');
+    if (absDiffMs < yearMs) return relativeTimeFormatter.format(Math.round(diffMs / monthMs), 'month');
+    return relativeTimeFormatter.format(Math.round(diffMs / yearMs), 'year');
+};
+
+const normalizeIsoTimestamp = (value: string | null | undefined): string | null => {
+    if (!value) return null;
+    const parsed = Date.parse(value);
+    if (!Number.isFinite(parsed)) return null;
+    return new Date(parsed).toISOString();
+};
+
+const formatSourceKindLabel = (sourceKind: string | null | undefined): string => {
+    const normalized = (sourceKind || '').trim();
+    if (!normalized) return 'Unknown source';
+    return normalized.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+};
+
+const getExpirationFilterLabel = (value: TripExpirationFilter): string => {
+    if (value === 'already_expired') return 'Already expired';
+    if (value === 'expiring_24h') return 'Expiring in 24h';
+    if (value === 'expiring_7d') return 'Expiring in 7d';
+    if (value === 'scheduled') return 'Scheduled';
+    return 'No expiration';
+};
+
+const getTripExpirationBucket = (trip: Pick<AdminTripRecord, 'trip_expires_at'>): TripExpirationFilter => {
+    const expiresAt = trip.trip_expires_at;
+    if (!expiresAt) return 'no_expiration';
+    const parsed = Date.parse(expiresAt);
+    if (!Number.isFinite(parsed)) return 'no_expiration';
+    const diffMs = parsed - Date.now();
+    if (diffMs <= 0) return 'already_expired';
+    if (diffMs <= 24 * 60 * 60 * 1000) return 'expiring_24h';
+    if (diffMs <= 7 * 24 * 60 * 60 * 1000) return 'expiring_7d';
+    return 'scheduled';
 };
 
 const getUserDisplayName = (user: AdminUserRecord): string => {
@@ -102,6 +279,31 @@ const formatAccountStatusLabel = (status: string | null | undefined): string => 
     if (normalized === 'disabled') return 'Suspended';
     if (normalized === 'deleted') return 'Deleted';
     return 'Active';
+};
+
+const getLifecyclePillClassName = (status: TripStatus): string => {
+    if (status === 'archived') return 'border-slate-300 bg-slate-100 text-slate-700';
+    if (status === 'expired') return 'border-amber-200 bg-amber-50 text-amber-700';
+    return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+};
+
+const getGenerationPillClassName = (state: TripGenerationState): string => {
+    if (state === 'failed') return 'border-rose-200 bg-rose-50 text-rose-700';
+    if (state === 'running' || state === 'queued') return 'border-amber-200 bg-amber-50 text-amber-700';
+    return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+};
+
+const getGenerationStateLabel = (state: TripGenerationState): string => {
+    if (state === 'failed') return 'failed';
+    if (state === 'running') return 'running';
+    if (state === 'queued') return 'queued';
+    return 'succeeded';
+};
+
+const resolveTripGenerationState = (trip: AdminTripRecord): TripGenerationState => {
+    const state = trip.generation_state;
+    if (state === 'failed' || state === 'running' || state === 'queued' || state === 'succeeded') return state;
+    return 'succeeded';
 };
 
 const isLikelyUserId = (value: string): boolean => USER_ID_PATTERN.test(value.trim());
@@ -258,6 +460,25 @@ export const AdminTripsPage: React.FC = () => {
     const [statusFilters, setStatusFilters] = useState<TripStatus[]>(
         () => parseQueryMultiValue(searchParams.get('status'), TRIP_STATUS_VALUES)
     );
+    const [generationStateFilters, setGenerationStateFilters] = useState<TripGenerationState[]>(
+        () => parseQueryMultiValue(searchParams.get('generation'), TRIP_GENERATION_STATE_VALUES)
+    );
+    const [expirationFilters, setExpirationFilters] = useState<TripExpirationFilter[]>(
+        () => parseQueryMultiValue(searchParams.get('expires'), TRIP_EXPIRATION_FILTER_VALUES)
+    );
+    const [sourceFilters, setSourceFilters] = useState<string[]>(
+        () => parseRawQueryMultiValue(searchParams.get('source'))
+    );
+    const [visibleColumns, setVisibleColumns] = useState<TripVisibleColumnId[]>(
+        () => parseTripVisibleColumns(searchParams.get('cols'))
+    );
+    const [sortColumn, setSortColumn] = useState<TripSortColumn>(
+        () => parseTripSortColumn(searchParams.get('sort'))
+    );
+    const [sortDirection, setSortDirection] = useState<TripSortDirection>(
+        () => parseTripSortDirection(searchParams.get('dir'))
+    );
+    const [page, setPage] = useState(() => parsePositivePage(searchParams.get('page')));
     const [dateRange, setDateRange] = useState<AdminDateRange>(() => {
         const value = searchParams.get('range');
         if (value === '7d' || value === '30d' || value === '90d' || value === 'all') return value;
@@ -276,6 +497,8 @@ export const AdminTripsPage: React.FC = () => {
     const [selectedFullTrip, setSelectedFullTrip] = useState<ITrip | null>(null);
     const [isLoadingFullTrip, setIsLoadingFullTrip] = useState(false);
     const [isLoadingOwnerProfile, setIsLoadingOwnerProfile] = useState(false);
+    const [drawerLifecycleDraft, setDrawerLifecycleDraft] = useState<TripStatus>('active');
+    const [drawerExpirationDraft, setDrawerExpirationDraft] = useState('');
     const handledDeepLinkedOwnerIdRef = useRef<string | null>(null);
     const handledDeepLinkedTripIdRef = useRef<string | null>(null);
     const deepLinkedOwnerId = useMemo(() => {
@@ -298,7 +521,28 @@ export const AdminTripsPage: React.FC = () => {
         if (statusFilters.length > 0 && statusFilters.length < TRIP_STATUS_VALUES.length) {
             next.set('status', statusFilters.join(','));
         }
+        if (generationStateFilters.length > 0 && generationStateFilters.length < TRIP_GENERATION_STATE_VALUES.length) {
+            next.set('generation', generationStateFilters.join(','));
+        }
+        if (expirationFilters.length > 0 && expirationFilters.length < TRIP_EXPIRATION_FILTER_VALUES.length) {
+            next.set('expires', expirationFilters.join(','));
+        }
+        if (sourceFilters.length > 0) {
+            next.set('source', sourceFilters.join(','));
+        }
+        const hasCustomColumns = (
+            visibleColumns.length !== DEFAULT_VISIBLE_TRIP_COLUMNS.length
+            || visibleColumns.some((columnId, index) => columnId !== DEFAULT_VISIBLE_TRIP_COLUMNS[index])
+        );
+        if (hasCustomColumns) {
+            next.set('cols', visibleColumns.join(','));
+        }
         if (dateRange !== '30d') next.set('range', dateRange);
+        if (page > 1) next.set('page', String(page));
+        if (sortColumn !== DEFAULT_TRIP_SORT_COLUMN || sortDirection !== DEFAULT_TRIP_SORT_DIRECTION) {
+            next.set('sort', sortColumn);
+            next.set('dir', sortDirection);
+        }
         const drawerTripId = selectedTripDrawerId || deepLinkedTripId;
         const drawerOwnerId = selectedOwnerId || deepLinkedOwnerId;
         if ((isTripDrawerOpen || deepLinkedTripId) && drawerTripId) {
@@ -314,14 +558,21 @@ export const AdminTripsPage: React.FC = () => {
         dateRange,
         deepLinkedOwnerId,
         deepLinkedTripId,
+        expirationFilters,
+        generationStateFilters,
         isOwnerDrawerOpen,
         isTripDrawerOpen,
+        page,
         searchParams,
         searchValue,
         selectedOwnerId,
         selectedTripDrawerId,
         setSearchParams,
+        sortColumn,
+        sortDirection,
+        sourceFilters,
         statusFilters,
+        visibleColumns,
     ]);
 
     const loadTrips = async () => {
@@ -359,6 +610,19 @@ export const AdminTripsPage: React.FC = () => {
         () => trips.find((trip) => trip.trip_id === selectedTripDrawerId) || null,
         [selectedTripDrawerId, trips]
     );
+    useEffect(() => {
+        if (!selectedTripForDrawer) {
+            setDrawerLifecycleDraft('active');
+            setDrawerExpirationDraft('');
+            return;
+        }
+        setDrawerLifecycleDraft(selectedTripForDrawer.status);
+        setDrawerExpirationDraft(toDateTimeInputValue(selectedTripForDrawer.trip_expires_at));
+    }, [
+        selectedTripForDrawer?.trip_id,
+        selectedTripForDrawer?.status,
+        selectedTripForDrawer?.trip_expires_at,
+    ]);
 
     useEffect(() => {
         if (!isTripDrawerOpen || !selectedTripDrawerId || !selectedTripForDrawer) {
@@ -384,7 +648,6 @@ export const AdminTripsPage: React.FC = () => {
         return () => { isMounted = false; };
     }, [isTripDrawerOpen, selectedTripDrawerId, selectedTripForDrawer]);
 
-
     const previewCityStops = useMemo(() => {
         if (!selectedFullTrip) return [];
         return getTripCityStops(selectedFullTrip);
@@ -395,21 +658,95 @@ export const AdminTripsPage: React.FC = () => {
         return buildMiniMapUrl(selectedFullTrip, 'en');
     }, [selectedFullTrip]);
 
+    const selectedTripGenerationState = useMemo<TripGenerationState>(() => {
+        if (selectedTripForDrawer) {
+            return resolveTripGenerationState(selectedTripForDrawer);
+        }
+        return 'succeeded';
+    }, [selectedTripForDrawer]);
+
 
     const visibleTrips = useMemo(() => {
         const token = searchValue.trim().toLowerCase();
         return trips.filter((trip) => {
             if (!isIsoDateInRange(trip.updated_at || trip.created_at, dateRange)) return false;
             if (statusFilters.length > 0 && !statusFilters.includes(trip.status)) return false;
+            if (generationStateFilters.length > 0 && !generationStateFilters.includes(resolveTripGenerationState(trip))) return false;
+            if (expirationFilters.length > 0 && !expirationFilters.includes(getTripExpirationBucket(trip))) return false;
+            const normalizedSource = (trip.source_kind || '').trim() || 'unknown';
+            if (sourceFilters.length > 0 && !sourceFilters.includes(normalizedSource)) return false;
             if (!token) return true;
             return (
                 (trip.title || '').toLowerCase().includes(token)
                 || trip.trip_id.toLowerCase().includes(token)
                 || (trip.owner_email || '').toLowerCase().includes(token)
                 || trip.owner_id.toLowerCase().includes(token)
+                || normalizedSource.toLowerCase().includes(token)
             );
         });
-    }, [dateRange, searchValue, statusFilters, trips]);
+    }, [dateRange, expirationFilters, generationStateFilters, searchValue, sourceFilters, statusFilters, trips]);
+
+    const sortedVisibleTrips = useMemo(() => {
+        const compareText = (left: string, right: string): number => left.localeCompare(right, undefined, { sensitivity: 'base' });
+        const getDateValue = (value: string | null | undefined): number | null => {
+            if (!value) return null;
+            const parsed = Date.parse(value);
+            return Number.isFinite(parsed) ? parsed : null;
+        };
+        const compareDate = (left: string | null | undefined, right: string | null | undefined): number => {
+            const leftValue = getDateValue(left);
+            const rightValue = getDateValue(right);
+            if (leftValue === null && rightValue === null) return 0;
+            if (leftValue === null) return 1;
+            if (rightValue === null) return -1;
+            return leftValue - rightValue;
+        };
+        const compareBySortColumn = (left: AdminTripRecord, right: AdminTripRecord): number => {
+            if (sortColumn === 'trip') {
+                return compareText((left.title || left.trip_id).trim(), (right.title || right.trip_id).trim());
+            }
+            if (sortColumn === 'owner') {
+                return compareText(left.owner_email || left.owner_id, right.owner_email || right.owner_id);
+            }
+            if (sortColumn === 'lifecycle') {
+                const order: Record<TripStatus, number> = { active: 0, expired: 1, archived: 2 };
+                return order[left.status] - order[right.status];
+            }
+            if (sortColumn === 'generation') {
+                const order: Record<TripGenerationState, number> = { failed: 0, running: 1, queued: 2, succeeded: 3 };
+                return order[resolveTripGenerationState(left)] - order[resolveTripGenerationState(right)];
+            }
+            if (sortColumn === 'source') {
+                return compareText(
+                    formatSourceKindLabel(left.source_kind),
+                    formatSourceKindLabel(right.source_kind),
+                );
+            }
+            if (sortColumn === 'expires') {
+                return compareDate(left.trip_expires_at, right.trip_expires_at);
+            }
+            if (sortColumn === 'updated') {
+                return compareDate(left.updated_at, right.updated_at);
+            }
+            if (sortColumn === 'created') {
+                return compareDate(left.created_at, right.created_at);
+            }
+            if (sortColumn === 'archived') {
+                return compareDate(left.archived_at, right.archived_at);
+            }
+            return 0;
+        };
+        return [...visibleTrips].sort((left, right) => {
+            const base = compareBySortColumn(left, right);
+            if (base === 0) return left.trip_id.localeCompare(right.trip_id);
+            return sortDirection === 'asc' ? base : -base;
+        });
+    }, [sortColumn, sortDirection, visibleTrips]);
+    const tripPageCount = Math.max(Math.ceil(sortedVisibleTrips.length / TRIPS_PAGE_SIZE), 1);
+    const pagedTrips = useMemo(() => {
+        const start = (page - 1) * TRIPS_PAGE_SIZE;
+        return sortedVisibleTrips.slice(start, start + TRIPS_PAGE_SIZE);
+    }, [page, sortedVisibleTrips]);
 
     const tripsInDateRange = useMemo(
         () => trips.filter((trip) => isIsoDateInRange(trip.updated_at || trip.created_at, dateRange)),
@@ -421,6 +758,7 @@ export const AdminTripsPage: React.FC = () => {
         active: visibleTrips.filter((trip) => trip.status === 'active').length,
         expired: visibleTrips.filter((trip) => trip.status === 'expired').length,
         archived: visibleTrips.filter((trip) => trip.status === 'archived').length,
+        failedGeneration: visibleTrips.filter((trip) => resolveTripGenerationState(trip) === 'failed').length,
     }), [visibleTrips]);
     const selectedVisibleTrips = useMemo(
         () => visibleTrips.filter((trip) => selectedTripIds.has(trip.trip_id)),
@@ -428,6 +766,16 @@ export const AdminTripsPage: React.FC = () => {
     );
     const areAllVisibleTripsSelected = visibleTrips.length > 0 && visibleTrips.every((trip) => selectedTripIds.has(trip.trip_id));
     const isVisibleTripSelectionPartial = selectedVisibleTrips.length > 0 && !areAllVisibleTripsSelected;
+    const visibleTripColumnSet = useMemo(() => new Set<TripVisibleColumnId>(visibleColumns), [visibleColumns]);
+    const isTripColumnVisible = (columnId: TripVisibleColumnId): boolean => visibleTripColumnSet.has(columnId);
+    const hasStickyTripColumnPair = true;
+    const tripsTableColumnCount = visibleColumns.length + 3;
+
+    useEffect(() => {
+        if (page > tripPageCount) {
+            setPage(tripPageCount);
+        }
+    }, [page, tripPageCount]);
 
     const statusFilterOptions = useMemo<AdminFilterMenuOption[]>(
         () => TRIP_STATUS_VALUES.map((value) => ({
@@ -438,25 +786,104 @@ export const AdminTripsPage: React.FC = () => {
         [tripsInDateRange]
     );
 
+    const generationFilterOptions = useMemo<AdminFilterMenuOption[]>(
+        () => TRIP_GENERATION_STATE_VALUES.map((value) => ({
+            value,
+            label: getGenerationStateLabel(value),
+            count: tripsInDateRange.filter((trip) => resolveTripGenerationState(trip) === value).length,
+        })),
+        [tripsInDateRange]
+    );
+
+    const expirationFilterOptions = useMemo<AdminFilterMenuOption[]>(
+        () => TRIP_EXPIRATION_FILTER_VALUES.map((value) => ({
+            value,
+            label: getExpirationFilterLabel(value),
+            count: tripsInDateRange.filter((trip) => getTripExpirationBucket(trip) === value).length,
+        })),
+        [tripsInDateRange]
+    );
+
+    const sourceFilterOptions = useMemo<AdminFilterMenuOption[]>(() => {
+        const counts = new Map<string, number>();
+        tripsInDateRange.forEach((trip) => {
+            const normalizedSource = (trip.source_kind || '').trim() || 'unknown';
+            counts.set(normalizedSource, (counts.get(normalizedSource) || 0) + 1);
+        });
+        return Array.from(counts.entries())
+            .sort((left, right) => left[0].localeCompare(right[0]))
+            .map(([value, count]) => ({
+                value,
+                label: formatSourceKindLabel(value),
+                count,
+            }));
+    }, [tripsInDateRange]);
+
+    useEffect(() => {
+        if (sourceFilters.length === 0) return;
+        const allowed = new Set(sourceFilterOptions.map((option) => option.value));
+        setSourceFilters((current) => {
+            const next = current.filter((value) => allowed.has(value));
+            return next.length === current.length ? current : next;
+        });
+    }, [sourceFilterOptions, sourceFilters.length]);
+
+    const visibleTripColumnOptions = useMemo<AdminFilterMenuOption[]>(
+        () => TRIP_VISIBLE_COLUMN_OPTIONS.map((option) => ({ value: option.value, label: option.label })),
+        []
+    );
+
     const updateTripStatus = async (
         trip: AdminTripRecord,
         patch: {
             status?: 'active' | 'archived' | 'expired';
             tripExpiresAt?: string | null;
-        }
+        },
+        successMessage = 'Trip updated.'
     ) => {
         setIsSaving(true);
         setErrorMessage(null);
         setMessage(null);
         try {
             await adminUpdateTrip(trip.trip_id, patch);
-            setMessage('Trip updated.');
+            setMessage(successMessage);
+            showAppToast({
+                tone: 'success',
+                title: 'Trip saved',
+                description: successMessage,
+            });
             await loadTrips();
         } catch (error) {
             setErrorMessage(error instanceof Error ? error.message : 'Could not update trip.');
         } finally {
             setIsSaving(false);
         }
+    };
+
+    const selectedTripDrawerExpirationIso = normalizeIsoTimestamp(selectedTripForDrawer?.trip_expires_at);
+    const drawerDraftExpirationIso = normalizeIsoTimestamp(fromDateTimeInputValue(drawerExpirationDraft));
+    const hasDrawerLifecycleChanges = Boolean(
+        selectedTripForDrawer
+        && (
+            drawerLifecycleDraft !== selectedTripForDrawer.status
+            || drawerDraftExpirationIso !== selectedTripDrawerExpirationIso
+        )
+    );
+
+    const handleSaveDrawerLifecycle = async () => {
+        if (!selectedTripForDrawer) return;
+        const patch: {
+            status?: 'active' | 'archived' | 'expired';
+            tripExpiresAt?: string | null;
+        } = {};
+        if (drawerLifecycleDraft !== selectedTripForDrawer.status) {
+            patch.status = drawerLifecycleDraft;
+        }
+        if (drawerDraftExpirationIso !== selectedTripDrawerExpirationIso) {
+            patch.tripExpiresAt = drawerDraftExpirationIso;
+        }
+        if (Object.keys(patch).length === 0) return;
+        await updateTripStatus(selectedTripForDrawer, patch, 'Trip lifecycle settings saved.');
     };
 
     const resolveTransferTargetUser = async (rawInput: string): Promise<AdminUserRecord> => {
@@ -689,7 +1116,29 @@ export const AdminTripsPage: React.FC = () => {
 
     const resetTripFilters = () => {
         setStatusFilters([]);
+        setGenerationStateFilters([]);
+        setExpirationFilters([]);
+        setSourceFilters([]);
+        setVisibleColumns([...DEFAULT_VISIBLE_TRIP_COLUMNS]);
+        setSortColumn(DEFAULT_TRIP_SORT_COLUMN);
+        setSortDirection(DEFAULT_TRIP_SORT_DIRECTION);
+        setPage(1);
     };
+
+    const handleSortChange = (column: TripSortColumn) => {
+        if (sortColumn !== column) {
+            setSortColumn(column);
+            setSortDirection(column === 'updated' || column === 'created' || column === 'expires' || column === 'archived'
+                ? 'desc'
+                : 'asc');
+            setPage(1);
+            return;
+        }
+        setSortDirection((current) => (current === 'asc' ? 'desc' : 'asc'));
+        setPage(1);
+    };
+
+    const isTripSortedColumn = (column: TripSortColumn): boolean => sortColumn === column;
 
     const openOwnerDrawer = (ownerId: string) => {
         setSelectedTripDrawerId(null);
@@ -882,7 +1331,8 @@ export const AdminTripsPage: React.FC = () => {
     }, [isOwnerDrawerOpen, selectedOwnerId]);
 
     useEffect(() => {
-        const node = tripsTableScrollRef.current;
+        const root = tripsTableScrollRef.current;
+        const node = root?.querySelector<HTMLElement>('[data-slot="table-container"]');
         if (!node) return;
         const handleScroll = () => {
             setIsTripsTableScrolledHorizontally(node.scrollLeft > 4);
@@ -895,11 +1345,17 @@ export const AdminTripsPage: React.FC = () => {
     return (
         <AdminShell
             title="Trip Lifecycle Controls"
-            description="Inspect and adjust trip status, ownership, and expiration metadata."
+            description="Inspect lifecycle, generation diagnostics, ownership, and expiration metadata."
             searchValue={searchValue}
-            onSearchValueChange={setSearchValue}
+            onSearchValueChange={(value) => {
+                setSearchValue(value);
+                setPage(1);
+            }}
             dateRange={dateRange}
-            onDateRangeChange={setDateRange}
+            onDateRangeChange={(value) => {
+                setDateRange(value);
+                setPage(1);
+            }}
             actions={(
                 <AdminReloadButton
                     onClick={() => void loadTrips()}
@@ -924,7 +1380,7 @@ export const AdminTripsPage: React.FC = () => {
                 </section>
             )}
 
-            <section className="grid gap-3 md:grid-cols-4">
+            <section className="grid gap-3 md:grid-cols-5">
                 <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                     <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Total</p>
                     <p className="mt-2 text-2xl font-black text-slate-900"><AdminCountUpNumber value={summary.total} /></p>
@@ -941,6 +1397,20 @@ export const AdminTripsPage: React.FC = () => {
                     <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Archived</p>
                     <p className="mt-2 text-2xl font-black text-slate-700"><AdminCountUpNumber value={summary.archived} /></p>
                 </article>
+                <article className="rounded-2xl border border-rose-200 bg-rose-50 p-4 shadow-sm">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-rose-600">Failed generation</p>
+                    <p className="mt-2 text-2xl font-black text-rose-700"><AdminCountUpNumber value={summary.failedGeneration} /></p>
+                    <button
+                        type="button"
+                        onClick={() => {
+                            setGenerationStateFilters(['failed']);
+                            setPage(1);
+                        }}
+                        className="mt-2 inline-flex h-7 items-center rounded-md border border-rose-300 bg-white px-2.5 text-[11px] font-semibold text-rose-700 hover:bg-rose-100"
+                    >
+                        Filter failed
+                    </button>
+                </article>
             </section>
 
             <section className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -951,7 +1421,46 @@ export const AdminTripsPage: React.FC = () => {
                             label="Status"
                             options={statusFilterOptions}
                             selectedValues={statusFilters}
-                            onSelectedValuesChange={(next) => setStatusFilters(next as TripStatus[])}
+                            onSelectedValuesChange={(next) => {
+                                setStatusFilters(next as TripStatus[]);
+                                setPage(1);
+                            }}
+                        />
+                        <AdminFilterMenu
+                            label="Generation"
+                            options={generationFilterOptions}
+                            selectedValues={generationStateFilters}
+                            onSelectedValuesChange={(next) => {
+                                setGenerationStateFilters(next as TripGenerationState[]);
+                                setPage(1);
+                            }}
+                        />
+                        <AdminFilterMenu
+                            label="Expiration"
+                            options={expirationFilterOptions}
+                            selectedValues={expirationFilters}
+                            onSelectedValuesChange={(next) => {
+                                setExpirationFilters(next as TripExpirationFilter[]);
+                                setPage(1);
+                            }}
+                        />
+                        <AdminFilterMenu
+                            label="Source"
+                            options={sourceFilterOptions}
+                            selectedValues={sourceFilters}
+                            onSelectedValuesChange={(next) => {
+                                setSourceFilters(next);
+                                setPage(1);
+                            }}
+                        />
+                        <AdminFilterMenu
+                            label="Columns"
+                            options={visibleTripColumnOptions}
+                            selectedValues={visibleColumns}
+                            onSelectedValuesChange={(next) => {
+                                setVisibleColumns(sanitizeTripVisibleColumns(next));
+                                setPage(1);
+                            }}
                         />
                         <button
                             type="button"
@@ -994,14 +1503,16 @@ export const AdminTripsPage: React.FC = () => {
                     )}
                 </div>
 
-                <div ref={tripsTableScrollRef} className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-                    <Table className="min-w-[1160px]">
+                <div ref={tripsTableScrollRef} className="rounded-xl border border-slate-200 bg-white">
+                    <Table className="w-[max(100%,1160px)]">
                         <TableHeader className="bg-slate-50">
                             <TableRow>
                                 <TableHead
-                                    className={`sticky left-0 z-30 w-14 min-w-14 border-r border-slate-200 bg-slate-50 px-4 py-3 ${
-                                        isTripsTableScrolledHorizontally ? 'shadow-[1px_0_0_0_rgba(148,163,184,0.65)]' : ''
-                                    }`}
+                                    className={`sticky left-0 z-40 w-[56px] min-w-[56px] max-w-[56px] px-4 py-3 ${getAdminStickyHeaderCellClass({
+                                        isScrolled: isTripsTableScrolledHorizontally,
+                                        isFirst: hasStickyTripColumnPair,
+                                    })}`}
+                                    style={{ width: 56, minWidth: 56, maxWidth: 56 }}
                                 >
                                     <Checkbox
                                         checked={areAllVisibleTripsSelected ? true : (isVisibleTripSelectionPartial ? 'indeterminate' : false)}
@@ -1010,148 +1521,282 @@ export const AdminTripsPage: React.FC = () => {
                                     />
                                 </TableHead>
                                 <TableHead
-                                    className={`sticky left-14 z-30 w-[340px] min-w-[340px] border-r border-slate-200 bg-slate-50 px-4 py-3 font-semibold text-slate-700 ${
-                                        isTripsTableScrolledHorizontally
-                                            ? 'relative shadow-[6px_0_12px_-9px_rgba(15,23,42,0.45)] after:pointer-events-none after:absolute after:inset-y-0 after:-right-3 after:w-3 after:bg-gradient-to-r after:from-slate-900/10 after:to-transparent'
-                                            : ''
-                                    }`}
+                                    className={`sticky left-[56px] z-30 w-[340px] min-w-[340px] max-w-[340px] px-4 py-3 font-semibold text-slate-700 ${getAdminStickyHeaderCellClass({
+                                        isScrolled: isTripsTableScrolledHorizontally,
+                                        isFirst: false,
+                                        isSorted: isTripSortedColumn('trip'),
+                                    })}`}
+                                    style={{ width: 340, minWidth: 340, maxWidth: 340 }}
                                 >
-                                    Trip
+                                    <AdminSortHeaderButton
+                                        label="Trip"
+                                        isActive={isTripSortedColumn('trip')}
+                                        direction={sortDirection}
+                                        onClick={() => handleSortChange('trip')}
+                                    />
                                 </TableHead>
-                                <TableHead className="px-4 py-3 font-semibold text-slate-700">Owner</TableHead>
-                                <TableHead className="px-4 py-3 font-semibold text-slate-700">Status</TableHead>
-                                <TableHead className="px-4 py-3 font-semibold text-slate-700">Expires at</TableHead>
-                                <TableHead className="px-4 py-3 font-semibold text-slate-700">Last update</TableHead>
+                                {isTripColumnVisible('owner') && (
+                                    <TableHead className={`px-4 py-3 font-semibold text-slate-700 ${isTripSortedColumn('owner') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                        <AdminSortHeaderButton
+                                            label="Owner"
+                                            isActive={isTripSortedColumn('owner')}
+                                            direction={sortDirection}
+                                            onClick={() => handleSortChange('owner')}
+                                        />
+                                    </TableHead>
+                                )}
+                                {isTripColumnVisible('lifecycle') && (
+                                    <TableHead className={`px-4 py-3 font-semibold text-slate-700 ${isTripSortedColumn('lifecycle') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                        <AdminSortHeaderButton
+                                            label="Lifecycle"
+                                            isActive={isTripSortedColumn('lifecycle')}
+                                            direction={sortDirection}
+                                            onClick={() => handleSortChange('lifecycle')}
+                                        />
+                                    </TableHead>
+                                )}
+                                {isTripColumnVisible('generation') && (
+                                    <TableHead className={`px-4 py-3 font-semibold text-slate-700 ${isTripSortedColumn('generation') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                        <AdminSortHeaderButton
+                                            label="Generation"
+                                            isActive={isTripSortedColumn('generation')}
+                                            direction={sortDirection}
+                                            onClick={() => handleSortChange('generation')}
+                                        />
+                                    </TableHead>
+                                )}
+                                {isTripColumnVisible('source') && (
+                                    <TableHead className={`px-4 py-3 font-semibold text-slate-700 ${isTripSortedColumn('source') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                        <AdminSortHeaderButton
+                                            label="Source"
+                                            isActive={isTripSortedColumn('source')}
+                                            direction={sortDirection}
+                                            onClick={() => handleSortChange('source')}
+                                        />
+                                    </TableHead>
+                                )}
+                                {isTripColumnVisible('expires') && (
+                                    <TableHead className={`px-4 py-3 font-semibold text-slate-700 ${isTripSortedColumn('expires') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                        <AdminSortHeaderButton
+                                            label="Expires"
+                                            isActive={isTripSortedColumn('expires')}
+                                            direction={sortDirection}
+                                            onClick={() => handleSortChange('expires')}
+                                        />
+                                    </TableHead>
+                                )}
+                                {isTripColumnVisible('updated') && (
+                                    <TableHead className={`px-4 py-3 font-semibold text-slate-700 ${isTripSortedColumn('updated') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                        <AdminSortHeaderButton
+                                            label="Last update"
+                                            isActive={isTripSortedColumn('updated')}
+                                            direction={sortDirection}
+                                            onClick={() => handleSortChange('updated')}
+                                        />
+                                    </TableHead>
+                                )}
+                                {isTripColumnVisible('created') && (
+                                    <TableHead className={`px-4 py-3 font-semibold text-slate-700 ${isTripSortedColumn('created') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                        <AdminSortHeaderButton
+                                            label="Created"
+                                            isActive={isTripSortedColumn('created')}
+                                            direction={sortDirection}
+                                            onClick={() => handleSortChange('created')}
+                                        />
+                                    </TableHead>
+                                )}
+                                {isTripColumnVisible('archived') && (
+                                    <TableHead className={`px-4 py-3 font-semibold text-slate-700 ${isTripSortedColumn('archived') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                        <AdminSortHeaderButton
+                                            label="Archived at"
+                                            isActive={isTripSortedColumn('archived')}
+                                            direction={sortDirection}
+                                            onClick={() => handleSortChange('archived')}
+                                        />
+                                    </TableHead>
+                                )}
                                 <TableHead className="px-4 py-3 text-right font-semibold text-slate-700">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {visibleTrips.map((trip) => (
-                                <TableRow
-                                    key={trip.trip_id}
-                                    data-state={selectedTripIds.has(trip.trip_id) ? "selected" : undefined}
-                                >
-                                    <TableCell
-                                        className={`sticky left-0 z-20 w-14 min-w-14 border-r border-slate-200 bg-white px-4 py-3 ${
-                                            isTripsTableScrolledHorizontally ? 'shadow-[1px_0_0_0_rgba(148,163,184,0.65)]' : ''
-                                        }`}
+                            {pagedTrips.map((trip) => {
+                                const generationState = resolveTripGenerationState(trip);
+                                const normalizedSource = (trip.source_kind || '').trim() || 'unknown';
+                                const hasExpiration = Boolean(normalizeIsoTimestamp(trip.trip_expires_at));
+                                const hasArchivedAt = Boolean(normalizeIsoTimestamp(trip.archived_at));
+                                return (
+                                    <TableRow
+                                        key={trip.trip_id}
+                                        className={ADMIN_TABLE_ROW_SURFACE_CLASS}
+                                        data-state={selectedTripIds.has(trip.trip_id) ? 'selected' : undefined}
                                     >
-                                        <Checkbox
-                                            checked={selectedTripIds.has(trip.trip_id)}
-                                            onCheckedChange={(checked) => toggleTripSelection(trip.trip_id, Boolean(checked))}
-                                            aria-label={`Select trip ${trip.title || trip.trip_id}`}
-                                        />
-                                    </TableCell>
-                                    <TableCell
-                                        className={`sticky left-14 z-20 w-[340px] min-w-[340px] max-w-[340px] border-r border-slate-200 bg-white px-4 py-3 ${
-                                            isTripsTableScrolledHorizontally
-                                                ? 'relative shadow-[6px_0_12px_-9px_rgba(15,23,42,0.45)] after:pointer-events-none after:absolute after:inset-y-0 after:-right-3 after:w-3 after:bg-gradient-to-r after:from-slate-900/10 after:to-transparent'
-                                                : ''
-                                        }`}
-                                    >
-                                        <button
-                                            type="button"
-                                            onClick={() => openTripDrawer(trip.trip_id)}
-                                            title="Open trip details drawer"
-                                            className="inline-flex cursor-pointer xl:max-w-full items-center gap-1.5 truncate text-left text-sm font-semibold text-slate-800 hover:text-accent-700 hover:underline"
+                                        <TableCell
+                                            className={`sticky left-0 z-40 w-[56px] min-w-[56px] max-w-[56px] px-4 py-3 ${getAdminStickyBodyCellClass({
+                                                isSelected: selectedTripIds.has(trip.trip_id),
+                                                isScrolled: isTripsTableScrolledHorizontally,
+                                                isFirst: hasStickyTripColumnPair,
+                                            })}`}
+                                            style={{ width: 56, minWidth: 56, maxWidth: 56 }}
                                         >
-                                            <span className="truncate">{trip.title || trip.trip_id}</span>
-                                        </button>
-                                        <div className="text-xs text-slate-500 mt-1">
-                                            <CopyableUuid
-                                                value={trip.trip_id}
-                                                textClassName="max-w-full truncate text-xs"
-                                                hintClassName="text-[9px]"
+                                            <Checkbox
+                                                checked={selectedTripIds.has(trip.trip_id)}
+                                                onCheckedChange={(checked) => toggleTripSelection(trip.trip_id, Boolean(checked))}
+                                                aria-label={`Select trip ${trip.title || trip.trip_id}`}
                                             />
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="px-4 py-3 text-xs text-slate-600 max-w-[240px]">
-                                        <button
-                                            type="button"
-                                            onClick={() => openOwnerDrawer(trip.owner_id)}
-                                            title="Open owner details"
-                                            className="group cursor-pointer xl:max-w-full text-left"
+                                        </TableCell>
+                                        <TableCell
+                                            className={`sticky left-[56px] z-30 w-[340px] min-w-[340px] max-w-[340px] cursor-pointer px-4 py-3 ${getAdminStickyBodyCellClass({
+                                                isSelected: selectedTripIds.has(trip.trip_id),
+                                                isScrolled: isTripsTableScrolledHorizontally,
+                                                isFirst: false,
+                                                isSorted: isTripSortedColumn('trip'),
+                                            })}`}
+                                            style={{ width: 340, minWidth: 340, maxWidth: 340 }}
+                                            role="button"
+                                            tabIndex={0}
+                                            onClick={() => openTripDrawer(trip.trip_id)}
+                                            onKeyDown={(event) => {
+                                                if (event.key === 'Enter' || event.key === ' ') {
+                                                    event.preventDefault();
+                                                    openTripDrawer(trip.trip_id);
+                                                }
+                                            }}
                                         >
-                                            <span className="block truncate text-sm font-medium text-slate-700 group-hover:text-accent-700 group-hover:underline">
-                                                {trip.owner_email || trip.owner_id}
-                                            </span>
-                                            <span className="block text-[11px] text-slate-500 mt-0.5">
+                                            <div
+                                                title="Open trip details drawer"
+                                                className="inline-flex xl:max-w-full items-center gap-1.5 truncate text-left text-sm font-semibold text-slate-800 group-hover:text-accent-700 group-hover:underline"
+                                            >
+                                                <span className="truncate">{trip.title || trip.trip_id}</span>
+                                            </div>
+                                            <div className="mt-1 text-xs text-slate-500">
                                                 <CopyableUuid
-                                                    value={trip.owner_id}
-                                                    focusable={false}
-                                                    textClassName="max-w-full truncate text-[11px]"
+                                                    value={trip.trip_id}
+                                                    textClassName="max-w-full truncate text-xs"
                                                     hintClassName="text-[9px]"
                                                 />
-                                            </span>
-                                        </button>
-                                    </TableCell>
-                                    <TableCell className="px-4 py-3">
-                                        <Select
-                                            value={trip.status}
-                                            onValueChange={(value) => {
-                                                void updateTripStatus(trip, { status: value as 'active' | 'archived' | 'expired' });
-                                            }}
-                                        >
-                                            <SelectTrigger className="h-8 w-[130px] text-xs font-medium">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="active">Active</SelectItem>
-                                                <SelectItem value="expired">Expired</SelectItem>
-                                                <SelectItem value="archived">Archived</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </TableCell>
-                                    <TableCell className="px-4 py-3">
-                                        <input
-                                            key={`${trip.trip_id}-${trip.updated_at}`}
-                                            type="datetime-local"
-                                            defaultValue={toDateTimeInputValue(trip.trip_expires_at)}
-                                            onBlur={(event) => {
-                                                void updateTripStatus(trip, {
-                                                    tripExpiresAt: fromDateTimeInputValue(event.target.value),
-                                                });
-                                            }}
-                                            className="h-8 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm shadow-black/5"
-                                        />
-                                    </TableCell>
-                                    <TableCell className="px-4 py-3 text-sm text-slate-500">
-                                        {new Date(trip.updated_at).toLocaleString()}
-                                    </TableCell>
-                                    <TableCell className="px-4 py-3 text-right">
-                                        <TripRowActionsMenu
-                                            trip={trip}
-                                            disabled={isSaving}
-                                            onPreviewTrip={handleOpenTripPreview}
-                                            onDuplicateTrip={(candidate) => {
-                                                void handleDuplicateTrip(candidate);
-                                            }}
-                                            onTransferTrip={(candidate) => {
-                                                void handleTransferTrip(candidate);
-                                            }}
-                                            onDownloadTripJson={(candidate) => {
-                                                void handleDownloadTripJson(candidate);
-                                            }}
-                                            onSoftDeleteTrip={(candidate) => {
-                                                void handleSoftDeleteTrip(candidate);
-                                            }}
-                                            onHardDeleteTrip={(candidate) => {
-                                                void handleHardDeleteTrip(candidate);
-                                            }}
-                                        />
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                            {visibleTrips.length === 0 && !isLoading && (
+                                            </div>
+                                        </TableCell>
+                                        {isTripColumnVisible('owner') && (
+                                            <TableCell className={`max-w-[240px] px-4 py-3 text-xs text-slate-600 ${isTripSortedColumn('owner') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => openOwnerDrawer(trip.owner_id)}
+                                                    title="Open owner details"
+                                                    className="group block w-full cursor-pointer text-left"
+                                                >
+                                                    <span className="block truncate text-sm font-medium text-slate-700 group-hover:text-accent-700 group-hover:underline">
+                                                        {trip.owner_email || trip.owner_id}
+                                                    </span>
+                                                    <span className="mt-0.5 block text-[11px] text-slate-500">
+                                                        <CopyableUuid
+                                                            value={trip.owner_id}
+                                                            focusable={false}
+                                                            textClassName="max-w-full truncate text-[11px]"
+                                                            hintClassName="text-[9px]"
+                                                        />
+                                                    </span>
+                                                </button>
+                                            </TableCell>
+                                        )}
+                                        {isTripColumnVisible('lifecycle') && (
+                                            <TableCell className={`px-4 py-3 ${isTripSortedColumn('lifecycle') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
+                                                <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${getLifecyclePillClassName(trip.status)}`}>
+                                                    {trip.status}
+                                                </span>
+                                            </TableCell>
+                                        )}
+                                        {isTripColumnVisible('generation') && (
+                                            <TableCell className={`px-4 py-3 ${isTripSortedColumn('generation') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
+                                                <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${getGenerationPillClassName(generationState)}`}>
+                                                    {getGenerationStateLabel(generationState)}
+                                                </span>
+                                            </TableCell>
+                                        )}
+                                        {isTripColumnVisible('source') && (
+                                            <TableCell className={`px-4 py-3 ${isTripSortedColumn('source') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
+                                                <div className="text-xs font-medium text-slate-700">{formatSourceKindLabel(normalizedSource)}</div>
+                                                <div className="text-[11px] text-slate-500">{normalizedSource}</div>
+                                            </TableCell>
+                                        )}
+                                        {isTripColumnVisible('expires') && (
+                                            <TableCell className={`px-4 py-3 ${isTripSortedColumn('expires') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
+                                                <div className="text-xs font-semibold text-slate-700">
+                                                    {formatRelativeTimestamp(trip.trip_expires_at, 'No expiration')}
+                                                </div>
+                                                {hasExpiration && (
+                                                    <div className="text-[11px] text-slate-500">
+                                                        {formatTimestamp(trip.trip_expires_at, 'Not set')}
+                                                    </div>
+                                                )}
+                                            </TableCell>
+                                        )}
+                                        {isTripColumnVisible('updated') && (
+                                            <TableCell className={`px-4 py-3 ${isTripSortedColumn('updated') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
+                                                <div className="text-xs font-semibold text-slate-700">
+                                                    {formatRelativeTimestamp(trip.updated_at, 'No update')}
+                                                </div>
+                                                <div className="text-[11px] text-slate-500">
+                                                    {formatTimestamp(trip.updated_at, 'No update')}
+                                                </div>
+                                            </TableCell>
+                                        )}
+                                        {isTripColumnVisible('created') && (
+                                            <TableCell className={`px-4 py-3 ${isTripSortedColumn('created') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
+                                                <div className="text-xs font-semibold text-slate-700">
+                                                    {formatRelativeTimestamp(trip.created_at, 'No timestamp')}
+                                                </div>
+                                                <div className="text-[11px] text-slate-500">
+                                                    {formatTimestamp(trip.created_at, 'No timestamp')}
+                                                </div>
+                                            </TableCell>
+                                        )}
+                                        {isTripColumnVisible('archived') && (
+                                            <TableCell className={`px-4 py-3 ${isTripSortedColumn('archived') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
+                                                <div className="text-xs font-semibold text-slate-700">
+                                                    {formatRelativeTimestamp(trip.archived_at, 'Not archived')}
+                                                </div>
+                                                {hasArchivedAt && (
+                                                    <div className="text-[11px] text-slate-500">
+                                                        {formatTimestamp(trip.archived_at, 'Not archived')}
+                                                    </div>
+                                                )}
+                                            </TableCell>
+                                        )}
+                                        <TableCell className="px-4 py-3 text-right">
+                                            <TripRowActionsMenu
+                                                trip={trip}
+                                                disabled={isSaving}
+                                                onPreviewTrip={handleOpenTripPreview}
+                                                onDuplicateTrip={(candidate) => {
+                                                    void handleDuplicateTrip(candidate);
+                                                }}
+                                                onTransferTrip={(candidate) => {
+                                                    void handleTransferTrip(candidate);
+                                                }}
+                                                onDownloadTripJson={(candidate) => {
+                                                    void handleDownloadTripJson(candidate);
+                                                }}
+                                                onSoftDeleteTrip={(candidate) => {
+                                                    void handleSoftDeleteTrip(candidate);
+                                                }}
+                                                onHardDeleteTrip={(candidate) => {
+                                                    void handleHardDeleteTrip(candidate);
+                                                }}
+                                            />
+                                        </TableCell>
+                                    </TableRow>
+                                );
+                            })}
+                            {sortedVisibleTrips.length === 0 && !isLoading && (
                                 <TableRow>
-                                    <TableCell className="px-4 py-8 text-center text-sm text-slate-500" colSpan={7}>
+                                    <TableCell className="px-4 py-8 text-center text-sm text-slate-500" colSpan={tripsTableColumnCount}>
                                         No trips match the current filters.
                                     </TableCell>
                                 </TableRow>
                             )}
                             {isLoading && (
                                 <TableRow>
-                                    <TableCell className="px-4 py-8 text-center text-sm text-slate-500" colSpan={7}>
+                                    <TableCell className="px-4 py-8 text-center text-sm text-slate-500" colSpan={tripsTableColumnCount}>
                                         <span className="inline-flex items-center gap-2 font-medium">
                                             <SpinnerGap size={16} className="animate-spin text-slate-400" />
                                             Loading trips...
@@ -1161,6 +1806,32 @@ export const AdminTripsPage: React.FC = () => {
                             )}
                         </TableBody>
                     </Table>
+                </div>
+                <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
+                    <span>
+                        {sortedVisibleTrips.length === 0
+                            ? 'Showing 0 trips'
+                            : `Showing ${(page - 1) * TRIPS_PAGE_SIZE + 1}-${Math.min(page * TRIPS_PAGE_SIZE, sortedVisibleTrips.length)} of ${sortedVisibleTrips.length}`}
+                    </span>
+                    <div className="flex items-center gap-1">
+                        <button
+                            type="button"
+                            onClick={() => setPage((current) => Math.max(current - 1, 1))}
+                            disabled={page === 1}
+                            className="rounded border border-slate-300 px-2 py-1 disabled:opacity-50"
+                        >
+                            Prev
+                        </button>
+                        <span>Page {page} / {tripPageCount}</span>
+                        <button
+                            type="button"
+                            onClick={() => setPage((current) => Math.min(current + 1, tripPageCount))}
+                            disabled={page >= tripPageCount}
+                            className="rounded border border-slate-300 px-2 py-1 disabled:opacity-50"
+                        >
+                            Next
+                        </button>
+                    </div>
                 </div>
                 {isSaving && (
                     <p className="mt-2 text-xs text-slate-500">Saving changes...</p>
@@ -1195,6 +1866,16 @@ export const AdminTripsPage: React.FC = () => {
                             <p className="truncate text-sm text-slate-600">
                                 {selectedTripForDrawer ? (selectedTripForDrawer.title || selectedTripForDrawer.trip_id) : 'No trip selected'}
                             </p>
+                            {selectedTripForDrawer && (
+                                <button
+                                    type="button"
+                                    onClick={() => handleOpenTripPreview(selectedTripForDrawer)}
+                                    className="mt-3 inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-accent-300 bg-accent-50 px-3 text-sm font-semibold text-accent-800 hover:bg-accent-100"
+                                >
+                                    Open trip page
+                                    <ArrowSquareOut size={14} />
+                                </button>
+                            )}
                         </div>
                         <div className="flex-1 overflow-y-auto p-4">
                             {!selectedTripForDrawer ? (
@@ -1237,25 +1918,88 @@ export const AdminTripsPage: React.FC = () => {
                                                 </div>
                                             </div>
                                             <div className="flex flex-col gap-1 rounded-lg border border-slate-100 bg-slate-50 p-3">
-                                                <span className="text-xs font-semibold text-slate-500">Status</span>
-                                                <span className="text-sm font-medium text-slate-800">{selectedTripForDrawer.status}</span>
+                                                <span className="text-xs font-semibold text-slate-500">Lifecycle</span>
+                                                <span className={`inline-flex w-fit items-center rounded-full border px-2 py-0.5 text-xs font-semibold ${getLifecyclePillClassName(selectedTripForDrawer.status)}`}>
+                                                    {selectedTripForDrawer.status}
+                                                </span>
+                                            </div>
+                                            <div className="flex flex-col gap-1 rounded-lg border border-slate-100 bg-slate-50 p-3">
+                                                <span className="text-xs font-semibold text-slate-500">Generation</span>
+                                                <span className={`inline-flex w-fit items-center rounded-full border px-2 py-0.5 text-xs font-semibold ${getGenerationPillClassName(selectedTripGenerationState)}`}>
+                                                    {getGenerationStateLabel(selectedTripGenerationState)}
+                                                </span>
                                             </div>
                                             <div className="flex flex-col gap-1 rounded-lg border border-slate-100 bg-slate-50 p-3">
                                                 <span className="text-xs font-semibold text-slate-500">Source</span>
-                                                <span className="text-sm font-medium text-slate-800">{selectedTripForDrawer.source_kind || 'n/a'}</span>
+                                                <span className="text-sm font-medium text-slate-800">{formatSourceKindLabel(selectedTripForDrawer.source_kind)}</span>
+                                                <span className="text-[11px] text-slate-500">{(selectedTripForDrawer.source_kind || '').trim() || 'unknown'}</span>
                                             </div>
                                             <div className="flex flex-col gap-1 rounded-lg border border-slate-100 bg-slate-50 p-3">
                                                 <span className="text-xs font-semibold text-slate-500">Created At</span>
-                                                <span className="text-sm font-medium text-slate-800">{new Date(selectedTripForDrawer.created_at).toLocaleString()}</span>
+                                                <span className="text-sm font-medium text-slate-800">{formatRelativeTimestamp(selectedTripForDrawer.created_at, 'n/a')}</span>
+                                                <span className="text-[11px] text-slate-500">{formatTimestamp(selectedTripForDrawer.created_at, 'n/a')}</span>
                                             </div>
                                             <div className="flex flex-col gap-1 rounded-lg border border-slate-100 bg-slate-50 p-3">
                                                 <span className="text-xs font-semibold text-slate-500">Updated At</span>
-                                                <span className="text-sm font-medium text-slate-800">{new Date(selectedTripForDrawer.updated_at).toLocaleString()}</span>
+                                                <span className="text-sm font-medium text-slate-800">{formatRelativeTimestamp(selectedTripForDrawer.updated_at, 'n/a')}</span>
+                                                <span className="text-[11px] text-slate-500">{formatTimestamp(selectedTripForDrawer.updated_at, 'n/a')}</span>
                                             </div>
                                             <div className="col-span-full flex flex-col gap-1 rounded-lg border border-slate-100 bg-slate-50 p-3">
                                                 <span className="text-xs font-semibold text-slate-500">Expires At</span>
-                                                <span className="text-sm font-medium text-slate-800">{selectedTripForDrawer.trip_expires_at ? new Date(selectedTripForDrawer.trip_expires_at).toLocaleString() : 'Not set'}</span>
+                                                <span className="text-sm font-medium text-slate-800">{formatRelativeTimestamp(selectedTripForDrawer.trip_expires_at, 'No expiration')}</span>
+                                                <span className="text-[11px] text-slate-500">{formatTimestamp(selectedTripForDrawer.trip_expires_at, 'No expiration')}</span>
                                             </div>
+                                        </div>
+                                    </section>
+
+                                    <section className="space-y-3 rounded-xl border border-slate-200 bg-white p-4">
+                                        <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Lifecycle Controls</h3>
+                                        <div className="grid gap-3 sm:grid-cols-2">
+                                            <div className="flex flex-col gap-1">
+                                                <span className="text-xs font-semibold text-slate-500">Lifecycle status</span>
+                                                <Select
+                                                    value={drawerLifecycleDraft}
+                                                    onValueChange={(value) => {
+                                                        setDrawerLifecycleDraft(value as TripStatus);
+                                                    }}
+                                                >
+                                                    <SelectTrigger className="h-9 text-sm font-medium">
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="active">Active</SelectItem>
+                                                        <SelectItem value="expired">Expired</SelectItem>
+                                                        <SelectItem value="archived">Archived</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                            <label htmlFor="trip-lifecycle-expiration" className="flex flex-col gap-1">
+                                                <span className="text-xs font-semibold text-slate-500">Expiration timestamp</span>
+                                                <input
+                                                    id="trip-lifecycle-expiration"
+                                                    type="datetime-local"
+                                                    value={drawerExpirationDraft}
+                                                    onChange={(event) => {
+                                                        setDrawerExpirationDraft(event.target.value);
+                                                    }}
+                                                    className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm shadow-black/5"
+                                                />
+                                            </label>
+                                        </div>
+                                        <div className="flex items-center justify-between gap-2 rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
+                                            <p className="text-xs text-slate-600">
+                                                Changes here are applied only after you save.
+                                            </p>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    void handleSaveDrawerLifecycle();
+                                                }}
+                                                disabled={isSaving || !hasDrawerLifecycleChanges}
+                                                className="inline-flex h-8 items-center rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-800 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+                                            >
+                                                Save lifecycle settings
+                                            </button>
                                         </div>
                                     </section>
                                     
@@ -1432,6 +2176,16 @@ export const AdminTripsPage: React.FC = () => {
                                     ? <CopyableUuid value={selectedOwnerId} textClassName="max-w-[360px] truncate text-sm" />
                                     : 'No owner selected'}
                             </p>
+                            {selectedOwnerId && (
+                                <button
+                                    type="button"
+                                    onClick={() => navigate(`/admin/users?user=${encodeURIComponent(selectedOwnerId)}&drawer=user`)}
+                                    className="mt-3 inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-accent-300 bg-accent-50 px-3 text-sm font-semibold text-accent-800 hover:bg-accent-100"
+                                >
+                                    Open user profile
+                                    <ArrowSquareOut size={14} />
+                                </button>
+                            )}
                         </div>
                         <div className="flex-1 overflow-y-auto p-4">
                             {isLoadingOwnerProfile ? (
