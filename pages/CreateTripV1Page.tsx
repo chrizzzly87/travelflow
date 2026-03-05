@@ -22,7 +22,15 @@ import { IdealTravelTimeline } from '../components/IdealTravelTimeline';
 import { MonthSeasonStrip } from '../components/MonthSeasonStrip';
 import { Checkbox } from '../components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '../components/ui/select';
-import { generateItinerary, generateWizardItinerary } from '../services/geminiService';
+import {
+    buildClassicItineraryPrompt,
+    buildWizardItineraryPrompt,
+    generateItinerary,
+    generateWizardItinerary,
+    type GenerateOptions,
+    type WizardGenerateOptions,
+} from '../services/geminiService';
+import { getDefaultCreateTripModel } from '../config/aiModelCatalog';
 import { ITimelineItem, ITrip, TripPrefillData } from '../types';
 import {
     addDays,
@@ -44,6 +52,9 @@ import { decodeTripPrefill } from '../services/tripPrefillDecoder';
 import { createThailandTrip } from '../data/exampleTrips';
 import { TripView } from '../components/TripView';
 import { TripGenerationSkeleton } from '../components/TripGenerationSkeleton';
+import { isClassicAsyncGenerationEnabled, isWizardAsyncGenerationEnabled } from '../services/tripGenerationAsyncConfig';
+import { startClientAsyncTripGeneration } from '../services/tripGenerationClientAsyncService';
+import { createTripGenerationInputSnapshot } from '../services/tripGenerationDiagnosticsService';
 import { HeroWebGLBackground } from '../components/HeroWebGLBackground';
 import { SiteFooter } from '../components/marketing/SiteFooter';
 import { SiteHeader } from '../components/navigation/SiteHeader';
@@ -278,7 +289,14 @@ export const CreateTripV1Page: React.FC<CreateTripV1PageProps> = ({ onTripGenera
         setter(current.includes(value) ? current.filter((v) => v !== value) : [...current, value]);
     };
 
-    const buildPreviewTrip = (params: { destination: string; startDate: string; endDate: string; requestedStops?: number }): ITrip => {
+    const buildPreviewTrip = (params: {
+        destination: string;
+        startDate: string;
+        endDate: string;
+        requestedStops?: number;
+        tripId?: string;
+        title?: string;
+    }): ITrip => {
         const now = Date.now();
         const totalDays = getDaysDifference(params.startDate, params.endDate);
         const stopCount = typeof params.requestedStops === 'number' ? Math.max(1, Math.round(params.requestedStops)) : Math.min(4, Math.max(2, Math.round(totalDays / 4)));
@@ -303,8 +321,8 @@ export const CreateTripV1Page: React.FC<CreateTripV1PageProps> = ({ onTripGenera
             return item;
         });
         return {
-            id: `trip-preview-${now}`,
-            title: `Planning ${params.destination || 'Trip'}...`,
+            id: params.tripId || `trip-preview-${now}`,
+            title: params.title || params.destination || 'Trip draft',
             startDate: params.startDate,
             items,
             countryInfo: undefined,
@@ -334,41 +352,130 @@ export const CreateTripV1Page: React.FC<CreateTripV1PageProps> = ({ onTripGenera
     const handleGenerate = async (e: React.FormEvent) => {
         e.preventDefault();
         const primary = selectedCountries[0] || destination;
+        const destinationLabel = destination || primary || 'Trip';
         setGenerationStart({ destination: primary, startDate, endDate, requestedStops: typeof numCities === 'number' ? numCities : undefined });
 
         const hasStyleVibeContext = selectedStyles.length > 0 || selectedVibes.length > 0;
+        const defaultModel = getDefaultCreateTripModel();
+        const classicOptions: GenerateOptions = {
+            budget,
+            pace,
+            interests: notes.split(',').map((t) => t.trim()).filter(Boolean),
+            specificCities,
+            roundTrip: isRoundTrip,
+            totalDays: duration,
+            numCities: typeof numCities === 'number' ? numCities : undefined,
+            selectedIslandNames,
+            enforceIslandOnly: hasIslandSelection ? enforceIslandOnly : undefined,
+            aiTarget: {
+                provider: defaultModel.provider,
+                model: defaultModel.model,
+            },
+        };
+        const wizardOptions: WizardGenerateOptions = {
+            countries: selectedCountries.map((c) => getDestinationPromptLabel(c)),
+            startDate,
+            endDate,
+            roundTrip: isRoundTrip,
+            totalDays: duration,
+            notes,
+            travelStyles: selectedStyles,
+            travelVibes: selectedVibes,
+            travelLogistics: [],
+            idealMonths: monthLabelsFromNumbers(commonMonths.ideal),
+            shoulderMonths: monthLabelsFromNumbers(commonMonths.shoulder),
+            recommendedDurationDays: durationRec.recommended,
+            selectedIslandNames,
+            enforceIslandOnly: hasIslandSelection ? enforceIslandOnly : undefined,
+            aiTarget: {
+                provider: defaultModel.provider,
+                model: defaultModel.model,
+            },
+        };
 
         try {
             let trip: ITrip;
             if (hasStyleVibeContext) {
-                trip = await generateWizardItinerary({
-                    countries: selectedCountries.map((c) => getDestinationPromptLabel(c)),
-                    startDate,
-                    endDate,
-                    roundTrip: isRoundTrip,
-                    totalDays: duration,
-                    notes,
-                    travelStyles: selectedStyles,
-                    travelVibes: selectedVibes,
-                    travelLogistics: [],
-                    idealMonths: monthLabelsFromNumbers(commonMonths.ideal),
-                    shoulderMonths: monthLabelsFromNumbers(commonMonths.shoulder),
-                    recommendedDurationDays: durationRec.recommended,
-                    selectedIslandNames,
-                    enforceIslandOnly: hasIslandSelection ? enforceIslandOnly : undefined,
-                });
+                if (isWizardAsyncGenerationEnabled()) {
+                    const snapshot = createTripGenerationInputSnapshot({
+                        flow: 'wizard',
+                        destinationLabel,
+                        startDate,
+                        endDate,
+                        payload: {
+                            options: wizardOptions,
+                        },
+                    });
+                    const prompt = buildWizardItineraryPrompt(wizardOptions);
+                    await startClientAsyncTripGeneration({
+                        flow: 'wizard',
+                        source: 'create_trip_v1',
+                        jobSource: 'create_trip_v1_async',
+                        destinationLabel,
+                        startDate,
+                        roundTrip: isRoundTrip,
+                        prompt,
+                        provider: defaultModel.provider,
+                        model: defaultModel.model,
+                        inputSnapshot: snapshot,
+                        buildOptimisticTrip: (tripId) => buildPreviewTrip({
+                            destination: destinationLabel,
+                            startDate,
+                            endDate,
+                            requestedStops: typeof numCities === 'number' ? numCities : undefined,
+                            tripId,
+                            title: destinationLabel,
+                        }),
+                        onTripUpdate: onTripGenerated,
+                        metadata: {
+                            variant: 'v1',
+                        },
+                    });
+                    setPreviewTrip(null);
+                    return;
+                }
+                trip = await generateWizardItinerary(wizardOptions);
             } else {
-                trip = await generateItinerary(destinationPrompt, startDate, {
-                    budget,
-                    pace,
-                    interests: notes.split(',').map((t) => t.trim()).filter(Boolean),
-                    specificCities,
-                    roundTrip: isRoundTrip,
-                    totalDays: duration,
-                    numCities: typeof numCities === 'number' ? numCities : undefined,
-                    selectedIslandNames,
-                    enforceIslandOnly: hasIslandSelection ? enforceIslandOnly : undefined,
-                });
+                if (isClassicAsyncGenerationEnabled()) {
+                    const snapshot = createTripGenerationInputSnapshot({
+                        flow: 'classic',
+                        destinationLabel,
+                        startDate,
+                        endDate,
+                        payload: {
+                            destinationPrompt,
+                            options: classicOptions,
+                        },
+                    });
+                    const prompt = buildClassicItineraryPrompt(destinationPrompt, classicOptions);
+                    await startClientAsyncTripGeneration({
+                        flow: 'classic',
+                        source: 'create_trip_v1',
+                        jobSource: 'create_trip_v1_async',
+                        destinationLabel,
+                        startDate,
+                        roundTrip: isRoundTrip,
+                        prompt,
+                        provider: defaultModel.provider,
+                        model: defaultModel.model,
+                        inputSnapshot: snapshot,
+                        buildOptimisticTrip: (tripId) => buildPreviewTrip({
+                            destination: destinationLabel,
+                            startDate,
+                            endDate,
+                            requestedStops: typeof numCities === 'number' ? numCities : undefined,
+                            tripId,
+                            title: destinationLabel,
+                        }),
+                        onTripUpdate: onTripGenerated,
+                        metadata: {
+                            variant: 'v1',
+                        },
+                    });
+                    setPreviewTrip(null);
+                    return;
+                }
+                trip = await generateItinerary(destinationPrompt, startDate, classicOptions);
             }
             setPreviewTrip(null);
             onTripGenerated(trip);

@@ -19,7 +19,12 @@ import { CountrySelect } from '../components/CountrySelect';
 import { DateRangePicker } from '../components/DateRangePicker';
 import { MonthSeasonStrip } from '../components/MonthSeasonStrip';
 import { Checkbox } from '../components/ui/checkbox';
-import { generateWizardItinerary } from '../services/geminiService';
+import {
+    buildWizardItineraryPrompt,
+    generateWizardItinerary,
+    type WizardGenerateOptions,
+} from '../services/geminiService';
+import { getDefaultCreateTripModel } from '../config/aiModelCatalog';
 import { ITimelineItem, ITrip, TripPrefillData } from '../types';
 import {
     addDays,
@@ -40,6 +45,9 @@ import { decodeTripPrefill } from '../services/tripPrefillDecoder';
 import { createThailandTrip } from '../data/exampleTrips';
 import { TripView } from '../components/TripView';
 import { TripGenerationSkeleton } from '../components/TripGenerationSkeleton';
+import { isWizardAsyncGenerationEnabled } from '../services/tripGenerationAsyncConfig';
+import { startClientAsyncTripGeneration } from '../services/tripGenerationClientAsyncService';
+import { createTripGenerationInputSnapshot } from '../services/tripGenerationDiagnosticsService';
 import { HeroWebGLBackground } from '../components/HeroWebGLBackground';
 import { SiteFooter } from '../components/marketing/SiteFooter';
 import { SiteHeader } from '../components/navigation/SiteHeader';
@@ -356,7 +364,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
     };
 
     // ---- Generation ----
-    const buildPreviewTrip = (params: { destination: string; startDate: string; endDate: string }): ITrip => {
+    const buildPreviewTrip = (params: { destination: string; startDate: string; endDate: string; tripId?: string; title?: string }): ITrip => {
         const now = Date.now();
         const totalDays = getDaysDifference(params.startDate, params.endDate);
         const cityCount = Math.max(1, Math.min(4, Math.max(2, Math.round(totalDays / 4))));
@@ -380,8 +388,8 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
             return item;
         });
         return {
-            id: `trip-preview-${now}`,
-            title: `Planning ${params.destination || 'Trip'}...`,
+            id: params.tripId || `trip-preview-${now}`,
+            title: params.title || params.destination || 'Trip draft',
             startDate: params.startDate,
             items,
             countryInfo: undefined,
@@ -393,30 +401,72 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
 
     const handleGenerate = async () => {
         const primary = selectedCountries[0] || destination;
+        const destinationLabel = destination || primary || 'Trip';
         setPreviewTrip(buildPreviewTrip({ destination: primary, startDate, endDate }));
         setGenerationSummary({ destination: primary, startDate, endDate });
         setIsGenerating(true);
         setGenerationError(null);
+        const defaultModel = getDefaultCreateTripModel();
+        const wizardOptions: WizardGenerateOptions = {
+            countries: selectedCountries.map((c) => getDestinationPromptLabel(c)),
+            startDate,
+            endDate,
+            roundTrip: isRoundTrip,
+            totalDays: duration,
+            notes: [notes, specificCities ? `Must visit: ${specificCities}` : ''].filter(Boolean).join('. '),
+            travelStyles: selectedStyles,
+            travelVibes: selectedVibes,
+            travelLogistics: [],
+            idealMonths: monthLabelsFromNumbers(commonMonths.ideal),
+            shoulderMonths: monthLabelsFromNumbers(commonMonths.shoulder),
+            recommendedDurationDays: durationRec.recommended,
+            selectedIslandNames,
+            enforceIslandOnly: hasIslandSelection ? enforceIslandOnly : undefined,
+            aiTarget: {
+                provider: defaultModel.provider,
+                model: defaultModel.model,
+            },
+        };
 
         try {
-            const trip = await generateWizardItinerary({
-                countries: selectedCountries.map((c) => getDestinationPromptLabel(c)),
-                startDate,
-                endDate,
-                roundTrip: isRoundTrip,
-                totalDays: duration,
-                notes: [notes, specificCities ? `Must visit: ${specificCities}` : ''].filter(Boolean).join('. '),
-                budget,
-                pace,
-                travelStyles: selectedStyles,
-                travelVibes: selectedVibes,
-                travelLogistics: [],
-                idealMonths: monthLabelsFromNumbers(commonMonths.ideal),
-                shoulderMonths: monthLabelsFromNumbers(commonMonths.shoulder),
-                recommendedDurationDays: durationRec.recommended,
-                selectedIslandNames,
-                enforceIslandOnly: hasIslandSelection ? enforceIslandOnly : undefined,
-            });
+            if (isWizardAsyncGenerationEnabled()) {
+                const snapshot = createTripGenerationInputSnapshot({
+                    flow: 'wizard',
+                    destinationLabel,
+                    startDate,
+                    endDate,
+                    payload: {
+                        options: wizardOptions,
+                    },
+                });
+                const prompt = buildWizardItineraryPrompt(wizardOptions);
+                await startClientAsyncTripGeneration({
+                    flow: 'wizard',
+                    source: 'create_trip_v3',
+                    jobSource: 'create_trip_v3_async',
+                    destinationLabel,
+                    startDate,
+                    roundTrip: isRoundTrip,
+                    prompt,
+                    provider: defaultModel.provider,
+                    model: defaultModel.model,
+                    inputSnapshot: snapshot,
+                    buildOptimisticTrip: (tripId) => buildPreviewTrip({
+                        destination: destinationLabel,
+                        startDate,
+                        endDate,
+                        tripId,
+                        title: destinationLabel,
+                    }),
+                    onTripUpdate: onTripGenerated,
+                    metadata: {
+                        variant: 'v3',
+                    },
+                });
+                setPreviewTrip(null);
+                return;
+            }
+            const trip = await generateWizardItinerary(wizardOptions);
             setPreviewTrip(null);
             onTripGenerated(trip);
         } catch (error) {
