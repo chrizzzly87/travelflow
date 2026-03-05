@@ -904,13 +904,20 @@ export const AdminTripsPage: React.FC = () => {
     ]);
 
     const selectedTripGenerationMeta = selectedFullTrip?.aiMeta?.generation || null;
-    const selectedTripRequestPayload = useMemo<Record<string, unknown> | null>(() => {
+    const selectedTripLatestAttemptMetadata = useMemo<Record<string, unknown> | null>(() => {
         const metadata = selectedTripLatestAttempt?.metadata;
         if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) return null;
-        const payload = (metadata as Record<string, unknown>).requestPayload;
+        return metadata as Record<string, unknown>;
+    }, [selectedTripLatestAttempt?.metadata]);
+    const selectedTripRequestPayload = useMemo<Record<string, unknown> | null>(() => {
+        const payload = selectedTripLatestAttemptMetadata?.requestPayload;
         if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return null;
         return payload as Record<string, unknown>;
-    }, [selectedTripLatestAttempt?.metadata]);
+    }, [selectedTripLatestAttemptMetadata]);
+    const selectedTripOrchestrationMode = useMemo(() => {
+        const value = selectedTripLatestAttemptMetadata?.orchestration;
+        return typeof value === 'string' && value.trim().length > 0 ? value.trim() : null;
+    }, [selectedTripLatestAttemptMetadata]);
     const selectedTripInputSnapshot = useMemo(() => {
         return selectedTripGenerationMeta?.inputSnapshot || null;
     }, [selectedTripGenerationMeta?.inputSnapshot]);
@@ -2576,6 +2583,10 @@ export const AdminTripsPage: React.FC = () => {
                                                 <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
                                                     <dt className="text-xs font-semibold text-slate-500">Request ID</dt>
                                                     <dd className="mt-1 break-all font-mono text-xs text-slate-700">{selectedTripLatestAttempt.requestId || 'n/a'}</dd>
+                                                </div>
+                                                <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+                                                    <dt className="text-xs font-semibold text-slate-500">Execution mode</dt>
+                                                    <dd className="mt-1 text-sm font-medium text-slate-800">{selectedTripOrchestrationMode || 'n/a'}</dd>
                                                 </div>
                                                 <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
                                                     <dt className="text-xs font-semibold text-slate-500">Duration</dt>

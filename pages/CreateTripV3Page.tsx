@@ -21,7 +21,6 @@ import { MonthSeasonStrip } from '../components/MonthSeasonStrip';
 import { Checkbox } from '../components/ui/checkbox';
 import {
     buildWizardItineraryPrompt,
-    generateWizardItinerary,
     type WizardGenerateOptions,
 } from '../services/geminiService';
 import { getDefaultCreateTripModel } from '../config/aiModelCatalog';
@@ -45,7 +44,6 @@ import { decodeTripPrefill } from '../services/tripPrefillDecoder';
 import { createThailandTrip } from '../data/exampleTrips';
 import { TripView } from '../components/TripView';
 import { TripGenerationSkeleton } from '../components/TripGenerationSkeleton';
-import { isWizardAsyncGenerationEnabled } from '../services/tripGenerationAsyncConfig';
 import { startClientAsyncTripGeneration } from '../services/tripGenerationClientAsyncService';
 import { createTripGenerationInputSnapshot } from '../services/tripGenerationDiagnosticsService';
 import { HeroWebGLBackground } from '../components/HeroWebGLBackground';
@@ -429,46 +427,40 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
         };
 
         try {
-            if (isWizardAsyncGenerationEnabled()) {
-                const snapshot = createTripGenerationInputSnapshot({
-                    flow: 'wizard',
-                    destinationLabel,
+            const snapshot = createTripGenerationInputSnapshot({
+                flow: 'wizard',
+                destinationLabel,
+                startDate,
+                endDate,
+                payload: {
+                    options: wizardOptions,
+                },
+            });
+            const prompt = buildWizardItineraryPrompt(wizardOptions);
+            await startClientAsyncTripGeneration({
+                flow: 'wizard',
+                source: 'create_trip_v3',
+                jobSource: 'create_trip_v3_async',
+                destinationLabel,
+                startDate,
+                roundTrip: isRoundTrip,
+                prompt,
+                provider: defaultModel.provider,
+                model: defaultModel.model,
+                inputSnapshot: snapshot,
+                buildOptimisticTrip: (tripId) => buildPreviewTrip({
+                    destination: destinationLabel,
                     startDate,
                     endDate,
-                    payload: {
-                        options: wizardOptions,
-                    },
-                });
-                const prompt = buildWizardItineraryPrompt(wizardOptions);
-                await startClientAsyncTripGeneration({
-                    flow: 'wizard',
-                    source: 'create_trip_v3',
-                    jobSource: 'create_trip_v3_async',
-                    destinationLabel,
-                    startDate,
-                    roundTrip: isRoundTrip,
-                    prompt,
-                    provider: defaultModel.provider,
-                    model: defaultModel.model,
-                    inputSnapshot: snapshot,
-                    buildOptimisticTrip: (tripId) => buildPreviewTrip({
-                        destination: destinationLabel,
-                        startDate,
-                        endDate,
-                        tripId,
-                        title: destinationLabel,
-                    }),
-                    onTripUpdate: onTripGenerated,
-                    metadata: {
-                        variant: 'v3',
-                    },
-                });
-                setPreviewTrip(null);
-                return;
-            }
-            const trip = await generateWizardItinerary(wizardOptions);
+                    tripId,
+                    title: destinationLabel,
+                }),
+                onTripUpdate: onTripGenerated,
+                metadata: {
+                    variant: 'v3',
+                },
+            });
             setPreviewTrip(null);
-            onTripGenerated(trip);
         } catch (error) {
             console.error('V3 generation failed:', error);
             setPreviewTrip(null);

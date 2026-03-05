@@ -343,7 +343,8 @@
           "running": "läuft",
           "queued": "wartend",
           "succeeded": "erfolgreich"
-        }
+        },
+        "orchestration": "Ausführungsmodus"
       },
       "retry": {
         "readOnly": "This trip is read-only, so generation retry is unavailable.",

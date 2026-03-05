@@ -147,9 +147,6 @@ The CI validator (`scripts/validate-edge-functions.mjs`) enforces this rule at b
 | `TF_ENABLE_ADMIN_KEY_FALLBACK` | `ai-benchmark.ts` | Enables optional `x-tf-admin-key` fallback auth path (disabled by default) |
 | `TF_ADMIN_API_KEY` | `ai-generate-worker.ts` | Required worker auth header secret (`x-tf-admin-key`) |
 | `AI_GENERATION_ASYNC_WORKER_ENABLED` | `ai-generate-worker.ts`, `netlify/functions/ai-generate-worker-cron.js` | Enables async queued trip-generation worker execution and scheduled trigger |
-| `VITE_AI_GENERATION_ASYNC_FLOW_CLASSIC_ENABLED` | `CreateTripClassicLabPage.tsx`, `tripGenerationQueueService.ts` | Enables async queue-backed server execution for classic create/claim flows |
-| `VITE_AI_GENERATION_ASYNC_FLOW_WIZARD_ENABLED` | `tripGenerationQueueService.ts` | Enables async queue-backed server execution for wizard queue-claim flow |
-| `VITE_AI_GENERATION_ASYNC_FLOW_SURPRISE_ENABLED` | `tripGenerationQueueService.ts` | Enables async queue-backed server execution for surprise queue-claim flow |
 | `VITE_SUPABASE_URL` | `ai-benchmark.ts` | Supabase REST URL used for benchmark session/run/trip persistence |
 | `VITE_SUPABASE_ANON_KEY` | `ai-benchmark.ts` | Supabase REST anon key used with caller bearer token for owner-scoped RLS access |
 | `VITE_SUPABASE_URL` | `admin-iam.ts`, `admin-audit-export.ts` | Supabase project URL used for Auth and REST calls |

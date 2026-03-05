@@ -208,13 +208,19 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
     }));
     const selectedRetryModelId = retryModelId || defaultRetryModelId;
     const selectedRetryModelOption = activeRetryModelOptions.find((option) => option.id === selectedRetryModelId) || null;
-    const requestPayload = (
+    const latestAttemptMetadata = (
         latestAttempt?.metadata
         && typeof latestAttempt.metadata === 'object'
         && !Array.isArray(latestAttempt.metadata)
-        && latestAttempt.metadata.requestPayload
-        && typeof latestAttempt.metadata.requestPayload === 'object'
-    ) ? latestAttempt.metadata.requestPayload as Record<string, unknown> : null;
+    ) ? latestAttempt.metadata as Record<string, unknown> : null;
+    const latestAttemptOrchestration = (
+        latestAttemptMetadata && typeof latestAttemptMetadata.orchestration === 'string'
+    ) ? latestAttemptMetadata.orchestration : null;
+    const requestPayload = (
+        latestAttemptMetadata
+        && latestAttemptMetadata.requestPayload
+        && typeof latestAttemptMetadata.requestPayload === 'object'
+    ) ? latestAttemptMetadata.requestPayload as Record<string, unknown> : null;
     const inputSnapshot = aiMeta?.generation?.inputSnapshot || null;
     const retryDisabledReason = (
         isRetryingGeneration
@@ -431,6 +437,10 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                         <div className="rounded-lg border border-gray-100 bg-gray-50 p-2">
                             <dt className="text-gray-500">{t('tripView.generation.tripInfo.requestId')}</dt>
                             <dd className="mt-1 break-all font-mono text-[11px] font-semibold text-gray-900">{latestAttempt?.requestId || '—'}</dd>
+                        </div>
+                        <div className="rounded-lg border border-gray-100 bg-gray-50 p-2">
+                            <dt className="text-gray-500">{t('tripView.generation.tripInfo.orchestration')}</dt>
+                            <dd className="mt-1 break-all font-semibold text-gray-900">{latestAttemptOrchestration || '—'}</dd>
                         </div>
                         <div className="rounded-lg border border-gray-100 bg-gray-50 p-2">
                             <dt className="text-gray-500">{t('tripView.generation.tripInfo.runTime')}</dt>

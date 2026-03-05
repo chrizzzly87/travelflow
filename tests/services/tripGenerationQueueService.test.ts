@@ -11,15 +11,12 @@ const ensureDbSessionMock = vi.fn().mockResolvedValue(undefined);
 const dbUpsertTripMock = vi.fn().mockResolvedValue('trip-queued-1');
 const dbCreateTripVersionMock = vi.fn().mockResolvedValue('version-1');
 
-const generateTripFromInputSnapshotMock = vi.fn();
 const buildClassicItineraryPromptMock = vi.fn().mockReturnValue('classic prompt');
 const buildWizardItineraryPromptMock = vi.fn().mockReturnValue('wizard prompt');
 const buildSurpriseItineraryPromptMock = vi.fn().mockReturnValue('surprise prompt');
 const enqueueAsyncTripGenerationJobMock = vi.fn().mockResolvedValue(true);
-const isFlowAsyncGenerationEnabledMock = vi.fn().mockReturnValue(false);
 const startAttemptLogMock = vi.fn().mockResolvedValue({ id: 'attempt-log-1' });
 const finishAttemptLogMock = vi.fn().mockResolvedValue(undefined);
-const beginAbortTelemetryMock = vi.fn(() => ({ cancel: vi.fn() }));
 
 vi.mock('../../services/supabaseClient', () => ({
   supabase: {
@@ -35,7 +32,6 @@ vi.mock('../../services/dbService', () => ({
 }));
 
 vi.mock('../../services/aiService', () => ({
-  generateTripFromInputSnapshot: (...args: unknown[]) => generateTripFromInputSnapshotMock(...args),
   buildClassicItineraryPrompt: (...args: unknown[]) => buildClassicItineraryPromptMock(...args),
   buildWizardItineraryPrompt: (...args: unknown[]) => buildWizardItineraryPromptMock(...args),
   buildSurpriseItineraryPrompt: (...args: unknown[]) => buildSurpriseItineraryPromptMock(...args),
@@ -48,14 +44,6 @@ vi.mock('../../services/tripGenerationAttemptLogService', () => ({
 
 vi.mock('../../services/tripGenerationAsyncEnqueueService', () => ({
   enqueueAsyncTripGenerationJob: (...args: unknown[]) => enqueueAsyncTripGenerationJobMock(...args),
-}));
-
-vi.mock('../../services/tripGenerationAsyncConfig', () => ({
-  isFlowAsyncGenerationEnabled: (...args: unknown[]) => isFlowAsyncGenerationEnabledMock(...args),
-}));
-
-vi.mock('../../services/tripGenerationAbortTelemetryService', () => ({
-  beginTripGenerationAbortTelemetry: (...args: unknown[]) => beginAbortTelemetryMock(...args),
 }));
 
 vi.mock('../../utils', async (importOriginal) => {
@@ -71,6 +59,33 @@ import {
   QueuedTripGenerationError,
 } from '../../services/tripGenerationQueueService';
 
+const setupClassicClaim = () => {
+  claimRpcMock.mockImplementation((fn: string) => {
+    if (fn === 'claim_trip_generation_request') {
+      return Promise.resolve({
+        data: {
+          request_id: 'request-1',
+          flow: 'classic',
+          payload: {
+            version: 1,
+            flow: 'classic',
+            destinationLabel: 'Barcelona',
+            destinationPrompt: 'Barcelona',
+            startDate: '2026-04-10',
+            endDate: '2026-04-14',
+            options: {},
+          },
+          status: 'queued',
+          owner_user_id: 'owner-1',
+          expires_at: new Date(Date.now() + 60_000).toISOString(),
+        },
+        error: null,
+      });
+    }
+    return Promise.resolve({ data: null, error: null });
+  });
+};
+
 describe('processQueuedTripGenerationAfterAuth', () => {
   beforeEach(() => {
     claimRpcMock.mockReset();
@@ -80,52 +95,24 @@ describe('processQueuedTripGenerationAfterAuth', () => {
     ensureDbSessionMock.mockClear();
     dbUpsertTripMock.mockClear();
     dbCreateTripVersionMock.mockClear();
-    generateTripFromInputSnapshotMock.mockReset();
     buildClassicItineraryPromptMock.mockClear();
     buildWizardItineraryPromptMock.mockClear();
     buildSurpriseItineraryPromptMock.mockClear();
     enqueueAsyncTripGenerationJobMock.mockReset();
-    isFlowAsyncGenerationEnabledMock.mockReset();
-    isFlowAsyncGenerationEnabledMock.mockReturnValue(false);
     startAttemptLogMock.mockClear();
     finishAttemptLogMock.mockClear();
-    beginAbortTelemetryMock.mockClear();
 
-    claimRpcMock.mockImplementation((fn: string) => {
-      if (fn === 'claim_trip_generation_request') {
-        return Promise.resolve({
-          data: {
-            request_id: 'request-1',
-            flow: 'classic',
-            payload: {
-              version: 1,
-              flow: 'classic',
-              destinationLabel: 'Barcelona',
-              destinationPrompt: 'Barcelona',
-              startDate: '2026-04-10',
-              endDate: '2026-04-14',
-              options: {},
-            },
-            status: 'queued',
-            owner_user_id: 'owner-1',
-            expires_at: new Date(Date.now() + 60_000).toISOString(),
-          },
-          error: null,
-        });
-      }
-      return Promise.resolve({ data: null, error: null });
-    });
+    enqueueAsyncTripGenerationJobMock.mockResolvedValue(true);
+    setupClassicClaim();
   });
 
-  it('keeps a discoverable failed trip and surfaces its tripId on queue failure', async () => {
-    generateTripFromInputSnapshotMock.mockRejectedValue(new Error('Provider timeout while generating itinerary'));
+  it('keeps a discoverable failed trip and surfaces its tripId when async enqueue fails', async () => {
+    enqueueAsyncTripGenerationJobMock.mockResolvedValue(false);
 
     await expect(processQueuedTripGenerationAfterAuth('request-1')).rejects.toMatchObject({
       name: 'QueuedTripGenerationError',
       tripId: 'trip-queued-1',
     } satisfies Partial<QueuedTripGenerationError>);
-
-    expect(dbUpsertTripMock).toHaveBeenCalled();
 
     const persistedTrips = dbUpsertTripMock.mock.calls.map((call) => call[0] as ITrip);
     const failedPersistedTrip = persistedTrips[persistedTrips.length - 1];
@@ -133,19 +120,15 @@ describe('processQueuedTripGenerationAfterAuth', () => {
     expect(failedPersistedTrip.id).toBe('trip-queued-1');
     expect(failedPersistedTrip.title).toBe('Barcelona');
     expect(failedPersistedTrip.aiMeta?.generation?.state).toBe('failed');
-    expect(failedPersistedTrip.aiMeta?.generation?.latestAttempt?.errorMessage).toContain('Provider timeout');
+    expect(failedPersistedTrip.aiMeta?.generation?.latestAttempt?.errorMessage).toContain('Could not enqueue async generation job');
     expect(failedPersistedTrip.items.some((item) => item.loading)).toBe(false);
   });
 
-  it('enqueues classic queue-claim work into async worker when async flag is enabled', async () => {
-    isFlowAsyncGenerationEnabledMock.mockReturnValue(true);
-    enqueueAsyncTripGenerationJobMock.mockResolvedValue(true);
-
+  it('enqueues classic queue-claim work into async worker', async () => {
     const result = await processQueuedTripGenerationAfterAuth('request-1');
 
     expect(result.tripId).toBe('trip-queued-1');
     expect(result.trip.aiMeta?.generation?.state).toBe('queued');
-    expect(generateTripFromInputSnapshotMock).not.toHaveBeenCalled();
     expect(enqueueAsyncTripGenerationJobMock).toHaveBeenCalledTimes(1);
     expect(enqueueAsyncTripGenerationJobMock).toHaveBeenCalledWith(expect.objectContaining({
       flow: 'classic',
@@ -157,7 +140,7 @@ describe('processQueuedTripGenerationAfterAuth', () => {
     }));
   });
 
-  it('enqueues wizard queue-claim work into async worker when wizard async is enabled', async () => {
+  it('enqueues wizard queue-claim work into async worker', async () => {
     claimRpcMock.mockImplementation((fn: string) => {
       if (fn === 'claim_trip_generation_request') {
         return Promise.resolve({
@@ -183,14 +166,11 @@ describe('processQueuedTripGenerationAfterAuth', () => {
       }
       return Promise.resolve({ data: null, error: null });
     });
-    isFlowAsyncGenerationEnabledMock.mockReturnValue(true);
-    enqueueAsyncTripGenerationJobMock.mockResolvedValue(true);
 
     const result = await processQueuedTripGenerationAfterAuth('request-1');
 
     expect(result.tripId).toBe('trip-queued-1');
     expect(result.trip.aiMeta?.generation?.state).toBe('queued');
-    expect(generateTripFromInputSnapshotMock).not.toHaveBeenCalled();
     expect(buildWizardItineraryPromptMock).toHaveBeenCalledTimes(1);
     expect(enqueueAsyncTripGenerationJobMock).toHaveBeenCalledWith(expect.objectContaining({
       flow: 'wizard',

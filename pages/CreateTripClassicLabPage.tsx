@@ -46,7 +46,6 @@ import { useTranslation } from 'react-i18next';
 import { SiteHeader } from '../components/navigation/SiteHeader';
 import { SiteFooter } from '../components/marketing/SiteFooter';
 import { CreateTripWizardCtaBanner } from '../components/create-trip/CreateTripWizardCtaBanner';
-import { useAppDialog } from '../components/AppDialogProvider';
 import { DateRangePicker } from '../components/DateRangePicker';
 import { IdealTravelTimeline } from '../components/IdealTravelTimeline';
 import { FlagIcon } from '../components/flags/FlagIcon';
@@ -59,9 +58,8 @@ import { useDbSync } from '../hooks/useDbSync';
 import { useConnectivityStatus } from '../hooks/useConnectivityStatus';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { useSyncStatus } from '../hooks/useSyncStatus';
-import { buildClassicItineraryPrompt, generateItinerary } from '../services/aiService';
+import { buildClassicItineraryPrompt } from '../services/aiService';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
-import { beginTripGenerationAbortTelemetry } from '../services/tripGenerationAbortTelemetryService';
 import {
     finishTripGenerationAttemptLog,
     startTripGenerationAttemptLog,
@@ -71,18 +69,12 @@ import {
     createTripGenerationRequestId,
     markTripGenerationFailed,
     markTripGenerationRunning,
-    markTripGenerationSucceeded,
-    mergeGeneratedTripIntoExisting,
     withLatestTripGenerationAttemptId,
 } from '../services/tripGenerationDiagnosticsService';
 import {
     beginTripGenerationTabFeedback,
-    getTripReadyNotificationPermission,
-    requestTripReadyNotificationPermission,
-    sendTripReadyNotification,
     type TripGenerationTabFeedbackSession,
 } from '../services/tripGenerationTabFeedbackService';
-import { isClassicAsyncGenerationEnabled } from '../services/tripGenerationAsyncConfig';
 import { enqueueClassicAsyncTripGenerationJob } from '../services/tripGenerationAsyncEnqueueService';
 import { getCountrySeasonByName } from '../data/countryTravelData';
 import { AppLanguage, ITrip, TripPrefillData } from '../types';
@@ -350,7 +342,6 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
     onLanguageLoaded,
 }) => {
     const { t, i18n } = useTranslation('createTrip');
-    const { confirm: confirmDialog } = useAppDialog();
     const [searchParams] = useSearchParams();
     const { snapshot: connectivitySnapshot } = useConnectivityStatus();
     const { snapshot: syncSnapshot, retrySyncNow } = useSyncStatus();
@@ -1505,31 +1496,6 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
         });
     };
 
-    const requestGenerationNotificationPermission = useCallback(async (): Promise<NotificationPermission | 'unsupported'> => {
-        const currentPermission = getTripReadyNotificationPermission();
-        if (currentPermission !== 'default') return currentPermission;
-
-        trackEvent('create_trip__notifications--prompt');
-        const shouldEnable = await confirmDialog({
-            title: t('notifications.prompt.title'),
-            message: (
-                <p>{t('notifications.prompt.message')}</p>
-            ),
-            confirmLabel: t('notifications.prompt.enable'),
-            cancelLabel: t('notifications.prompt.notNow'),
-        });
-
-        if (!shouldEnable) {
-            trackEvent('create_trip__notifications--not_now');
-            return currentPermission;
-        }
-
-        trackEvent('create_trip__notifications--enable');
-        const requestedPermission = await requestTripReadyNotificationPermission();
-        trackEvent('create_trip__notifications--permission', { permission: requestedPermission });
-        return requestedPermission;
-    }, [confirmDialog, t]);
-
     const handleGenerateTrip = async () => {
         if (isSubmitting) return;
         if (isGenerationBlockedOffline) {
@@ -1544,13 +1510,6 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
 
         setIsSubmitting(true);
         setSubmitError(null);
-
-        let notificationPermission: NotificationPermission | 'unsupported' = getTripReadyNotificationPermission();
-        try {
-            notificationPermission = await requestGenerationNotificationPermission();
-        } catch {
-            notificationPermission = getTripReadyNotificationPermission();
-        }
 
         trackEvent('create_trip__cta--generate', {
             destination_count: orderedDestinations.length,
@@ -1607,9 +1566,11 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
             provider: selectedAiModel.provider,
             model: selectedAiModel.model,
             requestId,
-            state: 'running',
+            state: 'queued',
+            metadata: {
+                orchestration: 'async_worker',
+            },
         });
-        const optimisticCreatedAt = optimisticBaseTrip.createdAt;
         const optimisticAttempt = optimisticTrip.aiMeta?.generation?.latestAttempt || null;
         let attemptId = optimisticAttempt?.id || null;
         generationTabFeedbackSessionRef.current?.cancel();
@@ -1619,13 +1580,14 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
             tripId: optimisticTripId,
             flow: 'classic',
             source: 'create_trip_classic_lab',
-            state: 'running',
+            state: 'queued',
             provider: selectedAiModel.provider,
             model: selectedAiModel.model,
             requestId,
             startedAt: optimisticAttempt?.startedAt,
             metadata: {
                 destination_label: destinationLabel,
+                orchestration: 'async_worker',
             },
         });
         if (loggedAttempt?.id) {
@@ -1633,7 +1595,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
             attemptId = loggedAttempt.id;
             onTripGenerated(optimisticTrip);
         }
-        const classicGenerateOptions: GenerateOptions = {
+        const classicGenerateOptions = {
             budget,
             pace,
             interests: notesInterests.length > 0 ? notesInterests : undefined,
@@ -1644,107 +1606,32 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                 model: selectedAiModel.model,
             },
         };
-        let abortTelemetrySession: ReturnType<typeof beginTripGenerationAbortTelemetry> | null = null;
 
         try {
-            if (isClassicAsyncGenerationEnabled()) {
-                if (!attemptId) {
-                    throw new Error('Could not start async generation attempt.');
-                }
-                const prompt = buildClassicItineraryPrompt(destinationPrompt, classicGenerateOptions);
-                const enqueueSucceeded = await enqueueClassicAsyncTripGenerationJob({
-                    tripId: optimisticTripId,
-                    attemptId,
-                    requestId,
-                    source: 'create_trip_classic_lab_async',
-                    queueRequestId: null,
-                    startDate,
-                    roundTrip,
-                    prompt,
-                    provider: selectedAiModel.provider,
-                    model: selectedAiModel.model,
-                    inputSnapshot: generationSnapshot,
-                    maxRetries: 0,
-                });
-                if (!enqueueSucceeded) {
-                    throw new Error('Could not enqueue async generation.');
-                }
-                generationTabFeedbackSessionRef.current?.cancel();
-                generationTabFeedbackSessionRef.current = null;
-                return;
+            if (!attemptId) {
+                throw new Error('Could not start async generation attempt.');
             }
-
-            abortTelemetrySession = beginTripGenerationAbortTelemetry({
+            const prompt = buildClassicItineraryPrompt(destinationPrompt, classicGenerateOptions);
+            const enqueueSucceeded = await enqueueClassicAsyncTripGenerationJob({
                 tripId: optimisticTripId,
-                attemptId: attemptId || 'unknown-attempt',
+                attemptId,
                 requestId,
-                flow: 'classic',
-                source: 'create_trip_classic_lab',
+                source: 'create_trip_classic_lab_async',
+                queueRequestId: null,
+                startDate,
+                roundTrip,
+                prompt,
                 provider: selectedAiModel.provider,
                 model: selectedAiModel.model,
-                startedAt: optimisticAttempt?.startedAt || null,
+                inputSnapshot: generationSnapshot,
+                maxRetries: 0,
             });
-
-            const generatedTrip = await generateItinerary(destinationPrompt, startDate, {
-                ...classicGenerateOptions,
-                generationContext: {
-                    requestId,
-                    tripId: optimisticTripId,
-                    attemptId: attemptId || undefined,
-                    flow: 'classic',
-                    source: 'create_trip_classic_lab',
-                },
-            });
-
-            const mergedTrip = mergeGeneratedTripIntoExisting(optimisticTrip, {
-                ...generatedTrip,
-                id: optimisticTripId,
-                createdAt: optimisticCreatedAt,
-                updatedAt: Date.now(),
-                roundTrip: generatedTrip.roundTrip ?? roundTrip,
-                sourceKind: generatedTrip.sourceKind || 'created',
-            });
-            const succeededTrip = markTripGenerationSucceeded(mergedTrip, {
-                flow: 'classic',
-                source: 'create_trip_classic_lab',
-                provider: generatedTrip.aiMeta?.provider || selectedAiModel.provider,
-                model: generatedTrip.aiMeta?.model || selectedAiModel.model,
-                providerModel: generatedTrip.aiMeta?.generation?.latestAttempt?.providerModel || null,
-                requestId: generatedTrip.aiMeta?.generation?.latestAttempt?.requestId || requestId,
-                durationMs: generatedTrip.aiMeta?.generation?.latestAttempt?.durationMs || null,
-                statusCode: 200,
-                attemptId,
-                metadata: generatedTrip.aiMeta?.generation?.latestAttempt?.metadata || null,
-            });
-            onTripGenerated(succeededTrip);
-            generationTabFeedbackSessionRef.current?.complete('success', {
-                title: generatedTrip.title,
-            });
+            if (!enqueueSucceeded) {
+                throw new Error('Could not enqueue async generation.');
+            }
+            generationTabFeedbackSessionRef.current?.cancel();
             generationTabFeedbackSessionRef.current = null;
-            abortTelemetrySession?.cancel();
-            if (loggedAttempt?.id) {
-                await finishTripGenerationAttemptLog({
-                    attemptId: loggedAttempt.id,
-                    state: 'succeeded',
-                    provider: succeededTrip.aiMeta?.provider,
-                    model: succeededTrip.aiMeta?.model,
-                    requestId: succeededTrip.aiMeta?.generation?.latestAttempt?.requestId || requestId,
-                    durationMs: succeededTrip.aiMeta?.generation?.latestAttempt?.durationMs || null,
-                    finishedAt: succeededTrip.aiMeta?.generation?.latestAttempt?.finishedAt || undefined,
-                });
-            }
-
-            const isTabBackgrounded = document.visibilityState === 'hidden'
-                || (typeof document.hasFocus === 'function' && !document.hasFocus());
-            if (isTabBackgrounded && notificationPermission === 'granted') {
-                const sent = sendTripReadyNotification({
-                    title: t('notifications.ready.title'),
-                    body: t('notifications.ready.body'),
-                });
-                if (sent) {
-                    trackEvent('create_trip__notifications--sent');
-                }
-            }
+            return;
         } catch (error) {
             const failedTrip = markTripGenerationFailed({
                 ...optimisticTrip,
@@ -1761,11 +1648,13 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                 model: selectedAiModel.model,
                 requestId,
                 attemptId,
+                metadata: {
+                    orchestration: 'async_worker_enqueue',
+                },
             });
             onTripGenerated(failedTrip);
             generationTabFeedbackSessionRef.current?.complete('error');
             generationTabFeedbackSessionRef.current = null;
-            abortTelemetrySession?.cancel();
             if (loggedAttempt?.id) {
                 await finishTripGenerationAttemptLog({
                     attemptId: loggedAttempt.id,

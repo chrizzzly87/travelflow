@@ -40,16 +40,16 @@ summary: "Failed trip generations are now easier to spot, inspect, and retry on 
 - [ ] [Internal] 🧩 Added an admin data-table component group in the design-system playground with sticky/sort/selection examples and documented the table pattern in brand/UI guidelines.
 - [ ] [Internal] 🧱 Added structured generation attempt diagnostics service and durable attempt-log RPC/table contracts for richer failure telemetry.
 - [ ] [Internal] 🧱 Started async-generation infrastructure rollout with server-side job queue schema, lease RPCs, and typed job service adapters for phased worker cutover.
-- [ ] [Internal] ⚙️ Added a flag-gated async generation worker path (edge worker endpoint + scheduled trigger) and queue-claim classic enqueue wiring for server-owned execution rollout.
-- [ ] [Internal] ⚙️ Classic create-trip now supports flag-gated async enqueue to the same worker pipeline instead of blocking on client-owned generation completion.
-- [ ] [Internal] ⚙️ Queue-claim wizard/surprise flows now support flag-gated async enqueue through the same worker path, with flow-aware prompt building and diagnostics metadata.
-- [ ] [Internal] ⚙️ Retry now supports flag-gated async server-owned enqueue, so the same trip can keep running after the browser request returns.
-- [ ] [Internal] ⚙️ Create-trip V1/V2/V3 submit flows now support flag-gated async worker enqueue paths so generation completion is no longer bound to an open browser tab.
-- [ ] [Internal] ⚙️ Main create-trip form (classic/wizard/surprise) now supports flag-gated async worker enqueue paths for authenticated generation flows.
+- [ ] [Internal] ⚙️ Added async generation worker infrastructure (edge worker endpoint + scheduled trigger) and queue enqueue wiring for server-owned execution.
+- [ ] [Internal] ⚙️ Classic and wizard create-trip submits now enqueue async worker jobs by default, so generation completion is no longer bound to an open browser tab.
+- [ ] [Internal] ⚙️ Queue-claim wizard/surprise processing now enqueues the same async worker pipeline with flow-aware prompt metadata.
+- [ ] [Internal] ⚙️ Retry now always enqueues server-owned async jobs for the same trip instead of running generation in the browser session.
+- [ ] [Internal] ⚙️ Removed client-side async-flow feature flags/fallback branches so all active generation entry points use the worker queue lifecycle.
 - [ ] [Internal] 🧯 Admin trip diagnostics now includes queue/dead-letter job history (state, retry budget, latest worker error) for faster worker incident triage.
 - [ ] [Internal] 🧯 Admin trip diagnostics now supports one-click requeue for dead/failed worker jobs to speed up manual recovery during incidents.
 - [ ] [Internal] 🔄 Trip view now polls owner-access DB snapshots while generation is queued/running so server-side async completions appear without manual refresh.
 - [x] [Improved] 🧭 Create Trip now focuses on classic + wizard flows, with obsolete lab routes retired and a guided wizard CTA at the bottom of the planner.
+- [x] [Improved] 🧪 Trip diagnostics now show the execution mode (`async_worker` plus legacy sync markers), making tab-independent rollout status directly visible.
 - [ ] [Internal] 🧹 Removed detached legacy create-trip lab components/tests so retired flows no longer add maintenance surface.
 - [ ] [Internal] 🛠️ Removed legacy admin trip-list RPC overloads and hardened generation-state RPC arguments to prevent PostgREST function ambiguity.
 - [ ] [Internal] 📡 Added best-effort tab-close abort beacons to improve abort classification during in-flight generation.
