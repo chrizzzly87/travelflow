@@ -161,6 +161,7 @@ describe('components/auth/AuthModal', () => {
       expect(mocks.auth.loginWithPassword).toHaveBeenCalledWith('traveler@example.com', 'password123');
     });
     expect(mocks.setRememberLoginEnabled).toHaveBeenLastCalledWith(false);
+    expect(screen.queryByText('states.alreadyAuthenticated')).not.toBeInTheDocument();
   });
 
   it('submits browser-autofilled credentials even when React state was not updated by input events', async () => {

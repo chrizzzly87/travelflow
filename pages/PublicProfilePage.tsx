@@ -530,6 +530,7 @@ export const PublicProfilePage: React.FC = () => {
                                                 pinnedTag: t('cards.pinnedTag'),
                                                 expiredTag: t('cards.expiredTag'),
                                                 expiredFallbackTitle: t('cards.expiredFallbackTitle'),
+                                                generationFailedTag: t('cards.generationFailedTag'),
                                                 mapUnavailable: t('cards.mapUnavailable'),
                                                 mapLoading: t('cards.mapLoading'),
                                             }}
@@ -576,6 +577,7 @@ export const PublicProfilePage: React.FC = () => {
                                                     pinnedTag: t('cards.pinnedTag'),
                                                     expiredTag: t('cards.expiredTag'),
                                                     expiredFallbackTitle: t('cards.expiredFallbackTitle'),
+                                                    generationFailedTag: t('cards.generationFailedTag'),
                                                     mapUnavailable: t('cards.mapUnavailable'),
                                                     mapLoading: t('cards.mapLoading'),
                                                 }}

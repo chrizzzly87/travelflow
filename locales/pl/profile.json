@@ -77,7 +77,8 @@
     },
     "expiredTag": "Wygasła",
     "expiredFallbackTitle": "Wygasły szkic podróży",
-    "hiddenTag": "Hidden"
+    "hiddenTag": "Hidden",
+    "generationFailedTag": "Generation failed"
   },
   "actions": {
     "title": "Szybkie akcje",

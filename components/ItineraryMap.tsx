@@ -277,6 +277,15 @@ const ACTIVITY_MARKER_Z_INDEX = 240;
 const ACTIVITY_MARKER_SELECTED_Z_INDEX = 260;
 export const ACTIVITY_MARKERS_MIN_ZOOM = 9;
 
+const resolveCityMarkerZIndex = (
+    isSelected: boolean,
+    profile: MarkerRenderProfile,
+): number => {
+    const base = isSelected ? CITY_MARKER_SELECTED_Z_INDEX : CITY_MARKER_Z_INDEX;
+    const size = isSelected ? profile.city.selectedSize : profile.city.size;
+    return base + Math.max(0, Math.round(size / 2));
+};
+
 type MarkerRenderProfile = {
     city: {
         shape: 'pin' | 'circle';
@@ -1736,6 +1745,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             centerAnchor = false,
             onClick,
             tooltipText,
+            markerDomId,
         }: {
             position: google.maps.LatLngLiteral;
             html: string;
@@ -1744,6 +1754,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             centerAnchor?: boolean;
             onClick?: () => void;
             tooltipText?: string;
+            markerDomId?: string;
         }): OverlayMarkerHandle => {
             const overlay = new window.google.maps.OverlayView();
             let markerDiv: HTMLDivElement | null = null;
@@ -1786,6 +1797,15 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 const targetPane = clickable
                     ? (panes.floatPane ?? panes.overlayMouseTarget ?? panes.overlayLayer)
                     : panes.overlayLayer;
+                if (markerDomId) {
+                    const staleNodes = targetPane.querySelectorAll('[data-tf-marker-id]');
+                    staleNodes.forEach((node) => {
+                        if (!(node instanceof HTMLElement)) return;
+                        if (node.dataset.tfMarkerId !== markerDomId) return;
+                        node.remove();
+                    });
+                    markerDiv.dataset.tfMarkerId = markerDomId;
+                }
                 targetPane.appendChild(markerDiv);
             };
 
@@ -2064,9 +2084,10 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 const marker = createOverlayMarker({
                     position: markerPosition,
                     html: buildCityMarkerHtml(index, cityMarkerColor, isSelected, effectiveMarkerRenderProfile),
-                    zIndex: isSelected ? CITY_MARKER_SELECTED_Z_INDEX : CITY_MARKER_Z_INDEX,
+                    zIndex: resolveCityMarkerZIndex(isSelected, effectiveMarkerRenderProfile),
                     clickable: true,
                     onClick: () => onCityMarkerSelectRef.current?.(city.id),
+                    markerDomId: `city:${city.id}`,
                 });
                 
                 cityMarkerMetaRef.current.push({
@@ -2102,6 +2123,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                     clickable: true,
                     onClick: () => onActivityMarkerSelectRef.current?.(activityMarker.id),
                     tooltipText: activityMarker.title,
+                    markerDomId: `activity:${activityMarker.id}`,
                 });
                 if (!shouldAttachActivityMarkers) {
                     marker.setMap(null);
@@ -2680,7 +2702,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             const isSelected = id === selectedCityId;
             marker.update({
                 html: buildCityMarkerHtml(index, color, isSelected, effectiveMarkerRenderProfile),
-                zIndex: isSelected ? CITY_MARKER_SELECTED_Z_INDEX : CITY_MARKER_Z_INDEX,
+                zIndex: resolveCityMarkerZIndex(isSelected, effectiveMarkerRenderProfile),
             });
         });
         activityMarkerMetaRef.current.forEach((meta) => {

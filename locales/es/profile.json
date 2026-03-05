@@ -77,7 +77,8 @@
     },
     "expiredTag": "Caducado",
     "expiredFallbackTitle": "Borrador de viaje caducado",
-    "hiddenTag": "Hidden"
+    "hiddenTag": "Hidden",
+    "generationFailedTag": "Generation failed"
   },
   "actions": {
     "title": "Acciones rápidas",

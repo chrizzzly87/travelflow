@@ -1,7 +1,8 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo, Suspense, lazy } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { AppLanguage, ITrip, ITimelineItem, IViewSettings, ShareMode } from '../types';
+import { AppLanguage, ITrip, ITimelineItem, IViewSettings, ShareMode, TripGenerationAttemptSummary, TripGenerationState } from '../types';
+import { getDefaultCreateTripModel } from '../config/aiModelCatalog';
 import { GoogleMapsLoader } from './GoogleMapsLoader';
 import { BASE_PIXELS_PER_DAY, DEFAULT_CITY_COLOR_PALETTE_ID, DEFAULT_DISTANCE_UNIT, buildShareUrl, formatDistance, getTimelineBounds, getTripDistanceKm, isInternalMapColorModeControlEnabled, normalizeMapColorMode } from '../utils';
 import { getExampleMapViewTransitionName, getExampleTitleViewTransitionName } from '../shared/viewTransitionNames';
@@ -17,7 +18,7 @@ import {
     resolveTripPaywallActivationMode,
     type TripPaywallActivationMode,
 } from '../config/paywall';
-import { trackEvent } from '../services/analyticsService';
+import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
 import { removeLocalStorageItem } from '../services/browserStorageService';
 import { useLoginModal } from '../hooks/useLoginModal';
 import { buildPathFromLocationParts } from '../services/authNavigationService';
@@ -71,6 +72,16 @@ import { TripViewHudOverlays } from './tripview/TripViewHudOverlays';
 import { TripViewPlannerWorkspace } from './tripview/TripViewPlannerWorkspace';
 import { TripViewStatusBanners } from './tripview/TripViewStatusBanners';
 import { showAppToast } from './ui/appToast';
+import {
+    TRIP_GENERATION_TIMEOUT_MS,
+    getTripGenerationElapsedMs,
+    getLatestTripGenerationAttempt,
+    getTripGenerationState,
+    markTripGenerationFailed,
+} from '../services/tripGenerationDiagnosticsService';
+import { retryTripGenerationWithDefaultModel } from '../services/tripGenerationRetryService';
+import { abortActiveTripGenerationRequest } from '../services/aiService';
+import { buildBenchmarkScenarioImportUrl } from '../services/tripGenerationBenchmarkBridge';
 
 const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
     moduleKey: string,
@@ -478,6 +489,16 @@ interface TripViewModalLayerProps {
         accessSource: string | null;
     } | null;
     aiMeta: ITrip['aiMeta'];
+    generationState: TripGenerationState;
+    latestGenerationAttempt: TripGenerationAttemptSummary | null;
+    canRetryGeneration: boolean;
+    isRetryingGeneration: boolean;
+    retryModelId: string | null;
+    onRetryModelIdChange: (modelId: string) => void;
+    onRetryGeneration: (source: 'trip_info' | 'trip_strip', modelId?: string | null) => void;
+    onOpenBenchmarkWithSnapshot: () => void;
+    canOpenBenchmarkWithSnapshot: boolean;
+    tripInfoRetryAnalyticsAttributes: Record<string, string>;
     forkMeta: { label: string; url: string | null } | null;
     isTripInfoHistoryExpanded: boolean;
     onToggleTripInfoHistoryExpanded: () => void;
@@ -556,6 +577,16 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
     ownerHint,
     adminMeta,
     aiMeta,
+    generationState,
+    latestGenerationAttempt,
+    canRetryGeneration,
+    isRetryingGeneration,
+    retryModelId,
+    onRetryModelIdChange,
+    onRetryGeneration,
+    onOpenBenchmarkWithSnapshot,
+    canOpenBenchmarkWithSnapshot,
+    tripInfoRetryAnalyticsAttributes,
     forkMeta,
     isTripInfoHistoryExpanded,
     onToggleTripInfoHistoryExpanded,
@@ -646,6 +677,16 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
                     ownerHint={ownerHint}
                     adminMeta={adminMeta}
                     aiMeta={aiMeta}
+                    generationState={generationState}
+                    latestGenerationAttempt={latestGenerationAttempt}
+                    canRetryGeneration={canRetryGeneration}
+                    isRetryingGeneration={isRetryingGeneration}
+                    retryModelId={retryModelId}
+                    onRetryModelIdChange={onRetryModelIdChange}
+                    onRetryGeneration={(modelId) => onRetryGeneration('trip_info', modelId)}
+                    onOpenBenchmarkWithSnapshot={onOpenBenchmarkWithSnapshot}
+                    canOpenBenchmarkWithSnapshot={canOpenBenchmarkWithSnapshot}
+                    retryAnalyticsAttributes={tripInfoRetryAnalyticsAttributes}
                     forkMeta={forkMeta}
                     isTripInfoHistoryExpanded={isTripInfoHistoryExpanded}
                     onToggleTripInfoHistoryExpanded={onToggleTripInfoHistoryExpanded}
@@ -841,6 +882,8 @@ const useTripViewRender = ({
     const titleViewTransitionName = getExampleTitleViewTransitionName(useExampleSharedTransition);
     const tripRef = useRef(trip);
     tripRef.current = trip;
+    const [generationNowMs, setGenerationNowMs] = useState(() => Date.now());
+    const [retryModelId, setRetryModelId] = useState<string>(getDefaultCreateTripModel().id);
     const isReleaseNoticeReady = useReleaseNoticeReady({ suppressReleaseNotice });
     const {
         tripExpiresAtMs,
@@ -868,6 +911,35 @@ const useTripViewRender = ({
     );
     const expectedCityLaneCount = displayTrip.items.filter((item) => item.type === 'city').length;
     const canEnableAdminOverride = isAdminFallbackView && Boolean(adminAccess?.canAdminWrite);
+    const shouldPollGenerationState = (
+        trip.aiMeta?.generation?.state === 'running'
+        || trip.aiMeta?.generation?.state === 'queued'
+        || trip.items.some((item) => item.loading)
+    );
+    useEffect(() => {
+        if (!shouldPollGenerationState) return undefined;
+        const timer = window.setInterval(() => {
+            setGenerationNowMs(Date.now());
+        }, 1_000);
+        return () => window.clearInterval(timer);
+    }, [shouldPollGenerationState, trip.id]);
+    const generationState = useMemo<TripGenerationState>(
+        () => getTripGenerationState(trip, generationNowMs),
+        [generationNowMs, trip]
+    );
+    const latestGenerationAttempt = useMemo<TripGenerationAttemptSummary | null>(
+        () => getLatestTripGenerationAttempt(trip),
+        [trip]
+    );
+    const generationElapsedMs = useMemo(
+        () => getTripGenerationElapsedMs(trip, generationNowMs),
+        [generationNowMs, trip]
+    );
+    const isGenerationSlow = (
+        (generationState === 'running' || generationState === 'queued')
+        && typeof generationElapsedMs === 'number'
+        && generationElapsedMs >= TRIP_GENERATION_TIMEOUT_MS
+    );
     const ownerUsersUrl = useMemo(() => {
         if (!isAdminFallbackView || !adminAccess?.ownerId) return null;
         return `/admin/trips?user=${encodeURIComponent(adminAccess.ownerId)}&drawer=user`;
@@ -979,6 +1051,7 @@ const useTripViewRender = ({
     ]);
 
     // View State
+    const [isRetryingGeneration, setIsRetryingGeneration] = useState(false);
     const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
     const [selectedCityIds, setSelectedCityIds] = useState<string[]>([]);
     const cityColorPaletteId = trip.cityColorPaletteId || DEFAULT_CITY_COLOR_PALETTE_ID;
@@ -1189,6 +1262,225 @@ const useTripViewRender = ({
         });
     }, [initialViewSettings, onCommitState, onUpdateTrip, showToast, t, trip.defaultView, trip.id]);
 
+    const canRetryGeneration = canEdit
+        && !isRetryingGeneration
+        && Boolean(trip.aiMeta?.generation?.inputSnapshot)
+        && generationState !== 'running'
+        && generationState !== 'queued';
+    const canAbortAndRetryGeneration = canEdit
+        && !isRetryingGeneration
+        && Boolean(trip.aiMeta?.generation?.inputSnapshot)
+        && isGenerationSlow;
+
+    const currentViewSettings: IViewSettings = useMemo(() => ({
+        layoutMode,
+        timelineMode,
+        timelineView,
+        mapDockMode,
+        mapStyle,
+        routeMode,
+        showCityNames,
+        zoomLevel,
+        sidebarWidth,
+        timelineHeight
+    }), [layoutMode, timelineMode, timelineView, mapDockMode, mapStyle, routeMode, showCityNames, zoomLevel, sidebarWidth, timelineHeight]);
+
+    const tripInfoRetryAnalyticsAttributes = useMemo(
+        () => getAnalyticsDebugAttributes('trip_generation__trip_info--retry', {
+            trip_id: trip.id,
+            source: 'trip_info_modal',
+        }),
+        [trip.id]
+    );
+
+    const handleOpenBenchmarkWithSnapshot = useCallback(() => {
+        const snapshot = trip.aiMeta?.generation?.inputSnapshot;
+        const importUrl = buildBenchmarkScenarioImportUrl({
+            snapshot: snapshot || null,
+            source: 'trip_info',
+            tripId: trip.id,
+        });
+        if (!importUrl) {
+            showToast('No generation input snapshot found for benchmark export.', {
+                tone: 'neutral',
+                title: 'Benchmark export unavailable',
+            });
+            return;
+        }
+        trackEvent('trip_generation__trip_info--open_benchmark', {
+            trip_id: trip.id,
+            flow: snapshot?.flow || 'unknown',
+            source: 'trip_info_modal',
+        });
+        window.open(importUrl, '_blank', 'noopener,noreferrer');
+    }, [showToast, trip.aiMeta?.generation?.inputSnapshot, trip.id]);
+
+    const handleRetryGeneration = useCallback(async (
+        source: 'trip_info' | 'trip_strip',
+        modelIdOverride?: string | null,
+        baseTripOverride?: ITrip,
+    ) => {
+        if (isRetryingGeneration) return;
+        const baseTrip = baseTripOverride || trip;
+        const selectedRetryModelId = modelIdOverride || retryModelId || null;
+        if (source === 'trip_info') {
+            trackEvent('trip_generation__trip_info--retry', {
+                trip_id: trip.id,
+                source,
+                model_id: selectedRetryModelId || 'default',
+            });
+        }
+        if (!canEdit) {
+            showToast(t('tripView.generation.retry.readOnly'), {
+                tone: 'neutral',
+                title: t('tripView.generation.retry.readOnlyTitle'),
+            });
+            return;
+        }
+        if (!baseTrip.aiMeta?.generation?.inputSnapshot) {
+            showToast(t('tripView.generation.retry.missingSnapshot'), {
+                tone: 'neutral',
+                title: t('tripView.generation.retry.missingSnapshotTitle'),
+            });
+            return;
+        }
+
+        setIsRetryingGeneration(true);
+        try {
+            const result = await retryTripGenerationWithDefaultModel(baseTrip, {
+                source: source === 'trip_info' ? 'trip_info_modal' : 'trip_status_strip',
+                contextSource: 'trip_retry',
+                modelId: selectedRetryModelId,
+                onTripUpdate: (updatedTrip) => {
+                    onUpdateTrip(updatedTrip);
+                },
+            });
+
+            if (onCommitState) {
+                onCommitState(
+                    result.trip,
+                    result.trip.defaultView ?? currentViewSettings,
+                    {
+                        label: result.state === 'succeeded'
+                            ? 'Data: Retried trip generation'
+                            : 'Data: Retried trip generation (failed)',
+                        adminOverride: isAdminFallbackView && adminOverrideEnabled,
+                    }
+                );
+            }
+
+            if (result.state === 'succeeded') {
+                showToast(t('tripView.generation.retry.completed'), {
+                    tone: 'add',
+                    title: t('tripView.generation.retry.completedTitle'),
+                });
+            } else {
+                showToast(t('tripView.generation.retry.failed'), {
+                    tone: 'neutral',
+                    title: t('tripView.generation.retry.failedTitle'),
+                });
+            }
+        } catch (error) {
+            showToast(error instanceof Error ? error.message : t('tripView.generation.retry.unexpected'), {
+                tone: 'neutral',
+                title: t('tripView.generation.retry.failedTitle'),
+            });
+        } finally {
+            setIsRetryingGeneration(false);
+        }
+    }, [
+        adminOverrideEnabled,
+        canEdit,
+        currentViewSettings,
+        isAdminFallbackView,
+        isRetryingGeneration,
+        onCommitState,
+        onUpdateTrip,
+        retryModelId,
+        showToast,
+        t,
+        trip,
+    ]);
+
+    const handleAbortAndRetryGeneration = useCallback(async () => {
+        if (isRetryingGeneration) return;
+        const snapshot = trip.aiMeta?.generation?.inputSnapshot;
+        if (!snapshot) {
+            showToast(t('tripView.generation.retry.missingSnapshot'), {
+                tone: 'neutral',
+                title: t('tripView.generation.retry.missingSnapshotTitle'),
+            });
+            return;
+        }
+        const latestRequestId = latestGenerationAttempt?.requestId || null;
+        const abortedLiveRequest = abortActiveTripGenerationRequest({
+            tripId: trip.id,
+            requestId: latestRequestId,
+            reason: 'user_abort_retry',
+        });
+
+        const abortedTrip = markTripGenerationFailed(trip, {
+            flow: snapshot.flow,
+            source: 'trip_status_strip_abort_retry',
+            requestId: latestRequestId,
+            attemptId: latestGenerationAttempt?.id || null,
+            provider: latestGenerationAttempt?.provider || trip.aiMeta?.provider || null,
+            model: latestGenerationAttempt?.model || trip.aiMeta?.model || null,
+            providerModel: latestGenerationAttempt?.providerModel || null,
+            error: {
+                code: 'AI_GENERATION_ABORTED_BY_USER',
+                status: 499,
+                message: abortedLiveRequest
+                    ? 'Generation aborted by user after prolonged runtime.'
+                    : 'Generation marked as aborted by user after prolonged runtime.',
+                failureKind: 'abort',
+                aborted: true,
+            },
+            metadata: {
+                abortedByUser: true,
+                abortedLiveRequest,
+                selectedRetryModelId: retryModelId || null,
+            },
+        });
+
+        onUpdateTrip(abortedTrip);
+        if (onCommitState) {
+            onCommitState(
+                abortedTrip,
+                abortedTrip.defaultView ?? currentViewSettings,
+                {
+                    label: 'Data: Aborted long-running generation',
+                    adminOverride: isAdminFallbackView && adminOverrideEnabled,
+                }
+            );
+        }
+
+        trackEvent('trip_generation__trip_strip--abort_retry', {
+            trip_id: trip.id,
+            had_live_abort: abortedLiveRequest,
+            model_id: retryModelId || 'default',
+        });
+
+        await handleRetryGeneration('trip_strip', retryModelId, abortedTrip);
+    }, [
+        adminOverrideEnabled,
+        currentViewSettings,
+        handleRetryGeneration,
+        isAdminFallbackView,
+        isRetryingGeneration,
+        latestGenerationAttempt?.id,
+        latestGenerationAttempt?.model,
+        latestGenerationAttempt?.provider,
+        latestGenerationAttempt?.providerModel,
+        latestGenerationAttempt?.requestId,
+        onCommitState,
+        onUpdateTrip,
+        retryModelId,
+        showToast,
+        t,
+        trip,
+    ]);
+
     const requireEdit = useCallback(() => {
         if (isTripLockedByArchive) {
             showToast('Archived trips stay read-only. Unarchive in Admin Trips first.', { tone: 'neutral', title: 'Archived trip' });
@@ -1283,19 +1575,6 @@ const useTripViewRender = ({
         if (typeof window === 'undefined') return;
         removeLocalStorageItem('tf_country_info_expanded');
     }, []);
-
-    const currentViewSettings: IViewSettings = useMemo(() => ({
-        layoutMode,
-        timelineMode,
-        timelineView,
-        mapDockMode,
-        mapStyle,
-        routeMode,
-        showCityNames,
-        zoomLevel,
-        sidebarWidth,
-        timelineHeight
-    }), [layoutMode, timelineMode, timelineView, mapDockMode, mapStyle, routeMode, showCityNames, zoomLevel, sidebarWidth, timelineHeight]);
 
     useTripViewSettingsSync({
         layoutMode,
@@ -2025,6 +2304,26 @@ const useTripViewRender = ({
                         : undefined}
                     hasConflictBackupForTrip={showOwnedTripConnectivityStatus ? Boolean(latestConflictBackupEntry) : false}
                     onRestoreConflictBackup={showOwnedTripConnectivityStatus && latestConflictBackupEntry ? handleRestoreServerBackup : undefined}
+                    generationState={generationState}
+                    generationElapsedMs={generationElapsedMs}
+                    generationTimeoutMs={TRIP_GENERATION_TIMEOUT_MS}
+                    generationFailureMessage={latestGenerationAttempt?.errorMessage || null}
+                    canRetryGeneration={canRetryGeneration}
+                    canAbortAndRetryGeneration={canAbortAndRetryGeneration}
+                    isRetryingGeneration={isRetryingGeneration}
+                    onAbortAndRetryGeneration={() => {
+                        void handleAbortAndRetryGeneration();
+                    }}
+                    onOpenRetryModelSelector={() => {
+                        trackEvent('trip_generation__trip_strip--change_model', {
+                            trip_id: trip.id,
+                            source: 'trip_strip',
+                        });
+                        openTripInfoModal();
+                    }}
+                    onRetryGeneration={() => {
+                        void handleRetryGeneration('trip_strip');
+                    }}
                     exampleTripBanner={exampleTripBanner}
                 />
 
@@ -2168,6 +2467,16 @@ const useTripViewRender = ({
                         ownerHint={ownerHint}
                         adminMeta={tripOwnerAdminMeta}
                         aiMeta={displayTrip.aiMeta}
+                        generationState={generationState}
+                        latestGenerationAttempt={latestGenerationAttempt}
+                        canRetryGeneration={canRetryGeneration}
+                        isRetryingGeneration={isRetryingGeneration}
+                        retryModelId={retryModelId}
+                        onRetryModelIdChange={setRetryModelId}
+                        onRetryGeneration={handleRetryGeneration}
+                        onOpenBenchmarkWithSnapshot={handleOpenBenchmarkWithSnapshot}
+                        canOpenBenchmarkWithSnapshot={Boolean(displayTrip.aiMeta?.generation?.inputSnapshot)}
+                        tripInfoRetryAnalyticsAttributes={tripInfoRetryAnalyticsAttributes}
                         forkMeta={forkMeta}
                         isTripInfoHistoryExpanded={isTripInfoHistoryExpanded}
                         onToggleTripInfoHistoryExpanded={() => setIsTripInfoHistoryExpanded((value) => !value)}

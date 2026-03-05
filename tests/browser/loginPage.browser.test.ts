@@ -88,6 +88,14 @@ vi.mock('../../services/analyticsService', () => ({
 vi.mock('../../services/tripGenerationQueueService', () => ({
   processQueuedTripGenerationAfterAuth: mocks.processQueuedTripGenerationAfterAuth,
   runOpportunisticTripQueueCleanup: mocks.runOpportunisticTripQueueCleanup,
+  QueuedTripGenerationError: class QueuedTripGenerationError extends Error {
+    tripId: string | null;
+    constructor(message: string, details?: { tripId?: string | null }) {
+      super(message);
+      this.name = 'QueuedTripGenerationError';
+      this.tripId = details?.tripId || null;
+    }
+  },
 }));
 
 vi.mock('../../services/anonymousAssetClaimService', () => ({
@@ -135,6 +143,7 @@ vi.mock('react-i18next', () => ({
 }));
 
 import { LoginPage } from '../../pages/LoginPage';
+import { QueuedTripGenerationError } from '../../services/tripGenerationQueueService';
 
 const setNativeInputValue = (input: HTMLInputElement, value: string): void => {
   const valueSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
@@ -169,6 +178,7 @@ describe('pages/LoginPage auth flows', () => {
       expect(mocks.auth.loginWithPassword).toHaveBeenCalledWith('traveler@example.com', 'password123');
     });
     expect(mocks.setRememberLoginEnabled).toHaveBeenLastCalledWith(true);
+    expect(screen.queryByText('states.alreadyAuthenticated')).not.toBeInTheDocument();
   });
 
   it('switches to session-only persistence when remember login is unchecked', async () => {
@@ -217,6 +227,24 @@ describe('pages/LoginPage auth flows', () => {
       mocks.processQueuedTripGenerationAfterAuth.mock.invocationCallOrder[0],
     );
     expect(mocks.navigate).toHaveBeenCalledWith('/trip/trip-123', { replace: true });
+  });
+
+  it('navigates to failed queued trip when queue processing fails with tripId context', async () => {
+    mocks.auth.isAuthenticated = true;
+    mocks.auth.isAnonymous = false;
+    mocks.searchParams = new URLSearchParams({
+      claim: 'queue-claim-2',
+    });
+    mocks.processQueuedTripGenerationAfterAuth.mockRejectedValue(
+      new QueuedTripGenerationError('Queued trip generation failed.', { tripId: 'trip-failed-77' }),
+    );
+
+    render(React.createElement(LoginPage));
+
+    await waitFor(() => {
+      expect(mocks.processQueuedTripGenerationAfterAuth).toHaveBeenCalledWith('queue-claim-2');
+    });
+    expect(mocks.navigate).toHaveBeenCalledWith('/trip/trip-failed-77', { replace: true });
   });
 
   it('submits browser-autofilled credentials even when React state was not updated by input events', async () => {

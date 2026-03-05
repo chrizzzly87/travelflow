@@ -16,6 +16,7 @@ import type { AppLanguage, ITrip } from '../../types';
 import { trackEvent } from '../../services/analyticsService';
 import { buildPath } from '../../config/routes';
 import { Checkbox } from '../ui/checkbox';
+import { getTripGenerationState } from '../../services/tripGenerationDiagnosticsService';
 import {
   buildMiniMapUrl,
   formatTripDateRange,
@@ -43,6 +44,7 @@ interface ProfileTripCardLabels {
   mapLoading: string;
   creatorPrefix?: string;
   hiddenTag?: string;
+  generationFailedTag?: string;
 }
 
 interface ProfileTripCardProps {
@@ -78,8 +80,6 @@ const DEFAULT_LANE_COLORS = [
   '#6366f1',
   '#8b5cf6',
 ];
-
-const GENERATION_ERROR_ITEM_PREFIX = 'loading-error-';
 
 const buildLaneOutlineColor = (hexColor: string): string => {
   const sanitized = hexColor.replace('#', '');
@@ -154,13 +154,11 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
   const hasCreatorAttribution = showCreatorAttribution && Boolean(creatorHandle) && Boolean(creatorProfilePath);
   const isPublic = trip.showOnPublicProfile !== false;
   const isExpired = trip.status === 'expired' || isTripExpiredByTimestamp(trip.tripExpiresAt);
-  const hasGenerationErrorItem = React.useMemo(
-    () => trip.items.some((item) => item.id.startsWith(GENERATION_ERROR_ITEM_PREFIX)),
-    [trip.items]
+  const isGenerationFailed = React.useMemo(
+    () => getTripGenerationState(trip) === 'failed',
+    [trip]
   );
-  const displayTitle = isExpired && hasGenerationErrorItem
-    ? (labels.expiredFallbackTitle || 'Expired trip')
-    : trip.title;
+  const displayTitle = trip.title;
 
   const cityLanes = React.useMemo(() => (
     cityItems.map((item, index) => ({
@@ -195,12 +193,12 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
       ref={cardRef}
       className={[
         'group relative overflow-hidden rounded-xl border bg-white transition-colors hover:border-slate-300',
-        isExpired ? 'border-amber-200' : 'border-slate-200',
+        isGenerationFailed ? 'border-rose-200' : (isExpired ? 'border-amber-200' : 'border-slate-200'),
         !isPublic ? 'opacity-[0.82]' : '',
       ].join(' ')}
       style={{ contentVisibility: 'auto', containIntrinsicSize: '420px' }}
     >
-      <div className={`relative aspect-[16/9] overflow-hidden ${isExpired ? 'bg-amber-50' : 'bg-slate-100'}`}>
+      <div className={`relative aspect-[16/9] overflow-hidden ${isGenerationFailed ? 'bg-rose-50' : (isExpired ? 'bg-amber-50' : 'bg-slate-100')}`}>
         {isSelectable && onSelectionChange && (
           <div
             className={[
@@ -258,6 +256,11 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
             {isExpired && (
               <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-[11px] font-semibold text-amber-800">
                 {labels.expiredTag || 'Expired'}
+              </span>
+            )}
+            {isGenerationFailed && (
+              <span className="rounded-full border border-rose-200 bg-rose-50 px-2.5 py-0.5 text-[11px] font-semibold text-rose-700">
+                {(labels.generationFailedTag || 'Generation failed').toLowerCase()}
               </span>
             )}
             {trip.isPinned && (
