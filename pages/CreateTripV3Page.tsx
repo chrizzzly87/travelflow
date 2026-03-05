@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import {
     Warning as AlertTriangle,
     Check,
@@ -46,6 +46,12 @@ import { TripView } from '../components/TripView';
 import { TripGenerationSkeleton } from '../components/TripGenerationSkeleton';
 import { startClientAsyncTripGeneration } from '../services/tripGenerationClientAsyncService';
 import { createTripGenerationInputSnapshot } from '../services/tripGenerationDiagnosticsService';
+import {
+    buildLoginPathWithNext,
+    rememberAuthReturnPath,
+    setPendingAuthRedirect,
+} from '../services/authNavigationService';
+import { ensureDbSession } from '../services/dbService';
 import { HeroWebGLBackground } from '../components/HeroWebGLBackground';
 import { SiteFooter } from '../components/marketing/SiteFooter';
 import { SiteHeader } from '../components/navigation/SiteHeader';
@@ -207,6 +213,8 @@ const StepDots: React.FC<{ currentStep: number; totalSteps: number; completedSte
 // ---------------------------------------------------------------------------
 
 export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenerated, onOpenManager }) => {
+    const navigate = useNavigate();
+    const location = useLocation();
     const [searchParams] = useSearchParams();
     const defaultDates = getDefaultTripDates();
 
@@ -398,6 +406,19 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
     };
 
     const handleGenerate = async () => {
+        const sessionUserId = await ensureDbSession();
+        if (!sessionUserId) {
+            const authRedirect = buildLoginPathWithNext({
+                pathname: location.pathname,
+                search: location.search,
+                hash: location.hash,
+            });
+            rememberAuthReturnPath(authRedirect.nextPath);
+            setPendingAuthRedirect(authRedirect.nextPath, 'create_trip_v3_generate');
+            navigate(authRedirect.loginTarget);
+            return;
+        }
+
         const primary = selectedCountries[0] || destination;
         const destinationLabel = destination || primary || 'Trip';
         setPreviewTrip(buildPreviewTrip({ destination: primary, startDate, endDate }));
