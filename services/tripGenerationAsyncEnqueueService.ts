@@ -1,0 +1,47 @@
+import type { TripGenerationInputSnapshot } from '../types';
+import { enqueueTripGenerationJob } from './tripGenerationJobService';
+
+interface EnqueueClassicAsyncTripGenerationInput {
+    tripId: string;
+    attemptId: string;
+    requestId: string;
+    source: string;
+    queueRequestId?: string | null;
+    startDate: string;
+    roundTrip: boolean;
+    prompt: string;
+    provider: string;
+    model: string;
+    inputSnapshot: TripGenerationInputSnapshot;
+    maxRetries?: number;
+}
+
+export const enqueueClassicAsyncTripGenerationJob = async (
+    input: EnqueueClassicAsyncTripGenerationInput,
+): Promise<boolean> => {
+    const enqueueResult = await enqueueTripGenerationJob({
+        tripId: input.tripId,
+        attemptId: input.attemptId,
+        maxRetries: input.maxRetries ?? 0,
+        payload: {
+            version: 1,
+            flow: 'classic',
+            source: input.source,
+            requestId: input.requestId,
+            queueRequestId: input.queueRequestId || null,
+            tripId: input.tripId,
+            attemptId: input.attemptId,
+            startDate: input.startDate,
+            roundTrip: input.roundTrip,
+            prompt: input.prompt,
+            target: {
+                provider: input.provider,
+                model: input.model,
+            },
+            inputSnapshot: input.inputSnapshot,
+        },
+    });
+
+    return Boolean(enqueueResult?.id);
+};
+

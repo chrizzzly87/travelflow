@@ -24,8 +24,8 @@ import {
 import { dbCreateTripVersion, dbUpsertTrip, ensureDbSession } from './dbService';
 import { supabase } from './supabaseClient';
 import { generateTripId } from '../utils';
-import { enqueueTripGenerationJob } from './tripGenerationJobService';
 import { isClassicAsyncGenerationEnabled } from './tripGenerationAsyncConfig';
+import { enqueueClassicAsyncTripGenerationJob } from './tripGenerationAsyncEnqueueService';
 
 interface BaseQueuedPayload {
     version: 1;
@@ -299,30 +299,22 @@ const processQueuedTripGenerationClassicAsync = async (
         }
 
         const prompt = buildClassicItineraryPrompt(params.payload.destinationPrompt, params.payload.options);
-        const enqueueResult = await enqueueTripGenerationJob({
+        const enqueueSucceeded = await enqueueClassicAsyncTripGenerationJob({
             tripId,
             attemptId,
+            requestId: requestTraceId,
+            source,
+            queueRequestId: params.requestId,
+            startDate: params.payload.startDate,
+            roundTrip: Boolean(params.payload.options.roundTrip),
+            prompt,
+            provider,
+            model,
+            inputSnapshot: params.snapshot,
             maxRetries: 0,
-            payload: {
-                version: 1,
-                flow: 'classic',
-                source,
-                requestId: requestTraceId,
-                queueRequestId: params.requestId,
-                tripId,
-                attemptId,
-                startDate: params.payload.startDate,
-                roundTrip: Boolean(params.payload.options.roundTrip),
-                prompt,
-                target: {
-                    provider,
-                    model,
-                },
-                inputSnapshot: params.snapshot,
-            },
         });
 
-        if (!enqueueResult?.id) {
+        if (!enqueueSucceeded) {
             throw new Error('Could not enqueue async generation job.');
         }
 
