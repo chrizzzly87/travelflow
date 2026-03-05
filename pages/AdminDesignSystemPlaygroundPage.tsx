@@ -129,7 +129,7 @@ const COMPONENT_GROUPS: ComponentGroupDefinition[] = [
         title: 'Country Select + Calendar',
         description: 'Create-trip destination selector variants and date-range calendar controls.',
         sourcePath: 'components/CountrySelect.tsx',
-        usagePaths: ['pages/CreateTripV1Page.tsx', 'pages/CreateTripV3Page.tsx', 'components/DateRangePicker.tsx'],
+        usagePaths: ['pages/CreateTripClassicLabPage.tsx', 'pages/CreateTripV3Page.tsx', 'components/DateRangePicker.tsx'],
     },
     {
         id: 'switches',
