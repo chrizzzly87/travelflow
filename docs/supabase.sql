@@ -2044,12 +2044,14 @@ set search_path = public
 set row_security = off
 as $$
 declare
+  v_role text;
   v_user_id uuid;
   v_owner_id uuid;
   v_attempt public.trip_generation_attempts%rowtype;
 begin
+  v_role := coalesce(auth.role(), '');
   v_user_id := auth.uid();
-  if v_user_id is null then
+  if v_role <> 'service_role' and v_user_id is null then
     raise exception 'Not authenticated';
   end if;
 
@@ -2063,8 +2065,10 @@ begin
     raise exception 'Trip not found';
   end if;
 
-  if v_owner_id <> v_user_id and not public.is_admin(v_user_id) then
-    raise exception 'Not allowed';
+  if v_role <> 'service_role' then
+    if v_owner_id <> v_user_id and not public.is_admin(v_user_id) then
+      raise exception 'Not allowed';
+    end if;
   end if;
 
   if p_flow not in ('classic', 'wizard', 'surprise') then
@@ -2164,13 +2168,15 @@ set search_path = public
 set row_security = off
 as $$
 declare
+  v_role text;
   v_user_id uuid;
   v_existing public.trip_generation_attempts%rowtype;
   v_finished_at timestamptz;
   v_duration_ms integer;
 begin
+  v_role := coalesce(auth.role(), '');
   v_user_id := auth.uid();
-  if v_user_id is null then
+  if v_role <> 'service_role' and v_user_id is null then
     raise exception 'Not authenticated';
   end if;
   if p_state not in ('succeeded', 'failed') then
@@ -2189,8 +2195,10 @@ begin
   if v_existing.id is null then
     raise exception 'Attempt not found';
   end if;
-  if v_existing.owner_id <> v_user_id and not public.is_admin(v_user_id) then
-    raise exception 'Not allowed';
+  if v_role <> 'service_role' then
+    if v_existing.owner_id <> v_user_id and not public.is_admin(v_user_id) then
+      raise exception 'Not allowed';
+    end if;
   end if;
 
   v_finished_at := coalesce(p_finished_at, now());
@@ -3541,14 +3549,21 @@ grant execute on function public.create_trip_generation_request(text, jsonb, int
 grant execute on function public.claim_trip_generation_request(uuid) to authenticated;
 grant execute on function public.expire_stale_trip_generation_requests() to anon, authenticated;
 grant execute on function public.trip_generation_attempt_start(text, text, text, text, text, text, text, text, timestamptz, jsonb) to authenticated;
+grant execute on function public.trip_generation_attempt_start(text, text, text, text, text, text, text, text, timestamptz, jsonb) to service_role;
 grant execute on function public.trip_generation_attempt_finish(uuid, text, text, text, text, text, timestamptz, integer, integer, text, text, text, jsonb) to authenticated;
+grant execute on function public.trip_generation_attempt_finish(uuid, text, text, text, text, text, timestamptz, integer, integer, text, text, text, jsonb) to service_role;
 grant execute on function public.trip_generation_attempt_list_owner(text, integer) to authenticated;
 grant execute on function public.trip_generation_attempt_list_admin(text, integer) to authenticated;
 grant execute on function public.trip_generation_job_enqueue(text, uuid, jsonb, integer, timestamptz, integer) to authenticated;
+grant execute on function public.trip_generation_job_enqueue(text, uuid, jsonb, integer, timestamptz, integer) to service_role;
 grant execute on function public.trip_generation_job_claim(text, integer, integer) to authenticated;
+grant execute on function public.trip_generation_job_claim(text, integer, integer) to service_role;
 grant execute on function public.trip_generation_job_heartbeat(uuid, text, integer) to authenticated;
+grant execute on function public.trip_generation_job_heartbeat(uuid, text, integer) to service_role;
 grant execute on function public.trip_generation_job_complete(uuid, text) to authenticated;
+grant execute on function public.trip_generation_job_complete(uuid, text) to service_role;
 grant execute on function public.trip_generation_job_fail(uuid, text, text, text, integer, boolean) to authenticated;
+grant execute on function public.trip_generation_job_fail(uuid, text, text, text, integer, boolean) to service_role;
 grant execute on function public.create_anonymous_asset_claim(integer) to authenticated;
 grant execute on function public.claim_anonymous_assets(uuid) to authenticated;
 grant execute on function public.expire_stale_anonymous_asset_claims() to anon, authenticated;
@@ -6149,14 +6164,21 @@ grant execute on function public.admin_update_user_tier(uuid, text) to authentic
 grant execute on function public.admin_update_user_overrides(uuid, jsonb) to authenticated;
 grant execute on function public.admin_update_plan_entitlements(text, jsonb) to authenticated;
 grant execute on function public.trip_generation_attempt_start(text, text, text, text, text, text, text, text, timestamptz, jsonb) to authenticated;
+grant execute on function public.trip_generation_attempt_start(text, text, text, text, text, text, text, text, timestamptz, jsonb) to service_role;
 grant execute on function public.trip_generation_attempt_finish(uuid, text, text, text, text, text, timestamptz, integer, integer, text, text, text, jsonb) to authenticated;
+grant execute on function public.trip_generation_attempt_finish(uuid, text, text, text, text, text, timestamptz, integer, integer, text, text, text, jsonb) to service_role;
 grant execute on function public.trip_generation_attempt_list_owner(text, integer) to authenticated;
 grant execute on function public.trip_generation_attempt_list_admin(text, integer) to authenticated;
 grant execute on function public.trip_generation_job_enqueue(text, uuid, jsonb, integer, timestamptz, integer) to authenticated;
+grant execute on function public.trip_generation_job_enqueue(text, uuid, jsonb, integer, timestamptz, integer) to service_role;
 grant execute on function public.trip_generation_job_claim(text, integer, integer) to authenticated;
+grant execute on function public.trip_generation_job_claim(text, integer, integer) to service_role;
 grant execute on function public.trip_generation_job_heartbeat(uuid, text, integer) to authenticated;
+grant execute on function public.trip_generation_job_heartbeat(uuid, text, integer) to service_role;
 grant execute on function public.trip_generation_job_complete(uuid, text) to authenticated;
+grant execute on function public.trip_generation_job_complete(uuid, text) to service_role;
 grant execute on function public.trip_generation_job_fail(uuid, text, text, text, integer, boolean) to authenticated;
+grant execute on function public.trip_generation_job_fail(uuid, text, text, text, integer, boolean) to service_role;
 grant execute on function public.admin_list_trips(integer, integer, text, uuid, text, text) to authenticated;
 grant execute on function public.admin_list_user_trips(uuid, integer, integer, text, text) to authenticated;
 grant execute on function public.admin_get_trip_for_view(text) to authenticated;

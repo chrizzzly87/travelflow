@@ -12,6 +12,9 @@ const dbUpsertTripMock = vi.fn().mockResolvedValue('trip-queued-1');
 const dbCreateTripVersionMock = vi.fn().mockResolvedValue('version-1');
 
 const generateTripFromInputSnapshotMock = vi.fn();
+const buildClassicItineraryPromptMock = vi.fn().mockReturnValue('classic prompt');
+const enqueueTripGenerationJobMock = vi.fn().mockResolvedValue({ id: 'job-1' });
+const isClassicAsyncGenerationEnabledMock = vi.fn().mockReturnValue(false);
 const startAttemptLogMock = vi.fn().mockResolvedValue({ id: 'attempt-log-1' });
 const finishAttemptLogMock = vi.fn().mockResolvedValue(undefined);
 const beginAbortTelemetryMock = vi.fn(() => ({ cancel: vi.fn() }));
@@ -31,11 +34,20 @@ vi.mock('../../services/dbService', () => ({
 
 vi.mock('../../services/aiService', () => ({
   generateTripFromInputSnapshot: (...args: unknown[]) => generateTripFromInputSnapshotMock(...args),
+  buildClassicItineraryPrompt: (...args: unknown[]) => buildClassicItineraryPromptMock(...args),
 }));
 
 vi.mock('../../services/tripGenerationAttemptLogService', () => ({
   startTripGenerationAttemptLog: (...args: unknown[]) => startAttemptLogMock(...args),
   finishTripGenerationAttemptLog: (...args: unknown[]) => finishAttemptLogMock(...args),
+}));
+
+vi.mock('../../services/tripGenerationJobService', () => ({
+  enqueueTripGenerationJob: (...args: unknown[]) => enqueueTripGenerationJobMock(...args),
+}));
+
+vi.mock('../../services/tripGenerationAsyncConfig', () => ({
+  isClassicAsyncGenerationEnabled: () => isClassicAsyncGenerationEnabledMock(),
 }));
 
 vi.mock('../../services/tripGenerationAbortTelemetryService', () => ({
@@ -65,6 +77,10 @@ describe('processQueuedTripGenerationAfterAuth', () => {
     dbUpsertTripMock.mockClear();
     dbCreateTripVersionMock.mockClear();
     generateTripFromInputSnapshotMock.mockReset();
+    buildClassicItineraryPromptMock.mockClear();
+    enqueueTripGenerationJobMock.mockReset();
+    isClassicAsyncGenerationEnabledMock.mockReset();
+    isClassicAsyncGenerationEnabledMock.mockReturnValue(false);
     startAttemptLogMock.mockClear();
     finishAttemptLogMock.mockClear();
     beginAbortTelemetryMock.mockClear();
@@ -113,5 +129,38 @@ describe('processQueuedTripGenerationAfterAuth', () => {
     expect(failedPersistedTrip.aiMeta?.generation?.state).toBe('failed');
     expect(failedPersistedTrip.aiMeta?.generation?.latestAttempt?.errorMessage).toContain('Provider timeout');
     expect(failedPersistedTrip.items.some((item) => item.loading)).toBe(false);
+  });
+
+  it('enqueues classic queue-claim work into async worker when async flag is enabled', async () => {
+    isClassicAsyncGenerationEnabledMock.mockReturnValue(true);
+    enqueueTripGenerationJobMock.mockResolvedValue({
+      id: 'job-1',
+      tripId: 'trip-queued-1',
+      ownerId: 'owner-1',
+      attemptId: 'attempt-log-1',
+      state: 'queued',
+      priority: 100,
+      retryCount: 0,
+      maxRetries: 0,
+      runAfter: new Date().toISOString(),
+      leaseExpiresAt: null,
+      leasedBy: null,
+      payload: {},
+      lastErrorCode: null,
+      lastErrorMessage: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+
+    const result = await processQueuedTripGenerationAfterAuth('request-1');
+
+    expect(result.tripId).toBe('trip-queued-1');
+    expect(result.trip.aiMeta?.generation?.state).toBe('queued');
+    expect(generateTripFromInputSnapshotMock).not.toHaveBeenCalled();
+    expect(enqueueTripGenerationJobMock).toHaveBeenCalledTimes(1);
+    expect(startAttemptLogMock).toHaveBeenCalledWith(expect.objectContaining({
+      state: 'queued',
+      source: 'queue_claim_async',
+    }));
   });
 });
