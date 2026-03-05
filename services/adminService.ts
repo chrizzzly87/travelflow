@@ -15,6 +15,8 @@ import { normalizeProfileCountryCode } from './profileCountryService';
 import { isSimulatedLoggedIn } from './simulatedLoginService';
 import { supabase } from './supabaseClient';
 
+type AdminTripGenerationState = 'failed' | 'running' | 'queued' | 'succeeded';
+
 export interface AdminUserRecord {
     user_id: string;
     email: string | null;
@@ -56,6 +58,7 @@ export interface AdminTripRecord {
     owner_email: string | null;
     title: string | null;
     status: 'active' | 'archived' | 'expired';
+    generation_state: AdminTripGenerationState | null;
     trip_expires_at: string | null;
     archived_at: string | null;
     source_kind: string | null;
@@ -366,6 +369,7 @@ export const adminListTrips = async (
         search?: string;
         ownerId?: string | null;
         status?: 'active' | 'archived' | 'expired' | 'all';
+        generationState?: AdminTripGenerationState | 'all';
     } = {}
 ): Promise<AdminTripRecord[]> => {
     if (shouldUseAdminMockData()) {
@@ -376,6 +380,7 @@ export const adminListTrips = async (
             owner_email: `user${i % 15}@example.com`,
             title: `Mock Trip to ${['Paris', 'Tokyo', 'London', 'New York', 'Rome'][i % 5]}`,
             status: i % 10 === 0 ? 'expired' : i % 8 === 0 ? 'archived' : 'active',
+            generation_state: i % 9 === 0 ? 'failed' : i % 7 === 0 ? 'running' : 'succeeded',
             trip_expires_at: null,
             archived_at: null,
             source_kind: null,
@@ -386,20 +391,38 @@ export const adminListTrips = async (
     }
 
     const client = requireSupabase();
-    const { data, error } = await client.rpc('admin_list_trips', {
+    const rpcArgsWithGeneration = {
         p_limit: options.limit ?? 300,
         p_offset: options.offset ?? 0,
         p_search: options.search ?? null,
         p_owner_id: options.ownerId ?? null,
         p_status: options.status && options.status !== 'all' ? options.status : null,
-    });
+        p_generation_state: options.generationState && options.generationState !== 'all' ? options.generationState : '',
+    };
+    let { data, error } = await client.rpc('admin_list_trips', rpcArgsWithGeneration);
+    if (error && /function public\.admin_list_trips/i.test(error.message || '')) {
+        const fallback = await client.rpc('admin_list_trips', {
+            p_limit: rpcArgsWithGeneration.p_limit,
+            p_offset: rpcArgsWithGeneration.p_offset,
+            p_search: rpcArgsWithGeneration.p_search,
+            p_owner_id: rpcArgsWithGeneration.p_owner_id,
+            p_status: rpcArgsWithGeneration.p_status,
+        });
+        data = fallback.data;
+        error = fallback.error;
+    }
     if (error) throw new Error(error.message || 'Could not load trips.');
     return (Array.isArray(data) ? data : []) as AdminTripRecord[];
 };
 
 export const adminListUserTrips = async (
     userId: string,
-    options: { limit?: number; offset?: number; status?: 'active' | 'archived' | 'expired' | 'all' } = {}
+    options: {
+        limit?: number;
+        offset?: number;
+        status?: 'active' | 'archived' | 'expired' | 'all';
+        generationState?: AdminTripGenerationState | 'all';
+    } = {}
 ): Promise<AdminTripRecord[]> => {
     if (shouldUseAdminMockData()) {
         const now = new Date();
@@ -409,6 +432,7 @@ export const adminListUserTrips = async (
             owner_email: `user-mock@example.com`,
             title: `User's Mock Trip ${i}`,
             status: 'active',
+            generation_state: i === 0 ? 'failed' : 'succeeded',
             trip_expires_at: null,
             archived_at: null,
             source_kind: null,
@@ -417,12 +441,24 @@ export const adminListUserTrips = async (
         }));
     }
     const client = requireSupabase();
-    const { data, error } = await client.rpc('admin_list_user_trips', {
+    const rpcArgsWithGeneration = {
         p_user_id: userId,
         p_limit: options.limit ?? 200,
         p_offset: options.offset ?? 0,
         p_status: options.status && options.status !== 'all' ? options.status : null,
-    });
+        p_generation_state: options.generationState && options.generationState !== 'all' ? options.generationState : '',
+    };
+    let { data, error } = await client.rpc('admin_list_user_trips', rpcArgsWithGeneration);
+    if (error && /function public\.admin_list_user_trips/i.test(error.message || '')) {
+        const fallback = await client.rpc('admin_list_user_trips', {
+            p_user_id: rpcArgsWithGeneration.p_user_id,
+            p_limit: rpcArgsWithGeneration.p_limit,
+            p_offset: rpcArgsWithGeneration.p_offset,
+            p_status: rpcArgsWithGeneration.p_status,
+        });
+        data = fallback.data;
+        error = fallback.error;
+    }
     if (error) throw new Error(error.message || 'Could not load user trips.');
     return (Array.isArray(data) ? data : []) as AdminTripRecord[];
 };

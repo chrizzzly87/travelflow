@@ -24,6 +24,7 @@ import {
 import { buildDecisionConfirmDialog } from '../services/appDialogPresets';
 import { AdminReloadButton } from '../components/admin/AdminReloadButton';
 import { AdminFilterMenu, type AdminFilterMenuOption } from '../components/admin/AdminFilterMenu';
+import { ADMIN_TABLE_ROW_SURFACE_CLASS } from '../components/admin/AdminDataTable';
 import { readAdminCache, writeAdminCache } from '../components/admin/adminLocalCache';
 import { CopyableUuid } from '../components/admin/CopyableUuid';
 import { Drawer, DrawerContent } from '../components/ui/drawer';
@@ -71,14 +72,14 @@ const AUDIT_COLUMN_OPTIONS: Array<{ value: AuditVisibleColumnId; label: string }
 const DEFAULT_VISIBLE_COLUMNS: AuditVisibleColumnId[] = [...AUDIT_VISIBLE_COLUMN_IDS];
 const AUDIT_COLUMN_WIDTH_DEFAULTS: Record<AuditResizableColumnId, number> = {
     when: 176,
-    actor: 236,
+    actor: 200,
     action: 296,
     target: 220,
     diff: 620,
 };
 const AUDIT_COLUMN_WIDTH_MIN: Record<AuditResizableColumnId, number> = {
     when: 124,
-    actor: 170,
+    actor: 160,
     action: 190,
     target: 160,
     diff: 360,
@@ -91,6 +92,7 @@ type AuditVisibleColumnId = typeof AUDIT_VISIBLE_COLUMN_IDS[number];
 type AuditResizableColumnId = typeof RESIZABLE_AUDIT_COLUMN_IDS[number];
 
 const ACTION_FILTER_LABELS: Record<string, string> = {
+    'admin.audit.export': 'Exported audit replay bundle',
     'admin.user.hard_delete': 'Hard-deleted user',
     'admin.user.invite': 'Invited user',
     'admin.user.create_direct': 'Created user',
@@ -112,7 +114,46 @@ const TARGET_LABELS: Record<string, string> = {
     user: 'User',
     trip: 'Trip',
     tier: 'Tier',
+    legal_terms_version: 'Terms version',
+    audit: 'Audit',
     unknown: 'Unknown',
+};
+
+const ACTION_GROUP_ORDER = [
+    'Audit & tooling',
+    'Admin users',
+    'Admin trips',
+    'Terms & legal',
+    'Tier & entitlements',
+    'User trip actions',
+    'User profile actions',
+    'User account actions',
+    'Other',
+] as const;
+
+const getActionGroupOrder = (groupLabel: string): number => {
+    const index = ACTION_GROUP_ORDER.indexOf(groupLabel as (typeof ACTION_GROUP_ORDER)[number]);
+    return index >= 0 ? index : ACTION_GROUP_ORDER.length;
+};
+
+const getActionGroupLabel = (action: string): string => {
+    const normalized = action.trim().toLowerCase();
+    if (normalized.startsWith('admin.audit.')) return 'Audit & tooling';
+    if (normalized.startsWith('admin.user.')) return 'Admin users';
+    if (normalized.startsWith('admin.trip.')) return 'Admin trips';
+    if (normalized.startsWith('admin.terms.')) return 'Terms & legal';
+    if (normalized.startsWith('admin.tier.')) return 'Tier & entitlements';
+    if (normalized.startsWith('trip.')) return 'User trip actions';
+    if (normalized.startsWith('profile.')) return 'User profile actions';
+    if (
+        normalized.includes('auth')
+        || normalized.includes('sign')
+        || normalized.includes('account')
+        || normalized.includes('login')
+    ) {
+        return 'User account actions';
+    }
+    return 'Other';
 };
 
 const NOISY_DIFF_KEYS = new Set([
@@ -264,6 +305,12 @@ const getStatusChange = (entries: AuditDiffEntry[], key: string): { from: string
 const getActionFilterLabel = (action: string): string => ACTION_FILTER_LABELS[action] || action;
 
 const getTargetLabel = (targetType: string): string => TARGET_LABELS[targetType] || targetType;
+
+export const __ADMIN_AUDIT_TESTING__ = {
+    getActionGroupLabel,
+    getActionFilterLabel,
+    getTargetLabel,
+};
 
 const asString = (value: unknown): string | null => {
     if (typeof value !== 'string') return null;
@@ -696,18 +743,54 @@ export const AdminAuditPage: React.FC = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    const openUserDrawerById = (
+        userId: string,
+        options?: {
+            sourceLog?: AdminAuditRecord;
+            actorEmail?: string | null;
+        }
+    ) => {
+        const trimmedUserId = userId.trim();
+        if (!trimmedUserId) return;
+        const sourceLog = options?.sourceLog || null;
+        const actorEmail = options?.actorEmail || sourceLog?.actor_email || null;
+        const userLog: AdminAuditRecord = sourceLog
+            ? {
+                ...sourceLog,
+                target_type: 'user',
+                target_id: trimmedUserId,
+                actor_email: sourceLog.actor_email || actorEmail,
+            }
+            : {
+                id: `audit-actor-${trimmedUserId}-${Date.now()}`,
+                actor_user_id: trimmedUserId,
+                actor_email: actorEmail,
+                action: 'audit.open_actor',
+                target_type: 'user',
+                target_id: trimmedUserId,
+                before_data: null,
+                after_data: null,
+                metadata: { source: 'actor_column' },
+                created_at: new Date().toISOString(),
+            };
+        setSelectedTripLog(null);
+        setSelectedTripRecord(null);
+        setTripDrawerError(null);
+        setIsTripDrawerOpen(false);
+        setSelectedUserLog(userLog);
+        setSelectedUserProfile(null);
+        setUserDrawerError(null);
+        setIsUserDrawerOpen(true);
+    };
+
     const openTargetDrawer = (log: AdminAuditRecord) => {
         if (!canOpenTargetDrawer(log)) return;
         setErrorMessage(null);
-        if (log.target_type === 'user') {
-            setSelectedTripLog(null);
-            setSelectedTripRecord(null);
-            setTripDrawerError(null);
-            setIsTripDrawerOpen(false);
-            setSelectedUserLog(log);
-            setSelectedUserProfile(null);
-            setUserDrawerError(null);
-            setIsUserDrawerOpen(true);
+        if (log.target_type === 'user' && log.target_id) {
+            openUserDrawerById(log.target_id, {
+                sourceLog: log,
+                actorEmail: log.actor_email,
+            });
             return;
         }
         setSelectedUserLog(null);
@@ -1039,14 +1122,19 @@ export const AdminAuditPage: React.FC = () => {
             counts.set(action, nextValue);
         });
         return Array.from(counts.entries())
-            .sort((a, b) => a[0].localeCompare(b[0]))
             .map(([value, count]) => {
                 const matchingEntry = logsInTimeRange.find((entry) => getTimelineAction(entry) === value);
                 return {
                     value,
                     label: matchingEntry ? getTimelineActionLabel(matchingEntry) : getActionFilterLabel(value),
                     count,
+                    group: getActionGroupLabel(value),
                 };
+            })
+            .sort((left, right) => {
+                const byGroup = getActionGroupOrder(left.group || 'Other') - getActionGroupOrder(right.group || 'Other');
+                if (byGroup !== 0) return byGroup;
+                return left.label.localeCompare(right.label);
             });
     }, [logsInTimeRange]);
     const allActionFilterValues = useMemo(
@@ -1519,21 +1607,9 @@ export const AdminAuditPage: React.FC = () => {
                     options={actionFilterOptions}
                     selectedValues={actionFilters}
                     onSelectedValuesChange={handleActionFiltersChange}
+                    selectAllLabel="Select all actions"
+                    clearLabel="Deselect all actions"
                 />
-                <button
-                    type="button"
-                    onClick={() => handleActionFiltersChange(allActionFilterValues)}
-                    className="inline-flex h-8 items-center rounded-md border border-slate-300 bg-white px-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                >
-                    Select all actions
-                </button>
-                <button
-                    type="button"
-                    onClick={() => handleActionFiltersChange([])}
-                    className="inline-flex h-8 items-center rounded-md border border-slate-300 bg-white px-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                >
-                    Deselect all actions
-                </button>
                 <AdminFilterMenu
                     label="Target"
                     icon={<Crosshair size={14} className="mr-2 shrink-0 text-slate-500" weight="duotone" />}
@@ -1616,6 +1692,25 @@ export const AdminAuditPage: React.FC = () => {
                         Tip: drag column handles to resize. Diff/details starts wider by default.
                     </p>
                 </div>
+                <div className="mb-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] text-slate-600">
+                    <p className="font-semibold text-slate-700">
+                        Action pill legend
+                    </p>
+                    <div className="mt-1 flex flex-wrap items-center gap-2">
+                        <span className="inline-flex rounded-full border border-sky-300 bg-sky-50 px-2 py-0.5 font-semibold text-sky-800">
+                            Primary action
+                        </span>
+                        <span className="inline-flex rounded-full border border-slate-300 bg-slate-100 px-2 py-0.5 font-semibold text-slate-700">
+                            Event origin
+                        </span>
+                        <span className="inline-flex rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 font-semibold text-amber-800">
+                            Field facet
+                        </span>
+                        <span className="text-slate-500">
+                            Use the action code chip copy button for raw event keys.
+                        </span>
+                    </div>
+                </div>
                 <div className="overflow-x-auto">
                     <table className="min-w-full table-fixed border-collapse text-left text-sm">
                         <colgroup>
@@ -1651,7 +1746,14 @@ export const AdminAuditPage: React.FC = () => {
                                     </th>
                                 )}
                                 {isColumnVisible('actor') && (
-                                    <th className="relative px-3 py-2">
+                                    <th
+                                        className="relative px-3 py-2"
+                                        style={{
+                                            width: `${columnWidths.actor}px`,
+                                            minWidth: `${columnWidths.actor}px`,
+                                            maxWidth: `${columnWidths.actor}px`,
+                                        }}
+                                    >
                                         Actor
                                         <button
                                             type="button"
@@ -1744,7 +1846,7 @@ export const AdminAuditPage: React.FC = () => {
                                 const isUndoing = revertingEntryKey === entryKey;
 
                                 return (
-                                    <tr key={entryKey} className="border-b border-slate-100 align-top transition-colors hover:bg-slate-50">
+                                    <tr key={entryKey} className={`border-b border-slate-100 align-top transition-colors ${ADMIN_TABLE_ROW_SURFACE_CLASS}`}>
                                         <td className="px-2 py-2">
                                             <Checkbox
                                                 checked={isRowSelected}
@@ -1756,11 +1858,40 @@ export const AdminAuditPage: React.FC = () => {
                                             <td className="px-3 py-2 text-xs text-slate-600">{new Date(log.created_at).toLocaleString()}</td>
                                         )}
                                         {isColumnVisible('actor') && (
-                                            <td className="px-3 py-2 text-xs text-slate-700">
-                                                {actorEmail || (
-                                                    actorUserId
-                                                        ? <CopyableUuid value={actorUserId} textClassName="max-w-[220px] truncate text-xs" hintClassName="text-[9px]" />
-                                                        : 'unknown'
+                                            <td
+                                                className="max-w-0 px-3 py-2 text-xs text-slate-700"
+                                                style={{
+                                                    width: `${columnWidths.actor}px`,
+                                                    minWidth: `${columnWidths.actor}px`,
+                                                    maxWidth: `${columnWidths.actor}px`,
+                                                }}
+                                            >
+                                                {actorUserId ? (
+                                                    <div className="group">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                openUserDrawerById(actorUserId, {
+                                                                    sourceLog: log,
+                                                                    actorEmail,
+                                                                });
+                                                            }}
+                                                            title="Open actor details"
+                                                            className="block w-full truncate text-left text-sm font-medium text-slate-700 hover:text-accent-700 hover:underline"
+                                                        >
+                                                            {actorEmail || 'Unknown actor'}
+                                                        </button>
+                                                        <span className="mt-0.5 block text-[11px] text-slate-500">
+                                                            <CopyableUuid
+                                                                value={actorUserId}
+                                                                focusable={false}
+                                                                textClassName="max-w-full truncate text-[11px]"
+                                                                hintClassName="text-[9px]"
+                                                            />
+                                                        </span>
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-xs text-slate-500">{actorEmail || 'unknown'}</span>
                                                 )}
                                             </td>
                                         )}
