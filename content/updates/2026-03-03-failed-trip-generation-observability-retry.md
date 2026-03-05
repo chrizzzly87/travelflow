@@ -16,3 +16,4 @@ summary: "Failed trip generations are now easier to spot, inspect, and retry on 
 - [ ] [Internal] 📄 Admin trips table now includes page navigation controls with row-range context for large result sets.
 - [ ] [Internal] 🔍 Audit JSON diff now supports a stable in-pane full-diff toggle without spawning extra side-by-side containers.
 - [ ] [Internal] 🧪 Added focused browser/unit regression coverage for sticky table primitives, filter menu behavior, trips pagination, and audit diff rendering.
+- [ ] [Internal] 🧩 Added a dedicated Data Tables component group to the admin design-system playground and documented sticky/sizing table guidance in brand CI docs.
