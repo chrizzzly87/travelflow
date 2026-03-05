@@ -22,7 +22,12 @@ import {
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
 import { removeLocalStorageItem } from '../services/browserStorageService';
 import { useLoginModal } from '../hooks/useLoginModal';
-import { buildPathFromLocationParts } from '../services/authNavigationService';
+import {
+    buildLoginPathWithNext,
+    buildPathFromLocationParts,
+    rememberAuthReturnPath,
+    setPendingAuthRedirect,
+} from '../services/authNavigationService';
 import { useAuth } from '../hooks/useAuth';
 import { useConnectivityStatus } from '../hooks/useConnectivityStatus';
 import { useSyncStatus } from '../hooks/useSyncStatus';
@@ -85,6 +90,7 @@ import { abortActiveTripGenerationRequest } from '../services/aiService';
 import { buildBenchmarkScenarioImportUrl } from '../services/tripGenerationBenchmarkBridge';
 import { beginTripGenerationTabFeedback, type TripGenerationTabFeedbackSession } from '../services/tripGenerationTabFeedbackService';
 import { shouldApplyPolledTripUpdate } from '../services/tripGenerationPollingService';
+import { processQueuedTripGenerationAfterAuth } from '../services/tripGenerationQueueService';
 
 const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
     moduleKey: string,
@@ -980,6 +986,16 @@ const useTripViewRender = ({
         () => getLatestTripGenerationAttempt(trip),
         [trip]
     );
+    const pendingAuthQueueRequestId = useMemo(() => {
+        const metadata = latestGenerationAttempt?.metadata;
+        if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) return null;
+        const queueRequestValue = metadata.queueRequestId;
+        const queueRequestId = typeof queueRequestValue === 'string' ? queueRequestValue.trim() : '';
+        if (!queueRequestId) return null;
+        const pendingAuthValue = metadata.pendingAuth;
+        return pendingAuthValue === true ? queueRequestId : null;
+    }, [latestGenerationAttempt?.metadata]);
+    const [isResolvingPendingAuthGeneration, setIsResolvingPendingAuthGeneration] = useState(false);
     const generationElapsedMs = useMemo(
         () => getTripGenerationElapsedMs(trip, generationNowMs),
         [generationNowMs, trip]
@@ -1073,6 +1089,56 @@ const useTripViewRender = ({
         t,
         trip.defaultView,
         trip.id,
+    ]);
+
+    const handleResolvePendingAuthGeneration = useCallback(async () => {
+        if (!pendingAuthQueueRequestId || isResolvingPendingAuthGeneration) return;
+
+        if (isAuthenticated && !isAnonymous) {
+            setIsResolvingPendingAuthGeneration(true);
+            try {
+                const result = await processQueuedTripGenerationAfterAuth(pendingAuthQueueRequestId);
+                showToast('Trip generation started and is running in the background.', {
+                    tone: 'add',
+                    title: 'Generation started',
+                });
+                navigate(`/trip/${result.tripId}`, { replace: true });
+            } catch (error) {
+                showToast(error instanceof Error ? error.message : 'Could not start trip generation.', {
+                    tone: 'warn',
+                    title: 'Generation unavailable',
+                });
+            } finally {
+                setIsResolvingPendingAuthGeneration(false);
+            }
+            return;
+        }
+
+        const authRedirect = buildLoginPathWithNext({
+            pathname: location.pathname,
+            search: location.search,
+            hash: location.hash,
+            language: i18n.language,
+            resolvedLanguage: i18n.resolvedLanguage,
+        });
+        rememberAuthReturnPath(authRedirect.nextPath);
+        setPendingAuthRedirect(authRedirect.nextPath, 'trip_generation_pending_auth');
+        const query = new URLSearchParams();
+        query.set('next', authRedirect.nextPath);
+        query.set('claim', pendingAuthQueueRequestId);
+        navigate(`${authRedirect.loginPath}?${query.toString()}`);
+    }, [
+        i18n.language,
+        i18n.resolvedLanguage,
+        isAnonymous,
+        isAuthenticated,
+        isResolvingPendingAuthGeneration,
+        location.hash,
+        location.pathname,
+        location.search,
+        navigate,
+        pendingAuthQueueRequestId,
+        showToast,
     ]);
 
     const {
@@ -1326,6 +1392,7 @@ const useTripViewRender = ({
 
     const canRetryGeneration = canEdit
         && !isRetryingGeneration
+        && !pendingAuthQueueRequestId
         && Boolean(trip.aiMeta?.generation?.inputSnapshot)
         && generationState !== 'running'
         && generationState !== 'queued';
@@ -2387,9 +2454,14 @@ const useTripViewRender = ({
                     generationElapsedMs={generationElapsedMs}
                     generationTimeoutMs={TRIP_GENERATION_TIMEOUT_MS}
                     generationFailureMessage={latestGenerationAttempt?.errorMessage || null}
+                    pendingAuthQueueRequestId={pendingAuthQueueRequestId}
                     canRetryGeneration={canRetryGeneration}
                     canAbortAndRetryGeneration={canAbortAndRetryGeneration}
                     isRetryingGeneration={isRetryingGeneration}
+                    isResolvingPendingAuthGeneration={isResolvingPendingAuthGeneration}
+                    onResolvePendingAuthGeneration={() => {
+                        void handleResolvePendingAuthGeneration();
+                    }}
                     onAbortAndRetryGeneration={() => {
                         void handleAbortAndRetryGeneration();
                     }}

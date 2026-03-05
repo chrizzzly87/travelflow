@@ -67,6 +67,7 @@ import {
     setPendingAuthRedirect,
 } from '../services/authNavigationService';
 import { ensureDbSession } from '../services/dbService';
+import { createTripGenerationRequest } from '../services/tripGenerationQueueService';
 import {
     finishTripGenerationAttemptLog,
     startTripGenerationAttemptLog,
@@ -1559,6 +1560,90 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
             .split(',')
             .map((token) => token.trim())
             .filter(Boolean);
+        const classicGenerateOptions = {
+            budget,
+            pace,
+            interests: notesInterests.length > 0 ? notesInterests : undefined,
+            roundTrip,
+            totalDays: dayCount,
+            aiTarget: {
+                provider: selectedAiModel.provider,
+                model: selectedAiModel.model,
+            },
+        };
+
+        if (!isAuthenticated) {
+            try {
+                const queuedRequest = await createTripGenerationRequest('classic', {
+                    version: 1,
+                    flow: 'classic',
+                    destinationLabel,
+                    startDate,
+                    endDate,
+                    destinationPrompt,
+                    options: classicGenerateOptions,
+                });
+                const queueRequestId = queuedRequest.requestId;
+                const requestId = createTripGenerationRequestId();
+                const optimisticTripId = generateTripId();
+                const optimisticBaseTrip = buildLoadingTripPreview({
+                    tripId: optimisticTripId,
+                    destinationLabel,
+                    focusLocations: localizedDestinationLabels,
+                    startDate,
+                    totalDays: dayCount,
+                    requestedStops: Math.max(orderedDestinations.length, 2),
+                    roundTrip,
+                });
+                const pendingAuthTrip = markTripGenerationFailed({
+                    ...optimisticBaseTrip,
+                    items: optimisticBaseTrip.items.map((item) => ({
+                        ...item,
+                        loading: false,
+                    })),
+                    updatedAt: Date.now(),
+                }, {
+                    flow: 'classic',
+                    source: 'create_trip_classic_lab_pending_auth',
+                    error: new Error('Sign in to start generation for this trip.'),
+                    provider: selectedAiModel.provider,
+                    model: selectedAiModel.model,
+                    requestId,
+                    metadata: {
+                        pendingAuth: true,
+                        queueRequestId,
+                        queueExpiresAt: queuedRequest.expiresAt,
+                        orchestration: 'auth_queue_claim',
+                    },
+                });
+                onTripGenerated(pendingAuthTrip);
+                trackEvent('create_trip__cta--queue_pending_auth', {
+                    request_id: queueRequestId,
+                    source: 'create_trip_classic_lab',
+                });
+                setIsSubmitting(false);
+                return;
+            } catch {
+                const authRedirect = buildLoginPathWithNext({
+                    pathname: location.pathname,
+                    search: location.search,
+                    hash: location.hash,
+                    language: i18n.language,
+                    resolvedLanguage: i18n.resolvedLanguage,
+                });
+                rememberAuthReturnPath(authRedirect.nextPath);
+                setPendingAuthRedirect(authRedirect.nextPath, 'create_trip_queue_fallback');
+                trackEvent('create_trip__cta--redirect_login', {
+                    reason: 'queue_request_failed',
+                    has_authenticated_access: isAuthenticated,
+                    is_anonymous_access: isAnonymous,
+                });
+                setIsSubmitting(false);
+                navigate(authRedirect.loginTarget);
+                return;
+            }
+        }
+
         const generationSnapshot = createTripGenerationInputSnapshot({
             flow: 'classic',
             destinationLabel,
@@ -1566,17 +1651,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
             endDate,
             payload: {
                 destinationPrompt,
-                options: {
-                    budget,
-                    pace,
-                    interests: notesInterests.length > 0 ? notesInterests : undefined,
-                    roundTrip,
-                    totalDays: dayCount,
-                    aiTarget: {
-                        provider: selectedAiModel.provider,
-                        model: selectedAiModel.model,
-                    },
-                },
+                options: classicGenerateOptions,
             },
         });
         const requestId = createTripGenerationRequestId();
@@ -1626,18 +1701,6 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
             attemptId = loggedAttempt.id;
             onTripGenerated(optimisticTrip);
         }
-        const classicGenerateOptions = {
-            budget,
-            pace,
-            interests: notesInterests.length > 0 ? notesInterests : undefined,
-            roundTrip,
-            totalDays: dayCount,
-            aiTarget: {
-                provider: selectedAiModel.provider,
-                model: selectedAiModel.model,
-            },
-        };
-
         try {
             if (!attemptId) {
                 throw new Error('Could not start async generation attempt.');

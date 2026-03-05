@@ -45,13 +45,15 @@ import { createThailandTrip } from '../data/exampleTrips';
 import { TripView } from '../components/TripView';
 import { TripGenerationSkeleton } from '../components/TripGenerationSkeleton';
 import { startClientAsyncTripGeneration } from '../services/tripGenerationClientAsyncService';
-import { createTripGenerationInputSnapshot } from '../services/tripGenerationDiagnosticsService';
+import { createTripGenerationInputSnapshot, createTripGenerationRequestId, markTripGenerationFailed } from '../services/tripGenerationDiagnosticsService';
 import {
     buildLoginPathWithNext,
     rememberAuthReturnPath,
     setPendingAuthRedirect,
 } from '../services/authNavigationService';
 import { ensureDbSession } from '../services/dbService';
+import { createTripGenerationRequest } from '../services/tripGenerationQueueService';
+import { useAuth } from '../hooks/useAuth';
 import { HeroWebGLBackground } from '../components/HeroWebGLBackground';
 import { SiteFooter } from '../components/marketing/SiteFooter';
 import { SiteHeader } from '../components/navigation/SiteHeader';
@@ -215,6 +217,7 @@ const StepDots: React.FC<{ currentStep: number; totalSteps: number; completedSte
 export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenerated, onOpenManager }) => {
     const navigate = useNavigate();
     const location = useLocation();
+    const { isAuthenticated } = useAuth();
     const [searchParams] = useSearchParams();
     const defaultDates = getDefaultTripDates();
 
@@ -421,10 +424,6 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
 
         const primary = selectedCountries[0] || destination;
         const destinationLabel = destination || primary || 'Trip';
-        setPreviewTrip(buildPreviewTrip({ destination: primary, startDate, endDate }));
-        setGenerationSummary({ destination: primary, startDate, endDate });
-        setIsGenerating(true);
-        setGenerationError(null);
         const defaultModel = getDefaultCreateTripModel();
         const wizardOptions: WizardGenerateOptions = {
             countries: selectedCountries.map((c) => getDestinationPromptLabel(c)),
@@ -446,6 +445,67 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                 model: defaultModel.model,
             },
         };
+
+        if (!isAuthenticated) {
+            try {
+                const queuedRequest = await createTripGenerationRequest('wizard', {
+                    version: 1,
+                    flow: 'wizard',
+                    destinationLabel,
+                    startDate,
+                    endDate,
+                    options: wizardOptions,
+                });
+                const requestId = createTripGenerationRequestId();
+                const queueRequestId = queuedRequest.requestId;
+                const optimisticTrip = buildPreviewTrip({
+                    destination: destinationLabel,
+                    startDate,
+                    endDate,
+                    tripId: generateTripId(),
+                    title: destinationLabel,
+                });
+                const pendingAuthTrip = markTripGenerationFailed({
+                    ...optimisticTrip,
+                    items: optimisticTrip.items.map((item) => ({
+                        ...item,
+                        loading: false,
+                    })),
+                    updatedAt: Date.now(),
+                }, {
+                    flow: 'wizard',
+                    source: 'create_trip_v3_pending_auth',
+                    error: new Error('Sign in to start generation for this trip.'),
+                    provider: defaultModel.provider,
+                    model: defaultModel.model,
+                    requestId,
+                    metadata: {
+                        pendingAuth: true,
+                        queueRequestId,
+                        queueExpiresAt: queuedRequest.expiresAt,
+                        orchestration: 'auth_queue_claim',
+                        variant: 'v3',
+                    },
+                });
+                onTripGenerated(pendingAuthTrip);
+                return;
+            } catch {
+                const authRedirect = buildLoginPathWithNext({
+                    pathname: location.pathname,
+                    search: location.search,
+                    hash: location.hash,
+                });
+                rememberAuthReturnPath(authRedirect.nextPath);
+                setPendingAuthRedirect(authRedirect.nextPath, 'create_trip_v3_queue_fallback');
+                navigate(authRedirect.loginTarget);
+                return;
+            }
+        }
+
+        setPreviewTrip(buildPreviewTrip({ destination: primary, startDate, endDate }));
+        setGenerationSummary({ destination: primary, startDate, endDate });
+        setIsGenerating(true);
+        setGenerationError(null);
 
         try {
             const snapshot = createTripGenerationInputSnapshot({
