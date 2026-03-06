@@ -36,3 +36,34 @@ export const waitForTripPersistence = async (
 
     return false;
 };
+
+export const waitForTripAttemptPersistence = async (
+    tripId: string,
+    attemptId: string,
+    options?: WaitForTripPersistenceOptions,
+): Promise<boolean> => {
+    const normalizedTripId = tripId.trim();
+    const normalizedAttemptId = attemptId.trim();
+    if (!normalizedTripId || !normalizedAttemptId) return false;
+    if (!DB_ENABLED) return true;
+
+    await ensureDbSession();
+
+    const timeoutMs = Math.max(500, Math.round(options?.timeoutMs ?? 4_000));
+    const intervalMs = Math.max(0, Math.round(options?.intervalMs ?? 200));
+    const computedAttempts = Math.max(1, Math.ceil(timeoutMs / Math.max(intervalMs, 1)));
+    const maxAttempts = Math.max(1, Math.round(options?.maxAttempts ?? computedAttempts));
+
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+        const result = await dbGetTrip(normalizedTripId, { includeOwnerProfile: false });
+        const persistedAttemptId = result?.trip?.aiMeta?.generation?.latestAttempt?.id?.trim() || '';
+        if (result?.trip?.id === normalizedTripId && persistedAttemptId === normalizedAttemptId) {
+            return true;
+        }
+        if (attempt < maxAttempts - 1 && intervalMs > 0) {
+            await delay(intervalMs);
+        }
+    }
+
+    return false;
+};

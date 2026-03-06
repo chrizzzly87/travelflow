@@ -11,7 +11,8 @@ import {
     markTripGenerationRunning,
     withLatestTripGenerationAttemptId,
 } from './tripGenerationDiagnosticsService';
-import { waitForTripPersistence } from './tripGenerationPersistenceService';
+import { waitForTripAttemptPersistence, waitForTripPersistence } from './tripGenerationPersistenceService';
+import { dbUpsertTrip, ensureDbSession } from './dbApi';
 
 interface StartClientAsyncTripGenerationParams {
     flow: TripGenerationFlow;
@@ -79,7 +80,11 @@ export const startClientAsyncTripGeneration = async (
     try {
         const persisted = await waitForTripPersistence(tripId);
         if (!persisted) {
-            throw new Error('Trip was not persisted before async generation started.');
+            await ensureDbSession();
+            const persistedTripId = await dbUpsertTrip(queuedTrip, undefined);
+            if (!persistedTripId) {
+                throw new Error('Trip was not persisted before async generation started.');
+            }
         }
 
         loggedAttempt = await startTripGenerationAttemptLog({
@@ -101,6 +106,25 @@ export const startClientAsyncTripGeneration = async (
             queuedTrip = withLatestTripGenerationAttemptId(queuedTrip, loggedAttempt.id);
             attemptId = loggedAttempt.id;
             await params.onTripUpdate(queuedTrip);
+
+            const persistedCanonicalAttempt = await waitForTripAttemptPersistence(tripId, loggedAttempt.id, {
+                timeoutMs: 2_000,
+                intervalMs: 150,
+            });
+            if (!persistedCanonicalAttempt) {
+                await ensureDbSession();
+                const persistedCanonicalTripId = await dbUpsertTrip(queuedTrip, undefined);
+                if (!persistedCanonicalTripId) {
+                    throw new Error('Trip generation attempt was not persisted before queueing.');
+                }
+                const confirmedCanonicalAttempt = await waitForTripAttemptPersistence(tripId, loggedAttempt.id, {
+                    timeoutMs: 1_200,
+                    intervalMs: 120,
+                });
+                if (!confirmedCanonicalAttempt) {
+                    throw new Error('Trip generation attempt was not persisted before queueing.');
+                }
+            }
         }
 
         if (!attemptId) {
@@ -111,6 +135,7 @@ export const startClientAsyncTripGeneration = async (
             flow: params.flow,
             tripId,
             attemptId,
+            startedAt: loggedAttempt?.startedAt || queuedAttempt?.startedAt || null,
             requestId,
             source: params.jobSource || params.source,
             queueRequestId: params.queueRequestId || null,

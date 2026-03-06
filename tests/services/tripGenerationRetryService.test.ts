@@ -7,9 +7,14 @@ const buildWizardItineraryPromptMock = vi.fn().mockReturnValue('wizard prompt');
 const buildSurpriseItineraryPromptMock = vi.fn().mockReturnValue('surprise prompt');
 const startAttemptLogMock = vi.fn();
 const finishAttemptLogMock = vi.fn();
+const listOwnerAttemptLogsMock = vi.fn();
 const enqueueAsyncTripGenerationJobMock = vi.fn();
 const dbGetTripMock = vi.fn();
+const dbUpsertTripMock = vi.fn();
+const ensureDbSessionMock = vi.fn();
+const waitForTripAttemptPersistenceMock = vi.fn();
 const triggerTripGenerationWorkerMock = vi.fn();
+const listTripGenerationJobsByTripMock = vi.fn();
 
 vi.mock('../../config/aiModelCatalog', () => ({
   getDefaultCreateTripModel: () => ({ id: 'default', provider: 'openai', model: 'gpt-4.1', availability: 'active' }),
@@ -25,6 +30,7 @@ vi.mock('../../services/aiService', () => ({
 vi.mock('../../services/tripGenerationAttemptLogService', () => ({
   startTripGenerationAttemptLog: (...args: unknown[]) => startAttemptLogMock(...args),
   finishTripGenerationAttemptLog: (...args: unknown[]) => finishAttemptLogMock(...args),
+  listOwnerTripGenerationAttempts: (...args: unknown[]) => listOwnerAttemptLogsMock(...args),
 }));
 
 vi.mock('../../services/tripGenerationAsyncEnqueueService', () => ({
@@ -33,10 +39,17 @@ vi.mock('../../services/tripGenerationAsyncEnqueueService', () => ({
 
 vi.mock('../../services/dbApi', () => ({
   dbGetTrip: (...args: unknown[]) => dbGetTripMock(...args),
+  dbUpsertTrip: (...args: unknown[]) => dbUpsertTripMock(...args),
+  ensureDbSession: (...args: unknown[]) => ensureDbSessionMock(...args),
 }));
 
 vi.mock('../../services/tripGenerationJobService', () => ({
   triggerTripGenerationWorker: (...args: unknown[]) => triggerTripGenerationWorkerMock(...args),
+  listTripGenerationJobsByTrip: (...args: unknown[]) => listTripGenerationJobsByTripMock(...args),
+}));
+
+vi.mock('../../services/tripGenerationPersistenceService', () => ({
+  waitForTripAttemptPersistence: (...args: unknown[]) => waitForTripAttemptPersistenceMock(...args),
 }));
 
 import { retryTripGenerationWithDefaultModel } from '../../services/tripGenerationRetryService';
@@ -112,12 +125,22 @@ describe('retryTripGenerationWithDefaultModel', () => {
     enqueueAsyncTripGenerationJobMock.mockReset();
     buildClassicItineraryPromptMock.mockClear();
     dbGetTripMock.mockReset();
+    dbUpsertTripMock.mockReset();
+    ensureDbSessionMock.mockReset();
+    waitForTripAttemptPersistenceMock.mockReset();
+    listOwnerAttemptLogsMock.mockReset();
+    listTripGenerationJobsByTripMock.mockReset();
     triggerTripGenerationWorkerMock.mockReset();
 
     startAttemptLogMock.mockResolvedValue({ id: 'attempt-log-1' });
     finishAttemptLogMock.mockResolvedValue(undefined);
     enqueueAsyncTripGenerationJobMock.mockResolvedValue(true);
     dbGetTripMock.mockResolvedValue(null);
+    dbUpsertTripMock.mockResolvedValue('trip-existing');
+    ensureDbSessionMock.mockResolvedValue('user-1');
+    waitForTripAttemptPersistenceMock.mockResolvedValue(true);
+    listOwnerAttemptLogsMock.mockResolvedValue([]);
+    listTripGenerationJobsByTripMock.mockResolvedValue([]);
     triggerTripGenerationWorkerMock.mockResolvedValue(true);
   });
 
@@ -143,6 +166,7 @@ describe('retryTripGenerationWithDefaultModel', () => {
       prompt: 'classic prompt',
       provider: 'openai',
       model: 'gpt-4.1',
+      startedAt: expect.any(String),
     }));
     expect(finishAttemptLogMock).not.toHaveBeenCalled();
   });
@@ -222,6 +246,35 @@ describe('retryTripGenerationWithDefaultModel', () => {
       },
     };
     dbGetTripMock.mockResolvedValue({ trip: remoteQueuedTrip });
+    listOwnerAttemptLogsMock.mockResolvedValue([
+      {
+        id: 'attempt-remote-queued',
+        flow: 'classic',
+        source: 'trip_status_strip',
+        state: 'queued',
+        startedAt: '2099-03-06T12:00:00.000Z',
+      },
+    ]);
+    listTripGenerationJobsByTripMock.mockResolvedValue([
+      {
+        id: 'job-remote-queued',
+        tripId: remoteQueuedTrip.id,
+        ownerId: 'owner-1',
+        attemptId: 'attempt-remote-queued',
+        state: 'queued',
+        priority: 25,
+        retryCount: 0,
+        maxRetries: 0,
+        runAfter: '2099-03-06T12:00:00.000Z',
+        leaseExpiresAt: null,
+        leasedBy: null,
+        payload: null,
+        lastErrorCode: null,
+        lastErrorMessage: null,
+        createdAt: '2099-03-06T12:00:00.000Z',
+        updatedAt: '2099-03-06T12:00:00.000Z',
+      },
+    ]);
 
     const onTripUpdate = vi.fn();
     const result = await retryTripGenerationWithDefaultModel(buildTrip(), {
@@ -238,5 +291,77 @@ describe('retryTripGenerationWithDefaultModel', () => {
     }));
     expect(startAttemptLogMock).not.toHaveBeenCalled();
     expect(enqueueAsyncTripGenerationJobMock).not.toHaveBeenCalled();
+  });
+
+  it('does not short-circuit retry when remote in-flight state is stale', async () => {
+    const staleAttemptId = 'attempt-stale-queued';
+    const remoteQueuedTrip: ITrip = {
+      ...buildTrip(),
+      updatedAt: 123_456_789,
+      aiMeta: {
+        provider: 'openai',
+        model: 'gpt-4.1',
+        generation: {
+          state: 'queued',
+          inputSnapshot: buildTrip().aiMeta!.generation!.inputSnapshot,
+          attempts: [
+            {
+              id: staleAttemptId,
+              flow: 'classic',
+              source: 'trip_status_strip',
+              state: 'queued',
+              startedAt: '2026-03-06T12:00:00.000Z',
+              requestId: 'request-remote-queued',
+              provider: 'openai',
+              model: 'gpt-4.1',
+              metadata: {
+                orchestration: 'async_worker',
+              },
+            },
+          ],
+          latestAttempt: {
+            id: staleAttemptId,
+            flow: 'classic',
+            source: 'trip_status_strip',
+            state: 'queued',
+            startedAt: '2026-03-06T12:00:00.000Z',
+            requestId: 'request-remote-queued',
+            provider: 'openai',
+            model: 'gpt-4.1',
+            metadata: {
+              orchestration: 'async_worker',
+            },
+          },
+          retryCount: 2,
+          retryRequestedAt: '2026-03-06T12:00:00.000Z',
+          lastSucceededAt: null,
+          lastFailedAt: '2026-03-06T11:55:00.000Z',
+        },
+      },
+    };
+    dbGetTripMock.mockResolvedValue({ trip: remoteQueuedTrip });
+    listOwnerAttemptLogsMock.mockResolvedValue([
+      {
+        id: staleAttemptId,
+        flow: 'classic',
+        source: 'trip_status_strip',
+        state: 'failed',
+        startedAt: '2026-03-06T12:00:00.000Z',
+        finishedAt: '2026-03-06T12:02:00.000Z',
+      },
+    ]);
+    listTripGenerationJobsByTripMock.mockResolvedValue([]);
+
+    const onTripUpdate = vi.fn();
+    const result = await retryTripGenerationWithDefaultModel(buildTrip(), {
+      source: 'trip_status_strip',
+      onTripUpdate,
+    });
+
+    expect(result.state).toBe('queued');
+    expect(startAttemptLogMock).toHaveBeenCalledTimes(1);
+    expect(enqueueAsyncTripGenerationJobMock).toHaveBeenCalledTimes(1);
+    expect(triggerTripGenerationWorkerMock).not.toHaveBeenCalled();
+    expect(onTripUpdate).toHaveBeenCalled();
   });
 });

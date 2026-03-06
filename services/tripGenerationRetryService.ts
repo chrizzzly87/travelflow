@@ -11,6 +11,7 @@ import {
 } from './aiService';
 import {
     finishTripGenerationAttemptLog,
+    listOwnerTripGenerationAttempts,
     startTripGenerationAttemptLog,
 } from './tripGenerationAttemptLogService';
 import {
@@ -22,8 +23,9 @@ import {
 } from './tripGenerationDiagnosticsService';
 import type { ITrip, TripGenerationFlow, TripGenerationInputSnapshot } from '../types';
 import { enqueueAsyncTripGenerationJob } from './tripGenerationAsyncEnqueueService';
-import { dbGetTrip } from './dbApi';
-import { triggerTripGenerationWorker } from './tripGenerationJobService';
+import { dbGetTrip, dbUpsertTrip, ensureDbSession } from './dbApi';
+import { listTripGenerationJobsByTrip, triggerTripGenerationWorker } from './tripGenerationJobService';
+import { waitForTripAttemptPersistence } from './tripGenerationPersistenceService';
 
 export interface RetryTripGenerationOptions {
     source: string;
@@ -96,6 +98,20 @@ const resolveRetryRoundTrip = (
     return true;
 };
 
+const isTerminalAttemptState = (state: string | null | undefined): boolean => (
+    state === 'failed' || state === 'succeeded'
+);
+
+const isInFlightAttemptState = (state: string | null | undefined): boolean => (
+    state === 'queued' || state === 'running'
+);
+
+const toMs = (value: string | null | undefined): number | null => {
+    if (!value) return null;
+    const parsed = Date.parse(value);
+    return Number.isFinite(parsed) ? parsed : null;
+};
+
 export const retryTripGenerationWithDefaultModel = async (
     trip: ITrip,
     options: RetryTripGenerationOptions,
@@ -112,8 +128,48 @@ export const retryTripGenerationWithDefaultModel = async (
         const remote = await dbGetTrip(trip.id, { includeOwnerProfile: false });
         const remoteTrip = remote?.trip || null;
         if (remoteTrip) {
-            const remoteState = getTripGenerationState(remoteTrip, Date.now());
-            if (remoteState === 'queued' || remoteState === 'running') {
+            const nowMs = Date.now();
+            const remoteState = getTripGenerationState(remoteTrip, nowMs);
+            const remoteLatestAttempt = remoteTrip.aiMeta?.generation?.latestAttempt || null;
+            const remoteLatestAttemptId = remoteLatestAttempt?.id?.trim() || null;
+            let shouldReuseExistingInFlight = remoteState === 'queued' || remoteState === 'running';
+
+            if (shouldReuseExistingInFlight && remoteLatestAttemptId) {
+                try {
+                    const [attemptLogs, jobs] = await Promise.all([
+                        listOwnerTripGenerationAttempts(remoteTrip.id, 8),
+                        listTripGenerationJobsByTrip(remoteTrip.id, { limit: 12 }),
+                    ]);
+                    const latestAttemptLog = attemptLogs.find((attempt) => attempt.id === remoteLatestAttemptId) || null;
+                    const latestAttemptLogState = latestAttemptLog?.state || null;
+                    const hasActiveJobForLatestAttempt = jobs.some((job) => (
+                        job.attemptId === remoteLatestAttemptId
+                        && (job.state === 'queued' || job.state === 'leased')
+                    ));
+                    const latestAttemptStartedAtMs = toMs(latestAttemptLog?.startedAt || remoteLatestAttempt.startedAt);
+                    const isLikelyStaleInFlight = (
+                        isInFlightAttemptState(latestAttemptLogState || remoteLatestAttempt.state || null)
+                        && !hasActiveJobForLatestAttempt
+                        && typeof latestAttemptStartedAtMs === 'number'
+                        && nowMs - latestAttemptStartedAtMs >= 20_000
+                    );
+
+                    if (isTerminalAttemptState(latestAttemptLogState) || isLikelyStaleInFlight) {
+                        shouldReuseExistingInFlight = false;
+                    }
+                } catch {
+                    const latestAttemptStartedAtMs = toMs(remoteLatestAttempt.startedAt);
+                    if (
+                        (remoteLatestAttempt.state === 'queued' || remoteLatestAttempt.state === 'running')
+                        && typeof latestAttemptStartedAtMs === 'number'
+                        && nowMs - latestAttemptStartedAtMs >= 30_000
+                    ) {
+                        shouldReuseExistingInFlight = false;
+                    }
+                }
+            }
+
+            if (shouldReuseExistingInFlight) {
                 if (options.onTripUpdate) {
                     await options.onTripUpdate(remoteTrip);
                 }
@@ -185,11 +241,32 @@ export const retryTripGenerationWithDefaultModel = async (
         if (!attemptId) {
             throw new Error('Retry attempt could not be initialized.');
         }
+
+        const persistedCanonicalAttempt = await waitForTripAttemptPersistence(trip.id, attemptId, {
+            timeoutMs: 2_000,
+            intervalMs: 150,
+        });
+        if (!persistedCanonicalAttempt) {
+            await ensureDbSession();
+            const persistedTripId = await dbUpsertTrip(runningTripWithCanonicalAttempt, undefined);
+            if (!persistedTripId) {
+                throw new Error('Retry attempt could not be persisted before queueing.');
+            }
+            const confirmedCanonicalAttempt = await waitForTripAttemptPersistence(trip.id, attemptId, {
+                timeoutMs: 1_200,
+                intervalMs: 120,
+            });
+            if (!confirmedCanonicalAttempt) {
+                throw new Error('Retry attempt could not be persisted before queueing.');
+            }
+        }
+
         const prompt = buildRetryPromptFromSnapshot(snapshot);
         const enqueueSucceeded = await enqueueAsyncTripGenerationJob({
             flow: snapshot.flow,
             tripId: trip.id,
             attemptId,
+            startedAt: loggedAttempt?.startedAt || runningAttempt?.startedAt || null,
             requestId,
             source: options.source,
             queueRequestId: null,
