@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { useAuth } from '../hooks/useAuth';
@@ -25,6 +25,23 @@ import type { ITrip, ITimelineItem, IViewSettings } from '../types';
 import { normalizeTransportMode } from '../shared/transportModes';
 import type { TripLoaderRouteProps } from './tripRouteTypes';
 import { TripView } from '../components/TripView';
+
+const areViewSettingsEqual = (a?: IViewSettings, b?: IViewSettings): boolean => {
+    if (!a && !b) return true;
+    if (!a || !b) return false;
+    return (
+        a.layoutMode === b.layoutMode
+        && a.timelineMode === b.timelineMode
+        && a.timelineView === b.timelineView
+        && a.mapDockMode === b.mapDockMode
+        && a.mapStyle === b.mapStyle
+        && a.routeMode === b.routeMode
+        && a.showCityNames === b.showCityNames
+        && a.zoomLevel === b.zoomLevel
+        && a.sidebarWidth === b.sidebarWidth
+        && a.timelineHeight === b.timelineHeight
+    );
+};
 
 const resolveTripInitialMapFocusQuery = (trip: ITrip): string | undefined => {
     const locations = trip.items
@@ -288,6 +305,13 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
     const adminFallbackAccess = tripAccess?.source === 'admin_fallback' ? tripAccess : undefined;
     const isPublicReadView = tripAccess?.source === 'public_read';
     const tripViewKey = `${trip.id}:${adminFallbackAccess ? 'admin-fallback' : isPublicReadView ? 'public-read' : 'default'}`;
+    const handleRouteViewSettingsChange = useCallback((settings: IViewSettings) => {
+        if (areViewSettingsEqual(latestViewSettingsRef.current, settings)) return;
+        hasInSessionViewOverrideRef.current = true;
+        latestViewSettingsRef.current = settings;
+        setViewSettings(settings);
+        onViewSettingsChange(settings);
+    }, [onViewSettingsChange]);
 
     return (
         <TripView
@@ -297,11 +321,7 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
             initialViewSettings={viewSettings ?? trip.defaultView}
             onUpdateTrip={onUpdateTrip}
             onCommitState={onCommitState}
-            onViewSettingsChange={(settings) => {
-                hasInSessionViewOverrideRef.current = true;
-                setViewSettings(settings);
-                onViewSettingsChange(settings);
-            }}
+            onViewSettingsChange={handleRouteViewSettingsChange}
             onOpenManager={onOpenManager}
             onOpenSettings={onOpenSettings}
             appLanguage={appLanguage}

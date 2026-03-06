@@ -20,6 +20,23 @@ import type { ITrip, IViewSettings } from '../types';
 import type { ExampleTripLoaderRouteProps } from './tripRouteTypes';
 import { TripView } from '../components/TripView';
 
+const areViewSettingsEqual = (a?: IViewSettings, b?: IViewSettings): boolean => {
+    if (!a && !b) return true;
+    if (!a || !b) return false;
+    return (
+        a.layoutMode === b.layoutMode
+        && a.timelineMode === b.timelineMode
+        && a.timelineView === b.timelineView
+        && a.mapDockMode === b.mapDockMode
+        && a.mapStyle === b.mapStyle
+        && a.routeMode === b.routeMode
+        && a.showCityNames === b.showCityNames
+        && a.zoomLevel === b.zoomLevel
+        && a.sidebarWidth === b.sidebarWidth
+        && a.timelineHeight === b.timelineHeight
+    );
+};
+
 type ExampleTemplateFactory = (createdAtIso: string) => ITrip;
 type ExampleTripCardSummary = {
     title: string;
@@ -290,16 +307,21 @@ export const ExampleTripLoaderRoute: React.FC<ExampleTripLoaderRouteProps> = ({
     };
 
     if (!activeTrip || !activeTrip.isExample) return null;
+    const handleRouteViewSettingsChange = useCallback((settings: IViewSettings) => {
+        if (areViewSettingsEqual(viewSettings, settings)) return;
+        setViewSettings((previous) => {
+            if (areViewSettingsEqual(previous, settings)) return previous;
+            return settings;
+        });
+        onViewSettingsChange(settings);
+    }, [onViewSettingsChange, viewSettings]);
 
     return (
         <TripView
             trip={activeTrip}
             initialViewSettings={viewSettings ?? activeTrip.defaultView}
             onUpdateTrip={(updatedTrip) => onTripLoaded(updatedTrip, viewSettings ?? updatedTrip.defaultView)}
-            onViewSettingsChange={(settings) => {
-                setViewSettings(settings);
-                onViewSettingsChange(settings);
-            }}
+            onViewSettingsChange={handleRouteViewSettingsChange}
             onOpenManager={onOpenManager}
             onOpenSettings={onOpenSettings}
             appLanguage={appLanguage}

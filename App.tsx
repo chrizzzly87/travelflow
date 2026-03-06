@@ -60,6 +60,25 @@ import {
 } from './services/authNavigationService';
 const IS_DEV = Boolean((import.meta as any)?.env?.DEV);
 
+const toFiniteNumber = (value: unknown, fallback: number): number => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const normalizeSettingsForPersistence = (settings: IViewSettings): Required<Pick<IViewSettings,
+    'mapStyle' | 'routeMode' | 'layoutMode' | 'timelineMode' | 'timelineView' | 'showCityNames' | 'zoomLevel' | 'sidebarWidth' | 'timelineHeight'
+>> => ({
+    mapStyle: settings.mapStyle,
+    routeMode: settings.routeMode,
+    layoutMode: settings.layoutMode,
+    timelineMode: settings.timelineMode,
+    timelineView: settings.timelineView,
+    showCityNames: Boolean(settings.showCityNames),
+    zoomLevel: Number(toFiniteNumber(settings.zoomLevel, 1).toFixed(2)),
+    sidebarWidth: Math.round(toFiniteNumber(settings.sidebarWidth, 560)),
+    timelineHeight: Math.round(toFiniteNumber(settings.timelineHeight, 340)),
+});
+
 const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
     moduleKey: string,
     importer: () => Promise<TModule>
@@ -312,6 +331,8 @@ const AppContent: React.FC = () => {
     const location = useLocation();
     const { snapshot: connectivitySnapshot } = useConnectivityStatus();
     const userSettingsSaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const pendingUserSettingsKeyRef = useRef<string | null>(null);
+    const persistedUserSettingsKeyRef = useRef<string | null>(null);
     const shouldLoadDebugger = useDebuggerBootstrap({ appName: APP_NAME, isDev: IS_DEV });
     const isFirstLoadCritical = useMemo(
         () => isFirstLoadCriticalPath(location.pathname),
@@ -632,26 +653,37 @@ const AppContent: React.FC = () => {
         }
     }, [access, appLanguage, isAuthenticated]);
 
-    const handleViewSettingsChange = (settings: IViewSettings) => {
+    useEffect(() => {
+        return () => {
+            if (!userSettingsSaveRef.current) return;
+            clearTimeout(userSettingsSaveRef.current);
+            userSettingsSaveRef.current = null;
+        };
+    }, []);
+
+    const handleViewSettingsChange = useCallback((settings: IViewSettings) => {
         if (!DB_ENABLED) return;
         if (!isAuthenticated || !access || access.isAnonymous) return;
+        const normalized = normalizeSettingsForPersistence(settings);
+        const payloadKey = JSON.stringify(normalized);
+        if (
+            payloadKey === pendingUserSettingsKeyRef.current
+            || payloadKey === persistedUserSettingsKeyRef.current
+        ) {
+            return;
+        }
         if (userSettingsSaveRef.current) {
             clearTimeout(userSettingsSaveRef.current);
         }
+        pendingUserSettingsKeyRef.current = payloadKey;
         userSettingsSaveRef.current = setTimeout(() => {
-            void dbUpsertUserSettings({
-                mapStyle: settings.mapStyle,
-                routeMode: settings.routeMode,
-                layoutMode: settings.layoutMode,
-                timelineMode: settings.timelineMode,
-                timelineView: settings.timelineView,
-                showCityNames: settings.showCityNames,
-                zoomLevel: settings.zoomLevel,
-                sidebarWidth: settings.sidebarWidth,
-                timelineHeight: settings.timelineHeight,
-            });
+            const persist = async () => {
+                await dbUpsertUserSettings(normalized);
+                persistedUserSettingsKeyRef.current = payloadKey;
+            };
+            void persist();
         }, 800);
-    };
+    }, [access, isAuthenticated]);
 
     const handleUpdateTrip = useCallback((updatedTrip: ITrip, options?: { persist?: boolean; preserveUpdatedAt?: boolean }) => {
         setTrip(updatedTrip);
