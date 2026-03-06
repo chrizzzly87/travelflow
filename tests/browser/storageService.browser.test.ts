@@ -141,4 +141,31 @@ describe('services/storageService', () => {
     setItemSpy.mockRestore();
     consoleSpy.mockRestore();
   });
+
+  it('prunes oldest trips when localStorage quota allows only smaller payloads', () => {
+    const originalSetItem = Storage.prototype.setItem;
+    const setItemSpy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (key: string, value: string) {
+      if (key === 'travelflow_trips_v1' && value.length > 450) {
+        throw new Error('quota');
+      }
+      return originalSetItem.call(this, key, value);
+    });
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const trips = Array.from({ length: 12 }, (_, index) => makeTrip({
+      id: `trip-${index + 1}`,
+      title: `Trip ${index + 1}`,
+      updatedAt: index + 1,
+    }));
+
+    expect(() => setAllTrips(trips)).not.toThrow();
+
+    const persisted = getAllTrips();
+    expect(persisted.length).toBeGreaterThan(0);
+    expect(persisted.length).toBeLessThan(trips.length);
+    expect(warnSpy).toHaveBeenCalled();
+
+    setItemSpy.mockRestore();
+    warnSpy.mockRestore();
+  });
 });
