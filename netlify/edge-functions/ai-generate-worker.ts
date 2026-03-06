@@ -156,6 +156,19 @@ const safeJsonParse = async (response: Response): Promise<any> => {
   }
 };
 
+export const extractRpcErrorMessage = async (
+  response: Response,
+  fallbackMessage: string,
+): Promise<string> => {
+  const payload = await safeJsonParse(response);
+  if (payload && typeof payload === "object") {
+    const record = payload as Record<string, unknown>;
+    const message = asString(record.message) || asString(record.error);
+    if (message) return message;
+  }
+  return fallbackMessage;
+};
+
 const asString = (value: unknown): string | null => {
   if (typeof value !== "string") return null;
   const trimmed = value.trim();
@@ -373,10 +386,7 @@ const buildTripFromModelData = (
     countryInfo: data.countryInfo ?? undefined,
     createdAt: now,
     updatedAt: now,
-    isFavorite: false,
     roundTrip: params.roundTrip ? true : undefined,
-    cityColorPaletteId: "classic",
-    mapColorMode: "trip",
     aiMeta: {
       provider: params.provider,
       model: params.model,
@@ -521,6 +531,8 @@ const applySucceededGenerationState = (
   };
 
   const generatedAiMeta = asObject(generatedTrip.aiMeta) || {};
+  const preferredCityColorPaletteId = asString(previousTrip.cityColorPaletteId) || asString(generatedTrip.cityColorPaletteId);
+  const preferredMapColorMode = asString(previousTrip.mapColorMode) || asString(generatedTrip.mapColorMode);
   const mergedTrip = {
     ...previousTrip,
     ...generatedTrip,
@@ -530,7 +542,14 @@ const applySucceededGenerationState = (
     sourceKind: asString(previousTrip.sourceKind) || asString(generatedTrip.sourceKind) || "created",
     status: asString(previousTrip.status) || asString(generatedTrip.status) || "active",
     tripExpiresAt: previousTrip.tripExpiresAt ?? generatedTrip.tripExpiresAt ?? null,
+    isFavorite: Boolean(previousTrip.isFavorite ?? generatedTrip.isFavorite),
   };
+  if (preferredCityColorPaletteId) {
+    mergedTrip.cityColorPaletteId = preferredCityColorPaletteId;
+  }
+  if (preferredMapColorMode) {
+    mergedTrip.mapColorMode = preferredMapColorMode;
+  }
 
   return {
     ...mergedTrip,
@@ -697,22 +716,29 @@ const insertTripVersion = async (
 const finishAttempt = async (
   config: { url: string; serviceRoleKey: string },
   payload: Record<string, unknown>,
-): Promise<void> => {
-  await serviceFetch(config, "/rest/v1/rpc/trip_generation_attempt_finish", {
+): Promise<boolean> => {
+  const response = await serviceFetch(config, "/rest/v1/rpc/trip_generation_attempt_finish", {
     method: "POST",
     headers: {
       Prefer: "params=single-object",
     },
     body: JSON.stringify(payload),
   });
+  if (response.ok) return true;
+  const errorMessage = await extractRpcErrorMessage(response, "trip_generation_attempt_finish failed");
+  console.error("[ai-generate-worker] trip_generation_attempt_finish failed", {
+    status: response.status,
+    error: errorMessage,
+  });
+  return false;
 };
 
 const completeJob = async (
   config: { url: string; serviceRoleKey: string },
   jobId: string,
   workerId: string,
-): Promise<void> => {
-  await serviceFetch(config, "/rest/v1/rpc/trip_generation_job_complete", {
+): Promise<boolean> => {
+  const response = await serviceFetch(config, "/rest/v1/rpc/trip_generation_job_complete", {
     method: "POST",
     headers: {
       Prefer: "params=single-object",
@@ -722,6 +748,15 @@ const completeJob = async (
       p_worker_id: workerId,
     }),
   });
+  if (response.ok) return true;
+  const errorMessage = await extractRpcErrorMessage(response, "trip_generation_job_complete failed");
+  console.error("[ai-generate-worker] trip_generation_job_complete failed", {
+    jobId,
+    workerId,
+    status: response.status,
+    error: errorMessage,
+  });
+  return false;
 };
 
 const failJob = async (
@@ -733,8 +768,8 @@ const failJob = async (
     errorMessage: string;
     terminal?: boolean;
   },
-): Promise<void> => {
-  await serviceFetch(config, "/rest/v1/rpc/trip_generation_job_fail", {
+): Promise<boolean> => {
+  const response = await serviceFetch(config, "/rest/v1/rpc/trip_generation_job_fail", {
     method: "POST",
     headers: {
       Prefer: "params=single-object",
@@ -748,6 +783,15 @@ const failJob = async (
       p_terminal: payload.terminal ?? true,
     }),
   });
+  if (response.ok) return true;
+  const errorMessage = await extractRpcErrorMessage(response, "trip_generation_job_fail failed");
+  console.error("[ai-generate-worker] trip_generation_job_fail failed", {
+    jobId: payload.jobId,
+    workerId: payload.workerId,
+    status: response.status,
+    error: errorMessage,
+  });
+  return false;
 };
 
 const patchQueueRequest = async (
@@ -805,35 +849,35 @@ const processJob = async (
 ): Promise<{ ok: boolean; jobId: string; tripId: string; error?: string }> => {
   const payload = parseWorkerPayload(job.payload);
   if (!payload) {
-    await failJob(config, {
+    const failedToMark = !(await failJob(config, {
       jobId: job.id,
       workerId,
       errorCode: "ASYNC_WORKER_PAYLOAD_INVALID",
       errorMessage: "Job payload is invalid for async generation worker.",
       terminal: true,
-    });
+    }));
     return {
       ok: false,
       jobId: job.id,
       tripId: job.trip_id,
-      error: "invalid_payload",
+      error: failedToMark ? "invalid_payload (job_fail_rpc_failed)" : "invalid_payload",
     };
   }
 
   const tripRow = await readTripRow(config, job.trip_id);
   if (!tripRow?.data) {
-    await failJob(config, {
+    const failedToMark = !(await failJob(config, {
       jobId: job.id,
       workerId,
       errorCode: "ASYNC_WORKER_TRIP_NOT_FOUND",
       errorMessage: "Trip row was not found while processing queued generation.",
       terminal: true,
-    });
+    }));
     return {
       ok: false,
       jobId: job.id,
       tripId: job.trip_id,
-      error: "trip_missing",
+      error: failedToMark ? "trip_missing (job_fail_rpc_failed)" : "trip_missing",
     };
   }
 
@@ -881,7 +925,7 @@ const processJob = async (
 
       await upsertTripRow(config, failedTrip, job.owner_id);
       await insertTripVersion(config, job.trip_id, failedTrip, "Data: Queued generation failed");
-      await finishAttempt(config, {
+      const attemptLogged = await finishAttempt(config, {
         p_attempt_id: payload.attemptId,
         p_state: "failed",
         p_provider: provider,
@@ -898,7 +942,7 @@ const processJob = async (
           details: asString(failure.details),
         },
       });
-      await failJob(config, {
+      const jobFailed = await failJob(config, {
         jobId: job.id,
         workerId,
         errorCode,
@@ -939,7 +983,11 @@ const processJob = async (
         ok: false,
         jobId: job.id,
         tripId: job.trip_id,
-        error: message,
+        error: [
+          message,
+          !attemptLogged ? "attempt_finish_rpc_failed" : null,
+          !jobFailed ? "job_fail_rpc_failed" : null,
+        ].filter(Boolean).join(" | "),
       };
     }
 
@@ -971,7 +1019,7 @@ const processJob = async (
 
     await upsertTripRow(config, succeededTrip, job.owner_id);
     await insertTripVersion(config, job.trip_id, succeededTrip, "Data: Queued generation completed");
-    await finishAttempt(config, {
+    const attemptLogged = await finishAttempt(config, {
       p_attempt_id: payload.attemptId,
       p_state: "succeeded",
       p_provider: generation.value.meta.provider || provider,
@@ -984,7 +1032,7 @@ const processJob = async (
         source: WORKER_SOURCE,
       },
     });
-    await completeJob(config, job.id, workerId);
+    const jobCompleted = await completeJob(config, job.id, workerId);
     await patchQueueRequest(config, {
       requestId: payload.queueRequestId,
       ownerId: job.owner_id,
@@ -1022,6 +1070,12 @@ const processJob = async (
       ok: true,
       jobId: job.id,
       tripId: job.trip_id,
+      error: !attemptLogged || !jobCompleted
+        ? [
+          !attemptLogged ? "attempt_finish_rpc_failed" : null,
+          !jobCompleted ? "job_complete_rpc_failed" : null,
+        ].filter(Boolean).join(" | ")
+        : undefined,
     };
   } catch (error) {
     const durationMs = Math.max(0, Date.now() - startedAt);
@@ -1050,7 +1104,7 @@ const processJob = async (
     });
     await upsertTripRow(config, failedTrip, job.owner_id);
     await insertTripVersion(config, job.trip_id, failedTrip, "Data: Queued generation failed");
-    await finishAttempt(config, {
+    const attemptLogged = await finishAttempt(config, {
       p_attempt_id: payload.attemptId,
       p_state: "failed",
       p_provider: provider,
@@ -1066,7 +1120,7 @@ const processJob = async (
         source: WORKER_SOURCE,
       },
     });
-    await failJob(config, {
+    const jobFailed = await failJob(config, {
       jobId: job.id,
       workerId,
       errorCode,
@@ -1106,7 +1160,11 @@ const processJob = async (
       ok: false,
       jobId: job.id,
       tripId: job.trip_id,
-      error: message,
+      error: [
+        message,
+        !attemptLogged ? "attempt_finish_rpc_failed" : null,
+        !jobFailed ? "job_fail_rpc_failed" : null,
+      ].filter(Boolean).join(" | "),
     };
   }
 };

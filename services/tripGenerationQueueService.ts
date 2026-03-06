@@ -450,6 +450,9 @@ export const processQueuedTripGenerationAfterAuth = async (
     if (!row?.request_id) {
         throw new Error('Queued request is missing, expired, or already processed.');
     }
+    if (row.status !== 'queued') {
+        throw new Error('Queued request is already claimed or processed.');
+    }
 
     const flow = row.flow;
     if (flow !== 'classic' && flow !== 'wizard' && flow !== 'surprise') {

@@ -177,6 +177,15 @@ const normalizeUsernameHandle = (value: string | null | undefined): string | nul
     return normalized || null;
 };
 
+const isRpcOverloadSelectionError = (message: string | null | undefined, fnName: string): boolean => {
+    const normalized = (message || '').toLowerCase();
+    if (!normalized) return false;
+    return normalized.includes(`function public.${fnName}`)
+        || normalized.includes('could not choose the best candidate function')
+        || normalized.includes('is not unique')
+        || normalized.includes('function matching');
+};
+
 export const shouldUseAdminMockData = (
     isDevRuntime = import.meta.env.DEV,
     simulatedLoginEnabled = isSimulatedLoggedIn()
@@ -400,7 +409,7 @@ export const adminListTrips = async (
         p_generation_state: options.generationState && options.generationState !== 'all' ? options.generationState : '',
     };
     let { data, error } = await client.rpc('admin_list_trips', rpcArgsWithGeneration);
-    if (error && /function public\.admin_list_trips/i.test(error.message || '')) {
+    if (error && isRpcOverloadSelectionError(error.message, 'admin_list_trips')) {
         const fallback = await client.rpc('admin_list_trips', {
             p_limit: rpcArgsWithGeneration.p_limit,
             p_offset: rpcArgsWithGeneration.p_offset,
@@ -449,7 +458,7 @@ export const adminListUserTrips = async (
         p_generation_state: options.generationState && options.generationState !== 'all' ? options.generationState : '',
     };
     let { data, error } = await client.rpc('admin_list_user_trips', rpcArgsWithGeneration);
-    if (error && /function public\.admin_list_user_trips/i.test(error.message || '')) {
+    if (error && isRpcOverloadSelectionError(error.message, 'admin_list_user_trips')) {
         const fallback = await client.rpc('admin_list_user_trips', {
             p_user_id: rpcArgsWithGeneration.p_user_id,
             p_limit: rpcArgsWithGeneration.p_limit,

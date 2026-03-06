@@ -1997,6 +1997,7 @@ set row_security = off
 as $$
 declare
   v_user_id uuid;
+  v_request public.trip_generation_requests%rowtype;
 begin
   v_user_id := auth.uid();
   if v_user_id is null then
@@ -2010,14 +2011,39 @@ begin
          updated_at = now()
    where r.id = p_request_id
      and r.status = 'pending_auth'
-     and r.expires_at > now();
+     and r.expires_at > now()
+   returning r.* into v_request;
+
+  if v_request.id is null then
+    select r.*
+      into v_request
+      from public.trip_generation_requests r
+     where r.id = p_request_id
+     limit 1;
+
+    if v_request.id is null then
+      raise exception 'Queued request not found.';
+    end if;
+    if v_request.expires_at <= now() or v_request.status = 'expired' then
+      raise exception 'Queued request expired.';
+    end if;
+    if v_request.owner_user_id is null then
+      raise exception 'Queued request is no longer claimable.';
+    end if;
+    if v_request.owner_user_id <> v_user_id then
+      raise exception 'Queued request already claimed by another user.';
+    end if;
+    raise exception 'Queued request already claimed.';
+  end if;
 
   return query
-  select r.id, r.flow, r.payload, r.status, r.owner_user_id, r.expires_at
-    from public.trip_generation_requests r
-   where r.id = p_request_id
-     and r.owner_user_id = v_user_id
-  limit 1;
+  select
+    v_request.id,
+    v_request.flow,
+    v_request.payload,
+    v_request.status,
+    v_request.owner_user_id,
+    v_request.expires_at;
 end;
 $$;
 

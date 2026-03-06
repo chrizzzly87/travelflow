@@ -84,6 +84,7 @@ import {
     type TripGenerationTabFeedbackSession,
 } from '../services/tripGenerationTabFeedbackService';
 import { enqueueClassicAsyncTripGenerationJob } from '../services/tripGenerationAsyncEnqueueService';
+import { waitForTripPersistence } from '../services/tripGenerationPersistenceService';
 import { getCountrySeasonByName } from '../data/countryTravelData';
 import { AppLanguage, ITrip, TripPrefillData } from '../types';
 import {
@@ -1678,10 +1679,15 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
             },
         });
         const optimisticAttempt = optimisticTrip.aiMeta?.generation?.latestAttempt || null;
-        let attemptId = optimisticAttempt?.id || null;
+        const optimisticAttemptId = optimisticAttempt?.id || null;
+        let attemptId: string | null = null;
         generationTabFeedbackSessionRef.current?.cancel();
         generationTabFeedbackSessionRef.current = beginTripGenerationTabFeedback();
         onTripGenerated(optimisticTrip);
+        const persistedTripReady = await waitForTripPersistence(optimisticTripId);
+        if (!persistedTripReady) {
+            throw new Error('Trip was not persisted before async generation started.');
+        }
         const loggedAttempt = await startTripGenerationAttemptLog({
             tripId: optimisticTripId,
             flow: 'classic',
@@ -1741,7 +1747,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                 provider: selectedAiModel.provider,
                 model: selectedAiModel.model,
                 requestId,
-                attemptId,
+                attemptId: attemptId || optimisticAttemptId,
                 metadata: {
                     orchestration: 'async_worker_enqueue',
                 },

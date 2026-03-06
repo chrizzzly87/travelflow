@@ -1,4 +1,4 @@
-import type { ITrip, TripGenerationFlow, TripGenerationInputSnapshot } from '../types';
+import type { ITrip, TripGenerationAttemptSummary, TripGenerationFlow, TripGenerationInputSnapshot } from '../types';
 import { generateTripId } from '../utils';
 import { enqueueAsyncTripGenerationJob } from './tripGenerationAsyncEnqueueService';
 import {
@@ -11,6 +11,7 @@ import {
     markTripGenerationRunning,
     withLatestTripGenerationAttemptId,
 } from './tripGenerationDiagnosticsService';
+import { waitForTripPersistence } from './tripGenerationPersistenceService';
 
 interface StartClientAsyncTripGenerationParams {
     flow: TripGenerationFlow;
@@ -71,30 +72,37 @@ export const startClientAsyncTripGeneration = async (
     await params.onTripUpdate(queuedTrip);
 
     const queuedAttempt = queuedTrip.aiMeta?.generation?.latestAttempt || null;
-    let attemptId = queuedAttempt?.id || null;
-
-    const loggedAttempt = await startTripGenerationAttemptLog({
-        tripId,
-        flow: params.flow,
-        source: params.source,
-        state: 'queued',
-        provider: params.provider,
-        model: params.model,
-        requestId,
-        startedAt: queuedAttempt?.startedAt,
-        metadata: mergeMetadata(params.metadata, {
-            orchestration: 'async_worker',
-            destination_label: params.destinationLabel,
-        }),
-    });
-
-    if (loggedAttempt?.id) {
-        queuedTrip = withLatestTripGenerationAttemptId(queuedTrip, loggedAttempt.id);
-        attemptId = loggedAttempt.id;
-        await params.onTripUpdate(queuedTrip);
-    }
+    const optimisticAttemptId = queuedAttempt?.id || null;
+    let attemptId: string | null = null;
+    let loggedAttempt: TripGenerationAttemptSummary | null = null;
 
     try {
+        const persisted = await waitForTripPersistence(tripId);
+        if (!persisted) {
+            throw new Error('Trip was not persisted before async generation started.');
+        }
+
+        loggedAttempt = await startTripGenerationAttemptLog({
+            tripId,
+            flow: params.flow,
+            source: params.source,
+            state: 'queued',
+            provider: params.provider,
+            model: params.model,
+            requestId,
+            startedAt: queuedAttempt?.startedAt,
+            metadata: mergeMetadata(params.metadata, {
+                orchestration: 'async_worker',
+                destination_label: params.destinationLabel,
+            }),
+        });
+
+        if (loggedAttempt?.id) {
+            queuedTrip = withLatestTripGenerationAttemptId(queuedTrip, loggedAttempt.id);
+            attemptId = loggedAttempt.id;
+            await params.onTripUpdate(queuedTrip);
+        }
+
         if (!attemptId) {
             throw new Error('Generation attempt id is missing.');
         }
@@ -133,7 +141,7 @@ export const startClientAsyncTripGeneration = async (
             provider: params.provider,
             model: params.model,
             requestId,
-            attemptId,
+            attemptId: attemptId || optimisticAttemptId,
             metadata: mergeMetadata(params.metadata, {
                 orchestration: 'async_worker_enqueue',
                 destination_label: params.destinationLabel,

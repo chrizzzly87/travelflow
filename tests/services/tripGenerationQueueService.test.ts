@@ -177,4 +177,37 @@ describe('processQueuedTripGenerationAfterAuth', () => {
       prompt: 'wizard prompt',
     }));
   });
+
+  it('rejects already-processed queue claims without creating duplicate trips', async () => {
+    claimRpcMock.mockImplementation((fn: string) => {
+      if (fn === 'claim_trip_generation_request') {
+        return Promise.resolve({
+          data: {
+            request_id: 'request-1',
+            flow: 'classic',
+            payload: {
+              version: 1,
+              flow: 'classic',
+              destinationLabel: 'Berlin',
+              destinationPrompt: 'Berlin',
+              startDate: '2026-04-10',
+              endDate: '2026-04-14',
+              options: {},
+            },
+            status: 'completed',
+            owner_user_id: 'owner-1',
+            expires_at: new Date(Date.now() + 60_000).toISOString(),
+          },
+          error: null,
+        });
+      }
+      return Promise.resolve({ data: null, error: null });
+    });
+
+    await expect(processQueuedTripGenerationAfterAuth('request-1')).rejects.toThrow(
+      'Queued request is already claimed or processed.',
+    );
+
+    expect(enqueueAsyncTripGenerationJobMock).not.toHaveBeenCalled();
+  });
 });

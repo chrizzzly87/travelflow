@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const enqueueAsyncTripGenerationJobMock = vi.fn();
 const startTripGenerationAttemptLogMock = vi.fn();
 const finishTripGenerationAttemptLogMock = vi.fn();
+const waitForTripPersistenceMock = vi.fn();
 
 vi.mock('../../utils', async (importOriginal) => {
     const original = await importOriginal<typeof import('../../utils')>();
@@ -19,6 +20,10 @@ vi.mock('../../services/tripGenerationAsyncEnqueueService', () => ({
 vi.mock('../../services/tripGenerationAttemptLogService', () => ({
     startTripGenerationAttemptLog: (...args: unknown[]) => startTripGenerationAttemptLogMock(...args),
     finishTripGenerationAttemptLog: (...args: unknown[]) => finishTripGenerationAttemptLogMock(...args),
+}));
+
+vi.mock('../../services/tripGenerationPersistenceService', () => ({
+    waitForTripPersistence: (...args: unknown[]) => waitForTripPersistenceMock(...args),
 }));
 
 import { startClientAsyncTripGeneration } from '../../services/tripGenerationClientAsyncService';
@@ -55,6 +60,7 @@ describe('startClientAsyncTripGeneration', () => {
         enqueueAsyncTripGenerationJobMock.mockResolvedValue(true);
         startTripGenerationAttemptLogMock.mockResolvedValue({ id: 'attempt-log-1' });
         finishTripGenerationAttemptLogMock.mockResolvedValue(undefined);
+        waitForTripPersistenceMock.mockResolvedValue(true);
     });
 
     it('creates a queued trip, canonicalizes attempt id, and enqueues job payload', async () => {
@@ -139,5 +145,77 @@ describe('startClientAsyncTripGeneration', () => {
             attemptId: 'attempt-log-1',
             state: 'failed',
         }));
+    });
+
+    it('fails early when trip row is not yet persisted for async generation', async () => {
+        waitForTripPersistenceMock.mockResolvedValue(false);
+
+        const updates: ITrip[] = [];
+
+        await expect(() => startClientAsyncTripGeneration({
+            flow: 'classic',
+            source: 'create_trip_v2',
+            jobSource: 'create_trip_v2_async',
+            destinationLabel: 'Japan',
+            startDate: '2026-06-01',
+            roundTrip: false,
+            prompt: 'classic prompt body',
+            provider: 'gemini',
+            model: 'gemini-3-pro-preview',
+            inputSnapshot: {
+                flow: 'classic',
+                destinationLabel: 'Japan',
+                startDate: '2026-06-01',
+                endDate: '2026-06-08',
+                payload: {
+                    destinationPrompt: 'Japan',
+                    options: {},
+                },
+            },
+            buildOptimisticTrip: (tripId) => buildTrip(tripId),
+            onTripUpdate: (trip) => {
+                updates.push(trip);
+            },
+        })).rejects.toThrow('Trip was not persisted before async generation started.');
+
+        expect(startTripGenerationAttemptLogMock).not.toHaveBeenCalled();
+        expect(enqueueAsyncTripGenerationJobMock).not.toHaveBeenCalled();
+        expect(updates.map((trip) => trip.aiMeta?.generation?.state)).toEqual(['queued', 'failed']);
+    });
+
+    it('does not enqueue when attempt logging fails and no canonical attempt id exists', async () => {
+        startTripGenerationAttemptLogMock.mockResolvedValue(null);
+
+        const updates: ITrip[] = [];
+
+        await expect(() => startClientAsyncTripGeneration({
+            flow: 'classic',
+            source: 'create_trip_v2',
+            jobSource: 'create_trip_v2_async',
+            destinationLabel: 'Japan',
+            startDate: '2026-06-01',
+            roundTrip: false,
+            prompt: 'classic prompt body',
+            provider: 'gemini',
+            model: 'gemini-3-pro-preview',
+            inputSnapshot: {
+                flow: 'classic',
+                destinationLabel: 'Japan',
+                startDate: '2026-06-01',
+                endDate: '2026-06-08',
+                payload: {
+                    destinationPrompt: 'Japan',
+                    options: {},
+                },
+            },
+            buildOptimisticTrip: (tripId) => buildTrip(tripId),
+            onTripUpdate: (trip) => {
+                updates.push(trip);
+            },
+        })).rejects.toThrow('Generation attempt id is missing.');
+
+        expect(enqueueAsyncTripGenerationJobMock).not.toHaveBeenCalled();
+        expect(finishTripGenerationAttemptLogMock).not.toHaveBeenCalled();
+        expect(updates.map((trip) => trip.aiMeta?.generation?.state)).toEqual(['queued', 'failed']);
     });
 });

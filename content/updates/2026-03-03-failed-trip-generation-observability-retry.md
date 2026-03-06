@@ -45,6 +45,12 @@ summary: "Failed trip generations are now easier to spot, inspect, and retry on 
 - [ ] [Internal] ⚙️ Queue-claim wizard/surprise processing now enqueues the same async worker pipeline with flow-aware prompt metadata.
 - [ ] [Internal] ⚙️ Retry now always enqueues server-owned async jobs for the same trip instead of running generation in the browser session.
 - [ ] [Internal] ⚙️ Removed client-side async-flow feature flags/fallback branches so all active generation entry points use the worker queue lifecycle.
+- [ ] [Internal] 🛠️ Async create-trip now waits for trip-row persistence before attempt logging/enqueue, preventing `Trip not found` races on `trip_generation_attempt_start` and enqueue RPCs.
+- [ ] [Internal] 🛠️ Async enqueue now requires a canonical server-logged attempt ID (not optimistic client IDs), preventing false enqueue attempts after failed attempt-start RPCs.
+- [ ] [Internal] 🛠️ Queue-claim RPC now rejects already-claimed requests instead of returning stale rows, preventing duplicate trip generation from repeated claim calls.
+- [ ] [Internal] 🛠️ Admin trip-list RPC fallback now also handles PostgREST overload-selection errors (`best candidate function`) for stable table loading during mixed-schema rollouts.
+- [ ] [Internal] 🛠️ Worker success merge now preserves existing trip preference fields (favorites and map/style settings) instead of resetting them to generated defaults.
+- [ ] [Internal] 🛠️ Worker now logs non-2xx attempt/job RPC responses with explicit error labels so completion/failure bookkeeping issues are visible in run output.
 - [x] [Fixed] 🧭 Create-trip generation now ensures an anonymous DB session before enqueueing worker jobs, preventing immediate enqueue failures for signed-out users.
 - [x] [Fixed] 🔐 Create-trip now redirects to login with the current draft path preserved when no DB session is available, avoiding dead enqueue attempts in strict-auth environments.
 - [x] [Improved] 🧭 Signed-out planners can save a trip draft and open the trip page first; generation starts after sign-in via a claim link from the trip status banner.
