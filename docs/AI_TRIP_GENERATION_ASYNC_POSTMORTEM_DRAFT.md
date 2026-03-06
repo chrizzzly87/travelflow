@@ -71,8 +71,7 @@ From `30afcf43` forward:
 46. `36cd717` · 2026-03-06 · Stop stale success polling and align worker city colors
 
 ### 2.4 Additional hardening commits after the inventory refresh started
-1. `TBD after next commit` · Route-loader hook-order fix for late-arriving trip props
-2. `TBD after next commit` · Admin override generation-restart permission alignment
+1. `0a20729` · 2026-03-06 · Fix trip loader hook order and admin retry gating
 
 ### 2.5 Why this section matters
 - It separates already-merged PRs from post-merge hardening on the still-open branch.
