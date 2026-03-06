@@ -74,6 +74,8 @@ From `30afcf43` forward:
 1. `0a20729` · 2026-03-06 · Fix trip loader hook order and admin retry gating
 2. `9b70a57` · 2026-03-06 · Fix local async worker routing in Vite dev
 3. `17f1c77` · 2026-03-06 · Fix async worker runtime path and local Netlify dev startup
+4. `04aec9d` · 2026-03-06 · Update async generation postmortem inventory
+5. `f0ee753` · 2026-03-06 · Harden stale success state detection for async trips
 
 ### 2.5 Why this section matters
 - It separates already-merged PRs from post-merge hardening on the still-open branch.
