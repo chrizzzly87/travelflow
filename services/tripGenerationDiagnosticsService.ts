@@ -362,23 +362,20 @@ export const getTripGenerationState = (trip: ITrip, nowMs = Date.now()): TripGen
             return 'failed';
         }
         if ((explicit === 'queued' || explicit === 'running') && !hasLoadingItems && hasMaterializedContent) {
-            const hasFreshGeneratedSnapshot = typeof generatedAtMs === 'number'
-                && (
-                    latestAttemptStartedAtMs === null
-                    || generatedAtMs >= latestAttemptStartedAtMs
-                );
-            if (
-                hasFreshGeneratedSnapshot
-                || (
-                    typeof lastSucceededAtMs === 'number'
-                    && (
-                        latestAttemptStartedAtMs === null
-                        || lastSucceededAtMs >= latestAttemptStartedAtMs
-                    )
-                )
-            ) {
-                return 'succeeded';
+            // Current async generation applies itinerary content atomically rather than
+            // streaming partial chunks, so real non-placeholder content with no loading
+            // markers is enough to treat stale in-flight metadata as terminal success.
+            const retryRequestedAtMs = toIsoMs(trip.aiMeta?.generation?.retryRequestedAt);
+            const retryCount = Number(trip.aiMeta?.generation?.retryCount || 0);
+            const hasExplicitRetryIntent = retryCount > 0 || typeof retryRequestedAtMs === 'number';
+            const attemptIsNewerThanVisibleSuccess = hasExplicitRetryIntent && typeof latestAttemptStartedAtMs === 'number' && (
+                (typeof lastSucceededAtMs === 'number' && latestAttemptStartedAtMs > lastSucceededAtMs)
+                || (typeof generatedAtMs === 'number' && latestAttemptStartedAtMs > generatedAtMs)
+            );
+            if (attemptIsNewerThanVisibleSuccess) {
+                return explicit;
             }
+            return 'succeeded';
         }
         return explicit;
     }
