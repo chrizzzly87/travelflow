@@ -149,6 +149,7 @@ The CI validator (`scripts/validate-edge-functions.mjs`) enforces this rule at b
 | `PADDLE_CHECKOUT_DOMAIN` | `paddle-checkout.ts` | Optional checkout domain override passed to Paddle transaction `checkout.url` |
 | `PADDLE_WEBHOOK_SECRET` | `paddle-webhook.ts` | Secret key for `Paddle-Signature` webhook verification |
 | `PADDLE_WEBHOOK_MAX_AGE_SECONDS` | `paddle-webhook.ts` | Optional timestamp tolerance for webhook signatures (default `300`) |
+| `PADDLE_WEBHOOK_SYNC_MODE` | `paddle-webhook.ts` | Optional webhook processing mode: `full` (default, writes Supabase) or `verify_only` (signature/payload verification only, no Supabase writes) |
 | `GEMINI_API_KEY` | `ai-generate.ts` | Preferred server-side Gemini key for `/api/ai/generate` |
 | `VITE_GEMINI_API_KEY` | `ai-generate.ts` (fallback), legacy browser path | Compatibility fallback if `GEMINI_API_KEY` is not set |
 | `TF_ADMIN_API_KEY` | `ai-benchmark.ts` | Emergency fallback key for internal benchmark endpoints when `TF_ENABLE_ADMIN_KEY_FALLBACK` is enabled |
@@ -203,5 +204,6 @@ All CDN-cached functions use `max-age=0` for browser to always revalidate with t
 | **Direct `/trip/...` links show generic previews** | Missing `SUPABASE_SERVICE_ROLE_KEY` prevents active-share lookup by trip ID | Set `SUPABASE_SERVICE_ROLE_KEY` so trip routes can resolve share-backed OG data |
 | **`/api/billing/paddle/checkout` returns 400 for paid tier** | Missing Paddle price ID mapping (`PADDLE_PRICE_ID_TIER_*`) | Set the mapped price IDs in Netlify environment variables |
 | **Paddle webhook requests return 401** | Invalid/missing `PADDLE_WEBHOOK_SECRET` or timestamp outside allowed window | Copy the exact destination secret from Paddle and verify `PADDLE_WEBHOOK_MAX_AGE_SECONDS` |
+| **Webhook verifies but tier never updates** | `PADDLE_WEBHOOK_SYNC_MODE=verify_only` is still enabled | Switch `PADDLE_WEBHOOK_SYNC_MODE=full` after Supabase schema migration is applied |
 | **Pricing checkout returns 404 in local Vite dev** | Netlify edge route is not active on plain `pnpm dev` | Run `pnpm dev:netlify` and route requests through port `8888` |
 | **Stale social previews** | CDN cache not yet expired | Append `?v=2` to force refetch, or purge via Netlify dashboard |

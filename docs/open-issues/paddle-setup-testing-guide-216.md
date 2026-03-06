@@ -30,11 +30,25 @@ PADDLE_PRICE_ID_TIER_MID=pri_...
 PADDLE_PRICE_ID_TIER_PREMIUM=pri_...   # optional
 PADDLE_CHECKOUT_DOMAIN=                # optional
 PADDLE_WEBHOOK_MAX_AGE_SECONDS=300     # optional
+PADDLE_WEBHOOK_SYNC_MODE=full          # full | verify_only
 
 VITE_SUPABASE_URL=...
 VITE_SUPABASE_ANON_KEY=...
-SUPABASE_SERVICE_ROLE_KEY=...
+SUPABASE_SERVICE_ROLE_KEY=...          # required when PADDLE_WEBHOOK_SYNC_MODE=full
 ```
+
+## Where Configuration Lives (Paddle-first)
+Use Paddle as the source of truth for commercial/billing setup:
+- Paddle dashboard:
+  - business/legal profile + tax handling
+  - products + recurring prices
+  - payment methods, checkout behavior, invoices, customer portal
+  - webhook destinations per environment
+- Netlify environment variables (server-side integration glue):
+  - `PADDLE_API_KEY`, `PADDLE_WEBHOOK_SECRET`, `PADDLE_PRICE_ID_*`, `PADDLE_ENV`, `PADDLE_WEBHOOK_SYNC_MODE`
+- Vite/public env:
+  - `VITE_PADDLE_CHECKOUT_ENABLED` only (feature flag)
+  - do not place Paddle secrets in browser-exposed vars
 
 ## Paddle Dashboard Setup
 1. Use **Sandbox** first in Paddle.
@@ -51,7 +65,7 @@ Official docs:
 - [Handle webhook delivery](https://developer.paddle.com/webhooks/handle-webhook-delivery)
 - [Sandbox + test cards](https://developer.paddle.com/concepts/testing/test-cards)
 
-## Database Setup
+## Database Setup (Full Sync Mode)
 Apply the latest schema changes from [`docs/supabase.sql`](/Users/chrizzzly/.codex/worktrees/248f/travelflow-codex/docs/supabase.sql), specifically:
 - `public.subscriptions` provider/lifecycle columns
 - `public.billing_webhook_events` table
@@ -86,6 +100,27 @@ pnpm dev:netlify
 4. Open `/pricing` and start checkout for paid tier.
 5. Complete payment with Paddle sandbox test methods.
 
+## Real Sandbox E2E Before Supabase Migration
+Use this when Supabase schema updates are blocked by parallel work:
+1. Set `PADDLE_WEBHOOK_SYNC_MODE=verify_only`.
+2. Keep checkout enabled (`VITE_PADDLE_CHECKOUT_ENABLED=true`) and sandbox keys configured.
+3. Run a real sandbox checkout from `/pricing`.
+4. Confirm webhook delivery in Paddle dashboard:
+   - Event status is delivered (or resendable) for `/api/billing/paddle/webhook`
+5. Confirm endpoint response payload contains:
+   - `ok: true`
+   - `status: "ignored"`
+   - `reason: "Webhook verified in verify_only mode; database sync skipped."`
+   - `syncMode: "verify_only"`
+
+This validates the full external loop (hosted checkout -> Paddle -> your real webhook endpoint) without requiring Supabase write paths.
+
+## Promote To Full Sync After Merge
+1. Apply Supabase schema updates from [`docs/supabase.sql`](/Users/chrizzzly/.codex/worktrees/248f/travelflow-codex/docs/supabase.sql).
+2. Set `PADDLE_WEBHOOK_SYNC_MODE=full`.
+3. Ensure `SUPABASE_SERVICE_ROLE_KEY` is present.
+4. Replay recent Paddle sandbox events (Webhook UI -> resend) to confirm persistence/tier sync.
+
 ## Functional Test Matrix
 ### Checkout creation
 - Expected: `/api/billing/paddle/checkout` returns `{ ok: true, data.checkoutUrl }`.
@@ -94,7 +129,7 @@ pnpm dev:netlify
   - `400` when tier has no mapped `PADDLE_PRICE_ID_*`
 
 ### Webhook processing
-Test with Paddle simulator and real sandbox flows:
+Test with Paddle simulator and real sandbox flows (in `full` sync mode):
 1. `subscription.created`:
    - `subscriptions.provider_subscription_id` set
    - `profiles.tier_key` upgraded to mapped tier
@@ -126,8 +161,9 @@ limit 50;
 1. Switch `PADDLE_ENV=live`.
 2. Replace API key, webhook secret, and price IDs with live values.
 3. Point production webhook destination to production domain.
-4. Keep `VITE_PADDLE_CHECKOUT_ENABLED=true` only when live config is fully set.
-5. Run one real low-value transaction and validate:
+4. Set `PADDLE_WEBHOOK_SYNC_MODE=full`.
+5. Keep `VITE_PADDLE_CHECKOUT_ENABLED=true` only when live config is fully set.
+6. Run one real low-value transaction and validate:
    - webhook processed
    - tier sync applied
    - cancellation + grace behavior works as expected
@@ -136,3 +172,4 @@ limit 50;
 - Tier mapping is price-ID driven; unmapped paid price IDs are intentionally ignored.
 - Subscription lifecycle authority is webhook-first; checkout return alone does not grant access.
 - Grace window policy is fixed to 7 days from cancellation timestamp.
+- `verify_only` mode verifies webhooks but intentionally skips persistence/tier updates.
