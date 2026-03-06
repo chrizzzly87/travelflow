@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Check } from '@phosphor-icons/react';
 import { Trans, useTranslation } from 'react-i18next';
@@ -7,6 +7,8 @@ import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsSe
 import { ANONYMOUS_TRIP_EXPIRATION_DAYS, ANONYMOUS_TRIP_LIMIT } from '../config/productLimits';
 import { buildPath } from '../config/routes';
 import { MarketingLayout } from '../components/marketing/MarketingLayout';
+import { useAuth } from '../hooks/useAuth';
+import { startPaddleCheckoutSession, type BillingCheckoutTierKey } from '../services/billingService';
 
 interface TierStyle {
     badgeClass: string;
@@ -39,10 +41,34 @@ const asDisplayCount = (value: number | null, unlimitedLabel: string): string =>
 
 export const PricingPage: React.FC = () => {
     const { t } = useTranslation('pricing');
+    const { access, isAuthenticated, isLoading: isAuthLoading } = useAuth();
+    const [checkoutTierInFlight, setCheckoutTierInFlight] = useState<BillingCheckoutTierKey | null>(null);
+    const isPaddleCheckoutEnabled = String(import.meta.env.VITE_PADDLE_CHECKOUT_ENABLED || '').toLowerCase() === 'true';
     const unlimitedLabel = t('shared.unlimited');
     const noExpiryLabel = t('shared.noExpiry');
     const enabledLabel = t('shared.enabled');
     const disabledLabel = t('shared.disabled');
+    const isCheckoutEligibleUser = isAuthenticated && access?.isAnonymous !== true;
+
+    const handlePaidTierCheckout = useCallback(async (
+        tierKey: BillingCheckoutTierKey,
+        tierSlug: 'explorer' | 'globetrotter'
+    ) => {
+        if (checkoutTierInFlight) return;
+        trackEvent(`pricing__tier--${tierSlug}`);
+        setCheckoutTierInFlight(tierKey);
+        try {
+            const session = await startPaddleCheckoutSession({
+                tierKey,
+                source: 'pricing_page',
+            });
+            window.location.assign(session.checkoutUrl);
+        } catch (error) {
+            console.error('Failed to start Paddle checkout session.', error);
+        } finally {
+            setCheckoutTierInFlight(null);
+        }
+    }, [checkoutTierInFlight]);
 
     return (
         <MarketingLayout>
@@ -64,6 +90,10 @@ export const PricingPage: React.FC = () => {
                         const tier = PLAN_CATALOG[tierKey];
                         const style = TIER_STYLE[tier.publicSlug];
                         const isPaidTier = tier.monthlyPriceUsd > 0;
+                        const supportsCheckout = isPaddleCheckoutEnabled
+                            && (tier.key === 'tier_mid' || tier.key === 'tier_premium');
+                        const canStartCheckout = isPaidTier && supportsCheckout && isCheckoutEligibleUser && !isAuthLoading;
+                        const isCheckoutBusy = checkoutTierInFlight === tier.key;
                         const interpolationValues = {
                             maxActiveTripsLabel: asDisplayCount(tier.entitlements.maxActiveTrips, unlimitedLabel),
                             maxTotalTripsLabel: asDisplayCount(tier.entitlements.maxTotalTrips, unlimitedLabel),
@@ -118,12 +148,36 @@ export const PricingPage: React.FC = () => {
 
                                 <div className="mt-8">
                                     {isPaidTier ? (
-                                        <button
-                                            disabled
-                                            className="w-full cursor-not-allowed rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-400"
-                                        >
-                                            {t(`tiers.${tier.publicSlug}.cta`)}
-                                        </button>
+                                        canStartCheckout ? (
+                                            <button
+                                                type="button"
+                                                disabled={isCheckoutBusy}
+                                                onClick={() => void handlePaidTierCheckout(
+                                                    tier.key as BillingCheckoutTierKey,
+                                                    tier.publicSlug as 'explorer' | 'globetrotter'
+                                                )}
+                                                className="w-full rounded-xl bg-accent-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-accent-700 disabled:cursor-wait disabled:opacity-70"
+                                                {...getAnalyticsDebugAttributes(`pricing__tier--${tier.publicSlug}`)}
+                                            >
+                                                {t(`tiers.${tier.publicSlug}.cta`)}
+                                            </button>
+                                        ) : supportsCheckout ? (
+                                            <Link
+                                                to={buildPath('login')}
+                                                onClick={() => trackEvent(`pricing__tier--${tier.publicSlug}`)}
+                                                className="block w-full rounded-xl bg-accent-600 px-4 py-3 text-center text-sm font-semibold text-white shadow-sm transition-colors hover:bg-accent-700"
+                                                {...getAnalyticsDebugAttributes(`pricing__tier--${tier.publicSlug}`)}
+                                            >
+                                                {t(`tiers.${tier.publicSlug}.cta`)}
+                                            </Link>
+                                        ) : (
+                                            <button
+                                                disabled
+                                                className="w-full cursor-not-allowed rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-400"
+                                            >
+                                                {t(`tiers.${tier.publicSlug}.cta`)}
+                                            </button>
+                                        )
                                     ) : (
                                         <Link
                                             to={buildPath('login')}
