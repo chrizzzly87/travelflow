@@ -48,6 +48,11 @@ summary: "Failed trip generations are now easier to spot, inspect, and retry on 
 - [ ] [Internal] 🛠️ Async create-trip now waits for trip-row persistence before attempt logging/enqueue, preventing `Trip not found` races on `trip_generation_attempt_start` and enqueue RPCs.
 - [ ] [Internal] 🛠️ Async enqueue now requires a canonical server-logged attempt ID (not optimistic client IDs), preventing false enqueue attempts after failed attempt-start RPCs.
 - [ ] [Internal] 🛠️ Retry flow now also requires a canonical server-logged attempt ID before enqueue, preventing first-click retry flash-fail behavior on stale optimistic attempt IDs.
+- [ ] [Internal] 🛠️ Trip polling now ignores stale remote failed snapshots while a newer local queued/running retry is in flight, preventing retry-state flicker regressions.
+- [ ] [Internal] 🛠️ Trip retry actions now use a strict in-flight mutex so one click cannot create duplicate attempt-start requests before UI state settles.
+- [ ] [Internal] ⚙️ Scheduled worker triggers now hand off processing to a protected background function, avoiding 30s scheduled-function limits and keeping queued jobs draining reliably.
+- [ ] [Internal] ⚙️ Async worker provider timeout default is now 120 seconds (env-overridable) for long-running models while still terminating each attempt cleanly on success/failure.
+- [x] [Improved] 🤖 Default generation + retry model baseline now uses OpenAI GPT-5.4 across create-trip and retry entry points.
 - [ ] [Internal] 🛠️ Queue-claim RPC now rejects already-claimed requests instead of returning stale rows, preventing duplicate trip generation from repeated claim calls.
 - [ ] [Internal] 🛠️ Admin trip-list RPC fallback now also handles PostgREST overload-selection errors (`best candidate function`) for stable table loading during mixed-schema rollouts.
 - [ ] [Internal] 🛠️ Worker success merge now preserves existing trip preference fields (favorites and map/style settings) instead of resetting them to generated defaults.

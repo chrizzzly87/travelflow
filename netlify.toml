@@ -26,6 +26,9 @@ exit 1
   SECRETS_SCAN_SMART_DETECTION_ENABLED = "false"
   SECRETS_SCAN_SMART_DETECTION_OMIT_VALUES = "AIza"
 
+[functions."ai-generate-worker-cron"]
+  schedule = "*/1 * * * *"
+
 [[plugins]]
   package = "./netlify/plugins/site-og-build-cache"
 

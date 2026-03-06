@@ -1,6 +1,7 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { ICoordinates, ITimelineItem, ITrip, TripGenerationAttemptSummary, TripGenerationFlow, TripGenerationFailureKind } from "../types";
 import type { AiProviderId } from "../config/aiProviderCatalog";
+import { getDefaultCreateTripModel } from "../config/aiModelCatalog";
 import { buildDurationPromptGuidance, parseFlexibleDurationDays, parseFlexibleDurationHours } from "../shared/durationParsing";
 import { buildTransportModePromptGuidance, MODEL_TRANSPORT_MODE_VALUES, normalizeTransportMode } from "../shared/transportModes";
 import {
@@ -34,6 +35,9 @@ const TRANSPORT_MODE_ENUM = [...MODEL_TRANSPORT_MODE_VALUES];
 const TRANSPORT_MODES_PROMPT_LIST = TRANSPORT_MODE_ENUM.join(", ");
 const TRANSPORT_MODE_PROMPT_GUIDANCE = buildTransportModePromptGuidance();
 const DURATION_PROMPT_GUIDANCE = buildDurationPromptGuidance();
+const DEFAULT_CREATE_TRIP_MODEL = getDefaultCreateTripModel();
+const DEFAULT_PROVIDER = DEFAULT_CREATE_TRIP_MODEL.provider;
+const DEFAULT_MODEL = DEFAULT_CREATE_TRIP_MODEL.model;
 
 const itinerarySchema = {
   type: Type.OBJECT,
@@ -602,8 +606,8 @@ const buildTripFromModelData = (
         cityColorPaletteId: DEFAULT_CITY_COLOR_PALETTE_ID,
         mapColorMode: DEFAULT_MAP_COLOR_MODE,
         aiMeta: {
-            provider: options?.aiTarget?.provider || 'gemini',
-            model: options?.aiTarget?.model || 'gemini-3-pro-preview',
+            provider: options?.aiTarget?.provider || DEFAULT_PROVIDER,
+            model: options?.aiTarget?.model || DEFAULT_MODEL,
             generatedAt: new Date(now).toISOString(),
         },
     };
@@ -617,8 +621,8 @@ const generateItineraryFromPrompt = async (
     options?: Pick<GenerateOptions, 'roundTrip' | 'aiTarget' | 'generationContext'>
 ): Promise<ITrip> => {
   const requestStartedAtMs = Date.now();
-  const selectedProvider = options?.aiTarget?.provider || 'gemini';
-  const selectedModel = options?.aiTarget?.model || 'gemini-3-pro-preview';
+  const selectedProvider = options?.aiTarget?.provider || DEFAULT_PROVIDER;
+  const selectedModel = options?.aiTarget?.model || DEFAULT_MODEL;
   const requestId = options?.generationContext?.requestId
     || (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : `gen-${Date.now().toString(36)}`);
   let serverFailureTracked = false;
@@ -765,8 +769,8 @@ const generateItineraryFromPrompt = async (
 
     const payload = await edgeResponse.json();
     const data = payload?.data || {};
-    const provider = payload?.meta?.provider || options?.aiTarget?.provider || 'gemini';
-    const model = payload?.meta?.model || options?.aiTarget?.model || 'gemini-3-pro-preview';
+    const provider = payload?.meta?.provider || options?.aiTarget?.provider || DEFAULT_PROVIDER;
+    const model = payload?.meta?.model || options?.aiTarget?.model || DEFAULT_MODEL;
     const responseDurationMs = Number(payload?.meta?.durationMs);
     trackEvent('create_trip__ai_request--success', {
         provider,
@@ -783,7 +787,7 @@ const generateItineraryFromPrompt = async (
         || provider === 'perplexity'
         || provider === 'qwen'
         ? provider
-        : 'gemini';
+        : DEFAULT_PROVIDER;
 
     const builtTrip = buildTripFromModelData(data, startDate, {
         roundTrip: options?.roundTrip,
@@ -913,7 +917,7 @@ const generateItineraryFromPrompt = async (
         if (!apiKey) throw new Error('API Key is missing or invalid. Please check your environment configuration.');
 
         const ai = new GoogleGenAI({ apiKey });
-        const selectedModel = options?.aiTarget?.model || 'gemini-3-pro-preview';
+        const selectedModel = options?.aiTarget?.model || DEFAULT_MODEL;
 
         const response = await ai.models.generateContent({
           model: selectedModel,
@@ -979,7 +983,7 @@ const generateItineraryFromPrompt = async (
     } catch (fallbackError) {
         trackEvent('create_trip__ai_request--fallback_failed', {
             provider: 'gemini',
-            model: options?.aiTarget?.model || 'gemini-3-pro-preview',
+            model: options?.aiTarget?.model || DEFAULT_MODEL,
             status: 500,
             duration_ms: Date.now() - fallbackStartedAtMs,
             error_code: fallbackError instanceof Error ? fallbackError.name : 'UNKNOWN_FALLBACK_ERROR',
@@ -994,7 +998,7 @@ const generateItineraryFromPrompt = async (
                 requestId,
                 durationMs: Date.now() - requestStartedAtMs,
                 provider: 'gemini',
-                model: options?.aiTarget?.model || 'gemini-3-pro-preview',
+                model: options?.aiTarget?.model || DEFAULT_MODEL,
                 failureKind: createFailureKind(
                     fallbackError instanceof Error ? fallbackError.name : null,
                     500,

@@ -52,6 +52,7 @@ export const PROVIDER_ALLOWLIST: Record<string, Set<string>> = {
     "gpt-5-mini",
     "gpt-5.2",
     "gpt-5.2-pro",
+    "gpt-5.4",
   ]),
   anthropic: new Set([
     "claude-haiku-4.5",
@@ -121,7 +122,17 @@ const PROVIDER_PARSE_RETRY_MAX_ATTEMPTS = 2;
 
 export const readEnv = (name: string): string => {
   try {
-    return (globalThis as { Deno?: { env?: { get: (key: string) => string | undefined } } }).Deno?.env?.get(name) || "";
+    const denoValue = (globalThis as { Deno?: { env?: { get: (key: string) => string | undefined } } }).Deno?.env?.get(name);
+    if (typeof denoValue === "string" && denoValue.length > 0) {
+      return denoValue;
+    }
+  } catch {
+    // noop
+  }
+  try {
+    const nodeEnv = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env;
+    const nodeValue = nodeEnv?.[name];
+    return typeof nodeValue === "string" ? nodeValue : "";
   } catch {
     return "";
   }

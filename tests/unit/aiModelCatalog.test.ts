@@ -14,6 +14,7 @@ describe('config/aiModelCatalog', () => {
     const modelIds = new Set(AI_MODEL_CATALOG.map((item) => item.id));
 
     expect(modelIds.has('gemini:gemini-3.1-pro-preview')).toBe(true);
+    expect(modelIds.has('openai:gpt-5.4')).toBe(true);
     expect(modelIds.has('openai:gpt-5.2-pro')).toBe(true);
     expect(modelIds.has('anthropic:claude-sonnet-4.6')).toBe(true);
     expect(modelIds.has('openrouter:openrouter/free')).toBe(true);
@@ -33,8 +34,8 @@ describe('config/aiModelCatalog', () => {
     const runtime = getCurrentRuntimeModel();
     const defaultModel = getDefaultCreateTripModel();
 
-    expect(runtime?.id).toBe('gemini:gemini-3-pro-preview');
-    expect(defaultModel.id).toBe('gemini:gemini-3-pro-preview');
+    expect(runtime?.id).toBe('openai:gpt-5.4');
+    expect(defaultModel.id).toBe('openai:gpt-5.4');
     expect(defaultModel.isCurrentRuntime).toBe(true);
   });
 
