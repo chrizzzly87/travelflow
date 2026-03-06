@@ -15,6 +15,7 @@ interface EnqueueAsyncTripGenerationInput {
     model: string;
     inputSnapshot: TripGenerationInputSnapshot;
     maxRetries?: number;
+    priority?: number;
 }
 
 export const enqueueAsyncTripGenerationJob = async (
@@ -24,6 +25,7 @@ export const enqueueAsyncTripGenerationJob = async (
         tripId: input.tripId,
         attemptId: input.attemptId,
         maxRetries: input.maxRetries ?? 0,
+        priority: Number.isFinite(Number(input.priority)) ? Number(input.priority) : 25,
         payload: {
             version: 1,
             flow: input.flow,
