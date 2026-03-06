@@ -320,6 +320,7 @@ const processQueuedTripGenerationAsync = async (
             flow: execution.flow,
             tripId,
             attemptId,
+            startedAt: loggedAttempt?.startedAt || queuedTrip.aiMeta?.generation?.latestAttempt?.startedAt || null,
             requestId: requestTraceId,
             source,
             queueRequestId: params.requestId,

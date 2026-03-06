@@ -5,6 +5,7 @@ interface EnqueueAsyncTripGenerationInput {
     flow: TripGenerationFlow;
     tripId: string;
     attemptId: string;
+    startedAt?: string | null;
     requestId: string;
     source: string;
     queueRequestId?: string | null;
@@ -34,6 +35,7 @@ export const enqueueAsyncTripGenerationJob = async (
             queueRequestId: input.queueRequestId || null,
             tripId: input.tripId,
             attemptId: input.attemptId,
+            startedAt: input.startedAt || null,
             startDate: input.startDate,
             roundTrip: input.roundTrip,
             prompt: input.prompt,

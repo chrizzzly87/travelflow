@@ -90,3 +90,6 @@ summary: "Failed trip generations are now easier to spot, inspect, and retry on 
 - [ ] [Internal] 🛠️ Retry now preflights server generation state, reuses existing queued/running attempts, and force-kicks the worker instead of creating duplicate queued retries.
 - [ ] [Internal] 🛠️ Client-side stale-state fallback no longer auto-flips async-worker queued/running attempts to failed before the worker writes a terminal state.
 - [ ] [Internal] 🛠️ Queue claiming now prefers newest jobs within the same priority/run window, so repeated retries process the latest attempt first.
+- [ ] [Internal] 🛠️ Worker supersede checks now compare attempt lifecycle state + start-time ordering instead of raw attempt-ID mismatch, preventing newer retries from being incorrectly skipped when trip metadata is stale.
+- [ ] [Internal] 🛠️ Async retry/create enqueue now verifies canonical attempt persistence (with DB upsert fallback) before queueing, reducing stale-latest-attempt races that left trips stuck in queued state.
+- [ ] [Internal] ⚙️ Trip view now periodically re-kicks the async worker while queued/running owner attempts are open, reducing “queued but not started yet” delays when the initial enqueue trigger is missed.

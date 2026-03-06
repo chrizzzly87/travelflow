@@ -92,6 +92,7 @@ import { beginTripGenerationTabFeedback, type TripGenerationTabFeedbackSession }
 import { shouldApplyPolledTripUpdate, shouldPollTripGenerationState } from '../services/tripGenerationPollingService';
 import { processQueuedTripGenerationAfterAuth } from '../services/tripGenerationQueueService';
 import { registerTripGenerationCompletionWatch } from '../services/tripGenerationCompletionWatchService';
+import { triggerTripGenerationWorker } from '../services/tripGenerationJobService';
 
 const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
     moduleKey: string,
@@ -977,6 +978,36 @@ const useTripViewRender = ({
         trip.id,
         tripAccess?.source,
     ]);
+    useEffect(() => {
+        if (!DB_ENABLED) return undefined;
+        if (connectivitySnapshot.state === 'offline') return undefined;
+        if (tripAccess?.source === 'public_read') return undefined;
+        if (generationState !== 'queued' && generationState !== 'running') return undefined;
+        if (latestGenerationAttemptOrchestration !== 'async_worker') return undefined;
+
+        let cancelled = false;
+        const kickWorker = () => {
+            if (cancelled) return;
+            void triggerTripGenerationWorker({
+                tripId: trip.id,
+                limit: 1,
+                source: 'trip_view_generation_poll_nudge',
+            });
+        };
+
+        kickWorker();
+        const timer = window.setInterval(kickWorker, 15_000);
+        return () => {
+            cancelled = true;
+            window.clearInterval(timer);
+        };
+    }, [
+        connectivitySnapshot.state,
+        generationState,
+        latestGenerationAttemptOrchestration,
+        trip.id,
+        tripAccess?.source,
+    ]);
     useEffect(() => () => {
         retryGenerationTabFeedbackSessionRef.current?.cancel();
         retryGenerationTabFeedbackSessionRef.current = null;
@@ -986,6 +1017,12 @@ const useTripViewRender = ({
         () => getLatestTripGenerationAttempt(trip),
         [trip]
     );
+    const latestGenerationAttemptOrchestration = useMemo(() => {
+        const metadata = latestGenerationAttempt?.metadata;
+        if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) return null;
+        const orchestration = metadata.orchestration;
+        return typeof orchestration === 'string' ? orchestration : null;
+    }, [latestGenerationAttempt?.metadata]);
     const pendingAuthQueueRequestId = useMemo(() => {
         const metadata = latestGenerationAttempt?.metadata;
         if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) return null;

@@ -4,6 +4,9 @@ const enqueueAsyncTripGenerationJobMock = vi.fn();
 const startTripGenerationAttemptLogMock = vi.fn();
 const finishTripGenerationAttemptLogMock = vi.fn();
 const waitForTripPersistenceMock = vi.fn();
+const waitForTripAttemptPersistenceMock = vi.fn();
+const dbUpsertTripMock = vi.fn();
+const ensureDbSessionMock = vi.fn();
 
 vi.mock('../../utils', async (importOriginal) => {
     const original = await importOriginal<typeof import('../../utils')>();
@@ -24,6 +27,12 @@ vi.mock('../../services/tripGenerationAttemptLogService', () => ({
 
 vi.mock('../../services/tripGenerationPersistenceService', () => ({
     waitForTripPersistence: (...args: unknown[]) => waitForTripPersistenceMock(...args),
+    waitForTripAttemptPersistence: (...args: unknown[]) => waitForTripAttemptPersistenceMock(...args),
+}));
+
+vi.mock('../../services/dbApi', () => ({
+    dbUpsertTrip: (...args: unknown[]) => dbUpsertTripMock(...args),
+    ensureDbSession: (...args: unknown[]) => ensureDbSessionMock(...args),
 }));
 
 import { startClientAsyncTripGeneration } from '../../services/tripGenerationClientAsyncService';
@@ -56,11 +65,17 @@ describe('startClientAsyncTripGeneration', () => {
         enqueueAsyncTripGenerationJobMock.mockReset();
         startTripGenerationAttemptLogMock.mockReset();
         finishTripGenerationAttemptLogMock.mockReset();
+        waitForTripAttemptPersistenceMock.mockReset();
+        dbUpsertTripMock.mockReset();
+        ensureDbSessionMock.mockReset();
 
         enqueueAsyncTripGenerationJobMock.mockResolvedValue(true);
         startTripGenerationAttemptLogMock.mockResolvedValue({ id: 'attempt-log-1' });
         finishTripGenerationAttemptLogMock.mockResolvedValue(undefined);
         waitForTripPersistenceMock.mockResolvedValue(true);
+        waitForTripAttemptPersistenceMock.mockResolvedValue(true);
+        dbUpsertTripMock.mockResolvedValue('trip-async-1');
+        ensureDbSessionMock.mockResolvedValue('user-1');
     });
 
     it('creates a queued trip, canonicalizes attempt id, and enqueues job payload', async () => {
@@ -103,6 +118,7 @@ describe('startClientAsyncTripGeneration', () => {
             flow: 'wizard',
             tripId: 'trip-async-1',
             attemptId: 'attempt-log-1',
+            startedAt: expect.any(String),
             source: 'create_trip_v3_async',
             prompt: 'wizard prompt body',
         }));
@@ -147,12 +163,12 @@ describe('startClientAsyncTripGeneration', () => {
         }));
     });
 
-    it('fails early when trip row is not yet persisted for async generation', async () => {
+    it('falls back to direct upsert when initial persistence check misses the trip row', async () => {
         waitForTripPersistenceMock.mockResolvedValue(false);
 
         const updates: ITrip[] = [];
 
-        await expect(() => startClientAsyncTripGeneration({
+        const result = await startClientAsyncTripGeneration({
             flow: 'classic',
             source: 'create_trip_v2',
             jobSource: 'create_trip_v2_async',
@@ -176,11 +192,51 @@ describe('startClientAsyncTripGeneration', () => {
             onTripUpdate: (trip) => {
                 updates.push(trip);
             },
-        })).rejects.toThrow('Trip was not persisted before async generation started.');
+        });
 
-        expect(startTripGenerationAttemptLogMock).not.toHaveBeenCalled();
-        expect(enqueueAsyncTripGenerationJobMock).not.toHaveBeenCalled();
-        expect(updates.map((trip) => trip.aiMeta?.generation?.state)).toEqual(['queued', 'failed']);
+        expect(result.tripId).toBe('trip-async-1');
+        expect(result.attemptId).toBe('attempt-log-1');
+        expect(startTripGenerationAttemptLogMock).toHaveBeenCalledTimes(1);
+        expect(enqueueAsyncTripGenerationJobMock).toHaveBeenCalledTimes(1);
+        expect(ensureDbSessionMock).toHaveBeenCalledTimes(1);
+        expect(dbUpsertTripMock).toHaveBeenCalledTimes(1);
+        expect(updates.map((trip) => trip.aiMeta?.generation?.state)).toEqual(['queued', 'queued']);
+    });
+
+    it('falls back to direct upsert when canonical attempt persistence did not settle before enqueue', async () => {
+        waitForTripAttemptPersistenceMock.mockResolvedValueOnce(false).mockResolvedValueOnce(true);
+
+        const updates: ITrip[] = [];
+        await startClientAsyncTripGeneration({
+            flow: 'classic',
+            source: 'create_trip_v2',
+            jobSource: 'create_trip_v2_async',
+            destinationLabel: 'Japan',
+            startDate: '2026-06-01',
+            roundTrip: false,
+            prompt: 'classic prompt body',
+            provider: 'gemini',
+            model: 'gemini-3-pro-preview',
+            inputSnapshot: {
+                flow: 'classic',
+                destinationLabel: 'Japan',
+                startDate: '2026-06-01',
+                endDate: '2026-06-08',
+                payload: {
+                    destinationPrompt: 'Japan',
+                    options: {},
+                },
+            },
+            buildOptimisticTrip: (tripId) => buildTrip(tripId),
+            onTripUpdate: (trip) => {
+                updates.push(trip);
+            },
+        });
+
+        expect(waitForTripAttemptPersistenceMock).toHaveBeenCalledTimes(2);
+        expect(dbUpsertTripMock).toHaveBeenCalledTimes(1);
+        expect(enqueueAsyncTripGenerationJobMock).toHaveBeenCalledTimes(1);
+        expect(updates.map((trip) => trip.aiMeta?.generation?.state)).toEqual(['queued', 'queued']);
     });
 
     it('does not enqueue when attempt logging fails and no canonical attempt id exists', async () => {

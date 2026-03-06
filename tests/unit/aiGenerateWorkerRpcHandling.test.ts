@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { extractRpcErrorMessage } from '../../netlify/edge-functions/ai-generate-worker.ts';
+import {
+    decideSupersededByAttemptOrdering,
+    extractRpcErrorMessage,
+} from '../../netlify/edge-functions/ai-generate-worker.ts';
 
 describe('ai-generate-worker RPC error parsing', () => {
     it('uses `message` payload field when present', async () => {
@@ -40,5 +43,25 @@ describe('ai-generate-worker RPC error parsing', () => {
 
         const result = await extractRpcErrorMessage(response, 'fallback');
         expect(result).toBe('fallback');
+    });
+
+    it('keeps payload attempt when payload is in-flight and latest attempt is terminal', () => {
+        const result = decideSupersededByAttemptOrdering({
+            payloadState: 'queued',
+            latestState: 'failed',
+            payloadStartedAt: '2026-03-06T15:35:27.460Z',
+            latestStartedAt: '2026-03-06T11:46:37.312Z',
+        });
+        expect(result).toBe(false);
+    });
+
+    it('marks payload attempt as superseded when latest in-flight attempt is newer', () => {
+        const result = decideSupersededByAttemptOrdering({
+            payloadState: 'queued',
+            latestState: 'running',
+            payloadStartedAt: '2026-03-06T11:46:37.312Z',
+            latestStartedAt: '2026-03-06T15:35:27.460Z',
+        });
+        expect(result).toBe(true);
     });
 });

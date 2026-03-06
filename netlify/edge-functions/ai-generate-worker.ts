@@ -39,6 +39,7 @@ interface WorkerJobPayload {
   queueRequestId: string | null;
   tripId: string;
   attemptId: string;
+  startedAt: string | null;
   startDate: string;
   roundTrip: boolean;
   prompt: string;
@@ -218,6 +219,20 @@ const asNumber = (value: unknown, fallback = 0): number => {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
 };
+
+const asIsoMs = (value: string | null | undefined): number | null => {
+  if (!value) return null;
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+const isTerminalAttemptState = (state: string | null | undefined): boolean => (
+  state === "failed" || state === "succeeded"
+);
+
+const isInFlightAttemptState = (state: string | null | undefined): boolean => (
+  state === "queued" || state === "running"
+);
 
 const asObject = (value: unknown): Record<string, unknown> | null => {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
@@ -621,6 +636,7 @@ const parseWorkerPayload = (payload: unknown): WorkerJobPayload | null => {
   const requestId = asString(record.requestId);
   const tripId = asString(record.tripId);
   const attemptId = asString(record.attemptId);
+  const startedAt = asString(record.startedAt);
   const startDate = asString(record.startDate);
   const prompt = asString(record.prompt);
   const source = asString(record.source) || WORKER_SOURCE;
@@ -641,6 +657,7 @@ const parseWorkerPayload = (payload: unknown): WorkerJobPayload | null => {
     queueRequestId,
     tripId,
     attemptId,
+    startedAt,
     startDate,
     roundTrip: Boolean(record.roundTrip),
     prompt,
@@ -674,6 +691,106 @@ const parseWorkerJobRow = (value: unknown): WorkerJobRow | null => {
     run_after: runAfter,
     payload: asObject(row.payload),
   };
+};
+
+interface WorkerAttemptStateRow {
+  id: string;
+  state: string | null;
+  startedAt: string | null;
+}
+
+const readAttemptStateRows = async (
+  config: { url: string; serviceRoleKey: string },
+  attemptIds: string[],
+): Promise<Map<string, WorkerAttemptStateRow>> => {
+  const uniqueAttemptIds = Array.from(new Set(
+    attemptIds
+      .map((value) => value.trim())
+      .filter((value) => value.length > 0),
+  ));
+  if (uniqueAttemptIds.length === 0) return new Map();
+
+  const endpoint = `/rest/v1/trip_generation_attempts?select=id,state,started_at&id=in.(${uniqueAttemptIds.join(",")})&limit=${uniqueAttemptIds.length}`;
+  const response = await serviceFetch(config, endpoint, {
+    method: "GET",
+  });
+  if (!response.ok) return new Map();
+
+  const payload = await safeJsonParse(response);
+  const rows = Array.isArray(payload) ? payload : [];
+  const mapped = new Map<string, WorkerAttemptStateRow>();
+  rows.forEach((entry) => {
+    const row = asObject(entry);
+    if (!row) return;
+    const id = asString(row.id);
+    if (!id) return;
+    mapped.set(id, {
+      id,
+      state: asString(row.state),
+      startedAt: asString(row.started_at),
+    });
+  });
+  return mapped;
+};
+
+export const decideSupersededByAttemptOrdering = (params: {
+  payloadState: string | null;
+  latestState: string | null;
+  payloadStartedAt: string | null;
+  latestStartedAt: string | null;
+}): boolean => {
+  if (isTerminalAttemptState(params.latestState) && isInFlightAttemptState(params.payloadState)) {
+    return false;
+  }
+  if (isTerminalAttemptState(params.payloadState) && isInFlightAttemptState(params.latestState)) {
+    return true;
+  }
+  if (isInFlightAttemptState(params.latestState) && !isInFlightAttemptState(params.payloadState)) {
+    return true;
+  }
+
+  const payloadStartedAtMs = asIsoMs(params.payloadStartedAt);
+  const latestStartedAtMs = asIsoMs(params.latestStartedAt);
+  if (payloadStartedAtMs !== null && latestStartedAtMs !== null) {
+    return latestStartedAtMs > payloadStartedAtMs;
+  }
+  if (latestStartedAtMs !== null && payloadStartedAtMs === null) {
+    return true;
+  }
+  if (payloadStartedAtMs !== null && latestStartedAtMs === null) {
+    return false;
+  }
+
+  // Conservative fallback: when there is no ordering signal, treat the payload as outdated.
+  return true;
+};
+
+const shouldSupersedePayloadAttempt = async (
+  config: { url: string; serviceRoleKey: string },
+  params: {
+    payloadAttemptId: string;
+    payloadStartedAt: string | null;
+    tripLatestAttemptId: string | null;
+    tripLatestStartedAt: string | null;
+  },
+): Promise<boolean> => {
+  const latestAttemptId = params.tripLatestAttemptId;
+  if (!latestAttemptId) return false;
+  if (latestAttemptId === params.payloadAttemptId) return false;
+
+  const attemptRows = await readAttemptStateRows(config, [
+    params.payloadAttemptId,
+    latestAttemptId,
+  ]);
+  const payloadAttempt = attemptRows.get(params.payloadAttemptId) || null;
+  const latestAttempt = attemptRows.get(latestAttemptId) || null;
+
+  return decideSupersededByAttemptOrdering({
+    payloadState: payloadAttempt?.state || null,
+    latestState: latestAttempt?.state || null,
+    payloadStartedAt: payloadAttempt?.startedAt || params.payloadStartedAt,
+    latestStartedAt: latestAttempt?.startedAt || params.tripLatestStartedAt,
+  });
 };
 
 const readTripRow = async (
@@ -990,47 +1107,61 @@ const processJob = async (
   const tripAiMeta = asObject(tripData.aiMeta);
   const tripGeneration = asObject(tripAiMeta?.generation);
   const latestAttemptId = asString(asObject(tripGeneration?.latestAttempt)?.id);
+  const latestAttemptStartedAt = asString(asObject(tripGeneration?.latestAttempt)?.startedAt);
   if (latestAttemptId && latestAttemptId !== payload.attemptId) {
-    const skippedMessage = "Skipped outdated queued attempt because a newer attempt exists.";
-    const attemptLogged = await finishAttempt(config, {
-      p_attempt_id: payload.attemptId,
-      p_state: "failed",
-      p_provider: payload.target.provider || DEFAULT_PROVIDER,
-      p_model: payload.target.model || DEFAULT_MODEL,
-      p_provider_model: null,
-      p_request_id: payload.requestId,
-      p_duration_ms: null,
-      p_status_code: 409,
-      p_failure_kind: "abort",
-      p_error_code: "ASYNC_WORKER_ATTEMPT_SUPERSEDED",
-      p_error_message: skippedMessage,
-      p_metadata: {
-        source: WORKER_SOURCE,
-        superseded_by_attempt_id: latestAttemptId,
-      },
+    const isSupersededAttempt = await shouldSupersedePayloadAttempt(config, {
+      payloadAttemptId: payload.attemptId,
+      payloadStartedAt: payload.startedAt,
+      tripLatestAttemptId: latestAttemptId,
+      tripLatestStartedAt: latestAttemptStartedAt,
     });
-    const jobCompleted = await completeJob(config, job.id, workerId);
-    await patchQueueRequest(config, {
-      requestId: payload.queueRequestId,
-      ownerId: job.owner_id,
-      patch: {
-        status: "failed",
-        result_trip_id: job.trip_id,
-        error_message: skippedMessage,
-        updated_at: new Date().toISOString(),
-      },
-    });
-    return {
-      ok: true,
-      jobId: job.id,
+    if (isSupersededAttempt) {
+      const skippedMessage = "Skipped outdated queued attempt because a newer attempt exists.";
+      const attemptLogged = await finishAttempt(config, {
+        p_attempt_id: payload.attemptId,
+        p_state: "failed",
+        p_provider: payload.target.provider || DEFAULT_PROVIDER,
+        p_model: payload.target.model || DEFAULT_MODEL,
+        p_provider_model: null,
+        p_request_id: payload.requestId,
+        p_duration_ms: null,
+        p_status_code: 409,
+        p_failure_kind: "abort",
+        p_error_code: "ASYNC_WORKER_ATTEMPT_SUPERSEDED",
+        p_error_message: skippedMessage,
+        p_metadata: {
+          source: WORKER_SOURCE,
+          superseded_by_attempt_id: latestAttemptId,
+        },
+      });
+      const jobCompleted = await completeJob(config, job.id, workerId);
+      await patchQueueRequest(config, {
+        requestId: payload.queueRequestId,
+        ownerId: job.owner_id,
+        patch: {
+          status: "failed",
+          result_trip_id: job.trip_id,
+          error_message: skippedMessage,
+          updated_at: new Date().toISOString(),
+        },
+      });
+      return {
+        ok: true,
+        jobId: job.id,
+        tripId: job.trip_id,
+        error: !attemptLogged || !jobCompleted
+          ? [
+            !attemptLogged ? "attempt_finish_rpc_failed" : null,
+            !jobCompleted ? "job_complete_rpc_failed" : null,
+          ].filter(Boolean).join(" | ")
+          : undefined,
+      };
+    }
+    console.warn("[ai-generate-worker] Trip latest attempt id differs, but payload attempt is newer. Continuing job.", {
       tripId: job.trip_id,
-      error: !attemptLogged || !jobCompleted
-        ? [
-          !attemptLogged ? "attempt_finish_rpc_failed" : null,
-          !jobCompleted ? "job_complete_rpc_failed" : null,
-        ].filter(Boolean).join(" | ")
-        : undefined,
-    };
+      payloadAttemptId: payload.attemptId,
+      latestAttemptId,
+    });
   }
   const provider = payload.target.provider || DEFAULT_PROVIDER;
   const model = payload.target.model || DEFAULT_MODEL;
