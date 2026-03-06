@@ -75,15 +75,18 @@ const WORKER_PROVIDER_TIMEOUT_MS = resolveTimeoutMs("AI_GENERATION_ASYNC_PROVIDE
 const WORKER_LEASE_SECONDS = Math.max(45, Math.min(180, Math.ceil((WORKER_PROVIDER_TIMEOUT_MS + 15_000) / 1_000)));
 
 const CITY_COLORS = [
-  "bg-rose-200 border-rose-300 text-rose-900",
-  "bg-orange-200 border-orange-300 text-orange-900",
-  "bg-amber-200 border-amber-300 text-amber-900",
-  "bg-emerald-200 border-emerald-300 text-emerald-900",
-  "bg-cyan-200 border-cyan-300 text-cyan-900",
-  "bg-sky-200 border-sky-300 text-sky-900",
-  "bg-indigo-200 border-indigo-300 text-indigo-900",
-  "bg-violet-200 border-violet-300 text-violet-900",
-  "bg-fuchsia-200 border-fuchsia-300 text-fuchsia-900",
+  "#f43f5e",
+  "#f97316",
+  "#d97706",
+  "#059669",
+  "#0d9488",
+  "#0891b2",
+  "#0284c7",
+  "#4f46e5",
+  "#7c3aed",
+  "#c026d3",
+  "#475569",
+  "#65a30d",
 ];
 const TRAVEL_COLOR = "bg-stone-800 border-stone-600 text-stone-100";
 const ACTIVITY_TYPE_COLOR: Record<string, string> = {

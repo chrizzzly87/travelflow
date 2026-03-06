@@ -259,6 +259,54 @@ describe('tripGenerationPollingService.shouldPollTripGenerationState', () => {
         expect(shouldPollTripGenerationState(trip, Date.now())).toBe(false);
     });
 
+    it('returns false when queued metadata is stale but trip content already reflects a newer successful generation', () => {
+        const lastSucceededAt = '2026-03-04T10:00:00.000Z';
+        const attemptStartedAt = '2026-03-04T09:58:00.000Z';
+        const trip = buildTrip({
+            items: [
+                {
+                    id: 'city-real-1',
+                    type: 'city',
+                    title: 'Berlin',
+                    startDateOffset: 0,
+                    duration: 2,
+                    color: 'bg-sky-100 border-sky-300 text-sky-800',
+                    description: 'Materialized itinerary content.',
+                    location: 'Berlin',
+                    coordinates: { lat: 52.52, lng: 13.405 },
+                },
+            ],
+            aiMeta: {
+                provider: 'openai',
+                model: 'gpt-5.4',
+                generatedAt: lastSucceededAt,
+                generation: {
+                    state: 'queued',
+                    latestAttempt: {
+                        id: 'attempt-stale-queued',
+                        flow: 'classic',
+                        source: 'trip_status_strip',
+                        state: 'queued',
+                        startedAt: attemptStartedAt,
+                        provider: 'openai',
+                        model: 'gpt-5.4',
+                        metadata: {
+                            orchestration: 'async_worker',
+                        },
+                    },
+                    attempts: [],
+                    inputSnapshot: null,
+                    retryCount: 0,
+                    retryRequestedAt: null,
+                    lastSucceededAt,
+                    lastFailedAt: null,
+                },
+            },
+        });
+
+        expect(shouldPollTripGenerationState(trip, Date.parse(lastSucceededAt))).toBe(false);
+    });
+
     it('returns true while generation is actively queued/running', () => {
         const startedAt = new Date(Date.now() - 5_000).toISOString();
         const runningTrip = buildTrip({

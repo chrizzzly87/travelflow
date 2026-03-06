@@ -66,6 +66,7 @@ summary: "Failed trip generations are now easier to spot, inspect, and retry on 
 - [ ] [Internal] 🧯 Admin trip diagnostics now supports one-click requeue for dead/failed worker jobs to speed up manual recovery during incidents.
 - [ ] [Internal] 🔄 Trip view now polls owner-access DB snapshots while generation is queued/running so server-side async completions appear without manual refresh.
 - [ ] [Internal] 🛠️ Trip-view polling now stops on derived terminal states (including stale-running timeout fallback) so failed banners do not keep background polling alive.
+- [ ] [Internal] 🛠️ Trip generation state now falls back to `succeeded` when newer completed content and `lastSucceededAt` prove async queued/running metadata is stale, preventing finished trips from polling forever after success.
 - [ ] [Internal] 🛠️ High-frequency trip polling now skips owner-profile lookup payloads to avoid duplicate `profiles` requests while generation is active.
 - [ ] [Internal] 🛠️ Polled remote trip snapshots now preserve server `updatedAt` when cached locally, preventing client sync feedback loops that spam repeated `upsert_trip`/trip-fetch requests.
 - [ ] [Internal] 🛠️ Tab-feedback favicon/title animation now stays active through queued/running generation and only resolves on terminal success/failure, including retry handoffs.

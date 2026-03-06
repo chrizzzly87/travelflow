@@ -277,6 +277,10 @@ const mergeAttemptMetadata = (
 };
 
 const LEGACY_FAILED_PLACEHOLDER_PREFIX = 'loading-error-';
+const ACTIVE_LOADING_PLACEHOLDER_PREFIX = 'loading-city-';
+const QUEUE_LOADING_PLACEHOLDER_PREFIX = 'queue-loading-city-';
+const ACTIVE_LOADING_DESCRIPTION = 'ai is generating this part of your itinerary.';
+const QUEUE_LOADING_DESCRIPTION = 'queued generation is preparing this trip.';
 
 const isLegacyFailedGenerationPlaceholderTrip = (trip: ITrip): boolean => {
     if (trip.aiMeta?.generation?.state) return false;
@@ -287,6 +291,30 @@ const isLegacyFailedGenerationPlaceholderTrip = (trip: ITrip): boolean => {
         && item.id.startsWith(LEGACY_FAILED_PLACEHOLDER_PREFIX)
     ));
 };
+
+const isTripGenerationPlaceholderItem = (item: ITrip['items'][number]): boolean => {
+    if (typeof item.id === 'string') {
+        if (item.id.startsWith(LEGACY_FAILED_PLACEHOLDER_PREFIX)) return true;
+        if (item.id.startsWith(ACTIVE_LOADING_PLACEHOLDER_PREFIX)) return true;
+        if (item.id.startsWith(QUEUE_LOADING_PLACEHOLDER_PREFIX)) return true;
+    }
+    if (item.type !== 'city') return false;
+
+    const normalizedTitle = (item.title || '').trim().toLowerCase();
+    const normalizedDescription = (item.description || '').trim().toLowerCase();
+    if (normalizedTitle.startsWith('loading stop ')) return true;
+    if (normalizedDescription === ACTIVE_LOADING_DESCRIPTION) return true;
+    if (normalizedDescription === QUEUE_LOADING_DESCRIPTION) return true;
+    return false;
+};
+
+const hasOnlyTripGenerationPlaceholderItems = (trip: ITrip): boolean => (
+    trip.items.length > 0 && trip.items.every((item) => isTripGenerationPlaceholderItem(item))
+);
+
+const hasMaterializedTripGenerationContent = (trip: ITrip): boolean => (
+    trip.items.some((item) => !item.loading && !isTripGenerationPlaceholderItem(item))
+);
 
 const isAsyncWorkerOrchestration = (
     metadata: Record<string, unknown> | null | undefined,
@@ -324,13 +352,29 @@ export const getTripGenerationState = (trip: ITrip, nowMs = Date.now()): TripGen
         const latestAttempt = trip.aiMeta?.generation?.latestAttempt || getLatestAttempt(getGenerationAttemptHistory(trip));
         const latestMetadata = asRecord(latestAttempt?.metadata);
         const isAsyncAttempt = isAsyncWorkerOrchestration(latestMetadata);
+        const latestAttemptStartedAtMs = toIsoMs(latestAttempt?.startedAt);
+        const lastSucceededAtMs = toIsoMs(trip.aiMeta?.generation?.lastSucceededAt);
+        const hasLoadingItems = trip.items.some((item) => item.loading);
+        const hasMaterializedContent = hasMaterializedTripGenerationContent(trip);
 
         if ((explicit === 'queued' || explicit === 'running') && !isAsyncAttempt && isTripGenerationStale(trip, TRIP_GENERATION_TIMEOUT_MS, nowMs)) {
             return 'failed';
         }
+        if ((explicit === 'queued' || explicit === 'running') && !hasLoadingItems && hasMaterializedContent) {
+            if (
+                typeof lastSucceededAtMs === 'number'
+                && (
+                    latestAttemptStartedAtMs === null
+                    || lastSucceededAtMs >= latestAttemptStartedAtMs
+                )
+            ) {
+                return 'succeeded';
+            }
+        }
         return explicit;
     }
     if (trip.items.some((item) => item.loading)) return 'running';
+    if (hasOnlyTripGenerationPlaceholderItems(trip)) return 'failed';
     if (isLegacyFailedGenerationPlaceholderTrip(trip)) return 'failed';
     return 'succeeded';
 };

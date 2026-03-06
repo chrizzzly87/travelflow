@@ -10,6 +10,8 @@ Status date: 2026-03-06
 - [x] Stabilized `App.tsx` view-settings persistence callback dependencies to avoid re-scheduling persistence work when auth access objects churn by reference.
 - [x] Normalized in-memory `currentViewSettings` precision in `TripView` and added zoom-diff epsilon handling to prevent visual-history commit churn from tiny float jitter.
 - [x] Tuned city panel gradient/opacity styling to avoid washed-out/dim appearance in timeline lanes.
+- [x] Hardened generation-state derivation so stale queued/running metadata no longer keeps polling alive after a newer successful async result has already materialized in trip content.
+- [x] Added regression coverage for stale queued metadata on already-succeeded trips so polling stops instead of continuing indefinitely.
 - [x] Full regression run completed after changes (`pnpm test:core`: 184 files, 802 passed, 1 skipped).
 - [x] Added draft postmortem document with commit/file inventory and incident/fix mapping (`docs/AI_TRIP_GENERATION_ASYNC_POSTMORTEM_DRAFT.md`).
 - [x] Added runtime user-flow architecture charts for async generation paths (`docs/AI_TRIP_GENERATION_RUNTIME_USERFLOWS.md`).
@@ -17,7 +19,7 @@ Status date: 2026-03-06
 
 ## Open
 - [ ] Verify in live runtime that `user_settings` write bursts are reduced after hook dedupe patch.
-- [ ] Continue trip generation polling stabilization for completed trips (stop unnecessary polling/fetch loops on terminal state).
+- [ ] Verify in live runtime that completed trips stop generation polling/fetch loops after the stale queued/running state fallback patch.
 - [ ] Validate city panel color tuning against real generated trips in production preview.
 - [ ] Produce postmortem package for browser -> async worker migration:
   - [x] complete commit/file/SQL change inventory
