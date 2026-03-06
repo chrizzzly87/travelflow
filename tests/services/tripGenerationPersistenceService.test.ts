@@ -3,6 +3,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const ensureDbSessionMock = vi.fn();
 const dbGetTripMock = vi.fn();
 
+vi.mock('../../config/db', () => ({
+    DB_ENABLED: true,
+}));
+
 vi.mock('../../services/dbApi', () => ({
     ensureDbSession: (...args: unknown[]) => ensureDbSessionMock(...args),
     dbGetTrip: (...args: unknown[]) => dbGetTripMock(...args),
