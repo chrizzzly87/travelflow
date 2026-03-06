@@ -948,9 +948,9 @@ export const TripManager: React.FC<TripManagerProps> = ({
 
         const updatedTrip: ITrip = { ...trip, items: nextItems };
         saveTrip(updatedTrip, { preserveUpdatedAt: true });
-        if (DB_ENABLED && isAuthenticated) {
-          void dbUpsertTrip(updatedTrip);
-        }
+        // Country enrichment is cosmetic metadata for sidebar display. Keep it
+        // local here instead of generating remote trip writes whenever My Trips
+        // is opened.
         if (onUpdateTrip && currentTripId === updatedTrip.id) {
           onUpdateTrip(updatedTrip);
         }

@@ -101,6 +101,7 @@ summary: "Failed trip generations are now easier to spot, inspect, and retry on 
 - [ ] [Internal] 🛠️ Trip polling now accepts remote terminal state after a hard-stale local in-flight window, self-healing stuck local queued snapshots that were newer but never actually runnable.
 - [ ] [Internal] 🛠️ Trip route view-settings forwarding now deduplicates unchanged payloads and stabilizes callback identity, reducing repeated `user_settings` upserts during idle trip viewing.
 - [ ] [Internal] 🛠️ DB bootstrap upload now skips stale local queued/running snapshots when remote generation is already terminal/newer, preventing completed worker trips from being overwritten back to queued.
+- [ ] [Internal] 🛠️ My Trips country enrichment now stays local-only instead of writing cosmetic country metadata back to the remote trip row on sidebar open.
 - [x] [Improved] 🎨 Async worker-generated city chips now use the same stronger palette depth as planner-generated trips, avoiding washed-out timeline colors.
 - [x] [Fixed] 🔄 Reopening a newly created trip after background loading resumes no longer crashes the trip page before the itinerary appears.
 - [ ] [Internal] 🛠️ Admin override-enabled trip views can now restart failed generation even when the trip would otherwise be read-only for normal traveler edits.
