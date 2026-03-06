@@ -2628,7 +2628,7 @@ begin
      where (j.state = 'queued' or (j.state = 'leased' and j.lease_expires_at is not null and j.lease_expires_at <= now()))
        and j.run_after <= now()
        and (j.lease_expires_at is null or j.lease_expires_at <= now())
-     order by j.priority asc, j.created_at asc
+     order by j.priority asc, j.run_after asc, j.created_at desc
      limit v_limit
      for update skip locked
   )

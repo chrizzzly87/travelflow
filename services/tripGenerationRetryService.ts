@@ -15,12 +15,15 @@ import {
 } from './tripGenerationAttemptLogService';
 import {
     createTripGenerationRequestId,
+    getTripGenerationState,
     markTripGenerationFailed,
     markTripGenerationRunning,
     withLatestTripGenerationAttemptId,
 } from './tripGenerationDiagnosticsService';
 import type { ITrip, TripGenerationFlow, TripGenerationInputSnapshot } from '../types';
 import { enqueueAsyncTripGenerationJob } from './tripGenerationAsyncEnqueueService';
+import { dbGetTrip } from './dbApi';
+import { triggerTripGenerationWorker } from './tripGenerationJobService';
 
 export interface RetryTripGenerationOptions {
     source: string;
@@ -104,6 +107,31 @@ export const retryTripGenerationWithDefaultModel = async (
 
     const requestId = createTripGenerationRequestId();
     const retryModel = resolveRetryModelTarget(options.modelId);
+
+    try {
+        const remote = await dbGetTrip(trip.id, { includeOwnerProfile: false });
+        const remoteTrip = remote?.trip || null;
+        if (remoteTrip) {
+            const remoteState = getTripGenerationState(remoteTrip, Date.now());
+            if (remoteState === 'queued' || remoteState === 'running') {
+                if (options.onTripUpdate) {
+                    await options.onTripUpdate(remoteTrip);
+                }
+                void triggerTripGenerationWorker({
+                    tripId: remoteTrip.id,
+                    limit: 1,
+                    source: 'trip_generation_retry_existing_inflight',
+                    force: true,
+                });
+                return {
+                    state: 'queued',
+                    trip: remoteTrip,
+                };
+            }
+        }
+    } catch {
+        // Continue with local retry flow if remote preflight fetch is unavailable.
+    }
 
     const runningTrip = markTripGenerationRunning(trip, {
         flow: snapshot.flow,
