@@ -123,7 +123,8 @@ export const retryTripGenerationWithDefaultModel = async (
 
     let runningTripWithCanonicalAttempt = runningTrip;
     const runningAttempt = runningTripWithCanonicalAttempt.aiMeta?.generation?.latestAttempt || null;
-    let attemptId = runningAttempt?.id || null;
+    const optimisticAttemptId = runningAttempt?.id || null;
+    let attemptId: string | null = null;
 
     if (options.onTripUpdate) {
         await options.onTripUpdate(runningTripWithCanonicalAttempt);
@@ -188,7 +189,7 @@ export const retryTripGenerationWithDefaultModel = async (
             provider: retryModel.provider,
             model: retryModel.model,
             requestId,
-            attemptId,
+            attemptId: attemptId || optimisticAttemptId,
             metadata: {
                 requestedModelId: options.modelId || null,
                 resolvedModelId: retryModel.id,
