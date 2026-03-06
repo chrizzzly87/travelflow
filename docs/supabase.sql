@@ -114,9 +114,37 @@ create table if not exists public.subscriptions (
   user_id uuid primary key references auth.users on delete cascade,
   plan_id uuid references public.plans(id),
   status text not null default 'active',
+  provider text,
+  provider_customer_id text,
+  provider_subscription_id text,
+  provider_price_id text,
+  provider_product_id text,
+  provider_status text,
+  current_period_start timestamptz,
   current_period_end timestamptz,
+  cancel_at timestamptz,
+  canceled_at timestamptz,
+  grace_ends_at timestamptz,
+  currency text,
+  amount integer,
+  last_event_id text,
+  last_event_type text,
+  last_event_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
+);
+
+create table if not exists public.billing_webhook_events (
+  event_id text primary key,
+  provider text not null,
+  event_type text not null,
+  occurred_at timestamptz not null,
+  user_id uuid references auth.users on delete set null,
+  status text not null default 'received',
+  error_message text,
+  payload jsonb not null default '{}'::jsonb,
+  processed_at timestamptz,
+  created_at timestamptz not null default now()
 );
 
 create table if not exists public.ai_benchmark_sessions (
@@ -204,6 +232,58 @@ alter table public.ai_benchmark_runs add column if not exists satisfaction_ratin
 alter table public.ai_benchmark_runs add column if not exists satisfaction_updated_at timestamptz;
 alter table public.ai_benchmark_runs add column if not exists run_comment text;
 alter table public.ai_benchmark_runs add column if not exists run_comment_updated_at timestamptz;
+alter table public.subscriptions add column if not exists provider text;
+alter table public.subscriptions add column if not exists provider_customer_id text;
+alter table public.subscriptions add column if not exists provider_subscription_id text;
+alter table public.subscriptions add column if not exists provider_price_id text;
+alter table public.subscriptions add column if not exists provider_product_id text;
+alter table public.subscriptions add column if not exists provider_status text;
+alter table public.subscriptions add column if not exists current_period_start timestamptz;
+alter table public.subscriptions add column if not exists cancel_at timestamptz;
+alter table public.subscriptions add column if not exists canceled_at timestamptz;
+alter table public.subscriptions add column if not exists grace_ends_at timestamptz;
+alter table public.subscriptions add column if not exists currency text;
+alter table public.subscriptions add column if not exists amount integer;
+alter table public.subscriptions add column if not exists last_event_id text;
+alter table public.subscriptions add column if not exists last_event_type text;
+alter table public.subscriptions add column if not exists last_event_at timestamptz;
+
+alter table public.billing_webhook_events add column if not exists provider text;
+alter table public.billing_webhook_events add column if not exists event_type text;
+alter table public.billing_webhook_events add column if not exists occurred_at timestamptz;
+alter table public.billing_webhook_events add column if not exists user_id uuid references auth.users on delete set null;
+update public.billing_webhook_events
+   set provider = 'paddle'
+ where provider is null;
+update public.billing_webhook_events
+   set event_type = 'unknown'
+ where event_type is null;
+update public.billing_webhook_events
+   set occurred_at = coalesce(occurred_at, now())
+ where occurred_at is null;
+alter table public.billing_webhook_events alter column provider set not null;
+alter table public.billing_webhook_events alter column event_type set not null;
+alter table public.billing_webhook_events alter column occurred_at set not null;
+alter table public.billing_webhook_events add column if not exists status text;
+alter table public.billing_webhook_events alter column status set default 'received';
+update public.billing_webhook_events
+   set status = 'received'
+ where status is null;
+alter table public.billing_webhook_events alter column status set not null;
+alter table public.billing_webhook_events add column if not exists error_message text;
+alter table public.billing_webhook_events add column if not exists payload jsonb;
+alter table public.billing_webhook_events alter column payload set default '{}'::jsonb;
+update public.billing_webhook_events
+   set payload = '{}'::jsonb
+ where payload is null;
+alter table public.billing_webhook_events alter column payload set not null;
+alter table public.billing_webhook_events add column if not exists processed_at timestamptz;
+alter table public.billing_webhook_events add column if not exists created_at timestamptz;
+update public.billing_webhook_events
+   set created_at = now()
+ where created_at is null;
+alter table public.billing_webhook_events alter column created_at set default now();
+alter table public.billing_webhook_events alter column created_at set not null;
 
 do $$
 begin
@@ -235,6 +315,21 @@ begin
 end;
 $$;
 
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'billing_webhook_events_status_check'
+      and conrelid = 'public.billing_webhook_events'::regclass
+  ) then
+    alter table public.billing_webhook_events
+      add constraint billing_webhook_events_status_check
+      check (status in ('received', 'processed', 'ignored', 'failed'));
+  end if;
+end;
+$$;
+
 -- Indexes
 create index if not exists trips_owner_id_idx on public.trips(owner_id);
 create index if not exists trips_updated_at_idx on public.trips(updated_at desc);
@@ -259,6 +354,13 @@ create index if not exists ai_generation_events_created_idx on public.ai_generat
 create index if not exists ai_generation_events_source_created_idx on public.ai_generation_events(source, created_at desc);
 create index if not exists ai_generation_events_provider_created_idx on public.ai_generation_events(provider, created_at desc);
 create index if not exists ai_generation_events_status_created_idx on public.ai_generation_events(status, created_at desc);
+create unique index if not exists subscriptions_provider_subscription_uidx
+  on public.subscriptions(provider_subscription_id)
+  where provider_subscription_id is not null;
+create index if not exists subscriptions_provider_customer_idx on public.subscriptions(provider_customer_id);
+create index if not exists subscriptions_last_event_at_idx on public.subscriptions(last_event_at desc);
+create index if not exists billing_webhook_events_occurred_at_idx on public.billing_webhook_events(occurred_at desc);
+create index if not exists billing_webhook_events_user_occurred_at_idx on public.billing_webhook_events(user_id, occurred_at desc);
 
 -- updated_at helpers
 create or replace function public.set_updated_at()
@@ -565,6 +667,7 @@ alter table public.profiles enable row level security;
 alter table public.user_settings enable row level security;
 alter table public.plans enable row level security;
 alter table public.subscriptions enable row level security;
+alter table public.billing_webhook_events enable row level security;
 alter table public.ai_benchmark_sessions enable row level security;
 alter table public.ai_benchmark_runs enable row level security;
 alter table public.ai_benchmark_preferences enable row level security;
@@ -725,6 +828,12 @@ create policy "Subscriptions are user-owned"
 on public.subscriptions for all
 using (user_id = auth.uid())
 with check (user_id = auth.uid());
+
+-- Billing webhook event policies
+drop policy if exists "Billing webhook events are user-owned" on public.billing_webhook_events;
+create policy "Billing webhook events are user-owned"
+on public.billing_webhook_events for select
+using (user_id = auth.uid());
 
 -- AI benchmark session policies
 drop policy if exists "AI benchmark sessions owner read" on public.ai_benchmark_sessions;
