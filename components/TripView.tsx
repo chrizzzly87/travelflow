@@ -930,6 +930,25 @@ const useTripViewRender = ({
         () => getTripGenerationState(trip, generationNowMs),
         [generationNowMs, trip]
     );
+    const latestGenerationAttempt = useMemo<TripGenerationAttemptSummary | null>(
+        () => getLatestTripGenerationAttempt(trip),
+        [trip]
+    );
+    const latestGenerationAttemptOrchestration = useMemo(() => {
+        const metadata = latestGenerationAttempt?.metadata;
+        if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) return null;
+        const orchestration = metadata.orchestration;
+        return typeof orchestration === 'string' ? orchestration : null;
+    }, [latestGenerationAttempt?.metadata]);
+    const pendingAuthQueueRequestId = useMemo(() => {
+        const metadata = latestGenerationAttempt?.metadata;
+        if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) return null;
+        const queueRequestValue = metadata.queueRequestId;
+        const queueRequestId = typeof queueRequestValue === 'string' ? queueRequestValue.trim() : '';
+        if (!queueRequestId) return null;
+        const pendingAuthValue = metadata.pendingAuth;
+        return pendingAuthValue === true ? queueRequestId : null;
+    }, [latestGenerationAttempt?.metadata]);
     const shouldPollGenerationState = shouldPollTripGenerationState(trip, generationNowMs);
     useEffect(() => {
         if (!shouldPollGenerationState) return undefined;
@@ -1013,25 +1032,6 @@ const useTripViewRender = ({
         retryGenerationTabFeedbackSessionRef.current = null;
         pendingRetryGenerationStateRef.current = false;
     }, []);
-    const latestGenerationAttempt = useMemo<TripGenerationAttemptSummary | null>(
-        () => getLatestTripGenerationAttempt(trip),
-        [trip]
-    );
-    const latestGenerationAttemptOrchestration = useMemo(() => {
-        const metadata = latestGenerationAttempt?.metadata;
-        if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) return null;
-        const orchestration = metadata.orchestration;
-        return typeof orchestration === 'string' ? orchestration : null;
-    }, [latestGenerationAttempt?.metadata]);
-    const pendingAuthQueueRequestId = useMemo(() => {
-        const metadata = latestGenerationAttempt?.metadata;
-        if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) return null;
-        const queueRequestValue = metadata.queueRequestId;
-        const queueRequestId = typeof queueRequestValue === 'string' ? queueRequestValue.trim() : '';
-        if (!queueRequestId) return null;
-        const pendingAuthValue = metadata.pendingAuth;
-        return pendingAuthValue === true ? queueRequestId : null;
-    }, [latestGenerationAttempt?.metadata]);
     const [isResolvingPendingAuthGeneration, setIsResolvingPendingAuthGeneration] = useState(false);
     const generationElapsedMs = useMemo(
         () => getTripGenerationElapsedMs(trip, generationNowMs),
