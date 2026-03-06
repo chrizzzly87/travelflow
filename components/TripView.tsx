@@ -894,6 +894,7 @@ const useTripViewRender = ({
     const tripRef = useRef(trip);
     const retryGenerationTabFeedbackSessionRef = useRef<TripGenerationTabFeedbackSession | null>(null);
     const pendingRetryGenerationStateRef = useRef(false);
+    const retryMutationInFlightRef = useRef(false);
     tripRef.current = trip;
     const [generationNowMs, setGenerationNowMs] = useState(() => Date.now());
     const [retryModelId, setRetryModelId] = useState<string>(getDefaultCreateTripModel().id);
@@ -1470,7 +1471,7 @@ const useTripViewRender = ({
         modelIdOverride?: string | null,
         baseTripOverride?: ITrip,
     ) => {
-        if (isRetryingGeneration) return;
+        if (isRetryingGeneration || retryMutationInFlightRef.current) return;
         const baseTrip = baseTripOverride || trip;
         const selectedRetryModelId = modelIdOverride || retryModelId || null;
         if (source === 'trip_info') {
@@ -1495,6 +1496,7 @@ const useTripViewRender = ({
             return;
         }
 
+        retryMutationInFlightRef.current = true;
         setIsRetryingGeneration(true);
         retryGenerationTabFeedbackSessionRef.current?.cancel();
         retryGenerationTabFeedbackSessionRef.current = beginTripGenerationTabFeedback();
@@ -1557,6 +1559,7 @@ const useTripViewRender = ({
             });
         } finally {
             setIsRetryingGeneration(false);
+            retryMutationInFlightRef.current = false;
             if (!keepRetryFeedbackActive) {
                 retryGenerationTabFeedbackSessionRef.current = null;
                 pendingRetryGenerationStateRef.current = false;

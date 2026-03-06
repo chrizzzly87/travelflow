@@ -111,6 +111,63 @@ describe('tripGenerationPollingService.shouldApplyPolledTripUpdate', () => {
 
         expect(shouldApplyPolledTripUpdate(localTrip, remoteTrip, Date.now())).toBe(false);
     });
+
+    it('does not regress a local queued retry to an older remote failed attempt', () => {
+        const nowMs = Date.now();
+        const olderIso = new Date(nowMs - 120_000).toISOString();
+        const newerIso = new Date(nowMs - 10_000).toISOString();
+
+        const localTrip = buildTrip({
+            updatedAt: 500,
+            aiMeta: {
+                provider: 'openai',
+                model: 'gpt-5.4',
+                generation: {
+                    state: 'queued',
+                    latestAttempt: {
+                        id: 'attempt-new',
+                        flow: 'classic',
+                        source: 'trip_status_strip',
+                        state: 'queued',
+                        startedAt: newerIso,
+                    },
+                    attempts: [],
+                    inputSnapshot: null,
+                    retryCount: 1,
+                    retryRequestedAt: newerIso,
+                    lastSucceededAt: null,
+                    lastFailedAt: olderIso,
+                },
+            },
+        });
+
+        const remoteTrip = buildTrip({
+            updatedAt: 400,
+            aiMeta: {
+                provider: 'openai',
+                model: 'gpt-5.4',
+                generation: {
+                    state: 'failed',
+                    latestAttempt: {
+                        id: 'attempt-old',
+                        flow: 'classic',
+                        source: 'queue_claim_async_worker',
+                        state: 'failed',
+                        startedAt: olderIso,
+                        finishedAt: olderIso,
+                    },
+                    attempts: [],
+                    inputSnapshot: null,
+                    retryCount: 0,
+                    retryRequestedAt: null,
+                    lastSucceededAt: null,
+                    lastFailedAt: olderIso,
+                },
+            },
+        });
+
+        expect(shouldApplyPolledTripUpdate(localTrip, remoteTrip, nowMs)).toBe(false);
+    });
 });
 
 describe('tripGenerationPollingService.shouldPollTripGenerationState', () => {

@@ -64,12 +64,12 @@ const JSON_HEADERS = {
 
 const WORKER_HEADER = "x-tf-admin-key";
 const WORKER_SOURCE = "queue_claim_async_worker";
-const DEFAULT_PROVIDER = "gemini";
-const DEFAULT_MODEL = "gemini-3-pro-preview";
+const DEFAULT_PROVIDER = "openai";
+const DEFAULT_MODEL = "gpt-5.4";
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MAX_ATTEMPT_HISTORY = 12;
 const MAX_JOB_BATCH = 10;
-const WORKER_PROVIDER_TIMEOUT_MS = resolveTimeoutMs("AI_GENERATION_ASYNC_PROVIDER_TIMEOUT_MS", 45_000, 20_000, 120_000);
+const WORKER_PROVIDER_TIMEOUT_MS = resolveTimeoutMs("AI_GENERATION_ASYNC_PROVIDER_TIMEOUT_MS", 120_000, 20_000, 180_000);
 const WORKER_LEASE_SECONDS = 180;
 
 const CITY_COLORS = [
@@ -108,7 +108,17 @@ const json = (status: number, payload: unknown): Response =>
 
 const readEnv = (name: string): string => {
   try {
-    return (globalThis as { Deno?: { env?: { get: (key: string) => string | undefined } } }).Deno?.env?.get(name) || "";
+    const denoValue = (globalThis as { Deno?: { env?: { get: (key: string) => string | undefined } } }).Deno?.env?.get(name);
+    if (typeof denoValue === "string" && denoValue.length > 0) {
+      return denoValue;
+    }
+  } catch {
+    // noop
+  }
+  try {
+    const nodeEnv = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env;
+    const nodeValue = nodeEnv?.[name];
+    return typeof nodeValue === "string" ? nodeValue : "";
   } catch {
     return "";
   }
@@ -1169,7 +1179,7 @@ const processJob = async (
   }
 };
 
-export default async (request: Request) => {
+export const handleGenerationWorkerRequest = async (request: Request): Promise<Response> => {
   if (request.method !== "POST") {
     return json(405, { ok: false, error: "Method not allowed. Use POST." });
   }
@@ -1236,3 +1246,5 @@ export default async (request: Request) => {
     jobs: results,
   });
 };
+
+export default handleGenerationWorkerRequest;

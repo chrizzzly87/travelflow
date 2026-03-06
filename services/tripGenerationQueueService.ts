@@ -1,4 +1,5 @@
 import type { ITrip, TripGenerationFlow, TripGenerationInputSnapshot } from '../types';
+import { getDefaultCreateTripModel } from '../config/aiModelCatalog';
 import {
     buildClassicItineraryPrompt,
     buildSurpriseItineraryPrompt,
@@ -80,6 +81,8 @@ const asText = (value: unknown, fallback = ''): string => {
     const next = value.trim();
     return next || fallback;
 };
+
+const DEFAULT_CREATE_MODEL = getDefaultCreateTripModel();
 
 const parseQueuedPayload = (flow: TripGenerationFlow, payload: unknown): QueuedTripGenerationPayload => {
     if (!isRecord(payload)) {
@@ -227,8 +230,8 @@ const resolveAsyncQueuedExecutionParams = (payload: QueuedTripGenerationPayload)
     prompt: string;
 } => {
     if (payload.flow === 'classic') {
-        const provider = payload.options.aiTarget?.provider || 'gemini';
-        const model = payload.options.aiTarget?.model || 'gemini-3-pro-preview';
+        const provider = payload.options.aiTarget?.provider || DEFAULT_CREATE_MODEL.provider;
+        const model = payload.options.aiTarget?.model || DEFAULT_CREATE_MODEL.model;
         return {
             flow: 'classic',
             provider,
@@ -238,8 +241,8 @@ const resolveAsyncQueuedExecutionParams = (payload: QueuedTripGenerationPayload)
         };
     }
     if (payload.flow === 'wizard') {
-        const provider = payload.options.aiTarget?.provider || 'gemini';
-        const model = payload.options.aiTarget?.model || 'gemini-3-pro-preview';
+        const provider = payload.options.aiTarget?.provider || DEFAULT_CREATE_MODEL.provider;
+        const model = payload.options.aiTarget?.model || DEFAULT_CREATE_MODEL.model;
         return {
             flow: 'wizard',
             provider,
@@ -249,8 +252,8 @@ const resolveAsyncQueuedExecutionParams = (payload: QueuedTripGenerationPayload)
         };
     }
 
-    const provider = payload.options.aiTarget?.provider || 'gemini';
-    const model = payload.options.aiTarget?.model || 'gemini-3-pro-preview';
+    const provider = payload.options.aiTarget?.provider || DEFAULT_CREATE_MODEL.provider;
+    const model = payload.options.aiTarget?.model || DEFAULT_CREATE_MODEL.model;
     return {
         flow: 'surprise',
         provider,

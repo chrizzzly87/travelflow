@@ -39,6 +39,7 @@ export interface BenchmarkPreferencesPayload {
 }
 
 export const BENCHMARK_DEFAULT_MODEL_IDS = [
+    'openai:gpt-5.4',
     'gemini:gemini-3.1-pro-preview',
     'gemini:gemini-3-pro-preview',
     'openai:gpt-5.2-pro',

@@ -36,8 +36,8 @@ describe('config/aiModelCatalog', () => {
     const runtime = getCurrentRuntimeModel();
     const defaultModel = getDefaultCreateTripModel();
 
-    expect(runtime?.id).toBe('gemini:gemini-3-pro-preview');
-    expect(defaultModel.id).toBe('gemini:gemini-3-pro-preview');
+    expect(runtime?.id).toBe('openai:gpt-5.4');
+    expect(defaultModel.id).toBe('openai:gpt-5.4');
     expect(defaultModel.isCurrentRuntime).toBe(true);
   });
 
