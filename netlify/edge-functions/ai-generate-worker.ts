@@ -69,8 +69,8 @@ const DEFAULT_MODEL = "gpt-5.4";
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MAX_ATTEMPT_HISTORY = 12;
 const MAX_JOB_BATCH = 10;
-const WORKER_PROVIDER_TIMEOUT_MS = resolveTimeoutMs("AI_GENERATION_ASYNC_PROVIDER_TIMEOUT_MS", 120_000, 20_000, 180_000);
-const WORKER_LEASE_SECONDS = 180;
+const WORKER_PROVIDER_TIMEOUT_MS = resolveTimeoutMs("AI_GENERATION_ASYNC_PROVIDER_TIMEOUT_MS", 45_000, 10_000, 120_000);
+const WORKER_LEASE_SECONDS = 75;
 
 const CITY_COLORS = [
   "bg-rose-100 border-rose-300 text-rose-800",
@@ -824,7 +824,13 @@ const claimJobs = async (
   config: { url: string; serviceRoleKey: string },
   workerId: string,
   limit: number,
-): Promise<WorkerJobRow[]> => {
+): Promise<{
+  jobs: WorkerJobRow[];
+  error: {
+    status: number;
+    message: string;
+  } | null;
+}> => {
   const response = await serviceFetch(config, "/rest/v1/rpc/trip_generation_job_claim", {
     method: "POST",
     headers: {
@@ -837,12 +843,24 @@ const claimJobs = async (
     }),
   });
 
-  if (!response.ok) return [];
+  if (!response.ok) {
+    const errorMessage = await extractRpcErrorMessage(response, "trip_generation_job_claim failed");
+    return {
+      jobs: [],
+      error: {
+        status: response.status,
+        message: errorMessage,
+      },
+    };
+  }
   const payload = await safeJsonParse(response);
   const rows = Array.isArray(payload) ? payload : [];
-  return rows
+  return {
+    jobs: rows
     .map((entry) => parseWorkerJobRow(entry))
-    .filter((entry): entry is WorkerJobRow => Boolean(entry));
+    .filter((entry): entry is WorkerJobRow => Boolean(entry)),
+    error: null,
+  };
 };
 
 const ensureWorkerAuthorized = (request: Request): boolean => {
@@ -1216,7 +1234,17 @@ export const handleGenerationWorkerRequest = async (request: Request): Promise<R
     : 3;
   const workerId = `edge:${crypto.randomUUID()}`;
 
-  const jobs = await claimJobs(config, workerId, limit);
+  const claimed = await claimJobs(config, workerId, limit);
+  if (claimed.error) {
+    return json(502, {
+      ok: false,
+      code: "WORKER_JOB_CLAIM_FAILED",
+      error: claimed.error.message,
+      status: claimed.error.status,
+    });
+  }
+
+  const jobs = claimed.jobs;
   if (jobs.length === 0) {
     return json(200, {
       ok: true,

@@ -80,3 +80,6 @@ summary: "Failed trip generations are now easier to spot, inspect, and retry on 
 - [ ] [Internal] 🧪 AI benchmark now includes a custom JSON import preset that maps imported generation payloads into the benchmark mask.
 - [ ] [Internal] 🔗 Benchmark import payloads now include full generation snapshots to keep benchmark replay and admin retry input shapes aligned.
 - [ ] [Internal] 🧪 Added regression coverage for canonical attempt-id alignment and duplicate-attempt display normalization.
+- [ ] [Internal] 🛠️ Worker job claiming now reclaims expired leased jobs, so interrupted runs no longer leave trips permanently stuck in queued/leased states.
+- [ ] [Internal] 🛠️ Worker claim RPC failures now return explicit error payloads instead of silent `claimed: 0` responses, improving production incident diagnosis.
+- [ ] [Internal] ⚙️ Async worker lease/provider timeout defaults are now tuned for edge-runtime safety to reduce long-lived stuck leases after provider hangs.
