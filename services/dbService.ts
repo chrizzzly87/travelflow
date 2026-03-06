@@ -1207,7 +1207,12 @@ export const dbUpsertTripWithStatus = async (
     };
 };
 
-export const dbGetTrip = async (tripId: string): Promise<DbTripResult | null> => {
+export const dbGetTrip = async (
+    tripId: string,
+    options?: {
+        includeOwnerProfile?: boolean;
+    },
+): Promise<DbTripResult | null> => {
     if (!DB_ENABLED) return null;
     const client = requireSupabase();
     const currentUserId = await ensureExistingDbSession();
@@ -1287,7 +1292,7 @@ export const dbGetTrip = async (tripId: string): Promise<DbTripResult | null> =>
             ? (data as { updated_at: string }).updated_at
             : null;
     }
-    if (ownerId) {
+    if (ownerId && options?.includeOwnerProfile !== false) {
         const { data: ownerProfile, error: ownerProfileError } = await client
             .from('profiles')
             .select('username')

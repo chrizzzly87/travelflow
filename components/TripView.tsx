@@ -89,7 +89,7 @@ import { retryTripGenerationWithDefaultModel } from '../services/tripGenerationR
 import { abortActiveTripGenerationRequest } from '../services/aiService';
 import { buildBenchmarkScenarioImportUrl } from '../services/tripGenerationBenchmarkBridge';
 import { beginTripGenerationTabFeedback, type TripGenerationTabFeedbackSession } from '../services/tripGenerationTabFeedbackService';
-import { shouldApplyPolledTripUpdate } from '../services/tripGenerationPollingService';
+import { shouldApplyPolledTripUpdate, shouldPollTripGenerationState } from '../services/tripGenerationPollingService';
 import { processQueuedTripGenerationAfterAuth } from '../services/tripGenerationQueueService';
 import { registerTripGenerationCompletionWatch } from '../services/tripGenerationCompletionWatchService';
 
@@ -893,6 +893,7 @@ const useTripViewRender = ({
     const titleViewTransitionName = getExampleTitleViewTransitionName(useExampleSharedTransition);
     const tripRef = useRef(trip);
     const retryGenerationTabFeedbackSessionRef = useRef<TripGenerationTabFeedbackSession | null>(null);
+    const pendingRetryGenerationStateRef = useRef(false);
     tripRef.current = trip;
     const [generationNowMs, setGenerationNowMs] = useState(() => Date.now());
     const [retryModelId, setRetryModelId] = useState<string>(getDefaultCreateTripModel().id);
@@ -923,11 +924,11 @@ const useTripViewRender = ({
     );
     const expectedCityLaneCount = displayTrip.items.filter((item) => item.type === 'city').length;
     const canEnableAdminOverride = isAdminFallbackView && Boolean(adminAccess?.canAdminWrite);
-    const shouldPollGenerationState = (
-        trip.aiMeta?.generation?.state === 'running'
-        || trip.aiMeta?.generation?.state === 'queued'
-        || trip.items.some((item) => item.loading)
+    const generationState = useMemo<TripGenerationState>(
+        () => getTripGenerationState(trip, generationNowMs),
+        [generationNowMs, trip]
     );
+    const shouldPollGenerationState = shouldPollTripGenerationState(trip, generationNowMs);
     useEffect(() => {
         if (!shouldPollGenerationState) return undefined;
         const timer = window.setInterval(() => {
@@ -947,7 +948,7 @@ const useTripViewRender = ({
             if (cancelled || inFlight) return;
             inFlight = true;
             try {
-                const remote = await dbGetTrip(trip.id);
+                const remote = await dbGetTrip(trip.id, { includeOwnerProfile: false });
                 if (cancelled || !remote?.trip) return;
 
                 const remoteTrip = remote.trip;
@@ -978,11 +979,8 @@ const useTripViewRender = ({
     useEffect(() => () => {
         retryGenerationTabFeedbackSessionRef.current?.cancel();
         retryGenerationTabFeedbackSessionRef.current = null;
+        pendingRetryGenerationStateRef.current = false;
     }, []);
-    const generationState = useMemo<TripGenerationState>(
-        () => getTripGenerationState(trip, generationNowMs),
-        [generationNowMs, trip]
-    );
     const latestGenerationAttempt = useMemo<TripGenerationAttemptSummary | null>(
         () => getLatestTripGenerationAttempt(trip),
         [trip]
@@ -1003,17 +1001,37 @@ const useTripViewRender = ({
     );
     useEffect(() => {
         const session = retryGenerationTabFeedbackSessionRef.current;
+        const isGenerationInFlight = generationState === 'running' || generationState === 'queued';
+
+        if (isGenerationInFlight) {
+            pendingRetryGenerationStateRef.current = false;
+            if (!session && tripAccess?.source !== 'public_read') {
+                retryGenerationTabFeedbackSessionRef.current = beginTripGenerationTabFeedback();
+            }
+            return;
+        }
+
         if (!session) return;
+        if (pendingRetryGenerationStateRef.current && generationState === 'failed') {
+            return;
+        }
+
         if (generationState === 'succeeded') {
             session.complete('success', { title: trip.title });
             retryGenerationTabFeedbackSessionRef.current = null;
+            pendingRetryGenerationStateRef.current = false;
             return;
         }
         if (generationState === 'failed') {
             session.complete('error');
             retryGenerationTabFeedbackSessionRef.current = null;
+            pendingRetryGenerationStateRef.current = false;
+            return;
         }
-    }, [generationState, trip.title]);
+        session.cancel();
+        retryGenerationTabFeedbackSessionRef.current = null;
+        pendingRetryGenerationStateRef.current = false;
+    }, [generationState, trip.title, tripAccess?.source]);
     const isGenerationSlow = (
         (generationState === 'running' || generationState === 'queued')
         && typeof generationElapsedMs === 'number'
@@ -1480,6 +1498,7 @@ const useTripViewRender = ({
         setIsRetryingGeneration(true);
         retryGenerationTabFeedbackSessionRef.current?.cancel();
         retryGenerationTabFeedbackSessionRef.current = beginTripGenerationTabFeedback();
+        pendingRetryGenerationStateRef.current = true;
         let keepRetryFeedbackActive = false;
         try {
             const result = await retryTripGenerationWithDefaultModel(baseTrip, {
@@ -1487,6 +1506,9 @@ const useTripViewRender = ({
                 contextSource: 'trip_retry',
                 modelId: selectedRetryModelId,
                 onTripUpdate: (updatedTrip) => {
+                    if (shouldPollTripGenerationState(updatedTrip, Date.now())) {
+                        pendingRetryGenerationStateRef.current = false;
+                    }
                     onUpdateTrip(updatedTrip);
                 },
             });
@@ -1519,6 +1541,7 @@ const useTripViewRender = ({
                     title: t('tripView.generation.retry.completedTitle'),
                 });
             } else {
+                pendingRetryGenerationStateRef.current = false;
                 retryGenerationTabFeedbackSessionRef.current?.complete('error');
                 showToast(t('tripView.generation.retry.failed'), {
                     tone: 'neutral',
@@ -1526,6 +1549,7 @@ const useTripViewRender = ({
                 });
             }
         } catch (error) {
+            pendingRetryGenerationStateRef.current = false;
             retryGenerationTabFeedbackSessionRef.current?.complete('error');
             showToast(error instanceof Error ? error.message : t('tripView.generation.retry.unexpected'), {
                 tone: 'neutral',
@@ -1535,6 +1559,7 @@ const useTripViewRender = ({
             setIsRetryingGeneration(false);
             if (!keepRetryFeedbackActive) {
                 retryGenerationTabFeedbackSessionRef.current = null;
+                pendingRetryGenerationStateRef.current = false;
             }
         }
     }, [

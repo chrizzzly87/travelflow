@@ -58,6 +58,9 @@ summary: "Failed trip generations are now easier to spot, inspect, and retry on 
 - [ ] [Internal] 🧯 Admin trip diagnostics now includes queue/dead-letter job history (state, retry budget, latest worker error) for faster worker incident triage.
 - [ ] [Internal] 🧯 Admin trip diagnostics now supports one-click requeue for dead/failed worker jobs to speed up manual recovery during incidents.
 - [ ] [Internal] 🔄 Trip view now polls owner-access DB snapshots while generation is queued/running so server-side async completions appear without manual refresh.
+- [ ] [Internal] 🛠️ Trip-view polling now stops on derived terminal states (including stale-running timeout fallback) so failed banners do not keep background polling alive.
+- [ ] [Internal] 🛠️ High-frequency trip polling now skips owner-profile lookup payloads to avoid duplicate `profiles` requests while generation is active.
+- [ ] [Internal] 🛠️ Tab-feedback favicon/title animation now stays active through queued/running generation and only resolves on terminal success/failure, including retry handoffs.
 - [x] [Improved] 🧭 Create Trip now focuses on classic + wizard flows, with obsolete lab routes retired and a guided wizard CTA at the bottom of the planner.
 - [x] [Improved] 🧪 Trip diagnostics now show the execution mode (`async_worker` plus legacy sync markers), making tab-independent rollout status directly visible.
 - [ ] [Internal] 🧹 Removed detached legacy create-trip lab components/tests so retired flows no longer add maintenance surface.

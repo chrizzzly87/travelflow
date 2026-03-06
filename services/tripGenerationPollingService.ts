@@ -1,6 +1,14 @@
 import type { ITrip } from '../types';
 import { getTripGenerationState } from './tripGenerationDiagnosticsService';
 
+export const shouldPollTripGenerationState = (
+    trip: ITrip,
+    nowMs: number,
+): boolean => {
+    const state = getTripGenerationState(trip, nowMs);
+    return state === 'running' || state === 'queued';
+};
+
 export const shouldApplyPolledTripUpdate = (
     localTrip: ITrip,
     remoteTrip: ITrip,
@@ -13,4 +21,3 @@ export const shouldApplyPolledTripUpdate = (
     const localState = getTripGenerationState(localTrip, nowMs);
     return remoteState !== localState;
 };
-
