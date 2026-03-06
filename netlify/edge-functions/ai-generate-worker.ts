@@ -820,6 +820,31 @@ const patchQueueRequest = async (
   });
 };
 
+const requeueExpiredLeasedJobs = async (
+  config: { url: string; serviceRoleKey: string },
+): Promise<void> => {
+  const cutoffIso = new Date().toISOString();
+  const endpoint = `/rest/v1/trip_generation_jobs?state=eq.leased&lease_expires_at=lte.${encodeURIComponent(cutoffIso)}`;
+  const response = await serviceFetch(config, endpoint, {
+    method: "PATCH",
+    headers: {
+      Prefer: "return=minimal",
+    },
+    body: JSON.stringify({
+      state: "queued",
+      leased_by: null,
+      lease_expires_at: null,
+      updated_at: cutoffIso,
+    }),
+  });
+  if (response.ok) return;
+  const errorMessage = await extractRpcErrorMessage(response, "Requeue expired leased jobs failed");
+  console.error("[ai-generate-worker] requeue expired leased jobs failed", {
+    status: response.status,
+    error: errorMessage,
+  });
+};
+
 const claimJobs = async (
   config: { url: string; serviceRoleKey: string },
   workerId: string,
@@ -1233,6 +1258,8 @@ export const handleGenerationWorkerRequest = async (request: Request): Promise<R
     ? Math.max(1, Math.min(MAX_JOB_BATCH, Math.round(queryLimit)))
     : 3;
   const workerId = `edge:${crypto.randomUUID()}`;
+
+  await requeueExpiredLeasedJobs(config);
 
   const claimed = await claimJobs(config, workerId, limit);
   if (claimed.error) {
