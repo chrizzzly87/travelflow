@@ -1,5 +1,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+const mocks = vi.hoisted(() => ({
+  processGenerationWorkerRequest: vi.fn(),
+}));
+
+vi.mock('../../netlify/edge-functions/ai-generate-worker.ts', () => ({
+  processGenerationWorkerRequest: (...args: unknown[]) => mocks.processGenerationWorkerRequest(...args),
+}));
+
 import { handler } from '../../netlify/functions/ai-generate-worker-background.js';
 
 const ORIGINAL_ENV = { ...process.env };
@@ -8,6 +16,7 @@ describe('netlify/functions/ai-generate-worker-background', () => {
   afterEach(() => {
     vi.restoreAllMocks();
     process.env = { ...ORIGINAL_ENV };
+    mocks.processGenerationWorkerRequest.mockReset();
   });
 
   it('rejects unauthorized invocations', async () => {
@@ -26,17 +35,16 @@ describe('netlify/functions/ai-generate-worker-background', () => {
     });
   });
 
-  it('proxies authorized invocations to the worker endpoint', async () => {
+  it('processes authorized invocations by calling the worker processor directly', async () => {
     process.env.AI_GENERATION_ASYNC_WORKER_ENABLED = 'true';
     process.env.TF_ADMIN_API_KEY = 'expected-key';
     process.env.URL = 'https://travelflowapp.netlify.app';
-    const fetchMock = vi.fn().mockResolvedValue(
+    mocks.processGenerationWorkerRequest.mockResolvedValue(
       new Response(JSON.stringify({ ok: true, processed: 1 }), {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
       }),
     );
-    vi.stubGlobal('fetch', fetchMock);
 
     const response = await handler({
       headers: { 'x-tf-admin-key': 'expected-key' },
@@ -45,11 +53,11 @@ describe('netlify/functions/ai-generate-worker-background', () => {
 
     expect(response.statusCode).toBe(200);
     expect(JSON.parse(String(response.body))).toEqual({ ok: true, processed: 1 });
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe('https://travelflowapp.netlify.app/api/internal/ai/generation-worker?limit=2');
-    expect(init.method).toBe('POST');
-    expect(init.headers).toMatchObject({
+    expect(mocks.processGenerationWorkerRequest).toHaveBeenCalledTimes(1);
+    const [request] = mocks.processGenerationWorkerRequest.mock.calls[0] as [Request];
+    expect(request.url).toBe('https://travelflowapp.netlify.app/api/internal/ai/generation-worker?limit=2');
+    expect(request.method).toBe('POST');
+    expect(Object.fromEntries(request.headers.entries())).toMatchObject({
       'x-tf-admin-key': 'expected-key',
     });
   });

@@ -107,3 +107,7 @@ summary: "Failed trip generations are now easier to spot, inspect, and retry on 
 - [ ] [Internal] 🛠️ Trip view settings sync now emits only normalized payload deltas and ignores callback-identity churn, further reducing duplicate `user_settings` writes.
 - [ ] [Internal] 🛠️ Visual-diff commit detection now normalizes zoom precision and ignores sub-threshold jitter, reducing repeated idle `upsert_trip` loops.
 - [ ] [Internal] 🛠️ Local Vite dev now proxies async generation-worker requests to Netlify dev and logs explicit guidance when `pnpm dev:netlify` is not running, replacing misleading raw 404 worker errors.
+- [ ] [Internal] 🛠️ Netlify local dev edge startup now correctly parses `trip-og-image`, restoring worker/map-preview routes during `pnpm dev:netlify`.
+- [ ] [Internal] ⚙️ Async generation edge triggers now hand work off to direct background-function processing instead of running provider calls in the edge response path.
+- [ ] [Internal] ⚙️ Async provider timeout and lease budgets are now tuned for the background worker runtime, reducing false 20-second timeouts on slower model responses.
+- [ ] [Internal] 🛠️ Trip view now polls/nudges queued worker jobs less aggressively to cut duplicate request bursts while still surfacing async progress.

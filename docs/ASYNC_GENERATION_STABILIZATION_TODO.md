@@ -3,6 +3,11 @@
 Status date: 2026-03-06
 
 ## Done
+- [x] Fixed local `pnpm dev:netlify` edge-function startup by correcting the TSX generic syntax in `trip-og-image.tsx`, so async worker and map-preview routes load again in Netlify dev.
+- [x] Split the async generation worker into a fast edge dispatcher plus direct background-function processing, so provider execution no longer depends on the edge response window.
+- [x] Raised async provider timeout budget to a slower-model-safe range in the background worker runtime and aligned lease duration with that budget.
+- [x] Reduced queued-trip worker nudges and generation polling cadence in `TripView` to cut redundant request churn while async jobs are in flight.
+- [x] Added unit regressions for edge-dispatch + direct-background worker processing behavior.
 - [x] Fixed route-loader hook ordering so reopening a trip after an initial `trip = null` render no longer crashes with “Rendered more hooks than during the previous render.”
 - [x] Added regression coverage for late-arriving trip props in `TripLoaderRoute`, `SharedTripLoaderRoute`, and `ExampleTripLoaderRoute`.
 - [x] Allowed admin fallback retry/restart actions when admin override editing is enabled, even if the trip is otherwise locked for normal traveler edits.
@@ -21,6 +26,9 @@ Status date: 2026-03-06
 - [x] Added App.tsx decomposition plan draft with phased extraction strategy (`docs/APP_TSX_DECOMPOSITION_PLAN.md`).
 
 ## Open
+- [ ] Redeploy production with the background-worker split so live create/retry runs are no longer capped by the old 20s edge timeout.
+- [ ] Verify in live runtime that fresh create-trip runs complete under the new background worker path instead of timing out at 20s.
+- [ ] Verify in live runtime that retry-triggered worker nudges no longer flood repeated trip fetches while a queued job waits to start.
 - [ ] Verify in live runtime that `user_settings` write bursts are reduced after hook dedupe patch.
 - [ ] Verify in live runtime that completed trips stop generation polling/fetch loops after the stale queued/running state fallback patch.
 - [ ] Verify in live runtime that admin override-enabled trips can restart generation from both the failed banner and Trip Info without disabled-state drift.

@@ -200,7 +200,8 @@ const GENERATION_PROGRESS_MESSAGES = [
     'Structuring your daily timeline...',
     'Finalizing logistics and details...',
 ];
-const TRIP_GENERATION_POLL_INTERVAL_MS = 4_000;
+const TRIP_GENERATION_POLL_INTERVAL_MS = 8_000;
+const TRIP_GENERATION_QUEUE_NUDGE_INTERVAL_MS = 30_000;
 const TRIP_CALENDAR_EXPORT_EVENT_BY_SCOPE: Record<
     TripCalendarExportScope,
     'trip_view__calendar_export--activity' | 'trip_view__calendar_export--activities' | 'trip_view__calendar_export--cities' | 'trip_view__calendar_export--all'
@@ -898,11 +899,13 @@ const useTripViewRender = ({
     const mapViewTransitionName = getExampleMapViewTransitionName(useExampleSharedTransition);
     const titleViewTransitionName = getExampleTitleViewTransitionName(useExampleSharedTransition);
     const tripRef = useRef(trip);
+    const onUpdateTripRef = useRef(onUpdateTrip);
     const retryGenerationTabFeedbackSessionRef = useRef<TripGenerationTabFeedbackSession | null>(null);
     const pendingRetryGenerationStateRef = useRef(false);
     const retryMutationInFlightRef = useRef(false);
     const asyncStallRecoveryAttemptIdRef = useRef<string | null>(null);
     tripRef.current = trip;
+    onUpdateTripRef.current = onUpdateTrip;
     const [generationNowMs, setGenerationNowMs] = useState(() => Date.now());
     const [retryModelId, setRetryModelId] = useState<string>(getDefaultCreateTripModel().id);
     const isReleaseNoticeReady = useReleaseNoticeReady({ suppressReleaseNotice });
@@ -982,7 +985,7 @@ const useTripViewRender = ({
                 const remoteTrip = remote.trip;
                 const localTrip = tripRef.current;
                 if (shouldApplyPolledTripUpdate(localTrip, remoteTrip, Date.now())) {
-                    onUpdateTrip(remoteTrip, { preserveUpdatedAt: true });
+                    onUpdateTripRef.current(remoteTrip, { preserveUpdatedAt: true });
                 }
             } finally {
                 inFlight = false;
@@ -999,7 +1002,6 @@ const useTripViewRender = ({
         };
     }, [
         connectivitySnapshot.state,
-        onUpdateTrip,
         shouldPollGenerationState,
         trip.id,
         tripAccess?.source,
@@ -1008,7 +1010,7 @@ const useTripViewRender = ({
         if (!DB_ENABLED) return undefined;
         if (connectivitySnapshot.state === 'offline') return undefined;
         if (tripAccess?.source === 'public_read') return undefined;
-        if (generationState !== 'queued' && generationState !== 'running') return undefined;
+        if (generationState !== 'queued') return undefined;
         if (latestGenerationAttemptOrchestration !== 'async_worker') return undefined;
 
         let cancelled = false;
@@ -1022,7 +1024,7 @@ const useTripViewRender = ({
         };
 
         kickWorker();
-        const timer = window.setInterval(kickWorker, 15_000);
+        const timer = window.setInterval(kickWorker, TRIP_GENERATION_QUEUE_NUDGE_INTERVAL_MS);
         return () => {
             cancelled = true;
             window.clearInterval(timer);

@@ -70,9 +70,12 @@ const DEFAULT_MODEL = "gpt-5.4";
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MAX_ATTEMPT_HISTORY = 12;
 const MAX_JOB_BATCH = 10;
-// Keep provider timeout safely below edge runtime ceilings to avoid orphaned leased jobs.
-const WORKER_PROVIDER_TIMEOUT_MS = resolveTimeoutMs("AI_GENERATION_ASYNC_PROVIDER_TIMEOUT_MS", 20_000, 10_000, 30_000);
+// Actual provider execution now runs in the background function runtime, so the
+// worker timeout can be long enough for slower models without colliding with the
+// edge response deadline.
+const WORKER_PROVIDER_TIMEOUT_MS = resolveTimeoutMs("AI_GENERATION_ASYNC_PROVIDER_TIMEOUT_MS", 90_000, 20_000, 120_000);
 const WORKER_LEASE_SECONDS = Math.max(45, Math.min(180, Math.ceil((WORKER_PROVIDER_TIMEOUT_MS + 15_000) / 1_000)));
+const BACKGROUND_DISPATCH_TIMEOUT_MS = 10_000;
 
 const CITY_COLORS = [
   "#f43f5e",
@@ -1084,6 +1087,86 @@ const ensureWorkerAuthorized = async (
   };
 };
 
+const resolveRequestedWorkerLimit = (request: Request, mode: "admin" | "user"): number => {
+  const url = new URL(request.url);
+  const queryLimit = Number(url.searchParams.get("limit"));
+  const maxLimit = mode === "admin" ? MAX_JOB_BATCH : 1;
+  return Number.isFinite(queryLimit)
+    ? Math.max(1, Math.min(maxLimit, Math.round(queryLimit)))
+    : (mode === "admin" ? 3 : 1);
+};
+
+const resolveBackgroundWorkerUrl = (request: Request): string => {
+  const origin = new URL(request.url).origin.replace(/\/+$/, "");
+  return `${origin}/.netlify/functions/ai-generate-worker-background`;
+};
+
+const safeReadResponseText = async (response: Response): Promise<string> => {
+  try {
+    return await response.text();
+  } catch {
+    return "";
+  }
+};
+
+const dispatchGenerationWorkerToBackground = async (
+  request: Request,
+  params: {
+    mode: "admin" | "user";
+    limit: number;
+  },
+): Promise<Response> => {
+  const adminKey = readEnv("TF_ADMIN_API_KEY").trim();
+  if (!adminKey) {
+    return json(500, {
+      ok: false,
+      error: "Background worker auth key is missing.",
+      code: "WORKER_DISPATCH_CONFIG_MISSING",
+    });
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), BACKGROUND_DISPATCH_TIMEOUT_MS);
+  try {
+    const dispatchResponse = await fetch(resolveBackgroundWorkerUrl(request), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-tf-admin-key": adminKey,
+        "x-tf-worker-dispatch-mode": params.mode,
+      },
+      body: JSON.stringify({ limit: params.limit }),
+      signal: controller.signal,
+    });
+
+    if (!dispatchResponse.ok) {
+      return json(502, {
+        ok: false,
+        error: "Background worker dispatch failed.",
+        code: "WORKER_DISPATCH_FAILED",
+        details: await safeReadResponseText(dispatchResponse),
+        status: dispatchResponse.status,
+      });
+    }
+
+    return json(202, {
+      ok: true,
+      accepted: true,
+      auth_mode: params.mode,
+      limit: params.limit,
+    });
+  } catch (error) {
+    return json(502, {
+      ok: false,
+      error: "Background worker dispatch failed.",
+      code: "WORKER_DISPATCH_FAILED",
+      details: error instanceof Error ? error.message : "Unknown dispatch error",
+    });
+  } finally {
+    clearTimeout(timeoutId);
+  }
+};
+
 const processJob = async (
   config: { url: string; serviceRoleKey: string },
   workerId: string,
@@ -1494,7 +1577,7 @@ const processJob = async (
   }
 };
 
-export const handleGenerationWorkerRequest = async (request: Request): Promise<Response> => {
+export const processGenerationWorkerRequest = async (request: Request): Promise<Response> => {
   if (request.method !== "POST") {
     return json(405, { ok: false, error: "Method not allowed. Use POST." });
   }
@@ -1525,12 +1608,7 @@ export const handleGenerationWorkerRequest = async (request: Request): Promise<R
     });
   }
 
-  const url = new URL(request.url);
-  const queryLimit = Number(url.searchParams.get("limit"));
-  const maxLimit = auth.mode === "admin" ? MAX_JOB_BATCH : 1;
-  const limit = Number.isFinite(queryLimit)
-    ? Math.max(1, Math.min(maxLimit, Math.round(queryLimit)))
-    : (auth.mode === "admin" ? 3 : 1);
+  const limit = resolveRequestedWorkerLimit(request, auth.mode);
   const workerId = `edge:${crypto.randomUUID()}`;
 
   await requeueExpiredLeasedJobs(config);
@@ -1575,6 +1653,44 @@ export const handleGenerationWorkerRequest = async (request: Request): Promise<R
     succeeded,
     failed,
     jobs: results,
+  });
+};
+
+export const handleGenerationWorkerRequest = async (request: Request): Promise<Response> => {
+  if (request.method !== "POST") {
+    return json(405, { ok: false, error: "Method not allowed. Use POST." });
+  }
+
+  if (!isWorkerEnabled()) {
+    return json(202, {
+      ok: true,
+      skipped: true,
+      reason: "worker_disabled",
+    });
+  }
+
+  const config = getServiceConfig();
+  if (!config) {
+    return json(500, {
+      ok: false,
+      error: "Supabase service configuration is missing.",
+      code: "WORKER_SUPABASE_CONFIG_MISSING",
+    });
+  }
+
+  const auth = await ensureWorkerAuthorized(request, config);
+  if (!auth.authorized) {
+    return json(401, {
+      ok: false,
+      error: "Unauthorized worker request.",
+      code: "WORKER_UNAUTHORIZED",
+    });
+  }
+
+  const limit = resolveRequestedWorkerLimit(request, auth.mode);
+  return dispatchGenerationWorkerToBackground(request, {
+    mode: auth.mode,
+    limit,
   });
 };
 
