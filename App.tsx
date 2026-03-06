@@ -661,9 +661,10 @@ const AppContent: React.FC = () => {
         };
     }, []);
 
+    const canPersistViewSettings = DB_ENABLED && isAuthenticated && access?.isAnonymous !== true;
+
     const handleViewSettingsChange = useCallback((settings: IViewSettings) => {
-        if (!DB_ENABLED) return;
-        if (!isAuthenticated || !access || access.isAnonymous) return;
+        if (!canPersistViewSettings) return;
         const normalized = normalizeSettingsForPersistence(settings);
         const payloadKey = JSON.stringify(normalized);
         if (
@@ -683,7 +684,7 @@ const AppContent: React.FC = () => {
             };
             void persist();
         }, 800);
-    }, [access, isAuthenticated]);
+    }, [canPersistViewSettings]);
 
     const handleUpdateTrip = useCallback((updatedTrip: ITrip, options?: { persist?: boolean; preserveUpdatedAt?: boolean }) => {
         setTrip(updatedTrip);

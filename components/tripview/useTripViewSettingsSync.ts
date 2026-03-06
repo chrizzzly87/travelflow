@@ -1,4 +1,4 @@
-import { useEffect, type Dispatch, type MutableRefObject, type SetStateAction } from 'react';
+import { useEffect, useRef, type Dispatch, type MutableRefObject, type SetStateAction } from 'react';
 
 import { writeLocalStorageItem } from '../../services/browserStorageService';
 import type { IViewSettings, MapStyle, RouteMode } from '../../types';
@@ -35,6 +35,19 @@ interface UseTripViewSettingsSyncOptions {
     prevViewRef: MutableRefObject<IViewSettings | null>;
 }
 
+const toFiniteNumber = (value: unknown, fallback: number): number => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const normalizeSettingsForCallback = (settings: IViewSettings): IViewSettings => ({
+    ...settings,
+    showCityNames: Boolean(settings.showCityNames),
+    zoomLevel: Number(toFiniteNumber(settings.zoomLevel, 1).toFixed(2)),
+    sidebarWidth: Math.round(toFiniteNumber(settings.sidebarWidth, 560)),
+    timelineHeight: Math.round(toFiniteNumber(settings.timelineHeight, 340)),
+});
+
 export const useTripViewSettingsSync = ({
     layoutMode,
     timelineMode,
@@ -65,6 +78,8 @@ export const useTripViewSettingsSync = ({
     appliedViewKeyRef,
     prevViewRef,
 }: UseTripViewSettingsSyncOptions) => {
+    const lastEmittedSettingsKeyRef = useRef<string | null>(null);
+
     useEffect(() => {
         writeLocalStorageItem('tf_map_style', mapStyle);
     }, [mapStyle]);
@@ -95,7 +110,7 @@ export const useTripViewSettingsSync = ({
 
     useEffect(() => {
         const timeoutId = window.setTimeout(() => {
-            const settings: IViewSettings = {
+            const rawSettings: IViewSettings = {
                 layoutMode,
                 timelineMode,
                 timelineView,
@@ -107,8 +122,12 @@ export const useTripViewSettingsSync = ({
                 sidebarWidth,
                 timelineHeight,
             };
+            const settings = normalizeSettingsForCallback(rawSettings);
+            const settingsKey = JSON.stringify(settings);
 
             if (onViewSettingsChange) {
+                if (lastEmittedSettingsKeyRef.current === settingsKey) return;
+                lastEmittedSettingsKeyRef.current = settingsKey;
                 onViewSettingsChange(settings);
             }
 

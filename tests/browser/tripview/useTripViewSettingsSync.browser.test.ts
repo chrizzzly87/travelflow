@@ -163,4 +163,34 @@ describe('components/tripview/useTripViewSettingsSync', () => {
     expect(props.setMapStyle.mock.calls.length).toBe(mapStyleCalls);
     expect(props.setRouteMode.mock.calls.length).toBe(routeModeCalls);
   });
+
+  it('does not re-emit unchanged settings when callback identity changes', () => {
+    vi.useFakeTimers();
+
+    const firstCallback = vi.fn();
+    const secondCallback = vi.fn();
+    const props = makeHookProps();
+    props.onViewSettingsChange = firstCallback;
+
+    const { rerender } = renderHook((hookProps: Parameters<typeof useTripViewSettingsSync>[0]) => {
+      useTripViewSettingsSync(hookProps);
+    }, { initialProps: props });
+
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+    expect(firstCallback).toHaveBeenCalledTimes(1);
+
+    rerender({
+      ...props,
+      onViewSettingsChange: secondCallback,
+    });
+
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+
+    expect(secondCallback).not.toHaveBeenCalled();
+    vi.useRealTimers();
+  });
 });

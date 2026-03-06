@@ -178,7 +178,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
   const isInactiveItem = item.isApproved === false;
   const isInactiveActivity = item.type === 'activity' && isInactiveItem;
   const cityBaseBackgroundHex = cityHex
-      ? shiftHexColor(cityHex, isUncertainCity ? 104 : 88)
+      ? shiftHexColor(cityHex, isUncertainCity ? 86 : 62)
       : null;
   const cityBorderHex = cityHex ? shiftHexColor(cityHex, -20) : null;
   const activityHex = item.type === 'activity'
@@ -221,16 +221,16 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
           backgroundColor: cityBaseBackgroundHex || undefined,
           backgroundImage: isUncertainCity
             ? `linear-gradient(155deg,
-               color-mix(in oklab, ${cityHex} 30%, transparent) 0%,
-                 color-mix(in oklab, ${cityHex} 44%, white 56%) 100%
+               color-mix(in oklab, ${cityHex} 48%, transparent) 0%,
+                 color-mix(in oklab, ${cityHex} 66%, white 34%) 100%
                ),
                repeating-linear-gradient(-45deg,
-                 color-mix(in oklab, ${cityHex} 60%, white 40%) 0 7px,
-                 color-mix(in oklab, ${cityHex} 52%, white 48%) 7px 14px
+                 color-mix(in oklab, ${cityHex} 76%, white 24%) 0 7px,
+                 color-mix(in oklab, ${cityHex} 68%, white 32%) 7px 14px
                )`
             : `linear-gradient(155deg,
-                 color-mix(in oklab, ${cityHex} 42%, white 58%) 0%,
-                 color-mix(in oklab, ${cityHex} 60%, white 40%) 100%
+                 color-mix(in oklab, ${cityHex} 74%, white 26%) 0%,
+                 color-mix(in oklab, ${cityHex} 86%, white 14%) 100%
                )`,
           backgroundOrigin: isUncertainCity ? 'padding-box, border-box' : undefined,
           backgroundClip: isUncertainCity ? 'padding-box, border-box' : undefined,
@@ -245,9 +245,9 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
             : '0 1px 0 rgb(255 255 255 / 0.28)',
           boxShadow: [
             selectedOutline,
-            'inset 0 1px 0 rgb(255 255 255 / 0.32)',
+            'inset 0 1px 0 rgb(255 255 255 / 0.18)',
           ].filter(Boolean).join(', '),
-          opacity: isInactiveItem ? 0.74 : (isUncertainCity ? 0.86 : 0.96),
+          opacity: isInactiveItem ? 0.74 : (isUncertainCity ? 0.92 : 1),
       }
       : (isInactiveActivity && !isLoadingItem
           ? {

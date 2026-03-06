@@ -1575,9 +1575,9 @@ const useTripViewRender = ({
         mapStyle,
         routeMode,
         showCityNames,
-        zoomLevel,
-        sidebarWidth,
-        timelineHeight
+        zoomLevel: Number(zoomLevel.toFixed(2)),
+        sidebarWidth: Math.round(sidebarWidth),
+        timelineHeight: Math.round(timelineHeight)
     }), [layoutMode, timelineMode, timelineView, mapDockMode, mapStyle, routeMode, showCityNames, zoomLevel, sidebarWidth, timelineHeight]);
 
     const tripInfoRetryAnalyticsAttributes = useMemo(

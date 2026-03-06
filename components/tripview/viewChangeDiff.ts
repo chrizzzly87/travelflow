@@ -49,6 +49,8 @@ interface ResolveVisualDiffResult {
     isAutoZoomOnlyChange: boolean;
 }
 
+const normalizeZoomForDiff = (value: number): number => Number(value.toFixed(2));
+
 export const resolveVisualDiff = ({
     previous,
     current,
@@ -74,9 +76,11 @@ export const resolveVisualDiff = ({
     }
     if (previous.timelineView !== current.timelineView) changes.push(`Timeline layout: ${previous.timelineView} → ${current.timelineView}`);
 
-    const didZoomChange = previous.zoomLevel !== current.zoomLevel;
+    const previousZoom = normalizeZoomForDiff(previous.zoomLevel);
+    const currentZoom = normalizeZoomForDiff(current.zoomLevel);
+    const didZoomChange = Math.abs(previousZoom - currentZoom) >= 0.01;
     if (didZoomChange && zoomChangeSource !== 'auto') {
-        changes.push(current.zoomLevel > previous.zoomLevel ? 'Zoomed in' : 'Zoomed out');
+        changes.push(currentZoom > previousZoom ? 'Zoomed in' : 'Zoomed out');
     }
 
     return {
