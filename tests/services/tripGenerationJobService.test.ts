@@ -8,11 +8,16 @@ const inMock = vi.fn();
 const orderMock = vi.fn();
 const limitMock = vi.fn();
 const ensureDbSessionMock = vi.fn().mockResolvedValue(undefined);
+const getSessionMock = vi.fn();
+const fetchMock = vi.fn();
 
 vi.mock('../../services/supabaseClient', () => ({
   supabase: {
     rpc: (...args: unknown[]) => rpcMock(...args),
     from: (...args: unknown[]) => fromMock(...args),
+    auth: {
+      getSession: (...args: unknown[]) => getSessionMock(...args),
+    },
   },
 }));
 
@@ -26,6 +31,7 @@ import {
   isTripGenerationJobActive,
   listTripGenerationJobsByTrip,
   requeueTripGenerationJob,
+  triggerTripGenerationWorker,
 } from '../../services/tripGenerationJobService';
 
 describe('tripGenerationJobService', () => {
@@ -38,6 +44,10 @@ describe('tripGenerationJobService', () => {
     orderMock.mockReset();
     limitMock.mockReset();
     ensureDbSessionMock.mockClear();
+    getSessionMock.mockReset();
+    fetchMock.mockReset();
+    vi.unstubAllEnvs();
+    vi.stubGlobal('fetch', fetchMock);
 
     fromMock.mockReturnValue({
       select: (...args: unknown[]) => selectMock(...args),
@@ -55,6 +65,14 @@ describe('tripGenerationJobService', () => {
     orderMock.mockImplementation(() => ({
       limit: (...args: unknown[]) => limitMock(...args),
     }));
+    getSessionMock.mockResolvedValue({
+      data: {
+        session: {
+          access_token: 'test-access-token',
+        },
+      },
+      error: null,
+    });
   });
 
   it('enqueues a generation job and returns normalized shape', async () => {
@@ -237,5 +255,75 @@ describe('tripGenerationJobService', () => {
       runAfter: '2026-03-06T10:00:00.000Z',
       leaseExpiresAt: '2026-03-06T11:00:00.000Z',
     }, Date.parse('2026-03-06T12:00:00.000Z'))).toBe(false);
+  });
+
+  it('warns with a netlify-dev hint when the worker route is missing in Vite-only dev', async () => {
+    vi.stubGlobal('window', {
+      setTimeout,
+      clearTimeout,
+      location: {
+        hostname: 'localhost',
+      },
+      localStorage: {
+        clear: vi.fn(),
+      },
+      sessionStorage: {
+        clear: vi.fn(),
+      },
+    });
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    fetchMock.mockResolvedValueOnce(new Response('<!doctype html><html><body>Not Found</body></html>', {
+      status: 404,
+      headers: {
+        'Content-Type': 'text/html',
+      },
+    }));
+
+    const result = await triggerTripGenerationWorker({
+      tripId: 'trip-dev-404',
+      source: 'test',
+      force: true,
+    });
+
+    expect(result).toBe(false);
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('pnpm dev:netlify'),
+    );
+    warnSpy.mockRestore();
+  });
+
+  it('warns with a netlify-dev hint when the Vite proxy cannot reach localhost:8888', async () => {
+    vi.stubGlobal('window', {
+      setTimeout,
+      clearTimeout,
+      location: {
+        hostname: 'localhost',
+      },
+      localStorage: {
+        clear: vi.fn(),
+      },
+      sessionStorage: {
+        clear: vi.fn(),
+      },
+    });
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    fetchMock.mockResolvedValueOnce(new Response('Internal Server Error', {
+      status: 500,
+      headers: {
+        'Content-Type': 'text/plain',
+      },
+    }));
+
+    const result = await triggerTripGenerationWorker({
+      tripId: 'trip-dev-500',
+      source: 'test',
+      force: true,
+    });
+
+    expect(result).toBe(false);
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('localhost:8888'),
+    );
+    warnSpy.mockRestore();
   });
 });

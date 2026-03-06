@@ -29,6 +29,14 @@ const toMs = (value: string | null | undefined): number | null => {
 
 const WORKER_TRIGGER_COOLDOWN_MS = 8_000;
 const workerTriggerByTrip = new Map<string, number>();
+const WORKER_TRIGGER_PATH = '/api/internal/ai/generation-worker';
+
+const isLocalDevRuntime = (): boolean => {
+    if (import.meta.env.DEV) return true;
+    if (typeof window === 'undefined') return false;
+    const hostname = window.location.hostname.trim().toLowerCase();
+    return hostname === 'localhost' || hostname === '127.0.0.1';
+};
 
 const asString = (value: unknown): string | null => {
     if (typeof value !== 'string') return null;
@@ -144,7 +152,7 @@ export const triggerTripGenerationWorker = async (input: {
     }, 7_000);
 
     try {
-        const response = await fetch(`/api/internal/ai/generation-worker?limit=${limit}`, {
+        const response = await fetch(`${WORKER_TRIGGER_PATH}?limit=${limit}`, {
             method: 'POST',
             headers: {
                 Authorization: `Bearer ${accessToken}`,
@@ -155,11 +163,32 @@ export const triggerTripGenerationWorker = async (input: {
             keepalive: true,
         });
         if (!response.ok) {
+            if (isLocalDevRuntime()) {
+                const responseText = await response.text().catch(() => '');
+                const looksLikeViteNotFoundPage = response.status === 404
+                    && /<\s*html|<\s*!doctype\s+html/i.test(responseText);
+                const looksLikeViteProxyFailure = response.status === 500
+                    && (!responseText.trim() || responseText.trim() === 'Internal Server Error');
+                if (looksLikeViteNotFoundPage) {
+                    console.warn(
+                        'Trip generation worker route is unavailable in Vite-only dev. Start `pnpm dev:netlify` and either open http://localhost:8888 or keep it running while using http://localhost:5173.',
+                    );
+                } else if (looksLikeViteProxyFailure) {
+                    console.warn(
+                        'Vite could not reach Netlify dev for trip generation worker requests (connection refused on localhost:8888). Start `pnpm dev:netlify` before testing async trip generation.',
+                    );
+                }
+            }
             workerTriggerByTrip.delete(tripId);
             return false;
         }
         return true;
     } catch {
+        if (isLocalDevRuntime()) {
+            console.warn(
+                'Trip generation worker request failed in local dev. Ensure `pnpm dev:netlify` is running for `/api/internal/ai/generation-worker`.',
+            );
+        }
         workerTriggerByTrip.delete(tripId);
         return false;
     } finally {

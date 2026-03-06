@@ -106,3 +106,4 @@ summary: "Failed trip generations are now easier to spot, inspect, and retry on 
 - [ ] [Internal] 🛠️ Admin override-enabled trip views can now restart failed generation even when the trip would otherwise be read-only for normal traveler edits.
 - [ ] [Internal] 🛠️ Trip view settings sync now emits only normalized payload deltas and ignores callback-identity churn, further reducing duplicate `user_settings` writes.
 - [ ] [Internal] 🛠️ Visual-diff commit detection now normalizes zoom precision and ignores sub-threshold jitter, reducing repeated idle `upsert_trip` loops.
+- [ ] [Internal] 🛠️ Local Vite dev now proxies async generation-worker requests to Netlify dev and logs explicit guidance when `pnpm dev:netlify` is not running, replacing misleading raw 404 worker errors.
