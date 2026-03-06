@@ -24,10 +24,17 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
   beforeEach(() => {
     fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);
+    vi.stubEnv('OPENROUTER_API_KEY', '');
+    vi.stubEnv('OPENAI_API_KEY', '');
+    vi.stubEnv('GEMINI_API_KEY', '');
+    vi.stubEnv('VITE_GEMINI_API_KEY', '');
+    vi.stubEnv('ANTHROPIC_API_KEY', '');
+    vi.stubEnv('SITE_URL', '');
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.unstubAllEnvs();
     vi.unstubAllGlobals();
   });
 

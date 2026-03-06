@@ -2625,7 +2625,7 @@ begin
   with picked as (
     select j.id
       from public.trip_generation_jobs j
-     where j.state = 'queued'
+     where (j.state = 'queued' or (j.state = 'leased' and j.lease_expires_at is not null and j.lease_expires_at <= now()))
        and j.run_after <= now()
        and (j.lease_expires_at is null or j.lease_expires_at <= now())
      order by j.priority asc, j.created_at asc
