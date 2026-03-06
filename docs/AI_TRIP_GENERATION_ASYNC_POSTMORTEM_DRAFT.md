@@ -11,9 +11,14 @@ Move trip generation from browser-owned execution to server/worker-owned executi
 This section is intentionally literal. It is derived from `git log` so the document can be used for rollback analysis without reconstructing history from memory.
 
 ### 2.1 Related PR merges already landed on `main`
-1. `f8a6c4f` · 2026-03-05 · Merge pull request #242 from `codex/admin-table-audit-stabilization`
-2. `c2f4bc9` · 2026-03-05 · Merge pull request #243 from `codex/admin-playground-docs-table-guidance`
-3. `b864052` · 2026-03-05 · Merge pull request #244 from `codex/failed-generation-observability-retry-core-final`
+1. `f8a6c4f` · 2026-03-05 · Merge pull request #242 from `codex/admin-table-audit-stabilization` · "Admin: stabilize table pinning, audit diff, and trips pagination"
+2. `c2f4bc9` · 2026-03-05 · Merge pull request #243 from `codex/admin-playground-docs-table-guidance` · "Admin docs/playground: add shared data-table guidance"
+3. `b864052` · 2026-03-05 · Merge pull request #244 from `codex/failed-generation-observability-retry-core-final` · "Core: failed-generation observability and retry finalization"
+
+### 2.1a Related PRs that matter to the incident timeline but were not the final merge vehicle
+1. `#236` · closed, unmerged · `codex/failed-trip-generation-observability-retry` · "Improve failed trip generation diagnostics and retry UX"
+   - This was the original mixed integration PR.
+   - It matters because later hardening work happened after the split-and-ship plan, so rollback analysis must not assume #244 alone contains the entire async migration story.
 
 ### 2.2 Intervening mainline merges that happened while this feature branch was still being hardened
 1. `cd3c4a3` · 2026-03-05 · Merge pull request #245 from `codex/admin-dashboard-stacked-date-scroll`
@@ -76,6 +81,12 @@ From `30afcf43` forward:
 3. `17f1c77` · 2026-03-06 · Fix async worker runtime path and local Netlify dev startup
 4. `04aec9d` · 2026-03-06 · Update async generation postmortem inventory
 5. `f0ee753` · 2026-03-06 · Harden stale success state detection for async trips
+6. `eaf2293` · 2026-03-06 · Refresh async generation postmortem inventory
+7. `b84a68e` · 2026-03-06 · Keep trip manager country enrichment local-only
+8. `0323888` · 2026-03-06 · Gate idle trip view persistence behind manual interactions
+9. `574accf` · 2026-03-06 · Stop stale async trip polling once real content is visible
+10. `9ee484d` · 2026-03-06 · Deepen loaded trip city lane contrast
+11. `e500113` · 2026-03-06 · Dedupe identical trip commits in app runtime
 
 ### 2.5 Why this section matters
 - It separates already-merged PRs from post-merge hardening on the still-open branch.
@@ -95,6 +106,7 @@ From `30afcf43` forward:
 - `components/TripView.tsx`: generation polling/orchestration/runtime protections and visual-commit churn reduction.
 - `components/tripview/useTripViewSettingsSync.ts`: normalized no-op dedupe for settings emissions.
 - `components/tripview/viewChangeDiff.ts`: zoom-jitter diff suppression.
+- `services/tripCommitDeduplicationService.ts`: session-local duplicate commit fingerprinting so identical trip/view payloads do not re-create versions when only `updatedAt` churn changes.
 - `routes/TripLoaderRoute.tsx`, `routes/SharedTripLoaderRoute.tsx`, `routes/ExampleTripLoaderRoute.tsx`: view-settings forwarding dedupe/stability.
 - `App.tsx`: user-settings persistence callback stability/dedupe hardening.
 - `components/TimelineBlock.tsx`: stronger city color rendering (removed washed-out look).
@@ -110,6 +122,7 @@ From `30afcf43` forward:
   - `tests/unit/viewChangeDiff.test.ts`
   - `tests/unit/aiProviderRuntime.test.ts`
   - `tests/unit/aiModelCatalog.test.ts`
+  - `tests/unit/tripCommitDeduplicationService.test.ts`
 
 ## 4. SQL / RPC / schema dependencies
 This branch assumes async-generation DB primitives are already present in the shared Supabase schema (from prior migration commits/rollout), including queue and attempt RPC contracts used by:
@@ -145,7 +158,7 @@ Verification command set:
 
 6. **Idle commit/request churn**
 - Cause: settings callback identity churn + tiny view jitter causing repeated diff/commit cycles.
-- Fix: normalized no-op dedupe in settings sync, App callback stabilization, zoom diff epsilon/normalization.
+- Fix: normalized no-op dedupe in settings sync, App callback stabilization, zoom diff epsilon/normalization, explicit manual-interaction gating for view persistence/visual commits, country-enrichment local-only handling, stale-finished polling cutoff, and final session-local duplicate commit fingerprinting in `App.tsx`.
 
 7. **Local Netlify dev worker routes failed to load**
 - Cause: `trip-og-image.tsx` used a TSX-invalid generic arrow signature, which prevented edge-function startup and left local `/api/internal/ai/generation-worker` routing unavailable.
@@ -158,8 +171,10 @@ Verification command set:
 ## 6. Validation executed
 - `pnpm test:core` => passed (`184` files, `802` tests passed, `1` skipped).
 - `pnpm test:core` => passed (`184` files, `812` tests passed, `1` skipped) after local-dev + background-worker split hardening.
+- `pnpm test:core` => passed (`186` files, `820` tests passed, `1` skipped) after trip-view request-churn hardening and app-level duplicate commit suppression.
 - `pnpm updates:validate` => passed.
 - `pnpm edge:validate` => passed.
+- `pnpm dlx react-doctor@latest . --verbose --diff` => passed with warnings only (score `95/100`).
 - Targeted regression tests for settings/diff/polling passed.
 
 ## 7. Remaining open risks
