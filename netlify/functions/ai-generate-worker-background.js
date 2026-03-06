@@ -49,9 +49,9 @@ const resolveWorkerLimit = (event) => {
 };
 
 const resolveTimeoutMs = () => {
-  const parsed = Number(process.env.AI_GENERATION_ASYNC_TRIGGER_TIMEOUT_MS || "8000");
-  if (!Number.isFinite(parsed)) return 8_000;
-  return Math.max(2_000, Math.min(25_000, Math.round(parsed)));
+  const parsed = Number(process.env.AI_GENERATION_ASYNC_TRIGGER_TIMEOUT_MS || "30000");
+  if (!Number.isFinite(parsed)) return 30_000;
+  return Math.max(5_000, Math.min(120_000, Math.round(parsed)));
 };
 
 const safeJsonBody = async (response) => {

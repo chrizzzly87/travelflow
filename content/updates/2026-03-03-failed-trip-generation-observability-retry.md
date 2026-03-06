@@ -83,3 +83,5 @@ summary: "Failed trip generations are now easier to spot, inspect, and retry on 
 - [ ] [Internal] 🛠️ Worker job claiming now reclaims expired leased jobs, so interrupted runs no longer leave trips permanently stuck in queued/leased states.
 - [ ] [Internal] 🛠️ Worker claim RPC failures now return explicit error payloads instead of silent `claimed: 0` responses, improving production incident diagnosis.
 - [ ] [Internal] ⚙️ Async worker lease/provider timeout defaults are now tuned for edge-runtime safety to reduce long-lived stuck leases after provider hangs.
+- [ ] [Internal] ⚙️ Async enqueue now performs a best-effort authenticated worker kick, and the worker accepts verified user bearer triggers (single-job), reducing stuck queued trips when cron/admin-key wiring drifts.
+- [ ] [Internal] 🛠️ Worker now marks stale superseded queue jobs as skipped so old backlog attempts cannot overwrite newer retry attempts for the same trip.

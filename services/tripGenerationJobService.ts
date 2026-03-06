@@ -21,6 +21,9 @@ interface TripGenerationJobRow {
     updated_at?: unknown;
 }
 
+const WORKER_TRIGGER_COOLDOWN_MS = 8_000;
+const workerTriggerByTrip = new Map<string, number>();
+
 const asString = (value: unknown): string | null => {
     if (typeof value !== 'string') return null;
     const trimmed = value.trim();
@@ -73,6 +76,76 @@ const parseJobSummary = (value: unknown): TripGenerationJobSummary | null => {
     };
 };
 
+const canTriggerWorkerForTrip = (tripId: string, force = false): boolean => {
+    if (force) return true;
+    const now = Date.now();
+    const previous = workerTriggerByTrip.get(tripId) || 0;
+    if (now - previous < WORKER_TRIGGER_COOLDOWN_MS) return false;
+    workerTriggerByTrip.set(tripId, now);
+    return true;
+};
+
+export const triggerTripGenerationWorker = async (input: {
+    tripId: string;
+    limit?: number;
+    source?: string;
+    force?: boolean;
+}): Promise<boolean> => {
+    if (typeof window === 'undefined') return false;
+    if (!supabase) return false;
+    const tripId = input.tripId.trim();
+    if (!tripId) return false;
+    if (!canTriggerWorkerForTrip(tripId, input.force === true)) return false;
+
+    let accessToken = '';
+    try {
+        const { data, error } = await supabase.auth.getSession();
+        if (error) {
+            workerTriggerByTrip.delete(tripId);
+            return false;
+        }
+        accessToken = data.session?.access_token || '';
+    } catch {
+        workerTriggerByTrip.delete(tripId);
+        return false;
+    }
+    if (!accessToken) {
+        workerTriggerByTrip.delete(tripId);
+        return false;
+    }
+
+    const limit = Number.isFinite(Number(input.limit))
+        ? Math.max(1, Math.min(3, Math.round(Number(input.limit))))
+        : 1;
+
+    const timeoutId = window.setTimeout(() => {
+        workerTriggerByTrip.delete(tripId);
+    }, 7_000);
+
+    try {
+        const response = await fetch(`/api/internal/ai/generation-worker?limit=${limit}`, {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+                'Content-Type': 'application/json',
+                'x-tf-worker-kick-source': input.source || 'trip_generation_job_enqueue',
+            },
+            body: '{}',
+            keepalive: true,
+        });
+        if (!response.ok) {
+            workerTriggerByTrip.delete(tripId);
+            return false;
+        }
+        return true;
+    } catch {
+        workerTriggerByTrip.delete(tripId);
+        return false;
+    } finally {
+        window.clearTimeout(timeoutId);
+    }
+};
+
 interface EnqueueTripGenerationJobInput {
     tripId: string;
     attemptId: string;
@@ -99,7 +172,15 @@ export const enqueueTripGenerationJob = async (
         });
         if (error) return null;
         const row = Array.isArray(data) ? data[0] : data;
-        return parseJobSummary(row);
+        const parsed = parseJobSummary(row);
+        if (parsed) {
+            void triggerTripGenerationWorker({
+                tripId: parsed.tripId,
+                limit: 1,
+                source: 'trip_generation_job_enqueue',
+            });
+        }
+        return parsed;
     } catch {
         return null;
     }

@@ -69,8 +69,8 @@ const DEFAULT_MODEL = "gpt-5.4";
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MAX_ATTEMPT_HISTORY = 12;
 const MAX_JOB_BATCH = 10;
-const WORKER_PROVIDER_TIMEOUT_MS = resolveTimeoutMs("AI_GENERATION_ASYNC_PROVIDER_TIMEOUT_MS", 45_000, 10_000, 120_000);
-const WORKER_LEASE_SECONDS = 75;
+const WORKER_PROVIDER_TIMEOUT_MS = resolveTimeoutMs("AI_GENERATION_ASYNC_PROVIDER_TIMEOUT_MS", 20_000, 5_000, 60_000);
+const WORKER_LEASE_SECONDS = 45;
 
 const CITY_COLORS = [
   "bg-rose-100 border-rose-300 text-rose-800",
@@ -164,6 +164,35 @@ const safeJsonParse = async (response: Response): Promise<any> => {
   } catch {
     return null;
   }
+};
+
+const extractBearerToken = (authorizationHeader: string | null): string | null => {
+  if (!authorizationHeader) return null;
+  const match = authorizationHeader.match(/^Bearer\s+(.+)$/i);
+  if (!match) return null;
+  const token = match[1]?.trim();
+  return token ? token : null;
+};
+
+const resolveAuthenticatedWorkerUserId = async (
+  config: { url: string; serviceRoleKey: string },
+  authorizationHeader: string | null,
+): Promise<string | null> => {
+  const token = extractBearerToken(authorizationHeader);
+  if (!token) return null;
+  const response = await serviceFetch(config, "/auth/v1/user", {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  if (!response.ok) return null;
+  const payload = await safeJsonParse(response);
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) return null;
+  const idValue = (payload as Record<string, unknown>).id;
+  return typeof idValue === "string" && idValue.trim().length > 0
+    ? idValue.trim()
+    : null;
 };
 
 export const extractRpcErrorMessage = async (
@@ -888,11 +917,34 @@ const claimJobs = async (
   };
 };
 
-const ensureWorkerAuthorized = (request: Request): boolean => {
+const ensureWorkerAuthorized = async (
+  request: Request,
+  config: { url: string; serviceRoleKey: string },
+): Promise<{ authorized: boolean; mode: "admin" | "user" | "none"; userId: string | null }> => {
   const expected = readEnv("TF_ADMIN_API_KEY").trim();
   const provided = request.headers.get(WORKER_HEADER)?.trim() || "";
-  if (!expected || !provided) return false;
-  return expected === provided;
+  if (expected && provided && expected === provided) {
+    return {
+      authorized: true,
+      mode: "admin",
+      userId: null,
+    };
+  }
+
+  const userId = await resolveAuthenticatedWorkerUserId(config, request.headers.get("authorization"));
+  if (userId) {
+    return {
+      authorized: true,
+      mode: "user",
+      userId,
+    };
+  }
+
+  return {
+    authorized: false,
+    mode: "none",
+    userId: null,
+  };
 };
 
 const processJob = async (
@@ -935,6 +987,51 @@ const processJob = async (
   }
 
   const tripData = tripRow.data;
+  const tripAiMeta = asObject(tripData.aiMeta);
+  const tripGeneration = asObject(tripAiMeta?.generation);
+  const latestAttemptId = asString(asObject(tripGeneration?.latestAttempt)?.id);
+  if (latestAttemptId && latestAttemptId !== payload.attemptId) {
+    const skippedMessage = "Skipped outdated queued attempt because a newer attempt exists.";
+    const attemptLogged = await finishAttempt(config, {
+      p_attempt_id: payload.attemptId,
+      p_state: "failed",
+      p_provider: payload.target.provider || DEFAULT_PROVIDER,
+      p_model: payload.target.model || DEFAULT_MODEL,
+      p_provider_model: null,
+      p_request_id: payload.requestId,
+      p_duration_ms: null,
+      p_status_code: 409,
+      p_failure_kind: "abort",
+      p_error_code: "ASYNC_WORKER_ATTEMPT_SUPERSEDED",
+      p_error_message: skippedMessage,
+      p_metadata: {
+        source: WORKER_SOURCE,
+        superseded_by_attempt_id: latestAttemptId,
+      },
+    });
+    const jobCompleted = await completeJob(config, job.id, workerId);
+    await patchQueueRequest(config, {
+      requestId: payload.queueRequestId,
+      ownerId: job.owner_id,
+      patch: {
+        status: "failed",
+        result_trip_id: job.trip_id,
+        error_message: skippedMessage,
+        updated_at: new Date().toISOString(),
+      },
+    });
+    return {
+      ok: true,
+      jobId: job.id,
+      tripId: job.trip_id,
+      error: !attemptLogged || !jobCompleted
+        ? [
+          !attemptLogged ? "attempt_finish_rpc_failed" : null,
+          !jobCompleted ? "job_complete_rpc_failed" : null,
+        ].filter(Boolean).join(" | ")
+        : undefined,
+    };
+  }
   const provider = payload.target.provider || DEFAULT_PROVIDER;
   const model = payload.target.model || DEFAULT_MODEL;
   const startedAt = Date.now();
@@ -1235,14 +1332,6 @@ export const handleGenerationWorkerRequest = async (request: Request): Promise<R
     });
   }
 
-  if (!ensureWorkerAuthorized(request)) {
-    return json(401, {
-      ok: false,
-      error: "Unauthorized worker request.",
-      code: "WORKER_UNAUTHORIZED",
-    });
-  }
-
   const config = getServiceConfig();
   if (!config) {
     return json(500, {
@@ -1252,11 +1341,21 @@ export const handleGenerationWorkerRequest = async (request: Request): Promise<R
     });
   }
 
+  const auth = await ensureWorkerAuthorized(request, config);
+  if (!auth.authorized) {
+    return json(401, {
+      ok: false,
+      error: "Unauthorized worker request.",
+      code: "WORKER_UNAUTHORIZED",
+    });
+  }
+
   const url = new URL(request.url);
   const queryLimit = Number(url.searchParams.get("limit"));
+  const maxLimit = auth.mode === "admin" ? MAX_JOB_BATCH : 1;
   const limit = Number.isFinite(queryLimit)
-    ? Math.max(1, Math.min(MAX_JOB_BATCH, Math.round(queryLimit)))
-    : 3;
+    ? Math.max(1, Math.min(maxLimit, Math.round(queryLimit)))
+    : (auth.mode === "admin" ? 3 : 1);
   const workerId = `edge:${crypto.randomUUID()}`;
 
   await requeueExpiredLeasedJobs(config);
@@ -1275,6 +1374,7 @@ export const handleGenerationWorkerRequest = async (request: Request): Promise<R
   if (jobs.length === 0) {
     return json(200, {
       ok: true,
+      auth_mode: auth.mode,
       claimed: 0,
       processed: 0,
       succeeded: 0,
@@ -1294,6 +1394,7 @@ export const handleGenerationWorkerRequest = async (request: Request): Promise<R
   const failed = results.length - succeeded;
   return json(200, {
     ok: true,
+    auth_mode: auth.mode,
     claimed: jobs.length,
     processed: results.length,
     succeeded,

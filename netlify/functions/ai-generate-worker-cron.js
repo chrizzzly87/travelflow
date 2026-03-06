@@ -112,7 +112,7 @@ export const handler = async () => {
   }
 
   const workerLimit = resolveInteger(process.env.AI_GENERATION_ASYNC_WORKER_BATCH || "1", 1, 1, 5);
-  const triggerTimeoutMs = resolveInteger(process.env.AI_GENERATION_ASYNC_TRIGGER_TIMEOUT_MS || "8000", 8_000, 2_000, 25_000);
+  const triggerTimeoutMs = resolveInteger(process.env.AI_GENERATION_ASYNC_TRIGGER_TIMEOUT_MS || "30000", 30_000, 5_000, 120_000);
   const invoked = await invokeBackgroundWorker({
     baseUrl,
     adminKey,
