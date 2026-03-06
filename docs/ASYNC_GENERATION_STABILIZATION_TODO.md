@@ -3,6 +3,9 @@
 Status date: 2026-03-06
 
 ## Done
+- [x] Fixed route-loader hook ordering so reopening a trip after an initial `trip = null` render no longer crashes with “Rendered more hooks than during the previous render.”
+- [x] Added regression coverage for late-arriving trip props in `TripLoaderRoute`, `SharedTripLoaderRoute`, and `ExampleTripLoaderRoute`.
+- [x] Allowed admin fallback retry/restart actions when admin override editing is enabled, even if the trip is otherwise locked for normal traveler edits.
 - [x] Added stale local snapshot upload guard so older local queued/running trip data cannot overwrite newer terminal remote generation state.
 - [x] Stabilized route view-settings forwarding to avoid duplicate emissions from unchanged payloads.
 - [x] Added dedupe guard in `useTripViewSettingsSync` so unchanged normalized settings are not re-emitted when callback identities change.
@@ -20,6 +23,7 @@ Status date: 2026-03-06
 ## Open
 - [ ] Verify in live runtime that `user_settings` write bursts are reduced after hook dedupe patch.
 - [ ] Verify in live runtime that completed trips stop generation polling/fetch loops after the stale queued/running state fallback patch.
+- [ ] Verify in live runtime that admin override-enabled trips can restart generation from both the failed banner and Trip Info without disabled-state drift.
 - [ ] Validate city panel color tuning against real generated trips in production preview.
 - [ ] Produce postmortem package for browser -> async worker migration:
   - [x] complete commit/file/SQL change inventory

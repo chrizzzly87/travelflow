@@ -21,7 +21,7 @@ import {
     markTripGenerationRunning,
     withLatestTripGenerationAttemptId,
 } from './tripGenerationDiagnosticsService';
-import type { ITrip, TripGenerationFlow, TripGenerationInputSnapshot } from '../types';
+import type { ITrip, TripGenerationFlow, TripGenerationInputSnapshot, TripGenerationState } from '../types';
 import { enqueueAsyncTripGenerationJob } from './tripGenerationAsyncEnqueueService';
 import { dbGetTrip, dbUpsertTrip, ensureDbSession } from './dbApi';
 import {
@@ -43,6 +43,37 @@ export interface RetryTripGenerationResult {
     state: 'queued' | 'failed';
     error?: unknown;
 }
+
+export interface TripGenerationRetryCapabilityOptions {
+    canEdit: boolean;
+    isAdminFallbackView?: boolean;
+    adminOverrideEnabled?: boolean;
+    canAdminWrite?: boolean;
+    hasInputSnapshot?: boolean;
+    generationState?: TripGenerationState | null;
+    isRetryingGeneration?: boolean;
+    pendingAuthQueueRequestId?: string | null;
+}
+
+const canUseAdminGenerationOverride = (options: TripGenerationRetryCapabilityOptions): boolean => (
+    Boolean(options.isAdminFallbackView && options.adminOverrideEnabled && options.canAdminWrite)
+);
+
+export const canTriggerTripGenerationRetry = (options: TripGenerationRetryCapabilityOptions): boolean => {
+    const hasWriteAccess = options.canEdit || canUseAdminGenerationOverride(options);
+    if (!hasWriteAccess) return false;
+    if (options.isRetryingGeneration) return false;
+    if (options.pendingAuthQueueRequestId) return false;
+    if (!options.hasInputSnapshot) return false;
+    return options.generationState !== 'running' && options.generationState !== 'queued';
+};
+
+export const canTriggerTripGenerationAbortAndRetry = (options: TripGenerationRetryCapabilityOptions): boolean => {
+    const hasWriteAccess = options.canEdit || canUseAdminGenerationOverride(options);
+    if (!hasWriteAccess) return false;
+    if (options.isRetryingGeneration) return false;
+    return Boolean(options.hasInputSnapshot);
+};
 
 const resolveRetryModelTarget = (modelId?: string | null) => {
     if (modelId) {

@@ -306,7 +306,6 @@ export const ExampleTripLoaderRoute: React.FC<ExampleTripLoaderRouteProps> = ({
         navigate(url);
     };
 
-    if (!activeTrip || !activeTrip.isExample) return null;
     const handleRouteViewSettingsChange = useCallback((settings: IViewSettings) => {
         if (areViewSettingsEqual(viewSettings, settings)) return;
         setViewSettings((previous) => {
@@ -315,6 +314,8 @@ export const ExampleTripLoaderRoute: React.FC<ExampleTripLoaderRouteProps> = ({
         });
         onViewSettingsChange(settings);
     }, [onViewSettingsChange, viewSettings]);
+
+    if (!activeTrip || !activeTrip.isExample) return null;
 
     return (
         <TripView

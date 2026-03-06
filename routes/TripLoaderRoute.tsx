@@ -301,10 +301,6 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
         connectivitySnapshot.state,
     ]);
 
-    if (!trip) return null;
-    const adminFallbackAccess = tripAccess?.source === 'admin_fallback' ? tripAccess : undefined;
-    const isPublicReadView = tripAccess?.source === 'public_read';
-    const tripViewKey = `${trip.id}:${adminFallbackAccess ? 'admin-fallback' : isPublicReadView ? 'public-read' : 'default'}`;
     const handleRouteViewSettingsChange = useCallback((settings: IViewSettings) => {
         if (areViewSettingsEqual(latestViewSettingsRef.current, settings)) return;
         hasInSessionViewOverrideRef.current = true;
@@ -312,6 +308,11 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
         setViewSettings(settings);
         onViewSettingsChange(settings);
     }, [onViewSettingsChange]);
+
+    if (!trip) return null;
+    const adminFallbackAccess = tripAccess?.source === 'admin_fallback' ? tripAccess : undefined;
+    const isPublicReadView = tripAccess?.source === 'public_read';
+    const tripViewKey = `${trip.id}:${adminFallbackAccess ? 'admin-fallback' : isPublicReadView ? 'public-read' : 'default'}`;
 
     return (
         <TripView

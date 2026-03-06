@@ -102,5 +102,7 @@ summary: "Failed trip generations are now easier to spot, inspect, and retry on 
 - [ ] [Internal] 🛠️ Trip route view-settings forwarding now deduplicates unchanged payloads and stabilizes callback identity, reducing repeated `user_settings` upserts during idle trip viewing.
 - [ ] [Internal] 🛠️ DB bootstrap upload now skips stale local queued/running snapshots when remote generation is already terminal/newer, preventing completed worker trips from being overwritten back to queued.
 - [x] [Improved] 🎨 Async worker-generated city chips now use the same stronger palette depth as planner-generated trips, avoiding washed-out timeline colors.
+- [x] [Fixed] 🔄 Reopening a newly created trip after background loading resumes no longer crashes the trip page before the itinerary appears.
+- [ ] [Internal] 🛠️ Admin override-enabled trip views can now restart failed generation even when the trip would otherwise be read-only for normal traveler edits.
 - [ ] [Internal] 🛠️ Trip view settings sync now emits only normalized payload deltas and ignores callback-identity churn, further reducing duplicate `user_settings` writes.
 - [ ] [Internal] 🛠️ Visual-diff commit detection now normalizes zoom precision and ignores sub-threshold jitter, reducing repeated idle `upsert_trip` loops.

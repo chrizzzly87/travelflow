@@ -66,7 +66,11 @@ vi.mock('../../services/tripGenerationPersistenceService', () => ({
   waitForTripAttemptPersistence: (...args: unknown[]) => waitForTripAttemptPersistenceMock(...args),
 }));
 
-import { retryTripGenerationWithDefaultModel } from '../../services/tripGenerationRetryService';
+import {
+  canTriggerTripGenerationAbortAndRetry,
+  canTriggerTripGenerationRetry,
+  retryTripGenerationWithDefaultModel,
+} from '../../services/tripGenerationRetryService';
 
 const buildTrip = (): ITrip => ({
   id: 'trip-existing',
@@ -156,6 +160,42 @@ describe('retryTripGenerationWithDefaultModel', () => {
     listOwnerAttemptLogsMock.mockResolvedValue([]);
     listTripGenerationJobsByTripMock.mockResolvedValue([]);
     triggerTripGenerationWorkerMock.mockResolvedValue(true);
+  });
+
+  it('allows admin fallback retry when override editing is enabled', () => {
+    expect(canTriggerTripGenerationRetry({
+      canEdit: false,
+      isAdminFallbackView: true,
+      adminOverrideEnabled: true,
+      canAdminWrite: true,
+      hasInputSnapshot: true,
+      generationState: 'failed',
+      isRetryingGeneration: false,
+      pendingAuthQueueRequestId: null,
+    })).toBe(true);
+  });
+
+  it('blocks admin fallback retry when override editing is disabled', () => {
+    expect(canTriggerTripGenerationRetry({
+      canEdit: false,
+      isAdminFallbackView: true,
+      adminOverrideEnabled: false,
+      canAdminWrite: true,
+      hasInputSnapshot: true,
+      generationState: 'failed',
+      isRetryingGeneration: false,
+      pendingAuthQueueRequestId: null,
+    })).toBe(false);
+    expect(canTriggerTripGenerationAbortAndRetry({
+      canEdit: false,
+      isAdminFallbackView: true,
+      adminOverrideEnabled: false,
+      canAdminWrite: true,
+      hasInputSnapshot: true,
+      generationState: 'running',
+      isRetryingGeneration: false,
+      pendingAuthQueueRequestId: null,
+    })).toBe(false);
   });
 
   it('retries on same trip id and forces default model target via async enqueue', async () => {

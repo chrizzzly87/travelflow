@@ -65,6 +65,7 @@ export interface TripInfoModalProps {
     generationState?: TripGenerationState | null;
     latestGenerationAttempt?: TripGenerationAttemptSummary | null;
     canRetryGeneration?: boolean;
+    retryDisabledReason?: string | null;
     isRetryingGeneration?: boolean;
     onRetryGeneration?: (modelId?: string | null) => void;
     retryModelId?: string | null;
@@ -112,6 +113,7 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
     generationState = null,
     latestGenerationAttempt = null,
     canRetryGeneration = false,
+    retryDisabledReason = null,
     isRetryingGeneration = false,
     onRetryGeneration,
     retryModelId = null,
@@ -222,7 +224,7 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
         && typeof latestAttemptMetadata.requestPayload === 'object'
     ) ? latestAttemptMetadata.requestPayload as Record<string, unknown> : null;
     const inputSnapshot = aiMeta?.generation?.inputSnapshot || null;
-    const retryDisabledReason = (
+    const resolvedRetryDisabledReason = retryDisabledReason || (
         isRetryingGeneration
             ? 'Retry is already in progress.'
             : !aiMeta?.generation?.inputSnapshot
@@ -543,7 +545,7 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                             )}
                             <span
                                 className="inline-flex"
-                                title={retryDisabledReason || t('tripView.generation.tripInfo.retry')}
+                                title={resolvedRetryDisabledReason || t('tripView.generation.tripInfo.retry')}
                             >
                                 <button
                                     type="button"

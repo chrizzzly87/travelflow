@@ -190,6 +190,24 @@ describe('routes/TripLoaderRoute', () => {
     expect(mocks.navigate).not.toHaveBeenCalled();
   });
 
+  it('does not change hook order when the trip prop appears after initial null render', async () => {
+    const resolvedTrip = makeTrip({ id: 'trip-late-load', title: 'Late load trip' });
+    const props = makeRouteProps();
+    const view = render(React.createElement(TripLoaderRoute, props));
+
+    expect(mocks.renderedTripViewProps).toBeNull();
+    expect(() => {
+      view.rerender(React.createElement(TripLoaderRoute, {
+        ...props,
+        trip: resolvedTrip,
+      }));
+    }).not.toThrow();
+
+    await waitFor(() => {
+      expect(mocks.renderedTripViewProps?.trip).toEqual(resolvedTrip);
+    });
+  });
+
   it('loads local trip immediately when connectivity is offline', async () => {
     mocks.dbEnabled = true;
     mocks.connectivityState = 'offline';

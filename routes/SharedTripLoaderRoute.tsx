@@ -328,7 +328,6 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
         navigate(buildTripUrl(cloned.id));
     };
 
-    if (!trip) return null;
     const handleRouteViewSettingsChange = useCallback((settings: IViewSettings) => {
         const currentViewSettings = routeState.viewSettings;
         if (areViewSettingsEqual(currentViewSettings, settings)) return;
@@ -336,6 +335,8 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
         setRouteState((prev) => ({ ...prev, viewSettings: settings }));
         onViewSettingsChange(settings);
     }, [onViewSettingsChange, routeState.viewSettings]);
+
+    if (!trip) return null;
 
     return (
         <TripView

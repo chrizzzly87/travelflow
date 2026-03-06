@@ -85,7 +85,11 @@ import {
     getTripGenerationState,
     markTripGenerationFailed,
 } from '../services/tripGenerationDiagnosticsService';
-import { retryTripGenerationWithDefaultModel } from '../services/tripGenerationRetryService';
+import {
+    canTriggerTripGenerationAbortAndRetry,
+    canTriggerTripGenerationRetry,
+    retryTripGenerationWithDefaultModel,
+} from '../services/tripGenerationRetryService';
 import { abortActiveTripGenerationRequest } from '../services/aiService';
 import { buildBenchmarkScenarioImportUrl } from '../services/tripGenerationBenchmarkBridge';
 import { beginTripGenerationTabFeedback, type TripGenerationTabFeedbackSession } from '../services/tripGenerationTabFeedbackService';
@@ -928,6 +932,7 @@ const useTripViewRender = ({
     );
     const expectedCityLaneCount = displayTrip.items.filter((item) => item.type === 'city').length;
     const canEnableAdminOverride = isAdminFallbackView && Boolean(adminAccess?.canAdminWrite);
+    const canUseAdminGenerationOverride = isAdminFallbackView && adminOverrideEnabled && Boolean(adminAccess?.canAdminWrite);
     const generationState = useMemo<TripGenerationState>(
         () => getTripGenerationState(trip, generationNowMs),
         [generationNowMs, trip]
@@ -1556,16 +1561,53 @@ const useTripViewRender = ({
         });
     }, [initialViewSettings, onCommitState, onUpdateTrip, showToast, t, trip.defaultView, trip.id]);
 
-    const canRetryGeneration = canEdit
-        && !isRetryingGeneration
-        && !pendingAuthQueueRequestId
-        && Boolean(trip.aiMeta?.generation?.inputSnapshot)
-        && generationState !== 'running'
-        && generationState !== 'queued';
-    const canAbortAndRetryGeneration = canEdit
-        && !isRetryingGeneration
-        && Boolean(trip.aiMeta?.generation?.inputSnapshot)
-        && isGenerationSlow;
+    const canRetryGeneration = canTriggerTripGenerationRetry({
+        canEdit,
+        isAdminFallbackView,
+        adminOverrideEnabled,
+        canAdminWrite: adminAccess?.canAdminWrite,
+        hasInputSnapshot: Boolean(trip.aiMeta?.generation?.inputSnapshot),
+        generationState,
+        isRetryingGeneration,
+        pendingAuthQueueRequestId,
+    });
+    const canAbortAndRetryGeneration = isGenerationSlow && canTriggerTripGenerationAbortAndRetry({
+        canEdit,
+        isAdminFallbackView,
+        adminOverrideEnabled,
+        canAdminWrite: adminAccess?.canAdminWrite,
+        hasInputSnapshot: Boolean(trip.aiMeta?.generation?.inputSnapshot),
+        generationState,
+        isRetryingGeneration,
+        pendingAuthQueueRequestId,
+    });
+    const retryDisabledReason = useMemo(() => {
+        if (!trip.aiMeta?.generation?.inputSnapshot) {
+            return t('tripView.generation.retry.missingSnapshot');
+        }
+        if (generationState === 'running' || generationState === 'queued') {
+            return t('tripView.generation.strip.running');
+        }
+        if (isAdminFallbackView && !adminOverrideEnabled) {
+            return 'Enable admin editing override to restart generation.';
+        }
+        if (isAdminFallbackView && !adminAccess?.canAdminWrite) {
+            return 'You do not have trip write permission, so generation restart is unavailable.';
+        }
+        if (!(canEdit || canUseAdminGenerationOverride)) {
+            return t('tripView.generation.retry.readOnly');
+        }
+        return null;
+    }, [
+        adminAccess?.canAdminWrite,
+        adminOverrideEnabled,
+        canEdit,
+        canUseAdminGenerationOverride,
+        generationState,
+        isAdminFallbackView,
+        t,
+        trip.aiMeta?.generation?.inputSnapshot,
+    ]);
 
     const currentViewSettings: IViewSettings = useMemo(() => ({
         layoutMode,
@@ -1625,8 +1667,13 @@ const useTripViewRender = ({
                 model_id: selectedRetryModelId || 'default',
             });
         }
-        if (!canEdit) {
-            showToast(t('tripView.generation.retry.readOnly'), {
+        if (!(canEdit || canUseAdminGenerationOverride)) {
+            const message = isAdminFallbackView && !adminOverrideEnabled
+                ? 'Enable admin editing override to restart generation.'
+                : isAdminFallbackView && !adminAccess?.canAdminWrite
+                    ? 'You do not have trip write permission, so generation restart is unavailable.'
+                    : t('tripView.generation.retry.readOnly');
+            showToast(message, {
                 tone: 'neutral',
                 title: t('tripView.generation.retry.readOnlyTitle'),
             });
@@ -1710,8 +1757,10 @@ const useTripViewRender = ({
             }
         }
     }, [
+        adminAccess?.canAdminWrite,
         adminOverrideEnabled,
         canEdit,
+        canUseAdminGenerationOverride,
         currentViewSettings,
         isAdminFallbackView,
         isRetryingGeneration,
@@ -2805,6 +2854,7 @@ const useTripViewRender = ({
                         generationState={generationState}
                         latestGenerationAttempt={latestGenerationAttempt}
                         canRetryGeneration={canRetryGeneration}
+                        retryDisabledReason={retryDisabledReason}
                         isRetryingGeneration={isRetryingGeneration}
                         retryModelId={retryModelId}
                         onRetryModelIdChange={setRetryModelId}

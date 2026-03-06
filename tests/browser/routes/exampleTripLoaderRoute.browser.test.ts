@@ -196,6 +196,28 @@ describe('routes/ExampleTripLoaderRoute', () => {
     expect(props.onTripLoaded).not.toHaveBeenCalled();
   });
 
+  it('does not change hook order when the example trip prop appears after initial null render', async () => {
+    const resolvedTrip = makeTrip({
+      id: 'example-late-load',
+      title: 'Example late load',
+      isExample: true,
+      exampleTemplateId: 'template-1',
+    });
+    const props = makeRouteProps();
+    const view = render(React.createElement(ExampleTripLoaderRoute, props));
+
+    expect(() => {
+      view.rerender(React.createElement(ExampleTripLoaderRoute, {
+        ...props,
+        trip: resolvedTrip,
+      }));
+    }).not.toThrow();
+
+    await waitFor(() => {
+      expect(latestTripViewProps()?.trip).toEqual(resolvedTrip);
+    });
+  });
+
   it('handles copy and create-similar actions through TripView callbacks', async () => {
     const activeTrip = makeTrip({
       id: 'example-active',
