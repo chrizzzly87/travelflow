@@ -50,6 +50,15 @@ import { normalizeTransportMode } from './shared/transportModes';
 import { showAppToast } from './components/ui/appToast';
 import { getTripGenerationState } from './services/tripGenerationDiagnosticsService';
 import {
+    buildTripCommitFingerprint,
+    createTripCommitDeduplicationState,
+    markTripCommitFingerprintCompleted,
+    markTripCommitFingerprintFailed,
+    markTripCommitFingerprintStarted,
+    resetTripCommitDeduplicationState,
+    shouldSkipTripCommitFingerprint,
+} from './services/tripCommitDeduplicationService';
+import {
     listTripGenerationCompletionWatches,
     removeTripGenerationCompletionWatch,
     subscribeTripGenerationCompletionWatches,
@@ -78,6 +87,8 @@ const normalizeSettingsForPersistence = (settings: IViewSettings): Required<Pick
     sidebarWidth: Math.round(toFiniteNumber(settings.sidebarWidth, 560)),
     timelineHeight: Math.round(toFiniteNumber(settings.timelineHeight, 340)),
 });
+
+type TripCommitOutcome = 'remote' | 'queued' | 'permission_denied';
 
 const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
     moduleKey: string,
@@ -699,6 +710,11 @@ const AppContent: React.FC = () => {
             return updatedTrip;
         });
     }, []);
+    const tripCommitDeduplicationRef = useRef(createTripCommitDeduplicationState());
+
+    useEffect(() => {
+        resetTripCommitDeduplicationState(tripCommitDeduplicationRef.current);
+    }, [trip?.id]);
 
     const enqueueTripCommitFallback = useCallback((updatedTrip: ITrip, view: IViewSettings | undefined, label: string) => {
         enqueueTripCommitAndSync({
@@ -713,41 +729,54 @@ const AppContent: React.FC = () => {
         updatedTrip: ITrip,
         view: IViewSettings | undefined,
         label: string,
-    ): Promise<boolean> => {
+    ): Promise<TripCommitOutcome> => {
         const canAttemptRemote = DB_ENABLED && connectivitySnapshot.state === 'online';
         if (!canAttemptRemote) {
             enqueueTripCommitFallback(updatedTrip, view, label);
-            return false;
+            return 'queued';
         }
 
         const sessionId = await ensureDbSession();
         if (!sessionId) {
             enqueueTripCommitFallback(updatedTrip, view, label);
-            return false;
+            return 'queued';
         }
 
         const upsertResult = await dbUpsertTripWithStatus(updatedTrip, view);
         if (!upsertResult.tripId) {
             if (upsertResult.isPermissionError) {
-                return false;
+                return 'permission_denied';
             }
             enqueueTripCommitFallback(updatedTrip, view, label);
-            return false;
+            return 'queued';
         }
         const versionId = await dbCreateTripVersion(updatedTrip, view, label);
         if (!versionId) {
             enqueueTripCommitFallback(updatedTrip, view, label);
-            return false;
+            return 'queued';
         }
-        return true;
+        return 'remote';
     }, [connectivitySnapshot.state, enqueueTripCommitFallback]);
 
     const handleCommitState = (updatedTrip: ITrip, view: IViewSettings | undefined, options?: { replace?: boolean; label?: string; adminOverride?: boolean }) => {
         const label = options?.label || 'Updated trip';
         const commitTs = Date.now();
+        const commitFingerprint = buildTripCommitFingerprint({
+            trip: updatedTrip,
+            view,
+            label,
+            adminOverride: options?.adminOverride === true,
+        });
+
+        if (shouldSkipTripCommitFingerprint(tripCommitDeduplicationRef.current, commitFingerprint)) {
+            return;
+        }
+
+        markTripCommitFingerprintStarted(tripCommitDeduplicationRef.current, commitFingerprint);
 
         if (!DB_ENABLED) {
             createLocalHistoryEntry(navigate, updatedTrip, view, label, options, commitTs);
+            markTripCommitFingerprintCompleted(tripCommitDeduplicationRef.current, commitFingerprint);
             return;
         }
 
@@ -756,12 +785,24 @@ const AppContent: React.FC = () => {
         const commit = async () => {
             if (options?.adminOverride) {
                 const sessionId = await ensureDbSession();
-                if (!sessionId) return;
+                if (!sessionId) {
+                    markTripCommitFingerprintFailed(tripCommitDeduplicationRef.current, commitFingerprint);
+                    return;
+                }
                 const overrideCommit = await dbAdminOverrideTripCommit(updatedTrip, view, label);
-                if (!overrideCommit?.tripId || !overrideCommit.versionId) return;
+                if (!overrideCommit?.tripId || !overrideCommit.versionId) {
+                    markTripCommitFingerprintFailed(tripCommitDeduplicationRef.current, commitFingerprint);
+                    return;
+                }
+                markTripCommitFingerprintCompleted(tripCommitDeduplicationRef.current, commitFingerprint);
                 return;
             }
-            await commitOwnedTripResilient(updatedTrip, view, label);
+            const outcome = await commitOwnedTripResilient(updatedTrip, view, label);
+            if (outcome === 'remote' || outcome === 'queued') {
+                markTripCommitFingerprintCompleted(tripCommitDeduplicationRef.current, commitFingerprint);
+                return;
+            }
+            markTripCommitFingerprintFailed(tripCommitDeduplicationRef.current, commitFingerprint);
         };
 
         void commit();

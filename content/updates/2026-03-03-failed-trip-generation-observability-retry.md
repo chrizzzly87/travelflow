@@ -104,6 +104,7 @@ summary: "Failed trip generations are now easier to spot, inspect, and retry on 
 - [ ] [Internal] 🛠️ Finished async trips now stop polling even when stale queued/running metadata lingers, as long as real itinerary content is already visible and no explicit newer retry is active.
 - [ ] [Internal] 🛠️ DB bootstrap upload now skips stale local queued/running snapshots when remote generation is already terminal/newer, preventing completed worker trips from being overwritten back to queued.
 - [ ] [Internal] 🛠️ My Trips country enrichment now stays local-only instead of writing cosmetic country metadata back to the remote trip row on sidebar open.
+- [ ] [Internal] 🛠️ App-level trip commit dedupe now ignores repeated identical trip/view payloads when only top-level `updatedAt` churn changes, reducing repeated `upsert_trip` / `add_trip_version` writes on settled trips.
 - [x] [Improved] 🎨 Async worker-generated city chips now use the same stronger palette depth as planner-generated trips, avoiding washed-out timeline colors.
 - [x] [Improved] 🎨 Trip city lanes now keep stronger contrast after loading, so finished itineraries no longer fade toward near-white pastels.
 - [x] [Fixed] 🔄 Reopening a newly created trip after background loading resumes no longer crashes the trip page before the itinerary appears.

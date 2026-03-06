@@ -25,7 +25,8 @@ Status date: 2026-03-06
 - [x] Kept Trip Manager country enrichment local-only so opening My Trips no longer writes cosmetic country metadata back to the remote trip row.
 - [x] Gated view-settings persistence and visual history commits behind explicit manual interactions so auto-fit/layout settling no longer looks like a user edit.
 - [x] Treat queued/running async metadata as terminal success when real itinerary content is already visible and there is no explicit newer retry intent, cutting off stale finished-trip polling loops.
-- [x] Full regression run completed after changes (`pnpm test:core`: 184 files, 802 passed, 1 skipped).
+- [x] Added session-local trip commit dedupe in `App.tsx` so identical trip/view commits no longer create repeated `upsert_trip` / `add_trip_version` churn when only top-level `updatedAt` changes.
+- [x] Full regression run completed after changes (`pnpm test:core`: 186 files, 820 passed, 1 skipped).
 - [x] Added draft postmortem document with commit/file inventory and incident/fix mapping (`docs/AI_TRIP_GENERATION_ASYNC_POSTMORTEM_DRAFT.md`).
 - [x] Added runtime user-flow architecture charts for async generation paths (`docs/AI_TRIP_GENERATION_RUNTIME_USERFLOWS.md`).
 - [x] Added App.tsx decomposition plan draft with phased extraction strategy (`docs/APP_TSX_DECOMPOSITION_PLAN.md`).
