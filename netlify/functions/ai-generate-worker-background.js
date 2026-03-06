@@ -1,5 +1,3 @@
-import { handleGenerationWorkerRequest } from "../edge-functions/ai-generate-worker.ts";
-
 const normalizeFlag = (value) => {
   if (typeof value !== "string") return "";
   return value.trim().toLowerCase();
@@ -50,6 +48,26 @@ const resolveWorkerLimit = (event) => {
   return 1;
 };
 
+const resolveTimeoutMs = () => {
+  const parsed = Number(process.env.AI_GENERATION_ASYNC_TRIGGER_TIMEOUT_MS || "8000");
+  if (!Number.isFinite(parsed)) return 8_000;
+  return Math.max(2_000, Math.min(25_000, Math.round(parsed)));
+};
+
+const safeJsonBody = async (response) => {
+  const text = await response.text();
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return {
+      ok: response.ok,
+      status: response.status,
+      body: text,
+    };
+  }
+};
+
 export const handler = async (event) => {
   if (!isEnabled(process.env.AI_GENERATION_ASYNC_WORKER_ENABLED || "")) {
     return jsonResponse(200, {
@@ -71,23 +89,30 @@ export const handler = async (event) => {
 
   const workerLimit = resolveWorkerLimit(event);
   const workerUrl = `${resolveWorkerUrl(event)}?limit=${workerLimit}`;
-  const request = new Request(workerUrl, {
-    method: "POST",
-    headers: {
-      "x-tf-admin-key": expectedKey,
-      "Content-Type": "application/json",
-    },
-    body: "{}",
-  });
-
-  const response = await handleGenerationWorkerRequest(request);
-  const body = await response.text();
-  return {
-    statusCode: response.status,
-    headers: {
-      "Content-Type": "application/json; charset=utf-8",
-      "Cache-Control": "no-store",
-    },
-    body,
-  };
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), resolveTimeoutMs());
+  try {
+    const response = await fetch(workerUrl, {
+      method: "POST",
+      headers: {
+        "x-tf-admin-key": expectedKey,
+        "Content-Type": "application/json",
+      },
+      body: "{}",
+      signal: controller.signal,
+    });
+    const payload = await safeJsonBody(response);
+    return jsonResponse(response.status, payload ?? { ok: response.ok });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Background worker invocation failed.";
+    return jsonResponse(502, {
+      ok: false,
+      code: "WORKER_INVOKE_FAILED",
+      error: message,
+    });
+  } finally {
+    clearTimeout(timeoutId);
+  }
 };
+
+export default handler;

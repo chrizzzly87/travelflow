@@ -29,6 +29,21 @@ const resolveInteger = (rawValue, fallback, min, max) => {
   return Math.max(min, Math.min(max, Math.round(parsed)));
 };
 
+const tryParseJson = (value) => {
+  if (typeof value !== "string" || !value.trim()) return null;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
+};
+
+const jsonResponse = (statusCode, payload) => ({
+  statusCode,
+  headers: JSON_HEADERS,
+  body: JSON.stringify(payload),
+});
+
 const invokeBackgroundWorker = async (params) => {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => {
@@ -48,39 +63,38 @@ const invokeBackgroundWorker = async (params) => {
       }),
       signal: controller.signal,
     });
-    const body = await response.text();
+    const bodyText = await response.text();
+    const parsed = tryParseJson(bodyText);
     return {
-      status: response.status,
-      body,
+      statusCode: response.status,
+      payload: parsed ?? {
+        ok: response.ok,
+        status: response.status,
+        body: bodyText || null,
+      },
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Background worker trigger failed";
     return {
-      status: 202,
-      body: JSON.stringify({
+      statusCode: 202,
+      payload: {
         ok: true,
         accepted: false,
         error: message,
-      }),
+      },
     };
   } finally {
     clearTimeout(timeoutId);
   }
 };
 
-const json = (status, payload) =>
-  new Response(JSON.stringify(payload), {
-    status,
-    headers: JSON_HEADERS,
-  });
-
 export const config = {
   schedule: "*/1 * * * *",
 };
 
-export default async () => {
+export const handler = async () => {
   if (!isEnabled(process.env.AI_GENERATION_ASYNC_WORKER_ENABLED || "")) {
-    return json(200, {
+    return jsonResponse(200, {
       ok: true,
       skipped: true,
       reason: "worker_disabled",
@@ -90,7 +104,7 @@ export default async () => {
   const adminKey = (process.env.TF_ADMIN_API_KEY || "").trim();
   const baseUrl = resolveBaseUrl();
   if (!adminKey || !baseUrl) {
-    return json(200, {
+    return jsonResponse(200, {
       ok: true,
       skipped: true,
       reason: "missing_configuration",
@@ -106,8 +120,5 @@ export default async () => {
     timeoutMs: triggerTimeoutMs,
   });
 
-  return new Response(invoked.body, {
-    status: invoked.status,
-    headers: JSON_HEADERS,
-  });
+  return jsonResponse(invoked.statusCode, invoked.payload);
 };
