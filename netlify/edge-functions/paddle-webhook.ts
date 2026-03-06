@@ -74,6 +74,8 @@ interface WebhookProcessResult {
   userId: string | null;
 }
 
+type WebhookSyncMode = 'full' | 'verify_only';
+
 const readEnv = (name: string): string => {
   try {
     return (globalThis as { Deno?: { env?: { get: (key: string) => string | undefined } } }).Deno?.env?.get(name) || '';
@@ -577,6 +579,12 @@ const getWebhookSignatureMaxAgeSeconds = (): number => {
   return Math.max(30, Math.min(raw, 30 * 60));
 };
 
+const getWebhookSyncMode = (): WebhookSyncMode => {
+  const normalized = readEnv('PADDLE_WEBHOOK_SYNC_MODE').trim().toLowerCase();
+  if (normalized === 'verify_only') return 'verify_only';
+  return 'full';
+};
+
 export default async (request: Request): Promise<Response> => {
   if (request.method !== 'POST') {
     return json(405, { ok: false, error: 'Method not allowed.' });
@@ -586,11 +594,7 @@ export default async (request: Request): Promise<Response> => {
   if (!webhookSecret) {
     return json(500, { ok: false, error: 'Paddle webhook secret is not configured.' });
   }
-
-  const supabaseConfig = getSupabaseServiceConfig();
-  if (!supabaseConfig) {
-    return json(500, { ok: false, error: 'Supabase service role configuration missing.' });
-  }
+  const syncMode = getWebhookSyncMode();
 
   const rawBody = await request.text();
   const nowMs = Date.now();
@@ -623,6 +627,23 @@ export default async (request: Request): Promise<Response> => {
 
   if (!eventId || !eventType) {
     return json(400, { ok: false, error: 'Webhook payload missing event_id or event_type.' });
+  }
+
+  if (syncMode === 'verify_only') {
+    return json(200, {
+      ok: true,
+      status: 'ignored',
+      reason: 'Webhook verified in verify_only mode; database sync skipped.',
+      eventId,
+      eventType,
+      occurredAtIso,
+      syncMode,
+    });
+  }
+
+  const supabaseConfig = getSupabaseServiceConfig();
+  if (!supabaseConfig) {
+    return json(500, { ok: false, error: 'Supabase service role configuration missing.' });
   }
 
   try {
@@ -660,6 +681,7 @@ export default async (request: Request): Promise<Response> => {
       status: processResult.status,
       reason: processResult.reason,
       userId: processResult.userId,
+      syncMode,
     });
   } catch (error) {
     const message = error instanceof Error && error.message
@@ -685,6 +707,7 @@ export default async (request: Request): Promise<Response> => {
 
 export const __paddleWebhookInternals = {
   coalesceDate,
+  getWebhookSyncMode,
   resolveEventTimestamp,
   shouldIgnoreAsStale,
 };
