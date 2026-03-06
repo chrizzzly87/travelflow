@@ -1392,6 +1392,20 @@ create index if not exists trip_generation_attempts_owner_started_idx on public.
 create index if not exists trip_generation_attempts_request_idx on public.trip_generation_attempts(request_id);
 create index if not exists trip_generation_attempts_state_started_idx on public.trip_generation_attempts(state, started_at desc);
 create unique index if not exists trip_generation_jobs_attempt_uidx on public.trip_generation_jobs(attempt_id);
+do $$
+begin
+  if not exists (
+    select 1
+      from pg_constraint c
+     where c.conname = 'trip_generation_jobs_attempt_key'
+       and c.conrelid = 'public.trip_generation_jobs'::regclass
+  ) then
+    alter table public.trip_generation_jobs
+      add constraint trip_generation_jobs_attempt_key
+      unique using index trip_generation_jobs_attempt_uidx;
+  end if;
+end;
+$$;
 create index if not exists trip_generation_jobs_state_run_after_idx on public.trip_generation_jobs(state, run_after, priority, created_at);
 create index if not exists trip_generation_jobs_owner_created_idx on public.trip_generation_jobs(owner_id, created_at desc);
 create index if not exists trip_generation_jobs_trip_created_idx on public.trip_generation_jobs(trip_id, created_at desc);
@@ -2483,7 +2497,7 @@ begin
     0,
     greatest(coalesce(p_max_retries, 3), 0)
   )
-  on conflict (attempt_id)
+  on conflict on constraint trip_generation_jobs_attempt_key
   do update
      set state = case
        when public.trip_generation_jobs.state in ('completed', 'failed', 'dead')
