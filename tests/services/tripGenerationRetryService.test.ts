@@ -146,4 +146,19 @@ describe('retryTripGenerationWithDefaultModel', () => {
     expect(result.trip.aiMeta?.generation?.latestAttempt?.errorMessage).toContain('Could not enqueue async generation retry');
     expect(finishAttemptLogMock).toHaveBeenCalledTimes(1);
   });
+
+  it('does not enqueue when retry attempt log could not be initialized', async () => {
+    startAttemptLogMock.mockResolvedValue(null);
+
+    const result = await retryTripGenerationWithDefaultModel(buildTrip(), {
+      source: 'trip_status_strip',
+    });
+
+    expect(result.state).toBe('failed');
+    expect(result.trip.id).toBe('trip-existing');
+    expect(result.trip.aiMeta?.generation?.state).toBe('failed');
+    expect(result.trip.aiMeta?.generation?.latestAttempt?.errorMessage).toContain('Retry attempt could not be initialized');
+    expect(enqueueAsyncTripGenerationJobMock).not.toHaveBeenCalled();
+    expect(finishAttemptLogMock).not.toHaveBeenCalled();
+  });
 });
