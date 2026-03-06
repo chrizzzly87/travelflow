@@ -25,12 +25,14 @@ describe('ai-generate-worker claim handling', () => {
       SUPABASE_SERVICE_ROLE_KEY: 'service-role-secret',
     });
 
-    const fetchMock = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify({ message: 'trip_generation_job_claim failed' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      }),
-    );
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ message: 'trip_generation_job_claim failed' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      );
     vi.stubGlobal('fetch', fetchMock);
 
     const request = new Request('https://travelflowapp.netlify.app/api/internal/ai/generation-worker?limit=2', {
@@ -52,6 +54,6 @@ describe('ai-generate-worker claim handling', () => {
       error: 'trip_generation_job_claim failed',
       status: 500,
     });
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });
