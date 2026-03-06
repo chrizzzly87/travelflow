@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import cronHandler, { config } from '../../netlify/functions/ai-generate-worker-cron.js';
+import { config, handler } from '../../netlify/functions/ai-generate-worker-cron.js';
 
 const ORIGINAL_ENV = { ...process.env };
 
@@ -15,11 +15,11 @@ describe('netlify/functions/ai-generate-worker-cron', () => {
     process.env.TF_ADMIN_API_KEY = 'secret';
     process.env.URL = 'https://travelflowapp.netlify.app';
 
-    const response = await cronHandler();
-    const payload = await response.json();
+    const response = await handler();
+    const payload = JSON.parse(String(response.body));
 
     expect(config.schedule).toBe('*/1 * * * *');
-    expect(response.status).toBe(200);
+    expect(response.statusCode).toBe(200);
     expect(payload).toMatchObject({
       ok: true,
       skipped: true,
@@ -41,10 +41,10 @@ describe('netlify/functions/ai-generate-worker-cron', () => {
     );
     vi.stubGlobal('fetch', fetchMock);
 
-    const response = await cronHandler();
-    const payload = await response.json();
+    const response = await handler();
+    const payload = JSON.parse(String(response.body));
 
-    expect(response.status).toBe(202);
+    expect(response.statusCode).toBe(202);
     expect(payload).toEqual({ ok: true, accepted: true });
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];

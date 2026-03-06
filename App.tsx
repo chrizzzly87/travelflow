@@ -653,10 +653,10 @@ const AppContent: React.FC = () => {
         }, 800);
     };
 
-    const handleUpdateTrip = useCallback((updatedTrip: ITrip, options?: { persist?: boolean }) => {
+    const handleUpdateTrip = useCallback((updatedTrip: ITrip, options?: { persist?: boolean; preserveUpdatedAt?: boolean }) => {
         setTrip(updatedTrip);
         if (options?.persist === false) return;
-        saveTrip(updatedTrip);
+        saveTrip(updatedTrip, { preserveUpdatedAt: options?.preserveUpdatedAt === true });
     }, []);
 
     const handleTripManagerUpdate = useCallback((updatedTrip: ITrip) => {

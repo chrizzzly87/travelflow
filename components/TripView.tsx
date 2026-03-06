@@ -349,7 +349,7 @@ const buildTripMetaSummary = (trip: ITrip): TripMetaSummary => {
 
 interface TripViewProps {
     trip: ITrip;
-    onUpdateTrip: (updatedTrip: ITrip, options?: { persist?: boolean }) => void;
+    onUpdateTrip: (updatedTrip: ITrip, options?: { persist?: boolean; preserveUpdatedAt?: boolean }) => void;
     onCommitState?: (updatedTrip: ITrip, view: IViewSettings, options?: { replace?: boolean; label?: string; adminOverride?: boolean }) => void;
     onOpenManager: () => void;
     onOpenSettings: () => void;
@@ -955,7 +955,7 @@ const useTripViewRender = ({
                 const remoteTrip = remote.trip;
                 const localTrip = tripRef.current;
                 if (shouldApplyPolledTripUpdate(localTrip, remoteTrip, Date.now())) {
-                    onUpdateTrip(remoteTrip);
+                    onUpdateTrip(remoteTrip, { preserveUpdatedAt: true });
                 }
             } finally {
                 inFlight = false;
@@ -1680,7 +1680,7 @@ const useTripViewRender = ({
         return false;
     }, [adminOverrideEnabled, canEdit, isAdminFallbackView, isTripLockedByArchive, isTripLockedByExpiry, showToast]);
 
-    const safeUpdateTrip = useCallback((updatedTrip: ITrip, options?: { persist?: boolean }) => {
+    const safeUpdateTrip = useCallback((updatedTrip: ITrip, options?: { persist?: boolean; preserveUpdatedAt?: boolean }) => {
         if (!requireEdit()) return;
         onUpdateTrip(updatedTrip, options);
     }, [onUpdateTrip, requireEdit]);

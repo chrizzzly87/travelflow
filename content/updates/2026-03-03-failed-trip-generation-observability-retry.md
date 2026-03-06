@@ -51,6 +51,7 @@ summary: "Failed trip generations are now easier to spot, inspect, and retry on 
 - [ ] [Internal] 🛠️ Trip polling now ignores stale remote failed snapshots while a newer local queued/running retry is in flight, preventing retry-state flicker regressions.
 - [ ] [Internal] 🛠️ Trip retry actions now use a strict in-flight mutex so one click cannot create duplicate attempt-start requests before UI state settles.
 - [ ] [Internal] ⚙️ Scheduled worker triggers now hand off processing to a protected background function, avoiding 30s scheduled-function limits and keeping queued jobs draining reliably.
+- [ ] [Internal] 🛠️ Netlify worker triggers now use deploy-safe function handlers (`handler` exports + HTTP bridge) so both cron and background worker functions are bundled and callable in production.
 - [ ] [Internal] ⚙️ Async worker provider timeout default is now 120 seconds (env-overridable) for long-running models while still terminating each attempt cleanly on success/failure.
 - [x] [Improved] 🤖 Default generation + retry model baseline now uses OpenAI GPT-5.4 across create-trip and retry entry points.
 - [ ] [Internal] 🛠️ Queue-claim RPC now rejects already-claimed requests instead of returning stale rows, preventing duplicate trip generation from repeated claim calls.
@@ -66,6 +67,7 @@ summary: "Failed trip generations are now easier to spot, inspect, and retry on 
 - [ ] [Internal] 🔄 Trip view now polls owner-access DB snapshots while generation is queued/running so server-side async completions appear without manual refresh.
 - [ ] [Internal] 🛠️ Trip-view polling now stops on derived terminal states (including stale-running timeout fallback) so failed banners do not keep background polling alive.
 - [ ] [Internal] 🛠️ High-frequency trip polling now skips owner-profile lookup payloads to avoid duplicate `profiles` requests while generation is active.
+- [ ] [Internal] 🛠️ Polled remote trip snapshots now preserve server `updatedAt` when cached locally, preventing client sync feedback loops that spam repeated `upsert_trip`/trip-fetch requests.
 - [ ] [Internal] 🛠️ Tab-feedback favicon/title animation now stays active through queued/running generation and only resolves on terminal success/failure, including retry handoffs.
 - [ ] [Internal] 🛠️ Local trip-cache writes now gracefully prune oldest local entries when browser storage quota is exceeded, preventing “Failed to replace trips in storage” hard-fail loops during reload/sync.
 - [x] [Improved] 🧭 Create Trip now focuses on classic + wizard flows, with obsolete lab routes retired and a guided wizard CTA at the bottom of the planner.
