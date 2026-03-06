@@ -39,7 +39,30 @@ summary: "Failed trip generations are now easier to spot, inspect, and retry on 
 - [x] [Fixed] 🧭 Checkbox + primary entity columns now behave as one sticky region in selectable admin tables, including correct width locking and horizontal scroll tracking.
 - [ ] [Internal] 🧩 Added an admin data-table component group in the design-system playground with sticky/sort/selection examples and documented the table pattern in brand/UI guidelines.
 - [ ] [Internal] 🧱 Added structured generation attempt diagnostics service and durable attempt-log RPC/table contracts for richer failure telemetry.
+- [ ] [Internal] 🧱 Started async-generation infrastructure rollout with server-side job queue schema, lease RPCs, and typed job service adapters for phased worker cutover.
+- [ ] [Internal] ⚙️ Added async generation worker infrastructure (edge worker endpoint + scheduled trigger) and queue enqueue wiring for server-owned execution.
+- [ ] [Internal] ⚙️ Classic and wizard create-trip submits now enqueue async worker jobs by default, so generation completion is no longer bound to an open browser tab.
+- [ ] [Internal] ⚙️ Queue-claim wizard/surprise processing now enqueues the same async worker pipeline with flow-aware prompt metadata.
+- [ ] [Internal] ⚙️ Retry now always enqueues server-owned async jobs for the same trip instead of running generation in the browser session.
+- [ ] [Internal] ⚙️ Removed client-side async-flow feature flags/fallback branches so all active generation entry points use the worker queue lifecycle.
+- [ ] [Internal] 🛠️ Async create-trip now waits for trip-row persistence before attempt logging/enqueue, preventing `Trip not found` races on `trip_generation_attempt_start` and enqueue RPCs.
+- [ ] [Internal] 🛠️ Async enqueue now requires a canonical server-logged attempt ID (not optimistic client IDs), preventing false enqueue attempts after failed attempt-start RPCs.
+- [ ] [Internal] 🛠️ Queue-claim RPC now rejects already-claimed requests instead of returning stale rows, preventing duplicate trip generation from repeated claim calls.
+- [ ] [Internal] 🛠️ Admin trip-list RPC fallback now also handles PostgREST overload-selection errors (`best candidate function`) for stable table loading during mixed-schema rollouts.
+- [ ] [Internal] 🛠️ Worker success merge now preserves existing trip preference fields (favorites and map/style settings) instead of resetting them to generated defaults.
+- [ ] [Internal] 🛠️ Worker now logs non-2xx attempt/job RPC responses with explicit error labels so completion/failure bookkeeping issues are visible in run output.
+- [x] [Fixed] 🧭 Create-trip generation now ensures an anonymous DB session before enqueueing worker jobs, preventing immediate enqueue failures for signed-out users.
+- [x] [Fixed] 🔐 Create-trip now redirects to login with the current draft path preserved when no DB session is available, avoiding dead enqueue attempts in strict-auth environments.
+- [x] [Improved] 🧭 Signed-out planners can save a trip draft and open the trip page first; generation starts after sign-in via a claim link from the trip status banner.
+- [ ] [Internal] 🔔 Background auth-claim generation now registers a global completion watcher that shows success/failure toast actions with a direct link back to the trip.
+- [ ] [Internal] 🧯 Admin trip diagnostics now includes queue/dead-letter job history (state, retry budget, latest worker error) for faster worker incident triage.
+- [ ] [Internal] 🧯 Admin trip diagnostics now supports one-click requeue for dead/failed worker jobs to speed up manual recovery during incidents.
+- [ ] [Internal] 🔄 Trip view now polls owner-access DB snapshots while generation is queued/running so server-side async completions appear without manual refresh.
+- [x] [Improved] 🧭 Create Trip now focuses on classic + wizard flows, with obsolete lab routes retired and a guided wizard CTA at the bottom of the planner.
+- [x] [Improved] 🧪 Trip diagnostics now show the execution mode (`async_worker` plus legacy sync markers), making tab-independent rollout status directly visible.
+- [ ] [Internal] 🧹 Removed detached legacy create-trip lab components/tests so retired flows no longer add maintenance surface.
 - [ ] [Internal] 🛠️ Removed legacy admin trip-list RPC overloads and hardened generation-state RPC arguments to prevent PostgREST function ambiguity.
+- [ ] [Internal] 🛠️ Async enqueue RPC now resolves attempt uniqueness via a named table constraint, preventing ambiguous `attempt_id` failures during retry/job enqueue calls.
 - [ ] [Internal] 📡 Added best-effort tab-close abort beacons to improve abort classification during in-flight generation.
 - [ ] [Internal] 🧩 Admin trips/users/audit tables now share sticky-column + sorting style primitives for consistent row/column highlighting.
 - [ ] [Internal] 🧪 AI benchmark now includes a custom JSON import preset that maps imported generation payloads into the benchmark mask.

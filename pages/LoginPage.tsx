@@ -17,6 +17,7 @@ import {
     QueuedTripGenerationError,
     runOpportunisticTripQueueCleanup,
 } from '../services/tripGenerationQueueService';
+import { registerTripGenerationCompletionWatch } from '../services/tripGenerationCompletionWatchService';
 import type { OAuthProviderId } from '../services/authService';
 import {
     buildPasswordResetRedirectUrl,
@@ -215,6 +216,7 @@ export const LoginPage: React.FC = () => {
 
             if (claimRequestId) {
                 const result = await processQueuedTripGenerationAfterAuth(claimRequestId);
+                registerTripGenerationCompletionWatch(result.tripId, 'auth_queue_claim_login');
                 trackEvent('auth__queue--fulfilled', { request_id: claimRequestId });
                 setInfoMessage(t('states.queuedSuccess'));
                 clearRememberedAuthReturnPath();

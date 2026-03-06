@@ -43,6 +43,7 @@ describe('services/pageTitleService', () => {
 
   it('resolves create-trip and trip routes', () => {
     expect(resolvePageTitle({ pathname: '/create-trip', appName: APP_NAME, labels: LABELS })).toBe('Create Trip · TravelFlow');
+    expect(resolvePageTitle({ pathname: '/create-trip/wizard', appName: APP_NAME, labels: LABELS })).toBe('Create Trip · TravelFlow');
     expect(resolvePageTitle({ pathname: '/create-trip/labs/classic-card', appName: APP_NAME, labels: LABELS })).toBe('Create Trip Labs · TravelFlow');
     expect(resolvePageTitle({ pathname: '/trip/abc123', appName: APP_NAME, labels: LABELS, tripTitle: 'Japan Road Trip' })).toBe('Japan Road Trip · TravelFlow');
     expect(resolvePageTitle({ pathname: '/trip/abc123', appName: APP_NAME, labels: LABELS })).toBe('Create Trip · TravelFlow');

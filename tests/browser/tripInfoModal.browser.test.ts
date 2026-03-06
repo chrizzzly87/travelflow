@@ -98,6 +98,9 @@ describe('components/TripInfoModal ownership context', () => {
             failureKind: 'provider',
             errorCode: 'MODEL_UNAVAILABLE',
             errorMessage: 'Model unavailable',
+            metadata: {
+              orchestration: 'async_worker',
+            },
           },
           attempts: [],
           inputSnapshot: null,
@@ -118,6 +121,9 @@ describe('components/TripInfoModal ownership context', () => {
         failureKind: 'provider',
         errorCode: 'MODEL_UNAVAILABLE',
         errorMessage: 'Model unavailable',
+        metadata: {
+          orchestration: 'async_worker',
+        },
       },
       canRetryGeneration: true,
       isRetryingGeneration: false,
@@ -146,6 +152,7 @@ describe('components/TripInfoModal ownership context', () => {
 
     expect(screen.getAllByText(/AI generation|tripView\.generation\.tripInfo\.title/).length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('req-1')).toBeInTheDocument();
+    expect(screen.getByText('async_worker')).toBeInTheDocument();
     expect(screen.getByText('Model unavailable')).toBeInTheDocument();
   });
 });

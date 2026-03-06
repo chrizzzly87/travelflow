@@ -343,13 +343,16 @@
           "running": "running",
           "queued": "queued",
           "succeeded": "succeeded"
-        }
+        },
+        "orchestration": "실행 모드"
       },
       "retry": {
         "readOnly": "This trip is read-only, so generation retry is unavailable.",
         "readOnlyTitle": "Retry unavailable",
         "missingSnapshot": "Retry requires saved generation input, but this trip has no snapshot.",
         "missingSnapshotTitle": "Retry unavailable",
+        "queued": "Trip generation retry started and is running in the background.",
+        "queuedTitle": "Retry started",
         "completed": "Trip generation completed with the default model.",
         "completedTitle": "Retry completed",
         "failed": "Trip generation failed again. Review the diagnostics and retry later.",

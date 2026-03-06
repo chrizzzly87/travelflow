@@ -2,17 +2,22 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ITrip } from '../../types';
 
-const generateFromSnapshotMock = vi.fn();
+const buildClassicItineraryPromptMock = vi.fn().mockReturnValue('classic prompt');
+const buildWizardItineraryPromptMock = vi.fn().mockReturnValue('wizard prompt');
+const buildSurpriseItineraryPromptMock = vi.fn().mockReturnValue('surprise prompt');
 const startAttemptLogMock = vi.fn();
 const finishAttemptLogMock = vi.fn();
-const beginAbortTelemetryMock = vi.fn(() => ({ cancel: vi.fn() }));
+const enqueueAsyncTripGenerationJobMock = vi.fn();
 
 vi.mock('../../config/aiModelCatalog', () => ({
-  getDefaultCreateTripModel: () => ({ provider: 'openai', model: 'gpt-4.1' }),
+  getDefaultCreateTripModel: () => ({ id: 'default', provider: 'openai', model: 'gpt-4.1', availability: 'active' }),
+  getAiModelById: () => null,
 }));
 
 vi.mock('../../services/aiService', () => ({
-  generateTripFromInputSnapshot: (...args: unknown[]) => generateFromSnapshotMock(...args),
+  buildClassicItineraryPrompt: (...args: unknown[]) => buildClassicItineraryPromptMock(...args),
+  buildWizardItineraryPrompt: (...args: unknown[]) => buildWizardItineraryPromptMock(...args),
+  buildSurpriseItineraryPrompt: (...args: unknown[]) => buildSurpriseItineraryPromptMock(...args),
 }));
 
 vi.mock('../../services/tripGenerationAttemptLogService', () => ({
@@ -20,8 +25,8 @@ vi.mock('../../services/tripGenerationAttemptLogService', () => ({
   finishTripGenerationAttemptLog: (...args: unknown[]) => finishAttemptLogMock(...args),
 }));
 
-vi.mock('../../services/tripGenerationAbortTelemetryService', () => ({
-  beginTripGenerationAbortTelemetry: (...args: unknown[]) => beginAbortTelemetryMock(...args),
+vi.mock('../../services/tripGenerationAsyncEnqueueService', () => ({
+  enqueueAsyncTripGenerationJob: (...args: unknown[]) => enqueueAsyncTripGenerationJobMock(...args),
 }));
 
 import { retryTripGenerationWithDefaultModel } from '../../services/tripGenerationRetryService';
@@ -92,32 +97,17 @@ const buildTrip = (): ITrip => ({
 
 describe('retryTripGenerationWithDefaultModel', () => {
   beforeEach(() => {
-    generateFromSnapshotMock.mockReset();
     startAttemptLogMock.mockReset();
     finishAttemptLogMock.mockReset();
-    beginAbortTelemetryMock.mockClear();
+    enqueueAsyncTripGenerationJobMock.mockReset();
+    buildClassicItineraryPromptMock.mockClear();
 
     startAttemptLogMock.mockResolvedValue({ id: 'attempt-log-1' });
     finishAttemptLogMock.mockResolvedValue(undefined);
+    enqueueAsyncTripGenerationJobMock.mockResolvedValue(true);
   });
 
-  it('retries on same trip id and forces default model target', async () => {
-    generateFromSnapshotMock.mockResolvedValue({
-      id: 'generated-trip-id-should-not-be-used',
-      title: 'Tokyo highlights',
-      startDate: '2026-04-01',
-      items: [],
-      createdAt: 2,
-      updatedAt: 2,
-      status: 'active',
-      sourceKind: 'created',
-      aiMeta: {
-        provider: 'openai',
-        model: 'gpt-4.1',
-        generatedAt: '2026-03-02T00:00:00.000Z',
-      },
-    } satisfies ITrip);
-
+  it('retries on same trip id and forces default model target via async enqueue', async () => {
     const updates: ITrip[] = [];
     const result = await retryTripGenerationWithDefaultModel(buildTrip(), {
       source: 'trip_info_modal',
@@ -126,23 +116,25 @@ describe('retryTripGenerationWithDefaultModel', () => {
       },
     });
 
-    expect(result.state).toBe('succeeded');
+    expect(result.state).toBe('queued');
     expect(result.trip.id).toBe('trip-existing');
-    expect(result.trip.aiMeta?.generation?.state).toBe('succeeded');
-    expect(updates.map((trip) => trip.aiMeta?.generation?.state)).toEqual(['running', 'running', 'succeeded']);
+    expect(result.trip.aiMeta?.generation?.state).toBe('queued');
     expect(result.trip.aiMeta?.generation?.latestAttempt?.id).toBe('attempt-log-1');
+    expect(updates.every((trip) => trip.aiMeta?.generation?.state === 'queued')).toBe(true);
 
-    expect(generateFromSnapshotMock).toHaveBeenCalledTimes(1);
-    expect(generateFromSnapshotMock.mock.calls[0]?.[1]).toMatchObject({
-      aiTarget: {
-        provider: 'openai',
-        model: 'gpt-4.1',
-      },
-    });
+    expect(buildClassicItineraryPromptMock).toHaveBeenCalledTimes(1);
+    expect(enqueueAsyncTripGenerationJobMock).toHaveBeenCalledWith(expect.objectContaining({
+      flow: 'classic',
+      tripId: 'trip-existing',
+      prompt: 'classic prompt',
+      provider: 'openai',
+      model: 'gpt-4.1',
+    }));
+    expect(finishAttemptLogMock).not.toHaveBeenCalled();
   });
 
-  it('keeps same trip id and records failed retry when generation errors', async () => {
-    generateFromSnapshotMock.mockRejectedValue(new Error('Provider timeout'));
+  it('keeps same trip id and records failed retry when enqueue fails', async () => {
+    enqueueAsyncTripGenerationJobMock.mockResolvedValue(false);
 
     const result = await retryTripGenerationWithDefaultModel(buildTrip(), {
       source: 'trip_status_strip',
@@ -151,7 +143,7 @@ describe('retryTripGenerationWithDefaultModel', () => {
     expect(result.state).toBe('failed');
     expect(result.trip.id).toBe('trip-existing');
     expect(result.trip.aiMeta?.generation?.state).toBe('failed');
-    expect(result.trip.aiMeta?.generation?.latestAttempt?.errorMessage).toContain('Provider timeout');
-    expect(finishAttemptLogMock).toHaveBeenCalled();
+    expect(result.trip.aiMeta?.generation?.latestAttempt?.errorMessage).toContain('Could not enqueue async generation retry');
+    expect(finishAttemptLogMock).toHaveBeenCalledTimes(1);
   });
 });

@@ -20,7 +20,7 @@ import {
 } from '../services/appDialogPresets';
 import { dbAdminOverrideTripCommit, dbGetTrip, dbUpsertTrip } from '../services/dbService';
 import { getTripCityStops, buildMiniMapUrl } from '../components/TripManager';
-import type { ITrip, TripGenerationAttemptSummary, TripGenerationState } from '../types';
+import type { ITrip, TripGenerationAttemptSummary, TripGenerationJobSummary, TripGenerationState } from '../types';
 import {
     Select,
     SelectContent,
@@ -65,6 +65,7 @@ import {
 import { retryTripGenerationWithDefaultModel } from '../services/tripGenerationRetryService';
 import { listAdminTripGenerationAttempts } from '../services/tripGenerationAttemptLogService';
 import { buildBenchmarkScenarioImportUrl } from '../services/tripGenerationBenchmarkBridge';
+import { listTripGenerationJobsByTrip, requeueTripGenerationJob } from '../services/tripGenerationJobService';
 
 const toDateTimeInputValue = (value: string | null): string => {
     if (!value) return '';
@@ -328,6 +329,13 @@ const getGenerationStateLabel = (state: TripGenerationState): string => {
     return 'succeeded';
 };
 
+const getGenerationJobPillClassName = (state: TripGenerationJobSummary['state']): string => {
+    if (state === 'dead') return 'border-rose-300 bg-rose-100 text-rose-800';
+    if (state === 'failed') return 'border-rose-200 bg-rose-50 text-rose-700';
+    if (state === 'queued' || state === 'leased') return 'border-amber-200 bg-amber-50 text-amber-700';
+    return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+};
+
 const resolveTripGenerationState = (trip: AdminTripRecord): TripGenerationState => {
     const state = trip.generation_state;
     if (state === 'failed' || state === 'running' || state === 'queued' || state === 'succeeded') return state;
@@ -533,7 +541,10 @@ export const AdminTripsPage: React.FC = () => {
     const [isTripDrawerOpen, setIsTripDrawerOpen] = useState(false);
     const [selectedFullTrip, setSelectedFullTrip] = useState<ITrip | null>(null);
     const [selectedTripAttemptLogRows, setSelectedTripAttemptLogRows] = useState<TripGenerationAttemptSummary[]>([]);
+    const [selectedTripGenerationJobRows, setSelectedTripGenerationJobRows] = useState<TripGenerationJobSummary[]>([]);
     const [isLoadingTripAttemptLogRows, setIsLoadingTripAttemptLogRows] = useState(false);
+    const [isLoadingTripGenerationJobRows, setIsLoadingTripGenerationJobRows] = useState(false);
+    const [requeueingGenerationJobId, setRequeueingGenerationJobId] = useState<string | null>(null);
     const [isRetryingGeneration, setIsRetryingGeneration] = useState(false);
     const [generationNowMs, setGenerationNowMs] = useState(() => Date.now());
     const [drawerRetryModelId, setDrawerRetryModelId] = useState<string>(DEFAULT_RETRY_MODEL_ID);
@@ -757,19 +768,48 @@ export const AdminTripsPage: React.FC = () => {
     }, [isTripDrawerOpen, selectedTripDrawerId, selectedTripForDrawer]);
 
     useEffect(() => {
+        if (!isTripDrawerOpen || !selectedTripDrawerId || !selectedTripForDrawer) {
+            setSelectedTripGenerationJobRows([]);
+            return;
+        }
+        let isMounted = true;
+        setIsLoadingTripGenerationJobRows(true);
+        void listTripGenerationJobsByTrip(selectedTripDrawerId, { limit: 24 })
+            .then((rows) => {
+                if (!isMounted) return;
+                setSelectedTripGenerationJobRows(rows);
+            })
+            .catch(() => {
+                if (!isMounted) return;
+                setSelectedTripGenerationJobRows([]);
+            })
+            .finally(() => {
+                if (!isMounted) return;
+                setIsLoadingTripGenerationJobRows(false);
+            });
+        return () => {
+            isMounted = false;
+        };
+    }, [isTripDrawerOpen, selectedTripDrawerId, selectedTripForDrawer]);
+
+    useEffect(() => {
         if (!shouldPollSelectedTripGenerationState || !selectedTripDrawerId) return undefined;
 
         let cancelled = false;
         const pollTripGenerationUpdates = async () => {
             try {
-                const [tripResult, attemptRows] = await Promise.all([
+                const [tripResult, attemptRows, jobRows] = await Promise.all([
                     dbGetTrip(selectedTripDrawerId),
                     listAdminTripGenerationAttempts(selectedTripDrawerId, 24),
+                    listTripGenerationJobsByTrip(selectedTripDrawerId, { limit: 24 }),
                 ]);
                 if (cancelled) return;
 
                 if (Array.isArray(attemptRows)) {
                     setSelectedTripAttemptLogRows(attemptRows);
+                }
+                if (Array.isArray(jobRows)) {
+                    setSelectedTripGenerationJobRows(jobRows);
                 }
 
                 const nextTrip = tripResult?.trip || null;
@@ -864,13 +904,20 @@ export const AdminTripsPage: React.FC = () => {
     ]);
 
     const selectedTripGenerationMeta = selectedFullTrip?.aiMeta?.generation || null;
-    const selectedTripRequestPayload = useMemo<Record<string, unknown> | null>(() => {
+    const selectedTripLatestAttemptMetadata = useMemo<Record<string, unknown> | null>(() => {
         const metadata = selectedTripLatestAttempt?.metadata;
         if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) return null;
-        const payload = (metadata as Record<string, unknown>).requestPayload;
+        return metadata as Record<string, unknown>;
+    }, [selectedTripLatestAttempt?.metadata]);
+    const selectedTripRequestPayload = useMemo<Record<string, unknown> | null>(() => {
+        const payload = selectedTripLatestAttemptMetadata?.requestPayload;
         if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return null;
         return payload as Record<string, unknown>;
-    }, [selectedTripLatestAttempt?.metadata]);
+    }, [selectedTripLatestAttemptMetadata]);
+    const selectedTripOrchestrationMode = useMemo(() => {
+        const value = selectedTripLatestAttemptMetadata?.orchestration;
+        return typeof value === 'string' && value.trim().length > 0 ? value.trim() : null;
+    }, [selectedTripLatestAttemptMetadata]);
     const selectedTripInputSnapshot = useMemo(() => {
         return selectedTripGenerationMeta?.inputSnapshot || null;
     }, [selectedTripGenerationMeta?.inputSnapshot]);
@@ -880,6 +927,14 @@ export const AdminTripsPage: React.FC = () => {
         }
         return Math.max(0, selectedTripGenerationAttempts.filter((attempt) => attempt.source.includes('retry')).length);
     }, [selectedTripGenerationAttempts, selectedTripGenerationMeta?.retryCount]);
+    const selectedTripDeadLetterJobCount = useMemo(
+        () => selectedTripGenerationJobRows.filter((job) => job.state === 'dead').length,
+        [selectedTripGenerationJobRows]
+    );
+    const selectedTripLatestGenerationJob = useMemo(
+        () => selectedTripGenerationJobRows[0] || null,
+        [selectedTripGenerationJobRows]
+    );
 
     const groupedRetryModelOptions = useMemo(() => {
         const groups = new Map<string, typeof ACTIVE_RETRY_MODEL_OPTIONS>();
@@ -1168,7 +1223,9 @@ export const AdminTripsPage: React.FC = () => {
                 },
             });
 
-            if (result.state === 'succeeded') {
+            if (result.state === 'queued') {
+                setMessage('Trip generation retry queued. Processing in background.');
+            } else if (result.state === 'succeeded') {
                 setMessage('Trip generation retry completed.');
             } else {
                 setMessage('Trip generation retry failed. Diagnostics have been updated.');
@@ -1179,6 +1236,62 @@ export const AdminTripsPage: React.FC = () => {
         } finally {
             setIsRetryingGeneration(false);
             setIsSaving(false);
+        }
+    };
+
+    const handleRequeueGenerationJob = async (job: TripGenerationJobSummary) => {
+        if (!selectedTripForDrawer) return;
+        if (job.state !== 'dead' && job.state !== 'failed') return;
+
+        setRequeueingGenerationJobId(job.id);
+        setErrorMessage(null);
+        setMessage(null);
+
+        try {
+            const requeued = await requeueTripGenerationJob(job.id, {
+                reason: 'admin_trip_drawer_manual_requeue',
+                resetRetryCount: true,
+            });
+            if (!requeued) {
+                throw new Error('Could not requeue generation job.');
+            }
+
+            setMessage('Generation job requeued.');
+            showAppToast({
+                tone: 'success',
+                title: 'Generation job requeued',
+                description: 'The async worker queue will process this job again.',
+            });
+
+            const [tripResult, attemptRows, jobRows] = await Promise.all([
+                dbGetTrip(selectedTripForDrawer.trip_id),
+                listAdminTripGenerationAttempts(selectedTripForDrawer.trip_id, 24),
+                listTripGenerationJobsByTrip(selectedTripForDrawer.trip_id, { limit: 24 }),
+            ]);
+
+            setSelectedTripAttemptLogRows(attemptRows);
+            setSelectedTripGenerationJobRows(jobRows);
+
+            const refreshedTrip = tripResult?.trip || null;
+            if (refreshedTrip) {
+                setSelectedFullTrip(refreshedTrip);
+                const nextState = getTripGenerationState(refreshedTrip, Date.now());
+                setTrips((current) => current.map((trip) => (
+                    trip.trip_id === refreshedTrip.id
+                        ? {
+                            ...trip,
+                            generation_state: nextState,
+                            updated_at: new Date().toISOString(),
+                        }
+                        : trip
+                )));
+            } else {
+                await loadTrips();
+            }
+        } catch (error) {
+            setErrorMessage(error instanceof Error ? error.message : 'Could not requeue generation job.');
+        } finally {
+            setRequeueingGenerationJobId(null);
         }
     };
 
@@ -2396,6 +2509,10 @@ export const AdminTripsPage: React.FC = () => {
                                                 <dd className="mt-1 text-sm font-medium text-slate-800">{selectedTripRetryCount}</dd>
                                             </div>
                                             <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+                                                <dt className="text-xs font-semibold text-slate-500">Dead-letter jobs</dt>
+                                                <dd className="mt-1 text-sm font-medium text-slate-800">{selectedTripDeadLetterJobCount}</dd>
+                                            </div>
+                                            <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
                                                 <dt className="text-xs font-semibold text-slate-500">Latest state transition</dt>
                                                 <dd className="mt-1 text-sm font-medium text-slate-800">
                                                     {selectedTripGenerationMeta?.lastFailedAt
@@ -2419,6 +2536,14 @@ export const AdminTripsPage: React.FC = () => {
                                                     {selectedTripGenerationMeta?.inputSnapshot
                                                         ? `${selectedTripGenerationMeta.inputSnapshot.flow} (${formatTimestamp(selectedTripGenerationMeta.inputSnapshot.createdAt, 'n/a')})`
                                                         : 'Unavailable'}
+                                                </dd>
+                                            </div>
+                                            <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+                                                <dt className="text-xs font-semibold text-slate-500">Latest queue job</dt>
+                                                <dd className="mt-1 text-sm font-medium text-slate-800">
+                                                    {selectedTripLatestGenerationJob
+                                                        ? `${selectedTripLatestGenerationJob.state} (${formatRelativeTimestamp(selectedTripLatestGenerationJob.createdAt, 'n/a')})`
+                                                        : 'n/a'}
                                                 </dd>
                                             </div>
                                         </dl>
@@ -2458,6 +2583,10 @@ export const AdminTripsPage: React.FC = () => {
                                                 <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
                                                     <dt className="text-xs font-semibold text-slate-500">Request ID</dt>
                                                     <dd className="mt-1 break-all font-mono text-xs text-slate-700">{selectedTripLatestAttempt.requestId || 'n/a'}</dd>
+                                                </div>
+                                                <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+                                                    <dt className="text-xs font-semibold text-slate-500">Execution mode</dt>
+                                                    <dd className="mt-1 text-sm font-medium text-slate-800">{selectedTripOrchestrationMode || 'n/a'}</dd>
                                                 </div>
                                                 <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
                                                     <dt className="text-xs font-semibold text-slate-500">Duration</dt>
@@ -2508,6 +2637,55 @@ export const AdminTripsPage: React.FC = () => {
                                                         <span className="shrink-0 text-slate-500">
                                                             {formatDurationMs(attempt.durationMs)}
                                                         </span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                        {isLoadingTripGenerationJobRows && (
+                                            <div className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+                                                Loading queue/dead-letter jobs...
+                                            </div>
+                                        )}
+                                        {selectedTripGenerationJobRows.length > 0 && (
+                                            <div className="space-y-1 rounded-lg border border-slate-100 bg-slate-50 p-2">
+                                                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Queue jobs</p>
+                                                {selectedTripGenerationJobRows.map((job) => (
+                                                    <div key={job.id} className="grid gap-1 rounded-md border border-slate-100 bg-white px-2 py-1.5 text-[11px] sm:grid-cols-[auto,1fr,auto,auto,auto] sm:items-center sm:gap-2">
+                                                        <span className={`inline-flex w-fit items-center rounded-full border px-2 py-0.5 font-semibold ${getGenerationJobPillClassName(job.state)}`}>
+                                                            {job.state}
+                                                        </span>
+                                                        <span className="truncate text-slate-600">
+                                                            {job.lastErrorCode || job.lastErrorMessage || job.attemptId}
+                                                        </span>
+                                                        <span className="shrink-0 text-slate-500">
+                                                            r{job.retryCount}/{job.maxRetries}
+                                                        </span>
+                                                        <span className="shrink-0 text-slate-500">
+                                                            {formatRelativeTimestamp(job.createdAt, 'n/a')}
+                                                        </span>
+                                                        {(job.state === 'dead' || job.state === 'failed') ? (
+                                                            <button
+                                                                type="button"
+                                                                onClick={(event) => {
+                                                                    event.preventDefault();
+                                                                    event.stopPropagation();
+                                                                    void handleRequeueGenerationJob(job);
+                                                                }}
+                                                                disabled={requeueingGenerationJobId === job.id}
+                                                                className="inline-flex h-6 items-center justify-center rounded-md border border-slate-300 bg-white px-2 text-[10px] font-semibold text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+                                                            >
+                                                                {requeueingGenerationJobId === job.id ? (
+                                                                    <>
+                                                                        <SpinnerGap size={12} className="mr-1 animate-spin" />
+                                                                        Requeueing...
+                                                                    </>
+                                                                ) : (
+                                                                    'Requeue'
+                                                                )}
+                                                            </button>
+                                                        ) : (
+                                                            <span className="hidden sm:block" aria-hidden="true" />
+                                                        )}
                                                     </div>
                                                 ))}
                                             </div>

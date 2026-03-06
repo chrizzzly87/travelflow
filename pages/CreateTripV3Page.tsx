@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import {
     Warning as AlertTriangle,
     Check,
@@ -19,7 +19,11 @@ import { CountrySelect } from '../components/CountrySelect';
 import { DateRangePicker } from '../components/DateRangePicker';
 import { MonthSeasonStrip } from '../components/MonthSeasonStrip';
 import { Checkbox } from '../components/ui/checkbox';
-import { generateWizardItinerary } from '../services/geminiService';
+import {
+    buildWizardItineraryPrompt,
+    type WizardGenerateOptions,
+} from '../services/geminiService';
+import { getDefaultCreateTripModel } from '../config/aiModelCatalog';
 import { ITimelineItem, ITrip, TripPrefillData } from '../types';
 import {
     addDays,
@@ -40,6 +44,16 @@ import { decodeTripPrefill } from '../services/tripPrefillDecoder';
 import { createThailandTrip } from '../data/exampleTrips';
 import { TripView } from '../components/TripView';
 import { TripGenerationSkeleton } from '../components/TripGenerationSkeleton';
+import { startClientAsyncTripGeneration } from '../services/tripGenerationClientAsyncService';
+import { createTripGenerationInputSnapshot, createTripGenerationRequestId, markTripGenerationFailed } from '../services/tripGenerationDiagnosticsService';
+import {
+    buildLoginPathWithNext,
+    rememberAuthReturnPath,
+    setPendingAuthRedirect,
+} from '../services/authNavigationService';
+import { ensureDbSession } from '../services/dbService';
+import { createTripGenerationRequest } from '../services/tripGenerationQueueService';
+import { useAuth } from '../hooks/useAuth';
 import { HeroWebGLBackground } from '../components/HeroWebGLBackground';
 import { SiteFooter } from '../components/marketing/SiteFooter';
 import { SiteHeader } from '../components/navigation/SiteHeader';
@@ -201,6 +215,9 @@ const StepDots: React.FC<{ currentStep: number; totalSteps: number; completedSte
 // ---------------------------------------------------------------------------
 
 export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenerated, onOpenManager }) => {
+    const navigate = useNavigate();
+    const location = useLocation();
+    const { isAuthenticated } = useAuth();
     const [searchParams] = useSearchParams();
     const defaultDates = getDefaultTripDates();
 
@@ -356,7 +373,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
     };
 
     // ---- Generation ----
-    const buildPreviewTrip = (params: { destination: string; startDate: string; endDate: string }): ITrip => {
+    const buildPreviewTrip = (params: { destination: string; startDate: string; endDate: string; tripId?: string; title?: string }): ITrip => {
         const now = Date.now();
         const totalDays = getDaysDifference(params.startDate, params.endDate);
         const cityCount = Math.max(1, Math.min(4, Math.max(2, Math.round(totalDays / 4))));
@@ -380,8 +397,8 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
             return item;
         });
         return {
-            id: `trip-preview-${now}`,
-            title: `Planning ${params.destination || 'Trip'}...`,
+            id: params.tripId || `trip-preview-${now}`,
+            title: params.title || params.destination || 'Trip draft',
             startDate: params.startDate,
             items,
             countryInfo: undefined,
@@ -392,33 +409,139 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
     };
 
     const handleGenerate = async () => {
+        const sessionUserId = await ensureDbSession();
+        if (!sessionUserId) {
+            const authRedirect = buildLoginPathWithNext({
+                pathname: location.pathname,
+                search: location.search,
+                hash: location.hash,
+            });
+            rememberAuthReturnPath(authRedirect.nextPath);
+            setPendingAuthRedirect(authRedirect.nextPath, 'create_trip_v3_generate');
+            navigate(authRedirect.loginTarget);
+            return;
+        }
+
         const primary = selectedCountries[0] || destination;
+        const destinationLabel = destination || primary || 'Trip';
+        const defaultModel = getDefaultCreateTripModel();
+        const wizardOptions: WizardGenerateOptions = {
+            countries: selectedCountries.map((c) => getDestinationPromptLabel(c)),
+            startDate,
+            endDate,
+            roundTrip: isRoundTrip,
+            totalDays: duration,
+            notes: [notes, specificCities ? `Must visit: ${specificCities}` : ''].filter(Boolean).join('. '),
+            travelStyles: selectedStyles,
+            travelVibes: selectedVibes,
+            travelLogistics: [],
+            idealMonths: monthLabelsFromNumbers(commonMonths.ideal),
+            shoulderMonths: monthLabelsFromNumbers(commonMonths.shoulder),
+            recommendedDurationDays: durationRec.recommended,
+            selectedIslandNames,
+            enforceIslandOnly: hasIslandSelection ? enforceIslandOnly : undefined,
+            aiTarget: {
+                provider: defaultModel.provider,
+                model: defaultModel.model,
+            },
+        };
+
+        if (!isAuthenticated) {
+            try {
+                const queuedRequest = await createTripGenerationRequest('wizard', {
+                    version: 1,
+                    flow: 'wizard',
+                    destinationLabel,
+                    startDate,
+                    endDate,
+                    options: wizardOptions,
+                });
+                const requestId = createTripGenerationRequestId();
+                const queueRequestId = queuedRequest.requestId;
+                const optimisticTrip = buildPreviewTrip({
+                    destination: destinationLabel,
+                    startDate,
+                    endDate,
+                    tripId: generateTripId(),
+                    title: destinationLabel,
+                });
+                const pendingAuthTrip = markTripGenerationFailed({
+                    ...optimisticTrip,
+                    items: optimisticTrip.items.map((item) => ({
+                        ...item,
+                        loading: false,
+                    })),
+                    updatedAt: Date.now(),
+                }, {
+                    flow: 'wizard',
+                    source: 'create_trip_v3_pending_auth',
+                    error: new Error('Sign in to start generation for this trip.'),
+                    provider: defaultModel.provider,
+                    model: defaultModel.model,
+                    requestId,
+                    metadata: {
+                        pendingAuth: true,
+                        queueRequestId,
+                        queueExpiresAt: queuedRequest.expiresAt,
+                        orchestration: 'auth_queue_claim',
+                        variant: 'v3',
+                    },
+                });
+                onTripGenerated(pendingAuthTrip);
+                return;
+            } catch {
+                const authRedirect = buildLoginPathWithNext({
+                    pathname: location.pathname,
+                    search: location.search,
+                    hash: location.hash,
+                });
+                rememberAuthReturnPath(authRedirect.nextPath);
+                setPendingAuthRedirect(authRedirect.nextPath, 'create_trip_v3_queue_fallback');
+                navigate(authRedirect.loginTarget);
+                return;
+            }
+        }
+
         setPreviewTrip(buildPreviewTrip({ destination: primary, startDate, endDate }));
         setGenerationSummary({ destination: primary, startDate, endDate });
         setIsGenerating(true);
         setGenerationError(null);
 
         try {
-            const trip = await generateWizardItinerary({
-                countries: selectedCountries.map((c) => getDestinationPromptLabel(c)),
+            const snapshot = createTripGenerationInputSnapshot({
+                flow: 'wizard',
+                destinationLabel,
                 startDate,
                 endDate,
+                payload: {
+                    options: wizardOptions,
+                },
+            });
+            const prompt = buildWizardItineraryPrompt(wizardOptions);
+            await startClientAsyncTripGeneration({
+                flow: 'wizard',
+                source: 'create_trip_v3',
+                jobSource: 'create_trip_v3_async',
+                destinationLabel,
+                startDate,
                 roundTrip: isRoundTrip,
-                totalDays: duration,
-                notes: [notes, specificCities ? `Must visit: ${specificCities}` : ''].filter(Boolean).join('. '),
-                budget,
-                pace,
-                travelStyles: selectedStyles,
-                travelVibes: selectedVibes,
-                travelLogistics: [],
-                idealMonths: monthLabelsFromNumbers(commonMonths.ideal),
-                shoulderMonths: monthLabelsFromNumbers(commonMonths.shoulder),
-                recommendedDurationDays: durationRec.recommended,
-                selectedIslandNames,
-                enforceIslandOnly: hasIslandSelection ? enforceIslandOnly : undefined,
+                prompt,
+                provider: defaultModel.provider,
+                model: defaultModel.model,
+                inputSnapshot: snapshot,
+                buildOptimisticTrip: (tripId) => buildPreviewTrip({
+                    destination: destinationLabel,
+                    startDate,
+                    endDate,
+                    tripId,
+                    title: destinationLabel,
+                }),
+                onTripUpdate: onTripGenerated,
+                metadata: {
+                    variant: 'v3',
+                },
             });
             setPreviewTrip(null);
-            onTripGenerated(trip);
         } catch (error) {
             console.error('V3 generation failed:', error);
             setPreviewTrip(null);
@@ -945,12 +1068,10 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
 
             <div className="relative z-10 flex-1 flex flex-col items-center p-4 pt-6 sm:pt-8 md:pt-10 overflow-y-auto w-full">
                 <div className="mb-3 flex flex-wrap items-center justify-center gap-2 text-xs text-gray-400">
-                    <span>Variants:</span>
-                    <Link to={buildVariantUrl('/create-trip/v1')} className="underline hover:text-accent-600 transition-colors">V1 Polished Card</Link>
-                    <Link to={buildVariantUrl('/create-trip/v2')} className="underline hover:text-accent-600 transition-colors">V2 Split-Screen</Link>
-                    <span className="font-medium text-accent-600">V3</span>
+                    <span>Flow:</span>
+                    <span className="font-medium text-accent-600">Wizard</span>
                     <span className="text-gray-300">|</span>
-                    <Link to={buildVariantUrl('/create-trip')} className="underline hover:text-accent-600 transition-colors">Main</Link>
+                    <Link to={buildVariantUrl('/create-trip')} className="underline hover:text-accent-600 transition-colors">Classic</Link>
                 </div>
 
                 {/* Step dots */}

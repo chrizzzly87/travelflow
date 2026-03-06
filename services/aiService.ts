@@ -1039,7 +1039,7 @@ export const buildClassicItineraryPrompt = (prompt: string, options?: GenerateOp
     return detailedPrompt;
 };
 
-export const generateWizardItinerary = async (options: WizardGenerateOptions): Promise<ITrip> => {
+export const buildWizardItineraryPrompt = (options: WizardGenerateOptions): string => {
     const countries = options.countries.map((country) => country.trim()).filter(Boolean);
     if (countries.length === 0) {
         throw new Error('Please select at least one destination for the wizard flow.');
@@ -1091,10 +1091,10 @@ export const generateWizardItinerary = async (options: WizardGenerateOptions): P
     `;
 
     detailedPrompt += BASE_ITINERARY_RULES_PROMPT;
-    return generateItineraryFromPrompt(detailedPrompt, options.startDate, options);
+    return detailedPrompt;
 };
 
-export const generateSurpriseItinerary = async (options: SurpriseGenerateOptions): Promise<ITrip> => {
+export const buildSurpriseItineraryPrompt = (options: SurpriseGenerateOptions): string => {
     const country = options.country.trim();
     if (!country) {
         throw new Error('Please pick a destination before generating a surprise trip.');
@@ -1128,6 +1128,16 @@ export const generateSurpriseItinerary = async (options: SurpriseGenerateOptions
     `;
 
     detailedPrompt += BASE_ITINERARY_RULES_PROMPT;
+    return detailedPrompt;
+};
+
+export const generateWizardItinerary = async (options: WizardGenerateOptions): Promise<ITrip> => {
+    const detailedPrompt = buildWizardItineraryPrompt(options);
+    return generateItineraryFromPrompt(detailedPrompt, options.startDate, options);
+};
+
+export const generateSurpriseItinerary = async (options: SurpriseGenerateOptions): Promise<ITrip> => {
+    const detailedPrompt = buildSurpriseItineraryPrompt(options);
     return generateItineraryFromPrompt(detailedPrompt, options.startDate, {
         roundTrip: true,
         aiTarget: options.aiTarget,

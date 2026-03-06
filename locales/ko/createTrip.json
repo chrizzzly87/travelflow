@@ -179,8 +179,9 @@
   },
   "prefillBadge": "자동 입력 출처: {label}",
   "labsBanner": {
-    "title": "다른 여행 만들기 방식을 테스트하고 싶으신가요?",
-    "description": "회귀 확인 및 비교 실험을 위한 실험 경로입니다.",
+    "title": "다음 여행 계획에 도움이 필요하신가요?",
+    "description": "단계별로 안내하는 위저드로 더 쉽게 계획해 보세요.",
+    "cta": "위저드 사용하기",
     "links": {
       "legacy": "클래식 레거시 폼",
       "classicCard": "클래식 카드",

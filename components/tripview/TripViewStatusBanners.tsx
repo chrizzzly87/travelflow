@@ -58,9 +58,12 @@ interface TripViewStatusBannersProps {
     generationElapsedMs?: number | null;
     generationTimeoutMs?: number;
     generationFailureMessage?: string | null;
+    pendingAuthQueueRequestId?: string | null;
     canRetryGeneration?: boolean;
     canAbortAndRetryGeneration?: boolean;
     isRetryingGeneration?: boolean;
+    isResolvingPendingAuthGeneration?: boolean;
+    onResolvePendingAuthGeneration?: () => void;
     onAbortAndRetryGeneration?: () => void;
     onOpenRetryModelSelector?: () => void;
     onRetryGeneration?: () => void;
@@ -108,9 +111,12 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
     generationElapsedMs = null,
     generationTimeoutMs = 60_000,
     generationFailureMessage = null,
+    pendingAuthQueueRequestId = null,
     canRetryGeneration = false,
     canAbortAndRetryGeneration = false,
     isRetryingGeneration = false,
+    isResolvingPendingAuthGeneration = false,
+    onResolvePendingAuthGeneration,
     onAbortAndRetryGeneration,
     onOpenRetryModelSelector,
     onRetryGeneration,
@@ -147,6 +153,7 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
         && typeof generationElapsedMs === 'number'
         && generationElapsedMs >= generationTimeoutMs
     );
+    const isPendingAuthGeneration = generationState === 'failed' && Boolean(pendingAuthQueueRequestId);
 
     return (
         <>
@@ -226,12 +233,38 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
                             <Spinner className="h-3.5 w-3.5 shrink-0" />
                         )}
                         {generationState === 'failed'
-                            ? (generationFailureMessage || t('tripView.generation.strip.failedDefault'))
+                            ? (
+                                isPendingAuthGeneration
+                                    ? t('tripPaywall.strip.loginNoDate')
+                                    : (generationFailureMessage || t('tripView.generation.strip.failedDefault'))
+                            )
                             : (isSlowGeneration
                                 ? t('tripView.generation.strip.slow')
                                 : t('tripView.generation.strip.running'))}
                     </span>
                     <div className="flex items-center gap-2">
+                        {isPendingAuthGeneration && onResolvePendingAuthGeneration && (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    trackEvent('trip_generation__trip_strip--pending_auth_login', {
+                                        trip_id: tripId,
+                                        source: 'trip_strip',
+                                        has_claim: Boolean(pendingAuthQueueRequestId),
+                                    });
+                                    onResolvePendingAuthGeneration();
+                                }}
+                                disabled={isResolvingPendingAuthGeneration}
+                                className="px-3 py-1 rounded-md bg-white text-xs font-semibold border border-current/20 hover:bg-white/80 disabled:cursor-not-allowed disabled:opacity-50"
+                                {...getAnalyticsDebugAttributes('trip_generation__trip_strip--pending_auth_login', {
+                                    trip_id: tripId,
+                                    source: 'trip_strip',
+                                    has_claim: Boolean(pendingAuthQueueRequestId),
+                                })}
+                            >
+                                {t('tripPaywall.reactivate.actions.login')}
+                            </button>
+                        )}
                         {isSlowGeneration && canAbortAndRetryGeneration && onAbortAndRetryGeneration && (
                             <button
                                 type="button"
@@ -261,7 +294,7 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
                                 {t('tripView.generation.strip.changeModel')}
                             </button>
                         )}
-                        {generationState === 'failed' && canRetryGeneration && onRetryGeneration && (
+                        {generationState === 'failed' && !isPendingAuthGeneration && canRetryGeneration && onRetryGeneration && (
                             <button
                                 type="button"
                                 onClick={() => {

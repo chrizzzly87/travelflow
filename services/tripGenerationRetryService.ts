@@ -1,13 +1,14 @@
 import { getAiModelById, getDefaultCreateTripModel } from '../config/aiModelCatalog';
 import type {
-    TripGenerationRequestContext,
+    GenerateOptions,
+    SurpriseGenerateOptions,
+    WizardGenerateOptions,
 } from './aiService';
 import {
-    generateTripFromInputSnapshot,
+    buildClassicItineraryPrompt,
+    buildSurpriseItineraryPrompt,
+    buildWizardItineraryPrompt,
 } from './aiService';
-import {
-    beginTripGenerationAbortTelemetry,
-} from './tripGenerationAbortTelemetryService';
 import {
     finishTripGenerationAttemptLog,
     startTripGenerationAttemptLog,
@@ -16,11 +17,10 @@ import {
     createTripGenerationRequestId,
     markTripGenerationFailed,
     markTripGenerationRunning,
-    markTripGenerationSucceeded,
-    mergeGeneratedTripIntoExisting,
     withLatestTripGenerationAttemptId,
 } from './tripGenerationDiagnosticsService';
 import type { ITrip, TripGenerationFlow, TripGenerationInputSnapshot } from '../types';
+import { enqueueAsyncTripGenerationJob } from './tripGenerationAsyncEnqueueService';
 
 export interface RetryTripGenerationOptions {
     source: string;
@@ -31,23 +31,9 @@ export interface RetryTripGenerationOptions {
 
 export interface RetryTripGenerationResult {
     trip: ITrip;
-    state: 'succeeded' | 'failed';
+    state: 'queued' | 'failed';
     error?: unknown;
 }
-
-const generateFromSnapshot = async (
-    snapshot: TripGenerationInputSnapshot,
-    context: TripGenerationRequestContext,
-    aiTarget: {
-        provider: ReturnType<typeof getDefaultCreateTripModel>['provider'];
-        model: string;
-    },
-) => {
-    return generateTripFromInputSnapshot(snapshot, {
-        aiTarget,
-        generationContext: context,
-    });
-};
 
 const resolveRetryModelTarget = (modelId?: string | null) => {
     if (modelId) {
@@ -57,6 +43,54 @@ const resolveRetryModelTarget = (modelId?: string | null) => {
         }
     }
     return getDefaultCreateTripModel();
+};
+
+const buildRetryPromptFromSnapshot = (
+    snapshot: TripGenerationInputSnapshot,
+): string => {
+    if (snapshot.flow === 'classic') {
+        const destinationPrompt = typeof snapshot.payload.destinationPrompt === 'string'
+            ? snapshot.payload.destinationPrompt.trim()
+            : '';
+        if (!destinationPrompt) {
+            throw new Error('Retry snapshot is missing destination prompt.');
+        }
+        const classicOptions = (snapshot.payload.options && typeof snapshot.payload.options === 'object')
+            ? snapshot.payload.options as GenerateOptions
+            : {} as GenerateOptions;
+        return buildClassicItineraryPrompt(destinationPrompt, classicOptions);
+    }
+
+    if (snapshot.flow === 'wizard') {
+        const wizardOptions = (snapshot.payload.options && typeof snapshot.payload.options === 'object')
+            ? snapshot.payload.options as WizardGenerateOptions
+            : { countries: [] } as WizardGenerateOptions;
+        return buildWizardItineraryPrompt(wizardOptions);
+    }
+
+    const surpriseOptions = (snapshot.payload.options && typeof snapshot.payload.options === 'object')
+        ? snapshot.payload.options as SurpriseGenerateOptions
+        : { country: '' } as SurpriseGenerateOptions;
+    return buildSurpriseItineraryPrompt(surpriseOptions);
+};
+
+const resolveRetryRoundTrip = (
+    snapshot: TripGenerationInputSnapshot,
+    trip: ITrip,
+): boolean => {
+    if (snapshot.flow === 'classic') {
+        const options = (snapshot.payload.options && typeof snapshot.payload.options === 'object')
+            ? snapshot.payload.options as GenerateOptions
+            : {} as GenerateOptions;
+        return Boolean(options.roundTrip || trip.roundTrip);
+    }
+    if (snapshot.flow === 'wizard') {
+        const options = (snapshot.payload.options && typeof snapshot.payload.options === 'object')
+            ? snapshot.payload.options as WizardGenerateOptions
+            : { countries: [] } as WizardGenerateOptions;
+        return Boolean(options.roundTrip || trip.roundTrip);
+    }
+    return true;
 };
 
 export const retryTripGenerationWithDefaultModel = async (
@@ -78,11 +112,12 @@ export const retryTripGenerationWithDefaultModel = async (
         provider: retryModel.provider,
         model: retryModel.model,
         requestId,
-        state: 'running',
+        state: 'queued',
         isRetry: true,
         metadata: {
             requestedModelId: options.modelId || null,
             resolvedModelId: retryModel.id,
+            orchestration: 'async_worker',
         },
     });
 
@@ -98,7 +133,7 @@ export const retryTripGenerationWithDefaultModel = async (
         tripId: trip.id,
         flow: snapshot.flow,
         source: options.source,
-        state: 'running',
+        state: 'queued',
         provider: retryModel.provider,
         model: retryModel.model,
         requestId,
@@ -117,60 +152,33 @@ export const retryTripGenerationWithDefaultModel = async (
         }
     }
 
-    const telemetrySession = beginTripGenerationAbortTelemetry({
-        tripId: trip.id,
-        attemptId: attemptId || 'unknown-attempt',
-        requestId,
-        flow: snapshot.flow,
-        source: options.source,
-        provider: retryModel.provider,
-        model: retryModel.model,
-    });
-
     try {
-        const generatedTrip = await generateFromSnapshot(snapshot, {
-            requestId,
-            tripId: trip.id,
-            attemptId: attemptId || undefined,
+        if (!attemptId) {
+            throw new Error('Retry attempt could not be initialized.');
+        }
+        const prompt = buildRetryPromptFromSnapshot(snapshot);
+        const enqueueSucceeded = await enqueueAsyncTripGenerationJob({
             flow: snapshot.flow,
-            source: options.contextSource || options.source,
-        }, {
+            tripId: trip.id,
+            attemptId,
+            requestId,
+            source: options.source,
+            queueRequestId: null,
+            startDate: snapshot.startDate || trip.startDate,
+            roundTrip: resolveRetryRoundTrip(snapshot, trip),
+            prompt,
             provider: retryModel.provider,
             model: retryModel.model,
+            inputSnapshot: snapshot,
+            maxRetries: 0,
         });
-
-        const merged = mergeGeneratedTripIntoExisting(runningTripWithCanonicalAttempt, generatedTrip);
-        const succeeded = markTripGenerationSucceeded(merged, {
-            flow: snapshot.flow,
-            source: options.source,
-            provider: generatedTrip.aiMeta?.provider || retryModel.provider,
-            model: generatedTrip.aiMeta?.model || retryModel.model,
-            providerModel: generatedTrip.aiMeta?.generation?.latestAttempt?.providerModel || null,
-            requestId,
-            attemptId,
-            durationMs: generatedTrip.aiMeta?.generation?.latestAttempt?.durationMs || null,
-            metadata: generatedTrip.aiMeta?.generation?.latestAttempt?.metadata || null,
-        });
-
-        if (options.onTripUpdate) {
-            await options.onTripUpdate(succeeded);
-        }
-
-        if (loggedAttempt?.id) {
-            await finishTripGenerationAttemptLog({
-                attemptId: loggedAttempt.id,
-                state: 'succeeded',
-                provider: succeeded.aiMeta?.provider,
-                model: succeeded.aiMeta?.model,
-                requestId,
-                durationMs: succeeded.aiMeta?.generation?.latestAttempt?.durationMs || null,
-                finishedAt: succeeded.aiMeta?.generation?.latestAttempt?.finishedAt || undefined,
-            });
+        if (!enqueueSucceeded) {
+            throw new Error('Could not enqueue async generation retry.');
         }
 
         return {
-            state: 'succeeded',
-            trip: succeeded,
+            state: 'queued',
+            trip: runningTripWithCanonicalAttempt,
         };
     } catch (error) {
         const failed = markTripGenerationFailed(runningTripWithCanonicalAttempt, {
@@ -212,8 +220,6 @@ export const retryTripGenerationWithDefaultModel = async (
             trip: failed,
             error,
         };
-    } finally {
-        telemetrySession.cancel();
     }
 };
 

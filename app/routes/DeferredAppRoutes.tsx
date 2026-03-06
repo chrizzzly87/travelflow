@@ -43,12 +43,7 @@ const PricingPage = lazyWithRecovery('PricingPage', () => import('../../pages/Pr
 const FaqPage = lazyWithRecovery('FaqPage', () => import('../../pages/FaqPage').then((module) => ({ default: module.FaqPage })));
 const ShareUnavailablePage = lazyWithRecovery('ShareUnavailablePage', () => import('../../pages/ShareUnavailablePage').then((module) => ({ default: module.ShareUnavailablePage })));
 const NotFoundPage = lazyWithRecovery('NotFoundPage', () => import('../../pages/NotFoundPage').then((module) => ({ default: module.NotFoundPage })));
-const CreateTripForm = lazyWithRecovery('CreateTripForm', () => import('../../components/CreateTripForm').then((module) => ({ default: module.CreateTripForm })));
 const CreateTripClassicLabPage = lazyWithRecovery('CreateTripClassicLabPage', () => import('../../pages/CreateTripClassicLabPage').then((module) => ({ default: module.CreateTripClassicLabPage })));
-const CreateTripSplitWorkspaceLabPage = lazyWithRecovery('CreateTripSplitWorkspaceLabPage', () => import('../../pages/CreateTripSplitWorkspaceLabPage').then((module) => ({ default: module.CreateTripSplitWorkspaceLabPage })));
-const CreateTripJourneyArchitectLabPage = lazyWithRecovery('CreateTripJourneyArchitectLabPage', () => import('../../pages/CreateTripJourneyArchitectLabPage').then((module) => ({ default: module.CreateTripJourneyArchitectLabPage })));
-const CreateTripV1Page = lazyWithRecovery('CreateTripV1Page', () => import('../../pages/CreateTripV1Page').then((module) => ({ default: module.CreateTripV1Page })));
-const CreateTripV2Page = lazyWithRecovery('CreateTripV2Page', () => import('../../pages/CreateTripV2Page').then((module) => ({ default: module.CreateTripV2Page })));
 const CreateTripV3Page = lazyWithRecovery('CreateTripV3Page', () => import('../../pages/CreateTripV3Page').then((module) => ({ default: module.CreateTripV3Page })));
 
 const RouteLoadingFallback: React.FC = () => (
@@ -129,46 +124,7 @@ const CreateTripClassicRoute: React.FC<{
     );
 };
 
-const CreateTripLegacyRoute: React.FC<{
-    onTripGenerated: (t: ITrip) => void;
-    onOpenManager: () => void;
-    onLanguageLoaded?: (lang: AppLanguage) => void;
-}> = ({ onTripGenerated, onOpenManager, onLanguageLoaded }) => {
-    useDbSync(onLanguageLoaded);
-    return (
-        <Suspense fallback={<RouteLoadingFallback />}>
-            <CreateTripForm onTripGenerated={onTripGenerated} onOpenManager={onOpenManager} />
-        </Suspense>
-    );
-};
-
-const CreateTripDesignV1Route: React.FC<{
-    onTripGenerated: (t: ITrip) => void;
-    onOpenManager: () => void;
-    onLanguageLoaded?: (lang: AppLanguage) => void;
-}> = ({ onTripGenerated, onOpenManager, onLanguageLoaded }) => {
-    useDbSync(onLanguageLoaded);
-    return (
-        <Suspense fallback={<RouteLoadingFallback />}>
-            <CreateTripV1Page onTripGenerated={onTripGenerated} onOpenManager={onOpenManager} />
-        </Suspense>
-    );
-};
-
-const CreateTripDesignV2Route: React.FC<{
-    onTripGenerated: (t: ITrip) => void;
-    onOpenManager: () => void;
-    onLanguageLoaded?: (lang: AppLanguage) => void;
-}> = ({ onTripGenerated, onOpenManager, onLanguageLoaded }) => {
-    useDbSync(onLanguageLoaded);
-    return (
-        <Suspense fallback={<RouteLoadingFallback />}>
-            <CreateTripV2Page onTripGenerated={onTripGenerated} onOpenManager={onOpenManager} />
-        </Suspense>
-    );
-};
-
-const CreateTripDesignV3Route: React.FC<{
+const CreateTripWizardRoute: React.FC<{
     onTripGenerated: (t: ITrip) => void;
     onOpenManager: () => void;
     onLanguageLoaded?: (lang: AppLanguage) => void;
@@ -267,93 +223,24 @@ export const DeferredAppRoutes: React.FC<DeferredAppRoutesProps> = ({
                 }
             />
             <Route
-                path="/create-trip/labs/classic-legacy"
+                path="/create-trip/wizard"
                 element={
-                    renderWithSuspense(<CreateTripLegacyRoute
+                    renderWithSuspense(<CreateTripWizardRoute
                         onTripGenerated={onTripGenerated}
                         onOpenManager={onOpenManager}
                         onLanguageLoaded={onAppLanguageLoaded}
                     />)
                 }
             />
-            <Route
-                path="/create-trip/labs/split-workspace"
-                element={
-                    renderWithSuspense(<CreateTripSplitWorkspaceLabPage
-                        onOpenManager={onOpenManager}
-                        onLanguageLoaded={onAppLanguageLoaded}
-                    />)
-                }
-            />
-            <Route
-                path="/create-trip/labs/journey-architect"
-                element={
-                    renderWithSuspense(<CreateTripJourneyArchitectLabPage
-                        onOpenManager={onOpenManager}
-                        onLanguageLoaded={onAppLanguageLoaded}
-                    />)
-                }
-            />
-            <Route
-                path="/create-trip/labs/design-v1"
-                element={
-                    renderWithSuspense(<CreateTripDesignV1Route
-                        onTripGenerated={onTripGenerated}
-                        onOpenManager={onOpenManager}
-                        onLanguageLoaded={onAppLanguageLoaded}
-                    />)
-                }
-            />
-            <Route
-                path="/create-trip/labs/design-v2"
-                element={
-                    renderWithSuspense(<CreateTripDesignV2Route
-                        onTripGenerated={onTripGenerated}
-                        onOpenManager={onOpenManager}
-                        onLanguageLoaded={onAppLanguageLoaded}
-                    />)
-                }
-            />
-            <Route
-                path="/create-trip/labs/design-v3"
-                element={
-                    renderWithSuspense(<CreateTripDesignV3Route
-                        onTripGenerated={onTripGenerated}
-                        onOpenManager={onOpenManager}
-                        onLanguageLoaded={onAppLanguageLoaded}
-                    />)
-                }
-            />
-            <Route
-                path="/create-trip/v1"
-                element={
-                    renderWithSuspense(<CreateTripDesignV1Route
-                        onTripGenerated={onTripGenerated}
-                        onOpenManager={onOpenManager}
-                        onLanguageLoaded={onAppLanguageLoaded}
-                    />)
-                }
-            />
-            <Route
-                path="/create-trip/v2"
-                element={
-                    renderWithSuspense(<CreateTripDesignV2Route
-                        onTripGenerated={onTripGenerated}
-                        onOpenManager={onOpenManager}
-                        onLanguageLoaded={onAppLanguageLoaded}
-                    />)
-                }
-            />
-            <Route
-                path="/create-trip/v3"
-                element={
-                    renderWithSuspense(<CreateTripDesignV3Route
-                        onTripGenerated={onTripGenerated}
-                        onOpenManager={onOpenManager}
-                        onLanguageLoaded={onAppLanguageLoaded}
-                    />)
-                }
-            />
+            <Route path="/create-trip/labs/classic-legacy" element={<Navigate to="/create-trip" replace />} />
+            <Route path="/create-trip/labs/split-workspace" element={<Navigate to="/create-trip" replace />} />
+            <Route path="/create-trip/labs/journey-architect" element={<Navigate to="/create-trip" replace />} />
+            <Route path="/create-trip/labs/design-v1" element={<Navigate to="/create-trip" replace />} />
+            <Route path="/create-trip/labs/design-v2" element={<Navigate to="/create-trip" replace />} />
+            <Route path="/create-trip/labs/design-v3" element={<Navigate to="/create-trip/wizard" replace />} />
+            <Route path="/create-trip/v1" element={<Navigate to="/create-trip" replace />} />
+            <Route path="/create-trip/v2" element={<Navigate to="/create-trip" replace />} />
+            <Route path="/create-trip/v3" element={<Navigate to="/create-trip/wizard" replace />} />
 
             <Route
                 path="/profile/onboarding"

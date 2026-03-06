@@ -3,10 +3,11 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { AppLanguage, ITrip, ITimelineItem, IViewSettings, ShareMode, TripGenerationAttemptSummary, TripGenerationState } from '../types';
 import { getDefaultCreateTripModel } from '../config/aiModelCatalog';
+import { DB_ENABLED } from '../config/db';
 import { GoogleMapsLoader } from './GoogleMapsLoader';
 import { BASE_PIXELS_PER_DAY, DEFAULT_CITY_COLOR_PALETTE_ID, DEFAULT_DISTANCE_UNIT, buildShareUrl, formatDistance, getTimelineBounds, getTripDistanceKm, isInternalMapColorModeControlEnabled, normalizeMapColorMode } from '../utils';
 import { getExampleMapViewTransitionName, getExampleTitleViewTransitionName } from '../shared/viewTransitionNames';
-import { type DbTripAccessMetadata } from '../services/dbApi';
+import { dbGetTrip, type DbTripAccessMetadata } from '../services/dbApi';
 import {
     buildTripCalendarExport,
     downloadTripCalendarExport,
@@ -21,7 +22,12 @@ import {
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
 import { removeLocalStorageItem } from '../services/browserStorageService';
 import { useLoginModal } from '../hooks/useLoginModal';
-import { buildPathFromLocationParts } from '../services/authNavigationService';
+import {
+    buildLoginPathWithNext,
+    buildPathFromLocationParts,
+    rememberAuthReturnPath,
+    setPendingAuthRedirect,
+} from '../services/authNavigationService';
 import { useAuth } from '../hooks/useAuth';
 import { useConnectivityStatus } from '../hooks/useConnectivityStatus';
 import { useSyncStatus } from '../hooks/useSyncStatus';
@@ -83,6 +89,9 @@ import { retryTripGenerationWithDefaultModel } from '../services/tripGenerationR
 import { abortActiveTripGenerationRequest } from '../services/aiService';
 import { buildBenchmarkScenarioImportUrl } from '../services/tripGenerationBenchmarkBridge';
 import { beginTripGenerationTabFeedback, type TripGenerationTabFeedbackSession } from '../services/tripGenerationTabFeedbackService';
+import { shouldApplyPolledTripUpdate } from '../services/tripGenerationPollingService';
+import { processQueuedTripGenerationAfterAuth } from '../services/tripGenerationQueueService';
+import { registerTripGenerationCompletionWatch } from '../services/tripGenerationCompletionWatchService';
 
 const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
     moduleKey: string,
@@ -185,6 +194,7 @@ const GENERATION_PROGRESS_MESSAGES = [
     'Structuring your daily timeline...',
     'Finalizing logistics and details...',
 ];
+const TRIP_GENERATION_POLL_INTERVAL_MS = 4_000;
 const TRIP_CALENDAR_EXPORT_EVENT_BY_SCOPE: Record<
     TripCalendarExportScope,
     'trip_view__calendar_export--activity' | 'trip_view__calendar_export--activities' | 'trip_view__calendar_export--cities' | 'trip_view__calendar_export--all'
@@ -871,7 +881,7 @@ const useTripViewRender = ({
 }: TripViewProps): React.ReactElement => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { t } = useTranslation('common');
+    const { t, i18n } = useTranslation('common');
     const { openLoginModal } = useLoginModal();
     const { access, profile, isAuthenticated, isAnonymous, isAdmin, logout } = useAuth();
     const { snapshot: connectivitySnapshot } = useConnectivityStatus();
@@ -925,6 +935,46 @@ const useTripViewRender = ({
         }, 1_000);
         return () => window.clearInterval(timer);
     }, [shouldPollGenerationState, trip.id]);
+    useEffect(() => {
+        if (!DB_ENABLED) return undefined;
+        if (!shouldPollGenerationState) return undefined;
+        if (connectivitySnapshot.state === 'offline') return undefined;
+        if (tripAccess?.source === 'public_read') return undefined;
+
+        let cancelled = false;
+        let inFlight = false;
+        const poll = async () => {
+            if (cancelled || inFlight) return;
+            inFlight = true;
+            try {
+                const remote = await dbGetTrip(trip.id);
+                if (cancelled || !remote?.trip) return;
+
+                const remoteTrip = remote.trip;
+                const localTrip = tripRef.current;
+                if (shouldApplyPolledTripUpdate(localTrip, remoteTrip, Date.now())) {
+                    onUpdateTrip(remoteTrip);
+                }
+            } finally {
+                inFlight = false;
+            }
+        };
+
+        void poll();
+        const timer = window.setInterval(() => {
+            void poll();
+        }, TRIP_GENERATION_POLL_INTERVAL_MS);
+        return () => {
+            cancelled = true;
+            window.clearInterval(timer);
+        };
+    }, [
+        connectivitySnapshot.state,
+        onUpdateTrip,
+        shouldPollGenerationState,
+        trip.id,
+        tripAccess?.source,
+    ]);
     useEffect(() => () => {
         retryGenerationTabFeedbackSessionRef.current?.cancel();
         retryGenerationTabFeedbackSessionRef.current = null;
@@ -937,10 +987,33 @@ const useTripViewRender = ({
         () => getLatestTripGenerationAttempt(trip),
         [trip]
     );
+    const pendingAuthQueueRequestId = useMemo(() => {
+        const metadata = latestGenerationAttempt?.metadata;
+        if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) return null;
+        const queueRequestValue = metadata.queueRequestId;
+        const queueRequestId = typeof queueRequestValue === 'string' ? queueRequestValue.trim() : '';
+        if (!queueRequestId) return null;
+        const pendingAuthValue = metadata.pendingAuth;
+        return pendingAuthValue === true ? queueRequestId : null;
+    }, [latestGenerationAttempt?.metadata]);
+    const [isResolvingPendingAuthGeneration, setIsResolvingPendingAuthGeneration] = useState(false);
     const generationElapsedMs = useMemo(
         () => getTripGenerationElapsedMs(trip, generationNowMs),
         [generationNowMs, trip]
     );
+    useEffect(() => {
+        const session = retryGenerationTabFeedbackSessionRef.current;
+        if (!session) return;
+        if (generationState === 'succeeded') {
+            session.complete('success', { title: trip.title });
+            retryGenerationTabFeedbackSessionRef.current = null;
+            return;
+        }
+        if (generationState === 'failed') {
+            session.complete('error');
+            retryGenerationTabFeedbackSessionRef.current = null;
+        }
+    }, [generationState, trip.title]);
     const isGenerationSlow = (
         (generationState === 'running' || generationState === 'queued')
         && typeof generationElapsedMs === 'number'
@@ -1017,6 +1090,58 @@ const useTripViewRender = ({
         t,
         trip.defaultView,
         trip.id,
+    ]);
+
+    const handleResolvePendingAuthGeneration = useCallback(async () => {
+        if (!pendingAuthQueueRequestId || isResolvingPendingAuthGeneration) return;
+
+        if (isAuthenticated && !isAnonymous) {
+            setIsResolvingPendingAuthGeneration(true);
+            try {
+                const result = await processQueuedTripGenerationAfterAuth(pendingAuthQueueRequestId);
+                registerTripGenerationCompletionWatch(result.tripId, 'auth_queue_claim_trip_view');
+                showAppToast({
+                    tone: 'add',
+                    title: 'Generation started',
+                    description: 'Trip generation started and is running in the background.',
+                });
+                navigate(`/trip/${result.tripId}`, { replace: true });
+            } catch (error) {
+                showAppToast({
+                    tone: 'warning',
+                    title: 'Generation unavailable',
+                    description: error instanceof Error ? error.message : 'Could not start trip generation.',
+                });
+            } finally {
+                setIsResolvingPendingAuthGeneration(false);
+            }
+            return;
+        }
+
+        const authRedirect = buildLoginPathWithNext({
+            pathname: location.pathname,
+            search: location.search,
+            hash: location.hash,
+            language: i18n.language,
+            resolvedLanguage: i18n.resolvedLanguage,
+        });
+        rememberAuthReturnPath(authRedirect.nextPath);
+        setPendingAuthRedirect(authRedirect.nextPath, 'trip_generation_pending_auth');
+        const query = new URLSearchParams();
+        query.set('next', authRedirect.nextPath);
+        query.set('claim', pendingAuthQueueRequestId);
+        navigate(`${authRedirect.loginPath}?${query.toString()}`);
+    }, [
+        i18n.language,
+        i18n.resolvedLanguage,
+        isAnonymous,
+        isAuthenticated,
+        isResolvingPendingAuthGeneration,
+        location.hash,
+        location.pathname,
+        location.search,
+        navigate,
+        pendingAuthQueueRequestId,
     ]);
 
     const {
@@ -1270,6 +1395,7 @@ const useTripViewRender = ({
 
     const canRetryGeneration = canEdit
         && !isRetryingGeneration
+        && !pendingAuthQueueRequestId
         && Boolean(trip.aiMeta?.generation?.inputSnapshot)
         && generationState !== 'running'
         && generationState !== 'queued';
@@ -1354,6 +1480,7 @@ const useTripViewRender = ({
         setIsRetryingGeneration(true);
         retryGenerationTabFeedbackSessionRef.current?.cancel();
         retryGenerationTabFeedbackSessionRef.current = beginTripGenerationTabFeedback();
+        let keepRetryFeedbackActive = false;
         try {
             const result = await retryTripGenerationWithDefaultModel(baseTrip, {
                 source: source === 'trip_info' ? 'trip_info_modal' : 'trip_status_strip',
@@ -1377,7 +1504,13 @@ const useTripViewRender = ({
                 );
             }
 
-            if (result.state === 'succeeded') {
+            if (result.state === 'queued') {
+                keepRetryFeedbackActive = true;
+                showToast(t('tripView.generation.retry.queued'), {
+                    tone: 'neutral',
+                    title: t('tripView.generation.retry.queuedTitle'),
+                });
+            } else if (result.state === 'succeeded') {
                 retryGenerationTabFeedbackSessionRef.current?.complete('success', {
                     title: result.trip.title,
                 });
@@ -1400,7 +1533,9 @@ const useTripViewRender = ({
             });
         } finally {
             setIsRetryingGeneration(false);
-            retryGenerationTabFeedbackSessionRef.current = null;
+            if (!keepRetryFeedbackActive) {
+                retryGenerationTabFeedbackSessionRef.current = null;
+            }
         }
     }, [
         adminOverrideEnabled,
@@ -2322,9 +2457,14 @@ const useTripViewRender = ({
                     generationElapsedMs={generationElapsedMs}
                     generationTimeoutMs={TRIP_GENERATION_TIMEOUT_MS}
                     generationFailureMessage={latestGenerationAttempt?.errorMessage || null}
+                    pendingAuthQueueRequestId={pendingAuthQueueRequestId}
                     canRetryGeneration={canRetryGeneration}
                     canAbortAndRetryGeneration={canAbortAndRetryGeneration}
                     isRetryingGeneration={isRetryingGeneration}
+                    isResolvingPendingAuthGeneration={isResolvingPendingAuthGeneration}
+                    onResolvePendingAuthGeneration={() => {
+                        void handleResolvePendingAuthGeneration();
+                    }}
                     onAbortAndRetryGeneration={() => {
                         void handleAbortAndRetryGeneration();
                     }}
