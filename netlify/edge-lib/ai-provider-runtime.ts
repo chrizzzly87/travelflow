@@ -46,12 +46,15 @@ export const PROVIDER_ALLOWLIST: Record<string, Set<string>> = {
     "gemini-3-flash-preview",
     "gemini-3-pro-preview",
     "gemini-3.1-pro-preview",
+    "gemini-3.1-flash-lite-preview",
   ]),
   openai: new Set([
     "gpt-5-nano",
     "gpt-5-mini",
     "gpt-5.2",
     "gpt-5.2-pro",
+    "gpt-5.4",
+    "gpt-5.4-pro",
   ]),
   anthropic: new Set([
     "claude-haiku-4.5",
@@ -112,6 +115,7 @@ const GEMINI_PRICING_PER_MILLION: Record<string, { input: number; output: number
   "gemini-3-flash-preview": { input: 0.35, output: 1.05 },
   "gemini-3-pro-preview": { input: 3.5, output: 10.5 },
   "gemini-3.1-pro-preview": { input: 4.0, output: 12.0 },
+  "gemini-3.1-flash-lite-preview": { input: 0.08, output: 0.3 },
 };
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
