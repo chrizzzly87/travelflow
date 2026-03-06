@@ -86,6 +86,7 @@ summary: "Failed trip generations are now easier to spot, inspect, and retry on 
 - [ ] [Internal] ⚙️ Async enqueue now performs a best-effort authenticated worker kick, and the worker accepts verified user bearer triggers (single-job), reducing stuck queued trips when cron/admin-key wiring drifts.
 - [ ] [Internal] 🛠️ Worker now marks stale superseded queue jobs as skipped so old backlog attempts cannot overwrite newer retry attempts for the same trip.
 - [ ] [Internal] ⚙️ Async worker provider timeout now defaults to 120 seconds and lease windows scale from timeout, reducing false timeout churn on slower models.
+- [ ] [Internal] ⚙️ Cron/background worker trigger timeouts now allow longer async worker runs, reducing premature trigger aborts on long model responses.
 - [ ] [Internal] 🛠️ Retry now preflights server generation state, reuses existing queued/running attempts, and force-kicks the worker instead of creating duplicate queued retries.
 - [ ] [Internal] 🛠️ Client-side stale-state fallback no longer auto-flips async-worker queued/running attempts to failed before the worker writes a terminal state.
 - [ ] [Internal] 🛠️ Queue claiming now prefers newest jobs within the same priority/run window, so repeated retries process the latest attempt first.
