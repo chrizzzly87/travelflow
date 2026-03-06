@@ -19,6 +19,7 @@ Status date: 2026-03-06
 - [x] Stabilized `App.tsx` view-settings persistence callback dependencies to avoid re-scheduling persistence work when auth access objects churn by reference.
 - [x] Normalized in-memory `currentViewSettings` precision in `TripView` and added zoom-diff epsilon handling to prevent visual-history commit churn from tiny float jitter.
 - [x] Tuned city panel gradient/opacity styling to avoid washed-out/dim appearance in timeline lanes.
+- [x] Deepened city lane color treatment so Tailwind `bg-100` palette tokens no longer get lightened into near-white timeline panels.
 - [x] Hardened generation-state derivation so stale queued/running metadata no longer keeps polling alive after a newer successful async result has already materialized in trip content.
 - [x] Added regression coverage for stale queued metadata on already-succeeded trips so polling stops instead of continuing indefinitely.
 - [x] Kept Trip Manager country enrichment local-only so opening My Trips no longer writes cosmetic country metadata back to the remote trip row.
