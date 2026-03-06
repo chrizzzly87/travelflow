@@ -21,6 +21,12 @@ interface TripGenerationJobRow {
     updated_at?: unknown;
 }
 
+const toMs = (value: string | null | undefined): number | null => {
+    if (!value) return null;
+    const parsed = Date.parse(value);
+    return Number.isFinite(parsed) ? parsed : null;
+};
+
 const WORKER_TRIGGER_COOLDOWN_MS = 8_000;
 const workerTriggerByTrip = new Map<string, number>();
 
@@ -74,6 +80,21 @@ const parseJobSummary = (value: unknown): TripGenerationJobSummary | null => {
         createdAt,
         updatedAt,
     };
+};
+
+export const isTripGenerationJobActive = (
+    job: Pick<TripGenerationJobSummary, 'state' | 'runAfter' | 'leaseExpiresAt'>,
+    nowMs = Date.now(),
+): boolean => {
+    if (job.state === 'queued') {
+        const runAfterMs = toMs(job.runAfter);
+        return runAfterMs === null || runAfterMs <= nowMs;
+    }
+    if (job.state === 'leased') {
+        const leaseExpiresAtMs = toMs(job.leaseExpiresAt);
+        return leaseExpiresAtMs !== null && leaseExpiresAtMs > nowMs;
+    }
+    return false;
 };
 
 const canTriggerWorkerForTrip = (tripId: string, force = false): boolean => {

@@ -70,19 +70,20 @@ const DEFAULT_MODEL = "gpt-5.4";
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MAX_ATTEMPT_HISTORY = 12;
 const MAX_JOB_BATCH = 10;
-const WORKER_PROVIDER_TIMEOUT_MS = resolveTimeoutMs("AI_GENERATION_ASYNC_PROVIDER_TIMEOUT_MS", 120_000, 20_000, 180_000);
-const WORKER_LEASE_SECONDS = Math.max(60, Math.min(600, Math.ceil((WORKER_PROVIDER_TIMEOUT_MS + 30_000) / 1_000)));
+// Keep provider timeout safely below edge runtime ceilings to avoid orphaned leased jobs.
+const WORKER_PROVIDER_TIMEOUT_MS = resolveTimeoutMs("AI_GENERATION_ASYNC_PROVIDER_TIMEOUT_MS", 20_000, 10_000, 30_000);
+const WORKER_LEASE_SECONDS = Math.max(45, Math.min(180, Math.ceil((WORKER_PROVIDER_TIMEOUT_MS + 15_000) / 1_000)));
 
 const CITY_COLORS = [
-  "bg-rose-100 border-rose-300 text-rose-800",
-  "bg-orange-100 border-orange-300 text-orange-800",
-  "bg-amber-100 border-amber-300 text-amber-800",
-  "bg-emerald-100 border-emerald-300 text-emerald-800",
-  "bg-cyan-100 border-cyan-300 text-cyan-800",
-  "bg-sky-100 border-sky-300 text-sky-800",
-  "bg-indigo-100 border-indigo-300 text-indigo-800",
-  "bg-violet-100 border-violet-300 text-violet-800",
-  "bg-fuchsia-100 border-fuchsia-300 text-fuchsia-800",
+  "bg-rose-200 border-rose-300 text-rose-900",
+  "bg-orange-200 border-orange-300 text-orange-900",
+  "bg-amber-200 border-amber-300 text-amber-900",
+  "bg-emerald-200 border-emerald-300 text-emerald-900",
+  "bg-cyan-200 border-cyan-300 text-cyan-900",
+  "bg-sky-200 border-sky-300 text-sky-900",
+  "bg-indigo-200 border-indigo-300 text-indigo-900",
+  "bg-violet-200 border-violet-300 text-violet-900",
+  "bg-fuchsia-200 border-fuchsia-300 text-fuchsia-900",
 ];
 const TRAVEL_COLOR = "bg-stone-800 border-stone-600 text-stone-100";
 const ACTIVITY_TYPE_COLOR: Record<string, string> = {
@@ -849,7 +850,14 @@ const upsertTripRow = async (
     },
     body: JSON.stringify(payload),
   });
-  return response.ok;
+  if (response.ok) return true;
+  const errorMessage = await extractRpcErrorMessage(response, "trip upsert failed");
+  console.error("[ai-generate-worker] trip upsert failed", {
+    tripId,
+    status: response.status,
+    error: errorMessage,
+  });
+  return false;
 };
 
 const insertTripVersion = async (
@@ -857,8 +865,8 @@ const insertTripVersion = async (
   tripId: string,
   trip: Record<string, unknown>,
   label: string,
-): Promise<void> => {
-  await serviceFetch(config, "/rest/v1/trip_versions", {
+): Promise<boolean> => {
+  const response = await serviceFetch(config, "/rest/v1/trip_versions", {
     method: "POST",
     body: JSON.stringify({
       trip_id: tripId,
@@ -867,6 +875,15 @@ const insertTripVersion = async (
       label,
     }),
   });
+  if (response.ok) return true;
+  const errorMessage = await extractRpcErrorMessage(response, "trip version insert failed");
+  console.error("[ai-generate-worker] trip version insert failed", {
+    tripId,
+    label,
+    status: response.status,
+    error: errorMessage,
+  });
+  return false;
 };
 
 const finishAttempt = async (
@@ -1204,8 +1221,10 @@ const processJob = async (
         },
       });
 
-      await upsertTripRow(config, failedTrip, job.owner_id);
-      await insertTripVersion(config, job.trip_id, failedTrip, "Data: Queued generation failed");
+      const failedTripPersisted = await upsertTripRow(config, failedTrip, job.owner_id);
+      const failedTripVersionLogged = failedTripPersisted
+        ? await insertTripVersion(config, job.trip_id, failedTrip, "Data: Queued generation failed")
+        : false;
       const attemptLogged = await finishAttempt(config, {
         p_attempt_id: payload.attemptId,
         p_state: "failed",
@@ -1221,6 +1240,8 @@ const processJob = async (
         p_metadata: {
           source: WORKER_SOURCE,
           details: asString(failure.details),
+          trip_upsert_ok: failedTripPersisted,
+          trip_version_ok: failedTripVersionLogged,
         },
       });
       const jobFailed = await failJob(config, {
@@ -1266,6 +1287,8 @@ const processJob = async (
         tripId: job.trip_id,
         error: [
           message,
+          !failedTripPersisted ? "trip_upsert_failed" : null,
+          failedTripPersisted && !failedTripVersionLogged ? "trip_version_insert_failed" : null,
           !attemptLogged ? "attempt_finish_rpc_failed" : null,
           !jobFailed ? "job_fail_rpc_failed" : null,
         ].filter(Boolean).join(" | "),
@@ -1298,8 +1321,18 @@ const processJob = async (
       },
     );
 
-    await upsertTripRow(config, succeededTrip, job.owner_id);
-    await insertTripVersion(config, job.trip_id, succeededTrip, "Data: Queued generation completed");
+    const succeededTripPersisted = await upsertTripRow(config, succeededTrip, job.owner_id);
+    if (!succeededTripPersisted) {
+      const persistenceError = new Error("Trip upsert failed while finalizing queued generation.");
+      persistenceError.name = "ASYNC_WORKER_TRIP_UPSERT_FAILED";
+      throw persistenceError;
+    }
+    const succeededTripVersionLogged = await insertTripVersion(config, job.trip_id, succeededTrip, "Data: Queued generation completed");
+    if (!succeededTripVersionLogged) {
+      const versionError = new Error("Trip version insert failed while finalizing queued generation.");
+      versionError.name = "ASYNC_WORKER_TRIP_VERSION_WRITE_FAILED";
+      throw versionError;
+    }
     const attemptLogged = await finishAttempt(config, {
       p_attempt_id: payload.attemptId,
       p_state: "succeeded",
@@ -1311,6 +1344,8 @@ const processJob = async (
       p_status_code: 200,
       p_metadata: {
         source: WORKER_SOURCE,
+        trip_upsert_ok: true,
+        trip_version_ok: true,
       },
     });
     const jobCompleted = await completeJob(config, job.id, workerId);
@@ -1383,8 +1418,10 @@ const processJob = async (
         source: WORKER_SOURCE,
       },
     });
-    await upsertTripRow(config, failedTrip, job.owner_id);
-    await insertTripVersion(config, job.trip_id, failedTrip, "Data: Queued generation failed");
+    const failedTripPersisted = await upsertTripRow(config, failedTrip, job.owner_id);
+    const failedTripVersionLogged = failedTripPersisted
+      ? await insertTripVersion(config, job.trip_id, failedTrip, "Data: Queued generation failed")
+      : false;
     const attemptLogged = await finishAttempt(config, {
       p_attempt_id: payload.attemptId,
       p_state: "failed",
@@ -1399,6 +1436,8 @@ const processJob = async (
       p_error_message: message.slice(0, 1200),
       p_metadata: {
         source: WORKER_SOURCE,
+        trip_upsert_ok: failedTripPersisted,
+        trip_version_ok: failedTripVersionLogged,
       },
     });
     const jobFailed = await failJob(config, {
@@ -1443,6 +1482,8 @@ const processJob = async (
       tripId: job.trip_id,
       error: [
         message,
+        !failedTripPersisted ? "trip_upsert_failed" : null,
+        failedTripPersisted && !failedTripVersionLogged ? "trip_version_insert_failed" : null,
         !attemptLogged ? "attempt_finish_rpc_failed" : null,
         !jobFailed ? "job_fail_rpc_failed" : null,
       ].filter(Boolean).join(" | "),

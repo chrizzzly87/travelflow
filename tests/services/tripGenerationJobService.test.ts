@@ -23,6 +23,7 @@ vi.mock('../../services/dbService', () => ({
 import {
   claimTripGenerationJobs,
   enqueueTripGenerationJob,
+  isTripGenerationJobActive,
   listTripGenerationJobsByTrip,
   requeueTripGenerationJob,
 } from '../../services/tripGenerationJobService';
@@ -220,5 +221,21 @@ describe('tripGenerationJobService', () => {
       p_run_after: null,
       p_reset_retry_count: true,
     });
+  });
+
+  it('treats queued jobs with future run_after as inactive', () => {
+    expect(isTripGenerationJobActive({
+      state: 'queued',
+      runAfter: '2099-01-01T00:00:00.000Z',
+      leaseExpiresAt: null,
+    }, Date.parse('2026-03-06T12:00:00.000Z'))).toBe(false);
+  });
+
+  it('treats leased jobs with expired lease as inactive', () => {
+    expect(isTripGenerationJobActive({
+      state: 'leased',
+      runAfter: '2026-03-06T10:00:00.000Z',
+      leaseExpiresAt: '2026-03-06T11:00:00.000Z',
+    }, Date.parse('2026-03-06T12:00:00.000Z'))).toBe(false);
   });
 });

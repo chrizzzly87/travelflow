@@ -92,7 +92,8 @@ import { beginTripGenerationTabFeedback, type TripGenerationTabFeedbackSession }
 import { shouldApplyPolledTripUpdate, shouldPollTripGenerationState } from '../services/tripGenerationPollingService';
 import { processQueuedTripGenerationAfterAuth } from '../services/tripGenerationQueueService';
 import { registerTripGenerationCompletionWatch } from '../services/tripGenerationCompletionWatchService';
-import { triggerTripGenerationWorker } from '../services/tripGenerationJobService';
+import { isTripGenerationJobActive, listTripGenerationJobsByTrip, triggerTripGenerationWorker } from '../services/tripGenerationJobService';
+import { finishTripGenerationAttemptLog } from '../services/tripGenerationAttemptLogService';
 
 const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
     moduleKey: string,
@@ -896,6 +897,7 @@ const useTripViewRender = ({
     const retryGenerationTabFeedbackSessionRef = useRef<TripGenerationTabFeedbackSession | null>(null);
     const pendingRetryGenerationStateRef = useRef(false);
     const retryMutationInFlightRef = useRef(false);
+    const asyncStallRecoveryAttemptIdRef = useRef<string | null>(null);
     tripRef.current = trip;
     const [generationNowMs, setGenerationNowMs] = useState(() => Date.now());
     const [retryModelId, setRetryModelId] = useState<string>(getDefaultCreateTripModel().id);
@@ -1037,6 +1039,111 @@ const useTripViewRender = ({
         () => getTripGenerationElapsedMs(trip, generationNowMs),
         [generationNowMs, trip]
     );
+    useEffect(() => {
+        if (!latestGenerationAttempt?.id) {
+            asyncStallRecoveryAttemptIdRef.current = null;
+            return;
+        }
+        if (generationState !== 'queued' && generationState !== 'running') {
+            asyncStallRecoveryAttemptIdRef.current = null;
+            return;
+        }
+        if (latestGenerationAttemptOrchestration !== 'async_worker') {
+            asyncStallRecoveryAttemptIdRef.current = null;
+            return;
+        }
+        if (typeof generationElapsedMs !== 'number' || generationElapsedMs < (TRIP_GENERATION_TIMEOUT_MS + 20_000)) {
+            return;
+        }
+        if (asyncStallRecoveryAttemptIdRef.current === latestGenerationAttempt.id) {
+            return;
+        }
+        if (!DB_ENABLED) return;
+        if (connectivitySnapshot.state === 'offline') return;
+        if (tripAccess?.source === 'public_read') return;
+
+        let cancelled = false;
+        const recoverStalledAttempt = async () => {
+            try {
+                const jobs = await listTripGenerationJobsByTrip(trip.id, {
+                    limit: 20,
+                    states: ['queued', 'leased'],
+                });
+                if (cancelled) return;
+                const nowMs = Date.now();
+                const hasActiveJob = jobs.some((job) => (
+                    job.attemptId === latestGenerationAttempt.id
+                    && isTripGenerationJobActive(job, nowMs)
+                ));
+                const hasHardStalledAttempt = typeof generationElapsedMs === 'number'
+                    && generationElapsedMs >= (TRIP_GENERATION_TIMEOUT_MS + 75_000);
+                if (hasActiveJob && !hasHardStalledAttempt) return;
+
+                asyncStallRecoveryAttemptIdRef.current = latestGenerationAttempt.id;
+                const failedTrip = markTripGenerationFailed(tripRef.current, {
+                    flow: latestGenerationAttempt.flow,
+                    source: 'trip_view_async_stall_recovery',
+                    requestId: latestGenerationAttempt.requestId || null,
+                    attemptId: latestGenerationAttempt.id,
+                    provider: latestGenerationAttempt.provider || tripRef.current.aiMeta?.provider || null,
+                    model: latestGenerationAttempt.model || tripRef.current.aiMeta?.model || null,
+                    providerModel: latestGenerationAttempt.providerModel || null,
+                    error: {
+                        code: 'ASYNC_WORKER_JOB_MISSING',
+                        status: 504,
+                        message: 'Generation queue job was not active anymore. Please retry.',
+                        failureKind: 'timeout',
+                    },
+                    metadata: {
+                        orchestration: 'async_worker',
+                        source: 'trip_view_async_stall_recovery',
+                    },
+                });
+                onUpdateTrip(failedTrip);
+                await finishTripGenerationAttemptLog({
+                    attemptId: latestGenerationAttempt.id,
+                    state: 'failed',
+                    provider: latestGenerationAttempt.provider || failedTrip.aiMeta?.provider || null,
+                    model: latestGenerationAttempt.model || failedTrip.aiMeta?.model || null,
+                    providerModel: latestGenerationAttempt.providerModel || null,
+                    requestId: latestGenerationAttempt.requestId || null,
+                    durationMs: failedTrip.aiMeta?.generation?.latestAttempt?.durationMs
+                        || latestGenerationAttempt.durationMs
+                        || generationElapsedMs,
+                    statusCode: 504,
+                    failureKind: 'timeout',
+                    errorCode: 'ASYNC_WORKER_JOB_MISSING',
+                    errorMessage: 'Generation queue job was not active anymore. Please retry.',
+                    finishedAt: failedTrip.aiMeta?.generation?.latestAttempt?.finishedAt || undefined,
+                    metadata: {
+                        source: 'trip_view_async_stall_recovery',
+                    },
+                });
+            } catch {
+                // best effort: keep queued state if diagnostics lookup fails.
+            }
+        };
+
+        void recoverStalledAttempt();
+        return () => {
+            cancelled = true;
+        };
+    }, [
+        connectivitySnapshot.state,
+        generationElapsedMs,
+        generationState,
+        latestGenerationAttempt?.durationMs,
+        latestGenerationAttempt?.flow,
+        latestGenerationAttempt?.id,
+        latestGenerationAttempt?.model,
+        latestGenerationAttempt?.provider,
+        latestGenerationAttempt?.providerModel,
+        latestGenerationAttempt?.requestId,
+        latestGenerationAttemptOrchestration,
+        onUpdateTrip,
+        trip.id,
+        tripAccess?.source,
+    ]);
     useEffect(() => {
         const session = retryGenerationTabFeedbackSessionRef.current;
         const isGenerationInFlight = generationState === 'running' || generationState === 'queued';
@@ -2002,6 +2109,7 @@ const useTripViewRender = ({
 
         const {
             changes,
+            didZoomChange,
             isAutoZoomOnlyChange,
         } = resolveVisualDiff({
             previous: prev,
@@ -2027,6 +2135,14 @@ const useTripViewRender = ({
             zoomChangeSourceRef.current = null;
             return;
         }
+        const hasOnlyZoomLabel = changes.length === 1 && (
+            changes[0] === 'Zoomed in' || changes[0] === 'Zoomed out'
+        );
+        if (didZoomChange && hasOnlyZoomLabel && zoomChangeSourceRef.current !== 'manual' && !isZoomDirty) {
+            prevViewRef.current = currentViewSettings;
+            zoomChangeSourceRef.current = null;
+            return;
+        }
 
         const nextVisualLabel = buildVisualHistoryLabel(pendingHistoryLabelRef.current, changes);
         if (nextVisualLabel) {
@@ -2036,7 +2152,7 @@ const useTripViewRender = ({
 
         prevViewRef.current = currentViewSettings;
         zoomChangeSourceRef.current = null;
-    }, [currentViewSettings, debugHistory, resolveMapDockModeLabel, setPendingLabel, scheduleCommit]);
+    }, [currentViewSettings, debugHistory, isZoomDirty, resolveMapDockModeLabel, setPendingLabel, scheduleCommit]);
 
     const { handleToggleFavorite } = useTripFavoriteHandler({
         trip,

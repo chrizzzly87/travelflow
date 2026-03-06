@@ -47,7 +47,8 @@ export const enqueueAsyncTripGenerationJob = async (
         },
     });
 
-    return Boolean(enqueueResult?.id);
+    if (!enqueueResult?.id) return false;
+    return enqueueResult.state === 'queued' || enqueueResult.state === 'leased';
 };
 
 type EnqueueClassicAsyncTripGenerationInput = Omit<EnqueueAsyncTripGenerationInput, 'flow'>;

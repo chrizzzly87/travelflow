@@ -52,7 +52,7 @@ summary: "Failed trip generations are now easier to spot, inspect, and retry on 
 - [ ] [Internal] 🛠️ Trip retry actions now use a strict in-flight mutex so one click cannot create duplicate attempt-start requests before UI state settles.
 - [ ] [Internal] ⚙️ Scheduled worker triggers now hand off processing to a protected background function, avoiding 30s scheduled-function limits and keeping queued jobs draining reliably.
 - [ ] [Internal] 🛠️ Netlify worker triggers now use deploy-safe function handlers (`handler` exports + HTTP bridge) so both cron and background worker functions are bundled and callable in production.
-- [ ] [Internal] ⚙️ Async worker provider timeout default is now 120 seconds (env-overridable) for long-running models while still terminating each attempt cleanly on success/failure.
+- [ ] [Internal] ⚙️ Async worker provider timeout now stays within edge-runtime-safe bounds (short default + capped max) so jobs fail deterministically instead of lingering in leased/queued limbo.
 - [x] [Improved] 🤖 Default generation + retry model baseline now uses OpenAI GPT-5.4 across create-trip and retry entry points.
 - [ ] [Internal] 🛠️ Queue-claim RPC now rejects already-claimed requests instead of returning stale rows, preventing duplicate trip generation from repeated claim calls.
 - [ ] [Internal] 🛠️ Admin trip-list RPC fallback now also handles PostgREST overload-selection errors (`best candidate function`) for stable table loading during mixed-schema rollouts.
@@ -85,7 +85,7 @@ summary: "Failed trip generations are now easier to spot, inspect, and retry on 
 - [ ] [Internal] ⚙️ Async worker lease/provider timeout defaults are now tuned for edge-runtime safety to reduce long-lived stuck leases after provider hangs.
 - [ ] [Internal] ⚙️ Async enqueue now performs a best-effort authenticated worker kick, and the worker accepts verified user bearer triggers (single-job), reducing stuck queued trips when cron/admin-key wiring drifts.
 - [ ] [Internal] 🛠️ Worker now marks stale superseded queue jobs as skipped so old backlog attempts cannot overwrite newer retry attempts for the same trip.
-- [ ] [Internal] ⚙️ Async worker provider timeout now defaults to 120 seconds and lease windows scale from timeout, reducing false timeout churn on slower models.
+- [ ] [Internal] ⚙️ Async worker lease windows now scale to the runtime-safe provider timeout cap so abandoned leases get reclaimed quickly and retry UX stays responsive.
 - [ ] [Internal] ⚙️ Cron/background worker trigger timeouts now allow longer async worker runs, reducing premature trigger aborts on long model responses.
 - [ ] [Internal] 🛠️ Retry now preflights server generation state, reuses existing queued/running attempts, and force-kicks the worker instead of creating duplicate queued retries.
 - [ ] [Internal] 🛠️ Client-side stale-state fallback no longer auto-flips async-worker queued/running attempts to failed before the worker writes a terminal state.
@@ -93,3 +93,9 @@ summary: "Failed trip generations are now easier to spot, inspect, and retry on 
 - [ ] [Internal] 🛠️ Worker supersede checks now compare attempt lifecycle state + start-time ordering instead of raw attempt-ID mismatch, preventing newer retries from being incorrectly skipped when trip metadata is stale.
 - [ ] [Internal] 🛠️ Async retry/create enqueue now verifies canonical attempt persistence (with DB upsert fallback) before queueing, reducing stale-latest-attempt races that left trips stuck in queued state.
 - [ ] [Internal] ⚙️ Trip view now periodically re-kicks the async worker while queued/running owner attempts are open, reducing “queued but not started yet” delays when the initial enqueue trigger is missed.
+- [ ] [Internal] 🛠️ Async enqueue now treats terminal queue-row responses (`failed`/`dead`/`completed`) as enqueue failures, preventing false “queued” UI states when no runnable job exists.
+- [ ] [Internal] 🛠️ Trip view now detects stale async attempts with no active queue job and marks them failed with explicit diagnostics, preventing endless queued overlays after refreshes.
+- [ ] [Internal] 🛠️ Visual commit tracking now ignores non-manual zoom jitter updates, reducing repeated `upsert_trip`/trip-read loops on already-finished trips.
+- [ ] [Internal] 🛠️ Retry stale-job checks now treat only truly active queue jobs as in-flight (queued-ready or unexpired lease), preventing first-click retry no-op flashes on expired/stale leases.
+- [ ] [Internal] 🛠️ Trip polling now accepts remote terminal state after a hard-stale local in-flight window, self-healing stuck local queued snapshots that were newer but never actually runnable.
+- [x] [Improved] 🎨 Async worker-generated city chips now use the same stronger palette depth as planner-generated trips, avoiding washed-out timeline colors.

@@ -24,7 +24,11 @@ import {
 import type { ITrip, TripGenerationFlow, TripGenerationInputSnapshot } from '../types';
 import { enqueueAsyncTripGenerationJob } from './tripGenerationAsyncEnqueueService';
 import { dbGetTrip, dbUpsertTrip, ensureDbSession } from './dbApi';
-import { listTripGenerationJobsByTrip, triggerTripGenerationWorker } from './tripGenerationJobService';
+import {
+    isTripGenerationJobActive,
+    listTripGenerationJobsByTrip,
+    triggerTripGenerationWorker,
+} from './tripGenerationJobService';
 import { waitForTripAttemptPersistence } from './tripGenerationPersistenceService';
 
 export interface RetryTripGenerationOptions {
@@ -144,13 +148,18 @@ export const retryTripGenerationWithDefaultModel = async (
                     const latestAttemptLogState = latestAttemptLog?.state || null;
                     const hasActiveJobForLatestAttempt = jobs.some((job) => (
                         job.attemptId === remoteLatestAttemptId
-                        && (job.state === 'queued' || job.state === 'leased')
+                        && isTripGenerationJobActive(job, nowMs)
                     ));
                     const latestAttemptStartedAtMs = toMs(latestAttemptLog?.startedAt || remoteLatestAttempt.startedAt);
+                    const hasHardStalledAttempt = typeof latestAttemptStartedAtMs === 'number'
+                        && nowMs - latestAttemptStartedAtMs >= 90_000;
                     const isLikelyStaleInFlight = (
                         isInFlightAttemptState(latestAttemptLogState || remoteLatestAttempt.state || null)
-                        && !hasActiveJobForLatestAttempt
                         && typeof latestAttemptStartedAtMs === 'number'
+                        && (
+                            !hasActiveJobForLatestAttempt
+                            || hasHardStalledAttempt
+                        )
                         && nowMs - latestAttemptStartedAtMs >= 20_000
                     );
 

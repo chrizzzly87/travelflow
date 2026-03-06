@@ -11,6 +11,7 @@ const toMs = (value?: string | null): number => {
 };
 
 const isInFlightState = (state: ReturnType<typeof getTripGenerationState>): boolean => state === 'queued' || state === 'running';
+const LOCAL_IN_FLIGHT_STALE_FALLBACK_MS = 90_000;
 
 export const shouldPollTripGenerationState = (
     trip: ITrip,
@@ -37,8 +38,15 @@ export const shouldApplyPolledTripUpdate = (
     const localLatestAttempt = getLatestTripGenerationAttempt(localTrip);
     const remoteAttemptStartedAtMs = toMs(remoteLatestAttempt?.startedAt);
     const localAttemptStartedAtMs = toMs(localLatestAttempt?.startedAt);
+    const localInFlightAgeMs = localAttemptStartedAtMs > 0 ? nowMs - localAttemptStartedAtMs : null;
+    const localInFlightLikelyStale = (
+        isInFlightState(localState)
+        && typeof localInFlightAgeMs === 'number'
+        && localInFlightAgeMs >= LOCAL_IN_FLIGHT_STALE_FALLBACK_MS
+    );
 
     if (isInFlightState(localState) && !isInFlightState(remoteState)) {
+        if (localInFlightLikelyStale) return true;
         // Do not regress queued/running local retries back to stale terminal remote data.
         if (remoteAttemptStartedAtMs < localAttemptStartedAtMs) return false;
         if (remoteUpdatedAt < localUpdatedAt) return false;
