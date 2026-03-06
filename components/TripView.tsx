@@ -1100,15 +1100,17 @@ const useTripViewRender = ({
             try {
                 const result = await processQueuedTripGenerationAfterAuth(pendingAuthQueueRequestId);
                 registerTripGenerationCompletionWatch(result.tripId, 'auth_queue_claim_trip_view');
-                showToast('Trip generation started and is running in the background.', {
+                showAppToast({
                     tone: 'add',
                     title: 'Generation started',
+                    description: 'Trip generation started and is running in the background.',
                 });
                 navigate(`/trip/${result.tripId}`, { replace: true });
             } catch (error) {
-                showToast(error instanceof Error ? error.message : 'Could not start trip generation.', {
-                    tone: 'warn',
+                showAppToast({
+                    tone: 'warning',
                     title: 'Generation unavailable',
+                    description: error instanceof Error ? error.message : 'Could not start trip generation.',
                 });
             } finally {
                 setIsResolvingPendingAuthGeneration(false);
@@ -1140,7 +1142,6 @@ const useTripViewRender = ({
         location.search,
         navigate,
         pendingAuthQueueRequestId,
-        showToast,
     ]);
 
     const {
