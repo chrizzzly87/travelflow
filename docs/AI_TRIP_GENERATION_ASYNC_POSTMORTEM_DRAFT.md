@@ -72,6 +72,8 @@ From `30afcf43` forward:
 
 ### 2.4 Additional hardening commits after the inventory refresh started
 1. `0a20729` · 2026-03-06 · Fix trip loader hook order and admin retry gating
+2. `9b70a57` · 2026-03-06 · Fix local async worker routing in Vite dev
+3. `17f1c77` · 2026-03-06 · Fix async worker runtime path and local Netlify dev startup
 
 ### 2.5 Why this section matters
 - It separates already-merged PRs from post-merge hardening on the still-open branch.
@@ -80,6 +82,8 @@ From `30afcf43` forward:
 
 ## 3. File change inventory (this branch delta)
 - `netlify/edge-functions/ai-generate-worker.ts`: worker trigger/processing hardening.
+- `netlify/functions/ai-generate-worker-background.js`: background worker execution path now processes jobs directly instead of proxying back into the edge worker route.
+- `netlify/edge-functions/trip-og-image.tsx`: Netlify local edge startup syntax fix for TSX generic parsing.
 - `netlify/edge-lib/ai-provider-runtime.ts`: provider runtime timeout/runtime-safe behavior alignment.
 - `services/tripGenerationAsyncEnqueueService.ts`: enqueue correctness + failure handling.
 - `services/tripGenerationJobService.ts`: queue job state handling and worker trigger integration.
@@ -141,9 +145,19 @@ Verification command set:
 - Cause: settings callback identity churn + tiny view jitter causing repeated diff/commit cycles.
 - Fix: normalized no-op dedupe in settings sync, App callback stabilization, zoom diff epsilon/normalization.
 
+7. **Local Netlify dev worker routes failed to load**
+- Cause: `trip-og-image.tsx` used a TSX-invalid generic arrow signature, which prevented edge-function startup and left local `/api/internal/ai/generation-worker` routing unavailable.
+- Fix: correct the TSX generic syntax and verify Netlify dev loads worker + preview edge routes again.
+
+8. **Async provider execution still timed out at edge-response limits**
+- Cause: the “background” worker function proxied back into the edge worker route, so heavy provider execution still effectively lived in the edge runtime and hit the 20s timeout budget.
+- Fix: move the heavy execution path into direct background-function processing, keep the edge route as a fast dispatcher, raise provider timeout to a background-safe range, and reduce UI nudge/poll pressure while jobs are queued.
+
 ## 6. Validation executed
 - `pnpm test:core` => passed (`184` files, `802` tests passed, `1` skipped).
+- `pnpm test:core` => passed (`184` files, `812` tests passed, `1` skipped) after local-dev + background-worker split hardening.
 - `pnpm updates:validate` => passed.
+- `pnpm edge:validate` => passed.
 - Targeted regression tests for settings/diff/polling passed.
 
 ## 7. Remaining open risks
