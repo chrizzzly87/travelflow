@@ -8,6 +8,7 @@ Status date: 2026-03-06
 - [x] Raised async provider timeout budget to a slower-model-safe range in the background worker runtime and aligned lease duration with that budget.
 - [x] Reduced queued-trip worker nudges and generation polling cadence in `TripView` to cut redundant request churn while async jobs are in flight.
 - [x] Added unit regressions for edge-dispatch + direct-background worker processing behavior.
+- [x] Expanded stale success derivation so completed trips fall back to `succeeded` when `generatedAt` proves the visible itinerary is newer than a stale queued/running attempt, even if `lastSucceededAt` is missing.
 - [x] Fixed route-loader hook ordering so reopening a trip after an initial `trip = null` render no longer crashes with “Rendered more hooks than during the previous render.”
 - [x] Added regression coverage for late-arriving trip props in `TripLoaderRoute`, `SharedTripLoaderRoute`, and `ExampleTripLoaderRoute`.
 - [x] Allowed admin fallback retry/restart actions when admin override editing is enabled, even if the trip is otherwise locked for normal traveler edits.

@@ -233,6 +233,53 @@ describe('tripGenerationDiagnosticsService', () => {
     expect(getTripGenerationState(queuedTrip, Date.parse(lastSucceededAt))).toBe('succeeded');
   });
 
+  it('treats queued async metadata as succeeded when generatedAt is newer than the latest attempt even without lastSucceededAt', () => {
+    const attemptStartedAt = '2026-03-04T09:58:00.000Z';
+    const generatedAt = '2026-03-04T10:00:00.000Z';
+    const queuedTrip = buildTrip();
+    queuedTrip.items = [
+      {
+        id: 'city-real-1',
+        type: 'city',
+        title: 'Warsaw',
+        startDateOffset: 0,
+        duration: 2,
+        color: 'bg-rose-100 border-rose-300 text-rose-800',
+        description: 'Materialized itinerary content.',
+        location: 'Warsaw',
+        coordinates: { lat: 52.2297, lng: 21.0122 },
+      },
+    ];
+    queuedTrip.aiMeta = {
+      provider: 'openai',
+      model: 'gpt-5.4',
+      generatedAt,
+      generation: {
+        state: 'queued',
+        latestAttempt: {
+          id: 'attempt-stale-generated',
+          flow: 'classic',
+          source: 'trip_status_strip',
+          state: 'queued',
+          startedAt: attemptStartedAt,
+          provider: 'openai',
+          model: 'gpt-5.4',
+          metadata: {
+            orchestration: 'async_worker',
+          },
+        },
+        attempts: [],
+        inputSnapshot: null,
+        retryCount: 0,
+        retryRequestedAt: null,
+        lastSucceededAt: null,
+        lastFailedAt: null,
+      },
+    };
+
+    expect(getTripGenerationState(queuedTrip, Date.parse(generatedAt))).toBe('succeeded');
+  });
+
   it('keeps queued async retries in-flight when the latest attempt started after the last success', () => {
     const lastSucceededAt = '2026-03-04T09:58:00.000Z';
     const attemptStartedAt = '2026-03-04T10:00:00.000Z';

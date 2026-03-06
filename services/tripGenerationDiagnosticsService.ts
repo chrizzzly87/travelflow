@@ -354,6 +354,7 @@ export const getTripGenerationState = (trip: ITrip, nowMs = Date.now()): TripGen
         const isAsyncAttempt = isAsyncWorkerOrchestration(latestMetadata);
         const latestAttemptStartedAtMs = toIsoMs(latestAttempt?.startedAt);
         const lastSucceededAtMs = toIsoMs(trip.aiMeta?.generation?.lastSucceededAt);
+        const generatedAtMs = toIsoMs(trip.aiMeta?.generatedAt);
         const hasLoadingItems = trip.items.some((item) => item.loading);
         const hasMaterializedContent = hasMaterializedTripGenerationContent(trip);
 
@@ -361,11 +362,19 @@ export const getTripGenerationState = (trip: ITrip, nowMs = Date.now()): TripGen
             return 'failed';
         }
         if ((explicit === 'queued' || explicit === 'running') && !hasLoadingItems && hasMaterializedContent) {
-            if (
-                typeof lastSucceededAtMs === 'number'
+            const hasFreshGeneratedSnapshot = typeof generatedAtMs === 'number'
                 && (
                     latestAttemptStartedAtMs === null
-                    || lastSucceededAtMs >= latestAttemptStartedAtMs
+                    || generatedAtMs >= latestAttemptStartedAtMs
+                );
+            if (
+                hasFreshGeneratedSnapshot
+                || (
+                    typeof lastSucceededAtMs === 'number'
+                    && (
+                        latestAttemptStartedAtMs === null
+                        || lastSucceededAtMs >= latestAttemptStartedAtMs
+                    )
                 )
             ) {
                 return 'succeeded';
