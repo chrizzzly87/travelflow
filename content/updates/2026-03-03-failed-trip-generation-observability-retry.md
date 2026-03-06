@@ -100,6 +100,7 @@ summary: "Failed trip generations are now easier to spot, inspect, and retry on 
 - [ ] [Internal] 🛠️ Retry stale-job checks now treat only truly active queue jobs as in-flight (queued-ready or unexpired lease), preventing first-click retry no-op flashes on expired/stale leases.
 - [ ] [Internal] 🛠️ Trip polling now accepts remote terminal state after a hard-stale local in-flight window, self-healing stuck local queued snapshots that were newer but never actually runnable.
 - [ ] [Internal] 🛠️ Trip route view-settings forwarding now deduplicates unchanged payloads and stabilizes callback identity, reducing repeated `user_settings` upserts during idle trip viewing.
+- [ ] [Internal] 🛠️ Trip view now persists view settings and visual-history commits only after explicit user interactions, reducing auto-layout churn from being written as idle edits.
 - [ ] [Internal] 🛠️ DB bootstrap upload now skips stale local queued/running snapshots when remote generation is already terminal/newer, preventing completed worker trips from being overwritten back to queued.
 - [ ] [Internal] 🛠️ My Trips country enrichment now stays local-only instead of writing cosmetic country metadata back to the remote trip row on sidebar open.
 - [x] [Improved] 🎨 Async worker-generated city chips now use the same stronger palette depth as planner-generated trips, avoiding washed-out timeline colors.

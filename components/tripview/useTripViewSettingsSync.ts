@@ -30,6 +30,7 @@ interface UseTripViewSettingsSyncOptions {
     setTimelineHeight: Dispatch<SetStateAction<number>>;
     setShowCityNames: Dispatch<SetStateAction<boolean>>;
     suppressCommitRef: MutableRefObject<boolean>;
+    pendingManualViewSettingsPersistRef: MutableRefObject<boolean>;
     skipViewDiffRef: MutableRefObject<boolean>;
     appliedViewKeyRef: MutableRefObject<string | null>;
     prevViewRef: MutableRefObject<IViewSettings | null>;
@@ -74,6 +75,7 @@ export const useTripViewSettingsSync = ({
     setTimelineHeight,
     setShowCityNames,
     suppressCommitRef,
+    pendingManualViewSettingsPersistRef,
     skipViewDiffRef,
     appliedViewKeyRef,
     prevViewRef,
@@ -126,18 +128,19 @@ export const useTripViewSettingsSync = ({
             const settingsKey = JSON.stringify(settings);
 
             if (onViewSettingsChange) {
+                if (!pendingManualViewSettingsPersistRef.current) return;
+                pendingManualViewSettingsPersistRef.current = false;
                 if (lastEmittedSettingsKeyRef.current === settingsKey) return;
                 lastEmittedSettingsKeyRef.current = settingsKey;
                 onViewSettingsChange(settings);
+                return;
             }
 
-            if (!onViewSettingsChange) {
-                const url = new URL(window.location.href);
-                applyViewSettingsToSearchParams(url.searchParams, settings);
-                if (viewMode === 'print') url.searchParams.set('mode', 'print');
-                else url.searchParams.delete('mode');
-                window.history.replaceState({}, '', url.toString());
-            }
+            const url = new URL(window.location.href);
+            applyViewSettingsToSearchParams(url.searchParams, settings);
+            if (viewMode === 'print') url.searchParams.set('mode', 'print');
+            else url.searchParams.delete('mode');
+            window.history.replaceState({}, '', url.toString());
         }, 500);
 
         return () => window.clearTimeout(timeoutId);

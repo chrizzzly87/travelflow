@@ -22,6 +22,7 @@ Status date: 2026-03-06
 - [x] Hardened generation-state derivation so stale queued/running metadata no longer keeps polling alive after a newer successful async result has already materialized in trip content.
 - [x] Added regression coverage for stale queued metadata on already-succeeded trips so polling stops instead of continuing indefinitely.
 - [x] Kept Trip Manager country enrichment local-only so opening My Trips no longer writes cosmetic country metadata back to the remote trip row.
+- [x] Gated view-settings persistence and visual history commits behind explicit manual interactions so auto-fit/layout settling no longer looks like a user edit.
 - [x] Full regression run completed after changes (`pnpm test:core`: 184 files, 802 passed, 1 skipped).
 - [x] Added draft postmortem document with commit/file inventory and incident/fix mapping (`docs/AI_TRIP_GENERATION_ASYNC_POSTMORTEM_DRAFT.md`).
 - [x] Added runtime user-flow architecture charts for async generation paths (`docs/AI_TRIP_GENERATION_RUNTIME_USERFLOWS.md`).

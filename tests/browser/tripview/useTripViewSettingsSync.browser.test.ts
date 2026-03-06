@@ -44,6 +44,7 @@ const makeHookProps = (): Parameters<typeof useTripViewSettingsSync>[0] => ({
   setTimelineHeight: vi.fn(),
   setShowCityNames: vi.fn(),
   suppressCommitRef: { current: false },
+  pendingManualViewSettingsPersistRef: { current: false },
   skipViewDiffRef: { current: false },
   appliedViewKeyRef: { current: null },
   prevViewRef: { current: null },
@@ -93,6 +94,7 @@ describe('components/tripview/useTripViewSettingsSync', () => {
     const props = makeHookProps();
     const onViewSettingsChange = vi.fn();
     props.onViewSettingsChange = onViewSettingsChange;
+    props.pendingManualViewSettingsPersistRef.current = true;
 
     const replaceStateSpy = vi.spyOn(window.history, 'replaceState');
 
@@ -117,6 +119,48 @@ describe('components/tripview/useTripViewSettingsSync', () => {
     expect(replaceStateSpy).not.toHaveBeenCalled();
 
     replaceStateSpy.mockRestore();
+    vi.useRealTimers();
+  });
+
+  it('does not emit callback updates until a manual view change is marked', () => {
+    vi.useFakeTimers();
+
+    const props = makeHookProps();
+    const onViewSettingsChange = vi.fn();
+    props.onViewSettingsChange = onViewSettingsChange;
+
+    const { rerender } = renderHook((hookProps: Parameters<typeof useTripViewSettingsSync>[0]) => {
+      useTripViewSettingsSync(hookProps);
+    }, { initialProps: props });
+
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+    expect(onViewSettingsChange).not.toHaveBeenCalled();
+
+    const manualProps = {
+      ...props,
+      pendingManualViewSettingsPersistRef: { current: true },
+      zoomLevel: 1.5,
+      currentViewSettings: {
+        ...BASE_VIEW_SETTINGS,
+        zoomLevel: 1.5,
+      },
+    };
+
+    rerender(manualProps);
+
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+
+    expect(onViewSettingsChange).toHaveBeenCalledTimes(1);
+    expect(onViewSettingsChange).toHaveBeenCalledWith({
+      ...BASE_VIEW_SETTINGS,
+      zoomLevel: 1.5,
+    });
+    expect(manualProps.pendingManualViewSettingsPersistRef.current).toBe(false);
+
     vi.useRealTimers();
   });
 
@@ -171,6 +215,7 @@ describe('components/tripview/useTripViewSettingsSync', () => {
     const secondCallback = vi.fn();
     const props = makeHookProps();
     props.onViewSettingsChange = firstCallback;
+    props.pendingManualViewSettingsPersistRef.current = true;
 
     const { rerender } = renderHook((hookProps: Parameters<typeof useTripViewSettingsSync>[0]) => {
       useTripViewSettingsSync(hookProps);
@@ -183,6 +228,7 @@ describe('components/tripview/useTripViewSettingsSync', () => {
 
     rerender({
       ...props,
+      pendingManualViewSettingsPersistRef: { current: true },
       onViewSettingsChange: secondCallback,
     });
 

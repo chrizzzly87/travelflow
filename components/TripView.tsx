@@ -1388,6 +1388,8 @@ const useTripViewRender = ({
     const commitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const pendingCommitRef = useRef<{ trip: ITrip; view: IViewSettings; skipToast?: boolean } | null>(null);
     const suppressCommitRef = useRef(false);
+    const pendingManualViewSettingsPersistRef = useRef(false);
+    const pendingManualVisualCommitRef = useRef(false);
     const navigateHistoryRef = useRef<((action: 'undo' | 'redo', options?: { silent?: boolean }) => boolean) | null>(null);
     const skipViewDiffRef = useRef(false);
     const appliedViewKeyRef = useRef<string | null>(null);
@@ -1427,20 +1429,27 @@ const useTripViewRender = ({
         const persisted = readFloatingMapPreviewState().mode;
         return persisted === 'floating' || persisted === 'docked' ? persisted : 'docked';
     });
+    const markManualViewChange = useCallback(() => {
+        pendingManualViewSettingsPersistRef.current = true;
+        pendingManualVisualCommitRef.current = true;
+    }, []);
     const markZoomDirty = useCallback((source: ZoomChangeSource = 'manual') => {
         if (source) {
             zoomChangeSourceRef.current = source;
         }
         if (source === 'manual') {
+            markManualViewChange();
             setIsZoomDirty(true);
         }
-    }, []);
+    }, [markManualViewChange]);
     const markAutoFitZoomChange = useCallback(() => {
         zoomChangeSourceRef.current = 'auto';
     }, []);
     useEffect(() => {
         setIsZoomDirty(false);
         zoomChangeSourceRef.current = null;
+        pendingManualViewSettingsPersistRef.current = false;
+        pendingManualVisualCommitRef.current = false;
     }, [trip.id]);
     useEffect(() => {
         if (!isMobileViewport || mapDockMode === 'docked') return;
@@ -1974,6 +1983,7 @@ const useTripViewRender = ({
         setTimelineHeight,
         setShowCityNames,
         suppressCommitRef,
+        pendingManualViewSettingsPersistRef,
         skipViewDiffRef,
         appliedViewKeyRef,
         prevViewRef,
@@ -2194,6 +2204,12 @@ const useTripViewRender = ({
             zoomChangeSourceRef.current = null;
             return;
         }
+        if (!pendingManualVisualCommitRef.current) {
+            prevViewRef.current = currentViewSettings;
+            zoomChangeSourceRef.current = null;
+            return;
+        }
+        pendingManualVisualCommitRef.current = false;
 
         const nextVisualLabel = buildVisualHistoryLabel(pendingHistoryLabelRef.current, changes);
         if (nextVisualLabel) {
@@ -2399,6 +2415,7 @@ const useTripViewRender = ({
         zoomLevelPresets: TIMELINE_ZOOM_LEVEL_PRESETS,
         basePixelsPerDay: BASE_PIXELS_PER_DAY,
         onAutoFitZoomApplied: markAutoFitZoomChange,
+        onManualViewSettingsChange: markManualViewChange,
     });
 
     const isMobile = isMobileViewport;
@@ -2748,6 +2765,7 @@ const useTripViewRender = ({
                             trackEvent(mode === 'calendar' ? 'trip_view__mode--calendar' : 'trip_view__mode--timeline', {
                                 trip_id: trip.id,
                             });
+                            markManualViewChange();
                             setTimelineMode(mode);
                         }}
                         onTimelineViewChange={(view) => {
@@ -2758,6 +2776,7 @@ const useTripViewRender = ({
                                     : 'trip_view__layout_direction--vertical',
                                 { trip_id: trip.id, target: 'timeline' }
                             );
+                            markManualViewChange();
                             setTimelineView(view);
                         }}
                         mapDockMode={mapDockMode}
@@ -2772,6 +2791,7 @@ const useTripViewRender = ({
                                     layout_mode: layoutMode,
                                 }
                             );
+                            markManualViewChange();
                             runWithOptionalViewTransition(() => {
                                 setMapDockMode(mode);
                             });
@@ -2797,14 +2817,27 @@ const useTripViewRender = ({
                                     : 'trip_view__layout_direction--vertical',
                                 { trip_id: trip.id, target: 'map' }
                             );
+                            markManualViewChange();
                             setLayoutMode(mode);
                         }}
                         mapStyle={mapStyle}
-                        onMapStyleChange={setMapStyle}
+                        onMapStyleChange={(nextStyle) => {
+                            if (nextStyle === mapStyle) return;
+                            markManualViewChange();
+                            setMapStyle(nextStyle);
+                        }}
                         routeMode={routeMode}
-                        onRouteModeChange={setRouteMode}
+                        onRouteModeChange={(nextMode) => {
+                            if (nextMode === routeMode) return;
+                            markManualViewChange();
+                            setRouteMode(nextMode);
+                        }}
                         showCityNames={showCityNames}
-                        onShowCityNamesChange={setShowCityNames}
+                        onShowCityNamesChange={(nextValue) => {
+                            if (nextValue === showCityNames) return;
+                            markManualViewChange();
+                            setShowCityNames(nextValue);
+                        }}
                         mapColorMode={mapColorMode}
                         onMapColorModeChange={allowMapColorModeControls ? handleMapColorModeChange : undefined}
                         initialMapFocusQuery={initialMapFocusQuery}

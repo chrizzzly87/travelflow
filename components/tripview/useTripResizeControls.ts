@@ -33,6 +33,7 @@ interface UseTripResizeControlsOptions {
     zoomLevelPresets: number[];
     basePixelsPerDay: number;
     onAutoFitZoomApplied?: () => void;
+    onManualViewSettingsChange?: () => void;
 }
 
 const MIN_AUTO_FIT_TIMELINE_WIDTH = 160;
@@ -98,6 +99,7 @@ export const useTripResizeControls = ({
     zoomLevelPresets,
     basePixelsPerDay,
     onAutoFitZoomApplied,
+    onManualViewSettingsChange,
 }: UseTripResizeControlsOptions) => {
     const verticalLayoutTimelineRef = useRef<HTMLDivElement | null>(null);
     const isResizingRef = useRef<'sidebar' | 'details' | 'timeline-h' | null>(null);
@@ -259,6 +261,7 @@ export const useTripResizeControls = ({
         if (!isResizingRef.current) return;
 
         if (isResizingRef.current === 'sidebar') {
+            onManualViewSettingsChange?.();
             const reservedForDetails = detailsPanelVisible ? detailsWidth : 0;
             const maxSidebar = window.innerWidth - reservedForDetails - minMapWidth - (resizerWidth * 2);
             const boundedMax = Math.max(minSidebarWidth, maxSidebar);
@@ -273,6 +276,7 @@ export const useTripResizeControls = ({
             return;
         }
 
+        onManualViewSettingsChange?.();
         const maxTimelineHeight = window.innerHeight - minBottomMapHeight;
         setTimelineHeight(Math.max(minTimelineHeight, Math.min(maxTimelineHeight, window.innerHeight - event.clientY)));
     }, [
@@ -284,6 +288,7 @@ export const useTripResizeControls = ({
         minSidebarWidth,
         minTimelineHeight,
         resizerWidth,
+        onManualViewSettingsChange,
         setDetailsWidth,
         setSidebarWidth,
         setTimelineHeight,
@@ -293,6 +298,7 @@ export const useTripResizeControls = ({
         if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
 
         event.preventDefault();
+        onManualViewSettingsChange?.();
         const direction = event.key === 'ArrowRight' ? 1 : -1;
         const reservedForDetails = detailsPanelVisible ? detailsWidth : 0;
         const maxSidebar = window.innerWidth - reservedForDetails - minMapWidth - (resizerWidth * 2);
@@ -305,6 +311,7 @@ export const useTripResizeControls = ({
         detailsWidth,
         minMapWidth,
         minSidebarWidth,
+        onManualViewSettingsChange,
         resizeKeyboardStep,
         resizerWidth,
         setSidebarWidth,
@@ -322,12 +329,13 @@ export const useTripResizeControls = ({
         if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
 
         event.preventDefault();
+        onManualViewSettingsChange?.();
         const direction = event.key === 'ArrowUp' ? 1 : -1;
         const maxTimelineHeight = window.innerHeight - minBottomMapHeight;
         setTimelineHeight((previous) =>
             Math.max(minTimelineHeight, Math.min(maxTimelineHeight, previous + (direction * resizeKeyboardStep)))
         );
-    }, [minBottomMapHeight, minTimelineHeight, resizeKeyboardStep, setTimelineHeight]);
+    }, [minBottomMapHeight, minTimelineHeight, onManualViewSettingsChange, resizeKeyboardStep, setTimelineHeight]);
 
     useEffect(() => {
         window.addEventListener('mousemove', handleMouseMove);
