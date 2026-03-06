@@ -29,6 +29,67 @@ const normalizeTrip = (trip: unknown): ITrip | null => {
     } as ITrip;
 };
 
+const sortTripsByUpdatedAtDesc = (trips: ITrip[]): ITrip[] =>
+    [...trips].sort((a: ITrip, b: ITrip) => b.updatedAt - a.updatedAt);
+
+const tryWriteTrips = (trips: ITrip[]): boolean => writeLocalStorageItem(STORAGE_KEY, JSON.stringify(trips));
+
+const writeTripsWithPruning = (
+    trips: ITrip[],
+): {
+    success: boolean;
+    persistedCount: number;
+    originalCount: number;
+} => {
+    const normalized = sortTripsByUpdatedAtDesc(trips);
+    const originalCount = normalized.length;
+    if (tryWriteTrips(normalized)) {
+        return {
+            success: true,
+            persistedCount: originalCount,
+            originalCount,
+        };
+    }
+
+    if (normalized.length <= 1) {
+        return {
+            success: false,
+            persistedCount: 0,
+            originalCount,
+        };
+    }
+
+    // If localStorage quota is exceeded, keep as many most-recent trips as fit.
+    let low = 1;
+    let high = normalized.length - 1;
+    let bestFitCount = 0;
+
+    while (low <= high) {
+        const mid = Math.floor((low + high) / 2);
+        const candidate = normalized.slice(0, mid);
+        if (tryWriteTrips(candidate)) {
+            bestFitCount = mid;
+            low = mid + 1;
+        } else {
+            high = mid - 1;
+        }
+    }
+
+    if (bestFitCount > 0) {
+        return {
+            success: true,
+            persistedCount: bestFitCount,
+            originalCount,
+        };
+    }
+
+    return {
+        success: false,
+        persistedCount: 0,
+        originalCount,
+    };
+};
+
 export const getAllTrips = (): ITrip[] => {
     try {
         const raw = readLocalStorageItem(STORAGE_KEY);
@@ -38,8 +99,7 @@ export const getAllTrips = (): ITrip[] => {
         const trips = parsed
             .map(normalizeTrip)
             .filter((trip): trip is ITrip => Boolean(trip));
-        // Sort by updatedAt descending
-        return trips.sort((a: ITrip, b: ITrip) => b.updatedAt - a.updatedAt);
+        return sortTripsByUpdatedAtDesc(trips);
     } catch (e) {
         console.error("Failed to load trips from storage", e);
         return [];
@@ -71,9 +131,15 @@ export const saveTrip = (trip: ITrip, options?: { preserveUpdatedAt?: boolean })
         } else {
             trips.unshift(tripToSave);
         }
-        
-        if (!writeLocalStorageItem(STORAGE_KEY, JSON.stringify(trips))) {
+
+        const writeResult = writeTripsWithPruning(trips);
+        if (!writeResult.success) {
             throw new Error('Trip storage write failed');
+        }
+        if (writeResult.persistedCount < writeResult.originalCount) {
+            console.warn(
+                `Trip storage quota reached; persisted ${writeResult.persistedCount}/${writeResult.originalCount} most-recent trips.`,
+            );
         }
         window.dispatchEvent(new CustomEvent('tf:trips-updated'));
     } catch (e) {
@@ -85,7 +151,8 @@ export const deleteTrip = (id: string): void => {
     try {
         const trips = getAllTrips();
         const filtered = trips.filter(t => t.id !== id);
-        if (!writeLocalStorageItem(STORAGE_KEY, JSON.stringify(filtered))) {
+        const writeResult = writeTripsWithPruning(filtered);
+        if (!writeResult.success) {
             throw new Error('Trip storage write failed');
         }
         window.dispatchEvent(new CustomEvent('tf:trips-updated'));
@@ -104,8 +171,14 @@ export const setAllTrips = (trips: ITrip[]): void => {
         const normalized = trips
             .map(normalizeTrip)
             .filter((trip): trip is ITrip => Boolean(trip));
-        if (!writeLocalStorageItem(STORAGE_KEY, JSON.stringify(normalized))) {
+        const writeResult = writeTripsWithPruning(normalized);
+        if (!writeResult.success) {
             throw new Error('Trip storage write failed');
+        }
+        if (writeResult.persistedCount < writeResult.originalCount) {
+            console.warn(
+                `Trip storage quota reached; persisted ${writeResult.persistedCount}/${writeResult.originalCount} most-recent trips.`,
+            );
         }
         window.dispatchEvent(new CustomEvent('tf:trips-updated'));
     } catch (e) {
