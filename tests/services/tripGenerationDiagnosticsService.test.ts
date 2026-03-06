@@ -146,6 +146,36 @@ describe('tripGenerationDiagnosticsService', () => {
     expect(getTripGenerationState(runningTrip, nowMs)).toBe('failed');
   });
 
+  it('keeps async-worker queued/running attempts in-flight even past local stale timeout threshold', () => {
+    const nowMs = Date.parse('2026-03-04T10:00:00.000Z');
+    const startedAt = new Date(
+      nowMs - TRIP_GENERATION_TIMEOUT_MS - TRIP_GENERATION_STALE_GRACE_MS - 1200
+    ).toISOString();
+
+    const queuedTrip = markTripGenerationRunning(buildTrip(), {
+      flow: 'classic',
+      source: 'unit_test',
+      inputSnapshot: createTripGenerationInputSnapshot({
+        flow: 'classic',
+        destinationLabel: 'Berlin',
+        startDate: '2026-03-10',
+        endDate: '2026-03-12',
+        payload: { destinationPrompt: 'Berlin', options: {} },
+      }),
+      provider: 'openai',
+      model: 'gpt-4.1',
+      requestId: 'request-async-stale',
+      attemptId: 'attempt-async-stale',
+      startedAt,
+      state: 'queued',
+      metadata: {
+        orchestration: 'async_worker',
+      },
+    });
+
+    expect(getTripGenerationState(queuedTrip, nowMs)).toBe('queued');
+  });
+
   it('treats legacy loading-error placeholders as failed without aiMeta state', () => {
     const legacyFailedTrip = buildTrip();
     legacyFailedTrip.title = 'Trip generation failed. Please try again.';

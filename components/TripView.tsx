@@ -1520,7 +1520,7 @@ const useTripViewRender = ({
                     result.trip,
                     result.trip.defaultView ?? currentViewSettings,
                     {
-                        label: result.state === 'succeeded'
+                        label: result.state === 'queued'
                             ? 'Data: Retried trip generation'
                             : 'Data: Retried trip generation (failed)',
                         adminOverride: isAdminFallbackView && adminOverrideEnabled,

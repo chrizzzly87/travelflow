@@ -8,6 +8,8 @@ const buildSurpriseItineraryPromptMock = vi.fn().mockReturnValue('surprise promp
 const startAttemptLogMock = vi.fn();
 const finishAttemptLogMock = vi.fn();
 const enqueueAsyncTripGenerationJobMock = vi.fn();
+const dbGetTripMock = vi.fn();
+const triggerTripGenerationWorkerMock = vi.fn();
 
 vi.mock('../../config/aiModelCatalog', () => ({
   getDefaultCreateTripModel: () => ({ id: 'default', provider: 'openai', model: 'gpt-4.1', availability: 'active' }),
@@ -27,6 +29,14 @@ vi.mock('../../services/tripGenerationAttemptLogService', () => ({
 
 vi.mock('../../services/tripGenerationAsyncEnqueueService', () => ({
   enqueueAsyncTripGenerationJob: (...args: unknown[]) => enqueueAsyncTripGenerationJobMock(...args),
+}));
+
+vi.mock('../../services/dbApi', () => ({
+  dbGetTrip: (...args: unknown[]) => dbGetTripMock(...args),
+}));
+
+vi.mock('../../services/tripGenerationJobService', () => ({
+  triggerTripGenerationWorker: (...args: unknown[]) => triggerTripGenerationWorkerMock(...args),
 }));
 
 import { retryTripGenerationWithDefaultModel } from '../../services/tripGenerationRetryService';
@@ -101,10 +111,14 @@ describe('retryTripGenerationWithDefaultModel', () => {
     finishAttemptLogMock.mockReset();
     enqueueAsyncTripGenerationJobMock.mockReset();
     buildClassicItineraryPromptMock.mockClear();
+    dbGetTripMock.mockReset();
+    triggerTripGenerationWorkerMock.mockReset();
 
     startAttemptLogMock.mockResolvedValue({ id: 'attempt-log-1' });
     finishAttemptLogMock.mockResolvedValue(undefined);
     enqueueAsyncTripGenerationJobMock.mockResolvedValue(true);
+    dbGetTripMock.mockResolvedValue(null);
+    triggerTripGenerationWorkerMock.mockResolvedValue(true);
   });
 
   it('retries on same trip id and forces default model target via async enqueue', async () => {
@@ -160,5 +174,69 @@ describe('retryTripGenerationWithDefaultModel', () => {
     expect(result.trip.aiMeta?.generation?.latestAttempt?.errorMessage).toContain('Retry attempt could not be initialized');
     expect(enqueueAsyncTripGenerationJobMock).not.toHaveBeenCalled();
     expect(finishAttemptLogMock).not.toHaveBeenCalled();
+  });
+
+  it('returns existing queued trip from server and nudges worker instead of creating duplicate retry', async () => {
+    const remoteQueuedTrip: ITrip = {
+      ...buildTrip(),
+      updatedAt: 123_456_789,
+      aiMeta: {
+        provider: 'openai',
+        model: 'gpt-4.1',
+        generation: {
+          state: 'queued',
+          inputSnapshot: buildTrip().aiMeta!.generation!.inputSnapshot,
+          attempts: [
+            {
+              id: 'attempt-remote-queued',
+              flow: 'classic',
+              source: 'trip_status_strip',
+              state: 'queued',
+              startedAt: '2026-03-06T12:00:00.000Z',
+              requestId: 'request-remote-queued',
+              provider: 'openai',
+              model: 'gpt-4.1',
+              metadata: {
+                orchestration: 'async_worker',
+              },
+            },
+          ],
+          latestAttempt: {
+            id: 'attempt-remote-queued',
+            flow: 'classic',
+            source: 'trip_status_strip',
+            state: 'queued',
+            startedAt: '2026-03-06T12:00:00.000Z',
+            requestId: 'request-remote-queued',
+            provider: 'openai',
+            model: 'gpt-4.1',
+            metadata: {
+              orchestration: 'async_worker',
+            },
+          },
+          retryCount: 2,
+          retryRequestedAt: '2026-03-06T12:00:00.000Z',
+          lastSucceededAt: null,
+          lastFailedAt: '2026-03-06T11:55:00.000Z',
+        },
+      },
+    };
+    dbGetTripMock.mockResolvedValue({ trip: remoteQueuedTrip });
+
+    const onTripUpdate = vi.fn();
+    const result = await retryTripGenerationWithDefaultModel(buildTrip(), {
+      source: 'trip_status_strip',
+      onTripUpdate,
+    });
+
+    expect(result.state).toBe('queued');
+    expect(result.trip).toEqual(remoteQueuedTrip);
+    expect(onTripUpdate).toHaveBeenCalledWith(remoteQueuedTrip);
+    expect(triggerTripGenerationWorkerMock).toHaveBeenCalledWith(expect.objectContaining({
+      tripId: remoteQueuedTrip.id,
+      force: true,
+    }));
+    expect(startAttemptLogMock).not.toHaveBeenCalled();
+    expect(enqueueAsyncTripGenerationJobMock).not.toHaveBeenCalled();
   });
 });

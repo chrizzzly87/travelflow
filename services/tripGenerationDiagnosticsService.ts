@@ -288,6 +288,16 @@ const isLegacyFailedGenerationPlaceholderTrip = (trip: ITrip): boolean => {
     ));
 };
 
+const isAsyncWorkerOrchestration = (
+    metadata: Record<string, unknown> | null | undefined,
+): boolean => {
+    if (!metadata) return false;
+    const orchestration = asText(metadata.orchestration);
+    return orchestration === 'async_worker'
+        || orchestration === 'async_worker_enqueue'
+        || orchestration === 'queue_claim_async_worker';
+};
+
 export const createTripGenerationAttemptId = (): string => randomUuid();
 export const createTripGenerationRequestId = (): string => randomUuid();
 
@@ -311,7 +321,11 @@ export const createTripGenerationInputSnapshot = (params: {
 export const getTripGenerationState = (trip: ITrip, nowMs = Date.now()): TripGenerationState => {
     const explicit = trip.aiMeta?.generation?.state;
     if (explicit === 'queued' || explicit === 'running' || explicit === 'failed' || explicit === 'succeeded') {
-        if ((explicit === 'queued' || explicit === 'running') && isTripGenerationStale(trip, TRIP_GENERATION_TIMEOUT_MS, nowMs)) {
+        const latestAttempt = trip.aiMeta?.generation?.latestAttempt || getLatestAttempt(getGenerationAttemptHistory(trip));
+        const latestMetadata = asRecord(latestAttempt?.metadata);
+        const isAsyncAttempt = isAsyncWorkerOrchestration(latestMetadata);
+
+        if ((explicit === 'queued' || explicit === 'running') && !isAsyncAttempt && isTripGenerationStale(trip, TRIP_GENERATION_TIMEOUT_MS, nowMs)) {
             return 'failed';
         }
         return explicit;

@@ -69,8 +69,8 @@ const DEFAULT_MODEL = "gpt-5.4";
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MAX_ATTEMPT_HISTORY = 12;
 const MAX_JOB_BATCH = 10;
-const WORKER_PROVIDER_TIMEOUT_MS = resolveTimeoutMs("AI_GENERATION_ASYNC_PROVIDER_TIMEOUT_MS", 20_000, 5_000, 60_000);
-const WORKER_LEASE_SECONDS = 45;
+const WORKER_PROVIDER_TIMEOUT_MS = resolveTimeoutMs("AI_GENERATION_ASYNC_PROVIDER_TIMEOUT_MS", 120_000, 20_000, 180_000);
+const WORKER_LEASE_SECONDS = Math.max(60, Math.min(600, Math.ceil((WORKER_PROVIDER_TIMEOUT_MS + 30_000) / 1_000)));
 
 const CITY_COLORS = [
   "bg-rose-100 border-rose-300 text-rose-800",
