@@ -1,16 +1,23 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ArrowRight, SpinnerGap as Loader2 } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
-import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { Checkbox } from '../components/ui/checkbox';
 import { MarketingLayout } from '../components/marketing/MarketingLayout';
 import { useAuth } from '../hooks/useAuth';
+import { buildLocalizedMarketingPath } from '../config/routes';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
 import {
     processAnonymousAssetClaimAfterAuth,
     resolveAnonymousAssetClaimErrorCode,
     runOpportunisticAnonymousAssetClaimCleanup,
 } from '../services/anonymousAssetClaimService';
-import { processQueuedTripGenerationAfterAuth, runOpportunisticTripQueueCleanup } from '../services/tripGenerationQueueService';
+import {
+    processQueuedTripGenerationAfterAuth,
+    QueuedTripGenerationError,
+    runOpportunisticTripQueueCleanup,
+} from '../services/tripGenerationQueueService';
+import { registerTripGenerationCompletionWatch } from '../services/tripGenerationCompletionWatchService';
 import type { OAuthProviderId } from '../services/authService';
 import {
     buildPasswordResetRedirectUrl,
@@ -20,10 +27,15 @@ import {
     resolvePreferredNextPath,
 } from '../services/authNavigationService';
 import {
+    isRememberLoginEnabled,
+    setRememberLoginEnabled,
+} from '../services/authSessionPersistenceService';
+import {
     clearPendingOAuthProvider,
     getLastUsedOAuthProvider,
     setPendingOAuthProvider,
 } from '../services/authUiPreferencesService';
+import { acceptCurrentTerms } from '../services/authService';
 import { normalizeAppLanguage } from '../utils';
 import { SocialProviderIcon } from '../components/auth/SocialProviderIcon';
 
@@ -90,6 +102,7 @@ const buildLoginRedirectUrl = (claimRequestId: string | null, nextPath: string):
 };
 const LOGIN_PAGE_EMAIL_INPUT_ID = 'login-page-email';
 const LOGIN_PAGE_SECONDARY_INPUT_ID = 'login-page-secondary';
+const LOGIN_PAGE_REMEMBER_CHECKBOX_ID = 'login-page-remember-login';
 
 export const LoginPage: React.FC = () => {
     const { t, i18n } = useTranslation('auth');
@@ -112,11 +125,16 @@ export const LoginPage: React.FC = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isPostAuthProcessing, setIsPostAuthProcessing] = useState(false);
     const [hasPostAuthAttempted, setHasPostAuthAttempted] = useState(false);
+    const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [infoMessage, setInfoMessage] = useState<string | null>(null);
+    const [rememberLogin, setRememberLogin] = useState<boolean>(() => isRememberLoginEnabled());
     const [lastUsedProvider, setLastUsedProvider] = useState<OAuthProviderId | null>(() => getLastUsedOAuthProvider());
 
     const oauthButtons = useMemo(() => getOAuthButtons(i18n.language), [i18n.language]);
+    const authLocale = useMemo(() => normalizeAppLanguage(i18n.language), [i18n.language]);
+    const termsPath = useMemo(() => buildLocalizedMarketingPath('terms', authLocale), [authLocale]);
+    const privacyPath = useMemo(() => buildLocalizedMarketingPath('privacy', authLocale), [authLocale]);
 
     const claimRequestId = (searchParams.get('claim') || '').trim() || null;
     const assetClaimId = (searchParams.get('asset_claim') || '').trim() || null;
@@ -198,6 +216,7 @@ export const LoginPage: React.FC = () => {
 
             if (claimRequestId) {
                 const result = await processQueuedTripGenerationAfterAuth(claimRequestId);
+                registerTripGenerationCompletionWatch(result.tripId, 'auth_queue_claim_login');
                 trackEvent('auth__queue--fulfilled', { request_id: claimRequestId });
                 setInfoMessage(t('states.queuedSuccess'));
                 clearRememberedAuthReturnPath();
@@ -205,11 +224,20 @@ export const LoginPage: React.FC = () => {
                 return;
             }
 
-            setInfoMessage(t('states.alreadyAuthenticated'));
+            setInfoMessage(null);
             clearRememberedAuthReturnPath();
             navigate(nextPath, { replace: true });
         } catch (error) {
-            trackEvent('auth__queue--failed', { request_id: claimRequestId });
+            const failedTripId = error instanceof QueuedTripGenerationError ? error.tripId : null;
+            trackEvent('auth__queue--failed', {
+                request_id: claimRequestId,
+                has_trip_id: Boolean(failedTripId),
+            });
+            if (failedTripId) {
+                clearRememberedAuthReturnPath();
+                navigate(`/trip/${failedTripId}`, { replace: true });
+                return;
+            }
             setErrorMessage(t('errors.queue_claim_failed'));
         } finally {
             setIsPostAuthProcessing(false);
@@ -240,16 +268,30 @@ export const LoginPage: React.FC = () => {
         setMode(nextMode);
         setErrorMessage(null);
         setInfoMessage(null);
+        if (nextMode === 'login') {
+            setHasAcceptedTerms(false);
+        }
         trackEvent('auth__method--select', { method: nextMode });
     };
 
     const handlePasswordSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         if (isSubmitting || isPostAuthProcessing) return;
-        if (!email.trim() || !password.trim()) {
+        const formData = new FormData(event.currentTarget);
+        const submittedEmail = (formData.get('email')?.toString() || email).trim();
+        const submittedPassword = formData.get('password')?.toString() || password;
+
+        if (!submittedEmail || !submittedPassword.trim()) {
             setErrorMessage(t('errors.default'));
             return;
         }
+        if (mode === 'register' && !hasAcceptedTerms) {
+            setErrorMessage(t('errors.terms_required'));
+            return;
+        }
+        if (submittedEmail !== email) setEmail(submittedEmail);
+        if (submittedPassword !== password) setPassword(submittedPassword);
+        setRememberLoginEnabled(rememberLogin);
         clearPendingOAuthProvider();
 
         setIsSubmitting(true);
@@ -257,20 +299,20 @@ export const LoginPage: React.FC = () => {
         setInfoMessage(null);
 
         if (mode === 'login') {
-            const response = await loginWithPassword(email.trim(), password);
+            const response = await loginWithPassword(submittedEmail, submittedPassword);
             if (response.error) {
                 const errorCode = normalizeErrorCode(response.error);
                 setErrorMessage(t(`errors.${errorCode}`, t('errors.default')));
             } else {
-                setInfoMessage(t('states.alreadyAuthenticated'));
+                setInfoMessage(null);
             }
             setIsSubmitting(false);
             return;
         }
 
         const response = await registerWithPassword(
-            email.trim(),
-            password,
+            submittedEmail,
+            submittedPassword,
             { emailRedirectTo: oauthRedirectTo }
         );
         if (response.error) {
@@ -279,7 +321,15 @@ export const LoginPage: React.FC = () => {
         } else if (!response.data.session) {
             setInfoMessage(t('states.emailConfirmationSent'));
         } else {
-            setInfoMessage(t('states.alreadyAuthenticated'));
+            const acceptance = await acceptCurrentTerms({
+                locale: authLocale,
+                source: 'signup_login_page',
+            });
+            if (acceptance.error) {
+                setInfoMessage(t('states.termsAcceptancePending'));
+            } else {
+                setInfoMessage(null);
+            }
         }
         setIsSubmitting(false);
     };
@@ -287,6 +337,7 @@ export const LoginPage: React.FC = () => {
     const handleOAuthLogin = async (provider: OAuthProviderId) => {
         setErrorMessage(null);
         setInfoMessage(null);
+        setRememberLoginEnabled(rememberLogin);
         setPendingOAuthProvider(provider);
         trackEvent('auth__method--select', { method: provider });
         const response = await loginWithOAuth(provider, oauthRedirectTo);
@@ -337,6 +388,12 @@ export const LoginPage: React.FC = () => {
         event.currentTarget.requestSubmit();
     };
 
+    const handleRememberLoginToggle = (checked: boolean) => {
+        setRememberLogin(checked);
+        setRememberLoginEnabled(checked);
+        trackEvent('auth__remember_login--toggle', { remember_login: checked });
+    };
+
     return (
         <MarketingLayout>
             <div className="mx-auto grid max-w-5xl gap-6 lg:grid-cols-[1fr_360px]">
@@ -385,7 +442,7 @@ export const LoginPage: React.FC = () => {
                                 id={LOGIN_PAGE_EMAIL_INPUT_ID}
                                 name="email"
                                 type="email"
-                                autoComplete="email"
+                                autoComplete={mode === 'login' ? 'username' : 'email'}
                                 inputMode="email"
                                 autoCapitalize="none"
                                 autoCorrect="off"
@@ -417,6 +474,20 @@ export const LoginPage: React.FC = () => {
                         </div>
                         {mode === 'login' && (
                             <div className="space-y-2">
+                                <label
+                                    htmlFor={LOGIN_PAGE_REMEMBER_CHECKBOX_ID}
+                                    className="inline-flex cursor-pointer items-center gap-2 text-sm font-semibold text-slate-800"
+                                >
+                                    <Checkbox
+                                        id={LOGIN_PAGE_REMEMBER_CHECKBOX_ID}
+                                        checked={rememberLogin}
+                                        onCheckedChange={(checked) => handleRememberLoginToggle(checked === true)}
+                                        disabled={isSubmitting || isPostAuthProcessing}
+                                        aria-label={t('labels.rememberLogin')}
+                                        {...getAnalyticsDebugAttributes('auth__remember_login--toggle')}
+                                    />
+                                    <span>{t('labels.rememberLogin')}</span>
+                                </label>
                                 <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
                                     <button
                                         type="button"
@@ -439,6 +510,31 @@ export const LoginPage: React.FC = () => {
                                 </div>
                                 <p className="text-xs text-slate-500">{t('copy.passwordResetHint')}</p>
                             </div>
+                        )}
+                        {mode === 'register' && (
+                            <label className="flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
+                                <input
+                                    type="checkbox"
+                                    checked={hasAcceptedTerms}
+                                    onChange={(event) => {
+                                        setHasAcceptedTerms(event.target.checked);
+                                        trackEvent(event.target.checked ? 'auth__terms_consent--accept' : 'auth__terms_consent--reject', { source: 'login_page' });
+                                    }}
+                                    className="mt-0.5 h-4 w-4 rounded border-slate-300"
+                                    {...getAnalyticsDebugAttributes('auth__terms_consent--accept', { source: 'login_page' })}
+                                />
+                                <span>
+                                    {t('copy.termsConsentPrefix')}{' '}
+                                    <Link className="font-semibold text-accent-700 hover:underline" to={termsPath} target="_blank" rel="noreferrer">
+                                        {t('copy.termsConsentTerms')}
+                                    </Link>{' '}
+                                    {t('copy.termsConsentJoiner')}{' '}
+                                    <Link className="font-semibold text-accent-700 hover:underline" to={privacyPath} target="_blank" rel="noreferrer">
+                                        {t('copy.termsConsentPrivacy')}
+                                    </Link>
+                                    .
+                                </span>
+                            </label>
                         )}
 
                         <button

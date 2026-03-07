@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
+import path from 'node:path';
 import {
   buildSiteOgMetadata,
   enumerateSiteOgPathnames,
@@ -13,8 +15,70 @@ import {
 } from '../../scripts/site-og-static-shared.ts';
 
 const ORIGIN = 'https://travelflowapp.netlify.app';
+const BLOG_OG_JPEG_MAX_WIDTH = 512;
+const BLOG_OG_JPEG_MAX_HEIGHT = 768;
+const BLOG_OG_JPEG_MAX_BYTES = 180_000;
 
 const getMetadata = (pathname: string) => buildSiteOgMetadata(new URL(pathname, ORIGIN));
+
+const JPEG_SOF_MARKERS = new Set<number>([
+  0xc0,
+  0xc1,
+  0xc2,
+  0xc3,
+  0xc5,
+  0xc6,
+  0xc7,
+  0xc9,
+  0xca,
+  0xcb,
+  0xcd,
+  0xce,
+  0xcf,
+]);
+
+const readJpegDimensions = (filePath: string): { width: number; height: number } => {
+  const buffer = readFileSync(filePath);
+  if (buffer.length < 4 || buffer[0] !== 0xff || buffer[1] !== 0xd8) {
+    throw new Error(`Invalid JPEG signature: ${filePath}`);
+  }
+
+  let offset = 2;
+  while (offset < buffer.length) {
+    if (buffer[offset] !== 0xff) {
+      offset += 1;
+      continue;
+    }
+
+    while (offset < buffer.length && buffer[offset] === 0xff) {
+      offset += 1;
+    }
+    if (offset >= buffer.length) break;
+
+    const marker = buffer[offset];
+    offset += 1;
+
+    if (marker === 0xd8 || marker === 0xd9) continue;
+    if (marker === 0xda) break;
+    if (offset + 1 >= buffer.length) break;
+
+    const segmentLength = buffer.readUInt16BE(offset);
+    if (segmentLength < 2 || offset + segmentLength > buffer.length) break;
+
+    if (JPEG_SOF_MARKERS.has(marker)) {
+      const height = buffer.readUInt16BE(offset + 3);
+      const width = buffer.readUInt16BE(offset + 5);
+      if (!width || !height) {
+        throw new Error(`Invalid JPEG dimensions in ${filePath}`);
+      }
+      return { width, height };
+    }
+
+    offset += segmentLength;
+  }
+
+  throw new Error(`Could not read JPEG dimensions for ${filePath}`);
+};
 
 describe('site OG metadata resolver', () => {
   it('resolves homepage metadata', () => {
@@ -211,5 +275,26 @@ describe('site OG static generation helpers', () => {
   it('resolves static target scope from env override', () => {
     expect(resolveSiteOgStaticTargetScope({}, { SITE_OG_STATIC_TARGET_SCOPE: 'full' } as NodeJS.ProcessEnv)).toBe('full');
     expect(resolveSiteOgStaticTargetScope({}, { SITE_OG_STATIC_TARGET_SCOPE: 'invalid' } as NodeJS.ProcessEnv)).toBe('priority');
+  });
+});
+
+describe('blog OG source asset budget', () => {
+  it('keeps OG JPEG sources within whatsapp-friendly size and dimensions', () => {
+    const blogDir = path.join(process.cwd(), 'public', 'images', 'blog');
+    const files = readdirSync(blogDir)
+      .filter((fileName) => /-og-vertical\.jpe?g$/i.test(fileName))
+      .sort((left, right) => left.localeCompare(right));
+
+    expect(files.length).toBeGreaterThan(0);
+
+    for (const fileName of files) {
+      const fullPath = path.join(blogDir, fileName);
+      const sizeBytes = statSync(fullPath).size;
+      const { width, height } = readJpegDimensions(fullPath);
+
+      expect(sizeBytes).toBeLessThanOrEqual(BLOG_OG_JPEG_MAX_BYTES);
+      expect(width).toBeLessThanOrEqual(BLOG_OG_JPEG_MAX_WIDTH);
+      expect(height).toBeLessThanOrEqual(BLOG_OG_JPEG_MAX_HEIGHT);
+    }
   });
 });

@@ -6,7 +6,7 @@ import userEvent from '@testing-library/user-event';
 import { AdminJsonDiffModal } from '../../../components/admin/AdminJsonDiffModal';
 
 describe('components/admin/AdminJsonDiffModal', () => {
-  it('renders focused diff by default and can expand full snapshots', async () => {
+  it('renders focused diff by default and can toggle full diff mode in-place', async () => {
     const user = userEvent.setup();
     render(
       React.createElement(AdminJsonDiffModal, {
@@ -22,10 +22,10 @@ describe('components/admin/AdminJsonDiffModal', () => {
     expect(screen.getAllByText(/changed lines?/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/Showing focused context around changed lines/i)).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: /Show full previous\/current JSON/i }));
-    expect(screen.getByText('Complete snapshots')).toBeInTheDocument();
+    await user.click(screen.getByRole('checkbox', { name: /Show full diff/i }));
+    expect(screen.queryByText(/Showing focused context around changed lines/i)).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: /Focused changes/i }));
-    expect(screen.getByRole('button', { name: /All lines/i })).toBeInTheDocument();
+    await user.click(screen.getByRole('checkbox', { name: /Show full diff/i }));
+    expect(screen.getByText(/Showing focused context around changed lines/i)).toBeInTheDocument();
   });
 });

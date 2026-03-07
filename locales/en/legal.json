@@ -53,5 +53,32 @@
     "stateAll": "Accept all",
     "stateEssential": "Essential only",
     "stateUnset": "Not set"
+  },
+  "termsPage": {
+    "heroEyebrow": "Terms of Service · AGB",
+    "heroTitle": "Terms of Service / Allgemeine Geschäftsbedingungen",
+    "heroIntro": "These Terms govern your use of {appName}.",
+    "heroBindingNote": "The German text below is the legally binding version. The English text is provided for convenience only.",
+    "versionLabel": "Version",
+    "lastUpdatedLabel": "Last updated",
+    "controllerInfoLead": "Controller information is available in the",
+    "imprintLinkLabel": "Imprint",
+    "privacyInfoLead": "Data processing details are available in the",
+    "privacyLinkLabel": "Privacy Policy",
+    "acceptRequiredTitle": "Action required: please accept the current Terms to continue using your account.",
+    "acceptRequiredDescription": "You can review both versions below before confirming.",
+    "acceptSubmit": "Accept current Terms and continue",
+    "acceptSubmitting": "Saving acceptance...",
+    "acceptError": "We could not save your Terms acceptance right now. Please try again.",
+    "bindingSectionTitle": "Binding Version (German)",
+    "helperSectionTitle": "Convenience Translation (English, non-binding)",
+    "globalForceTitle": "Account action required: updated Terms need your acceptance.",
+    "globalForceDescription": "Review the latest Terms version and confirm acceptance to continue using protected account features.",
+    "globalInformTitle": "Terms updated: review the latest legal version.",
+    "globalInformDescription": "This update is informational only (no forced re-acceptance), but you should review the latest wording.",
+    "globalReviewAction": "Review Terms",
+    "globalDismissAction": "Dismiss for now",
+    "acceptOptionalTitle": "Optional confirmation: acknowledge the latest Terms version.",
+    "acceptOptionalDescription": "You can confirm acceptance now to clear update notices for this version."
   }
 }

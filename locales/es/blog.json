@@ -31,6 +31,12 @@
     "explore": "Explorar",
     "allArticles": "Todos los artículos",
     "tripInspirations": "Inspiración de viajes",
-    "relatedArticles": "Artículos relacionados"
+    "relatedArticles": "Artículos relacionados",
+    "calendarCard": {
+      "badge": "Añadir al calendario",
+      "downloadIcs": "Descargar .ics",
+      "eventCount": "{count} eventos incluidos",
+      "compatibilityHint": "Un archivo .ics funciona con Apple Calendar, Google Calendar y Outlook."
+    }
   }
 }

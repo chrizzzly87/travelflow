@@ -15,10 +15,13 @@ describe('netlify/edge-lib/ai-generation-telemetry', () => {
   beforeEach(() => {
     fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);
+    vi.stubEnv('VITE_SUPABASE_URL', '');
+    vi.stubEnv('SUPABASE_SERVICE_ROLE_KEY', '');
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.unstubAllEnvs();
     vi.unstubAllGlobals();
   });
 

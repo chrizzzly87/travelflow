@@ -30,6 +30,12 @@ const messages: Record<string, string> = {
   'connectivity.tripStrip.pendingMany': '{count} queued changes are waiting for replay.',
   'connectivity.tripStrip.serverBackup': 'A newer server version was backed up before replay. You can restore it if needed.',
   'connectivity.tripStrip.restoreServerVersion': 'Restore server version',
+  'tripView.generation.strip.failedDefault': 'Trip generation failed. Check diagnostics or retry with the default model.',
+  'tripView.generation.strip.running': 'Trip generation is running...',
+  'tripView.generation.strip.retry': 'Retry generation',
+  'tripView.generation.strip.retrying': 'Retrying...',
+  'tripPaywall.strip.loginNoDate': 'Trip preview paused. Sign in to reactivate and unlock full planning mode.',
+  'tripPaywall.reactivate.actions.login': 'Sign in to reactivate',
 };
 
 vi.mock('react-i18next', () => ({
@@ -67,7 +73,8 @@ const makeProps = (overrides?: Partial<TripViewStatusBannersProps>): TripViewSta
   isPaywallLocked: false,
   expirationLabel: null,
   expirationRelativeLabel: null,
-  onPaywallLoginClick: () => undefined,
+  paywallActivationMode: 'login_modal',
+  onPaywallActivateClick: () => undefined,
   tripId: 'trip-1',
   connectivityState: undefined,
   connectivityForced: false,
@@ -171,5 +178,45 @@ describe('TripViewStatusBanners connectivity strips', () => {
 
     expect(screen.queryByText(/Offline mode enabled/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/queued change/i)).not.toBeInTheDocument();
+  });
+
+  it('renders failed generation strip and fires retry action', () => {
+    const onRetryGeneration = vi.fn();
+    render(
+      <TripViewStatusBanners
+        {...makeProps({
+          generationState: 'failed',
+          canRetryGeneration: true,
+          onRetryGeneration,
+        })}
+      />,
+    );
+
+    expect(screen.getByText('Trip generation failed. Check diagnostics or retry with the default model.')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Retry generation' }));
+    expect(onRetryGeneration).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows pending-auth sign-in action instead of retry button for queued claim trips', () => {
+    const onResolvePendingAuthGeneration = vi.fn();
+    const onRetryGeneration = vi.fn();
+    render(
+      <TripViewStatusBanners
+        {...makeProps({
+          generationState: 'failed',
+          generationFailureMessage: 'Sign in to start generation for this trip.',
+          pendingAuthQueueRequestId: 'queue-claim-123',
+          onResolvePendingAuthGeneration,
+          canRetryGeneration: true,
+          onRetryGeneration,
+        })}
+      />,
+    );
+
+    expect(screen.getByText('Trip preview paused. Sign in to reactivate and unlock full planning mode.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Retry generation' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Sign in to reactivate' }));
+    expect(onResolvePendingAuthGeneration).toHaveBeenCalledTimes(1);
+    expect(onRetryGeneration).not.toHaveBeenCalled();
   });
 });

@@ -3,6 +3,7 @@ import { getFreePlanEntitlements } from '../config/planCatalog';
 import type { PlanTierKey, SystemRole, UserAccessContext } from '../types';
 import { trackEvent } from './analyticsService';
 import { appendAuthTraceEntry } from './authTraceService';
+import { clearLocalhostSupabaseBridgeCookies } from './authSessionPersistenceService';
 import { appendClientErrorLog } from './clientErrorLogger';
 import {
     removeLocalStorageItem,
@@ -81,6 +82,7 @@ const reportAuthSupabaseSuccess = (operation: string): void => {
 
 export const clearSupabaseAuthStorage = (): void => {
     if (typeof window === 'undefined') return;
+    clearLocalhostSupabaseBridgeCookies();
     const shouldClear = (key: string): boolean => (
         key.startsWith('sb-') &&
         (
@@ -263,6 +265,12 @@ const defaultAccessContext = (session: Session | null): UserAccessContext => ({
     entitlements: FREE_ENTITLEMENTS,
     onboardingCompleted: true,
     accountStatus: 'active',
+    termsCurrentVersion: null,
+    termsRequiresReaccept: true,
+    termsAcceptedVersion: null,
+    termsAcceptedAt: null,
+    termsAcceptanceRequired: false,
+    termsNoticeRequired: false,
 });
 
 const logAuthFlow = async (options: LogAuthFlowOptions): Promise<void> => {
@@ -349,6 +357,12 @@ export const getCurrentAccessContext = async (): Promise<UserAccessContext> => {
             entitlements: FREE_ENTITLEMENTS,
             onboardingCompleted: true,
             accountStatus: 'active',
+            termsCurrentVersion: null,
+            termsRequiresReaccept: true,
+            termsAcceptedVersion: null,
+            termsAcceptedAt: null,
+            termsAcceptanceRequired: false,
+            termsNoticeRequired: false,
         };
     }
 
@@ -403,11 +417,87 @@ export const getCurrentAccessContext = async (): Promise<UserAccessContext> => {
                 : row.account_status === 'deleted'
                     ? 'deleted'
                     : 'active',
+            termsCurrentVersion: typeof row.terms_current_version === 'string' && row.terms_current_version.trim().length > 0
+                ? row.terms_current_version
+                : null,
+            termsRequiresReaccept: Object.prototype.hasOwnProperty.call(row, 'terms_requires_reaccept')
+                ? Boolean(row.terms_requires_reaccept)
+                : true,
+            termsAcceptedVersion: typeof row.terms_accepted_version === 'string' && row.terms_accepted_version.trim().length > 0
+                ? row.terms_accepted_version
+                : null,
+            termsAcceptedAt: typeof row.terms_accepted_at === 'string' && row.terms_accepted_at.trim().length > 0
+                ? row.terms_accepted_at
+                : null,
+            termsAcceptanceRequired: Boolean(row.terms_acceptance_required),
+            termsNoticeRequired: Boolean(row.terms_notice_required),
         };
     } catch (error) {
         reportAuthSupabaseFailure(error, 'get_current_user_access_exception');
         return defaultAccessContext(session);
     }
+};
+
+export interface AcceptedTermsRecord {
+    termsVersion: string;
+    acceptedAt: string;
+}
+
+export const acceptCurrentTerms = async (
+    options?: { locale?: string | null; source?: string | null }
+): Promise<{ data: AcceptedTermsRecord | null; error: Error | null }> => {
+    if (!supabase) {
+        return {
+            data: null,
+            error: new Error('Supabase auth is not configured.'),
+        };
+    }
+
+    const { data, error } = await supabase.rpc('accept_current_terms', {
+        p_locale: typeof options?.locale === 'string' ? options.locale : null,
+        p_source: typeof options?.source === 'string' ? options.source : null,
+    });
+
+    if (error) {
+        reportAuthSupabaseFailure(error, 'accept_current_terms');
+        return {
+            data: null,
+            error: new Error(error.message || 'Could not persist terms acceptance.'),
+        };
+    }
+
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!row || typeof row !== 'object') {
+        reportAuthSupabaseFailure(new Error('accept_current_terms returned no payload'), 'accept_current_terms_payload');
+        return {
+            data: null,
+            error: new Error('Could not persist terms acceptance.'),
+        };
+    }
+
+    const acceptedVersion = typeof row.terms_version === 'string' && row.terms_version.trim().length > 0
+        ? row.terms_version
+        : null;
+    const acceptedAt = typeof row.accepted_at === 'string' && row.accepted_at.trim().length > 0
+        ? row.accepted_at
+        : null;
+
+    if (!acceptedVersion || !acceptedAt) {
+        reportAuthSupabaseFailure(new Error('accept_current_terms returned incomplete payload'), 'accept_current_terms_payload');
+        return {
+            data: null,
+            error: new Error('Could not persist terms acceptance.'),
+        };
+    }
+
+    reportAuthSupabaseSuccess('accept_current_terms');
+    return {
+        data: {
+            termsVersion: acceptedVersion,
+            acceptedAt,
+        },
+        error: null,
+    };
 };
 
 export const subscribeToAuthState = (

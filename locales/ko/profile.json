@@ -77,7 +77,8 @@
     },
     "expiredTag": "만료됨",
     "expiredFallbackTitle": "만료된 여행 초안",
-    "hiddenTag": "Hidden"
+    "hiddenTag": "Hidden",
+    "generationFailedTag": "Generation failed"
   },
   "actions": {
     "title": "빠른 작업",

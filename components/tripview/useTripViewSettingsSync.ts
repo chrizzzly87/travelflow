@@ -1,4 +1,4 @@
-import { useEffect, type Dispatch, type MutableRefObject, type SetStateAction } from 'react';
+import { useEffect, useRef, type Dispatch, type MutableRefObject, type SetStateAction } from 'react';
 
 import { writeLocalStorageItem } from '../../services/browserStorageService';
 import type { IViewSettings, MapStyle, RouteMode } from '../../types';
@@ -30,10 +30,24 @@ interface UseTripViewSettingsSyncOptions {
     setTimelineHeight: Dispatch<SetStateAction<number>>;
     setShowCityNames: Dispatch<SetStateAction<boolean>>;
     suppressCommitRef: MutableRefObject<boolean>;
+    pendingManualViewSettingsPersistRef: MutableRefObject<boolean>;
     skipViewDiffRef: MutableRefObject<boolean>;
     appliedViewKeyRef: MutableRefObject<string | null>;
     prevViewRef: MutableRefObject<IViewSettings | null>;
 }
+
+const toFiniteNumber = (value: unknown, fallback: number): number => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const normalizeSettingsForCallback = (settings: IViewSettings): IViewSettings => ({
+    ...settings,
+    showCityNames: Boolean(settings.showCityNames),
+    zoomLevel: Number(toFiniteNumber(settings.zoomLevel, 1).toFixed(2)),
+    sidebarWidth: Math.round(toFiniteNumber(settings.sidebarWidth, 560)),
+    timelineHeight: Math.round(toFiniteNumber(settings.timelineHeight, 340)),
+});
 
 export const useTripViewSettingsSync = ({
     layoutMode,
@@ -61,10 +75,13 @@ export const useTripViewSettingsSync = ({
     setTimelineHeight,
     setShowCityNames,
     suppressCommitRef,
+    pendingManualViewSettingsPersistRef,
     skipViewDiffRef,
     appliedViewKeyRef,
     prevViewRef,
 }: UseTripViewSettingsSyncOptions) => {
+    const lastEmittedSettingsKeyRef = useRef<string | null>(null);
+
     useEffect(() => {
         writeLocalStorageItem('tf_map_style', mapStyle);
     }, [mapStyle]);
@@ -95,7 +112,7 @@ export const useTripViewSettingsSync = ({
 
     useEffect(() => {
         const timeoutId = window.setTimeout(() => {
-            const settings: IViewSettings = {
+            const rawSettings: IViewSettings = {
                 layoutMode,
                 timelineMode,
                 timelineView,
@@ -107,18 +124,23 @@ export const useTripViewSettingsSync = ({
                 sidebarWidth,
                 timelineHeight,
             };
+            const settings = normalizeSettingsForCallback(rawSettings);
+            const settingsKey = JSON.stringify(settings);
 
             if (onViewSettingsChange) {
+                if (!pendingManualViewSettingsPersistRef.current) return;
+                pendingManualViewSettingsPersistRef.current = false;
+                if (lastEmittedSettingsKeyRef.current === settingsKey) return;
+                lastEmittedSettingsKeyRef.current = settingsKey;
                 onViewSettingsChange(settings);
+                return;
             }
 
-            if (!onViewSettingsChange) {
-                const url = new URL(window.location.href);
-                applyViewSettingsToSearchParams(url.searchParams, settings);
-                if (viewMode === 'print') url.searchParams.set('mode', 'print');
-                else url.searchParams.delete('mode');
-                window.history.replaceState({}, '', url.toString());
-            }
+            const url = new URL(window.location.href);
+            applyViewSettingsToSearchParams(url.searchParams, settings);
+            if (viewMode === 'print') url.searchParams.set('mode', 'print');
+            else url.searchParams.delete('mode');
+            window.history.replaceState({}, '', url.toString());
         }, 500);
 
         return () => window.clearTimeout(timeoutId);

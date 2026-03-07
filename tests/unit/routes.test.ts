@@ -49,12 +49,7 @@ describe('config/routes', () => {
       buildPath('cookies'),
       buildPath('createTrip'),
       buildPath('createTripClassicLab'),
-      buildPath('createTripClassicLegacyLab'),
-      buildPath('createTripSplitWorkspaceLab'),
-      buildPath('createTripJourneyArchitectLab'),
-      buildPath('createTripDesignV1Lab'),
-      buildPath('createTripDesignV2Lab'),
-      buildPath('createTripDesignV3Lab'),
+      buildPath('createTripWizard'),
       buildPath('tripDetail', { tripId: 'trip-id' }),
       buildPath('tripLegacy'),
       buildPath('exampleTrip', { templateId: 'template-id' }),
@@ -117,7 +112,7 @@ describe('config/routes', () => {
     expect(getNamespacesForMarketingPath('/pricing')).toEqual(['common', 'pricing']);
     expect(getNamespacesForMarketingPath('/de/blog/spring-guide')).toEqual(['common', 'blog']);
     expect(getNamespacesForMarketingPath('/terms')).toEqual(['common', 'legal']);
-    expect(getNamespacesForMarketingPath('/faq')).toEqual(['common', 'wip']);
+    expect(getNamespacesForMarketingPath('/faq')).toEqual(['common']);
     expect(getNamespacesForMarketingPath('/login')).toEqual(['common', 'auth']);
     expect(getNamespacesForMarketingPath('/inspirations')).toEqual(['common', 'pages']);
     expect(getNamespacesForToolPath('/create-trip')).toEqual(['common', 'createTrip']);

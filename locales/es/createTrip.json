@@ -179,8 +179,9 @@
   },
   "prefillBadge": "Precargado desde: {label}",
   "labsBanner": {
-    "title": "¿Quieres probar otros conceptos de crear viaje?",
-    "description": "Rutas directas de laboratorio para regresiones y comparación de experimentos.",
+    "title": "¿Necesitas ayuda con tu próximo viaje?",
+    "description": "Usa nuestro asistente guiado para planificar paso a paso.",
+    "cta": "Probar el asistente",
     "links": {
       "legacy": "Formulario Classic Legacy",
       "classicCard": "Ruta Classic Card",

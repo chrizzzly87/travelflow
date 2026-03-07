@@ -48,6 +48,21 @@ describe('components/tripview/viewChangeDiff', () => {
     expect(result.changes).toEqual(['Zoomed in']);
   });
 
+  it('ignores tiny zoom jitter below the persisted precision threshold', () => {
+    const previous = createViewSettings({ zoomLevel: 1 });
+    const current = createViewSettings({ zoomLevel: 1.004 });
+
+    const result = resolveVisualDiff({
+      previous,
+      current,
+      zoomChangeSource: 'manual',
+    });
+
+    expect(result.didZoomChange).toBe(false);
+    expect(result.changes).toEqual([]);
+    expect(result.isAutoZoomOnlyChange).toBe(false);
+  });
+
   it('merges visual labels across quick successive updates without duplicates', () => {
     const label = buildVisualHistoryLabel('Visual: Timeline layout: horizontal → vertical', [
       'Timeline layout: horizontal → vertical',

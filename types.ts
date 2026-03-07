@@ -8,9 +8,18 @@ export type ActivityType =
     'general' | 'food' | 'culture' | 'sightseeing' | 'relaxation' | 'nightlife' | 
     'sports' | 'hiking' | 'wildlife' | 'shopping' | 'adventure' | 'beach' | 'nature';
 
-export type MapStyle = 'minimal' | 'standard' | 'dark' | 'satellite' | 'clean';
+export type MapStyle = 'minimal' | 'standard' | 'dark' | 'satellite' | 'clean' | 'cleanDark';
 export type RouteMode = 'simple' | 'realistic';
 export type RouteStatus = 'calculating' | 'ready' | 'failed' | 'idle';
+export type RouteFailureReason =
+  | 'unsupported_mode'
+  | 'invalid_distance'
+  | 'distance_cap_exceeded'
+  | 'zero_results'
+  | 'no_route_path'
+  | 'straight_path'
+  | 'api_unavailable'
+  | 'request_error';
 export type AppLanguage = 'en' | 'es' | 'de' | 'fr' | 'pt' | 'ru' | 'it' | 'pl' | 'ko' | 'fa' | 'ur';
 export type MapColorMode = 'brand' | 'trip';
 export type SystemRole = 'admin' | 'user';
@@ -36,6 +45,12 @@ export interface UserAccessContext {
     entitlements: Entitlements;
     onboardingCompleted: boolean;
     accountStatus: 'active' | 'disabled' | 'deleted';
+    termsCurrentVersion: string | null;
+    termsRequiresReaccept: boolean;
+    termsAcceptedVersion: string | null;
+    termsAcceptedAt: string | null;
+    termsAcceptanceRequired: boolean;
+    termsNoticeRequired: boolean;
 }
 
 export interface ICoordinates {
@@ -49,12 +64,76 @@ export interface IAiInsights {
     tips: string;
 }
 
+export type TripGenerationFlow = 'classic' | 'wizard' | 'surprise';
+export type TripGenerationState = 'queued' | 'running' | 'succeeded' | 'failed';
+export type TripGenerationFailureKind = 'timeout' | 'abort' | 'quality' | 'provider' | 'network' | 'unknown';
+export type TripGenerationJobState = 'queued' | 'leased' | 'completed' | 'failed' | 'dead';
+
+export interface TripGenerationInputSnapshot {
+    flow: TripGenerationFlow;
+    destinationLabel?: string;
+    startDate?: string;
+    endDate?: string;
+    payload: Record<string, unknown>;
+    createdAt: string;
+}
+
+export interface TripGenerationAttemptSummary {
+    id: string;
+    flow: TripGenerationFlow;
+    source: string;
+    state: TripGenerationState;
+    startedAt: string;
+    finishedAt?: string | null;
+    durationMs?: number | null;
+    requestId?: string | null;
+    provider?: string | null;
+    model?: string | null;
+    providerModel?: string | null;
+    statusCode?: number | null;
+    failureKind?: TripGenerationFailureKind | null;
+    errorCode?: string | null;
+    errorMessage?: string | null;
+    metadata?: Record<string, unknown> | null;
+}
+
+export interface TripGenerationMeta {
+    state: TripGenerationState;
+    latestAttempt?: TripGenerationAttemptSummary | null;
+    attempts?: TripGenerationAttemptSummary[];
+    inputSnapshot?: TripGenerationInputSnapshot | null;
+    retryCount?: number;
+    retryRequestedAt?: string | null;
+    lastSucceededAt?: string | null;
+    lastFailedAt?: string | null;
+}
+
+export interface TripGenerationJobSummary {
+    id: string;
+    tripId: string;
+    ownerId: string;
+    attemptId: string;
+    state: TripGenerationJobState;
+    priority: number;
+    retryCount: number;
+    maxRetries: number;
+    runAfter: string;
+    leaseExpiresAt?: string | null;
+    leasedBy?: string | null;
+    payload?: Record<string, unknown> | null;
+    lastErrorCode?: string | null;
+    lastErrorMessage?: string | null;
+    createdAt: string;
+    updatedAt: string;
+}
+
 export interface ITripAiMeta {
     provider: string;
     model: string;
     generatedAt: string;
     benchmarkSessionId?: string | null;
     benchmarkRunId?: string | null;
+    generation?: TripGenerationMeta;
 }
 
 export interface IHotel {

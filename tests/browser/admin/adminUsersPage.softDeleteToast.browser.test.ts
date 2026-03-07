@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 
@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   adminListUserChangeLogs: vi.fn(),
   adminUpdateUserProfile: vi.fn(),
   adminResetUserUsernameCooldown: vi.fn(),
+  adminResetUserTermsAcceptance: vi.fn(),
   adminHardDeleteUser: vi.fn(),
   confirmDialog: vi.fn(async () => true),
   promptDialog: vi.fn(async () => null),
@@ -87,12 +88,15 @@ vi.mock('../../../services/adminService', () => ({
   adminListUserTrips: mocks.adminListUserTrips,
   adminListUsers: mocks.adminListUsers,
   adminResetUserUsernameCooldown: mocks.adminResetUserUsernameCooldown,
+  adminResetUserTermsAcceptance: mocks.adminResetUserTermsAcceptance,
   adminUpdateTrip: vi.fn(),
   adminUpdateUserOverrides: vi.fn(),
   adminUpdateUserProfile: mocks.adminUpdateUserProfile,
 }));
 
 import { AdminUsersPage } from '../../../pages/AdminUsersPage';
+
+const daysAgoIso = (days: number): string => new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
 
 const USER_ROW = {
   user_id: 'user-1',
@@ -102,7 +106,7 @@ const USER_ROW = {
   display_name: 'Traveler One',
   username: 'traveler_one',
   username_display: 'TravelerOne',
-  username_changed_at: '2026-02-20T00:00:00.000Z',
+  username_changed_at: daysAgoIso(10),
   gender: null,
   country: null,
   city: null,
@@ -113,13 +117,15 @@ const USER_ROW = {
   tier_key: 'tier_free',
   total_trips: 2,
   active_trips: 2,
-  created_at: '2026-02-01T00:00:00.000Z',
-  updated_at: '2026-02-01T00:00:00.000Z',
-  last_sign_in_at: '2026-02-15T00:00:00.000Z',
-  onboarding_completed_at: '2026-02-10T00:00:00.000Z',
+  created_at: daysAgoIso(3),
+  updated_at: daysAgoIso(2),
+  last_sign_in_at: daysAgoIso(1),
+  onboarding_completed_at: daysAgoIso(2),
   auth_provider: 'email',
   auth_providers: ['email'],
   is_anonymous: false,
+  terms_accepted_version: '2026-03-03',
+  terms_accepted_at: '2026-03-03T10:00:00Z',
   entitlements_override: {},
 } as const;
 
@@ -132,10 +138,23 @@ const USER_ROW_2 = {
   display_name: 'Traveler Two',
   username: 'traveler_two',
   username_display: 'TravelerTwo',
-  username_changed_at: '2026-02-20T00:00:00.000Z',
+  username_changed_at: daysAgoIso(9),
   total_trips: 3,
   active_trips: 3,
 } as const;
+
+const createTripRow = (index: number) => ({
+  trip_id: `trip-${index}`,
+  owner_id: USER_ROW.user_id,
+  owner_email: USER_ROW.email,
+  title: `Trip ${index}`,
+  status: 'active' as const,
+  trip_expires_at: null,
+  archived_at: null,
+  source_kind: null,
+  created_at: daysAgoIso(20 - index),
+  updated_at: daysAgoIso(20 - index),
+});
 
 const renderPage = () => render(
   React.createElement(
@@ -165,6 +184,14 @@ const normalizeMessageText = (value: string): string => (
     .trim()
 );
 
+const findButtonsByName = (name: RegExp) => (
+  screen.findAllByRole('button', { name }, { timeout: 10_000 })
+);
+
+const findCheckboxesByName = (name: RegExp) => (
+  screen.findAllByRole('checkbox', { name }, { timeout: 10_000 })
+);
+
 describe('pages/AdminUsersPage soft delete toasts', () => {
   beforeEach(() => {
     cleanup();
@@ -175,6 +202,7 @@ describe('pages/AdminUsersPage soft delete toasts', () => {
     mocks.adminListUserChangeLogs.mockResolvedValue([]);
     mocks.adminUpdateUserProfile.mockResolvedValue(undefined);
     mocks.adminResetUserUsernameCooldown.mockResolvedValue(undefined);
+    mocks.adminResetUserTermsAcceptance.mockResolvedValue(undefined);
     mocks.adminHardDeleteUser.mockResolvedValue(undefined);
     mocks.confirmDialog.mockResolvedValue(true);
     mocks.promptDialog.mockResolvedValue(null);
@@ -186,8 +214,7 @@ describe('pages/AdminUsersPage soft delete toasts', () => {
 
     renderPage();
 
-    await screen.findAllByRole('button', { name: /Traveler One/i });
-    const openDetailButtons = screen.getAllByRole('button', { name: /Traveler One/i });
+    const openDetailButtons = await findButtonsByName(/Traveler One/i);
     await user.click(openDetailButtons[0]);
     await user.click(await screen.findByRole('button', { name: 'Soft-delete user' }));
 
@@ -221,13 +248,69 @@ describe('pages/AdminUsersPage soft delete toasts', () => {
     }));
   }, 20000);
 
+  it('shows terms acceptance snapshot fields in the user detail drawer', async () => {
+    const user = userEvent.setup();
+
+    renderPage();
+
+    const openDetailButtons = await findButtonsByName(/Traveler One/i);
+    await user.click(openDetailButtons[0]);
+
+    const identitySection = (await screen.findByRole('heading', { name: 'Identity' })).closest('section');
+    expect(identitySection).not.toBeNull();
+    expect(identitySection).toHaveTextContent('Terms accepted version: 2026-03-03');
+    expect(identitySection).toHaveTextContent('Terms accepted at:');
+    expect(identitySection).not.toHaveTextContent('Terms accepted at: Not set');
+    expect(identitySection).toHaveTextContent('Last log:');
+  }, 20000);
+
+  it('resets terms acceptance from the user detail identity panel', async () => {
+    const user = userEvent.setup();
+
+    renderPage();
+
+    const openDetailButtons = await findButtonsByName(/Traveler One/i);
+    await user.click(openDetailButtons[0]);
+
+    await user.click(await screen.findByRole('button', { name: 'Reset ToC acceptance' }));
+
+    await waitFor(() => {
+      expect(mocks.adminResetUserTermsAcceptance).toHaveBeenCalledWith('user-1', 'admin.testing.reset_terms');
+    });
+  }, 20000);
+
+  it('paginates connected trips in the user detail drawer', async () => {
+    const user = userEvent.setup();
+    const manyTrips = Array.from({ length: 12 }, (_, index) => createTripRow(index + 1));
+    mocks.adminListUserTrips.mockResolvedValue(manyTrips);
+
+    renderPage();
+
+    const openDetailButtons = await findButtonsByName(/Traveler One/i);
+    await user.click(openDetailButtons[0]);
+
+    const connectedTripsSection = (await screen.findByRole('heading', { name: 'Connected trips' })).closest('section');
+    expect(connectedTripsSection).not.toBeNull();
+    const section = connectedTripsSection as HTMLElement;
+
+    expect(within(section).getByText('Trip 1')).toBeInTheDocument();
+    expect(within(section).queryByText('Trip 11')).not.toBeInTheDocument();
+    expect(within(section).getByText('Page 1 / 2')).toBeInTheDocument();
+
+    await user.click(within(section).getByRole('button', { name: 'Next' }));
+
+    await waitFor(() => {
+      expect(within(section).getByText('Trip 11')).toBeInTheDocument();
+    });
+    expect(within(section).getByText('Page 2 / 2')).toBeInTheDocument();
+  }, 20000);
+
   it('uses hard-delete copy that explains permanent removal versus soft delete', async () => {
     const user = userEvent.setup();
 
     renderPage();
 
-    await screen.findAllByRole('button', { name: /Traveler One/i });
-    const openDetailButtons = screen.getAllByRole('button', { name: /Traveler One/i });
+    const openDetailButtons = await findButtonsByName(/Traveler One/i);
     await user.click(openDetailButtons[0]);
     await user.click(await screen.findByRole('button', { name: 'Hard delete' }));
 
@@ -248,7 +331,7 @@ describe('pages/AdminUsersPage soft delete toasts', () => {
 
     renderPage();
 
-    await screen.findAllByRole('button', { name: /Traveler One/i });
+    await findButtonsByName(/Traveler One/i);
     await user.click(screen.getByRole('checkbox', { name: /Select Traveler One/i }));
     await user.click(screen.getByRole('button', { name: 'Hard delete selected' }));
 
@@ -265,7 +348,7 @@ describe('pages/AdminUsersPage soft delete toasts', () => {
 
     renderPage();
 
-    await screen.findAllByRole('checkbox', { name: /Select Traveler/i });
+    await findCheckboxesByName(/Select Traveler/i);
     const travelerOneCheckboxes = screen.getAllByRole('checkbox', { name: /Select Traveler One/i });
     const travelerTwoCheckboxes = screen.getAllByRole('checkbox', { name: /Select Traveler Two/i });
     await user.click(travelerOneCheckboxes[0]);
@@ -299,8 +382,7 @@ describe('pages/AdminUsersPage soft delete toasts', () => {
 
     renderPage();
 
-    await screen.findAllByRole('button', { name: /ExAmPleUser/i });
-    const openDetailButtons = screen.getAllByRole('button', { name: /ExAmPleUser/i });
+    const openDetailButtons = await findButtonsByName(/ExAmPleUser/i);
     await user.click(openDetailButtons[0]);
 
     const usernameInput = await screen.findByLabelText('Username');
@@ -323,14 +405,13 @@ describe('pages/AdminUsersPage soft delete toasts', () => {
 
     renderPage();
 
-    await screen.findAllByRole('button', { name: /Traveler One/i });
-    const openDetailButtons = screen.getAllByRole('button', { name: /Traveler One/i });
+    const openDetailButtons = await findButtonsByName(/Traveler One/i);
     await user.click(openDetailButtons[0]);
 
     expect(await screen.findByText(/Self-service username changes are limited to once every 90 days\./i)).toBeInTheDocument();
     expect(screen.getByText(/Cooldown ends:/i)).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Reset username cooldown' }));
+    await user.click(screen.getByRole('button', { name: 'Revoke cooldown' }));
 
     await waitFor(() => {
       expect(mocks.adminResetUserUsernameCooldown).toHaveBeenCalledWith('user-1', 'admin.manual_reset');

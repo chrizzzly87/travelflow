@@ -166,6 +166,10 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 | `trip_view__timeline_city--open` | — | `{ trip_id, city_id }` | `TripTimelineListView.tsx` |
 | `trip_view__timeline_activity--open` | — | `{ trip_id, item_id, city_id }` | `TripTimelineListView.tsx` |
 | `trip_view__timeline_transfer--open` | — | `{ trip_id, item_id, city_id, mode }` | `TripTimelineListView.tsx` |
+| `trip_view__calendar_export--activity` | — | `{ trip_id, source, item_id, event_count }` | `TripView.tsx` |
+| `trip_view__calendar_export--activities` | — | `{ trip_id, source, event_count }` | `TripView.tsx` |
+| `trip_view__calendar_export--cities` | — | `{ trip_id, source, event_count }` | `TripView.tsx` |
+| `trip_view__calendar_export--all` | — | `{ trip_id, source, event_count }` | `TripView.tsx` |
 
 ### Profile
 | Event | Detail | Payload | File |
@@ -222,10 +226,23 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 ### Contact
 | Event | Detail | Payload | File |
 |-------|--------|---------|------|
-| `contact__form--submit` | — | `{ reason, locale, has_user }` | `ContactPage.tsx` |
-| `contact__form--success` | — | `{ reason, locale, has_user, status }` | `ContactPage.tsx` |
-| `contact__form--failed` | — | `{ reason, locale, has_user, status, error_type }` | `ContactPage.tsx` |
-| `contact__fallback--email` | — | `{ reason, locale, has_user, status, error_type }` | `ContactPage.tsx` |
+| `contact__form--submit` | — | `{ reason, sub_reason, locale, has_user, source }` | `ContactPage.tsx` |
+| `contact__form--success` | — | `{ reason, sub_reason, locale, has_user, status, source }` | `ContactPage.tsx` |
+| `contact__form--failed` | — | `{ reason, sub_reason, locale, has_user, status, error_type, source }` | `ContactPage.tsx` |
+| `contact__fallback--email` | — | `{ reason, sub_reason, locale, has_user, status, error_type, source }` | `ContactPage.tsx` |
+| `contact__faq_item--open` | — | `{ item_id, section_id, source }` | `ContactPage.tsx` |
+| `contact__faq_item--close` | — | `{ item_id, section_id, source }` | `ContactPage.tsx` |
+| `contact__faq_link--item` | — | `{ item_id, section_id, source }` | `ContactPage.tsx` |
+| `contact__faq_link--full_page` | — | `{ source }` | `ContactPage.tsx` |
+
+### FAQ
+| Event | Detail | Payload | File |
+|-------|--------|---------|------|
+| `faq__view` | — | `{ locale, hash }` | `FaqPage.tsx` |
+| `faq__section_link` | — | `{ section_id, source }` | `FaqPage.tsx` |
+| `faq__item--open` | — | `{ item_id, section_id, source }` | `FaqPage.tsx` |
+| `faq__item--close` | — | `{ item_id, section_id, source }` | `FaqPage.tsx` |
+| `faq__cta--contact` | — | `{ source }` | `FaqPage.tsx` |
 
 ### Inspirations
 | Event | Detail | Payload | File |
@@ -262,11 +279,6 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 ### Create Trip
 | Event | Detail | Payload | File |
 |-------|--------|---------|------|
-| `create_trip__guest_queue--queued` | — | `{ flow, request_id }` | `CreateTripForm.tsx` |
-| `create_trip__guest_queue--queue_failed` | — | `{ flow }` | `CreateTripForm.tsx` |
-| `create_trip__guest_queue--modal_open` | — | `{ request_id }` | `CreateTripForm.tsx` |
-| `create_trip__guest_queue--continue_auth` | — | `{ request_id }` | `CreateTripForm.tsx` |
-| `create_trip__guest_queue--dismiss` | — | `{ request_id }` | `CreateTripForm.tsx` |
 | `create_trip__ai_request--success` | — | `{ provider, model, status, duration_ms, request_id }` | `aiService.ts` |
 | `create_trip__ai_request--failed` | — | `{ provider, model, status, duration_ms, error_code }` | `aiService.ts` |
 | `create_trip__ai_request--fallback_success` | — | `{ provider, model, status, duration_ms }` | `aiService.ts` |

@@ -37,6 +37,485 @@
       }
       body {
         overscroll-behavior-y: none;
+        margin: 0;
+        background: #ffffff;
+        color: #0f172a;
+      }
+
+      .tf-boot-shell {
+        min-height: 100vh;
+        width: 100%;
+        background: #ffffff;
+        color: #0f172a;
+        font-family: "Bricolage Grotesque", "Space Grotesk", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      .tf-boot-header {
+        border-bottom: 1px solid rgba(226, 232, 240, 0.7);
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(10px);
+      }
+
+      .tf-boot-header-inner {
+        min-height: 72px;
+        max-width: 1280px;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        padding-inline: 20px;
+        padding-block: 16px;
+      }
+
+      .tf-boot-brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+        flex: 0 0 auto;
+      }
+
+      .tf-boot-logo-frame {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        height: 32px;
+        width: 32px;
+        border-radius: 8px;
+        background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+        box-shadow: 0 10px 24px rgba(165, 180, 252, 0.9);
+      }
+
+      .tf-boot-logo-image {
+        height: 18px;
+        width: 18px;
+        display: block;
+      }
+
+      .tf-boot-wordmark {
+        font-size: 1.125rem;
+        line-height: 1.75rem;
+        font-weight: 800;
+        letter-spacing: -0.025em;
+        color: #0f172a;
+      }
+
+      .tf-boot-nav {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        min-width: 0;
+        flex: 1 1 auto;
+        font-size: 0.875rem;
+      }
+
+      .tf-boot-nav-link,
+      .tf-boot-line,
+      .tf-boot-card,
+      .tf-boot-metric,
+      .tf-boot-trip-day,
+      .tf-boot-trip-block,
+      .tf-boot-trip-side-card,
+      .tf-boot-trip-status,
+      .tf-boot-trip-toolbar-pill {
+        border-radius: 999px;
+        background: linear-gradient(90deg, #e2e8f0 0%, #f8fafc 45%, #e2e8f0 100%);
+        background-size: 200% 100%;
+        animation: tf-boot-shimmer 1.4s linear infinite;
+      }
+
+      .tf-boot-nav-link {
+        flex: 0 0 auto;
+        color: #64748b;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+
+      .tf-boot-actions {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        flex: 0 0 auto;
+      }
+
+      .tf-boot-action-chip,
+      .tf-boot-action-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 auto;
+        border: 1px solid #e2e8f0;
+        background-color: rgba(255, 255, 255, 0.96);
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+        border-radius: 8px;
+        font-size: 0.875rem;
+        line-height: 1.25rem;
+      }
+
+      .tf-boot-action-chip {
+        height: 36px;
+        padding-inline: 12px;
+        color: #334155;
+        font-weight: 600;
+      }
+
+      .tf-boot-action-chip--locale {
+        gap: 8px;
+      }
+
+      .tf-boot-action-chip--login {
+        min-width: 80px;
+      }
+
+      .tf-boot-action-button {
+        height: 36px;
+        padding-inline: 12px;
+        background:
+          linear-gradient(135deg, rgba(79, 70, 229, 0.92) 0%, rgba(99, 102, 241, 0.92) 100%);
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+        border-color: rgba(99, 102, 241, 0.36);
+        color: #ffffff;
+        font-weight: 600;
+      }
+
+      .tf-boot-action-locale-flag {
+        font-size: 0.875rem;
+        line-height: 1;
+      }
+
+      .tf-boot-action-locale-caret {
+        font-size: 0.75rem;
+        color: #64748b;
+      }
+
+      .tf-boot-main {
+        min-height: calc(100vh - 73px);
+        background: #ffffff;
+      }
+
+      .tf-boot-page {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding-inline: 20px;
+        padding-block: 28px 40px;
+      }
+
+      .tf-boot-page--trip {
+        display: none;
+      }
+
+      html[data-tf-boot-route="trip"] .tf-boot-page--marketing {
+        display: none;
+      }
+
+      html[data-tf-boot-route="trip"] .tf-boot-page--trip {
+        display: block;
+      }
+
+      .tf-boot-hero {
+        border-radius: 28px;
+        border: 1px solid #e2e8f0;
+        background:
+          radial-gradient(circle at top left, rgba(224, 231, 255, 0.42), transparent 48%),
+          linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+        padding: 28px;
+      }
+
+      .tf-boot-hero-lines {
+        display: grid;
+        gap: 14px;
+        max-width: 720px;
+      }
+
+      .tf-boot-line {
+        height: 14px;
+      }
+
+      .tf-boot-line--headline {
+        width: min(540px, 100%);
+        height: 24px;
+      }
+
+      .tf-boot-line--body-lg {
+        width: min(640px, 100%);
+      }
+
+      .tf-boot-line--body-md {
+        width: min(520px, 85%);
+      }
+
+      .tf-boot-line--body-sm {
+        width: min(360px, 62%);
+      }
+
+      .tf-boot-hero-actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 22px;
+      }
+
+      .tf-boot-hero-action {
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+        background: #ffffff;
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+      }
+
+      .tf-boot-hero-action--primary {
+        width: 156px;
+        height: 48px;
+      }
+
+      .tf-boot-hero-action--secondary {
+        width: 134px;
+        height: 48px;
+      }
+
+      .tf-boot-marketing-grid {
+        display: grid;
+        gap: 16px;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        margin-top: 22px;
+      }
+
+      .tf-boot-card {
+        min-height: 150px;
+        border-radius: 24px;
+        border: 1px solid #e2e8f0;
+        background-color: #ffffff;
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.04);
+      }
+
+      .tf-boot-trip-status {
+        height: 14px;
+        width: min(280px, 46vw);
+        margin-bottom: 18px;
+      }
+
+      .tf-boot-trip-summary {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 16px;
+      }
+
+      .tf-boot-trip-summary-copy {
+        display: grid;
+        gap: 12px;
+        flex: 1 1 auto;
+        min-width: 0;
+      }
+
+      .tf-boot-trip-toolbar {
+        display: flex;
+        gap: 10px;
+        flex: 0 0 auto;
+      }
+
+      .tf-boot-trip-toolbar-pill {
+        height: 42px;
+        width: 42px;
+        border: 1px solid #e2e8f0;
+        background-color: #ffffff;
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
+      }
+
+      .tf-boot-trip-layout {
+        display: grid;
+        gap: 18px;
+        grid-template-columns: minmax(0, 1fr) 290px;
+      }
+
+      .tf-boot-trip-canvas {
+        min-height: 460px;
+        border: 1px solid #e2e8f0;
+        border-radius: 30px;
+        background:
+          linear-gradient(180deg, rgba(248, 250, 252, 0.82), rgba(255, 255, 255, 0.98));
+        overflow: hidden;
+      }
+
+      .tf-boot-trip-grid {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        border-bottom: 1px solid #e2e8f0;
+      }
+
+      .tf-boot-trip-day {
+        height: 76px;
+        border-right: 1px solid #eef2f7;
+        background-color: rgba(255, 255, 255, 0.64);
+      }
+
+      .tf-boot-trip-day:last-child {
+        border-right: 0;
+      }
+
+      .tf-boot-trip-body {
+        padding: 22px 18px;
+      }
+
+      .tf-boot-trip-block {
+        height: 74px;
+        border-radius: 22px;
+        border: 1px solid #e2e8f0;
+        background-color: rgba(255, 255, 255, 0.94);
+      }
+
+      .tf-boot-trip-block + .tf-boot-trip-block {
+        margin-top: 14px;
+      }
+
+      .tf-boot-trip-block--thin {
+        height: 56px;
+      }
+
+      .tf-boot-trip-sidebar {
+        display: grid;
+        gap: 14px;
+      }
+
+      .tf-boot-trip-side-card {
+        min-height: 180px;
+        border-radius: 26px;
+        border: 1px solid #e2e8f0;
+        background-color: #ffffff;
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+      }
+
+      .tf-boot-trip-side-card--map {
+        min-height: 280px;
+      }
+
+      .tf-boot-metrics {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .tf-boot-metric {
+        height: 86px;
+        border-radius: 22px;
+        border: 1px solid #e2e8f0;
+        background-color: #ffffff;
+      }
+
+      .tf-boot-surface {
+        margin-top: 22px;
+        min-height: 220px;
+        border: 1px solid #e2e8f0;
+        border-radius: 28px;
+        background:
+          linear-gradient(180deg, rgba(248, 250, 252, 0.82), rgba(255, 255, 255, 0.98));
+      }
+
+      @keyframes tf-boot-shimmer {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+      }
+
+      @media (max-width: 1200px) {
+        .tf-boot-header-inner {
+          gap: 18px;
+        }
+
+        .tf-boot-nav {
+          gap: 18px;
+        }
+
+        .tf-boot-trip-layout {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      }
+
+      @media (max-width: 960px) {
+        .tf-boot-nav {
+          display: none;
+        }
+
+        .tf-boot-marketing-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 640px) {
+        .tf-boot-header-inner {
+          min-height: 64px;
+          padding-inline: 14px;
+          padding-block: 14px;
+          gap: 12px;
+        }
+
+        .tf-boot-logo-frame {
+          height: 32px;
+          width: 32px;
+          border-radius: 8px;
+        }
+
+        .tf-boot-logo-image {
+          height: 18px;
+          width: 18px;
+        }
+
+        .tf-boot-wordmark {
+          font-size: 1.125rem;
+          line-height: 1.75rem;
+        }
+
+        .tf-boot-page {
+          padding-inline: 14px;
+          padding-block: 18px 24px;
+        }
+
+        .tf-boot-action-chip--locale,
+        .tf-boot-action-chip--login {
+          display: none;
+        }
+
+        .tf-boot-action-button {
+          height: 36px;
+        }
+
+        .tf-boot-hero {
+          padding: 20px 18px;
+        }
+
+        .tf-boot-marketing-grid {
+          grid-template-columns: minmax(0, 1fr);
+        }
+
+        .tf-boot-trip-grid {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .tf-boot-trip-grid .tf-boot-trip-day:nth-child(n+4) {
+          display: none;
+        }
+
+        .tf-boot-trip-summary {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .tf-boot-trip-toolbar {
+          justify-content: flex-start;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .tf-boot-line,
+        .tf-boot-card,
+        .tf-boot-metric,
+        .tf-boot-trip-day,
+        .tf-boot-trip-block,
+        .tf-boot-trip-side-card,
+        .tf-boot-trip-status,
+        .tf-boot-trip-toolbar-pill {
+          animation: none;
+        }
       }
       
       /* Print Styles */
@@ -99,9 +578,106 @@
         z-index: 99999 !important;
       }
     </style>
+    <script>
+      (() => {
+        const path = window.location.pathname || '/';
+        const isTripLikeRoute = /^\/(?:[a-z]{2}(?:-[A-Z]{2})?\/)?(?:trip|s|example)(?:\/|$)/.test(path);
+        if (isTripLikeRoute) {
+          document.documentElement.setAttribute('data-tf-boot-route', 'trip');
+        }
+      })();
+    </script>
 </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div class="tf-boot-shell" aria-hidden="true">
+        <header class="tf-boot-header">
+          <div class="tf-boot-header-inner">
+            <div class="tf-boot-brand">
+              <span class="tf-boot-logo-frame">
+                <img class="tf-boot-logo-image" src="/favicon.svg" alt="" />
+              </span>
+              <span class="tf-boot-wordmark">TravelFlow</span>
+            </div>
+            <nav class="tf-boot-nav" aria-hidden="true">
+              <span class="tf-boot-nav-link">Features</span>
+              <span class="tf-boot-nav-link">Inspirations</span>
+              <span class="tf-boot-nav-link">News &amp; Updates</span>
+              <span class="tf-boot-nav-link">Blog</span>
+              <span class="tf-boot-nav-link">Pricing</span>
+            </nav>
+            <div class="tf-boot-actions">
+              <span class="tf-boot-action-chip tf-boot-action-chip--locale">
+                <span class="tf-boot-action-locale-flag" aria-hidden="true">🇬🇧</span>
+                <span>English</span>
+                <span class="tf-boot-action-locale-caret" aria-hidden="true">⌄</span>
+              </span>
+              <span class="tf-boot-action-chip tf-boot-action-chip--login">Login</span>
+              <span class="tf-boot-action-button">Create Trip</span>
+            </div>
+          </div>
+        </header>
+        <main class="tf-boot-main">
+          <section class="tf-boot-page tf-boot-page--marketing">
+            <div class="tf-boot-hero">
+              <div class="tf-boot-hero-lines">
+                <div class="tf-boot-line tf-boot-line--headline"></div>
+                <div class="tf-boot-line tf-boot-line--body-lg"></div>
+                <div class="tf-boot-line tf-boot-line--body-md"></div>
+                <div class="tf-boot-line tf-boot-line--body-sm"></div>
+              </div>
+              <div class="tf-boot-hero-actions" aria-hidden="true">
+                <span class="tf-boot-hero-action tf-boot-hero-action--primary"></span>
+                <span class="tf-boot-hero-action tf-boot-hero-action--secondary"></span>
+              </div>
+            </div>
+            <div class="tf-boot-marketing-grid" aria-hidden="true">
+              <div class="tf-boot-card"></div>
+              <div class="tf-boot-card"></div>
+              <div class="tf-boot-card"></div>
+            </div>
+            <div class="tf-boot-surface" aria-hidden="true"></div>
+          </section>
+          <section class="tf-boot-page tf-boot-page--trip">
+            <div class="tf-boot-trip-status"></div>
+            <div class="tf-boot-trip-summary">
+              <div class="tf-boot-trip-summary-copy">
+                <div class="tf-boot-line tf-boot-line--headline" style="width:min(420px,72%);"></div>
+                <div class="tf-boot-line tf-boot-line--body-md" style="width:min(300px,56%);"></div>
+              </div>
+              <div class="tf-boot-trip-toolbar" aria-hidden="true">
+                <span class="tf-boot-trip-toolbar-pill"></span>
+                <span class="tf-boot-trip-toolbar-pill"></span>
+                <span class="tf-boot-trip-toolbar-pill"></span>
+              </div>
+            </div>
+            <div class="tf-boot-trip-layout">
+              <section class="tf-boot-trip-canvas" aria-hidden="true">
+                <div class="tf-boot-trip-grid">
+                  <div class="tf-boot-trip-day"></div>
+                  <div class="tf-boot-trip-day"></div>
+                  <div class="tf-boot-trip-day"></div>
+                  <div class="tf-boot-trip-day"></div>
+                  <div class="tf-boot-trip-day"></div>
+                </div>
+                <div class="tf-boot-trip-body">
+                  <div class="tf-boot-trip-block"></div>
+                  <div class="tf-boot-trip-block tf-boot-trip-block--thin"></div>
+                  <div class="tf-boot-trip-block"></div>
+                </div>
+              </section>
+              <aside class="tf-boot-trip-sidebar" aria-hidden="true">
+                <div class="tf-boot-trip-side-card tf-boot-trip-side-card--map"></div>
+                <div class="tf-boot-metrics">
+                  <div class="tf-boot-metric"></div>
+                  <div class="tf-boot-metric"></div>
+                </div>
+              </aside>
+            </section>
+          </section>
+        </main>
+      </div>
+    </div>
     <!-- Netlify Forms SPA registration scaffold -->
     <form
       name="contact"
@@ -113,11 +689,14 @@
     >
       <input type="hidden" name="form-name" value="contact" />
       <input type="text" name="reason" />
+      <input type="text" name="subReason" />
       <input type="text" name="name" />
       <input type="email" name="email" />
       <textarea name="message"></textarea>
       <input type="text" name="currentPath" />
+      <input type="text" name="lastVisitedPath" />
       <input type="text" name="locale" />
+      <input type="text" name="contactSource" />
       <input type="text" name="userId" />
       <input type="text" name="plan" />
       <input type="text" name="appVersion" />

@@ -12,7 +12,7 @@ describe('index.html Netlify contact form scaffold', () => {
     expect(html).toContain('netlify-honeypot="bot-field"');
     expect(html).toContain('name="form-name" value="contact"');
 
-    for (const fieldName of ['reason', 'name', 'email', 'message', 'currentPath', 'locale', 'userId', 'plan', 'appVersion', 'bot-field']) {
+    for (const fieldName of ['reason', 'subReason', 'name', 'email', 'message', 'currentPath', 'lastVisitedPath', 'locale', 'contactSource', 'userId', 'plan', 'appVersion', 'bot-field']) {
       expect(html).toContain(`name="${fieldName}"`);
     }
   });

@@ -27,7 +27,25 @@ import {
 } from '../utils';
 import type { ITrip, IViewSettings } from '../types';
 import type { CommitOptions, SharedTripLoaderRouteProps } from './tripRouteTypes';
-import { TripView } from '../components/TripView';
+import { LazyTripView } from '../components/tripview/LazyTripView';
+import { TripRouteLoadingShell } from '../components/tripview/TripRouteLoadingShell';
+
+const areViewSettingsEqual = (a?: IViewSettings, b?: IViewSettings): boolean => {
+    if (!a && !b) return true;
+    if (!a || !b) return false;
+    return (
+        a.layoutMode === b.layoutMode
+        && a.timelineMode === b.timelineMode
+        && a.timelineView === b.timelineView
+        && a.mapDockMode === b.mapDockMode
+        && a.mapStyle === b.mapStyle
+        && a.routeMode === b.routeMode
+        && a.showCityNames === b.showCityNames
+        && a.zoomLevel === b.zoomLevel
+        && a.sidebarWidth === b.sidebarWidth
+        && a.timelineHeight === b.timelineHeight
+    );
+};
 
 type SharedTripSnapshotState = { hasNewer: boolean; latestUrl: string } | null;
 
@@ -311,27 +329,35 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
         navigate(buildTripUrl(cloned.id));
     };
 
-    if (!trip) return null;
+    const handleRouteViewSettingsChange = useCallback((settings: IViewSettings) => {
+        const currentViewSettings = routeState.viewSettings;
+        if (areViewSettingsEqual(currentViewSettings, settings)) return;
+        hasInSessionViewOverrideRef.current = true;
+        setRouteState((prev) => ({ ...prev, viewSettings: settings }));
+        onViewSettingsChange(settings);
+    }, [onViewSettingsChange, routeState.viewSettings]);
+
+    if (!trip) {
+        return <TripRouteLoadingShell variant="loadingSharedTrip" />;
+    }
 
     return (
-        <TripView
-            trip={trip}
-            initialViewSettings={viewSettings ?? trip.defaultView}
-            onUpdateTrip={(updatedTrip) => onTripLoaded(updatedTrip, viewSettings ?? updatedTrip.defaultView)}
-            onCommitState={handleCommitShared}
-            onViewSettingsChange={(settings) => {
-                hasInSessionViewOverrideRef.current = true;
-                setRouteState((prev) => ({ ...prev, viewSettings: settings }));
-                onViewSettingsChange(settings);
-            }}
-            onOpenManager={onOpenManager}
-            onOpenSettings={onOpenSettings}
-            appLanguage={appLanguage}
-            readOnly={shareMode === 'view'}
-            canShare={false}
-            shareStatus={shareMode}
-            shareSnapshotMeta={snapshotState ?? undefined}
-            onCopyTrip={allowCopy ? handleCopyTrip : undefined}
-        />
+        <React.Suspense fallback={<TripRouteLoadingShell variant="preparingSharedPlanner" />}>
+            <LazyTripView
+                trip={trip}
+                initialViewSettings={viewSettings ?? trip.defaultView}
+                onUpdateTrip={(updatedTrip) => onTripLoaded(updatedTrip, viewSettings ?? updatedTrip.defaultView)}
+                onCommitState={handleCommitShared}
+                onViewSettingsChange={handleRouteViewSettingsChange}
+                onOpenManager={onOpenManager}
+                onOpenSettings={onOpenSettings}
+                appLanguage={appLanguage}
+                readOnly={shareMode === 'view'}
+                canShare={false}
+                shareStatus={shareMode}
+                shareSnapshotMeta={snapshotState ?? undefined}
+                onCopyTrip={allowCopy ? handleCopyTrip : undefined}
+            />
+        </React.Suspense>
     );
 };

@@ -31,6 +31,12 @@
     "explore": "Изучить",
     "allArticles": "Все статьи",
     "tripInspirations": "Идеи для поездок",
-    "relatedArticles": "Похожие статьи"
+    "relatedArticles": "Похожие статьи",
+    "calendarCard": {
+      "badge": "Добавить в календарь",
+      "downloadIcs": "Скачать .ics",
+      "eventCount": "В пакете: {count} событий",
+      "compatibilityHint": "Один файл .ics работает в Apple Calendar, Google Calendar и Outlook."
+    }
   }
 }

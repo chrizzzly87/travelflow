@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 
-import type { ITrip, ITimelineItem, IViewSettings, RouteStatus } from '../../types';
+import type { ITrip, ITimelineItem, IViewSettings, RouteFailureReason, RouteStatus } from '../../types';
 import { buildRouteCacheKey, getTravelLegMetricsForItem } from '../../utils';
 import { normalizeTransportMode } from '../../shared/transportModes';
 
@@ -20,6 +20,7 @@ interface RouteMetricsPayload {
 interface RouteStatusMeta {
     mode?: string;
     routeKey?: string;
+    reason?: RouteFailureReason;
 }
 
 export const useTripRouteStatusState = ({

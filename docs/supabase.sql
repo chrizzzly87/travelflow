@@ -147,6 +147,32 @@ create table if not exists public.billing_webhook_events (
   created_at timestamptz not null default now()
 );
 
+create table if not exists public.legal_terms_versions (
+  version text primary key,
+  title text not null,
+  summary text,
+  binding_locale text not null default 'de',
+  content_de text not null default '',
+  content_en text not null default '',
+  last_updated date not null,
+  effective_at timestamptz not null default now(),
+  requires_reaccept boolean not null default true,
+  is_current boolean not null default false,
+  created_at timestamptz not null default now(),
+  created_by uuid references auth.users on delete set null
+);
+
+create table if not exists public.legal_terms_acceptance_events (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users on delete cascade,
+  terms_version text not null references public.legal_terms_versions(version) on delete restrict,
+  accepted_at timestamptz not null default now(),
+  accepted_locale text,
+  source text,
+  metadata jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+
 create table if not exists public.ai_benchmark_sessions (
   id uuid primary key default gen_random_uuid(),
   owner_id uuid not null references auth.users on delete cascade default auth.uid(),
@@ -228,6 +254,12 @@ alter table public.trips add column if not exists source_kind text;
 alter table public.trips add column if not exists source_template_id text;
 alter table public.profiles add column if not exists passport_sticker_positions jsonb not null default '{}'::jsonb;
 alter table public.profiles add column if not exists passport_sticker_selection jsonb not null default '[]'::jsonb;
+alter table public.profiles add column if not exists terms_accepted_version text;
+alter table public.profiles add column if not exists terms_accepted_at timestamptz;
+alter table public.profiles add column if not exists terms_accepted_locale text;
+alter table public.profiles add column if not exists terms_acceptance_source text;
+alter table public.legal_terms_versions add column if not exists content_de text not null default '';
+alter table public.legal_terms_versions add column if not exists content_en text not null default '';
 alter table public.ai_benchmark_runs add column if not exists satisfaction_rating text;
 alter table public.ai_benchmark_runs add column if not exists satisfaction_updated_at timestamptz;
 alter table public.ai_benchmark_runs add column if not exists run_comment text;
@@ -239,6 +271,7 @@ alter table public.subscriptions add column if not exists provider_price_id text
 alter table public.subscriptions add column if not exists provider_product_id text;
 alter table public.subscriptions add column if not exists provider_status text;
 alter table public.subscriptions add column if not exists current_period_start timestamptz;
+alter table public.subscriptions add column if not exists current_period_end timestamptz;
 alter table public.subscriptions add column if not exists cancel_at timestamptz;
 alter table public.subscriptions add column if not exists canceled_at timestamptz;
 alter table public.subscriptions add column if not exists grace_ends_at timestamptz;
@@ -330,6 +363,134 @@ begin
 end;
 $$;
 
+insert into public.legal_terms_versions (
+  version,
+  title,
+  summary,
+  binding_locale,
+  content_de,
+  content_en,
+  last_updated,
+  effective_at,
+  requires_reaccept,
+  is_current
+)
+values (
+  '2026-03-03',
+  'Terms of Service / AGB',
+  'Initial production-ready Terms of Service for B2C/B2B launch with Merchant-of-Record billing model.',
+  'de',
+  $$## 1. Geltungsbereich
+Diese Allgemeinen Geschäftsbedingungen (AGB) gelten für sämtliche Verträge zwischen Ihnen und dem Betreiber von {appName} in der zum Zeitpunkt des Vertragsschlusses gültigen Fassung.
+
+Abweichende Bedingungen des Nutzers werden nicht Vertragsbestandteil, es sei denn, ihrer Geltung wurde ausdrücklich schriftlich zugestimmt.
+
+## 2. Leistungen von {appName}
+{appName} bietet eine digitale Plattform zur Reiseplanung und -organisation. Der konkrete Leistungsumfang ergibt sich aus den jeweils zum Buchungs- oder Nutzungszeitpunkt angezeigten Produktinformationen.
+
+Kostenlose und kostenpflichtige Funktionsumfänge können bestehen. Es besteht kein Anspruch auf bestimmte Funktionen, soweit diese nicht ausdrücklich als Vertragsbestandteil zugesagt wurden.
+
+## 3. Vertragsschluss und Nutzerkonto
+Der Vertrag über die Nutzung Ihres Kontos kommt mit erfolgreicher Registrierung bzw. Freischaltung zustande. Sie sind verpflichtet, bei der Registrierung zutreffende und vollständige Angaben zu machen.
+
+Zugangsdaten sind geheim zu halten und dürfen nicht an Dritte weitergegeben werden. Sie haften für missbräuchliche Nutzung, soweit Sie diese zu vertreten haben.
+
+## 4. Preise, Zahlung und Merchant-of-Record-Modell
+Angezeigte Preise verstehen sich als Endpreise inklusive gesetzlich geschuldeter Steuern, soweit nicht anders gekennzeichnet. Bei kostenpflichtigen Plänen erfolgt die Zahlungsabwicklung über einen Merchant of Record (MoR).
+
+Im MoR-Modell ist der jeweilige Zahlungsanbieter gegenüber dem Endkunden Verkäufer der digitalen Leistung für die Abrechnung und Rechnungsstellung. Der Nutzungsvertrag über die Plattformfunktionen besteht weiterhin mit dem Betreiber von {appName}.
+
+Rechnungen, Zahlungsbelege, Erstattungen und steuerliche Ausweise werden nach den Bedingungen des jeweils eingesetzten Zahlungsanbieters erstellt und bereitgestellt.
+
+## 5. Laufzeit, Kündigung und Beendigung
+Soweit ein laufendes Abonnement besteht, verlängert es sich entsprechend den im Checkout angezeigten Bedingungen, sofern es nicht fristgerecht gekündigt wird.
+
+Das Recht zur außerordentlichen Kündigung aus wichtigem Grund bleibt unberührt. Gesetzlich zwingende Rechte, insbesondere Verbraucherrechte, bleiben unberührt.
+
+## 6. Verbraucherrechte und Widerruf
+Verbrauchern stehen bei Fernabsatzverträgen gesetzliche Rechte, insbesondere Widerrufsrechte nach §§ 355 ff. BGB, zu, soweit diese nicht gesetzlich ausgeschlossen sind.
+
+Informationen zu Voraussetzungen, Fristen, Ausnahmen und einem Muster-Widerrufsformular werden im Rahmen des Bestellprozesses auf einem dauerhaften Datenträger bereitgestellt.
+
+## 7. Zulässige Nutzung
+Die Plattform darf ausschließlich rechtmäßig genutzt werden. Unzulässig sind insbesondere missbräuchliche, betrügerische, rechtswidrige oder sicherheitsgefährdende Handlungen.
+
+Bei Verstößen kann der Zugriff vorübergehend oder dauerhaft eingeschränkt werden, soweit dies erforderlich und verhältnismäßig ist.
+
+## 8. Haftung
+Es gilt die gesetzliche Haftung. Für leicht fahrlässige Pflichtverletzungen wird die Haftung auf vorhersehbare, vertragstypische Schäden begrenzt, soweit keine zwingenden gesetzlichen Vorschriften entgegenstehen.
+
+Die Haftungsbeschränkungen gelten nicht bei Vorsatz, grober Fahrlässigkeit, Verletzung von Leben, Körper oder Gesundheit sowie bei zwingender Produkthaftung.
+
+## 9. Änderungen dieser AGB
+Änderungen dieser AGB werden nur unter Beachtung der gesetzlichen Vorgaben vorgenommen. Wesentliche Änderungen werden vor Inkrafttreten in geeigneter Form angekündigt.
+
+Sofern eine erneute Zustimmung rechtlich erforderlich oder aus Compliance-Gründen vorgesehen ist, wird der weitere Zugriff auf geschützte Kontofunktionen von der Zustimmung zur jeweils aktuellen Fassung abhängig gemacht.
+
+## 10. Anwendbares Recht und Streitbeilegung
+Es gilt deutsches Recht unter Ausschluss des UN-Kaufrechts, soweit keine zwingenden Verbraucherschutzvorschriften entgegenstehen.
+
+Informationen zur Teilnahme an Verbraucherstreitbeilegungsverfahren finden Sie im Impressum.
+$$,
+  $$## 1. Scope
+These Terms apply to all agreements between you and the operator of {appName} at the time you enter into the contract.
+
+## 2. Service
+{appName} provides digital travel-planning functionality. Features can differ by plan and can evolve over time.
+
+## 3. Account
+You must provide accurate account data and keep credentials confidential.
+
+## 4. Pricing, payment, and MoR model
+Paid plans are processed through a Merchant of Record provider responsible for checkout and invoice issuance.
+
+Your platform-use agreement remains with the operator of {appName}.
+
+## 5. Term and cancellation
+Subscription term, renewal, and cancellation conditions are shown during checkout. Mandatory consumer rights remain unaffected.
+
+## 6. Consumer withdrawal rights
+Consumers may have statutory withdrawal rights under German/EU distance-selling rules, including digital-content/service rules where applicable.
+
+## 7. Acceptable use
+Illegal, abusive, fraudulent, or security-threatening use is prohibited and can lead to restriction or termination.
+
+## 8. Liability
+Liability follows mandatory law. For minor negligence, liability is limited to foreseeable, typical contractual damages where legally permissible.
+
+## 9. Terms updates
+Material changes are announced before they take effect. If required, continued use of protected account features requires accepting the current version.
+
+## 10. Governing law
+German law applies, subject to mandatory consumer protections.
+$$,
+  date '2026-03-03',
+  '2026-03-03T00:00:00Z'::timestamptz,
+  true,
+  true
+)
+on conflict (version) do update
+set
+  title = excluded.title,
+  summary = excluded.summary,
+  binding_locale = excluded.binding_locale,
+  content_de = excluded.content_de,
+  content_en = excluded.content_en,
+  last_updated = excluded.last_updated;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from public.legal_terms_versions ltv
+    where ltv.is_current = true
+  ) then
+    update public.legal_terms_versions ltv
+       set is_current = (ltv.version = '2026-03-03');
+  end if;
+end;
+$$;
+
 -- Indexes
 create index if not exists trips_owner_id_idx on public.trips(owner_id);
 create index if not exists trips_updated_at_idx on public.trips(updated_at desc);
@@ -361,6 +522,10 @@ create index if not exists subscriptions_provider_customer_idx on public.subscri
 create index if not exists subscriptions_last_event_at_idx on public.subscriptions(last_event_at desc);
 create index if not exists billing_webhook_events_occurred_at_idx on public.billing_webhook_events(occurred_at desc);
 create index if not exists billing_webhook_events_user_occurred_at_idx on public.billing_webhook_events(user_id, occurred_at desc);
+create index if not exists legal_terms_versions_effective_idx on public.legal_terms_versions(effective_at desc);
+create unique index if not exists legal_terms_versions_single_current_idx on public.legal_terms_versions((is_current)) where is_current;
+create index if not exists legal_terms_acceptance_user_created_idx on public.legal_terms_acceptance_events(user_id, accepted_at desc);
+create unique index if not exists legal_terms_acceptance_user_version_uidx on public.legal_terms_acceptance_events(user_id, terms_version);
 
 -- updated_at helpers
 create or replace function public.set_updated_at()
@@ -668,6 +833,8 @@ alter table public.user_settings enable row level security;
 alter table public.plans enable row level security;
 alter table public.subscriptions enable row level security;
 alter table public.billing_webhook_events enable row level security;
+alter table public.legal_terms_versions enable row level security;
+alter table public.legal_terms_acceptance_events enable row level security;
 alter table public.ai_benchmark_sessions enable row level security;
 alter table public.ai_benchmark_runs enable row level security;
 alter table public.ai_benchmark_preferences enable row level security;
@@ -768,6 +935,19 @@ using (
 create policy "Profile user events owner insert"
 on public.profile_user_events for insert
 with check (owner_id = auth.uid());
+
+drop policy if exists "Legal terms versions public read" on public.legal_terms_versions;
+create policy "Legal terms versions public read"
+on public.legal_terms_versions for select
+using (true);
+
+drop policy if exists "Legal terms acceptance owner read" on public.legal_terms_acceptance_events;
+create policy "Legal terms acceptance owner read"
+on public.legal_terms_acceptance_events for select
+using (
+  user_id = auth.uid()
+  or public.is_admin(auth.uid())
+);
 
 -- Trip shares policies (owner only)
 drop policy if exists "Trip shares owner read" on public.trip_shares;
@@ -1250,6 +1430,51 @@ create table if not exists public.trip_generation_requests (
   completed_at timestamptz
 );
 
+create table if not exists public.trip_generation_attempts (
+  id uuid primary key default gen_random_uuid(),
+  trip_id text not null references public.trips(id) on delete cascade,
+  owner_id uuid not null references auth.users on delete cascade,
+  flow text not null check (flow in ('classic', 'wizard', 'surprise')),
+  source text not null,
+  state text not null check (state in ('queued', 'running', 'succeeded', 'failed')),
+  provider text,
+  model text,
+  provider_model text,
+  request_id text,
+  failure_kind text check (failure_kind in ('timeout', 'abort', 'quality', 'provider', 'network', 'unknown')),
+  error_code text,
+  error_message text,
+  status_code integer,
+  started_at timestamptz not null default now(),
+  finished_at timestamptz,
+  duration_ms integer,
+  metadata jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.trip_generation_jobs (
+  id uuid primary key default gen_random_uuid(),
+  trip_id text not null references public.trips(id) on delete cascade,
+  owner_id uuid not null references auth.users on delete cascade,
+  attempt_id uuid not null references public.trip_generation_attempts(id) on delete cascade,
+  state text not null default 'queued'
+    check (state in ('queued', 'leased', 'completed', 'failed', 'dead')),
+  priority integer not null default 100,
+  payload jsonb not null default '{}'::jsonb,
+  run_after timestamptz not null default now(),
+  lease_expires_at timestamptz,
+  leased_by text,
+  retry_count integer not null default 0,
+  max_retries integer not null default 3,
+  last_error_code text,
+  last_error_message text,
+  started_at timestamptz,
+  finished_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create table if not exists public.anonymous_asset_claims (
   id uuid primary key default gen_random_uuid(),
   anon_user_id uuid not null references auth.users on delete cascade,
@@ -1272,6 +1497,28 @@ create index if not exists trip_generation_requests_status_idx on public.trip_ge
 create index if not exists trip_generation_requests_expires_idx on public.trip_generation_requests(expires_at);
 create index if not exists trip_generation_requests_owner_idx on public.trip_generation_requests(owner_user_id, created_at desc);
 create index if not exists trip_generation_requests_anon_idx on public.trip_generation_requests(requested_by_anon_id, created_at desc);
+create index if not exists trip_generation_attempts_trip_started_idx on public.trip_generation_attempts(trip_id, started_at desc);
+create index if not exists trip_generation_attempts_owner_started_idx on public.trip_generation_attempts(owner_id, started_at desc);
+create index if not exists trip_generation_attempts_request_idx on public.trip_generation_attempts(request_id);
+create index if not exists trip_generation_attempts_state_started_idx on public.trip_generation_attempts(state, started_at desc);
+create unique index if not exists trip_generation_jobs_attempt_uidx on public.trip_generation_jobs(attempt_id);
+do $$
+begin
+  if not exists (
+    select 1
+      from pg_constraint c
+     where c.conname = 'trip_generation_jobs_attempt_key'
+       and c.conrelid = 'public.trip_generation_jobs'::regclass
+  ) then
+    alter table public.trip_generation_jobs
+      add constraint trip_generation_jobs_attempt_key
+      unique using index trip_generation_jobs_attempt_uidx;
+  end if;
+end;
+$$;
+create index if not exists trip_generation_jobs_state_run_after_idx on public.trip_generation_jobs(state, run_after, priority, created_at);
+create index if not exists trip_generation_jobs_owner_created_idx on public.trip_generation_jobs(owner_id, created_at desc);
+create index if not exists trip_generation_jobs_trip_created_idx on public.trip_generation_jobs(trip_id, created_at desc);
 create index if not exists anonymous_asset_claims_anon_idx on public.anonymous_asset_claims(anon_user_id, created_at desc);
 create index if not exists anonymous_asset_claims_target_idx on public.anonymous_asset_claims(target_user_id, created_at desc);
 create index if not exists anonymous_asset_claims_status_idx on public.anonymous_asset_claims(status, created_at desc);
@@ -1280,6 +1527,16 @@ create index if not exists anonymous_asset_claims_expires_idx on public.anonymou
 drop trigger if exists set_trip_generation_requests_updated_at on public.trip_generation_requests;
 create trigger set_trip_generation_requests_updated_at
 before update on public.trip_generation_requests
+for each row execute function public.set_updated_at();
+
+drop trigger if exists set_trip_generation_attempts_updated_at on public.trip_generation_attempts;
+create trigger set_trip_generation_attempts_updated_at
+before update on public.trip_generation_attempts
+for each row execute function public.set_updated_at();
+
+drop trigger if exists set_trip_generation_jobs_updated_at on public.trip_generation_jobs;
+create trigger set_trip_generation_jobs_updated_at
+before update on public.trip_generation_jobs
 for each row execute function public.set_updated_at();
 
 drop trigger if exists set_anonymous_asset_claims_updated_at on public.anonymous_asset_claims;
@@ -1556,6 +1813,10 @@ returns table(
   system_role text,
   tier_key text,
   entitlements_override jsonb,
+  terms_accepted_version text,
+  terms_accepted_at timestamptz,
+  terms_accepted_locale text,
+  terms_acceptance_source text,
   created_at timestamptz,
   updated_at timestamptz
 )
@@ -1576,6 +1837,10 @@ begin
     p.system_role,
     p.tier_key,
     p.entitlements_override,
+    p.terms_accepted_version,
+    p.terms_accepted_at,
+    p.terms_accepted_locale,
+    p.terms_acceptance_source,
     p.created_at,
     p.updated_at
   from public.profiles p
@@ -1842,6 +2107,7 @@ set row_security = off
 as $$
 declare
   v_user_id uuid;
+  v_request public.trip_generation_requests%rowtype;
 begin
   v_user_id := auth.uid();
   if v_user_id is null then
@@ -1855,14 +2121,896 @@ begin
          updated_at = now()
    where r.id = p_request_id
      and r.status = 'pending_auth'
-     and r.expires_at > now();
+     and r.expires_at > now()
+   returning r.* into v_request;
+
+  if v_request.id is null then
+    select r.*
+      into v_request
+      from public.trip_generation_requests r
+     where r.id = p_request_id
+     limit 1;
+
+    if v_request.id is null then
+      raise exception 'Queued request not found.';
+    end if;
+    if v_request.expires_at <= now() or v_request.status = 'expired' then
+      raise exception 'Queued request expired.';
+    end if;
+    if v_request.owner_user_id is null then
+      raise exception 'Queued request is no longer claimable.';
+    end if;
+    if v_request.owner_user_id <> v_user_id then
+      raise exception 'Queued request already claimed by another user.';
+    end if;
+    raise exception 'Queued request already claimed.';
+  end if;
 
   return query
-  select r.id, r.flow, r.payload, r.status, r.owner_user_id, r.expires_at
-    from public.trip_generation_requests r
-   where r.id = p_request_id
-     and r.owner_user_id = v_user_id
+  select
+    v_request.id,
+    v_request.flow,
+    v_request.payload,
+    v_request.status,
+    v_request.owner_user_id,
+    v_request.expires_at;
+end;
+$$;
+
+create or replace function public.trip_generation_attempt_start(
+  p_trip_id text,
+  p_flow text,
+  p_source text,
+  p_state text default 'running',
+  p_provider text default null,
+  p_model text default null,
+  p_provider_model text default null,
+  p_request_id text default null,
+  p_started_at timestamptz default null,
+  p_metadata jsonb default null
+)
+returns table(
+  id uuid,
+  trip_id text,
+  flow text,
+  source text,
+  state text,
+  started_at timestamptz,
+  finished_at timestamptz,
+  duration_ms integer,
+  request_id text,
+  provider text,
+  model text,
+  provider_model text,
+  status_code integer,
+  failure_kind text,
+  error_code text,
+  error_message text,
+  metadata jsonb
+)
+language plpgsql
+security definer
+set search_path = public
+set row_security = off
+as $$
+declare
+  v_role text;
+  v_user_id uuid;
+  v_owner_id uuid;
+  v_attempt public.trip_generation_attempts%rowtype;
+begin
+  v_role := coalesce(auth.role(), '');
+  v_user_id := auth.uid();
+  if v_role <> 'service_role' and v_user_id is null then
+    raise exception 'Not authenticated';
+  end if;
+
+  select t.owner_id
+    into v_owner_id
+    from public.trips t
+   where t.id = p_trip_id
    limit 1;
+
+  if v_owner_id is null then
+    raise exception 'Trip not found';
+  end if;
+
+  if v_role <> 'service_role' then
+    if v_owner_id <> v_user_id and not public.is_admin(v_user_id) then
+      raise exception 'Not allowed';
+    end if;
+  end if;
+
+  if p_flow not in ('classic', 'wizard', 'surprise') then
+    raise exception 'Invalid flow';
+  end if;
+  if p_state not in ('queued', 'running', 'succeeded', 'failed') then
+    raise exception 'Invalid state';
+  end if;
+
+  insert into public.trip_generation_attempts (
+    trip_id,
+    owner_id,
+    flow,
+    source,
+    state,
+    provider,
+    model,
+    provider_model,
+    request_id,
+    started_at,
+    metadata
+  )
+  values (
+    p_trip_id,
+    v_owner_id,
+    p_flow,
+    coalesce(nullif(btrim(coalesce(p_source, '')), ''), 'unknown'),
+    p_state,
+    nullif(btrim(coalesce(p_provider, '')), ''),
+    nullif(btrim(coalesce(p_model, '')), ''),
+    nullif(btrim(coalesce(p_provider_model, '')), ''),
+    nullif(btrim(coalesce(p_request_id, '')), ''),
+    coalesce(p_started_at, now()),
+    coalesce(p_metadata, '{}'::jsonb)
+  )
+  returning * into v_attempt;
+
+  return query
+  select
+    v_attempt.id,
+    v_attempt.trip_id,
+    v_attempt.flow,
+    v_attempt.source,
+    v_attempt.state,
+    v_attempt.started_at,
+    v_attempt.finished_at,
+    v_attempt.duration_ms,
+    v_attempt.request_id,
+    v_attempt.provider,
+    v_attempt.model,
+    v_attempt.provider_model,
+    v_attempt.status_code,
+    v_attempt.failure_kind,
+    v_attempt.error_code,
+    v_attempt.error_message,
+    v_attempt.metadata;
+end;
+$$;
+
+create or replace function public.trip_generation_attempt_finish(
+  p_attempt_id uuid,
+  p_state text,
+  p_provider text default null,
+  p_model text default null,
+  p_provider_model text default null,
+  p_request_id text default null,
+  p_finished_at timestamptz default null,
+  p_duration_ms integer default null,
+  p_status_code integer default null,
+  p_failure_kind text default null,
+  p_error_code text default null,
+  p_error_message text default null,
+  p_metadata jsonb default null
+)
+returns table(
+  id uuid,
+  trip_id text,
+  flow text,
+  source text,
+  state text,
+  started_at timestamptz,
+  finished_at timestamptz,
+  duration_ms integer,
+  request_id text,
+  provider text,
+  model text,
+  provider_model text,
+  status_code integer,
+  failure_kind text,
+  error_code text,
+  error_message text,
+  metadata jsonb
+)
+language plpgsql
+security definer
+set search_path = public
+set row_security = off
+as $$
+declare
+  v_role text;
+  v_user_id uuid;
+  v_existing public.trip_generation_attempts%rowtype;
+  v_finished_at timestamptz;
+  v_duration_ms integer;
+begin
+  v_role := coalesce(auth.role(), '');
+  v_user_id := auth.uid();
+  if v_role <> 'service_role' and v_user_id is null then
+    raise exception 'Not authenticated';
+  end if;
+  if p_state not in ('succeeded', 'failed') then
+    raise exception 'Invalid state';
+  end if;
+  if p_failure_kind is not null and p_failure_kind not in ('timeout', 'abort', 'quality', 'provider', 'network', 'unknown') then
+    raise exception 'Invalid failure kind';
+  end if;
+
+  select a.*
+    into v_existing
+    from public.trip_generation_attempts a
+   where a.id = p_attempt_id
+   limit 1;
+
+  if v_existing.id is null then
+    raise exception 'Attempt not found';
+  end if;
+  if v_role <> 'service_role' then
+    if v_existing.owner_id <> v_user_id and not public.is_admin(v_user_id) then
+      raise exception 'Not allowed';
+    end if;
+  end if;
+
+  v_finished_at := coalesce(p_finished_at, now());
+  if p_duration_ms is not null then
+    v_duration_ms := greatest(p_duration_ms, 0);
+  else
+    v_duration_ms := greatest(
+      extract(epoch from (v_finished_at - coalesce(v_existing.started_at, v_finished_at)))::integer * 1000,
+      0
+    );
+  end if;
+
+  update public.trip_generation_attempts a
+     set state = p_state,
+         provider = coalesce(nullif(btrim(coalesce(p_provider, '')), ''), a.provider),
+         model = coalesce(nullif(btrim(coalesce(p_model, '')), ''), a.model),
+         provider_model = coalesce(nullif(btrim(coalesce(p_provider_model, '')), ''), a.provider_model),
+         request_id = coalesce(nullif(btrim(coalesce(p_request_id, '')), ''), a.request_id),
+         finished_at = v_finished_at,
+         duration_ms = v_duration_ms,
+         status_code = coalesce(p_status_code, a.status_code),
+         failure_kind = case
+           when p_state = 'failed' then coalesce(p_failure_kind, a.failure_kind, 'unknown')
+           else null
+         end,
+         error_code = case when p_state = 'failed' then coalesce(nullif(btrim(coalesce(p_error_code, '')), ''), a.error_code) else null end,
+         error_message = case when p_state = 'failed' then coalesce(nullif(btrim(coalesce(p_error_message, '')), ''), a.error_message) else null end,
+         metadata = coalesce(p_metadata, a.metadata),
+         updated_at = now()
+   where a.id = p_attempt_id
+   returning * into v_existing;
+
+  return query
+  select
+    v_existing.id,
+    v_existing.trip_id,
+    v_existing.flow,
+    v_existing.source,
+    v_existing.state,
+    v_existing.started_at,
+    v_existing.finished_at,
+    v_existing.duration_ms,
+    v_existing.request_id,
+    v_existing.provider,
+    v_existing.model,
+    v_existing.provider_model,
+    v_existing.status_code,
+    v_existing.failure_kind,
+    v_existing.error_code,
+    v_existing.error_message,
+    v_existing.metadata;
+end;
+$$;
+
+create or replace function public.trip_generation_attempt_list_owner(
+  p_trip_id text,
+  p_limit integer default 20
+)
+returns table(
+  id uuid,
+  trip_id text,
+  flow text,
+  source text,
+  state text,
+  started_at timestamptz,
+  finished_at timestamptz,
+  duration_ms integer,
+  request_id text,
+  provider text,
+  model text,
+  provider_model text,
+  status_code integer,
+  failure_kind text,
+  error_code text,
+  error_message text,
+  metadata jsonb
+)
+language plpgsql
+security definer
+set search_path = public
+set row_security = off
+as $$
+declare
+  v_user_id uuid;
+begin
+  v_user_id := auth.uid();
+  if v_user_id is null then
+    raise exception 'Not authenticated';
+  end if;
+
+  if not exists (
+    select 1
+      from public.trips t
+     where t.id = p_trip_id
+       and t.owner_id = v_user_id
+  ) then
+    raise exception 'Not allowed';
+  end if;
+
+  return query
+  select
+    a.id,
+    a.trip_id,
+    a.flow,
+    a.source,
+    a.state,
+    a.started_at,
+    a.finished_at,
+    a.duration_ms,
+    a.request_id,
+    a.provider,
+    a.model,
+    a.provider_model,
+    a.status_code,
+    a.failure_kind,
+    a.error_code,
+    a.error_message,
+    a.metadata
+  from public.trip_generation_attempts a
+  where a.trip_id = p_trip_id
+    and a.owner_id = v_user_id
+  order by a.started_at desc
+  limit greatest(coalesce(p_limit, 20), 1);
+end;
+$$;
+
+create or replace function public.trip_generation_attempt_list_admin(
+  p_trip_id text,
+  p_limit integer default 30
+)
+returns table(
+  id uuid,
+  trip_id text,
+  flow text,
+  source text,
+  state text,
+  started_at timestamptz,
+  finished_at timestamptz,
+  duration_ms integer,
+  request_id text,
+  provider text,
+  model text,
+  provider_model text,
+  status_code integer,
+  failure_kind text,
+  error_code text,
+  error_message text,
+  metadata jsonb
+)
+language plpgsql
+security definer
+set search_path = public
+set row_security = off
+as $$
+begin
+  if not public.is_admin(auth.uid()) then
+    raise exception 'Not allowed';
+  end if;
+
+  return query
+  select
+    a.id,
+    a.trip_id,
+    a.flow,
+    a.source,
+    a.state,
+    a.started_at,
+    a.finished_at,
+    a.duration_ms,
+    a.request_id,
+    a.provider,
+    a.model,
+    a.provider_model,
+    a.status_code,
+    a.failure_kind,
+    a.error_code,
+    a.error_message,
+    a.metadata
+  from public.trip_generation_attempts a
+  where a.trip_id = p_trip_id
+  order by a.started_at desc
+  limit greatest(coalesce(p_limit, 30), 1);
+end;
+$$;
+
+create or replace function public.trip_generation_job_enqueue(
+  p_trip_id text,
+  p_attempt_id uuid,
+  p_payload jsonb default null,
+  p_priority integer default 100,
+  p_run_after timestamptz default null,
+  p_max_retries integer default 3
+)
+returns table(
+  id uuid,
+  trip_id text,
+  owner_id uuid,
+  attempt_id uuid,
+  state text,
+  priority integer,
+  retry_count integer,
+  max_retries integer,
+  run_after timestamptz,
+  lease_expires_at timestamptz,
+  leased_by text,
+  payload jsonb,
+  last_error_code text,
+  last_error_message text,
+  created_at timestamptz,
+  updated_at timestamptz
+)
+language plpgsql
+security definer
+set search_path = public
+set row_security = off
+as $$
+declare
+  v_user_id uuid;
+  v_owner_id uuid;
+  v_attempt_owner_id uuid;
+  v_attempt_trip_id text;
+  v_job public.trip_generation_jobs%rowtype;
+begin
+  v_user_id := auth.uid();
+  if coalesce(auth.role(), '') <> 'service_role' then
+    if v_user_id is null then
+      raise exception 'Not authenticated';
+    end if;
+  end if;
+
+  select t.owner_id
+    into v_owner_id
+    from public.trips t
+   where t.id = p_trip_id
+   limit 1;
+
+  if v_owner_id is null then
+    raise exception 'Trip not found';
+  end if;
+
+  select a.owner_id, a.trip_id
+    into v_attempt_owner_id, v_attempt_trip_id
+    from public.trip_generation_attempts a
+   where a.id = p_attempt_id
+   limit 1;
+
+  if v_attempt_owner_id is null then
+    raise exception 'Attempt not found';
+  end if;
+  if v_attempt_trip_id <> p_trip_id then
+    raise exception 'Attempt does not belong to trip';
+  end if;
+  if v_attempt_owner_id <> v_owner_id then
+    raise exception 'Attempt owner mismatch';
+  end if;
+
+  if coalesce(auth.role(), '') <> 'service_role' then
+    if v_owner_id <> v_user_id and not public.is_admin(v_user_id) then
+      raise exception 'Not allowed';
+    end if;
+  end if;
+
+  insert into public.trip_generation_jobs (
+    trip_id,
+    owner_id,
+    attempt_id,
+    state,
+    priority,
+    payload,
+    run_after,
+    retry_count,
+    max_retries
+  )
+  values (
+    p_trip_id,
+    v_owner_id,
+    p_attempt_id,
+    'queued',
+    greatest(coalesce(p_priority, 100), 0),
+    coalesce(p_payload, '{}'::jsonb),
+    coalesce(p_run_after, now()),
+    0,
+    greatest(coalesce(p_max_retries, 3), 0)
+  )
+  on conflict on constraint trip_generation_jobs_attempt_key
+  do update
+     set state = case
+       when public.trip_generation_jobs.state in ('completed', 'failed', 'dead')
+         then public.trip_generation_jobs.state
+       else 'queued'
+     end,
+         priority = excluded.priority,
+         payload = excluded.payload,
+         run_after = excluded.run_after,
+         max_retries = excluded.max_retries,
+         lease_expires_at = case
+           when public.trip_generation_jobs.state in ('completed', 'failed', 'dead')
+             then public.trip_generation_jobs.lease_expires_at
+           else null
+         end,
+         leased_by = case
+           when public.trip_generation_jobs.state in ('completed', 'failed', 'dead')
+             then public.trip_generation_jobs.leased_by
+           else null
+         end,
+         last_error_code = case
+           when public.trip_generation_jobs.state in ('completed', 'failed', 'dead')
+             then public.trip_generation_jobs.last_error_code
+           else null
+         end,
+         last_error_message = case
+           when public.trip_generation_jobs.state in ('completed', 'failed', 'dead')
+             then public.trip_generation_jobs.last_error_message
+           else null
+         end,
+         updated_at = now()
+  returning * into v_job;
+
+  return query
+  select
+    v_job.id,
+    v_job.trip_id,
+    v_job.owner_id,
+    v_job.attempt_id,
+    v_job.state,
+    v_job.priority,
+    v_job.retry_count,
+    v_job.max_retries,
+    v_job.run_after,
+    v_job.lease_expires_at,
+    v_job.leased_by,
+    v_job.payload,
+    v_job.last_error_code,
+    v_job.last_error_message,
+    v_job.created_at,
+    v_job.updated_at;
+end;
+$$;
+
+create or replace function public.trip_generation_job_claim(
+  p_worker_id text default null,
+  p_limit integer default 1,
+  p_lease_seconds integer default 120
+)
+returns table(
+  id uuid,
+  trip_id text,
+  owner_id uuid,
+  attempt_id uuid,
+  state text,
+  priority integer,
+  retry_count integer,
+  max_retries integer,
+  run_after timestamptz,
+  lease_expires_at timestamptz,
+  leased_by text,
+  payload jsonb,
+  last_error_code text,
+  last_error_message text,
+  created_at timestamptz,
+  updated_at timestamptz
+)
+language plpgsql
+security definer
+set search_path = public
+set row_security = off
+as $$
+declare
+  v_worker_id text;
+  v_limit integer;
+  v_lease_seconds integer;
+  v_uid uuid;
+begin
+  v_uid := auth.uid();
+  if coalesce(auth.role(), '') <> 'service_role' and not public.is_admin(v_uid) then
+    raise exception 'Not allowed';
+  end if;
+
+  v_worker_id := coalesce(nullif(btrim(coalesce(p_worker_id, '')), ''), concat('worker:', coalesce(v_uid::text, 'service-role')));
+  v_limit := greatest(least(coalesce(p_limit, 1), 25), 1);
+  v_lease_seconds := greatest(least(coalesce(p_lease_seconds, 120), 600), 30);
+
+  return query
+  with picked as (
+    select j.id
+      from public.trip_generation_jobs j
+     where (j.state = 'queued' or (j.state = 'leased' and j.lease_expires_at is not null and j.lease_expires_at <= now()))
+       and j.run_after <= now()
+       and (j.lease_expires_at is null or j.lease_expires_at <= now())
+     order by j.priority asc, j.run_after asc, j.created_at desc
+     limit v_limit
+     for update skip locked
+  )
+  update public.trip_generation_jobs j
+     set state = 'leased',
+         lease_expires_at = now() + make_interval(secs => v_lease_seconds),
+         leased_by = v_worker_id,
+         started_at = coalesce(j.started_at, now()),
+         updated_at = now()
+    from picked
+   where j.id = picked.id
+  returning
+    j.id,
+    j.trip_id,
+    j.owner_id,
+    j.attempt_id,
+    j.state,
+    j.priority,
+    j.retry_count,
+    j.max_retries,
+    j.run_after,
+    j.lease_expires_at,
+    j.leased_by,
+    j.payload,
+    j.last_error_code,
+    j.last_error_message,
+    j.created_at,
+    j.updated_at;
+end;
+$$;
+
+create or replace function public.trip_generation_job_heartbeat(
+  p_job_id uuid,
+  p_worker_id text,
+  p_lease_seconds integer default 120
+)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+set row_security = off
+as $$
+declare
+  v_uid uuid;
+begin
+  v_uid := auth.uid();
+  if coalesce(auth.role(), '') <> 'service_role' and not public.is_admin(v_uid) then
+    raise exception 'Not allowed';
+  end if;
+
+  update public.trip_generation_jobs j
+     set lease_expires_at = now() + make_interval(secs => greatest(least(coalesce(p_lease_seconds, 120), 600), 30)),
+         updated_at = now()
+   where j.id = p_job_id
+     and j.state = 'leased'
+     and j.leased_by = nullif(btrim(coalesce(p_worker_id, '')), '')
+     and (j.lease_expires_at is null or j.lease_expires_at > now());
+
+  return found;
+end;
+$$;
+
+create or replace function public.trip_generation_job_complete(
+  p_job_id uuid,
+  p_worker_id text
+)
+returns table(
+  id uuid,
+  state text,
+  updated_at timestamptz
+)
+language plpgsql
+security definer
+set search_path = public
+set row_security = off
+as $$
+declare
+  v_uid uuid;
+  v_worker_id text;
+  v_row public.trip_generation_jobs%rowtype;
+begin
+  v_uid := auth.uid();
+  if coalesce(auth.role(), '') <> 'service_role' and not public.is_admin(v_uid) then
+    raise exception 'Not allowed';
+  end if;
+  v_worker_id := nullif(btrim(coalesce(p_worker_id, '')), '');
+  if v_worker_id is null then
+    raise exception 'Worker id required';
+  end if;
+
+  update public.trip_generation_jobs j
+     set state = 'completed',
+         lease_expires_at = null,
+         leased_by = null,
+         finished_at = now(),
+         updated_at = now()
+   where j.id = p_job_id
+     and j.state = 'leased'
+     and j.leased_by = v_worker_id
+     and (j.lease_expires_at is null or j.lease_expires_at > now())
+   returning * into v_row;
+
+  if v_row.id is null then
+    raise exception 'Job not found or not currently leased by worker';
+  end if;
+
+  return query
+  select v_row.id, v_row.state, v_row.updated_at;
+end;
+$$;
+
+create or replace function public.trip_generation_job_fail(
+  p_job_id uuid,
+  p_worker_id text,
+  p_error_code text default null,
+  p_error_message text default null,
+  p_retry_delay_seconds integer default 15,
+  p_terminal boolean default false
+)
+returns table(
+  id uuid,
+  state text,
+  retry_count integer,
+  run_after timestamptz,
+  updated_at timestamptz
+)
+language plpgsql
+security definer
+set search_path = public
+set row_security = off
+as $$
+declare
+  v_uid uuid;
+  v_worker_id text;
+  v_row public.trip_generation_jobs%rowtype;
+  v_next_retry_count integer;
+  v_next_state text;
+  v_next_run_after timestamptz;
+begin
+  v_uid := auth.uid();
+  if coalesce(auth.role(), '') <> 'service_role' and not public.is_admin(v_uid) then
+    raise exception 'Not allowed';
+  end if;
+
+  v_worker_id := nullif(btrim(coalesce(p_worker_id, '')), '');
+  if v_worker_id is null then
+    raise exception 'Worker id required';
+  end if;
+
+  select j.*
+    into v_row
+    from public.trip_generation_jobs j
+   where j.id = p_job_id
+     and j.state = 'leased'
+     and j.leased_by = v_worker_id
+     and (j.lease_expires_at is null or j.lease_expires_at > now())
+   limit 1
+   for update;
+
+  if v_row.id is null then
+    raise exception 'Job not found or not currently leased by worker';
+  end if;
+
+  v_next_retry_count := coalesce(v_row.retry_count, 0) + 1;
+  if p_terminal then
+    v_next_state := 'failed';
+    v_next_run_after := v_row.run_after;
+  elsif v_next_retry_count > coalesce(v_row.max_retries, 0) then
+    v_next_state := 'dead';
+    v_next_run_after := v_row.run_after;
+  else
+    v_next_state := 'queued';
+    v_next_run_after := now() + make_interval(secs => greatest(coalesce(p_retry_delay_seconds, 15), 0));
+  end if;
+
+  update public.trip_generation_jobs j
+     set state = v_next_state,
+         retry_count = v_next_retry_count,
+         run_after = v_next_run_after,
+         lease_expires_at = null,
+         leased_by = null,
+         finished_at = case when v_next_state in ('failed', 'dead') then now() else null end,
+         last_error_code = nullif(btrim(coalesce(p_error_code, '')), ''),
+         last_error_message = nullif(left(coalesce(p_error_message, ''), 1200), ''),
+         updated_at = now()
+   where j.id = p_job_id
+   returning * into v_row;
+
+  return query
+  select
+    v_row.id,
+    v_row.state,
+    v_row.retry_count,
+    v_row.run_after,
+    v_row.updated_at;
+end;
+$$;
+
+create or replace function public.trip_generation_job_requeue(
+  p_job_id uuid,
+  p_reason text default null,
+  p_run_after timestamptz default null,
+  p_reset_retry_count boolean default false
+)
+returns table(
+  id uuid,
+  state text,
+  retry_count integer,
+  run_after timestamptz,
+  updated_at timestamptz
+)
+language plpgsql
+security definer
+set search_path = public
+set row_security = off
+as $$
+declare
+  v_uid uuid;
+  v_user_id uuid;
+  v_job public.trip_generation_jobs%rowtype;
+begin
+  v_uid := auth.uid();
+  if coalesce(auth.role(), '') <> 'service_role' then
+    if v_uid is null then
+      raise exception 'Not authenticated';
+    end if;
+  end if;
+
+  select j.owner_id
+    into v_user_id
+    from public.trip_generation_jobs j
+   where j.id = p_job_id
+   limit 1;
+
+  if v_user_id is null then
+    raise exception 'Job not found';
+  end if;
+
+  if coalesce(auth.role(), '') <> 'service_role' then
+    if not public.is_admin(v_uid) and v_user_id <> v_uid then
+      raise exception 'Not allowed';
+    end if;
+  end if;
+
+  update public.trip_generation_jobs j
+     set state = 'queued',
+         run_after = coalesce(p_run_after, now()),
+         lease_expires_at = null,
+         leased_by = null,
+         finished_at = null,
+         retry_count = case when coalesce(p_reset_retry_count, false) then 0 else j.retry_count end,
+         last_error_code = case
+           when nullif(btrim(coalesce(p_reason, '')), '') is null then j.last_error_code
+           else nullif(left(btrim(p_reason), 1200), '')
+         end,
+         last_error_message = null,
+         updated_at = now()
+   where j.id = p_job_id
+     and j.state in ('dead', 'failed')
+   returning * into v_job;
+
+  if v_job.id is null then
+    raise exception 'Job is not requeueable';
+  end if;
+
+  return query
+  select
+    v_job.id,
+    v_job.state,
+    v_job.retry_count,
+    v_job.run_after,
+    v_job.updated_at;
 end;
 $$;
 
@@ -2545,6 +3693,8 @@ $$;
 
 alter table public.auth_flow_logs enable row level security;
 alter table public.trip_generation_requests enable row level security;
+alter table public.trip_generation_attempts enable row level security;
+alter table public.trip_generation_jobs enable row level security;
 alter table public.anonymous_asset_claims enable row level security;
 alter table public.admin_allowlist enable row level security;
 
@@ -2568,6 +3718,38 @@ create policy "Trip generation requests owner update"
 on public.trip_generation_requests for update
 using (requested_by_anon_id = auth.uid() or owner_user_id = auth.uid())
 with check (requested_by_anon_id = auth.uid() or owner_user_id = auth.uid());
+
+drop policy if exists "Trip generation attempts owner or admin read" on public.trip_generation_attempts;
+create policy "Trip generation attempts owner or admin read"
+on public.trip_generation_attempts for select
+using (owner_id = auth.uid() or public.is_admin(auth.uid()));
+
+drop policy if exists "Trip generation attempts owner or admin insert" on public.trip_generation_attempts;
+create policy "Trip generation attempts owner or admin insert"
+on public.trip_generation_attempts for insert
+with check (owner_id = auth.uid() or public.is_admin(auth.uid()));
+
+drop policy if exists "Trip generation attempts owner or admin update" on public.trip_generation_attempts;
+create policy "Trip generation attempts owner or admin update"
+on public.trip_generation_attempts for update
+using (owner_id = auth.uid() or public.is_admin(auth.uid()))
+with check (owner_id = auth.uid() or public.is_admin(auth.uid()));
+
+drop policy if exists "Trip generation jobs owner or admin read" on public.trip_generation_jobs;
+create policy "Trip generation jobs owner or admin read"
+on public.trip_generation_jobs for select
+using (owner_id = auth.uid() or public.is_admin(auth.uid()));
+
+drop policy if exists "Trip generation jobs owner or admin insert" on public.trip_generation_jobs;
+create policy "Trip generation jobs owner or admin insert"
+on public.trip_generation_jobs for insert
+with check (owner_id = auth.uid() or public.is_admin(auth.uid()));
+
+drop policy if exists "Trip generation jobs owner or admin update" on public.trip_generation_jobs;
+create policy "Trip generation jobs owner or admin update"
+on public.trip_generation_jobs for update
+using (owner_id = auth.uid() or public.is_admin(auth.uid()))
+with check (owner_id = auth.uid() or public.is_admin(auth.uid()));
 
 drop policy if exists "Anonymous asset claims owner read" on public.anonymous_asset_claims;
 create policy "Anonymous asset claims owner read"
@@ -2593,6 +3775,24 @@ grant execute on function public.log_auth_flow(text, text, text, text, text, tex
 grant execute on function public.create_trip_generation_request(text, jsonb, integer) to anon, authenticated;
 grant execute on function public.claim_trip_generation_request(uuid) to authenticated;
 grant execute on function public.expire_stale_trip_generation_requests() to anon, authenticated;
+grant execute on function public.trip_generation_attempt_start(text, text, text, text, text, text, text, text, timestamptz, jsonb) to authenticated;
+grant execute on function public.trip_generation_attempt_start(text, text, text, text, text, text, text, text, timestamptz, jsonb) to service_role;
+grant execute on function public.trip_generation_attempt_finish(uuid, text, text, text, text, text, timestamptz, integer, integer, text, text, text, jsonb) to authenticated;
+grant execute on function public.trip_generation_attempt_finish(uuid, text, text, text, text, text, timestamptz, integer, integer, text, text, text, jsonb) to service_role;
+grant execute on function public.trip_generation_attempt_list_owner(text, integer) to authenticated;
+grant execute on function public.trip_generation_attempt_list_admin(text, integer) to authenticated;
+grant execute on function public.trip_generation_job_enqueue(text, uuid, jsonb, integer, timestamptz, integer) to authenticated;
+grant execute on function public.trip_generation_job_enqueue(text, uuid, jsonb, integer, timestamptz, integer) to service_role;
+grant execute on function public.trip_generation_job_claim(text, integer, integer) to authenticated;
+grant execute on function public.trip_generation_job_claim(text, integer, integer) to service_role;
+grant execute on function public.trip_generation_job_heartbeat(uuid, text, integer) to authenticated;
+grant execute on function public.trip_generation_job_heartbeat(uuid, text, integer) to service_role;
+grant execute on function public.trip_generation_job_complete(uuid, text) to authenticated;
+grant execute on function public.trip_generation_job_complete(uuid, text) to service_role;
+grant execute on function public.trip_generation_job_fail(uuid, text, text, text, integer, boolean) to authenticated;
+grant execute on function public.trip_generation_job_fail(uuid, text, text, text, integer, boolean) to service_role;
+grant execute on function public.trip_generation_job_requeue(uuid, text, timestamptz, boolean) to authenticated;
+grant execute on function public.trip_generation_job_requeue(uuid, text, timestamptz, boolean) to service_role;
 grant execute on function public.create_anonymous_asset_claim(integer) to authenticated;
 grant execute on function public.claim_anonymous_assets(uuid) to authenticated;
 grant execute on function public.expire_stale_anonymous_asset_claims() to anon, authenticated;
@@ -2924,7 +4124,13 @@ returns table(
   tier_key text,
   entitlements jsonb,
   account_status text,
-  onboarding_completed boolean
+  onboarding_completed boolean,
+  terms_current_version text,
+  terms_requires_reaccept boolean,
+  terms_accepted_version text,
+  terms_accepted_at timestamptz,
+  terms_acceptance_required boolean,
+  terms_notice_required boolean
 )
 language plpgsql
 security definer
@@ -2939,6 +4145,12 @@ declare
   v_is_anonymous boolean;
   v_account_status text;
   v_onboarding_completed boolean;
+  v_terms_current_version text;
+  v_terms_requires_reaccept boolean;
+  v_terms_accepted_version text;
+  v_terms_accepted_at timestamptz;
+  v_terms_acceptance_required boolean;
+  v_terms_notice_required boolean;
 begin
   v_uid := auth.uid();
   if v_uid is null then
@@ -2953,6 +4165,8 @@ begin
     p.system_role,
     p.tier_key,
     p.account_status,
+    p.terms_accepted_version,
+    p.terms_accepted_at,
     (
       p.onboarding_completed_at is not null
       and coalesce(btrim(p.first_name), '') <> ''
@@ -2961,11 +4175,37 @@ begin
       and coalesce(btrim(p.city), '') <> ''
       and coalesce(btrim(p.preferred_language), '') <> ''
     )
-    into v_role, v_tier, v_account_status, v_onboarding_completed
+    into v_role, v_tier, v_account_status, v_terms_accepted_version, v_terms_accepted_at, v_onboarding_completed
     from public.profiles p
    where p.id = v_uid;
 
   v_is_anonymous := coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false);
+
+  select
+    ltv.version,
+    ltv.requires_reaccept
+    into v_terms_current_version, v_terms_requires_reaccept
+    from public.legal_terms_versions ltv
+   where ltv.is_current = true
+   order by ltv.effective_at desc, ltv.created_at desc
+   limit 1;
+
+  v_terms_acceptance_required := (
+    v_terms_current_version is not null
+    and (
+      v_terms_accepted_version is null
+      or (
+        v_terms_accepted_version <> v_terms_current_version
+        and coalesce(v_terms_requires_reaccept, true)
+      )
+    )
+  );
+
+  v_terms_notice_required := (
+    v_terms_current_version is not null
+    and coalesce(v_terms_accepted_version, '') <> v_terms_current_version
+    and not coalesce(v_terms_requires_reaccept, true)
+  );
 
   return query
   select
@@ -2976,7 +4216,404 @@ begin
     coalesce(v_tier, 'tier_free'),
     public.get_effective_entitlements(v_uid),
     coalesce(v_account_status, 'active'),
-    coalesce(v_onboarding_completed, false);
+    coalesce(v_onboarding_completed, false),
+    v_terms_current_version,
+    coalesce(v_terms_requires_reaccept, true),
+    v_terms_accepted_version,
+    v_terms_accepted_at,
+    coalesce(v_terms_acceptance_required, false),
+    coalesce(v_terms_notice_required, false);
+end;
+$$;
+
+drop function if exists public.accept_current_terms(text, text);
+create or replace function public.accept_current_terms(
+  p_locale text default null,
+  p_source text default null
+)
+returns table(
+  terms_version text,
+  accepted_at timestamptz
+)
+language plpgsql
+security definer
+set search_path = public, auth
+set row_security = off
+as $$
+#variable_conflict use_column
+declare
+  v_uid uuid;
+  v_terms_version text;
+  v_terms_accepted_at timestamptz;
+  v_accepted_locale text;
+  v_acceptance_source text;
+  v_before_terms_version text;
+  v_before_terms_accepted_at timestamptz;
+  v_before_terms_locale text;
+  v_before_terms_source text;
+begin
+  v_uid := auth.uid();
+  if v_uid is null then
+    raise exception 'Not authenticated';
+  end if;
+
+  select ltv.version
+    into v_terms_version
+    from public.legal_terms_versions ltv
+   where ltv.is_current = true
+   order by ltv.effective_at desc, ltv.created_at desc
+   limit 1;
+
+  if v_terms_version is null then
+    raise exception 'Current terms version is not configured';
+  end if;
+
+  v_accepted_locale := nullif(btrim(coalesce(p_locale, '')), '');
+  v_acceptance_source := nullif(btrim(coalesce(p_source, '')), '');
+
+  begin
+    insert into public.legal_terms_acceptance_events (
+      user_id,
+      terms_version,
+      accepted_locale,
+      source
+    )
+    select
+      v_uid,
+      v_terms_version,
+      v_accepted_locale,
+      v_acceptance_source
+    where not exists (
+      select 1
+        from public.legal_terms_acceptance_events lta
+       where lta.user_id = v_uid
+         and lta.terms_version = v_terms_version
+    );
+  exception
+    when unique_violation then
+      -- Concurrent accept requests can race; unique index resolves the winner.
+      null;
+  end;
+
+  select lta.accepted_at
+    into v_terms_accepted_at
+    from public.legal_terms_acceptance_events lta
+   where lta.user_id = v_uid
+     and lta.terms_version = v_terms_version
+   order by lta.accepted_at desc
+   limit 1;
+
+  if v_terms_accepted_at is null then
+    v_terms_accepted_at := now();
+  end if;
+
+  select
+    p.terms_accepted_version,
+    p.terms_accepted_at,
+    p.terms_accepted_locale,
+    p.terms_acceptance_source
+    into
+      v_before_terms_version,
+      v_before_terms_accepted_at,
+      v_before_terms_locale,
+      v_before_terms_source
+  from public.profiles p
+  where p.id = v_uid;
+
+  update public.profiles p
+     set terms_accepted_version = v_terms_version,
+         terms_accepted_at = v_terms_accepted_at,
+         terms_accepted_locale = v_accepted_locale,
+         terms_acceptance_source = v_acceptance_source
+   where p.id = v_uid;
+
+  insert into public.profile_user_events (
+    owner_id,
+    action,
+    source,
+    before_data,
+    after_data,
+    metadata
+  )
+  values (
+    v_uid,
+    'legal.terms.accepted',
+    v_acceptance_source,
+    jsonb_build_object(
+      'terms_accepted_version', v_before_terms_version,
+      'terms_accepted_at', v_before_terms_accepted_at,
+      'terms_accepted_locale', v_before_terms_locale,
+      'terms_acceptance_source', v_before_terms_source
+    ),
+    jsonb_build_object(
+      'terms_accepted_version', v_terms_version,
+      'terms_accepted_at', v_terms_accepted_at,
+      'terms_accepted_locale', v_accepted_locale,
+      'terms_acceptance_source', v_acceptance_source
+    ),
+    jsonb_build_object(
+      'terms_version', v_terms_version,
+      'accepted_at', v_terms_accepted_at,
+      'locale', v_accepted_locale
+    )
+  );
+
+  return query
+  select
+    v_terms_version,
+    v_terms_accepted_at;
+end;
+$$;
+
+drop function if exists public.admin_publish_terms_version(text, text, text, text, date, timestamptz, boolean, text, text, boolean);
+create or replace function public.admin_publish_terms_version(
+  p_version text,
+  p_title text,
+  p_summary text default null,
+  p_binding_locale text default 'de',
+  p_last_updated date default current_date,
+  p_effective_at timestamptz default now(),
+  p_requires_reaccept boolean default true,
+  p_content_de text default null,
+  p_content_en text default null,
+  p_make_current boolean default true
+)
+returns table(
+  version text,
+  title text,
+  summary text,
+  binding_locale text,
+  last_updated date,
+  effective_at timestamptz,
+  requires_reaccept boolean,
+  is_current boolean,
+  content_de text,
+  content_en text,
+  created_at timestamptz,
+  created_by uuid
+)
+language plpgsql
+security definer
+set search_path = public, auth
+set row_security = off
+as $$
+#variable_conflict use_column
+declare
+  v_version text;
+  v_title text;
+  v_summary text;
+  v_binding_locale text;
+  v_content_de text;
+  v_content_en text;
+  v_before jsonb;
+  v_after jsonb;
+begin
+  if not public.has_admin_permission('users.write') then
+    raise exception 'Not allowed';
+  end if;
+
+  v_version := nullif(btrim(coalesce(p_version, '')), '');
+  v_title := nullif(btrim(coalesce(p_title, '')), '');
+  v_summary := nullif(btrim(coalesce(p_summary, '')), '');
+  v_binding_locale := coalesce(nullif(btrim(coalesce(p_binding_locale, '')), ''), 'de');
+  v_content_de := nullif(btrim(coalesce(p_content_de, '')), '');
+  v_content_en := nullif(btrim(coalesce(p_content_en, '')), '');
+
+  if v_version is null then
+    raise exception 'Version is required';
+  end if;
+  if v_title is null then
+    raise exception 'Title is required';
+  end if;
+  if v_content_de is null or v_content_en is null then
+    raise exception 'Both German and English terms content are required';
+  end if;
+
+  if exists (
+    select 1
+      from public.legal_terms_versions ltv
+     where ltv.version = v_version
+  ) then
+    raise exception 'Version "%" already exists. Publish a new version.', v_version;
+  end if;
+
+  select to_jsonb(ltv) into v_before
+    from public.legal_terms_versions ltv
+   where ltv.version = v_version;
+
+  if coalesce(p_make_current, true) then
+    update public.legal_terms_versions ltv
+       set is_current = false
+     where ltv.is_current = true
+       and ltv.version <> v_version;
+  end if;
+
+  insert into public.legal_terms_versions (
+    version,
+    title,
+    summary,
+    binding_locale,
+    content_de,
+    content_en,
+    last_updated,
+    effective_at,
+    requires_reaccept,
+    is_current,
+    created_by
+  )
+  values (
+    v_version,
+    v_title,
+    v_summary,
+    v_binding_locale,
+    v_content_de,
+    v_content_en,
+    coalesce(p_last_updated, current_date),
+    coalesce(p_effective_at, now()),
+    coalesce(p_requires_reaccept, true),
+    coalesce(p_make_current, true),
+    auth.uid()
+  )
+  ;
+
+  select to_jsonb(ltv) into v_after
+    from public.legal_terms_versions ltv
+   where ltv.version = v_version;
+
+  perform public.admin_write_audit(
+    'admin.terms.publish',
+    'legal_terms_version',
+    v_version,
+    coalesce(v_before, '{}'::jsonb),
+    coalesce(v_after, '{}'::jsonb),
+    jsonb_build_object(
+      'make_current', coalesce(p_make_current, true),
+      'requires_reaccept', coalesce(p_requires_reaccept, true),
+      'binding_locale', v_binding_locale
+    )
+  );
+
+  return query
+  select
+    ltv.version,
+    ltv.title,
+    ltv.summary,
+    ltv.binding_locale,
+    ltv.last_updated,
+    ltv.effective_at,
+    ltv.requires_reaccept,
+    ltv.is_current,
+    ltv.content_de,
+    ltv.content_en,
+    ltv.created_at,
+    ltv.created_by
+  from public.legal_terms_versions ltv
+  where ltv.version = v_version
+  limit 1;
+end;
+$$;
+
+drop function if exists public.admin_set_current_terms_version(text, timestamptz, boolean);
+create or replace function public.admin_set_current_terms_version(
+  p_version text,
+  p_effective_at timestamptz default now(),
+  p_requires_reaccept boolean default null
+)
+returns table(
+  version text,
+  title text,
+  summary text,
+  binding_locale text,
+  last_updated date,
+  effective_at timestamptz,
+  requires_reaccept boolean,
+  is_current boolean,
+  content_de text,
+  content_en text,
+  created_at timestamptz,
+  created_by uuid
+)
+language plpgsql
+security definer
+set search_path = public, auth
+set row_security = off
+as $$
+#variable_conflict use_column
+declare
+  v_version text;
+  v_target_before jsonb;
+  v_target_after jsonb;
+  v_previous_current text;
+begin
+  if not public.has_admin_permission('users.write') then
+    raise exception 'Not allowed';
+  end if;
+
+  v_version := nullif(btrim(coalesce(p_version, '')), '');
+  if v_version is null then
+    raise exception 'Version is required';
+  end if;
+
+  select to_jsonb(ltv) into v_target_before
+    from public.legal_terms_versions ltv
+   where ltv.version = v_version;
+
+  if v_target_before is null then
+    raise exception 'Unknown terms version';
+  end if;
+
+  select ltv.version
+    into v_previous_current
+    from public.legal_terms_versions ltv
+   where ltv.is_current = true
+   order by ltv.effective_at desc, ltv.created_at desc
+   limit 1;
+
+  update public.legal_terms_versions ltv
+     set is_current = false
+   where ltv.is_current = true
+     and ltv.version <> v_version;
+
+  update public.legal_terms_versions ltv
+     set is_current = true,
+         effective_at = coalesce(p_effective_at, ltv.effective_at),
+         requires_reaccept = coalesce(p_requires_reaccept, ltv.requires_reaccept)
+   where ltv.version = v_version;
+
+  select to_jsonb(ltv) into v_target_after
+    from public.legal_terms_versions ltv
+   where ltv.version = v_version;
+
+  perform public.admin_write_audit(
+    'admin.terms.set_current',
+    'legal_terms_version',
+    v_version,
+    coalesce(v_target_before, '{}'::jsonb),
+    coalesce(v_target_after, '{}'::jsonb),
+    jsonb_build_object(
+      'previous_current_version', v_previous_current,
+      'new_current_version', v_version,
+      'requires_reaccept_override', p_requires_reaccept
+    )
+  );
+
+  return query
+  select
+    ltv.version,
+    ltv.title,
+    ltv.summary,
+    ltv.binding_locale,
+    ltv.last_updated,
+    ltv.effective_at,
+    ltv.requires_reaccept,
+    ltv.is_current,
+    ltv.content_de,
+    ltv.content_en,
+    ltv.created_at,
+    ltv.created_by
+  from public.legal_terms_versions ltv
+  where ltv.version = v_version
+  limit 1;
 end;
 $$;
 
@@ -3015,6 +4652,10 @@ returns table(
   system_role text,
   tier_key text,
   entitlements_override jsonb,
+  terms_accepted_version text,
+  terms_accepted_at timestamptz,
+  terms_accepted_locale text,
+  terms_acceptance_source text,
   created_at timestamptz,
   updated_at timestamptz
 )
@@ -3085,6 +4726,10 @@ begin
     p.system_role,
     p.tier_key,
     p.entitlements_override,
+    p.terms_accepted_version,
+    p.terms_accepted_at,
+    p.terms_accepted_locale,
+    p.terms_acceptance_source,
     p.created_at,
     p.updated_at
   from public.profiles p
@@ -3151,6 +4796,10 @@ returns table(
   system_role text,
   tier_key text,
   entitlements_override jsonb,
+  terms_accepted_version text,
+  terms_accepted_at timestamptz,
+  terms_accepted_locale text,
+  terms_acceptance_source text,
   created_at timestamptz,
   updated_at timestamptz
 )
@@ -3221,6 +4870,10 @@ begin
     p.system_role,
     p.tier_key,
     p.entitlements_override,
+    p.terms_accepted_version,
+    p.terms_accepted_at,
+    p.terms_accepted_locale,
+    p.terms_acceptance_source,
     p.created_at,
     p.updated_at
   from public.profiles p
@@ -3415,18 +5068,30 @@ as $$
 declare
   v_before jsonb;
   v_after jsonb;
+  v_reason text;
+  v_before_username_changed_at timestamptz;
 begin
   if not public.has_admin_permission('users.write') then
     raise exception 'Not allowed';
   end if;
 
-  select to_jsonb(p)
-    into v_before
+  v_reason := nullif(btrim(coalesce(p_reason, '')), '');
+
+  select
+    to_jsonb(p),
+    p.username_changed_at
+    into
+      v_before,
+      v_before_username_changed_at
     from public.profiles p
    where p.id = p_user_id;
 
   if v_before is null then
     raise exception 'User profile not found';
+  end if;
+
+  if v_before_username_changed_at is null then
+    raise exception 'Username cooldown is not active for this user';
   end if;
 
   update public.profiles p
@@ -3446,7 +5111,31 @@ begin
     v_before,
     v_after,
     jsonb_build_object(
-      'reason', nullif(btrim(coalesce(p_reason, '')), ''),
+      'reason', v_reason,
+      'updated_by', auth.uid()
+    )
+  );
+
+  insert into public.profile_user_events (
+    owner_id,
+    action,
+    source,
+    before_data,
+    after_data,
+    metadata
+  )
+  values (
+    p_user_id,
+    'profile.username_cooldown.reset_by_admin',
+    'admin.user.reset_username_cooldown',
+    jsonb_build_object(
+      'username_changed_at', v_before_username_changed_at
+    ),
+    jsonb_build_object(
+      'username_changed_at', null
+    ),
+    jsonb_build_object(
+      'reason', v_reason,
       'updated_by', auth.uid()
     )
   );
@@ -3463,12 +5152,140 @@ begin
 end;
 $$;
 
+drop function if exists public.admin_reset_user_terms_acceptance(uuid, text);
+create or replace function public.admin_reset_user_terms_acceptance(
+  p_user_id uuid,
+  p_reason text default null
+)
+returns table(
+  user_id uuid,
+  terms_accepted_version text,
+  terms_accepted_at timestamptz,
+  terms_accepted_locale text,
+  terms_acceptance_source text,
+  updated_at timestamptz
+)
+language plpgsql
+security definer
+set search_path = public, auth
+set row_security = off
+as $$
+declare
+  v_before jsonb;
+  v_after jsonb;
+  v_reason text;
+  v_before_terms_version text;
+  v_before_terms_accepted_at timestamptz;
+  v_before_terms_locale text;
+  v_before_terms_source text;
+begin
+  if not public.has_admin_permission('users.write') then
+    raise exception 'Not allowed';
+  end if;
+
+  v_reason := nullif(btrim(coalesce(p_reason, '')), '');
+
+  select to_jsonb(p),
+         p.terms_accepted_version,
+         p.terms_accepted_at,
+         p.terms_accepted_locale,
+         p.terms_acceptance_source
+    into v_before,
+         v_before_terms_version,
+         v_before_terms_accepted_at,
+         v_before_terms_locale,
+         v_before_terms_source
+    from public.profiles p
+   where p.id = p_user_id;
+
+  if v_before is null then
+    raise exception 'User profile not found';
+  end if;
+
+  if v_before_terms_version is null
+    and v_before_terms_accepted_at is null
+    and v_before_terms_locale is null
+    and v_before_terms_source is null then
+    raise exception 'Terms acceptance is already empty for this user';
+  end if;
+
+  update public.profiles p
+     set terms_accepted_version = null,
+         terms_accepted_at = null,
+         terms_accepted_locale = null,
+         terms_acceptance_source = null,
+         updated_at = now()
+   where p.id = p_user_id;
+
+  select to_jsonb(p)
+    into v_after
+    from public.profiles p
+   where p.id = p_user_id;
+
+  perform public.admin_write_audit(
+    'admin.user.reset_terms_acceptance',
+    'user',
+    p_user_id::text,
+    v_before,
+    v_after,
+    jsonb_build_object(
+      'reason', v_reason,
+      'updated_by', auth.uid()
+    )
+  );
+
+  insert into public.profile_user_events (
+    owner_id,
+    action,
+    source,
+    before_data,
+    after_data,
+    metadata
+  )
+  values (
+    p_user_id,
+    'legal.terms.reset_by_admin',
+    'admin.user.reset_terms_acceptance',
+    jsonb_build_object(
+      'terms_accepted_version', v_before_terms_version,
+      'terms_accepted_at', v_before_terms_accepted_at,
+      'terms_accepted_locale', v_before_terms_locale,
+      'terms_acceptance_source', v_before_terms_source
+    ),
+    jsonb_build_object(
+      'terms_accepted_version', null,
+      'terms_accepted_at', null,
+      'terms_accepted_locale', null,
+      'terms_acceptance_source', null
+    ),
+    jsonb_build_object(
+      'reason', v_reason,
+      'updated_by', auth.uid()
+    )
+  );
+
+  return query
+  select
+    p.id,
+    p.terms_accepted_version,
+    p.terms_accepted_at,
+    p.terms_accepted_locale,
+    p.terms_acceptance_source,
+    p.updated_at
+  from public.profiles p
+  where p.id = p_user_id;
+end;
+$$;
+
+drop function if exists public.admin_list_trips(integer, integer, text, uuid, text);
+
 create or replace function public.admin_list_trips(
   p_limit integer default 200,
   p_offset integer default 0,
   p_search text default null,
   p_owner_id uuid default null,
-  p_status text default null
+  p_status text default null,
+  p_generation_state text default null
 )
 returns table(
   trip_id text,
@@ -3476,6 +5293,7 @@ returns table(
   owner_email text,
   title text,
   status text,
+  generation_state text,
   trip_expires_at timestamptz,
   archived_at timestamptz,
   source_kind text,
@@ -3493,43 +5311,77 @@ begin
   end if;
 
   return query
+  with base as (
+    select
+      t.id as trip_id,
+      t.owner_id,
+      u.email::text as owner_email,
+      t.title,
+      coalesce(t.status, 'active') as status,
+      case
+        when coalesce(t.data #>> '{aiMeta,generation,state}', '') in ('queued', 'running', 'succeeded', 'failed')
+          then t.data #>> '{aiMeta,generation,state}'
+        when exists (
+          select 1
+            from jsonb_array_elements(coalesce(t.data -> 'items', '[]'::jsonb)) as item
+           where lower(coalesce(item ->> 'loading', 'false')) = 'true'
+        )
+          then 'running'
+        else 'succeeded'
+      end as generation_state,
+      t.trip_expires_at,
+      t.archived_at,
+      t.source_kind,
+      t.created_at,
+      t.updated_at
+    from public.trips t
+    left join auth.users u on u.id = t.owner_id
+    where (
+      p_owner_id is null or t.owner_id = p_owner_id
+    )
+    and (
+      p_status is null or p_status = '' or coalesce(t.status, 'active') = p_status
+    )
+    and (
+      p_search is null
+      or p_search = ''
+      or coalesce(t.title, '') ilike ('%' || p_search || '%')
+      or t.id ilike ('%' || p_search || '%')
+      or coalesce(u.email, '') ilike ('%' || p_search || '%')
+    )
+  )
   select
-    t.id,
-    t.owner_id,
-    u.email::text,
-    t.title,
-    coalesce(t.status, 'active'),
-    t.trip_expires_at,
-    t.archived_at,
-    t.source_kind,
-    t.created_at,
-    t.updated_at
-  from public.trips t
-  left join auth.users u on u.id = t.owner_id
+    base.trip_id,
+    base.owner_id,
+    base.owner_email,
+    base.title,
+    base.status,
+    base.generation_state,
+    base.trip_expires_at,
+    base.archived_at,
+    base.source_kind,
+    base.created_at,
+    base.updated_at
+  from base
   where (
-    p_owner_id is null or t.owner_id = p_owner_id
+    p_generation_state is null
+    or p_generation_state = ''
+    or base.generation_state = p_generation_state
   )
-  and (
-    p_status is null or p_status = '' or coalesce(t.status, 'active') = p_status
-  )
-  and (
-    p_search is null
-    or p_search = ''
-    or coalesce(t.title, '') ilike ('%' || p_search || '%')
-    or t.id ilike ('%' || p_search || '%')
-    or coalesce(u.email, '') ilike ('%' || p_search || '%')
-  )
-  order by t.updated_at desc
+  order by base.updated_at desc
   limit greatest(coalesce(p_limit, 200), 1)
   offset greatest(coalesce(p_offset, 0), 0);
 end;
 $$;
 
+drop function if exists public.admin_list_user_trips(uuid, integer, integer, text);
+
 create or replace function public.admin_list_user_trips(
   p_user_id uuid,
   p_limit integer default 200,
   p_offset integer default 0,
-  p_status text default null
+  p_status text default null,
+  p_generation_state text default null
 )
 returns table(
   trip_id text,
@@ -3537,6 +5389,7 @@ returns table(
   owner_email text,
   title text,
   status text,
+  generation_state text,
   trip_expires_at timestamptz,
   archived_at timestamptz,
   source_kind text,
@@ -3554,22 +5407,53 @@ begin
   end if;
 
   return query
+  with base as (
+    select
+      t.id as trip_id,
+      t.owner_id,
+      u.email::text as owner_email,
+      t.title,
+      coalesce(t.status, 'active') as status,
+      case
+        when coalesce(t.data #>> '{aiMeta,generation,state}', '') in ('queued', 'running', 'succeeded', 'failed')
+          then t.data #>> '{aiMeta,generation,state}'
+        when exists (
+          select 1
+            from jsonb_array_elements(coalesce(t.data -> 'items', '[]'::jsonb)) as item
+           where lower(coalesce(item ->> 'loading', 'false')) = 'true'
+        )
+          then 'running'
+        else 'succeeded'
+      end as generation_state,
+      t.trip_expires_at,
+      t.archived_at,
+      t.source_kind,
+      t.created_at,
+      t.updated_at
+    from public.trips t
+    left join auth.users u on u.id = t.owner_id
+    where t.owner_id = p_user_id
+      and (p_status is null or p_status = '' or coalesce(t.status, 'active') = p_status)
+  )
   select
-    t.id,
-    t.owner_id,
-    u.email::text,
-    t.title,
-    coalesce(t.status, 'active'),
-    t.trip_expires_at,
-    t.archived_at,
-    t.source_kind,
-    t.created_at,
-    t.updated_at
-  from public.trips t
-  left join auth.users u on u.id = t.owner_id
-  where t.owner_id = p_user_id
-    and (p_status is null or p_status = '' or coalesce(t.status, 'active') = p_status)
-  order by t.updated_at desc
+    base.trip_id,
+    base.owner_id,
+    base.owner_email,
+    base.title,
+    base.status,
+    base.generation_state,
+    base.trip_expires_at,
+    base.archived_at,
+    base.source_kind,
+    base.created_at,
+    base.updated_at
+  from base
+  where (
+    p_generation_state is null
+    or p_generation_state = ''
+    or base.generation_state = p_generation_state
+  )
+  order by base.updated_at desc
   limit greatest(coalesce(p_limit, 200), 1)
   offset greatest(coalesce(p_offset, 0), 0);
 end;
@@ -4495,17 +6379,39 @@ end;
 $$;
 
 grant execute on function public.get_current_user_access() to anon, authenticated;
+grant execute on function public.accept_current_terms(text, text) to authenticated;
+grant execute on function public.admin_publish_terms_version(text, text, text, text, date, timestamptz, boolean, text, text, boolean) to authenticated;
+grant execute on function public.admin_set_current_terms_version(text, timestamptz, boolean) to authenticated;
 grant execute on function public.has_admin_permission(text, uuid) to authenticated;
 grant execute on function public.admin_write_audit(text, text, text, jsonb, jsonb, jsonb) to authenticated;
 grant execute on function public.admin_list_users(integer, integer, text) to authenticated;
 grant execute on function public.admin_get_user_profile(uuid) to authenticated;
 grant execute on function public.admin_update_user_profile(uuid, text, text, text, text, text, text, text, text, text, text, boolean) to authenticated;
 grant execute on function public.admin_reset_user_username_cooldown(uuid, text) to authenticated;
+grant execute on function public.admin_reset_user_terms_acceptance(uuid, text) to authenticated;
 grant execute on function public.admin_update_user_tier(uuid, text) to authenticated;
 grant execute on function public.admin_update_user_overrides(uuid, jsonb) to authenticated;
 grant execute on function public.admin_update_plan_entitlements(text, jsonb) to authenticated;
-grant execute on function public.admin_list_trips(integer, integer, text, uuid, text) to authenticated;
-grant execute on function public.admin_list_user_trips(uuid, integer, integer, text) to authenticated;
+grant execute on function public.trip_generation_attempt_start(text, text, text, text, text, text, text, text, timestamptz, jsonb) to authenticated;
+grant execute on function public.trip_generation_attempt_start(text, text, text, text, text, text, text, text, timestamptz, jsonb) to service_role;
+grant execute on function public.trip_generation_attempt_finish(uuid, text, text, text, text, text, timestamptz, integer, integer, text, text, text, jsonb) to authenticated;
+grant execute on function public.trip_generation_attempt_finish(uuid, text, text, text, text, text, timestamptz, integer, integer, text, text, text, jsonb) to service_role;
+grant execute on function public.trip_generation_attempt_list_owner(text, integer) to authenticated;
+grant execute on function public.trip_generation_attempt_list_admin(text, integer) to authenticated;
+grant execute on function public.trip_generation_job_enqueue(text, uuid, jsonb, integer, timestamptz, integer) to authenticated;
+grant execute on function public.trip_generation_job_enqueue(text, uuid, jsonb, integer, timestamptz, integer) to service_role;
+grant execute on function public.trip_generation_job_claim(text, integer, integer) to authenticated;
+grant execute on function public.trip_generation_job_claim(text, integer, integer) to service_role;
+grant execute on function public.trip_generation_job_heartbeat(uuid, text, integer) to authenticated;
+grant execute on function public.trip_generation_job_heartbeat(uuid, text, integer) to service_role;
+grant execute on function public.trip_generation_job_complete(uuid, text) to authenticated;
+grant execute on function public.trip_generation_job_complete(uuid, text) to service_role;
+grant execute on function public.trip_generation_job_fail(uuid, text, text, text, integer, boolean) to authenticated;
+grant execute on function public.trip_generation_job_fail(uuid, text, text, text, integer, boolean) to service_role;
+grant execute on function public.trip_generation_job_requeue(uuid, text, timestamptz, boolean) to authenticated;
+grant execute on function public.trip_generation_job_requeue(uuid, text, timestamptz, boolean) to service_role;
+grant execute on function public.admin_list_trips(integer, integer, text, uuid, text, text) to authenticated;
+grant execute on function public.admin_list_user_trips(uuid, integer, integer, text, text) to authenticated;
 grant execute on function public.admin_get_trip_for_view(text) to authenticated;
 grant execute on function public.admin_override_trip_commit(text, jsonb, jsonb, text, date, boolean, text, jsonb) to authenticated;
 grant execute on function public.admin_update_trip(text, text, timestamptz, uuid, boolean, boolean, boolean) to authenticated;
@@ -4527,6 +6433,10 @@ alter table public.profiles add column if not exists public_profile_enabled bool
 alter table public.profiles add column if not exists default_public_trip_visibility boolean not null default true;
 alter table public.profiles add column if not exists username_changed_at timestamptz;
 alter table public.profiles add column if not exists username_display text;
+alter table public.profiles add column if not exists terms_accepted_version text;
+alter table public.profiles add column if not exists terms_accepted_at timestamptz;
+alter table public.profiles add column if not exists terms_accepted_locale text;
+alter table public.profiles add column if not exists terms_acceptance_source text;
 
 update public.profiles p
 set username_display = p.username

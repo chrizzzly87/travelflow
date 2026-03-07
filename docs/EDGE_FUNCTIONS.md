@@ -10,6 +10,7 @@ Shared helpers live in `netlify/edge-lib/`.
 | `paddle-checkout.ts` | `/api/billing/paddle/checkout` | Authenticated billing endpoint that creates Paddle checkout transactions for paid web tiers. | API |
 | `paddle-webhook.ts` | `/api/billing/paddle/webhook` | Verifies Paddle webhook signatures, deduplicates events, and syncs subscription lifecycle + tier state in Supabase. | API |
 | `ai-generate.ts` | `/api/ai/generate` | Server-side AI itinerary generation endpoint (Gemini, OpenAI, Anthropic, OpenRouter allowlisted models) | API |
+| `ai-generate-worker.ts` | `/api/internal/ai/generation-worker` | Internal async queue worker endpoint for server-owned trip-generation job execution | API |
 | `ai-benchmark.ts` | `/api/internal/ai/benchmark`, `/api/internal/ai/benchmark/export`, `/api/internal/ai/benchmark/cleanup`, `/api/internal/ai/benchmark/rating`, `/api/internal/ai/benchmark/telemetry`, `/api/internal/ai/benchmark/preferences` | Internal benchmark API (session/run persistence, execution, export, cleanup, persisted run ratings/comments, telemetry summaries, and admin preference persistence for benchmark model targets/presets) with bearer-token admin role enforcement (`get_current_user_access`). Session export supports `includeLogs=1` to bundle prompt/scenario + run logs. | API |
 | `admin-iam.ts` | `/api/internal/admin/iam` | Internal admin identity API for invite/direct user provisioning and hard-delete actions via Supabase Auth admin endpoints. | API |
 | `admin-audit-export.ts` | `/api/internal/admin/audit/replay-export` | Internal admin audit replay export API that builds server-side forensic bundles and writes persisted `admin.audit.export` audit entries. | API |
@@ -154,6 +155,8 @@ The CI validator (`scripts/validate-edge-functions.mjs`) enforces this rule at b
 | `VITE_GEMINI_API_KEY` | `ai-generate.ts` (fallback), legacy browser path | Compatibility fallback if `GEMINI_API_KEY` is not set |
 | `TF_ADMIN_API_KEY` | `ai-benchmark.ts` | Emergency fallback key for internal benchmark endpoints when `TF_ENABLE_ADMIN_KEY_FALLBACK` is enabled |
 | `TF_ENABLE_ADMIN_KEY_FALLBACK` | `ai-benchmark.ts` | Enables optional `x-tf-admin-key` fallback auth path (disabled by default) |
+| `TF_ADMIN_API_KEY` | `ai-generate-worker.ts` | Required worker auth header secret (`x-tf-admin-key`) |
+| `AI_GENERATION_ASYNC_WORKER_ENABLED` | `ai-generate-worker.ts`, `netlify/functions/ai-generate-worker-cron.js` | Enables async queued trip-generation worker execution and scheduled trigger |
 | `VITE_SUPABASE_URL` | `ai-benchmark.ts` | Supabase REST URL used for benchmark session/run/trip persistence |
 | `VITE_SUPABASE_ANON_KEY` | `ai-benchmark.ts` | Supabase REST anon key used with caller bearer token for owner-scoped RLS access |
 | `VITE_SUPABASE_URL` | `admin-iam.ts`, `admin-audit-export.ts` | Supabase project URL used for Auth and REST calls |

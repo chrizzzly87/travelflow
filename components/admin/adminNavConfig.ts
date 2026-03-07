@@ -7,7 +7,7 @@ export interface AdminNavItem {
 }
 
 export type AdminNavSectionId = 'workspace' | 'operations' | 'tools';
-export type AdminNavItemIconKey = 'overview' | 'users' | 'trips' | 'tiers' | 'audit' | 'benchmark' | 'telemetry' | 'og_tools' | 'design_system';
+export type AdminNavItemIconKey = 'overview' | 'users' | 'trips' | 'tiers' | 'audit' | 'legal' | 'benchmark' | 'telemetry' | 'og_tools' | 'design_system';
 
 export interface AdminNavSection {
     id: AdminNavSectionId;
@@ -49,6 +49,13 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
         path: '/admin/audit',
         section: 'operations',
         icon: 'audit',
+    },
+    {
+        id: 'legal',
+        label: 'Legal Terms',
+        path: '/admin/legal',
+        section: 'operations',
+        icon: 'legal',
     },
     {
         id: 'ai_benchmark',

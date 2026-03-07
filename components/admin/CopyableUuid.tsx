@@ -99,14 +99,14 @@ export const CopyableUuid: React.FC<CopyableUuidProps> = ({
                 }
             }}
             className={mergeClasses(
-                'group inline-flex max-w-full cursor-copy items-center gap-1 rounded px-1 text-left outline-none',
+                'group inline-flex min-w-0 max-w-full cursor-copy items-center gap-1 rounded px-1 text-left outline-none',
                 'hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-accent-300',
                 className
             )}
             title={copied ? 'Copied' : 'Click to select and copy UUID'}
             aria-label={ariaLabel || `Copy UUID ${value}`}
         >
-            <span ref={textRef} className={mergeClasses('select-all font-mono', textClassName)}>
+            <span ref={textRef} className={mergeClasses('min-w-0 select-all font-mono', textClassName)}>
                 {value}
             </span>
             <span

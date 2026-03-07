@@ -21,14 +21,14 @@ export interface AiModelCatalogItem {
     costNote?: string;
 }
 
-export const CURRENT_RUNTIME_MODEL_ID = 'gemini-3-pro-preview';
+export const CURRENT_RUNTIME_MODEL_ID = 'gpt-5.4';
 
-export const DEFAULT_CREATE_TRIP_MODEL_ID = `${'gemini'}:${CURRENT_RUNTIME_MODEL_ID}`;
+export const DEFAULT_CREATE_TRIP_MODEL_ID = `${'openai'}:${CURRENT_RUNTIME_MODEL_ID}`;
 
 export const CREATE_TRIP_PREFERRED_MODEL_IDS = [
+    DEFAULT_CREATE_TRIP_MODEL_ID,
     'openrouter:minimax/minimax-m2.5',
     'perplexity:perplexity/sonar-pro',
-    DEFAULT_CREATE_TRIP_MODEL_ID,
 ] as const;
 
 const ESTIMATE_NOTE = 'Estimate for one classic itinerary generation; real cost varies by prompt/output size.';
@@ -93,7 +93,6 @@ const RAW_AI_MODEL_CATALOG: RawAiModelCatalogItem[] = [
         availability: 'active',
         releasedAt: '2026-01-10',
         isPreferred: true,
-        isCurrentRuntime: true,
         estimatedCostPerQueryLabel: '~$0.05 - $0.15',
         costNote: ESTIMATE_NOTE,
     },
@@ -107,6 +106,18 @@ const RAW_AI_MODEL_CATALOG: RawAiModelCatalogItem[] = [
         releasedAt: '2026-02-18',
         isPreferred: true,
         estimatedCostPerQueryLabel: '~$0.06 - $0.18',
+        costNote: ESTIMATE_NOTE,
+    },
+    {
+        id: 'gemini:gemini-3.1-flash-lite-preview',
+        provider: 'gemini',
+        providerLabel: 'Google Gemini',
+        model: 'gemini-3.1-flash-lite-preview',
+        label: 'Gemini 3.1 Flash Lite Preview',
+        availability: 'active',
+        releasedAt: '2026-03-01',
+        isPreferred: true,
+        estimatedCostPerQueryLabel: '~$0.002 - $0.008',
         costNote: ESTIMATE_NOTE,
     },
     {
@@ -144,6 +155,19 @@ const RAW_AI_MODEL_CATALOG: RawAiModelCatalogItem[] = [
         costNote: 'Requires OPENAI_API_KEY on server. Exact pricing depends on active provider account pricing.',
     },
     {
+        id: 'openai:gpt-5.4',
+        provider: 'openai',
+        providerLabel: 'OpenAI',
+        model: 'gpt-5.4',
+        label: 'GPT-5.4',
+        availability: 'active',
+        releasedAt: '2026-03-01',
+        isPreferred: true,
+        isCurrentRuntime: true,
+        estimatedCostPerQueryLabel: '~$0.08 - $0.24',
+        costNote: 'Requires OPENAI_API_KEY on server. Exact pricing depends on active provider account pricing.',
+    },
+    {
         id: 'openai:gpt-5.2-pro',
         provider: 'openai',
         providerLabel: 'OpenAI',
@@ -153,6 +177,30 @@ const RAW_AI_MODEL_CATALOG: RawAiModelCatalogItem[] = [
         releasedAt: '2026-02-19',
         isPreferred: true,
         estimatedCostPerQueryLabel: '~$0.10 - $0.30',
+        costNote: 'Requires OPENAI_API_KEY on server. Exact pricing depends on active provider account pricing.',
+    },
+    {
+        id: 'openai:gpt-5.4',
+        provider: 'openai',
+        providerLabel: 'OpenAI',
+        model: 'gpt-5.4',
+        label: 'GPT-5.4',
+        availability: 'active',
+        releasedAt: '2026-03-04',
+        isPreferred: true,
+        estimatedCostPerQueryLabel: '~$0.08 - $0.24',
+        costNote: 'Requires OPENAI_API_KEY on server. Exact pricing depends on active provider account pricing.',
+    },
+    {
+        id: 'openai:gpt-5.4-pro',
+        provider: 'openai',
+        providerLabel: 'OpenAI',
+        model: 'gpt-5.4-pro',
+        label: 'GPT-5.4 Pro',
+        availability: 'active',
+        releasedAt: '2026-03-04',
+        isPreferred: true,
+        estimatedCostPerQueryLabel: '~$0.14 - $0.40',
         costNote: 'Requires OPENAI_API_KEY on server. Exact pricing depends on active provider account pricing.',
     },
     {

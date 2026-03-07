@@ -1061,6 +1061,56 @@ const applyTripAccessFields = (
     };
 };
 
+const resolveExplicitGenerationState = (trip: ITrip | null | undefined): 'queued' | 'running' | 'failed' | 'succeeded' | null => {
+    if (!trip) return null;
+    const generation = (trip.aiMeta as Record<string, unknown> | undefined)?.generation as Record<string, unknown> | undefined;
+    const explicitState = typeof generation?.state === 'string' ? generation.state.trim().toLowerCase() : '';
+    if (explicitState === 'queued' || explicitState === 'running' || explicitState === 'failed' || explicitState === 'succeeded') {
+        return explicitState;
+    }
+    const latestAttempt = generation?.latestAttempt as Record<string, unknown> | undefined;
+    const latestAttemptState = typeof latestAttempt?.state === 'string' ? latestAttempt.state.trim().toLowerCase() : '';
+    if (latestAttemptState === 'queued' || latestAttemptState === 'running' || latestAttemptState === 'failed' || latestAttemptState === 'succeeded') {
+        return latestAttemptState;
+    }
+    return null;
+};
+
+const isInFlightGenerationState = (state: ReturnType<typeof resolveExplicitGenerationState>): boolean =>
+    state === 'queued' || state === 'running';
+
+const isTerminalGenerationState = (state: ReturnType<typeof resolveExplicitGenerationState>): boolean =>
+    state === 'failed' || state === 'succeeded';
+
+const parseUpdatedAtIsoToMs = (value: unknown): number | null => {
+    if (typeof value !== 'string') return null;
+    const parsed = Date.parse(value);
+    return Number.isFinite(parsed) ? parsed : null;
+};
+
+export const __shouldUploadLocalTripSnapshot = (params: {
+    localTrip: ITrip;
+    remoteTrip?: ITrip | null;
+    remoteUpdatedAtMs?: number | null;
+}): boolean => {
+    const localUpdatedAt = typeof params.localTrip.updatedAt === 'number' && Number.isFinite(params.localTrip.updatedAt)
+        ? params.localTrip.updatedAt
+        : 0;
+    const remoteUpdatedAt = typeof params.remoteUpdatedAtMs === 'number' && Number.isFinite(params.remoteUpdatedAtMs)
+        ? params.remoteUpdatedAtMs
+        : 0;
+
+    if (remoteUpdatedAt > localUpdatedAt) return false;
+
+    const localGenerationState = resolveExplicitGenerationState(params.localTrip);
+    const remoteGenerationState = resolveExplicitGenerationState(params.remoteTrip ?? undefined);
+    if (isInFlightGenerationState(localGenerationState) && isTerminalGenerationState(remoteGenerationState)) {
+        return false;
+    }
+
+    return localUpdatedAt > remoteUpdatedAt;
+};
+
 export const dbUpsertTrip = async (trip: ITrip, view?: IViewSettings | null) => {
     const result = await dbUpsertTripWithStatus(trip, view);
     return result.tripId;
@@ -1207,7 +1257,12 @@ export const dbUpsertTripWithStatus = async (
     };
 };
 
-export const dbGetTrip = async (tripId: string): Promise<DbTripResult | null> => {
+export const dbGetTrip = async (
+    tripId: string,
+    options?: {
+        includeOwnerProfile?: boolean;
+    },
+): Promise<DbTripResult | null> => {
     if (!DB_ENABLED) return null;
     const client = requireSupabase();
     const currentUserId = await ensureExistingDbSession();
@@ -1287,7 +1342,7 @@ export const dbGetTrip = async (tripId: string): Promise<DbTripResult | null> =>
             ? (data as { updated_at: string }).updated_at
             : null;
     }
-    if (ownerId) {
+    if (ownerId && options?.includeOwnerProfile !== false) {
         const { data: ownerProfile, error: ownerProfileError } = await client
             .from('profiles')
             .select('username')
@@ -1504,7 +1559,46 @@ export const uploadLocalTripsToDb = async () => {
     if (trips.length === 0) return;
     const userId = await ensureDbSession();
     if (!userId) return;
+    const client = requireSupabase();
+    const remoteRowsById = new Map<string, {
+        updatedAtMs: number | null;
+        trip: ITrip | null;
+    }>();
+
+    const { data: remoteRows, error: remoteRowsError } = await client
+        .from('trips')
+        .select('id, updated_at, data')
+        .eq('owner_id', userId);
+
+    if (remoteRowsError) {
+        console.error('Failed to read remote trips before local upload sync', remoteRowsError);
+    } else if (Array.isArray(remoteRows)) {
+        for (const row of remoteRows) {
+            const rowId = typeof (row as { id?: unknown }).id === 'string'
+                ? (row as { id: string }).id
+                : null;
+            if (!rowId) continue;
+            const rowData = (row as { data?: unknown }).data;
+            const rowTrip = rowData && typeof rowData === 'object' ? rowData as ITrip : null;
+            const normalizedRowTrip = rowTrip
+                ? (rowTrip.id === rowId ? rowTrip : { ...rowTrip, id: rowId })
+                : null;
+            remoteRowsById.set(rowId, {
+                updatedAtMs: parseUpdatedAtIsoToMs((row as { updated_at?: unknown }).updated_at),
+                trip: normalizedRowTrip,
+            });
+        }
+    }
+
     for (const trip of trips) {
+        const remoteRow = remoteRowsById.get(trip.id);
+        if (remoteRow && !__shouldUploadLocalTripSnapshot({
+            localTrip: trip,
+            remoteTrip: remoteRow.trip,
+            remoteUpdatedAtMs: remoteRow.updatedAtMs,
+        })) {
+            continue;
+        }
         await dbUpsertTrip(trip);
     }
 };

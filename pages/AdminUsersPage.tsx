@@ -3,8 +3,6 @@ import { useSearchParams } from 'react-router-dom';
 import {
     AppleLogo,
     ArrowSquareOut,
-    ArrowsDownUp,
-    CaretDown,
     ChatCircleDots,
     ChartBarHorizontal,
     DiscordLogo,
@@ -25,6 +23,7 @@ import { createPortal } from 'react-dom';
 import { PLAN_CATALOG, PLAN_ORDER } from '../config/planCatalog';
 import { PROFILE_ACCOUNT_STATUS_OPTIONS, PROFILE_GENDER_OPTIONS } from '../config/profileFields';
 import { buildPath } from '../config/routes';
+import { useAuth } from '../hooks/useAuth';
 import { AdminShell, type AdminDateRange } from '../components/admin/AdminShell';
 import { isIsoDateInRange } from '../components/admin/adminDateRange';
 import {
@@ -36,6 +35,7 @@ import {
     adminListUserChangeLogs,
     adminListUserTrips,
     adminListUsers,
+    adminResetUserTermsAcceptance,
     adminResetUserUsernameCooldown,
     adminUpdateTrip,
     adminUpdateUserOverrides,
@@ -63,6 +63,14 @@ import {
 } from '../components/ui/table';
 import { AdminReloadButton } from '../components/admin/AdminReloadButton';
 import { AdminFilterMenu, type AdminFilterMenuOption } from '../components/admin/AdminFilterMenu';
+import {
+    AdminSortHeaderButton,
+    ADMIN_TABLE_ROW_SURFACE_CLASS,
+    ADMIN_TABLE_SORTED_CELL_CLASS,
+    ADMIN_TABLE_SORTED_HEADER_CLASS,
+    getAdminStickyBodyCellClass,
+    getAdminStickyHeaderCellClass,
+} from '../components/admin/AdminDataTable';
 import { AdminCountUpNumber } from '../components/admin/AdminCountUpNumber';
 import { AdminJsonDiffModal } from '../components/admin/AdminJsonDiffModal';
 import { CopyableUuid } from '../components/admin/CopyableUuid';
@@ -79,25 +87,90 @@ import {
     resolveUserChangeSecondaryFacets,
 } from '../services/adminUserChangeLog';
 
-type SortKey = 'name' | 'email' | 'total_trips' | 'activation_status' | 'last_sign_in_at' | 'created_at' | 'tier_key' | 'system_role' | 'account_status';
+type SortKey =
+    | 'name'
+    | 'email'
+    | 'total_trips'
+    | 'activation_status'
+    | 'last_sign_in_at'
+    | 'updated_at'
+    | 'created_at'
+    | 'tier_key'
+    | 'system_role'
+    | 'account_status'
+    | 'terms_accepted_version';
 type SortDirection = 'asc' | 'desc';
 type UserActivationStatus = 'activated' | 'invited' | 'pending' | 'anonymous';
 type UserAccountStatus = 'active' | 'disabled' | 'deleted';
 type UserLoginType = 'social' | 'password' | 'unknown';
 type UserTripFilter = 'no_trips_no_profile' | 'no_trips' | 'one_to_two' | 'three_to_five' | 'six_plus';
+type UserTermsState = 'latest' | 'pending' | 'never';
 type SocialProviderFilter = 'google' | 'facebook' | 'kakao' | 'apple' | 'github' | 'discord' | 'other_social';
 type LoginPillKey = 'password' | SocialProviderFilter | 'anonymous' | 'unknown';
+type UserVisibleColumnId =
+    | 'user'
+    | 'login'
+    | 'trips'
+    | 'activation'
+    | 'role'
+    | 'tier'
+    | 'status'
+    | 'toc'
+    | 'last_visit'
+    | 'last_log'
+    | 'created';
 
 const PAGE_SIZE = 25;
 const USER_CHANGE_LOG_DRAWER_LIMIT = 20;
+const USER_DETAIL_TRIP_PAGE_SIZE = 10;
+const USER_DETAIL_LOG_PAGE_SIZE = 10;
 const GENDER_UNSET_VALUE = '__gender_unset__';
 const USERS_CACHE_KEY = 'admin.users.cache.v1';
+const USERS_COLUMNS_CACHE_KEY_PREFIX = 'admin.users.columns.v1';
 const USERNAME_CHANGE_COOLDOWN_DAYS = 90;
 const USER_ROLE_VALUES = ['admin', 'user'] as const;
 const USER_STATUS_VALUES: ReadonlyArray<UserAccountStatus> = ['active', 'disabled', 'deleted'];
 const USER_ACTIVATION_VALUES: ReadonlyArray<UserActivationStatus> = ['activated', 'invited', 'pending', 'anonymous'];
 const USER_LOGIN_TYPE_VALUES: ReadonlyArray<UserLoginType> = ['social', 'password', 'unknown'];
 const USER_TRIP_FILTER_VALUES: ReadonlyArray<UserTripFilter> = ['no_trips_no_profile', 'no_trips', 'one_to_two', 'three_to_five', 'six_plus'];
+const USER_TERMS_STATE_VALUES: ReadonlyArray<UserTermsState> = ['latest', 'pending', 'never'];
+const USER_VISIBLE_COLUMN_IDS: readonly UserVisibleColumnId[] = [
+    'user',
+    'login',
+    'trips',
+    'activation',
+    'role',
+    'tier',
+    'status',
+    'toc',
+    'last_visit',
+    'last_log',
+    'created',
+];
+const USER_VISIBLE_COLUMN_OPTIONS: Array<{ value: UserVisibleColumnId; label: string }> = [
+    { value: 'user', label: 'User' },
+    { value: 'login', label: 'Login method' },
+    { value: 'trips', label: '# Trips' },
+    { value: 'activation', label: 'Activation' },
+    { value: 'role', label: 'Role' },
+    { value: 'tier', label: 'Tier' },
+    { value: 'status', label: 'Status' },
+    { value: 'toc', label: 'ToC' },
+    { value: 'last_visit', label: 'Last sign-in' },
+    { value: 'last_log', label: 'Last log' },
+    { value: 'created', label: 'Created' },
+];
+const DEFAULT_VISIBLE_USER_COLUMNS: UserVisibleColumnId[] = [
+    'user',
+    'login',
+    'trips',
+    'activation',
+    'role',
+    'tier',
+    'status',
+    'last_visit',
+    'created',
+];
 const SOCIAL_PROVIDER_VALUES: ReadonlyArray<SocialProviderFilter> = [
     'google',
     'facebook',
@@ -207,10 +280,12 @@ const parseSortKey = (value: string | null): SortKey => {
         || value === 'total_trips'
         || value === 'activation_status'
         || value === 'last_sign_in_at'
+        || value === 'updated_at'
         || value === 'created_at'
         || value === 'tier_key'
         || value === 'system_role'
-        || value === 'account_status') {
+        || value === 'account_status'
+        || value === 'terms_accepted_version') {
         return value;
     }
     return 'created_at';
@@ -246,6 +321,31 @@ const parsePositivePage = (value: string | null): number => {
     return Math.max(1, Math.floor(parsed));
 };
 
+const parseUserVisibleColumns = (value: string | null): UserVisibleColumnId[] => {
+    const parsed = parseQueryMultiValue(value, USER_VISIBLE_COLUMN_IDS);
+    if (parsed.length === 0) return [...DEFAULT_VISIBLE_USER_COLUMNS];
+    return sanitizeUserVisibleColumns(parsed);
+};
+
+const sanitizeUserVisibleColumns = (values: string[] | null | undefined): UserVisibleColumnId[] => {
+    if (!Array.isArray(values) || values.length === 0) return [...DEFAULT_VISIBLE_USER_COLUMNS];
+    const unique = new Set<string>();
+    values.forEach((value) => {
+        if (USER_VISIBLE_COLUMN_IDS.includes(value as UserVisibleColumnId)) {
+            unique.add(value);
+        }
+    });
+    const ordered = USER_VISIBLE_COLUMN_IDS.filter((columnId) => unique.has(columnId));
+    if (ordered.length === 0) return [...DEFAULT_VISIBLE_USER_COLUMNS];
+    if (ordered.includes('user')) return ordered;
+    return ['user', ...ordered];
+};
+
+const buildUsersColumnsCacheKey = (userId: string | null | undefined): string => {
+    const normalized = typeof userId === 'string' ? userId.trim() : '';
+    return `${USERS_COLUMNS_CACHE_KEY_PREFIX}.${normalized || 'anonymous'}`;
+};
+
 const toDateTimeInputValue = (value: string | null): string => {
     if (!value) return '';
     const date = new Date(value);
@@ -277,6 +377,31 @@ const formatOptionalTimestamp = (value: string | null | undefined): string => {
     const parsed = Date.parse(value);
     if (!Number.isFinite(parsed)) return 'Unknown';
     return new Date(parsed).toLocaleString();
+};
+
+const relativeTimeFormatter = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
+
+const formatRelativeTimestamp = (value: string | null | undefined, fallback = 'No data'): string => {
+    if (!value) return fallback;
+    const parsed = Date.parse(value);
+    if (!Number.isFinite(parsed)) return fallback;
+
+    const diffMs = parsed - Date.now();
+    const absDiffMs = Math.abs(diffMs);
+    const minuteMs = 60_000;
+    const hourMs = 60 * minuteMs;
+    const dayMs = 24 * hourMs;
+    const weekMs = 7 * dayMs;
+    const monthMs = 30 * dayMs;
+    const yearMs = 365 * dayMs;
+
+    if (absDiffMs < minuteMs) return relativeTimeFormatter.format(Math.round(diffMs / 1000), 'second');
+    if (absDiffMs < hourMs) return relativeTimeFormatter.format(Math.round(diffMs / minuteMs), 'minute');
+    if (absDiffMs < dayMs) return relativeTimeFormatter.format(Math.round(diffMs / hourMs), 'hour');
+    if (absDiffMs < weekMs) return relativeTimeFormatter.format(Math.round(diffMs / dayMs), 'day');
+    if (absDiffMs < monthMs) return relativeTimeFormatter.format(Math.round(diffMs / weekMs), 'week');
+    if (absDiffMs < yearMs) return relativeTimeFormatter.format(Math.round(diffMs / monthMs), 'month');
+    return relativeTimeFormatter.format(Math.round(diffMs / yearMs), 'year');
 };
 
 const getUsernameCooldownMeta = (usernameChangedAt: string | null | undefined): {
@@ -507,6 +632,34 @@ const matchesUserTripFilter = (user: AdminUserRecord, filter: UserTripFilter): b
     if (filter === 'one_to_two') return totalTrips >= 1 && totalTrips <= 2;
     if (filter === 'three_to_five') return totalTrips >= 3 && totalTrips <= 5;
     return totalTrips >= 6;
+};
+
+const resolveUserTermsState = (
+    user: Pick<AdminUserRecord, 'terms_accepted_version'>,
+    currentTermsVersion: string | null
+): UserTermsState => {
+    const acceptedVersion = (user.terms_accepted_version || '').trim();
+    if (!acceptedVersion) return 'never';
+    if (!currentTermsVersion) return 'latest';
+    return acceptedVersion === currentTermsVersion ? 'latest' : 'pending';
+};
+
+const getUserTermsStateLabel = (state: UserTermsState): string => {
+    if (state === 'latest') return 'Latest accepted';
+    if (state === 'pending') return 'Pending re-accept';
+    return 'Never accepted';
+};
+
+const getUserTermsStatePillClass = (state: UserTermsState): string => {
+    if (state === 'latest') return 'border-emerald-300 bg-emerald-50 text-emerald-800';
+    if (state === 'pending') return 'border-amber-300 bg-amber-50 text-amber-800';
+    return 'border-rose-300 bg-rose-50 text-rose-800';
+};
+
+const getUserTermsSortRank = (state: UserTermsState): number => {
+    if (state === 'latest') return 3;
+    if (state === 'pending') return 2;
+    return 1;
 };
 const getUserReferenceText = (user: AdminUserRecord): string => {
     const name = getUserDisplayName(user);
@@ -1057,6 +1210,7 @@ const LoginTypeFilterMenu: React.FC<{
 
 export const AdminUsersPage: React.FC = () => {
     const { confirm: confirmDialog, prompt: promptDialog } = useAppDialog();
+    const { access } = useAuth();
     const [searchParams, setSearchParams] = useSearchParams();
     const cachedUsers = useMemo(
         () => readAdminCache<AdminUserRecord[]>(USERS_CACHE_KEY, []),
@@ -1093,6 +1247,12 @@ export const AdminUsersPage: React.FC = () => {
     const [tripFilters, setTripFilters] = useState<UserTripFilter[]>(
         () => parseQueryMultiValue(searchParams.get('trips'), USER_TRIP_FILTER_VALUES)
     );
+    const [termsFilters, setTermsFilters] = useState<UserTermsState[]>(
+        () => parseQueryMultiValue(searchParams.get('terms'), USER_TERMS_STATE_VALUES)
+    );
+    const [visibleColumns, setVisibleColumns] = useState<UserVisibleColumnId[]>(
+        () => parseUserVisibleColumns(searchParams.get('cols'))
+    );
     const [sortKey, setSortKey] = useState<SortKey>(() => parseSortKey(searchParams.get('sort')));
     const [sortDirection, setSortDirection] = useState<SortDirection>(() => parseSortDirection(searchParams.get('dir')));
     const [page, setPage] = useState(() => parsePositivePage(searchParams.get('page')));
@@ -1124,9 +1284,11 @@ export const AdminUsersPage: React.FC = () => {
     });
     const [userTrips, setUserTrips] = useState<AdminTripRecord[]>([]);
     const [isLoadingTrips, setIsLoadingTrips] = useState(false);
+    const [connectedTripsPage, setConnectedTripsPage] = useState(1);
     const [userChangeLogs, setUserChangeLogs] = useState<AdminUserChangeRecord[]>([]);
     const [isLoadingUserChangeLogs, setIsLoadingUserChangeLogs] = useState(false);
     const [userChangeLogsError, setUserChangeLogsError] = useState<string | null>(null);
+    const [userChangeLogsPage, setUserChangeLogsPage] = useState(1);
     const [isDiffModalOpen, setIsDiffModalOpen] = useState(false);
     const [isDiffModalLoading, setIsDiffModalLoading] = useState(false);
     const [diffModalError, setDiffModalError] = useState<string | null>(null);
@@ -1136,6 +1298,12 @@ export const AdminUsersPage: React.FC = () => {
     const [diffModalAfterLabel, setDiffModalAfterLabel] = useState('After snapshot');
     const [diffModalBeforeValue, setDiffModalBeforeValue] = useState<unknown>({});
     const [diffModalAfterValue, setDiffModalAfterValue] = useState<unknown>({});
+    const usersColumnsCacheKey = useMemo(
+        () => buildUsersColumnsCacheKey(access?.userId),
+        [access?.userId]
+    );
+    const usersTableScrollRef = useRef<HTMLDivElement | null>(null);
+    const [isUsersTableScrolledHorizontally, setIsUsersTableScrolledHorizontally] = useState(false);
     const handledDeepLinkUserIdRef = useRef<string | null>(null);
     const deepLinkedUserId = useMemo(() => {
         const drawer = searchParams.get('drawer');
@@ -1143,6 +1311,34 @@ export const AdminUsersPage: React.FC = () => {
         if (drawer !== 'user' || !userId) return null;
         return userId;
     }, [searchParams]);
+    const loadedColumnsCacheKeyRef = useRef<string | null>(null);
+
+    useEffect(() => {
+        if (loadedColumnsCacheKeyRef.current === usersColumnsCacheKey) return;
+        loadedColumnsCacheKeyRef.current = usersColumnsCacheKey;
+        if (searchParams.get('cols')) return;
+        const cachedColumns = readAdminCache<UserVisibleColumnId[]>(
+            usersColumnsCacheKey,
+            DEFAULT_VISIBLE_USER_COLUMNS
+        );
+        setVisibleColumns(sanitizeUserVisibleColumns(cachedColumns));
+    }, [searchParams, usersColumnsCacheKey]);
+
+    useEffect(() => {
+        writeAdminCache(usersColumnsCacheKey, visibleColumns);
+    }, [usersColumnsCacheKey, visibleColumns]);
+
+    useEffect(() => {
+        const root = usersTableScrollRef.current;
+        const node = root?.querySelector<HTMLElement>('[data-slot="table-container"]');
+        if (!node) return;
+        const handleScroll = () => {
+            setIsUsersTableScrolledHorizontally(node.scrollLeft > 4);
+        };
+        handleScroll();
+        node.addEventListener('scroll', handleScroll, { passive: true });
+        return () => node.removeEventListener('scroll', handleScroll);
+    }, [visibleColumns]);
 
     useEffect(() => {
         const next = new URLSearchParams();
@@ -1166,9 +1362,19 @@ export const AdminUsersPage: React.FC = () => {
         if (tripFilters.length > 0 && tripFilters.length < USER_TRIP_FILTER_VALUES.length) {
             next.set('trips', tripFilters.join(','));
         }
+        if (termsFilters.length > 0 && termsFilters.length < USER_TERMS_STATE_VALUES.length) {
+            next.set('terms', termsFilters.join(','));
+        }
         if (sortKey !== 'created_at') next.set('sort', sortKey);
         if (sortDirection !== 'desc') next.set('dir', sortDirection);
         if (page > 1) next.set('page', String(page));
+        const hasCustomColumns = (
+            visibleColumns.length !== DEFAULT_VISIBLE_USER_COLUMNS.length
+            || visibleColumns.some((columnId, index) => columnId !== DEFAULT_VISIBLE_USER_COLUMNS[index])
+        );
+        if (hasCustomColumns) {
+            next.set('cols', visibleColumns.join(','));
+        }
         const drawerUserId = selectedUserId || deepLinkedUserId;
         if ((isDetailOpen || deepLinkedUserId) && drawerUserId) {
             next.set('user', drawerUserId);
@@ -1192,8 +1398,10 @@ export const AdminUsersPage: React.FC = () => {
         sortKey,
         socialProviderFilters,
         statusFilters,
+        termsFilters,
         tierFilters,
         tripFilters,
+        visibleColumns,
     ]);
 
     useEffect(() => {
@@ -1237,6 +1445,7 @@ export const AdminUsersPage: React.FC = () => {
         () => users.find((user) => user.user_id === selectedUserId) || null,
         [selectedUserId, users]
     );
+    const currentTermsVersion = access?.termsCurrentVersion ?? null;
     const selectedUserUsernameCooldown = useMemo(
         () => getUsernameCooldownMeta(selectedUser?.username_changed_at),
         [selectedUser?.username_changed_at]
@@ -1275,6 +1484,33 @@ export const AdminUsersPage: React.FC = () => {
             hiddenDiffCount,
         };
     }), [userChangeLogs]);
+    const connectedTripsPageCount = Math.max(Math.ceil(userTrips.length / USER_DETAIL_TRIP_PAGE_SIZE), 1);
+    const pagedConnectedTrips = useMemo(() => {
+        const start = (connectedTripsPage - 1) * USER_DETAIL_TRIP_PAGE_SIZE;
+        return userTrips.slice(start, start + USER_DETAIL_TRIP_PAGE_SIZE);
+    }, [connectedTripsPage, userTrips]);
+    const userChangeLogsPageCount = Math.max(Math.ceil(selectedUserChangeEntries.length / USER_DETAIL_LOG_PAGE_SIZE), 1);
+    const pagedUserChangeEntries = useMemo(() => {
+        const start = (userChangeLogsPage - 1) * USER_DETAIL_LOG_PAGE_SIZE;
+        return selectedUserChangeEntries.slice(start, start + USER_DETAIL_LOG_PAGE_SIZE);
+    }, [selectedUserChangeEntries, userChangeLogsPage]);
+
+    useEffect(() => {
+        setConnectedTripsPage(1);
+        setUserChangeLogsPage(1);
+    }, [selectedUser?.user_id]);
+
+    useEffect(() => {
+        if (connectedTripsPage > connectedTripsPageCount) {
+            setConnectedTripsPage(connectedTripsPageCount);
+        }
+    }, [connectedTripsPage, connectedTripsPageCount]);
+
+    useEffect(() => {
+        if (userChangeLogsPage > userChangeLogsPageCount) {
+            setUserChangeLogsPage(userChangeLogsPageCount);
+        }
+    }, [userChangeLogsPage, userChangeLogsPageCount]);
 
     const canOpenUserChangeFullDiffModal = (log: AdminUserChangeRecord): boolean => {
         if (hasSnapshotData(log.before_data) || hasSnapshotData(log.after_data)) return true;
@@ -1475,6 +1711,8 @@ export const AdminUsersPage: React.FC = () => {
             if (tripFilters.length > 0 && !tripFilters.some((tripFilter) => matchesUserTripFilter(user, tripFilter))) {
                 return false;
             }
+            const termsState = resolveUserTermsState(user, currentTermsVersion);
+            if (termsFilters.length > 0 && !termsFilters.includes(termsState)) return false;
             if (!token) return true;
             return (
                 getUserDisplayName(user).toLowerCase().includes(token)
@@ -1483,6 +1721,7 @@ export const AdminUsersPage: React.FC = () => {
                 || getLoginSearchText(user).includes(token)
                 || (user.username || '').toLowerCase().includes(token)
                 || getActivationStatusLabel(activationStatus).toLowerCase().includes(token)
+                || getUserTermsStateLabel(termsState).toLowerCase().includes(token)
             );
         });
 
@@ -1492,9 +1731,15 @@ export const AdminUsersPage: React.FC = () => {
             if (sortKey === 'total_trips') return getUserTotalTrips(user);
             if (sortKey === 'activation_status') return resolveActivationStatus(user);
             if (sortKey === 'last_sign_in_at') return Date.parse(user.last_sign_in_at || '') || 0;
+            if (sortKey === 'updated_at') return Date.parse(user.updated_at || '') || 0;
             if (sortKey === 'created_at') return Date.parse(user.created_at || '') || 0;
             if (sortKey === 'tier_key') return String(user.tier_key || '').toLowerCase();
             if (sortKey === 'system_role') return String(user.system_role || '').toLowerCase();
+            if (sortKey === 'terms_accepted_version') {
+                const stateRank = getUserTermsSortRank(resolveUserTermsState(user, currentTermsVersion));
+                const acceptedAt = Date.parse(user.terms_accepted_at || '') || 0;
+                return stateRank * 10_000_000_000_000 + acceptedAt;
+            }
             return String(user.account_status || 'active').toLowerCase();
         };
 
@@ -1515,6 +1760,7 @@ export const AdminUsersPage: React.FC = () => {
     }, [
         activationFilters,
         dateRange,
+        currentTermsVersion,
         loginTypeFilters,
         roleFilters,
         searchValue,
@@ -1523,6 +1769,7 @@ export const AdminUsersPage: React.FC = () => {
         sortKey,
         statusFilters,
         tierFilters,
+        termsFilters,
         tripFilters,
         users,
     ]);
@@ -1601,6 +1848,21 @@ export const AdminUsersPage: React.FC = () => {
         })),
         [usersInDateRange]
     );
+    const termsFilterOptions = useMemo<AdminFilterMenuOption[]>(
+        () => USER_TERMS_STATE_VALUES.map((value) => ({
+            value,
+            label: getUserTermsStateLabel(value),
+            count: usersInDateRange.filter((user) => resolveUserTermsState(user, currentTermsVersion) === value).length,
+        })),
+        [currentTermsVersion, usersInDateRange]
+    );
+    const visibleUserColumnOptions = useMemo<AdminFilterMenuOption[]>(
+        () => USER_VISIBLE_COLUMN_OPTIONS.map((option) => ({
+            value: option.value,
+            label: option.label,
+        })),
+        []
+    );
 
     const loginFilterCounts = useMemo<LoginFilterCounts>(() => {
         const socialProviders: Record<SocialProviderFilter, number> = {
@@ -1650,6 +1912,10 @@ export const AdminUsersPage: React.FC = () => {
     const areAllVisibleUsersSelected = hardDeleteSelectableVisibleUsers.length > 0
         && hardDeleteSelectableVisibleUsers.every((user) => selectedUserIds.has(user.user_id));
     const isVisibleUserSelectionPartial = selectedVisibleUsers.length > 0 && !areAllVisibleUsersSelected;
+    const visibleUserColumnSet = useMemo(() => new Set<UserVisibleColumnId>(visibleColumns), [visibleColumns]);
+    const isUserColumnVisible = (columnId: UserVisibleColumnId): boolean => visibleUserColumnSet.has(columnId);
+    const hasStickyUserColumnPair = isUserColumnVisible('user');
+    const usersTableColumnCount = visibleColumns.length + 2;
 
     useEffect(() => {
         if (page > pageCount) setPage(pageCount);
@@ -1697,6 +1963,8 @@ export const AdminUsersPage: React.FC = () => {
         setSortKey(key);
         setSortDirection('asc');
     };
+
+    const isUserSortedColumn = (key: SortKey): boolean => sortKey === key;
 
     const openUserDetail = (userId: string) => {
         setSelectedUserId(userId);
@@ -1769,17 +2037,17 @@ export const AdminUsersPage: React.FC = () => {
         setMessage(null);
         const loadingToastId = showAppToast({
             tone: 'loading',
-            title: 'Resetting username cooldown',
+            title: 'Revoking username cooldown',
             description: `Allowing "${userName}" to change username immediately.`,
         });
         try {
             await adminResetUserUsernameCooldown(selectedUser.user_id, 'admin.manual_reset');
-            setMessage('Username cooldown reset. The user can change username immediately.');
+            setMessage('Username cooldown revoked. The user can change username immediately.');
             await loadUsers();
             showAppToast({
                 id: loadingToastId,
                 tone: 'success',
-                title: 'Username cooldown reset',
+                title: 'Username cooldown revoked',
                 description: `"${userName}" can now change username immediately.`,
             });
         } catch (error) {
@@ -1788,7 +2056,42 @@ export const AdminUsersPage: React.FC = () => {
             showAppToast({
                 id: loadingToastId,
                 tone: 'error',
-                title: 'Cooldown reset failed',
+                title: 'Cooldown revoke failed',
+                description: reason,
+            });
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleResetTermsAcceptance = async () => {
+        if (!selectedUser) return;
+        const userName = getUserDisplayName(selectedUser);
+        setIsSaving(true);
+        setErrorMessage(null);
+        setMessage(null);
+        const loadingToastId = showAppToast({
+            tone: 'loading',
+            title: 'Resetting Terms acceptance',
+            description: `Clearing Terms acceptance for "${userName}".`,
+        });
+        try {
+            await adminResetUserTermsAcceptance(selectedUser.user_id, 'admin.testing.reset_terms');
+            setMessage('Terms acceptance reset for this user.');
+            await loadUsers();
+            showAppToast({
+                id: loadingToastId,
+                tone: 'success',
+                title: 'Terms acceptance reset',
+                description: `"${userName}" is now marked as pending Terms acceptance.`,
+            });
+        } catch (error) {
+            const reason = error instanceof Error ? error.message : 'Could not reset terms acceptance.';
+            setErrorMessage(reason);
+            showAppToast({
+                id: loadingToastId,
+                tone: 'error',
+                title: 'Terms reset failed',
                 description: reason,
             });
         } finally {
@@ -2306,6 +2609,7 @@ export const AdminUsersPage: React.FC = () => {
         setLoginTypeFilters([]);
         setSocialProviderFilters([]);
         setTripFilters([]);
+        setTermsFilters([]);
         setPage(1);
     };
 
@@ -2480,6 +2784,23 @@ export const AdminUsersPage: React.FC = () => {
                                 setPage(1);
                             }}
                         />
+                        <AdminFilterMenu
+                            label="ToC"
+                            options={termsFilterOptions}
+                            selectedValues={termsFilters}
+                            onSelectedValuesChange={(next) => {
+                                setTermsFilters(next as UserTermsState[]);
+                                setPage(1);
+                            }}
+                        />
+                        <AdminFilterMenu
+                            label="Columns"
+                            options={visibleUserColumnOptions}
+                            selectedValues={visibleColumns}
+                            onSelectedValuesChange={(next) => {
+                                setVisibleColumns(sanitizeUserVisibleColumns(next));
+                            }}
+                        />
                         <button
                             type="button"
                             onClick={resetTableFilters}
@@ -2527,62 +2848,140 @@ export const AdminUsersPage: React.FC = () => {
                     )}
                 </div>
 
-                <div className="mt-3 overflow-x-auto rounded-xl border border-slate-200 bg-white">
-                    <Table>
+                <div ref={usersTableScrollRef} className="mt-3 rounded-xl border border-slate-200 bg-white">
+                    <Table className="w-[max(100%,1320px)]">
                         <TableHeader className="bg-slate-50">
                             <TableRow>
-                                <TableHead className="w-12 px-4 py-3">
+                                <TableHead
+                                    className={`sticky left-0 z-40 w-[56px] min-w-[56px] max-w-[56px] px-2 py-3 ${getAdminStickyHeaderCellClass({
+                                        isScrolled: isUsersTableScrolledHorizontally,
+                                        isFirst: hasStickyUserColumnPair,
+                                    })}`}
+                                    style={{ width: 56, minWidth: 56, maxWidth: 56 }}
+                                >
                                     <Checkbox
                                         checked={areAllVisibleUsersSelected ? true : (isVisibleUserSelectionPartial ? 'indeterminate' : false)}
                                         onCheckedChange={(checked) => toggleSelectAllVisibleUsers(Boolean(checked))}
                                         aria-label="Select all visible users"
                                     />
                                 </TableHead>
-                                <TableHead className="px-4 py-3 font-semibold text-slate-700">
-                                    <button type="button" className="inline-flex items-center gap-1 hover:text-accent-700" onClick={() => toggleSort('name')}>
-                                        User <ArrowsDownUp size={12} />
-                                    </button>
-                                </TableHead>
-                                <TableHead className="px-4 py-3 font-semibold text-slate-700">
-                                    <button type="button" className="inline-flex items-center gap-1 hover:text-accent-700" onClick={() => toggleSort('email')}>
-                                        Login <ArrowsDownUp size={12} />
-                                    </button>
-                                </TableHead>
-                                <TableHead className="px-4 py-3 font-semibold text-slate-700">
-                                    <button type="button" className="inline-flex items-center gap-1 hover:text-accent-700" onClick={() => toggleSort('total_trips')}>
-                                        Trips <ArrowsDownUp size={12} />
-                                    </button>
-                                </TableHead>
-                                <TableHead className="px-4 py-3 font-semibold text-slate-700">
-                                    <button type="button" className="inline-flex items-center gap-1 hover:text-accent-700" onClick={() => toggleSort('activation_status')}>
-                                        Activation <ArrowsDownUp size={12} />
-                                    </button>
-                                </TableHead>
-                                <TableHead className="px-4 py-3 font-semibold text-slate-700">
-                                    <button type="button" className="inline-flex items-center gap-1 hover:text-accent-700" onClick={() => toggleSort('system_role')}>
-                                        Role <ArrowsDownUp size={12} />
-                                    </button>
-                                </TableHead>
-                                <TableHead className="px-4 py-3 font-semibold text-slate-700">
-                                    <button type="button" className="inline-flex items-center gap-1 hover:text-accent-700" onClick={() => toggleSort('tier_key')}>
-                                        Tier <ArrowsDownUp size={12} />
-                                    </button>
-                                </TableHead>
-                                <TableHead className="px-4 py-3 font-semibold text-slate-700">
-                                    <button type="button" className="inline-flex items-center gap-1 hover:text-accent-700" onClick={() => toggleSort('account_status')}>
-                                        Status <ArrowsDownUp size={12} />
-                                    </button>
-                                </TableHead>
-                                <TableHead className="px-4 py-3 font-semibold text-slate-700">
-                                    <button type="button" className="inline-flex items-center gap-1 hover:text-accent-700" onClick={() => toggleSort('last_sign_in_at')}>
-                                        Last visit <ArrowsDownUp size={12} />
-                                    </button>
-                                </TableHead>
-                                <TableHead className="px-4 py-3 font-semibold text-slate-700">
-                                    <button type="button" className="inline-flex items-center gap-1 hover:text-accent-700" onClick={() => toggleSort('created_at')}>
-                                        Created <ArrowsDownUp size={12} />
-                                    </button>
-                                </TableHead>
+                                {isUserColumnVisible('user') && (
+                                    <TableHead
+                                        className={`sticky left-[56px] z-30 w-[340px] min-w-[340px] max-w-[340px] overflow-hidden px-4 py-3 font-semibold text-slate-700 ${getAdminStickyHeaderCellClass({
+                                            isScrolled: isUsersTableScrolledHorizontally,
+                                            isFirst: false,
+                                            isSorted: isUserSortedColumn('name'),
+                                        })}`}
+                                        style={{ width: 340, minWidth: 340, maxWidth: 340 }}
+                                    >
+                                        <AdminSortHeaderButton
+                                            label="User"
+                                            isActive={isUserSortedColumn('name')}
+                                            direction={sortDirection}
+                                            onClick={() => toggleSort('name')}
+                                        />
+                                    </TableHead>
+                                )}
+                                {isUserColumnVisible('login') && (
+                                    <TableHead className={`px-4 py-3 font-semibold text-slate-700 ${isUserSortedColumn('email') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                        <AdminSortHeaderButton
+                                            label="Login"
+                                            isActive={isUserSortedColumn('email')}
+                                            direction={sortDirection}
+                                            onClick={() => toggleSort('email')}
+                                        />
+                                    </TableHead>
+                                )}
+                                {isUserColumnVisible('trips') && (
+                                    <TableHead className={`px-4 py-3 font-semibold text-slate-700 ${isUserSortedColumn('total_trips') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                        <AdminSortHeaderButton
+                                            label="Trips"
+                                            isActive={isUserSortedColumn('total_trips')}
+                                            direction={sortDirection}
+                                            onClick={() => toggleSort('total_trips')}
+                                        />
+                                    </TableHead>
+                                )}
+                                {isUserColumnVisible('activation') && (
+                                    <TableHead className={`px-4 py-3 font-semibold text-slate-700 ${isUserSortedColumn('activation_status') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                        <AdminSortHeaderButton
+                                            label="Activation"
+                                            isActive={isUserSortedColumn('activation_status')}
+                                            direction={sortDirection}
+                                            onClick={() => toggleSort('activation_status')}
+                                        />
+                                    </TableHead>
+                                )}
+                                {isUserColumnVisible('role') && (
+                                    <TableHead className={`px-4 py-3 font-semibold text-slate-700 ${isUserSortedColumn('system_role') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                        <AdminSortHeaderButton
+                                            label="Role"
+                                            isActive={isUserSortedColumn('system_role')}
+                                            direction={sortDirection}
+                                            onClick={() => toggleSort('system_role')}
+                                        />
+                                    </TableHead>
+                                )}
+                                {isUserColumnVisible('tier') && (
+                                    <TableHead className={`px-4 py-3 font-semibold text-slate-700 ${isUserSortedColumn('tier_key') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                        <AdminSortHeaderButton
+                                            label="Tier"
+                                            isActive={isUserSortedColumn('tier_key')}
+                                            direction={sortDirection}
+                                            onClick={() => toggleSort('tier_key')}
+                                        />
+                                    </TableHead>
+                                )}
+                                {isUserColumnVisible('status') && (
+                                    <TableHead className={`px-4 py-3 font-semibold text-slate-700 ${isUserSortedColumn('account_status') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                        <AdminSortHeaderButton
+                                            label="Status"
+                                            isActive={isUserSortedColumn('account_status')}
+                                            direction={sortDirection}
+                                            onClick={() => toggleSort('account_status')}
+                                        />
+                                    </TableHead>
+                                )}
+                                {isUserColumnVisible('toc') && (
+                                    <TableHead className={`px-4 py-3 font-semibold text-slate-700 ${isUserSortedColumn('terms_accepted_version') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                        <AdminSortHeaderButton
+                                            label="ToC"
+                                            isActive={isUserSortedColumn('terms_accepted_version')}
+                                            direction={sortDirection}
+                                            onClick={() => toggleSort('terms_accepted_version')}
+                                        />
+                                    </TableHead>
+                                )}
+                                {isUserColumnVisible('last_visit') && (
+                                    <TableHead className={`px-4 py-3 font-semibold text-slate-700 ${isUserSortedColumn('last_sign_in_at') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                        <AdminSortHeaderButton
+                                            label="Last sign-in"
+                                            isActive={isUserSortedColumn('last_sign_in_at')}
+                                            direction={sortDirection}
+                                            onClick={() => toggleSort('last_sign_in_at')}
+                                        />
+                                    </TableHead>
+                                )}
+                                {isUserColumnVisible('last_log') && (
+                                    <TableHead className={`px-4 py-3 font-semibold text-slate-700 ${isUserSortedColumn('updated_at') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                        <AdminSortHeaderButton
+                                            label="Last log"
+                                            isActive={isUserSortedColumn('updated_at')}
+                                            direction={sortDirection}
+                                            onClick={() => toggleSort('updated_at')}
+                                        />
+                                    </TableHead>
+                                )}
+                                {isUserColumnVisible('created') && (
+                                    <TableHead className={`px-4 py-3 font-semibold text-slate-700 ${isUserSortedColumn('created_at') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                        <AdminSortHeaderButton
+                                            label="Created"
+                                            isActive={isUserSortedColumn('created_at')}
+                                            direction={sortDirection}
+                                            onClick={() => toggleSort('created_at')}
+                                        />
+                                    </TableHead>
+                                )}
                                 <TableHead className="px-4 py-3 text-right font-semibold text-slate-700">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -2594,12 +2993,21 @@ export const AdminUsersPage: React.FC = () => {
                                 const isSelected = selectedUserIds.has(user.user_id);
                                 const isHardDeleteEligible = isUserHardDeleteEligible(user);
                                 const isTriplessNoData = isUserTriplessAndNoData(user);
+                                const termsState = resolveUserTermsState(user, currentTermsVersion);
                                 return (
                                     <TableRow
                                         key={user.user_id}
-                                        data-state={isSelected ? "selected" : undefined}
+                                        className={ADMIN_TABLE_ROW_SURFACE_CLASS}
+                                        data-state={isSelected ? 'selected' : undefined}
                                     >
-                                        <TableCell className="px-4 py-3">
+                                        <TableCell
+                                            className={`sticky left-0 z-40 w-[56px] min-w-[56px] max-w-[56px] px-2 py-3 ${getAdminStickyBodyCellClass({
+                                                isSelected,
+                                                isScrolled: isUsersTableScrolledHorizontally,
+                                                isFirst: hasStickyUserColumnPair,
+                                            })}`}
+                                            style={{ width: 56, minWidth: 56, maxWidth: 56 }}
+                                        >
                                             <Checkbox
                                                 checked={isSelected}
                                                 disabled={!isHardDeleteEligible}
@@ -2607,90 +3015,149 @@ export const AdminUsersPage: React.FC = () => {
                                                 aria-label={isHardDeleteEligible ? `Select ${userName}` : `Cannot select ${userName} (soft-deleted)`}
                                             />
                                         </TableCell>
-                                        <TableCell className="px-4 py-3 max-w-[280px]">
-                                            <button
-                                                type="button"
-                                                onClick={() => openUserDetail(user.user_id)}
-                                                title="Open details drawer"
-                                                className="group xl:max-w-full cursor-pointer text-left hover:text-accent-700"
+                                        {isUserColumnVisible('user') && (
+                                            <TableCell
+                                                className={`sticky left-[56px] z-30 w-[340px] min-w-[340px] max-w-[340px] overflow-hidden px-4 py-3 ${getAdminStickyBodyCellClass({
+                                                    isSelected,
+                                                    isScrolled: isUsersTableScrolledHorizontally,
+                                                    isFirst: false,
+                                                    isSorted: isUserSortedColumn('name'),
+                                                })}`}
+                                                style={{ width: 340, minWidth: 340, maxWidth: 340 }}
                                             >
-                                                <div className="truncate text-sm font-semibold text-slate-800 group-hover:underline group-hover:decoration-slate-400">{userName}</div>
-                                                <div className="truncate text-xs text-slate-600">{user.email || 'No email address'}</div>
-                                                <div className="text-[11px] text-slate-500 mt-0.5">
-                                                    UUID:{' '}
-                                                    <CopyableUuid
-                                                        value={user.user_id}
-                                                        focusable={false}
-                                                        className="align-middle"
-                                                        textClassName="max-w-full truncate text-[11px]"
-                                                        hintClassName="text-[9px]"
-                                                    />
-                                                </div>
-                                            </button>
-                                        </TableCell>
-                                        <TableCell className="px-4 py-3">
-                                            <div className="flex flex-wrap items-center gap-1.5">
-                                                {getLoginPills(user).map((pill) => {
-                                                    const Icon = pill.icon;
-                                                    return (
-                                                        <span key={`${user.user_id}-login-pill-${pill.label}`} className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${pill.className}`}>
-                                                            <Icon size={11} />
-                                                            {pill.label}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => openUserDetail(user.user_id)}
+                                                    title="Open details drawer"
+                                                    className="group block w-full min-w-0 cursor-pointer text-left hover:text-accent-700"
+                                                >
+                                                    <div className="truncate text-sm font-semibold text-slate-800 group-hover:underline group-hover:decoration-slate-400">{userName}</div>
+                                                    <div className="truncate text-xs text-slate-600">{user.email || 'No email address'}</div>
+                                                    <div className="mt-0.5 flex min-w-0 items-center gap-1 text-[11px] text-slate-500">
+                                                        <span className="shrink-0">UUID:</span>
+                                                        <CopyableUuid
+                                                            value={user.user_id}
+                                                            focusable={false}
+                                                            className="relative w-full min-w-0 max-w-[214px] flex-1 overflow-hidden pr-8 align-middle"
+                                                            textClassName="block max-w-full truncate text-[11px]"
+                                                            hintClassName="absolute right-1 top-1/2 -translate-y-1/2 text-[9px]"
+                                                        />
+                                                    </div>
+                                                </button>
+                                            </TableCell>
+                                        )}
+                                        {isUserColumnVisible('login') && (
+                                            <TableCell className={`px-4 py-3 ${isUserSortedColumn('email') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
+                                                <div className="flex flex-wrap items-center gap-1.5">
+                                                    {getLoginPills(user).map((pill) => {
+                                                        const Icon = pill.icon;
+                                                        return (
+                                                            <span key={`${user.user_id}-login-pill-${pill.label}`} className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${pill.className}`}>
+                                                                <Icon size={11} />
+                                                                {pill.label}
+                                                            </span>
+                                                        );
+                                                    })}
+                                                    {activationStatus === 'pending' && (
+                                                        <span className="rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
+                                                            Needs activation
                                                         </span>
-                                                    );
-                                                })}
-                                                {activationStatus === 'pending' && (
-                                                    <span className="rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
-                                                        Needs activation
-                                                    </span>
-                                                )}
-                                                {activationStatus === 'invited' && (
-                                                    <span className="rounded-full border border-sky-300 bg-sky-50 px-2 py-0.5 text-[11px] font-semibold text-sky-800">
-                                                        Invite sent
-                                                    </span>
-                                                )}
-                                                {activationStatus === 'anonymous' && (
-                                                    <span className="rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
-                                                        Temp
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="px-4 py-3 text-xs text-slate-600">
-                                            <div className="font-semibold text-slate-800 hover:text-accent-700">
-                                                {getUserTotalTrips(user)} total
-                                            </div>
-                                            <div className="text-[11px] text-slate-500">
-                                                {getUserActiveTrips(user)} active
-                                            </div>
-                                            {isTriplessNoData && (
-                                                <div className="text-[11px] font-semibold text-amber-700">
-                                                    No profile data
+                                                    )}
+                                                    {activationStatus === 'invited' && (
+                                                        <span className="rounded-full border border-sky-300 bg-sky-50 px-2 py-0.5 text-[11px] font-semibold text-sky-800">
+                                                            Invite sent
+                                                        </span>
+                                                    )}
+                                                    {activationStatus === 'anonymous' && (
+                                                        <span className="rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
+                                                            Temp
+                                                        </span>
+                                                    )}
                                                 </div>
-                                            )}
-                                        </TableCell>
-                                        <TableCell className="px-4 py-3">
-                                            <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${activationPillClass(activationStatus)}`}>
-                                                {getActivationStatusLabel(activationStatus)}
-                                            </span>
-                                        </TableCell>
-                                        <TableCell className="px-4 py-3">
-                                            <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${rolePillClass(user.system_role)}`}>
-                                                {user.system_role === 'admin' ? 'Admin' : 'User'}
-                                            </span>
-                                        </TableCell>
-                                        <TableCell className="px-4 py-3">
-                                            <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${tierPillClass(user.tier_key)}`}>
-                                                {PLAN_CATALOG[user.tier_key]?.publicName || user.tier_key}
-                                            </span>
-                                        </TableCell>
-                                        <TableCell className="px-4 py-3">
-                                            <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${statusPillClass(accountStatus)}`}>
-                                                {formatAccountStatusLabel(accountStatus)}
-                                            </span>
-                                        </TableCell>
-                                        <TableCell className="px-4 py-3 text-xs text-slate-600 max-w-[120px] truncate">{formatTimestamp(user.last_sign_in_at)}</TableCell>
-                                        <TableCell className="px-4 py-3 text-xs text-slate-500 max-w-[140px] truncate">{new Date(user.created_at).toLocaleString()}</TableCell>
+                                            </TableCell>
+                                        )}
+                                        {isUserColumnVisible('trips') && (
+                                            <TableCell className={`px-4 py-3 text-xs text-slate-600 ${isUserSortedColumn('total_trips') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
+                                                <div className="font-semibold text-slate-800 hover:text-accent-700">
+                                                    {getUserTotalTrips(user)} total
+                                                </div>
+                                                <div className="text-[11px] text-slate-500">
+                                                    {getUserActiveTrips(user)} active
+                                                </div>
+                                                {isTriplessNoData && (
+                                                    <div className="text-[11px] font-semibold text-amber-700">
+                                                        No profile data
+                                                    </div>
+                                                )}
+                                            </TableCell>
+                                        )}
+                                        {isUserColumnVisible('activation') && (
+                                            <TableCell className={`px-4 py-3 ${isUserSortedColumn('activation_status') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
+                                                <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${activationPillClass(activationStatus)}`}>
+                                                    {getActivationStatusLabel(activationStatus)}
+                                                </span>
+                                            </TableCell>
+                                        )}
+                                        {isUserColumnVisible('role') && (
+                                            <TableCell className={`px-4 py-3 ${isUserSortedColumn('system_role') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
+                                                <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${rolePillClass(user.system_role)}`}>
+                                                    {user.system_role === 'admin' ? 'Admin' : 'User'}
+                                                </span>
+                                            </TableCell>
+                                        )}
+                                        {isUserColumnVisible('tier') && (
+                                            <TableCell className={`px-4 py-3 ${isUserSortedColumn('tier_key') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
+                                                <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${tierPillClass(user.tier_key)}`}>
+                                                    {PLAN_CATALOG[user.tier_key]?.publicName || user.tier_key}
+                                                </span>
+                                            </TableCell>
+                                        )}
+                                        {isUserColumnVisible('status') && (
+                                            <TableCell className={`px-4 py-3 ${isUserSortedColumn('account_status') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
+                                                <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${statusPillClass(accountStatus)}`}>
+                                                    {formatAccountStatusLabel(accountStatus)}
+                                                </span>
+                                            </TableCell>
+                                        )}
+                                        {isUserColumnVisible('toc') && (
+                                            <TableCell className={`px-4 py-3 ${isUserSortedColumn('terms_accepted_version') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
+                                                <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${getUserTermsStatePillClass(termsState)}`}>
+                                                    {getUserTermsStateLabel(termsState)}
+                                                </span>
+                                                <div className="mt-1 text-[11px] text-slate-500">
+                                                    {user.terms_accepted_version || 'No accepted version'}
+                                                </div>
+                                            </TableCell>
+                                        )}
+                                        {isUserColumnVisible('last_visit') && (
+                                            <TableCell className={`max-w-[210px] px-4 py-3 text-xs text-slate-600 ${isUserSortedColumn('last_sign_in_at') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
+                                                <div className="space-y-0.5">
+                                                    <span className="block font-medium text-slate-700" title={formatTimestamp(user.last_sign_in_at)}>
+                                                        {formatRelativeTimestamp(user.last_sign_in_at, 'No visit yet')}
+                                                    </span>
+                                                    <span className="block text-[11px] text-slate-500">
+                                                        {formatOptionalTimestamp(user.last_sign_in_at)}
+                                                    </span>
+                                                </div>
+                                            </TableCell>
+                                        )}
+                                        {isUserColumnVisible('last_log') && (
+                                            <TableCell className={`max-w-[210px] px-4 py-3 text-xs text-slate-600 ${isUserSortedColumn('updated_at') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
+                                                <div className="space-y-0.5">
+                                                    <span className="block font-medium text-slate-700" title={formatOptionalTimestamp(user.updated_at)}>
+                                                        {formatRelativeTimestamp(user.updated_at, 'No logs yet')}
+                                                    </span>
+                                                    <span className="block text-[11px] text-slate-500">
+                                                        {formatOptionalTimestamp(user.updated_at)}
+                                                    </span>
+                                                </div>
+                                            </TableCell>
+                                        )}
+                                        {isUserColumnVisible('created') && (
+                                            <TableCell className={`max-w-[170px] px-4 py-3 text-xs text-slate-500 ${isUserSortedColumn('created_at') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
+                                                {formatOptionalTimestamp(user.created_at)}
+                                            </TableCell>
+                                        )}
                                         <TableCell className="px-4 py-3 text-right">
                                             <UserRowActionsMenu
                                                 disabled={isSaving}
@@ -2706,14 +3173,14 @@ export const AdminUsersPage: React.FC = () => {
                             })}
                             {pagedUsers.length === 0 && !isLoadingUsers && (
                                 <TableRow>
-                                    <TableCell className="px-4 py-8 text-center text-sm text-slate-500" colSpan={11}>
+                                    <TableCell className="px-4 py-8 text-center text-sm text-slate-500" colSpan={usersTableColumnCount}>
                                         No users match your filters.
                                     </TableCell>
                                 </TableRow>
                             )}
                             {isLoadingUsers && (
                                 <TableRow>
-                                    <TableCell className="px-4 py-8 text-center text-sm text-slate-500" colSpan={11}>
+                                    <TableCell className="px-4 py-8 text-center text-sm text-slate-500" colSpan={usersTableColumnCount}>
                                         <span className="inline-flex items-center gap-2 font-medium">
                                             <SpinnerGap size={16} className="animate-spin text-slate-400" />
                                             Loading users...
@@ -3045,6 +3512,15 @@ export const AdminUsersPage: React.FC = () => {
                                                 ? `Cooldown ends: ${formatOptionalTimestamp(selectedUserUsernameCooldown.endsAt)}.`
                                                 : 'Cooldown is currently not active.'}
                                         </div>
+                                        <div>Use the admin action below to revoke cooldown immediately.</div>
+                                        <button
+                                            type="button"
+                                            onClick={() => void handleResetUsernameCooldown()}
+                                            disabled={isSaving || !selectedUserUsernameCooldown.isActive}
+                                            className="mt-1 inline-flex h-7 items-center rounded-md border border-slate-300 bg-white px-2.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+                                        >
+                                            Revoke cooldown
+                                        </button>
                                     </div>
                                     <label className="space-y-1">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Gender</span>
@@ -3180,14 +3656,6 @@ export const AdminUsersPage: React.FC = () => {
                                 </button>
                                 <button
                                     type="button"
-                                    onClick={() => void handleResetUsernameCooldown()}
-                                    disabled={isSaving}
-                                    className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-                                >
-                                    Reset username cooldown
-                                </button>
-                                <button
-                                    type="button"
                                     onClick={() => void handleSoftDelete(selectedUser)}
                                     disabled={isSaving}
                                     className="rounded-lg border border-amber-300 px-3 py-2 text-xs font-semibold text-amber-700 hover:bg-amber-50 disabled:opacity-50"
@@ -3223,67 +3691,92 @@ export const AdminUsersPage: React.FC = () => {
                                     <div className="text-sm text-slate-500">No trips owned by this user.</div>
                                 ) : (
                                     <div className="space-y-2">
-                                        {userTrips.map((trip) => (
-                                            <article key={trip.trip_id} className="rounded-lg border border-slate-200 p-3">
-                                                <div className="flex items-start justify-between gap-2">
-                                                    <div className="min-w-0 flex-1">
-                                                        <a
-                                                            href={`/trip/${encodeURIComponent(trip.trip_id)}`}
-                                                            target="_blank"
-                                                            rel="noreferrer"
-                                                            title="Open trip in a new tab"
-                                                            className="block text-sm font-semibold text-slate-800 hover:text-accent-700 hover:underline"
-                                                        >
-                                                            {trip.title || trip.trip_id}
-                                                        </a>
-                                                        <div className="text-[11px] text-slate-500">
-                                                            <CopyableUuid
-                                                                value={trip.trip_id}
-                                                                textClassName="max-w-[300px] truncate text-[11px]"
-                                                                hintClassName="text-[9px]"
-                                                            />
+                                        <div className="max-h-[26rem] space-y-2 overflow-y-auto pr-1">
+                                            {pagedConnectedTrips.map((trip) => (
+                                                <article key={trip.trip_id} className="rounded-lg border border-slate-200 p-3">
+                                                    <div className="flex items-start justify-between gap-2">
+                                                        <div className="min-w-0 flex-1">
+                                                            <a
+                                                                href={`/trip/${encodeURIComponent(trip.trip_id)}`}
+                                                                target="_blank"
+                                                                rel="noreferrer"
+                                                                title="Open trip in a new tab"
+                                                                className="block text-sm font-semibold text-slate-800 hover:text-accent-700 hover:underline"
+                                                            >
+                                                                {trip.title || trip.trip_id}
+                                                            </a>
+                                                            <div className="text-[11px] text-slate-500">
+                                                                <CopyableUuid
+                                                                    value={trip.trip_id}
+                                                                    textClassName="max-w-[300px] truncate text-[11px]"
+                                                                    hintClassName="text-[9px]"
+                                                                />
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                </div>
-                                                <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
-                                                    <input
-                                                        key={`${trip.trip_id}-${trip.updated_at}`}
-                                                        type="datetime-local"
-                                                        defaultValue={toDateTimeInputValue(trip.trip_expires_at)}
-                                                        onBlur={(event) => {
-                                                            void handleTripPatch(trip, { tripExpiresAt: fromDateTimeInputValue(event.target.value) });
-                                                        }}
-                                                        className="h-8 rounded border border-slate-300 px-2"
-                                                    />
-                                                    <Select
-                                                        value={trip.status}
-                                                        onValueChange={(value) => {
-                                                            void handleTripPatch(trip, { status: value as 'active' | 'archived' | 'expired' });
-                                                        }}
+                                                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                                                        <input
+                                                            key={`${trip.trip_id}-${trip.updated_at}`}
+                                                            type="datetime-local"
+                                                            defaultValue={toDateTimeInputValue(trip.trip_expires_at)}
+                                                            onBlur={(event) => {
+                                                                void handleTripPatch(trip, { tripExpiresAt: fromDateTimeInputValue(event.target.value) });
+                                                            }}
+                                                            className="h-8 rounded border border-slate-300 px-2"
+                                                        />
+                                                        <Select
+                                                            value={trip.status}
+                                                            onValueChange={(value) => {
+                                                                void handleTripPatch(trip, { status: value as 'active' | 'archived' | 'expired' });
+                                                            }}
+                                                        >
+                                                            <SelectTrigger className="h-8 !w-[132px] min-w-[132px] text-xs">
+                                                                <SelectValue />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                <SelectItem value="active">Active</SelectItem>
+                                                                <SelectItem value="expired">Expired</SelectItem>
+                                                                <SelectItem value="archived">Archived</SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                        <span className="text-slate-500">
+                                                            Owner:{' '}
+                                                            {trip.owner_email || (
+                                                                <CopyableUuid
+                                                                    value={trip.owner_id}
+                                                                    className="align-middle"
+                                                                    textClassName="max-w-[280px] truncate text-xs"
+                                                                    hintClassName="text-[9px]"
+                                                                />
+                                                            )}
+                                                        </span>
+                                                    </div>
+                                                </article>
+                                            ))}
+                                        </div>
+                                        {connectedTripsPageCount > 1 && (
+                                            <div className="flex items-center justify-between border-t border-slate-200 pt-2 text-xs text-slate-500">
+                                                <span>Page {connectedTripsPage} / {connectedTripsPageCount}</span>
+                                                <div className="flex items-center gap-1">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setConnectedTripsPage((current) => Math.max(current - 1, 1))}
+                                                        disabled={connectedTripsPage <= 1}
+                                                        className="rounded border border-slate-300 px-2 py-1 disabled:opacity-50"
                                                     >
-                                                        <SelectTrigger className="h-8 w-[116px] text-xs">
-                                                            <SelectValue />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            <SelectItem value="active">Active</SelectItem>
-                                                            <SelectItem value="expired">Expired</SelectItem>
-                                                            <SelectItem value="archived">Archived</SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
-                                                    <span className="text-slate-500">
-                                                        Owner:{' '}
-                                                        {trip.owner_email || (
-                                                            <CopyableUuid
-                                                                value={trip.owner_id}
-                                                                className="align-middle"
-                                                                textClassName="max-w-[280px] truncate text-xs"
-                                                                hintClassName="text-[9px]"
-                                                            />
-                                                        )}
-                                                    </span>
+                                                        Prev
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setConnectedTripsPage((current) => Math.min(current + 1, connectedTripsPageCount))}
+                                                        disabled={connectedTripsPage >= connectedTripsPageCount}
+                                                        className="rounded border border-slate-300 px-2 py-1 disabled:opacity-50"
+                                                    >
+                                                        Next
+                                                    </button>
                                                 </div>
-                                            </article>
-                                        ))}
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                                 </section>
@@ -3311,80 +3804,105 @@ export const AdminUsersPage: React.FC = () => {
                                         <div className="text-sm text-slate-500">No user-originated changes recorded for this account yet.</div>
                                     ) : (
                                         <div className="space-y-2">
-                                            {selectedUserChangeEntries.map(({ log, actionPresentation, secondaryFacets, visibleDiffEntries, hiddenDiffCount }) => (
-                                                <article key={log.id} className="rounded-lg border border-slate-200 p-3">
-                                                    <div className="flex flex-wrap items-center justify-between gap-2">
-                                                        <div className="text-[11px] font-semibold text-slate-500">
-                                                            {new Date(log.created_at).toLocaleString()}
+                                            <div className="max-h-[30rem] space-y-2 overflow-y-auto pr-1">
+                                                {pagedUserChangeEntries.map(({ log, actionPresentation, secondaryFacets, visibleDiffEntries, hiddenDiffCount }) => (
+                                                    <article key={log.id} className="rounded-lg border border-slate-200 p-3">
+                                                        <div className="flex flex-wrap items-center justify-between gap-2">
+                                                            <div className="text-[11px] font-semibold text-slate-500">
+                                                                {new Date(log.created_at).toLocaleString()}
+                                                            </div>
+                                                            <span className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold ${actionPresentation.className}`}>
+                                                                {actionPresentation.label}
+                                                            </span>
                                                         </div>
-                                                        <span className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold ${actionPresentation.className}`}>
-                                                            {actionPresentation.label}
-                                                        </span>
-                                                    </div>
-                                                    {secondaryFacets.length > 0 && (
-                                                        <div className="mt-1 flex flex-wrap items-center gap-1">
-                                                            {secondaryFacets.map((facet, facetIndex) => (
-                                                                <span
-                                                                    key={`${log.id}-${buildSecondaryFacetRenderKey(facet, facetIndex)}`}
-                                                                    className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${facet.className}`}
-                                                                    title={facet.code}
-                                                                >
-                                                                    {facet.label}
-                                                                </span>
-                                                            ))}
-                                                        </div>
-                                                    )}
-                                                    <div className="mt-2 space-y-1 text-[11px] text-slate-600">
-                                                        <div><span className="font-semibold text-slate-700">Action:</span> <span className="font-mono">{log.action}</span></div>
-                                                        {log.source && (
-                                                            <div><span className="font-semibold text-slate-700">Source:</span> {log.source}</div>
-                                                        )}
-                                                        {log.target_type === 'trip' && log.target_id && (
-                                                            <div className="break-all">
-                                                                <span className="font-semibold text-slate-700">Trip:</span>{' '}
-                                                                <CopyableUuid value={log.target_id} textClassName="break-all text-[11px]" hintClassName="text-[9px]" />
+                                                        {secondaryFacets.length > 0 && (
+                                                            <div className="mt-1 flex flex-wrap items-center gap-1">
+                                                                {secondaryFacets.map((facet, facetIndex) => (
+                                                                    <span
+                                                                        key={`${log.id}-${buildSecondaryFacetRenderKey(facet, facetIndex)}`}
+                                                                        className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${facet.className}`}
+                                                                        title={facet.code}
+                                                                    >
+                                                                        {facet.label}
+                                                                    </span>
+                                                                ))}
                                                             </div>
                                                         )}
-                                                    </div>
-                                                    {visibleDiffEntries.length > 0 ? (
-                                                        <div className="mt-2 space-y-2">
-                                                            {visibleDiffEntries.map((entry, entryIndex) => (
-                                                                <article key={`${log.id}-${buildDiffEntryRenderKey(entry, entryIndex)}`} className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1.5">
-                                                                    <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
-                                                                        {formatFieldLabel(entry.key)}
-                                                                    </p>
-                                                                    <div className="mt-1 grid gap-1 lg:grid-cols-2">
-                                                                        <div className="rounded border border-rose-200 bg-rose-50 px-1.5 py-1 text-[11px] text-rose-900">
-                                                                            <span className="font-semibold">Before: </span>
-                                                                            <span className="break-all">{formatUserChangeDiffValue(entry, entry.beforeValue)}</span>
-                                                                        </div>
-                                                                        <div className="rounded border border-emerald-200 bg-emerald-50 px-1.5 py-1 text-[11px] text-emerald-900">
-                                                                            <span className="font-semibold">After: </span>
-                                                                            <span className="break-all">{formatUserChangeDiffValue(entry, entry.afterValue)}</span>
-                                                                        </div>
-                                                                    </div>
-                                                                </article>
-                                                            ))}
-                                                            {hiddenDiffCount > 0 && (
-                                                                <p className="text-[11px] font-semibold text-slate-500">
-                                                                    +{hiddenDiffCount} more changed field{hiddenDiffCount === 1 ? '' : 's'}
-                                                                </p>
+                                                        <div className="mt-2 space-y-1 text-[11px] text-slate-600">
+                                                            <div><span className="font-semibold text-slate-700">Action:</span> <span className="font-mono">{log.action}</span></div>
+                                                            {log.source && (
+                                                                <div><span className="font-semibold text-slate-700">Source:</span> {log.source}</div>
+                                                            )}
+                                                            {log.target_type === 'trip' && log.target_id && (
+                                                                <div className="break-all">
+                                                                    <span className="font-semibold text-slate-700">Trip:</span>{' '}
+                                                                    <CopyableUuid value={log.target_id} textClassName="break-all text-[11px]" hintClassName="text-[9px]" />
+                                                                </div>
                                                             )}
                                                         </div>
-                                                    ) : (
-                                                        <p className="mt-2 text-xs text-slate-500">No field diff recorded.</p>
-                                                    )}
-                                                    {canOpenUserChangeFullDiffModal(log) && (
+                                                        {visibleDiffEntries.length > 0 ? (
+                                                            <div className="mt-2 space-y-2">
+                                                                {visibleDiffEntries.map((entry, entryIndex) => (
+                                                                    <article key={`${log.id}-${buildDiffEntryRenderKey(entry, entryIndex)}`} className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1.5">
+                                                                        <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                                                                            {formatFieldLabel(entry.key)}
+                                                                        </p>
+                                                                        <div className="mt-1 grid gap-1 lg:grid-cols-2">
+                                                                            <div className="rounded border border-rose-200 bg-rose-50 px-1.5 py-1 text-[11px] text-rose-900">
+                                                                                <span className="font-semibold">Before: </span>
+                                                                                <span className="break-all">{formatUserChangeDiffValue(entry, entry.beforeValue)}</span>
+                                                                            </div>
+                                                                            <div className="rounded border border-emerald-200 bg-emerald-50 px-1.5 py-1 text-[11px] text-emerald-900">
+                                                                                <span className="font-semibold">After: </span>
+                                                                                <span className="break-all">{formatUserChangeDiffValue(entry, entry.afterValue)}</span>
+                                                                            </div>
+                                                                        </div>
+                                                                    </article>
+                                                                ))}
+                                                                {hiddenDiffCount > 0 && (
+                                                                    <p className="text-[11px] font-semibold text-slate-500">
+                                                                        +{hiddenDiffCount} more changed field{hiddenDiffCount === 1 ? '' : 's'}
+                                                                    </p>
+                                                                )}
+                                                            </div>
+                                                        ) : (
+                                                            <p className="mt-2 text-xs text-slate-500">No field diff recorded.</p>
+                                                        )}
+                                                        {canOpenUserChangeFullDiffModal(log) && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => void openUserChangeFullDiffModal(log)}
+                                                                className="mt-2 inline-flex h-7 items-center rounded-md border border-slate-300 px-2.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50"
+                                                            >
+                                                                Show complete diff
+                                                            </button>
+                                                        )}
+                                                    </article>
+                                                ))}
+                                            </div>
+                                            {userChangeLogsPageCount > 1 && (
+                                                <div className="flex items-center justify-between border-t border-slate-200 pt-2 text-xs text-slate-500">
+                                                    <span>Page {userChangeLogsPage} / {userChangeLogsPageCount}</span>
+                                                    <div className="flex items-center gap-1">
                                                         <button
                                                             type="button"
-                                                            onClick={() => void openUserChangeFullDiffModal(log)}
-                                                            className="mt-2 inline-flex h-7 items-center rounded-md border border-slate-300 px-2.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50"
+                                                            onClick={() => setUserChangeLogsPage((current) => Math.max(current - 1, 1))}
+                                                            disabled={userChangeLogsPage <= 1}
+                                                            className="rounded border border-slate-300 px-2 py-1 disabled:opacity-50"
                                                         >
-                                                            Show complete diff
+                                                            Prev
                                                         </button>
-                                                    )}
-                                                </article>
-                                            ))}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setUserChangeLogsPage((current) => Math.min(current + 1, userChangeLogsPageCount))}
+                                                            disabled={userChangeLogsPage >= userChangeLogsPageCount}
+                                                            className="rounded border border-slate-300 px-2 py-1 disabled:opacity-50"
+                                                        >
+                                                            Next
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                 </section>
@@ -3401,7 +3919,25 @@ export const AdminUsersPage: React.FC = () => {
                                         <div><span className="font-semibold text-slate-800">Activation:</span> {getActivationStatusLabel(resolveActivationStatus(selectedUser))}</div>
                                         <div><span className="font-semibold text-slate-800">Login method:</span> {getLoginMethodSummary(selectedUser)}</div>
                                         <div><span className="font-semibold text-slate-800">Account status:</span> {formatAccountStatusLabel((selectedUser.account_status || 'active') as UserAccountStatus)}</div>
-                                        <div><span className="font-semibold text-slate-800">Last visit:</span> {formatTimestamp(selectedUser.last_sign_in_at)}</div>
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <span><span className="font-semibold text-slate-800">Terms accepted version:</span> {selectedUser.terms_accepted_version || 'Not accepted yet'}</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => void handleResetTermsAcceptance()}
+                                                disabled={isSaving || !selectedUser.terms_accepted_version}
+                                                className="inline-flex h-6 items-center rounded-md border border-amber-300 bg-amber-50 px-2 text-[11px] font-semibold text-amber-800 hover:bg-amber-100 disabled:opacity-50"
+                                            >
+                                                Reset ToC acceptance
+                                            </button>
+                                        </div>
+                                        <div><span className="font-semibold text-slate-800">Terms accepted at:</span> {formatOptionalTimestamp(selectedUser.terms_accepted_at)}</div>
+                                        <div>
+                                            <span className="font-semibold text-slate-800">Last sign-in:</span>{' '}
+                                            {selectedUser.last_sign_in_at
+                                                ? `${formatRelativeTimestamp(selectedUser.last_sign_in_at, 'No visit yet')} (${formatTimestamp(selectedUser.last_sign_in_at)})`
+                                                : 'No visit yet'}
+                                        </div>
+                                        <div><span className="font-semibold text-slate-800">Last log:</span> {formatOptionalTimestamp(selectedUser.updated_at)}</div>
                                     </div>
                                 </section>
                             </div>

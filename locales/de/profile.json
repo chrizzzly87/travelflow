@@ -77,7 +77,8 @@
     },
     "expiredTag": "Abgelaufen",
     "expiredFallbackTitle": "Abgelaufener Reiseentwurf",
-    "hiddenTag": "Hidden"
+    "hiddenTag": "Hidden",
+    "generationFailedTag": "Generation failed"
   },
   "actions": {
     "title": "Schnellaktionen",

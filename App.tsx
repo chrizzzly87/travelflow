@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState, Suspense, lazy } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { AppLanguage, ITrip, IViewSettings } from './types';
+import { Scales } from '@phosphor-icons/react';
+import { AppLanguage, ITrip, ITimelineItem, IViewSettings } from './types';
 import { TripManagerProvider } from './contexts/TripManagerContext';
 import { CookieConsentBanner } from './components/marketing/CookieConsentBanner';
 import { saveTrip, getTripById } from './services/storageService';
@@ -13,6 +14,7 @@ import { trackEvent } from './services/analyticsService';
 import { resolveTripExpiryFromEntitlements } from './config/productLimits';
 import { applyDocumentLocale, DEFAULT_LOCALE, normalizeLocale } from './config/locales';
 import {
+    buildLocalizedMarketingPath,
     extractLocaleFromPath,
     getBlogSlugFromPath,
     isToolRoute,
@@ -24,6 +26,7 @@ import {
     dbAdminOverrideTripCommit,
     dbCanCreateTrip,
     dbCreateTripVersion,
+    dbGetTrip,
     dbUpsertTripWithStatus,
     dbUpsertUserSettings,
     ensureDbSession,
@@ -35,6 +38,7 @@ import { setCanonicalDocumentTitle } from './services/tripGenerationTabFeedbackS
 import { useAnalyticsBootstrap } from './app/bootstrap/useAnalyticsBootstrap';
 import { useAuthNavigationBootstrap } from './app/bootstrap/useAuthNavigationBootstrap';
 import { useDebuggerBootstrap } from './app/bootstrap/useDebuggerBootstrap';
+import { useNavigationContextBootstrap } from './app/bootstrap/useNavigationContextBootstrap';
 import { useWarmupGate } from './app/bootstrap/useWarmupGate';
 import { AppProviderShell } from './app/bootstrap/AppProviderShell';
 import { AppRoutes } from './app/routes/AppRoutes';
@@ -42,7 +46,49 @@ import { isFirstLoadCriticalPath } from './app/prefetch/isFirstLoadCriticalPath'
 import { useConnectivityStatus } from './hooks/useConnectivityStatus';
 import { enqueueTripCommitAndSync } from './services/tripSyncManager';
 import { GlobalConnectivityBadge } from './components/GlobalConnectivityBadge';
+import { normalizeTransportMode } from './shared/transportModes';
+import { showAppToast } from './components/ui/appToast';
+import { getTripGenerationState } from './services/tripGenerationDiagnosticsService';
+import {
+    buildTripCommitFingerprint,
+    createTripCommitDeduplicationState,
+    markTripCommitFingerprintCompleted,
+    markTripCommitFingerprintFailed,
+    markTripCommitFingerprintStarted,
+    resetTripCommitDeduplicationState,
+    shouldSkipTripCommitFingerprint,
+} from './services/tripCommitDeduplicationService';
+import {
+    listTripGenerationCompletionWatches,
+    removeTripGenerationCompletionWatch,
+    subscribeTripGenerationCompletionWatches,
+} from './services/tripGenerationCompletionWatchService';
+import {
+    buildPathFromLocationParts,
+    isSafeAuthReturnPath,
+} from './services/authNavigationService';
 const IS_DEV = Boolean((import.meta as any)?.env?.DEV);
+
+const toFiniteNumber = (value: unknown, fallback: number): number => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const normalizeSettingsForPersistence = (settings: IViewSettings): Required<Pick<IViewSettings,
+    'mapStyle' | 'routeMode' | 'layoutMode' | 'timelineMode' | 'timelineView' | 'showCityNames' | 'zoomLevel' | 'sidebarWidth' | 'timelineHeight'
+>> => ({
+    mapStyle: settings.mapStyle,
+    routeMode: settings.routeMode,
+    layoutMode: settings.layoutMode,
+    timelineMode: settings.timelineMode,
+    timelineView: settings.timelineView,
+    showCityNames: Boolean(settings.showCityNames),
+    zoomLevel: Number(toFiniteNumber(settings.zoomLevel, 1).toFixed(2)),
+    sidebarWidth: Math.round(toFiniteNumber(settings.sidebarWidth, 560)),
+    timelineHeight: Math.round(toFiniteNumber(settings.timelineHeight, 340)),
+});
+
+type TripCommitOutcome = 'remote' | 'queued' | 'permission_denied';
 
 const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
     moduleKey: string,
@@ -70,6 +116,41 @@ const SpeculationRulesManager = lazyWithRecovery(
     () => import('./components/SpeculationRulesManager').then((module) => ({ default: module.SpeculationRulesManager }))
 );
 const TRIP_MANAGER_FALLBACK_ROWS = [0, 1, 2, 3, 4, 5];
+
+const normalizeTripForRuntimeLoad = (trip: ITrip): ITrip => {
+    let didChange = false;
+
+    const normalizedItems = trip.items.map((item) => {
+        if (item.type !== 'travel' && item.type !== 'travel-empty') return item;
+
+        const nextMode = normalizeTransportMode(item.transportMode);
+        const nextType: ITimelineItem['type'] = nextMode === 'na' ? 'travel-empty' : 'travel';
+        const modeChanged = item.transportMode !== nextMode;
+        const typeChanged = item.type !== nextType;
+        const shouldClearRouteMetrics = (
+            modeChanged || nextMode === 'na'
+        ) && (
+            item.routeDistanceKm !== undefined || item.routeDurationHours !== undefined
+        );
+
+        if (!modeChanged && !typeChanged && !shouldClearRouteMetrics) return item;
+
+        didChange = true;
+        return {
+            ...item,
+            type: nextType,
+            transportMode: nextMode,
+            routeDistanceKm: shouldClearRouteMetrics ? undefined : item.routeDistanceKm,
+            routeDurationHours: shouldClearRouteMetrics ? undefined : item.routeDurationHours,
+        };
+    });
+
+    if (!didChange) return trip;
+    return {
+        ...trip,
+        items: normalizedItems,
+    };
+};
 
 const TripManagerLoadingFallback: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => (
     <>
@@ -204,17 +285,65 @@ const createLocalHistoryEntry = (
     return url;
 };
 
+const TERMS_EXEMPT_PATHS = new Set([
+    '/terms',
+    '/privacy',
+    '/cookies',
+    '/imprint',
+    '/login',
+    '/auth/reset-password',
+]);
+
+export const shouldRedirectToTermsAcceptance = (options: {
+    isAuthenticated: boolean;
+    isAuthLoading: boolean;
+    hasAccess: boolean;
+    isAnonymous: boolean;
+    isAdmin: boolean;
+    termsAcceptanceRequired: boolean;
+    pathname: string;
+}): boolean => {
+    if (options.isAuthLoading) return false;
+    if (!options.isAuthenticated || !options.hasAccess || options.isAnonymous) return false;
+    if (!options.termsAcceptanceRequired) return false;
+
+    const strippedPath = stripLocalePrefix(options.pathname);
+    if (options.isAdmin && strippedPath.startsWith('/admin')) return false;
+    if (TERMS_EXEMPT_PATHS.has(strippedPath)) return false;
+    return isToolRoute(options.pathname);
+};
+
+export type TermsNoticeState = 'none' | 'force' | 'inform';
+
+export const resolveTermsNoticeState = (options: {
+    isAuthenticated: boolean;
+    isAuthLoading: boolean;
+    hasAccess: boolean;
+    isAnonymous: boolean;
+    termsAcceptanceRequired: boolean;
+    termsNoticeRequired: boolean;
+}): TermsNoticeState => {
+    if (options.isAuthLoading) return 'none';
+    if (!options.isAuthenticated || !options.hasAccess || options.isAnonymous) return 'none';
+    if (options.termsAcceptanceRequired) return 'force';
+    if (options.termsNoticeRequired) return 'inform';
+    return 'none';
+};
+
 const AppContent: React.FC = () => {
-    const { i18n, t } = useTranslation(['common', 'pages', 'auth', 'wip']);
+    const { i18n, t } = useTranslation(['common', 'pages', 'auth', 'wip', 'legal', 'profile']);
     const { access, isAuthenticated, isLoading: isAuthLoading, logout } = useAuth();
     const [trip, setTrip] = useState<ITrip | null>(null);
     const [isManagerOpen, setIsManagerOpen] = useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+    const [dismissedTermsNoticeVersion, setDismissedTermsNoticeVersion] = useState<string | null>(null);
     const [appLanguage, setAppLanguage] = useState<AppLanguage>(() => getStoredAppLanguage());
     const navigate = useNavigate();
     const location = useLocation();
     const { snapshot: connectivitySnapshot } = useConnectivityStatus();
     const userSettingsSaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const pendingUserSettingsKeyRef = useRef<string | null>(null);
+    const persistedUserSettingsKeyRef = useRef<string | null>(null);
     const shouldLoadDebugger = useDebuggerBootstrap({ appName: APP_NAME, isDev: IS_DEV });
     const isFirstLoadCritical = useMemo(
         () => isFirstLoadCriticalPath(location.pathname),
@@ -224,6 +353,7 @@ const AppContent: React.FC = () => {
     const shouldSuppressSpeculationRules = isFirstLoadCritical;
 
     useAuthNavigationBootstrap();
+    useNavigationContextBootstrap();
     useAnalyticsBootstrap();
 
     useEffect(() => {
@@ -238,6 +368,138 @@ const AppContent: React.FC = () => {
         }
     }, [access, isAuthLoading, isAuthenticated, location.pathname, location.search, logout, navigate]);
 
+    useEffect(() => {
+        if (!isAuthenticated || !access || access.isAnonymous) return;
+
+        const WATCH_STALE_AFTER_MS = 30 * 60 * 1000;
+        let isCancelled = false;
+        const inFlight = new Set<string>();
+
+        const pollCompletionWatches = async (): Promise<void> => {
+            if (isCancelled) return;
+            const watches = listTripGenerationCompletionWatches();
+            if (!watches.length) return;
+
+            const now = Date.now();
+            await Promise.all(watches.map(async (watch) => {
+                if (isCancelled || inFlight.has(watch.tripId)) return;
+
+                if ((now - watch.startedAt) > WATCH_STALE_AFTER_MS) {
+                    removeTripGenerationCompletionWatch(watch.tripId);
+                    return;
+                }
+
+                inFlight.add(watch.tripId);
+                try {
+                    const remoteTripResult = await dbGetTrip(watch.tripId);
+                    const remoteTrip = remoteTripResult?.trip;
+                    if (!remoteTrip) return;
+
+                    const state = getTripGenerationState(remoteTrip, Date.now());
+                    if (state === 'running' || state === 'queued') return;
+
+                    removeTripGenerationCompletionWatch(watch.tripId);
+                    const actionLabel = t('cards.actions.open', { ns: 'profile' });
+                    const action = {
+                        label: actionLabel,
+                        onClick: () => {
+                            trackEvent('trip_generation__background_completion_toast--open', {
+                                trip_id: watch.tripId,
+                                source: watch.source,
+                                state,
+                            });
+                            navigate(`/trip/${watch.tripId}`);
+                        },
+                    };
+
+                    trackEvent('trip_generation__background_completion_toast--shown', {
+                        trip_id: watch.tripId,
+                        source: watch.source,
+                        state,
+                    });
+
+                    if (state === 'succeeded') {
+                        showAppToast({
+                            tone: 'add',
+                            title: t('tripView.generation.retry.completedTitle'),
+                            description: t('tripView.generation.retry.completed'),
+                            action,
+                        });
+                    } else {
+                        showAppToast({
+                            tone: 'warning',
+                            title: t('tripView.generation.retry.failedTitle'),
+                            description: t('tripView.generation.strip.failedDefault'),
+                            action,
+                        });
+                    }
+                } catch {
+                    // Ignore transient fetch errors; next poll continues.
+                } finally {
+                    inFlight.delete(watch.tripId);
+                }
+            }));
+        };
+
+        const unsubscribe = subscribeTripGenerationCompletionWatches(() => {
+            void pollCompletionWatches();
+        });
+        void pollCompletionWatches();
+        const intervalId = window.setInterval(() => {
+            void pollCompletionWatches();
+        }, 5000);
+
+        return () => {
+            isCancelled = true;
+            unsubscribe();
+            window.clearInterval(intervalId);
+        };
+    }, [access, isAuthenticated, navigate, t]);
+
+    useEffect(() => {
+        if (!shouldRedirectToTermsAcceptance({
+            isAuthenticated,
+            isAuthLoading,
+            hasAccess: Boolean(access),
+            isAnonymous: Boolean(access?.isAnonymous),
+            isAdmin: access?.role === 'admin',
+            termsAcceptanceRequired: Boolean(access?.termsAcceptanceRequired),
+            pathname: location.pathname,
+        })) {
+            return;
+        }
+
+        const localeFromPath = extractLocaleFromPath(location.pathname);
+        const activeLocale = localeFromPath ?? normalizeLocale(i18n.resolvedLanguage ?? i18n.language ?? appLanguage);
+        const termsPath = buildLocalizedMarketingPath('terms', activeLocale);
+        const currentRoutePath = buildPathFromLocationParts({
+            pathname: location.pathname,
+            search: location.search,
+            hash: location.hash,
+        });
+        const nextPath = isSafeAuthReturnPath(currentRoutePath) ? currentRoutePath : '/create-trip';
+        const query = new URLSearchParams();
+        query.set('accept', 'required');
+        query.set('next', nextPath);
+
+        const redirectTarget = `${termsPath}?${query.toString()}`;
+        const currentTarget = `${location.pathname}${location.search}`;
+        if (currentTarget === redirectTarget) return;
+
+        navigate(redirectTarget, { replace: true });
+    }, [
+        access,
+        appLanguage,
+        i18n.language,
+        i18n.resolvedLanguage,
+        isAuthLoading,
+        isAuthenticated,
+        location.hash,
+        location.pathname,
+        location.search,
+        navigate,
+    ]);
+
     const resolvedRouteLocale = useMemo<AppLanguage>(() => {
         const localeFromPath = extractLocaleFromPath(location.pathname);
         if (isToolRoute(location.pathname)) {
@@ -248,6 +510,77 @@ const AppContent: React.FC = () => {
         if (localeFromPath) return localeFromPath;
         return DEFAULT_LOCALE;
     }, [appLanguage, i18n.language, i18n.resolvedLanguage, location.pathname]);
+
+    const termsNoticeState = useMemo(
+        () => resolveTermsNoticeState({
+            isAuthenticated,
+            isAuthLoading,
+            hasAccess: Boolean(access),
+            isAnonymous: Boolean(access?.isAnonymous),
+            termsAcceptanceRequired: Boolean(access?.termsAcceptanceRequired),
+            termsNoticeRequired: Boolean(access?.termsNoticeRequired),
+        }),
+        [access, isAuthLoading, isAuthenticated]
+    );
+    const hasResolvedAuthAccess = !isAuthLoading && (!isAuthenticated || Boolean(access));
+    const forceRedirectApplies = hasResolvedAuthAccess && shouldRedirectToTermsAcceptance({
+        isAuthenticated,
+        isAuthLoading,
+        hasAccess: Boolean(access),
+        isAnonymous: Boolean(access?.isAnonymous),
+        isAdmin: access?.role === 'admin',
+        termsAcceptanceRequired: Boolean(access?.termsAcceptanceRequired),
+        pathname: location.pathname,
+    });
+
+    const termsNoticeVersion = access?.termsCurrentVersion ?? null;
+    const shouldShowInformTermsNotice = (
+        termsNoticeState === 'inform'
+        && Boolean(termsNoticeVersion)
+        && dismissedTermsNoticeVersion !== termsNoticeVersion
+    );
+    const shouldShowForceTermsNotice = termsNoticeState === 'force';
+    const isTermsRoute = stripLocalePrefix(location.pathname) === '/terms';
+    const shouldEvaluateTermsGate = isToolRoute(location.pathname) && !isTermsRoute;
+    const canResolveTermsGate = !isAuthLoading && (!isAuthenticated || Boolean(access));
+    const shouldBlockForTermsGate = shouldEvaluateTermsGate && (!canResolveTermsGate || forceRedirectApplies);
+    const shouldRenderTermsNotice = (
+        hasResolvedAuthAccess
+        && !isTermsRoute
+        && (shouldShowForceTermsNotice || shouldShowInformTermsNotice)
+        && !forceRedirectApplies
+    );
+
+    useEffect(() => {
+        if (!termsNoticeVersion) {
+            if (dismissedTermsNoticeVersion !== null) {
+                setDismissedTermsNoticeVersion(null);
+            }
+            return;
+        }
+        if (dismissedTermsNoticeVersion && dismissedTermsNoticeVersion !== termsNoticeVersion) {
+            setDismissedTermsNoticeVersion(null);
+        }
+    }, [dismissedTermsNoticeVersion, termsNoticeVersion]);
+
+    const openTermsFromNotice = useCallback((mode: 'force' | 'inform') => {
+        const termsPath = buildLocalizedMarketingPath('terms', resolvedRouteLocale);
+        const query = new URLSearchParams();
+        if (mode === 'force') {
+            const currentRoutePath = buildPathFromLocationParts({
+                pathname: location.pathname,
+                search: location.search,
+                hash: location.hash,
+            });
+            const nextPath = isSafeAuthReturnPath(currentRoutePath) ? currentRoutePath : '/create-trip';
+            query.set('accept', 'required');
+            query.set('next', nextPath);
+        } else {
+            query.set('notice', 'updated');
+        }
+        const target = query.size > 0 ? `${termsPath}?${query.toString()}` : termsPath;
+        navigate(target, { replace: false });
+    }, [location.hash, location.pathname, location.search, navigate, resolvedRouteLocale]);
 
     const pageTitleLabels = useMemo(() => ({
         features: t('nav.features', { ns: 'common' }),
@@ -331,31 +664,43 @@ const AppContent: React.FC = () => {
         }
     }, [access, appLanguage, isAuthenticated]);
 
-    const handleViewSettingsChange = (settings: IViewSettings) => {
-        if (!DB_ENABLED) return;
-        if (!isAuthenticated || !access || access.isAnonymous) return;
+    useEffect(() => {
+        return () => {
+            if (!userSettingsSaveRef.current) return;
+            clearTimeout(userSettingsSaveRef.current);
+            userSettingsSaveRef.current = null;
+        };
+    }, []);
+
+    const canPersistViewSettings = DB_ENABLED && isAuthenticated && access?.isAnonymous !== true;
+
+    const handleViewSettingsChange = useCallback((settings: IViewSettings) => {
+        if (!canPersistViewSettings) return;
+        const normalized = normalizeSettingsForPersistence(settings);
+        const payloadKey = JSON.stringify(normalized);
+        if (
+            payloadKey === pendingUserSettingsKeyRef.current
+            || payloadKey === persistedUserSettingsKeyRef.current
+        ) {
+            return;
+        }
         if (userSettingsSaveRef.current) {
             clearTimeout(userSettingsSaveRef.current);
         }
+        pendingUserSettingsKeyRef.current = payloadKey;
         userSettingsSaveRef.current = setTimeout(() => {
-            void dbUpsertUserSettings({
-                mapStyle: settings.mapStyle,
-                routeMode: settings.routeMode,
-                layoutMode: settings.layoutMode,
-                timelineMode: settings.timelineMode,
-                timelineView: settings.timelineView,
-                showCityNames: settings.showCityNames,
-                zoomLevel: settings.zoomLevel,
-                sidebarWidth: settings.sidebarWidth,
-                timelineHeight: settings.timelineHeight,
-            });
+            const persist = async () => {
+                await dbUpsertUserSettings(normalized);
+                persistedUserSettingsKeyRef.current = payloadKey;
+            };
+            void persist();
         }, 800);
-    };
+    }, [canPersistViewSettings]);
 
-    const handleUpdateTrip = useCallback((updatedTrip: ITrip, options?: { persist?: boolean }) => {
+    const handleUpdateTrip = useCallback((updatedTrip: ITrip, options?: { persist?: boolean; preserveUpdatedAt?: boolean }) => {
         setTrip(updatedTrip);
         if (options?.persist === false) return;
-        saveTrip(updatedTrip);
+        saveTrip(updatedTrip, { preserveUpdatedAt: options?.preserveUpdatedAt === true });
     }, []);
 
     const handleTripManagerUpdate = useCallback((updatedTrip: ITrip) => {
@@ -365,6 +710,11 @@ const AppContent: React.FC = () => {
             return updatedTrip;
         });
     }, []);
+    const tripCommitDeduplicationRef = useRef(createTripCommitDeduplicationState());
+
+    useEffect(() => {
+        resetTripCommitDeduplicationState(tripCommitDeduplicationRef.current);
+    }, [trip?.id]);
 
     const enqueueTripCommitFallback = useCallback((updatedTrip: ITrip, view: IViewSettings | undefined, label: string) => {
         enqueueTripCommitAndSync({
@@ -379,41 +729,54 @@ const AppContent: React.FC = () => {
         updatedTrip: ITrip,
         view: IViewSettings | undefined,
         label: string,
-    ): Promise<boolean> => {
+    ): Promise<TripCommitOutcome> => {
         const canAttemptRemote = DB_ENABLED && connectivitySnapshot.state === 'online';
         if (!canAttemptRemote) {
             enqueueTripCommitFallback(updatedTrip, view, label);
-            return false;
+            return 'queued';
         }
 
         const sessionId = await ensureDbSession();
         if (!sessionId) {
             enqueueTripCommitFallback(updatedTrip, view, label);
-            return false;
+            return 'queued';
         }
 
         const upsertResult = await dbUpsertTripWithStatus(updatedTrip, view);
         if (!upsertResult.tripId) {
             if (upsertResult.isPermissionError) {
-                return false;
+                return 'permission_denied';
             }
             enqueueTripCommitFallback(updatedTrip, view, label);
-            return false;
+            return 'queued';
         }
         const versionId = await dbCreateTripVersion(updatedTrip, view, label);
         if (!versionId) {
             enqueueTripCommitFallback(updatedTrip, view, label);
-            return false;
+            return 'queued';
         }
-        return true;
+        return 'remote';
     }, [connectivitySnapshot.state, enqueueTripCommitFallback]);
 
     const handleCommitState = (updatedTrip: ITrip, view: IViewSettings | undefined, options?: { replace?: boolean; label?: string; adminOverride?: boolean }) => {
         const label = options?.label || 'Updated trip';
         const commitTs = Date.now();
+        const commitFingerprint = buildTripCommitFingerprint({
+            trip: updatedTrip,
+            view,
+            label,
+            adminOverride: options?.adminOverride === true,
+        });
+
+        if (shouldSkipTripCommitFingerprint(tripCommitDeduplicationRef.current, commitFingerprint)) {
+            return;
+        }
+
+        markTripCommitFingerprintStarted(tripCommitDeduplicationRef.current, commitFingerprint);
 
         if (!DB_ENABLED) {
             createLocalHistoryEntry(navigate, updatedTrip, view, label, options, commitTs);
+            markTripCommitFingerprintCompleted(tripCommitDeduplicationRef.current, commitFingerprint);
             return;
         }
 
@@ -422,12 +785,24 @@ const AppContent: React.FC = () => {
         const commit = async () => {
             if (options?.adminOverride) {
                 const sessionId = await ensureDbSession();
-                if (!sessionId) return;
+                if (!sessionId) {
+                    markTripCommitFingerprintFailed(tripCommitDeduplicationRef.current, commitFingerprint);
+                    return;
+                }
                 const overrideCommit = await dbAdminOverrideTripCommit(updatedTrip, view, label);
-                if (!overrideCommit?.tripId || !overrideCommit.versionId) return;
+                if (!overrideCommit?.tripId || !overrideCommit.versionId) {
+                    markTripCommitFingerprintFailed(tripCommitDeduplicationRef.current, commitFingerprint);
+                    return;
+                }
+                markTripCommitFingerprintCompleted(tripCommitDeduplicationRef.current, commitFingerprint);
                 return;
             }
-            await commitOwnedTripResilient(updatedTrip, view, label);
+            const outcome = await commitOwnedTripResilient(updatedTrip, view, label);
+            if (outcome === 'remote' || outcome === 'queued') {
+                markTripCommitFingerprintCompleted(tripCommitDeduplicationRef.current, commitFingerprint);
+                return;
+            }
+            markTripCommitFingerprintFailed(tripCommitDeduplicationRef.current, commitFingerprint);
         };
 
         void commit();
@@ -513,8 +888,12 @@ const AppContent: React.FC = () => {
         void create();
     };
 
+    const handleRouteTripLoaded = useCallback((loadedTrip: ITrip) => {
+        setTrip(normalizeTripForRuntimeLoad(loadedTrip));
+    }, []);
+
     const handleLoadTrip = (loadedTrip: ITrip) => {
-        setTrip(loadedTrip);
+        setTrip(normalizeTripForRuntimeLoad(loadedTrip));
         setIsManagerOpen(false);
         navigate(buildTripUrl(loadedTrip.id));
     };
@@ -538,18 +917,84 @@ const AppContent: React.FC = () => {
                     <SpeculationRulesManager enabled={!shouldSuppressSpeculationRules} />
                 </Suspense>
             )}
-            <AppRoutes
-                trip={trip}
-                appLanguage={appLanguage}
-                onAppLanguageLoaded={setAppLanguage}
-                onTripGenerated={handleTripGenerated}
-                onTripLoaded={setTrip}
-                onUpdateTrip={handleUpdateTrip}
-                onCommitState={handleCommitState}
-                onViewSettingsChange={handleViewSettingsChange}
-                onOpenManager={openTripManager}
-                onOpenSettings={() => setIsSettingsOpen(true)}
-            />
+            {shouldRenderTermsNotice && (
+                <section
+                    className={`mx-auto w-full max-w-[1600px] px-4 pt-3 ${shouldShowForceTermsNotice ? 'text-rose-950' : 'text-accent-950'} sm:px-6 lg:px-8`}
+                    aria-live={shouldShowForceTermsNotice ? 'assertive' : 'polite'}
+                >
+                    <div
+                        className={`rounded-2xl border px-4 py-3 shadow-sm sm:flex sm:items-start sm:justify-between sm:gap-4 ${
+                            shouldShowForceTermsNotice
+                                ? 'border-rose-200 bg-rose-50'
+                                : 'border-accent-200 bg-accent-50'
+                        }`}
+                    >
+                        <div className="flex min-w-0 items-start gap-3">
+                            <span
+                                className={`mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border ${
+                                    shouldShowForceTermsNotice
+                                        ? 'border-rose-200 bg-rose-100 text-rose-700'
+                                        : 'border-accent-200 bg-accent-100 text-accent-700'
+                                }`}
+                                aria-hidden="true"
+                            >
+                                <Scales size={18} weight="duotone" />
+                            </span>
+                            <div className="min-w-0">
+                                <p className="text-sm font-semibold">
+                                    {shouldShowForceTermsNotice
+                                        ? t('termsPage.globalForceTitle', { ns: 'legal' })
+                                        : t('termsPage.globalInformTitle', { ns: 'legal' })}
+                                </p>
+                                <p className="mt-1 text-xs leading-5">
+                                    {shouldShowForceTermsNotice
+                                        ? t('termsPage.globalForceDescription', { ns: 'legal' })
+                                        : t('termsPage.globalInformDescription', { ns: 'legal' })}
+                                </p>
+                                {termsNoticeVersion && (
+                                    <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.1em] opacity-80">
+                                        {t('termsPage.versionLabel', { ns: 'legal' })}: {termsNoticeVersion}
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+                        <div className="mt-3 flex items-center gap-2 sm:mt-0">
+                            <button
+                                type="button"
+                                onClick={() => openTermsFromNotice(shouldShowForceTermsNotice ? 'force' : 'inform')}
+                                className="inline-flex h-9 items-center rounded-lg bg-accent-700 px-3 text-xs font-semibold text-white hover:bg-accent-800"
+                            >
+                                {t('termsPage.globalReviewAction', { ns: 'legal' })}
+                            </button>
+                            {shouldShowInformTermsNotice && termsNoticeVersion && (
+                                <button
+                                    type="button"
+                                    onClick={() => setDismissedTermsNoticeVersion(termsNoticeVersion)}
+                                    className="inline-flex h-9 items-center rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-900 hover:bg-slate-50"
+                                >
+                                    {t('termsPage.globalDismissAction', { ns: 'legal' })}
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </section>
+            )}
+            {shouldBlockForTermsGate ? (
+                <div className="min-h-screen w-full bg-white" aria-hidden="true" />
+            ) : (
+                <AppRoutes
+                    trip={trip}
+                    appLanguage={appLanguage}
+                    onAppLanguageLoaded={setAppLanguage}
+                    onTripGenerated={handleTripGenerated}
+                    onTripLoaded={handleRouteTripLoaded}
+                    onUpdateTrip={handleUpdateTrip}
+                    onCommitState={handleCommitState}
+                    onViewSettingsChange={handleViewSettingsChange}
+                    onOpenManager={openTripManager}
+                    onOpenSettings={() => setIsSettingsOpen(true)}
+                />
+            )}
 
             {isManagerOpen && (
                 <Suspense fallback={<TripManagerLoadingFallback isOpen={isManagerOpen} onClose={() => setIsManagerOpen(false)} />}>

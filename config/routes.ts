@@ -25,12 +25,7 @@ export type RouteKey =
     | 'cookies'
     | 'createTrip'
     | 'createTripClassicLab'
-    | 'createTripClassicLegacyLab'
-    | 'createTripSplitWorkspaceLab'
-    | 'createTripJourneyArchitectLab'
-    | 'createTripDesignV1Lab'
-    | 'createTripDesignV2Lab'
-    | 'createTripDesignV3Lab'
+    | 'createTripWizard'
     | 'tripDetail'
     | 'tripLegacy'
     | 'exampleTrip'
@@ -40,6 +35,7 @@ export type RouteKey =
     | 'adminTrips'
     | 'adminTiers'
     | 'adminAudit'
+    | 'adminLegal'
     | 'adminAiBenchmark'
     | 'adminDesignSystemPlayground'
     | 'profile'
@@ -169,18 +165,8 @@ export const buildPath = <K extends RouteKey>(
             return '/create-trip';
         case 'createTripClassicLab':
             return '/create-trip/labs/classic-card';
-        case 'createTripClassicLegacyLab':
-            return '/create-trip/labs/classic-legacy';
-        case 'createTripSplitWorkspaceLab':
-            return '/create-trip/labs/split-workspace';
-        case 'createTripJourneyArchitectLab':
-            return '/create-trip/labs/journey-architect';
-        case 'createTripDesignV1Lab':
-            return '/create-trip/labs/design-v1';
-        case 'createTripDesignV2Lab':
-            return '/create-trip/labs/design-v2';
-        case 'createTripDesignV3Lab':
-            return '/create-trip/labs/design-v3';
+        case 'createTripWizard':
+            return '/create-trip/wizard';
         case 'tripDetail':
             return `/trip/${encodeSegment((params as RouteParamsByKey['tripDetail']).tripId)}`;
         case 'tripLegacy':
@@ -199,6 +185,8 @@ export const buildPath = <K extends RouteKey>(
             return '/admin/tiers';
         case 'adminAudit':
             return '/admin/audit';
+        case 'adminLegal':
+            return '/admin/legal';
         case 'adminAiBenchmark':
             return '/admin/ai-benchmark';
         case 'adminDesignSystemPlayground':
@@ -298,7 +286,7 @@ export const getNamespacesForMarketingPath = (pathname: string): string[] => {
     if (stripped === '/pricing') return ['common', 'pricing'];
     if (stripped.startsWith('/blog')) return ['common', 'blog'];
     if (['/imprint', '/privacy', '/terms', '/cookies'].includes(stripped)) return ['common', 'legal'];
-    if (stripped === '/faq') return ['common', 'wip'];
+    if (stripped === '/faq') return ['common'];
     if (stripped === '/login') return ['common', 'auth'];
     return ['common', 'pages'];
 };

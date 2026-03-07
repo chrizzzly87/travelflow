@@ -5,6 +5,7 @@ import { normalizeActivityTypes, normalizeCityColors } from '../../utils';
 interface UpdateItemsOptions {
     deferCommit?: boolean;
     skipPendingLabel?: boolean;
+    suppressCommitToast?: boolean;
 }
 
 interface UseTripUpdateItemsHandlerParams {
@@ -14,7 +15,7 @@ interface UseTripUpdateItemsHandlerParams {
     safeUpdateTrip: (updatedTrip: ITrip, options?: { persist?: boolean }) => void;
     setPendingLabel: (label: string) => void;
     pendingHistoryLabelRef: MutableRefObject<string | null>;
-    scheduleCommit: (nextTrip?: ITrip, nextView?: IViewSettings) => void;
+    scheduleCommit: (nextTrip?: ITrip, nextView?: IViewSettings, options?: { skipToast?: boolean }) => void;
     normalizeOffsetsForTrip: (
         items: ITimelineItem[],
         startDate: string
@@ -119,7 +120,11 @@ export const useTripUpdateItemsHandler = ({
 
     const updatedTrip = { ...trip, startDate: nextTripStartDate, items: normalizedItems, updatedAt: Date.now() };
     safeUpdateTrip(updatedTrip, { persist: true });
-    scheduleCommit(updatedTrip, currentViewSettings);
+    scheduleCommit(
+        updatedTrip,
+        currentViewSettings,
+        options?.suppressCommitToast ? { skipToast: true } : undefined
+    );
 }, [
     currentViewSettings,
     markUserEdit,

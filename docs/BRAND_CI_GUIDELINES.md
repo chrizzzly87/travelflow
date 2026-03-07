@@ -26,6 +26,15 @@ Use this file as the source of truth for new UI components, banners, and marketi
 - Admin UI component inventory source of truth is `/admin/design-system-playground`; when introducing a new shared component or major variant, add it to the playground in the same PR.
 - Prefer reusing component patterns already represented in the playground instead of introducing parallel one-off variants.
 
+## Admin Data Tables
+- Use shared table primitives from `components/ui/table.tsx`; do not introduce one-off wrappers.
+- Table scroll wrappers must keep `overscroll-behavior: none` to avoid bounce-back horizontal snapping.
+- For large admin grids, use content-aware column sizing for non-sticky columns plus explicit sticky key-column widths (checkbox + primary entity columns).
+- Keep table width at least the design minimum while still filling the container (`max(100%, <min-width>)`) so columns stay readable and avoid overlap on sort/filter reordering.
+- For selectable admin tables, treat checkbox + primary entity columns as one sticky region and keep the trailing sticky column responsible for separator/shadow rendering.
+- Keep sort behavior visually consistent: sorted header uses accent header tint, sorted cells use subtle accent cell tint.
+- Any new admin table variant must be represented in `/admin/design-system-playground` under the table component group.
+
 ## Toast Rules
 - All product toasts must route through `showAppToast(...)` in `components/ui/appToast.tsx`.
 - Do not import `sonner` directly outside `components/ui/appToast.tsx` and `components/ui/sonner.tsx`.

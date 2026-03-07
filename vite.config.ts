@@ -11,6 +11,11 @@ export default defineConfig(({ mode }) => {
             strictPort: false,
             host: '0.0.0.0',
             proxy: {
+                '/api/internal/ai/generation-worker': {
+                    target: 'http://localhost:8888',
+                    changeOrigin: true,
+                    secure: false,
+                },
                 '/api/internal/admin/iam': {
                     target: 'http://localhost:8888',
                     changeOrigin: true,
@@ -27,6 +32,11 @@ export default defineConfig(({ mode }) => {
                     secure: false,
                 },
                 '/api/billing/paddle/webhook': {
+                    target: 'http://localhost:8888',
+                    changeOrigin: true,
+                    secure: false,
+                },
+                '/api/trip-map-preview': {
                     target: 'http://localhost:8888',
                     changeOrigin: true,
                     secure: false,

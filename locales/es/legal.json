@@ -53,5 +53,32 @@
     "stateAll": "Aceptar todo",
     "stateEssential": "Solo esenciales",
     "stateUnset": "Sin definir"
+  },
+  "termsPage": {
+    "heroEyebrow": "Términos del servicio · AGB",
+    "heroTitle": "Términos del servicio / Allgemeine Geschäftsbedingungen",
+    "heroIntro": "Estos términos regulan el uso de {appName}.",
+    "heroBindingNote": "El texto en alemán que aparece abajo es la versión legalmente vinculante. El texto en inglés se ofrece solo como ayuda.",
+    "versionLabel": "Versión",
+    "lastUpdatedLabel": "Última actualización",
+    "controllerInfoLead": "La información del responsable está disponible en el",
+    "imprintLinkLabel": "Aviso legal",
+    "privacyInfoLead": "Los detalles del tratamiento de datos están disponibles en la",
+    "privacyLinkLabel": "Política de privacidad",
+    "acceptRequiredTitle": "Acción requerida: acepta los términos actuales para seguir usando tu cuenta.",
+    "acceptRequiredDescription": "Puedes revisar ambas versiones antes de confirmar.",
+    "acceptSubmit": "Aceptar términos actuales y continuar",
+    "acceptSubmitting": "Guardando aceptación...",
+    "acceptError": "No pudimos guardar tu aceptación de los términos en este momento. Inténtalo de nuevo.",
+    "bindingSectionTitle": "Versión vinculante (alemán)",
+    "helperSectionTitle": "Traducción de apoyo (inglés, no vinculante)",
+    "globalForceTitle": "Acción requerida: los términos actualizados requieren tu aceptación.",
+    "globalForceDescription": "Revisa la versión más reciente de los términos y confirma tu aceptación para seguir usando funciones protegidas de la cuenta.",
+    "globalInformTitle": "Términos actualizados: revisa la versión legal más reciente.",
+    "globalInformDescription": "Esta actualización es solo informativa (sin reaceptación forzada), pero debes revisar el texto más reciente.",
+    "globalReviewAction": "Revisar términos",
+    "globalDismissAction": "Ocultar por ahora",
+    "acceptOptionalTitle": "Confirmación opcional: reconoce la versión más reciente de los términos.",
+    "acceptOptionalDescription": "Puedes confirmar la aceptación ahora para dejar de ver avisos de actualización de esta versión."
   }
 }

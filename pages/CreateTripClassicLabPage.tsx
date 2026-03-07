@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import {
     AirplaneTilt,
     Bicycle,
@@ -45,7 +45,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { SiteHeader } from '../components/navigation/SiteHeader';
 import { SiteFooter } from '../components/marketing/SiteFooter';
-import { useAppDialog } from '../components/AppDialogProvider';
+import { CreateTripWizardCtaBanner } from '../components/create-trip/CreateTripWizardCtaBanner';
 import { DateRangePicker } from '../components/DateRangePicker';
 import { IdealTravelTimeline } from '../components/IdealTravelTimeline';
 import { FlagIcon } from '../components/flags/FlagIcon';
@@ -58,17 +58,35 @@ import { useDbSync } from '../hooks/useDbSync';
 import { useConnectivityStatus } from '../hooks/useConnectivityStatus';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { useSyncStatus } from '../hooks/useSyncStatus';
-import { generateItinerary } from '../services/aiService';
+import { useAuth } from '../hooks/useAuth';
+import { buildClassicItineraryPrompt } from '../services/aiService';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
 import {
+    buildLoginPathWithNext,
+    rememberAuthReturnPath,
+    setPendingAuthRedirect,
+} from '../services/authNavigationService';
+import { ensureDbSession } from '../services/dbService';
+import { dbUpsertTrip } from '../services/dbApi';
+import { createTripGenerationRequest } from '../services/tripGenerationQueueService';
+import {
+    finishTripGenerationAttemptLog,
+    startTripGenerationAttemptLog,
+} from '../services/tripGenerationAttemptLogService';
+import {
+    createTripGenerationInputSnapshot,
+    createTripGenerationRequestId,
+    markTripGenerationFailed,
+    markTripGenerationRunning,
+    withLatestTripGenerationAttemptId,
+} from '../services/tripGenerationDiagnosticsService';
+import {
     beginTripGenerationTabFeedback,
-    getTripReadyNotificationPermission,
-    requestTripReadyNotificationPermission,
-    sendTripReadyNotification,
     type TripGenerationTabFeedbackSession,
 } from '../services/tripGenerationTabFeedbackService';
+import { enqueueClassicAsyncTripGenerationJob } from '../services/tripGenerationAsyncEnqueueService';
+import { waitForTripAttemptPersistence, waitForTripPersistence } from '../services/tripGenerationPersistenceService';
 import { getCountrySeasonByName } from '../data/countryTravelData';
-import { buildPath } from '../config/routes';
 import { AppLanguage, ITrip, TripPrefillData } from '../types';
 import {
     addDays,
@@ -270,7 +288,7 @@ const buildLoadingTripPreview = (params: {
 
     return {
         id: params.tripId,
-        title: `Planning ${params.destinationLabel || 'Trip'}...`,
+        title: params.destinationLabel || 'Trip draft',
         startDate: params.startDate,
         items,
         createdAt: now,
@@ -334,8 +352,10 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
     onLanguageLoaded,
 }) => {
     const { t, i18n } = useTranslation('createTrip');
-    const { confirm: confirmDialog } = useAppDialog();
+    const navigate = useNavigate();
+    const location = useLocation();
     const [searchParams] = useSearchParams();
+    const { isAuthenticated, isAnonymous } = useAuth();
     const { snapshot: connectivitySnapshot } = useConnectivityStatus();
     const { snapshot: syncSnapshot, retrySyncNow } = useSyncStatus();
     const { isOnline: isBrowserOnline } = useNetworkStatus({ probeWhileOffline: false });
@@ -1180,18 +1200,6 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
     const getFlexWindowOption = useCallback((value: FlexWindow) => (
         FLEX_WINDOW_OPTIONS.find((entry) => entry.id === value) ?? FLEX_WINDOW_OPTIONS[0]
     ), []);
-    const labRouteLinks = useMemo(
-        () => [
-            { key: 'legacy', path: buildPath('createTripClassicLegacyLab') },
-            { key: 'classicCard', path: buildPath('createTripClassicLab') },
-            { key: 'splitWorkspace', path: buildPath('createTripSplitWorkspaceLab') },
-            { key: 'journeyArchitect', path: buildPath('createTripJourneyArchitectLab') },
-            { key: 'designV1', path: buildPath('createTripDesignV1Lab') },
-            { key: 'designV2', path: buildPath('createTripDesignV2Lab') },
-            { key: 'designV3', path: buildPath('createTripDesignV3Lab') },
-        ] as const,
-        []
-    );
     const isLgbtqCoupleMode = settingsTraveler === 'couple' && coupleTravelerA !== '' && coupleTravelerB !== '' && (
         coupleTravelerA === 'non-binary'
         || coupleTravelerB === 'non-binary'
@@ -1501,31 +1509,6 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
         });
     };
 
-    const requestGenerationNotificationPermission = useCallback(async (): Promise<NotificationPermission | 'unsupported'> => {
-        const currentPermission = getTripReadyNotificationPermission();
-        if (currentPermission !== 'default') return currentPermission;
-
-        trackEvent('create_trip__notifications--prompt');
-        const shouldEnable = await confirmDialog({
-            title: t('notifications.prompt.title'),
-            message: (
-                <p>{t('notifications.prompt.message')}</p>
-            ),
-            confirmLabel: t('notifications.prompt.enable'),
-            cancelLabel: t('notifications.prompt.notNow'),
-        });
-
-        if (!shouldEnable) {
-            trackEvent('create_trip__notifications--not_now');
-            return currentPermission;
-        }
-
-        trackEvent('create_trip__notifications--enable');
-        const requestedPermission = await requestTripReadyNotificationPermission();
-        trackEvent('create_trip__notifications--permission', { permission: requestedPermission });
-        return requestedPermission;
-    }, [confirmDialog, t]);
-
     const handleGenerateTrip = async () => {
         if (isSubmitting) return;
         if (isGenerationBlockedOffline) {
@@ -1541,13 +1524,6 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
         setIsSubmitting(true);
         setSubmitError(null);
 
-        let notificationPermission: NotificationPermission | 'unsupported' = getTripReadyNotificationPermission();
-        try {
-            notificationPermission = await requestGenerationNotificationPermission();
-        } catch {
-            notificationPermission = getTripReadyNotificationPermission();
-        }
-
         trackEvent('create_trip__cta--generate', {
             destination_count: orderedDestinations.length,
             date_mode: dateInputMode,
@@ -1557,11 +1533,132 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
             model: selectedAiModel.model,
         });
 
+        const sessionUserId = await ensureDbSession();
+        if (!sessionUserId) {
+            const authRedirect = buildLoginPathWithNext({
+                pathname: location.pathname,
+                search: location.search,
+                hash: location.hash,
+                language: i18n.language,
+                resolvedLanguage: i18n.resolvedLanguage,
+            });
+            rememberAuthReturnPath(authRedirect.nextPath);
+            setPendingAuthRedirect(authRedirect.nextPath, 'create_trip_generate');
+            trackEvent('create_trip__cta--redirect_login', {
+                reason: 'missing_db_session',
+                has_authenticated_access: isAuthenticated,
+                is_anonymous_access: isAnonymous,
+            });
+            setIsSubmitting(false);
+            navigate(authRedirect.loginTarget);
+            return;
+        }
+
         const destinationPromptLabels = orderedDestinations.map((destination) => getDestinationPromptLabel(destination));
         const localizedDestinationLabels = orderedDestinations.map((destination) => getLocalizedDestinationLabel(destination));
         const destinationLabel = formatDestinationList(localizedDestinationLabels);
+        const destinationPrompt = destinationPromptLabels.join(', ');
+        const notesInterests = notes
+            .split(',')
+            .map((token) => token.trim())
+            .filter(Boolean);
+        const classicGenerateOptions = {
+            budget,
+            pace,
+            interests: notesInterests.length > 0 ? notesInterests : undefined,
+            roundTrip,
+            totalDays: dayCount,
+            aiTarget: {
+                provider: selectedAiModel.provider,
+                model: selectedAiModel.model,
+            },
+        };
+
+        if (!isAuthenticated) {
+            try {
+                const queuedRequest = await createTripGenerationRequest('classic', {
+                    version: 1,
+                    flow: 'classic',
+                    destinationLabel,
+                    startDate,
+                    endDate,
+                    destinationPrompt,
+                    options: classicGenerateOptions,
+                });
+                const queueRequestId = queuedRequest.requestId;
+                const requestId = createTripGenerationRequestId();
+                const optimisticTripId = generateTripId();
+                const optimisticBaseTrip = buildLoadingTripPreview({
+                    tripId: optimisticTripId,
+                    destinationLabel,
+                    focusLocations: localizedDestinationLabels,
+                    startDate,
+                    totalDays: dayCount,
+                    requestedStops: Math.max(orderedDestinations.length, 2),
+                    roundTrip,
+                });
+                const pendingAuthTrip = markTripGenerationFailed({
+                    ...optimisticBaseTrip,
+                    items: optimisticBaseTrip.items.map((item) => ({
+                        ...item,
+                        loading: false,
+                    })),
+                    updatedAt: Date.now(),
+                }, {
+                    flow: 'classic',
+                    source: 'create_trip_classic_lab_pending_auth',
+                    error: new Error('Sign in to start generation for this trip.'),
+                    provider: selectedAiModel.provider,
+                    model: selectedAiModel.model,
+                    requestId,
+                    metadata: {
+                        pendingAuth: true,
+                        queueRequestId,
+                        queueExpiresAt: queuedRequest.expiresAt,
+                        orchestration: 'auth_queue_claim',
+                    },
+                });
+                onTripGenerated(pendingAuthTrip);
+                trackEvent('create_trip__cta--queue_pending_auth', {
+                    request_id: queueRequestId,
+                    source: 'create_trip_classic_lab',
+                });
+                setIsSubmitting(false);
+                return;
+            } catch {
+                const authRedirect = buildLoginPathWithNext({
+                    pathname: location.pathname,
+                    search: location.search,
+                    hash: location.hash,
+                    language: i18n.language,
+                    resolvedLanguage: i18n.resolvedLanguage,
+                });
+                rememberAuthReturnPath(authRedirect.nextPath);
+                setPendingAuthRedirect(authRedirect.nextPath, 'create_trip_queue_fallback');
+                trackEvent('create_trip__cta--redirect_login', {
+                    reason: 'queue_request_failed',
+                    has_authenticated_access: isAuthenticated,
+                    is_anonymous_access: isAnonymous,
+                });
+                setIsSubmitting(false);
+                navigate(authRedirect.loginTarget);
+                return;
+            }
+        }
+
+        const generationSnapshot = createTripGenerationInputSnapshot({
+            flow: 'classic',
+            destinationLabel,
+            startDate,
+            endDate,
+            payload: {
+                destinationPrompt,
+                options: classicGenerateOptions,
+            },
+        });
+        const requestId = createTripGenerationRequestId();
         const optimisticTripId = generateTripId();
-        const optimisticTrip = buildLoadingTripPreview({
+        const optimisticBaseTrip = buildLoadingTripPreview({
             tripId: optimisticTripId,
             destinationLabel,
             focusLocations: localizedDestinationLabels,
@@ -1570,76 +1667,131 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
             requestedStops: Math.max(orderedDestinations.length, 2),
             roundTrip,
         });
-        const optimisticCreatedAt = optimisticTrip.createdAt;
+        let optimisticTrip = markTripGenerationRunning(optimisticBaseTrip, {
+            flow: 'classic',
+            source: 'create_trip_classic_lab',
+            inputSnapshot: generationSnapshot,
+            provider: selectedAiModel.provider,
+            model: selectedAiModel.model,
+            requestId,
+            state: 'queued',
+            metadata: {
+                orchestration: 'async_worker',
+            },
+        });
+        const optimisticAttempt = optimisticTrip.aiMeta?.generation?.latestAttempt || null;
+        const optimisticAttemptId = optimisticAttempt?.id || null;
+        let attemptId: string | null = null;
         generationTabFeedbackSessionRef.current?.cancel();
         generationTabFeedbackSessionRef.current = beginTripGenerationTabFeedback();
         onTripGenerated(optimisticTrip);
-
+        const persistedTripId = await dbUpsertTrip(optimisticTrip, undefined);
+        if (!persistedTripId) {
+            throw new Error('Trip was not persisted before async generation started.');
+        }
+        const persistedTripReady = await waitForTripPersistence(optimisticTripId, {
+            timeoutMs: 450,
+            intervalMs: 120,
+            maxAttempts: 3,
+        });
+        if (!persistedTripReady) {
+            throw new Error('Trip was not persisted before async generation started.');
+        }
+        const loggedAttempt = await startTripGenerationAttemptLog({
+            tripId: optimisticTripId,
+            flow: 'classic',
+            source: 'create_trip_classic_lab',
+            state: 'queued',
+            provider: selectedAiModel.provider,
+            model: selectedAiModel.model,
+            requestId,
+            startedAt: optimisticAttempt?.startedAt,
+            metadata: {
+                destination_label: destinationLabel,
+                orchestration: 'async_worker',
+            },
+        });
+        if (loggedAttempt?.id) {
+            optimisticTrip = withLatestTripGenerationAttemptId(optimisticTrip, loggedAttempt.id);
+            attemptId = loggedAttempt.id;
+            onTripGenerated(optimisticTrip);
+            const persistedCanonicalTripId = await dbUpsertTrip(optimisticTrip, undefined);
+            if (!persistedCanonicalTripId) {
+                throw new Error('Trip generation attempt was not persisted before queueing.');
+            }
+            const persistedCanonicalAttempt = await waitForTripAttemptPersistence(optimisticTripId, loggedAttempt.id, {
+                timeoutMs: 450,
+                intervalMs: 120,
+                maxAttempts: 3,
+            });
+            if (!persistedCanonicalAttempt) {
+                throw new Error('Trip generation attempt was not persisted before queueing.');
+            }
+        }
         try {
-            const destinationPrompt = destinationPromptLabels.join(', ');
-            const notesInterests = notes
-                .split(',')
-                .map((token) => token.trim())
-                .filter(Boolean);
-
-            const generatedTrip = await generateItinerary(destinationPrompt, startDate, {
-                budget,
-                pace,
-                interests: notesInterests.length > 0 ? notesInterests : undefined,
+            if (!attemptId) {
+                throw new Error('Could not start async generation attempt.');
+            }
+            const prompt = buildClassicItineraryPrompt(destinationPrompt, classicGenerateOptions);
+            const enqueueSucceeded = await enqueueClassicAsyncTripGenerationJob({
+                tripId: optimisticTripId,
+                attemptId,
+                startedAt: loggedAttempt?.startedAt || optimisticAttempt?.startedAt || null,
+                requestId,
+                source: 'create_trip_classic_lab_async',
+                queueRequestId: null,
+                startDate,
                 roundTrip,
-                totalDays: dayCount,
-                aiTarget: {
-                    provider: selectedAiModel.provider,
-                    model: selectedAiModel.model,
+                prompt,
+                provider: selectedAiModel.provider,
+                model: selectedAiModel.model,
+                inputSnapshot: generationSnapshot,
+                maxRetries: 0,
+            });
+            if (!enqueueSucceeded) {
+                throw new Error('Could not enqueue async generation.');
+            }
+            generationTabFeedbackSessionRef.current?.cancel();
+            generationTabFeedbackSessionRef.current = null;
+            return;
+        } catch (error) {
+            const failedTrip = markTripGenerationFailed({
+                ...optimisticTrip,
+                items: optimisticTrip.items.map((item) => ({
+                    ...item,
+                    loading: false,
+                })),
+                updatedAt: Date.now(),
+            }, {
+                flow: 'classic',
+                source: 'create_trip_classic_lab',
+                error,
+                provider: selectedAiModel.provider,
+                model: selectedAiModel.model,
+                requestId,
+                attemptId: attemptId || optimisticAttemptId,
+                metadata: {
+                    orchestration: 'async_worker_enqueue',
                 },
             });
-
-            onTripGenerated({
-                ...generatedTrip,
-                id: optimisticTripId,
-                createdAt: optimisticCreatedAt,
-                updatedAt: Date.now(),
-                roundTrip: generatedTrip.roundTrip ?? roundTrip,
-                sourceKind: generatedTrip.sourceKind || 'created',
-            });
-            generationTabFeedbackSessionRef.current?.complete('success', {
-                title: generatedTrip.title,
-            });
-            generationTabFeedbackSessionRef.current = null;
-
-            const isTabBackgrounded = document.visibilityState === 'hidden'
-                || (typeof document.hasFocus === 'function' && !document.hasFocus());
-            if (isTabBackgrounded && notificationPermission === 'granted') {
-                const sent = sendTripReadyNotification({
-                    title: t('notifications.ready.title'),
-                    body: t('notifications.ready.body'),
-                });
-                if (sent) {
-                    trackEvent('create_trip__notifications--sent');
-                }
-            }
-        } catch (error) {
-            const message = getErrorMessage(error, t('errors.genericGenerate'));
-            const errorTitle = t('errors.genericGenerate');
-            onTripGenerated({
-                ...optimisticTrip,
-                title: errorTitle,
-                updatedAt: Date.now(),
-                items: [
-                    {
-                        id: `loading-error-${optimisticTripId}`,
-                        type: 'city',
-                        title: errorTitle,
-                        startDateOffset: 0,
-                        duration: Math.max(1, dayCount),
-                        color: 'bg-rose-100 border-rose-300 text-rose-700',
-                        description: message,
-                        location: destinationLabel,
-                    },
-                ],
-            });
+            onTripGenerated(failedTrip);
             generationTabFeedbackSessionRef.current?.complete('error');
             generationTabFeedbackSessionRef.current = null;
+            if (loggedAttempt?.id) {
+                await finishTripGenerationAttemptLog({
+                    attemptId: loggedAttempt.id,
+                    state: 'failed',
+                    provider: failedTrip.aiMeta?.provider,
+                    model: failedTrip.aiMeta?.model,
+                    requestId: failedTrip.aiMeta?.generation?.latestAttempt?.requestId || requestId,
+                    durationMs: failedTrip.aiMeta?.generation?.latestAttempt?.durationMs || null,
+                    statusCode: failedTrip.aiMeta?.generation?.latestAttempt?.statusCode || null,
+                    failureKind: failedTrip.aiMeta?.generation?.latestAttempt?.failureKind || null,
+                    errorCode: failedTrip.aiMeta?.generation?.latestAttempt?.errorCode || null,
+                    errorMessage: failedTrip.aiMeta?.generation?.latestAttempt?.errorMessage || getErrorMessage(error, t('errors.genericGenerate')),
+                    finishedAt: failedTrip.aiMeta?.generation?.latestAttempt?.finishedAt || undefined,
+                });
+            }
         } finally {
             setIsSubmitting(false);
         }
@@ -2449,26 +2601,12 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                         </aside>
                     </section>
 
-                    <section className="mt-6 rounded-2xl border border-sky-200 bg-sky-50/80 px-4 py-4 text-slate-700 shadow-sm sm:px-5">
-                        <div className="flex items-start gap-2">
-                            <Info size={16} weight="duotone" className="mt-0.5 shrink-0 text-sky-700" />
-                            <div className="min-w-0">
-                                <p className="text-sm font-semibold text-slate-900">{t('labsBanner.title')}</p>
-                                <p className="mt-1 text-xs text-slate-600">{t('labsBanner.description')}</p>
-                                <div className="mt-3 flex flex-wrap gap-2">
-                                    {labRouteLinks.map((entry) => (
-                                        <Link
-                                            key={entry.key}
-                                            to={entry.path}
-                                            className="inline-flex items-center rounded-lg border border-sky-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-sky-800 transition-colors hover:border-sky-300 hover:bg-sky-100"
-                                        >
-                                            {t(`labsBanner.links.${entry.key}`)}
-                                        </Link>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    </section>
+                    <CreateTripWizardCtaBanner
+                        className="mt-6"
+                        title={t('labsBanner.title')}
+                        description={t('labsBanner.description')}
+                        ctaLabel={t('labsBanner.cta')}
+                    />
                 </main>
 
                 <div

@@ -24,16 +24,27 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
   beforeEach(() => {
     fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);
+    vi.stubEnv('OPENROUTER_API_KEY', '');
+    vi.stubEnv('OPENAI_API_KEY', '');
+    vi.stubEnv('GEMINI_API_KEY', '');
+    vi.stubEnv('VITE_GEMINI_API_KEY', '');
+    vi.stubEnv('ANTHROPIC_API_KEY', '');
+    vi.stubEnv('SITE_URL', '');
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.unstubAllEnvs();
     vi.unstubAllGlobals();
   });
 
   it('validates provider/model allowlists including openrouter', () => {
+    expect(ensureModelAllowed('gemini', 'gemini-3.1-flash-lite-preview')).toBeNull();
+    expect(ensureModelAllowed('openai', 'gpt-5.4')).toBeNull();
+    expect(ensureModelAllowed('openai', 'gpt-5.4-pro')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'openrouter/free')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'z-ai/glm-5')).toBeNull();
+    expect(ensureModelAllowed('openai', 'gpt-5.4')).toBeNull();
     expect(ensureModelAllowed('anthropic', 'claude-sonnet-4.6')).toBeNull();
     expect(ensureModelAllowed('perplexity', 'perplexity/sonar')).toBeNull();
     expect(ensureModelAllowed('qwen', 'qwen/qwen3.5-plus-02-15')).toBeNull();

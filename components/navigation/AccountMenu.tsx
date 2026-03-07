@@ -112,6 +112,7 @@ const labelFromPath = (pathname: string): string => {
     if (pathname.startsWith('/admin/trips')) return 'Trips';
     if (pathname.startsWith('/admin/tiers')) return 'Tiers';
     if (pathname.startsWith('/admin/audit')) return 'Audit';
+    if (pathname.startsWith('/admin/legal')) return 'Legal Terms';
     if (pathname.startsWith('/admin/ai-benchmark')) return 'AI Benchmark';
     if (pathname.startsWith('/profile/settings')) return 'Settings';
     if (pathname.startsWith('/profile')) return 'Profile';

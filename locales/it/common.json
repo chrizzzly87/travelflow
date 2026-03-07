@@ -76,7 +76,7 @@
       "reasonLabel": "Motivo",
       "reasonPlaceholder": "Seleziona un motivo",
       "reasonOptions": {
-        "bugReport": "Segnala un bug",
+        "bugReport": "Problema con il sito o l'app",
         "featureRequest": "Richiesta funzionalità",
         "billingAccount": "Fatturazione / account",
         "dataPrivacy": "Richiesta dati/privacy",
@@ -103,7 +103,56 @@
       "validationReason": "Seleziona un motivo.",
       "validationEmail": "Inserisci un indirizzo email valido.",
       "validationMessage": "Inserisci un messaggio.",
-      "validationMessageLength": "Il tuo messaggio è troppo lungo. Massimo {max} caratteri."
+      "validationMessageLength": "Il tuo messaggio è troppo lungo. Massimo {max} caratteri.",
+      "subReasonLabel": "Argomento (facoltativo)",
+      "subReasonPlaceholder": "Seleziona un argomento (facoltativo)",
+      "subReasonEmptyOption": "Nessun argomento specifico",
+      "subReasonOptions": {
+        "bugReport": {
+          "pageNotLoadingWorking": "La pagina non carica o non funziona",
+          "translationWrongMisleading": "Traduzioni errate o fuorvianti",
+          "actionNotWorking": "Un pulsante o un’azione non funziona",
+          "layoutVisualIssue": "Problema di layout o visivo",
+          "mapRoutingIssue": "Problema di mappa o percorso",
+          "performanceIssue": "Prestazioni lente o instabili"
+        },
+        "featureRequest": {
+          "newFeature": "Funzionalità completamente nuova",
+          "improveFeature": "Migliorare una funzionalità esistente",
+          "workflowAutomation": "Miglioramento di flusso o automazione",
+          "mobileExperience": "Miglioramento esperienza mobile",
+          "accessibility": "Miglioramento accessibilità"
+        },
+        "billingAccount": {
+          "subscriptionChange": "Modificare o annullare l’abbonamento",
+          "invoiceReceipt": "Domanda su fattura o ricevuta",
+          "paymentFailed": "Pagamento non riuscito",
+          "refundQuestion": "Domanda sul rimborso",
+          "accountAccess": "Problema di accesso account"
+        },
+        "dataPrivacy": {
+          "dataExport": "Richiedere l’esportazione dei miei dati",
+          "dataDeletion": "Richiedere la cancellazione dei dati",
+          "consentCookies": "Domanda su cookie/consenso",
+          "legalQuestion": "Domanda legale/privacy",
+          "securityConcern": "Segnalazione di sicurezza"
+        },
+        "partnership": {
+          "affiliateInfluencer": "Collaborazione affiliate o creator",
+          "brandCampaign": "Partnership per campagna brand",
+          "mediaPress": "Richiesta media o stampa",
+          "integrationPartner": "Partnership di integrazione",
+          "educationNonProfit": "Collaborazione education o nonprofit"
+        },
+        "other": {
+          "generalFeedback": "Feedback generale",
+          "productQuestion": "Domanda sul prodotto",
+          "careerOpportunity": "Opportunità di carriera",
+          "responsibleDisclosure": "Segnalazione di sicurezza",
+          "somethingElse": "Altro"
+        }
+      },
+      "requiredFieldsNote": "* Campi obbligatori."
     }
   },
   "appDialog": {
@@ -260,6 +309,64 @@
         "docked": "ancorata",
         "floating": "fluttuante"
       }
+    },
+    "generation": {
+      "strip": {
+        "failedDefault": "Trip generation failed. Check diagnostics or retry with the default model.",
+        "running": "Trip generation is running...",
+        "retry": "Retry generation",
+        "retrying": "Retrying...",
+        "slow": "Sta impiegando più tempo del solito.",
+        "abortRetry": "Interrompi e riprova",
+        "changeModel": "Cambia modello"
+      },
+      "tripInfo": {
+        "title": "AI generation",
+        "provider": "Provider",
+        "model": "Model",
+        "providerModel": "Provider model",
+        "requestId": "Request ID",
+        "runTime": "Run time",
+        "httpStatus": "HTTP status",
+        "started": "Started",
+        "finished": "Finished",
+        "failureKind": "Failure kind",
+        "errorCode": "Error code",
+        "errorMessage": "Error message",
+        "generatedAt": "Generated at",
+        "recentAttempts": "Recent attempts",
+        "modelFallback": "Model n/a",
+        "retry": "Retry generation with default model",
+        "retrying": "Retrying with default model...",
+        "state": {
+          "failed": "failed",
+          "running": "running",
+          "queued": "queued",
+          "succeeded": "succeeded"
+        },
+        "orchestration": "Modalità di esecuzione"
+      },
+      "retry": {
+        "readOnly": "This trip is read-only, so generation retry is unavailable.",
+        "readOnlyTitle": "Retry unavailable",
+        "missingSnapshot": "Retry requires saved generation input, but this trip has no snapshot.",
+        "missingSnapshotTitle": "Retry unavailable",
+        "queued": "Trip generation retry started and is running in the background.",
+        "queuedTitle": "Retry started",
+        "completed": "Trip generation completed with the default model.",
+        "completedTitle": "Retry completed",
+        "failed": "Trip generation failed again. Review the diagnostics and retry later.",
+        "failedTitle": "Retry failed",
+        "unexpected": "Retry failed unexpectedly."
+      }
     }
+  },
+  "tripRouteShell": {
+    "loadingTrip": "Caricamento viaggio",
+    "preparingPlanner": "Preparazione pianificatore",
+    "loadingSharedTrip": "Caricamento viaggio condiviso",
+    "preparingSharedPlanner": "Preparazione pianificatore condiviso",
+    "loadingExampleTrip": "Caricamento viaggio di esempio",
+    "preparingExamplePlanner": "Preparazione pianificatore di esempio"
   }
 }
