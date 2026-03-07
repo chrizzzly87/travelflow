@@ -10,7 +10,8 @@ const JSON_HEADERS = {
 };
 
 const AUTH_HEADER = 'authorization';
-const PADDLE_API_BASE_URL = 'https://api.paddle.com';
+const PADDLE_API_BASE_URL_LIVE = 'https://api.paddle.com';
+const PADDLE_API_BASE_URL_SANDBOX = 'https://sandbox-api.paddle.com';
 
 type CheckoutTierKey = Extract<PlanTierKey, 'tier_mid' | 'tier_premium'>;
 
@@ -68,6 +69,12 @@ const getPaddleApiConfig = () => {
     checkoutDomain: readEnv('PADDLE_CHECKOUT_DOMAIN').trim(),
   };
 };
+
+const resolvePaddleApiBaseUrl = (environment: string): string => (
+  environment === 'sandbox'
+    ? PADDLE_API_BASE_URL_SANDBOX
+    : PADDLE_API_BASE_URL_LIVE
+);
 
 const buildSupabaseHeaders = (authToken: string, anonKey: string) => ({
   'Content-Type': 'application/json',
@@ -230,7 +237,7 @@ export default async (request: Request): Promise<Response> => {
     };
   }
 
-  const paddleResponse = await fetch(`${PADDLE_API_BASE_URL}/transactions`, {
+  const paddleResponse = await fetch(`${resolvePaddleApiBaseUrl(paddleConfig.environment)}/transactions`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -269,4 +276,8 @@ export default async (request: Request): Promise<Response> => {
       tierKey,
     },
   });
+};
+
+export const __paddleCheckoutInternals = {
+  resolvePaddleApiBaseUrl,
 };

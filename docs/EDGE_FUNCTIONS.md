@@ -146,7 +146,7 @@ The CI validator (`scripts/validate-edge-functions.mjs`) enforces this rule at b
 | `PADDLE_API_KEY` | `paddle-checkout.ts` | Paddle API key used to create checkout transactions |
 | `PADDLE_PRICE_ID_TIER_MID` | `paddle-checkout.ts`, `paddle-webhook.ts` | Paddle price ID mapped to internal `tier_mid` entitlements |
 | `PADDLE_PRICE_ID_TIER_PREMIUM` | `paddle-checkout.ts`, `paddle-webhook.ts` | Optional Paddle price ID mapped to `tier_premium` entitlements |
-| `PADDLE_ENV` | `paddle-checkout.ts` | Optional Paddle environment marker (`sandbox`/`live`) returned for debugging |
+| `PADDLE_ENV` | `paddle-checkout.ts` | Paddle environment selector (`sandbox`/`live`) used to choose the correct Paddle API base URL and returned in checkout responses |
 | `PADDLE_CHECKOUT_DOMAIN` | `paddle-checkout.ts` | Optional checkout domain override passed to Paddle transaction `checkout.url` |
 | `PADDLE_WEBHOOK_SECRET` | `paddle-webhook.ts` | Secret key for `Paddle-Signature` webhook verification |
 | `PADDLE_WEBHOOK_MAX_AGE_SECONDS` | `paddle-webhook.ts` | Optional timestamp tolerance for webhook signatures (default `300`) |

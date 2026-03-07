@@ -18,6 +18,11 @@ Reference issue: [#216](https://github.com/chrizzzly87/travelflow/issues/216)
    - `public.profiles.tier_key` (`tier_mid`/`tier_premium` or fallback `tier_free`)
    - `public.billing_webhook_events` log for replay/debug safety
 
+## Current Identity Model
+- Supported now: visitor opens pricing -> signs in or registers -> starts paid checkout.
+- Not supported yet: truly anonymous checkout that grants a paid tier before a durable non-anonymous user session exists.
+- Reason: the checkout endpoint stores `tf_user_id` in Paddle `custom_data` and currently requires an authenticated non-anonymous Supabase user so webhook tier sync can resolve a stable account.
+
 ## Required Environment Variables
 Set these in Netlify (and locally when testing edge routes):
 
@@ -52,18 +57,36 @@ Use Paddle as the source of truth for commercial/billing setup:
 
 ## Paddle Dashboard Setup
 1. Use **Sandbox** first in Paddle.
-2. Create product + recurring price for `tier_mid` (Explorer).
-3. Optional: create price for `tier_premium`.
-4. Create webhook destination for each environment:
-   - Sandbox: `https://<your-preview-or-tunnel>/api/billing/paddle/webhook`
-   - Production: `https://<your-domain>/api/billing/paddle/webhook`
-5. Copy the endpoint secret into `PADDLE_WEBHOOK_SECRET`.
+2. Create a sandbox API key and store it as `PADDLE_API_KEY`.
+3. Create product + recurring price for `tier_mid` (Explorer).
+4. Optional: create product/price for `tier_premium` (Globetrotter).
+5. Copy the recurring price IDs into:
+   - `PADDLE_PRICE_ID_TIER_MID`
+   - `PADDLE_PRICE_ID_TIER_PREMIUM`
+6. Ensure a default payment link is configured in Paddle for the sandbox account.
+7. Create a webhook destination for sandbox:
+   - `https://<your-preview-or-tunnel>/api/billing/paddle/webhook`
+8. Subscribe the destination to the events this integration actually uses:
+   - `subscription.created`
+   - `subscription.updated`
+   - `subscription.canceled`
+   - `transaction.completed`
+9. Copy the webhook endpoint secret into `PADDLE_WEBHOOK_SECRET`.
+10. Keep the account in sandbox and use Paddle test payment methods/cards for end-to-end runs.
 
 Official docs:
 - [Create transaction API](https://developer.paddle.com/api-reference/transactions/create-transaction)
 - [Webhook signature verification](https://developer.paddle.com/webhooks/signature-verification)
 - [Handle webhook delivery](https://developer.paddle.com/webhooks/handle-webhook-delivery)
 - [Sandbox + test cards](https://developer.paddle.com/concepts/testing/test-cards)
+
+## Implementation Plan
+1. Finish sandbox configuration in Paddle dashboard.
+2. Verify checkout session creation locally or on a preview deployment with a signed-in non-anonymous user.
+3. Verify webhook delivery in `verify_only` mode first when you only want transport/signature validation.
+4. Switch to `full` sync mode once database writes should apply.
+5. Validate internal state in `public.subscriptions`, `public.billing_webhook_events`, and `public.profiles.tier_key`.
+6. Re-run the same scenario in Paddle live by swapping only environment variables and Paddle dashboard objects.
 
 ## Database Setup (Full Sync Mode)
 If you want only the Paddle billing delta before your broader schema branch is ready, run:
@@ -103,9 +126,26 @@ pnpm dev:netlify
 ```
 
 2. For local webhook delivery, expose port `8888` via a tunnel (for example `ngrok http 8888`) and use that URL in Paddle sandbox webhook destination.
-3. Log in with a real (non-anonymous) account.
-4. Open `/pricing` and start checkout for paid tier.
+3. Log in or register with a real (non-anonymous) account.
+4. Open `/pricing` and start checkout for `Explorer` or `Globetrotter`.
 5. Complete payment with Paddle sandbox test methods.
+6. Wait for webhook delivery and verify tier sync in Supabase.
+
+## Recommended First End-to-End Scenario
+1. Start from a logged-out browser session.
+2. Open `/pricing`.
+3. Click `Explorer` or `Globetrotter`.
+4. Confirm the app sends you to login/register first.
+5. Complete login/register.
+6. Return to pricing and start checkout.
+7. Pay with a Paddle sandbox payment method.
+8. Confirm:
+   - checkout redirected correctly
+   - Paddle shows successful payment/subscription in sandbox
+   - webhook reached `/api/billing/paddle/webhook`
+   - `public.subscriptions` has the provider IDs and billing dates
+   - `public.profiles.tier_key` changed to `tier_mid` or `tier_premium`
+   - `public.billing_webhook_events` contains the raw event log
 
 ## Real Sandbox E2E Before Supabase Migration
 Use this when Supabase schema updates are blocked by parallel work:
@@ -164,13 +204,35 @@ order by created_at desc
 limit 50;
 ```
 
+## Admin Visibility Baseline
+Use these tables as the source of truth for future admin billing pages/endpoints:
+- `public.subscriptions`
+  - current provider subscription id
+  - current billing period dates
+  - cancel/grace lifecycle state
+  - current amount/currency snapshot
+- `public.billing_webhook_events`
+  - raw webhook audit log
+  - event delivery/order debugging
+  - replay/idempotency troubleshooting
+- `public.profiles`
+  - currently effective `tier_key`
+
+The first internal admin billing view should filter by `user_id`, `provider_subscription_id`, and newest `occurred_at`.
+
 ## Go-Live Checklist
-1. Switch `PADDLE_ENV=live`.
-2. Replace API key, webhook secret, and price IDs with live values.
-3. Point production webhook destination to production domain.
-4. Set `PADDLE_WEBHOOK_SYNC_MODE=full`.
-5. Keep `VITE_PADDLE_CHECKOUT_ENABLED=true` only when live config is fully set.
-6. Run one real low-value transaction and validate:
+1. Clone or recreate the same products/prices in Paddle live.
+2. Create a live API key and live webhook destination in Paddle.
+3. Switch `PADDLE_ENV=live`.
+4. Replace only these environment variables with live values:
+   - `PADDLE_API_KEY`
+   - `PADDLE_WEBHOOK_SECRET`
+   - `PADDLE_PRICE_ID_TIER_MID`
+   - `PADDLE_PRICE_ID_TIER_PREMIUM`
+5. Point the production webhook destination to your production domain.
+6. Set `PADDLE_WEBHOOK_SYNC_MODE=full`.
+7. Keep `VITE_PADDLE_CHECKOUT_ENABLED=true` only when live config is fully set.
+8. Run one real low-value transaction and validate:
    - webhook processed
    - tier sync applied
    - cancellation + grace behavior works as expected
