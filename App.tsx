@@ -41,6 +41,7 @@ import { useDebuggerBootstrap } from './app/bootstrap/useDebuggerBootstrap';
 import { useNavigationContextBootstrap } from './app/bootstrap/useNavigationContextBootstrap';
 import { useWarmupGate } from './app/bootstrap/useWarmupGate';
 import { AppProviderShell } from './app/bootstrap/AppProviderShell';
+import { AppBootstrapShell } from './components/bootstrap/AppBootstrapShell';
 import { AppRoutes } from './app/routes/AppRoutes';
 import { isFirstLoadCriticalPath } from './app/prefetch/isFirstLoadCriticalPath';
 import { useConnectivityStatus } from './hooks/useConnectivityStatus';
@@ -980,7 +981,7 @@ const AppContent: React.FC = () => {
                 </section>
             )}
             {shouldBlockForTermsGate ? (
-                <div className="min-h-screen w-full bg-white" aria-hidden="true" />
+                <AppBootstrapShell variant="marketing" testId="terms-gate-loading-shell" />
             ) : (
                 <AppRoutes
                     trip={trip}

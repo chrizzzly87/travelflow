@@ -5,6 +5,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useDbSync } from '../../hooks/useDbSync';
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from '../../config/locales';
 import { loadLazyComponentWithRecovery } from '../../services/lazyImportRecovery';
+import { AppBootstrapShell } from '../../components/bootstrap/AppBootstrapShell';
 import '../../styles/deferred-routes.css';
 
 const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
@@ -47,7 +48,7 @@ const CreateTripClassicLabPage = lazyWithRecovery('CreateTripClassicLabPage', ()
 const CreateTripV3Page = lazyWithRecovery('CreateTripV3Page', () => import('../../pages/CreateTripV3Page').then((module) => ({ default: module.CreateTripV3Page })));
 
 const RouteLoadingFallback: React.FC = () => (
-    <div className="min-h-screen w-full bg-white" aria-hidden="true" />
+    <AppBootstrapShell variant="marketing" testId="route-loading-shell" />
 );
 
 const renderWithSuspense = (node: React.ReactElement) => (

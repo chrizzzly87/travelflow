@@ -83,13 +83,13 @@ describe('app/routes/DeferredAppRoutes root auth gate', () => {
   it('shows loading fallback while auth is resolving on root', () => {
     mocks.auth.isLoading = true;
 
-    const { container, getByTestId } = renderDeferredRoutes('/');
-    const fallback = container.querySelector('div[aria-hidden="true"]');
+    const { getByTestId } = renderDeferredRoutes('/');
+    const fallback = getByTestId('route-loading-shell');
 
     expect(getByTestId('location-probe').textContent).toBe('/');
-    expect(fallback).toBeTruthy();
-    expect(fallback?.className).toContain('min-h-screen');
-    expect(fallback?.className).toContain('bg-white');
+    expect(fallback).toHaveAttribute('data-shell-variant', 'marketing');
+    expect(fallback.textContent).toContain('TravelFlow');
+    expect(fallback.textContent).toContain('Create Trip');
   });
 
   it('supports public profile routes', async () => {

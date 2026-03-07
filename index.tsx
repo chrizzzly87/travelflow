@@ -1,4 +1,4 @@
-import React, { ReactNode } from 'react';
+import React, { ReactNode, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import './index.css';
@@ -49,6 +49,37 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
   }
 }
 
+const BootstrapShellHandoff: React.FC = () => {
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+
+    const root = document.documentElement;
+    const shell = document.getElementById('app-bootstrap-shell');
+    let removalTimer: number | undefined;
+
+    const finalizeRemoval = () => {
+      shell?.remove();
+    };
+
+    const frame = window.requestAnimationFrame(() => {
+      root.setAttribute('data-tf-react-mounted', 'true');
+      if (!shell) return;
+      shell.addEventListener('transitionend', finalizeRemoval, { once: true });
+      removalTimer = window.setTimeout(finalizeRemoval, 240);
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      if (removalTimer !== undefined) {
+        window.clearTimeout(removalTimer);
+      }
+      shell?.removeEventListener('transitionend', finalizeRemoval);
+    };
+  }, []);
+
+  return null;
+};
+
 const rootElement = document.getElementById('root');
 if (!rootElement) {
   throw new Error("Could not find root element to mount to");
@@ -72,6 +103,7 @@ const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
     <ErrorBoundary>
+        <BootstrapShellHandoff />
         <App />
     </ErrorBoundary>
   </React.StrictMode>

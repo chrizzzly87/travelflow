@@ -42,6 +42,25 @@
         color: #0f172a;
       }
 
+      #root {
+        min-height: 100vh;
+      }
+
+      #app-bootstrap-shell {
+        position: fixed;
+        inset: 0;
+        z-index: 2147483000;
+        background: #ffffff;
+        transition: opacity 180ms ease, visibility 180ms ease;
+        overflow: hidden;
+      }
+
+      html[data-tf-react-mounted="true"] #app-bootstrap-shell {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+      }
+
       .tf-boot-shell {
         min-height: 100vh;
         width: 100%;
@@ -206,6 +225,14 @@
         display: none;
       }
 
+      .tf-boot-page--trip-react {
+        display: block;
+      }
+
+      .tf-boot-page--marketing-react {
+        display: block;
+      }
+
       html[data-tf-boot-route="trip"] .tf-boot-page--marketing {
         display: none;
       }
@@ -221,6 +248,10 @@
           radial-gradient(circle at top left, rgba(224, 231, 255, 0.42), transparent 48%),
           linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
         padding: 28px;
+      }
+
+      .tf-boot-marketing-spacer {
+        min-height: calc(100vh - 145px);
       }
 
       .tf-boot-hero-lines {
@@ -589,9 +620,9 @@
     </script>
 </head>
   <body>
-    <div id="root">
-      <div class="tf-boot-shell" aria-hidden="true">
-        <header class="tf-boot-header">
+      <div id="app-bootstrap-shell">
+        <div class="tf-boot-shell" aria-hidden="true">
+          <header class="tf-boot-header">
           <div class="tf-boot-header-inner">
             <div class="tf-boot-brand">
               <span class="tf-boot-logo-frame">
@@ -619,24 +650,7 @@
         </header>
         <main class="tf-boot-main">
           <section class="tf-boot-page tf-boot-page--marketing">
-            <div class="tf-boot-hero">
-              <div class="tf-boot-hero-lines">
-                <div class="tf-boot-line tf-boot-line--headline"></div>
-                <div class="tf-boot-line tf-boot-line--body-lg"></div>
-                <div class="tf-boot-line tf-boot-line--body-md"></div>
-                <div class="tf-boot-line tf-boot-line--body-sm"></div>
-              </div>
-              <div class="tf-boot-hero-actions" aria-hidden="true">
-                <span class="tf-boot-hero-action tf-boot-hero-action--primary"></span>
-                <span class="tf-boot-hero-action tf-boot-hero-action--secondary"></span>
-              </div>
-            </div>
-            <div class="tf-boot-marketing-grid" aria-hidden="true">
-              <div class="tf-boot-card"></div>
-              <div class="tf-boot-card"></div>
-              <div class="tf-boot-card"></div>
-            </div>
-            <div class="tf-boot-surface" aria-hidden="true"></div>
+            <div class="tf-boot-marketing-spacer"></div>
           </section>
           <section class="tf-boot-page tf-boot-page--trip">
             <div class="tf-boot-trip-status"></div>
@@ -678,6 +692,7 @@
         </main>
       </div>
     </div>
+    <div id="root"></div>
     <!-- Netlify Forms SPA registration scaffold -->
     <form
       name="contact"
