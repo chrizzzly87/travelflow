@@ -16,10 +16,10 @@ export const AppBrand: React.FC<AppBrandProps> = ({
     imageClassName,
     wordmarkClassName,
 }) => (
-    <span className={cn('flex items-center gap-1.5', className)}>
+    <span className={cn('flex items-center gap-1', className)}>
         <span
             className={cn(
-                'flex h-9 w-9 items-center justify-center rounded-[0.625rem]',
+                'flex h-10 w-10 items-center justify-center rounded-xl',
                 frameClassName,
             )}
         >

@@ -19,3 +19,4 @@ summary: "Kept the branded header visible through the React handoff and removed 
 - [ ] [Internal] ⏱️ Moved the bootstrap handoff trigger to the actual resolved route content for marketing and create-trip flows, so the static shell stays in place until the real page is ready to replace it.
 - [ ] [Internal] 🚀 Started route-aware chunk preloading before React mounts and moved the homepage route module into the eager path to reduce direct-entry latency without adding more fake skeleton UI.
 - [ ] [Internal] 🎛️ Matched the React route fallback to the static bootstrap shell with disabled-looking controls, skeleton nav bars, and a single-logo treatment so the header no longer flips between different visual states during first load.
+- [ ] [Internal] 🎨 Tuned the brand badge padding and wordmark gap so the bootstrap shell and live header now match the published logo proportions more closely.
