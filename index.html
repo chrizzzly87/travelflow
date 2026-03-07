@@ -69,8 +69,8 @@
       }
 
       .tf-boot-header-inner {
-        width: 100%;
         max-width: 80rem;
+        box-sizing: border-box;
         margin: 0 auto;
         display: flex;
         align-items: center;
@@ -98,8 +98,8 @@
       }
 
       .tf-boot-logo-image {
-        height: 32px;
-        width: 32px;
+        height: 24px;
+        width: 24px;
         display: block;
       }
 
@@ -191,6 +191,7 @@
 
       .tf-boot-action-chip,
       .tf-boot-action-button {
+        box-sizing: border-box;
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -212,10 +213,18 @@
       .tf-boot-action-chip--locale {
         display: none;
         gap: 8px;
+        width: 115px;
+        height: 40px;
+      }
+
+      .tf-boot-action-chip--login {
+        width: 62px;
+        height: 38px;
       }
 
       .tf-boot-action-button {
         height: 36px;
+        width: 99px;
         padding-inline: 12px;
         background: rgba(79, 70, 229, 0.9);
         box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
@@ -551,8 +560,8 @@
         }
 
         .tf-boot-logo-image {
-          height: 32px;
-          width: 32px;
+          height: 24px;
+          width: 24px;
         }
 
         .tf-boot-wordmark {

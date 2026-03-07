@@ -23,7 +23,7 @@ export const AppBrand: React.FC<AppBrandProps> = ({
                 frameClassName,
             )}
         >
-            <img src="/favicon.svg" alt="" className={cn('h-8 w-8', imageClassName)} />
+            <img src="/favicon.svg" alt="" className={cn('h-6 w-6', imageClassName)} />
         </span>
         <span className={cn('text-lg font-extrabold tracking-tight text-slate-900', wordmarkClassName)}>
             {APP_NAME}
