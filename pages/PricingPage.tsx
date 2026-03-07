@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Check } from '@phosphor-icons/react';
 import { Trans, useTranslation } from 'react-i18next';
@@ -9,6 +9,7 @@ import { buildPath } from '../config/routes';
 import { MarketingLayout } from '../components/marketing/MarketingLayout';
 import { useAuth } from '../hooks/useAuth';
 import { startPaddleCheckoutSession, type BillingCheckoutTierKey } from '../services/billingService';
+import { initializePaddleJs, isPaddleClientConfigured } from '../services/paddleClient';
 
 interface TierStyle {
     badgeClass: string;
@@ -44,11 +45,21 @@ export const PricingPage: React.FC = () => {
     const { access, isAuthenticated, isLoading: isAuthLoading } = useAuth();
     const [checkoutTierInFlight, setCheckoutTierInFlight] = useState<BillingCheckoutTierKey | null>(null);
     const isPaddleCheckoutEnabled = String(import.meta.env.VITE_PADDLE_CHECKOUT_ENABLED || '').toLowerCase() === 'true';
+    const isPaddleClientTokenConfigured = isPaddleClientConfigured();
     const unlimitedLabel = t('shared.unlimited');
     const noExpiryLabel = t('shared.noExpiry');
     const enabledLabel = t('shared.enabled');
     const disabledLabel = t('shared.disabled');
     const isCheckoutEligibleUser = isAuthenticated && access?.isAnonymous !== true;
+
+    useEffect(() => {
+        if (!isPaddleCheckoutEnabled || !isPaddleClientTokenConfigured) return;
+        void initializePaddleJs().then((ready) => {
+            if (!ready) {
+                console.error('Failed to initialize Paddle.js on pricing page.');
+            }
+        });
+    }, [isPaddleCheckoutEnabled, isPaddleClientTokenConfigured]);
 
     const handlePaidTierCheckout = useCallback(async (
         tierKey: BillingCheckoutTierKey,
@@ -91,6 +102,7 @@ export const PricingPage: React.FC = () => {
                         const style = TIER_STYLE[tier.publicSlug];
                         const isPaidTier = tier.monthlyPriceUsd > 0;
                         const supportsCheckout = isPaddleCheckoutEnabled
+                            && isPaddleClientTokenConfigured
                             && (tier.key === 'tier_mid' || tier.key === 'tier_premium');
                         const canStartCheckout = isPaidTier && supportsCheckout && isCheckoutEligibleUser && !isAuthLoading;
                         const isCheckoutBusy = checkoutTierInFlight === tier.key;

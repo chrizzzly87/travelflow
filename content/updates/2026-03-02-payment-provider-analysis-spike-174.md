@@ -16,3 +16,4 @@ summary: "Completed the payment-provider spike and locked a MoR-first recommenda
 - [ ] [Internal] 🧪 Added a `verify_only` webhook sync mode so real Paddle sandbox checkout and webhook delivery can be tested end-to-end before Supabase migration changes are merged.
 - [ ] [Internal] 🗃️ Added a standalone Paddle billing SQL subset so the required Supabase schema can ship independently of the larger pending `docs/supabase.sql` merge.
 - [ ] [Internal] 🚦 Added a sandbox-first rollout plan, corrected Paddle sandbox API routing, and documented the live cutover path so billing can move from test to production by swapping environment and Paddle-side objects.
+- [ ] [Internal] 🪪 Added browser-side Paddle.js initialization with a public client token so transaction checkout links can open correctly on the pricing page during sandbox and live testing.

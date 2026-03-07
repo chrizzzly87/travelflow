@@ -28,6 +28,7 @@ Set these in Netlify (and locally when testing edge routes):
 
 ```bash
 VITE_PADDLE_CHECKOUT_ENABLED=true
+VITE_PADDLE_CLIENT_TOKEN=...
 PADDLE_ENV=sandbox
 PADDLE_API_KEY=...
 PADDLE_WEBHOOK_SECRET=...
@@ -52,7 +53,8 @@ Use Paddle as the source of truth for commercial/billing setup:
 - Netlify environment variables (server-side integration glue):
   - `PADDLE_API_KEY`, `PADDLE_WEBHOOK_SECRET`, `PADDLE_PRICE_ID_*`, `PADDLE_ENV`, `PADDLE_WEBHOOK_SYNC_MODE`
 - Vite/public env:
-  - `VITE_PADDLE_CHECKOUT_ENABLED` only (feature flag)
+  - `VITE_PADDLE_CHECKOUT_ENABLED`
+  - `VITE_PADDLE_CLIENT_TOKEN`
   - do not place Paddle secrets in browser-exposed vars
 
 ## Paddle Dashboard Setup
@@ -61,35 +63,38 @@ Use Paddle as the source of truth for commercial/billing setup:
    - In Paddle, go to `Developer tools -> Authentication -> API keys`.
    - Create a sandbox key with server-side access for transactions.
    - Copy it once and store it in Netlify/local env.
-3. Create product + recurring price for `tier_mid` (Explorer).
+3. Create a sandbox client-side token and store it as `VITE_PADDLE_CLIENT_TOKEN`.
+   - In Paddle, go to `Developer tools -> Authentication -> Client-side tokens`.
+   - Create a sandbox token for Paddle.js.
+   - This token is public/browser-safe and is required so the pricing page can open Paddle Checkout from the transaction link.
+4. Create product + recurring price for `tier_mid` (Explorer).
    - In Paddle, go to `Catalog -> Products`.
    - Create a product for Explorer.
    - Add a recurring monthly price to that product.
-4. Optional: create product/price for `tier_premium` (Globetrotter).
+5. Optional: create product/price for `tier_premium` (Globetrotter).
    - Repeat the same product + recurring price flow for Globetrotter.
-5. Copy the recurring price IDs into env:
+6. Copy the recurring price IDs into env:
    - `PADDLE_PRICE_ID_TIER_MID`
    - `PADDLE_PRICE_ID_TIER_PREMIUM`
    - Open the product in Paddle and copy the `pri_...` ID from the price.
-6. Ensure a default payment link is configured in Paddle for the sandbox account.
+7. Ensure a default payment link is configured in Paddle for the sandbox account.
    - In Paddle, go to `Checkout -> Checkout settings -> Default payment link`.
-   - Set it to your local or preview site while testing.
-   - Example local/dev value: `http://localhost:8888/pricing`
-   - Example preview value: `https://<your-netlify-preview-domain>/pricing`
-7. Create a webhook destination for sandbox:
+   - Set it to your pricing page, because that page now loads Paddle.js and can open checkout from the transaction link.
+   - Recommended value: `https://<your-netlify-preview-domain>/pricing`
+8. Create a webhook destination for sandbox:
    - `https://<your-preview-or-tunnel>/api/billing/paddle/webhook`
    - In Paddle, go to `Developer tools -> Notifications`.
    - Click `New destination`.
    - Choose webhook destination and enter the URL above.
-8. Subscribe the destination to the events this integration actually uses:
+9. Subscribe the destination to the events this integration actually uses:
    - `subscription.created`
    - `subscription.updated`
    - `subscription.canceled`
    - `transaction.completed`
-9. Copy the webhook endpoint secret into `PADDLE_WEBHOOK_SECRET`.
+10. Copy the webhook endpoint secret into `PADDLE_WEBHOOK_SECRET`.
    - Paddle generates this for the notification destination.
    - Use the destination secret, not the API key.
-10. Keep the account in sandbox and use Paddle test payment methods/cards for end-to-end runs.
+11. Keep the account in sandbox and use Paddle test payment methods/cards for end-to-end runs.
    - Basic sandbox card without 3DS: `4242 4242 4242 4242`, CVC `100`
    - Successful 3DS test card: `4000 0038 0000 0446`, CVC `100`
    - Declined test card: `4000 0000 0000 0002`, CVC `100`
@@ -98,6 +103,8 @@ Use Paddle as the source of truth for commercial/billing setup:
 ## Exact Env Mapping
 - `PADDLE_API_KEY`
   - Comes from `Developer tools -> Authentication -> API keys`
+- `VITE_PADDLE_CLIENT_TOKEN`
+  - Comes from `Developer tools -> Authentication -> Client-side tokens`
 - `PADDLE_PRICE_ID_TIER_MID`
   - Comes from the recurring Explorer price (`pri_...`)
 - `PADDLE_PRICE_ID_TIER_PREMIUM`
@@ -108,11 +115,13 @@ Use Paddle as the source of truth for commercial/billing setup:
 ## Minimum Paddle Setup To Test Your First Real Flow
 If you want the shortest path to a working test, do only this in Paddle sandbox:
 1. Create one sandbox API key.
-2. Create one product + one recurring price for Explorer.
-3. Copy that Explorer `pri_...` into `PADDLE_PRICE_ID_TIER_MID`.
-4. Create one webhook destination for `/api/billing/paddle/webhook`.
-5. Subscribe it to `subscription.created`, `subscription.updated`, `subscription.canceled`, and `transaction.completed`.
-6. Copy its secret into `PADDLE_WEBHOOK_SECRET`.
+2. Create one sandbox client-side token.
+3. Create one product + one recurring price for Explorer.
+4. Copy that Explorer `pri_...` into `PADDLE_PRICE_ID_TIER_MID`.
+5. Set the sandbox default payment link to your preview `/pricing` page.
+6. Create one webhook destination for `/api/billing/paddle/webhook`.
+7. Subscribe it to `subscription.created`, `subscription.updated`, `subscription.canceled`, and `transaction.completed`.
+8. Copy its secret into `PADDLE_WEBHOOK_SECRET`.
 
 You can leave `PADDLE_PRICE_ID_TIER_PREMIUM` empty until Explorer works.
 
