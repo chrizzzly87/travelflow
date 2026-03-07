@@ -1,16 +1,20 @@
 ---
 id: rel-2026-03-03-failed-trip-generation-observability-retry
-version: v0.80.0
-title: "Failed Trip Generation Visibility And Retry"
-date: 2026-03-03
-published_at: 2026-03-03T16:00:00Z
-status: draft
+version: v0.85.0
+title: "Background Trip Generation, Safer Recovery, And Faster Trip Startup"
+date: 2026-03-07
+published_at: 2026-03-07T07:39:57Z
+status: published
 notify_in_app: false
 in_app_hours: 24
-summary: "Failed trip generations are now easier to spot, inspect, and retry on the same trip."
+summary: "Trip generation now keeps running in the background, recovers more safely when jobs stall, and makes failed plans easier to inspect and retry."
 ---
 
 ## Changes
+- [x] [Improved] ⚙️ Trip generation now keeps running in the background, so create-trip and retry are no longer tied to keeping the tab open.
+- [x] [Improved] 🛟 Stalled generation jobs now use safer recovery and retry guards, helping stuck plans recover without losing the trip.
+- [x] [Improved] 🤖 Planning and retry now default to OpenAI GPT-5.4, with expanded model choices available for trip creation and benchmark runs.
+- [x] [Improved] ⚡ Trip pages now open with a branded loading shell and faster planner startup while heavier route data loads in the background.
 - [x] [Improved] 🚨 Failed trip generations now stay visible in plan lists and trip screens with clear generation-status badges.
 - [x] [Improved] 🧾 Trip details now show richer AI generation diagnostics, including model/provider context and latest failure details.
 - [x] [New feature] 🔁 Travelers can retry failed generation directly on the same trip using the default model.
@@ -53,7 +57,7 @@ summary: "Failed trip generations are now easier to spot, inspect, and retry on 
 - [ ] [Internal] ⚙️ Scheduled worker triggers now hand off processing to a protected background function, avoiding 30s scheduled-function limits and keeping queued jobs draining reliably.
 - [ ] [Internal] 🛠️ Netlify worker triggers now use deploy-safe function handlers (`handler` exports + HTTP bridge) so both cron and background worker functions are bundled and callable in production.
 - [ ] [Internal] ⚙️ Async worker provider timeout now stays within edge-runtime-safe bounds (short default + capped max) so jobs fail deterministically instead of lingering in leased/queued limbo.
-- [x] [Improved] 🤖 Default generation + retry model baseline now uses OpenAI GPT-5.4 across create-trip and retry entry points.
+- [ ] [Internal] 🤖 Default generation + retry model baseline now uses OpenAI GPT-5.4 across create-trip and retry entry points.
 - [ ] [Internal] 🛠️ Queue-claim RPC now rejects already-claimed requests instead of returning stale rows, preventing duplicate trip generation from repeated claim calls.
 - [ ] [Internal] 🛠️ Admin trip-list RPC fallback now also handles PostgREST overload-selection errors (`best candidate function`) for stable table loading during mixed-schema rollouts.
 - [ ] [Internal] 🛠️ Worker success merge now preserves existing trip preference fields (favorites and map/style settings) instead of resetting them to generated defaults.
@@ -118,6 +122,6 @@ summary: "Failed trip generations are now easier to spot, inspect, and retry on 
 - [ ] [Internal] 🛠️ Trip view now polls/nudges queued worker jobs less aggressively to cut duplicate request bursts while still surfacing async progress.
 - [ ] [Internal] 🛠️ Create/retry async bootstrap now persists optimistic snapshots before canonical-attempt confirmation, reducing the first-click burst of repeated trip reads during queue handoff.
 - [ ] [Internal] 🛠️ Trip-view stall recovery now force-kicks missing async jobs before failing and does not mark still-leased jobs as `ASYNC_WORKER_JOB_MISSING`.
-- [x] [Improved] ⚡ Trip routes now paint a lightweight loading shell immediately while planner data and the heavy trip workspace load in the background, making first open feel much faster.
-- [x] [Fixed] ⚪ Trip pages no longer flash a half-screen grey loading block before the planner shell appears.
-- [x] [Improved] 🧭 The very first app bootstrap frame now shows a branded TravelFlow shell with header chrome instead of a blank white page.
+- [ ] [Internal] ⚡ Trip routes now paint a lightweight loading shell immediately while planner data and the heavy trip workspace load in the background, making first open feel much faster.
+- [ ] [Internal] ⚪ Trip pages no longer flash a half-screen grey loading block before the planner shell appears.
+- [ ] [Internal] 🧭 The very first app bootstrap frame now shows a branded TravelFlow shell with header chrome instead of a blank white page.
