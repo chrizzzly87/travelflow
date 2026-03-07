@@ -66,9 +66,16 @@ Official docs:
 - [Sandbox + test cards](https://developer.paddle.com/concepts/testing/test-cards)
 
 ## Database Setup (Full Sync Mode)
-Apply the latest schema changes from [`docs/supabase.sql`](/Users/chrizzzly/.codex/worktrees/248f/travelflow-codex/docs/supabase.sql), specifically:
+If you want only the Paddle billing delta before your broader schema branch is ready, run:
+- [`docs/open-issues/paddle-billing-subset-216.sql`](/Users/chrizzzly/.codex/worktrees/248f/travelflow-codex/docs/open-issues/paddle-billing-subset-216.sql)
+
+If you want the full canonical schema instead, apply the latest changes from [`docs/supabase.sql`](/Users/chrizzzly/.codex/worktrees/248f/travelflow-codex/docs/supabase.sql).
+
+The standalone subset is intentionally limited to:
 - `public.subscriptions` provider/lifecycle columns
+- `public.subscriptions.current_period_end` for older existing tables
 - `public.billing_webhook_events` table
+- `public.profiles.tier_key` safety/backfill for webhook tier sync
 - related indexes + RLS policies
 
 Quick verification queries:
@@ -116,7 +123,7 @@ Use this when Supabase schema updates are blocked by parallel work:
 This validates the full external loop (hosted checkout -> Paddle -> your real webhook endpoint) without requiring Supabase write paths.
 
 ## Promote To Full Sync After Merge
-1. Apply Supabase schema updates from [`docs/supabase.sql`](/Users/chrizzzly/.codex/worktrees/248f/travelflow-codex/docs/supabase.sql).
+1. Apply Supabase schema updates from [`docs/open-issues/paddle-billing-subset-216.sql`](/Users/chrizzzly/.codex/worktrees/248f/travelflow-codex/docs/open-issues/paddle-billing-subset-216.sql) now, or the broader [`docs/supabase.sql`](/Users/chrizzzly/.codex/worktrees/248f/travelflow-codex/docs/supabase.sql) once your parallel schema branch is merged.
 2. Set `PADDLE_WEBHOOK_SYNC_MODE=full`.
 3. Ensure `SUPABASE_SERVICE_ROLE_KEY` is present.
 4. Replay recent Paddle sandbox events (Webhook UI -> resend) to confirm persistence/tier sync.
