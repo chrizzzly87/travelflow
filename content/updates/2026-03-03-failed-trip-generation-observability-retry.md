@@ -118,3 +118,4 @@ summary: "Failed trip generations are now easier to spot, inspect, and retry on 
 - [ ] [Internal] 🛠️ Trip view now polls/nudges queued worker jobs less aggressively to cut duplicate request bursts while still surfacing async progress.
 - [ ] [Internal] 🛠️ Create/retry async bootstrap now persists optimistic snapshots before canonical-attempt confirmation, reducing the first-click burst of repeated trip reads during queue handoff.
 - [ ] [Internal] 🛠️ Trip-view stall recovery now force-kicks missing async jobs before failing and does not mark still-leased jobs as `ASYNC_WORKER_JOB_MISSING`.
+- [x] [Improved] ⚡ Trip routes now paint a lightweight loading shell immediately while planner data and the heavy trip workspace load in the background, making first open feel much faster.

@@ -18,7 +18,8 @@ import {
 } from '../utils';
 import type { ITrip, IViewSettings } from '../types';
 import type { ExampleTripLoaderRouteProps } from './tripRouteTypes';
-import { TripView } from '../components/TripView';
+import { LazyTripView } from '../components/tripview/LazyTripView';
+import { TripRouteLoadingShell } from '../components/tripview/TripRouteLoadingShell';
 
 const areViewSettingsEqual = (a?: IViewSettings, b?: IViewSettings): boolean => {
     if (!a && !b) return true;
@@ -315,27 +316,31 @@ export const ExampleTripLoaderRoute: React.FC<ExampleTripLoaderRouteProps> = ({
         onViewSettingsChange(settings);
     }, [onViewSettingsChange, viewSettings]);
 
-    if (!activeTrip || !activeTrip.isExample) return null;
+    if (!activeTrip || !activeTrip.isExample) {
+        return <TripRouteLoadingShell variant="loadingExampleTrip" />;
+    }
 
     return (
-        <TripView
-            trip={activeTrip}
-            initialViewSettings={viewSettings ?? activeTrip.defaultView}
-            onUpdateTrip={(updatedTrip) => onTripLoaded(updatedTrip, viewSettings ?? updatedTrip.defaultView)}
-            onViewSettingsChange={handleRouteViewSettingsChange}
-            onOpenManager={onOpenManager}
-            onOpenSettings={onOpenSettings}
-            appLanguage={appLanguage}
-            canShare={false}
-            onCopyTrip={handleCopyExampleTrip}
-            isExamplePreview
-            suppressToasts
-            suppressReleaseNotice
-            exampleTripBanner={{
-                title: templateCard?.title || activeTrip.title,
-                countries: templateCountries,
-                onCreateSimilarTrip: handleCreateSimilarTrip,
-            }}
-        />
+        <React.Suspense fallback={<TripRouteLoadingShell variant="preparingExamplePlanner" />}>
+            <LazyTripView
+                trip={activeTrip}
+                initialViewSettings={viewSettings ?? activeTrip.defaultView}
+                onUpdateTrip={(updatedTrip) => onTripLoaded(updatedTrip, viewSettings ?? updatedTrip.defaultView)}
+                onViewSettingsChange={handleRouteViewSettingsChange}
+                onOpenManager={onOpenManager}
+                onOpenSettings={onOpenSettings}
+                appLanguage={appLanguage}
+                canShare={false}
+                onCopyTrip={handleCopyExampleTrip}
+                isExamplePreview
+                suppressToasts
+                suppressReleaseNotice
+                exampleTripBanner={{
+                    title: templateCard?.title || activeTrip.title,
+                    countries: templateCountries,
+                    onCreateSimilarTrip: handleCreateSimilarTrip,
+                }}
+            />
+        </React.Suspense>
     );
 };

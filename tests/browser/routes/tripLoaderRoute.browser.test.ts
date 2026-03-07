@@ -208,6 +208,20 @@ describe('routes/TripLoaderRoute', () => {
     });
   });
 
+  it('renders a route loading shell while the trip loader is still resolving', () => {
+    mocks.dbEnabled = true;
+    mocks.auth.isAuthenticated = true;
+    mocks.route.tripId = 'trip-pending';
+    mocks.route.pathname = '/trip/trip-pending';
+    mocks.dbGetTrip.mockImplementation(() => new Promise(() => {}));
+
+    const props = makeRouteProps();
+    const view = render(React.createElement(TripLoaderRoute, props));
+
+    expect(view.queryAllByTestId('trip-route-loading-shell').length).toBeGreaterThan(0);
+    expect(mocks.renderedTripViewProps).toBeNull();
+  });
+
   it('loads local trip immediately when connectivity is offline', async () => {
     mocks.dbEnabled = true;
     mocks.connectivityState = 'offline';

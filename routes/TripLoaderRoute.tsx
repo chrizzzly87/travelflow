@@ -24,7 +24,8 @@ import {
 import type { ITrip, ITimelineItem, IViewSettings } from '../types';
 import { normalizeTransportMode } from '../shared/transportModes';
 import type { TripLoaderRouteProps } from './tripRouteTypes';
-import { TripView } from '../components/TripView';
+import { LazyTripView } from '../components/tripview/LazyTripView';
+import { TripRouteLoadingShell } from '../components/tripview/TripRouteLoadingShell';
 
 const areViewSettingsEqual = (a?: IViewSettings, b?: IViewSettings): boolean => {
     if (!a && !b) return true;
@@ -309,27 +310,31 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
         onViewSettingsChange(settings);
     }, [onViewSettingsChange]);
 
-    if (!trip) return null;
+    if (!trip) {
+        return <TripRouteLoadingShell variant="loadingTrip" />;
+    }
     const adminFallbackAccess = tripAccess?.source === 'admin_fallback' ? tripAccess : undefined;
     const isPublicReadView = tripAccess?.source === 'public_read';
     const tripViewKey = `${trip.id}:${adminFallbackAccess ? 'admin-fallback' : isPublicReadView ? 'public-read' : 'default'}`;
 
     return (
-        <TripView
-            key={tripViewKey}
-            trip={trip}
-            initialMapFocusQuery={resolveTripInitialMapFocusQuery(trip)}
-            initialViewSettings={viewSettings ?? trip.defaultView}
-            onUpdateTrip={onUpdateTrip}
-            onCommitState={onCommitState}
-            onViewSettingsChange={handleRouteViewSettingsChange}
-            onOpenManager={onOpenManager}
-            onOpenSettings={onOpenSettings}
-            appLanguage={appLanguage}
-            readOnly={Boolean(isPublicReadView)}
-            canShare={!adminFallbackAccess && !isPublicReadView}
-            adminAccess={adminFallbackAccess}
-            tripAccess={tripAccess || undefined}
-        />
+        <React.Suspense fallback={<TripRouteLoadingShell variant="preparingPlanner" />}>
+            <LazyTripView
+                key={tripViewKey}
+                trip={trip}
+                initialMapFocusQuery={resolveTripInitialMapFocusQuery(trip)}
+                initialViewSettings={viewSettings ?? trip.defaultView}
+                onUpdateTrip={onUpdateTrip}
+                onCommitState={onCommitState}
+                onViewSettingsChange={handleRouteViewSettingsChange}
+                onOpenManager={onOpenManager}
+                onOpenSettings={onOpenSettings}
+                appLanguage={appLanguage}
+                readOnly={Boolean(isPublicReadView)}
+                canShare={!adminFallbackAccess && !isPublicReadView}
+                adminAccess={adminFallbackAccess}
+                tripAccess={tripAccess || undefined}
+            />
+        </React.Suspense>
     );
 };

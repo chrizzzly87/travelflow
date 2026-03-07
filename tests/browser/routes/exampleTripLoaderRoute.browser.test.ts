@@ -181,7 +181,9 @@ describe('routes/ExampleTripLoaderRoute', () => {
       template: 'template-1',
       country_count: 1,
     });
-    expect(latestTripViewProps()?.isExamplePreview).toBe(true);
+    await waitFor(() => {
+      expect(latestTripViewProps()?.isExamplePreview).toBe(true);
+    });
   });
 
   it('redirects to home when template factory cannot be loaded', async () => {
@@ -216,6 +218,15 @@ describe('routes/ExampleTripLoaderRoute', () => {
     await waitFor(() => {
       expect(latestTripViewProps()?.trip).toEqual(resolvedTrip);
     });
+  });
+
+  it('renders a route loading shell while example template resources are still resolving', () => {
+    mocks.loadExampleTemplateFactory.mockImplementation(() => new Promise(() => {}));
+    const props = makeRouteProps();
+    const view = render(React.createElement(ExampleTripLoaderRoute, props));
+
+    expect(view.queryAllByTestId('trip-route-loading-shell').length).toBeGreaterThan(0);
+    expect(latestTripViewProps()).toBeUndefined();
   });
 
   it('handles copy and create-similar actions through TripView callbacks', async () => {

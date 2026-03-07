@@ -360,5 +360,13 @@
         "unexpected": "Retry failed unexpectedly."
       }
     }
+  },
+  "tripRouteShell": {
+    "loadingTrip": "Caricamento viaggio",
+    "preparingPlanner": "Preparazione pianificatore",
+    "loadingSharedTrip": "Caricamento viaggio condiviso",
+    "preparingSharedPlanner": "Preparazione pianificatore condiviso",
+    "loadingExampleTrip": "Caricamento viaggio di esempio",
+    "preparingExamplePlanner": "Preparazione pianificatore di esempio"
   }
 }
