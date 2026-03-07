@@ -1,4 +1,4 @@
-import React, { ReactNode, useEffect } from 'react';
+import React, { ReactNode } from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import './index.css';
@@ -29,7 +29,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
   render() {
     if (this.state.hasError) {
       return (
-        <div className="p-8 font-sans text-center">
+        <div className="p-8 font-sans text-center" data-tf-handoff-ready="true">
           <h1 className="text-2xl font-bold text-red-600 mb-4">Something went wrong</h1>
           <p className="text-gray-600 mb-4">The application encountered an error while loading.</p>
           <pre className="bg-gray-100 p-4 rounded text-left text-sm overflow-auto max-w-2xl mx-auto">
@@ -49,35 +49,60 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
   }
 }
 
-const BootstrapShellHandoff: React.FC = () => {
-  useEffect(() => {
-    if (typeof document === 'undefined') return;
+const setupBootstrapShellHandoff = (rootElement: HTMLElement) => {
+  if (typeof document === 'undefined') return;
 
-    const root = document.documentElement;
-    const shell = document.getElementById('app-bootstrap-shell');
-    let removalTimer: number | undefined;
+  const root = document.documentElement;
+  const shell = document.getElementById('app-bootstrap-shell');
+  if (!shell) return;
 
-    const finalizeRemoval = () => {
-      shell?.remove();
-    };
+  let removalTimer: number | undefined;
+  let rafId: number | undefined;
+  let observer: MutationObserver | undefined;
+  let didScheduleRemoval = false;
 
-    const frame = window.requestAnimationFrame(() => {
-      root.setAttribute('data-tf-react-mounted', 'true');
-      if (!shell) return;
+  const finalizeRemoval = () => {
+    shell.remove();
+    if (removalTimer !== undefined) {
+      window.clearTimeout(removalTimer);
+      removalTimer = undefined;
+    }
+    if (rafId !== undefined) {
+      window.cancelAnimationFrame(rafId);
+      rafId = undefined;
+    }
+    observer?.disconnect();
+  };
+
+  const scheduleRemoval = () => {
+    if (didScheduleRemoval) return;
+    didScheduleRemoval = true;
+    rafId = window.requestAnimationFrame(() => {
+      root.setAttribute('data-tf-react-shell-visible', 'true');
       shell.addEventListener('transitionend', finalizeRemoval, { once: true });
-      removalTimer = window.setTimeout(finalizeRemoval, 240);
+      removalTimer = window.setTimeout(finalizeRemoval, 220);
     });
+  };
 
-    return () => {
-      window.cancelAnimationFrame(frame);
-      if (removalTimer !== undefined) {
-        window.clearTimeout(removalTimer);
-      }
-      shell?.removeEventListener('transitionend', finalizeRemoval);
-    };
-  }, []);
+  const hasReadyNode = () => rootElement.querySelector('[data-tf-handoff-ready="true"]') !== null;
 
-  return null;
+  if (hasReadyNode()) {
+    scheduleRemoval();
+    return;
+  }
+
+  observer = new MutationObserver(() => {
+    if (!hasReadyNode()) return;
+    observer?.disconnect();
+    scheduleRemoval();
+  });
+
+  observer.observe(rootElement, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ['data-tf-handoff-ready'],
+  });
 };
 
 const rootElement = document.getElementById('root');
@@ -100,10 +125,10 @@ if (typeof window !== 'undefined') {
 }
 
 const root = ReactDOM.createRoot(rootElement);
+setupBootstrapShellHandoff(rootElement);
 root.render(
   <React.StrictMode>
     <ErrorBoundary>
-        <BootstrapShellHandoff />
         <App />
     </ErrorBoundary>
   </React.StrictMode>

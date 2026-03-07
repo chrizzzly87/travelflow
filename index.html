@@ -55,7 +55,7 @@
         overflow: hidden;
       }
 
-      html[data-tf-react-mounted="true"] #app-bootstrap-shell {
+      html[data-tf-react-shell-visible="true"] #app-bootstrap-shell {
         opacity: 0;
         visibility: hidden;
         pointer-events: none;
@@ -72,12 +72,12 @@
       .tf-boot-header {
         border-bottom: 1px solid rgba(226, 232, 240, 0.7);
         background: rgba(255, 255, 255, 0.9);
-        backdrop-filter: blur(10px);
+        backdrop-filter: blur(8px);
       }
 
       .tf-boot-header-inner {
-        min-height: 72px;
-        max-width: 1280px;
+        width: 100%;
+        max-width: 80rem;
         margin: 0 auto;
         display: flex;
         align-items: center;
@@ -121,16 +121,14 @@
       }
 
       .tf-boot-nav {
-        display: flex;
+        display: none;
         align-items: center;
         justify-content: center;
         gap: 16px;
         min-width: 0;
         flex: 1 1 auto;
-        font-size: 0.875rem;
       }
 
-      .tf-boot-nav-link,
       .tf-boot-line,
       .tf-boot-card,
       .tf-boot-metric,
@@ -147,6 +145,8 @@
 
       .tf-boot-nav-link {
         flex: 0 0 auto;
+        font-size: 0.875rem;
+        line-height: 1.25rem;
         color: #64748b;
         font-weight: 600;
         white-space: nowrap;
@@ -181,6 +181,7 @@
       }
 
       .tf-boot-action-chip--locale {
+        display: none;
         gap: 8px;
       }
 
@@ -210,8 +211,8 @@
       }
 
       .tf-boot-main {
-        min-height: calc(100vh - 73px);
-        background: #ffffff;
+        min-height: calc(100vh - 68px);
+        background: #f8fafc;
       }
 
       .tf-boot-page {
@@ -250,8 +251,10 @@
         padding: 28px;
       }
 
-      .tf-boot-marketing-spacer {
-        min-height: calc(100vh - 145px);
+      .tf-boot-page--marketing,
+      .tf-boot-page--marketing-react {
+        min-height: calc(100vh - 68px);
+        padding: 0;
       }
 
       .tf-boot-hero-lines {
@@ -453,20 +456,34 @@
           gap: 18px;
         }
 
-        .tf-boot-nav {
-          gap: 18px;
-        }
-
         .tf-boot-trip-layout {
           grid-template-columns: minmax(0, 1fr);
         }
       }
 
-      @media (max-width: 960px) {
-        .tf-boot-nav {
-          display: none;
+      @media (min-width: 768px) {
+        .tf-boot-action-chip--locale {
+          display: inline-flex;
+        }
+      }
+
+      @media (min-width: 1024px) {
+        .tf-boot-header-inner {
+          padding-inline: 32px;
         }
 
+        .tf-boot-nav {
+          display: flex;
+        }
+      }
+
+      @media (min-width: 1280px) {
+        .tf-boot-nav {
+          gap: 24px;
+        }
+      }
+
+      @media (max-width: 960px) {
         .tf-boot-marketing-grid {
           grid-template-columns: repeat(2, minmax(0, 1fr));
         }
@@ -474,7 +491,6 @@
 
       @media (max-width: 640px) {
         .tf-boot-header-inner {
-          min-height: 64px;
           padding-inline: 14px;
           padding-block: 14px;
           gap: 12px;
@@ -649,9 +665,7 @@
           </div>
         </header>
         <main class="tf-boot-main">
-          <section class="tf-boot-page tf-boot-page--marketing">
-            <div class="tf-boot-marketing-spacer"></div>
-          </section>
+          <section class="tf-boot-page tf-boot-page--marketing"></section>
           <section class="tf-boot-page tf-boot-page--trip">
             <div class="tf-boot-trip-status"></div>
             <div class="tf-boot-trip-summary">
@@ -691,7 +705,6 @@
           </section>
         </main>
       </div>
-    </div>
     <div id="root"></div>
     <!-- Netlify Forms SPA registration scaffold -->
     <form

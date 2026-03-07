@@ -16,8 +16,9 @@ describe('index.html bootstrap shell', () => {
     expect(html).toContain('Features');
     expect(html).toContain('News &amp; Updates');
     expect(html).toContain('Create Trip');
-    expect(html).toContain('class="tf-boot-marketing-spacer"');
+    expect(html).not.toContain('class="tf-boot-marketing-spacer"');
     expect(html).not.toContain('class="tf-boot-hero"');
+    expect(html).toContain('data-tf-react-shell-visible');
   });
 
   it('switches to a trip-specific bootstrap shell on trip-like routes before hydration', () => {

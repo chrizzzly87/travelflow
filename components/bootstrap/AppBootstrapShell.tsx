@@ -21,6 +21,7 @@ export const AppBootstrapShell: React.FC<AppBootstrapShellProps> = ({
     data-testid={testId}
     data-shell-variant={variant}
     data-shell-state={shellState}
+    data-tf-handoff-ready="true"
     aria-hidden="true"
   >
     <header className="tf-boot-header">
@@ -90,9 +91,7 @@ export const AppBootstrapShell: React.FC<AppBootstrapShellProps> = ({
           </div>
         </section>
       ) : (
-        <section className="tf-boot-page tf-boot-page--marketing tf-boot-page--marketing-react">
-          <div className="tf-boot-marketing-spacer" />
-        </section>
+        <section className="tf-boot-page tf-boot-page--marketing tf-boot-page--marketing-react" />
       )}
     </main>
   </div>
