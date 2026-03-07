@@ -1,10 +1,26 @@
+import type { AppLanguage } from '../types';
+
 declare global {
     interface Window {
         Paddle?: {
             Environment?: {
                 set: (environment: 'sandbox' | 'production') => void;
             };
-            Initialize: (config: { token: string }) => void;
+            Checkout?: {
+                open: (config: {
+                    transactionId: string;
+                    customer?: {
+                        email?: string;
+                    };
+                }) => void;
+            };
+            Initialize: (config: {
+                token: string;
+                checkout?: {
+                    settings?: PaddleCheckoutSettings;
+                };
+                eventCallback?: (event: PaddleCheckoutEvent) => void;
+            }) => void;
         };
     }
 }
@@ -12,13 +28,65 @@ declare global {
 const PADDLE_JS_URL = 'https://cdn.paddle.com/paddle/v2/paddle.js';
 const PADDLE_SCRIPT_ID = 'tf-paddle-js';
 const PADDLE_CONFIG_ENDPOINT = '/api/billing/paddle/config';
+export const PADDLE_INLINE_FRAME_TARGET_CLASS = 'tf-paddle-inline-frame';
+
+const PADDLE_CHECKOUT_TRANSACTION_QUERY_KEY = '_ptxn';
+const PADDLE_CHECKOUT_TIER_QUERY_KEY = '_tf_tier';
+const DEFAULT_PADDLE_CHECKOUT_LOCALE = 'en';
+const PADDLE_INLINE_FRAME_STYLE = [
+    'width: 100%',
+    'min-width: 312px',
+    'background-color: transparent',
+    'border: none',
+].join('; ');
+const PADDLE_LOCALE_MAP: Partial<Record<AppLanguage, string>> = {
+    en: 'en',
+    es: 'es',
+    de: 'de',
+    fr: 'fr',
+    pt: 'pt',
+    ru: 'ru',
+    it: 'it',
+    pl: 'pl',
+    ko: 'ko',
+};
 
 let paddleScriptPromise: Promise<boolean> | null = null;
 let initializedToken: string | null = null;
 let initializedEnvironment: PaddleClientEnvironment | null = null;
 let publicConfigPromise: Promise<PaddlePublicConfig> | null = null;
+let latestPaddleEventCallback: ((event: PaddleCheckoutEvent) => void) | null = null;
 
 export type PaddleClientEnvironment = 'sandbox' | 'live';
+export type PaddleCheckoutTierKey = 'tier_mid' | 'tier_premium';
+
+export interface PaddleCheckoutEvent {
+    name?: string;
+    data?: unknown;
+}
+
+export interface PaddleCheckoutSettings {
+    allowLogout?: boolean;
+    displayMode: 'inline';
+    frameInitialHeight: string;
+    frameStyle: string;
+    frameTarget: string;
+    locale: string;
+    showAddDiscounts?: boolean;
+    theme: 'light' | 'dark';
+    variant: 'one-page' | 'multi-page';
+}
+
+export interface InitializePaddleJsOptions {
+    environment?: PaddleClientEnvironment;
+    eventCallback?: (event: PaddleCheckoutEvent) => void;
+    locale?: AppLanguage | string | null;
+}
+
+export interface PaddleCheckoutLocationContext {
+    tierKey: PaddleCheckoutTierKey | null;
+    transactionId: string | null;
+}
 
 export interface PaddlePublicConfigIssue {
     code: 'api_key_environment_mismatch' | 'client_token_environment_mismatch';
@@ -45,6 +113,37 @@ const normalizePaddleEnvironment = (value: unknown): PaddleClientEnvironment =>
     value === 'sandbox' ? 'sandbox' : 'live';
 
 const asBoolean = (value: unknown): boolean => value === true;
+
+const asTrimmedString = (value: unknown): string | null =>
+    typeof value === 'string' && value.trim() ? value.trim() : null;
+
+const asObject = (value: unknown): Record<string, unknown> | null =>
+    value && typeof value === 'object' ? value as Record<string, unknown> : null;
+
+const asCheckoutTierKey = (value: unknown): PaddleCheckoutTierKey | null =>
+    value === 'tier_mid' || value === 'tier_premium' ? value : null;
+
+const resolvePaddleCheckoutLocale = (locale: AppLanguage | string | null | undefined): string => {
+    if (!locale || typeof locale !== 'string') return DEFAULT_PADDLE_CHECKOUT_LOCALE;
+    const normalized = locale.trim().toLowerCase().split(/[-_]/)[0] as AppLanguage;
+    return PADDLE_LOCALE_MAP[normalized] || DEFAULT_PADDLE_CHECKOUT_LOCALE;
+};
+
+const buildInlineCheckoutSettings = (locale: AppLanguage | string | null | undefined): PaddleCheckoutSettings => ({
+    allowLogout: false,
+    displayMode: 'inline',
+    frameInitialHeight: '640',
+    frameStyle: PADDLE_INLINE_FRAME_STYLE,
+    frameTarget: PADDLE_INLINE_FRAME_TARGET_CLASS,
+    locale: resolvePaddleCheckoutLocale(locale),
+    showAddDiscounts: false,
+    theme: 'light',
+    variant: 'one-page',
+});
+
+const dispatchPaddleEvent = (event: PaddleCheckoutEvent) => {
+    latestPaddleEventCallback?.(event);
+};
 
 const parsePaddlePublicConfig = (payload: unknown): PaddlePublicConfig | null => {
     if (!payload || typeof payload !== 'object') return null;
@@ -127,9 +226,52 @@ const ensurePaddleScript = async (): Promise<boolean> => {
 
 export const isPaddleClientConfigured = (): boolean => Boolean(readPaddleClientToken());
 
-export const initializePaddleJs = async (environment: PaddleClientEnvironment = 'live'): Promise<boolean> => {
+export const readPaddleCheckoutLocationContext = (search: string): PaddleCheckoutLocationContext => {
+    const params = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search);
+    return {
+        tierKey: asCheckoutTierKey(params.get(PADDLE_CHECKOUT_TIER_QUERY_KEY)),
+        transactionId: asTrimmedString(params.get(PADDLE_CHECKOUT_TRANSACTION_QUERY_KEY)),
+    };
+};
+
+export const appendPaddleCheckoutContext = (
+    checkoutUrl: string,
+    tierKey: PaddleCheckoutTierKey
+): string => {
+    const trimmedUrl = checkoutUrl.trim();
+    if (!trimmedUrl) return checkoutUrl;
+
+    try {
+        const fallbackBase = isBrowser() ? window.location.origin : 'https://travelflow.invalid';
+        const parsed = new URL(trimmedUrl, fallbackBase);
+        parsed.searchParams.set(PADDLE_CHECKOUT_TIER_QUERY_KEY, tierKey);
+        return parsed.toString();
+    } catch {
+        return checkoutUrl;
+    }
+};
+
+export const navigateToPaddleCheckout = (checkoutUrl: string): void => {
+    if (!isBrowser()) return;
+    window.location.assign(checkoutUrl);
+};
+
+export const extractPaddleCheckoutItemName = (event: PaddleCheckoutEvent | null | undefined): string | null => {
+    const data = asObject(event?.data);
+    const items = Array.isArray(data?.items) ? data.items : [];
+    const firstItem = asObject(items[0]);
+    return asTrimmedString(firstItem?.price_name) || asTrimmedString(asObject(firstItem?.product)?.name);
+};
+
+export const initializePaddleJs = async ({
+    environment = 'live',
+    eventCallback,
+    locale,
+}: InitializePaddleJsOptions = {}): Promise<boolean> => {
     const token = readPaddleClientToken();
+    const checkoutLocale = resolvePaddleCheckoutLocale(locale);
     if (!token || !isBrowser()) return false;
+    latestPaddleEventCallback = eventCallback || null;
 
     const scriptReady = await ensurePaddleScript();
     if (!scriptReady || !window.Paddle || typeof window.Paddle.Initialize !== 'function') {
@@ -149,7 +291,13 @@ export const initializePaddleJs = async (environment: PaddleClientEnvironment = 
     }
 
     try {
-        window.Paddle.Initialize({ token });
+        window.Paddle.Initialize({
+            token,
+            checkout: {
+                settings: buildInlineCheckoutSettings(checkoutLocale),
+            },
+            eventCallback: dispatchPaddleEvent,
+        });
         initializedToken = token;
         initializedEnvironment = environment;
         return true;
@@ -204,13 +352,19 @@ export const isPaddleTierCheckoutConfigured = (
 };
 
 export const __paddleClientInternals = {
+    appendPaddleCheckoutContext,
+    buildInlineCheckoutSettings,
+    extractPaddleCheckoutItemName,
     ensurePaddleScript,
     parsePaddlePublicConfig,
     readPaddleClientToken,
+    readPaddleCheckoutLocationContext,
+    resolvePaddleCheckoutLocale,
     resetForTest: () => {
         paddleScriptPromise = null;
         initializedToken = null;
         initializedEnvironment = null;
         publicConfigPromise = null;
+        latestPaddleEventCallback = null;
     },
 };

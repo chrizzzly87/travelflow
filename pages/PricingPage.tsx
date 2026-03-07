@@ -1,7 +1,8 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { Check } from '@phosphor-icons/react';
 import { Trans, useTranslation } from 'react-i18next';
+import { DEFAULT_LOCALE, normalizeLocale } from '../config/locales';
 import { PLAN_CATALOG, PLAN_ORDER } from '../config/planCatalog';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
 import { ANONYMOUS_TRIP_EXPIRATION_DAYS, ANONYMOUS_TRIP_LIMIT } from '../config/productLimits';
@@ -10,10 +11,16 @@ import { MarketingLayout } from '../components/marketing/MarketingLayout';
 import { useAuth } from '../hooks/useAuth';
 import { startPaddleCheckoutSession, type BillingCheckoutTierKey } from '../services/billingService';
 import {
+    appendPaddleCheckoutContext,
+    extractPaddleCheckoutItemName,
     fetchPaddlePublicConfig,
     initializePaddleJs,
     isPaddleClientConfigured,
     isPaddleTierCheckoutConfigured,
+    navigateToPaddleCheckout,
+    PADDLE_INLINE_FRAME_TARGET_CLASS,
+    readPaddleCheckoutLocationContext,
+    type PaddleCheckoutEvent,
     type PaddlePublicConfig,
 } from '../services/paddleClient';
 
@@ -47,10 +54,14 @@ const asDisplayCount = (value: number | null, unlimitedLabel: string): string =>
     value === null ? unlimitedLabel : String(value);
 
 export const PricingPage: React.FC = () => {
-    const { t } = useTranslation('pricing');
+    const { t, i18n } = useTranslation('pricing');
+    const location = useLocation();
     const { access, isAuthenticated, isLoading: isAuthLoading } = useAuth();
     const [checkoutTierInFlight, setCheckoutTierInFlight] = useState<BillingCheckoutTierKey | null>(null);
     const [paddlePublicConfig, setPaddlePublicConfig] = useState<PaddlePublicConfig | null>(null);
+    const [inlineCheckoutItemName, setInlineCheckoutItemName] = useState<string | null>(null);
+    const [isInlineCheckoutLoading, setIsInlineCheckoutLoading] = useState(false);
+    const inlineCheckoutSectionRef = useRef<HTMLDivElement | null>(null);
     const isPaddleCheckoutEnabled = String(import.meta.env.VITE_PADDLE_CHECKOUT_ENABLED || '').toLowerCase() === 'true';
     const isPaddleClientTokenConfigured = isPaddleClientConfigured();
     const unlimitedLabel = t('shared.unlimited');
@@ -58,6 +69,51 @@ export const PricingPage: React.FC = () => {
     const enabledLabel = t('shared.enabled');
     const disabledLabel = t('shared.disabled');
     const isCheckoutEligibleUser = isAuthenticated && access?.isAnonymous !== true;
+    const activeLocale = useMemo(
+        () => normalizeLocale(i18n.resolvedLanguage ?? i18n.language ?? DEFAULT_LOCALE),
+        [i18n.language, i18n.resolvedLanguage]
+    );
+    const checkoutLocationContext = useMemo(
+        () => readPaddleCheckoutLocationContext(location.search),
+        [location.search]
+    );
+    const activeCheckoutTier = checkoutLocationContext.tierKey
+        ? PLAN_CATALOG[checkoutLocationContext.tierKey]
+        : null;
+    const activeCheckoutTierStyle = activeCheckoutTier
+        ? TIER_STYLE[activeCheckoutTier.publicSlug]
+        : null;
+    const hasInlineCheckout = Boolean(checkoutLocationContext.transactionId);
+
+    const resolveTierFeatures = useCallback((tierKey: typeof PLAN_ORDER[number]) => {
+        const tier = PLAN_CATALOG[tierKey];
+        const interpolationValues = {
+            maxActiveTripsLabel: asDisplayCount(tier.entitlements.maxActiveTrips, unlimitedLabel),
+            maxTotalTripsLabel: asDisplayCount(tier.entitlements.maxTotalTrips, unlimitedLabel),
+            tripExpirationLabel: tier.entitlements.tripExpirationDays === null
+                ? noExpiryLabel
+                : t('shared.days', { count: tier.entitlements.tripExpirationDays }),
+            sharingLabel: tier.entitlements.canShare ? enabledLabel : disabledLabel,
+            editableSharesLabel: tier.entitlements.canCreateEditableShares ? enabledLabel : disabledLabel,
+            proCreationLabel: tier.entitlements.canCreateProTrips ? enabledLabel : disabledLabel,
+        };
+        const featureTemplates = t(`tiers.${tier.publicSlug}.features`, { returnObjects: true }) as unknown;
+        return Array.isArray(featureTemplates)
+            ? featureTemplates.map((_, index) => (
+                t(`tiers.${tier.publicSlug}.features.${index}`, interpolationValues)
+            ))
+            : [];
+    }, [disabledLabel, enabledLabel, noExpiryLabel, t, unlimitedLabel]);
+
+    const handlePaddleCheckoutEvent = useCallback((event: PaddleCheckoutEvent) => {
+        const itemName = extractPaddleCheckoutItemName(event);
+        if (itemName) {
+            setInlineCheckoutItemName(itemName);
+        }
+        if (typeof event.name === 'string' && event.name.startsWith('checkout.')) {
+            setIsInlineCheckoutLoading(false);
+        }
+    }, []);
 
     useEffect(() => {
         if (!isPaddleCheckoutEnabled || !isPaddleClientTokenConfigured) return;
@@ -73,13 +129,23 @@ export const PricingPage: React.FC = () => {
                     return;
                 }
 
-                const ready = await initializePaddleJs(config.environment);
+                const ready = await initializePaddleJs({
+                    environment: config.environment,
+                    eventCallback: handlePaddleCheckoutEvent,
+                    locale: activeLocale,
+                });
                 if (!ready) {
+                    if (!cancelled && hasInlineCheckout) {
+                        setIsInlineCheckoutLoading(false);
+                    }
                     console.error('Failed to initialize Paddle.js on pricing page.');
                 }
             })
             .catch((error) => {
                 if (!cancelled) {
+                    if (hasInlineCheckout) {
+                        setIsInlineCheckoutLoading(false);
+                    }
                     console.error('Failed to load Paddle public config.', error);
                 }
             });
@@ -87,7 +153,22 @@ export const PricingPage: React.FC = () => {
         return () => {
             cancelled = true;
         };
-    }, [isPaddleCheckoutEnabled, isPaddleClientTokenConfigured]);
+    }, [activeLocale, handlePaddleCheckoutEvent, hasInlineCheckout, isPaddleCheckoutEnabled, isPaddleClientTokenConfigured]);
+
+    useEffect(() => {
+        if (!hasInlineCheckout) {
+            setInlineCheckoutItemName(null);
+            setIsInlineCheckoutLoading(false);
+            return;
+        }
+        setIsInlineCheckoutLoading(true);
+    }, [hasInlineCheckout]);
+
+    useEffect(() => {
+        if (!hasInlineCheckout || !inlineCheckoutSectionRef.current) return;
+        if (typeof inlineCheckoutSectionRef.current.scrollIntoView !== 'function') return;
+        inlineCheckoutSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, [hasInlineCheckout]);
 
     const handlePaidTierCheckout = useCallback(async (
         tierKey: BillingCheckoutTierKey,
@@ -101,7 +182,7 @@ export const PricingPage: React.FC = () => {
                 tierKey,
                 source: 'pricing_page',
             });
-            window.location.assign(session.checkoutUrl);
+            navigateToPaddleCheckout(appendPaddleCheckoutContext(session.checkoutUrl, tierKey));
         } catch (error) {
             console.error('Failed to start Paddle checkout session.', error);
         } finally {
@@ -135,22 +216,7 @@ export const PricingPage: React.FC = () => {
                             && isPaddleTierCheckoutConfigured(paddlePublicConfig, tier.key);
                         const canStartCheckout = isPaidTier && supportsCheckout && isCheckoutEligibleUser && !isAuthLoading;
                         const isCheckoutBusy = checkoutTierInFlight === tier.key;
-                        const interpolationValues = {
-                            maxActiveTripsLabel: asDisplayCount(tier.entitlements.maxActiveTrips, unlimitedLabel),
-                            maxTotalTripsLabel: asDisplayCount(tier.entitlements.maxTotalTrips, unlimitedLabel),
-                            tripExpirationLabel: tier.entitlements.tripExpirationDays === null
-                                ? noExpiryLabel
-                                : t('shared.days', { count: tier.entitlements.tripExpirationDays }),
-                            sharingLabel: tier.entitlements.canShare ? enabledLabel : disabledLabel,
-                            editableSharesLabel: tier.entitlements.canCreateEditableShares ? enabledLabel : disabledLabel,
-                            proCreationLabel: tier.entitlements.canCreateProTrips ? enabledLabel : disabledLabel,
-                        };
-                        const featureTemplates = t(`tiers.${tier.publicSlug}.features`, { returnObjects: true }) as unknown;
-                        const featureList = Array.isArray(featureTemplates)
-                            ? featureTemplates.map((_, index) => (
-                                t(`tiers.${tier.publicSlug}.features.${index}`, interpolationValues)
-                            ))
-                            : [];
+                        const featureList = resolveTierFeatures(tier.key);
 
                         return (
                             <div
@@ -234,6 +300,91 @@ export const PricingPage: React.FC = () => {
                         );
                     })}
                 </div>
+
+                {hasInlineCheckout ? (
+                    <div
+                        ref={inlineCheckoutSectionRef}
+                        className="mx-auto mt-10 max-w-6xl overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-[0_32px_80px_-40px_rgba(15,23,42,0.55)]"
+                    >
+                        <div className="grid lg:grid-cols-[minmax(0,360px)_minmax(0,1fr)]">
+                            <div
+                                className={`relative overflow-hidden p-8 text-white ${
+                                    activeCheckoutTierStyle
+                                        ? `bg-gradient-to-br ${activeCheckoutTierStyle.accentClass}`
+                                        : 'bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.28),_transparent_40%),linear-gradient(135deg,#0f172a_0%,#1e293b_100%)]'
+                                }`}
+                            >
+                                <div className="flex h-full flex-col">
+                                    {activeCheckoutTier ? (
+                                        <>
+                                            <span className="inline-flex self-start rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-white/75">
+                                                {t(`tiers.${activeCheckoutTier.publicSlug}.badge`)}
+                                            </span>
+                                            <div className="mt-6 flex items-baseline gap-2">
+                                                <span
+                                                    className="text-5xl font-extrabold tracking-tight"
+                                                    style={{ fontFamily: 'var(--tf-font-heading)' }}
+                                                >
+                                                    {`$${activeCheckoutTier.monthlyPriceUsd}`}
+                                                </span>
+                                                <span className="text-sm font-medium text-white/70">{t('shared.perMonth')}</span>
+                                            </div>
+                                            <h2
+                                                className="mt-4 text-2xl font-bold tracking-tight"
+                                                style={{ fontFamily: 'var(--tf-font-heading)' }}
+                                            >
+                                                {t(`tiers.${activeCheckoutTier.publicSlug}.name`)}
+                                            </h2>
+                                            <p className="mt-3 max-w-sm text-sm leading-6 text-white/75">
+                                                {t(`tiers.${activeCheckoutTier.publicSlug}.description`)}
+                                            </p>
+                                            <ul className="mt-8 space-y-3">
+                                                {resolveTierFeatures(activeCheckoutTier.key).map((feature) => (
+                                                    <li key={feature} className="flex items-start gap-3 text-sm text-white/80">
+                                                        <Check size={16} weight="bold" className="mt-0.5 shrink-0 text-white" />
+                                                        {feature}
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <span className="inline-flex self-start rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-white/75">
+                                                TravelFlow
+                                            </span>
+                                            <h2
+                                                className="mt-6 text-3xl font-bold tracking-tight"
+                                                style={{ fontFamily: 'var(--tf-font-heading)' }}
+                                            >
+                                                {inlineCheckoutItemName || t('hero.title')}
+                                            </h2>
+                                            <p className="mt-3 max-w-sm text-sm leading-6 text-white/75">
+                                                {t('hero.description')}
+                                            </p>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="bg-slate-50/70 p-4 sm:p-6 lg:p-8">
+                                <div className="relative overflow-hidden rounded-[28px] border border-slate-200 bg-white p-2 shadow-[0_20px_60px_-40px_rgba(15,23,42,0.45)]">
+                                    {isInlineCheckoutLoading ? (
+                                        <div className="pointer-events-none absolute inset-0 z-10 bg-white/88 backdrop-blur-sm">
+                                            <div className="flex h-full flex-col gap-4 p-6">
+                                                <div className="h-6 w-32 animate-pulse rounded-full bg-slate-200" />
+                                                <div className="h-14 w-full animate-pulse rounded-2xl bg-slate-100" />
+                                                <div className="h-14 w-full animate-pulse rounded-2xl bg-slate-100" />
+                                                <div className="h-40 w-full animate-pulse rounded-3xl bg-slate-100" />
+                                                <div className="mt-auto h-12 w-full animate-pulse rounded-2xl bg-slate-200" />
+                                            </div>
+                                        </div>
+                                    ) : null}
+                                    <div className={`${PADDLE_INLINE_FRAME_TARGET_CLASS} min-h-[640px] w-full`} />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                ) : null}
 
                 <div className="mx-auto mt-16 max-w-2xl text-center">
                     <div className="mb-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-left text-sm text-slate-600">

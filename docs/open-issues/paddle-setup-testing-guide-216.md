@@ -12,9 +12,10 @@ Reference issue: [#216](https://github.com/chrizzzly87/travelflow/issues/216)
 1. Signed-in user starts paid checkout from pricing.
 2. Frontend calls `/api/billing/paddle/config` first to learn the active environment and which paid tiers are actually configured.
 3. Frontend calls `/api/billing/paddle/checkout` with tier key.
-4. Edge function creates a Paddle transaction and returns hosted checkout URL.
-5. Paddle sends webhook events to `/api/billing/paddle/webhook`.
-6. Webhook handler verifies `Paddle-Signature`, deduplicates by `event_id`, and updates:
+4. Edge function creates a Paddle transaction and returns a checkout URL that routes back to the pricing page with Paddle transaction state.
+5. Pricing initializes Paddle.js in one-page inline mode and renders the checkout inside a branded shell on the pricing page instead of dropping the user into Paddle's plain default overlay.
+6. Paddle sends webhook events to `/api/billing/paddle/webhook`.
+7. Webhook handler verifies `Paddle-Signature`, deduplicates by `event_id`, and updates:
    - `public.subscriptions` canonical lifecycle row per user
    - `public.profiles.tier_key` (`tier_mid`/`tier_premium` or fallback `tier_free`)
    - `public.billing_webhook_events` log for replay/debug safety
@@ -57,6 +58,11 @@ Use Paddle as the source of truth for commercial/billing setup:
   - `VITE_PADDLE_CHECKOUT_ENABLED`
   - `VITE_PADDLE_CLIENT_TOKEN`
   - do not place Paddle secrets in browser-exposed vars
+
+## Checkout Presentation Notes
+- Pricing now hosts Paddle Checkout in an inline frame with one-page layout, light theme, and app-locale-aware initialization.
+- The sandbox `Test mode` badge comes from Paddle and remains visible in sandbox. It disappears in live mode.
+- For brand tuning beyond the app shell, use Paddle dashboard checkout branding/settings in the matching environment.
 
 ## Paddle Dashboard Setup
 1. Use **Sandbox** first in Paddle.

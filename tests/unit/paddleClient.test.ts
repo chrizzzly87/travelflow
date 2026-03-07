@@ -3,10 +3,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   __paddleClientInternals,
+  appendPaddleCheckoutContext,
+  extractPaddleCheckoutItemName,
   fetchPaddlePublicConfig,
   initializePaddleJs,
   isPaddleClientConfigured,
   isPaddleTierCheckoutConfigured,
+  readPaddleCheckoutLocationContext,
 } from '../../services/paddleClient';
 
 const ORIGINAL_TOKEN = import.meta.env.VITE_PADDLE_CLIENT_TOKEN;
@@ -39,11 +42,27 @@ describe('paddleClient', () => {
     const setEnvironment = vi.fn();
     window.Paddle = { Initialize: initialize, Environment: { set: setEnvironment } };
 
-    await expect(initializePaddleJs('sandbox')).resolves.toBe(true);
-    await expect(initializePaddleJs('sandbox')).resolves.toBe(true);
+    await expect(initializePaddleJs({ environment: 'sandbox', locale: 'de' })).resolves.toBe(true);
+    await expect(initializePaddleJs({ environment: 'sandbox', locale: 'de' })).resolves.toBe(true);
 
     expect(initialize).toHaveBeenCalledTimes(1);
-    expect(initialize).toHaveBeenCalledWith({ token: 'test_client_token' });
+    expect(initialize).toHaveBeenCalledWith({
+      token: 'test_client_token',
+      checkout: {
+        settings: {
+          allowLogout: false,
+          displayMode: 'inline',
+          frameInitialHeight: '640',
+          frameStyle: 'width: 100%; min-width: 312px; background-color: transparent; border: none',
+          frameTarget: 'tf-paddle-inline-frame',
+          locale: 'de',
+          showAddDiscounts: false,
+          theme: 'light',
+          variant: 'one-page',
+        },
+      },
+      eventCallback: expect.any(Function),
+    });
     expect(setEnvironment).toHaveBeenCalledWith('sandbox');
   });
 
@@ -106,6 +125,35 @@ describe('paddleClient', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(isPaddleTierCheckoutConfigured(first, 'tier_mid')).toBe(true);
     expect(isPaddleTierCheckoutConfigured(first, 'tier_premium')).toBe(false);
+  });
+
+  it('adds tier context to checkout URLs for branded pricing return state', () => {
+    expect(appendPaddleCheckoutContext(
+      'https://issue-174-paddle-sandbox--travelflowapp.netlify.app/pricing?_ptxn=txn_123',
+      'tier_mid',
+    )).toBe(
+      'https://issue-174-paddle-sandbox--travelflowapp.netlify.app/pricing?_ptxn=txn_123&_tf_tier=tier_mid',
+    );
+  });
+
+  it('reads checkout transaction and tier state from the pricing URL', () => {
+    expect(readPaddleCheckoutLocationContext('?_ptxn=txn_123&_tf_tier=tier_premium')).toEqual({
+      transactionId: 'txn_123',
+      tierKey: 'tier_premium',
+    });
+  });
+
+  it('extracts the checkout item name from Paddle checkout events', () => {
+    expect(extractPaddleCheckoutItemName({
+      name: 'checkout.loaded',
+      data: {
+        items: [
+          {
+            price_name: 'Explorer',
+          },
+        ],
+      },
+    })).toBe('Explorer');
   });
 
   it('treats config issues as blocking for tier checkout availability', () => {
