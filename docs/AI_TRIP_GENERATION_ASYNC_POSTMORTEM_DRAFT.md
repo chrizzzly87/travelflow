@@ -87,6 +87,10 @@ From `30afcf43` forward:
 9. `574accf` · 2026-03-06 · Stop stale async trip polling once real content is visible
 10. `9ee484d` · 2026-03-06 · Deepen loaded trip city lane contrast
 11. `e500113` · 2026-03-06 · Dedupe identical trip commits in app runtime
+12. `d796c78` · 2026-03-06 · Refresh async generation postmortem with latest hardening chain
+13. `105148c` · 2026-03-07 · Stabilize async retry bootstrap and stall recovery
+14. `d217818` · 2026-03-07 · Render trip route shell before planner bootstrap
+15. `0a3f19a` · 2026-03-07 · Remove pre-shell trip route placeholder flash
 
 ### 2.5 Why this section matters
 - It separates already-merged PRs from post-merge hardening on the still-open branch.
@@ -181,7 +185,17 @@ Verification command set:
 - Live verification still needed for:
   - reduced `user_settings` write bursts on long-lived trip pages,
   - fully stopping idle polling/fetch churn across all terminal-state trip scenarios,
-  - city color tuning acceptance on real generated data.
+  - local Netlify async-worker dev parity staying reliable across ports/restarts.
+
+## 7.1 Merge-readiness note
+- The original async-worker migration is now considered merge-ready as a follow-up hardening branch, with remaining work primarily in:
+  - verification,
+  - local-dev ergonomics,
+  - residual request-churn cleanup,
+  - documentation completion.
+- Reference:
+  - [docs/AI_TRIP_GENERATION_MERGE_READINESS.md](/Users/chrizzzly/.codex/worktrees/bece/travelflow-codex/docs/AI_TRIP_GENERATION_MERGE_READINESS.md)
+  - [docs/AI_TRIP_GENERATION_LOCAL_DEV.md](/Users/chrizzzly/.codex/worktrees/bece/travelflow-codex/docs/AI_TRIP_GENERATION_LOCAL_DEV.md)
 
 ## 8. Recommended next checks (production-like)
 1. Open a terminal-state trip for 2-3 minutes and inspect network request count trend.

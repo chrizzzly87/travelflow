@@ -37,6 +37,309 @@
       }
       body {
         overscroll-behavior-y: none;
+        margin: 0;
+        background: #ffffff;
+        color: #0f172a;
+      }
+
+      .tf-boot-shell {
+        min-height: 100vh;
+        width: 100%;
+        background: #ffffff;
+        color: #0f172a;
+        font-family: "Bricolage Grotesque", "Space Grotesk", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      .tf-boot-header {
+        height: 64px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 0 20px;
+        border-bottom: 1px solid #e2e8f0;
+        background: #ffffff;
+      }
+
+      .tf-boot-brand {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        min-width: 0;
+      }
+
+      .tf-boot-logo {
+        height: 40px;
+        width: 40px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+        color: #ffffff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        font-weight: 900;
+        letter-spacing: 0.02em;
+        box-shadow: 0 10px 25px rgba(79, 70, 229, 0.18);
+      }
+
+      .tf-boot-title {
+        font-size: 1.75rem;
+        font-weight: 900;
+        line-height: 1;
+        color: #111827;
+      }
+
+      .tf-boot-title span {
+        color: #4f46e5;
+      }
+
+      .tf-boot-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .tf-boot-pill,
+      .tf-boot-cta {
+        height: 40px;
+        border-radius: 14px;
+        border: 1px solid #e2e8f0;
+        background: #ffffff;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+      }
+
+      .tf-boot-pill {
+        width: 40px;
+      }
+
+      .tf-boot-cta {
+        width: 112px;
+      }
+
+      .tf-boot-main {
+        padding: 0;
+      }
+
+      .tf-boot-strip {
+        height: 52px;
+        display: flex;
+        align-items: center;
+        padding: 0 20px;
+        border-bottom: 1px solid #fde68a;
+        background: rgba(254, 243, 199, 0.55);
+      }
+
+      .tf-boot-strip-line {
+        height: 14px;
+        width: min(320px, 52vw);
+        border-radius: 999px;
+        background: linear-gradient(90deg, #fde68a 0%, #fef3c7 45%, #fde68a 100%);
+        background-size: 200% 100%;
+        animation: tf-boot-shimmer 1.4s linear infinite;
+      }
+
+      .tf-boot-grid {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        border-bottom: 1px solid #e2e8f0;
+      }
+
+      .tf-boot-day {
+        min-height: 78px;
+        padding: 16px 14px;
+        border-right: 1px solid #f1f5f9;
+      }
+
+      .tf-boot-day:last-child {
+        border-right: 0;
+      }
+
+      .tf-boot-line,
+      .tf-boot-chip,
+      .tf-boot-card-line,
+      .tf-boot-card-pill,
+      .tf-boot-map,
+      .tf-boot-metric {
+        border-radius: 999px;
+        background: linear-gradient(90deg, #e2e8f0 0%, #f8fafc 45%, #e2e8f0 100%);
+        background-size: 200% 100%;
+        animation: tf-boot-shimmer 1.4s linear infinite;
+      }
+
+      .tf-boot-line {
+        height: 12px;
+      }
+
+      .tf-boot-line--sm {
+        width: 52px;
+      }
+
+      .tf-boot-line--md {
+        width: 74px;
+        margin-top: 12px;
+        height: 28px;
+      }
+
+      .tf-boot-workspace {
+        display: grid;
+        gap: 20px;
+        grid-template-columns: minmax(0, 1fr);
+        padding: 24px 20px 28px;
+      }
+
+      .tf-boot-planner {
+        min-height: 420px;
+        border: 1px solid #e2e8f0;
+        border-radius: 30px;
+        background: rgba(248, 250, 252, 0.72);
+        padding: 18px;
+      }
+
+      .tf-boot-planner-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 16px;
+      }
+
+      .tf-boot-chip {
+        height: 36px;
+        width: 128px;
+      }
+
+      .tf-boot-card {
+        border: 1px solid #e2e8f0;
+        border-radius: 24px;
+        background: rgba(255, 255, 255, 0.94);
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+        padding: 16px;
+        margin-bottom: 14px;
+      }
+
+      .tf-boot-card-row {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+      }
+
+      .tf-boot-card-copy {
+        flex: 1 1 auto;
+        min-width: 0;
+      }
+
+      .tf-boot-card-line {
+        height: 22px;
+        width: 180px;
+        margin-bottom: 12px;
+      }
+
+      .tf-boot-card-line--wide {
+        width: min(560px, 100%);
+        height: 14px;
+      }
+
+      .tf-boot-card-line--mid {
+        width: min(430px, 78%);
+        height: 14px;
+        margin-top: 10px;
+      }
+
+      .tf-boot-card-pill {
+        width: 82px;
+        height: 40px;
+        flex: 0 0 auto;
+      }
+
+      .tf-boot-side {
+        display: none;
+        min-height: 420px;
+        border: 1px solid #e2e8f0;
+        border-radius: 30px;
+        background: rgba(248, 250, 252, 0.8);
+        padding: 18px;
+      }
+
+      .tf-boot-map {
+        width: 100%;
+        aspect-ratio: 4 / 5;
+        border-radius: 24px;
+        border: 1px solid #e2e8f0;
+        background-color: #ffffff;
+        margin-top: 14px;
+      }
+
+      .tf-boot-metrics {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+        margin-top: 14px;
+      }
+
+      .tf-boot-metric {
+        height: 66px;
+        border-radius: 20px;
+        border: 1px solid #e2e8f0;
+        background-color: #ffffff;
+      }
+
+      @keyframes tf-boot-shimmer {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+      }
+
+      @media (min-width: 1024px) {
+        .tf-boot-workspace {
+          grid-template-columns: minmax(0, 1fr) 320px;
+        }
+
+        .tf-boot-side {
+          display: block;
+        }
+      }
+
+      @media (max-width: 640px) {
+        .tf-boot-header {
+          padding: 0 14px;
+        }
+
+        .tf-boot-title {
+          font-size: 1.45rem;
+        }
+
+        .tf-boot-pill {
+          display: none;
+        }
+
+        .tf-boot-cta {
+          width: 88px;
+        }
+
+        .tf-boot-grid {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .tf-boot-grid .tf-boot-day:nth-child(n+4) {
+          display: none;
+        }
+
+        .tf-boot-workspace {
+          padding: 18px 14px 22px;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .tf-boot-strip-line,
+        .tf-boot-line,
+        .tf-boot-chip,
+        .tf-boot-card-line,
+        .tf-boot-card-pill,
+        .tf-boot-map,
+        .tf-boot-metric {
+          animation: none;
+        }
       }
       
       /* Print Styles */
@@ -101,7 +404,79 @@
     </style>
 </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div class="tf-boot-shell" aria-hidden="true">
+        <header class="tf-boot-header">
+          <div class="tf-boot-brand">
+            <div class="tf-boot-logo">TF</div>
+            <div class="tf-boot-title">Travel<span>Flow</span></div>
+          </div>
+          <div class="tf-boot-actions">
+            <div class="tf-boot-pill"></div>
+            <div class="tf-boot-pill"></div>
+            <div class="tf-boot-cta"></div>
+          </div>
+        </header>
+        <main class="tf-boot-main">
+          <div class="tf-boot-strip">
+            <div class="tf-boot-strip-line"></div>
+          </div>
+          <div class="tf-boot-grid">
+            <div class="tf-boot-day"><div class="tf-boot-line tf-boot-line--sm"></div><div class="tf-boot-line tf-boot-line--md"></div></div>
+            <div class="tf-boot-day"><div class="tf-boot-line tf-boot-line--sm"></div><div class="tf-boot-line tf-boot-line--md"></div></div>
+            <div class="tf-boot-day"><div class="tf-boot-line tf-boot-line--sm"></div><div class="tf-boot-line tf-boot-line--md"></div></div>
+            <div class="tf-boot-day"><div class="tf-boot-line tf-boot-line--sm"></div><div class="tf-boot-line tf-boot-line--md"></div></div>
+            <div class="tf-boot-day"><div class="tf-boot-line tf-boot-line--sm"></div><div class="tf-boot-line tf-boot-line--md"></div></div>
+          </div>
+          <div class="tf-boot-workspace">
+            <section class="tf-boot-planner">
+              <div class="tf-boot-planner-head">
+                <div class="tf-boot-line" style="width: 124px;"></div>
+                <div class="tf-boot-chip"></div>
+              </div>
+              <div class="tf-boot-card">
+                <div class="tf-boot-card-row">
+                  <div class="tf-boot-card-copy">
+                    <div class="tf-boot-card-line"></div>
+                    <div class="tf-boot-card-line tf-boot-card-line--wide"></div>
+                    <div class="tf-boot-card-line tf-boot-card-line--mid"></div>
+                  </div>
+                  <div class="tf-boot-card-pill"></div>
+                </div>
+              </div>
+              <div class="tf-boot-card">
+                <div class="tf-boot-card-row">
+                  <div class="tf-boot-card-copy">
+                    <div class="tf-boot-card-line" style="width: 156px;"></div>
+                    <div class="tf-boot-card-line tf-boot-card-line--wide"></div>
+                    <div class="tf-boot-card-line tf-boot-card-line--mid"></div>
+                  </div>
+                  <div class="tf-boot-card-pill"></div>
+                </div>
+              </div>
+              <div class="tf-boot-card" style="margin-bottom: 0;">
+                <div class="tf-boot-card-row">
+                  <div class="tf-boot-card-copy">
+                    <div class="tf-boot-card-line" style="width: 132px;"></div>
+                    <div class="tf-boot-card-line tf-boot-card-line--wide"></div>
+                    <div class="tf-boot-card-line tf-boot-card-line--mid"></div>
+                  </div>
+                  <div class="tf-boot-card-pill"></div>
+                </div>
+              </div>
+            </section>
+            <aside class="tf-boot-side">
+              <div class="tf-boot-line" style="width: 110px;"></div>
+              <div class="tf-boot-map"></div>
+              <div class="tf-boot-metrics">
+                <div class="tf-boot-metric"></div>
+                <div class="tf-boot-metric"></div>
+              </div>
+            </aside>
+          </div>
+        </main>
+      </div>
+    </div>
     <!-- Netlify Forms SPA registration scaffold -->
     <form
       name="contact"

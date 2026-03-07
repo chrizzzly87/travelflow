@@ -27,6 +27,7 @@ Status date: 2026-03-06
 - [x] Treat queued/running async metadata as terminal success when real itinerary content is already visible and there is no explicit newer retry intent, cutting off stale finished-trip polling loops.
 - [x] Added session-local trip commit dedupe in `App.tsx` so identical trip/view commits no longer create repeated `upsert_trip` / `add_trip_version` churn when only top-level `updatedAt` changes.
 - [x] Reverted the over-dark city-lane contrast pass so generated trip colors match the intended default palette depth again instead of rendering noticeably darker than existing trips.
+- [x] Production spot-check confirmed city panels look correct again after the palette rollback.
 - [x] Create/retry async bootstrap now persists optimistic trip snapshots before queue confirmation, replacing the initial high-frequency canonical-attempt fetch burst with a short confirmation window.
 - [x] Trip-view async stall recovery now force-kicks missing jobs before failing, and no longer marks a still-leased worker job as `ASYNC_WORKER_JOB_MISSING`.
 - [x] Route-level suspense fallbacks for trip/share/example pages now use the real planner loading shell, eliminating the pre-shell half-screen grey placeholder flash.
@@ -36,7 +37,6 @@ Status date: 2026-03-06
 - [x] Added App.tsx decomposition plan draft with phased extraction strategy (`docs/APP_TSX_DECOMPOSITION_PLAN.md`).
 
 ## Open
-- [ ] Redeploy production with the background-worker split so live create/retry runs are no longer capped by the old 20s edge timeout.
 - [ ] Verify in live runtime that fresh create-trip runs complete under the new background worker path instead of timing out at 20s.
 - [ ] Verify in live runtime that retry-triggered worker nudges no longer flood repeated trip fetches while a queued job waits to start.
 - [ ] Verify in live runtime that `user_settings` write bursts are reduced after hook dedupe patch.
@@ -44,7 +44,6 @@ Status date: 2026-03-06
 - [ ] Verify in live runtime that My Trips no longer triggers remote trip write churn from country enrichment.
 - [ ] Verify in live runtime that admin override-enabled trips can restart generation from both the failed banner and Trip Info without disabled-state drift.
 - [ ] Verify in live runtime that trip/share/example first paint no longer flashes the half-screen grey bootstrap block before the planner shell appears.
-- [ ] Validate city panel color tuning against real generated trips in production preview.
 - [ ] Produce postmortem package for browser -> async worker migration:
   - [x] complete commit/file/SQL change inventory
   - [x] user-flow architecture chart (route open -> checks -> outcomes)
