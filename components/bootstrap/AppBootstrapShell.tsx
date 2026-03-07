@@ -6,6 +6,7 @@ interface AppBootstrapShellProps {
   variant?: AppBootstrapShellVariant;
   testId?: string;
   shellState?: string;
+  handoffReady?: boolean;
 }
 
 const TRIP_DAYS = [0, 1, 2, 3, 4];
@@ -15,13 +16,14 @@ export const AppBootstrapShell: React.FC<AppBootstrapShellProps> = ({
   variant = 'marketing',
   testId,
   shellState,
+  handoffReady = false,
 }) => (
   <div
     className="tf-boot-shell"
     data-testid={testId}
     data-shell-variant={variant}
     data-shell-state={shellState}
-    data-tf-handoff-ready="true"
+    data-tf-handoff-ready={handoffReady ? 'true' : undefined}
     aria-hidden="true"
   >
     <header className="tf-boot-header">
