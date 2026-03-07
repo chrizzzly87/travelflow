@@ -12,6 +12,9 @@ describe('index.html bootstrap shell', () => {
     expect(html).toContain('class="tf-boot-page tf-boot-page--marketing"');
     expect(html).toContain('src="/favicon.svg"');
     expect(html).toContain('TravelFlow');
+    expect(html).toContain('Features');
+    expect(html).toContain('News &amp; Updates');
+    expect(html).toContain('Create Trip');
   });
 
   it('switches to a trip-specific bootstrap shell on trip-like routes before hydration', () => {
