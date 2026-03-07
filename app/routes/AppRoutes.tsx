@@ -6,6 +6,7 @@ import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from '../../config/locales';
 import { loadLazyComponentWithRecovery } from '../../services/lazyImportRecovery';
 import { MarketingRouteLoadingShell } from '../../components/bootstrap/MarketingRouteLoadingShell';
 import { TripRouteLoadingShell } from '../../components/tripview/TripRouteLoadingShell';
+import { DeferredAppRoutes } from './DeferredAppRoutes';
 
 const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
     moduleKey: string,
@@ -17,7 +18,6 @@ const SharedTripLoaderRoute = lazyWithRecovery('SharedTripLoaderRoute', () => im
 const ExampleTripLoaderRoute = lazyWithRecovery('ExampleTripLoaderRoute', () => import('../../routes/ExampleTripLoaderRoute').then((module) => ({ default: module.ExampleTripLoaderRoute })));
 const CreateTripClassicLabPage = lazyWithRecovery('CreateTripClassicLabPage', () => import('../../pages/CreateTripClassicLabPage').then((module) => ({ default: module.CreateTripClassicLabPage })));
 const CreateTripV3Page = lazyWithRecovery('CreateTripV3Page', () => import('../../pages/CreateTripV3Page').then((module) => ({ default: module.CreateTripV3Page })));
-const DeferredAppRoutes = lazyWithRecovery('DeferredAppRoutes', () => import('./DeferredAppRoutes').then((module) => ({ default: module.DeferredAppRoutes })));
 
 export const RouteLoadingFallback: React.FC = () => (
     <MarketingRouteLoadingShell />
@@ -215,15 +215,13 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
                 <Route path="/trip" element={<Navigate to="/create-trip" replace />} />
                 <Route
                     path="*"
-                    element={renderWithSuspense(
+                    element={
                         <DeferredAppRoutes
                             onAppLanguageLoaded={onAppLanguageLoaded}
                             onTripGenerated={onTripGenerated}
                             onOpenManager={onOpenManager}
-                        />,
-                        <RouteLoadingFallback />,
-                        { handoffReady: false }
-                    )}
+                        />
+                    }
                 />
             </Routes>
         </>

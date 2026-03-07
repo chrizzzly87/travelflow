@@ -5,6 +5,7 @@ import './index.css';
 import './i18n';
 import { applyDocumentLocale, DEFAULT_LOCALE, normalizeLocale } from './config/locales';
 import { extractLocaleFromPath, isToolRoute } from './config/routes';
+import { preloadCriticalRouteModules } from './services/criticalRoutePreload';
 
 interface ErrorBoundaryProps {
   children?: ReactNode;
@@ -125,6 +126,9 @@ if (typeof window !== 'undefined') {
 
 const root = ReactDOM.createRoot(rootElement);
 setupBootstrapShellHandoff(rootElement);
+if (typeof window !== 'undefined') {
+  preloadCriticalRouteModules(window.location.pathname);
+}
 root.render(
   <React.StrictMode>
     <ErrorBoundary>
