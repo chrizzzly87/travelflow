@@ -29,7 +29,8 @@ Status date: 2026-03-06
 - [x] Reverted the over-dark city-lane contrast pass so generated trip colors match the intended default palette depth again instead of rendering noticeably darker than existing trips.
 - [x] Create/retry async bootstrap now persists optimistic trip snapshots before queue confirmation, replacing the initial high-frequency canonical-attempt fetch burst with a short confirmation window.
 - [x] Trip-view async stall recovery now force-kicks missing jobs before failing, and no longer marks a still-leased worker job as `ASYNC_WORKER_JOB_MISSING`.
-- [x] Full regression run completed after changes (`pnpm test:core`: 186 files, 820 passed, 1 skipped).
+- [x] Route-level suspense fallbacks for trip/share/example pages now use the real planner loading shell, eliminating the pre-shell half-screen grey placeholder flash.
+- [x] Full regression run completed after changes (`pnpm test:core`: 187 files, 827 passed, 1 skipped).
 - [x] Added draft postmortem document with commit/file inventory and incident/fix mapping (`docs/AI_TRIP_GENERATION_ASYNC_POSTMORTEM_DRAFT.md`).
 - [x] Added runtime user-flow architecture charts for async generation paths (`docs/AI_TRIP_GENERATION_RUNTIME_USERFLOWS.md`).
 - [x] Added App.tsx decomposition plan draft with phased extraction strategy (`docs/APP_TSX_DECOMPOSITION_PLAN.md`).
@@ -42,6 +43,7 @@ Status date: 2026-03-06
 - [ ] Verify in live runtime that completed trips stop generation polling/fetch loops after the stale queued/running state fallback patch.
 - [ ] Verify in live runtime that My Trips no longer triggers remote trip write churn from country enrichment.
 - [ ] Verify in live runtime that admin override-enabled trips can restart generation from both the failed banner and Trip Info without disabled-state drift.
+- [ ] Verify in live runtime that trip/share/example first paint no longer flashes the half-screen grey bootstrap block before the planner shell appears.
 - [ ] Validate city panel color tuning against real generated trips in production preview.
 - [ ] Produce postmortem package for browser -> async worker migration:
   - [x] complete commit/file/SQL change inventory

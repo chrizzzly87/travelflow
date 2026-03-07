@@ -47,7 +47,7 @@ const CreateTripClassicLabPage = lazyWithRecovery('CreateTripClassicLabPage', ()
 const CreateTripV3Page = lazyWithRecovery('CreateTripV3Page', () => import('../../pages/CreateTripV3Page').then((module) => ({ default: module.CreateTripV3Page })));
 
 const RouteLoadingFallback: React.FC = () => (
-    <div className="min-h-[42vh] w-full bg-slate-50" aria-hidden="true" />
+    <div className="min-h-screen w-full bg-white" aria-hidden="true" />
 );
 
 const renderWithSuspense = (node: React.ReactElement) => (

@@ -980,7 +980,7 @@ const AppContent: React.FC = () => {
                 </section>
             )}
             {shouldBlockForTermsGate ? (
-                <div className="min-h-[42vh] w-full bg-slate-50" aria-hidden="true" />
+                <div className="min-h-screen w-full bg-white" aria-hidden="true" />
             ) : (
                 <AppRoutes
                     trip={trip}

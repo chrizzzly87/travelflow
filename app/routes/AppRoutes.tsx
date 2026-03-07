@@ -4,6 +4,7 @@ import { AppLanguage, ITrip, IViewSettings } from '../../types';
 import { useDbSync } from '../../hooks/useDbSync';
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from '../../config/locales';
 import { loadLazyComponentWithRecovery } from '../../services/lazyImportRecovery';
+import { TripRouteLoadingShell } from '../../components/tripview/TripRouteLoadingShell';
 
 const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
     moduleKey: string,
@@ -18,11 +19,14 @@ const CreateTripV3Page = lazyWithRecovery('CreateTripV3Page', () => import('../.
 const DeferredAppRoutes = lazyWithRecovery('DeferredAppRoutes', () => import('./DeferredAppRoutes').then((module) => ({ default: module.DeferredAppRoutes })));
 
 export const RouteLoadingFallback: React.FC = () => (
-    <div className="min-h-[42vh] w-full bg-slate-50" aria-hidden="true" />
+    <div className="min-h-screen w-full bg-white" aria-hidden="true" />
 );
 
-const renderWithSuspense = (node: React.ReactElement) => (
-    <Suspense fallback={<RouteLoadingFallback />}>
+const renderWithSuspense = (
+    node: React.ReactElement,
+    fallback: React.ReactElement = <RouteLoadingFallback />
+) => (
+    <Suspense fallback={fallback}>
         {node}
     </Suspense>
 );
@@ -164,7 +168,8 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
                             appLanguage={appLanguage}
                             onViewSettingsChange={onViewSettingsChange}
                             onLanguageLoaded={onAppLanguageLoaded}
-                        />
+                        />,
+                        <TripRouteLoadingShell variant="loadingTrip" />
                     )}
                 />
                 <Route
@@ -177,7 +182,8 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
                             onOpenSettings={onOpenSettings}
                             appLanguage={appLanguage}
                             onViewSettingsChange={onViewSettingsChange}
-                        />
+                        />,
+                        <TripRouteLoadingShell variant="loadingExampleTrip" />
                     )}
                 />
                 <Route
@@ -191,7 +197,8 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
                             appLanguage={appLanguage}
                             onViewSettingsChange={onViewSettingsChange}
                             onLanguageLoaded={onAppLanguageLoaded}
-                        />
+                        />,
+                        <TripRouteLoadingShell variant="loadingSharedTrip" />
                     )}
                 />
                 <Route path="/trip" element={<Navigate to="/create-trip" replace />} />

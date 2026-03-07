@@ -84,9 +84,12 @@ describe('app/routes/DeferredAppRoutes root auth gate', () => {
     mocks.auth.isLoading = true;
 
     const { container, getByTestId } = renderDeferredRoutes('/');
+    const fallback = container.querySelector('div[aria-hidden="true"]');
 
     expect(getByTestId('location-probe').textContent).toBe('/');
-    expect(container.querySelector('div[aria-hidden="true"]')).toBeTruthy();
+    expect(fallback).toBeTruthy();
+    expect(fallback?.className).toContain('min-h-screen');
+    expect(fallback?.className).toContain('bg-white');
   });
 
   it('supports public profile routes', async () => {
