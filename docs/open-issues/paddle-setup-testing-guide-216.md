@@ -58,21 +58,63 @@ Use Paddle as the source of truth for commercial/billing setup:
 ## Paddle Dashboard Setup
 1. Use **Sandbox** first in Paddle.
 2. Create a sandbox API key and store it as `PADDLE_API_KEY`.
+   - In Paddle, go to `Developer tools -> Authentication -> API keys`.
+   - Create a sandbox key with server-side access for transactions.
+   - Copy it once and store it in Netlify/local env.
 3. Create product + recurring price for `tier_mid` (Explorer).
+   - In Paddle, go to `Catalog -> Products`.
+   - Create a product for Explorer.
+   - Add a recurring monthly price to that product.
 4. Optional: create product/price for `tier_premium` (Globetrotter).
-5. Copy the recurring price IDs into:
+   - Repeat the same product + recurring price flow for Globetrotter.
+5. Copy the recurring price IDs into env:
    - `PADDLE_PRICE_ID_TIER_MID`
    - `PADDLE_PRICE_ID_TIER_PREMIUM`
+   - Open the product in Paddle and copy the `pri_...` ID from the price.
 6. Ensure a default payment link is configured in Paddle for the sandbox account.
+   - In Paddle, go to `Checkout -> Checkout settings -> Default payment link`.
+   - Set it to your local or preview site while testing.
+   - Example local/dev value: `http://localhost:8888/pricing`
+   - Example preview value: `https://<your-netlify-preview-domain>/pricing`
 7. Create a webhook destination for sandbox:
    - `https://<your-preview-or-tunnel>/api/billing/paddle/webhook`
+   - In Paddle, go to `Developer tools -> Notifications`.
+   - Click `New destination`.
+   - Choose webhook destination and enter the URL above.
 8. Subscribe the destination to the events this integration actually uses:
    - `subscription.created`
    - `subscription.updated`
    - `subscription.canceled`
    - `transaction.completed`
 9. Copy the webhook endpoint secret into `PADDLE_WEBHOOK_SECRET`.
+   - Paddle generates this for the notification destination.
+   - Use the destination secret, not the API key.
 10. Keep the account in sandbox and use Paddle test payment methods/cards for end-to-end runs.
+   - Basic sandbox card without 3DS: `4242 4242 4242 4242`, CVC `100`
+   - Successful 3DS test card: `4000 0038 0000 0446`, CVC `100`
+   - Declined test card: `4000 0000 0000 0002`, CVC `100`
+   - Use any future expiry date and any cardholder name.
+
+## Exact Env Mapping
+- `PADDLE_API_KEY`
+  - Comes from `Developer tools -> Authentication -> API keys`
+- `PADDLE_PRICE_ID_TIER_MID`
+  - Comes from the recurring Explorer price (`pri_...`)
+- `PADDLE_PRICE_ID_TIER_PREMIUM`
+  - Comes from the recurring Globetrotter price (`pri_...`)
+- `PADDLE_WEBHOOK_SECRET`
+  - Comes from `Developer tools -> Notifications` on the webhook destination
+
+## Minimum Paddle Setup To Test Your First Real Flow
+If you want the shortest path to a working test, do only this in Paddle sandbox:
+1. Create one sandbox API key.
+2. Create one product + one recurring price for Explorer.
+3. Copy that Explorer `pri_...` into `PADDLE_PRICE_ID_TIER_MID`.
+4. Create one webhook destination for `/api/billing/paddle/webhook`.
+5. Subscribe it to `subscription.created`, `subscription.updated`, `subscription.canceled`, and `transaction.completed`.
+6. Copy its secret into `PADDLE_WEBHOOK_SECRET`.
+
+You can leave `PADDLE_PRICE_ID_TIER_PREMIUM` empty until Explorer works.
 
 Official docs:
 - [Create transaction API](https://developer.paddle.com/api-reference/transactions/create-transaction)
