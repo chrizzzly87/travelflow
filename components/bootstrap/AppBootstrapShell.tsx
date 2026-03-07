@@ -25,8 +25,8 @@ export const AppBootstrapShell: React.FC<AppBootstrapShellProps> = ({
     data-shell-state={shellState}
     data-tf-handoff-ready={handoffReady ? 'true' : undefined}
     aria-hidden="true"
-  >
-    <header className="tf-boot-header">
+    >
+      <header className="tf-boot-header">
       <div className="tf-boot-header-inner">
         <div className="tf-boot-brand">
           <span className="tf-boot-logo-frame">
@@ -50,10 +50,10 @@ export const AppBootstrapShell: React.FC<AppBootstrapShellProps> = ({
           <span className="tf-boot-action-chip tf-boot-action-chip--login">Login</span>
           <span className="tf-boot-action-button">Create Trip</span>
         </div>
-      </div>
-    </header>
-    <main className="tf-boot-main">
-      {variant === 'trip' ? (
+        </div>
+      </header>
+    {variant === 'trip' ? (
+      <main className="tf-boot-main">
         <section className="tf-boot-page tf-boot-page--trip tf-boot-page--trip-react">
           <div className="tf-boot-trip-status" />
           <div className="tf-boot-trip-summary">
@@ -92,9 +92,7 @@ export const AppBootstrapShell: React.FC<AppBootstrapShellProps> = ({
             </aside>
           </div>
         </section>
-      ) : (
-        <section className="tf-boot-page tf-boot-page--marketing tf-boot-page--marketing-react" />
-      )}
-    </main>
+      </main>
+    ) : null}
   </div>
 );

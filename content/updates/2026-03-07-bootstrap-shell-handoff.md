@@ -13,4 +13,5 @@ summary: "Kept the branded header visible through the React handoff so first loa
 ## Changes
 - [x] [Improved] 🧭 First-load navigation now stays visible while the app hydrates, so opening a page feels faster and less blank.
 - [x] [Improved] 🧳 Trip, shared-trip, and example-trip loading now keep a route-aware top bar on screen until the first real planner view is ready.
-- [ ] [Internal] 🧱 Added a shared React bootstrap shell and overlay handoff so static HTML chrome remains visible until the first React paint.
+- [ ] [Internal] 🧱 Replaced the marketing route fallback with the real React site header so the bootstrap handoff no longer jumps between different header layouts.
+- [ ] [Internal] 🛠️ Fixed the bootstrap container markup so removing the pre-hydration shell no longer tears down the React root during the handoff.

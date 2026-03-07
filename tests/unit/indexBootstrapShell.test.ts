@@ -30,4 +30,8 @@ describe('index.html bootstrap shell', () => {
     expect(bootstrapMarkup).toContain('class="tf-boot-trip-header tf-boot-header--trip"');
     expect(html).toContain('(?:trip|s|example)');
   });
+
+  it('keeps the React root outside the bootstrap shell container', () => {
+    expect(html).toMatch(/<\/div>\s*<\/div>\s*<div id="root"><\/div>/);
+  });
 });

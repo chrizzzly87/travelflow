@@ -4,7 +4,7 @@ import { AppLanguage, ITrip, IViewSettings } from '../../types';
 import { useDbSync } from '../../hooks/useDbSync';
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from '../../config/locales';
 import { loadLazyComponentWithRecovery } from '../../services/lazyImportRecovery';
-import { AppBootstrapShell } from '../../components/bootstrap/AppBootstrapShell';
+import { MarketingRouteLoadingShell } from '../../components/bootstrap/MarketingRouteLoadingShell';
 import { TripRouteLoadingShell } from '../../components/tripview/TripRouteLoadingShell';
 
 const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
@@ -20,7 +20,7 @@ const CreateTripV3Page = lazyWithRecovery('CreateTripV3Page', () => import('../.
 const DeferredAppRoutes = lazyWithRecovery('DeferredAppRoutes', () => import('./DeferredAppRoutes').then((module) => ({ default: module.DeferredAppRoutes })));
 
 export const RouteLoadingFallback: React.FC = () => (
-    <AppBootstrapShell variant="marketing" testId="route-loading-shell" />
+    <MarketingRouteLoadingShell />
 );
 
 const renderWithSuspense = (
