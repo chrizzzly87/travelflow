@@ -67,6 +67,7 @@ import {
     setPendingAuthRedirect,
 } from '../services/authNavigationService';
 import { ensureDbSession } from '../services/dbService';
+import { dbUpsertTrip } from '../services/dbApi';
 import { createTripGenerationRequest } from '../services/tripGenerationQueueService';
 import {
     finishTripGenerationAttemptLog,
@@ -1684,7 +1685,15 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
         generationTabFeedbackSessionRef.current?.cancel();
         generationTabFeedbackSessionRef.current = beginTripGenerationTabFeedback();
         onTripGenerated(optimisticTrip);
-        const persistedTripReady = await waitForTripPersistence(optimisticTripId);
+        const persistedTripId = await dbUpsertTrip(optimisticTrip, undefined);
+        if (!persistedTripId) {
+            throw new Error('Trip was not persisted before async generation started.');
+        }
+        const persistedTripReady = await waitForTripPersistence(optimisticTripId, {
+            timeoutMs: 450,
+            intervalMs: 120,
+            maxAttempts: 3,
+        });
         if (!persistedTripReady) {
             throw new Error('Trip was not persisted before async generation started.');
         }
@@ -1706,9 +1715,14 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
             optimisticTrip = withLatestTripGenerationAttemptId(optimisticTrip, loggedAttempt.id);
             attemptId = loggedAttempt.id;
             onTripGenerated(optimisticTrip);
+            const persistedCanonicalTripId = await dbUpsertTrip(optimisticTrip, undefined);
+            if (!persistedCanonicalTripId) {
+                throw new Error('Trip generation attempt was not persisted before queueing.');
+            }
             const persistedCanonicalAttempt = await waitForTripAttemptPersistence(optimisticTripId, loggedAttempt.id, {
-                timeoutMs: 2_000,
-                intervalMs: 150,
+                timeoutMs: 450,
+                intervalMs: 120,
+                maxAttempts: 3,
             });
             if (!persistedCanonicalAttempt) {
                 throw new Error('Trip generation attempt was not persisted before queueing.');

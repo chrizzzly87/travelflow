@@ -122,6 +122,9 @@ describe('startClientAsyncTripGeneration', () => {
             source: 'create_trip_v3_async',
             prompt: 'wizard prompt body',
         }));
+        expect(dbUpsertTripMock).toHaveBeenCalledTimes(2);
+        expect(waitForTripPersistenceMock).toHaveBeenCalledTimes(1);
+        expect(waitForTripAttemptPersistenceMock).toHaveBeenCalledTimes(1);
         expect(finishTripGenerationAttemptLogMock).not.toHaveBeenCalled();
     });
 
@@ -163,9 +166,7 @@ describe('startClientAsyncTripGeneration', () => {
         }));
     });
 
-    it('falls back to direct upsert when initial persistence check misses the trip row', async () => {
-        waitForTripPersistenceMock.mockResolvedValue(false);
-
+    it('persists the optimistic trip before attempt logging', async () => {
         const updates: ITrip[] = [];
 
         const result = await startClientAsyncTripGeneration({
@@ -198,14 +199,12 @@ describe('startClientAsyncTripGeneration', () => {
         expect(result.attemptId).toBe('attempt-log-1');
         expect(startTripGenerationAttemptLogMock).toHaveBeenCalledTimes(1);
         expect(enqueueAsyncTripGenerationJobMock).toHaveBeenCalledTimes(1);
-        expect(ensureDbSessionMock).toHaveBeenCalledTimes(1);
-        expect(dbUpsertTripMock).toHaveBeenCalledTimes(1);
+        expect(dbUpsertTripMock).toHaveBeenCalledTimes(2);
+        expect(dbUpsertTripMock.mock.invocationCallOrder[0]).toBeLessThan(startTripGenerationAttemptLogMock.mock.invocationCallOrder[0]);
         expect(updates.map((trip) => trip.aiMeta?.generation?.state)).toEqual(['queued', 'queued']);
     });
 
-    it('falls back to direct upsert when canonical attempt persistence did not settle before enqueue', async () => {
-        waitForTripAttemptPersistenceMock.mockResolvedValueOnce(false).mockResolvedValueOnce(true);
-
+    it('persists the canonical attempt before enqueue with a single confirmation read', async () => {
         const updates: ITrip[] = [];
         await startClientAsyncTripGeneration({
             flow: 'classic',
@@ -233,8 +232,9 @@ describe('startClientAsyncTripGeneration', () => {
             },
         });
 
-        expect(waitForTripAttemptPersistenceMock).toHaveBeenCalledTimes(2);
-        expect(dbUpsertTripMock).toHaveBeenCalledTimes(1);
+        expect(waitForTripAttemptPersistenceMock).toHaveBeenCalledTimes(1);
+        expect(dbUpsertTripMock).toHaveBeenCalledTimes(2);
+        expect(dbUpsertTripMock.mock.invocationCallOrder[1]).toBeLessThan(waitForTripAttemptPersistenceMock.mock.invocationCallOrder[0]);
         expect(enqueueAsyncTripGenerationJobMock).toHaveBeenCalledTimes(1);
         expect(updates.map((trip) => trip.aiMeta?.generation?.state)).toEqual(['queued', 'queued']);
     });

@@ -26,6 +26,9 @@ Status date: 2026-03-06
 - [x] Gated view-settings persistence and visual history commits behind explicit manual interactions so auto-fit/layout settling no longer looks like a user edit.
 - [x] Treat queued/running async metadata as terminal success when real itinerary content is already visible and there is no explicit newer retry intent, cutting off stale finished-trip polling loops.
 - [x] Added session-local trip commit dedupe in `App.tsx` so identical trip/view commits no longer create repeated `upsert_trip` / `add_trip_version` churn when only top-level `updatedAt` changes.
+- [x] Reverted the over-dark city-lane contrast pass so generated trip colors match the intended default palette depth again instead of rendering noticeably darker than existing trips.
+- [x] Create/retry async bootstrap now persists optimistic trip snapshots before queue confirmation, replacing the initial high-frequency canonical-attempt fetch burst with a short confirmation window.
+- [x] Trip-view async stall recovery now force-kicks missing jobs before failing, and no longer marks a still-leased worker job as `ASYNC_WORKER_JOB_MISSING`.
 - [x] Full regression run completed after changes (`pnpm test:core`: 186 files, 820 passed, 1 skipped).
 - [x] Added draft postmortem document with commit/file inventory and incident/fix mapping (`docs/AI_TRIP_GENERATION_ASYNC_POSTMORTEM_DRAFT.md`).
 - [x] Added runtime user-flow architecture charts for async generation paths (`docs/AI_TRIP_GENERATION_RUNTIME_USERFLOWS.md`).

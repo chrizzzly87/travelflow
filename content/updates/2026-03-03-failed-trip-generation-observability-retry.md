@@ -106,7 +106,7 @@ summary: "Failed trip generations are now easier to spot, inspect, and retry on 
 - [ ] [Internal] 🛠️ My Trips country enrichment now stays local-only instead of writing cosmetic country metadata back to the remote trip row on sidebar open.
 - [ ] [Internal] 🛠️ App-level trip commit dedupe now ignores repeated identical trip/view payloads when only top-level `updatedAt` churn changes, reducing repeated `upsert_trip` / `add_trip_version` writes on settled trips.
 - [x] [Improved] 🎨 Async worker-generated city chips now use the same stronger palette depth as planner-generated trips, avoiding washed-out timeline colors.
-- [x] [Improved] 🎨 Trip city lanes now keep stronger contrast after loading, so finished itineraries no longer fade toward near-white pastels.
+- [x] [Improved] 🎨 Trip city lanes now keep the intended default palette depth after loading, avoiding both washed-out and over-dark itinerary colors.
 - [x] [Fixed] 🔄 Reopening a newly created trip after background loading resumes no longer crashes the trip page before the itinerary appears.
 - [ ] [Internal] 🛠️ Admin override-enabled trip views can now restart failed generation even when the trip would otherwise be read-only for normal traveler edits.
 - [ ] [Internal] 🛠️ Trip view settings sync now emits only normalized payload deltas and ignores callback-identity churn, further reducing duplicate `user_settings` writes.
@@ -116,3 +116,5 @@ summary: "Failed trip generations are now easier to spot, inspect, and retry on 
 - [ ] [Internal] ⚙️ Async generation edge triggers now hand work off to direct background-function processing instead of running provider calls in the edge response path.
 - [ ] [Internal] ⚙️ Async provider timeout and lease budgets are now tuned for the background worker runtime, reducing false 20-second timeouts on slower model responses.
 - [ ] [Internal] 🛠️ Trip view now polls/nudges queued worker jobs less aggressively to cut duplicate request bursts while still surfacing async progress.
+- [ ] [Internal] 🛠️ Create/retry async bootstrap now persists optimistic snapshots before canonical-attempt confirmation, reducing the first-click burst of repeated trip reads during queue handoff.
+- [ ] [Internal] 🛠️ Trip-view stall recovery now force-kicks missing async jobs before failing and does not mark still-leased jobs as `ASYNC_WORKER_JOB_MISSING`.

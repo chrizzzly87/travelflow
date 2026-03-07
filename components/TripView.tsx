@@ -93,10 +93,14 @@ import {
 import { abortActiveTripGenerationRequest } from '../services/aiService';
 import { buildBenchmarkScenarioImportUrl } from '../services/tripGenerationBenchmarkBridge';
 import { beginTripGenerationTabFeedback, type TripGenerationTabFeedbackSession } from '../services/tripGenerationTabFeedbackService';
-import { shouldApplyPolledTripUpdate, shouldPollTripGenerationState } from '../services/tripGenerationPollingService';
+import {
+    getAsyncTripGenerationStallRecoveryAction,
+    shouldApplyPolledTripUpdate,
+    shouldPollTripGenerationState,
+} from '../services/tripGenerationPollingService';
 import { processQueuedTripGenerationAfterAuth } from '../services/tripGenerationQueueService';
 import { registerTripGenerationCompletionWatch } from '../services/tripGenerationCompletionWatchService';
-import { isTripGenerationJobActive, listTripGenerationJobsByTrip, triggerTripGenerationWorker } from '../services/tripGenerationJobService';
+import { listTripGenerationJobsByTrip, triggerTripGenerationWorker } from '../services/tripGenerationJobService';
 import { finishTripGenerationAttemptLog } from '../services/tripGenerationAttemptLogService';
 
 const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
@@ -904,6 +908,8 @@ const useTripViewRender = ({
     const pendingRetryGenerationStateRef = useRef(false);
     const retryMutationInFlightRef = useRef(false);
     const asyncStallRecoveryAttemptIdRef = useRef<string | null>(null);
+    const asyncStallRecoveryNudgeAttemptIdRef = useRef<string | null>(null);
+    const asyncStallRecoveryNudgeAtRef = useRef<number>(0);
     tripRef.current = trip;
     onUpdateTripRef.current = onUpdateTrip;
     const [generationNowMs, setGenerationNowMs] = useState(() => Date.now());
@@ -1049,14 +1055,20 @@ const useTripViewRender = ({
     useEffect(() => {
         if (!latestGenerationAttempt?.id) {
             asyncStallRecoveryAttemptIdRef.current = null;
+            asyncStallRecoveryNudgeAttemptIdRef.current = null;
+            asyncStallRecoveryNudgeAtRef.current = 0;
             return;
         }
         if (generationState !== 'queued' && generationState !== 'running') {
             asyncStallRecoveryAttemptIdRef.current = null;
+            asyncStallRecoveryNudgeAttemptIdRef.current = null;
+            asyncStallRecoveryNudgeAtRef.current = 0;
             return;
         }
         if (latestGenerationAttemptOrchestration !== 'async_worker') {
             asyncStallRecoveryAttemptIdRef.current = null;
+            asyncStallRecoveryNudgeAttemptIdRef.current = null;
+            asyncStallRecoveryNudgeAtRef.current = 0;
             return;
         }
         if (typeof generationElapsedMs !== 'number' || generationElapsedMs < (TRIP_GENERATION_TIMEOUT_MS + 20_000)) {
@@ -1078,13 +1090,29 @@ const useTripViewRender = ({
                 });
                 if (cancelled) return;
                 const nowMs = Date.now();
-                const hasActiveJob = jobs.some((job) => (
-                    job.attemptId === latestGenerationAttempt.id
-                    && isTripGenerationJobActive(job, nowMs)
-                ));
-                const hasHardStalledAttempt = typeof generationElapsedMs === 'number'
-                    && generationElapsedMs >= (TRIP_GENERATION_TIMEOUT_MS + 75_000);
-                if (hasActiveJob && !hasHardStalledAttempt) return;
+                const stallRecoveryAction = getAsyncTripGenerationStallRecoveryAction({
+                    latestAttemptId: latestGenerationAttempt.id,
+                    generationElapsedMs,
+                    jobs,
+                    nowMs,
+                });
+                if (stallRecoveryAction === 'ignore') return;
+                if (stallRecoveryAction === 'nudge_worker') {
+                    const lastNudgeWasForSameAttempt = asyncStallRecoveryNudgeAttemptIdRef.current === latestGenerationAttempt.id;
+                    const nudgeCooldownMs = 15_000;
+                    if (lastNudgeWasForSameAttempt && (nowMs - asyncStallRecoveryNudgeAtRef.current) < nudgeCooldownMs) {
+                        return;
+                    }
+                    asyncStallRecoveryNudgeAttemptIdRef.current = latestGenerationAttempt.id;
+                    asyncStallRecoveryNudgeAtRef.current = nowMs;
+                    void triggerTripGenerationWorker({
+                        tripId: trip.id,
+                        limit: 1,
+                        source: 'trip_view_async_stall_recovery',
+                        force: true,
+                    });
+                    return;
+                }
 
                 asyncStallRecoveryAttemptIdRef.current = latestGenerationAttempt.id;
                 const failedTrip = markTripGenerationFailed(tripRef.current, {

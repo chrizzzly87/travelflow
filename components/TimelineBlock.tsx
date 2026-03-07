@@ -178,10 +178,9 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
   const isInactiveItem = item.isApproved === false;
   const isInactiveActivity = item.type === 'activity' && isInactiveItem;
   const cityBaseBackgroundHex = cityHex
-      ? shiftHexColor(cityHex, isUncertainCity ? -6 : -14)
+      ? shiftHexColor(cityHex, isUncertainCity ? 86 : 62)
       : null;
-  const cityGradientHex = cityBaseBackgroundHex || cityHex;
-  const cityBorderHex = cityHex ? shiftHexColor(cityHex, -34) : null;
+  const cityBorderHex = cityHex ? shiftHexColor(cityHex, -20) : null;
   const activityHex = item.type === 'activity'
       ? getHexFromColorClass(resolvedColorClass || item.color || '')
       : null;
@@ -222,16 +221,16 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
           backgroundColor: cityBaseBackgroundHex || undefined,
           backgroundImage: isUncertainCity
             ? `linear-gradient(155deg,
-               color-mix(in oklab, ${cityGradientHex} 82%, transparent) 0%,
-                 color-mix(in oklab, ${cityGradientHex} 92%, white 8%) 100%
+               color-mix(in oklab, ${cityHex} 48%, transparent) 0%,
+                 color-mix(in oklab, ${cityHex} 66%, white 34%) 100%
                ),
                repeating-linear-gradient(-45deg,
-                 color-mix(in oklab, ${cityGradientHex} 90%, white 10%) 0 7px,
-                 color-mix(in oklab, ${cityGradientHex} 82%, white 18%) 7px 14px
+                 color-mix(in oklab, ${cityHex} 76%, white 24%) 0 7px,
+                 color-mix(in oklab, ${cityHex} 68%, white 32%) 7px 14px
                )`
             : `linear-gradient(155deg,
-                 color-mix(in oklab, ${cityGradientHex} 92%, white 8%) 0%,
-                 color-mix(in oklab, ${cityGradientHex} 96%, white 4%) 100%
+                 color-mix(in oklab, ${cityHex} 74%, white 26%) 0%,
+                 color-mix(in oklab, ${cityHex} 86%, white 14%) 100%
                )`,
           backgroundOrigin: isUncertainCity ? 'padding-box, border-box' : undefined,
           backgroundClip: isUncertainCity ? 'padding-box, border-box' : undefined,

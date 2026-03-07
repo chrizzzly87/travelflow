@@ -282,23 +282,19 @@ export const retryTripGenerationWithDefaultModel = async (
             throw new Error('Retry attempt could not be initialized.');
         }
 
+        await ensureDbSession();
+        const persistedTripId = await dbUpsertTrip(runningTripWithCanonicalAttempt, undefined);
+        if (!persistedTripId) {
+            throw new Error('Retry attempt could not be persisted before queueing.');
+        }
+
         const persistedCanonicalAttempt = await waitForTripAttemptPersistence(trip.id, attemptId, {
-            timeoutMs: 2_000,
-            intervalMs: 150,
+            timeoutMs: 450,
+            intervalMs: 120,
+            maxAttempts: 3,
         });
         if (!persistedCanonicalAttempt) {
-            await ensureDbSession();
-            const persistedTripId = await dbUpsertTrip(runningTripWithCanonicalAttempt, undefined);
-            if (!persistedTripId) {
-                throw new Error('Retry attempt could not be persisted before queueing.');
-            }
-            const confirmedCanonicalAttempt = await waitForTripAttemptPersistence(trip.id, attemptId, {
-                timeoutMs: 1_200,
-                intervalMs: 120,
-            });
-            if (!confirmedCanonicalAttempt) {
-                throw new Error('Retry attempt could not be persisted before queueing.');
-            }
+            throw new Error('Retry attempt could not be persisted before queueing.');
         }
 
         const prompt = buildRetryPromptFromSnapshot(snapshot);

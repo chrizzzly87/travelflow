@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest';
 
 import type { ITrip } from '../../types';
 import {
+    ASYNC_TRIP_STALL_RECOVERY_FAIL_AFTER_MS,
+    ASYNC_TRIP_STALL_RECOVERY_NUDGE_AFTER_MS,
+    getAsyncTripGenerationStallRecoveryAction,
     shouldApplyPolledTripUpdate,
     shouldPollTripGenerationState,
 } from '../../services/tripGenerationPollingService';
@@ -380,5 +383,42 @@ describe('tripGenerationPollingService.shouldPollTripGenerationState', () => {
         });
 
         expect(shouldPollTripGenerationState(runningTrip, Date.now())).toBe(true);
+    });
+});
+
+describe('tripGenerationPollingService.getAsyncTripGenerationStallRecoveryAction', () => {
+    it('nudges the worker when an async attempt is overdue and no active job exists yet', () => {
+        expect(getAsyncTripGenerationStallRecoveryAction({
+            latestAttemptId: 'attempt-1',
+            generationElapsedMs: ASYNC_TRIP_STALL_RECOVERY_NUDGE_AFTER_MS + 5_000,
+            jobs: [],
+            nowMs: Date.now(),
+        })).toBe('nudge_worker');
+    });
+
+    it('ignores overdue attempts when the matching job is still actively leased', () => {
+        const nowMs = Date.now();
+        expect(getAsyncTripGenerationStallRecoveryAction({
+            latestAttemptId: 'attempt-1',
+            generationElapsedMs: ASYNC_TRIP_STALL_RECOVERY_FAIL_AFTER_MS + 30_000,
+            jobs: [
+                {
+                    attemptId: 'attempt-1',
+                    state: 'leased',
+                    runAfter: new Date(nowMs - 30_000).toISOString(),
+                    leaseExpiresAt: new Date(nowMs + 30_000).toISOString(),
+                },
+            ],
+            nowMs,
+        })).toBe('ignore');
+    });
+
+    it('marks the attempt failed only when it is hard-stalled and no active job remains', () => {
+        expect(getAsyncTripGenerationStallRecoveryAction({
+            latestAttemptId: 'attempt-1',
+            generationElapsedMs: ASYNC_TRIP_STALL_RECOVERY_FAIL_AFTER_MS + 5_000,
+            jobs: [],
+            nowMs: Date.now(),
+        })).toBe('mark_failed');
     });
 });

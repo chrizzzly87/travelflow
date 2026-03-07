@@ -222,6 +222,9 @@ describe('retryTripGenerationWithDefaultModel', () => {
       model: 'gpt-4.1',
       startedAt: expect.any(String),
     }));
+    expect(dbUpsertTripMock).toHaveBeenCalledTimes(1);
+    expect(waitForTripAttemptPersistenceMock).toHaveBeenCalledTimes(1);
+    expect(dbUpsertTripMock.mock.invocationCallOrder[0]).toBeLessThan(waitForTripAttemptPersistenceMock.mock.invocationCallOrder[0]);
     expect(finishAttemptLogMock).not.toHaveBeenCalled();
   });
 
