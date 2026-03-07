@@ -21,10 +21,14 @@ import {
     markTripGenerationRunning,
     withLatestTripGenerationAttemptId,
 } from './tripGenerationDiagnosticsService';
-import type { ITrip, TripGenerationFlow, TripGenerationInputSnapshot } from '../types';
+import type { ITrip, TripGenerationFlow, TripGenerationInputSnapshot, TripGenerationState } from '../types';
 import { enqueueAsyncTripGenerationJob } from './tripGenerationAsyncEnqueueService';
 import { dbGetTrip, dbUpsertTrip, ensureDbSession } from './dbApi';
-import { listTripGenerationJobsByTrip, triggerTripGenerationWorker } from './tripGenerationJobService';
+import {
+    isTripGenerationJobActive,
+    listTripGenerationJobsByTrip,
+    triggerTripGenerationWorker,
+} from './tripGenerationJobService';
 import { waitForTripAttemptPersistence } from './tripGenerationPersistenceService';
 
 export interface RetryTripGenerationOptions {
@@ -39,6 +43,37 @@ export interface RetryTripGenerationResult {
     state: 'queued' | 'failed';
     error?: unknown;
 }
+
+export interface TripGenerationRetryCapabilityOptions {
+    canEdit: boolean;
+    isAdminFallbackView?: boolean;
+    adminOverrideEnabled?: boolean;
+    canAdminWrite?: boolean;
+    hasInputSnapshot?: boolean;
+    generationState?: TripGenerationState | null;
+    isRetryingGeneration?: boolean;
+    pendingAuthQueueRequestId?: string | null;
+}
+
+const canUseAdminGenerationOverride = (options: TripGenerationRetryCapabilityOptions): boolean => (
+    Boolean(options.isAdminFallbackView && options.adminOverrideEnabled && options.canAdminWrite)
+);
+
+export const canTriggerTripGenerationRetry = (options: TripGenerationRetryCapabilityOptions): boolean => {
+    const hasWriteAccess = options.canEdit || canUseAdminGenerationOverride(options);
+    if (!hasWriteAccess) return false;
+    if (options.isRetryingGeneration) return false;
+    if (options.pendingAuthQueueRequestId) return false;
+    if (!options.hasInputSnapshot) return false;
+    return options.generationState !== 'running' && options.generationState !== 'queued';
+};
+
+export const canTriggerTripGenerationAbortAndRetry = (options: TripGenerationRetryCapabilityOptions): boolean => {
+    const hasWriteAccess = options.canEdit || canUseAdminGenerationOverride(options);
+    if (!hasWriteAccess) return false;
+    if (options.isRetryingGeneration) return false;
+    return Boolean(options.hasInputSnapshot);
+};
 
 const resolveRetryModelTarget = (modelId?: string | null) => {
     if (modelId) {
@@ -144,13 +179,18 @@ export const retryTripGenerationWithDefaultModel = async (
                     const latestAttemptLogState = latestAttemptLog?.state || null;
                     const hasActiveJobForLatestAttempt = jobs.some((job) => (
                         job.attemptId === remoteLatestAttemptId
-                        && (job.state === 'queued' || job.state === 'leased')
+                        && isTripGenerationJobActive(job, nowMs)
                     ));
                     const latestAttemptStartedAtMs = toMs(latestAttemptLog?.startedAt || remoteLatestAttempt.startedAt);
+                    const hasHardStalledAttempt = typeof latestAttemptStartedAtMs === 'number'
+                        && nowMs - latestAttemptStartedAtMs >= 90_000;
                     const isLikelyStaleInFlight = (
                         isInFlightAttemptState(latestAttemptLogState || remoteLatestAttempt.state || null)
-                        && !hasActiveJobForLatestAttempt
                         && typeof latestAttemptStartedAtMs === 'number'
+                        && (
+                            !hasActiveJobForLatestAttempt
+                            || hasHardStalledAttempt
+                        )
                         && nowMs - latestAttemptStartedAtMs >= 20_000
                     );
 
@@ -242,23 +282,19 @@ export const retryTripGenerationWithDefaultModel = async (
             throw new Error('Retry attempt could not be initialized.');
         }
 
+        await ensureDbSession();
+        const persistedTripId = await dbUpsertTrip(runningTripWithCanonicalAttempt, undefined);
+        if (!persistedTripId) {
+            throw new Error('Retry attempt could not be persisted before queueing.');
+        }
+
         const persistedCanonicalAttempt = await waitForTripAttemptPersistence(trip.id, attemptId, {
-            timeoutMs: 2_000,
-            intervalMs: 150,
+            timeoutMs: 450,
+            intervalMs: 120,
+            maxAttempts: 3,
         });
         if (!persistedCanonicalAttempt) {
-            await ensureDbSession();
-            const persistedTripId = await dbUpsertTrip(runningTripWithCanonicalAttempt, undefined);
-            if (!persistedTripId) {
-                throw new Error('Retry attempt could not be persisted before queueing.');
-            }
-            const confirmedCanonicalAttempt = await waitForTripAttemptPersistence(trip.id, attemptId, {
-                timeoutMs: 1_200,
-                intervalMs: 120,
-            });
-            if (!confirmedCanonicalAttempt) {
-                throw new Error('Retry attempt could not be persisted before queueing.');
-            }
+            throw new Error('Retry attempt could not be persisted before queueing.');
         }
 
         const prompt = buildRetryPromptFromSnapshot(snapshot);

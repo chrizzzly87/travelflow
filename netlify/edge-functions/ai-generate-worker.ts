@@ -70,19 +70,26 @@ const DEFAULT_MODEL = "gpt-5.4";
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MAX_ATTEMPT_HISTORY = 12;
 const MAX_JOB_BATCH = 10;
-const WORKER_PROVIDER_TIMEOUT_MS = resolveTimeoutMs("AI_GENERATION_ASYNC_PROVIDER_TIMEOUT_MS", 120_000, 20_000, 180_000);
-const WORKER_LEASE_SECONDS = Math.max(60, Math.min(600, Math.ceil((WORKER_PROVIDER_TIMEOUT_MS + 30_000) / 1_000)));
+// Actual provider execution now runs in the background function runtime, so the
+// worker timeout can be long enough for slower models without colliding with the
+// edge response deadline.
+const WORKER_PROVIDER_TIMEOUT_MS = resolveTimeoutMs("AI_GENERATION_ASYNC_PROVIDER_TIMEOUT_MS", 90_000, 20_000, 120_000);
+const WORKER_LEASE_SECONDS = Math.max(45, Math.min(180, Math.ceil((WORKER_PROVIDER_TIMEOUT_MS + 15_000) / 1_000)));
+const BACKGROUND_DISPATCH_TIMEOUT_MS = 10_000;
 
 const CITY_COLORS = [
-  "bg-rose-100 border-rose-300 text-rose-800",
-  "bg-orange-100 border-orange-300 text-orange-800",
-  "bg-amber-100 border-amber-300 text-amber-800",
-  "bg-emerald-100 border-emerald-300 text-emerald-800",
-  "bg-cyan-100 border-cyan-300 text-cyan-800",
-  "bg-sky-100 border-sky-300 text-sky-800",
-  "bg-indigo-100 border-indigo-300 text-indigo-800",
-  "bg-violet-100 border-violet-300 text-violet-800",
-  "bg-fuchsia-100 border-fuchsia-300 text-fuchsia-800",
+  "#f43f5e",
+  "#f97316",
+  "#d97706",
+  "#059669",
+  "#0d9488",
+  "#0891b2",
+  "#0284c7",
+  "#4f46e5",
+  "#7c3aed",
+  "#c026d3",
+  "#475569",
+  "#65a30d",
 ];
 const TRAVEL_COLOR = "bg-stone-800 border-stone-600 text-stone-100";
 const ACTIVITY_TYPE_COLOR: Record<string, string> = {
@@ -849,7 +856,14 @@ const upsertTripRow = async (
     },
     body: JSON.stringify(payload),
   });
-  return response.ok;
+  if (response.ok) return true;
+  const errorMessage = await extractRpcErrorMessage(response, "trip upsert failed");
+  console.error("[ai-generate-worker] trip upsert failed", {
+    tripId,
+    status: response.status,
+    error: errorMessage,
+  });
+  return false;
 };
 
 const insertTripVersion = async (
@@ -857,8 +871,8 @@ const insertTripVersion = async (
   tripId: string,
   trip: Record<string, unknown>,
   label: string,
-): Promise<void> => {
-  await serviceFetch(config, "/rest/v1/trip_versions", {
+): Promise<boolean> => {
+  const response = await serviceFetch(config, "/rest/v1/trip_versions", {
     method: "POST",
     body: JSON.stringify({
       trip_id: tripId,
@@ -867,6 +881,15 @@ const insertTripVersion = async (
       label,
     }),
   });
+  if (response.ok) return true;
+  const errorMessage = await extractRpcErrorMessage(response, "trip version insert failed");
+  console.error("[ai-generate-worker] trip version insert failed", {
+    tripId,
+    label,
+    status: response.status,
+    error: errorMessage,
+  });
+  return false;
 };
 
 const finishAttempt = async (
@@ -1064,6 +1087,86 @@ const ensureWorkerAuthorized = async (
   };
 };
 
+const resolveRequestedWorkerLimit = (request: Request, mode: "admin" | "user"): number => {
+  const url = new URL(request.url);
+  const queryLimit = Number(url.searchParams.get("limit"));
+  const maxLimit = mode === "admin" ? MAX_JOB_BATCH : 1;
+  return Number.isFinite(queryLimit)
+    ? Math.max(1, Math.min(maxLimit, Math.round(queryLimit)))
+    : (mode === "admin" ? 3 : 1);
+};
+
+const resolveBackgroundWorkerUrl = (request: Request): string => {
+  const origin = new URL(request.url).origin.replace(/\/+$/, "");
+  return `${origin}/.netlify/functions/ai-generate-worker-background`;
+};
+
+const safeReadResponseText = async (response: Response): Promise<string> => {
+  try {
+    return await response.text();
+  } catch {
+    return "";
+  }
+};
+
+const dispatchGenerationWorkerToBackground = async (
+  request: Request,
+  params: {
+    mode: "admin" | "user";
+    limit: number;
+  },
+): Promise<Response> => {
+  const adminKey = readEnv("TF_ADMIN_API_KEY").trim();
+  if (!adminKey) {
+    return json(500, {
+      ok: false,
+      error: "Background worker auth key is missing.",
+      code: "WORKER_DISPATCH_CONFIG_MISSING",
+    });
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), BACKGROUND_DISPATCH_TIMEOUT_MS);
+  try {
+    const dispatchResponse = await fetch(resolveBackgroundWorkerUrl(request), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-tf-admin-key": adminKey,
+        "x-tf-worker-dispatch-mode": params.mode,
+      },
+      body: JSON.stringify({ limit: params.limit }),
+      signal: controller.signal,
+    });
+
+    if (!dispatchResponse.ok) {
+      return json(502, {
+        ok: false,
+        error: "Background worker dispatch failed.",
+        code: "WORKER_DISPATCH_FAILED",
+        details: await safeReadResponseText(dispatchResponse),
+        status: dispatchResponse.status,
+      });
+    }
+
+    return json(202, {
+      ok: true,
+      accepted: true,
+      auth_mode: params.mode,
+      limit: params.limit,
+    });
+  } catch (error) {
+    return json(502, {
+      ok: false,
+      error: "Background worker dispatch failed.",
+      code: "WORKER_DISPATCH_FAILED",
+      details: error instanceof Error ? error.message : "Unknown dispatch error",
+    });
+  } finally {
+    clearTimeout(timeoutId);
+  }
+};
+
 const processJob = async (
   config: { url: string; serviceRoleKey: string },
   workerId: string,
@@ -1204,8 +1307,10 @@ const processJob = async (
         },
       });
 
-      await upsertTripRow(config, failedTrip, job.owner_id);
-      await insertTripVersion(config, job.trip_id, failedTrip, "Data: Queued generation failed");
+      const failedTripPersisted = await upsertTripRow(config, failedTrip, job.owner_id);
+      const failedTripVersionLogged = failedTripPersisted
+        ? await insertTripVersion(config, job.trip_id, failedTrip, "Data: Queued generation failed")
+        : false;
       const attemptLogged = await finishAttempt(config, {
         p_attempt_id: payload.attemptId,
         p_state: "failed",
@@ -1221,6 +1326,8 @@ const processJob = async (
         p_metadata: {
           source: WORKER_SOURCE,
           details: asString(failure.details),
+          trip_upsert_ok: failedTripPersisted,
+          trip_version_ok: failedTripVersionLogged,
         },
       });
       const jobFailed = await failJob(config, {
@@ -1266,6 +1373,8 @@ const processJob = async (
         tripId: job.trip_id,
         error: [
           message,
+          !failedTripPersisted ? "trip_upsert_failed" : null,
+          failedTripPersisted && !failedTripVersionLogged ? "trip_version_insert_failed" : null,
           !attemptLogged ? "attempt_finish_rpc_failed" : null,
           !jobFailed ? "job_fail_rpc_failed" : null,
         ].filter(Boolean).join(" | "),
@@ -1298,8 +1407,18 @@ const processJob = async (
       },
     );
 
-    await upsertTripRow(config, succeededTrip, job.owner_id);
-    await insertTripVersion(config, job.trip_id, succeededTrip, "Data: Queued generation completed");
+    const succeededTripPersisted = await upsertTripRow(config, succeededTrip, job.owner_id);
+    if (!succeededTripPersisted) {
+      const persistenceError = new Error("Trip upsert failed while finalizing queued generation.");
+      persistenceError.name = "ASYNC_WORKER_TRIP_UPSERT_FAILED";
+      throw persistenceError;
+    }
+    const succeededTripVersionLogged = await insertTripVersion(config, job.trip_id, succeededTrip, "Data: Queued generation completed");
+    if (!succeededTripVersionLogged) {
+      const versionError = new Error("Trip version insert failed while finalizing queued generation.");
+      versionError.name = "ASYNC_WORKER_TRIP_VERSION_WRITE_FAILED";
+      throw versionError;
+    }
     const attemptLogged = await finishAttempt(config, {
       p_attempt_id: payload.attemptId,
       p_state: "succeeded",
@@ -1311,6 +1430,8 @@ const processJob = async (
       p_status_code: 200,
       p_metadata: {
         source: WORKER_SOURCE,
+        trip_upsert_ok: true,
+        trip_version_ok: true,
       },
     });
     const jobCompleted = await completeJob(config, job.id, workerId);
@@ -1383,8 +1504,10 @@ const processJob = async (
         source: WORKER_SOURCE,
       },
     });
-    await upsertTripRow(config, failedTrip, job.owner_id);
-    await insertTripVersion(config, job.trip_id, failedTrip, "Data: Queued generation failed");
+    const failedTripPersisted = await upsertTripRow(config, failedTrip, job.owner_id);
+    const failedTripVersionLogged = failedTripPersisted
+      ? await insertTripVersion(config, job.trip_id, failedTrip, "Data: Queued generation failed")
+      : false;
     const attemptLogged = await finishAttempt(config, {
       p_attempt_id: payload.attemptId,
       p_state: "failed",
@@ -1399,6 +1522,8 @@ const processJob = async (
       p_error_message: message.slice(0, 1200),
       p_metadata: {
         source: WORKER_SOURCE,
+        trip_upsert_ok: failedTripPersisted,
+        trip_version_ok: failedTripVersionLogged,
       },
     });
     const jobFailed = await failJob(config, {
@@ -1443,6 +1568,8 @@ const processJob = async (
       tripId: job.trip_id,
       error: [
         message,
+        !failedTripPersisted ? "trip_upsert_failed" : null,
+        failedTripPersisted && !failedTripVersionLogged ? "trip_version_insert_failed" : null,
         !attemptLogged ? "attempt_finish_rpc_failed" : null,
         !jobFailed ? "job_fail_rpc_failed" : null,
       ].filter(Boolean).join(" | "),
@@ -1450,7 +1577,7 @@ const processJob = async (
   }
 };
 
-export const handleGenerationWorkerRequest = async (request: Request): Promise<Response> => {
+export const processGenerationWorkerRequest = async (request: Request): Promise<Response> => {
   if (request.method !== "POST") {
     return json(405, { ok: false, error: "Method not allowed. Use POST." });
   }
@@ -1481,12 +1608,7 @@ export const handleGenerationWorkerRequest = async (request: Request): Promise<R
     });
   }
 
-  const url = new URL(request.url);
-  const queryLimit = Number(url.searchParams.get("limit"));
-  const maxLimit = auth.mode === "admin" ? MAX_JOB_BATCH : 1;
-  const limit = Number.isFinite(queryLimit)
-    ? Math.max(1, Math.min(maxLimit, Math.round(queryLimit)))
-    : (auth.mode === "admin" ? 3 : 1);
+  const limit = resolveRequestedWorkerLimit(request, auth.mode);
   const workerId = `edge:${crypto.randomUUID()}`;
 
   await requeueExpiredLeasedJobs(config);
@@ -1531,6 +1653,44 @@ export const handleGenerationWorkerRequest = async (request: Request): Promise<R
     succeeded,
     failed,
     jobs: results,
+  });
+};
+
+export const handleGenerationWorkerRequest = async (request: Request): Promise<Response> => {
+  if (request.method !== "POST") {
+    return json(405, { ok: false, error: "Method not allowed. Use POST." });
+  }
+
+  if (!isWorkerEnabled()) {
+    return json(202, {
+      ok: true,
+      skipped: true,
+      reason: "worker_disabled",
+    });
+  }
+
+  const config = getServiceConfig();
+  if (!config) {
+    return json(500, {
+      ok: false,
+      error: "Supabase service configuration is missing.",
+      code: "WORKER_SUPABASE_CONFIG_MISSING",
+    });
+  }
+
+  const auth = await ensureWorkerAuthorized(request, config);
+  if (!auth.authorized) {
+    return json(401, {
+      ok: false,
+      error: "Unauthorized worker request.",
+      code: "WORKER_UNAUTHORIZED",
+    });
+  }
+
+  const limit = resolveRequestedWorkerLimit(request, auth.mode);
+  return dispatchGenerationWorkerToBackground(request, {
+    mode: auth.mode,
+    limit,
   });
 };
 

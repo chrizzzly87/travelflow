@@ -17,7 +17,7 @@ describe('tripGenerationAsyncEnqueueService.enqueueClassicAsyncTripGenerationJob
     });
 
     it('returns true when the job enqueue succeeds and forwards normalized payload', async () => {
-        enqueueTripGenerationJobMock.mockResolvedValue({ id: 'job-1' });
+        enqueueTripGenerationJobMock.mockResolvedValue({ id: 'job-1', state: 'queued' });
 
         const success = await enqueueClassicAsyncTripGenerationJob({
             tripId: 'trip-1',
@@ -99,7 +99,7 @@ describe('tripGenerationAsyncEnqueueService.enqueueAsyncTripGenerationJob', () =
     });
 
     it('forwards non-classic flow payloads', async () => {
-        enqueueTripGenerationJobMock.mockResolvedValue({ id: 'job-2' });
+        enqueueTripGenerationJobMock.mockResolvedValue({ id: 'job-2', state: 'queued' });
 
         const success = await enqueueAsyncTripGenerationJob({
             flow: 'wizard',
@@ -138,5 +138,35 @@ describe('tripGenerationAsyncEnqueueService.enqueueAsyncTripGenerationJob', () =
                 prompt: 'Wizard prompt body',
             }),
         }));
+    });
+
+    it('returns false when enqueue returns a terminal state row', async () => {
+        enqueueTripGenerationJobMock.mockResolvedValue({ id: 'job-3', state: 'failed' });
+
+        const success = await enqueueAsyncTripGenerationJob({
+            flow: 'classic',
+            tripId: 'trip-3',
+            attemptId: 'attempt-3',
+            requestId: 'request-3',
+            source: 'trip_status_strip',
+            queueRequestId: null,
+            startDate: '2026-05-01',
+            roundTrip: true,
+            prompt: 'Classic prompt',
+            provider: 'openai',
+            model: 'gpt-5.4',
+            inputSnapshot: {
+                flow: 'classic',
+                destinationLabel: 'Paris',
+                startDate: '2026-05-01',
+                endDate: '2026-05-10',
+                payload: {
+                    destinationPrompt: 'Paris',
+                    options: {},
+                },
+            },
+        });
+
+        expect(success).toBe(false);
     });
 });

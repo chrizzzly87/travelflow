@@ -52,10 +52,14 @@ pnpm dev
 For internal edge API routes (for example `/api/internal/ai/benchmark`), run Netlify dev instead:
 
 ```bash
-pnpm dlx netlify dev
+pnpm dev:netlify
 ```
 
 Then open the app via `http://localhost:8888` so `/api/*` routes are handled by Netlify Edge Functions.
+
+For async trip-generation worker parity and local troubleshooting, use:
+
+- [docs/AI_TRIP_GENERATION_LOCAL_DEV.md](/Users/chrizzzly/.codex/worktrees/bece/travelflow-codex/docs/AI_TRIP_GENERATION_LOCAL_DEV.md)
 
 ## Routes
 

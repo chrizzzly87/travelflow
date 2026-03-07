@@ -164,6 +164,32 @@ describe('routes/SharedTripLoaderRoute', () => {
     expect(props.onTripLoaded).not.toHaveBeenCalled();
   });
 
+  it('does not change hook order when the shared trip prop appears after initial null render', async () => {
+    const resolvedTrip = makeTrip({ id: 'shared-late-load', title: 'Shared late load' });
+    const props = makeRouteProps();
+    const view = render(React.createElement(SharedTripLoaderRoute, props));
+
+    expect(() => {
+      view.rerender(React.createElement(SharedTripLoaderRoute, {
+        ...props,
+        trip: resolvedTrip,
+      }));
+    }).not.toThrow();
+
+    await waitFor(() => {
+      expect(latestTripViewProps()?.trip).toEqual(resolvedTrip);
+    });
+  });
+
+  it('renders a route loading shell while the shared trip loader is still resolving', () => {
+    mocks.dbGetSharedTrip.mockImplementation(() => new Promise(() => {}));
+    const props = makeRouteProps();
+    const view = render(React.createElement(SharedTripLoaderRoute, props));
+
+    expect(view.queryAllByTestId('trip-route-loading-shell').length).toBeGreaterThan(0);
+    expect(latestTripViewProps()).toBeUndefined();
+  });
+
   it('loads shared version snapshots when a valid version id exists', async () => {
     const versionId = '123e4567-e89b-12d3-a456-426614174000';
     mocks.route.search = `?v=${versionId}`;

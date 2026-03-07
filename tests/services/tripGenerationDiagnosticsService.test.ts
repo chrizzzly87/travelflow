@@ -176,6 +176,214 @@ describe('tripGenerationDiagnosticsService', () => {
     expect(getTripGenerationState(queuedTrip, nowMs)).toBe('queued');
   });
 
+  it('treats queued async metadata as succeeded when materialized trip content exists and last success is newer than the attempt start', () => {
+    const attemptStartedAt = '2026-03-04T09:58:00.000Z';
+    const lastSucceededAt = '2026-03-04T10:00:00.000Z';
+    const queuedTrip = buildTrip();
+    queuedTrip.items = [
+      {
+        id: 'city-real-1',
+        type: 'city',
+        title: 'Berlin',
+        startDateOffset: 0,
+        duration: 2,
+        color: 'bg-sky-100 border-sky-300 text-sky-800',
+        description: 'Walkable neighborhoods and museum visits.',
+        location: 'Berlin',
+        coordinates: { lat: 52.52, lng: 13.405 },
+      },
+      {
+        id: 'travel-real-1',
+        type: 'travel',
+        title: 'ICE train',
+        startDateOffset: 1.5,
+        duration: 0.15,
+        color: 'bg-stone-800 border-stone-600 text-stone-100',
+        description: 'Travel from Berlin to Hamburg',
+        transportMode: 'train',
+      },
+    ];
+    queuedTrip.aiMeta = {
+      provider: 'openai',
+      model: 'gpt-5.4',
+      generatedAt: lastSucceededAt,
+      generation: {
+        state: 'queued',
+        latestAttempt: {
+          id: 'attempt-stale-queued',
+          flow: 'classic',
+          source: 'trip_status_strip',
+          state: 'queued',
+          startedAt: attemptStartedAt,
+          provider: 'openai',
+          model: 'gpt-5.4',
+          metadata: {
+            orchestration: 'async_worker',
+          },
+        },
+        attempts: [],
+        inputSnapshot: null,
+        retryCount: 0,
+        retryRequestedAt: null,
+        lastSucceededAt,
+        lastFailedAt: null,
+      },
+    };
+
+    expect(getTripGenerationState(queuedTrip, Date.parse(lastSucceededAt))).toBe('succeeded');
+  });
+
+  it('treats queued async metadata as succeeded when generatedAt is newer than the latest attempt even without lastSucceededAt', () => {
+    const attemptStartedAt = '2026-03-04T09:58:00.000Z';
+    const generatedAt = '2026-03-04T10:00:00.000Z';
+    const queuedTrip = buildTrip();
+    queuedTrip.items = [
+      {
+        id: 'city-real-1',
+        type: 'city',
+        title: 'Warsaw',
+        startDateOffset: 0,
+        duration: 2,
+        color: 'bg-rose-100 border-rose-300 text-rose-800',
+        description: 'Materialized itinerary content.',
+        location: 'Warsaw',
+        coordinates: { lat: 52.2297, lng: 21.0122 },
+      },
+    ];
+    queuedTrip.aiMeta = {
+      provider: 'openai',
+      model: 'gpt-5.4',
+      generatedAt,
+      generation: {
+        state: 'queued',
+        latestAttempt: {
+          id: 'attempt-stale-generated',
+          flow: 'classic',
+          source: 'trip_status_strip',
+          state: 'queued',
+          startedAt: attemptStartedAt,
+          provider: 'openai',
+          model: 'gpt-5.4',
+          metadata: {
+            orchestration: 'async_worker',
+          },
+        },
+        attempts: [],
+        inputSnapshot: null,
+        retryCount: 0,
+        retryRequestedAt: null,
+        lastSucceededAt: null,
+        lastFailedAt: null,
+      },
+    };
+
+    expect(getTripGenerationState(queuedTrip, Date.parse(generatedAt))).toBe('succeeded');
+  });
+
+  it('treats queued async metadata as succeeded when real itinerary content exists even if generated timestamps are missing or stale', () => {
+    const attemptStartedAt = '2026-03-04T10:00:00.000Z';
+    const queuedTrip = buildTrip();
+    queuedTrip.items = [
+      {
+        id: 'city-real-1',
+        type: 'city',
+        title: 'Warsaw',
+        startDateOffset: 0,
+        duration: 2,
+        color: 'bg-rose-100 border-rose-300 text-rose-800',
+        description: 'Real itinerary content that should not keep polling.',
+        location: 'Warsaw',
+        coordinates: { lat: 52.2297, lng: 21.0122 },
+      },
+      {
+        id: 'city-real-2',
+        type: 'city',
+        title: 'Gdańsk',
+        startDateOffset: 2,
+        duration: 2,
+        color: 'bg-cyan-100 border-cyan-300 text-cyan-800',
+        description: 'Another real stop.',
+        location: 'Gdańsk',
+        coordinates: { lat: 54.352, lng: 18.6466 },
+      },
+    ];
+    queuedTrip.aiMeta = {
+      provider: 'openai',
+      model: 'gpt-5.4',
+      generatedAt: '2026-03-04T09:55:00.000Z',
+      generation: {
+        state: 'queued',
+        latestAttempt: {
+          id: 'attempt-stale-visible-content',
+          flow: 'classic',
+          source: 'trip_status_strip',
+          state: 'queued',
+          startedAt: attemptStartedAt,
+          provider: 'openai',
+          model: 'gpt-5.4',
+          metadata: {
+            orchestration: 'async_worker',
+          },
+        },
+        attempts: [],
+        inputSnapshot: null,
+        retryCount: 0,
+        retryRequestedAt: null,
+        lastSucceededAt: null,
+        lastFailedAt: null,
+      },
+    };
+
+    expect(getTripGenerationState(queuedTrip, Date.parse('2026-03-04T10:01:00.000Z'))).toBe('succeeded');
+  });
+
+  it('keeps queued async retries in-flight when the latest attempt started after the last success', () => {
+    const lastSucceededAt = '2026-03-04T09:58:00.000Z';
+    const attemptStartedAt = '2026-03-04T10:00:00.000Z';
+    const queuedTrip = buildTrip();
+    queuedTrip.items = [
+      {
+        id: 'city-real-1',
+        type: 'city',
+        title: 'Berlin',
+        startDateOffset: 0,
+        duration: 2,
+        color: 'bg-sky-100 border-sky-300 text-sky-800',
+        description: 'Existing trip content from prior success.',
+        location: 'Berlin',
+        coordinates: { lat: 52.52, lng: 13.405 },
+      },
+    ];
+    queuedTrip.aiMeta = {
+      provider: 'openai',
+      model: 'gpt-5.4',
+      generatedAt: lastSucceededAt,
+      generation: {
+        state: 'queued',
+        latestAttempt: {
+          id: 'attempt-active-retry',
+          flow: 'classic',
+          source: 'trip_status_strip',
+          state: 'queued',
+          startedAt: attemptStartedAt,
+          provider: 'openai',
+          model: 'gpt-5.4',
+          metadata: {
+            orchestration: 'async_worker',
+          },
+        },
+        attempts: [],
+        inputSnapshot: null,
+        retryCount: 1,
+        retryRequestedAt: attemptStartedAt,
+        lastSucceededAt,
+        lastFailedAt: null,
+      },
+    };
+
+    expect(getTripGenerationState(queuedTrip, Date.parse(attemptStartedAt))).toBe('queued');
+  });
+
   it('treats legacy loading-error placeholders as failed without aiMeta state', () => {
     const legacyFailedTrip = buildTrip();
     legacyFailedTrip.title = 'Trip generation failed. Please try again.';

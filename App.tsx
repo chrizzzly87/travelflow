@@ -50,6 +50,15 @@ import { normalizeTransportMode } from './shared/transportModes';
 import { showAppToast } from './components/ui/appToast';
 import { getTripGenerationState } from './services/tripGenerationDiagnosticsService';
 import {
+    buildTripCommitFingerprint,
+    createTripCommitDeduplicationState,
+    markTripCommitFingerprintCompleted,
+    markTripCommitFingerprintFailed,
+    markTripCommitFingerprintStarted,
+    resetTripCommitDeduplicationState,
+    shouldSkipTripCommitFingerprint,
+} from './services/tripCommitDeduplicationService';
+import {
     listTripGenerationCompletionWatches,
     removeTripGenerationCompletionWatch,
     subscribeTripGenerationCompletionWatches,
@@ -59,6 +68,27 @@ import {
     isSafeAuthReturnPath,
 } from './services/authNavigationService';
 const IS_DEV = Boolean((import.meta as any)?.env?.DEV);
+
+const toFiniteNumber = (value: unknown, fallback: number): number => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const normalizeSettingsForPersistence = (settings: IViewSettings): Required<Pick<IViewSettings,
+    'mapStyle' | 'routeMode' | 'layoutMode' | 'timelineMode' | 'timelineView' | 'showCityNames' | 'zoomLevel' | 'sidebarWidth' | 'timelineHeight'
+>> => ({
+    mapStyle: settings.mapStyle,
+    routeMode: settings.routeMode,
+    layoutMode: settings.layoutMode,
+    timelineMode: settings.timelineMode,
+    timelineView: settings.timelineView,
+    showCityNames: Boolean(settings.showCityNames),
+    zoomLevel: Number(toFiniteNumber(settings.zoomLevel, 1).toFixed(2)),
+    sidebarWidth: Math.round(toFiniteNumber(settings.sidebarWidth, 560)),
+    timelineHeight: Math.round(toFiniteNumber(settings.timelineHeight, 340)),
+});
+
+type TripCommitOutcome = 'remote' | 'queued' | 'permission_denied';
 
 const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
     moduleKey: string,
@@ -312,6 +342,8 @@ const AppContent: React.FC = () => {
     const location = useLocation();
     const { snapshot: connectivitySnapshot } = useConnectivityStatus();
     const userSettingsSaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const pendingUserSettingsKeyRef = useRef<string | null>(null);
+    const persistedUserSettingsKeyRef = useRef<string | null>(null);
     const shouldLoadDebugger = useDebuggerBootstrap({ appName: APP_NAME, isDev: IS_DEV });
     const isFirstLoadCritical = useMemo(
         () => isFirstLoadCriticalPath(location.pathname),
@@ -632,26 +664,38 @@ const AppContent: React.FC = () => {
         }
     }, [access, appLanguage, isAuthenticated]);
 
-    const handleViewSettingsChange = (settings: IViewSettings) => {
-        if (!DB_ENABLED) return;
-        if (!isAuthenticated || !access || access.isAnonymous) return;
+    useEffect(() => {
+        return () => {
+            if (!userSettingsSaveRef.current) return;
+            clearTimeout(userSettingsSaveRef.current);
+            userSettingsSaveRef.current = null;
+        };
+    }, []);
+
+    const canPersistViewSettings = DB_ENABLED && isAuthenticated && access?.isAnonymous !== true;
+
+    const handleViewSettingsChange = useCallback((settings: IViewSettings) => {
+        if (!canPersistViewSettings) return;
+        const normalized = normalizeSettingsForPersistence(settings);
+        const payloadKey = JSON.stringify(normalized);
+        if (
+            payloadKey === pendingUserSettingsKeyRef.current
+            || payloadKey === persistedUserSettingsKeyRef.current
+        ) {
+            return;
+        }
         if (userSettingsSaveRef.current) {
             clearTimeout(userSettingsSaveRef.current);
         }
+        pendingUserSettingsKeyRef.current = payloadKey;
         userSettingsSaveRef.current = setTimeout(() => {
-            void dbUpsertUserSettings({
-                mapStyle: settings.mapStyle,
-                routeMode: settings.routeMode,
-                layoutMode: settings.layoutMode,
-                timelineMode: settings.timelineMode,
-                timelineView: settings.timelineView,
-                showCityNames: settings.showCityNames,
-                zoomLevel: settings.zoomLevel,
-                sidebarWidth: settings.sidebarWidth,
-                timelineHeight: settings.timelineHeight,
-            });
+            const persist = async () => {
+                await dbUpsertUserSettings(normalized);
+                persistedUserSettingsKeyRef.current = payloadKey;
+            };
+            void persist();
         }, 800);
-    };
+    }, [canPersistViewSettings]);
 
     const handleUpdateTrip = useCallback((updatedTrip: ITrip, options?: { persist?: boolean; preserveUpdatedAt?: boolean }) => {
         setTrip(updatedTrip);
@@ -666,6 +710,11 @@ const AppContent: React.FC = () => {
             return updatedTrip;
         });
     }, []);
+    const tripCommitDeduplicationRef = useRef(createTripCommitDeduplicationState());
+
+    useEffect(() => {
+        resetTripCommitDeduplicationState(tripCommitDeduplicationRef.current);
+    }, [trip?.id]);
 
     const enqueueTripCommitFallback = useCallback((updatedTrip: ITrip, view: IViewSettings | undefined, label: string) => {
         enqueueTripCommitAndSync({
@@ -680,41 +729,54 @@ const AppContent: React.FC = () => {
         updatedTrip: ITrip,
         view: IViewSettings | undefined,
         label: string,
-    ): Promise<boolean> => {
+    ): Promise<TripCommitOutcome> => {
         const canAttemptRemote = DB_ENABLED && connectivitySnapshot.state === 'online';
         if (!canAttemptRemote) {
             enqueueTripCommitFallback(updatedTrip, view, label);
-            return false;
+            return 'queued';
         }
 
         const sessionId = await ensureDbSession();
         if (!sessionId) {
             enqueueTripCommitFallback(updatedTrip, view, label);
-            return false;
+            return 'queued';
         }
 
         const upsertResult = await dbUpsertTripWithStatus(updatedTrip, view);
         if (!upsertResult.tripId) {
             if (upsertResult.isPermissionError) {
-                return false;
+                return 'permission_denied';
             }
             enqueueTripCommitFallback(updatedTrip, view, label);
-            return false;
+            return 'queued';
         }
         const versionId = await dbCreateTripVersion(updatedTrip, view, label);
         if (!versionId) {
             enqueueTripCommitFallback(updatedTrip, view, label);
-            return false;
+            return 'queued';
         }
-        return true;
+        return 'remote';
     }, [connectivitySnapshot.state, enqueueTripCommitFallback]);
 
     const handleCommitState = (updatedTrip: ITrip, view: IViewSettings | undefined, options?: { replace?: boolean; label?: string; adminOverride?: boolean }) => {
         const label = options?.label || 'Updated trip';
         const commitTs = Date.now();
+        const commitFingerprint = buildTripCommitFingerprint({
+            trip: updatedTrip,
+            view,
+            label,
+            adminOverride: options?.adminOverride === true,
+        });
+
+        if (shouldSkipTripCommitFingerprint(tripCommitDeduplicationRef.current, commitFingerprint)) {
+            return;
+        }
+
+        markTripCommitFingerprintStarted(tripCommitDeduplicationRef.current, commitFingerprint);
 
         if (!DB_ENABLED) {
             createLocalHistoryEntry(navigate, updatedTrip, view, label, options, commitTs);
+            markTripCommitFingerprintCompleted(tripCommitDeduplicationRef.current, commitFingerprint);
             return;
         }
 
@@ -723,12 +785,24 @@ const AppContent: React.FC = () => {
         const commit = async () => {
             if (options?.adminOverride) {
                 const sessionId = await ensureDbSession();
-                if (!sessionId) return;
+                if (!sessionId) {
+                    markTripCommitFingerprintFailed(tripCommitDeduplicationRef.current, commitFingerprint);
+                    return;
+                }
                 const overrideCommit = await dbAdminOverrideTripCommit(updatedTrip, view, label);
-                if (!overrideCommit?.tripId || !overrideCommit.versionId) return;
+                if (!overrideCommit?.tripId || !overrideCommit.versionId) {
+                    markTripCommitFingerprintFailed(tripCommitDeduplicationRef.current, commitFingerprint);
+                    return;
+                }
+                markTripCommitFingerprintCompleted(tripCommitDeduplicationRef.current, commitFingerprint);
                 return;
             }
-            await commitOwnedTripResilient(updatedTrip, view, label);
+            const outcome = await commitOwnedTripResilient(updatedTrip, view, label);
+            if (outcome === 'remote' || outcome === 'queued') {
+                markTripCommitFingerprintCompleted(tripCommitDeduplicationRef.current, commitFingerprint);
+                return;
+            }
+            markTripCommitFingerprintFailed(tripCommitDeduplicationRef.current, commitFingerprint);
         };
 
         void commit();
@@ -906,7 +980,7 @@ const AppContent: React.FC = () => {
                 </section>
             )}
             {shouldBlockForTermsGate ? (
-                <div className="min-h-[42vh] w-full bg-slate-50" aria-hidden="true" />
+                <div className="min-h-screen w-full bg-white" aria-hidden="true" />
             ) : (
                 <AppRoutes
                     trip={trip}

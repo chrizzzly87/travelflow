@@ -360,5 +360,13 @@
         "unexpected": "Retry failed unexpectedly."
       }
     }
+  },
+  "tripRouteShell": {
+    "loadingTrip": "여행 불러오는 중",
+    "preparingPlanner": "플래너 준비 중",
+    "loadingSharedTrip": "공유 여행 불러오는 중",
+    "preparingSharedPlanner": "공유 플래너 준비 중",
+    "loadingExampleTrip": "예시 여행 불러오는 중",
+    "preparingExamplePlanner": "예시 플래너 준비 중"
   }
 }
