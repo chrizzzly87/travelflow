@@ -51,9 +51,15 @@ const RouteLoadingFallback: React.FC = () => (
     <MarketingRouteLoadingShell />
 );
 
+const HandoffReadyBoundary: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+    <div data-tf-handoff-ready="true">
+        {children}
+    </div>
+);
+
 const renderWithSuspense = (node: React.ReactElement) => (
     <Suspense fallback={<RouteLoadingFallback />}>
-        {node}
+        <HandoffReadyBoundary>{node}</HandoffReadyBoundary>
     </Suspense>
 );
 

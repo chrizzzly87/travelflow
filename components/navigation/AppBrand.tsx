@@ -19,7 +19,7 @@ export const AppBrand: React.FC<AppBrandProps> = ({
     <span className={cn('flex items-center gap-2', className)}>
         <span
             className={cn(
-                'flex h-8 w-8 items-center justify-center rounded-lg bg-accent-600 shadow-lg shadow-accent-200',
+                'flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-accent-600 to-accent-500 shadow-lg shadow-accent-200',
                 frameClassName,
             )}
         >

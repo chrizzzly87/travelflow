@@ -51,12 +51,10 @@
         inset: 0;
         z-index: 2147483000;
         background: #ffffff;
-        transition: opacity 180ms ease, visibility 180ms ease;
         overflow: hidden;
       }
 
       html[data-tf-react-shell-visible="true"] #app-bootstrap-shell {
-        opacity: 0;
         visibility: hidden;
         pointer-events: none;
       }
@@ -126,7 +124,8 @@
         justify-content: center;
         gap: 16px;
         min-width: 0;
-        flex: 1 1 auto;
+        flex: 0 0 auto;
+        margin-inline: auto;
       }
 
       .tf-boot-line,
@@ -186,10 +185,6 @@
         gap: 8px;
       }
 
-      .tf-boot-action-chip--login {
-        min-width: 80px;
-      }
-
       .tf-boot-action-button {
         height: 36px;
         padding-inline: 12px;
@@ -213,7 +208,7 @@
 
       .tf-boot-main {
         min-height: calc(100vh - 68px);
-        background: #f8fafc;
+        background: #ffffff;
       }
 
       .tf-boot-page {

@@ -79,8 +79,7 @@ const setupBootstrapShellHandoff = (rootElement: HTMLElement) => {
     didScheduleRemoval = true;
     rafId = window.requestAnimationFrame(() => {
       root.setAttribute('data-tf-react-shell-visible', 'true');
-      shell.addEventListener('transitionend', finalizeRemoval, { once: true });
-      removalTimer = window.setTimeout(finalizeRemoval, 220);
+      removalTimer = window.setTimeout(finalizeRemoval, 0);
     });
   };
 

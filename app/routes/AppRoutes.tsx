@@ -23,12 +23,19 @@ export const RouteLoadingFallback: React.FC = () => (
     <MarketingRouteLoadingShell />
 );
 
+const HandoffReadyBoundary: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+    <div data-tf-handoff-ready="true">
+        {children}
+    </div>
+);
+
 const renderWithSuspense = (
     node: React.ReactElement,
-    fallback: React.ReactElement = <RouteLoadingFallback />
+    fallback: React.ReactElement = <RouteLoadingFallback />,
+    options?: { handoffReady?: boolean }
 ) => (
     <Suspense fallback={fallback}>
-        {node}
+        {options?.handoffReady === false ? node : <HandoffReadyBoundary>{node}</HandoffReadyBoundary>}
     </Suspense>
 );
 
@@ -170,7 +177,8 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
                             onViewSettingsChange={onViewSettingsChange}
                             onLanguageLoaded={onAppLanguageLoaded}
                         />,
-                        <TripRouteLoadingShell variant="loadingTrip" />
+                        <TripRouteLoadingShell variant="loadingTrip" />,
+                        { handoffReady: false }
                     )}
                 />
                 <Route
@@ -184,7 +192,8 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
                             appLanguage={appLanguage}
                             onViewSettingsChange={onViewSettingsChange}
                         />,
-                        <TripRouteLoadingShell variant="loadingExampleTrip" />
+                        <TripRouteLoadingShell variant="loadingExampleTrip" />,
+                        { handoffReady: false }
                     )}
                 />
                 <Route
@@ -199,7 +208,8 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
                             onViewSettingsChange={onViewSettingsChange}
                             onLanguageLoaded={onAppLanguageLoaded}
                         />,
-                        <TripRouteLoadingShell variant="loadingSharedTrip" />
+                        <TripRouteLoadingShell variant="loadingSharedTrip" />,
+                        { handoffReady: false }
                     )}
                 />
                 <Route path="/trip" element={<Navigate to="/create-trip" replace />} />
@@ -210,7 +220,9 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
                             onAppLanguageLoaded={onAppLanguageLoaded}
                             onTripGenerated={onTripGenerated}
                             onOpenManager={onOpenManager}
-                        />
+                        />,
+                        <RouteLoadingFallback />,
+                        { handoffReady: false }
                     )}
                 />
             </Routes>

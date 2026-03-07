@@ -981,7 +981,9 @@ const AppContent: React.FC = () => {
                 </section>
             )}
             {shouldBlockForTermsGate ? (
-                <MarketingRouteLoadingShell />
+                <div data-tf-handoff-ready="true">
+                    <MarketingRouteLoadingShell />
+                </div>
             ) : (
                 <AppRoutes
                     trip={trip}

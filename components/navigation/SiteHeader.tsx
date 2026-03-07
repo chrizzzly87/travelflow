@@ -142,7 +142,6 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
             <header
                 className={headerClass}
                 style={{ viewTransitionName: 'site-header' }}
-                data-tf-handoff-ready="true"
             >
                 <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-5 py-4 lg:px-8">
                     <NavLink
