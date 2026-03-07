@@ -51,64 +51,67 @@
       }
 
       .tf-boot-header {
-        border-bottom: 1px solid #e2e8f0;
-        background: #ffffff;
+        border-bottom: 1px solid rgba(226, 232, 240, 0.7);
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(10px);
       }
 
       .tf-boot-header-inner {
-        height: 72px;
-        max-width: 1600px;
+        min-height: 72px;
+        max-width: 1280px;
         margin: 0 auto;
-        display: grid;
-        grid-template-columns: auto minmax(0, 1fr) auto;
+        display: flex;
         align-items: center;
-        gap: 24px;
-        padding: 0 24px;
+        justify-content: space-between;
+        gap: 20px;
+        padding-inline: 20px;
+        padding-block: 16px;
       }
 
       .tf-boot-brand {
         display: inline-flex;
         align-items: center;
-        gap: 14px;
+        gap: 8px;
         min-width: 0;
+        flex: 0 0 auto;
       }
 
       .tf-boot-logo-frame {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        height: 46px;
-        width: 46px;
-        border-radius: 14px;
+        height: 32px;
+        width: 32px;
+        border-radius: 8px;
         background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
-        box-shadow: 0 14px 30px rgba(79, 70, 229, 0.18);
+        box-shadow: 0 10px 24px rgba(165, 180, 252, 0.9);
       }
 
       .tf-boot-logo-image {
-        height: 28px;
-        width: 28px;
+        height: 18px;
+        width: 18px;
         display: block;
       }
 
       .tf-boot-wordmark {
-        font-size: 2rem;
-        line-height: 1;
-        font-weight: 900;
-        letter-spacing: -0.035em;
-        color: #111827;
+        font-size: 1.125rem;
+        line-height: 1.75rem;
+        font-weight: 800;
+        letter-spacing: -0.025em;
+        color: #0f172a;
       }
 
       .tf-boot-nav {
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 22px;
+        gap: 16px;
         min-width: 0;
+        flex: 1 1 auto;
+        font-size: 0.875rem;
       }
 
       .tf-boot-nav-link,
-      .tf-boot-action-chip,
-      .tf-boot-action-button,
       .tf-boot-line,
       .tf-boot-card,
       .tf-boot-metric,
@@ -124,48 +127,67 @@
       }
 
       .tf-boot-nav-link {
-        height: 14px;
         flex: 0 0 auto;
+        color: #64748b;
+        font-weight: 600;
+        white-space: nowrap;
       }
-
-      .tf-boot-nav-link:nth-child(1) { width: 72px; }
-      .tf-boot-nav-link:nth-child(2) { width: 94px; }
-      .tf-boot-nav-link:nth-child(3) { width: 110px; }
-      .tf-boot-nav-link:nth-child(4) { width: 48px; }
-      .tf-boot-nav-link:nth-child(5) { width: 64px; }
 
       .tf-boot-actions {
         display: inline-flex;
         align-items: center;
-        gap: 10px;
+        gap: 8px;
+        flex: 0 0 auto;
       }
 
       .tf-boot-action-chip,
       .tf-boot-action-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         flex: 0 0 auto;
         border: 1px solid #e2e8f0;
-        background-color: #ffffff;
+        background-color: rgba(255, 255, 255, 0.96);
         box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+        border-radius: 8px;
+        font-size: 0.875rem;
+        line-height: 1.25rem;
       }
 
       .tf-boot-action-chip {
-        height: 44px;
+        height: 36px;
+        padding-inline: 12px;
+        color: #334155;
+        font-weight: 600;
       }
 
       .tf-boot-action-chip--locale {
-        width: 146px;
+        gap: 8px;
       }
 
       .tf-boot-action-chip--login {
-        width: 96px;
+        min-width: 80px;
       }
 
       .tf-boot-action-button {
-        height: 44px;
-        width: 140px;
+        height: 36px;
+        padding-inline: 12px;
         background:
           linear-gradient(135deg, rgba(79, 70, 229, 0.92) 0%, rgba(99, 102, 241, 0.92) 100%);
-        box-shadow: 0 10px 22px rgba(79, 70, 229, 0.18);
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+        border-color: rgba(99, 102, 241, 0.36);
+        color: #ffffff;
+        font-weight: 600;
+      }
+
+      .tf-boot-action-locale-flag {
+        font-size: 0.875rem;
+        line-height: 1;
+      }
+
+      .tf-boot-action-locale-caret {
+        font-size: 0.75rem;
+        color: #64748b;
       }
 
       .tf-boot-main {
@@ -174,9 +196,10 @@
       }
 
       .tf-boot-page {
-        max-width: 1600px;
+        max-width: 1280px;
         margin: 0 auto;
-        padding: 28px 24px 40px;
+        padding-inline: 20px;
+        padding-block: 28px 40px;
       }
 
       .tf-boot-page--trip {
@@ -396,7 +419,6 @@
 
       @media (max-width: 1200px) {
         .tf-boot-header-inner {
-          grid-template-columns: auto 1fr auto;
           gap: 18px;
         }
 
@@ -410,10 +432,6 @@
       }
 
       @media (max-width: 960px) {
-        .tf-boot-header-inner {
-          grid-template-columns: auto auto;
-        }
-
         .tf-boot-nav {
           display: none;
         }
@@ -425,28 +443,31 @@
 
       @media (max-width: 640px) {
         .tf-boot-header-inner {
-          height: 64px;
-          padding: 0 14px;
+          min-height: 64px;
+          padding-inline: 14px;
+          padding-block: 14px;
           gap: 12px;
         }
 
         .tf-boot-logo-frame {
-          height: 40px;
-          width: 40px;
-          border-radius: 12px;
+          height: 32px;
+          width: 32px;
+          border-radius: 8px;
         }
 
         .tf-boot-logo-image {
-          height: 24px;
-          width: 24px;
+          height: 18px;
+          width: 18px;
         }
 
         .tf-boot-wordmark {
-          font-size: 1.6rem;
+          font-size: 1.125rem;
+          line-height: 1.75rem;
         }
 
         .tf-boot-page {
-          padding: 18px 14px 24px;
+          padding-inline: 14px;
+          padding-block: 18px 24px;
         }
 
         .tf-boot-action-chip--locale,
@@ -455,8 +476,7 @@
         }
 
         .tf-boot-action-button {
-          width: 104px;
-          height: 40px;
+          height: 36px;
         }
 
         .tf-boot-hero {
@@ -486,9 +506,6 @@
       }
 
       @media (prefers-reduced-motion: reduce) {
-        .tf-boot-nav-link,
-        .tf-boot-action-chip,
-        .tf-boot-action-button,
         .tf-boot-line,
         .tf-boot-card,
         .tf-boot-metric,
@@ -583,16 +600,20 @@
               <span class="tf-boot-wordmark">TravelFlow</span>
             </div>
             <nav class="tf-boot-nav" aria-hidden="true">
-              <span class="tf-boot-nav-link"></span>
-              <span class="tf-boot-nav-link"></span>
-              <span class="tf-boot-nav-link"></span>
-              <span class="tf-boot-nav-link"></span>
-              <span class="tf-boot-nav-link"></span>
+              <span class="tf-boot-nav-link">Features</span>
+              <span class="tf-boot-nav-link">Inspirations</span>
+              <span class="tf-boot-nav-link">News &amp; Updates</span>
+              <span class="tf-boot-nav-link">Blog</span>
+              <span class="tf-boot-nav-link">Pricing</span>
             </nav>
             <div class="tf-boot-actions">
-              <span class="tf-boot-action-chip tf-boot-action-chip--locale"></span>
-              <span class="tf-boot-action-chip tf-boot-action-chip--login"></span>
-              <span class="tf-boot-action-button"></span>
+              <span class="tf-boot-action-chip tf-boot-action-chip--locale">
+                <span class="tf-boot-action-locale-flag" aria-hidden="true">🇬🇧</span>
+                <span>English</span>
+                <span class="tf-boot-action-locale-caret" aria-hidden="true">⌄</span>
+              </span>
+              <span class="tf-boot-action-chip tf-boot-action-chip--login">Login</span>
+              <span class="tf-boot-action-button">Create Trip</span>
             </div>
           </div>
         </header>

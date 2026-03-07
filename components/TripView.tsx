@@ -51,6 +51,7 @@ import { useTripLayoutControlsState } from './tripview/useTripLayoutControlsStat
 import { useTripCityForceFill } from './tripview/useTripCityForceFill';
 import { useTripFavoriteHandler } from './tripview/useTripFavoriteHandler';
 import { resolveTripToastUndoAction } from './tripview/tripToastUndoAction';
+import { buildQueuedTripGenerationRetryToastOptions } from './tripview/tripGenerationRetryToast';
 import { useTripItemMutationHandlers } from './tripview/useTripItemMutationHandlers';
 import { useTripItemUpdateHandlers } from './tripview/useTripItemUpdateHandlers';
 import { useTripRouteStatusState } from './tripview/useTripRouteStatusState';
@@ -1760,10 +1761,12 @@ const useTripViewRender = ({
 
             if (result.state === 'queued') {
                 keepRetryFeedbackActive = true;
-                showToast(t('tripView.generation.retry.queued'), {
-                    tone: 'neutral',
-                    title: t('tripView.generation.retry.queuedTitle'),
-                });
+                showToast(
+                    t('tripView.generation.retry.queued'),
+                    buildQueuedTripGenerationRetryToastOptions(
+                        t('tripView.generation.retry.queuedTitle'),
+                    ),
+                );
             } else if (result.state === 'succeeded') {
                 retryGenerationTabFeedbackSessionRef.current?.complete('success', {
                     title: result.trip.title,

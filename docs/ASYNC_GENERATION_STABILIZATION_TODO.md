@@ -1,6 +1,6 @@
 # Async Generation Stabilization TODO Tracker
 
-Status date: 2026-03-06
+Status date: 2026-03-07
 
 ## Done
 - [x] Fixed local `pnpm dev:netlify` edge-function startup by correcting the TSX generic syntax in `trip-og-image.tsx`, so async worker and map-preview routes load again in Netlify dev.
@@ -28,6 +28,9 @@ Status date: 2026-03-06
 - [x] Added session-local trip commit dedupe in `App.tsx` so identical trip/view commits no longer create repeated `upsert_trip` / `add_trip_version` churn when only top-level `updatedAt` changes.
 - [x] Reverted the over-dark city-lane contrast pass so generated trip colors match the intended default palette depth again instead of rendering noticeably darker than existing trips.
 - [x] Production spot-check confirmed city panels look correct again after the palette rollback.
+- [x] Production spot-check confirmed `user_settings` write bursts no longer show up in normal trip usage after the sync dedupe hardening.
+- [x] Production spot-check confirmed My Trips no longer triggers cosmetic remote trip writes during normal usage.
+- [x] Production spot-check confirmed failed-trip retry now completes cleanly in normal traveler flows without the earlier duplicate first-click behavior.
 - [x] Create/retry async bootstrap now persists optimistic trip snapshots before queue confirmation, replacing the initial high-frequency canonical-attempt fetch burst with a short confirmation window.
 - [x] Trip-view async stall recovery now force-kicks missing jobs before failing, and no longer marks a still-leased worker job as `ASYNC_WORKER_JOB_MISSING`.
 - [x] Route-level suspense fallbacks for trip/share/example pages now use the real planner loading shell, eliminating the pre-shell half-screen grey placeholder flash.
@@ -39,9 +42,7 @@ Status date: 2026-03-06
 ## Open
 - [ ] Verify in live runtime that fresh create-trip runs complete under the new background worker path instead of timing out at 20s.
 - [ ] Verify in live runtime that retry-triggered worker nudges no longer flood repeated trip fetches while a queued job waits to start.
-- [ ] Verify in live runtime that `user_settings` write bursts are reduced after hook dedupe patch.
 - [ ] Verify in live runtime that completed trips stop generation polling/fetch loops after the stale queued/running state fallback patch.
-- [ ] Verify in live runtime that My Trips no longer triggers remote trip write churn from country enrichment.
 - [ ] Verify in live runtime that admin override-enabled trips can restart generation from both the failed banner and Trip Info without disabled-state drift.
 - [ ] Verify in live runtime that trip/share/example first paint no longer flashes the half-screen grey bootstrap block before the planner shell appears.
 - [ ] Produce postmortem package for browser -> async worker migration:

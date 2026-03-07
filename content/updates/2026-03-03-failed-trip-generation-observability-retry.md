@@ -125,3 +125,5 @@ summary: "Trip generation now keeps running in the background, recovers more saf
 - [ ] [Internal] ⚡ Trip routes now paint a lightweight loading shell immediately while planner data and the heavy trip workspace load in the background, making first open feel much faster.
 - [ ] [Internal] ⚪ Trip pages no longer flash a half-screen grey loading block before the planner shell appears.
 - [ ] [Internal] 🧭 The very first app bootstrap frame now shows a branded TravelFlow shell with header chrome instead of a blank white page.
+- [ ] [Internal] 🧭 Queued retry toasts now suppress the default Undo action once async generation has already been enqueued.
+- [ ] [Internal] 🧭 Bootstrap header sizing now mirrors the real site navigation more closely, using real nav/button chrome instead of oversized placeholder bars.
