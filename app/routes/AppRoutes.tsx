@@ -4,7 +4,9 @@ import { AppLanguage, ITrip, IViewSettings } from '../../types';
 import { useDbSync } from '../../hooks/useDbSync';
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from '../../config/locales';
 import { loadLazyComponentWithRecovery } from '../../services/lazyImportRecovery';
+import { MarketingRouteLoadingShell } from '../../components/bootstrap/MarketingRouteLoadingShell';
 import { TripRouteLoadingShell } from '../../components/tripview/TripRouteLoadingShell';
+import { DeferredAppRoutes } from './DeferredAppRoutes';
 
 const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
     moduleKey: string,
@@ -16,18 +18,24 @@ const SharedTripLoaderRoute = lazyWithRecovery('SharedTripLoaderRoute', () => im
 const ExampleTripLoaderRoute = lazyWithRecovery('ExampleTripLoaderRoute', () => import('../../routes/ExampleTripLoaderRoute').then((module) => ({ default: module.ExampleTripLoaderRoute })));
 const CreateTripClassicLabPage = lazyWithRecovery('CreateTripClassicLabPage', () => import('../../pages/CreateTripClassicLabPage').then((module) => ({ default: module.CreateTripClassicLabPage })));
 const CreateTripV3Page = lazyWithRecovery('CreateTripV3Page', () => import('../../pages/CreateTripV3Page').then((module) => ({ default: module.CreateTripV3Page })));
-const DeferredAppRoutes = lazyWithRecovery('DeferredAppRoutes', () => import('./DeferredAppRoutes').then((module) => ({ default: module.DeferredAppRoutes })));
 
 export const RouteLoadingFallback: React.FC = () => (
-    <div className="min-h-screen w-full bg-white" aria-hidden="true" />
+    <MarketingRouteLoadingShell />
+);
+
+const HandoffReadyBoundary: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+    <div data-tf-handoff-ready="true">
+        {children}
+    </div>
 );
 
 const renderWithSuspense = (
     node: React.ReactElement,
-    fallback: React.ReactElement = <RouteLoadingFallback />
+    fallback: React.ReactElement = <RouteLoadingFallback />,
+    options?: { handoffReady?: boolean }
 ) => (
     <Suspense fallback={fallback}>
-        {node}
+        {options?.handoffReady === false ? node : <HandoffReadyBoundary>{node}</HandoffReadyBoundary>}
     </Suspense>
 );
 
@@ -169,7 +177,8 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
                             onViewSettingsChange={onViewSettingsChange}
                             onLanguageLoaded={onAppLanguageLoaded}
                         />,
-                        <TripRouteLoadingShell variant="loadingTrip" />
+                        <TripRouteLoadingShell variant="loadingTrip" />,
+                        { handoffReady: false }
                     )}
                 />
                 <Route
@@ -183,7 +192,8 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
                             appLanguage={appLanguage}
                             onViewSettingsChange={onViewSettingsChange}
                         />,
-                        <TripRouteLoadingShell variant="loadingExampleTrip" />
+                        <TripRouteLoadingShell variant="loadingExampleTrip" />,
+                        { handoffReady: false }
                     )}
                 />
                 <Route
@@ -198,19 +208,20 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
                             onViewSettingsChange={onViewSettingsChange}
                             onLanguageLoaded={onAppLanguageLoaded}
                         />,
-                        <TripRouteLoadingShell variant="loadingSharedTrip" />
+                        <TripRouteLoadingShell variant="loadingSharedTrip" />,
+                        { handoffReady: false }
                     )}
                 />
                 <Route path="/trip" element={<Navigate to="/create-trip" replace />} />
                 <Route
                     path="*"
-                    element={renderWithSuspense(
+                    element={
                         <DeferredAppRoutes
                             onAppLanguageLoaded={onAppLanguageLoaded}
                             onTripGenerated={onTripGenerated}
                             onOpenManager={onOpenManager}
                         />
-                    )}
+                    }
                 />
             </Routes>
         </>

@@ -1,6 +1,6 @@
 import React, { Suspense, lazy, useMemo, useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { AirplaneTilt, List, Folder, SpinnerGap as Loader2 } from '@phosphor-icons/react';
+import { List, Folder, SpinnerGap as Loader2 } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { LanguageSelect } from './LanguageSelect';
 import { useHasSavedTrips } from '../../hooks/useHasSavedTrips';
@@ -9,12 +9,12 @@ import { buildLocalizedCreateTripPath, buildLocalizedMarketingPath, extractLocal
 import { applyDocumentLocale, DEFAULT_LOCALE, normalizeLocale } from '../../config/locales';
 import { AppLanguage } from '../../types';
 import { buildLocalizedLocation } from '../../services/localeRoutingService';
-import { APP_NAME } from '../../config/appGlobals';
 import { preloadLocaleNamespaces } from '../../i18n';
 import { useAuth } from '../../hooks/useAuth';
 import { useLoginModal } from '../../hooks/useLoginModal';
 import { buildPathFromLocationParts } from '../../services/authNavigationService';
 import { loadLazyComponentWithRecovery } from '../../services/lazyImportRecovery';
+import { AppBrand } from './AppBrand';
 
 const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
     moduleKey: string,
@@ -139,7 +139,10 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
 
     return (
         <>
-            <header className={headerClass} style={{ viewTransitionName: 'site-header' }}>
+            <header
+                className={headerClass}
+                style={{ viewTransitionName: 'site-header' }}
+            >
                 <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-5 py-4 lg:px-8">
                     <NavLink
                         to={buildLocalizedMarketingPath('home', activeLocale)}
@@ -147,10 +150,7 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
                         className="flex items-center gap-2"
                         {...navDebugAttributes('brand')}
                     >
-                        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-600 text-white shadow-lg shadow-accent-200">
-                            <AirplaneTilt size={16} weight="duotone" />
-                        </span>
-                        <span className="text-lg font-extrabold tracking-tight">{APP_NAME}</span>
+                        <AppBrand />
                     </NavLink>
 
                     <nav className="hidden items-center gap-4 text-sm lg:flex xl:gap-6">
