@@ -39,6 +39,9 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
   });
 
   it('validates provider/model allowlists including openrouter', () => {
+    expect(ensureModelAllowed('gemini', 'gemini-3.1-flash-lite-preview')).toBeNull();
+    expect(ensureModelAllowed('openai', 'gpt-5.4')).toBeNull();
+    expect(ensureModelAllowed('openai', 'gpt-5.4-pro')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'openrouter/free')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'z-ai/glm-5')).toBeNull();
     expect(ensureModelAllowed('openai', 'gpt-5.4')).toBeNull();
