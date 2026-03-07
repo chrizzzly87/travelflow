@@ -1,9 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
+  collectPaddleEnvironmentIssues,
   computePaddleSignature,
+  detectPaddleApiKeyEnvironment,
+  detectPaddleClientTokenEnvironment,
   extractPaddleUserIdFromCustomData,
   extractSubscriptionSnapshot,
   extractTransactionSnapshot,
+  normalizePaddleEnvironment,
   parsePaddleSignatureHeader,
   readPaddlePriceMapFromEnv,
   resolvePriceIdForTier,
@@ -69,6 +73,32 @@ describe('paddle billing internals', () => {
     expect(resolveTierFromPriceId('pri_mid', priceMap)).toBe('tier_mid');
     expect(resolveTierFromPriceId('pri_premium', priceMap)).toBe('tier_premium');
     expect(resolveTierFromPriceId('pri_unknown', priceMap)).toBeNull();
+  });
+
+  it('normalizes Paddle environments and detects credential mismatches', () => {
+    expect(normalizePaddleEnvironment('sandbox')).toBe('sandbox');
+    expect(normalizePaddleEnvironment('live')).toBe('live');
+    expect(normalizePaddleEnvironment('unexpected')).toBe('live');
+
+    expect(detectPaddleApiKeyEnvironment('pdl_sdbx_apikey_123')).toBe('sandbox');
+    expect(detectPaddleApiKeyEnvironment('pdl_live_apikey_123')).toBe('live');
+    expect(detectPaddleClientTokenEnvironment('test_123')).toBe('sandbox');
+    expect(detectPaddleClientTokenEnvironment('live_123')).toBe('live');
+
+    expect(collectPaddleEnvironmentIssues({
+      declaredEnvironment: 'sandbox',
+      apiKey: 'pdl_live_apikey_123',
+      clientToken: 'live_123',
+    })).toEqual([
+      {
+        code: 'api_key_environment_mismatch',
+        message: 'PADDLE_API_KEY appears to be a live key while PADDLE_ENV=sandbox. Create and use a sandbox API key from Paddle Developer tools -> Authentication -> API keys.',
+      },
+      {
+        code: 'client_token_environment_mismatch',
+        message: 'VITE_PADDLE_CLIENT_TOKEN appears to be a live token while PADDLE_ENV=sandbox. Use a sandbox client-side token (test_) and set Paddle.Environment.set("sandbox") before Paddle.Initialize().',
+      },
+    ]);
   });
 
   it('extracts Paddle user id from custom_data only when UUID is valid', () => {

@@ -9,7 +9,13 @@ import { buildPath } from '../config/routes';
 import { MarketingLayout } from '../components/marketing/MarketingLayout';
 import { useAuth } from '../hooks/useAuth';
 import { startPaddleCheckoutSession, type BillingCheckoutTierKey } from '../services/billingService';
-import { initializePaddleJs, isPaddleClientConfigured } from '../services/paddleClient';
+import {
+    fetchPaddlePublicConfig,
+    initializePaddleJs,
+    isPaddleClientConfigured,
+    isPaddleTierCheckoutConfigured,
+    type PaddlePublicConfig,
+} from '../services/paddleClient';
 
 interface TierStyle {
     badgeClass: string;
@@ -44,6 +50,7 @@ export const PricingPage: React.FC = () => {
     const { t } = useTranslation('pricing');
     const { access, isAuthenticated, isLoading: isAuthLoading } = useAuth();
     const [checkoutTierInFlight, setCheckoutTierInFlight] = useState<BillingCheckoutTierKey | null>(null);
+    const [paddlePublicConfig, setPaddlePublicConfig] = useState<PaddlePublicConfig | null>(null);
     const isPaddleCheckoutEnabled = String(import.meta.env.VITE_PADDLE_CHECKOUT_ENABLED || '').toLowerCase() === 'true';
     const isPaddleClientTokenConfigured = isPaddleClientConfigured();
     const unlimitedLabel = t('shared.unlimited');
@@ -54,11 +61,32 @@ export const PricingPage: React.FC = () => {
 
     useEffect(() => {
         if (!isPaddleCheckoutEnabled || !isPaddleClientTokenConfigured) return;
-        void initializePaddleJs().then((ready) => {
-            if (!ready) {
-                console.error('Failed to initialize Paddle.js on pricing page.');
-            }
-        });
+        let cancelled = false;
+        void fetchPaddlePublicConfig()
+            .then(async (config) => {
+                if (cancelled) return;
+                setPaddlePublicConfig(config);
+                if (config.issues.length > 0) {
+                    config.issues.forEach((issue) => {
+                        console.warn(`Paddle config issue: ${issue.message}`);
+                    });
+                    return;
+                }
+
+                const ready = await initializePaddleJs(config.environment);
+                if (!ready) {
+                    console.error('Failed to initialize Paddle.js on pricing page.');
+                }
+            })
+            .catch((error) => {
+                if (!cancelled) {
+                    console.error('Failed to load Paddle public config.', error);
+                }
+            });
+
+        return () => {
+            cancelled = true;
+        };
     }, [isPaddleCheckoutEnabled, isPaddleClientTokenConfigured]);
 
     const handlePaidTierCheckout = useCallback(async (
@@ -101,9 +129,10 @@ export const PricingPage: React.FC = () => {
                         const tier = PLAN_CATALOG[tierKey];
                         const style = TIER_STYLE[tier.publicSlug];
                         const isPaidTier = tier.monthlyPriceUsd > 0;
-                        const supportsCheckout = isPaddleCheckoutEnabled
+                        const supportsCheckout = (tier.key === 'tier_mid' || tier.key === 'tier_premium')
+                            && isPaddleCheckoutEnabled
                             && isPaddleClientTokenConfigured
-                            && (tier.key === 'tier_mid' || tier.key === 'tier_premium');
+                            && isPaddleTierCheckoutConfigured(paddlePublicConfig, tier.key);
                         const canStartCheckout = isPaidTier && supportsCheckout && isCheckoutEligibleUser && !isAuthLoading;
                         const isCheckoutBusy = checkoutTierInFlight === tier.key;
                         const interpolationValues = {

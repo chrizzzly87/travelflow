@@ -40,6 +40,10 @@ exit 1
   function = "health"
 
 [[edge_functions]]
+  path = "/api/billing/paddle/config"
+  function = "paddle-config"
+
+[[edge_functions]]
   path = "/api/billing/paddle/checkout"
   function = "paddle-checkout"
 

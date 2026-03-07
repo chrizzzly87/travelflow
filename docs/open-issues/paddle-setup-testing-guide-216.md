@@ -10,10 +10,11 @@ Reference issue: [#216](https://github.com/chrizzzly87/travelflow/issues/216)
 
 ## Current Flow (Implemented)
 1. Signed-in user starts paid checkout from pricing.
-2. Frontend calls `/api/billing/paddle/checkout` with tier key.
-3. Edge function creates a Paddle transaction and returns hosted checkout URL.
-4. Paddle sends webhook events to `/api/billing/paddle/webhook`.
-5. Webhook handler verifies `Paddle-Signature`, deduplicates by `event_id`, and updates:
+2. Frontend calls `/api/billing/paddle/config` first to learn the active environment and which paid tiers are actually configured.
+3. Frontend calls `/api/billing/paddle/checkout` with tier key.
+4. Edge function creates a Paddle transaction and returns hosted checkout URL.
+5. Paddle sends webhook events to `/api/billing/paddle/webhook`.
+6. Webhook handler verifies `Paddle-Signature`, deduplicates by `event_id`, and updates:
    - `public.subscriptions` canonical lifecycle row per user
    - `public.profiles.tier_key` (`tier_mid`/`tier_premium` or fallback `tier_free`)
    - `public.billing_webhook_events` log for replay/debug safety
@@ -67,6 +68,7 @@ Use Paddle as the source of truth for commercial/billing setup:
    - In Paddle, go to `Developer tools -> Authentication -> Client-side tokens`.
    - Create a sandbox token for Paddle.js.
    - This token is public/browser-safe and is required so the pricing page can open Paddle Checkout from the transaction link.
+   - Sandbox client-side tokens start with `test_`; live client-side tokens start with `live_`.
 4. Create product + recurring price for `tier_mid` (Explorer).
    - In Paddle, go to `Catalog -> Products`.
    - Create a product for Explorer.
@@ -103,8 +105,10 @@ Use Paddle as the source of truth for commercial/billing setup:
 ## Exact Env Mapping
 - `PADDLE_API_KEY`
   - Comes from `Developer tools -> Authentication -> API keys`
+  - For sandbox testing, do not use a live key. The app now rejects obvious mismatches like `pdl_live_apikey_*` with `PADDLE_ENV=sandbox`.
 - `VITE_PADDLE_CLIENT_TOKEN`
   - Comes from `Developer tools -> Authentication -> Client-side tokens`
+  - For sandbox testing, use the sandbox token (`test_...`), not a live token (`live_...`).
 - `PADDLE_PRICE_ID_TIER_MID`
   - Comes from the recurring Explorer price (`pri_...`)
 - `PADDLE_PRICE_ID_TIER_PREMIUM`
@@ -125,8 +129,17 @@ If you want the shortest path to a working test, do only this in Paddle sandbox:
 
 You can leave `PADDLE_PRICE_ID_TIER_PREMIUM` empty until Explorer works.
 
+## Common Sandbox Misconfiguration
+If checkout fails with `You aren't permitted to perform this request.` during sandbox testing, check this first:
+1. `PADDLE_ENV` must be `sandbox`.
+2. `PADDLE_API_KEY` must come from Paddle sandbox, not live.
+3. `VITE_PADDLE_CLIENT_TOKEN` must come from Paddle sandbox, not live.
+4. The app now loads `/api/billing/paddle/config` before checkout and disables tiers that are not fully configured.
+5. If Explorer is configured but Globetrotter is not, only Explorer should be testable until `PADDLE_PRICE_ID_TIER_PREMIUM` is added.
+
 Official docs:
 - [Create transaction API](https://developer.paddle.com/api-reference/transactions/create-transaction)
+- [Paddle.js overview](https://developer.paddle.com/paddlejs/overview)
 - [Webhook signature verification](https://developer.paddle.com/webhooks/signature-verification)
 - [Handle webhook delivery](https://developer.paddle.com/webhooks/handle-webhook-delivery)
 - [Sandbox + test cards](https://developer.paddle.com/concepts/testing/test-cards)

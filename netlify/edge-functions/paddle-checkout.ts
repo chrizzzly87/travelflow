@@ -1,5 +1,7 @@
 import type { PlanTierKey } from '../../types';
 import {
+  collectPaddleEnvironmentIssues,
+  normalizePaddleEnvironment,
   readPaddlePriceMapFromEnv,
   resolvePriceIdForTier,
 } from '../edge-lib/paddle-billing.ts';
@@ -64,7 +66,7 @@ const getPaddleApiConfig = () => {
   if (!apiKey) return null;
   return {
     apiKey,
-    environment: readEnv('PADDLE_ENV').trim().toLowerCase() || 'live',
+    environment: normalizePaddleEnvironment(readEnv('PADDLE_ENV')),
     priceMap: readPaddlePriceMapFromEnv(readEnv),
     checkoutDomain: readEnv('PADDLE_CHECKOUT_DOMAIN').trim(),
   };
@@ -191,6 +193,17 @@ export default async (request: Request): Promise<Response> => {
     return json(500, { ok: false, error: 'Paddle API key is not configured.' });
   }
 
+  const environmentIssues = collectPaddleEnvironmentIssues({
+    declaredEnvironment: paddleConfig.environment,
+    apiKey: paddleConfig.apiKey,
+  });
+  if (environmentIssues.length > 0) {
+    return json(500, {
+      ok: false,
+      error: environmentIssues[0]?.message || 'Paddle environment configuration is invalid.',
+    });
+  }
+
   let body: PaddleCheckoutRequestBody;
   try {
     body = (await request.json()) as PaddleCheckoutRequestBody;
@@ -248,9 +261,12 @@ export default async (request: Request): Promise<Response> => {
 
   const paddlePayload = await safeJsonParse(paddleResponse);
   if (!paddleResponse.ok) {
+    const forbiddenMessage = paddleResponse.status === 403
+      ? ' Confirm the API key belongs to the same Paddle environment as PADDLE_ENV and can create transactions.'
+      : '';
     return json(502, {
       ok: false,
-      error: extractServiceError(paddlePayload, `Paddle transaction creation failed (${paddleResponse.status}).`),
+      error: `${extractServiceError(paddlePayload, `Paddle transaction creation failed (${paddleResponse.status}).`)}${forbiddenMessage}`.trim(),
     });
   }
 

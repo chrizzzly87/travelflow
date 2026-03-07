@@ -3,6 +3,8 @@ import type { PlanTierKey } from '../../types';
 export const PADDLE_PROVIDER = 'paddle' as const;
 export const PADDLE_SIGNATURE_HEADER = 'Paddle-Signature';
 
+export type PaddleEnvironment = 'sandbox' | 'live';
+
 export type PaddleNormalizedStatus =
   | 'active'
   | 'trialing'
@@ -15,6 +17,13 @@ export type PaddleNormalizedStatus =
 export interface PaddlePriceMap {
   tier_mid: string | null;
   tier_premium: string | null;
+}
+
+export interface PaddleEnvironmentIssue {
+  code:
+    | 'api_key_environment_mismatch'
+    | 'client_token_environment_mismatch';
+  message: string;
 }
 
 export interface PaddleSignatureParts {
@@ -104,6 +113,61 @@ export const readPaddlePriceMapFromEnv = (
     tier_mid: tierMid,
     tier_premium: tierPremium,
   };
+};
+
+export const normalizePaddleEnvironment = (value: string | null | undefined): PaddleEnvironment => {
+  const normalized = asTrimmedString(value)?.toLowerCase();
+  return normalized === 'sandbox' ? 'sandbox' : 'live';
+};
+
+export const detectPaddleApiKeyEnvironment = (
+  apiKey: string | null | undefined,
+): PaddleEnvironment | null => {
+  const normalized = asTrimmedString(apiKey);
+  if (!normalized) return null;
+  if (normalized.startsWith('pdl_sdbx_apikey_')) return 'sandbox';
+  if (normalized.startsWith('pdl_live_apikey_')) return 'live';
+  return null;
+};
+
+export const detectPaddleClientTokenEnvironment = (
+  clientToken: string | null | undefined,
+): PaddleEnvironment | null => {
+  const normalized = asTrimmedString(clientToken);
+  if (!normalized) return null;
+  if (normalized.startsWith('test_')) return 'sandbox';
+  if (normalized.startsWith('live_')) return 'live';
+  return null;
+};
+
+export const collectPaddleEnvironmentIssues = ({
+  declaredEnvironment,
+  apiKey,
+  clientToken,
+}: {
+  declaredEnvironment: PaddleEnvironment;
+  apiKey?: string | null;
+  clientToken?: string | null;
+}): PaddleEnvironmentIssue[] => {
+  const issues: PaddleEnvironmentIssue[] = [];
+  const apiKeyEnvironment = detectPaddleApiKeyEnvironment(apiKey);
+  const clientTokenEnvironment = detectPaddleClientTokenEnvironment(clientToken);
+
+  if (apiKeyEnvironment && apiKeyEnvironment !== declaredEnvironment) {
+    issues.push({
+      code: 'api_key_environment_mismatch',
+      message: `PADDLE_API_KEY appears to be a ${apiKeyEnvironment} key while PADDLE_ENV=${declaredEnvironment}. Create and use a ${declaredEnvironment} API key from Paddle Developer tools -> Authentication -> API keys.`,
+    });
+  }
+
+  if (clientTokenEnvironment && clientTokenEnvironment !== declaredEnvironment) {
+    issues.push({
+      code: 'client_token_environment_mismatch',
+      message: `VITE_PADDLE_CLIENT_TOKEN appears to be a ${clientTokenEnvironment} token while PADDLE_ENV=${declaredEnvironment}. Use a ${declaredEnvironment === 'sandbox' ? 'sandbox client-side token (test_) and set Paddle.Environment.set("sandbox") before Paddle.Initialize().' : 'live client-side token (live_) for production checkout.'}`,
+    });
+  }
+
+  return issues;
 };
 
 export const resolvePriceIdForTier = (
