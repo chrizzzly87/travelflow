@@ -89,7 +89,10 @@ describe('app/routes/DeferredAppRoutes root auth gate', () => {
     expect(getByTestId('location-probe').textContent).toBe('/');
     expect(fallback).toHaveAttribute('data-shell-variant', 'marketing');
     expect(fallback.textContent).toContain('TravelFlow');
-    expect(fallback.textContent).toContain('Create Trip');
+    expect(fallback.textContent).not.toContain('Create Trip');
+    expect(fallback.querySelector('.tf-boot-nav-skeleton--features')).toBeTruthy();
+    expect(fallback.querySelector('.tf-boot-control-flag')).toBeTruthy();
+    expect(fallback.querySelector('.tf-boot-control-skeleton--cta')).toBeTruthy();
   });
 
   it('supports public profile routes', async () => {

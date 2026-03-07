@@ -54,11 +54,6 @@
         overflow: hidden;
       }
 
-      html[data-tf-react-shell-visible="true"] #app-bootstrap-shell {
-        visibility: hidden;
-        pointer-events: none;
-      }
-
       .tf-boot-shell {
         min-height: 100vh;
         width: 100%;
@@ -100,13 +95,11 @@
         height: 32px;
         width: 32px;
         border-radius: 8px;
-        background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
-        box-shadow: 0 10px 24px rgba(165, 180, 252, 0.9);
       }
 
       .tf-boot-logo-image {
-        height: 18px;
-        width: 18px;
+        height: 32px;
+        width: 32px;
         display: block;
       }
 
@@ -143,12 +136,50 @@
       }
 
       .tf-boot-nav-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         flex: 0 0 auto;
-        font-size: 0.875rem;
-        line-height: 1.25rem;
-        color: #64748b;
-        font-weight: 600;
-        white-space: nowrap;
+        height: 20px;
+        pointer-events: none;
+      }
+
+      .tf-boot-nav-skeleton,
+      .tf-boot-control-skeleton,
+      .tf-boot-control-flag {
+        border-radius: 999px;
+        background: linear-gradient(90deg, #e2e8f0 0%, #f8fafc 45%, #e2e8f0 100%);
+        background-size: 200% 100%;
+        animation: tf-boot-shimmer 1.4s linear infinite;
+      }
+
+      .tf-boot-nav-skeleton--features { width: 64px; height: 12px; }
+      .tf-boot-nav-skeleton--inspirations { width: 78px; height: 12px; }
+      .tf-boot-nav-skeleton--updates { width: 110px; height: 12px; }
+      .tf-boot-nav-skeleton--blog { width: 34px; height: 12px; }
+      .tf-boot-nav-skeleton--pricing { width: 52px; height: 12px; }
+
+      .tf-boot-control-flag {
+        width: 18px;
+        height: 12px;
+        border-radius: 4px;
+      }
+
+      .tf-boot-control-skeleton--locale {
+        width: 56px;
+        height: 12px;
+      }
+
+      .tf-boot-control-skeleton--login {
+        width: 40px;
+        height: 12px;
+      }
+
+      .tf-boot-control-skeleton--cta {
+        width: 68px;
+        height: 12px;
+        background: rgba(255, 255, 255, 0.72);
+        animation: none;
       }
 
       .tf-boot-actions {
@@ -168,16 +199,14 @@
         background-color: rgba(255, 255, 255, 0.96);
         box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
         border-radius: 8px;
-        font-size: 0.875rem;
-        line-height: 1.25rem;
         white-space: nowrap;
+        pointer-events: none;
       }
 
       .tf-boot-action-chip {
         height: 36px;
         padding-inline: 12px;
-        color: #334155;
-        font-weight: 600;
+        color: transparent;
       }
 
       .tf-boot-action-chip--locale {
@@ -188,22 +217,10 @@
       .tf-boot-action-button {
         height: 36px;
         padding-inline: 12px;
-        background:
-          linear-gradient(135deg, rgba(79, 70, 229, 0.92) 0%, rgba(99, 102, 241, 0.92) 100%);
+        background: rgba(79, 70, 229, 0.9);
         box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
-        border-color: rgba(99, 102, 241, 0.36);
-        color: #ffffff;
-        font-weight: 600;
-      }
-
-      .tf-boot-action-locale-flag {
-        font-size: 0.875rem;
-        line-height: 1;
-      }
-
-      .tf-boot-action-locale-caret {
-        font-size: 0.75rem;
-        color: #64748b;
+        border-color: rgba(79, 70, 229, 0.36);
+        color: transparent;
       }
 
       .tf-boot-main {
@@ -534,8 +551,8 @@
         }
 
         .tf-boot-logo-image {
-          height: 18px;
-          width: 18px;
+          height: 32px;
+          width: 32px;
         }
 
         .tf-boot-wordmark {
@@ -685,20 +702,23 @@
                 <span class="tf-boot-wordmark">TravelFlow</span>
               </div>
               <nav class="tf-boot-nav" aria-hidden="true">
-                <span class="tf-boot-nav-link">Features</span>
-                <span class="tf-boot-nav-link">Inspirations</span>
-                <span class="tf-boot-nav-link">News &amp; Updates</span>
-                <span class="tf-boot-nav-link">Blog</span>
-                <span class="tf-boot-nav-link">Pricing</span>
+                <span class="tf-boot-nav-link"><span class="tf-boot-nav-skeleton tf-boot-nav-skeleton--features"></span></span>
+                <span class="tf-boot-nav-link"><span class="tf-boot-nav-skeleton tf-boot-nav-skeleton--inspirations"></span></span>
+                <span class="tf-boot-nav-link"><span class="tf-boot-nav-skeleton tf-boot-nav-skeleton--updates"></span></span>
+                <span class="tf-boot-nav-link"><span class="tf-boot-nav-skeleton tf-boot-nav-skeleton--blog"></span></span>
+                <span class="tf-boot-nav-link"><span class="tf-boot-nav-skeleton tf-boot-nav-skeleton--pricing"></span></span>
               </nav>
               <div class="tf-boot-actions">
                 <span class="tf-boot-action-chip tf-boot-action-chip--locale">
-                  <span class="tf-boot-action-locale-flag" aria-hidden="true">🇬🇧</span>
-                  <span>English</span>
-                  <span class="tf-boot-action-locale-caret" aria-hidden="true">⌄</span>
+                  <span class="tf-boot-control-flag" aria-hidden="true"></span>
+                  <span class="tf-boot-control-skeleton tf-boot-control-skeleton--locale"></span>
                 </span>
-                <span class="tf-boot-action-chip tf-boot-action-chip--login">Login</span>
-                <span class="tf-boot-action-button">Create Trip</span>
+                <span class="tf-boot-action-chip tf-boot-action-chip--login">
+                  <span class="tf-boot-control-skeleton tf-boot-control-skeleton--login"></span>
+                </span>
+                <span class="tf-boot-action-button">
+                  <span class="tf-boot-control-skeleton tf-boot-control-skeleton--cta"></span>
+                </span>
               </div>
             </div>
           </header>

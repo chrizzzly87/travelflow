@@ -19,11 +19,11 @@ export const AppBrand: React.FC<AppBrandProps> = ({
     <span className={cn('flex items-center gap-2', className)}>
         <span
             className={cn(
-                'flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-accent-600 to-accent-500 shadow-lg shadow-accent-200',
+                'flex h-8 w-8 items-center justify-center rounded-lg',
                 frameClassName,
             )}
         >
-            <img src="/favicon.svg" alt="" className={cn('h-[18px] w-[18px]', imageClassName)} />
+            <img src="/favicon.svg" alt="" className={cn('h-8 w-8', imageClassName)} />
         </span>
         <span className={cn('text-lg font-extrabold tracking-tight text-slate-900', wordmarkClassName)}>
             {APP_NAME}

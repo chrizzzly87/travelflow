@@ -14,13 +14,14 @@ describe('index.html bootstrap shell', () => {
     expect(html).toContain('class="tf-boot-nav"');
     expect(html).toContain('src="/favicon.svg"');
     expect(html).toContain('TravelFlow');
-    expect(html).toContain('Features');
-    expect(html).toContain('News &amp; Updates');
-    expect(html).toContain('Create Trip');
+    expect(bootstrapMarkup).toContain('class="tf-boot-nav-skeleton tf-boot-nav-skeleton--features"');
+    expect(bootstrapMarkup).toContain('class="tf-boot-control-flag"');
+    expect(bootstrapMarkup).toContain('class="tf-boot-control-skeleton tf-boot-control-skeleton--cta"');
+    expect(bootstrapMarkup).not.toContain('Features</span>');
+    expect(bootstrapMarkup).not.toContain('Create Trip</span>');
     expect(bootstrapMarkup).not.toContain('class="tf-boot-main"');
     expect(bootstrapMarkup).not.toContain('class="tf-boot-page tf-boot-page--marketing"');
     expect(bootstrapMarkup).not.toContain('class="tf-boot-page tf-boot-page--trip"');
-    expect(html).toContain('data-tf-react-shell-visible');
   });
 
   it('switches only the bootstrap header on trip-like routes before hydration', () => {

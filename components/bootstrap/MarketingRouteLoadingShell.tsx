@@ -1,13 +1,10 @@
 import React from 'react';
 
-import { SiteHeader } from '../navigation/SiteHeader';
+import { AppBootstrapShell } from './AppBootstrapShell';
 
 export const MarketingRouteLoadingShell: React.FC = () => (
-    <div
-        className="min-h-screen bg-white text-slate-900"
-        data-testid="route-loading-shell"
-        data-shell-variant="marketing"
-    >
-        <SiteHeader />
-    </div>
+    <AppBootstrapShell
+        variant="marketing"
+        testId="route-loading-shell"
+    />
 );

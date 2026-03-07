@@ -74,6 +74,9 @@ describe('app/routes/AppRoutes suspense fallbacks', () => {
     expect(shell).toBeTruthy();
     expect(shell).toHaveAttribute('data-shell-variant', 'marketing');
     expect(shell.textContent).toContain('TravelFlow');
-    expect(shell.textContent).toContain('Create Trip');
+    expect(shell.textContent).not.toContain('Create Trip');
+    expect(shell.querySelector('.tf-boot-nav-skeleton--features')).toBeTruthy();
+    expect(shell.querySelector('.tf-boot-control-flag')).toBeTruthy();
+    expect(shell.querySelector('.tf-boot-control-skeleton--cta')).toBeTruthy();
   });
 });

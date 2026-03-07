@@ -5,6 +5,7 @@ import './index.css';
 import './i18n';
 import { applyDocumentLocale, DEFAULT_LOCALE, normalizeLocale } from './config/locales';
 import { extractLocaleFromPath, isToolRoute } from './config/routes';
+import { hasRenderableHandoffNode } from './services/bootstrapHandoffService';
 import { preloadCriticalRouteModules } from './services/criticalRoutePreload';
 
 interface ErrorBoundaryProps {
@@ -53,46 +54,38 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
 const setupBootstrapShellHandoff = (rootElement: HTMLElement) => {
   if (typeof document === 'undefined') return;
 
-  const root = document.documentElement;
   const shell = document.getElementById('app-bootstrap-shell');
   if (!shell) return;
 
-  let removalTimer: number | undefined;
   let rafId: number | undefined;
   let observer: MutationObserver | undefined;
   let didScheduleRemoval = false;
 
   const finalizeRemoval = () => {
     shell.remove();
-    if (removalTimer !== undefined) {
-      window.clearTimeout(removalTimer);
-      removalTimer = undefined;
-    }
     if (rafId !== undefined) {
       window.cancelAnimationFrame(rafId);
       rafId = undefined;
     }
     observer?.disconnect();
+    document.documentElement.setAttribute('data-tf-react-shell-visible', 'true');
   };
 
   const scheduleRemoval = () => {
     if (didScheduleRemoval) return;
     didScheduleRemoval = true;
     rafId = window.requestAnimationFrame(() => {
-      root.setAttribute('data-tf-react-shell-visible', 'true');
-      removalTimer = window.setTimeout(finalizeRemoval, 0);
+      finalizeRemoval();
     });
   };
 
-  const hasReadyNode = () => rootElement.querySelector('[data-tf-handoff-ready="true"]') !== null;
-
-  if (hasReadyNode()) {
+  if (hasRenderableHandoffNode(rootElement)) {
     scheduleRemoval();
     return;
   }
 
   observer = new MutationObserver(() => {
-    if (!hasReadyNode()) return;
+    if (!hasRenderableHandoffNode(rootElement)) return;
     observer?.disconnect();
     scheduleRemoval();
   });
