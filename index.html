@@ -190,6 +190,25 @@
         flex: 0 0 auto;
       }
 
+      .tf-boot-action-burger {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        background-color: rgba(255, 255, 255, 0.96);
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+        pointer-events: none;
+      }
+
+      .tf-boot-action-burger-icon {
+        width: 16px;
+        height: 16px;
+        color: #64748b;
+      }
+
       .tf-boot-action-chip,
       .tf-boot-action-button {
         box-sizing: border-box;
@@ -539,6 +558,10 @@
         .tf-boot-nav {
           display: flex;
         }
+
+        .tf-boot-action-burger {
+          display: none;
+        }
       }
 
       @media (min-width: 1280px) {
@@ -555,14 +578,14 @@
         }
 
         .tf-boot-logo-frame {
-          height: 40px;
-          width: 40px;
-          border-radius: 12px;
+          height: 28px;
+          width: 28px;
+          border-radius: 0.375rem;
         }
 
         .tf-boot-logo-image {
-          height: 20px;
-          width: 20px;
+          height: 16px;
+          width: 16px;
         }
 
         .tf-boot-wordmark {
@@ -582,6 +605,10 @@
 
         .tf-boot-action-button {
           height: 36px;
+        }
+
+        .tf-boot-action-burger {
+          display: inline-flex;
         }
 
         .tf-boot-trip-grid {
@@ -728,6 +755,13 @@
                 </span>
                 <span class="tf-boot-action-button">
                   <span class="tf-boot-control-skeleton tf-boot-control-skeleton--cta"></span>
+                </span>
+                <span class="tf-boot-action-burger" aria-hidden="true">
+                  <svg class="tf-boot-action-burger-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+                    <path d="M4 7h16"></path>
+                    <path d="M4 12h16"></path>
+                    <path d="M4 17h16"></path>
+                  </svg>
                 </span>
               </div>
             </div>

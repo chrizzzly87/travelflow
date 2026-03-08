@@ -52,6 +52,13 @@ export const AppBootstrapShell: React.FC<AppBootstrapShellProps> = ({
           <span className="tf-boot-action-button">
             <span className="tf-boot-control-skeleton tf-boot-control-skeleton--cta"></span>
           </span>
+          <span className="tf-boot-action-burger" aria-hidden="true">
+            <svg className="tf-boot-action-burger-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
+              <path d="M4 7h16" />
+              <path d="M4 12h16" />
+              <path d="M4 17h16" />
+            </svg>
+          </span>
         </div>
       </div>
     </header>
