@@ -21,3 +21,4 @@ summary: "Kept the branded header visible through the React handoff and removed 
 - [ ] [Internal] 🎛️ Matched the React route fallback to the static bootstrap shell with disabled-looking controls, skeleton nav bars, and a single-logo treatment so the header no longer flips between different visual states during first load.
 - [ ] [Internal] 🎨 Tuned the brand badge padding and wordmark gap so the bootstrap shell and live header now match the published logo proportions more closely.
 - [ ] [Internal] 🛫 Swapped the scaled favicon for a dedicated white plane glyph inside an explicit indigo badge, so the live header and bootstrap shell now use the same cleaner logo geometry.
+- [ ] [Internal] 📐 Tightened the brand badge corner radius and eased the wordmark spacing so the live header and bootstrap shell stay aligned with the published brand lockup.
