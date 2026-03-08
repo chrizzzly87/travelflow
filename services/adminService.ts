@@ -104,6 +104,27 @@ export interface AdminBillingWebhookEventRecord {
     created_at: string;
 }
 
+export interface AdminBillingPaddleReconcileSummary {
+    fetched: number;
+    eligible: number;
+    processed: number;
+    ignored: number;
+    duplicates: number;
+    failed: number;
+    resolvedUsers: number;
+    unresolved: number;
+}
+
+export interface AdminBillingPaddleReconcileResult {
+    summary: AdminBillingPaddleReconcileSummary;
+    results: Array<{
+        subscriptionId: string | null;
+        eventId: string;
+        message: string;
+        statusCode: number;
+    }>;
+}
+
 export interface AdminAuditRecord {
     id: string;
     actor_user_id: string | null;
@@ -1073,24 +1094,31 @@ const callAdminInternalApi = async <T extends Record<string, unknown>>(
                         : null;
         const fallbackText = responseText.trim();
         const normalizedFallback = fallbackText && fallbackText.length <= 280 ? fallbackText : null;
-        const isIdentityPath = path === '/api/internal/admin/iam';
+        const pathMessages = path === '/api/internal/admin/iam'
+            ? {
+                notFound: 'Admin identity route is unavailable in Vite-only dev. Run `pnpm dev:netlify` (or run it in a second terminal while `pnpm dev` is active) to test admin delete/invite/create actions.',
+                proxyFailure: 'Vite could not reach Netlify dev for admin identity actions (connection refused on localhost:8888). Start `pnpm dev:netlify` before testing delete/invite/create.',
+            }
+            : path === '/api/internal/admin/audit/replay-export'
+                ? {
+                    notFound: 'Admin audit export route is unavailable in Vite-only dev. Run `pnpm dev:netlify` (or run it in a second terminal while `pnpm dev` is active) to test replay exports.',
+                    proxyFailure: 'Vite could not reach Netlify dev for admin audit export actions (connection refused on localhost:8888). Start `pnpm dev:netlify` before testing replay export.',
+                }
+                : path === '/api/internal/admin/billing/paddle/reconcile'
+                    ? {
+                        notFound: 'Admin billing reconcile route is unavailable in Vite-only dev. Run `pnpm dev:netlify` (or run it in a second terminal while `pnpm dev` is active) to test Paddle reconciliation.',
+                        proxyFailure: 'Vite could not reach Netlify dev for admin billing reconciliation (connection refused on localhost:8888). Start `pnpm dev:netlify` before testing Paddle reconciliation.',
+                    }
+                    : null;
         const devNotFoundMessage = looksLikeViteNotFoundPage && import.meta.env.DEV
-            ? (
-                isIdentityPath
-                    ? 'Admin identity route is unavailable in Vite-only dev. Run `pnpm dev:netlify` (or run it in a second terminal while `pnpm dev` is active) to test admin delete/invite/create actions.'
-                    : 'Admin audit export route is unavailable in Vite-only dev. Run `pnpm dev:netlify` (or run it in a second terminal while `pnpm dev` is active) to test replay exports.'
-            )
+            ? pathMessages?.notFound ?? null
             : null;
         const looksLikeViteProxyFailure = import.meta.env.DEV
             && response.status === 500
             && !payloadError
             && (!normalizedFallback || normalizedFallback === 'Internal Server Error');
         const devProxyFailureMessage = looksLikeViteProxyFailure
-            ? (
-                isIdentityPath
-                    ? 'Vite could not reach Netlify dev for admin identity actions (connection refused on localhost:8888). Start `pnpm dev:netlify` before testing delete/invite/create.'
-                    : 'Vite could not reach Netlify dev for admin audit export actions (connection refused on localhost:8888). Start `pnpm dev:netlify` before testing replay export.'
-            )
+            ? pathMessages?.proxyFailure ?? null
             : null;
         const reason = payloadError
             || devNotFoundMessage
@@ -1212,4 +1240,51 @@ export const adminExportAuditReplay = async (
         exportAuditId: response?.data?.exportAuditId ?? null,
         bundle,
     };
+};
+
+export const adminReconcilePaddleSubscriptions = async (
+    maxSubscriptions = 200,
+): Promise<AdminBillingPaddleReconcileResult> => {
+    if (shouldUseAdminMockData()) {
+        await new Promise((resolve) => setTimeout(resolve, 350));
+        return {
+            summary: {
+                fetched: 3,
+                eligible: 2,
+                processed: 1,
+                ignored: 1,
+                duplicates: 0,
+                failed: 0,
+                resolvedUsers: 1,
+                unresolved: 1,
+            },
+            results: [
+                {
+                    subscriptionId: 'sub_mock_101',
+                    eventId: 'reconcile__sub_mock_101__active__20260308',
+                    message: 'Processed.',
+                    statusCode: 200,
+                },
+                {
+                    subscriptionId: 'sub_mock_202',
+                    eventId: 'reconcile__sub_mock_202__canceled__20260308',
+                    message: 'Could not resolve a TravelFlow user for the Paddle subscription event.',
+                    statusCode: 200,
+                },
+            ],
+        };
+    }
+
+    const response = await callAdminInternalApi<{
+        ok: boolean;
+        data?: AdminBillingPaddleReconcileResult;
+    }>('/api/internal/admin/billing/paddle/reconcile', {
+        maxSubscriptions,
+    });
+
+    if (!response?.data?.summary || !Array.isArray(response?.data?.results)) {
+        throw new Error('Admin billing reconcile returned an invalid payload.');
+    }
+
+    return response.data;
 };

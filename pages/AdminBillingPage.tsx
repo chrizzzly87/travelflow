@@ -1,16 +1,20 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { CreditCard, LinkBreak, ShieldCheck, WarningCircle } from '@phosphor-icons/react';
+import { ArrowsClockwise, CreditCard, LinkBreak, ShieldCheck, SpinnerGap, WarningCircle } from '@phosphor-icons/react';
 import { Link, useSearchParams } from 'react-router-dom';
 
+import { useAppDialog } from '../components/AppDialogProvider';
 import { AdminCountUpNumber } from '../components/admin/AdminCountUpNumber';
 import { AdminFilterMenu, type AdminFilterMenuOption } from '../components/admin/AdminFilterMenu';
 import { AdminReloadButton } from '../components/admin/AdminReloadButton';
 import { AdminShell, type AdminDateRange } from '../components/admin/AdminShell';
 import { AdminSurfaceCard } from '../components/admin/AdminSurfaceCard';
 import { CopyableUuid } from '../components/admin/CopyableUuid';
+import { showAppToast } from '../components/ui/appToast';
 import {
     adminListBillingSubscriptions,
+    adminReconcilePaddleSubscriptions,
     adminListBillingWebhookEvents,
+    type AdminBillingPaddleReconcileSummary,
     type AdminBillingSubscriptionRecord,
     type AdminBillingWebhookEventRecord,
 } from '../services/adminService';
@@ -84,6 +88,7 @@ const SUBSCRIPTIONS_CACHE_LIMIT = 250;
 const EVENTS_CACHE_LIMIT = 250;
 
 export const AdminBillingPage: React.FC = () => {
+    const { confirm: confirmDialog } = useAppDialog();
     const [searchParams, setSearchParams] = useSearchParams();
     const [searchValue, setSearchValue] = useState(() => searchParams.get('q') || '');
     const [dateRange, setDateRange] = useState<AdminDateRange>(() => {
@@ -96,7 +101,9 @@ export const AdminBillingPage: React.FC = () => {
     const [selectedSubscriptionStatuses, setSelectedSubscriptionStatuses] = useState<string[]>([]);
     const [selectedEventStatuses, setSelectedEventStatuses] = useState<string[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isReconciling, setIsReconciling] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [lastReconcileSummary, setLastReconcileSummary] = useState<AdminBillingPaddleReconcileSummary | null>(null);
 
     useEffect(() => {
         const next = new URLSearchParams();
@@ -192,6 +199,46 @@ export const AdminBillingPage: React.FC = () => {
         [filteredEvents, filteredSubscriptions],
     );
 
+    const handleReconcile = async () => {
+        const confirmed = await confirmDialog({
+            title: 'Reconcile Paddle subscriptions',
+            message: 'This fetches configured Paddle subscriptions, replays them through the billing sync, and reapplies local subscription state for matched TravelFlow users.',
+            confirmLabel: 'Run reconcile',
+            cancelLabel: 'Cancel',
+        });
+        if (!confirmed) return;
+
+        setIsReconciling(true);
+        const loadingToastId = showAppToast({
+            tone: 'loading',
+            title: 'Reconciling Paddle subscriptions',
+            description: 'Fetching Paddle subscriptions and replaying them through the billing sync.',
+        });
+
+        try {
+            const result = await adminReconcilePaddleSubscriptions();
+            setLastReconcileSummary(result.summary);
+            await loadData();
+
+            showAppToast({
+                id: loadingToastId,
+                tone: result.summary.failed > 0 || result.summary.unresolved > 0 ? 'warning' : 'success',
+                title: 'Paddle reconciliation finished',
+                description: `Fetched ${result.summary.fetched}, replayed ${result.summary.eligible}, processed ${result.summary.processed}, duplicates ${result.summary.duplicates}, unresolved ${result.summary.unresolved}.`,
+            });
+        } catch (error) {
+            const message = error instanceof Error ? error.message : 'Could not reconcile Paddle subscriptions.';
+            showAppToast({
+                id: loadingToastId,
+                tone: 'error',
+                title: 'Paddle reconciliation failed',
+                description: message,
+            });
+        } finally {
+            setIsReconciling(false);
+        }
+    };
+
     return (
         <AdminShell
             title="Billing"
@@ -201,16 +248,46 @@ export const AdminBillingPage: React.FC = () => {
             dateRange={dateRange}
             onDateRangeChange={setDateRange}
             actions={(
-                <AdminReloadButton
-                    onClick={() => void loadData()}
-                    isLoading={isLoading}
-                    label="Reload"
-                />
+                <div className="flex flex-wrap items-center gap-2">
+                    <button
+                        type="button"
+                        onClick={() => void handleReconcile()}
+                        disabled={isReconciling}
+                        className="inline-flex h-9 items-center gap-2 whitespace-nowrap rounded-lg bg-accent-600 px-3 text-sm font-semibold text-white transition-colors hover:bg-accent-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                        {isReconciling ? <SpinnerGap size={14} className="animate-spin" /> : <ArrowsClockwise size={14} weight="bold" />}
+                        Reconcile Paddle
+                    </button>
+                    <AdminReloadButton
+                        onClick={() => void loadData()}
+                        isLoading={isLoading}
+                        label="Reload"
+                    />
+                </div>
             )}
         >
             {errorMessage ? (
                 <section className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
                     {errorMessage}
+                </section>
+            ) : null}
+
+            {lastReconcileSummary ? (
+                <section className="mb-4 rounded-2xl border border-accent-200 bg-accent-50/70 px-4 py-4 text-sm text-slate-800 shadow-sm">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                            <p className="font-semibold text-slate-900">Latest Paddle reconciliation</p>
+                            <p className="mt-1 text-slate-600">
+                                Fetched {lastReconcileSummary.fetched} subscriptions and replayed {lastReconcileSummary.eligible} eligible records through the billing sync.
+                            </p>
+                        </div>
+                        <div className="flex flex-wrap gap-2 text-xs font-semibold text-slate-700">
+                            <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1">Processed {lastReconcileSummary.processed}</span>
+                            <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1">Duplicates {lastReconcileSummary.duplicates}</span>
+                            <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1">Unresolved {lastReconcileSummary.unresolved}</span>
+                            <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1">Failed {lastReconcileSummary.failed}</span>
+                        </div>
+                    </div>
                 </section>
             ) : null}
 

@@ -100,6 +100,10 @@ exit 1
   function = "admin-audit-export"
 
 [[edge_functions]]
+  path = "/api/internal/admin/billing/paddle/reconcile"
+  function = "admin-billing-paddle-reconcile"
+
+[[edge_functions]]
   path = "/api/trip-map-preview"
   function = "trip-map-preview"
 

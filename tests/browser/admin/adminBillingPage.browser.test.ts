@@ -7,6 +7,9 @@ import { MemoryRouter } from 'react-router-dom';
 const mocks = vi.hoisted(() => ({
   adminListBillingSubscriptions: vi.fn(),
   adminListBillingWebhookEvents: vi.fn(),
+  adminReconcilePaddleSubscriptions: vi.fn(),
+  confirmDialog: vi.fn(),
+  showAppToast: vi.fn(),
 }));
 
 vi.mock('../../../components/admin/AdminShell', () => ({
@@ -24,6 +27,16 @@ vi.mock('../../../components/admin/AdminShell', () => ({
 
 vi.mock('../../../components/admin/AdminReloadButton', () => ({
   AdminReloadButton: ({ onClick, label }: { onClick: () => void; label: string }) => React.createElement('button', { type: 'button', onClick }, label),
+}));
+
+vi.mock('../../../components/AppDialogProvider', () => ({
+  useAppDialog: () => ({
+    confirm: mocks.confirmDialog,
+  }),
+}));
+
+vi.mock('../../../components/ui/appToast', () => ({
+  showAppToast: mocks.showAppToast,
 }));
 
 vi.mock('../../../components/admin/AdminFilterMenu', () => ({
@@ -45,6 +58,7 @@ vi.mock('../../../components/admin/CopyableUuid', () => ({
 vi.mock('../../../services/adminService', () => ({
   adminListBillingSubscriptions: mocks.adminListBillingSubscriptions,
   adminListBillingWebhookEvents: mocks.adminListBillingWebhookEvents,
+  adminReconcilePaddleSubscriptions: mocks.adminReconcilePaddleSubscriptions,
 }));
 
 import { AdminBillingPage } from '../../../pages/AdminBillingPage';
@@ -101,6 +115,21 @@ describe('pages/AdminBillingPage', () => {
         created_at: new Date().toISOString(),
       },
     ]);
+    mocks.adminReconcilePaddleSubscriptions.mockResolvedValue({
+      summary: {
+        fetched: 2,
+        eligible: 1,
+        processed: 1,
+        ignored: 0,
+        duplicates: 0,
+        failed: 0,
+        resolvedUsers: 1,
+        unresolved: 0,
+      },
+      results: [],
+    });
+    mocks.confirmDialog.mockResolvedValue(true);
+    mocks.showAppToast.mockReturnValue('toast-id');
   });
 
   it('renders subscription and webhook sections with fetched billing data', async () => {
@@ -119,5 +148,25 @@ describe('pages/AdminBillingPage', () => {
     expect(screen.getByText('Subscription status')).toBeInTheDocument();
     expect(screen.getByText('Webhook status')).toBeInTheDocument();
     expect(screen.getByText('Payload JSON')).toBeInTheDocument();
+  });
+
+  it('runs Paddle reconciliation from the billing workspace', async () => {
+    const { userEvent } = await import('@testing-library/user-event');
+    renderPage();
+
+    await waitFor(() => {
+      expect(mocks.adminListBillingSubscriptions).toHaveBeenCalledTimes(1);
+      expect(mocks.adminListBillingWebhookEvents).toHaveBeenCalledTimes(1);
+    });
+
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Reconcile Paddle' }));
+
+    await waitFor(() => {
+      expect(mocks.confirmDialog).toHaveBeenCalled();
+      expect(mocks.adminReconcilePaddleSubscriptions).toHaveBeenCalledTimes(1);
+    });
+
+    expect(screen.getByText('Latest Paddle reconciliation')).toBeInTheDocument();
+    expect(screen.getByText(/Fetched 2 subscriptions and replayed 1 eligible records/i)).toBeInTheDocument();
   });
 });

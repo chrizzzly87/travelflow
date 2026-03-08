@@ -153,6 +153,9 @@ If checkout fails with `You aren't permitted to perform this request.` during sa
 4. The app now loads `/api/billing/paddle/config` before checkout and disables tiers that are not fully configured.
 5. If Explorer is configured but Globetrotter is not, only Explorer should be testable until `PADDLE_PRICE_ID_TIER_PREMIUM` is added.
 6. If sandbox checkout succeeds but `public.billing_webhook_events` stays empty, confirm the Paddle notification destination is allowed to send **simulation** traffic to your webhook URL.
+7. If the original event was missed, use one of these recovery paths:
+   - Replay the notification from Paddle.
+   - Run **Reconcile Paddle** from `/admin/billing` to fetch Paddle subscriptions and replay them through TravelFlow's billing sync.
 
 Official docs:
 - [Create transaction API](https://developer.paddle.com/api-reference/transactions/create-transaction)
@@ -251,6 +254,9 @@ This validates the full external loop (hosted checkout -> Paddle -> your real we
 4. Replay recent Paddle sandbox events (Webhook UI -> resend) to confirm persistence/tier sync.
    - If the original destination was created without simulation traffic, replay after correcting the destination settings.
 5. Re-run the latest subset or canonical schema if you want `/admin/billing` to work, because the admin billing page depends on the seeded `billing.read` permission and the documented `admin_list_billing_*` RPCs.
+6. If replay is incomplete or the webhook delivery history is missing, open `/admin/billing` and run **Reconcile Paddle**.
+   - This is a manual repair tool.
+   - It fetches Paddle subscriptions, synthesizes deterministic subscription events, and runs them through the same webhook sync logic used for normal delivery.
 
 ## Functional Test Matrix
 ### Checkout creation
