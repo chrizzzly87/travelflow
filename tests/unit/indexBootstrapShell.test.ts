@@ -12,7 +12,7 @@ describe('index.html bootstrap shell', () => {
     expect(html).toContain('id="app-bootstrap-shell"');
     expect(html).toContain('class="tf-boot-header-inner"');
     expect(html).toContain('class="tf-boot-nav"');
-    expect(html).toContain('src="/favicon.svg"');
+    expect(html).toContain('src="/brand-plane.svg"');
     expect(html).toContain('TravelFlow');
     expect(bootstrapMarkup).toContain('class="tf-boot-nav-skeleton tf-boot-nav-skeleton--features"');
     expect(bootstrapMarkup).toContain('class="tf-boot-control-flag"');

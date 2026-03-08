@@ -16,14 +16,14 @@ export const AppBrand: React.FC<AppBrandProps> = ({
     imageClassName,
     wordmarkClassName,
 }) => (
-    <span className={cn('flex items-center gap-1', className)}>
+    <span className={cn('flex items-center gap-0.5', className)}>
         <span
             className={cn(
-                'flex h-10 w-10 items-center justify-center rounded-xl',
+                'flex h-7 w-7 items-center justify-center rounded-lg bg-[#4F46E5]',
                 frameClassName,
             )}
         >
-            <img src="/favicon.svg" alt="" className={cn('h-5 w-5', imageClassName)} />
+            <img src="/brand-plane.svg" alt="" className={cn('h-4 w-4', imageClassName)} />
         </span>
         <span className={cn('text-lg font-extrabold tracking-tight text-slate-900', wordmarkClassName)}>
             {APP_NAME}
