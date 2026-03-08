@@ -4,6 +4,10 @@ import type { AdminBillingSubscriptionRecord, AdminBillingWebhookEventRecord } f
 
 export type AdminBillingStatusTone = 'accent' | 'success' | 'warning' | 'danger' | 'neutral';
 
+const BILLING_STATUS_SYNONYMS: Record<string, string> = {
+    cancelled: 'canceled',
+};
+
 const MINOR_UNIT_SCALE_FALLBACK = 100;
 
 const isPositiveFiniteInteger = (value: number | null | undefined): value is number => (
@@ -65,6 +69,24 @@ export const formatAdminBillingAmount = (
     }
 };
 
+export const normalizeAdminBillingStatus = (
+    providerStatus: string | null | undefined,
+    subscriptionStatus?: string | null | undefined,
+): string => {
+    const normalized = (providerStatus || subscriptionStatus || '').trim().toLowerCase();
+    if (!normalized) return 'none';
+    return BILLING_STATUS_SYNONYMS[normalized] || normalized;
+};
+
+export const humanizeAdminBillingStatus = (value: string | null | undefined): string => {
+    const normalized = normalizeAdminBillingStatus(value);
+    if (normalized === 'none') return 'No subscription';
+    if (normalized === 'past_due') return 'Past due';
+    return normalized
+        .replace(/[_-]+/g, ' ')
+        .replace(/\b\w/g, (match) => match.toUpperCase());
+};
+
 export const summarizeAdminBilling = (
     subscriptions: AdminBillingSubscriptionRecord[],
     events: AdminBillingWebhookEventRecord[],
@@ -79,7 +101,7 @@ export const summarizeAdminBilling = (
 });
 
 export const resolveAdminBillingStatusTone = (status: string | null | undefined): AdminBillingStatusTone => {
-    const normalized = (status || '').trim().toLowerCase();
+    const normalized = normalizeAdminBillingStatus(status);
     if (normalized === 'active' || normalized === 'processed' || normalized === 'trialing') return 'accent';
     if (normalized === 'past_due' || normalized === 'ignored' || normalized === 'paused') return 'warning';
     if (normalized === 'failed' || normalized === 'canceled' || normalized === 'cancelled') return 'danger';

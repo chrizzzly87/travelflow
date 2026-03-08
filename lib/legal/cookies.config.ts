@@ -363,6 +363,14 @@ export const COOKIE_REGISTRY: CookieRegistry = {
       duration: 'Persistent',
       provider: 'TravelFlow',
       storage: 'localStorage',
+      notes: 'Legacy key prefix retained until older admin-browser caches are naturally replaced.',
+    },
+    {
+      name: 'admin.users.columns.v2*',
+      purpose: 'Persists admin users table column visibility preferences per signed-in admin.',
+      duration: 'Persistent',
+      provider: 'TravelFlow',
+      storage: 'localStorage',
     },
     {
       name: 'admin.trips.cache.v1',

@@ -23,6 +23,8 @@ import {
     filterAdminBillingSubscriptionsByRange,
     filterAdminBillingWebhookEventsByRange,
     formatAdminBillingAmount,
+    humanizeAdminBillingStatus,
+    normalizeAdminBillingStatus,
     summarizeAdminBilling,
     resolveAdminBillingStatusTone,
 } from '../services/adminBillingPresentation';
@@ -61,12 +63,6 @@ const humanizeEventType = (value: string | null | undefined): string => {
     return normalized.replace(/[._]+/g, ' ');
 };
 
-const humanizeStatus = (value: string | null | undefined): string => {
-    const normalized = (value || '').trim();
-    if (!normalized) return 'Unknown';
-    return normalized.replace(/[_-]+/g, ' ');
-};
-
 const formatPayloadJson = (value: Record<string, unknown> | null | undefined): string => {
     if (!value) return '';
     try {
@@ -77,7 +73,7 @@ const formatPayloadJson = (value: Record<string, unknown> | null | undefined): s
 };
 
 const statusPill = (value: string | null | undefined) => {
-    const tone = resolveAdminBillingStatusTone(value);
+    const tone = resolveAdminBillingStatusTone(normalizeAdminBillingStatus(value));
     return [
         'inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold capitalize',
         adminBillingStatusClassName(tone),
@@ -150,7 +146,7 @@ export const AdminBillingPage: React.FC = () => {
             .sort(([left], [right]) => left.localeCompare(right))
             .map(([value, count]) => ({
                 value,
-                label: humanizeStatus(value),
+                label: humanizeAdminBillingStatus(value),
                 count,
             }));
     }, [subscriptions]);
@@ -165,7 +161,7 @@ export const AdminBillingPage: React.FC = () => {
             .sort(([left], [right]) => left.localeCompare(right))
             .map(([value, count]) => ({
                 value,
-                label: humanizeStatus(value),
+                label: humanizeAdminBillingStatus(value),
                 count,
             }));
     }, [events]);
@@ -464,9 +460,9 @@ export const AdminBillingPage: React.FC = () => {
                                             <td className="border-b border-slate-200 py-4 pe-4">
                                                 <div className="flex flex-col gap-2">
                                                     <span className={statusPill(record.provider_status || record.subscription_status)}>
-                                                        {humanizeStatus(record.provider_status || record.subscription_status)}
+                                                        {humanizeAdminBillingStatus(record.provider_status || record.subscription_status)}
                                                     </span>
-                                                    <span className="text-xs text-slate-500">App: {humanizeStatus(record.subscription_status)}</span>
+                                                    <span className="text-xs text-slate-500">App: {humanizeAdminBillingStatus(record.subscription_status)}</span>
                                                 </div>
                                             </td>
                                             <td className="border-b border-slate-200 py-4 pe-4">
@@ -518,7 +514,7 @@ export const AdminBillingPage: React.FC = () => {
                                         <div className="min-w-0 flex-1">
                                             <div className="flex flex-wrap items-center gap-2">
                                                 <span className="font-semibold text-slate-900">{humanizeEventType(record.event_type)}</span>
-                                                <span className={statusPill(record.status)}>{humanizeStatus(record.status)}</span>
+                                                <span className={statusPill(record.status)}>{humanizeAdminBillingStatus(record.status)}</span>
                                             </div>
                                             <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500">
                                                 <span>{formatDateTime(record.occurred_at)}</span>

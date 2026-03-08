@@ -347,6 +347,302 @@ $$;
 grant execute on function public.admin_list_billing_subscriptions(integer, integer, text) to authenticated;
 grant execute on function public.admin_list_billing_webhook_events(integer, integer, text) to authenticated;
 
+-- Surface billing status in the admin users workspace without waiting for the full schema merge.
+create or replace function public.admin_list_users(
+  p_limit integer default 100,
+  p_offset integer default 0,
+  p_search text default null
+)
+returns table(
+  user_id uuid,
+  email text,
+  is_anonymous boolean,
+  auth_provider text,
+  auth_providers text[],
+  activation_status text,
+  last_sign_in_at timestamptz,
+  display_name text,
+  first_name text,
+  last_name text,
+  username text,
+  username_display text,
+  username_changed_at timestamptz,
+  gender text,
+  country text,
+  city text,
+  preferred_language text,
+  account_status text,
+  disabled_at timestamptz,
+  disabled_by uuid,
+  onboarding_completed_at timestamptz,
+  active_trips integer,
+  total_trips integer,
+  provider_subscription_id text,
+  provider_status text,
+  subscription_status text,
+  system_role text,
+  tier_key text,
+  entitlements_override jsonb,
+  terms_accepted_version text,
+  terms_accepted_at timestamptz,
+  terms_accepted_locale text,
+  terms_acceptance_source text,
+  created_at timestamptz,
+  updated_at timestamptz
+)
+language plpgsql
+security definer
+set search_path = public, auth
+set row_security = off
+as $$
+begin
+  if not public.has_admin_permission('users.read') then
+    raise exception 'Not allowed';
+  end if;
+
+  return query
+  select
+    p.id,
+    u.email::text,
+    (u.id is null or coalesce((u.raw_app_meta_data ->> 'provider') = 'anonymous', false))::boolean,
+    (
+      case
+        when u.id is null then 'placeholder'
+        else coalesce(
+          (
+            select provider_name
+              from unnest(coalesce(identity_providers.providers, array[]::text[])) provider_name
+             where provider_name <> 'email'
+             order by provider_name
+             limit 1
+          ),
+          case when u.email is not null then 'email' else 'unknown' end
+        )
+      end
+    )::text,
+    (
+      case
+        when u.id is null then array[]::text[]
+        when coalesce(array_length(identity_providers.providers, 1), 0) > 0 then identity_providers.providers
+        when u.email is not null then array['email']::text[]
+        else array[]::text[]
+      end
+    )::text[],
+    (
+      case
+        when u.id is null then 'pending'
+        when coalesce((u.raw_app_meta_data ->> 'provider') = 'anonymous', false) then 'anonymous'
+        when u.last_sign_in_at is null and u.email is not null then 'invited'
+        when u.last_sign_in_at is null then 'pending'
+        else 'activated'
+      end
+    )::text,
+    u.last_sign_in_at::timestamptz,
+    p.display_name,
+    p.first_name,
+    p.last_name,
+    p.username,
+    p.username_display,
+    p.username_changed_at,
+    p.gender,
+    p.country,
+    p.city,
+    p.preferred_language,
+    p.account_status,
+    p.disabled_at,
+    p.disabled_by,
+    p.onboarding_completed_at,
+    coalesce(trip_counts.active_trips, 0)::integer,
+    coalesce(trip_counts.total_trips, 0)::integer,
+    s.provider_subscription_id,
+    s.provider_status,
+    s.status as subscription_status,
+    p.system_role,
+    p.tier_key,
+    p.entitlements_override,
+    p.terms_accepted_version,
+    p.terms_accepted_at,
+    p.terms_accepted_locale,
+    p.terms_acceptance_source,
+    p.created_at,
+    p.updated_at
+  from public.profiles p
+  left join auth.users u on u.id = p.id
+  left join lateral (
+    select
+      array_agg(distinct provider_name order by provider_name) filter (where provider_name is not null) as providers
+    from (
+      select nullif(lower(i.provider), '') as provider_name
+      from auth.identities i
+      where i.user_id = u.id
+    ) provider_rows
+  ) identity_providers on true
+  left join lateral (
+    select
+      count(*)::integer as total_trips,
+      count(*) filter (where coalesce(t.status, 'active') = 'active')::integer as active_trips
+    from public.trips t
+    where t.owner_id = p.id
+  ) trip_counts on true
+  left join public.subscriptions s on s.user_id = p.id
+  where (
+    p_search is null
+    or p_search = ''
+    or coalesce(u.email, '') ilike ('%' || p_search || '%')
+    or coalesce(p.first_name, '') ilike ('%' || p_search || '%')
+    or coalesce(p.last_name, '') ilike ('%' || p_search || '%')
+    or coalesce(p.username, '') ilike ('%' || p_search || '%')
+    or coalesce(s.provider_subscription_id, '') ilike ('%' || p_search || '%')
+    or coalesce(s.provider_status, '') ilike ('%' || p_search || '%')
+    or coalesce(s.status, '') ilike ('%' || p_search || '%')
+    or p.id::text ilike ('%' || p_search || '%')
+  )
+  order by p.created_at desc
+  limit greatest(coalesce(p_limit, 100), 1)
+  offset greatest(coalesce(p_offset, 0), 0);
+end;
+$$;
+
+create or replace function public.admin_get_user_profile(
+  p_user_id uuid
+)
+returns table(
+  user_id uuid,
+  email text,
+  is_anonymous boolean,
+  auth_provider text,
+  auth_providers text[],
+  activation_status text,
+  last_sign_in_at timestamptz,
+  display_name text,
+  first_name text,
+  last_name text,
+  username text,
+  username_display text,
+  username_changed_at timestamptz,
+  gender text,
+  country text,
+  city text,
+  preferred_language text,
+  account_status text,
+  disabled_at timestamptz,
+  disabled_by uuid,
+  onboarding_completed_at timestamptz,
+  active_trips integer,
+  total_trips integer,
+  provider_subscription_id text,
+  provider_status text,
+  subscription_status text,
+  system_role text,
+  tier_key text,
+  entitlements_override jsonb,
+  terms_accepted_version text,
+  terms_accepted_at timestamptz,
+  terms_accepted_locale text,
+  terms_acceptance_source text,
+  created_at timestamptz,
+  updated_at timestamptz
+)
+language plpgsql
+security definer
+set search_path = public, auth
+set row_security = off
+as $$
+begin
+  if not public.has_admin_permission('users.read') then
+    raise exception 'Not allowed';
+  end if;
+
+  return query
+  select
+    p.id,
+    u.email::text,
+    (u.id is null or coalesce((u.raw_app_meta_data ->> 'provider') = 'anonymous', false))::boolean,
+    (
+      case
+        when u.id is null then 'placeholder'
+        else coalesce(
+          (
+            select provider_name
+              from unnest(coalesce(identity_providers.providers, array[]::text[])) provider_name
+             where provider_name <> 'email'
+             order by provider_name
+             limit 1
+          ),
+          case when u.email is not null then 'email' else 'unknown' end
+        )
+      end
+    )::text,
+    (
+      case
+        when u.id is null then array[]::text[]
+        when coalesce(array_length(identity_providers.providers, 1), 0) > 0 then identity_providers.providers
+        when u.email is not null then array['email']::text[]
+        else array[]::text[]
+      end
+    )::text[],
+    (
+      case
+        when u.id is null then 'pending'
+        when coalesce((u.raw_app_meta_data ->> 'provider') = 'anonymous', false) then 'anonymous'
+        when u.last_sign_in_at is null and u.email is not null then 'invited'
+        when u.last_sign_in_at is null then 'pending'
+        else 'activated'
+      end
+    )::text,
+    u.last_sign_in_at::timestamptz,
+    p.display_name,
+    p.first_name,
+    p.last_name,
+    p.username,
+    p.username_display,
+    p.username_changed_at,
+    p.gender,
+    p.country,
+    p.city,
+    p.preferred_language,
+    p.account_status,
+    p.disabled_at,
+    p.disabled_by,
+    p.onboarding_completed_at,
+    coalesce(trip_counts.active_trips, 0)::integer,
+    coalesce(trip_counts.total_trips, 0)::integer,
+    s.provider_subscription_id,
+    s.provider_status,
+    s.status as subscription_status,
+    p.system_role,
+    p.tier_key,
+    p.entitlements_override,
+    p.terms_accepted_version,
+    p.terms_accepted_at,
+    p.terms_accepted_locale,
+    p.terms_acceptance_source,
+    p.created_at,
+    p.updated_at
+  from public.profiles p
+  left join auth.users u on u.id = p.id
+  left join lateral (
+    select
+      array_agg(distinct provider_name order by provider_name) filter (where provider_name is not null) as providers
+    from (
+      select nullif(lower(i.provider), '') as provider_name
+      from auth.identities i
+      where i.user_id = u.id
+    ) provider_rows
+  ) identity_providers on true
+  left join lateral (
+    select
+      count(*)::integer as total_trips,
+      count(*) filter (where coalesce(t.status, 'active') = 'active')::integer as active_trips
+    from public.trips t
+    where t.owner_id = p.id
+  ) trip_counts on true
+  left join public.subscriptions s on s.user_id = p.id
+  where p.id = p_user_id
+  limit 1;
+end;
+$$;
+
 commit;
 
 -- Verification:

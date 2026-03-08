@@ -5,8 +5,10 @@ import {
   filterAdminBillingSubscriptionsByRange,
   filterAdminBillingWebhookEventsByRange,
   formatAdminBillingAmount,
+  humanizeAdminBillingStatus,
   isAdminBillingGraceActive,
   isAdminBillingSubscriptionActive,
+  normalizeAdminBillingStatus,
   resolveAdminBillingStatusTone,
   summarizeAdminBilling,
 } from '../../services/adminBillingPresentation';
@@ -117,5 +119,13 @@ describe('services/adminBillingPresentation', () => {
     expect(resolveAdminBillingStatusTone('failed')).toBe('danger');
     expect(resolveAdminBillingStatusTone('processed')).toBe('accent');
     expect(adminBillingStatusClassName('accent')).toContain('border-accent-200');
+  });
+
+  it('normalizes billing status aliases and empty states for admin surfaces', () => {
+    expect(normalizeAdminBillingStatus('cancelled')).toBe('canceled');
+    expect(normalizeAdminBillingStatus(null, 'past_due')).toBe('past_due');
+    expect(normalizeAdminBillingStatus(null, null)).toBe('none');
+    expect(humanizeAdminBillingStatus('past_due')).toBe('Past due');
+    expect(humanizeAdminBillingStatus('none')).toBe('No subscription');
   });
 });

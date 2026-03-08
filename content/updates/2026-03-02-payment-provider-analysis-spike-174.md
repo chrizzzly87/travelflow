@@ -29,3 +29,4 @@ summary: "Completed the payment-provider spike and locked a MoR-first recommenda
 - [ ] [Internal] 🎛️ Realigned the checkout route with existing TravelFlow layout patterns by restoring the standard page width, widening the summary rail, using the shared tab treatment, and matching the app's card radius/border/shadow language.
 - [ ] [Internal] 🧩 Replaced the checkout rail's broken tab chrome with a cleaner underline switcher, tightened country/flag alignment in traveler details, and corrected the shared admin header layout regression.
 - [ ] [Internal] 🛠️ Hardened Paddle repair tooling with targeted `sub_...` reconciliation and retry-aware rate-limit handling so a single missed sandbox subscription can be reapplied without relying on the broad Paddle list scan.
+- [ ] [Internal] 🧾 Added subscription-status pills and filtering to the admin users table so support can spot active, canceled, past-due, or missing billing state directly in the main user workspace.

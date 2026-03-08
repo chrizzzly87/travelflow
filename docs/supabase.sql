@@ -4652,6 +4652,9 @@ returns table(
   onboarding_completed_at timestamptz,
   active_trips integer,
   total_trips integer,
+  provider_subscription_id text,
+  provider_status text,
+  subscription_status text,
   system_role text,
   tier_key text,
   entitlements_override jsonb,
@@ -4726,6 +4729,9 @@ begin
     p.onboarding_completed_at,
     coalesce(trip_counts.active_trips, 0)::integer,
     coalesce(trip_counts.total_trips, 0)::integer,
+    s.provider_subscription_id,
+    s.provider_status,
+    s.status as subscription_status,
     p.system_role,
     p.tier_key,
     p.entitlements_override,
@@ -4753,6 +4759,7 @@ begin
     from public.trips t
     where t.owner_id = p.id
   ) trip_counts on true
+  left join public.subscriptions s on s.user_id = p.id
   where (
     p_search is null
     or p_search = ''
@@ -4760,6 +4767,9 @@ begin
     or coalesce(p.first_name, '') ilike ('%' || p_search || '%')
     or coalesce(p.last_name, '') ilike ('%' || p_search || '%')
     or coalesce(p.username, '') ilike ('%' || p_search || '%')
+    or coalesce(s.provider_subscription_id, '') ilike ('%' || p_search || '%')
+    or coalesce(s.provider_status, '') ilike ('%' || p_search || '%')
+    or coalesce(s.status, '') ilike ('%' || p_search || '%')
     or p.id::text ilike ('%' || p_search || '%')
   )
   order by p.created_at desc
@@ -4796,6 +4806,9 @@ returns table(
   onboarding_completed_at timestamptz,
   active_trips integer,
   total_trips integer,
+  provider_subscription_id text,
+  provider_status text,
+  subscription_status text,
   system_role text,
   tier_key text,
   entitlements_override jsonb,
@@ -4870,6 +4883,9 @@ begin
     p.onboarding_completed_at,
     coalesce(trip_counts.active_trips, 0)::integer,
     coalesce(trip_counts.total_trips, 0)::integer,
+    s.provider_subscription_id,
+    s.provider_status,
+    s.status as subscription_status,
     p.system_role,
     p.tier_key,
     p.entitlements_override,
@@ -4897,6 +4913,7 @@ begin
     from public.trips t
     where t.owner_id = p.id
   ) trip_counts on true
+  left join public.subscriptions s on s.user_id = p.id
   where p.id = p_user_id
   limit 1;
 end;

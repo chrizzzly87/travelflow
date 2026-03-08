@@ -40,6 +40,9 @@ export interface AdminUserRecord {
     disabled_by?: string | null;
     active_trips?: number | null;
     total_trips?: number | null;
+    provider_subscription_id?: string | null;
+    provider_status?: string | null;
+    subscription_status?: string | null;
     system_role: 'admin' | 'user';
     tier_key: PlanTierKey;
     entitlements_override: Record<string, unknown> | null;
@@ -272,9 +275,12 @@ export const adminListUsers = async (
             user_id: `mock-user-${i}`,
             email: `user${i}@example.com`,
             system_role: i === 0 ? 'admin' : 'user',
-            tier_key: i % 3 === 0 ? 'tier_premium' : 'tier_free',
+            tier_key: i % 5 === 0 ? 'tier_premium' : i % 3 === 0 ? 'tier_mid' : 'tier_free',
             account_status: i === 14 ? 'disabled' : 'active',
             auth_provider: i % 2 === 0 ? 'email' : 'google',
+            provider_subscription_id: i % 5 === 0 ? `sub_mock_premium_${i}` : i % 3 === 0 ? `sub_mock_mid_${i}` : null,
+            provider_status: i % 5 === 0 ? 'canceled' : i % 3 === 0 ? 'active' : null,
+            subscription_status: i % 5 === 0 ? 'inactive' : i % 3 === 0 ? 'active' : null,
             created_at: new Date(now.getTime() - i * 86400000 * 3).toISOString(),
             updated_at: new Date(now.getTime() - i * 3600000).toISOString(),
             entitlements_override: null,
@@ -428,6 +434,9 @@ export const adminGetUserProfile = async (userId: string): Promise<AdminUserReco
             username: 'mockuserprofile',
             username_display: 'MockUserProfile',
             username_changed_at: null,
+            provider_subscription_id: null,
+            provider_status: null,
+            subscription_status: null,
         };
     }
     const client = requireSupabase();

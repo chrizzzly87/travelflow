@@ -79,6 +79,12 @@ import { readAdminCache, writeAdminCache } from '../components/admin/adminLocalC
 import { useAppDialog } from '../components/AppDialogProvider';
 import { showAppToast } from '../components/ui/appToast';
 import {
+    adminBillingStatusClassName,
+    humanizeAdminBillingStatus,
+    normalizeAdminBillingStatus,
+    resolveAdminBillingStatusTone,
+} from '../services/adminBillingPresentation';
+import {
     buildDiffEntryRenderKey,
     buildSecondaryFacetRenderKey,
     buildUserChangeDiffEntries,
@@ -96,6 +102,7 @@ type SortKey =
     | 'updated_at'
     | 'created_at'
     | 'tier_key'
+    | 'subscription_status'
     | 'system_role'
     | 'account_status'
     | 'terms_accepted_version';
@@ -105,6 +112,7 @@ type UserAccountStatus = 'active' | 'disabled' | 'deleted';
 type UserLoginType = 'social' | 'password' | 'unknown';
 type UserTripFilter = 'no_trips_no_profile' | 'no_trips' | 'one_to_two' | 'three_to_five' | 'six_plus';
 type UserTermsState = 'latest' | 'pending' | 'never';
+type UserSubscriptionStatus = 'active' | 'trialing' | 'past_due' | 'paused' | 'canceled' | 'inactive' | 'none' | 'unknown';
 type SocialProviderFilter = 'google' | 'facebook' | 'kakao' | 'apple' | 'github' | 'discord' | 'other_social';
 type LoginPillKey = 'password' | SocialProviderFilter | 'anonymous' | 'unknown';
 type UserVisibleColumnId =
@@ -114,6 +122,7 @@ type UserVisibleColumnId =
     | 'activation'
     | 'role'
     | 'tier'
+    | 'subscription'
     | 'status'
     | 'toc'
     | 'last_visit'
@@ -126,7 +135,7 @@ const USER_DETAIL_TRIP_PAGE_SIZE = 10;
 const USER_DETAIL_LOG_PAGE_SIZE = 10;
 const GENDER_UNSET_VALUE = '__gender_unset__';
 const USERS_CACHE_KEY = 'admin.users.cache.v1';
-const USERS_COLUMNS_CACHE_KEY_PREFIX = 'admin.users.columns.v1';
+const USERS_COLUMNS_CACHE_KEY_PREFIX = 'admin.users.columns.v2';
 const USERNAME_CHANGE_COOLDOWN_DAYS = 90;
 const USER_ROLE_VALUES = ['admin', 'user'] as const;
 const USER_STATUS_VALUES: ReadonlyArray<UserAccountStatus> = ['active', 'disabled', 'deleted'];
@@ -134,6 +143,7 @@ const USER_ACTIVATION_VALUES: ReadonlyArray<UserActivationStatus> = ['activated'
 const USER_LOGIN_TYPE_VALUES: ReadonlyArray<UserLoginType> = ['social', 'password', 'unknown'];
 const USER_TRIP_FILTER_VALUES: ReadonlyArray<UserTripFilter> = ['no_trips_no_profile', 'no_trips', 'one_to_two', 'three_to_five', 'six_plus'];
 const USER_TERMS_STATE_VALUES: ReadonlyArray<UserTermsState> = ['latest', 'pending', 'never'];
+const USER_SUBSCRIPTION_VALUES: ReadonlyArray<UserSubscriptionStatus> = ['active', 'trialing', 'past_due', 'paused', 'canceled', 'inactive', 'none', 'unknown'];
 const USER_VISIBLE_COLUMN_IDS: readonly UserVisibleColumnId[] = [
     'user',
     'login',
@@ -141,6 +151,7 @@ const USER_VISIBLE_COLUMN_IDS: readonly UserVisibleColumnId[] = [
     'activation',
     'role',
     'tier',
+    'subscription',
     'status',
     'toc',
     'last_visit',
@@ -154,6 +165,7 @@ const USER_VISIBLE_COLUMN_OPTIONS: Array<{ value: UserVisibleColumnId; label: st
     { value: 'activation', label: 'Activation' },
     { value: 'role', label: 'Role' },
     { value: 'tier', label: 'Tier' },
+    { value: 'subscription', label: 'Subscription' },
     { value: 'status', label: 'Status' },
     { value: 'toc', label: 'ToC' },
     { value: 'last_visit', label: 'Last sign-in' },
@@ -167,6 +179,7 @@ const DEFAULT_VISIBLE_USER_COLUMNS: UserVisibleColumnId[] = [
     'activation',
     'role',
     'tier',
+    'subscription',
     'status',
     'last_visit',
     'created',
@@ -283,6 +296,7 @@ const parseSortKey = (value: string | null): SortKey => {
         || value === 'updated_at'
         || value === 'created_at'
         || value === 'tier_key'
+        || value === 'subscription_status'
         || value === 'system_role'
         || value === 'account_status'
         || value === 'terms_accepted_version') {
@@ -845,6 +859,26 @@ const formatAccountStatusLabel = (status: UserAccountStatus): string => {
     return status.charAt(0).toUpperCase() + status.slice(1);
 };
 
+const resolveUserSubscriptionStatus = (user: AdminUserRecord): UserSubscriptionStatus => {
+    const normalized = normalizeAdminBillingStatus(user.provider_status, user.subscription_status);
+    if (normalized === 'active'
+        || normalized === 'trialing'
+        || normalized === 'past_due'
+        || normalized === 'paused'
+        || normalized === 'canceled'
+        || normalized === 'inactive'
+        || normalized === 'none') {
+        return normalized;
+    }
+    return 'unknown';
+};
+
+const getUserSubscriptionStatusLabel = (status: UserSubscriptionStatus): string => humanizeAdminBillingStatus(status);
+
+const subscriptionStatusPillClass = (status: UserSubscriptionStatus): string => (
+    adminBillingStatusClassName(resolveAdminBillingStatusTone(status))
+);
+
 const tierPillClass = (tier: PlanTierKey) => {
     if (tier === 'tier_premium') return 'border-violet-300 bg-violet-50 text-violet-800';
     if (tier === 'tier_mid') return 'border-sky-300 bg-sky-50 text-sky-800';
@@ -1250,6 +1284,9 @@ export const AdminUsersPage: React.FC = () => {
     const [termsFilters, setTermsFilters] = useState<UserTermsState[]>(
         () => parseQueryMultiValue(searchParams.get('terms'), USER_TERMS_STATE_VALUES)
     );
+    const [subscriptionFilters, setSubscriptionFilters] = useState<UserSubscriptionStatus[]>(
+        () => parseQueryMultiValue(searchParams.get('subscription'), USER_SUBSCRIPTION_VALUES)
+    );
     const [visibleColumns, setVisibleColumns] = useState<UserVisibleColumnId[]>(
         () => parseUserVisibleColumns(searchParams.get('cols'))
     );
@@ -1365,6 +1402,9 @@ export const AdminUsersPage: React.FC = () => {
         if (termsFilters.length > 0 && termsFilters.length < USER_TERMS_STATE_VALUES.length) {
             next.set('terms', termsFilters.join(','));
         }
+        if (subscriptionFilters.length > 0 && subscriptionFilters.length < USER_SUBSCRIPTION_VALUES.length) {
+            next.set('subscription', subscriptionFilters.join(','));
+        }
         if (sortKey !== 'created_at') next.set('sort', sortKey);
         if (sortDirection !== 'desc') next.set('dir', sortDirection);
         if (page > 1) next.set('page', String(page));
@@ -1398,6 +1438,7 @@ export const AdminUsersPage: React.FC = () => {
         sortKey,
         socialProviderFilters,
         statusFilters,
+        subscriptionFilters,
         termsFilters,
         tierFilters,
         tripFilters,
@@ -1685,10 +1726,12 @@ export const AdminUsersPage: React.FC = () => {
         const filtered = users.filter((user) => {
             const accountStatus = (user.account_status || 'active') as UserAccountStatus;
             const activationStatus = resolveActivationStatus(user);
+            const subscriptionStatus = resolveUserSubscriptionStatus(user);
             const loginProfile = resolveUserLoginProfile(user);
             if (!isIsoDateInRange(user.created_at, dateRange)) return false;
             if (roleFilters.length > 0 && !roleFilters.includes(user.system_role)) return false;
             if (tierFilters.length > 0 && !tierFilters.includes(user.tier_key)) return false;
+            if (subscriptionFilters.length > 0 && !subscriptionFilters.includes(subscriptionStatus)) return false;
             if (statusFilters.length > 0 && !statusFilters.includes(accountStatus)) return false;
             if (activationFilters.length > 0 && !activationFilters.includes(activationStatus)) return false;
             if (loginTypeFilters.length > 0) {
@@ -1721,6 +1764,8 @@ export const AdminUsersPage: React.FC = () => {
                 || getLoginSearchText(user).includes(token)
                 || (user.username || '').toLowerCase().includes(token)
                 || getActivationStatusLabel(activationStatus).toLowerCase().includes(token)
+                || getUserSubscriptionStatusLabel(subscriptionStatus).toLowerCase().includes(token)
+                || (user.provider_subscription_id || '').toLowerCase().includes(token)
                 || getUserTermsStateLabel(termsState).toLowerCase().includes(token)
             );
         });
@@ -1734,6 +1779,7 @@ export const AdminUsersPage: React.FC = () => {
             if (sortKey === 'updated_at') return Date.parse(user.updated_at || '') || 0;
             if (sortKey === 'created_at') return Date.parse(user.created_at || '') || 0;
             if (sortKey === 'tier_key') return String(user.tier_key || '').toLowerCase();
+            if (sortKey === 'subscription_status') return resolveUserSubscriptionStatus(user);
             if (sortKey === 'system_role') return String(user.system_role || '').toLowerCase();
             if (sortKey === 'terms_accepted_version') {
                 const stateRank = getUserTermsSortRank(resolveUserTermsState(user, currentTermsVersion));
@@ -1768,6 +1814,7 @@ export const AdminUsersPage: React.FC = () => {
         sortDirection,
         sortKey,
         statusFilters,
+        subscriptionFilters,
         tierFilters,
         termsFilters,
         tripFilters,
@@ -1828,6 +1875,15 @@ export const AdminUsersPage: React.FC = () => {
             value,
             label: PLAN_CATALOG[value].publicName,
             count: usersInDateRange.filter((user) => user.tier_key === value).length,
+        })),
+        [usersInDateRange]
+    );
+
+    const subscriptionFilterOptions = useMemo<AdminFilterMenuOption[]>(
+        () => USER_SUBSCRIPTION_VALUES.map((value) => ({
+            value,
+            label: getUserSubscriptionStatusLabel(value),
+            count: usersInDateRange.filter((user) => resolveUserSubscriptionStatus(user) === value).length,
         })),
         [usersInDateRange]
     );
@@ -2610,6 +2666,7 @@ export const AdminUsersPage: React.FC = () => {
         setSocialProviderFilters([]);
         setTripFilters([]);
         setTermsFilters([]);
+        setSubscriptionFilters([]);
         setPage(1);
     };
 
@@ -2785,6 +2842,15 @@ export const AdminUsersPage: React.FC = () => {
                             }}
                         />
                         <AdminFilterMenu
+                            label="Subscription"
+                            options={subscriptionFilterOptions}
+                            selectedValues={subscriptionFilters}
+                            onSelectedValuesChange={(next) => {
+                                setSubscriptionFilters(next as UserSubscriptionStatus[]);
+                                setPage(1);
+                            }}
+                        />
+                        <AdminFilterMenu
                             label="ToC"
                             options={termsFilterOptions}
                             selectedValues={termsFilters}
@@ -2932,6 +2998,16 @@ export const AdminUsersPage: React.FC = () => {
                                         />
                                     </TableHead>
                                 )}
+                                {isUserColumnVisible('subscription') && (
+                                    <TableHead className={`px-4 py-3 font-semibold text-slate-700 ${isUserSortedColumn('subscription_status') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
+                                        <AdminSortHeaderButton
+                                            label="Subscription"
+                                            isActive={isUserSortedColumn('subscription_status')}
+                                            direction={sortDirection}
+                                            onClick={() => toggleSort('subscription_status')}
+                                        />
+                                    </TableHead>
+                                )}
                                 {isUserColumnVisible('status') && (
                                     <TableHead className={`px-4 py-3 font-semibold text-slate-700 ${isUserSortedColumn('account_status') ? ADMIN_TABLE_SORTED_HEADER_CLASS : ''}`}>
                                         <AdminSortHeaderButton
@@ -2990,6 +3066,7 @@ export const AdminUsersPage: React.FC = () => {
                                 const userName = getUserDisplayName(user);
                                 const accountStatus = (user.account_status || 'active') as UserAccountStatus;
                                 const activationStatus = resolveActivationStatus(user);
+                                const subscriptionStatus = resolveUserSubscriptionStatus(user);
                                 const isSelected = selectedUserIds.has(user.user_id);
                                 const isHardDeleteEligible = isUserHardDeleteEligible(user);
                                 const isTriplessNoData = isUserTriplessAndNoData(user);
@@ -3110,6 +3187,20 @@ export const AdminUsersPage: React.FC = () => {
                                                 <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${tierPillClass(user.tier_key)}`}>
                                                     {PLAN_CATALOG[user.tier_key]?.publicName || user.tier_key}
                                                 </span>
+                                            </TableCell>
+                                        )}
+                                        {isUserColumnVisible('subscription') && (
+                                            <TableCell className={`px-4 py-3 ${isUserSortedColumn('subscription_status') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
+                                                <div className="flex min-w-[132px] flex-col gap-1">
+                                                    <span className={`inline-flex w-fit rounded-full border px-2 py-0.5 text-[11px] font-semibold ${subscriptionStatusPillClass(subscriptionStatus)}`}>
+                                                        {getUserSubscriptionStatusLabel(subscriptionStatus)}
+                                                    </span>
+                                                    {user.provider_subscription_id ? (
+                                                        <span className="truncate text-[11px] font-mono text-slate-500" title={user.provider_subscription_id}>
+                                                            {user.provider_subscription_id}
+                                                        </span>
+                                                    ) : null}
+                                                </div>
                                             </TableCell>
                                         )}
                                         {isUserColumnVisible('status') && (
