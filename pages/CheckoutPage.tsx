@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, Check, CreditCard, SpinnerGap } from '@phosphor-icons/react';
+import { ArrowLeft, Check, CheckCircle, CreditCard, SpinnerGap } from '@phosphor-icons/react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
@@ -73,6 +73,7 @@ const checkoutInputClassName = 'mt-1 h-11 w-full rounded-md border border-slate-
 const checkoutFieldLabelClassName = 'text-sm font-medium text-slate-700';
 const checkoutActionClassName = 'inline-flex h-11 items-center justify-center gap-2 rounded-md px-4 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60';
 const checkoutSectionLabelClassName = 'text-xs font-semibold uppercase tracking-[0.14em] text-slate-500';
+const checkoutRailTabTriggerClassName = '!-mb-px !h-auto !flex-none justify-start rounded-none border-b-2 border-transparent px-0 pb-3 pt-0 text-sm font-semibold text-slate-500 after:hidden hover:text-slate-900 data-[state=active]:border-accent-600 data-[state=active]:bg-transparent data-[state=active]:text-accent-700 disabled:text-slate-300';
 
 const normalizeAuthErrorCode = (error: unknown): string => {
     if (!error || typeof error !== 'object') return 'default';
@@ -99,16 +100,16 @@ const CheckoutStepSection: React.FC<CheckoutStepSectionProps> = ({ step, state, 
         <div className="flex items-start gap-4">
             <div
                 className={cn(
-                    'mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-sm font-semibold',
+                    'mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold',
                     state === 'complete'
-                        ? 'border-accent-200 bg-accent-50 text-accent-700'
+                        ? 'text-accent-600'
                         : state === 'active'
-                            ? 'border-slate-900 text-slate-900'
-                            : 'border-slate-300 text-slate-400'
+                            ? 'border border-slate-900 text-slate-900'
+                            : 'border border-slate-300 text-slate-400'
                 )}
                 aria-hidden="true"
             >
-                {state === 'complete' ? <Check size={16} weight="duotone" /> : step}
+                {state === 'complete' ? <CheckCircle size={28} weight="duotone" aria-hidden="true" /> : step}
             </div>
             <div className="min-w-0 flex-1">
                 <h2 className="text-xl font-semibold tracking-tight text-slate-900">{title}</h2>
@@ -819,7 +820,7 @@ export const CheckoutPage: React.FC = () => {
                             <section className="space-y-4">
                                 <p className={checkoutSectionLabelClassName}>{t('checkout.planSummaryTitle', { ns: 'pricing' })}</p>
                                 <Tabs value={selectedTierKey} onValueChange={handlePlanChange} className="gap-4">
-                                    <TabsList variant="line" className="h-auto w-full justify-start gap-4 border-b border-slate-200 p-0">
+                                    <TabsList variant="line" className="h-auto w-full justify-start gap-6 border-b border-slate-200 p-0">
                                         {PAID_TIER_ORDER.map((tierKey) => {
                                             const tier = PLAN_CATALOG[tierKey];
                                             const tierAvailable = isPaddleTierCheckoutConfigured(paddlePublicConfig, tierKey);
@@ -828,7 +829,7 @@ export const CheckoutPage: React.FC = () => {
                                                     key={tierKey}
                                                     value={tierKey}
                                                     disabled={Boolean(paddlePublicConfig) && !tierAvailable}
-                                                    className="h-10 flex-none rounded-none px-0 text-sm data-[state=active]:text-slate-900"
+                                                    className={checkoutRailTabTriggerClassName}
                                                 >
                                                     {t(`tiers.${tier.publicSlug}.name`, { ns: 'pricing' })}
                                                 </TabsTrigger>

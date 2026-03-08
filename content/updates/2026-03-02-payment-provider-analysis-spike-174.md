@@ -20,3 +20,4 @@ summary: "Completed the payment-provider spike and locked a MoR-first recommenda
 - [ ] [Internal] 🧭 Added Paddle environment diagnostics and public tier-availability bootstrapping so sandbox/live credential mismatches fail clearly and unconfigured paid tiers stay disabled on the pricing page.
 - [ ] [Internal] 🧭 Moved billing into a dedicated `/checkout` flow with branded plan review, profile enrichment, and trip-aware handoff metadata so pricing and locked-trip upgrades feed the same Paddle path.
 - [ ] [Internal] 🎨 Reworked the dedicated checkout route into a leaner three-step flow with inline auth, traveler details, main-column payment, email-confirmation terms finalization, and cleaner mobile-first form styling.
+- [ ] [Internal] ✅ Polished the checkout summary rail with accent-colored completion states and more explicit plan-switch tabs so the paid flow reads closer to the rest of the app UI.
