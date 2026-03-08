@@ -52,6 +52,46 @@ VITE_SUPABASE_ANON_KEY=...
 SUPABASE_SERVICE_ROLE_KEY=...          # required when PADDLE_WEBHOOK_SYNC_MODE=full
 ```
 
+## Recommended Environment Strategy
+Do not keep separate `*_SANDBOX` and `*_LIVE` keys in the app code. Keep one canonical key name per setting and let the environment decide the value.
+
+Recommended setup:
+
+| Runtime | Recommended values |
+| --- | --- |
+| Local dev (`pnpm dev`, `pnpm dev:netlify`) | Sandbox only via `.env.local` |
+| Netlify `Deploy previews` | Sandbox |
+| Netlify `Branch deploys` | Sandbox |
+| Netlify `Production` | Live |
+
+Practical rule:
+1. Keep your local machine on sandbox all the time.
+2. Keep preview/feature branches on Netlify in sandbox all the time.
+3. Put live Paddle credentials only in Netlify `Production` context for `main`.
+4. Do not manually swap the same site between sandbox and live for routine testing.
+
+Recommended keys by context:
+
+| Key | Local / Preview / Branch Deploys | Production |
+| --- | --- | --- |
+| `PADDLE_ENV` | `sandbox` | `live` |
+| `PADDLE_API_KEY` | sandbox API key | live API key |
+| `VITE_PADDLE_CLIENT_TOKEN` | sandbox client token | live client token |
+| `PADDLE_WEBHOOK_SECRET` | sandbox webhook secret | live webhook secret |
+| `PADDLE_PRICE_ID_TIER_MID` | sandbox Explorer price | live Explorer price |
+| `PADDLE_PRICE_ID_TIER_PREMIUM` | sandbox Globetrotter price | live Globetrotter price |
+| `PADDLE_WEBHOOK_SYNC_MODE` | `full` or `verify_only` | `full` |
+
+Local recommendation:
+1. Keep `.env.local` as sandbox only.
+2. Avoid local live testing unless there is a very specific production-dry-run reason.
+3. If you ever need a one-off local live build, use an untracked local file outside the normal dev loop instead of overwriting your everyday sandbox config.
+
+Netlify recommendation:
+1. Use the Netlify UI environment contexts instead of suffixing variables in code.
+2. `Production` should be the only context that holds live Paddle values.
+3. `Deploy previews` and `Branch deploys` should keep sandbox values so every feature branch stays safe by default.
+
 ## Where Configuration Lives (Paddle-first)
 Use Paddle as the source of truth for commercial/billing setup:
 - Paddle dashboard:
