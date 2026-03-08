@@ -21,4 +21,7 @@ summary: "Completed the payment-provider spike and locked a MoR-first recommenda
 - [ ] [Internal] 🧭 Moved billing into a dedicated `/checkout` flow with branded plan review, profile enrichment, and trip-aware handoff metadata so pricing and locked-trip upgrades feed the same Paddle path.
 - [ ] [Internal] 🎨 Reworked the dedicated checkout route into a leaner three-step flow with inline auth, traveler details, main-column payment, email-confirmation terms finalization, and cleaner mobile-first form styling.
 - [ ] [Internal] ✅ Corrected the checkout summary rail to use a simpler accent bottom-border tab state and stronger completed-step markers that match the rest of the app better.
+- [ ] [Internal] 🧭 Kept traveler details editable after the Paddle frame loads, removed the stuck signup-wait state, and switched same-origin checkout reloads to in-app navigation for a faster step-3 handoff.
+- [ ] [Internal] ✅ Replaced the post-payment toast-only state with a real success step that can resume queued trip generation, return users to a claimed trip, or guide them into create-trip/profile next actions.
+- [ ] [Internal] 🔎 Exposed non-secret webhook sync diagnostics in the Paddle config endpoint and documented that sandbox webhook destinations must allow simulation traffic, because otherwise admin billing stays empty even when sandbox checkout succeeds.
 - [ ] [Internal] 🧾 Added the first admin billing workspace for subscription state and webhook visibility, plus the matching documented Supabase RPCs needed to read billing data under admin permissions.

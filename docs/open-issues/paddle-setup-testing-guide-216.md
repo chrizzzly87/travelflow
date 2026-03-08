@@ -11,6 +11,10 @@ Reference issue: [#216](https://github.com/chrizzzly87/travelflow/issues/216)
 ## Current Flow (Implemented)
 1. User starts paid checkout from pricing or from a locked trip upgrade CTA.
 2. Frontend calls `/api/billing/paddle/config` first to learn the active environment and which paid tiers are actually configured.
+   - The config payload now also exposes non-secret billing sync diagnostics:
+     - `webhookSecretConfigured`
+     - `supabaseSyncConfigured`
+     - `webhookSyncMode`
 3. Frontend routes the user into the dedicated `/checkout` page with tier, source, return path, and optional claim/trip metadata.
 4. `/checkout` keeps the flow in one place: account sign-in/registration first, traveler details second, and payment last.
 5. If email confirmation is required, the confirmation link returns to `/checkout` and the app finalizes current-terms acceptance there before continuing.
@@ -97,8 +101,10 @@ Use Paddle as the source of truth for commercial/billing setup:
    - In Paddle, go to `Developer tools -> Notifications`.
    - Click `New destination`.
    - Choose webhook destination and enter the URL above.
+   - Enable **simulation** delivery for sandbox testing. If the destination is limited to platform/live traffic only, sandbox checkout can succeed while `billing_webhook_events` stays empty.
 9. Subscribe the destination to the events this integration actually uses:
    - `subscription.created`
+   - `subscription.activated`
    - `subscription.updated`
    - `subscription.canceled`
    - `transaction.completed`
@@ -134,6 +140,7 @@ If you want the shortest path to a working test, do only this in Paddle sandbox:
 5. Set the sandbox default payment link to your preview `/checkout` page.
 6. Create one webhook destination for `/api/billing/paddle/webhook`.
 7. Subscribe it to `subscription.created`, `subscription.updated`, `subscription.canceled`, and `transaction.completed`.
+   - Include `subscription.activated` too.
 8. Copy its secret into `PADDLE_WEBHOOK_SECRET`.
 
 You can leave `PADDLE_PRICE_ID_TIER_PREMIUM` empty until Explorer works.
@@ -145,6 +152,7 @@ If checkout fails with `You aren't permitted to perform this request.` during sa
 3. `VITE_PADDLE_CLIENT_TOKEN` must come from Paddle sandbox, not live.
 4. The app now loads `/api/billing/paddle/config` before checkout and disables tiers that are not fully configured.
 5. If Explorer is configured but Globetrotter is not, only Explorer should be testable until `PADDLE_PRICE_ID_TIER_PREMIUM` is added.
+6. If sandbox checkout succeeds but `public.billing_webhook_events` stays empty, confirm the Paddle notification destination is allowed to send **simulation** traffic to your webhook URL.
 
 Official docs:
 - [Create transaction API](https://developer.paddle.com/api-reference/transactions/create-transaction)
@@ -227,6 +235,7 @@ Use this when Supabase schema updates are blocked by parallel work:
 3. Run a real sandbox checkout from `/checkout`.
 4. Confirm webhook delivery in Paddle dashboard:
    - Event status is delivered (or resendable) for `/api/billing/paddle/webhook`
+   - Destination must be configured for simulation traffic, not platform-only delivery
 5. Confirm endpoint response payload contains:
    - `ok: true`
    - `status: "ignored"`
@@ -240,6 +249,7 @@ This validates the full external loop (hosted checkout -> Paddle -> your real we
 2. Set `PADDLE_WEBHOOK_SYNC_MODE=full`.
 3. Ensure `SUPABASE_SERVICE_ROLE_KEY` is present.
 4. Replay recent Paddle sandbox events (Webhook UI -> resend) to confirm persistence/tier sync.
+   - If the original destination was created without simulation traffic, replay after correcting the destination settings.
 5. Re-run the latest subset or canonical schema if you want `/admin/billing` to work, because the admin billing page depends on the seeded `billing.read` permission and the documented `admin_list_billing_*` RPCs.
 
 ## Functional Test Matrix
