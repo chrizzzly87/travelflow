@@ -6,6 +6,7 @@ import {
     CaretRight,
     ChartLineUp,
     ChartPieSlice,
+    CreditCard,
     Flask,
     ImageSquare,
     List,
@@ -71,6 +72,7 @@ const itemIcon = (icon: (typeof ADMIN_NAV_ITEMS)[number]['icon']) => {
     if (icon === 'users') return <UsersThree size={16} weight="duotone" />;
     if (icon === 'trips') return <SuitcaseRolling size={16} weight="duotone" />;
     if (icon === 'tiers') return <StackSimple size={16} weight="duotone" />;
+    if (icon === 'billing') return <CreditCard size={16} weight="duotone" />;
     if (icon === 'audit') return <Scroll size={16} weight="duotone" />;
     if (icon === 'legal') return <Scales size={16} weight="duotone" />;
     if (icon === 'og_tools') return <ImageSquare size={16} weight="duotone" />;

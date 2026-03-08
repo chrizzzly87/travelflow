@@ -122,6 +122,7 @@ export const resolvePageTitle = ({
         if (normalizedPath === '/admin/users') return titleWithAppName(`${labels.admin} · Users`, appName);
         if (normalizedPath === '/admin/trips') return titleWithAppName(`${labels.admin} · Trips`, appName);
         if (normalizedPath === '/admin/tiers') return titleWithAppName(`${labels.admin} · Tiers`, appName);
+        if (normalizedPath === '/admin/billing') return titleWithAppName(`${labels.admin} · Billing`, appName);
         if (normalizedPath === '/admin/audit') return titleWithAppName(`${labels.admin} · Audit`, appName);
         if (normalizedPath === '/admin/ai-benchmark') return titleWithAppName(`${labels.admin} · AI Benchmark`, appName);
         if (normalizedPath === '/admin/ai-telemetry') return titleWithAppName(`${labels.admin} · AI Telemetry`, appName);

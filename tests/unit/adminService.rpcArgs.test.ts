@@ -78,4 +78,28 @@ describe('services/adminService RPC argument guards', () => {
     const fallbackArgs = rpcMock.mock.calls[1]?.[1] as Record<string, unknown>;
     expect(fallbackArgs.p_generation_state).toBeUndefined();
   });
+
+  it('passes search and pagination args to admin_list_billing_subscriptions', async () => {
+    const { adminListBillingSubscriptions } = await import('../../services/adminService');
+
+    await adminListBillingSubscriptions({ limit: 50, offset: 10, search: 'explorer@example.com' });
+
+    expect(rpcMock).toHaveBeenCalledWith('admin_list_billing_subscriptions', {
+      p_limit: 50,
+      p_offset: 10,
+      p_search: 'explorer@example.com',
+    });
+  });
+
+  it('passes search and pagination args to admin_list_billing_webhook_events', async () => {
+    const { adminListBillingWebhookEvents } = await import('../../services/adminService');
+
+    await adminListBillingWebhookEvents({ limit: 25, offset: 5, search: 'evt_123' });
+
+    expect(rpcMock).toHaveBeenCalledWith('admin_list_billing_webhook_events', {
+      p_limit: 25,
+      p_offset: 5,
+      p_search: 'evt_123',
+    });
+  });
 });

@@ -66,6 +66,44 @@ export interface AdminTripRecord {
     updated_at: string;
 }
 
+export interface AdminBillingSubscriptionRecord {
+    user_id: string;
+    email: string | null;
+    tier_key: string | null;
+    provider: string | null;
+    provider_customer_id: string | null;
+    provider_subscription_id: string | null;
+    provider_price_id: string | null;
+    provider_status: string | null;
+    subscription_status: string | null;
+    current_period_start: string | null;
+    current_period_end: string | null;
+    cancel_at: string | null;
+    canceled_at: string | null;
+    grace_ends_at: string | null;
+    currency: string | null;
+    amount: number | null;
+    last_event_id: string | null;
+    last_event_type: string | null;
+    last_event_at: string | null;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface AdminBillingWebhookEventRecord {
+    event_id: string;
+    provider: string;
+    event_type: string;
+    occurred_at: string;
+    user_id: string | null;
+    user_email: string | null;
+    status: string;
+    error_message: string | null;
+    payload: Record<string, unknown> | null;
+    processed_at: string | null;
+    created_at: string;
+}
+
 export interface AdminAuditRecord {
     id: string;
     actor_user_id: string | null;
@@ -158,6 +196,15 @@ const mapTermsRpcErrorMessage = (rawMessage: string | null | undefined, fallback
     if (!message) return fallbackMessage;
     if (/column reference "is_current" is ambiguous/i.test(message)) {
         return `${message}. Please re-run the latest /docs/supabase.sql migration for Terms admin functions.`;
+    }
+    return message;
+};
+
+const mapBillingRpcErrorMessage = (rawMessage: string | null | undefined, fallbackMessage: string): string => {
+    const message = (rawMessage || '').trim();
+    if (!message) return fallbackMessage;
+    if (/admin_list_billing_(subscriptions|webhook_events)/i.test(message) || /billing\.read/i.test(message)) {
+        return `${message}. Please re-run the latest /docs/supabase.sql migration for billing admin functions.`;
     }
     return message;
 };
@@ -422,6 +469,128 @@ export const adminListTrips = async (
     }
     if (error) throw new Error(error.message || 'Could not load trips.');
     return (Array.isArray(data) ? data : []) as AdminTripRecord[];
+};
+
+export const adminListBillingSubscriptions = async (
+    options: {
+        limit?: number;
+        offset?: number;
+        search?: string;
+    } = {}
+): Promise<AdminBillingSubscriptionRecord[]> => {
+    if (shouldUseAdminMockData()) {
+        const now = new Date();
+        return [
+            {
+                user_id: '00000000-0000-0000-0000-000000000101',
+                email: 'explorer@example.com',
+                tier_key: 'tier_mid',
+                provider: 'paddle',
+                provider_customer_id: 'ctm_mock_101',
+                provider_subscription_id: 'sub_mock_101',
+                provider_price_id: 'pri_mock_mid',
+                provider_status: 'active',
+                subscription_status: 'active',
+                current_period_start: new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000)).toISOString(),
+                current_period_end: new Date(now.getTime() + (23 * 24 * 60 * 60 * 1000)).toISOString(),
+                cancel_at: null,
+                canceled_at: null,
+                grace_ends_at: null,
+                currency: 'USD',
+                amount: 900,
+                last_event_id: 'evt_mock_active',
+                last_event_type: 'subscription.updated',
+                last_event_at: new Date(now.getTime() - (60 * 60 * 1000)).toISOString(),
+                created_at: new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000)).toISOString(),
+                updated_at: new Date(now.getTime() - (60 * 60 * 1000)).toISOString(),
+            },
+            {
+                user_id: '00000000-0000-0000-0000-000000000202',
+                email: 'grace@example.com',
+                tier_key: 'tier_premium',
+                provider: 'paddle',
+                provider_customer_id: 'ctm_mock_202',
+                provider_subscription_id: 'sub_mock_202',
+                provider_price_id: 'pri_mock_premium',
+                provider_status: 'canceled',
+                subscription_status: 'active',
+                current_period_start: new Date(now.getTime() - (14 * 24 * 60 * 60 * 1000)).toISOString(),
+                current_period_end: new Date(now.getTime() + (14 * 24 * 60 * 60 * 1000)).toISOString(),
+                cancel_at: null,
+                canceled_at: new Date(now.getTime() - (2 * 24 * 60 * 60 * 1000)).toISOString(),
+                grace_ends_at: new Date(now.getTime() + (5 * 24 * 60 * 60 * 1000)).toISOString(),
+                currency: 'USD',
+                amount: 1900,
+                last_event_id: 'evt_mock_grace',
+                last_event_type: 'subscription.canceled',
+                last_event_at: new Date(now.getTime() - (2 * 24 * 60 * 60 * 1000)).toISOString(),
+                created_at: new Date(now.getTime() - (45 * 24 * 60 * 60 * 1000)).toISOString(),
+                updated_at: new Date(now.getTime() - (2 * 24 * 60 * 60 * 1000)).toISOString(),
+            },
+        ];
+    }
+
+    const client = requireSupabase();
+    const { data, error } = await client.rpc('admin_list_billing_subscriptions', {
+        p_limit: options.limit ?? 250,
+        p_offset: options.offset ?? 0,
+        p_search: options.search ?? null,
+    });
+    if (error) {
+        throw new Error(mapBillingRpcErrorMessage(error.message, 'Could not load billing subscriptions.'));
+    }
+    return (Array.isArray(data) ? data : []) as AdminBillingSubscriptionRecord[];
+};
+
+export const adminListBillingWebhookEvents = async (
+    options: {
+        limit?: number;
+        offset?: number;
+        search?: string;
+    } = {}
+): Promise<AdminBillingWebhookEventRecord[]> => {
+    if (shouldUseAdminMockData()) {
+        const now = new Date();
+        return [
+            {
+                event_id: 'evt_mock_active',
+                provider: 'paddle',
+                event_type: 'subscription.updated',
+                occurred_at: new Date(now.getTime() - (60 * 60 * 1000)).toISOString(),
+                user_id: '00000000-0000-0000-0000-000000000101',
+                user_email: 'explorer@example.com',
+                status: 'processed',
+                error_message: null,
+                payload: { source: 'mock' },
+                processed_at: new Date(now.getTime() - (59 * 60 * 1000)).toISOString(),
+                created_at: new Date(now.getTime() - (59 * 60 * 1000)).toISOString(),
+            },
+            {
+                event_id: 'evt_mock_failed',
+                provider: 'paddle',
+                event_type: 'transaction.completed',
+                occurred_at: new Date(now.getTime() - (3 * 60 * 60 * 1000)).toISOString(),
+                user_id: null,
+                user_email: null,
+                status: 'failed',
+                error_message: 'Missing tf_user_id custom_data value.',
+                payload: { source: 'mock' },
+                processed_at: new Date(now.getTime() - (179 * 60 * 1000)).toISOString(),
+                created_at: new Date(now.getTime() - (179 * 60 * 1000)).toISOString(),
+            },
+        ];
+    }
+
+    const client = requireSupabase();
+    const { data, error } = await client.rpc('admin_list_billing_webhook_events', {
+        p_limit: options.limit ?? 250,
+        p_offset: options.offset ?? 0,
+        p_search: options.search ?? null,
+    });
+    if (error) {
+        throw new Error(mapBillingRpcErrorMessage(error.message, 'Could not load billing webhook events.'));
+    }
+    return (Array.isArray(data) ? data : []) as AdminBillingWebhookEventRecord[];
 };
 
 export const adminListUserTrips = async (

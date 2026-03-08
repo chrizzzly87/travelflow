@@ -178,6 +178,175 @@ create policy "Billing webhook events are user-owned"
 on public.billing_webhook_events for select
 using (user_id = auth.uid());
 
+-- Admin workspace billing visibility.
+insert into public.admin_permissions (key, label, domain, description)
+values
+  ('billing.read', 'Read billing', 'billing', 'Inspect subscription state and billing webhook delivery records.')
+on conflict (key) do update
+set
+  label = excluded.label,
+  domain = excluded.domain,
+  description = excluded.description;
+
+insert into public.admin_role_permissions (role_key, permission_key)
+values
+  ('support_admin', 'billing.read'),
+  ('read_only_admin', 'billing.read')
+on conflict (role_key, permission_key) do nothing;
+
+insert into public.admin_role_permissions (role_key, permission_key)
+select 'super_admin', 'billing.read'
+where exists (
+  select 1
+  from public.admin_roles r
+  where r.key = 'super_admin'
+)
+on conflict (role_key, permission_key) do nothing;
+
+create or replace function public.admin_list_billing_subscriptions(
+  p_limit integer default 250,
+  p_offset integer default 0,
+  p_search text default null
+)
+returns table(
+  user_id uuid,
+  email text,
+  tier_key text,
+  provider text,
+  provider_customer_id text,
+  provider_subscription_id text,
+  provider_price_id text,
+  provider_status text,
+  subscription_status text,
+  current_period_start timestamptz,
+  current_period_end timestamptz,
+  cancel_at timestamptz,
+  canceled_at timestamptz,
+  grace_ends_at timestamptz,
+  currency text,
+  amount integer,
+  last_event_id text,
+  last_event_type text,
+  last_event_at timestamptz,
+  created_at timestamptz,
+  updated_at timestamptz
+)
+language plpgsql
+security definer
+set search_path = public, auth
+set row_security = off
+as $$
+begin
+  if not public.has_admin_permission('billing.read') then
+    raise exception 'Not allowed';
+  end if;
+
+  return query
+  select
+    s.user_id,
+    u.email::text,
+    p.tier_key,
+    s.provider,
+    s.provider_customer_id,
+    s.provider_subscription_id,
+    s.provider_price_id,
+    s.provider_status,
+    s.status as subscription_status,
+    s.current_period_start,
+    s.current_period_end,
+    s.cancel_at,
+    s.canceled_at,
+    s.grace_ends_at,
+    s.currency,
+    s.amount,
+    s.last_event_id,
+    s.last_event_type,
+    s.last_event_at,
+    s.created_at,
+    s.updated_at
+  from public.subscriptions s
+  left join public.profiles p on p.id = s.user_id
+  left join auth.users u on u.id = s.user_id
+  where (
+    p_search is null
+    or p_search = ''
+    or s.user_id::text ilike ('%' || p_search || '%')
+    or coalesce(u.email, '') ilike ('%' || p_search || '%')
+    or coalesce(s.provider_subscription_id, '') ilike ('%' || p_search || '%')
+    or coalesce(s.provider_customer_id, '') ilike ('%' || p_search || '%')
+    or coalesce(s.provider_status, '') ilike ('%' || p_search || '%')
+    or coalesce(s.last_event_type, '') ilike ('%' || p_search || '%')
+    or coalesce(p.tier_key, '') ilike ('%' || p_search || '%')
+  )
+  order by coalesce(s.updated_at, s.created_at) desc
+  limit greatest(coalesce(p_limit, 250), 1)
+  offset greatest(coalesce(p_offset, 0), 0);
+end;
+$$;
+
+create or replace function public.admin_list_billing_webhook_events(
+  p_limit integer default 250,
+  p_offset integer default 0,
+  p_search text default null
+)
+returns table(
+  event_id text,
+  provider text,
+  event_type text,
+  occurred_at timestamptz,
+  user_id uuid,
+  user_email text,
+  status text,
+  error_message text,
+  payload jsonb,
+  processed_at timestamptz,
+  created_at timestamptz
+)
+language plpgsql
+security definer
+set search_path = public, auth
+set row_security = off
+as $$
+begin
+  if not public.has_admin_permission('billing.read') then
+    raise exception 'Not allowed';
+  end if;
+
+  return query
+  select
+    e.event_id,
+    e.provider,
+    e.event_type,
+    e.occurred_at,
+    e.user_id,
+    u.email::text as user_email,
+    e.status,
+    e.error_message,
+    e.payload,
+    e.processed_at,
+    e.created_at
+  from public.billing_webhook_events e
+  left join auth.users u on u.id = e.user_id
+  where (
+    p_search is null
+    or p_search = ''
+    or e.event_id ilike ('%' || p_search || '%')
+    or coalesce(u.email, '') ilike ('%' || p_search || '%')
+    or coalesce(e.user_id::text, '') ilike ('%' || p_search || '%')
+    or coalesce(e.event_type, '') ilike ('%' || p_search || '%')
+    or coalesce(e.status, '') ilike ('%' || p_search || '%')
+    or coalesce(e.error_message, '') ilike ('%' || p_search || '%')
+    or coalesce(e.payload::text, '') ilike ('%' || p_search || '%')
+  )
+  order by e.occurred_at desc, e.created_at desc
+  limit greatest(coalesce(p_limit, 250), 1)
+  offset greatest(coalesce(p_offset, 0), 0);
+end;
+$$;
+
+grant execute on function public.admin_list_billing_subscriptions(integer, integer, text) to authenticated;
+grant execute on function public.admin_list_billing_webhook_events(integer, integer, text) to authenticated;
+
 commit;
 
 -- Verification:

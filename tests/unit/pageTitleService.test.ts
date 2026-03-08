@@ -56,6 +56,7 @@ describe('services/pageTitleService', () => {
     expect(resolvePageTitle({ pathname: '/profile/settings', appName: APP_NAME, labels: LABELS })).toBe('Profile settings · TravelFlow');
     expect(resolvePageTitle({ pathname: '/u/traveler', appName: APP_NAME, labels: LABELS })).toBe('Profile · TravelFlow');
     expect(resolvePageTitle({ pathname: '/admin/users', appName: APP_NAME, labels: LABELS })).toBe('Admin · Users · TravelFlow');
+    expect(resolvePageTitle({ pathname: '/admin/billing', appName: APP_NAME, labels: LABELS })).toBe('Admin · Billing · TravelFlow');
   });
 
   it('falls back to not-found title for unknown routes', () => {

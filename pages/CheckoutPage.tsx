@@ -73,7 +73,7 @@ const checkoutInputClassName = 'mt-1 h-11 w-full rounded-md border border-slate-
 const checkoutFieldLabelClassName = 'text-sm font-medium text-slate-700';
 const checkoutActionClassName = 'inline-flex h-11 items-center justify-center gap-2 rounded-md px-4 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60';
 const checkoutSectionLabelClassName = 'text-xs font-semibold uppercase tracking-[0.14em] text-slate-500';
-const checkoutRailTabTriggerClassName = '!-mb-px !h-auto !flex-none justify-start rounded-none border-b-2 border-transparent px-0 pb-3 pt-0 text-sm font-semibold text-slate-500 after:hidden hover:text-slate-900 data-[state=active]:border-accent-600 data-[state=active]:bg-transparent data-[state=active]:text-accent-700 disabled:text-slate-300';
+const checkoutRailTabTriggerClassName = '!h-auto !flex-none !rounded-none !border-0 !px-0 !pb-3 !pt-0 text-sm font-semibold text-slate-500 !shadow-none hover:text-slate-900 data-[state=active]:!bg-transparent data-[state=active]:text-accent-700 disabled:text-slate-300 after:bottom-[-1px] after:h-0.5 after:bg-accent-600';
 
 const normalizeAuthErrorCode = (error: unknown): string => {
     if (!error || typeof error !== 'object') return 'default';

@@ -240,6 +240,7 @@ This validates the full external loop (hosted checkout -> Paddle -> your real we
 2. Set `PADDLE_WEBHOOK_SYNC_MODE=full`.
 3. Ensure `SUPABASE_SERVICE_ROLE_KEY` is present.
 4. Replay recent Paddle sandbox events (Webhook UI -> resend) to confirm persistence/tier sync.
+5. Re-run the latest subset or canonical schema if you want `/admin/billing` to work, because the admin billing page depends on the seeded `billing.read` permission and the documented `admin_list_billing_*` RPCs.
 
 ## Functional Test Matrix
 ### Checkout creation
@@ -291,7 +292,14 @@ Use these tables as the source of truth for future admin billing pages/endpoints
 - `public.profiles`
   - currently effective `tier_key`
 
-The first internal admin billing view should filter by `user_id`, `provider_subscription_id`, and newest `occurred_at`.
+Current internal admin billing view:
+- `/admin/billing`
+  - summary cards for active paid, grace-period, failed-webhook, and unlinked-event counts
+  - searchable subscription rows
+  - searchable webhook event log
+  - links back to `/admin/users`
+
+If `/admin/billing` shows a missing-function error, re-run the current subset or canonical schema file and reload the admin page.
 
 ## Go-Live Checklist
 1. Clone or recreate the same products/prices in Paddle live.
