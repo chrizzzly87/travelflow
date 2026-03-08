@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
-    AirplaneTilt,
     CaretLeft,
     CaretRight,
     ChartLineUp,
@@ -18,7 +17,6 @@ import {
     UsersThree,
     X,
 } from '@phosphor-icons/react';
-import { APP_NAME } from '../../config/appGlobals';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import {
     readLocalStorageItem,
@@ -35,6 +33,7 @@ import { ADMIN_NAV_ITEMS, ADMIN_NAV_SECTIONS } from './adminNavConfig';
 import { AccountMenu } from '../navigation/AccountMenu';
 import { useAuth } from '../../hooks/useAuth';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { AppBrand } from '../navigation/AppBrand';
 
 export type AdminDateRange = '7d' | '30d' | '90d' | 'all';
 
@@ -246,10 +245,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                         onClick={() => emitMenuEvent('brand')}
                         {...getAnalyticsDebugAttributes('admin__menu--brand')}
                     >
-                        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-600 text-white shadow-lg shadow-accent-200">
-                            <AirplaneTilt size={16} weight="duotone" />
-                        </span>
-                        <span className="text-base font-black tracking-tight text-slate-900">{APP_NAME}</span>
+                        <AppBrand wordmarkClassName="text-base font-black tracking-tight text-slate-900" />
                     </NavLink>
                     <button
                         type="button"
@@ -292,12 +288,10 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                             onClick={() => emitMenuEvent('brand')}
                             {...getAnalyticsDebugAttributes('admin__menu--brand')}
                         >
-                            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-600 text-white shadow-lg shadow-accent-200">
-                                <AirplaneTilt size={16} weight="duotone" />
-                            </span>
-                            {!isSidebarCollapsed && (
-                                <span className="text-base font-black tracking-tight text-slate-900">{APP_NAME}</span>
-                            )}
+                            <AppBrand
+                                className={isSidebarCollapsed ? 'gap-0' : undefined}
+                                wordmarkClassName={`text-base font-black tracking-tight text-slate-900 ${isSidebarCollapsed ? 'hidden' : ''}`}
+                            />
                         </NavLink>
 
                         <div className="mt-4 flex-1 space-y-4 overflow-y-auto pr-1">
@@ -338,7 +332,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                     </button>
                 </div>
 
-                <main className="min-w-0 flex-1 min-h-dvh">
+                <main className="min-w-0 flex-1 min-h-dvh" data-tf-handoff-ready="true">
                     <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
                         <div className="flex flex-col gap-3 px-4 py-4 md:px-6 lg:flex-row lg:items-end lg:justify-between">
                             <div className="min-w-0">

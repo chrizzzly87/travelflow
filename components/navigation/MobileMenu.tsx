@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { X, AirplaneTilt, SpinnerGap as Loader2 } from '@phosphor-icons/react';
+import { X, SpinnerGap as Loader2 } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { NAV_ITEMS } from '../../config/navigation';
 import { LanguageSelect } from './LanguageSelect';
@@ -10,12 +10,12 @@ import { buildLocalizedCreateTripPath, buildLocalizedMarketingPath, buildPath, e
 import { AppLanguage } from '../../types';
 import { applyDocumentLocale, DEFAULT_LOCALE, normalizeLocale } from '../../config/locales';
 import { buildLocalizedLocation } from '../../services/localeRoutingService';
-import { APP_NAME } from '../../config/appGlobals';
 import { preloadLocaleNamespaces } from '../../i18n';
 import { useAuth } from '../../hooks/useAuth';
 import { useLoginModal } from '../../hooks/useLoginModal';
 import { buildPathFromLocationParts } from '../../services/authNavigationService';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
+import { AppBrand } from './AppBrand';
 
 interface MobileMenuProps {
     isOpen: boolean;
@@ -215,12 +215,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
             >
                 <div className="flex h-full flex-col">
                     <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-                        <div className="flex items-center gap-2">
-                            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-600 text-white shadow-lg shadow-accent-200">
-                                <AirplaneTilt size={16} weight="duotone" />
-                            </span>
-                            <span className="text-lg font-extrabold tracking-tight">{APP_NAME}</span>
-                        </div>
+                        <AppBrand />
                         <button
                             ref={closeButtonRef}
                             type="button"

@@ -5,6 +5,8 @@ import { useAuth } from '../../hooks/useAuth';
 import { useDbSync } from '../../hooks/useDbSync';
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from '../../config/locales';
 import { loadLazyComponentWithRecovery } from '../../services/lazyImportRecovery';
+import { MarketingRouteLoadingShell } from '../../components/bootstrap/MarketingRouteLoadingShell';
+import { MarketingHomePage } from '../../pages/MarketingHomePage';
 import '../../styles/deferred-routes.css';
 
 const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
@@ -12,7 +14,6 @@ const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },
     importer: () => Promise<TModule>
 ) => lazy(() => loadLazyComponentWithRecovery(moduleKey, importer));
 
-const MarketingHomePage = lazyWithRecovery('MarketingHomePage', () => import('../../pages/MarketingHomePage').then((module) => ({ default: module.MarketingHomePage })));
 const FeaturesPage = lazyWithRecovery('FeaturesPage', () => import('../../pages/FeaturesPage').then((module) => ({ default: module.FeaturesPage })));
 const UpdatesPage = lazyWithRecovery('UpdatesPage', () => import('../../pages/UpdatesPage').then((module) => ({ default: module.UpdatesPage })));
 const BlogPage = lazyWithRecovery('BlogPage', () => import('../../pages/BlogPage').then((module) => ({ default: module.BlogPage })));
@@ -48,12 +49,18 @@ const CreateTripClassicLabPage = lazyWithRecovery('CreateTripClassicLabPage', ()
 const CreateTripV3Page = lazyWithRecovery('CreateTripV3Page', () => import('../../pages/CreateTripV3Page').then((module) => ({ default: module.CreateTripV3Page })));
 
 const RouteLoadingFallback: React.FC = () => (
-    <div className="min-h-screen w-full bg-white" aria-hidden="true" />
+    <MarketingRouteLoadingShell />
+);
+
+const HandoffReadyBoundary: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+    <div data-tf-handoff-ready="true">
+        {children}
+    </div>
 );
 
 const renderWithSuspense = (node: React.ReactElement) => (
     <Suspense fallback={<RouteLoadingFallback />}>
-        {node}
+        <HandoffReadyBoundary>{node}</HandoffReadyBoundary>
     </Suspense>
 );
 
