@@ -302,6 +302,7 @@ export const shouldRedirectToTermsAcceptance = (options: {
     isAdmin: boolean;
     termsAcceptanceRequired: boolean;
     pathname: string;
+    search?: string;
 }): boolean => {
     if (options.isAuthLoading) return false;
     if (!options.isAuthenticated || !options.hasAccess || options.isAnonymous) return false;
@@ -310,6 +311,10 @@ export const shouldRedirectToTermsAcceptance = (options: {
     const strippedPath = stripLocalePrefix(options.pathname);
     if (options.isAdmin && strippedPath.startsWith('/admin')) return false;
     if (TERMS_EXEMPT_PATHS.has(strippedPath)) return false;
+    if (strippedPath === '/checkout') {
+        const params = new URLSearchParams(options.search || '');
+        if (params.get('signup_accept_terms') === '1') return false;
+    }
     return isToolRoute(options.pathname);
 };
 
@@ -465,6 +470,7 @@ const AppContent: React.FC = () => {
             isAdmin: access?.role === 'admin',
             termsAcceptanceRequired: Boolean(access?.termsAcceptanceRequired),
             pathname: location.pathname,
+            search: location.search,
         })) {
             return;
         }
@@ -531,6 +537,7 @@ const AppContent: React.FC = () => {
         isAdmin: access?.role === 'admin',
         termsAcceptanceRequired: Boolean(access?.termsAcceptanceRequired),
         pathname: location.pathname,
+        search: location.search,
     });
 
     const termsNoticeVersion = access?.termsCurrentVersion ?? null;

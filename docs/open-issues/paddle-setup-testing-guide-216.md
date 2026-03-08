@@ -13,11 +13,12 @@ Reference issue: [#216](https://github.com/chrizzzly87/travelflow/issues/216)
 2. Frontend calls `/api/billing/paddle/config` first to learn the active environment and which paid tiers are actually configured.
 3. Frontend routes the user into the dedicated `/checkout` page with tier, source, return path, and optional claim/trip metadata.
 4. `/checkout` keeps the flow in one place: account sign-in/registration first, traveler details second, and payment last.
-5. Frontend calls `/api/billing/paddle/checkout` with tier key plus optional claim/trip/return metadata.
-6. Edge function creates a Paddle transaction and returns a checkout URL that routes back to the dedicated `/checkout` page with Paddle transaction state.
-7. `/checkout` initializes Paddle.js in one-page inline mode and renders the payment frame inside the branded checkout shell instead of dropping the user into Paddle's plain default overlay.
-8. Paddle sends webhook events to `/api/billing/paddle/webhook`.
-9. Webhook handler verifies `Paddle-Signature`, deduplicates by `event_id`, and updates:
+5. If email confirmation is required, the confirmation link returns to `/checkout` and the app finalizes current-terms acceptance there before continuing.
+6. Frontend calls `/api/billing/paddle/checkout` with tier key plus optional claim/trip/return metadata.
+7. Edge function creates a Paddle transaction and returns a checkout URL that routes back to the dedicated `/checkout` page with Paddle transaction state.
+8. `/checkout` initializes Paddle.js in one-page inline mode and renders the payment frame inside the branded checkout shell instead of dropping the user into Paddle's plain default overlay.
+9. Paddle sends webhook events to `/api/billing/paddle/webhook`.
+10. Webhook handler verifies `Paddle-Signature`, deduplicates by `event_id`, and updates:
    - `public.subscriptions` canonical lifecycle row per user
    - `public.profiles.tier_key` (`tier_mid`/`tier_premium` or fallback `tier_free`)
    - `public.billing_webhook_events` log for replay/debug safety

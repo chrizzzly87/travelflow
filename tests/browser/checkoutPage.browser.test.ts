@@ -36,6 +36,7 @@ const mocks = vi.hoisted(() => ({
       usernameDisplay: 'ada',
       gender: '',
     },
+    refreshAccess: vi.fn().mockResolvedValue(undefined),
     refreshProfile: vi.fn().mockResolvedValue(undefined),
     loginWithPassword: vi.fn().mockResolvedValue({ data: { session: { user: { id: 'user_123' } } }, error: null }),
     registerWithPassword: vi.fn().mockResolvedValue({ data: { session: { user: { id: 'user_123' } } }, error: null }),
@@ -201,6 +202,7 @@ describe('pages/CheckoutPage', () => {
       usernameDisplay: 'ada',
       gender: '',
     };
+    mocks.auth.refreshAccess.mockResolvedValue(undefined);
   });
 
   it('preserves trip and claim metadata when starting checkout from the dedicated route', async () => {
@@ -244,5 +246,56 @@ describe('pages/CheckoutPage', () => {
     });
 
     expect(mocks.startPaddleCheckoutSession).not.toHaveBeenCalled();
+  });
+
+  it('adds the signup terms-finalization marker to register email redirects', async () => {
+    const user = userEvent.setup();
+    mocks.auth.session = null;
+    mocks.auth.isAuthenticated = false;
+    mocks.auth.access = { isAnonymous: true };
+    mocks.auth.registerWithPassword.mockResolvedValueOnce({
+      error: null,
+      data: { session: null },
+    });
+
+    render(React.createElement(CheckoutPage));
+
+    await user.click(screen.getByRole('button', { name: 'tabs.register' }));
+    await user.type(screen.getByRole('textbox', { name: 'labels.email' }), 'new-user@example.com');
+    await user.type(screen.getByLabelText('labels.password'), 'password123');
+    await user.click(screen.getByRole('button', { name: 'errors.terms_required' }));
+    await user.click(screen.getByRole('button', { name: 'actions.submitRegister' }));
+
+    await waitFor(() => {
+      expect(mocks.auth.registerWithPassword).toHaveBeenCalledWith(
+        'new-user@example.com',
+        'password123',
+        expect.objectContaining({
+          emailRedirectTo: expect.stringContaining('signup_accept_terms=1'),
+        }),
+      );
+    });
+  });
+
+  it('auto-accepts pending signup terms after confirmed email and keeps the user on checkout', async () => {
+    mocks.location.search = '?tier=tier_mid&source=pricing_page&signup_accept_terms=1';
+    mocks.auth.access = {
+      isAnonymous: false,
+      termsAcceptanceRequired: true,
+    };
+
+    render(React.createElement(CheckoutPage));
+
+    await waitFor(() => {
+      expect(mocks.acceptCurrentTerms).toHaveBeenCalledWith({
+        locale: 'en',
+        source: 'signup_checkout_email_confirmation',
+      });
+    });
+
+    await waitFor(() => {
+      expect(mocks.auth.refreshAccess).toHaveBeenCalled();
+      expect(mocks.navigate).toHaveBeenCalledWith('/checkout?tier=tier_mid&source=pricing_page', { replace: true });
+    });
   });
 });

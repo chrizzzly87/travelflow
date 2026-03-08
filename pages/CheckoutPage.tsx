@@ -101,14 +101,14 @@ const CheckoutStepSection: React.FC<CheckoutStepSectionProps> = ({ step, state, 
                 className={cn(
                     'mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-sm font-semibold',
                     state === 'complete'
-                        ? 'border-slate-900 bg-slate-900 text-white'
+                        ? 'border-accent-200 bg-accent-50 text-accent-700'
                         : state === 'active'
                             ? 'border-slate-900 text-slate-900'
                             : 'border-slate-300 text-slate-400'
                 )}
                 aria-hidden="true"
             >
-                {state === 'complete' ? <Check size={14} weight="bold" /> : step}
+                {state === 'complete' ? <Check size={16} weight="duotone" /> : step}
             </div>
             <div className="min-w-0 flex-1">
                 <h2 className="text-xl font-semibold tracking-tight text-slate-900">{title}</h2>
@@ -129,6 +129,7 @@ export const CheckoutPage: React.FC = () => {
         isLoading: isAuthLoading,
         profile,
         isProfileLoading,
+        refreshAccess,
         refreshProfile,
         loginWithPassword,
         registerWithPassword,
@@ -146,6 +147,7 @@ export const CheckoutPage: React.FC = () => {
     const [paddlePublicConfig, setPaddlePublicConfig] = useState<PaddlePublicConfig | null>(null);
     const [isInlineCheckoutLoading, setIsInlineCheckoutLoading] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isAutoAcceptingSignupTerms, setIsAutoAcceptingSignupTerms] = useState(false);
     const [hasHydratedForm, setHasHydratedForm] = useState(false);
     const [checkoutCompleted, setCheckoutCompleted] = useState(false);
     const inlineCheckoutSectionRef = useRef<HTMLDivElement | null>(null);
@@ -178,6 +180,7 @@ export const CheckoutPage: React.FC = () => {
         : t('checkout.backToPricing', { ns: 'pricing' });
     const currentStep = hasInlineCheckout ? 3 : isEligibleAccount ? 2 : 1;
     const accountEmail = asTrimmedString(session?.user?.email);
+    const hasPendingSignupTermsAcceptance = new URLSearchParams(location.search).get('signup_accept_terms') === '1';
     const checkoutRedirectTo = typeof window !== 'undefined'
         ? window.location.href
         : `${location.pathname}${location.search}${location.hash}`;
@@ -254,6 +257,58 @@ export const CheckoutPage: React.FC = () => {
         setAuthErrorMessage(null);
         setAuthInfoMessage(null);
     }, [isEligibleAccount]);
+
+    useEffect(() => {
+        if (!hasPendingSignupTermsAcceptance || !isEligibleAccount || isAuthLoading || !access) return;
+
+        const cleanedParams = new URLSearchParams(location.search);
+        cleanedParams.delete('signup_accept_terms');
+        const cleanedSearch = cleanedParams.toString();
+        const cleanedTarget = `${location.pathname}${cleanedSearch ? `?${cleanedSearch}` : ''}${location.hash || ''}`;
+
+        if (!access.termsAcceptanceRequired) {
+            navigate(cleanedTarget, { replace: true });
+            return;
+        }
+
+        let cancelled = false;
+        setIsAutoAcceptingSignupTerms(true);
+        setCheckoutErrorMessage(null);
+
+        void acceptCurrentTerms({
+            locale: activeLocale,
+            source: 'signup_checkout_email_confirmation',
+        }).then(async ({ error }) => {
+            if (cancelled) return;
+            if (error) {
+                setCheckoutErrorMessage(error.message || t('checkout.errorConfig', { ns: 'pricing' }));
+                return;
+            }
+            await refreshAccess();
+            if (cancelled) return;
+            navigate(cleanedTarget, { replace: true });
+        }).finally(() => {
+            if (!cancelled) {
+                setIsAutoAcceptingSignupTerms(false);
+            }
+        });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [
+        access,
+        activeLocale,
+        hasPendingSignupTermsAcceptance,
+        isAuthLoading,
+        isEligibleAccount,
+        location.hash,
+        location.pathname,
+        location.search,
+        navigate,
+        refreshAccess,
+        t,
+    ]);
 
     const handlePaddleCheckoutEvent = useCallback((event: PaddleCheckoutEvent) => {
         if (typeof event.name === 'string' && event.name.startsWith('checkout.')) {
@@ -372,7 +427,12 @@ export const CheckoutPage: React.FC = () => {
             }
 
             const response = await registerWithPassword(trimmedEmail, trimmedPassword, {
-                emailRedirectTo: checkoutRedirectTo,
+                emailRedirectTo: (() => {
+                    if (typeof window === 'undefined') return checkoutRedirectTo;
+                    const redirectUrl = new URL(checkoutRedirectTo);
+                    redirectUrl.searchParams.set('signup_accept_terms', '1');
+                    return redirectUrl.toString();
+                })(),
             });
             if (response.error) {
                 const errorCode = normalizeAuthErrorCode(response.error);
@@ -672,10 +732,16 @@ export const CheckoutPage: React.FC = () => {
                                         </label>
                                     </div>
 
-                                    <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)]">
-                                        <div>
-                                            <span className={checkoutFieldLabelClassName}>{t('settings.fields.country', { ns: 'profile' })}</span>
-                                            <ProfileCountryRegionSelect
+                                        {isAutoAcceptingSignupTerms ? (
+                                            <div className="border-s-4 border-sky-500 bg-sky-50 px-4 py-3 text-sm text-sky-900">
+                                                {t('actions.submitting', { ns: 'auth' })}
+                                            </div>
+                                        ) : null}
+
+                                        <div className="grid gap-4 sm:grid-cols-2">
+                                            <div>
+                                                <span className={checkoutFieldLabelClassName}>{t('settings.fields.country', { ns: 'profile' })}</span>
+                                                <ProfileCountryRegionSelect
                                                 value={form.country}
                                                 locale={activeLocale}
                                                 disabled={isSubmitting || isProfileLoading}
@@ -697,12 +763,12 @@ export const CheckoutPage: React.FC = () => {
                                         </label>
                                     </div>
 
-                                    <button
-                                        type="button"
-                                        disabled={isSubmitting || !hasHydratedForm || isAuthLoading || isProfileLoading || !supportsSelectedTier}
-                                        onClick={() => void handleContinueToPayment()}
-                                        className={cn(checkoutActionClassName, 'w-full bg-accent-600 text-white hover:bg-accent-700 sm:w-auto')}
-                                        {...getAnalyticsDebugAttributes('checkout__payment--start')}
+                                        <button
+                                            type="button"
+                                            disabled={isSubmitting || isAutoAcceptingSignupTerms || !hasHydratedForm || isAuthLoading || isProfileLoading || !supportsSelectedTier}
+                                            onClick={() => void handleContinueToPayment()}
+                                            className={cn(checkoutActionClassName, 'w-full bg-accent-600 text-white hover:bg-accent-700 sm:w-auto')}
+                                            {...getAnalyticsDebugAttributes('checkout__payment--start')}
                                     >
                                         {isSubmitting ? <SpinnerGap size={18} className="animate-spin" /> : <CreditCard size={18} weight="duotone" />}
                                         {t('checkout.continueToPayment', { ns: 'pricing' })}

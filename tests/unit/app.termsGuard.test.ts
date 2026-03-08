@@ -30,6 +30,15 @@ describe('App terms acceptance redirect guard', () => {
     expect(shouldRedirectToTermsAcceptance({
       ...baseOptions,
       pathname: '/pricing',
+      search: '',
+    })).toBe(false);
+  });
+
+  it('does not redirect checkout confirmation flows that still need inline terms finalization', () => {
+    expect(shouldRedirectToTermsAcceptance({
+      ...baseOptions,
+      pathname: '/checkout',
+      search: '?tier=tier_mid&signup_accept_terms=1',
     })).toBe(false);
   });
 
