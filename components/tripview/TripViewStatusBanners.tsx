@@ -1,9 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { CopySimple, Sparkle } from '@phosphor-icons/react';
+import { Check, CopySimple, Sparkle } from '@phosphor-icons/react';
 import { AlertTriangle, WifiOff } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+import { PLAN_CATALOG } from '../../config/planCatalog';
 import { normalizeLocale } from '../../config/locales';
 import type { TripPaywallActivationMode } from '../../config/paywall';
 import { buildLocalizedMarketingPath } from '../../config/routes';
@@ -132,7 +133,32 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
     const isBrowserOffline = connectivityReason === 'browser_offline';
     const paywallRequiresLogin = paywallActivationMode === 'login_modal';
     const activeLocale = normalizeLocale(i18n?.resolvedLanguage ?? i18n?.language ?? 'en');
+    const explorerTier = PLAN_CATALOG.tier_mid;
     const supportContactPath = buildLocalizedMarketingPath('contact', activeLocale);
+    const explorerHighlights = React.useMemo(() => {
+        const unlimitedLabel = t('shared.unlimited', { ns: 'pricing' });
+        const noExpiryLabel = t('shared.noExpiry', { ns: 'pricing' });
+        const enabledLabel = t('shared.enabled', { ns: 'pricing' });
+        const disabledLabel = t('shared.disabled', { ns: 'pricing' });
+        const interpolationValues = {
+            maxActiveTripsLabel: explorerTier.entitlements.maxActiveTrips === null
+                ? unlimitedLabel
+                : String(explorerTier.entitlements.maxActiveTrips),
+            maxTotalTripsLabel: explorerTier.entitlements.maxTotalTrips === null
+                ? unlimitedLabel
+                : String(explorerTier.entitlements.maxTotalTrips),
+            tripExpirationLabel: explorerTier.entitlements.tripExpirationDays === null
+                ? noExpiryLabel
+                : t('shared.days', { ns: 'pricing', count: explorerTier.entitlements.tripExpirationDays }),
+            sharingLabel: explorerTier.entitlements.canShare ? enabledLabel : disabledLabel,
+            editableSharesLabel: explorerTier.entitlements.canCreateEditableShares ? enabledLabel : disabledLabel,
+            proCreationLabel: explorerTier.entitlements.canCreateProTrips ? enabledLabel : disabledLabel,
+        };
+        return [0, 2, 4].map((index) => t(`tiers.explorer.features.${index}`, {
+            ns: 'pricing',
+            ...interpolationValues,
+        }));
+    }, [t]);
     const stripMessage = shouldShowConnectivityStrip ? (
         connectivityState === 'offline'
             ? t(isBrowserOffline ? 'connectivity.tripStrip.offline.browser' : 'connectivity.tripStrip.offline.service')
@@ -472,51 +498,94 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
 
             {(tripExpiresAtMs || isTripLockedByExpiry) && !isExampleTrip && (
                 <div
-                    className={`px-4 sm:px-6 py-2 border-b text-xs flex items-center justify-between gap-3 ${
+                    className={`border-b ${
                         isTripLockedByExpiry
                             ? 'border-rose-200 bg-rose-50 text-rose-900'
                             : 'border-sky-200 bg-sky-50 text-sky-900'
                     }`}
                 >
-                    <span>
-                        {isPaywallLocked
-                            ? (paywallRequiresLogin
-                                ? (expirationLabel
-                                    ? t('tripPaywall.strip.loginSinceDate', { date: expirationLabel })
-                                    : t('tripPaywall.strip.loginNoDate'))
-                                : (expirationLabel
-                                    ? t('tripPaywall.strip.directSinceDate', { date: expirationLabel })
-                                    : t('tripPaywall.strip.directNoDate')))
-                            : isTripLockedByExpiry
-                                ? `Trip expired${expirationLabel ? ` since ${expirationLabel}` : ''}. It stays read-only until reactivated.`
-                                : `${expirationRelativeLabel || 'Trip access is time-limited'}${expirationLabel ? ` · Ends ${expirationLabel}` : ''}.`}
-                    </span>
-                    {isPaywallLocked && (
-                        <div className="flex flex-wrap items-center justify-end gap-2">
-                            {paywallStripUpgradeCheckoutPath && (
-                                <Link
-                                    to={paywallStripUpgradeCheckoutPath}
-                                    onClick={() => trackEvent('trip_paywall__strip--upgrade', {
-                                        trip_id: tripId,
-                                        has_claim: Boolean(pendingAuthQueueRequestId),
-                                    })}
-                                    className="px-3 py-1 rounded-md border border-rose-200 bg-white text-rose-900 text-xs font-semibold hover:bg-rose-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
-                                    {...getAnalyticsDebugAttributes('trip_paywall__strip--upgrade')}
-                                >
-                                    {t('checkout.tripEntryCta', { ns: 'pricing' })}
-                                </Link>
+                    <div className="px-4 py-4 sm:px-6">
+                        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                            <div className="min-w-0">
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <span className={`inline-flex h-8 w-8 items-center justify-center rounded-lg border ${
+                                        isTripLockedByExpiry
+                                            ? 'border-rose-200 bg-white text-rose-700'
+                                            : 'border-sky-200 bg-white text-sky-700'
+                                    }`}>
+                                        <AlertTriangle className="h-4 w-4" />
+                                    </span>
+                                    <p className="min-w-0 text-sm font-semibold leading-6 text-current">
+                                        {isPaywallLocked
+                                            ? (paywallRequiresLogin
+                                                ? (expirationLabel
+                                                    ? t('tripPaywall.strip.loginSinceDate', { date: expirationLabel })
+                                                    : t('tripPaywall.strip.loginNoDate'))
+                                                : (expirationLabel
+                                                    ? t('tripPaywall.strip.directSinceDate', { date: expirationLabel })
+                                                    : t('tripPaywall.strip.directNoDate')))
+                                            : isTripLockedByExpiry
+                                                ? `Trip expired${expirationLabel ? ` since ${expirationLabel}` : ''}. It stays read-only until reactivated.`
+                                                : `${expirationRelativeLabel || 'Trip access is time-limited'}${expirationLabel ? ` · Ends ${expirationLabel}` : ''}.`}
+                                    </p>
+                                    {isPaywallLocked ? (
+                                        <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${
+                                            isTripLockedByExpiry
+                                                ? 'border-rose-200 bg-white text-rose-800'
+                                                : 'border-sky-200 bg-white text-sky-800'
+                                        }`}>
+                                            {explorerTier.publicName} · ${explorerTier.monthlyPriceUsd}{t('shared.perMonth', { ns: 'pricing' })}
+                                        </span>
+                                    ) : null}
+                                </div>
+
+                                {isPaywallLocked ? (
+                                    <ul className="mt-3 flex flex-wrap gap-2">
+                                        {explorerHighlights.map((feature) => (
+                                            <li
+                                                key={feature}
+                                                className={`inline-flex items-center gap-1.5 rounded-full border bg-white px-3 py-1 text-xs font-medium ${
+                                                    isTripLockedByExpiry
+                                                        ? 'border-rose-200 text-rose-900'
+                                                        : 'border-sky-200 text-sky-900'
+                                                }`}
+                                            >
+                                                <Check size={12} weight="bold" className="shrink-0 text-accent-600" />
+                                                <span>{feature}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                ) : null}
+                            </div>
+
+                            {isPaywallLocked && (
+                                <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+                                    {paywallStripUpgradeCheckoutPath && (
+                                        <Link
+                                            to={paywallStripUpgradeCheckoutPath}
+                                            onClick={() => trackEvent('trip_paywall__strip--upgrade', {
+                                                trip_id: tripId,
+                                                has_claim: Boolean(pendingAuthQueueRequestId),
+                                            })}
+                                            className="inline-flex h-10 items-center rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
+                                            {...getAnalyticsDebugAttributes('trip_paywall__strip--upgrade')}
+                                        >
+                                            {t('checkout.tripEntryCta', { ns: 'pricing' })}
+                                        </Link>
+                                    )}
+                                    <Link
+                                        to="/login"
+                                        onClick={(event) => onPaywallActivateClick(event, 'trip_paywall__strip--activate', 'trip_paywall_strip')}
+                                        className="inline-flex h-10 items-center rounded-lg bg-accent-600 px-4 text-sm font-semibold text-white hover:bg-accent-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
+                                    >
+                                        {paywallRequiresLogin
+                                            ? t('tripPaywall.reactivate.actions.login')
+                                            : t('tripPaywall.reactivate.actions.direct')}
+                                    </Link>
+                                </div>
                             )}
-                            <Link
-                                to="/login"
-                                onClick={(event) => onPaywallActivateClick(event, 'trip_paywall__strip--activate', 'trip_paywall_strip')}
-                                className="px-3 py-1 rounded-md bg-rose-100 text-rose-900 text-xs font-semibold hover:bg-rose-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
-                            >
-                                {paywallRequiresLogin
-                                    ? t('tripPaywall.reactivate.actions.login')
-                                    : t('tripPaywall.reactivate.actions.direct')}
-                            </Link>
                         </div>
-                    )}
+                    </div>
                 </div>
             )}
 

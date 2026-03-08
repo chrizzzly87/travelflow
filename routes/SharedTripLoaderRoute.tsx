@@ -1,12 +1,18 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Check } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 
+import { useAppDialog } from '../components/AppDialogProvider';
 import { useAuth } from '../hooks/useAuth';
 import { useDbSync } from '../hooks/useDbSync';
 import { useConnectivityStatus } from '../hooks/useConnectivityStatus';
+import { PLAN_CATALOG } from '../config/planCatalog';
 import { DB_ENABLED } from '../config/db';
 import { resolveTripExpiryFromEntitlements } from '../config/productLimits';
 import { getTripLifecycleState } from '../config/paywall';
+import { trackEvent } from '../services/analyticsService';
+import { buildBillingCheckoutPath } from '../services/billingService';
 import {
     dbCanCreateTrip,
     dbCreateTripVersion,
@@ -90,6 +96,8 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
     onViewSettingsChange,
     onLanguageLoaded,
 }) => {
+    const { confirm: confirmDialog } = useAppDialog();
+    const { t } = useTranslation(['common', 'pricing']);
     const { token } = useParams();
     const location = useLocation();
     const navigate = useNavigate();
@@ -272,13 +280,122 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
         void commit();
     };
 
+    const resolveTierHighlights = useCallback((tierKey: 'tier_mid' | 'tier_premium') => {
+        const tier = PLAN_CATALOG[tierKey];
+        const unlimitedLabel = t('shared.unlimited', { ns: 'pricing' });
+        const noExpiryLabel = t('shared.noExpiry', { ns: 'pricing' });
+        const enabledLabel = t('shared.enabled', { ns: 'pricing' });
+        const disabledLabel = t('shared.disabled', { ns: 'pricing' });
+        const interpolationValues = {
+            maxActiveTripsLabel: tier.entitlements.maxActiveTrips === null
+                ? unlimitedLabel
+                : String(tier.entitlements.maxActiveTrips),
+            maxTotalTripsLabel: tier.entitlements.maxTotalTrips === null
+                ? unlimitedLabel
+                : String(tier.entitlements.maxTotalTrips),
+            tripExpirationLabel: tier.entitlements.tripExpirationDays === null
+                ? noExpiryLabel
+                : t('shared.days', { ns: 'pricing', count: tier.entitlements.tripExpirationDays }),
+            sharingLabel: tier.entitlements.canShare ? enabledLabel : disabledLabel,
+            editableSharesLabel: tier.entitlements.canCreateEditableShares ? enabledLabel : disabledLabel,
+            proCreationLabel: tier.entitlements.canCreateProTrips ? enabledLabel : disabledLabel,
+        };
+        return [0, 2, 4].map((index) => t(`tiers.${tier.publicSlug}.features.${index}`, {
+            ns: 'pricing',
+            ...interpolationValues,
+        }));
+    }, [t]);
+
+    const handleTripLimitReached = useCallback(async (limit: { activeTripCount: number; maxTripCount: number }) => {
+        const currentTierKey = access?.tierKey === 'tier_mid' || access?.tierKey === 'tier_premium'
+            ? access.tierKey
+            : 'tier_free';
+        const upgradeTierKey = currentTierKey === 'tier_mid' ? 'tier_premium' : 'tier_mid';
+        const currentTier = PLAN_CATALOG[currentTierKey];
+        const upgradeTier = PLAN_CATALOG[upgradeTierKey];
+        const currentPath = `${location.pathname}${location.search}${location.hash}`;
+
+        trackEvent('trip_limit__dialog--view', {
+            source: 'shared_trip',
+            current_tier: currentTierKey,
+            target_tier: upgradeTierKey,
+            active_trip_count: limit.activeTripCount,
+            max_trip_count: limit.maxTripCount,
+        });
+
+        const shouldUpgrade = await confirmDialog({
+            title: `${currentTier.publicName} -> ${upgradeTier.publicName}`,
+            message: (
+                <div className="space-y-3">
+                    <div className="rounded-xl border border-slate-200 bg-white p-4">
+                        <div className="flex items-end justify-between gap-3">
+                            <div>
+                                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                                    {currentTier.publicName}
+                                </p>
+                                <p className="mt-1 text-sm font-semibold text-slate-900">
+                                    {limit.activeTripCount} / {limit.maxTripCount}
+                                </p>
+                            </div>
+                            <div className="text-right text-sm text-slate-500">
+                                ${currentTier.monthlyPriceUsd}{t('shared.perMonth', { ns: 'pricing' })}
+                            </div>
+                        </div>
+                    </div>
+                    <div className="rounded-xl border border-accent-200 bg-accent-50/70 p-4">
+                        <div className="flex items-end justify-between gap-3">
+                            <div>
+                                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-accent-700">
+                                    {upgradeTier.publicName}
+                                </p>
+                                <p className="mt-1 text-sm font-semibold text-slate-900">
+                                    ${upgradeTier.monthlyPriceUsd}{t('shared.perMonth', { ns: 'pricing' })}
+                                </p>
+                            </div>
+                        </div>
+                        <ul className="mt-3 space-y-2">
+                            {resolveTierHighlights(upgradeTierKey).map((feature) => (
+                                <li key={feature} className="flex items-start gap-2 text-sm leading-6 text-slate-700">
+                                    <Check size={14} weight="bold" className="mt-1 shrink-0 text-accent-600" />
+                                    <span>{feature}</span>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                </div>
+            ),
+            confirmLabel: t(`tiers.${upgradeTier.publicSlug}.cta`, { ns: 'pricing' }),
+            cancelLabel: t('buttons.done', { ns: 'common' }),
+        });
+
+        if (!shouldUpgrade) {
+            trackEvent('trip_limit__dialog--dismiss', {
+                source: 'shared_trip',
+                current_tier: currentTierKey,
+                target_tier: upgradeTierKey,
+            });
+            return;
+        }
+
+        trackEvent('trip_limit__dialog--upgrade', {
+            source: 'shared_trip',
+            current_tier: currentTierKey,
+            target_tier: upgradeTierKey,
+        });
+
+        navigate(buildBillingCheckoutPath({
+            tierKey: upgradeTierKey,
+            source: 'shared_trip_limit_dialog',
+            returnTo: currentPath,
+        }));
+    }, [access?.tierKey, confirmDialog, location.hash, location.pathname, location.search, navigate, resolveTierHighlights, t]);
+
     const handleCopyTrip = async () => {
         if (!trip) return;
         if (DB_ENABLED) {
             const limit = await dbCanCreateTrip();
             if (!limit.allowCreate) {
-                window.alert(`Trip limit reached (${limit.activeTripCount}/${limit.maxTripCount}). Archive a trip or upgrade to continue.`);
-                navigate('/pricing');
+                await handleTripLimitReached(limit);
                 return;
             }
         }

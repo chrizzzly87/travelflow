@@ -434,6 +434,7 @@ export const CheckoutPage: React.FC = () => {
         ? t('checkout.refreshPayment', { ns: 'pricing' })
         : t('checkout.continueToPayment', { ns: 'pricing' });
     const shouldShowPostPaymentTripAction = Boolean(postPaymentTripId);
+    const shouldShowProfileAction = !checkoutLocationContext.claimId;
     const shouldShowTripReturnAction = !postPaymentTripId
         && Boolean(checkoutLocationContext.claimId)
         && isSafeInternalPath(returnToPath)
@@ -945,15 +946,17 @@ export const CheckoutPage: React.FC = () => {
                                                 {t('checkout.successCreateTrip', { ns: 'pricing' })}
                                             </Link>
 
-                                            <Link
-                                                to={profileActionPath}
-                                                className={cn(checkoutActionClassName, 'border border-slate-300 bg-white text-slate-900 hover:bg-slate-50')}
-                                                onClick={() => trackEvent('checkout__success_cta--profile', { tier: selectedTierKey, source })}
-                                                {...getAnalyticsDebugAttributes('checkout__success_cta--profile')}
-                                            >
-                                                <UserCircle size={18} weight="duotone" />
-                                                {t('checkout.successOpenProfile', { ns: 'pricing' })}
-                                            </Link>
+                                            {shouldShowProfileAction ? (
+                                                <Link
+                                                    to={profileActionPath}
+                                                    className={cn(checkoutActionClassName, 'border border-slate-300 bg-white text-slate-900 hover:bg-slate-50')}
+                                                    onClick={() => trackEvent('checkout__success_cta--profile', { tier: selectedTierKey, source })}
+                                                    {...getAnalyticsDebugAttributes('checkout__success_cta--profile')}
+                                                >
+                                                    <UserCircle size={18} weight="duotone" />
+                                                    {t('checkout.successOpenProfile', { ns: 'pricing' })}
+                                                </Link>
+                                            ) : null}
                                         </div>
                                     </div>
                                 </div>
@@ -999,7 +1002,7 @@ export const CheckoutPage: React.FC = () => {
                                                     onClick={() => handlePlanChange(tierKey)}
                                                     disabled={Boolean(paddlePublicConfig) && !tierAvailable}
                                                     className={cn(
-                                                        'inline-flex h-11 cursor-pointer items-center border-b-2 px-0 pb-2 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed',
+                                                        'inline-flex h-11 appearance-none cursor-pointer items-center whitespace-nowrap border-0 border-b-2 bg-transparent px-0 pb-2 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed',
                                                         isActive
                                                             ? 'border-accent-600 text-accent-700'
                                                             : 'border-transparent text-slate-400 hover:text-slate-900',

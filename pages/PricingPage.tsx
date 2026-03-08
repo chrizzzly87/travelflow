@@ -8,6 +8,7 @@ import { ANONYMOUS_TRIP_EXPIRATION_DAYS, ANONYMOUS_TRIP_LIMIT } from '../config/
 import { buildPath } from '../config/routes';
 import { MarketingLayout } from '../components/marketing/MarketingLayout';
 import { useAuth } from '../hooks/useAuth';
+import { cn } from '../lib/utils';
 import { buildBillingCheckoutPath, type BillingCheckoutTierKey } from '../services/billingService';
 import {
     fetchPaddlePublicConfig,
@@ -18,27 +19,31 @@ import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsSe
 
 interface TierStyle {
     badgeClass: string;
-    accentClass: string;
-    ringClass: string;
+    surfaceClass: string;
+    headerClass: string;
+    featureIconClass: string;
     highlighted?: boolean;
 }
 
 const TIER_STYLE: Record<'backpacker' | 'explorer' | 'globetrotter', TierStyle> = {
     backpacker: {
         badgeClass: 'border-slate-300 bg-slate-100 text-slate-700',
-        accentClass: 'from-slate-600 to-slate-800',
-        ringClass: 'ring-slate-900/5',
+        surfaceClass: 'border-slate-200',
+        headerClass: 'bg-slate-50',
+        featureIconClass: 'text-slate-500',
     },
     explorer: {
         badgeClass: 'border-accent-300 bg-accent-100 text-accent-700',
-        accentClass: 'from-accent-500 to-accent-700',
-        ringClass: 'ring-accent-500/10',
+        surfaceClass: 'border-accent-200 shadow-md ring-1 ring-accent-100',
+        headerClass: 'bg-accent-50/70',
+        featureIconClass: 'text-accent-600',
         highlighted: true,
     },
     globetrotter: {
         badgeClass: 'border-amber-300 bg-amber-100 text-amber-700',
-        accentClass: 'from-amber-500 to-amber-700',
-        ringClass: 'ring-amber-500/10',
+        surfaceClass: 'border-amber-200',
+        headerClass: 'bg-amber-50/70',
+        featureIconClass: 'text-amber-600',
     },
 };
 
@@ -47,12 +52,13 @@ const asDisplayCount = (value: number | null, unlimitedLabel: string): string =>
 
 export const PricingPage: React.FC = () => {
     const { t } = useTranslation('pricing');
-    const { isAuthenticated } = useAuth();
+    const { access, isAuthenticated } = useAuth();
     const [paddlePublicConfig, setPaddlePublicConfig] = useState<PaddlePublicConfig | null>(null);
     const unlimitedLabel = t('shared.unlimited');
     const noExpiryLabel = t('shared.noExpiry');
     const enabledLabel = t('shared.enabled');
     const disabledLabel = t('shared.disabled');
+    const activeTierKey = access?.tierKey ?? 'tier_free';
     useEffect(() => {
         let cancelled = false;
         void fetchPaddlePublicConfig()
@@ -104,7 +110,7 @@ export const PricingPage: React.FC = () => {
                     </p>
                 </div>
 
-                <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 md:grid-cols-3 md:gap-8">
+                <div className="mx-auto grid max-w-6xl grid-cols-1 gap-6 md:grid-cols-3">
                     {PLAN_ORDER.map((tierKey) => {
                         const tier = PLAN_CATALOG[tierKey];
                         const style = TIER_STYLE[tier.publicSlug];
@@ -112,6 +118,7 @@ export const PricingPage: React.FC = () => {
                         const supportsCheckout = (tier.key === 'tier_mid' || tier.key === 'tier_premium')
                             && isPaddleTierCheckoutConfigured(paddlePublicConfig, tier.key as BillingCheckoutTierKey);
                         const featureList = resolveTierFeatures(tier.key);
+                        const isCurrentTier = isAuthenticated && activeTierKey === tier.key;
                         const freeTierTarget = isAuthenticated ? buildPath('profile') : buildPath('login');
                         const checkoutTarget = buildBillingCheckoutPath({
                             tierKey: tier.key as BillingCheckoutTierKey,
@@ -120,41 +127,50 @@ export const PricingPage: React.FC = () => {
                         });
 
                         return (
-                            <div
+                            <article
                                 key={tier.key}
-                                className={`relative flex flex-col rounded-2xl bg-white p-8 shadow-lg ring-1 ${style.ringClass} ${
-                                    style.highlighted ? 'z-10 scale-[1.02] pb-12 pt-10 md:-mt-4 md:mb-0 md:scale-105' : ''
-                                }`}
+                                className={cn(
+                                    'group flex h-full flex-col overflow-hidden rounded-2xl bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg',
+                                    style.surfaceClass,
+                                )}
                             >
-                                <div className={`absolute inset-x-0 top-0 h-1 rounded-t-2xl bg-gradient-to-r ${style.accentClass}`} />
+                                <div className={cn('border-b border-slate-200 px-6 py-6', style.headerClass)}>
+                                    <div className="flex items-start justify-between gap-3">
+                                        {(isPaidTier || isCurrentTier) ? (
+                                            <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${style.badgeClass}`}>
+                                                {isCurrentTier ? t('tiers.backpacker.badge') : t(`tiers.${tier.publicSlug}.badge`)}
+                                            </span>
+                                        ) : <span />}
+                                        <div className="text-right">
+                                            <div
+                                                className="text-4xl font-extrabold tracking-tight text-slate-900"
+                                                style={{ fontFamily: 'var(--tf-font-heading)' }}
+                                            >
+                                                {`$${tier.monthlyPriceUsd}`}
+                                            </div>
+                                            <div className="text-sm font-medium text-slate-500">{t('shared.perMonth')}</div>
+                                        </div>
+                                    </div>
 
-                                <span className={`inline-flex self-start rounded-full border px-3 py-1 text-xs font-semibold ${style.badgeClass}`}>
-                                    {t(`tiers.${tier.publicSlug}.badge`)}
-                                </span>
-
-                                <div className="mt-5 flex items-baseline gap-1">
-                                    <span
-                                        className="text-4xl font-extrabold tracking-tight text-slate-900"
-                                        style={{ fontFamily: 'var(--tf-font-heading)' }}
-                                    >
-                                        {`$${tier.monthlyPriceUsd}`}
-                                    </span>
-                                    <span className="text-sm font-medium text-slate-500">{t('shared.perMonth')}</span>
+                                    <h2 className="mt-5 text-2xl font-bold tracking-tight text-slate-900">
+                                        {t(`tiers.${tier.publicSlug}.name`)}
+                                    </h2>
+                                    <p className="mt-2 max-w-[24rem] text-sm leading-6 text-slate-600">
+                                        {t(`tiers.${tier.publicSlug}.description`)}
+                                    </p>
                                 </div>
 
-                                <h2 className="mt-3 text-lg font-bold text-slate-900">{t(`tiers.${tier.publicSlug}.name`)}</h2>
-                                <p className="mt-2 text-sm text-slate-500">{t(`tiers.${tier.publicSlug}.description`)}</p>
-
-                                <ul className="mt-6 flex-1 space-y-3">
+                                <div className="flex flex-1 flex-col px-6 py-6">
+                                <ul className="space-y-3">
                                     {featureList.map((feature) => (
-                                        <li key={feature} className="flex items-start gap-2.5 text-sm text-slate-700">
-                                            <Check size={16} weight="bold" className="mt-0.5 shrink-0 text-accent-600" />
+                                        <li key={feature} className="flex items-start gap-3 text-sm leading-6 text-slate-700">
+                                            <Check size={16} weight="bold" className={cn('mt-1 shrink-0', style.featureIconClass)} />
                                             {feature}
                                         </li>
                                     ))}
                                 </ul>
 
-                                <div className="mt-8">
+                                <div className="mt-8 border-t border-slate-200 pt-5">
                                     {isPaidTier ? (
                                         supportsCheckout ? (
                                             <Link
@@ -178,14 +194,15 @@ export const PricingPage: React.FC = () => {
                                         <Link
                                             to={freeTierTarget}
                                             onClick={() => trackEvent(`pricing__tier--${tier.publicSlug}`)}
-                                            className="block w-full rounded-xl bg-accent-600 px-4 py-3 text-center text-sm font-semibold text-white shadow-sm transition-colors hover:bg-accent-700"
+                                            className="block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-center text-sm font-semibold text-slate-900 shadow-sm transition-colors hover:bg-slate-50"
                                             {...getAnalyticsDebugAttributes(`pricing__tier--${tier.publicSlug}`)}
                                         >
                                             {t(`tiers.${tier.publicSlug}.cta`)}
                                         </Link>
                                     )}
                                 </div>
-                            </div>
+                                </div>
+                            </article>
                         );
                     })}
                 </div>

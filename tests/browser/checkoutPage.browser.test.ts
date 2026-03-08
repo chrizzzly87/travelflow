@@ -63,6 +63,8 @@ const mocks = vi.hoisted(() => ({
   }),
   updateCurrentUserProfile: vi.fn().mockResolvedValue(undefined),
   acceptCurrentTerms: vi.fn().mockResolvedValue({ data: { termsVersion: '2026-03', acceptedAt: '2026-03-08T10:00:00Z' }, error: null }),
+  processQueuedTripGenerationAfterAuth: vi.fn().mockResolvedValue({ tripId: 'trip_claimed_123' }),
+  registerTripGenerationCompletionWatch: vi.fn(),
   trackEvent: vi.fn(),
 }));
 
@@ -151,6 +153,14 @@ vi.mock('../../services/paddleClient', async () => {
 
 vi.mock('../../services/profileService', () => ({
   updateCurrentUserProfile: mocks.updateCurrentUserProfile,
+}));
+
+vi.mock('../../services/tripGenerationQueueService', () => ({
+  processQueuedTripGenerationAfterAuth: mocks.processQueuedTripGenerationAfterAuth,
+}));
+
+vi.mock('../../services/tripGenerationCompletionWatchService', () => ({
+  registerTripGenerationCompletionWatch: mocks.registerTripGenerationCompletionWatch,
 }));
 
 vi.mock('react-i18next', () => ({
@@ -309,5 +319,33 @@ describe('pages/CheckoutPage', () => {
     expect(screen.getByDisplayValue('Ada')).toBeInTheDocument();
     expect(screen.getByDisplayValue('Lovelace')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'checkout.refreshPayment' })).toBeInTheDocument();
+  });
+
+  it('starts the claimed trip after payment and prioritizes trip actions on success', async () => {
+    let checkoutEventCallback: ((event: { name: string }) => void) | null = null;
+    mocks.location.search = '?tier=tier_mid&source=trip_paywall_strip&claim=claim_123&return_to=%2Ftrip%2Ftrip_123&trip_id=trip_123&_ptxn=txn_123';
+    mocks.initializePaddleJs.mockImplementation(async ({ eventCallback }: { eventCallback: (event: { name: string }) => void }) => {
+      checkoutEventCallback = eventCallback;
+      return true;
+    });
+
+    render(React.createElement(CheckoutPage));
+
+    await waitFor(() => {
+      expect(typeof checkoutEventCallback).toBe('function');
+    });
+
+    checkoutEventCallback?.({ name: 'checkout.completed' });
+
+    await waitFor(() => {
+      expect(mocks.processQueuedTripGenerationAfterAuth).toHaveBeenCalledWith('claim_123');
+    });
+    await waitFor(() => {
+      expect(mocks.registerTripGenerationCompletionWatch).toHaveBeenCalledWith('trip_claimed_123', 'checkout_payment_completed');
+    });
+
+    expect(await screen.findByRole('link', { name: 'checkout.successOpenTrip' })).toHaveAttribute('href', '/trip/trip_claimed_123');
+    expect(screen.getByRole('link', { name: 'checkout.successCreateTrip' })).toHaveAttribute('href', '/create-trip');
+    expect(screen.queryByRole('link', { name: 'checkout.successOpenProfile' })).toBeNull();
   });
 });
