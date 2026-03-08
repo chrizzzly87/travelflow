@@ -8,6 +8,7 @@ import { SiteFooter } from '../components/marketing/SiteFooter';
 import { ProfileCountryRegionSelect } from '../components/profile/ProfileCountryRegionSelect';
 import { Checkbox } from '../components/ui/checkbox';
 import { showAppToast } from '../components/ui/appToast';
+import { Tabs, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { PLAN_CATALOG } from '../config/planCatalog';
 import { DEFAULT_LOCALE, normalizeLocale } from '../config/locales';
 import { buildLocalizedMarketingPath, buildPath } from '../config/routes';
@@ -103,7 +104,7 @@ const CheckoutStepSection: React.FC<CheckoutStepSectionProps> = ({ step, state, 
                 className={cn(
                     'mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold',
                     state === 'complete'
-                        ? 'text-accent-600'
+                        ? 'bg-accent-50 text-accent-700 ring-1 ring-accent-200'
                         : state === 'active'
                             ? 'border border-slate-900 text-slate-900'
                             : 'border border-slate-300 text-slate-400'
@@ -640,9 +641,9 @@ export const CheckoutPage: React.FC = () => {
     ]);
 
     return (
-        <div className="flex min-h-screen flex-col bg-white text-slate-900">
+        <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
             <SiteHeader hideCreateTrip />
-            <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 pb-16 pt-8 sm:px-6 lg:px-8">
+            <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col px-5 pb-16 pt-8 md:px-8 md:pt-10">
                 <div className="border-b border-slate-200 pb-6">
                     <Link
                         to={returnToPath}
@@ -669,7 +670,7 @@ export const CheckoutPage: React.FC = () => {
                     </div>
                 </div>
 
-                <section className="mt-8 grid gap-12 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
+                <section className="mt-8 grid gap-10 xl:gap-16 lg:grid-cols-[minmax(0,1fr)_400px] xl:grid-cols-[minmax(0,1fr)_440px] lg:items-start">
                     <div className="order-1 min-w-0">
                         {paddlePublicConfig?.issues.length ? (
                             <div className="mb-6 border-s-4 border-rose-500 bg-rose-50 px-4 py-3 text-sm text-rose-900">
@@ -684,7 +685,7 @@ export const CheckoutPage: React.FC = () => {
                             title={t('checkout.accountTitle', { ns: 'pricing' })}
                         >
                             {!isEligibleAccount ? (
-                                <div className="max-w-2xl space-y-5">
+                                <div className="w-full max-w-4xl space-y-6">
                                     <div className="flex flex-wrap gap-2 border-b border-slate-200 pb-2">
                                         <button
                                             type="button"
@@ -809,7 +810,7 @@ export const CheckoutPage: React.FC = () => {
                             {!isEligibleAccount ? (
                                 <p className="text-sm text-slate-500">{t('checkout.detailsLocked', { ns: 'pricing' })}</p>
                             ) : (
-                                <div className="max-w-2xl space-y-5">
+                                <div className="w-full max-w-4xl space-y-6">
                                     {checkoutErrorMessage ? (
                                         <div className="border-s-4 border-rose-500 bg-rose-50 px-4 py-3 text-sm text-rose-900">
                                             {checkoutErrorMessage}
@@ -982,34 +983,38 @@ export const CheckoutPage: React.FC = () => {
                     </div>
 
                     <aside className="order-2 lg:order-2">
-                        <div className="lg:sticky lg:top-24">
-                            <div className="rounded-2xl bg-white p-6 shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
+                        <div className="lg:sticky lg:top-28">
+                            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
                                 <section className="space-y-4">
                                 <p className={checkoutSectionLabelClassName}>{t('checkout.planSummaryTitle', { ns: 'pricing' })}</p>
-                                <div className="flex gap-6 border-b border-slate-200">
-                                    {PAID_TIER_ORDER.map((tierKey) => {
-                                        const tier = PLAN_CATALOG[tierKey];
-                                        const tierAvailable = isPaddleTierCheckoutConfigured(paddlePublicConfig, tierKey);
-                                        const active = tierKey === selectedTierKey;
-                                        return (
-                                            <button
-                                                key={tierKey}
-                                                type="button"
-                                                disabled={Boolean(paddlePublicConfig) && !tierAvailable}
-                                                onClick={() => handlePlanChange(tierKey)}
-                                                className={cn(
-                                                    'border-b-2 pb-3 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:text-slate-300',
-                                                    active
-                                                        ? 'border-accent-600 text-accent-700'
-                                                        : 'border-transparent text-slate-400 hover:text-slate-900'
-                                                )}
-                                                {...getAnalyticsDebugAttributes(`checkout__plan--${tier.publicSlug}`)}
-                                            >
-                                                {t(`tiers.${tier.publicSlug}.name`, { ns: 'pricing' })}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
+                                <Tabs
+                                    value={selectedTierKey}
+                                    onValueChange={(value) => {
+                                        if (!isPaidTierKey(value)) return;
+                                        handlePlanChange(value);
+                                    }}
+                                >
+                                    <TabsList
+                                        variant="line"
+                                        className="w-full justify-start gap-8 rounded-none border-b border-slate-200 p-0"
+                                    >
+                                        {PAID_TIER_ORDER.map((tierKey) => {
+                                            const tier = PLAN_CATALOG[tierKey];
+                                            const tierAvailable = isPaddleTierCheckoutConfigured(paddlePublicConfig, tierKey);
+                                            return (
+                                                <TabsTrigger
+                                                    key={tierKey}
+                                                    value={tierKey}
+                                                    disabled={Boolean(paddlePublicConfig) && !tierAvailable}
+                                                    className="h-auto cursor-pointer rounded-none border-b-2 border-transparent px-0 pb-3 pt-0 text-sm font-semibold text-slate-400 after:hidden hover:text-slate-900 data-[state=active]:border-accent-600 data-[state=active]:text-accent-700 disabled:cursor-not-allowed disabled:text-slate-300"
+                                                    {...getAnalyticsDebugAttributes(`checkout__plan--${tier.publicSlug}`)}
+                                                >
+                                                    {t(`tiers.${tier.publicSlug}.name`, { ns: 'pricing' })}
+                                                </TabsTrigger>
+                                            );
+                                        })}
+                                    </TabsList>
+                                </Tabs>
 
                                 <div className="flex items-end justify-between gap-4 border-b border-slate-200 pb-5">
                                     <div>
