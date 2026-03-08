@@ -127,19 +127,29 @@ describe('paddleClient', () => {
     expect(isPaddleTierCheckoutConfigured(first, 'tier_premium')).toBe(false);
   });
 
-  it('adds tier context to checkout URLs for branded pricing return state', () => {
+  it('adds checkout route context to Paddle checkout URLs', () => {
     expect(appendPaddleCheckoutContext(
       'https://issue-174-paddle-sandbox--travelflowapp.netlify.app/pricing?_ptxn=txn_123',
-      'tier_mid',
+      {
+        tierKey: 'tier_mid',
+        source: 'trip_paywall_strip',
+        claimId: '123e4567-e89b-12d3-a456-426614174000',
+        returnTo: '/trip/trip_123',
+        tripId: 'trip_123',
+      },
     )).toBe(
-      'https://issue-174-paddle-sandbox--travelflowapp.netlify.app/pricing?_ptxn=txn_123&_tf_tier=tier_mid',
+      'https://issue-174-paddle-sandbox--travelflowapp.netlify.app/pricing?_ptxn=txn_123&tier=tier_mid&source=trip_paywall_strip&claim=123e4567-e89b-12d3-a456-426614174000&return_to=%2Ftrip%2Ftrip_123&trip_id=trip_123',
     );
   });
 
-  it('reads checkout transaction and tier state from the pricing URL', () => {
-    expect(readPaddleCheckoutLocationContext('?_ptxn=txn_123&_tf_tier=tier_premium')).toEqual({
+  it('reads checkout transaction and route state from the URL', () => {
+    expect(readPaddleCheckoutLocationContext('?_ptxn=txn_123&tier=tier_premium&source=pricing_page&claim=claim_123&return_to=%2Fpricing&trip_id=trip_123')).toEqual({
       transactionId: 'txn_123',
       tierKey: 'tier_premium',
+      source: 'pricing_page',
+      claimId: 'claim_123',
+      returnTo: '/pricing',
+      tripId: 'trip_123',
     });
   });
 

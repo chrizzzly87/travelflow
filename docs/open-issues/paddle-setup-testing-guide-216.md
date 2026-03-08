@@ -9,19 +9,21 @@ This guide covers the first production-ready Paddle integration path for TravelF
 Reference issue: [#216](https://github.com/chrizzzly87/travelflow/issues/216)
 
 ## Current Flow (Implemented)
-1. Signed-in user starts paid checkout from pricing.
+1. User starts paid checkout from pricing or from a locked trip upgrade CTA.
 2. Frontend calls `/api/billing/paddle/config` first to learn the active environment and which paid tiers are actually configured.
-3. Frontend calls `/api/billing/paddle/checkout` with tier key.
-4. Edge function creates a Paddle transaction and returns a checkout URL that routes back to the pricing page with Paddle transaction state.
-5. Pricing initializes Paddle.js in one-page inline mode and renders the checkout inside a branded shell on the pricing page instead of dropping the user into Paddle's plain default overlay.
-6. Paddle sends webhook events to `/api/billing/paddle/webhook`.
-7. Webhook handler verifies `Paddle-Signature`, deduplicates by `event_id`, and updates:
+3. Frontend routes the user into the dedicated `/checkout` page with tier, source, return path, and optional claim/trip metadata.
+4. Signed-in users can enrich profile fields on `/checkout` before payment; signed-out users are routed through `/login` and back into the same checkout context.
+5. Frontend calls `/api/billing/paddle/checkout` with tier key plus optional claim/trip/return metadata.
+6. Edge function creates a Paddle transaction and returns a checkout URL that routes back to the dedicated `/checkout` page with Paddle transaction state.
+7. `/checkout` initializes Paddle.js in one-page inline mode and renders the payment frame inside the branded checkout shell instead of dropping the user into Paddle's plain default overlay.
+8. Paddle sends webhook events to `/api/billing/paddle/webhook`.
+9. Webhook handler verifies `Paddle-Signature`, deduplicates by `event_id`, and updates:
    - `public.subscriptions` canonical lifecycle row per user
    - `public.profiles.tier_key` (`tier_mid`/`tier_premium` or fallback `tier_free`)
    - `public.billing_webhook_events` log for replay/debug safety
 
 ## Current Identity Model
-- Supported now: visitor opens pricing -> signs in or registers -> starts paid checkout.
+- Supported now: visitor opens pricing or a locked trip -> signs in or registers -> lands on `/checkout` -> starts paid checkout.
 - Not supported yet: truly anonymous checkout that grants a paid tier before a durable non-anonymous user session exists.
 - Reason: the checkout endpoint stores `tf_user_id` in Paddle `custom_data` and currently requires an authenticated non-anonymous Supabase user so webhook tier sync can resolve a stable account.
 
@@ -60,9 +62,9 @@ Use Paddle as the source of truth for commercial/billing setup:
   - do not place Paddle secrets in browser-exposed vars
 
 ## Checkout Presentation Notes
-- Pricing now hosts Paddle Checkout in an inline frame with one-page layout, light theme, and app-locale-aware initialization.
+- `/checkout` now hosts Paddle Checkout in an inline frame with one-page layout, light theme, and app-locale-aware initialization.
 - The sandbox `Test mode` badge comes from Paddle and remains visible in sandbox. It disappears in live mode.
-- For brand tuning beyond the app shell, use Paddle dashboard checkout branding/settings in the matching environment.
+- The dedicated route now owns plan benefits, profile enrichment, trip-origin context, and mobile layout. For brand tuning inside the payment frame itself, use Paddle dashboard checkout branding/settings in the matching environment.
 
 ## Paddle Dashboard Setup
 1. Use **Sandbox** first in Paddle.
@@ -73,7 +75,7 @@ Use Paddle as the source of truth for commercial/billing setup:
 3. Create a sandbox client-side token and store it as `VITE_PADDLE_CLIENT_TOKEN`.
    - In Paddle, go to `Developer tools -> Authentication -> Client-side tokens`.
    - Create a sandbox token for Paddle.js.
-   - This token is public/browser-safe and is required so the pricing page can open Paddle Checkout from the transaction link.
+   - This token is public/browser-safe and is required so the dedicated `/checkout` page can open Paddle Checkout from the transaction link.
    - Sandbox client-side tokens start with `test_`; live client-side tokens start with `live_`.
 4. Create product + recurring price for `tier_mid` (Explorer).
    - In Paddle, go to `Catalog -> Products`.
@@ -87,8 +89,8 @@ Use Paddle as the source of truth for commercial/billing setup:
    - Open the product in Paddle and copy the `pri_...` ID from the price.
 7. Ensure a default payment link is configured in Paddle for the sandbox account.
    - In Paddle, go to `Checkout -> Checkout settings -> Default payment link`.
-   - Set it to your pricing page, because that page now loads Paddle.js and can open checkout from the transaction link.
-   - Recommended value: `https://<your-netlify-preview-domain>/pricing`
+   - Set it to your dedicated checkout page, because that page now loads Paddle.js and can open checkout from the transaction link.
+   - Recommended value: `https://<your-netlify-preview-domain>/checkout`
 8. Create a webhook destination for sandbox:
    - `https://<your-preview-or-tunnel>/api/billing/paddle/webhook`
    - In Paddle, go to `Developer tools -> Notifications`.
@@ -128,7 +130,7 @@ If you want the shortest path to a working test, do only this in Paddle sandbox:
 2. Create one sandbox client-side token.
 3. Create one product + one recurring price for Explorer.
 4. Copy that Explorer `pri_...` into `PADDLE_PRICE_ID_TIER_MID`.
-5. Set the sandbox default payment link to your preview `/pricing` page.
+5. Set the sandbox default payment link to your preview `/checkout` page.
 6. Create one webhook destination for `/api/billing/paddle/webhook`.
 7. Subscribe it to `subscription.created`, `subscription.updated`, `subscription.canceled`, and `transaction.completed`.
 8. Copy its secret into `PADDLE_WEBHOOK_SECRET`.
@@ -197,20 +199,20 @@ pnpm dev:netlify
 
 2. For local webhook delivery, expose port `8888` via a tunnel (for example `ngrok http 8888`) and use that URL in Paddle sandbox webhook destination.
 3. Log in or register with a real (non-anonymous) account.
-4. Open `/pricing` and start checkout for `Explorer` or `Globetrotter`.
+4. Open `/pricing` or a locked trip paywall and start checkout for `Explorer` or `Globetrotter`.
 5. Complete payment with Paddle sandbox test methods.
 6. Wait for webhook delivery and verify tier sync in Supabase.
 
 ## Recommended First End-to-End Scenario
 1. Start from a logged-out browser session.
 2. Open `/pricing`.
-3. Click `Explorer` or `Globetrotter`.
-4. Confirm the app sends you to login/register first.
+3. Click `Explorer` or `Globetrotter` to enter `/checkout`.
+4. Confirm the app sends you to login/register first if no real account session exists.
 5. Complete login/register.
-6. Return to pricing and start checkout.
+6. Return to `/checkout`, review plan benefits, and complete the traveler details step.
 7. Pay with a Paddle sandbox payment method.
 8. Confirm:
-   - checkout redirected correctly
+   - checkout stayed on `/checkout` with the branded inline frame
    - Paddle shows successful payment/subscription in sandbox
    - webhook reached `/api/billing/paddle/webhook`
    - `public.subscriptions` has the provider IDs and billing dates
@@ -221,7 +223,7 @@ pnpm dev:netlify
 Use this when Supabase schema updates are blocked by parallel work:
 1. Set `PADDLE_WEBHOOK_SYNC_MODE=verify_only`.
 2. Keep checkout enabled (`VITE_PADDLE_CHECKOUT_ENABLED=true`) and sandbox keys configured.
-3. Run a real sandbox checkout from `/pricing`.
+3. Run a real sandbox checkout from `/checkout`.
 4. Confirm webhook delivery in Paddle dashboard:
    - Event status is delivered (or resendable) for `/api/billing/paddle/webhook`
 5. Confirm endpoint response payload contains:

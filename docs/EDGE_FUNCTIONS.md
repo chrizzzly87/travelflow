@@ -7,7 +7,7 @@ Shared helpers live in `netlify/edge-lib/`.
 
 | Function file | Route(s) | Purpose | Type |
 |---|---|---|---|
-| `paddle-config.ts` | `/api/billing/paddle/config` | Public billing bootstrap endpoint that exposes the active Paddle environment, configured tier availability, and non-secret configuration diagnostics for the pricing page. | API |
+| `paddle-config.ts` | `/api/billing/paddle/config` | Public billing bootstrap endpoint that exposes the active Paddle environment, configured tier availability, and non-secret configuration diagnostics for pricing and the dedicated checkout page. | API |
 | `paddle-checkout.ts` | `/api/billing/paddle/checkout` | Authenticated billing endpoint that creates Paddle checkout transactions for paid web tiers. | API |
 | `paddle-webhook.ts` | `/api/billing/paddle/webhook` | Verifies Paddle webhook signatures, deduplicates events, and syncs subscription lifecycle + tier state in Supabase. | API |
 | `ai-generate.ts` | `/api/ai/generate` | Server-side AI itinerary generation endpoint (Gemini, OpenAI, Anthropic, OpenRouter allowlisted models) | API |
@@ -149,7 +149,7 @@ The CI validator (`scripts/validate-edge-functions.mjs`) enforces this rule at b
 | `PADDLE_PRICE_ID_TIER_PREMIUM` | `paddle-checkout.ts`, `paddle-webhook.ts` | Optional Paddle price ID mapped to `tier_premium` entitlements |
 | `PADDLE_ENV` | `paddle-config.ts`, `paddle-checkout.ts` | Paddle environment selector (`sandbox`/`live`) used to choose the correct Paddle API base URL and validate that configured keys/tokens belong to the same environment |
 | `PADDLE_CHECKOUT_DOMAIN` | `paddle-checkout.ts` | Optional checkout domain override passed to Paddle transaction `checkout.url` |
-| `VITE_PADDLE_CHECKOUT_ENABLED` | `paddle-config.ts` | Public feature flag surfaced to the pricing page to enable/disable checkout bootstrapping |
+| `VITE_PADDLE_CHECKOUT_ENABLED` | `paddle-config.ts` | Public feature flag surfaced to pricing and `/checkout` to enable/disable billing bootstrapping |
 | `VITE_PADDLE_CLIENT_TOKEN` | `paddle-config.ts` | Paddle.js client-side token presence + environment are surfaced as non-secret diagnostics for checkout bootstrapping |
 | `PADDLE_WEBHOOK_SECRET` | `paddle-webhook.ts` | Secret key for `Paddle-Signature` webhook verification |
 | `PADDLE_WEBHOOK_MAX_AGE_SECONDS` | `paddle-webhook.ts` | Optional timestamp tolerance for webhook signatures (default `300`) |

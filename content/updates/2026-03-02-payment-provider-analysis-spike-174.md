@@ -18,4 +18,4 @@ summary: "Completed the payment-provider spike and locked a MoR-first recommenda
 - [ ] [Internal] 🚦 Added a sandbox-first rollout plan, corrected Paddle sandbox API routing, and documented the live cutover path so billing can move from test to production by swapping environment and Paddle-side objects.
 - [ ] [Internal] 🪪 Added browser-side Paddle.js initialization with a public client token so transaction checkout links can open correctly on the pricing page during sandbox and live testing.
 - [ ] [Internal] 🧭 Added Paddle environment diagnostics and public tier-availability bootstrapping so sandbox/live credential mismatches fail clearly and unconfigured paid tiers stay disabled on the pricing page.
-- [ ] [Internal] 🎛️ Reworked the pricing-page checkout handoff into a branded one-page inline Paddle shell so sandbox and live billing feel closer to the product instead of a raw provider modal.
+- [ ] [Internal] 🧭 Moved billing into a dedicated `/checkout` flow with branded plan review, profile enrichment, and trip-aware handoff metadata so pricing and locked-trip upgrades feed the same Paddle path.

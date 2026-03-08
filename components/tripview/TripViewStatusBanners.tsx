@@ -44,6 +44,7 @@ interface TripViewStatusBannersProps {
         analyticsEvent: 'trip_paywall__strip--activate' | 'trip_paywall__overlay--activate',
         source: 'trip_paywall_strip' | 'trip_paywall_overlay'
     ) => void;
+    paywallStripUpgradeCheckoutPath?: string | null;
     tripId: string;
     connectivityState?: ConnectivityState;
     connectivityReason?: string | null;
@@ -97,6 +98,7 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
     expirationRelativeLabel,
     paywallActivationMode,
     onPaywallActivateClick,
+    paywallStripUpgradeCheckoutPath = null,
     tripId,
     connectivityState,
     connectivityReason,
@@ -122,7 +124,7 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
     onRetryGeneration,
     exampleTripBanner,
 }) => {
-    const { t, i18n } = useTranslation('common');
+    const { t, i18n } = useTranslation(['common', 'pricing']);
     const shouldShowConnectivityStrip = Boolean(connectivityState && connectivityState !== 'online');
     const shouldShowSyncStrip = pendingSyncCount > 0 || isSyncingQueue;
     const showSyncStatusStrip = shouldShowConnectivityStrip || shouldShowSyncStrip;
@@ -490,15 +492,30 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
                                 : `${expirationRelativeLabel || 'Trip access is time-limited'}${expirationLabel ? ` · Ends ${expirationLabel}` : ''}.`}
                     </span>
                     {isPaywallLocked && (
-                        <Link
-                            to="/login"
-                            onClick={(event) => onPaywallActivateClick(event, 'trip_paywall__strip--activate', 'trip_paywall_strip')}
-                            className="px-3 py-1 rounded-md bg-rose-100 text-rose-900 text-xs font-semibold hover:bg-rose-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
-                        >
-                            {paywallRequiresLogin
-                                ? t('tripPaywall.reactivate.actions.login')
-                                : t('tripPaywall.reactivate.actions.direct')}
-                        </Link>
+                        <div className="flex flex-wrap items-center justify-end gap-2">
+                            {paywallStripUpgradeCheckoutPath && (
+                                <Link
+                                    to={paywallStripUpgradeCheckoutPath}
+                                    onClick={() => trackEvent('trip_paywall__strip--upgrade', {
+                                        trip_id: tripId,
+                                        has_claim: Boolean(pendingAuthQueueRequestId),
+                                    })}
+                                    className="px-3 py-1 rounded-md border border-rose-200 bg-white text-rose-900 text-xs font-semibold hover:bg-rose-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
+                                    {...getAnalyticsDebugAttributes('trip_paywall__strip--upgrade')}
+                                >
+                                    {t('checkout.tripEntryCta', { ns: 'pricing' })}
+                                </Link>
+                            )}
+                            <Link
+                                to="/login"
+                                onClick={(event) => onPaywallActivateClick(event, 'trip_paywall__strip--activate', 'trip_paywall_strip')}
+                                className="px-3 py-1 rounded-md bg-rose-100 text-rose-900 text-xs font-semibold hover:bg-rose-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
+                            >
+                                {paywallRequiresLogin
+                                    ? t('tripPaywall.reactivate.actions.login')
+                                    : t('tripPaywall.reactivate.actions.direct')}
+                            </Link>
+                        </div>
                     )}
                 </div>
             )}

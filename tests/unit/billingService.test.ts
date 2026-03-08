@@ -8,7 +8,7 @@ const dbServiceMocks = vi.hoisted(() => ({
 
 vi.mock('../../services/dbService', () => dbServiceMocks);
 
-import { startPaddleCheckoutSession } from '../../services/billingService';
+import { buildBillingCheckoutPath, startPaddleCheckoutSession } from '../../services/billingService';
 
 describe('billingService startPaddleCheckoutSession', () => {
   beforeEach(() => {
@@ -60,6 +60,9 @@ describe('billingService startPaddleCheckoutSession', () => {
       body: JSON.stringify({
         tierKey: 'tier_mid',
         source: 'pricing_page',
+        claimId: null,
+        returnTo: null,
+        tripId: null,
       }),
     });
   });
@@ -76,5 +79,15 @@ describe('billingService startPaddleCheckoutSession', () => {
     await expect(startPaddleCheckoutSession({ tierKey: 'tier_mid' })).rejects.toThrow(
       'No Paddle price ID configured for tier_mid.',
     );
+  });
+
+  it('builds the dedicated checkout route with optional trip and claim metadata', () => {
+    expect(buildBillingCheckoutPath({
+      tierKey: 'tier_mid',
+      source: 'trip_paywall_strip',
+      claimId: '123e4567-e89b-12d3-a456-426614174000',
+      returnTo: '/trip/trip_123?view=map',
+      tripId: 'trip_123',
+    })).toBe('/checkout?tier=tier_mid&source=trip_paywall_strip&claim=123e4567-e89b-12d3-a456-426614174000&return_to=%2Ftrip%2Ftrip_123%3Fview%3Dmap&trip_id=trip_123');
   });
 });

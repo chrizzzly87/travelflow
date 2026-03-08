@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Article, RocketLaunch, WarningCircle } from '@phosphor-icons/react';
+import { Article, RocketLaunch, Sparkle, WarningCircle } from '@phosphor-icons/react';
 import { Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -20,6 +20,7 @@ interface TripViewHudOverlaysProps {
         analyticsEvent: 'trip_paywall__strip--activate' | 'trip_paywall__overlay--activate',
         source: 'trip_paywall_strip' | 'trip_paywall_overlay'
     ) => void;
+    paywallOverlayUpgradeCheckoutPath?: string | null;
     showGenerationOverlay: boolean;
     generationProgressMessage: string;
     loadingDestinationSummary: string;
@@ -35,13 +36,14 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
     tripId,
     paywallActivationMode,
     onPaywallActivateClick,
+    paywallOverlayUpgradeCheckoutPath = null,
     showGenerationOverlay,
     generationProgressMessage,
     loadingDestinationSummary,
     tripDateRange,
     tripTotalDaysLabel,
 }) => {
-    const { t } = useTranslation('common');
+    const { t } = useTranslation(['common', 'pricing']);
     const paywallRequiresLogin = paywallActivationMode === 'login_modal';
 
     return (
@@ -101,6 +103,16 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                                     <Article size={14} weight="duotone" />
                                     Visit FAQ
                                 </Link>
+                                {paywallOverlayUpgradeCheckoutPath && (
+                                    <Link
+                                        to={paywallOverlayUpgradeCheckoutPath}
+                                        onClick={() => trackEvent('trip_paywall__overlay--upgrade', { trip_id: tripId })}
+                                        className="inline-flex h-9 items-center gap-1.5 rounded-md border border-accent-200 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
+                                    >
+                                        <Sparkle size={14} weight="duotone" />
+                                        {t('checkout.tripEntryCta', { ns: 'pricing' })}
+                                    </Link>
+                                )}
                                 <Link
                                     to="/login"
                                     onClick={(event) => onPaywallActivateClick(event, 'trip_paywall__overlay--activate', 'trip_paywall_overlay')}

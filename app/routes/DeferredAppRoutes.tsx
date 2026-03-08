@@ -37,6 +37,7 @@ const PublicProfilePage = lazyWithRecovery('PublicProfilePage', () => import('..
 const PublicProfileStampsPage = lazyWithRecovery('PublicProfileStampsPage', () => import('../../pages/PublicProfileStampsPage').then((module) => ({ default: module.PublicProfileStampsPage })));
 const ProfileSettingsPage = lazyWithRecovery('ProfileSettingsPage', () => import('../../pages/ProfileSettingsPage').then((module) => ({ default: module.ProfileSettingsPage })));
 const ProfileOnboardingPage = lazyWithRecovery('ProfileOnboardingPage', () => import('../../pages/ProfileOnboardingPage').then((module) => ({ default: module.ProfileOnboardingPage })));
+const CheckoutPage = lazyWithRecovery('CheckoutPage', () => import('../../pages/CheckoutPage').then((module) => ({ default: module.CheckoutPage })));
 const AdminAccessDeniedPage = lazyWithRecovery('AdminAccessDeniedPage', () => import('../../pages/AdminAccessDeniedPage').then((module) => ({ default: module.AdminAccessDeniedPage })));
 const AdminWorkspaceRouter = lazyWithRecovery('AdminWorkspaceRouter', () => import('../../pages/AdminWorkspaceRouter').then((module) => ({ default: module.AdminWorkspaceRouter })));
 const PricingPage = lazyWithRecovery('PricingPage', () => import('../../pages/PricingPage').then((module) => ({ default: module.PricingPage })));
@@ -242,6 +243,10 @@ export const DeferredAppRoutes: React.FC<DeferredAppRoutesProps> = ({
             <Route path="/create-trip/v2" element={<Navigate to="/create-trip" replace />} />
             <Route path="/create-trip/v3" element={<Navigate to="/create-trip/wizard" replace />} />
 
+            <Route
+                path="/checkout"
+                element={renderWithSuspense(<CheckoutPage />)}
+            />
             <Route
                 path="/profile/onboarding"
                 element={renderWithSuspense(

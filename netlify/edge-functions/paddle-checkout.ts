@@ -20,6 +20,9 @@ type CheckoutTierKey = Extract<PlanTierKey, 'tier_mid' | 'tier_premium'>;
 interface PaddleCheckoutRequestBody {
   tierKey?: string;
   source?: string | null;
+  claimId?: string | null;
+  returnTo?: string | null;
+  tripId?: string | null;
 }
 
 const readEnv = (name: string): string => {
@@ -173,6 +176,20 @@ const normalizeCheckoutSource = (value: unknown): string => {
   return normalized.slice(0, 80);
 };
 
+const normalizeOptionalMetadataValue = (value: unknown, maxLength = 160): string | null => {
+  if (typeof value !== 'string') return null;
+  const normalized = value.trim();
+  if (!normalized) return null;
+  return normalized.slice(0, maxLength);
+};
+
+const normalizeReturnPath = (value: unknown): string | null => {
+  const normalized = normalizeOptionalMetadataValue(value, 300);
+  if (!normalized) return null;
+  if (!normalized.startsWith('/') || normalized.startsWith('//')) return null;
+  return normalized;
+};
+
 export default async (request: Request): Promise<Response> => {
   if (request.method !== 'POST') {
     return json(405, { ok: false, error: 'Method not allowed.' });
@@ -233,6 +250,9 @@ export default async (request: Request): Promise<Response> => {
   }
 
   const source = normalizeCheckoutSource(body?.source);
+  const claimId = normalizeOptionalMetadataValue(body?.claimId, 120);
+  const returnTo = normalizeReturnPath(body?.returnTo);
+  const tripId = normalizeOptionalMetadataValue(body?.tripId, 120);
 
   const transactionPayload: Record<string, unknown> = {
     items: [{ price_id: priceId, quantity: 1 }],
@@ -241,6 +261,9 @@ export default async (request: Request): Promise<Response> => {
       tf_user_id: authorization.userId,
       tf_tier_key: tierKey,
       tf_source: source,
+      ...(claimId ? { tf_claim_id: claimId } : {}),
+      ...(returnTo ? { tf_return_to: returnTo } : {}),
+      ...(tripId ? { tf_trip_id: tripId } : {}),
     },
   };
 

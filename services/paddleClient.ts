@@ -31,7 +31,11 @@ const PADDLE_CONFIG_ENDPOINT = '/api/billing/paddle/config';
 export const PADDLE_INLINE_FRAME_TARGET_CLASS = 'tf-paddle-inline-frame';
 
 const PADDLE_CHECKOUT_TRANSACTION_QUERY_KEY = '_ptxn';
-const PADDLE_CHECKOUT_TIER_QUERY_KEY = '_tf_tier';
+const PADDLE_CHECKOUT_TIER_QUERY_KEY = 'tier';
+const PADDLE_CHECKOUT_SOURCE_QUERY_KEY = 'source';
+const PADDLE_CHECKOUT_CLAIM_QUERY_KEY = 'claim';
+const PADDLE_CHECKOUT_RETURN_QUERY_KEY = 'return_to';
+const PADDLE_CHECKOUT_TRIP_QUERY_KEY = 'trip_id';
 const DEFAULT_PADDLE_CHECKOUT_LOCALE = 'en';
 const PADDLE_INLINE_FRAME_STYLE = [
     'width: 100%',
@@ -86,6 +90,18 @@ export interface InitializePaddleJsOptions {
 export interface PaddleCheckoutLocationContext {
     tierKey: PaddleCheckoutTierKey | null;
     transactionId: string | null;
+    source: string | null;
+    claimId: string | null;
+    returnTo: string | null;
+    tripId: string | null;
+}
+
+export interface PaddleCheckoutUrlContext {
+    tierKey: PaddleCheckoutTierKey;
+    source?: string | null;
+    claimId?: string | null;
+    returnTo?: string | null;
+    tripId?: string | null;
 }
 
 export interface PaddlePublicConfigIssue {
@@ -231,12 +247,16 @@ export const readPaddleCheckoutLocationContext = (search: string): PaddleCheckou
     return {
         tierKey: asCheckoutTierKey(params.get(PADDLE_CHECKOUT_TIER_QUERY_KEY)),
         transactionId: asTrimmedString(params.get(PADDLE_CHECKOUT_TRANSACTION_QUERY_KEY)),
+        source: asTrimmedString(params.get(PADDLE_CHECKOUT_SOURCE_QUERY_KEY)),
+        claimId: asTrimmedString(params.get(PADDLE_CHECKOUT_CLAIM_QUERY_KEY)),
+        returnTo: asTrimmedString(params.get(PADDLE_CHECKOUT_RETURN_QUERY_KEY)),
+        tripId: asTrimmedString(params.get(PADDLE_CHECKOUT_TRIP_QUERY_KEY)),
     };
 };
 
 export const appendPaddleCheckoutContext = (
     checkoutUrl: string,
-    tierKey: PaddleCheckoutTierKey
+    context: PaddleCheckoutUrlContext
 ): string => {
     const trimmedUrl = checkoutUrl.trim();
     if (!trimmedUrl) return checkoutUrl;
@@ -244,7 +264,19 @@ export const appendPaddleCheckoutContext = (
     try {
         const fallbackBase = isBrowser() ? window.location.origin : 'https://travelflow.invalid';
         const parsed = new URL(trimmedUrl, fallbackBase);
-        parsed.searchParams.set(PADDLE_CHECKOUT_TIER_QUERY_KEY, tierKey);
+        parsed.searchParams.set(PADDLE_CHECKOUT_TIER_QUERY_KEY, context.tierKey);
+        if (asTrimmedString(context.source)) {
+            parsed.searchParams.set(PADDLE_CHECKOUT_SOURCE_QUERY_KEY, context.source!.trim());
+        }
+        if (asTrimmedString(context.claimId)) {
+            parsed.searchParams.set(PADDLE_CHECKOUT_CLAIM_QUERY_KEY, context.claimId!.trim());
+        }
+        if (asTrimmedString(context.returnTo)) {
+            parsed.searchParams.set(PADDLE_CHECKOUT_RETURN_QUERY_KEY, context.returnTo!.trim());
+        }
+        if (asTrimmedString(context.tripId)) {
+            parsed.searchParams.set(PADDLE_CHECKOUT_TRIP_QUERY_KEY, context.tripId!.trim());
+        }
         return parsed.toString();
     } catch {
         return checkoutUrl;

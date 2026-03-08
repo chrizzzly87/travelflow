@@ -1,11 +1,26 @@
 import type { PlanTierKey } from '../types';
+import { buildPath } from '../config/routes';
 import { dbGetAccessToken, ensureExistingDbSession, DB_ENABLED } from './dbService';
 
 export type BillingCheckoutTierKey = Extract<PlanTierKey, 'tier_mid' | 'tier_premium'>;
+export type BillingCheckoutSource =
+  | 'pricing_page'
+  | 'checkout_page'
+  | 'trip_paywall_strip'
+  | 'trip_paywall_overlay';
+
+const BILLING_CHECKOUT_TIER_QUERY_KEY = 'tier';
+const BILLING_CHECKOUT_SOURCE_QUERY_KEY = 'source';
+const BILLING_CHECKOUT_CLAIM_QUERY_KEY = 'claim';
+const BILLING_CHECKOUT_RETURN_QUERY_KEY = 'return_to';
+const BILLING_CHECKOUT_TRIP_QUERY_KEY = 'trip_id';
 
 interface StartPaddleCheckoutPayload {
   tierKey: BillingCheckoutTierKey;
-  source?: string;
+  source?: BillingCheckoutSource | string;
+  claimId?: string | null;
+  returnTo?: string | null;
+  tripId?: string | null;
 }
 
 interface PaddleCheckoutResponse {
@@ -28,6 +43,53 @@ export interface PaddleCheckoutSession {
   checkoutUrl: string;
   tierKey: BillingCheckoutTierKey;
 }
+
+export interface BillingCheckoutPathOptions {
+  tierKey: BillingCheckoutTierKey;
+  source?: BillingCheckoutSource | string | null;
+  claimId?: string | null;
+  returnTo?: string | null;
+  tripId?: string | null;
+}
+
+const asTrimmedString = (value: unknown): string | null =>
+  typeof value === 'string' && value.trim() ? value.trim() : null;
+
+const isSafeInternalPath = (value: string | null): value is string =>
+  Boolean(value && value.startsWith('/') && !value.startsWith('//'));
+
+export const buildBillingCheckoutPath = ({
+  tierKey,
+  source,
+  claimId,
+  returnTo,
+  tripId,
+}: BillingCheckoutPathOptions): string => {
+  const params = new URLSearchParams();
+  params.set(BILLING_CHECKOUT_TIER_QUERY_KEY, tierKey);
+
+  const normalizedSource = asTrimmedString(source);
+  if (normalizedSource) {
+    params.set(BILLING_CHECKOUT_SOURCE_QUERY_KEY, normalizedSource.slice(0, 80));
+  }
+
+  const normalizedClaimId = asTrimmedString(claimId);
+  if (normalizedClaimId) {
+    params.set(BILLING_CHECKOUT_CLAIM_QUERY_KEY, normalizedClaimId.slice(0, 120));
+  }
+
+  const normalizedReturnTo = asTrimmedString(returnTo);
+  if (isSafeInternalPath(normalizedReturnTo)) {
+    params.set(BILLING_CHECKOUT_RETURN_QUERY_KEY, normalizedReturnTo);
+  }
+
+  const normalizedTripId = asTrimmedString(tripId);
+  if (normalizedTripId) {
+    params.set(BILLING_CHECKOUT_TRIP_QUERY_KEY, normalizedTripId.slice(0, 120));
+  }
+
+  return `${buildPath('checkout')}?${params.toString()}`;
+};
 
 const parseCheckoutResponse = (payload: unknown): PaddleCheckoutResponse => {
   if (!payload || typeof payload !== 'object') return {};
@@ -84,6 +146,9 @@ export const startPaddleCheckoutSession = async (
     body: JSON.stringify({
       tierKey: payload.tierKey,
       source: payload.source || 'pricing_page',
+      claimId: asTrimmedString(payload.claimId),
+      returnTo: isSafeInternalPath(asTrimmedString(payload.returnTo)) ? asTrimmedString(payload.returnTo) : null,
+      tripId: asTrimmedString(payload.tripId),
     }),
   });
 
