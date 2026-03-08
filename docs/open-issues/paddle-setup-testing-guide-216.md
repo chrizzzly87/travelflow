@@ -156,6 +156,7 @@ If checkout fails with `You aren't permitted to perform this request.` during sa
 7. If the original event was missed, use one of these recovery paths:
    - Replay the notification from Paddle.
    - Run **Reconcile Paddle** from `/admin/billing` to fetch Paddle subscriptions and replay them through TravelFlow's billing sync.
+     - If Paddle rate-limits the broad scan, enter a specific `sub_...` subscription ID in the admin dialog to repair one subscription directly.
 
 Official docs:
 - [Create transaction API](https://developer.paddle.com/api-reference/transactions/create-transaction)
@@ -257,6 +258,7 @@ This validates the full external loop (hosted checkout -> Paddle -> your real we
 6. If replay is incomplete or the webhook delivery history is missing, open `/admin/billing` and run **Reconcile Paddle**.
    - This is a manual repair tool.
    - It fetches Paddle subscriptions, synthesizes deterministic subscription events, and runs them through the same webhook sync logic used for normal delivery.
+   - The admin flow now accepts an optional `sub_...` subscription ID so you can repair one known Paddle subscription without relying on the broader list endpoint.
 
 ## Functional Test Matrix
 ### Checkout creation

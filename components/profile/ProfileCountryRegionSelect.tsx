@@ -131,9 +131,9 @@ export const ProfileCountryRegionSelect: React.FC<ProfileCountryRegionSelectProp
     return (
         <div className="space-y-1" ref={wrapperRef}>
             <div className="relative">
-                <div className="pointer-events-none absolute start-0 top-1/2 flex h-5 w-12 -translate-y-1/2 items-center justify-center">
+                <div className="pointer-events-none absolute inset-y-0 start-0 flex h-11 w-12 items-center justify-center">
                     {selectedCountry ? (
-                        <FlagIcon code={selectedCountry.code} size="sm" fallback={null} className="block shrink-0 translate-y-px" />
+                        <FlagIcon code={selectedCountry.code} size="sm" fallback={null} className="block shrink-0" />
                     ) : (
                         <span className="flex h-4 w-4 items-center justify-center">
                             <GlobeHemisphereWest size={16} weight="duotone" className="text-slate-400" />
@@ -147,7 +147,7 @@ export const ProfileCountryRegionSelect: React.FC<ProfileCountryRegionSelectProp
                     disabled={disabled}
                     placeholder={placeholder}
                     autoComplete="off"
-                    className={`h-11 w-full rounded-lg border border-slate-300 bg-white ps-12 pe-12 text-sm leading-none text-slate-900 outline-none transition-colors focus:border-accent-400 focus:ring-2 focus:ring-accent-200 disabled:cursor-not-allowed disabled:opacity-60 ${inputClassName}`.trim()}
+                    className={`h-11 w-full rounded-lg border border-slate-300 bg-white ps-12 pe-12 text-sm leading-5 text-slate-900 outline-none transition-colors focus:border-accent-400 focus:ring-2 focus:ring-accent-200 disabled:cursor-not-allowed disabled:opacity-60 ${inputClassName}`.trim()}
                     role="combobox"
                     aria-expanded={isOpen}
                     aria-controls={listboxId}
@@ -200,8 +200,8 @@ export const ProfileCountryRegionSelect: React.FC<ProfileCountryRegionSelectProp
                                         index === activeIndex ? 'bg-accent-50 text-accent-900' : 'text-slate-700 hover:bg-slate-50'
                                     }`}
                                 >
-                                    <span className="inline-flex items-center gap-2 leading-none">
-                                        <FlagIcon code={country.code} size="sm" fallback={null} className="shrink-0 translate-y-px" />
+                                    <span className="inline-flex items-center gap-2">
+                                        <FlagIcon code={country.code} size="sm" fallback={null} className="shrink-0" />
                                         <span>{country.name}</span>
                                     </span>
                                     {country.code === value && (

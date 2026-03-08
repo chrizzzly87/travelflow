@@ -1243,8 +1243,15 @@ export const adminExportAuditReplay = async (
 };
 
 export const adminReconcilePaddleSubscriptions = async (
-    maxSubscriptions = 200,
+    optionsOrMaxSubscriptions: number | {
+        maxSubscriptions?: number;
+        subscriptionId?: string | null;
+    } = {},
 ): Promise<AdminBillingPaddleReconcileResult> => {
+    const options = typeof optionsOrMaxSubscriptions === 'number'
+        ? { maxSubscriptions: optionsOrMaxSubscriptions }
+        : optionsOrMaxSubscriptions;
+
     if (shouldUseAdminMockData()) {
         await new Promise((resolve) => setTimeout(resolve, 350));
         return {
@@ -1279,7 +1286,8 @@ export const adminReconcilePaddleSubscriptions = async (
         ok: boolean;
         data?: AdminBillingPaddleReconcileResult;
     }>('/api/internal/admin/billing/paddle/reconcile', {
-        maxSubscriptions,
+        maxSubscriptions: options.maxSubscriptions ?? 200,
+        subscriptionId: options.subscriptionId ?? null,
     });
 
     if (!response?.data?.summary || !Array.isArray(response?.data?.results)) {

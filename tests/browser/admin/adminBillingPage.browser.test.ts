@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   adminListBillingWebhookEvents: vi.fn(),
   adminReconcilePaddleSubscriptions: vi.fn(),
   confirmDialog: vi.fn(),
+  promptDialog: vi.fn(),
   showAppToast: vi.fn(),
 }));
 
@@ -32,6 +33,7 @@ vi.mock('../../../components/admin/AdminReloadButton', () => ({
 vi.mock('../../../components/AppDialogProvider', () => ({
   useAppDialog: () => ({
     confirm: mocks.confirmDialog,
+    prompt: mocks.promptDialog,
   }),
 }));
 
@@ -129,6 +131,7 @@ describe('pages/AdminBillingPage', () => {
       results: [],
     });
     mocks.confirmDialog.mockResolvedValue(true);
+    mocks.promptDialog.mockResolvedValue('');
     mocks.showAppToast.mockReturnValue('toast-id');
   });
 
@@ -162,11 +165,35 @@ describe('pages/AdminBillingPage', () => {
     await userEvent.setup().click(screen.getByRole('button', { name: 'Reconcile Paddle' }));
 
     await waitFor(() => {
+      expect(mocks.promptDialog).toHaveBeenCalled();
       expect(mocks.confirmDialog).toHaveBeenCalled();
       expect(mocks.adminReconcilePaddleSubscriptions).toHaveBeenCalledTimes(1);
     });
 
     expect(screen.getByText('Latest Paddle reconciliation')).toBeInTheDocument();
     expect(screen.getByText(/Fetched 2 subscriptions and replayed 1 eligible records/i)).toBeInTheDocument();
+  });
+
+  it('passes a targeted subscription id into Paddle reconciliation when provided', async () => {
+    const { userEvent } = await import('@testing-library/user-event');
+    mocks.promptDialog.mockResolvedValue('sub_01kk6fcs5t4f75tddavgjx1rtz');
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(mocks.adminListBillingSubscriptions).toHaveBeenCalledTimes(1);
+      expect(mocks.adminListBillingWebhookEvents).toHaveBeenCalledTimes(1);
+    });
+
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Reconcile Paddle' }));
+
+    await waitFor(() => {
+      expect(mocks.adminReconcilePaddleSubscriptions).toHaveBeenCalledWith({
+        maxSubscriptions: 1,
+        subscriptionId: 'sub_01kk6fcs5t4f75tddavgjx1rtz',
+      });
+    });
+
+    expect(screen.getByText(/Fetched sub_01kk6fcs5t4f75tddavgjx1rtz and replayed it through the billing sync/i)).toBeInTheDocument();
   });
 });

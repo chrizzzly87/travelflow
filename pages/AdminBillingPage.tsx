@@ -88,7 +88,7 @@ const SUBSCRIPTIONS_CACHE_LIMIT = 250;
 const EVENTS_CACHE_LIMIT = 250;
 
 export const AdminBillingPage: React.FC = () => {
-    const { confirm: confirmDialog } = useAppDialog();
+    const { confirm: confirmDialog, prompt: promptDialog } = useAppDialog();
     const [searchParams, setSearchParams] = useSearchParams();
     const [searchValue, setSearchValue] = useState(() => searchParams.get('q') || '');
     const [dateRange, setDateRange] = useState<AdminDateRange>(() => {
@@ -104,6 +104,7 @@ export const AdminBillingPage: React.FC = () => {
     const [isReconciling, setIsReconciling] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [lastReconcileSummary, setLastReconcileSummary] = useState<AdminBillingPaddleReconcileSummary | null>(null);
+    const [lastReconcileSubscriptionId, setLastReconcileSubscriptionId] = useState<string | null>(null);
 
     useEffect(() => {
         const next = new URLSearchParams();
@@ -200,10 +201,36 @@ export const AdminBillingPage: React.FC = () => {
     );
 
     const handleReconcile = async () => {
+        const suggestedSubscriptionId = (() => {
+            const trimmedSearch = searchValue.trim();
+            return trimmedSearch.startsWith('sub_') ? trimmedSearch : '';
+        })();
+
+        const subscriptionInput = await promptDialog({
+            title: 'Optional Paddle subscription ID',
+            message: 'Leave this blank to scan recent Paddle subscriptions. Enter a specific sub_... ID when you want to repair one subscription without hitting Paddle list rate limits.',
+            label: 'Subscription ID',
+            placeholder: 'sub_01...',
+            defaultValue: suggestedSubscriptionId,
+            confirmLabel: 'Continue',
+            cancelLabel: 'Cancel',
+            validate: (value) => {
+                const trimmedValue = value.trim();
+                if (!trimmedValue) return null;
+                return /^sub_[a-z0-9]+$/i.test(trimmedValue)
+                    ? null
+                    : 'Use a Paddle subscription ID that starts with sub_.';
+            },
+        });
+        if (subscriptionInput === null) return;
+
+        const subscriptionId = subscriptionInput.trim() || null;
         const confirmed = await confirmDialog({
-            title: 'Reconcile Paddle subscriptions',
-            message: 'This fetches configured Paddle subscriptions, replays them through the billing sync, and reapplies local subscription state for matched TravelFlow users.',
-            confirmLabel: 'Run reconcile',
+            title: subscriptionId ? 'Reconcile Paddle subscription' : 'Reconcile Paddle subscriptions',
+            message: subscriptionId
+                ? `This fetches ${subscriptionId} from Paddle, replays it through the billing sync, and reapplies the local subscription state for the matched TravelFlow user.`
+                : 'This fetches configured Paddle subscriptions, replays them through the billing sync, and reapplies local subscription state for matched TravelFlow users.',
+            confirmLabel: subscriptionId ? 'Reconcile subscription' : 'Run reconcile',
             cancelLabel: 'Cancel',
         });
         if (!confirmed) return;
@@ -211,20 +238,28 @@ export const AdminBillingPage: React.FC = () => {
         setIsReconciling(true);
         const loadingToastId = showAppToast({
             tone: 'loading',
-            title: 'Reconciling Paddle subscriptions',
-            description: 'Fetching Paddle subscriptions and replaying them through the billing sync.',
+            title: subscriptionId ? 'Reconciling Paddle subscription' : 'Reconciling Paddle subscriptions',
+            description: subscriptionId
+                ? `Fetching ${subscriptionId} and replaying it through the billing sync.`
+                : 'Fetching Paddle subscriptions and replaying them through the billing sync.',
         });
 
         try {
-            const result = await adminReconcilePaddleSubscriptions();
+            const result = await adminReconcilePaddleSubscriptions({
+                maxSubscriptions: subscriptionId ? 1 : SUBSCRIPTIONS_CACHE_LIMIT,
+                subscriptionId,
+            });
             setLastReconcileSummary(result.summary);
+            setLastReconcileSubscriptionId(subscriptionId);
             await loadData();
 
             showAppToast({
                 id: loadingToastId,
                 tone: result.summary.failed > 0 || result.summary.unresolved > 0 ? 'warning' : 'success',
                 title: 'Paddle reconciliation finished',
-                description: `Fetched ${result.summary.fetched}, replayed ${result.summary.eligible}, processed ${result.summary.processed}, duplicates ${result.summary.duplicates}, unresolved ${result.summary.unresolved}.`,
+                description: subscriptionId
+                    ? `Fetched ${subscriptionId}, processed ${result.summary.processed}, duplicates ${result.summary.duplicates}, unresolved ${result.summary.unresolved}.`
+                    : `Fetched ${result.summary.fetched}, replayed ${result.summary.eligible}, processed ${result.summary.processed}, duplicates ${result.summary.duplicates}, unresolved ${result.summary.unresolved}.`,
             });
         } catch (error) {
             const message = error instanceof Error ? error.message : 'Could not reconcile Paddle subscriptions.';
@@ -278,7 +313,9 @@ export const AdminBillingPage: React.FC = () => {
                         <div>
                             <p className="font-semibold text-slate-900">Latest Paddle reconciliation</p>
                             <p className="mt-1 text-slate-600">
-                                Fetched {lastReconcileSummary.fetched} subscriptions and replayed {lastReconcileSummary.eligible} eligible records through the billing sync.
+                                {lastReconcileSubscriptionId
+                                    ? `Fetched ${lastReconcileSubscriptionId} and replayed it through the billing sync.`
+                                    : `Fetched ${lastReconcileSummary.fetched} subscriptions and replayed ${lastReconcileSummary.eligible} eligible records through the billing sync.`}
                             </p>
                         </div>
                         <div className="flex flex-wrap gap-2 text-xs font-semibold text-slate-700">

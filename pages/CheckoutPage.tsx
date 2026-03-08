@@ -8,7 +8,6 @@ import { SiteFooter } from '../components/marketing/SiteFooter';
 import { ProfileCountryRegionSelect } from '../components/profile/ProfileCountryRegionSelect';
 import { Checkbox } from '../components/ui/checkbox';
 import { showAppToast } from '../components/ui/appToast';
-import { Tabs, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { PLAN_CATALOG } from '../config/planCatalog';
 import { DEFAULT_LOCALE, normalizeLocale } from '../config/locales';
 import { buildLocalizedMarketingPath, buildPath } from '../config/routes';
@@ -987,34 +986,34 @@ export const CheckoutPage: React.FC = () => {
                             <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
                                 <section className="space-y-4">
                                 <p className={checkoutSectionLabelClassName}>{t('checkout.planSummaryTitle', { ns: 'pricing' })}</p>
-                                <Tabs
-                                    value={selectedTierKey}
-                                    onValueChange={(value) => {
-                                        if (!isPaidTierKey(value)) return;
-                                        handlePlanChange(value);
-                                    }}
-                                >
-                                    <TabsList
-                                        variant="line"
-                                        className="w-full justify-start gap-8 rounded-none border-b border-slate-200 p-0"
-                                    >
+                                <div className="border-b border-slate-200">
+                                    <div className="-mb-px flex items-center gap-8">
                                         {PAID_TIER_ORDER.map((tierKey) => {
                                             const tier = PLAN_CATALOG[tierKey];
                                             const tierAvailable = isPaddleTierCheckoutConfigured(paddlePublicConfig, tierKey);
+                                            const isActive = tierKey === selectedTierKey;
                                             return (
-                                                <TabsTrigger
+                                                <button
                                                     key={tierKey}
-                                                    value={tierKey}
+                                                    type="button"
+                                                    onClick={() => handlePlanChange(tierKey)}
                                                     disabled={Boolean(paddlePublicConfig) && !tierAvailable}
-                                                    className="h-auto cursor-pointer rounded-none border-b-2 border-transparent px-0 pb-3 pt-0 text-sm font-semibold text-slate-400 after:hidden hover:text-slate-900 data-[state=active]:border-accent-600 data-[state=active]:text-accent-700 disabled:cursor-not-allowed disabled:text-slate-300"
+                                                    className={cn(
+                                                        'inline-flex h-11 cursor-pointer items-center border-b-2 px-0 pb-2 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed',
+                                                        isActive
+                                                            ? 'border-accent-600 text-accent-700'
+                                                            : 'border-transparent text-slate-400 hover:text-slate-900',
+                                                        Boolean(paddlePublicConfig) && !tierAvailable ? 'text-slate-300 hover:text-slate-300' : null,
+                                                    )}
+                                                    aria-pressed={isActive}
                                                     {...getAnalyticsDebugAttributes(`checkout__plan--${tier.publicSlug}`)}
                                                 >
                                                     {t(`tiers.${tier.publicSlug}.name`, { ns: 'pricing' })}
-                                                </TabsTrigger>
+                                                </button>
                                             );
                                         })}
-                                    </TabsList>
-                                </Tabs>
+                                    </div>
+                                </div>
 
                                 <div className="flex items-end justify-between gap-4 border-b border-slate-200 pb-5">
                                     <div>

@@ -13,9 +13,12 @@ const PADDLE_API_BASE_URL_SANDBOX = 'https://sandbox-api.paddle.com';
 const DEFAULT_MAX_SUBSCRIPTIONS = 200;
 const MAX_SUBSCRIPTIONS = 1000;
 const RECONCILE_STATUSES = new Set(['active', 'trialing', 'past_due', 'paused', 'canceled']);
+const RETRYABLE_STATUS_CODES = new Set([429, 500, 502, 503, 504]);
+const MAX_PADDLE_API_ATTEMPTS = 3;
 
 interface AdminReconcileRequestBody {
   maxSubscriptions?: number | null;
+  subscriptionId?: string | null;
 }
 
 interface PaddleListResponse<T> {
@@ -295,6 +298,12 @@ const asIsoString = (value: unknown): string | null => {
   return new Date(timestamp).toISOString();
 };
 
+const normalizeSubscriptionId = (value: unknown): string | null => {
+  const normalized = asTrimmedString(value);
+  if (!normalized) return null;
+  return normalized.slice(0, 120);
+};
+
 const getConfiguredPriceIds = (config: { priceMap: { tier_mid: string | null; tier_premium: string | null } }): string[] => {
   const ids = [config.priceMap.tier_mid, config.priceMap.tier_premium].filter((value): value is string => Boolean(value));
   return Array.from(new Set(ids));
@@ -350,6 +359,49 @@ const buildSyntheticEnvelope = (subscription: PaddleSubscription): { rawBody: st
   };
 };
 
+const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
+
+const parseRetryAfterMs = (response: Response): number | null => {
+  const raw = response.headers.get('retry-after')?.trim();
+  if (!raw) return null;
+
+  const seconds = Number.parseInt(raw, 10);
+  if (Number.isFinite(seconds) && seconds > 0) {
+    return seconds * 1000;
+  }
+
+  const retryAt = Date.parse(raw);
+  if (!Number.isFinite(retryAt)) return null;
+  const waitMs = retryAt - Date.now();
+  return waitMs > 0 ? waitMs : null;
+};
+
+const fetchPaddleJson = async (
+  url: string,
+  apiKey: string,
+): Promise<{ response: Response; payload: unknown }> => {
+  let attempt = 0;
+
+  while (true) {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+    });
+    const payload = await safeJsonParse(response);
+
+    if (!RETRYABLE_STATUS_CODES.has(response.status) || attempt >= MAX_PADDLE_API_ATTEMPTS - 1) {
+      return { response, payload };
+    }
+
+    const waitMs = parseRetryAfterMs(response) ?? (700 * (attempt + 1));
+    await sleep(waitMs);
+    attempt += 1;
+  }
+};
+
 const invokeWebhookSync = async (
   webhookSecret: string,
   rawBody: string,
@@ -395,31 +447,53 @@ const listPaddleSubscriptions = async (
   let nextUrl: string | null = `${baseUrl}/subscriptions?per_page=${Math.min(maxSubscriptions, 200)}`;
 
   while (nextUrl && rows.length < maxSubscriptions) {
-    const response = await fetch(nextUrl, {
-      method: 'GET',
-      headers: {
-        Accept: 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-      },
-    });
-
-    const payload = await safeJsonParse(response) as PaddleListResponse<PaddleSubscription> | null;
+    const { response, payload } = await fetchPaddleJson(nextUrl, apiKey);
+    const typedPayload = payload as PaddleListResponse<PaddleSubscription> | null;
     if (!response.ok) {
-      throw new Error(extractServiceError(payload, `Could not list Paddle subscriptions (${response.status}).`));
+      const fallback = response.status === 429
+        ? 'Could not list Paddle subscriptions (429). Paddle rate limited the broad reconcile. Retry shortly or reconcile a specific sub_... ID instead.'
+        : `Could not list Paddle subscriptions (${response.status}).`;
+      throw new Error(extractServiceError(typedPayload, fallback));
     }
 
-    const pageRows = Array.isArray(payload?.data) ? payload!.data! : [];
+    const pageRows = Array.isArray(typedPayload?.data) ? typedPayload!.data! : [];
     rows.push(...pageRows);
 
     if (rows.length >= maxSubscriptions) break;
 
-    const candidate = typeof payload?.meta?.pagination?.next === 'string'
-      ? payload.meta.pagination.next.trim()
+    const candidate = typeof typedPayload?.meta?.pagination?.next === 'string'
+      ? typedPayload.meta.pagination.next.trim()
       : '';
     nextUrl = candidate || null;
   }
 
   return rows.slice(0, maxSubscriptions);
+};
+
+const getPaddleSubscription = async (
+  apiKey: string,
+  baseUrl: string,
+  subscriptionId: string,
+): Promise<PaddleSubscription> => {
+  const { response, payload } = await fetchPaddleJson(
+    `${baseUrl}/subscriptions/${encodeURIComponent(subscriptionId)}`,
+    apiKey,
+  );
+  const typedPayload = payload as { data?: PaddleSubscription | null } | null;
+
+  if (!response.ok) {
+    const fallback = response.status === 429
+      ? `Could not load Paddle subscription ${subscriptionId} (429). Paddle rate limited the targeted reconcile. Retry shortly.`
+      : `Could not load Paddle subscription ${subscriptionId} (${response.status}).`;
+    throw new Error(extractServiceError(typedPayload, fallback));
+  }
+
+  const row = typedPayload?.data;
+  if (!row || typeof row !== 'object') {
+    throw new Error(`Paddle subscription ${subscriptionId} returned no data.`);
+  }
+
+  return row;
 };
 
 const writeAuditLog = async (
@@ -447,6 +521,7 @@ const writeAuditLog = async (
 
 export const __adminBillingPaddleReconcileInternals = {
   normalizeMaxSubscriptions,
+  normalizeSubscriptionId,
   buildSyntheticEventId,
   buildSyntheticEventType,
   buildSyntheticEnvelope,
@@ -493,13 +568,20 @@ export default async (request: Request): Promise<Response> => {
 
   try {
     const maxSubscriptions = normalizeMaxSubscriptions(body?.maxSubscriptions);
-    const subscriptions = await listPaddleSubscriptions(
-      paddleConfig.apiKey,
-      resolvePaddleApiBaseUrl(paddleConfig.environment),
-      maxSubscriptions,
-    );
+    const subscriptionId = normalizeSubscriptionId(body?.subscriptionId);
+    const baseUrl = resolvePaddleApiBaseUrl(paddleConfig.environment);
+    const configuredPriceIdSet = new Set(configuredPriceIds);
+    const subscriptions = subscriptionId
+      ? [await getPaddleSubscription(paddleConfig.apiKey, baseUrl, subscriptionId)]
+      : await listPaddleSubscriptions(
+          paddleConfig.apiKey,
+          baseUrl,
+          maxSubscriptions,
+        );
 
-    const eligibleSubscriptions = subscriptions.filter((subscription) => isEligibleSubscription(subscription, new Set(configuredPriceIds)));
+    const eligibleSubscriptions = subscriptionId
+      ? subscriptions
+      : subscriptions.filter((subscription) => isEligibleSubscription(subscription, configuredPriceIdSet));
 
     const summary: ReconcileSummary = {
       fetched: subscriptions.length,

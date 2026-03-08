@@ -44,4 +44,11 @@ describe('admin billing Paddle reconcile edge internals', () => {
     expect(__adminBillingPaddleReconcileInternals.buildSyntheticEventType('canceled')).toBe('subscription.canceled');
     expect(__adminBillingPaddleReconcileInternals.buildSyntheticEventType('past_due')).toBe('subscription.updated');
   });
+
+  it('normalizes targeted subscription ids from admin input', () => {
+    expect(__adminBillingPaddleReconcileInternals.normalizeSubscriptionId('  sub_01kk6fcs5t4f75tddavgjx1rtz  ')).toBe(
+      'sub_01kk6fcs5t4f75tddavgjx1rtz',
+    );
+    expect(__adminBillingPaddleReconcileInternals.normalizeSubscriptionId('')).toBeNull();
+  });
 });

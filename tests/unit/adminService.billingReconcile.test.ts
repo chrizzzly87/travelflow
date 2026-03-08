@@ -55,9 +55,53 @@ describe('services/adminService billing reconcile', () => {
         'Content-Type': 'application/json',
         Authorization: 'Bearer access-token-123',
       },
-      body: JSON.stringify({ maxSubscriptions: 120 }),
+      body: JSON.stringify({
+        maxSubscriptions: 120,
+        subscriptionId: null,
+      }),
     });
     expect(result.summary.processed).toBe(3);
     expect(result.summary.unresolved).toBe(1);
+  });
+
+  it('forwards an optional targeted Paddle subscription id to the internal reconcile API', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      text: async () => JSON.stringify({
+        ok: true,
+        data: {
+          summary: {
+            fetched: 1,
+            eligible: 1,
+            processed: 1,
+            ignored: 0,
+            duplicates: 0,
+            failed: 0,
+            resolvedUsers: 1,
+            unresolved: 0,
+          },
+          results: [],
+        },
+      }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { adminReconcilePaddleSubscriptions } = await import('../../services/adminService');
+    await adminReconcilePaddleSubscriptions({
+      maxSubscriptions: 1,
+      subscriptionId: 'sub_01kk6fcs5t4f75tddavgjx1rtz',
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/internal/admin/billing/paddle/reconcile', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer access-token-123',
+      },
+      body: JSON.stringify({
+        maxSubscriptions: 1,
+        subscriptionId: 'sub_01kk6fcs5t4f75tddavgjx1rtz',
+      }),
+    });
   });
 });
