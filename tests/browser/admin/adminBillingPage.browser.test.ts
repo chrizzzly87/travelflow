@@ -118,5 +118,6 @@ describe('pages/AdminBillingPage', () => {
     expect(screen.getByText('Signature mismatch')).toBeInTheDocument();
     expect(screen.getByText('Subscription status')).toBeInTheDocument();
     expect(screen.getByText('Webhook status')).toBeInTheDocument();
+    expect(screen.getByText('Payload JSON')).toBeInTheDocument();
   });
 });

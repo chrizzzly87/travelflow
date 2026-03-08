@@ -63,6 +63,15 @@ const humanizeStatus = (value: string | null | undefined): string => {
     return normalized.replace(/[_-]+/g, ' ');
 };
 
+const formatPayloadJson = (value: Record<string, unknown> | null | undefined): string => {
+    if (!value) return '';
+    try {
+        return JSON.stringify(value, null, 2);
+    } catch {
+        return '{}';
+    }
+};
+
 const statusPill = (value: string | null | undefined) => {
     const tone = resolveAdminBillingStatusTone(value);
     return [
@@ -418,6 +427,17 @@ export const AdminBillingPage: React.FC = () => {
                                             {record.user_id ? <CopyableUuid value={record.user_id} textClassName="text-xs text-slate-500" hintClassName="text-[10px]" /> : '—'}
                                         </div>
                                     </div>
+
+                                    {record.payload ? (
+                                        <details className="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                                            <summary className="cursor-pointer text-[11px] font-semibold uppercase tracking-wide text-slate-600">
+                                                Payload JSON
+                                            </summary>
+                                            <pre className="mt-3 max-h-56 overflow-auto rounded border border-slate-200 bg-slate-900 p-3 text-[10px] text-slate-100">
+                                                {formatPayloadJson(record.payload)}
+                                            </pre>
+                                        </details>
+                                    ) : null}
                                 </article>
                             ))}
                         </div>
