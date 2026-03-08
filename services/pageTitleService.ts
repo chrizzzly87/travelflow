@@ -6,6 +6,7 @@ export interface PageTitleLabels {
     updates: string;
     blog: string;
     pricing: string;
+    checkout: string;
     faq: string;
     contact: string;
     imprint: string;
@@ -89,6 +90,7 @@ export const resolvePageTitle = ({
         return blogTitle ? titleWithAppName(blogTitle, appName) : titleWithAppName(labels.blog, appName);
     }
     if (normalizedPath === '/pricing') return titleWithAppName(labels.pricing, appName);
+    if (normalizedPath === '/checkout') return titleWithAppName(labels.checkout, appName);
     if (normalizedPath === '/faq') return titleWithAppName(labels.faq, appName);
     if (normalizedPath === '/contact') return titleWithAppName(labels.contact, appName);
     if (normalizedPath === '/imprint') return titleWithAppName(labels.imprint, appName);

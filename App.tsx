@@ -588,6 +588,7 @@ const AppContent: React.FC = () => {
         updates: t('nav.updates', { ns: 'common' }),
         blog: t('nav.blog', { ns: 'common' }),
         pricing: t('nav.pricing', { ns: 'common' }),
+        checkout: t('checkout.eyebrow', { ns: 'pricing', defaultValue: 'Checkout' }),
         faq: t('faq.title', { ns: 'wip' }),
         contact: t('footer.contact', { ns: 'common' }),
         imprint: t('footer.imprint', { ns: 'common' }),

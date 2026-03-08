@@ -19,3 +19,4 @@ summary: "Completed the payment-provider spike and locked a MoR-first recommenda
 - [ ] [Internal] 🪪 Added browser-side Paddle.js initialization with a public client token so transaction checkout links can open correctly on the pricing page during sandbox and live testing.
 - [ ] [Internal] 🧭 Added Paddle environment diagnostics and public tier-availability bootstrapping so sandbox/live credential mismatches fail clearly and unconfigured paid tiers stay disabled on the pricing page.
 - [ ] [Internal] 🧭 Moved billing into a dedicated `/checkout` flow with branded plan review, profile enrichment, and trip-aware handoff metadata so pricing and locked-trip upgrades feed the same Paddle path.
+- [ ] [Internal] 🎨 Simplified the dedicated checkout route into a flatter, mobile-friendly review flow with cleaner section hierarchy, app-consistent styling, and a checkout-specific document title.

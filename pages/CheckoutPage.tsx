@@ -6,9 +6,7 @@ import {
     CreditCard,
     GlobeHemisphereWest,
     ShieldCheck,
-    Sparkle,
     SpinnerGap,
-    SuitcaseRolling,
 } from '@phosphor-icons/react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -51,6 +49,7 @@ import {
 } from '../services/paddleClient';
 import { updateCurrentUserProfile } from '../services/profileService';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
+import { cn } from '../lib/utils';
 import type { AppLanguage } from '../types';
 
 interface CheckoutProfileFormState {
@@ -89,6 +88,10 @@ const clampBio = (value: string): string => value.slice(0, 160);
 const asDisplayCount = (value: number | null, unlimitedLabel: string): string => value === null ? unlimitedLabel : String(value);
 const isSafeInternalPath = (value: string | null | undefined): value is string => Boolean(value && value.startsWith('/') && !value.startsWith('//'));
 const isPaidTierKey = (value: string | null | undefined): value is BillingCheckoutTierKey => value === 'tier_mid' || value === 'tier_premium';
+const checkoutInputClassName = 'h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 shadow-sm transition-colors placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60';
+const checkoutTextareaClassName = 'min-h-28 w-full rounded-md border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm transition-colors placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60';
+const checkoutSectionLabelClassName = 'text-xs font-semibold uppercase tracking-[0.14em] text-slate-500';
+const checkoutActionClassName = 'inline-flex h-11 items-center justify-center gap-2 rounded-md px-4 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60';
 
 export const CheckoutPage: React.FC = () => {
     const location = useLocation();
@@ -143,12 +146,10 @@ export const CheckoutPage: React.FC = () => {
     const isEligibleAccount = isAuthenticated && access?.isAnonymous !== true;
     const supportsSelectedTier = isPaddleTierCheckoutConfigured(paddlePublicConfig, selectedTierKey);
     const hasInlineCheckout = Boolean(checkoutLocationContext.transactionId);
-    const progressCount = useMemo(() => (
-        PROFILE_FIELD_PROGRESS_KEYS.filter((key) => {
-            const value = form[key];
-            return typeof value === 'string' ? Boolean(value.trim()) : Boolean(value);
-        }).length
-    ), [form]);
+    const progressCount = PROFILE_FIELD_PROGRESS_KEYS.filter((key) => {
+        const value = form[key];
+        return typeof value === 'string' ? Boolean(value.trim()) : Boolean(value);
+    }).length;
     const unlimitedLabel = t('shared.unlimited', { ns: 'pricing' });
     const noExpiryLabel = t('shared.noExpiry', { ns: 'pricing' });
     const enabledLabel = t('shared.enabled', { ns: 'pricing' });
@@ -374,182 +375,90 @@ export const CheckoutPage: React.FC = () => {
 
     const frameTitle = inlineCheckoutItemName || t(`tiers.${selectedTier.publicSlug}.name`, { ns: 'pricing' });
     const planFeatures = resolveTierFeatures(selectedTierKey);
-    const backLabel = source === 'trip_paywall_strip' || source === 'trip_paywall_overlay'
+    const fromTripCheckout = source === 'trip_paywall_strip' || source === 'trip_paywall_overlay';
+    const backLabel = fromTripCheckout
         ? t('checkout.backToTrip', { ns: 'pricing' })
         : t('checkout.backToPricing', { ns: 'pricing' });
 
     return (
-        <div className="flex min-h-screen flex-col bg-[radial-gradient(circle_at_top,_rgba(251,191,36,0.12),_transparent_30%),linear-gradient(180deg,#f8fafc_0%,#eef4ff_42%,#ffffff_100%)] text-slate-900">
+        <div className="flex min-h-screen flex-col bg-white text-slate-900">
             <SiteHeader hideCreateTrip />
-            <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col px-4 pb-14 pt-6 sm:px-6 lg:px-8 lg:pt-10">
-                <div className="flex flex-wrap items-center justify-between gap-3">
+            <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 pb-16 pt-8 sm:px-6 lg:px-8">
+                <div className="border-b border-slate-200 pb-4">
                     <Link
                         to={returnToPath}
-                        className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:text-slate-900"
-                        onClick={() => trackEvent(source === 'trip_paywall_strip' || source === 'trip_paywall_overlay' ? 'checkout__return--trip' : 'checkout__return--pricing', { tier: selectedTierKey })}
+                        className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 transition-colors hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
+                        onClick={() => trackEvent(fromTripCheckout ? 'checkout__return--trip' : 'checkout__return--pricing', { tier: selectedTierKey })}
                     >
                         <ArrowLeft size={14} weight="bold" />
                         {backLabel}
                     </Link>
-                    <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">
-                        <ShieldCheck size={14} weight="duotone" />
-                        {t('checkout.eyebrow', { ns: 'pricing' })}
-                    </div>
                 </div>
 
-                <section className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(360px,0.95fr)]">
-                    <div className="space-y-5">
-                        <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-white/90 shadow-[0_36px_90px_-58px_rgba(15,23,42,0.55)] backdrop-blur">
-                            <div className="border-b border-slate-200 bg-[linear-gradient(135deg,rgba(15,23,42,0.98)_0%,rgba(30,41,59,0.98)_46%,rgba(2,132,199,0.95)_100%)] px-5 py-6 text-white sm:px-7 sm:py-7">
-                                <div className="flex flex-wrap items-start justify-between gap-4">
-                                    <div className="max-w-2xl">
-                                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/65">
-                                            {source === 'trip_paywall_strip' || source === 'trip_paywall_overlay'
-                                                ? t('checkout.tripEntryDescription', { ns: 'pricing' })
-                                                : t('checkout.description', { ns: 'pricing' })}
-                                        </p>
-                                        <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl" style={{ fontFamily: 'var(--tf-font-heading)' }}>
-                                            {t('checkout.title', { ns: 'pricing' })}
-                                        </h1>
-                                        <p className="mt-3 max-w-2xl text-sm leading-6 text-white/78">
-                                            {t('checkout.summaryLead', {
-                                                ns: 'pricing',
-                                                tierName: t(`tiers.${selectedTier.publicSlug}.name`, { ns: 'pricing' }),
-                                            })}
-                                        </p>
-                                    </div>
-                                    <div className="rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-end shadow-inner shadow-black/5">
-                                        <div className="text-xs font-semibold uppercase tracking-[0.14em] text-white/65">{t(`tiers.${selectedTier.publicSlug}.badge`, { ns: 'pricing' })}</div>
-                                        <div className="mt-2 text-4xl font-black tracking-tight">${selectedTier.monthlyPriceUsd}</div>
-                                        <div className="text-sm font-medium text-white/70">{t('shared.perMonth', { ns: 'pricing' })}</div>
-                                    </div>
-                                </div>
-                                <div className="mt-6">
-                                    <Tabs value={selectedTierKey} onValueChange={handlePlanChange} className="gap-4">
-                                        <TabsList className="h-auto rounded-2xl bg-white/10 p-1.5 backdrop-blur">
-                                            {PAID_TIER_ORDER.map((tierKey) => {
-                                                const tier = PLAN_CATALOG[tierKey];
-                                                const tierAvailable = isPaddleTierCheckoutConfigured(paddlePublicConfig, tierKey);
-                                                return (
-                                                    <TabsTrigger
-                                                        key={tierKey}
-                                                        value={tierKey}
-                                                        disabled={Boolean(paddlePublicConfig) && !tierAvailable}
-                                                        className="rounded-xl px-4 py-2.5 text-sm data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm"
-                                                    >
-                                                        {t(`tiers.${tier.publicSlug}.name`, { ns: 'pricing' })}
-                                                    </TabsTrigger>
-                                                );
-                                            })}
-                                        </TabsList>
-                                    </Tabs>
-                                </div>
-                            </div>
+                <section className="mt-8 grid gap-10 lg:grid-cols-[minmax(0,1fr)_360px]">
+                    <div className="order-2 space-y-8 lg:order-1">
+                        <header className="border-b border-slate-200 pb-6">
+                            <p className={checkoutSectionLabelClassName}>
+                                {fromTripCheckout
+                                    ? t('checkout.tripEntryDescription', { ns: 'pricing' })
+                                    : t(`tiers.${selectedTier.publicSlug}.badge`, { ns: 'pricing' })}
+                            </p>
+                            <h1
+                                className="mt-3 text-3xl font-black tracking-tight text-slate-900 sm:text-[2.5rem]"
+                                style={{ fontFamily: 'var(--tf-font-heading)' }}
+                            >
+                                {t('checkout.eyebrow', { ns: 'pricing' })}
+                            </h1>
+                            <p className="mt-3 max-w-2xl text-base leading-7 text-slate-600">
+                                {t('checkout.summaryLead', {
+                                    ns: 'pricing',
+                                    tierName: t(`tiers.${selectedTier.publicSlug}.name`, { ns: 'pricing' }),
+                                })}
+                            </p>
+                        </header>
 
-                            <div className="grid gap-4 px-5 py-5 sm:px-7 sm:py-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(260px,0.75fr)]">
-                                <div>
-                                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{t('checkout.whatsIncluded', { ns: 'pricing' })}</p>
-                                    <ul className="mt-4 space-y-3">
-                                        {planFeatures.map((feature) => (
-                                            <li key={feature} className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-3 text-sm text-slate-700">
-                                                <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent-100 text-accent-700">
-                                                    <Check size={14} weight="bold" />
-                                                </span>
-                                                <span>{feature}</span>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-                                <div className="space-y-3">
-                                    <article className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
-                                        <div className="flex items-center gap-3">
-                                            <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-900 text-white">
-                                                <CreditCard size={18} weight="duotone" />
-                                            </span>
-                                            <div>
-                                                <p className="text-sm font-semibold text-slate-900">{t('checkout.planSummaryTitle', { ns: 'pricing' })}</p>
-                                                <p className="text-xs leading-5 text-slate-600">{t('checkout.planSummaryBilling', { ns: 'pricing' })}</p>
-                                            </div>
-                                        </div>
-                                    </article>
-                                    <article className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
-                                        <div className="flex items-center gap-3">
-                                            <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">
-                                                <ShieldCheck size={18} weight="duotone" />
-                                            </span>
-                                            <div>
-                                                <p className="text-sm font-semibold text-slate-900">{t('checkout.planSummaryMerchant', { ns: 'pricing' })}</p>
-                                                <p className="text-xs leading-5 text-slate-600">{t('checkout.planSummarySupport', { ns: 'pricing' })}</p>
-                                            </div>
-                                        </div>
-                                    </article>
-                                    <article className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
-                                        <div className="flex items-center gap-3">
-                                            <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
-                                                <SuitcaseRolling size={18} weight="duotone" />
-                                            </span>
-                                            <div>
-                                                <p className="text-sm font-semibold text-slate-900">{t('checkout.profileSaveTitle', { ns: 'pricing' })}</p>
-                                                <p className="text-xs leading-5 text-slate-600">{t('checkout.profileSaveDescription', { ns: 'pricing' })}</p>
-                                            </div>
-                                        </div>
-                                    </article>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="space-y-5">
                         {paddlePublicConfig?.issues.length ? (
-                            <div className="rounded-[24px] border border-rose-200 bg-rose-50 px-5 py-4 text-sm text-rose-900 shadow-sm">
+                            <div className="border-s-4 border-rose-500 bg-rose-50 px-4 py-3 text-sm text-rose-900">
                                 <p className="font-semibold">{t('checkout.errorTitle', { ns: 'pricing' })}</p>
                                 <p className="mt-1">{t('checkout.errorConfig', { ns: 'pricing' })}</p>
                             </div>
                         ) : null}
 
                         {!isEligibleAccount && !hasInlineCheckout ? (
-                            <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_30px_80px_-55px_rgba(15,23,42,0.5)]">
-                                <div className="border-b border-slate-200 px-5 py-5 sm:px-6">
-                                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{t('benefits.title', { ns: 'auth' })}</p>
-                                    <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900">{t('checkout.loginTitle', { ns: 'pricing' })}</h2>
-                                    <p className="mt-2 text-sm leading-6 text-slate-600">{t('checkout.loginDescription', { ns: 'pricing' })}</p>
+                            <section className="space-y-5 border-b border-slate-200 pb-8">
+                                <div className="space-y-2">
+                                    <p className={checkoutSectionLabelClassName}>{t('benefits.title', { ns: 'auth' })}</p>
+                                    <h2 className="text-2xl font-semibold tracking-tight text-slate-900">{t('checkout.loginTitle', { ns: 'pricing' })}</h2>
+                                    <p className="text-sm leading-6 text-slate-600">{t('checkout.loginDescription', { ns: 'pricing' })}</p>
                                 </div>
-                                <div className="space-y-4 px-5 py-5 sm:px-6">
-                                    <ul className="space-y-2 text-sm text-slate-700">
+                                <ul className="divide-y divide-slate-200 border-y border-slate-200 text-sm text-slate-700">
                                         {(t('benefits.items', { ns: 'auth', returnObjects: true }) as string[]).map((item) => (
-                                            <li key={item} className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-                                                <span className="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-accent-100 text-accent-700">
-                                                    <Sparkle size={14} weight="duotone" />
-                                                </span>
-                                                <span>{item}</span>
+                                            <li key={item} className="flex items-start gap-3 py-3">
+                                                <Check size={16} weight="bold" className="mt-0.5 shrink-0 text-accent-600" />
+                                                <span className="leading-6">{item}</span>
                                             </li>
                                         ))}
                                     </ul>
                                     <NavLink
                                         to={loginTarget}
                                         onClick={() => trackEvent('checkout__account_gate--login', { tier: selectedTierKey, source, has_claim: Boolean(checkoutLocationContext.claimId) })}
-                                        className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 text-sm font-semibold text-white transition-colors hover:bg-slate-800"
+                                        className={cn(checkoutActionClassName, 'w-full bg-accent-600 text-white hover:bg-accent-700')}
                                         {...getAnalyticsDebugAttributes('checkout__account_gate--login')}
                                     >
                                         <GlobeHemisphereWest size={16} weight="duotone" />
                                         {t('checkout.loginCta', { ns: 'pricing' })}
                                     </NavLink>
-                                </div>
-                            </div>
+                            </section>
                         ) : hasInlineCheckout ? (
-                            <div
-                                ref={inlineCheckoutSectionRef}
-                                className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_36px_90px_-58px_rgba(15,23,42,0.55)]"
-                            >
-                                <div className="border-b border-slate-200 px-5 py-5 sm:px-6">
-                                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{t('checkout.paymentTitle', { ns: 'pricing' })}</p>
-                                    <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900">{frameTitle}</h2>
-                                    <p className="mt-2 text-sm leading-6 text-slate-600">{t('checkout.paymentDescription', { ns: 'pricing' })}</p>
+                            <section ref={inlineCheckoutSectionRef} className="space-y-5">
+                                <div className="space-y-2 border-b border-slate-200 pb-6">
+                                    <p className={checkoutSectionLabelClassName}>{t('checkout.paymentTitle', { ns: 'pricing' })}</p>
+                                    <h2 className="text-2xl font-semibold tracking-tight text-slate-900">{frameTitle}</h2>
+                                    <p className="text-sm leading-6 text-slate-600">{t('checkout.paymentDescription', { ns: 'pricing' })}</p>
                                 </div>
-                                <div className="bg-slate-50/70 p-3 sm:p-4">
-                                    <div className="relative overflow-hidden rounded-[24px] border border-slate-200 bg-white p-2 shadow-[0_18px_48px_-36px_rgba(15,23,42,0.5)]">
+                                <div className="relative overflow-hidden rounded-md border border-slate-200 bg-white">
                                         {isInlineCheckoutLoading ? (
-                                            <div className="pointer-events-none absolute inset-0 z-10 bg-white/90 backdrop-blur-sm">
+                                            <div className="pointer-events-none absolute inset-0 z-10 bg-white/95">
                                                 <div className="flex h-full flex-col gap-4 p-6">
                                                     <div className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700">
                                                         <SpinnerGap size={16} className="animate-spin" />
@@ -558,128 +467,128 @@ export const CheckoutPage: React.FC = () => {
                                                     <div className="h-14 w-full animate-pulse rounded-2xl bg-slate-100" />
                                                     <div className="h-14 w-full animate-pulse rounded-2xl bg-slate-100" />
                                                     <div className="h-48 w-full animate-pulse rounded-3xl bg-slate-100" />
-                                                    <div className="mt-auto h-12 w-full animate-pulse rounded-2xl bg-slate-200" />
+                                                    <div className="mt-auto h-12 w-full animate-pulse rounded-md bg-slate-200" />
                                                 </div>
                                             </div>
                                         ) : null}
                                         <div className={`${PADDLE_INLINE_FRAME_TARGET_CLASS} min-h-[680px] w-full`} />
-                                    </div>
                                 </div>
                                 {checkoutCompleted ? (
-                                    <div className="border-t border-emerald-200 bg-emerald-50 px-5 py-4 text-sm text-emerald-900 sm:px-6">
+                                    <div className="border-s-4 border-emerald-500 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
                                         <p className="font-semibold">{t('checkout.paymentCompletedTitle', { ns: 'pricing' })}</p>
                                         <p className="mt-1">{t('checkout.paymentCompletedDescription', { ns: 'pricing' })}</p>
                                     </div>
                                 ) : null}
-                            </div>
+                            </section>
                         ) : (
-                            <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_36px_90px_-58px_rgba(15,23,42,0.55)]">
-                                <div className="border-b border-slate-200 px-5 py-5 sm:px-6">
-                                    <div className="flex items-start justify-between gap-4">
-                                        <div>
-                                            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{t('checkout.travelerDetailsTitle', { ns: 'pricing' })}</p>
-                                            <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900">{t('checkout.travelerDetailsHeadline', { ns: 'pricing' })}</h2>
-                                            <p className="mt-2 text-sm leading-6 text-slate-600">{t('checkout.travelerDetailsDescription', { ns: 'pricing' })}</p>
-                                        </div>
-                                        <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-right">
-                                            <div className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{t('checkout.travelerDetailsProgressLabel', { ns: 'pricing' })}</div>
-                                            <div className="mt-1 text-lg font-black tracking-tight text-slate-900">{t('checkout.travelerDetailsProgress', { ns: 'pricing', count: progressCount, total: PROFILE_FIELD_PROGRESS_KEYS.length })}</div>
-                                        </div>
+                            <section className="space-y-8">
+                                <div className="flex flex-col gap-4 border-b border-slate-200 pb-6 sm:flex-row sm:items-start sm:justify-between">
+                                    <div className="space-y-2">
+                                        <p className={checkoutSectionLabelClassName}>{t('checkout.travelerDetailsTitle', { ns: 'pricing' })}</p>
+                                        <h2 className="text-2xl font-semibold tracking-tight text-slate-900">{t('checkout.travelerDetailsHeadline', { ns: 'pricing' })}</h2>
+                                        <p className="max-w-2xl text-sm leading-6 text-slate-600">{t('checkout.travelerDetailsDescription', { ns: 'pricing' })}</p>
+                                    </div>
+                                    <div className="sm:text-right">
+                                        <div className={checkoutSectionLabelClassName}>{t('checkout.travelerDetailsProgressLabel', { ns: 'pricing' })}</div>
+                                        <div className="mt-1 text-sm font-semibold text-slate-900">{t('checkout.travelerDetailsProgress', { ns: 'pricing', count: progressCount, total: PROFILE_FIELD_PROGRESS_KEYS.length })}</div>
                                     </div>
                                 </div>
-                                <div className="space-y-5 px-5 py-5 sm:px-6">
-                                    {errorMessage ? (
-                                        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
-                                            {errorMessage}
-                                        </div>
-                                    ) : null}
 
-                                    <div className="grid gap-4 sm:grid-cols-2">
-                                        <label className="space-y-1.5">
-                                            <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{t('settings.fields.firstName', { ns: 'profile' })}</span>
-                                            <input
-                                                value={form.firstName}
-                                                onChange={(event) => setField('firstName', event.target.value)}
-                                                className="h-11 w-full rounded-2xl border border-slate-300 px-3 text-sm outline-none transition-colors focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
-                                            />
-                                        </label>
-                                        <label className="space-y-1.5">
-                                            <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{t('settings.fields.lastName', { ns: 'profile' })}</span>
-                                            <input
-                                                value={form.lastName}
-                                                onChange={(event) => setField('lastName', event.target.value)}
-                                                className="h-11 w-full rounded-2xl border border-slate-300 px-3 text-sm outline-none transition-colors focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
-                                            />
-                                        </label>
+                                {errorMessage ? (
+                                    <div className="border-s-4 border-rose-500 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+                                        {errorMessage}
                                     </div>
+                                ) : null}
 
-                                    <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,0.88fr)]">
-                                        <div className="space-y-1.5">
-                                            <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{t('settings.fields.country', { ns: 'profile' })}</span>
-                                            <ProfileCountryRegionSelect
-                                                value={form.country}
-                                                locale={activeLocale}
-                                                disabled={isSubmitting || isProfileLoading}
-                                                inputClassName="h-11 rounded-2xl"
-                                                placeholder={t('settings.countryRegionSearchPlaceholder', { ns: 'profile' })}
-                                                emptyLabel={t('settings.countryRegionEmpty', { ns: 'profile' })}
-                                                toggleLabel={t('settings.countryRegionToggle', { ns: 'profile' })}
-                                                onValueChange={(nextCode) => setField('country', nextCode)}
-                                            />
+                                <div className="grid gap-6">
+                                    <section className="space-y-4">
+                                        <div className="grid gap-4 sm:grid-cols-2">
+                                            <label className="space-y-1.5">
+                                                <span className={checkoutSectionLabelClassName}>{t('settings.fields.firstName', { ns: 'profile' })}</span>
+                                                <input
+                                                    value={form.firstName}
+                                                    onChange={(event) => setField('firstName', event.target.value)}
+                                                    className={checkoutInputClassName}
+                                                />
+                                            </label>
+                                            <label className="space-y-1.5">
+                                                <span className={checkoutSectionLabelClassName}>{t('settings.fields.lastName', { ns: 'profile' })}</span>
+                                                <input
+                                                    value={form.lastName}
+                                                    onChange={(event) => setField('lastName', event.target.value)}
+                                                    className={checkoutInputClassName}
+                                                />
+                                            </label>
                                         </div>
+
+                                        <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,0.88fr)]">
+                                            <div className="space-y-1.5">
+                                                <span className={checkoutSectionLabelClassName}>{t('settings.fields.country', { ns: 'profile' })}</span>
+                                                <ProfileCountryRegionSelect
+                                                    value={form.country}
+                                                    locale={activeLocale}
+                                                    disabled={isSubmitting || isProfileLoading}
+                                                    inputClassName="h-10 rounded-md"
+                                                    placeholder={t('settings.countryRegionSearchPlaceholder', { ns: 'profile' })}
+                                                    emptyLabel={t('settings.countryRegionEmpty', { ns: 'profile' })}
+                                                    toggleLabel={t('settings.countryRegionToggle', { ns: 'profile' })}
+                                                    onValueChange={(nextCode) => setField('country', nextCode)}
+                                                />
+                                            </div>
+                                            <label className="space-y-1.5">
+                                                <span className={checkoutSectionLabelClassName}>{t('settings.fields.city', { ns: 'profile' })}</span>
+                                                <input
+                                                    value={form.city}
+                                                    onChange={(event) => setField('city', event.target.value)}
+                                                    className={checkoutInputClassName}
+                                                />
+                                            </label>
+                                        </div>
+
                                         <label className="space-y-1.5">
-                                            <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{t('settings.fields.city', { ns: 'profile' })}</span>
-                                            <input
-                                                value={form.city}
-                                                onChange={(event) => setField('city', event.target.value)}
-                                                className="h-11 w-full rounded-2xl border border-slate-300 px-3 text-sm outline-none transition-colors focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
-                                            />
+                                            <span className={checkoutSectionLabelClassName}>{t('settings.fields.preferredLanguage', { ns: 'profile' })}</span>
+                                            <Select
+                                                value={form.preferredLanguage}
+                                                onValueChange={(value) => setField('preferredLanguage', value as AppLanguage)}
+                                            >
+                                                <SelectTrigger className="h-10 w-full rounded-md border-slate-300 text-sm focus:border-accent-400 focus:ring-accent-200">
+                                                    <span className="inline-flex items-center gap-2">
+                                                        <FlagIcon code={LOCALE_FLAGS[form.preferredLanguage]} size="sm" className="shrink-0" />
+                                                        <span>{LOCALE_LABELS[form.preferredLanguage]}</span>
+                                                    </span>
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {LOCALE_DROPDOWN_ORDER.map((locale) => (
+                                                        <SelectItem key={`checkout-language-${locale}`} value={locale} textValue={LOCALE_LABELS[locale]}>
+                                                            <span className="inline-flex items-center gap-2">
+                                                                <FlagIcon code={LOCALE_FLAGS[locale]} size="sm" className="shrink-0" />
+                                                                <span>{LOCALE_LABELS[locale]}</span>
+                                                            </span>
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
                                         </label>
-                                    </div>
 
-                                    <label className="space-y-1.5">
-                                        <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{t('settings.fields.preferredLanguage', { ns: 'profile' })}</span>
-                                        <Select
-                                            value={form.preferredLanguage}
-                                            onValueChange={(value) => setField('preferredLanguage', value as AppLanguage)}
-                                        >
-                                            <SelectTrigger className="h-11 w-full rounded-2xl border-slate-300 text-sm focus:border-accent-400 focus:ring-accent-200">
-                                                <span className="inline-flex items-center gap-2">
-                                                    <FlagIcon code={LOCALE_FLAGS[form.preferredLanguage]} size="sm" className="shrink-0" />
-                                                    <span>{LOCALE_LABELS[form.preferredLanguage]}</span>
-                                                </span>
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {LOCALE_DROPDOWN_ORDER.map((locale) => (
-                                                    <SelectItem key={`checkout-language-${locale}`} value={locale} textValue={LOCALE_LABELS[locale]}>
-                                                        <span className="inline-flex items-center gap-2">
-                                                            <FlagIcon code={LOCALE_FLAGS[locale]} size="sm" className="shrink-0" />
-                                                            <span>{LOCALE_LABELS[locale]}</span>
-                                                        </span>
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </label>
+                                        <label className="space-y-1.5">
+                                            <span className={checkoutSectionLabelClassName}>{t('settings.fields.bio', { ns: 'profile' })}</span>
+                                            <textarea
+                                                value={form.bio}
+                                                onChange={(event) => setField('bio', clampBio(event.target.value))}
+                                                rows={4}
+                                                maxLength={160}
+                                                className={checkoutTextareaClassName}
+                                            />
+                                            <div className="flex items-center justify-between gap-3 text-xs text-slate-500">
+                                                <span>{t('settings.bioHelp', { ns: 'profile' })}</span>
+                                                <span>{form.bio.length}/160</span>
+                                            </div>
+                                        </label>
+                                    </section>
 
-                                    <label className="space-y-1.5">
-                                        <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{t('settings.fields.bio', { ns: 'profile' })}</span>
-                                        <textarea
-                                            value={form.bio}
-                                            onChange={(event) => setField('bio', clampBio(event.target.value))}
-                                            rows={4}
-                                            maxLength={160}
-                                            className="w-full rounded-[22px] border border-slate-300 px-3 py-3 text-sm outline-none transition-colors focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
-                                        />
-                                        <div className="flex items-center justify-between gap-3 text-xs text-slate-500">
-                                            <span>{t('settings.bioHelp', { ns: 'profile' })}</span>
-                                            <span>{form.bio.length}/160</span>
-                                        </div>
-                                    </label>
-
-                                    <div className="grid gap-3 sm:grid-cols-2">
-                                        <article className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
-                                            <div className="flex items-center justify-between gap-4">
+                                    <section className="border-t border-slate-200 pt-6">
+                                        <div className="space-y-4">
+                                            <div className="flex items-start justify-between gap-4 border-b border-slate-200 py-3">
                                                 <div>
                                                     <p className="text-sm font-semibold text-slate-900">{t('settings.publicProfileToggleTitle', { ns: 'profile' })}</p>
                                                     <p className="mt-1 text-xs leading-5 text-slate-600">{t('settings.publicProfileToggleDescription', { ns: 'profile' })}</p>
@@ -690,9 +599,7 @@ export const CheckoutPage: React.FC = () => {
                                                     aria-label={t('settings.publicProfileToggleTitle', { ns: 'profile' })}
                                                 />
                                             </div>
-                                        </article>
-                                        <article className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
-                                            <div className="flex items-center justify-between gap-4">
+                                            <div className="flex items-start justify-between gap-4 border-b border-slate-200 py-3">
                                                 <div>
                                                     <p className="text-sm font-semibold text-slate-900">{t('settings.defaultVisibilityToggleTitle', { ns: 'profile' })}</p>
                                                     <p className="mt-1 text-xs leading-5 text-slate-600">{t('settings.defaultVisibilityToggleDescription', { ns: 'profile' })}</p>
@@ -703,38 +610,110 @@ export const CheckoutPage: React.FC = () => {
                                                     aria-label={t('settings.defaultVisibilityToggleTitle', { ns: 'profile' })}
                                                 />
                                             </div>
-                                        </article>
-                                    </div>
+                                        </div>
+                                    </section>
 
-                                    <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+                                    <div className="border-t border-slate-200 pt-6">
+                                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                         <div className="min-w-0">
                                             <p className="text-sm font-semibold text-slate-900">{t('checkout.profileSettingsTitle', { ns: 'pricing' })}</p>
                                             <p className="mt-1 text-xs leading-5 text-slate-600">{t('checkout.profileSettingsDescription', { ns: 'pricing' })}</p>
                                         </div>
                                         <NavLink
                                             to={buildPath('profileSettings')}
-                                            className="inline-flex items-center gap-2 text-sm font-semibold text-accent-700 transition-colors hover:text-accent-800"
+                                            className="inline-flex items-center gap-2 text-sm font-semibold text-accent-700 transition-colors hover:text-accent-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
                                             onClick={() => trackEvent('checkout__profile_settings--open', { tier: selectedTierKey, source })}
                                         >
                                             {t('checkout.profileSettingsLink', { ns: 'pricing' })}
                                             <ArrowRight size={14} weight="bold" />
                                         </NavLink>
                                     </div>
+                                    </div>
 
-                                    <button
-                                        type="button"
-                                        disabled={isSubmitting || !hasHydratedForm || isAuthLoading || isProfileLoading || !supportsSelectedTier}
-                                        onClick={() => void handleContinueToPayment()}
-                                        className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 text-sm font-semibold text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-                                        {...getAnalyticsDebugAttributes('checkout__payment--start')}
-                                    >
-                                        {isSubmitting ? <SpinnerGap size={18} className="animate-spin" /> : <CreditCard size={18} weight="duotone" />}
-                                        {t('checkout.continueToPayment', { ns: 'pricing' })}
-                                    </button>
+                                    <div className="border-t border-slate-200 pt-6">
+                                        <button
+                                            type="button"
+                                            disabled={isSubmitting || !hasHydratedForm || isAuthLoading || isProfileLoading || !supportsSelectedTier}
+                                            onClick={() => void handleContinueToPayment()}
+                                            className={cn(checkoutActionClassName, 'w-full bg-accent-600 text-white hover:bg-accent-700')}
+                                            {...getAnalyticsDebugAttributes('checkout__payment--start')}
+                                        >
+                                            {isSubmitting ? <SpinnerGap size={18} className="animate-spin" /> : <CreditCard size={18} weight="duotone" />}
+                                            {t('checkout.continueToPayment', { ns: 'pricing' })}
+                                        </button>
+                                        <p className="mt-3 text-xs leading-5 text-slate-500">{t('checkout.planSummaryBilling', { ns: 'pricing' })}</p>
+                                    </div>
                                 </div>
-                            </div>
+                            </section>
                         )}
                     </div>
+
+                    <aside className="order-1 border-b border-slate-200 pb-8 lg:order-2 lg:border-b-0 lg:border-s lg:pb-0 lg:ps-10">
+                        <div className="space-y-6 lg:sticky lg:top-24">
+                            <div className="border-b border-slate-200 pb-6">
+                                <p className={checkoutSectionLabelClassName}>{t('checkout.planSummaryTitle', { ns: 'pricing' })}</p>
+                                <Tabs value={selectedTierKey} onValueChange={handlePlanChange} className="mt-3 gap-4">
+                                    <TabsList variant="line" className="h-auto w-full justify-start gap-2 p-0">
+                                        {PAID_TIER_ORDER.map((tierKey) => {
+                                            const tier = PLAN_CATALOG[tierKey];
+                                            const tierAvailable = isPaddleTierCheckoutConfigured(paddlePublicConfig, tierKey);
+                                            return (
+                                                <TabsTrigger
+                                                    key={tierKey}
+                                                    value={tierKey}
+                                                    disabled={Boolean(paddlePublicConfig) && !tierAvailable}
+                                                    className="h-10 rounded-md border border-slate-200 px-4 text-sm data-[state=active]:border-slate-300 data-[state=active]:bg-slate-100"
+                                                >
+                                                    {t(`tiers.${tier.publicSlug}.name`, { ns: 'pricing' })}
+                                                </TabsTrigger>
+                                            );
+                                        })}
+                                    </TabsList>
+                                </Tabs>
+                            </div>
+
+                            <div className="space-y-4 border-b border-slate-200 pb-6">
+                                <div className="flex items-end justify-between gap-4">
+                                    <div>
+                                        <p className={checkoutSectionLabelClassName}>{t(`tiers.${selectedTier.publicSlug}.badge`, { ns: 'pricing' })}</p>
+                                        <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">{t(`tiers.${selectedTier.publicSlug}.name`, { ns: 'pricing' })}</h2>
+                                    </div>
+                                    <div className="text-right">
+                                        <div className="text-3xl font-black tracking-tight text-slate-900">${selectedTier.monthlyPriceUsd}</div>
+                                        <div className="text-sm text-slate-500">{t('shared.perMonth', { ns: 'pricing' })}</div>
+                                    </div>
+                                </div>
+                                <ul className="space-y-3 text-sm leading-6 text-slate-600">
+                                    <li className="flex items-start gap-3">
+                                        <ShieldCheck size={16} weight="duotone" className="mt-1 shrink-0 text-accent-600" />
+                                        <span>{t('checkout.planSummaryBilling', { ns: 'pricing' })}</span>
+                                    </li>
+                                    <li className="flex items-start gap-3">
+                                        <Check size={16} weight="bold" className="mt-1 shrink-0 text-accent-600" />
+                                        <span>{t('checkout.profileSaveDescription', { ns: 'pricing' })}</span>
+                                    </li>
+                                    {fromTripCheckout ? (
+                                        <li className="flex items-start gap-3">
+                                            <ArrowLeft size={16} weight="bold" className="mt-1 shrink-0 text-accent-600" />
+                                            <span>{backLabel}</span>
+                                        </li>
+                                    ) : null}
+                                </ul>
+                            </div>
+
+                            <div>
+                                <p className={checkoutSectionLabelClassName}>{t('checkout.whatsIncluded', { ns: 'pricing' })}</p>
+                                <ul className="mt-4 space-y-3">
+                                    {planFeatures.map((feature) => (
+                                        <li key={feature} className="flex items-start gap-3 text-sm leading-6 text-slate-700">
+                                            <Check size={16} weight="bold" className="mt-1 shrink-0 text-accent-600" />
+                                            <span>{feature}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </div>
+                    </aside>
                 </section>
             </main>
             <SiteFooter />
