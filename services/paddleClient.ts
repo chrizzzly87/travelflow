@@ -114,6 +114,9 @@ export interface PaddlePublicConfig {
     environment: PaddleClientEnvironment;
     checkoutEnabled: boolean;
     clientTokenConfigured: boolean;
+    webhookSecretConfigured: boolean;
+    supabaseSyncConfigured: boolean;
+    webhookSyncMode: 'full' | 'verify_only';
     tierAvailability: {
         tier_mid: boolean;
         tier_premium: boolean;
@@ -168,6 +171,9 @@ const parsePaddlePublicConfig = (payload: unknown): PaddlePublicConfig | null =>
         environment?: unknown;
         checkoutEnabled?: unknown;
         clientTokenConfigured?: unknown;
+        webhookSecretConfigured?: unknown;
+        supabaseSyncConfigured?: unknown;
+        webhookSyncMode?: unknown;
         tierAvailability?: unknown;
         issues?: unknown;
     };
@@ -196,6 +202,9 @@ const parsePaddlePublicConfig = (payload: unknown): PaddlePublicConfig | null =>
         environment: normalizePaddleEnvironment(data.environment),
         checkoutEnabled: asBoolean(data.checkoutEnabled),
         clientTokenConfigured: asBoolean(data.clientTokenConfigured),
+        webhookSecretConfigured: asBoolean(data.webhookSecretConfigured),
+        supabaseSyncConfigured: asBoolean(data.supabaseSyncConfigured),
+        webhookSyncMode: data.webhookSyncMode === 'verify_only' ? 'verify_only' : 'full',
         tierAvailability: {
             tier_mid: asBoolean(tierAvailability?.tier_mid),
             tier_premium: asBoolean(tierAvailability?.tier_premium),
@@ -286,6 +295,20 @@ export const appendPaddleCheckoutContext = (
 export const navigateToPaddleCheckout = (checkoutUrl: string): void => {
     if (!isBrowser()) return;
     window.location.assign(checkoutUrl);
+};
+
+export const resolveSameOriginPaddleCheckoutPath = (checkoutUrl: string): string | null => {
+    if (!isBrowser()) return null;
+    const trimmedUrl = checkoutUrl.trim();
+    if (!trimmedUrl) return null;
+
+    try {
+        const parsed = new URL(trimmedUrl, window.location.origin);
+        if (parsed.origin !== window.location.origin) return null;
+        return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+    } catch {
+        return null;
+    }
 };
 
 export const extractPaddleCheckoutItemName = (event: PaddleCheckoutEvent | null | undefined): string | null => {
@@ -391,6 +414,7 @@ export const __paddleClientInternals = {
     parsePaddlePublicConfig,
     readPaddleClientToken,
     readPaddleCheckoutLocationContext,
+    resolveSameOriginPaddleCheckoutPath,
     resolvePaddleCheckoutLocale,
     resetForTest: () => {
         paddleScriptPromise = null;

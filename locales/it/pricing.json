@@ -78,8 +78,8 @@
     "paymentTitle": "Pagamento sicuro",
     "paymentDescription": "Completa il pagamento qui sotto. Il resto del flusso rimane in questa pagina di checkout dedicata.",
     "loading": "Caricamento del checkout sicuro...",
-    "paymentCompletedTitle": "Pagamento inviato",
-    "paymentCompletedDescription": "Paddle ha segnalato il completamento del checkout. La sincronizzazione dell'abbonamento continua tramite webhook.",
+    "paymentCompletedTitle": "Pagamento completato",
+    "paymentCompletedDescription": "Paddle ha confermato il checkout. La sincronizzazione dell’abbonamento continua in background.",
     "travelerDetailsTitle": "Dati del viaggiatore",
     "travelerDetailsHeadline": "Salva i dati del profilo che vuoi mantenere",
     "travelerDetailsDescription": "Questi dati restano nel tuo account TravelFlow. Le informazioni fiscali e di fatturazione restano in Paddle.",
@@ -100,6 +100,16 @@
     "accountDescription": "Accedi o crea un account per collegare l’abbonamento a un vero profilo TravelFlow.",
     "accountReadyDescription": "Questo account riceverà l’abbonamento.",
     "detailsLocked": "Continua dopo il passaggio account.",
-    "paymentLocked": "Continua dopo i dati del viaggiatore."
+    "paymentLocked": "Continua dopo i dati del viaggiatore.",
+    "refreshPayment": "Ricarica il pagamento sicuro",
+    "successEyebrow": "Pagamento completato",
+    "successDescription": "Il tuo piano ora è collegato a questo account. Continua con il prossimo passo davvero utile.",
+    "successClaimProcessing": "Stiamo avviando il tuo viaggio in background.",
+    "successClaimNeedsAttention": "Il passaggio del viaggio richiede attenzione",
+    "successClaimError": "Il pagamento è andato a buon fine, ma il viaggio salvato non è potuto partire automaticamente.",
+    "successOpenTrip": "Apri il tuo viaggio",
+    "successReturnToTrip": "Torna al viaggio",
+    "successCreateTrip": "Crea un viaggio",
+    "successOpenProfile": "Apri profilo"
   }
 }

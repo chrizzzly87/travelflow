@@ -78,8 +78,8 @@
     "paymentTitle": "محفوظ ادائیگی",
     "paymentDescription": "نیچے ادائیگی مکمل کریں۔ باقی فلو اسی مخصوص چیک آؤٹ صفحے پر رہتا ہے۔",
     "loading": "محفوظ چیک آؤٹ لوڈ ہو رہا ہے...",
-    "paymentCompletedTitle": "ادائیگی جمع ہو گئی",
-    "paymentCompletedDescription": "Paddle نے چیک آؤٹ مکمل ہونے کی اطلاع دی ہے۔ سبسکرپشن کی ہم آہنگی ویب ہک کے ذریعے جاری ہے۔",
+    "paymentCompletedTitle": "Payment complete",
+    "paymentCompletedDescription": "Paddle confirmed your checkout. Subscription sync continues in the background.",
     "travelerDetailsTitle": "مسافر کی تفصیلات",
     "travelerDetailsHeadline": "وہ پروفائل معلومات محفوظ کریں جو آپ رکھنا چاہتے ہیں",
     "travelerDetailsDescription": "یہ معلومات آپ کے TravelFlow اکاؤنٹ میں رہتی ہیں۔ ٹیکس اور بلنگ کی معلومات Paddle میں رہتی ہیں۔",
@@ -100,6 +100,16 @@
     "accountDescription": "لاگ اِن کریں یا اکاؤنٹ بنائیں تاکہ سبسکرپشن ایک حقیقی TravelFlow پروفائل سے جڑ جائے۔",
     "accountReadyDescription": "سبسکرپشن اسی اکاؤنٹ پر جائے گی۔",
     "detailsLocked": "اکاؤنٹ مرحلے کے بعد آگے بڑھیں۔",
-    "paymentLocked": "مسافر کی معلومات کے بعد آگے بڑھیں۔"
+    "paymentLocked": "مسافر کی معلومات کے بعد آگے بڑھیں۔",
+    "refreshPayment": "Reload secure payment",
+    "successEyebrow": "Payment complete",
+    "successDescription": "Your plan is now linked to this account. Continue from the next step you actually need.",
+    "successClaimProcessing": "We’re starting your trip in the background.",
+    "successClaimNeedsAttention": "Trip handoff needs attention",
+    "successClaimError": "Your payment succeeded, but the saved trip could not be started automatically.",
+    "successOpenTrip": "Open your trip",
+    "successReturnToTrip": "Back to your trip",
+    "successCreateTrip": "Create a trip",
+    "successOpenProfile": "Open profile"
   }
 }

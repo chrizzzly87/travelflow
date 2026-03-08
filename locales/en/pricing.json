@@ -78,8 +78,8 @@
     "paymentTitle": "Secure payment",
     "paymentDescription": "Finish the payment below. We keep the rest of the flow on this dedicated checkout page.",
     "loading": "Loading secure checkout...",
-    "paymentCompletedTitle": "Payment submitted",
-    "paymentCompletedDescription": "Paddle reported checkout completion. Subscription sync continues through the webhook.",
+    "paymentCompletedTitle": "Payment complete",
+    "paymentCompletedDescription": "Paddle confirmed your checkout. Subscription sync continues in the background.",
     "travelerDetailsTitle": "Traveler details",
     "travelerDetailsHeadline": "Save the profile details you want to keep",
     "travelerDetailsDescription": "These details stay on your TravelFlow account. Billing-specific tax information stays inside Paddle.",
@@ -100,6 +100,16 @@
     "accountDescription": "Sign in or create your account to keep the subscription on a real TravelFlow profile.",
     "accountReadyDescription": "This account will receive the subscription.",
     "detailsLocked": "Continue after the account step.",
-    "paymentLocked": "Continue after traveler details."
+    "paymentLocked": "Continue after traveler details.",
+    "refreshPayment": "Reload secure payment",
+    "successEyebrow": "Payment complete",
+    "successDescription": "Your plan is now linked to this account. Continue from the next step you actually need.",
+    "successClaimProcessing": "We’re starting your trip in the background.",
+    "successClaimNeedsAttention": "Trip handoff needs attention",
+    "successClaimError": "Your payment succeeded, but the saved trip could not be started automatically.",
+    "successOpenTrip": "Open your trip",
+    "successReturnToTrip": "Back to your trip",
+    "successCreateTrip": "Create a trip",
+    "successOpenProfile": "Open profile"
   }
 }

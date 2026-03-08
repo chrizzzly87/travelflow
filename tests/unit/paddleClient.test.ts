@@ -10,6 +10,7 @@ import {
   isPaddleClientConfigured,
   isPaddleTierCheckoutConfigured,
   readPaddleCheckoutLocationContext,
+  resolveSameOriginPaddleCheckoutPath,
 } from '../../services/paddleClient';
 
 const ORIGINAL_TOKEN = import.meta.env.VITE_PADDLE_CLIENT_TOKEN;
@@ -97,6 +98,9 @@ describe('paddleClient', () => {
           environment: 'sandbox',
           checkoutEnabled: true,
           clientTokenConfigured: true,
+          webhookSecretConfigured: true,
+          supabaseSyncConfigured: true,
+          webhookSyncMode: 'full',
           tierAvailability: {
             tier_mid: true,
             tier_premium: false,
@@ -115,6 +119,9 @@ describe('paddleClient', () => {
       environment: 'sandbox',
       checkoutEnabled: true,
       clientTokenConfigured: true,
+      webhookSecretConfigured: true,
+      supabaseSyncConfigured: true,
+      webhookSyncMode: 'full',
       tierAvailability: {
         tier_mid: true,
         tier_premium: false,
@@ -153,6 +160,16 @@ describe('paddleClient', () => {
     });
   });
 
+  it('resolves same-origin checkout URLs to in-app paths', () => {
+    expect(resolveSameOriginPaddleCheckoutPath(
+      '/checkout?_ptxn=txn_123&tier=tier_mid',
+    )).toBe('/checkout?_ptxn=txn_123&tier=tier_mid');
+
+    expect(resolveSameOriginPaddleCheckoutPath(
+      'https://sandbox-checkout.paddle.com/checkout?_ptxn=txn_123',
+    )).toBeNull();
+  });
+
   it('extracts the checkout item name from Paddle checkout events', () => {
     expect(extractPaddleCheckoutItemName({
       name: 'checkout.loaded',
@@ -172,6 +189,9 @@ describe('paddleClient', () => {
       environment: 'sandbox',
       checkoutEnabled: true,
       clientTokenConfigured: true,
+      webhookSecretConfigured: true,
+      supabaseSyncConfigured: true,
+      webhookSyncMode: 'full',
       tierAvailability: {
         tier_mid: true,
         tier_premium: true,

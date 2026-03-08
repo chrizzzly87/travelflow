@@ -78,8 +78,8 @@
     "paymentTitle": "Безопасный платеж",
     "paymentDescription": "Завершите оплату ниже. Остальная часть потока остается на этой отдельной странице оплаты.",
     "loading": "Загрузка безопасной оплаты...",
-    "paymentCompletedTitle": "Платеж отправлен",
-    "paymentCompletedDescription": "Paddle сообщил о завершении оплаты. Синхронизация подписки продолжается через webhook.",
+    "paymentCompletedTitle": "Оплата завершена",
+    "paymentCompletedDescription": "Paddle подтвердил оплату. Синхронизация подписки продолжается в фоновом режиме.",
     "travelerDetailsTitle": "Данные путешественника",
     "travelerDetailsHeadline": "Сохраните данные профиля, которые хотите оставить",
     "travelerDetailsDescription": "Эти данные остаются в вашем аккаунте TravelFlow. Налоговая и платежная информация остается в Paddle.",
@@ -100,6 +100,16 @@
     "accountDescription": "Войдите или создайте аккаунт, чтобы привязать подписку к реальному профилю TravelFlow.",
     "accountReadyDescription": "Подписка будет оформлена на этот аккаунт.",
     "detailsLocked": "Продолжите после шага с аккаунтом.",
-    "paymentLocked": "Продолжите после данных путешественника."
+    "paymentLocked": "Продолжите после данных путешественника.",
+    "refreshPayment": "Перезагрузить безопасную оплату",
+    "successEyebrow": "Оплата завершена",
+    "successDescription": "Ваш тариф теперь привязан к этой учетной записи. Переходите к следующему нужному шагу.",
+    "successClaimProcessing": "Мы запускаем вашу поездку в фоновом режиме.",
+    "successClaimNeedsAttention": "Передача поездки требует внимания",
+    "successClaimError": "Оплата прошла успешно, но сохраненную поездку не удалось запустить автоматически.",
+    "successOpenTrip": "Открыть поездку",
+    "successReturnToTrip": "Вернуться к поездке",
+    "successCreateTrip": "Создать поездку",
+    "successOpenProfile": "Открыть профиль"
   }
 }

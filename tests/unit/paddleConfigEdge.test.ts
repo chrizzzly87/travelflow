@@ -13,6 +13,12 @@ describe('paddle config edge', () => {
           return 'live_client_token';
         case 'PADDLE_API_KEY':
           return 'pdl_live_apikey_123';
+        case 'PADDLE_WEBHOOK_SECRET':
+          return 'whsec_123';
+        case 'SUPABASE_SERVICE_ROLE_KEY':
+          return 'service-role-key';
+        case 'PADDLE_WEBHOOK_SYNC_MODE':
+          return 'full';
         case 'PADDLE_PRICE_ID_TIER_MID':
           return 'pri_mid';
         default:
@@ -25,6 +31,9 @@ describe('paddle config edge', () => {
       environment: 'sandbox',
       checkoutEnabled: true,
       clientTokenConfigured: true,
+      webhookSecretConfigured: true,
+      supabaseSyncConfigured: true,
+      webhookSyncMode: 'full',
       tierAvailability: {
         tier_mid: true,
         tier_premium: false,

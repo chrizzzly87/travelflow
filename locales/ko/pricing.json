@@ -78,8 +78,8 @@
     "paymentTitle": "안전한 결제",
     "paymentDescription": "아래에서 결제를 완료하세요. 나머지 흐름은 이 전용 체크아웃 페이지에 유지됩니다.",
     "loading": "안전한 체크아웃을 불러오는 중...",
-    "paymentCompletedTitle": "결제가 제출되었습니다",
-    "paymentCompletedDescription": "Paddle이 체크아웃 완료를 보고했습니다. 구독 동기화는 webhook으로 계속 진행됩니다.",
+    "paymentCompletedTitle": "결제가 완료되었습니다",
+    "paymentCompletedDescription": "Paddle에서 체크아웃 완료를 확인했습니다. 구독 동기화는 백그라운드에서 계속 진행됩니다.",
     "travelerDetailsTitle": "여행자 정보",
     "travelerDetailsHeadline": "보관할 프로필 정보를 저장하세요",
     "travelerDetailsDescription": "이 정보는 TravelFlow 계정에 남습니다. 세금 및 청구 정보는 Paddle에 유지됩니다.",
@@ -100,6 +100,16 @@
     "accountDescription": "구독을 실제 TravelFlow 프로필에 연결하려면 로그인하거나 계정을 만드세요.",
     "accountReadyDescription": "이 계정으로 구독이 연결됩니다.",
     "detailsLocked": "계정 단계를 완료한 뒤 계속하세요.",
-    "paymentLocked": "여행자 정보를 입력한 뒤 계속하세요."
+    "paymentLocked": "여행자 정보를 입력한 뒤 계속하세요.",
+    "refreshPayment": "보안 결제 다시 불러오기",
+    "successEyebrow": "결제 완료",
+    "successDescription": "이 플랜은 이제 이 계정에 연결되었습니다. 지금 필요한 다음 단계로 바로 이어가세요.",
+    "successClaimProcessing": "여행 생성을 백그라운드에서 시작하고 있습니다.",
+    "successClaimNeedsAttention": "여행 연결에 확인이 필요합니다",
+    "successClaimError": "결제는 완료되었지만 저장된 여행을 자동으로 시작할 수 없었습니다.",
+    "successOpenTrip": "여행 열기",
+    "successReturnToTrip": "여행으로 돌아가기",
+    "successCreateTrip": "여행 만들기",
+    "successOpenProfile": "프로필 열기"
   }
 }

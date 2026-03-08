@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, Check, CheckCircle, CreditCard, SpinnerGap } from '@phosphor-icons/react';
+import { ArrowLeft, ArrowSquareOut, Check, CheckCircle, CreditCard, SpinnerGap, SuitcaseRolling, UserCircle } from '@phosphor-icons/react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
@@ -7,7 +7,6 @@ import { SiteHeader } from '../components/navigation/SiteHeader';
 import { SiteFooter } from '../components/marketing/SiteFooter';
 import { ProfileCountryRegionSelect } from '../components/profile/ProfileCountryRegionSelect';
 import { Checkbox } from '../components/ui/checkbox';
-import { Tabs, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { showAppToast } from '../components/ui/appToast';
 import { PLAN_CATALOG } from '../config/planCatalog';
 import { DEFAULT_LOCALE, normalizeLocale } from '../config/locales';
@@ -27,12 +26,15 @@ import {
     navigateToPaddleCheckout,
     PADDLE_INLINE_FRAME_TARGET_CLASS,
     readPaddleCheckoutLocationContext,
+    resolveSameOriginPaddleCheckoutPath,
     type PaddleCheckoutEvent,
     type PaddlePublicConfig,
 } from '../services/paddleClient';
 import { acceptCurrentTerms } from '../services/authService';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
 import { updateCurrentUserProfile } from '../services/profileService';
+import { registerTripGenerationCompletionWatch } from '../services/tripGenerationCompletionWatchService';
+import { processQueuedTripGenerationAfterAuth } from '../services/tripGenerationQueueService';
 import { cn } from '../lib/utils';
 import type { AppLanguage } from '../types';
 
@@ -73,7 +75,6 @@ const checkoutInputClassName = 'mt-1 h-11 w-full rounded-md border border-slate-
 const checkoutFieldLabelClassName = 'text-sm font-medium text-slate-700';
 const checkoutActionClassName = 'inline-flex h-11 items-center justify-center gap-2 rounded-md px-4 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60';
 const checkoutSectionLabelClassName = 'text-xs font-semibold uppercase tracking-[0.14em] text-slate-500';
-const checkoutRailTabTriggerClassName = '!h-auto !flex-none !rounded-none !border-0 !px-0 !pb-3 !pt-0 text-sm font-semibold text-slate-500 !shadow-none hover:text-slate-900 data-[state=active]:!bg-transparent data-[state=active]:text-accent-700 disabled:text-slate-300 after:bottom-[-1px] after:h-0.5 after:bg-accent-600';
 
 const normalizeAuthErrorCode = (error: unknown): string => {
     if (!error || typeof error !== 'object') return 'default';
@@ -151,7 +152,11 @@ export const CheckoutPage: React.FC = () => {
     const [isAutoAcceptingSignupTerms, setIsAutoAcceptingSignupTerms] = useState(false);
     const [hasHydratedForm, setHasHydratedForm] = useState(false);
     const [checkoutCompleted, setCheckoutCompleted] = useState(false);
+    const [postPaymentTripId, setPostPaymentTripId] = useState<string | null>(null);
+    const [postPaymentClaimState, setPostPaymentClaimState] = useState<'idle' | 'processing' | 'ready' | 'error'>('idle');
+    const [postPaymentClaimErrorMessage, setPostPaymentClaimErrorMessage] = useState<string | null>(null);
     const inlineCheckoutSectionRef = useRef<HTMLDivElement | null>(null);
+    const claimProcessingRequestIdRef = useRef<string | null>(null);
 
     const activeLocale = useMemo(
         () => normalizeLocale(i18n.resolvedLanguage ?? i18n.language ?? DEFAULT_LOCALE),
@@ -191,6 +196,8 @@ export const CheckoutPage: React.FC = () => {
     const noExpiryLabel = t('shared.noExpiry', { ns: 'pricing' });
     const enabledLabel = t('shared.enabled', { ns: 'pricing' });
     const disabledLabel = t('shared.disabled', { ns: 'pricing' });
+    const profileActionPath = buildPath('profileSettings');
+    const createTripPath = buildPath('createTrip');
 
     const resolveTierFeatures = useCallback((tierKey: BillingCheckoutTierKey) => {
         const tier = PLAN_CATALOG[tierKey];
@@ -260,6 +267,14 @@ export const CheckoutPage: React.FC = () => {
     }, [isEligibleAccount]);
 
     useEffect(() => {
+        setCheckoutCompleted(false);
+        setPostPaymentTripId(null);
+        setPostPaymentClaimState('idle');
+        setPostPaymentClaimErrorMessage(null);
+        claimProcessingRequestIdRef.current = null;
+    }, [checkoutLocationContext.transactionId]);
+
+    useEffect(() => {
         if (!hasPendingSignupTermsAcceptance || !isEligibleAccount || isAuthLoading || !access) return;
 
         const cleanedParams = new URLSearchParams(location.search);
@@ -279,15 +294,16 @@ export const CheckoutPage: React.FC = () => {
         void acceptCurrentTerms({
             locale: activeLocale,
             source: 'signup_checkout_email_confirmation',
-        }).then(async ({ error }) => {
+        }).then(({ error }) => {
             if (cancelled) return;
             if (error) {
                 setCheckoutErrorMessage(error.message || t('checkout.errorConfig', { ns: 'pricing' }));
                 return;
             }
-            await refreshAccess();
-            if (cancelled) return;
             navigate(cleanedTarget, { replace: true });
+            void refreshAccess().catch((refreshError) => {
+                console.warn('Checkout terms refresh failed after confirmation redirect.', refreshError);
+            });
         }).finally(() => {
             if (!cancelled) {
                 setIsAutoAcceptingSignupTerms(false);
@@ -317,6 +333,7 @@ export const CheckoutPage: React.FC = () => {
         }
         if (event.name === 'checkout.completed') {
             setCheckoutCompleted(true);
+            setPostPaymentClaimErrorMessage(null);
             showAppToast({
                 tone: 'success',
                 title: t('checkout.paymentCompletedTitle', { ns: 'pricing' }),
@@ -324,6 +341,54 @@ export const CheckoutPage: React.FC = () => {
             });
         }
     }, [t]);
+
+    useEffect(() => {
+        const claimId = checkoutLocationContext.claimId;
+        if (!checkoutCompleted || !claimId || !isEligibleAccount) {
+            return;
+        }
+        if (claimProcessingRequestIdRef.current === claimId) {
+            return;
+        }
+
+        let cancelled = false;
+        claimProcessingRequestIdRef.current = claimId;
+        setPostPaymentClaimState('processing');
+        setPostPaymentClaimErrorMessage(null);
+
+        trackEvent('checkout__claim_trip--start', {
+            tier: selectedTierKey,
+            source,
+        });
+
+        void processQueuedTripGenerationAfterAuth(claimId)
+            .then((result) => {
+                if (cancelled) return;
+                registerTripGenerationCompletionWatch(result.tripId, 'checkout_payment_completed');
+                setPostPaymentTripId(result.tripId);
+                setPostPaymentClaimState('ready');
+                trackEvent('checkout__claim_trip--success', {
+                    tier: selectedTierKey,
+                    source,
+                });
+            })
+            .catch((error) => {
+                if (cancelled) return;
+                const message = error instanceof Error
+                    ? error.message
+                    : t('checkout.successClaimError', { ns: 'pricing' });
+                setPostPaymentClaimState('error');
+                setPostPaymentClaimErrorMessage(message);
+                trackEvent('checkout__claim_trip--failed', {
+                    tier: selectedTierKey,
+                    source,
+                });
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [checkoutCompleted, checkoutLocationContext.claimId, isEligibleAccount, selectedTierKey, source, t]);
 
     useEffect(() => {
         if (!hasInlineCheckout || !paddlePublicConfig || paddlePublicConfig.issues.length > 0) return;
@@ -346,7 +411,9 @@ export const CheckoutPage: React.FC = () => {
 
     useEffect(() => {
         if (!hasInlineCheckout || !inlineCheckoutSectionRef.current) return;
-        inlineCheckoutSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (typeof inlineCheckoutSectionRef.current.scrollIntoView === 'function') {
+            inlineCheckoutSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
     }, [hasInlineCheckout]);
 
     const profileDraftDirty = useMemo(() => {
@@ -363,6 +430,14 @@ export const CheckoutPage: React.FC = () => {
     }, [activeLocale, form, profile]);
 
     const planFeatures = resolveTierFeatures(selectedTierKey);
+    const checkoutButtonLabel = hasInlineCheckout
+        ? t('checkout.refreshPayment', { ns: 'pricing' })
+        : t('checkout.continueToPayment', { ns: 'pricing' });
+    const shouldShowPostPaymentTripAction = Boolean(postPaymentTripId);
+    const shouldShowTripReturnAction = !postPaymentTripId
+        && Boolean(checkoutLocationContext.claimId)
+        && isSafeInternalPath(returnToPath)
+        && returnToPath !== buildPath('pricing');
 
     const setField = <K extends keyof CheckoutProfileFormState>(key: K, value: CheckoutProfileFormState[K]) => {
         setForm((current) => ({ ...current, [key]: value }));
@@ -457,7 +532,7 @@ export const CheckoutPage: React.FC = () => {
         }
     };
 
-    const handleContinueToPayment = async () => {
+    const handleContinueToPayment = useCallback(async () => {
         if (isSubmitting) return;
         if (!form.firstName.trim() || !form.lastName.trim() || !form.country.trim()) {
             setCheckoutErrorMessage(t('settings.errors.required', { ns: 'profile' }));
@@ -482,6 +557,12 @@ export const CheckoutPage: React.FC = () => {
         setIsSubmitting(true);
 
         try {
+            setCheckoutCompleted(false);
+            setPostPaymentTripId(null);
+            setPostPaymentClaimState('idle');
+            setPostPaymentClaimErrorMessage(null);
+            claimProcessingRequestIdRef.current = null;
+
             if (profileDraftDirty) {
                 await updateCurrentUserProfile({
                     firstName: form.firstName,
@@ -508,13 +589,19 @@ export const CheckoutPage: React.FC = () => {
                 tripId: checkoutLocationContext.tripId,
             });
 
-            navigateToPaddleCheckout(appendPaddleCheckoutContext(sessionPayload.checkoutUrl, {
+            const checkoutUrl = appendPaddleCheckoutContext(sessionPayload.checkoutUrl, {
                 tierKey: selectedTierKey,
                 source,
                 claimId: checkoutLocationContext.claimId,
                 returnTo: returnToPath,
                 tripId: checkoutLocationContext.tripId,
-            }));
+            });
+            const sameOriginCheckoutPath = resolveSameOriginPaddleCheckoutPath(checkoutUrl);
+            if (sameOriginCheckoutPath) {
+                navigate(sameOriginCheckoutPath);
+                return;
+            }
+            navigateToPaddleCheckout(checkoutUrl);
         } catch (error) {
             const message = error instanceof Error ? error.message : t('checkout.errorConfig', { ns: 'pricing' });
             setCheckoutErrorMessage(message);
@@ -526,7 +613,31 @@ export const CheckoutPage: React.FC = () => {
         } finally {
             setIsSubmitting(false);
         }
-    };
+    }, [
+        checkoutLocationContext.claimId,
+        checkoutLocationContext.tripId,
+        navigate,
+        paddlePublicConfig,
+        profile?.bio,
+        profile?.defaultPublicTripVisibility,
+        profile?.gender,
+        profile?.publicProfileEnabled,
+        profile?.username,
+        profile?.usernameDisplay,
+        profileDraftDirty,
+        refreshProfile,
+        returnToPath,
+        selectedTierKey,
+        source,
+        supportsSelectedTier,
+        t,
+        form.city,
+        form.country,
+        form.firstName,
+        form.lastName,
+        fromTripCheckout,
+        form.preferredLanguage,
+    ]);
 
     return (
         <div className="flex min-h-screen flex-col bg-white text-slate-900">
@@ -697,13 +808,6 @@ export const CheckoutPage: React.FC = () => {
                         >
                             {!isEligibleAccount ? (
                                 <p className="text-sm text-slate-500">{t('checkout.detailsLocked', { ns: 'pricing' })}</p>
-                            ) : hasInlineCheckout ? (
-                                <div className="flex flex-col gap-1 text-sm text-slate-700">
-                                    <p className="font-medium text-slate-900">
-                                        {[form.firstName, form.lastName].filter(Boolean).join(' ') || '—'}
-                                    </p>
-                                    <p>{[form.city, form.country].filter(Boolean).join(' · ') || '—'}</p>
-                                </div>
                             ) : (
                                 <div className="max-w-2xl space-y-5">
                                     {checkoutErrorMessage ? (
@@ -733,20 +837,14 @@ export const CheckoutPage: React.FC = () => {
                                         </label>
                                     </div>
 
-                                        {isAutoAcceptingSignupTerms ? (
-                                            <div className="border-s-4 border-sky-500 bg-sky-50 px-4 py-3 text-sm text-sky-900">
-                                                {t('actions.submitting', { ns: 'auth' })}
-                                            </div>
-                                        ) : null}
-
-                                        <div className="grid gap-4 sm:grid-cols-2">
-                                            <div>
-                                                <span className={checkoutFieldLabelClassName}>{t('settings.fields.country', { ns: 'profile' })}</span>
-                                                <ProfileCountryRegionSelect
+                                    <div className="grid gap-4 sm:grid-cols-2">
+                                        <div>
+                                            <span className={checkoutFieldLabelClassName}>{t('settings.fields.country', { ns: 'profile' })}</span>
+                                            <ProfileCountryRegionSelect
                                                 value={form.country}
                                                 locale={activeLocale}
                                                 disabled={isSubmitting || isProfileLoading}
-                                                inputClassName="mt-1 h-11 rounded-md"
+                                                inputClassName="mt-1 rounded-md"
                                                 placeholder={t('settings.countryRegionSearchPlaceholder', { ns: 'profile' })}
                                                 emptyLabel={t('settings.countryRegionEmpty', { ns: 'profile' })}
                                                 toggleLabel={t('settings.countryRegionToggle', { ns: 'profile' })}
@@ -764,15 +862,15 @@ export const CheckoutPage: React.FC = () => {
                                         </label>
                                     </div>
 
-                                        <button
-                                            type="button"
-                                            disabled={isSubmitting || isAutoAcceptingSignupTerms || !hasHydratedForm || isAuthLoading || isProfileLoading || !supportsSelectedTier}
-                                            onClick={() => void handleContinueToPayment()}
-                                            className={cn(checkoutActionClassName, 'w-full bg-accent-600 text-white hover:bg-accent-700 sm:w-auto')}
-                                            {...getAnalyticsDebugAttributes('checkout__payment--start')}
+                                    <button
+                                        type="button"
+                                        disabled={isSubmitting || isAutoAcceptingSignupTerms || !hasHydratedForm || isAuthLoading || isProfileLoading || !supportsSelectedTier}
+                                        onClick={() => void handleContinueToPayment()}
+                                        className={cn(checkoutActionClassName, 'w-full bg-accent-600 text-white hover:bg-accent-700 sm:w-auto')}
+                                        {...getAnalyticsDebugAttributes(hasInlineCheckout ? 'checkout__payment--refresh' : 'checkout__payment--start')}
                                     >
                                         {isSubmitting ? <SpinnerGap size={18} className="animate-spin" /> : <CreditCard size={18} weight="duotone" />}
-                                        {t('checkout.continueToPayment', { ns: 'pricing' })}
+                                        {checkoutButtonLabel}
                                     </button>
                                 </div>
                             )}
@@ -785,6 +883,80 @@ export const CheckoutPage: React.FC = () => {
                         >
                             {!hasInlineCheckout ? (
                                 <p className="text-sm text-slate-500">{t('checkout.paymentLocked', { ns: 'pricing' })}</p>
+                            ) : checkoutCompleted ? (
+                                <div ref={inlineCheckoutSectionRef} className="space-y-5">
+                                    <div className="rounded-2xl bg-emerald-50 px-6 py-6 shadow-sm ring-1 ring-emerald-100">
+                                        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">
+                                            {t('checkout.successEyebrow', { ns: 'pricing' })}
+                                        </p>
+                                        <h3 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900">
+                                            {t('checkout.paymentCompletedTitle', { ns: 'pricing' })}
+                                        </h3>
+                                        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-700">
+                                            {t('checkout.successDescription', { ns: 'pricing' })}
+                                        </p>
+
+                                        {postPaymentClaimState === 'processing' ? (
+                                            <div className="mt-5 flex items-center gap-3 rounded-xl bg-white/80 px-4 py-3 text-sm text-slate-700 ring-1 ring-emerald-100">
+                                                <SpinnerGap size={16} className="animate-spin text-accent-600" />
+                                                <span>{t('checkout.successClaimProcessing', { ns: 'pricing' })}</span>
+                                            </div>
+                                        ) : null}
+
+                                        {postPaymentClaimState === 'error' && postPaymentClaimErrorMessage ? (
+                                            <div className="mt-5 border-s-4 border-amber-500 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                                                <p className="font-semibold">{t('checkout.successClaimNeedsAttention', { ns: 'pricing' })}</p>
+                                                <p className="mt-1">{postPaymentClaimErrorMessage}</p>
+                                            </div>
+                                        ) : null}
+
+                                        <div className="mt-6 flex flex-wrap gap-3">
+                                            {shouldShowPostPaymentTripAction ? (
+                                                <Link
+                                                    to={buildPath('tripDetail', { tripId: postPaymentTripId! })}
+                                                    className={cn(checkoutActionClassName, 'bg-accent-600 text-white hover:bg-accent-700')}
+                                                    onClick={() => trackEvent('checkout__success_cta--trip', { tier: selectedTierKey, source })}
+                                                    {...getAnalyticsDebugAttributes('checkout__success_cta--trip')}
+                                                >
+                                                    <ArrowSquareOut size={18} weight="duotone" />
+                                                    {t('checkout.successOpenTrip', { ns: 'pricing' })}
+                                                </Link>
+                                            ) : null}
+
+                                            {shouldShowTripReturnAction ? (
+                                                <Link
+                                                    to={returnToPath}
+                                                    className={cn(checkoutActionClassName, 'border border-slate-300 bg-white text-slate-900 hover:bg-slate-50')}
+                                                    onClick={() => trackEvent('checkout__success_cta--return_trip', { tier: selectedTierKey, source })}
+                                                    {...getAnalyticsDebugAttributes('checkout__success_cta--return_trip')}
+                                                >
+                                                    <ArrowSquareOut size={18} weight="duotone" />
+                                                    {t('checkout.successReturnToTrip', { ns: 'pricing' })}
+                                                </Link>
+                                            ) : null}
+
+                                            <Link
+                                                to={createTripPath}
+                                                className={cn(checkoutActionClassName, shouldShowPostPaymentTripAction ? 'border border-slate-300 bg-white text-slate-900 hover:bg-slate-50' : 'bg-accent-600 text-white hover:bg-accent-700')}
+                                                onClick={() => trackEvent('checkout__success_cta--create_trip', { tier: selectedTierKey, source })}
+                                                {...getAnalyticsDebugAttributes('checkout__success_cta--create_trip')}
+                                            >
+                                                <SuitcaseRolling size={18} weight="duotone" />
+                                                {t('checkout.successCreateTrip', { ns: 'pricing' })}
+                                            </Link>
+
+                                            <Link
+                                                to={profileActionPath}
+                                                className={cn(checkoutActionClassName, 'border border-slate-300 bg-white text-slate-900 hover:bg-slate-50')}
+                                                onClick={() => trackEvent('checkout__success_cta--profile', { tier: selectedTierKey, source })}
+                                                {...getAnalyticsDebugAttributes('checkout__success_cta--profile')}
+                                            >
+                                                <UserCircle size={18} weight="duotone" />
+                                                {t('checkout.successOpenProfile', { ns: 'pricing' })}
+                                            </Link>
+                                        </div>
+                                    </div>
+                                </div>
                             ) : (
                                 <div ref={inlineCheckoutSectionRef} className="space-y-5">
                                     <div className="relative overflow-hidden rounded-md border border-slate-200 bg-white">
@@ -804,39 +976,40 @@ export const CheckoutPage: React.FC = () => {
                                         ) : null}
                                         <div className={`${PADDLE_INLINE_FRAME_TARGET_CLASS} min-h-[680px] w-full`} />
                                     </div>
-                                    {checkoutCompleted ? (
-                                        <div className="border-s-4 border-emerald-500 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
-                                            <p className="font-semibold">{t('checkout.paymentCompletedTitle', { ns: 'pricing' })}</p>
-                                            <p className="mt-1">{t('checkout.paymentCompletedDescription', { ns: 'pricing' })}</p>
-                                        </div>
-                                    ) : null}
                                 </div>
                             )}
                         </CheckoutStepSection>
                     </div>
 
-                    <aside className="order-2 border-t border-slate-200 pt-8 lg:border-l lg:border-t-0 lg:pl-10 lg:pt-0">
-                        <div className="space-y-8 lg:sticky lg:top-24">
-                            <section className="space-y-4">
+                    <aside className="order-2 lg:order-2">
+                        <div className="lg:sticky lg:top-24">
+                            <div className="rounded-2xl bg-white p-6 shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
+                                <section className="space-y-4">
                                 <p className={checkoutSectionLabelClassName}>{t('checkout.planSummaryTitle', { ns: 'pricing' })}</p>
-                                <Tabs value={selectedTierKey} onValueChange={handlePlanChange} className="gap-4">
-                                    <TabsList variant="line" className="h-auto w-full justify-start gap-6 border-b border-slate-200 p-0">
-                                        {PAID_TIER_ORDER.map((tierKey) => {
-                                            const tier = PLAN_CATALOG[tierKey];
-                                            const tierAvailable = isPaddleTierCheckoutConfigured(paddlePublicConfig, tierKey);
-                                            return (
-                                                <TabsTrigger
-                                                    key={tierKey}
-                                                    value={tierKey}
-                                                    disabled={Boolean(paddlePublicConfig) && !tierAvailable}
-                                                    className={checkoutRailTabTriggerClassName}
-                                                >
-                                                    {t(`tiers.${tier.publicSlug}.name`, { ns: 'pricing' })}
-                                                </TabsTrigger>
-                                            );
-                                        })}
-                                    </TabsList>
-                                </Tabs>
+                                <div className="flex gap-6 border-b border-slate-200">
+                                    {PAID_TIER_ORDER.map((tierKey) => {
+                                        const tier = PLAN_CATALOG[tierKey];
+                                        const tierAvailable = isPaddleTierCheckoutConfigured(paddlePublicConfig, tierKey);
+                                        const active = tierKey === selectedTierKey;
+                                        return (
+                                            <button
+                                                key={tierKey}
+                                                type="button"
+                                                disabled={Boolean(paddlePublicConfig) && !tierAvailable}
+                                                onClick={() => handlePlanChange(tierKey)}
+                                                className={cn(
+                                                    'border-b-2 pb-3 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:text-slate-300',
+                                                    active
+                                                        ? 'border-accent-600 text-accent-700'
+                                                        : 'border-transparent text-slate-400 hover:text-slate-900'
+                                                )}
+                                                {...getAnalyticsDebugAttributes(`checkout__plan--${tier.publicSlug}`)}
+                                            >
+                                                {t(`tiers.${tier.publicSlug}.name`, { ns: 'pricing' })}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
 
                                 <div className="flex items-end justify-between gap-4 border-b border-slate-200 pb-5">
                                     <div>
@@ -848,23 +1021,24 @@ export const CheckoutPage: React.FC = () => {
                                         <div className="text-sm text-slate-500">{t('shared.perMonth', { ns: 'pricing' })}</div>
                                     </div>
                                 </div>
-                            </section>
+                                </section>
 
-                            <section>
-                                <p className={checkoutSectionLabelClassName}>{t('checkout.whatsIncluded', { ns: 'pricing' })}</p>
-                                <ul className="mt-4 space-y-3">
-                                    {planFeatures.map((feature) => (
-                                        <li key={feature} className="flex items-start gap-3 text-sm leading-6 text-slate-700">
-                                            <Check size={16} weight="bold" className="mt-1 shrink-0 text-accent-600" />
-                                            <span>{feature}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </section>
+                                <section className="mt-8">
+                                    <p className={checkoutSectionLabelClassName}>{t('checkout.whatsIncluded', { ns: 'pricing' })}</p>
+                                    <ul className="mt-4 space-y-3">
+                                        {planFeatures.map((feature) => (
+                                            <li key={feature} className="flex items-start gap-3 text-sm leading-6 text-slate-700">
+                                                <Check size={16} weight="bold" className="mt-1 shrink-0 text-accent-600" />
+                                                <span>{feature}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </section>
 
-                            <p className="border-t border-slate-200 pt-4 text-xs leading-5 text-slate-500">
-                                {t('checkout.planSummaryBilling', { ns: 'pricing' })}
-                            </p>
+                                <p className="mt-8 border-t border-slate-200 pt-4 text-xs leading-5 text-slate-500">
+                                    {t('checkout.planSummaryBilling', { ns: 'pricing' })}
+                                </p>
+                            </div>
                         </div>
                     </aside>
                 </section>

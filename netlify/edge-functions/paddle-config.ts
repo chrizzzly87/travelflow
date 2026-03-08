@@ -28,6 +28,11 @@ export const buildPaddlePublicConfig = (envReader: (name: string) => string | un
   const checkoutEnabled = String(envReader('VITE_PADDLE_CHECKOUT_ENABLED') || '').trim().toLowerCase() === 'true';
   const clientToken = String(envReader('VITE_PADDLE_CLIENT_TOKEN') || '').trim();
   const apiKey = String(envReader('PADDLE_API_KEY') || '').trim();
+  const webhookSecret = String(envReader('PADDLE_WEBHOOK_SECRET') || '').trim();
+  const serviceRoleKey = String(envReader('SUPABASE_SERVICE_ROLE_KEY') || '').trim();
+  const webhookSyncMode = String(envReader('PADDLE_WEBHOOK_SYNC_MODE') || '').trim().toLowerCase() === 'verify_only'
+    ? 'verify_only'
+    : 'full';
   const priceMap = readPaddlePriceMapFromEnv(envReader);
   const issues = collectPaddleEnvironmentIssues({
     declaredEnvironment: environment,
@@ -40,6 +45,9 @@ export const buildPaddlePublicConfig = (envReader: (name: string) => string | un
     environment,
     checkoutEnabled,
     clientTokenConfigured: Boolean(clientToken),
+    webhookSecretConfigured: Boolean(webhookSecret),
+    supabaseSyncConfigured: Boolean(serviceRoleKey),
+    webhookSyncMode,
     tierAvailability: {
       tier_mid: Boolean(priceMap.tier_mid),
       tier_premium: Boolean(priceMap.tier_premium),

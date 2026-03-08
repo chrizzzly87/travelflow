@@ -302,7 +302,14 @@ export const AdminBillingPage: React.FC = () => {
                     </div>
 
                     {filteredSubscriptions.length === 0 ? (
-                        <p className="py-8 text-sm text-slate-500">No billing subscriptions found for this filter set.</p>
+                        <div className="py-8 text-sm text-slate-500">
+                            <p>No billing subscriptions found for this filter set.</p>
+                            {searchValue.trim() || selectedSubscriptionStatuses.length > 0 ? null : (
+                                <p className="mt-2 text-xs leading-5 text-slate-400">
+                                    If a sandbox checkout already completed, replay the latest Paddle notification and confirm this deploy can receive simulation events.
+                                </p>
+                            )}
+                        </div>
                     ) : (
                         <div className="overflow-x-auto">
                             <table className="min-w-[860px] w-full border-separate border-spacing-0 text-left text-sm">
@@ -381,7 +388,14 @@ export const AdminBillingPage: React.FC = () => {
                     </div>
 
                     {filteredEvents.length === 0 ? (
-                        <p className="py-8 text-sm text-slate-500">No billing webhook events found for this filter set.</p>
+                        <div className="py-8 text-sm text-slate-500">
+                            <p>No billing webhook events found for this filter set.</p>
+                            {searchValue.trim() || selectedEventStatuses.length > 0 ? null : (
+                                <p className="mt-2 text-xs leading-5 text-slate-400">
+                                    This usually means Paddle never reached the webhook endpoint, the notification was not sent for simulation traffic, or signature verification failed before the event could be stored.
+                                </p>
+                            )}
+                        </div>
                     ) : (
                         <div className="divide-y divide-slate-200">
                             {filteredEvents.map((record) => (

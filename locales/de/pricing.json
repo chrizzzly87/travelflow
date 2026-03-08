@@ -78,8 +78,8 @@
     "paymentTitle": "Sichere Zahlung",
     "paymentDescription": "Schließe die Zahlung unten ab. Der restliche Ablauf bleibt auf dieser eigenen Checkout-Seite.",
     "loading": "Sicherer Checkout wird geladen ...",
-    "paymentCompletedTitle": "Zahlung übermittelt",
-    "paymentCompletedDescription": "Paddle hat den Abschluss des Checkouts gemeldet. Die Abo-Synchronisierung läuft jetzt über den Webhook weiter.",
+    "paymentCompletedTitle": "Zahlung abgeschlossen",
+    "paymentCompletedDescription": "Paddle hat deinen Checkout bestätigt. Die Abo-Synchronisierung läuft jetzt im Hintergrund weiter.",
     "travelerDetailsTitle": "Reisedetails",
     "travelerDetailsHeadline": "Speichere die Profildaten, die du behalten willst",
     "travelerDetailsDescription": "Diese Angaben bleiben in deinem TravelFlow-Konto. Steuer- und Rechnungsdaten bleiben in Paddle.",
@@ -100,6 +100,16 @@
     "accountDescription": "Melde dich an oder erstelle ein Konto, damit das Abo auf einem echten TravelFlow-Profil landet.",
     "accountReadyDescription": "Dieses Konto erhält das Abo.",
     "detailsLocked": "Weiter nach dem Kontoschritt.",
-    "paymentLocked": "Weiter nach den Reisedetails."
+    "paymentLocked": "Weiter nach den Reisedetails.",
+    "refreshPayment": "Sichere Zahlung neu laden",
+    "successEyebrow": "Zahlung abgeschlossen",
+    "successDescription": "Dein Tarif ist jetzt mit diesem Konto verknüpft. Gehe direkt mit dem nächsten sinnvollen Schritt weiter.",
+    "successClaimProcessing": "Deine Reise wird gerade im Hintergrund gestartet.",
+    "successClaimNeedsAttention": "Bei der Reise-Übergabe ist etwas offengeblieben",
+    "successClaimError": "Deine Zahlung war erfolgreich, aber die gespeicherte Reise konnte nicht automatisch gestartet werden.",
+    "successOpenTrip": "Reise öffnen",
+    "successReturnToTrip": "Zur Reise zurück",
+    "successCreateTrip": "Reise erstellen",
+    "successOpenProfile": "Profil öffnen"
   }
 }

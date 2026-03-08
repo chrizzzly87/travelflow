@@ -78,8 +78,8 @@
     "paymentTitle": "Bezpieczna płatność",
     "paymentDescription": "Dokończ płatność poniżej. Reszta procesu pozostaje na tej dedykowanej stronie checkoutu.",
     "loading": "Ładowanie bezpiecznego checkoutu...",
-    "paymentCompletedTitle": "Płatność wysłana",
-    "paymentCompletedDescription": "Paddle zgłosił zakończenie checkoutu. Synchronizacja subskrypcji trwa dalej przez webhook.",
+    "paymentCompletedTitle": "Płatność zakończona",
+    "paymentCompletedDescription": "Paddle potwierdził checkout. Synchronizacja subskrypcji trwa w tle.",
     "travelerDetailsTitle": "Dane podróżnika",
     "travelerDetailsHeadline": "Zapisz dane profilu, które chcesz zachować",
     "travelerDetailsDescription": "Te dane zostają na Twoim koncie TravelFlow. Dane podatkowe i rozliczeniowe pozostają w Paddle.",
@@ -100,6 +100,16 @@
     "accountDescription": "Zaloguj się lub utwórz konto, aby przypisać subskrypcję do prawdziwego profilu TravelFlow.",
     "accountReadyDescription": "Ta subskrypcja trafi na to konto.",
     "detailsLocked": "Przejdź dalej po kroku konta.",
-    "paymentLocked": "Przejdź dalej po danych podróżnego."
+    "paymentLocked": "Przejdź dalej po danych podróżnego.",
+    "refreshPayment": "Odśwież bezpieczną płatność",
+    "successEyebrow": "Płatność zakończona",
+    "successDescription": "Twój plan jest już połączony z tym kontem. Przejdź do kolejnego potrzebnego kroku.",
+    "successClaimProcessing": "Uruchamiamy Twoją podróż w tle.",
+    "successClaimNeedsAttention": "Przekazanie podróży wymaga uwagi",
+    "successClaimError": "Płatność się powiodła, ale zapisanej podróży nie udało się uruchomić automatycznie.",
+    "successOpenTrip": "Otwórz podróż",
+    "successReturnToTrip": "Wróć do podróży",
+    "successCreateTrip": "Utwórz podróż",
+    "successOpenProfile": "Otwórz profil"
   }
 }

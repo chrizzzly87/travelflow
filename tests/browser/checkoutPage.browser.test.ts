@@ -58,7 +58,7 @@ const mocks = vi.hoisted(() => ({
     provider: 'paddle',
     environment: 'sandbox',
     transactionId: 'txn_123',
-    checkoutUrl: 'https://example.com/checkout?_ptxn=txn_123',
+    checkoutUrl: '/checkout?_ptxn=txn_123',
     tierKey: 'tier_mid',
   }),
   updateCurrentUserProfile: vi.fn().mockResolvedValue(undefined),
@@ -222,9 +222,12 @@ describe('pages/CheckoutPage', () => {
       });
     });
 
-    expect(mocks.navigateToPaddleCheckout).toHaveBeenCalledWith(
-      'https://example.com/checkout?_ptxn=txn_123&tier=tier_mid&source=trip_paywall_strip&claim=claim_123&return_to=%2Ftrip%2Ftrip_123&trip_id=trip_123',
-    );
+    await waitFor(() => {
+      expect(mocks.navigate).toHaveBeenCalledWith(
+        '/checkout?_ptxn=txn_123&tier=tier_mid&source=trip_paywall_strip&claim=claim_123&return_to=%2Ftrip%2Ftrip_123&trip_id=trip_123',
+      );
+    });
+    expect(mocks.navigateToPaddleCheckout).not.toHaveBeenCalled();
   });
 
   it('keeps signed-out users inside the checkout page and submits inline login', async () => {
@@ -294,8 +297,17 @@ describe('pages/CheckoutPage', () => {
     });
 
     await waitFor(() => {
-      expect(mocks.auth.refreshAccess).toHaveBeenCalled();
       expect(mocks.navigate).toHaveBeenCalledWith('/checkout?tier=tier_mid&source=pricing_page', { replace: true });
     });
+  });
+
+  it('keeps traveler details editable when an inline checkout transaction already exists', () => {
+    mocks.location.search = '?tier=tier_mid&source=pricing_page&_ptxn=txn_123';
+
+    render(React.createElement(CheckoutPage));
+
+    expect(screen.getByDisplayValue('Ada')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Lovelace')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'checkout.refreshPayment' })).toBeInTheDocument();
   });
 });
