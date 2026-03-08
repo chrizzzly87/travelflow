@@ -95,6 +95,11 @@
     "backToTrip": "Назад к поездке",
     "backToPricing": "Назад к тарифам",
     "tripEntryCta": "Обновить тариф из этой поездки",
-    "tripEntryDescription": "Запуск из заблокированной поездки"
+    "tripEntryDescription": "Запуск из заблокированной поездки",
+    "accountTitle": "Аккаунт",
+    "accountDescription": "Войдите или создайте аккаунт, чтобы привязать подписку к реальному профилю TravelFlow.",
+    "accountReadyDescription": "Подписка будет оформлена на этот аккаунт.",
+    "detailsLocked": "Продолжите после шага с аккаунтом.",
+    "paymentLocked": "Продолжите после данных путешественника."
   }
 }

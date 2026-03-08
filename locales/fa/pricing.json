@@ -95,6 +95,11 @@
     "backToTrip": "بازگشت به سفر",
     "backToPricing": "بازگشت به قیمت‌ها",
     "tripEntryCta": "ارتقا از همین سفر",
-    "tripEntryDescription": "شروع‌شده از یک سفر قفل‌شده"
+    "tripEntryDescription": "شروع‌شده از یک سفر قفل‌شده",
+    "accountTitle": "حساب",
+    "accountDescription": "وارد شوید یا حساب بسازید تا اشتراک به یک پروفایل واقعی TravelFlow متصل شود.",
+    "accountReadyDescription": "اشتراک به این حساب متصل می‌شود.",
+    "detailsLocked": "بعد از مرحله حساب ادامه دهید.",
+    "paymentLocked": "بعد از اطلاعات مسافر ادامه دهید."
   }
 }

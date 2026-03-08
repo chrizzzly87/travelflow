@@ -95,6 +95,11 @@
     "backToTrip": "سفر پر واپس جائیں",
     "backToPricing": "قیمتوں پر واپس جائیں",
     "tripEntryCta": "اسی سفر سے اپ گریڈ کریں",
-    "tripEntryDescription": "لاک شدہ سفر سے شروع کیا گیا"
+    "tripEntryDescription": "لاک شدہ سفر سے شروع کیا گیا",
+    "accountTitle": "اکاؤنٹ",
+    "accountDescription": "لاگ اِن کریں یا اکاؤنٹ بنائیں تاکہ سبسکرپشن ایک حقیقی TravelFlow پروفائل سے جڑ جائے۔",
+    "accountReadyDescription": "سبسکرپشن اسی اکاؤنٹ پر جائے گی۔",
+    "detailsLocked": "اکاؤنٹ مرحلے کے بعد آگے بڑھیں۔",
+    "paymentLocked": "مسافر کی معلومات کے بعد آگے بڑھیں۔"
   }
 }

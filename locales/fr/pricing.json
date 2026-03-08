@@ -95,6 +95,11 @@
     "backToTrip": "Retour au voyage",
     "backToPricing": "Retour aux tarifs",
     "tripEntryCta": "Passer à une offre depuis ce voyage",
-    "tripEntryDescription": "Démarré depuis un voyage verrouillé"
+    "tripEntryDescription": "Démarré depuis un voyage verrouillé",
+    "accountTitle": "Compte",
+    "accountDescription": "Connectez-vous ou créez un compte pour rattacher l’abonnement à un vrai profil TravelFlow.",
+    "accountReadyDescription": "Ce compte recevra l’abonnement.",
+    "detailsLocked": "Continuez après l’étape du compte.",
+    "paymentLocked": "Continuez après les informations voyageur."
   }
 }

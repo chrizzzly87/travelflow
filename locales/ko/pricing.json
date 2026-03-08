@@ -95,6 +95,11 @@
     "backToTrip": "여행으로 돌아가기",
     "backToPricing": "요금제로 돌아가기",
     "tripEntryCta": "이 여행에서 업그레이드",
-    "tripEntryDescription": "잠긴 여행에서 시작됨"
+    "tripEntryDescription": "잠긴 여행에서 시작됨",
+    "accountTitle": "계정",
+    "accountDescription": "구독을 실제 TravelFlow 프로필에 연결하려면 로그인하거나 계정을 만드세요.",
+    "accountReadyDescription": "이 계정으로 구독이 연결됩니다.",
+    "detailsLocked": "계정 단계를 완료한 뒤 계속하세요.",
+    "paymentLocked": "여행자 정보를 입력한 뒤 계속하세요."
   }
 }

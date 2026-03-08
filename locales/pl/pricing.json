@@ -95,6 +95,11 @@
     "backToTrip": "Wróć do podróży",
     "backToPricing": "Wróć do cennika",
     "tripEntryCta": "Ulepsz plan z tego wyjazdu",
-    "tripEntryDescription": "Uruchomiono z zablokowanej podróży"
+    "tripEntryDescription": "Uruchomiono z zablokowanej podróży",
+    "accountTitle": "Konto",
+    "accountDescription": "Zaloguj się lub utwórz konto, aby przypisać subskrypcję do prawdziwego profilu TravelFlow.",
+    "accountReadyDescription": "Ta subskrypcja trafi na to konto.",
+    "detailsLocked": "Przejdź dalej po kroku konta.",
+    "paymentLocked": "Przejdź dalej po danych podróżnego."
   }
 }

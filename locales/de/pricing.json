@@ -95,6 +95,11 @@
     "backToTrip": "Zurück zur Reise",
     "backToPricing": "Zurück zu den Preisen",
     "tripEntryCta": "Von dieser Reise aus upgraden",
-    "tripEntryDescription": "Von einer gesperrten Reise gestartet"
+    "tripEntryDescription": "Von einer gesperrten Reise gestartet",
+    "accountTitle": "Konto",
+    "accountDescription": "Melde dich an oder erstelle ein Konto, damit das Abo auf einem echten TravelFlow-Profil landet.",
+    "accountReadyDescription": "Dieses Konto erhält das Abo.",
+    "detailsLocked": "Weiter nach dem Kontoschritt.",
+    "paymentLocked": "Weiter nach den Reisedetails."
   }
 }

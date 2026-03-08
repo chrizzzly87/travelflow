@@ -95,6 +95,11 @@
     "backToTrip": "Back to trip",
     "backToPricing": "Back to pricing",
     "tripEntryCta": "Upgrade from this trip",
-    "tripEntryDescription": "Started from a locked trip"
+    "tripEntryDescription": "Started from a locked trip",
+    "accountTitle": "Account",
+    "accountDescription": "Sign in or create your account to keep the subscription on a real TravelFlow profile.",
+    "accountReadyDescription": "This account will receive the subscription.",
+    "detailsLocked": "Continue after the account step.",
+    "paymentLocked": "Continue after traveler details."
   }
 }

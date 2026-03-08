@@ -12,7 +12,7 @@ Reference issue: [#216](https://github.com/chrizzzly87/travelflow/issues/216)
 1. User starts paid checkout from pricing or from a locked trip upgrade CTA.
 2. Frontend calls `/api/billing/paddle/config` first to learn the active environment and which paid tiers are actually configured.
 3. Frontend routes the user into the dedicated `/checkout` page with tier, source, return path, and optional claim/trip metadata.
-4. Signed-in users can enrich profile fields on `/checkout` before payment; signed-out users are routed through `/login` and back into the same checkout context.
+4. `/checkout` keeps the flow in one place: account sign-in/registration first, traveler details second, and payment last.
 5. Frontend calls `/api/billing/paddle/checkout` with tier key plus optional claim/trip/return metadata.
 6. Edge function creates a Paddle transaction and returns a checkout URL that routes back to the dedicated `/checkout` page with Paddle transaction state.
 7. `/checkout` initializes Paddle.js in one-page inline mode and renders the payment frame inside the branded checkout shell instead of dropping the user into Paddle's plain default overlay.
@@ -23,7 +23,7 @@ Reference issue: [#216](https://github.com/chrizzzly87/travelflow/issues/216)
    - `public.billing_webhook_events` log for replay/debug safety
 
 ## Current Identity Model
-- Supported now: visitor opens pricing or a locked trip -> signs in or registers -> lands on `/checkout` -> starts paid checkout.
+- Supported now: visitor opens pricing or a locked trip -> lands on `/checkout` -> signs in or registers inline -> saves traveler details -> starts paid checkout.
 - Not supported yet: truly anonymous checkout that grants a paid tier before a durable non-anonymous user session exists.
 - Reason: the checkout endpoint stores `tf_user_id` in Paddle `custom_data` and currently requires an authenticated non-anonymous Supabase user so webhook tier sync can resolve a stable account.
 
@@ -207,9 +207,9 @@ pnpm dev:netlify
 1. Start from a logged-out browser session.
 2. Open `/pricing`.
 3. Click `Explorer` or `Globetrotter` to enter `/checkout`.
-4. Confirm the app sends you to login/register first if no real account session exists.
-5. Complete login/register.
-6. Return to `/checkout`, review plan benefits, and complete the traveler details step.
+4. Complete the inline login/register step on `/checkout`.
+5. Complete the traveler details step.
+6. Continue into the Paddle payment step on the same `/checkout` route.
 7. Pay with a Paddle sandbox payment method.
 8. Confirm:
    - checkout stayed on `/checkout` with the branded inline frame

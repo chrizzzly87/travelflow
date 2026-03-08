@@ -95,6 +95,11 @@
     "backToTrip": "Voltar à viagem",
     "backToPricing": "Voltar aos preços",
     "tripEntryCta": "Fazer upgrade a partir desta viagem",
-    "tripEntryDescription": "Iniciado a partir de uma viagem bloqueada"
+    "tripEntryDescription": "Iniciado a partir de uma viagem bloqueada",
+    "accountTitle": "Conta",
+    "accountDescription": "Entre ou crie sua conta para vincular a assinatura a um perfil real do TravelFlow.",
+    "accountReadyDescription": "Esta conta receberá a assinatura.",
+    "detailsLocked": "Continue depois da etapa da conta.",
+    "paymentLocked": "Continue depois dos dados do viajante."
   }
 }

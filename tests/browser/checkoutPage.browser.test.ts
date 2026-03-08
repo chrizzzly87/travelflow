@@ -12,6 +12,11 @@ const mocks = vi.hoisted(() => ({
   },
   navigate: vi.fn(),
   auth: {
+    session: {
+      user: {
+        email: 'ada@example.com',
+      },
+    },
     access: {
       isAnonymous: false,
     },
@@ -32,6 +37,8 @@ const mocks = vi.hoisted(() => ({
       gender: '',
     },
     refreshProfile: vi.fn().mockResolvedValue(undefined),
+    loginWithPassword: vi.fn().mockResolvedValue({ data: { session: { user: { id: 'user_123' } } }, error: null }),
+    registerWithPassword: vi.fn().mockResolvedValue({ data: { session: { user: { id: 'user_123' } } }, error: null }),
   },
   fetchPaddlePublicConfig: vi.fn().mockResolvedValue({
     provider: 'paddle',
@@ -54,6 +61,7 @@ const mocks = vi.hoisted(() => ({
     tierKey: 'tier_mid',
   }),
   updateCurrentUserProfile: vi.fn().mockResolvedValue(undefined),
+  acceptCurrentTerms: vi.fn().mockResolvedValue({ data: { termsVersion: '2026-03', acceptedAt: '2026-03-08T10:00:00Z' }, error: null }),
   trackEvent: vi.fn(),
 }));
 
@@ -86,18 +94,14 @@ vi.mock('../../components/profile/ProfileCountryRegionSelect', () => ({
   ),
 }));
 
-vi.mock('../../components/flags/FlagIcon', () => ({
-  FlagIcon: () => React.createElement('span', { 'data-testid': 'flag-icon' }),
-}));
-
-vi.mock('../../components/ui/switch', () => ({
-  Switch: ({ checked, onCheckedChange, ...props }: { checked: boolean; onCheckedChange: (next: boolean) => void }) => (
+vi.mock('../../components/ui/checkbox', () => ({
+  Checkbox: ({ checked, onCheckedChange, ...props }: { checked?: boolean; onCheckedChange?: (next: boolean) => void }) => (
     React.createElement('button', {
       type: 'button',
       'aria-pressed': checked,
-      onClick: () => onCheckedChange(!checked),
+      onClick: () => onCheckedChange?.(!checked),
       ...props,
-    }, checked ? 'on' : 'off')
+    }, checked ? 'checked' : 'unchecked')
   ),
 }));
 
@@ -107,15 +111,6 @@ vi.mock('../../components/ui/tabs', () => ({
   TabsTrigger: ({ children, value, onClick, disabled }: { children: React.ReactNode; value: string; onClick?: () => void; disabled?: boolean }) => (
     React.createElement('button', { type: 'button', onClick, disabled, 'data-value': value }, children)
   ),
-}));
-
-vi.mock('../../components/ui/select', () => ({
-  Select: ({ children }: { children: React.ReactNode }) => React.createElement('div', null, children),
-  SelectContent: ({ children }: { children: React.ReactNode }) => React.createElement('div', null, children),
-  SelectItem: ({ children, value }: { children: React.ReactNode; value: string }) => React.createElement('div', { 'data-value': value }, children),
-  SelectTrigger: React.forwardRef<HTMLButtonElement, React.ComponentProps<'button'>>(({ children, ...props }, ref) => (
-    React.createElement('button', { type: 'button', ref, ...props }, children)
-  )),
 }));
 
 vi.mock('../../components/ui/appToast', () => ({
@@ -129,6 +124,10 @@ vi.mock('../../hooks/useAuth', () => ({
 vi.mock('../../services/analyticsService', () => ({
   getAnalyticsDebugAttributes: () => ({}),
   trackEvent: mocks.trackEvent,
+}));
+
+vi.mock('../../services/authService', () => ({
+  acceptCurrentTerms: mocks.acceptCurrentTerms,
 }));
 
 vi.mock('../../services/billingService', async () => {
@@ -155,10 +154,7 @@ vi.mock('../../services/profileService', () => ({
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, options?: { returnObjects?: boolean; count?: number; total?: number; tierName?: string }) => {
-      if (options?.returnObjects && key === 'benefits.items') {
-        return ['benefit_one', 'benefit_two'];
-      }
+    t: (key: string, options?: { returnObjects?: boolean; count?: number }) => {
       if (options?.returnObjects && key.endsWith('.features')) {
         return ['feature_one', 'feature_two'];
       }
@@ -183,6 +179,11 @@ describe('pages/CheckoutPage', () => {
     mocks.location.pathname = '/checkout';
     mocks.location.search = '?tier=tier_mid&source=trip_paywall_strip&claim=claim_123&return_to=%2Ftrip%2Ftrip_123&trip_id=trip_123';
     mocks.location.hash = '';
+    mocks.auth.session = {
+      user: {
+        email: 'ada@example.com',
+      },
+    };
     mocks.auth.isAuthenticated = true;
     mocks.auth.isLoading = false;
     mocks.auth.isProfileLoading = false;
@@ -224,17 +225,24 @@ describe('pages/CheckoutPage', () => {
     );
   });
 
-  it('routes signed-out users through login while preserving the checkout context', async () => {
+  it('keeps signed-out users inside the checkout page and submits inline login', async () => {
+    const user = userEvent.setup();
+    mocks.auth.session = null;
     mocks.auth.isAuthenticated = false;
     mocks.auth.access = { isAnonymous: true };
 
     render(React.createElement(CheckoutPage));
 
+    expect(screen.queryByRole('link', { name: 'checkout.loginCta' })).toBeNull();
+
+    await user.type(screen.getByRole('textbox', { name: 'labels.email' }), 'traveler@example.com');
+    await user.type(screen.getByLabelText('labels.password'), 'password123');
+    await user.click(screen.getByRole('button', { name: 'actions.submitLogin' }));
+
     await waitFor(() => {
-      expect(screen.getByRole('link', { name: 'checkout.loginCta' })).toHaveAttribute(
-        'href',
-        '/login?next=%2Fcheckout%3Ftier%3Dtier_mid%26source%3Dtrip_paywall_strip%26claim%3Dclaim_123%26return_to%3D%252Ftrip%252Ftrip_123%26trip_id%3Dtrip_123&claim=claim_123',
-      );
+      expect(mocks.auth.loginWithPassword).toHaveBeenCalledWith('traveler@example.com', 'password123');
     });
+
+    expect(mocks.startPaddleCheckoutSession).not.toHaveBeenCalled();
   });
 });

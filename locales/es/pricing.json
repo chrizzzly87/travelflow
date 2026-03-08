@@ -95,6 +95,11 @@
     "backToTrip": "Volver al viaje",
     "backToPricing": "Volver a precios",
     "tripEntryCta": "Mejorar desde este viaje",
-    "tripEntryDescription": "Iniciado desde un viaje bloqueado"
+    "tripEntryDescription": "Iniciado desde un viaje bloqueado",
+    "accountTitle": "Cuenta",
+    "accountDescription": "Inicia sesión o crea tu cuenta para vincular la suscripción a un perfil real de TravelFlow.",
+    "accountReadyDescription": "Esta cuenta recibirá la suscripción.",
+    "detailsLocked": "Continúa después del paso de cuenta.",
+    "paymentLocked": "Continúa después de los datos del viajero."
   }
 }

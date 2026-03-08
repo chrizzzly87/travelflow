@@ -95,6 +95,11 @@
     "backToTrip": "Torna al viaggio",
     "backToPricing": "Torna ai prezzi",
     "tripEntryCta": "Fai upgrade da questo viaggio",
-    "tripEntryDescription": "Avviato da un viaggio bloccato"
+    "tripEntryDescription": "Avviato da un viaggio bloccato",
+    "accountTitle": "Account",
+    "accountDescription": "Accedi o crea un account per collegare l’abbonamento a un vero profilo TravelFlow.",
+    "accountReadyDescription": "Questo account riceverà l’abbonamento.",
+    "detailsLocked": "Continua dopo il passaggio account.",
+    "paymentLocked": "Continua dopo i dati del viaggiatore."
   }
 }
