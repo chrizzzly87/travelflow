@@ -59,6 +59,7 @@ export interface ProgressiveImageProps {
     placeholderBlurhash?: string;
     onError?: () => void;
     disableCdn?: boolean;
+    skipFade?: boolean;
 }
 
 export const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
@@ -75,6 +76,7 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
     placeholderBlurhash,
     onError,
     disableCdn = false,
+    skipFade = false,
 }) => {
     const [isLoaded, setIsLoaded] = useState(false);
     const [hasError, setHasError] = useState(false);
