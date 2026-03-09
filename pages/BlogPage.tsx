@@ -21,17 +21,23 @@ import {
     isBlogTransitionTargetMatch,
     isPendingBlogTransitionTarget,
     isPrimaryUnmodifiedClick,
+    markBlogRouteKindSeen,
     primeBlogTransitionSnapshot,
     resolveBlogTransitionNavigationHint,
+    setPendingBlogTransitionMode,
     shouldDelayBlogCardProgressiveBlurReveal,
+    shouldUseColdBlogTransitionFallbackForKind,
     startPreparedBlogViewTransition,
     subscribeBlogTransitionState,
+    shouldUseTitleOnlyBlogTransition,
     setPendingBlogTransitionTarget,
     supportsBlogViewTransitions,
+    warmResponsiveBlogImage,
     type BlogTransitionTarget,
 } from '../shared/blogViewTransitions';
 
 const BLOG_CARD_IMAGE_SIZES = '(min-width: 1280px) 24vw, (min-width: 1024px) 30vw, (min-width: 640px) 46vw, 100vw';
+const BLOG_HEADER_IMAGE_SIZES = '(min-width: 1280px) 76rem, (min-width: 1024px) 88vw, 100vw';
 const BLOG_CARD_TRANSITION = 'transform-gpu will-change-transform transition-[transform,box-shadow,border-color] duration-300 ease-out motion-reduce:transition-none';
 const BLOG_CARD_IMAGE_TRANSITION = 'transform-gpu will-change-transform transition-transform duration-500 ease-out motion-reduce:transition-none';
 const BLOG_CARD_IMAGE_FADE = 'pointer-events-none absolute inset-0 bg-gradient-to-t from-slate-950/30 via-slate-900/8 to-transparent';
@@ -71,16 +77,19 @@ const BlogCard: React.FC<{
     const showImage = !hasImageError;
     const showEnglishBadge = locale !== DEFAULT_LOCALE && post.language === DEFAULT_LOCALE;
     const isPendingTarget = isPendingBlogTransitionTarget(post.language, post.slug);
+    const usesTitleOnlyTransition = shouldUseTitleOnlyBlogTransition(post.language, post.slug);
     const matchesTransitionHint = transitionTargetHint
         ? isBlogTransitionTargetMatch(transitionTargetHint, { language: post.language, slug: post.slug })
         : false;
-    const shouldAssignTransitionNames = viewTransitionsEnabled &&
+    const shouldAssignTitleTransition = viewTransitionsEnabled &&
         (isTransitionSource || matchesTransitionHint || isPendingTarget);
+    const shouldAssignCardTransition = shouldAssignTitleTransition && !usesTitleOnlyTransition;
+    const shouldAssignImageTransition = shouldAssignTitleTransition && !usesTitleOnlyTransition;
     const shouldDelayProgressiveBlurReveal = shouldDelayBlogCardProgressiveBlurReveal(
         isTransitionSource,
         isPendingTarget
     );
-    const transitionNames = shouldAssignTransitionNames
+    const transitionNames = shouldAssignTitleTransition
         ? getBlogPostViewTransitionNames(post.language, post.slug)
         : null;
     const imageLoading = transitionNames ? 'eager' : 'lazy';
@@ -88,15 +97,27 @@ const BlogCard: React.FC<{
     const postPath = buildLocalizedMarketingPath('blogPost', locale, { slug: post.slug });
     const prefetchPostRoute = useCallback(() => {
         void ensureBlogPostRouteModule();
-    }, []);
+        warmResponsiveBlogImage({
+            src: post.images.header.sources.large,
+            sizes: BLOG_HEADER_IMAGE_SIZES,
+            fetchPriority: 'high',
+        });
+    }, [post.images.header.sources.large]);
 
     const handleCardClick = useCallback(async (event: React.MouseEvent<HTMLAnchorElement>) => {
         if (!viewTransitionsEnabled || !isPrimaryUnmodifiedClick(event)) return;
         event.preventDefault();
+        warmResponsiveBlogImage({
+            src: post.images.header.sources.large,
+            sizes: BLOG_HEADER_IMAGE_SIZES,
+            fetchPriority: 'high',
+        });
         const transitionTarget = { language: post.language, slug: post.slug };
+        const useColdFallback = shouldUseColdBlogTransitionFallbackForKind('post');
         await startPreparedBlogViewTransition({
             prepare: ensureBlogPostRouteModule,
             beforeTransition: () => {
+                setPendingBlogTransitionMode(useColdFallback ? 'title-only' : 'full');
                 setPendingBlogTransitionTarget(transitionTarget);
                 flushSync(() => {
                     setIsTransitionSource(true);
@@ -112,7 +133,7 @@ const BlogCard: React.FC<{
                 primeBlogTransitionSnapshot();
             },
         });
-    }, [navigate, post.language, post.slug, postPath, viewTransitionsEnabled]);
+    }, [navigate, post.images.header.sources.large, post.language, post.slug, postPath, viewTransitionsEnabled]);
     const formattedDate = new Date(post.publishedAt).toLocaleDateString(localeToIntlLocale(locale), {
         month: 'short',
         day: 'numeric',
@@ -129,7 +150,7 @@ const BlogCard: React.FC<{
             lang={cardLang}
             data-blog-card-lang={cardLang}
             className={`group relative flex flex-col overflow-hidden rounded-2xl ${BLOG_CARD_TRANSITION} hover:-translate-y-0.5`}
-            style={transitionNames ? getBlogTransitionStyle(transitionNames.card, BLOG_VIEW_TRANSITION_CLASSES.card, 'contain') : undefined}
+            style={transitionNames && shouldAssignCardTransition ? getBlogTransitionStyle(transitionNames.card, BLOG_VIEW_TRANSITION_CLASSES.card, 'contain') : undefined}
         >
             <div
                 aria-hidden
@@ -143,7 +164,7 @@ const BlogCard: React.FC<{
                         <>
                             <div
                                 className="absolute inset-0 overflow-hidden rounded-t-2xl"
-                                style={transitionNames ? getBlogTransitionStyle(transitionNames.image, BLOG_VIEW_TRANSITION_CLASSES.image, 'contain') : undefined}
+                                style={transitionNames && shouldAssignImageTransition ? getBlogTransitionStyle(transitionNames.image, BLOG_VIEW_TRANSITION_CLASSES.image, 'nearest') : undefined}
                             >
                                 <ProgressiveImage
                                     src={post.images.card.sources.large}
@@ -159,8 +180,8 @@ const BlogCard: React.FC<{
                                     className={`absolute inset-0 h-full w-full rounded-t-2xl object-cover ${BLOG_CARD_IMAGE_TRANSITION} scale-100 group-hover:scale-[1.03]`}
                                     skipFade={!!transitionNames}
                                 />
-                                <div className={BLOG_CARD_IMAGE_FADE} />
                             </div>
+                            <div className={BLOG_CARD_IMAGE_FADE} />
                             <div
                                 className={`${BLOG_CARD_IMAGE_PROGRESSIVE_BLUR} transition-opacity duration-300 ease-out ${
                                     shouldDelayProgressiveBlurReveal ? 'opacity-0' : 'opacity-100'
@@ -294,6 +315,10 @@ export const BlogPage: React.FC = () => {
             forceTransitionStateRefresh((current) => current + 1);
         });
     }, [viewTransitionsEnabled]);
+
+    useEffect(() => {
+        markBlogRouteKindSeen('list');
+    }, []);
 
     useLayoutEffect(() => {
         if (!viewTransitionsEnabled) return;

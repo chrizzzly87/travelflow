@@ -1,3 +1,5 @@
+import { buildImageCdnUrl, buildImageSrcSet } from '../utils/imageDelivery';
+
 type BlogViewTransitionPart = 'card' | 'image' | 'title';
 type BlogRouteKind = 'list' | 'post' | 'other';
 
@@ -6,9 +8,20 @@ const BLOG_ROUTE_PATTERN = /^\/(?:[a-z]{2}\/)?blog(?:\/([^/?#]+))?\/?$/i;
 
 export const BLOG_VIEW_TRANSITION_DURATION = '420ms';
 
+type SeenBlogRouteKind = Exclude<BlogRouteKind, 'other'>;
+type PendingBlogTransitionMode = 'full' | 'title-only';
+
 export interface BlogTransitionTarget {
     language: string;
     slug: string;
+}
+
+export interface WarmResponsiveBlogImageOptions {
+    src: string;
+    sizes?: string;
+    srcSetWidths?: number[];
+    disableCdn?: boolean;
+    fetchPriority?: 'high' | 'low' | 'auto';
 }
 
 export type BlogTransitionSource = 'list' | 'post';
@@ -75,6 +88,14 @@ let currentBlogPostTransitionTarget: BlogTransitionTarget | null = null;
 let lastKnownBlogPostTransitionTarget: BlogTransitionTarget | null = null;
 let blogTransitionStateVersion = 0;
 const blogTransitionStateListeners = new Set<() => void>();
+const warmedResponsiveBlogImages = new Set<string>();
+const seenBlogRouteKinds = new Set<SeenBlogRouteKind>();
+let pendingBlogTransitionMode: PendingBlogTransitionMode = 'full';
+
+const notifyBlogTransitionStateChange = (): void => {
+    blogTransitionStateVersion += 1;
+    blogTransitionStateListeners.forEach((listener) => listener());
+};
 
 export const getBlogPostViewTransitionNames = (
     language: string,
@@ -167,8 +188,10 @@ export const primeBlogTransitionSnapshot = (): void => {
 
 export const setPendingBlogTransitionTarget = (target: BlogTransitionTarget | null): void => {
     pendingBlogTransitionTarget = target;
-    blogTransitionStateVersion += 1;
-    blogTransitionStateListeners.forEach((listener) => listener());
+    if (!target) {
+        pendingBlogTransitionMode = 'full';
+    }
+    notifyBlogTransitionStateChange();
 };
 
 export const getPendingBlogTransitionTarget = (): BlogTransitionTarget | null =>
@@ -205,6 +228,38 @@ export const getLastKnownBlogPostTransitionTarget = (): BlogTransitionTarget | n
 export const getBlogTransitionStateVersion = (): number =>
     blogTransitionStateVersion;
 
+export const markBlogRouteKindSeen = (kind: SeenBlogRouteKind): void => {
+    if (seenBlogRouteKinds.has(kind)) return;
+    seenBlogRouteKinds.add(kind);
+};
+
+export const shouldUseColdBlogTransitionFallbackForKind = (
+    kind: SeenBlogRouteKind
+): boolean => !seenBlogRouteKinds.has(kind);
+
+export const setPendingBlogTransitionMode = (
+    mode: PendingBlogTransitionMode
+): void => {
+    pendingBlogTransitionMode = mode;
+    notifyBlogTransitionStateChange();
+};
+
+export const shouldUseTitleOnlyBlogTransition = (
+    language: string,
+    slug: string
+): boolean =>
+    pendingBlogTransitionMode === 'title-only' &&
+    isPendingBlogTransitionTarget(language, slug);
+
+export const resetBlogTransitionWarmStateForTests = (): void => {
+    seenBlogRouteKinds.clear();
+    pendingBlogTransitionMode = 'full';
+    pendingBlogTransitionTarget = null;
+    currentBlogPostTransitionTarget = null;
+    lastKnownBlogPostTransitionTarget = null;
+    notifyBlogTransitionStateChange();
+};
+
 export const subscribeBlogTransitionState = (
     listener: () => void
 ): (() => void) => {
@@ -220,6 +275,49 @@ export const supportsBlogViewTransitions = (): boolean => {
     if (typeof viewTransitionDocument.startViewTransition !== 'function') return false;
     if (typeof window.matchMedia !== 'function') return true;
     return !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+};
+
+export const warmResponsiveBlogImage = ({
+    src,
+    sizes,
+    srcSetWidths = [480, 768, 1024, 1536],
+    disableCdn = false,
+    fetchPriority = 'auto',
+}: WarmResponsiveBlogImageOptions): void => {
+    if (typeof window === 'undefined' || typeof Image === 'undefined' || !src) return;
+
+    const key = JSON.stringify([src, sizes || '', srcSetWidths.join(','), disableCdn]);
+    if (warmedResponsiveBlogImages.has(key)) return;
+
+    const preloadImage = new Image();
+    const lastWidth = srcSetWidths[srcSetWidths.length - 1];
+    const srcSet = disableCdn
+        ? ''
+        : buildImageSrcSet(src, srcSetWidths, { quality: 66 });
+    const resolvedSrc = disableCdn || !lastWidth
+        ? src
+        : buildImageCdnUrl(src, { width: lastWidth, quality: 66 });
+
+    warmedResponsiveBlogImages.add(key);
+
+    if (sizes) preloadImage.sizes = sizes;
+    if (srcSet) preloadImage.srcset = srcSet;
+    preloadImage.decoding = 'async';
+    if ('fetchPriority' in preloadImage) {
+        (preloadImage as HTMLImageElement & { fetchPriority?: 'high' | 'low' | 'auto' }).fetchPriority = fetchPriority;
+    }
+
+    const reset = () => {
+        preloadImage.onload = null;
+        preloadImage.onerror = null;
+    };
+
+    preloadImage.onload = reset;
+    preloadImage.onerror = () => {
+        warmedResponsiveBlogImages.delete(key);
+        reset();
+    };
+    preloadImage.src = resolvedSrc;
 };
 
 export const getBlogRouteKindFromPath = (pathname: string): BlogRouteKind => {
@@ -295,8 +393,8 @@ const startTransitionWithTypes = (
 
 const clearBlogTransitionState = (): void => {
     pendingBlogTransitionTarget = null;
-    blogTransitionStateVersion += 1;
-    blogTransitionStateListeners.forEach((listener) => listener());
+    pendingBlogTransitionMode = 'full';
+    notifyBlogTransitionStateChange();
 };
 
 export const startBlogViewTransition = ({

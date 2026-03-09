@@ -5,7 +5,9 @@ import {
     getBlogRouteKindFromPath,
     getLastKnownBlogPostTransitionTarget,
     isBlogListDetailTransition,
+    setPendingBlogTransitionMode,
     setPendingBlogTransitionTarget,
+    shouldUseColdBlogTransitionFallbackForKind,
     startBlogViewTransition,
     supportsBlogViewTransitions,
     type BlogViewTransitionType,
@@ -33,8 +35,11 @@ const wrapHistoryListenerWithBlogTransitions = (
         return;
     }
 
-    setPendingBlogTransitionTarget(currentTarget);
     const toKind = getBlogRouteKindFromPath(toPathname);
+    setPendingBlogTransitionMode(
+        toKind !== 'other' && shouldUseColdBlogTransitionFallbackForKind(toKind) ? 'title-only' : 'full'
+    );
+    setPendingBlogTransitionTarget(currentTarget);
     const type: BlogViewTransitionType = toKind === 'post' ? 'blog-expand' : 'blog-collapse';
 
     startBlogViewTransition({

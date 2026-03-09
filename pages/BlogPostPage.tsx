@@ -15,16 +15,24 @@ import type { Components } from 'react-markdown';
 import {
     BLOG_VIEW_TRANSITION_CLASSES,
     createBlogTransitionNavigationState,
-    setCurrentBlogPostTransitionTarget,
     getBlogPostViewTransitionNames,
+    isPendingBlogTransitionTarget,
     isPrimaryUnmodifiedClick,
+    markBlogRouteKindSeen,
     primeBlogTransitionSnapshot,
+    setCurrentBlogPostTransitionTarget,
+    setPendingBlogTransitionMode,
     setPendingBlogTransitionTarget,
+    shouldUseColdBlogTransitionFallbackForKind,
+    shouldUseTitleOnlyBlogTransition,
     startPreparedBlogViewTransition,
+    subscribeBlogTransitionState,
     supportsBlogViewTransitions,
+    warmResponsiveBlogImage,
 } from '../shared/blogViewTransitions';
 
 const BLOG_HEADER_IMAGE_SIZES = '(min-width: 1280px) 76rem, (min-width: 1024px) 88vw, 100vw';
+const BLOG_CARD_IMAGE_SIZES = '(min-width: 1280px) 24vw, (min-width: 1024px) 30vw, (min-width: 640px) 46vw, 100vw';
 const BLOG_HEADER_IMAGE_FADE = 'pointer-events-none absolute inset-0 bg-gradient-to-t from-slate-950/28 via-slate-900/10 to-transparent';
 const BLOG_HEADER_IMAGE_PROGRESSIVE_BLUR = 'pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-slate-950/12 backdrop-blur-md [mask-image:linear-gradient(to_top,black_0%,rgba(0,0,0,0.68)_40%,transparent_100%)]';
 const BLOG_DEFERRED_SECTION_STYLE: React.CSSProperties = {
@@ -188,11 +196,20 @@ export const BlogPostPage: React.FC = () => {
     const { t } = useTranslation('blog');
     const viewTransitionsEnabled = useMemo(() => supportsBlogViewTransitions(), []);
     const blogPath = buildLocalizedMarketingPath('blog', locale);
+    const [, forceTransitionStateRefresh] = useState(0);
 
     const post = useMemo(() => (slug ? getBlogPostBySlugWithFallback(slug, locale) : undefined), [locale, slug]);
+    const [isTransitionSource, setIsTransitionSource] = useState(false);
+    const isTransitionTarget = post ? isPendingBlogTransitionTarget(post.language, post.slug) : false;
+    const usesTitleOnlyTransition = post
+        ? shouldUseTitleOnlyBlogTransition(post.language, post.slug)
+        : false;
+    const shouldAssignTitleTransition = viewTransitionsEnabled && (isTransitionSource || isTransitionTarget);
+    const shouldAssignCardTransition = shouldAssignTitleTransition && !usesTitleOnlyTransition;
+    const shouldAssignImageTransition = shouldAssignTitleTransition && !usesTitleOnlyTransition;
     const postTransitionNames = useMemo(
-        () => (post && viewTransitionsEnabled ? getBlogPostViewTransitionNames(post.language, post.slug) : null),
-        [post, viewTransitionsEnabled]
+        () => (post && shouldAssignTitleTransition ? getBlogPostViewTransitionNames(post.language, post.slug) : null),
+        [post, shouldAssignTitleTransition]
     );
     const [hasHeaderImageError, setHasHeaderImageError] = useState(false);
 
@@ -224,16 +241,32 @@ export const BlogPostPage: React.FC = () => {
         : blogPath;
     const prefetchBlogListRoute = useCallback(() => {
         void ensureBlogListRouteModule();
-    }, []);
+        if (!post) return;
+        warmResponsiveBlogImage({
+            src: post.images.card.sources.large,
+            sizes: BLOG_CARD_IMAGE_SIZES,
+            fetchPriority: 'high',
+        });
+    }, [post]);
 
     const handleBackToBlogClick = useCallback(async (event: React.MouseEvent<HTMLAnchorElement>) => {
         if (!viewTransitionsEnabled || !isPrimaryUnmodifiedClick(event)) return;
         event.preventDefault();
+        warmResponsiveBlogImage({
+            src: post.images.card.sources.large,
+            sizes: BLOG_CARD_IMAGE_SIZES,
+            fetchPriority: 'high',
+        });
         const transitionTarget = { language: post.language, slug: post.slug };
+        const useColdFallback = shouldUseColdBlogTransitionFallbackForKind('list');
         await startPreparedBlogViewTransition({
             prepare: ensureBlogListRouteModule,
             beforeTransition: () => {
+                setPendingBlogTransitionMode(useColdFallback ? 'title-only' : 'full');
                 setPendingBlogTransitionTarget(transitionTarget);
+                flushSync(() => {
+                    setIsTransitionSource(true);
+                });
             },
             type: 'blog-collapse',
             update: () => {
@@ -245,7 +278,7 @@ export const BlogPostPage: React.FC = () => {
                 primeBlogTransitionSnapshot();
             },
         });
-    }, [blogPath, navigate, post.language, post.slug, viewTransitionsEnabled]);
+    }, [blogPath, navigate, post.images.card.sources.large, post.language, post.slug, viewTransitionsEnabled]);
 
     useEffect(() => {
         if (!post || !viewTransitionsEnabled) {
@@ -258,10 +291,30 @@ export const BlogPostPage: React.FC = () => {
         };
     }, [post, viewTransitionsEnabled]);
 
+    useEffect(() => {
+        if (!viewTransitionsEnabled) return;
+        return subscribeBlogTransitionState(() => {
+            forceTransitionStateRefresh((current) => current + 1);
+        });
+    }, [viewTransitionsEnabled]);
+
+    useEffect(() => {
+        markBlogRouteKindSeen('post');
+    }, []);
+
     useLayoutEffect(() => {
         if (!viewTransitionsEnabled) return;
         void ensureBlogListRouteModule();
     }, [viewTransitionsEnabled]);
+
+    useEffect(() => {
+        if (!post || !viewTransitionsEnabled) return;
+        warmResponsiveBlogImage({
+            src: post.images.card.sources.large,
+            sizes: BLOG_CARD_IMAGE_SIZES,
+            fetchPriority: 'high',
+        });
+    }, [post, viewTransitionsEnabled]);
 
     useEffect(() => {
         if (!post) return;
@@ -315,14 +368,14 @@ export const BlogPostPage: React.FC = () => {
 
                 <div
                     className="relative w-full"
-                    style={postTransitionNames ? getBlogTransitionStyle(postTransitionNames.card, BLOG_VIEW_TRANSITION_CLASSES.card, 'contain') : undefined}
+                    style={postTransitionNames && shouldAssignCardTransition ? getBlogTransitionStyle(postTransitionNames.card, BLOG_VIEW_TRANSITION_CLASSES.card, 'contain') : undefined}
                 >
                     <div className="relative mb-8 h-56 w-full overflow-hidden rounded-2xl bg-slate-100 md:h-80 lg:h-[26rem]">
                         {!hasHeaderImageError ? (
                             <>
                                 <div
                                     className="absolute inset-0 overflow-hidden rounded-2xl"
-                                    style={postTransitionNames ? getBlogTransitionStyle(postTransitionNames.image, BLOG_VIEW_TRANSITION_CLASSES.image, 'contain') : undefined}
+                                    style={postTransitionNames && shouldAssignImageTransition ? getBlogTransitionStyle(postTransitionNames.image, BLOG_VIEW_TRANSITION_CLASSES.image, 'nearest') : undefined}
                                 >
                                     <ProgressiveImage
                                         src={post.images.header.sources.large}
@@ -338,9 +391,9 @@ export const BlogPostPage: React.FC = () => {
                                         className="absolute inset-0 h-full w-full object-cover"
                                         skipFade={!!postTransitionNames}
                                     />
-                                    <div className={BLOG_HEADER_IMAGE_FADE} />
-                                    <div className={BLOG_HEADER_IMAGE_PROGRESSIVE_BLUR} />
                                 </div>
+                                <div className={BLOG_HEADER_IMAGE_FADE} />
+                                <div className={BLOG_HEADER_IMAGE_PROGRESSIVE_BLUR} />
                             </>
                         ) : (
                             <div className={`absolute inset-0 rounded-2xl ${post.coverColor}`} />

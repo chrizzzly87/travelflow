@@ -7,7 +7,9 @@ const blogTransitionMocks = vi.hoisted(() => ({
     getLastKnownBlogPostTransitionTarget: vi.fn(),
     getBlogRouteKindFromPath: vi.fn(),
     isBlogListDetailTransition: vi.fn(),
+    setPendingBlogTransitionMode: vi.fn(),
     setPendingBlogTransitionTarget: vi.fn(),
+    shouldUseColdBlogTransitionFallbackForKind: vi.fn(),
     startBlogViewTransition: vi.fn(),
     supportsBlogViewTransitions: vi.fn(),
 }));
@@ -25,7 +27,9 @@ vi.mock('../../shared/blogViewTransitions', () => ({
     getLastKnownBlogPostTransitionTarget: blogTransitionMocks.getLastKnownBlogPostTransitionTarget,
     getBlogRouteKindFromPath: blogTransitionMocks.getBlogRouteKindFromPath,
     isBlogListDetailTransition: blogTransitionMocks.isBlogListDetailTransition,
+    setPendingBlogTransitionMode: blogTransitionMocks.setPendingBlogTransitionMode,
     setPendingBlogTransitionTarget: blogTransitionMocks.setPendingBlogTransitionTarget,
+    shouldUseColdBlogTransitionFallbackForKind: blogTransitionMocks.shouldUseColdBlogTransitionFallbackForKind,
     startBlogViewTransition: blogTransitionMocks.startBlogViewTransition,
     supportsBlogViewTransitions: blogTransitionMocks.supportsBlogViewTransitions,
 }));
@@ -83,6 +87,7 @@ describe('shared/appHistory', () => {
         blogTransitionMocks.supportsBlogViewTransitions.mockReturnValue(true);
         blogTransitionMocks.isBlogListDetailTransition.mockReturnValue(true);
         blogTransitionMocks.getBlogRouteKindFromPath.mockReturnValue('list');
+        blogTransitionMocks.shouldUseColdBlogTransitionFallbackForKind.mockReturnValue(false);
     });
 
     it('wraps POP blog list/detail updates in a view transition and commits inside flushSync', () => {
@@ -102,6 +107,7 @@ describe('shared/appHistory', () => {
             location: { pathname: '/blog' },
         });
 
+        expect(blogTransitionMocks.setPendingBlogTransitionMode).toHaveBeenCalledWith('full');
         expect(blogTransitionMocks.setPendingBlogTransitionTarget).toHaveBeenCalledWith({
             language: 'en',
             slug: 'how-to-plan-multi-city-trip',
@@ -139,5 +145,27 @@ describe('shared/appHistory', () => {
             action: 'PUSH',
             location: { pathname: '/blog/how-to-plan-multi-city-trip' },
         });
+    });
+
+    it('downgrades cold POP transitions to title-only mode for unseen destination kinds', () => {
+        const fakeHistory = createFakeHistory('/blog/best-time-visit-japan');
+        const wrappedHistory = createBlogTransitionAwareBrowserHistory(fakeHistory as never);
+        const listener = vi.fn();
+
+        blogTransitionMocks.getCurrentBlogPostTransitionTarget.mockReturnValue({
+            language: 'en',
+            slug: 'best-time-visit-japan',
+        });
+        blogTransitionMocks.getBlogRouteKindFromPath.mockReturnValue('list');
+        blogTransitionMocks.shouldUseColdBlogTransitionFallbackForKind.mockReturnValue(true);
+
+        wrappedHistory.listen(listener);
+        fakeHistory.emit({
+            action: 'POP',
+            location: { pathname: '/blog' },
+        });
+
+        expect(blogTransitionMocks.setPendingBlogTransitionMode).toHaveBeenCalledWith('title-only');
+        expect(blogTransitionMocks.startBlogViewTransition).toHaveBeenCalledTimes(1);
     });
 });

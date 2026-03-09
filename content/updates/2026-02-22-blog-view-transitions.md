@@ -28,7 +28,12 @@ summary: "Adds smooth shared-element transitions between the blog list and artic
 - [x] [Improved] 🪟 Shared blog cards now keep a solid surface during expansion, which prevents neighboring article thumbnails from flashing through at the start of the transition.
 - [x] [Improved] 🌫️ Returning from an article to the overview now reveals the card blur band more softly instead of popping it in at the very end.
 - [x] [Improved] 🧠 First blog transitions now warm the opposite route earlier without delaying the animation start, so cold navigation stays responsive while shared motion remains reliable.
+- [x] [Improved] 🖼️ Cold-start blog transitions now warm the opposite image size in advance, which keeps the first article-to-overview animation from falling back to an unprepared image state.
+- [x] [Improved] 🪟 The temporary article-card snapshot now fades away faster during return transitions, so the shared image motion stays visually dominant instead of lingering as a large overlay.
+- [x] [Improved] 🧭 The very first cold blog transition now falls back to a cleaner text-led animation, avoiding broken hero-image morphs before both blog routes have been loaded once.
 - [ ] [Internal] 🧩 Added feature-detected transition wiring, tuned shared-element animation rules, and regression coverage for transition helpers and media mapping.
 - [ ] [Internal] 🧭 Switched blog history transitions onto a shared history router wrapper and committed POP route updates inside the transition callback so browser back/forward animates reliably.
 - [ ] [Internal] ❄️ Replaced blocking cold-start waits with earlier route prewarming on mount and interaction intent, keeping the transition callback synchronous.
+- [ ] [Internal] 🖼️ Added responsive image warmup caching for the active blog target so cold transitions can capture the correct image candidate without delaying navigation.
+- [ ] [Internal] 🧪 Added a cold-start title-only fallback mode for first-run blog transitions, so the app avoids unreliable image/card pairing until both sides have been mounted once.
 - [ ] [Internal] 📝 Added a detailed Issue #109 postmortem in docs with timeline, root causes, regressions, and a handoff checklist for follow-up AI debugging.

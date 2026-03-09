@@ -18,20 +18,26 @@ import {
     isBlogTransitionTargetMatch,
     isPendingBlogTransitionTarget,
     isPrimaryUnmodifiedClick,
+    markBlogRouteKindSeen,
     primeBlogTransitionSnapshot,
+    resetBlogTransitionWarmStateForTests,
     resolveBlogTransitionNavigationHint,
     setCurrentBlogPostTransitionTarget,
+    setPendingBlogTransitionMode,
     setPendingBlogTransitionTarget,
     shouldDelayBlogCardProgressiveBlurReveal,
+    shouldUseColdBlogTransitionFallbackForKind,
+    shouldUseTitleOnlyBlogTransition,
     startPreparedBlogViewTransition,
     startBlogViewTransition,
     subscribeBlogTransitionState,
     supportsBlogViewTransitions,
+    warmResponsiveBlogImage,
 } from '../../shared/blogViewTransitions';
 
 let originalStartViewTransition: unknown;
 let originalMatchMedia: typeof window.matchMedia;
-let originalRequestAnimationFrame: typeof window.requestAnimationFrame;
+let originalImage: typeof window.Image;
 
 const createReducedMotionMediaQueryList = (matches: boolean): MediaQueryList => ({
     matches,
@@ -47,7 +53,7 @@ const createReducedMotionMediaQueryList = (matches: boolean): MediaQueryList => 
 beforeEach(() => {
     originalStartViewTransition = (document as Document & { startViewTransition?: unknown }).startViewTransition;
     originalMatchMedia = window.matchMedia;
-    originalRequestAnimationFrame = window.requestAnimationFrame;
+    originalImage = window.Image;
 });
 
 afterEach(() => {
@@ -57,10 +63,11 @@ afterEach(() => {
         value: originalStartViewTransition,
     });
     window.matchMedia = originalMatchMedia;
-    window.requestAnimationFrame = originalRequestAnimationFrame;
+    window.Image = originalImage;
     document.body.innerHTML = '';
     setPendingBlogTransitionTarget(null);
     setCurrentBlogPostTransitionTarget(null);
+    resetBlogTransitionWarmStateForTests();
 });
 
 describe('shared/blogViewTransitions', () => {
@@ -232,6 +239,71 @@ describe('shared/blogViewTransitions', () => {
             value: undefined,
         });
         expect(supportsBlogViewTransitions()).toBe(false);
+    });
+
+    it('warms responsive blog images once per image configuration', () => {
+        const uniqueSrc = `/images/blog/japan-card-${Math.random().toString(36).slice(2)}.webp`;
+        const createdImages: Array<{
+            sizes: string;
+            src: string;
+            srcset: string;
+            decoding: string;
+            fetchPriority?: string;
+        }> = [];
+
+        class MockImage {
+            sizes = '';
+            src = '';
+            srcset = '';
+            decoding = '';
+            fetchPriority: 'high' | 'low' | 'auto' = 'auto';
+            onload: null | (() => void) = null;
+            onerror: null | (() => void) = null;
+
+            constructor() {
+                createdImages.push(this);
+            }
+        }
+
+        window.Image = MockImage as unknown as typeof window.Image;
+
+        warmResponsiveBlogImage({
+            src: uniqueSrc,
+            sizes: '(min-width: 1280px) 24vw, 100vw',
+            fetchPriority: 'high',
+        });
+        warmResponsiveBlogImage({
+            src: uniqueSrc,
+            sizes: '(min-width: 1280px) 24vw, 100vw',
+            fetchPriority: 'high',
+        });
+
+        expect(createdImages).toHaveLength(1);
+        expect(createdImages[0]).toMatchObject({
+            sizes: '(min-width: 1280px) 24vw, 100vw',
+            src: uniqueSrc,
+            decoding: 'async',
+            fetchPriority: 'high',
+        });
+        expect(createdImages[0].srcset).toContain(`${uniqueSrc} 480w`);
+        expect(createdImages[0].srcset).toContain(`${uniqueSrc} 1536w`);
+    });
+
+    it('falls back to title-only transitions when the destination blog route kind has not been seen yet', () => {
+        expect(shouldUseColdBlogTransitionFallbackForKind('list')).toBe(true);
+        expect(shouldUseColdBlogTransitionFallbackForKind('post')).toBe(true);
+
+        markBlogRouteKindSeen('list');
+        expect(shouldUseColdBlogTransitionFallbackForKind('list')).toBe(false);
+        expect(shouldUseColdBlogTransitionFallbackForKind('post')).toBe(true);
+
+        setPendingBlogTransitionMode('title-only');
+        setPendingBlogTransitionTarget({ language: 'en', slug: 'best-time-visit-japan' });
+        expect(shouldUseTitleOnlyBlogTransition('en', 'best-time-visit-japan')).toBe(true);
+        expect(shouldUseTitleOnlyBlogTransition('en', 'weekend-getaway-planning')).toBe(false);
+
+        setPendingBlogTransitionTarget(null);
+        expect(shouldUseTitleOnlyBlogTransition('en', 'best-time-visit-japan')).toBe(false);
     });
 
     it('starts a view transition with typed options when supported and falls back otherwise', async () => {
