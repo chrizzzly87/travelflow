@@ -1,16 +1,19 @@
 ---
 id: rel-2026-03-02-payment-provider-analysis-spike-174
-version: v0.77.0
-title: "Payment provider decision memo for subscription launch"
-date: 2026-03-02
-published_at: 2026-03-02T10:45:00Z
-status: draft
+version: v0.86.0
+title: "Dedicated checkout and upgrade flow for paid plans"
+date: 2026-03-09
+published_at: 2026-03-09T20:22:04Z
+status: published
 notify_in_app: false
 in_app_hours: 24
-summary: "Completed the payment-provider spike and locked a MoR-first recommendation for upcoming subscription implementation."
+summary: "Added a dedicated paid-plan checkout, clearer upgrade prompts from locked trips, and the billing groundwork for Paddle subscriptions."
 ---
 
 ## Changes
+- [x] [New feature] 💳 Added a dedicated checkout flow for paid-plan upgrades with inline sign-in, traveler details, and a cleaner step-by-step payment handoff.
+- [x] [Improved] 🚀 Upgrading from trip limits or expired trips now sends you into a clearer paid-plan path with stronger Explorer plan framing and better benefit prompts.
+- [x] [Improved] ✅ Payment completion now gives clearer next steps and can continue claim-based trip creation after a successful upgrade.
 - [ ] [Internal] 🧮 Completed a weighted provider analysis for issue #174, selected Paddle as primary with Lemon Squeezy as backup, and froze the follow-up subscription integration contracts for issue #216.
 - [ ] [Internal] 🔁 Added Paddle checkout/webhook implementation foundations for issue #216, including signature verification, webhook idempotency logging, Supabase subscription sync, and a dedicated setup/testing runbook.
 - [ ] [Internal] 🧪 Added a `verify_only` webhook sync mode so real Paddle sandbox checkout and webhook delivery can be tested end-to-end before Supabase migration changes are merged.
@@ -30,6 +33,4 @@ summary: "Completed the payment-provider spike and locked a MoR-first recommenda
 - [ ] [Internal] 🧩 Replaced the checkout rail's broken tab chrome with a cleaner underline switcher, tightened country/flag alignment in traveler details, and corrected the shared admin header layout regression.
 - [ ] [Internal] 🛠️ Hardened Paddle repair tooling with targeted `sub_...` reconciliation and retry-aware rate-limit handling so a single missed sandbox subscription can be reapplied without relying on the broad Paddle list scan.
 - [ ] [Internal] 🧾 Added subscription-status pills and filtering to the admin users table so support can spot active, canceled, past-due, or missing billing state directly in the main user workspace.
-- [ ] [Internal] 🎯 Reworked pricing cards and locked-trip upgrade surfaces so plan selection, trip-limit upsells, and expired-trip messaging now push users into the dedicated checkout flow with clearer Explorer/Premium value framing.
-- [ ] [Internal] 🧭 Improved checkout completion for claim-based upgrades so successful payment can resume queued trip generation, surface the resulting trip directly, and avoid bouncing claim users toward irrelevant profile actions.
 - [ ] [Internal] 🧪 Documented the recommended sandbox/live env strategy for local development, Netlify previews, and production so the eventual Paddle live cutover stays a Netlify-context swap instead of a code-level env rename exercise.
