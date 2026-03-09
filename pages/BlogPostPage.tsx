@@ -1020,7 +1020,7 @@ export const BlogPostPage: React.FC = () => {
                     className="relative w-full"
                     style={postTransitionNames && shouldAssignCardTransition ? getBlogTransitionStyle(postTransitionNames.card, BLOG_VIEW_TRANSITION_CLASSES.card, 'contain') : undefined}
                 >
-                    <div className={`relative mb-8 h-56 overflow-hidden rounded-2xl md:h-80 lg:h-[26rem] ${hasHeaderImageError ? post.coverColor : 'bg-slate-100'}`}>
+                    <div className={`relative z-10 mb-8 h-52 overflow-hidden rounded-2xl md:h-72 lg:h-80 ${hasHeaderImageError ? post.coverColor : 'bg-slate-100'}`}>
                         {!hasHeaderImageError && (
                             <>
                                 <div
