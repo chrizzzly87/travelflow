@@ -1,12 +1,17 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { useLocation } from 'react-router-dom';
+import { getFreePlanEntitlements } from '../config/planCatalog';
 import { trackEvent } from '../services/analyticsService';
 import { appendAuthTraceEntry } from '../services/authTraceService';
 import type { UserAccessContext } from '../types';
 import { stripLocalePrefix } from '../config/routes';
 import { isSimulatedLoggedIn, setSimulatedLoggedIn } from '../services/simulatedLoginService';
 import type { UserProfileRecord } from '../services/profileService';
+import {
+    readPersistedSupabaseSessionHint,
+    type PersistedSupabaseSessionHint,
+} from '../services/authSessionPersistenceService';
 
 type AuthServiceModule = typeof import('../services/authService');
 type ProfileServiceModule = typeof import('../services/profileService');
@@ -56,6 +61,8 @@ const hasAuthCallbackPayload = (): boolean => {
 
 const DEV_ADMIN_BYPASS_DISABLED_STORAGE_KEY = 'tf_dev_admin_bypass_disabled';
 const DEV_ADMIN_BYPASS_USER_ID = 'dev-admin-id';
+const OPTIMISTIC_AUTH_HINT_SESSION_LIFETIME_SECONDS = 300;
+const FREE_ENTITLEMENTS = getFreePlanEntitlements();
 
 export const shouldEnableDevAdminBypass = (
     isDevRuntime = import.meta.env.DEV,
@@ -84,6 +91,53 @@ export const shouldUseDevAdminBypassSession = (
     bypassEnabled
     && (!sessionUserId || sessionUserId === DEV_ADMIN_BYPASS_USER_ID)
 );
+
+export const shouldUseOptimisticMarketingAuthHint = (pathname: string): boolean =>
+    !isAuthBootstrapCriticalPath(pathname);
+
+export const createOptimisticAccessFromSessionHint = (
+    hint: PersistedSupabaseSessionHint
+): UserAccessContext => ({
+    userId: hint.userId,
+    email: hint.email,
+    isAnonymous: false,
+    role: 'user',
+    tierKey: 'tier_free',
+    entitlements: FREE_ENTITLEMENTS,
+    onboardingCompleted: true,
+    accountStatus: 'active',
+    termsCurrentVersion: null,
+    termsRequiresReaccept: false,
+    termsAcceptedVersion: null,
+    termsAcceptedAt: null,
+    termsAcceptanceRequired: false,
+    termsNoticeRequired: false,
+});
+
+export const createOptimisticSessionFromSessionHint = (
+    hint: PersistedSupabaseSessionHint
+): Session => {
+    const now = Math.floor(Date.now() / 1000);
+    const expiresAt = hint.expiresAt && Number.isFinite(hint.expiresAt)
+        ? hint.expiresAt
+        : now + OPTIMISTIC_AUTH_HINT_SESSION_LIFETIME_SECONDS;
+
+    return {
+        access_token: 'optimistic-auth-hint',
+        refresh_token: 'optimistic-auth-hint',
+        expires_in: Math.max(1, expiresAt - now),
+        expires_at: expiresAt,
+        token_type: 'bearer',
+        user: {
+            id: hint.userId,
+            email: hint.email ?? undefined,
+            app_metadata: { provider: 'email', providers: ['email'] },
+            user_metadata: {},
+            aud: 'authenticated',
+            created_at: new Date(0).toISOString(),
+        } as Session['user'],
+    };
+};
 
 interface AuthContextValue {
     session: Session | null;
@@ -167,6 +221,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const hasBootstrappedRef = useRef(false);
     const isBootstrappingRef = useRef(false);
     const profileLoadRequestIdRef = useRef(0);
+    const optimisticAuthHintRef = useRef<PersistedSupabaseSessionHint | null>(
+        shouldUseOptimisticMarketingAuthHint(location.pathname)
+            ? readPersistedSupabaseSessionHint()
+            : null
+    );
 
     const resetProfileState = useCallback(() => {
         profileLoadRequestIdRef.current += 1;
@@ -569,22 +628,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             };
         }
 
+        const optimisticAuthHint = isLoading && shouldUseOptimisticMarketingAuthHint(location.pathname)
+            ? optimisticAuthHintRef.current
+            : null;
+        const effectiveSession = session ?? (
+            optimisticAuthHint
+                ? createOptimisticSessionFromSessionHint(optimisticAuthHint)
+                : null
+        );
+        const effectiveAccess = access ?? (
+            optimisticAuthHint
+                ? createOptimisticAccessFromSessionHint(optimisticAuthHint)
+                : null
+        );
         const hasValidBoundAccess = Boolean(
-            session?.user
-            && access
-            && access.userId
-            && access.userId === session.user.id
+            effectiveSession?.user
+            && effectiveAccess
+            && effectiveAccess.userId
+            && effectiveAccess.userId === effectiveSession.user.id
         );
         const isAuthenticated = Boolean(
             hasValidBoundAccess
-            && !access?.isAnonymous
-            && access?.accountStatus === 'active'
+            && !effectiveAccess?.isAnonymous
+            && effectiveAccess?.accountStatus === 'active'
         );
-        const isAnonymous = Boolean(session?.user && access?.isAnonymous);
-        const isAdmin = access?.role === 'admin';
+        const isAnonymous = Boolean(effectiveSession?.user && effectiveAccess?.isAnonymous);
+        const isAdmin = effectiveAccess?.role === 'admin';
         return {
-            session,
-            access,
+            session: effectiveSession,
+            access: effectiveAccess,
             profile,
             isLoading,
             isProfileLoading,
