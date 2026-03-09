@@ -38,7 +38,7 @@ import {
 
 const BLOG_CARD_IMAGE_SIZES = '(min-width: 1280px) 24vw, (min-width: 1024px) 30vw, (min-width: 640px) 46vw, 100vw';
 const BLOG_HEADER_IMAGE_SIZES = '(min-width: 1280px) 76rem, (min-width: 1024px) 88vw, 100vw';
-const BLOG_CARD_TRANSITION = 'transform-gpu will-change-transform transition-[transform,box-shadow,border-color] duration-300 ease-out motion-reduce:transition-none';
+const BLOG_CARD_TRANSITION = 'transition-[box-shadow,border-color] duration-300 ease-out motion-reduce:transition-none';
 const BLOG_CARD_IMAGE_TRANSITION = 'transform-gpu will-change-transform transition-transform duration-500 ease-out motion-reduce:transition-none';
 const BLOG_CARD_IMAGE_FADE = 'pointer-events-none absolute inset-0 bg-gradient-to-t from-slate-950/30 via-slate-900/8 to-transparent';
 const BLOG_CARD_IMAGE_PROGRESSIVE_BLUR = 'pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-slate-950/12 backdrop-blur-md [mask-image:linear-gradient(to_top,black_0%,rgba(0,0,0,0.65)_44%,transparent_100%)]';
@@ -149,7 +149,7 @@ const BlogCard: React.FC<{
             onPointerEnter={prefetchPostRoute}
             lang={cardLang}
             data-blog-card-lang={cardLang}
-            className={`group relative flex flex-col overflow-hidden rounded-2xl ${BLOG_CARD_TRANSITION} hover:-translate-y-0.5`}
+            className={`group relative flex flex-col overflow-hidden rounded-2xl ${BLOG_CARD_TRANSITION}`}
             style={transitionNames && shouldAssignCardTransition ? getBlogTransitionStyle(transitionNames.card, BLOG_VIEW_TRANSITION_CLASSES.card, 'contain') : undefined}
         >
             <div
@@ -158,7 +158,7 @@ const BlogCard: React.FC<{
             />
             <div className="relative z-10 flex flex-1 flex-col">
                 <div
-                    className={`relative aspect-[3/1] overflow-hidden rounded-t-2xl ${showImage ? 'bg-slate-100' : `${post.coverColor} flex items-center justify-center`}`}
+                    className={`relative aspect-[2/1] overflow-hidden rounded-t-2xl ${showImage ? 'bg-slate-100' : `${post.coverColor} flex items-center justify-center`}`}
                 >
                     {showImage ? (
                         <>
@@ -177,7 +177,7 @@ const BlogCard: React.FC<{
                                     loading={imageLoading}
                                     fetchPriority={imageFetchPriority}
                                     onError={() => setHasImageError(true)}
-                                    className={`absolute inset-0 h-full w-full rounded-t-2xl object-cover ${BLOG_CARD_IMAGE_TRANSITION} scale-100 group-hover:scale-[1.03]`}
+                                    className={`absolute inset-0 h-full w-full rounded-t-2xl object-cover ${BLOG_CARD_IMAGE_TRANSITION} scale-100`}
                                     skipFade={!!transitionNames}
                                 />
                             </div>
