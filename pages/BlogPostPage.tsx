@@ -15,14 +15,15 @@ import type { Components } from 'react-markdown';
 import {
     BLOG_VIEW_TRANSITION_CLASSES,
     createBlogTransitionNavigationState,
+    hasWarmedBlogRouteKind,
+    markBlogRouteKindWarm,
     setCurrentBlogPostTransitionTarget,
     getBlogPostViewTransitionNames,
     isPrimaryUnmodifiedClick,
     primeBlogTransitionSnapshot,
     setPendingBlogTransitionTarget,
-    startBlogViewTransition,
+    startPreparedBlogViewTransition,
     supportsBlogViewTransitions,
-    getIsFirstBlogTransition,
     waitForBlogTransitionTarget,
 } from '../shared/blogViewTransitions';
 
@@ -229,22 +230,30 @@ export const BlogPostPage: React.FC = () => {
         if (!viewTransitionsEnabled || !isPrimaryUnmodifiedClick(event)) return;
         event.preventDefault();
         const transitionTarget = { language: post.language, slug: post.slug };
-        setPendingBlogTransitionTarget(transitionTarget);
-        try {
-            await ensureBlogListRouteModule();
-        } catch {
-            // Ignore preload errors and rely on router fallback behavior.
-        }
-        startBlogViewTransition(async () => {
-            flushSync(() => {
-                navigate(blogPath, {
-                    state: createBlogTransitionNavigationState('post', transitionTarget),
+        const shouldStabilizeColdTarget = !hasWarmedBlogRouteKind('list');
+        await startPreparedBlogViewTransition({
+            prepare: ensureBlogListRouteModule,
+            beforeTransition: () => {
+                setPendingBlogTransitionTarget(transitionTarget);
+            },
+            waitForReady: shouldStabilizeColdTarget
+                ? () => waitForBlogTransitionTarget(transitionTarget, 'list', 180)
+                : undefined,
+            type: 'blog-collapse',
+            update: () => {
+                flushSync(() => {
+                    navigate(blogPath, {
+                        state: createBlogTransitionNavigationState('post', transitionTarget),
+                    });
                 });
-            });
-            primeBlogTransitionSnapshot();
-            await waitForBlogTransitionTarget(transitionTarget, 'list');
+                primeBlogTransitionSnapshot();
+            },
         });
     }, [blogPath, navigate, post.language, post.slug, viewTransitionsEnabled]);
+
+    useEffect(() => {
+        markBlogRouteKindWarm('post');
+    }, []);
 
     useEffect(() => {
         if (!post || !viewTransitionsEnabled) {
@@ -310,27 +319,17 @@ export const BlogPostPage: React.FC = () => {
                     </div>
                 )}
 
-                <div className="relative">
-                    <div
-                        aria-hidden
-                        className="pointer-events-none absolute rounded-[1.75rem]"
-                        style={
-                            postTransitionNames && !getIsFirstBlogTransition()
-                                ? ({
-                                    ...getBlogTransitionStyle(postTransitionNames.card, BLOG_VIEW_TRANSITION_CLASSES.card, 'contain'),
-                                    insetInline: 0,
-                                    insetBlockStart: 0,
-                                    blockSize: 'clamp(26rem, 58vh, 42rem)',
-                                } as React.CSSProperties)
-                                : undefined
-                        }
-                    />
-                    <div className="mb-8 h-52 overflow-hidden rounded-2xl md:h-72 lg:h-80 relative z-10"
-                        style={postTransitionNames ? getBlogTransitionStyle(postTransitionNames.image, BLOG_VIEW_TRANSITION_CLASSES.image, 'nearest') : undefined}
-                    >
+                <div
+                    className="relative w-full"
+                    style={postTransitionNames ? getBlogTransitionStyle(postTransitionNames.card, BLOG_VIEW_TRANSITION_CLASSES.card, 'contain') : undefined}
+                >
+                    <div className="relative mb-8 h-56 w-full overflow-hidden rounded-2xl bg-slate-100 md:h-80 lg:h-[26rem]">
                         {!hasHeaderImageError ? (
                             <>
-                                <div className="absolute inset-0 overflow-hidden rounded-2xl">
+                                <div
+                                    className="absolute inset-0 overflow-hidden rounded-2xl"
+                                    style={postTransitionNames ? getBlogTransitionStyle(postTransitionNames.image, BLOG_VIEW_TRANSITION_CLASSES.image, 'contain') : undefined}
+                                >
                                     <ProgressiveImage
                                         src={post.images.header.sources.large}
                                         alt={post.images.header.alt}
@@ -342,31 +341,33 @@ export const BlogPostPage: React.FC = () => {
                                         loading="eager"
                                         fetchPriority="high"
                                         onError={() => setHasHeaderImageError(true)}
-                                        className={`absolute inset-0 h-full w-full object-cover ${hasHeaderImageError ? post.coverColor : 'bg-slate-100'}`}
+                                        className="absolute inset-0 h-full w-full object-cover"
                                         skipFade={!!postTransitionNames}
                                     />
+                                    <div className={BLOG_HEADER_IMAGE_FADE} />
+                                    <div className={BLOG_HEADER_IMAGE_PROGRESSIVE_BLUR} />
                                 </div>
-                                <div className={BLOG_HEADER_IMAGE_FADE} />
-                                <div className={BLOG_HEADER_IMAGE_PROGRESSIVE_BLUR} />
                             </>
                         ) : (
                             <div className={`absolute inset-0 rounded-2xl ${post.coverColor}`} />
                         )}
                     </div>
+
                     <div className="flex gap-10 lg:gap-14">
-                        <div className="min-w-0 flex-1 max-w-3xl">
-                            <article
-                                lang={contentLang}
-                                data-blog-content-lang={contentLang}
-                                translate={showEnglishContentNotice ? 'no' : undefined}
-                            >
+                        <article
+                            lang={contentLang}
+                            data-blog-content-lang={contentLang}
+                            translate={showEnglishContentNotice ? 'no' : undefined}
+                            className="min-w-0 max-w-3xl flex-1"
+                        >
+                            <header>
                                 <h1
                                     className="text-3xl font-black tracking-tight text-slate-900 md:text-5xl"
                                     style={
                                         postTransitionNames
                                             ? ({
                                                 fontFamily: 'var(--tf-font-heading)',
-                                                ...getBlogTransitionStyle(postTransitionNames.title, BLOG_VIEW_TRANSITION_CLASSES.title),
+                                                ...getBlogTransitionStyle(postTransitionNames.title, BLOG_VIEW_TRANSITION_CLASSES.title, 'nearest'),
                                             } as React.CSSProperties)
                                             : ({ fontFamily: 'var(--tf-font-heading)' } as React.CSSProperties)
                                     }
@@ -389,9 +390,7 @@ export const BlogPostPage: React.FC = () => {
                                     </span>
                                 </div>
 
-                                <div
-                                    className="mt-4 flex flex-wrap gap-1.5"
-                                >
+                                <div className="mt-4 flex flex-wrap gap-1.5">
                                     {post.tags.map((tag) => (
                                         <Link
                                             key={tag}
@@ -404,21 +403,19 @@ export const BlogPostPage: React.FC = () => {
                                     ))}
                                 </div>
 
-                                <p
-                                    className="mt-6 border-l-4 border-accent-200 pl-4 text-lg leading-relaxed text-slate-600"
-                                >
+                                <p className="mt-6 border-l-4 border-accent-200 pl-4 text-lg leading-relaxed text-slate-600">
                                     {post.summary}
                                 </p>
+                            </header>
 
-                                <div className="mt-10">
-                                    <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
-                                        {post.content}
-                                    </ReactMarkdown>
-                                </div>
-                            </article>
-                        </div>
+                            <div className="mt-10">
+                                <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+                                    {post.content}
+                                </ReactMarkdown>
+                            </div>
+                        </article>
 
-                        <aside className="hidden lg:block w-64 shrink-0">
+                        <aside className="hidden w-64 shrink-0 lg:block" style={BLOG_DEFERRED_SECTION_STYLE}>
                         <div className="sticky top-24 space-y-8">
                             {headings.length > 0 && (
                                 <nav>
@@ -514,8 +511,8 @@ export const BlogPostPage: React.FC = () => {
                                 </div>
                             </div>
                         </div>
-                    </aside>
-                </div>
+                        </aside>
+                    </div>
                 </div>
 
                 {relatedPosts.length > 0 && (

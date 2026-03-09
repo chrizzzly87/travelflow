@@ -9,6 +9,7 @@ import {
     getBlogTransitionNavigationState,
     getBlogTransitionStateVersion,
     getBlogPostViewTransitionNames,
+    hasWarmedBlogRouteKind,
     getCurrentBlogPostTransitionTarget,
     getCurrentBlogRouteKindFromDom,
     getLastKnownBlogPostTransitionTarget,
@@ -22,6 +23,7 @@ import {
     resolveBlogTransitionNavigationHint,
     setCurrentBlogPostTransitionTarget,
     setPendingBlogTransitionTarget,
+    markBlogRouteKindWarm,
     shouldDelayBlogCardProgressiveBlurReveal,
     startPreparedBlogViewTransition,
     startBlogViewTransition,
@@ -141,6 +143,16 @@ describe('shared/blogViewTransitions', () => {
         expect(shouldDelayBlogCardProgressiveBlurReveal(false, true)).toBe(true);
         expect(shouldDelayBlogCardProgressiveBlurReveal(true, true)).toBe(false);
         expect(shouldDelayBlogCardProgressiveBlurReveal(false, false)).toBe(false);
+    });
+
+    it('tracks warmed blog route kinds for cold-start stabilization', () => {
+        expect(hasWarmedBlogRouteKind('list')).toBe(false);
+        expect(hasWarmedBlogRouteKind('post')).toBe(false);
+
+        markBlogRouteKindWarm('list');
+
+        expect(hasWarmedBlogRouteKind('list')).toBe(true);
+        expect(hasWarmedBlogRouteKind('post')).toBe(false);
     });
 
     it('tracks pending and current transition targets with normalized matching', () => {
@@ -360,6 +372,39 @@ describe('shared/blogViewTransitions', () => {
 
         expect(callOrder).toEqual(['prepare', 'before', 'start', 'update']);
         expect(transitionUpdateResult).toBeUndefined();
+    });
+
+    it('supports a bounded target-ready wait for cold-start transitions', async () => {
+        window.matchMedia = vi.fn().mockReturnValue(createReducedMotionMediaQueryList(false)) as unknown as typeof window.matchMedia;
+
+        const callOrder: string[] = [];
+        let transitionUpdateResult: unknown;
+        const startTransition = vi.fn((value: unknown) => {
+            const options = value as { update?: () => void | Promise<void>; types?: string[] };
+            callOrder.push('start');
+            transitionUpdateResult = options.update?.();
+            return { finished: Promise.resolve() };
+        });
+
+        Object.defineProperty(document, 'startViewTransition', {
+            configurable: true,
+            writable: true,
+            value: startTransition,
+        });
+
+        await startPreparedBlogViewTransition({
+            type: 'blog-collapse',
+            update: () => {
+                callOrder.push('update');
+            },
+            waitForReady: async () => {
+                callOrder.push('wait');
+            },
+        });
+
+        expect(callOrder).toEqual(['start', 'update', 'wait']);
+        expect(transitionUpdateResult).toBeInstanceOf(Promise);
+        await transitionUpdateResult;
     });
 
     it('waits for route marker + shared elements before considering target ready', async () => {

@@ -1,8 +1,9 @@
 import React from 'react';
-import { BrowserRouter as Router } from 'react-router-dom';
+import { unstable_HistoryRouter as Router } from 'react-router-dom';
 import { AuthProvider } from '../../contexts/AuthContext';
 import { AppDialogProvider } from '../../components/AppDialogProvider';
 import { LoginModalProvider } from '../../contexts/LoginModalContext';
+import { appHistory } from '../../shared/appHistory';
 
 interface AppProviderShellProps {
     children: React.ReactNode;
@@ -10,7 +11,7 @@ interface AppProviderShellProps {
 
 export const AppProviderShell: React.FC<AppProviderShellProps> = ({ children }) => {
     return (
-        <Router unstable_useTransitions={false}>
+        <Router history={appHistory} unstable_useTransitions={false}>
             <AuthProvider>
                 <AppDialogProvider>
                     <LoginModalProvider>

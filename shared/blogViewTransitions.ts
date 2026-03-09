@@ -38,6 +38,7 @@ interface StartViewTransitionOptions {
 interface StartPreparedBlogViewTransitionOptions extends StartViewTransitionOptions {
     beforeTransition?: () => void;
     prepare?: () => Promise<unknown>;
+    waitForReady?: () => Promise<unknown>;
 }
 
 const toTransitionToken = (value: string, fallback: string): string => {
@@ -397,6 +398,15 @@ const clearBlogTransitionState = (): void => {
     blogTransitionStateListeners.forEach((listener) => listener());
 };
 
+const warmedBlogRouteKinds = new Set<Exclude<BlogRouteKind, 'other'>>();
+
+export const markBlogRouteKindWarm = (kind: Exclude<BlogRouteKind, 'other'>): void => {
+    warmedBlogRouteKinds.add(kind);
+};
+
+export const hasWarmedBlogRouteKind = (kind: Exclude<BlogRouteKind, 'other'>): boolean =>
+    warmedBlogRouteKinds.has(kind);
+
 export const startBlogViewTransition = ({
     update,
     type,
@@ -438,6 +448,7 @@ export const startBlogViewTransition = ({
 export const startPreparedBlogViewTransition = async ({
     beforeTransition,
     prepare,
+    waitForReady,
     update,
     type,
 }: StartPreparedBlogViewTransitionOptions = {}): Promise<void> => {
@@ -448,5 +459,13 @@ export const startPreparedBlogViewTransition = async ({
     }
 
     beforeTransition?.();
-    startBlogViewTransition({ update, type });
+    startBlogViewTransition({
+        type,
+        update: waitForReady
+            ? async () => {
+                update?.();
+                await waitForReady();
+            }
+            : update,
+    });
 };

@@ -19,8 +19,10 @@ import {
     getPendingBlogTransitionTarget,
     getBlogPostViewTransitionNames,
     isBlogTransitionTargetMatch,
+    hasWarmedBlogRouteKind,
     isPendingBlogTransitionTarget,
     isPrimaryUnmodifiedClick,
+    markBlogRouteKindWarm,
     primeBlogTransitionSnapshot,
     resolveBlogTransitionNavigationHint,
     shouldDelayBlogCardProgressiveBlurReveal,
@@ -28,6 +30,7 @@ import {
     subscribeBlogTransitionState,
     setPendingBlogTransitionTarget,
     supportsBlogViewTransitions,
+    waitForBlogTransitionTarget,
     type BlogTransitionTarget,
 } from '../shared/blogViewTransitions';
 
@@ -90,6 +93,7 @@ const BlogCard: React.FC<{
         if (!viewTransitionsEnabled || !isPrimaryUnmodifiedClick(event)) return;
         event.preventDefault();
         const transitionTarget = { language: post.language, slug: post.slug };
+        const shouldStabilizeColdTarget = !hasWarmedBlogRouteKind('post');
         await startPreparedBlogViewTransition({
             prepare: ensureBlogPostRouteModule,
             beforeTransition: () => {
@@ -98,6 +102,9 @@ const BlogCard: React.FC<{
                     setIsTransitionSource(true);
                 });
             },
+            waitForReady: shouldStabilizeColdTarget
+                ? () => waitForBlogTransitionTarget(transitionTarget, 'post', 180)
+                : undefined,
             type: 'blog-expand',
             update: () => {
                 flushSync(() => {
@@ -281,6 +288,10 @@ export const BlogPage: React.FC = () => {
     const isSearching = search.trim().length > 0;
     const showMixedLanguageNotice = supportsMixedLanguage && languageFilter !== 'nativeOnly';
     const localeDisplayName = t(`common:language.${locale}`, { defaultValue: locale.toUpperCase() });
+
+    useEffect(() => {
+        markBlogRouteKindWarm('list');
+    }, []);
 
     useEffect(() => {
         if (!viewTransitionsEnabled) return;
