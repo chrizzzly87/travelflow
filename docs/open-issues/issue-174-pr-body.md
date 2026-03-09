@@ -18,11 +18,19 @@
 
 ## Validation
 - [x] `pnpm exec vitest run tests/browser/pricingPage.browser.test.ts tests/browser/checkoutPage.browser.test.ts tests/browser/routes/exampleTripLoaderRoute.browser.test.ts tests/browser/routes/sharedTripLoaderRoute.browser.test.ts test/components/TripViewStatusBanners.connectivity.test.tsx`
-- [ ] `pnpm test:core`
-- [ ] `pnpm updates:validate`
-- [ ] `pnpm dlx react-doctor@latest . --verbose --diff`
-- [ ] `pnpm dlx dotenv-cli -e .env.local -- pnpm build:netlify`
+- [x] `pnpm test:core`
+- [x] `pnpm updates:validate`
+- [x] `pnpm dlx react-doctor@latest . --verbose --diff`
+- [x] `pnpm dlx dotenv-cli -e .env.local -- pnpm build:netlify`
 - [ ] fresh sandbox checkout verified after latest Paddle notification fix
+
+## Checklist
+- [x] New module guard completed
+- [x] Corresponding tests added for new service modules:
+  - `tests/unit/adminBillingPresentation.test.ts`
+  - `tests/unit/billingService.test.ts`
+  - `tests/unit/paddleClient.test.ts`
+  - `tests/browser/checkoutPage.browser.test.ts`
 
 ## Follow-Up Checks
 - verify one fresh sandbox checkout reaches `public.billing_webhook_events`, `public.subscriptions`, `public.profiles.tier_key`, `/admin/billing`, and `/admin/users`
