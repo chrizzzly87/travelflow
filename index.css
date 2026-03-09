@@ -534,6 +534,26 @@ h6,
   }
 }
 
+@keyframes blog-card-fade-out {
+  from {
+    opacity: 0.9;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes blog-card-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
 ::view-transition-old(root) {
   animation: vt-slide-out 0.15s cubic-bezier(0.4, 0, 1, 1) both;
 }
@@ -642,4 +662,14 @@ html:active-view-transition-type(blog-expand)::view-transition-new(.blog-image-t
 html:active-view-transition-type(blog-collapse)::view-transition-old(.blog-image-transition) {
   animation: none;
   opacity: 1;
+}
+
+html:active-view-transition-type(blog-expand)::view-transition-old(.blog-card-transition),
+html:active-view-transition-type(blog-collapse)::view-transition-old(.blog-card-transition) {
+  animation: blog-card-fade-out 140ms ease-out both;
+}
+
+html:active-view-transition-type(blog-expand)::view-transition-new(.blog-card-transition),
+html:active-view-transition-type(blog-collapse)::view-transition-new(.blog-card-transition) {
+  animation: blog-card-fade-in 180ms ease-out 40ms both;
 }
