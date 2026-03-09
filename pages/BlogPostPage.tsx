@@ -1,5 +1,6 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useParams, Link, useLocation, Navigate } from 'react-router-dom';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
+import { useParams, Link, useLocation, Navigate, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Clock, User, Tag, ArrowRight, Compass, Article, ArrowSquareOut } from '@phosphor-icons/react';
 import { Map as GoogleMap, useMap } from '@vis.gl/react-google-maps';
@@ -21,14 +22,53 @@ import { APP_NAME } from '../config/appGlobals';
 import { DEFAULT_LOCALE, localeToIntlLocale } from '../config/locales';
 import { normalizeAppLanguage } from '../utils';
 import type { Components } from 'react-markdown';
+import {
+    BLOG_VIEW_TRANSITION_CLASSES,
+    createBlogTransitionNavigationState,
+    getBlogPostViewTransitionNames,
+    isPendingBlogTransitionTarget,
+    isPrimaryUnmodifiedClick,
+    markBlogRouteKindSeen,
+    primeBlogTransitionSnapshot,
+    setCurrentBlogPostTransitionTarget,
+    setPendingBlogTransitionMode,
+    setPendingBlogTransitionTarget,
+    shouldUseColdBlogTransitionFallbackForKind,
+    shouldUseTitleOnlyBlogTransition,
+    startPreparedBlogViewTransition,
+    subscribeBlogTransitionState,
+    supportsBlogViewTransitions,
+    warmResponsiveBlogImage,
+} from '../shared/blogViewTransitions';
 
 const BLOG_HEADER_IMAGE_SIZES = '(min-width: 1280px) 76rem, (min-width: 1024px) 88vw, 100vw';
+const BLOG_CARD_IMAGE_SIZES = '(min-width: 1280px) 24vw, (min-width: 1024px) 30vw, (min-width: 640px) 46vw, 100vw';
 const BLOG_HEADER_IMAGE_FADE = 'pointer-events-none absolute inset-0 bg-gradient-to-t from-slate-950/28 via-slate-900/10 to-transparent';
 const BLOG_HEADER_IMAGE_PROGRESSIVE_BLUR = 'pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-slate-950/12 backdrop-blur-md [mask-image:linear-gradient(to_top,black_0%,rgba(0,0,0,0.68)_40%,transparent_100%)]';
 const BLOG_DEFERRED_SECTION_STYLE: React.CSSProperties = {
     contentVisibility: 'auto',
     containIntrinsicSize: '1px 720px',
 };
+
+let blogListRouteModulePromise: Promise<unknown> | null = null;
+
+const ensureBlogListRouteModule = (): Promise<unknown> => {
+    if (!blogListRouteModulePromise) {
+        blogListRouteModulePromise = import('./BlogPage');
+    }
+    return blogListRouteModulePromise;
+};
+
+const getBlogTransitionStyle = (
+    transitionName: string,
+    transitionClass: string,
+    transitionGroup?: string
+): React.CSSProperties =>
+    ({
+        viewTransitionName: transitionName,
+        ['viewTransitionClass' as any]: transitionClass,
+        ...(transitionGroup ? { ['viewTransitionGroup' as any]: transitionGroup } : {}),
+    } as React.CSSProperties);
 
 const toSlug = (text: string): string =>
     text
@@ -788,10 +828,26 @@ const useActiveHeading = (headingSlugs: string[]): string | null => {
 export const BlogPostPage: React.FC = () => {
     const { slug } = useParams<{ slug: string }>();
     const location = useLocation();
+    const navigate = useNavigate();
     const locale = extractLocaleFromPath(location.pathname) ?? DEFAULT_LOCALE;
     const { t } = useTranslation('blog');
+    const viewTransitionsEnabled = useMemo(() => supportsBlogViewTransitions(), []);
+    const blogPath = buildLocalizedMarketingPath('blog', locale);
+    const [, forceTransitionStateRefresh] = useState(0);
 
     const post = useMemo(() => (slug ? getBlogPostBySlugWithFallback(slug, locale) : undefined), [locale, slug]);
+    const [isTransitionSource, setIsTransitionSource] = useState(false);
+    const isTransitionTarget = post ? isPendingBlogTransitionTarget(post.language, post.slug) : false;
+    const usesTitleOnlyTransition = post
+        ? shouldUseTitleOnlyBlogTransition(post.language, post.slug)
+        : false;
+    const shouldAssignTitleTransition = viewTransitionsEnabled && (isTransitionSource || isTransitionTarget);
+    const shouldAssignCardTransition = shouldAssignTitleTransition && !usesTitleOnlyTransition;
+    const shouldAssignImageTransition = shouldAssignTitleTransition && !usesTitleOnlyTransition;
+    const postTransitionNames = useMemo(
+        () => (post && shouldAssignTitleTransition ? getBlogPostViewTransitionNames(post.language, post.slug) : null),
+        [post, shouldAssignTitleTransition]
+    );
     const [hasHeaderImageError, setHasHeaderImageError] = useState(false);
 
     const relatedPosts = useMemo(() => {
@@ -832,7 +888,83 @@ export const BlogPostPage: React.FC = () => {
         ? showEnglishContentNotice
             ? buildLocalizedMarketingPath('blogPost', DEFAULT_LOCALE, { slug: post.slug })
             : buildLocalizedMarketingPath('blogPost', locale, { slug: post.slug })
-        : buildLocalizedMarketingPath('blog', locale);
+        : blogPath;
+    const prefetchBlogListRoute = useCallback(() => {
+        void ensureBlogListRouteModule();
+        if (!post) return;
+        warmResponsiveBlogImage({
+            src: post.images.card.sources.large,
+            sizes: BLOG_CARD_IMAGE_SIZES,
+            fetchPriority: 'high',
+        });
+    }, [post]);
+
+    const handleBackToBlogClick = useCallback(async (event: React.MouseEvent<HTMLAnchorElement>) => {
+        if (!viewTransitionsEnabled || !isPrimaryUnmodifiedClick(event)) return;
+        event.preventDefault();
+        warmResponsiveBlogImage({
+            src: post.images.card.sources.large,
+            sizes: BLOG_CARD_IMAGE_SIZES,
+            fetchPriority: 'high',
+        });
+        const transitionTarget = { language: post.language, slug: post.slug };
+        const useColdFallback = shouldUseColdBlogTransitionFallbackForKind('list');
+        await startPreparedBlogViewTransition({
+            prepare: ensureBlogListRouteModule,
+            beforeTransition: () => {
+                setPendingBlogTransitionMode(useColdFallback ? 'title-only' : 'full');
+                setPendingBlogTransitionTarget(transitionTarget);
+                flushSync(() => {
+                    setIsTransitionSource(true);
+                });
+            },
+            type: 'blog-collapse',
+            update: () => {
+                flushSync(() => {
+                    navigate(blogPath, {
+                        state: createBlogTransitionNavigationState('post', transitionTarget),
+                    });
+                });
+                primeBlogTransitionSnapshot();
+            },
+        });
+    }, [blogPath, navigate, post, viewTransitionsEnabled]);
+
+    useEffect(() => {
+        if (!post || !viewTransitionsEnabled) {
+            setCurrentBlogPostTransitionTarget(null);
+            return;
+        }
+        setCurrentBlogPostTransitionTarget({ language: post.language, slug: post.slug });
+        return () => {
+            setCurrentBlogPostTransitionTarget(null);
+        };
+    }, [post, viewTransitionsEnabled]);
+
+    useEffect(() => {
+        if (!viewTransitionsEnabled) return;
+        return subscribeBlogTransitionState(() => {
+            forceTransitionStateRefresh((current) => current + 1);
+        });
+    }, [viewTransitionsEnabled]);
+
+    useEffect(() => {
+        markBlogRouteKindSeen('post');
+    }, []);
+
+    useLayoutEffect(() => {
+        if (!viewTransitionsEnabled) return;
+        void ensureBlogListRouteModule();
+    }, [viewTransitionsEnabled]);
+
+    useEffect(() => {
+        if (!post || !viewTransitionsEnabled) return;
+        warmResponsiveBlogImage({
+            src: post.images.card.sources.large,
+            sizes: BLOG_CARD_IMAGE_SIZES,
+            fetchPriority: 'high',
+        });
+    }, [post, viewTransitionsEnabled]);
 
     useEffect(() => {
         if (!post) return;
@@ -862,10 +994,13 @@ export const BlogPostPage: React.FC = () => {
         <MarketingLayout rootClassName="overflow-x-clip">
             <div className="reading-progress-bar" />
 
-            <div className="pb-16 md:pb-24">
+            <div data-blog-route-kind="post" className="pb-16 md:pb-24">
                 <div className="pt-6 pb-4">
                     <Link
-                        to={buildLocalizedMarketingPath('blog', locale)}
+                        to={blogPath}
+                        onClick={handleBackToBlogClick}
+                        onFocus={prefetchBlogListRoute}
+                        onPointerEnter={prefetchBlogListRoute}
                         className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-accent-700 transition-colors"
                     >
                         <ArrowLeft size={14} weight="bold" />
@@ -881,30 +1016,40 @@ export const BlogPostPage: React.FC = () => {
                     </div>
                 )}
 
-                <div className={`relative mb-8 h-52 overflow-hidden rounded-2xl md:h-72 lg:h-80 ${hasHeaderImageError ? post.coverColor : 'bg-slate-100'}`}>
-                    {!hasHeaderImageError && (
-                        <>
-                            <ProgressiveImage
-                                src={post.images.header.sources.large}
-                                alt={post.images.header.alt}
-                                width={1536}
-                                height={1024}
-                                sizes={BLOG_HEADER_IMAGE_SIZES}
-                                srcSetWidths={[480, 768, 1024, 1536]}
-                                placeholderKey={post.images.header.sources.large}
-                                loading="eager"
-                                fetchPriority="high"
-                                onError={() => setHasHeaderImageError(true)}
-                                className="absolute inset-0 h-full w-full object-cover"
-                            />
-                            <div className={BLOG_HEADER_IMAGE_FADE} />
-                            <div className={BLOG_HEADER_IMAGE_PROGRESSIVE_BLUR} />
-                        </>
-                    )}
-                </div>
+                <div
+                    className="relative w-full"
+                    style={postTransitionNames && shouldAssignCardTransition ? getBlogTransitionStyle(postTransitionNames.card, BLOG_VIEW_TRANSITION_CLASSES.card, 'contain') : undefined}
+                >
+                    <div className={`relative mb-8 h-56 overflow-hidden rounded-2xl md:h-80 lg:h-[26rem] ${hasHeaderImageError ? post.coverColor : 'bg-slate-100'}`}>
+                        {!hasHeaderImageError && (
+                            <>
+                                <div
+                                    className="absolute inset-0 overflow-hidden rounded-2xl"
+                                    style={postTransitionNames && shouldAssignImageTransition ? getBlogTransitionStyle(postTransitionNames.image, BLOG_VIEW_TRANSITION_CLASSES.image, 'nearest') : undefined}
+                                >
+                                    <ProgressiveImage
+                                        src={post.images.header.sources.large}
+                                        alt={post.images.header.alt}
+                                        width={1536}
+                                        height={1024}
+                                        sizes={BLOG_HEADER_IMAGE_SIZES}
+                                        srcSetWidths={[480, 768, 1024, 1536]}
+                                        placeholderKey={post.images.header.sources.large}
+                                        loading="eager"
+                                        fetchPriority="high"
+                                        onError={() => setHasHeaderImageError(true)}
+                                        className="absolute inset-0 h-full w-full object-cover"
+                                        skipFade={!!postTransitionNames}
+                                    />
+                                </div>
+                                <div className={BLOG_HEADER_IMAGE_FADE} />
+                                <div className={BLOG_HEADER_IMAGE_PROGRESSIVE_BLUR} />
+                            </>
+                        )}
+                    </div>
 
-                <div className="flex items-start gap-10 lg:gap-14">
-                    <div className="min-w-0 flex-1 max-w-3xl">
+                    <div className="flex items-start gap-10 lg:gap-14">
+                        <div className="min-w-0 flex-1 max-w-3xl">
                         <article
                             lang={contentLang}
                             data-blog-content-lang={contentLang}
@@ -913,7 +1058,14 @@ export const BlogPostPage: React.FC = () => {
                             <div id="overview" className="scroll-mt-24 h-px w-full" />
                             <h1
                                 className="text-3xl font-black tracking-tight text-slate-900 md:text-5xl"
-                                style={{ fontFamily: 'var(--tf-font-heading)' }}
+                                style={
+                                    postTransitionNames
+                                        ? ({
+                                            fontFamily: 'var(--tf-font-heading)',
+                                            ...getBlogTransitionStyle(postTransitionNames.title, BLOG_VIEW_TRANSITION_CLASSES.title, 'nearest'),
+                                        } as React.CSSProperties)
+                                        : ({ fontFamily: 'var(--tf-font-heading)' } as React.CSSProperties)
+                                }
                             >
                                 {post.title}
                             </h1>
@@ -953,9 +1105,9 @@ export const BlogPostPage: React.FC = () => {
                                 </ReactMarkdown>
                             </div>
                         </article>
-                    </div>
+                        </div>
 
-                    <aside className="hidden w-64 shrink-0 self-start lg:sticky lg:top-24 lg:block lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
+                        <aside className="hidden w-64 shrink-0 self-start lg:sticky lg:top-24 lg:block lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
                         <div className="space-y-8 pr-1">
                             {headings.length > 0 && (
                                 <nav>
@@ -1051,7 +1203,8 @@ export const BlogPostPage: React.FC = () => {
                                 </div>
                             </div>
                         </div>
-                    </aside>
+                        </aside>
+                    </div>
                 </div>
 
                 {relatedPosts.length > 0 && (

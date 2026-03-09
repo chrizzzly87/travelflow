@@ -168,15 +168,6 @@ const main = () => {
                 ],
             },
             {
-                variant: 'header',
-                large: media.header.sources.large,
-                responsive: [
-                    media.header.sources.xsmall,
-                    media.header.sources.small,
-                    media.header.sources.medium,
-                ],
-            },
-            {
                 variant: 'ogVertical',
                 large: media.ogVertical.source,
             },
