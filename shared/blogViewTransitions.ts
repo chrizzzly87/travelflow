@@ -38,7 +38,6 @@ interface StartViewTransitionOptions {
 interface StartPreparedBlogViewTransitionOptions extends StartViewTransitionOptions {
     beforeTransition?: () => void;
     prepare?: () => Promise<unknown>;
-    waitForReady?: () => Promise<unknown>;
 }
 
 const toTransitionToken = (value: string, fallback: string): string => {
@@ -270,104 +269,6 @@ export const isPrimaryUnmodifiedClick = (
     !event.shiftKey &&
     !event.defaultPrevented;
 
-const getTransitionElement = (transitionName: string): HTMLElement | null => {
-    if (typeof document === 'undefined') return null;
-    const elements = document.querySelectorAll<HTMLElement>('*');
-    for (const element of elements) {
-        if (element.style?.viewTransitionName === transitionName) {
-            return element;
-        }
-    }
-    return null;
-};
-
-const hasRouteMarker = (kind: Exclude<BlogRouteKind, 'other'>): boolean => {
-    if (typeof document === 'undefined') return false;
-    return !!document.querySelector(`[data-blog-route-kind="${kind}"]`);
-};
-
-const hasReadyTransitionTarget = (
-    target: BlogTransitionTarget,
-    expectedRouteKind?: Exclude<BlogRouteKind, 'other'>
-): boolean => {
-    const names = getBlogPostViewTransitionNames(target.language, target.slug);
-    const routeReady = expectedRouteKind ? hasRouteMarker(expectedRouteKind) : true;
-    return routeReady &&
-        Boolean(getTransitionElement(names.card)) &&
-        Boolean(getTransitionElement(names.image)) &&
-        Boolean(getTransitionElement(names.title));
-};
-
-const waitForImageDecode = async (target: BlogTransitionTarget, timeoutMs: number): Promise<void> => {
-    const imageContainer = getTransitionElement(getBlogPostViewTransitionNames(target.language, target.slug).image);
-    const img = imageContainer?.querySelector('img:not([aria-hidden="true"])');
-    if (!(img instanceof HTMLImageElement)) return;
-    if (img.complete && img.naturalWidth > 0) return;
-    if (typeof img.decode !== 'function') return;
-
-    await Promise.race([
-        img.decode().catch(() => undefined),
-        new Promise<void>((resolve) => window.setTimeout(resolve, timeoutMs)),
-    ]);
-};
-
-const waitForFonts = async (timeoutMs: number): Promise<void> => {
-    if (typeof document === 'undefined') return;
-    const fontSet = (document as Document & { fonts?: { status?: string; ready?: Promise<unknown> } }).fonts;
-    const readyPromise = fontSet?.ready;
-    if (fontSet?.status !== 'loading' || !readyPromise || typeof readyPromise.then !== 'function') return;
-
-    await Promise.race([
-        readyPromise,
-        new Promise<void>((resolve) => window.setTimeout(resolve, timeoutMs)),
-    ]);
-};
-
-const waitForAnimationFrames = async (count: number): Promise<void> => {
-    if (typeof window === 'undefined') return;
-    for (let index = 0; index < count; index += 1) {
-        await new Promise<void>((resolve) => {
-            window.requestAnimationFrame(() => resolve());
-        });
-    }
-};
-
-export const waitForBlogTransitionTarget = async (
-    target: BlogTransitionTarget,
-    expectedRouteKind?: Exclude<BlogRouteKind, 'other'>,
-    timeoutMs = 240
-): Promise<void> => {
-    if (typeof window === 'undefined' || typeof document === 'undefined') return;
-
-    const startedAt = typeof performance !== 'undefined' ? performance.now() : Date.now();
-
-    await new Promise<void>((resolve) => {
-        const tick = () => {
-            if (hasReadyTransitionTarget(target, expectedRouteKind)) {
-                resolve();
-                return;
-            }
-
-            const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
-            if (now - startedAt >= timeoutMs) {
-                resolve();
-                return;
-            }
-
-            window.requestAnimationFrame(tick);
-        };
-
-        tick();
-    });
-
-    await Promise.all([
-        waitForFonts(Math.min(timeoutMs, 160)),
-        waitForImageDecode(target, Math.min(timeoutMs, 160)),
-    ]);
-
-    await waitForAnimationFrames(2);
-};
-
 const startTransitionWithTypes = (
     viewTransitionDocument: ViewTransitionCapableDocument,
     startTransition: (value: unknown) => ViewTransitionWithFinished | undefined,
@@ -397,15 +298,6 @@ const clearBlogTransitionState = (): void => {
     blogTransitionStateVersion += 1;
     blogTransitionStateListeners.forEach((listener) => listener());
 };
-
-const warmedBlogRouteKinds = new Set<Exclude<BlogRouteKind, 'other'>>();
-
-export const markBlogRouteKindWarm = (kind: Exclude<BlogRouteKind, 'other'>): void => {
-    warmedBlogRouteKinds.add(kind);
-};
-
-export const hasWarmedBlogRouteKind = (kind: Exclude<BlogRouteKind, 'other'>): boolean =>
-    warmedBlogRouteKinds.has(kind);
 
 export const startBlogViewTransition = ({
     update,
@@ -448,7 +340,6 @@ export const startBlogViewTransition = ({
 export const startPreparedBlogViewTransition = async ({
     beforeTransition,
     prepare,
-    waitForReady,
     update,
     type,
 }: StartPreparedBlogViewTransitionOptions = {}): Promise<void> => {
@@ -459,13 +350,5 @@ export const startPreparedBlogViewTransition = async ({
     }
 
     beforeTransition?.();
-    startBlogViewTransition({
-        type,
-        update: waitForReady
-            ? async () => {
-                update?.();
-                await waitForReady();
-            }
-            : update,
-    });
+    startBlogViewTransition({ update, type });
 };

@@ -9,7 +9,6 @@ import {
     getBlogTransitionNavigationState,
     getBlogTransitionStateVersion,
     getBlogPostViewTransitionNames,
-    hasWarmedBlogRouteKind,
     getCurrentBlogPostTransitionTarget,
     getCurrentBlogRouteKindFromDom,
     getLastKnownBlogPostTransitionTarget,
@@ -23,13 +22,11 @@ import {
     resolveBlogTransitionNavigationHint,
     setCurrentBlogPostTransitionTarget,
     setPendingBlogTransitionTarget,
-    markBlogRouteKindWarm,
     shouldDelayBlogCardProgressiveBlurReveal,
     startPreparedBlogViewTransition,
     startBlogViewTransition,
     subscribeBlogTransitionState,
     supportsBlogViewTransitions,
-    waitForBlogTransitionTarget,
 } from '../../shared/blogViewTransitions';
 
 let originalStartViewTransition: unknown;
@@ -143,16 +140,6 @@ describe('shared/blogViewTransitions', () => {
         expect(shouldDelayBlogCardProgressiveBlurReveal(false, true)).toBe(true);
         expect(shouldDelayBlogCardProgressiveBlurReveal(true, true)).toBe(false);
         expect(shouldDelayBlogCardProgressiveBlurReveal(false, false)).toBe(false);
-    });
-
-    it('tracks warmed blog route kinds for cold-start stabilization', () => {
-        expect(hasWarmedBlogRouteKind('list')).toBe(false);
-        expect(hasWarmedBlogRouteKind('post')).toBe(false);
-
-        markBlogRouteKindWarm('list');
-
-        expect(hasWarmedBlogRouteKind('list')).toBe(true);
-        expect(hasWarmedBlogRouteKind('post')).toBe(false);
     });
 
     it('tracks pending and current transition targets with normalized matching', () => {
@@ -374,65 +361,4 @@ describe('shared/blogViewTransitions', () => {
         expect(transitionUpdateResult).toBeUndefined();
     });
 
-    it('supports a bounded target-ready wait for cold-start transitions', async () => {
-        window.matchMedia = vi.fn().mockReturnValue(createReducedMotionMediaQueryList(false)) as unknown as typeof window.matchMedia;
-
-        const callOrder: string[] = [];
-        let transitionUpdateResult: unknown;
-        const startTransition = vi.fn((value: unknown) => {
-            const options = value as { update?: () => void | Promise<void>; types?: string[] };
-            callOrder.push('start');
-            transitionUpdateResult = options.update?.();
-            return { finished: Promise.resolve() };
-        });
-
-        Object.defineProperty(document, 'startViewTransition', {
-            configurable: true,
-            writable: true,
-            value: startTransition,
-        });
-
-        await startPreparedBlogViewTransition({
-            type: 'blog-collapse',
-            update: () => {
-                callOrder.push('update');
-            },
-            waitForReady: async () => {
-                callOrder.push('wait');
-            },
-        });
-
-        expect(callOrder).toEqual(['start', 'update', 'wait']);
-        expect(transitionUpdateResult).toBeInstanceOf(Promise);
-        await transitionUpdateResult;
-    });
-
-    it('waits for route marker + shared elements before considering target ready', async () => {
-        const names = getBlogPostViewTransitionNames('en', 'how-to-plan-multi-city-trip');
-        window.requestAnimationFrame = vi.fn((callback: FrameRequestCallback) => {
-            callback(16);
-            return 1;
-        }) as unknown as typeof window.requestAnimationFrame;
-
-        const routeMarker = document.createElement('section');
-        routeMarker.setAttribute('data-blog-route-kind', 'list');
-        document.body.appendChild(routeMarker);
-
-        const card = document.createElement('div');
-        card.style.viewTransitionName = names.card;
-        document.body.appendChild(card);
-
-        const image = document.createElement('div');
-        image.style.viewTransitionName = names.image;
-        image.innerHTML = '<img alt="cover" src="/cover.webp">';
-        document.body.appendChild(image);
-
-        const title = document.createElement('h1');
-        title.style.viewTransitionName = names.title;
-        document.body.appendChild(title);
-
-        await expect(
-            waitForBlogTransitionTarget({ language: 'en', slug: 'how-to-plan-multi-city-trip' }, 'list', 120)
-        ).resolves.toBeUndefined();
-    });
 });

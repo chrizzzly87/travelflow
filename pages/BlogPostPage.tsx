@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
+import React, { useMemo, useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import { flushSync } from 'react-dom';
 import { useParams, Link, useLocation, Navigate, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -15,8 +15,6 @@ import type { Components } from 'react-markdown';
 import {
     BLOG_VIEW_TRANSITION_CLASSES,
     createBlogTransitionNavigationState,
-    hasWarmedBlogRouteKind,
-    markBlogRouteKindWarm,
     setCurrentBlogPostTransitionTarget,
     getBlogPostViewTransitionNames,
     isPrimaryUnmodifiedClick,
@@ -24,7 +22,6 @@ import {
     setPendingBlogTransitionTarget,
     startPreparedBlogViewTransition,
     supportsBlogViewTransitions,
-    waitForBlogTransitionTarget,
 } from '../shared/blogViewTransitions';
 
 const BLOG_HEADER_IMAGE_SIZES = '(min-width: 1280px) 76rem, (min-width: 1024px) 88vw, 100vw';
@@ -225,20 +222,19 @@ export const BlogPostPage: React.FC = () => {
             ? buildLocalizedMarketingPath('blogPost', DEFAULT_LOCALE, { slug: post.slug })
             : buildLocalizedMarketingPath('blogPost', locale, { slug: post.slug })
         : blogPath;
+    const prefetchBlogListRoute = useCallback(() => {
+        void ensureBlogListRouteModule();
+    }, []);
 
     const handleBackToBlogClick = useCallback(async (event: React.MouseEvent<HTMLAnchorElement>) => {
         if (!viewTransitionsEnabled || !isPrimaryUnmodifiedClick(event)) return;
         event.preventDefault();
         const transitionTarget = { language: post.language, slug: post.slug };
-        const shouldStabilizeColdTarget = !hasWarmedBlogRouteKind('list');
         await startPreparedBlogViewTransition({
             prepare: ensureBlogListRouteModule,
             beforeTransition: () => {
                 setPendingBlogTransitionTarget(transitionTarget);
             },
-            waitForReady: shouldStabilizeColdTarget
-                ? () => waitForBlogTransitionTarget(transitionTarget, 'list', 180)
-                : undefined,
             type: 'blog-collapse',
             update: () => {
                 flushSync(() => {
@@ -252,10 +248,6 @@ export const BlogPostPage: React.FC = () => {
     }, [blogPath, navigate, post.language, post.slug, viewTransitionsEnabled]);
 
     useEffect(() => {
-        markBlogRouteKindWarm('post');
-    }, []);
-
-    useEffect(() => {
         if (!post || !viewTransitionsEnabled) {
             setCurrentBlogPostTransitionTarget(null);
             return;
@@ -266,7 +258,7 @@ export const BlogPostPage: React.FC = () => {
         };
     }, [post, viewTransitionsEnabled]);
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         if (!viewTransitionsEnabled) return;
         void ensureBlogListRouteModule();
     }, [viewTransitionsEnabled]);
@@ -304,6 +296,8 @@ export const BlogPostPage: React.FC = () => {
                     <Link
                         to={blogPath}
                         onClick={handleBackToBlogClick}
+                        onFocus={prefetchBlogListRoute}
+                        onPointerEnter={prefetchBlogListRoute}
                         className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-accent-700 transition-colors"
                     >
                         <ArrowLeft size={14} weight="bold" />

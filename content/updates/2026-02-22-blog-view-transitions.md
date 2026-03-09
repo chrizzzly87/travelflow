@@ -27,8 +27,8 @@ summary: "Adds smooth shared-element transitions between the blog list and artic
 - [x] [Improved] 📐 Blog overview cards now use a wider image ratio that better matches the article hero crop, reducing the last-moment shared-image jump when the transition settles.
 - [x] [Improved] 🪟 Shared blog cards now keep a solid surface during expansion, which prevents neighboring article thumbnails from flashing through at the start of the transition.
 - [x] [Improved] 🌫️ Returning from an article to the overview now reveals the card blur band more softly instead of popping it in at the very end.
-- [x] [Improved] 🧠 The first blog transition in either direction now gets a short cold-start stabilization pass, so shared image motion is more reliable even before the other blog route has been visited.
+- [x] [Improved] 🧠 First blog transitions now warm the opposite route earlier without delaying the animation start, so cold navigation stays responsive while shared motion remains reliable.
 - [ ] [Internal] 🧩 Added feature-detected transition wiring, tuned shared-element animation rules, and regression coverage for transition helpers and media mapping.
 - [ ] [Internal] 🧭 Switched blog history transitions onto a shared history router wrapper and committed POP route updates inside the transition callback so browser back/forward animates reliably.
-- [ ] [Internal] ❄️ Added route-kind warm tracking plus a bounded target-ready wait so first-load blog transitions can stabilize without reintroducing the old multi-second pause.
+- [ ] [Internal] ❄️ Replaced blocking cold-start waits with earlier route prewarming on mount and interaction intent, keeping the transition callback synchronous.
 - [ ] [Internal] 📝 Added a detailed Issue #109 postmortem in docs with timeline, root causes, regressions, and a handoff checklist for follow-up AI debugging.

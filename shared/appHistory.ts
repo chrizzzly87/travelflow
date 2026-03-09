@@ -4,13 +4,11 @@ import {
     getCurrentBlogPostTransitionTarget,
     getBlogRouteKindFromPath,
     getLastKnownBlogPostTransitionTarget,
-    hasWarmedBlogRouteKind,
     isBlogListDetailTransition,
     setPendingBlogTransitionTarget,
     startBlogViewTransition,
     supportsBlogViewTransitions,
     type BlogViewTransitionType,
-    waitForBlogTransitionTarget,
 } from './blogViewTransitions';
 
 type AppBrowserHistory = ReturnType<typeof UNSAFE_createBrowserHistory>;
@@ -38,22 +36,14 @@ const wrapHistoryListenerWithBlogTransitions = (
     setPendingBlogTransitionTarget(currentTarget);
     const toKind = getBlogRouteKindFromPath(toPathname);
     const type: BlogViewTransitionType = toKind === 'post' ? 'blog-expand' : 'blog-collapse';
-    const shouldStabilizeColdTarget = (toKind === 'list' || toKind === 'post') && !hasWarmedBlogRouteKind(toKind);
 
     startBlogViewTransition({
         type,
-        update: shouldStabilizeColdTarget
-            ? async () => {
-                flushSync(() => {
-                    listener(update);
-                });
-                await waitForBlogTransitionTarget(currentTarget, toKind, 180);
-            }
-            : () => {
-                flushSync(() => {
-                    listener(update);
-                });
-            },
+        update: () => {
+            flushSync(() => {
+                listener(update);
+            });
+        },
     });
 };
 

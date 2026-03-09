@@ -6,12 +6,10 @@ const blogTransitionMocks = vi.hoisted(() => ({
     getCurrentBlogPostTransitionTarget: vi.fn(),
     getLastKnownBlogPostTransitionTarget: vi.fn(),
     getBlogRouteKindFromPath: vi.fn(),
-    hasWarmedBlogRouteKind: vi.fn(),
     isBlogListDetailTransition: vi.fn(),
     setPendingBlogTransitionTarget: vi.fn(),
     startBlogViewTransition: vi.fn(),
     supportsBlogViewTransitions: vi.fn(),
-    waitForBlogTransitionTarget: vi.fn(),
 }));
 
 const reactDomMocks = vi.hoisted(() => ({
@@ -26,12 +24,10 @@ vi.mock('../../shared/blogViewTransitions', () => ({
     getCurrentBlogPostTransitionTarget: blogTransitionMocks.getCurrentBlogPostTransitionTarget,
     getLastKnownBlogPostTransitionTarget: blogTransitionMocks.getLastKnownBlogPostTransitionTarget,
     getBlogRouteKindFromPath: blogTransitionMocks.getBlogRouteKindFromPath,
-    hasWarmedBlogRouteKind: blogTransitionMocks.hasWarmedBlogRouteKind,
     isBlogListDetailTransition: blogTransitionMocks.isBlogListDetailTransition,
     setPendingBlogTransitionTarget: blogTransitionMocks.setPendingBlogTransitionTarget,
     startBlogViewTransition: blogTransitionMocks.startBlogViewTransition,
     supportsBlogViewTransitions: blogTransitionMocks.supportsBlogViewTransitions,
-    waitForBlogTransitionTarget: blogTransitionMocks.waitForBlogTransitionTarget,
 }));
 
 import { createBlogTransitionAwareBrowserHistory } from '../../shared/appHistory';
@@ -85,10 +81,8 @@ describe('shared/appHistory', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         blogTransitionMocks.supportsBlogViewTransitions.mockReturnValue(true);
-        blogTransitionMocks.hasWarmedBlogRouteKind.mockReturnValue(true);
         blogTransitionMocks.isBlogListDetailTransition.mockReturnValue(true);
         blogTransitionMocks.getBlogRouteKindFromPath.mockReturnValue('list');
-        blogTransitionMocks.waitForBlogTransitionTarget.mockResolvedValue(undefined);
     });
 
     it('wraps POP blog list/detail updates in a view transition and commits inside flushSync', () => {
@@ -145,41 +139,5 @@ describe('shared/appHistory', () => {
             action: 'PUSH',
             location: { pathname: '/blog/how-to-plan-multi-city-trip' },
         });
-    });
-
-    it('uses a bounded ready wait for cold POP targets', async () => {
-        const fakeHistory = createFakeHistory('/blog/how-to-plan-multi-city-trip');
-        const wrappedHistory = createBlogTransitionAwareBrowserHistory(fakeHistory as never);
-        const listener = vi.fn();
-
-        blogTransitionMocks.getCurrentBlogPostTransitionTarget.mockReturnValue({
-            language: 'en',
-            slug: 'how-to-plan-multi-city-trip',
-        });
-        blogTransitionMocks.getBlogRouteKindFromPath.mockReturnValue('list');
-        blogTransitionMocks.hasWarmedBlogRouteKind.mockReturnValue(false);
-
-        wrappedHistory.listen(listener);
-        fakeHistory.emit({
-            action: 'POP',
-            location: { pathname: '/blog' },
-        });
-
-        const options = blogTransitionMocks.startBlogViewTransition.mock.calls[0][0] as {
-            update: () => Promise<void>;
-        };
-
-        await options.update();
-
-        expect(reactDomMocks.flushSync).toHaveBeenCalledTimes(1);
-        expect(listener).toHaveBeenCalledWith({
-            action: 'POP',
-            location: { pathname: '/blog' },
-        });
-        expect(blogTransitionMocks.waitForBlogTransitionTarget).toHaveBeenCalledWith(
-            { language: 'en', slug: 'how-to-plan-multi-city-trip' },
-            'list',
-            180
-        );
     });
 });

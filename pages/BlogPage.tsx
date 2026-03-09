@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -19,10 +19,8 @@ import {
     getPendingBlogTransitionTarget,
     getBlogPostViewTransitionNames,
     isBlogTransitionTargetMatch,
-    hasWarmedBlogRouteKind,
     isPendingBlogTransitionTarget,
     isPrimaryUnmodifiedClick,
-    markBlogRouteKindWarm,
     primeBlogTransitionSnapshot,
     resolveBlogTransitionNavigationHint,
     shouldDelayBlogCardProgressiveBlurReveal,
@@ -30,7 +28,6 @@ import {
     subscribeBlogTransitionState,
     setPendingBlogTransitionTarget,
     supportsBlogViewTransitions,
-    waitForBlogTransitionTarget,
     type BlogTransitionTarget,
 } from '../shared/blogViewTransitions';
 
@@ -89,11 +86,14 @@ const BlogCard: React.FC<{
     const imageLoading = transitionNames ? 'eager' : 'lazy';
     const imageFetchPriority = transitionNames ? 'high' : 'low';
     const postPath = buildLocalizedMarketingPath('blogPost', locale, { slug: post.slug });
+    const prefetchPostRoute = useCallback(() => {
+        void ensureBlogPostRouteModule();
+    }, []);
+
     const handleCardClick = useCallback(async (event: React.MouseEvent<HTMLAnchorElement>) => {
         if (!viewTransitionsEnabled || !isPrimaryUnmodifiedClick(event)) return;
         event.preventDefault();
         const transitionTarget = { language: post.language, slug: post.slug };
-        const shouldStabilizeColdTarget = !hasWarmedBlogRouteKind('post');
         await startPreparedBlogViewTransition({
             prepare: ensureBlogPostRouteModule,
             beforeTransition: () => {
@@ -102,9 +102,6 @@ const BlogCard: React.FC<{
                     setIsTransitionSource(true);
                 });
             },
-            waitForReady: shouldStabilizeColdTarget
-                ? () => waitForBlogTransitionTarget(transitionTarget, 'post', 180)
-                : undefined,
             type: 'blog-expand',
             update: () => {
                 flushSync(() => {
@@ -127,6 +124,8 @@ const BlogCard: React.FC<{
         <Link
             to={postPath}
             onClick={handleCardClick}
+            onFocus={prefetchPostRoute}
+            onPointerEnter={prefetchPostRoute}
             lang={cardLang}
             data-blog-card-lang={cardLang}
             className={`group relative flex flex-col overflow-hidden rounded-2xl ${BLOG_CARD_TRANSITION} hover:-translate-y-0.5`}
@@ -290,17 +289,13 @@ export const BlogPage: React.FC = () => {
     const localeDisplayName = t(`common:language.${locale}`, { defaultValue: locale.toUpperCase() });
 
     useEffect(() => {
-        markBlogRouteKindWarm('list');
-    }, []);
-
-    useEffect(() => {
         if (!viewTransitionsEnabled) return;
         return subscribeBlogTransitionState(() => {
             forceTransitionStateRefresh((current) => current + 1);
         });
     }, [viewTransitionsEnabled]);
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         if (!viewTransitionsEnabled) return;
         void ensureBlogPostRouteModule();
     }, [viewTransitionsEnabled]);

@@ -1,141 +1,142 @@
 # Issue #109 Postmortem: Blog List/Detail View Transitions
 
 ## Summary
-- **Issue:** Shared-element transitions between `/blog` and `/blog/:slug` were inconsistent, sometimes delayed, and sometimes showed wrong/ghost elements.
+- **Issue:** Shared-element transitions between `/blog` and `/blog/:slug` were inconsistent, occasionally showed wrong-card artifacts, and repeatedly regressed into "URL changes, then the old page sits there, then the new page appears".
 - **Branch:** `codex/issue-109-blog-view-transitions`
-- **Current baseline commit:** `f3a4348` (`Scope blog shared elements back to active target card`)
-- **Current status:** Animations are working in both directions, but the **first cold-start transition** can still be misaligned.
+- **Current implementation shape:** active-target-only shared names, nested card/image/title groups, sync SPA transitions via `document.startViewTransition(...)`, and transition-aware browser history wrapping.
+- **Current status:** list -> detail, detail -> list, and browser back/forward animate through the same pipeline. The latest fix removes the cold-start delay by warming routes earlier instead of awaiting readiness inside the transition callback.
 
-## What This Implementation Uses
+## What Actually Helped
 - Same-document (SPA) transitions using `document.startViewTransition(...)`.
-- Per-post shared element names for `card`, `image`, `title`, `summary`, `meta`, and `pills`.
-- Dynamic, target-scoped transition CSS injected only while a transition is active (`#blog-view-transition-active`).
-- Bidirectional interception:
-  - List -> detail click interception in `/Users/chrizzzly/.codex/worktrees/8337/travelflow-codex/pages/BlogPage.tsx`
-  - Detail -> list link interception in `/Users/chrizzzly/.codex/worktrees/8337/travelflow-codex/pages/BlogPostPage.tsx`
-  - Browser back/forward popstate hook in `/Users/chrizzzly/.codex/worktrees/8337/travelflow-codex/index.tsx`
+- Per-post shared names for only the elements that need to morph:
+  - `card`
+  - `image`
+  - `title`
+- Nested shared-element grouping so the card shell and image clip/mask stay aligned.
+- Active-target-only participation so unrelated cards never join the transition.
+- A dedicated browser-history wrapper for POP navigation instead of ad-hoc `popstate` monkeypatching.
+- Using the same underlying landscape image asset for blog card and article hero.
 
-## Timeline Of Key Iterations
+## What Did Not Help
+- Waiting for the destination route to become "fully ready" inside the `startViewTransition(...).update` callback.
+- Global history monkeypatching (`pushState` / `replaceState` / `popstate`) outside the router.
+- Cross-fading decorative layers like blur bands or dark overlays as shared elements.
+- Broad shared names that allowed multiple cards to participate at once.
 
-1. `1b56708` - Initial shared list/detail transition implementation.
-2. `39bb4b3` - Added stable target hints to improve mapping between pages.
-3. `3f69b75` - Fixed stale hint reuse that caused wrong-card image artifacts.
-4. `0c5cc27` - Attempted cold-start stabilization; later caused regressions.
-5. `14106a6` - Reverted `0c5cc27` due degraded behavior (delay/no visible transition).
-6. `e0cf168` - Refined image shared-element handling for cold starts.
-7. `b144773` - Additional first-run stabilization and faster timing; mixed results.
-8. `f3a4348` - Scoped shared elements back to active target card; user confirmed this as better baseline.
+## Main Root Causes
 
-## Confirmed Root Causes
+### 1) Illegal invocation of `document.startViewTransition`
+- **Symptom:** `TypeError: Illegal invocation`.
+- **Cause:** calling the method without a guaranteed `document` binding.
+- **Fix:** invoke via `startTransition.call(viewTransitionDocument, ...)` in `/Users/chrizzzly/.codex/worktrees/8337/travelflow-codex/shared/blogViewTransitions.ts`.
 
-### 1) Illegal invocation during transition start
-- Symptom: `TypeError: Illegal invocation` from `startBlogViewTransition`.
-- Cause: Calling `document.startViewTransition` without guaranteed `document` binding can fail in some invocation patterns.
-- Fix: Explicitly invoke via `startTransition.call(viewTransitionDocument, ...)` in `/Users/chrizzzly/.codex/worktrees/8337/travelflow-codex/shared/blogViewTransitions.ts`.
-- Regression test: `/Users/chrizzzly/.codex/worktrees/8337/travelflow-codex/tests/unit/blogViewTransitions.test.ts` (`invokes document.startViewTransition with document binding`).
+### 2) Wrong-card / ghost-image artifacts
+- **Symptom:** other blog cards briefly appeared during the transition.
+- **Cause:** stale hints and over-broad shared names let multiple cards qualify for the same transition.
+- **Fix:** scope transition names to the active pending target only, and ignore stale hints when no active target is in progress.
 
-### 2) Wrong card/image artifacts during transition
-- Symptom: Non-selected blog cards or mismatched images appeared during motion.
-- Cause: Over-broad/shared naming and stale transition hints allowed unintended elements to participate.
-- Fixes:
-  - Scoped transition participation to the active target post only.
-  - Cleared stale hint behavior and tied transition state to explicit pending target.
-  - Limited readiness checks to key elements (`image`, `title`) and route markers.
+### 3) Blur/fade layers caused muddy crossfades
+- **Symptom:** gray or dirty-looking reverse transitions, especially around the hero image.
+- **Cause:** the browser was blending decorative overlays, not just the actual photo content.
+- **Fix:** keep the shared transition on the real image wrapper only; let decorative fade/blur layers remain normal page chrome.
 
-### 3) Gray/flashy image behavior
-- Symptom: Reverse transition could appear gray or visually muddy.
-- Cause: Cross-fading decorative overlays (fade/blur layers) as shared elements instead of only the photo layer.
-- Fix: Apply shared transition to the real photo layer only; keep decorative overlays out of shared-element mapping.
+### 4) Card/image clipping was unstable without nested grouping
+- **Symptom:** image masks, rounded corners, and card shells did not stay visually locked together.
+- **Cause:** the browser had to animate pieces with different clipping contexts.
+- **Fix:** move the shared transition onto the real card and image wrappers, then use nested groups with clipped children. This is where the Chrome nested-group guidance helped.
 
-### 4) Font-size mismatch/ghost text during morph
-- Symptom: Headline looked too small/incorrect in one direction and ghosted during swap.
-- Cause: Different typography contexts and fallback-font timing across list/detail snapshots.
-- Fixes made:
-  - Keep heading font family explicit in both contexts.
-  - Use consistent title shared-element naming.
-  - Add `font-synthesis: none` in transition pseudo-elements to reduce synthetic font distortion.
-- Remaining issue: first cold transition can still mis-estimate typography bounds.
+### 5) The biggest recurring regression: async update callbacks
+- **Symptom:** URL changes, then nothing animates for a noticeable delay, then the new page appears.
+- **Cause:** for SPA view transitions, the browser does not start the animation until the `update` callback resolves. Every time we awaited extra route/image/font readiness inside that callback, we reintroduced a dead pause.
+- **Fix:** keep the actual route update synchronous again. Warm resources earlier, but do not await them inside the transition callback.
 
-## Important External Constraints (Web Platform)
-- `view-transition-name` must be unique among simultaneously rendered participants; duplicates can cause the transition to be skipped.
-  - Source: [MDN `view-transition-name`](https://developer.mozilla.org/en-US/docs/Web/CSS/view-transition-name)
-- For SPA transitions, `document.startViewTransition()` wraps the DOM update callback; this repo intentionally uses this flow.
-  - Source: [MDN `Document.startViewTransition()`](https://developer.mozilla.org/en-US/docs/Web/API/Document/startViewTransition)
-- `@view-transition { navigation: auto; }` is for cross-document (MPA) transitions, not required for this SPA implementation path.
-  - Source: [MDN `@view-transition`](https://developer.mozilla.org/en-US/docs/Web/CSS/@view-transition)
+## Did Nested View Transitions Help?
+Yes, but only for the right class of problems.
 
-## Why The First Cold Transition Is Still The Weak Spot
-- In cold starts, layout-critical resources (fonts/images/component chunks) and route structure can settle across initial frames.
-- Shared-element transitions capture geometry at snapshot time; if destination geometry is still settling, first animation can misalign.
-- After one successful transition, caches and warmed modules reduce variance, so subsequent transitions are typically correct.
+They **did help** with:
+- clipping the card and image correctly
+- keeping rounded corners stable
+- making image motion feel like one coherent object instead of stacked layers fighting each other
+- reducing bleed-through from neighboring cards
 
-## Current Mitigations Already In Code
-- Prefetch opposite route modules:
-  - `ensureBlogPostRouteModule()` in list page.
-  - `ensureBlogListRouteModule()` in detail page.
-- Prime snapshots with forced layout reads before/around transition capture.
-- Wait for target readiness via route marker + required transition elements.
-- Keep shared image source identical between card and detail header:
-  - In `/Users/chrizzzly/.codex/worktrees/8337/travelflow-codex/data/blogImageMedia.ts`, `header` and `card` both use `sharedLandscapeSources`.
+They **did not help** with:
+- route-chunk timing
+- router update sequencing
+- first-load startup delays
+- async readiness waits inside `startViewTransition`
 
-## Remaining Known Gaps
-- First transition from a fresh session can still show slight position/scale mismatch.
-- Title/text morph is improved but not pixel-perfect on first cold pass.
-- Popstate transition path remains more timing-sensitive than direct click path.
+So the nested-group work was worth keeping, but it was never the fix for the lagging/no-animation regression.
 
-## Resolved in Latest Sessions (Rounds 5-14)
-- **Progressive Blur Plop**: Restored native UA crossfades by removing `opacity: 1` keyframes.
-- **Morphing Glitches (Flash/Bloom)**: Removed `mix-blend-mode` plus-lighter hacks; tracking down and removing legacy `vt-blog-card-old` forced opacity animations.
-- **Directional Control**: Implemented direction-aware CSS generation for image crossfades.
-- **Global Layout**: Fixed sticky sidebar by changing `overflow-x-hidden` to `overflow-x-clip` in `<MarketingLayout>`.
-- **View Transition Specificity**: Blocked User-Agent stylesheets from fading out snapshots by applying `!important` to `animation: none` and `opacity`.
-- **Popstate Resync**: Explicitly tracked `window.location.pathname` over history changes to pass accurate source paths to `startBlogViewTransition`.
-- **Destructive Geometry Keyframes**: Removed hidden `@keyframes vt-blog-card-old` from `index.css` that shattered list-card layout.
-- **Z-Index Layering**: Fixed VT wrapper flying *over* the image by adjusting `content`, `card`, and `image` z-indexes with `!important`.
-- **Aspect-Ratio Independence**: Restored user's preferred detail image height, but hardened `object-fit: cover` directly onto `::view-transition-[old/new](.image)` to crop morphs rather than stretch them.
-- **Suppressing Ghost Crossfades**: Restored `display: none` isolation to `old`/`new` VT image layers based on direction to cleanly morph a single snapshot rectangle.
-- **Hardened Containment**: Added `overflow: hidden !important` on VT image layers so snapshots cannot bleed outside `1rem` rounded corners during morph flights.
-- **White Flash / Transparent Glitch**: Tightened `waitForBlogTransitionTarget` by adding an animation frame loop to guarantee `opacity-100` before GPU snapshot, and forced `display: none` on fast-loading Blurhash data URIs.
+## Final Working Direction
+The stable pattern is:
+1. Preload the destination route module as early as possible.
+2. Keep the view-transition `update` callback synchronous.
+3. Use `flushSync(...)` for the route commit inside the transition.
+4. Keep browser back/forward on the same path via a shared history wrapper.
+5. Limit shared participants to the active target card/image/title.
+6. Keep card and hero using the same image source.
 
-## Recommended Next Steps (For Next AI)
+In the current branch that means:
+- `/Users/chrizzzly/.codex/worktrees/8337/travelflow-codex/pages/BlogPage.tsx`
+  - preloads `BlogPostPage` early
+  - also preloads on card intent (`focus` / `pointerenter`)
+- `/Users/chrizzzly/.codex/worktrees/8337/travelflow-codex/pages/BlogPostPage.tsx`
+  - preloads `BlogPage` early
+  - also preloads on back-link intent
+- `/Users/chrizzzly/.codex/worktrees/8337/travelflow-codex/shared/blogViewTransitions.ts`
+  - transition start is binding-safe
+  - prepared transitions await route preload before starting, but do **not** await extra readiness inside the update callback
+- `/Users/chrizzzly/.codex/worktrees/8337/travelflow-codex/shared/appHistory.ts`
+  - POP navigation uses the same synchronous transition commit path
 
-1. Add one-time diagnostics for first transition only:
-   - Log active target, presence of each shared element name, and bounding boxes at capture start/end.
-   - Capture `document.fonts.status`, image decode status, and route marker presence.
-2. Gate first transition more strictly:
-   - Before starting first transition after load, wait for:
-     - target image decode completion
-     - `document.fonts.ready` (with short timeout)
-     - target route marker and required shared elements
-3. Reduce first-run complexity:
-   - Temporarily disable `card` shell shared element for the first transition only; keep `image` + `title` shared.
-4. Re-check popstate flow:
-   - Ensure snapshot/update ordering for browser back uses the same readiness guarantees as click-driven navigation.
-5. Once stable, retune duration/easing from current debugging-friendly timing to final production timing.
+## Why The Latest Cold-Start Attempt Was Wrong
+A bounded `waitForBlogTransitionTarget(...)` looked attractive because it improved first-run geometry in some cases. But it was placed in the wrong phase: inside the transition update callback.
 
-## Repro Checklist
-1. Start dev server.
-2. Hard-refresh on a blog detail URL (cold load).
-3. Navigate detail -> list, then list -> detail once.
-4. Observe first transition geometry.
-5. Repeat same flow without hard refresh; compare warm behavior.
+That traded one bug for another:
+- **good:** first-run target could be a bit more stable
+- **bad:** the browser delayed the animation start until the wait finished
+
+That is not an acceptable tradeoff here. A transition that starts late feels broken even if its geometry is cleaner.
+
+## Verified Behavior From Browser Probing
+Local probe after the latest change showed:
+- detail -> list
+  - route update finished inside the transition callback in about `99ms`
+  - total transition finished in about `535ms`
+  - callback result was **not** a promise
+- list -> detail
+  - route update finished inside the transition callback in about `67ms`
+  - total transition finished in about `523ms`
+  - callback result was **not** a promise
+
+That is the right shape. The browser is animating immediately again.
+
+## Current Known Risks
+- First uncached transitions are still more timing-sensitive than warm ones. This is a platform reality when lazy routes and view-transition snapshots meet.
+- The CSS toolchain still warns about `::view-transition-group-children(...)`, even though the selector is preserved in the final CSS.
+- If this feature is extended elsewhere, the same rule applies: do not solve readiness issues by making the update callback async.
+
+## Recommended Pattern For Other Parts Of The App
+If another feature wants the same effect:
+1. choose the minimum shared elements that truly need to morph
+2. keep shared names unique to the active target
+3. use nested groups for clipping/masking problems
+4. preload the destination route/component before the click path when possible
+5. keep the transition update callback synchronous
+6. handle browser POP navigation with router-aware history wrapping, not ad-hoc global listeners
 
 ## Test/Build Commands Used
 - `pnpm test:core`
 - `pnpm exec vite build`
 - `pnpm dlx react-doctor@latest . --verbose --diff`
+- browser probes via Playwright against a local preview server
 
-## File Map For Handoff
+## File Map
 - `/Users/chrizzzly/.codex/worktrees/8337/travelflow-codex/shared/blogViewTransitions.ts`
+- `/Users/chrizzzly/.codex/worktrees/8337/travelflow-codex/shared/appHistory.ts`
 - `/Users/chrizzzly/.codex/worktrees/8337/travelflow-codex/pages/BlogPage.tsx`
 - `/Users/chrizzzly/.codex/worktrees/8337/travelflow-codex/pages/BlogPostPage.tsx`
-- `/Users/chrizzzly/.codex/worktrees/8337/travelflow-codex/index.tsx`
 - `/Users/chrizzzly/.codex/worktrees/8337/travelflow-codex/index.css`
 - `/Users/chrizzzly/.codex/worktrees/8337/travelflow-codex/data/blogImageMedia.ts`
 - `/Users/chrizzzly/.codex/worktrees/8337/travelflow-codex/tests/unit/blogViewTransitions.test.ts`
-
-## Copy/Paste Prompt For Another AI
-Use this baseline: branch `codex/issue-109-blog-view-transitions`, commit `f3a4348`.  
-Goal: fix first-transition cold-start misalignment in blog list/detail shared-element transitions without regressing performance or reintroducing wrong-card artifacts.  
-Constraints: keep active-target-only shared names, keep image/photo layer mapping, keep illegal-invocation-safe start call, and preserve bidirectional transitions (click + browser back).  
-Please instrument first-run geometry/readiness and propose minimal, performant fixes.
+- `/Users/chrizzzly/.codex/worktrees/8337/travelflow-codex/tests/unit/appHistory.test.ts`
