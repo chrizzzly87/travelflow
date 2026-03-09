@@ -23,12 +23,11 @@ import {
     isPrimaryUnmodifiedClick,
     primeBlogTransitionSnapshot,
     resolveBlogTransitionNavigationHint,
+    shouldDelayBlogCardProgressiveBlurReveal,
+    startPreparedBlogViewTransition,
     subscribeBlogTransitionState,
     setPendingBlogTransitionTarget,
-    startBlogViewTransition,
     supportsBlogViewTransitions,
-    getIsFirstBlogTransition,
-    waitForBlogTransitionTarget,
     type BlogTransitionTarget,
 } from '../shared/blogViewTransitions';
 
@@ -71,11 +70,16 @@ const BlogCard: React.FC<{
     const [hasImageError, setHasImageError] = useState(false);
     const showImage = !hasImageError;
     const showEnglishBadge = locale !== DEFAULT_LOCALE && post.language === DEFAULT_LOCALE;
+    const isPendingTarget = isPendingBlogTransitionTarget(post.language, post.slug);
     const matchesTransitionHint = transitionTargetHint
         ? isBlogTransitionTargetMatch(transitionTargetHint, { language: post.language, slug: post.slug })
         : false;
     const shouldAssignTransitionNames = viewTransitionsEnabled &&
-        (isTransitionSource || matchesTransitionHint || isPendingBlogTransitionTarget(post.language, post.slug));
+        (isTransitionSource || matchesTransitionHint || isPendingTarget);
+    const shouldDelayProgressiveBlurReveal = shouldDelayBlogCardProgressiveBlurReveal(
+        isTransitionSource,
+        isPendingTarget
+    );
     const transitionNames = shouldAssignTransitionNames
         ? getBlogPostViewTransitionNames(post.language, post.slug)
         : null;
@@ -86,23 +90,23 @@ const BlogCard: React.FC<{
         if (!viewTransitionsEnabled || !isPrimaryUnmodifiedClick(event)) return;
         event.preventDefault();
         const transitionTarget = { language: post.language, slug: post.slug };
-        setPendingBlogTransitionTarget(transitionTarget);
-        flushSync(() => {
-            setIsTransitionSource(true);
-        });
-        try {
-            await ensureBlogPostRouteModule();
-        } catch {
-            // Ignore preload errors and rely on router fallback behavior.
-        }
-        startBlogViewTransition(async () => {
-            flushSync(() => {
-                navigate(postPath, {
-                    state: createBlogTransitionNavigationState('list', transitionTarget),
+        await startPreparedBlogViewTransition({
+            prepare: ensureBlogPostRouteModule,
+            beforeTransition: () => {
+                setPendingBlogTransitionTarget(transitionTarget);
+                flushSync(() => {
+                    setIsTransitionSource(true);
                 });
-            });
-            primeBlogTransitionSnapshot();
-            await waitForBlogTransitionTarget(transitionTarget, 'post');
+            },
+            type: 'blog-expand',
+            update: () => {
+                flushSync(() => {
+                    navigate(postPath, {
+                        state: createBlogTransitionNavigationState('list', transitionTarget),
+                    });
+                });
+                primeBlogTransitionSnapshot();
+            },
         });
     }, [navigate, post.language, post.slug, postPath, viewTransitionsEnabled]);
     const formattedDate = new Date(post.publishedAt).toLocaleDateString(localeToIntlLocale(locale), {
@@ -119,21 +123,21 @@ const BlogCard: React.FC<{
             lang={cardLang}
             data-blog-card-lang={cardLang}
             className={`group relative flex flex-col overflow-hidden rounded-2xl ${BLOG_CARD_TRANSITION} hover:-translate-y-0.5`}
+            style={transitionNames ? getBlogTransitionStyle(transitionNames.card, BLOG_VIEW_TRANSITION_CLASSES.card, 'contain') : undefined}
         >
             <div
                 aria-hidden
                 className="pointer-events-none absolute inset-0 rounded-2xl border border-slate-200 bg-white shadow-sm transition-[box-shadow,border-color] duration-300 ease-out group-hover:border-slate-300 group-hover:shadow-lg"
-                style={transitionNames && !getIsFirstBlogTransition() ? getBlogTransitionStyle(transitionNames.card, BLOG_VIEW_TRANSITION_CLASSES.card, 'contain') : undefined}
             />
             <div className="relative z-10 flex flex-1 flex-col">
                 <div
-                    className={`relative aspect-[2/1] overflow-hidden rounded-t-2xl ${showImage ? 'bg-slate-100' : `${post.coverColor} flex items-center justify-center`}`}
-                    style={transitionNames ? getBlogTransitionStyle(transitionNames.image, BLOG_VIEW_TRANSITION_CLASSES.image, 'nearest') : undefined}
+                    className={`relative aspect-[3/1] overflow-hidden rounded-t-2xl ${showImage ? 'bg-slate-100' : `${post.coverColor} flex items-center justify-center`}`}
                 >
                     {showImage ? (
                         <>
                             <div
                                 className="absolute inset-0 overflow-hidden rounded-t-2xl"
+                                style={transitionNames ? getBlogTransitionStyle(transitionNames.image, BLOG_VIEW_TRANSITION_CLASSES.image, 'contain') : undefined}
                             >
                                 <ProgressiveImage
                                     src={post.images.card.sources.large}
@@ -146,28 +150,29 @@ const BlogCard: React.FC<{
                                     loading={imageLoading}
                                     fetchPriority={imageFetchPriority}
                                     onError={() => setHasImageError(true)}
-                                    className={`absolute inset-0 h-full w-full rounded-t-2xl object-cover ${BLOG_CARD_IMAGE_TRANSITION} scale-100`}
+                                    className={`absolute inset-0 h-full w-full rounded-t-2xl object-cover ${BLOG_CARD_IMAGE_TRANSITION} scale-100 group-hover:scale-[1.03]`}
                                     skipFade={!!transitionNames}
                                 />
+                                <div className={BLOG_CARD_IMAGE_FADE} />
                             </div>
-                            <div className={BLOG_CARD_IMAGE_FADE} />
-                            <div className={BLOG_CARD_IMAGE_PROGRESSIVE_BLUR} />
+                            <div
+                                className={`${BLOG_CARD_IMAGE_PROGRESSIVE_BLUR} transition-opacity duration-300 ease-out ${
+                                    shouldDelayProgressiveBlurReveal ? 'opacity-0' : 'opacity-100'
+                                }`}
+                            />
                         </>
                     ) : (
                         <Article size={36} weight="duotone" className="text-slate-400/40" />
                     )}
                 </div>
-                <div
-                    className="flex flex-1 flex-col p-5 bg-white relative rounded-b-2xl"
-                    style={transitionNames ? getBlogTransitionStyle(`${transitionNames.card}-content`, BLOG_VIEW_TRANSITION_CLASSES.content) : undefined}
-                >
+                <div className="flex flex-1 flex-col rounded-b-2xl bg-white p-5">
                     <h3
                         className="text-base font-bold text-slate-900 group-hover:text-accent-700 transition-colors line-clamp-2"
                         style={
                             transitionNames
                                 ? ({
                                     fontFamily: 'var(--tf-font-heading)',
-                                    ...getBlogTransitionStyle(transitionNames.title, BLOG_VIEW_TRANSITION_CLASSES.title),
+                                    ...getBlogTransitionStyle(transitionNames.title, BLOG_VIEW_TRANSITION_CLASSES.title, 'nearest'),
                                 } as React.CSSProperties)
                                 : ({ fontFamily: 'var(--tf-font-heading)' } as React.CSSProperties)
                         }

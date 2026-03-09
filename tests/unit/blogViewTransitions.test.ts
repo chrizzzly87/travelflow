@@ -3,24 +3,29 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
     BLOG_VIEW_TRANSITION_CLASSES,
+    BLOG_VIEW_TRANSITION_DURATION,
     createBlogTransitionNavigationState,
-    getBlogTransitionStateVersion,
+    getBlogRouteKindFromPath,
     getBlogTransitionNavigationState,
-    getCurrentBlogPostTransitionTarget,
-    getLastKnownBlogPostTransitionTarget,
+    getBlogTransitionStateVersion,
     getBlogPostViewTransitionNames,
+    getCurrentBlogPostTransitionTarget,
+    getCurrentBlogRouteKindFromDom,
+    getLastKnownBlogPostTransitionTarget,
     getPendingBlogTransitionTarget,
-    isBlogTransitionTargetMatch,
     isBlogListDetailTransition,
     isBlogListPath,
+    isBlogTransitionTargetMatch,
     isPendingBlogTransitionTarget,
     isPrimaryUnmodifiedClick,
     primeBlogTransitionSnapshot,
     resolveBlogTransitionNavigationHint,
-    subscribeBlogTransitionState,
     setCurrentBlogPostTransitionTarget,
     setPendingBlogTransitionTarget,
+    shouldDelayBlogCardProgressiveBlurReveal,
+    startPreparedBlogViewTransition,
     startBlogViewTransition,
+    subscribeBlogTransitionState,
     supportsBlogViewTransitions,
     waitForBlogTransitionTarget,
 } from '../../shared/blogViewTransitions';
@@ -54,6 +59,7 @@ afterEach(() => {
     });
     window.matchMedia = originalMatchMedia;
     window.requestAnimationFrame = originalRequestAnimationFrame;
+    document.body.innerHTML = '';
     setPendingBlogTransitionTarget(null);
     setCurrentBlogPostTransitionTarget(null);
 });
@@ -80,8 +86,8 @@ describe('shared/blogViewTransitions', () => {
             card: 'blog-card-transition',
             image: 'blog-image-transition',
             title: 'blog-title-transition',
-            content: 'blog-content-transition',
         });
+        expect(BLOG_VIEW_TRANSITION_DURATION).toBe('420ms');
     });
 
     it('creates and parses blog transition navigation state payloads', () => {
@@ -131,6 +137,12 @@ describe('shared/blogViewTransitions', () => {
         ).toBe(false);
     });
 
+    it('delays the blog card blur reveal only for transition targets returning to the list', () => {
+        expect(shouldDelayBlogCardProgressiveBlurReveal(false, true)).toBe(true);
+        expect(shouldDelayBlogCardProgressiveBlurReveal(true, true)).toBe(false);
+        expect(shouldDelayBlogCardProgressiveBlurReveal(false, false)).toBe(false);
+    });
+
     it('tracks pending and current transition targets with normalized matching', () => {
         const events: number[] = [];
         const unsubscribe = subscribeBlogTransitionState(() => {
@@ -153,6 +165,11 @@ describe('shared/blogViewTransitions', () => {
     });
 
     it('matches localized blog list/detail route transitions', () => {
+        expect(getBlogRouteKindFromPath('/blog')).toBe('list');
+        expect(getBlogRouteKindFromPath('/de/blog')).toBe('list');
+        expect(getBlogRouteKindFromPath('/de/blog/weekend-getaway-tips')).toBe('post');
+        expect(getBlogRouteKindFromPath('/pricing')).toBe('other');
+
         expect(isBlogListPath('/blog')).toBe(true);
         expect(isBlogListPath('/de/blog')).toBe(true);
         expect(isBlogListPath('/de/blog/weekend-getaway-tips')).toBe(false);
@@ -161,6 +178,21 @@ describe('shared/blogViewTransitions', () => {
         expect(isBlogListDetailTransition('/de/blog/weekend-getaway-tips', '/de/blog')).toBe(true);
         expect(isBlogListDetailTransition('/de/blog/a', '/de/blog/b')).toBe(false);
         expect(isBlogListDetailTransition('/pricing', '/blog')).toBe(false);
+    });
+
+    it('detects the current blog route kind from DOM markers', () => {
+        expect(getCurrentBlogRouteKindFromDom()).toBeNull();
+
+        const listRoute = document.createElement('section');
+        listRoute.setAttribute('data-blog-route-kind', 'list');
+        document.body.appendChild(listRoute);
+        expect(getCurrentBlogRouteKindFromDom()).toBe('list');
+
+        listRoute.remove();
+        const postRoute = document.createElement('section');
+        postRoute.setAttribute('data-blog-route-kind', 'post');
+        document.body.appendChild(postRoute);
+        expect(getCurrentBlogRouteKindFromDom()).toBe('post');
     });
 
     it('accepts only unmodified primary-button clicks for transition interception', () => {
@@ -203,34 +235,59 @@ describe('shared/blogViewTransitions', () => {
         expect(supportsBlogViewTransitions()).toBe(false);
     });
 
-    it('starts a view transition wrapper when supported and falls back otherwise', () => {
+    it('starts a view transition with typed options when supported and falls back otherwise', async () => {
         const applyUpdate = vi.fn();
+        let resolveFinished: (() => void) | null = null;
+        const finished = new Promise<void>((resolve) => {
+            resolveFinished = resolve;
+        });
+
         window.matchMedia = vi.fn().mockReturnValue(createReducedMotionMediaQueryList(false)) as unknown as typeof window.matchMedia;
-        window.requestAnimationFrame = vi.fn((callback: FrameRequestCallback) => {
-            callback(16);
-            return 1;
-        }) as unknown as typeof window.requestAnimationFrame;
-        const startTransition = vi.fn((callback: () => void | Promise<void>) => callback());
+        const startTransition = vi.fn((value: unknown) => {
+            expect(typeof value).toBe('object');
+            const options = value as { update?: () => void | Promise<void>; types?: string[] };
+            expect(options.types).toEqual(['blog-expand']);
+            void options.update?.();
+            return { finished };
+        });
         Object.defineProperty(document, 'startViewTransition', {
             configurable: true,
             writable: true,
             value: startTransition,
         });
 
-        startBlogViewTransition(applyUpdate);
+        setPendingBlogTransitionTarget({ language: 'en', slug: 'how-to-plan-multi-city-trip' });
+        startBlogViewTransition({ type: 'blog-expand', update: applyUpdate });
         expect(startTransition).toHaveBeenCalledTimes(1);
         expect(applyUpdate).toHaveBeenCalledTimes(1);
+        expect(getPendingBlogTransitionTarget()).toEqual({ language: 'en', slug: 'how-to-plan-multi-city-trip' });
+
+        resolveFinished?.();
+        await Promise.resolve();
+        expect(getPendingBlogTransitionTarget()).toBeNull();
 
         startTransition.mockClear();
         applyUpdate.mockClear();
+
+        const typesAdd = vi.fn();
+        const legacyStartTransition = vi.fn((value: unknown) => {
+            if (typeof value === 'object') {
+                throw new TypeError('legacy signature');
+            }
+            const callback = value as () => void | Promise<void>;
+            void callback();
+            return { types: { add: typesAdd } };
+        });
         Object.defineProperty(document, 'startViewTransition', {
             configurable: true,
             writable: true,
-            value: undefined,
+            value: legacyStartTransition,
         });
-        startBlogViewTransition(applyUpdate);
-        expect(startTransition).not.toHaveBeenCalled();
+
+        startBlogViewTransition({ type: 'blog-collapse', update: applyUpdate });
+        expect(legacyStartTransition).toHaveBeenCalledTimes(2);
         expect(applyUpdate).toHaveBeenCalledTimes(1);
+        expect(typesAdd).toHaveBeenCalledWith('blog-collapse');
     });
 
     it('primes blog transition snapshots with a deterministic layout read', () => {
@@ -247,16 +304,17 @@ describe('shared/blogViewTransitions', () => {
 
     it('invokes document.startViewTransition with document binding', () => {
         window.matchMedia = vi.fn().mockReturnValue(createReducedMotionMediaQueryList(false)) as unknown as typeof window.matchMedia;
-        window.requestAnimationFrame = vi.fn((callback: FrameRequestCallback) => {
-            callback(16);
-            return 1;
-        }) as unknown as typeof window.requestAnimationFrame;
         const applyUpdate = vi.fn();
-        const startTransition = vi.fn(function (this: unknown, callback: () => void | Promise<void>) {
+        const startTransition = vi.fn(function (this: unknown, value: unknown) {
             if (this !== document) {
                 throw new TypeError('Illegal invocation');
             }
-            return callback();
+
+            if (typeof value === 'function') {
+                return value();
+            }
+
+            return (value as { update?: () => void | Promise<void> }).update?.();
         });
         Object.defineProperty(document, 'startViewTransition', {
             configurable: true,
@@ -264,41 +322,44 @@ describe('shared/blogViewTransitions', () => {
             value: startTransition,
         });
 
-        expect(() => startBlogViewTransition(applyUpdate)).not.toThrow();
+        expect(() => startBlogViewTransition({ update: applyUpdate })).not.toThrow();
         expect(startTransition).toHaveBeenCalledTimes(1);
         expect(applyUpdate).toHaveBeenCalledTimes(1);
     });
 
-    it('applies and clears scoped blog transition styles around the active target', async () => {
+    it('prepares navigation before starting the transition without making the update async', async () => {
         window.matchMedia = vi.fn().mockReturnValue(createReducedMotionMediaQueryList(false)) as unknown as typeof window.matchMedia;
 
-        let resolveFinished: (() => void) | null = null;
-        const finished = new Promise<void>((resolve) => {
-            resolveFinished = resolve;
+        const callOrder: string[] = [];
+        let transitionUpdateResult: unknown;
+        const startTransition = vi.fn((value: unknown) => {
+            const options = value as { update?: () => void | Promise<void>; types?: string[] };
+            callOrder.push('start');
+            transitionUpdateResult = options.update?.();
+            return { finished: Promise.resolve() };
         });
-        const startTransition = vi.fn((callback: () => void | Promise<void>) => {
-            callback();
-            return { finished };
-        });
+
         Object.defineProperty(document, 'startViewTransition', {
             configurable: true,
             writable: true,
             value: startTransition,
         });
-        setPendingBlogTransitionTarget({ language: 'en', slug: 'how-to-plan-multi-city-trip' });
 
-        startBlogViewTransition();
-        const styleElement = document.getElementById('blog-view-transition-active');
-        expect(styleElement).not.toBeNull();
-        expect(styleElement?.textContent).toContain('animation-duration: 350ms;');
-        expect(styleElement?.textContent).toContain('font-synthesis: none;');
-        expect(getPendingBlogTransitionTarget()).toEqual({ language: 'en', slug: 'how-to-plan-multi-city-trip' });
+        await startPreparedBlogViewTransition({
+            prepare: async () => {
+                callOrder.push('prepare');
+            },
+            beforeTransition: () => {
+                callOrder.push('before');
+            },
+            type: 'blog-expand',
+            update: () => {
+                callOrder.push('update');
+            },
+        });
 
-        resolveFinished?.();
-        await Promise.resolve();
-
-        expect(document.getElementById('blog-view-transition-active')).toBeNull();
-        expect(getPendingBlogTransitionTarget()).toBeNull();
+        expect(callOrder).toEqual(['prepare', 'before', 'start', 'update']);
+        expect(transitionUpdateResult).toBeUndefined();
     });
 
     it('waits for route marker + shared elements before considering target ready', async () => {
@@ -318,6 +379,7 @@ describe('shared/blogViewTransitions', () => {
 
         const image = document.createElement('div');
         image.style.viewTransitionName = names.image;
+        image.innerHTML = '<img alt="cover" src="/cover.webp">';
         document.body.appendChild(image);
 
         const title = document.createElement('h1');
@@ -327,10 +389,5 @@ describe('shared/blogViewTransitions', () => {
         await expect(
             waitForBlogTransitionTarget({ language: 'en', slug: 'how-to-plan-multi-city-trip' }, 'list', 120)
         ).resolves.toBeUndefined();
-
-        routeMarker.remove();
-        card.remove();
-        image.remove();
-        title.remove();
     });
 });

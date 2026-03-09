@@ -20,5 +20,13 @@ summary: "Adds smooth shared-element transitions between the blog list and artic
 - [x] [Improved] 🖼️ Shared image motion now animates only the real photo layer (not decorative blur/fade overlays) and prioritizes loading for the active target card.
 - [x] [Improved] ⚡ Transition timing is now tuned to a faster, production-like speed for normal browsing.
 - [x] [Improved] 🖼️ Blog list cards and article headers now use the same underlying photo source for each post.
+- [x] [Improved] 🧩 Blog transitions now use nested shared-element grouping so the card, image, and headline stack and clip more reliably between overview and article.
+- [x] [Improved] ⚡ Blog article transitions now start immediately again instead of pausing while the next page finishes loading.
+- [x] [Improved] ↔️ Browser back and forward now reuse the same shared-element transition flow as direct blog clicks, so history navigation stays visually consistent.
+- [x] [Improved] 🖼️ The article hero image now spans the full blog detail content width again while keeping the shared image crop more stable at the end of the transition.
+- [x] [Improved] 📐 Blog overview cards now use a wider image ratio that better matches the article hero crop, reducing the last-moment shared-image jump when the transition settles.
+- [x] [Improved] 🪟 Shared blog cards now keep a solid surface during expansion, which prevents neighboring article thumbnails from flashing through at the start of the transition.
+- [x] [Improved] 🌫️ Returning from an article to the overview now reveals the card blur band more softly instead of popping it in at the very end.
 - [ ] [Internal] 🧩 Added feature-detected transition wiring, tuned shared-element animation rules, and regression coverage for transition helpers and media mapping.
+- [ ] [Internal] 🧭 Switched blog history transitions onto a shared history router wrapper and committed POP route updates inside the transition callback so browser back/forward animates reliably.
 - [ ] [Internal] 📝 Added a detailed Issue #109 postmortem in docs with timeline, root causes, regressions, and a handoff checklist for follow-up AI debugging.

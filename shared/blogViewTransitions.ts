@@ -3,8 +3,8 @@ type BlogRouteKind = 'list' | 'post' | 'other';
 
 const BLOG_VIEW_TRANSITION_PREFIX = 'blog-post';
 const BLOG_ROUTE_PATTERN = /^\/(?:[a-z]{2}\/)?blog(?:\/([^/?#]+))?\/?$/i;
-const BLOG_VIEW_TRANSITION_STYLE_ID = 'blog-view-transition-active';
-const BLOG_VIEW_TRANSITION_DURATION = '350ms';
+
+export const BLOG_VIEW_TRANSITION_DURATION = '420ms';
 
 export interface BlogTransitionTarget {
     language: string;
@@ -12,10 +12,32 @@ export interface BlogTransitionTarget {
 }
 
 export type BlogTransitionSource = 'list' | 'post';
+export type BlogViewTransitionType = 'blog-expand' | 'blog-collapse';
 
 export interface BlogTransitionNavigationState {
     blogTransitionSource: BlogTransitionSource;
     blogTransitionTarget: BlogTransitionTarget;
+}
+
+interface ViewTransitionWithFinished {
+    finished?: Promise<unknown>;
+    types?: {
+        add?: (value: string) => void;
+    };
+}
+
+type ViewTransitionCapableDocument = Document & {
+    startViewTransition?: unknown;
+};
+
+interface StartViewTransitionOptions {
+    update?: () => void | Promise<void>;
+    type?: BlogViewTransitionType;
+}
+
+interface StartPreparedBlogViewTransitionOptions extends StartViewTransitionOptions {
+    beforeTransition?: () => void;
+    prepare?: () => Promise<unknown>;
 }
 
 const toTransitionToken = (value: string, fallback: string): string => {
@@ -40,21 +62,18 @@ export interface BlogPostViewTransitionNames {
     card: string;
     image: string;
     title: string;
-    content?: string;
 }
 
 export const BLOG_VIEW_TRANSITION_CLASSES = {
     card: 'blog-card-transition',
     image: 'blog-image-transition',
     title: 'blog-title-transition',
-    content: 'blog-content-transition',
 } as const;
 
 let pendingBlogTransitionTarget: BlogTransitionTarget | null = null;
 let currentBlogPostTransitionTarget: BlogTransitionTarget | null = null;
 let lastKnownBlogPostTransitionTarget: BlogTransitionTarget | null = null;
 let blogTransitionStateVersion = 0;
-let isFirstBlogTransition = true;
 const blogTransitionStateListeners = new Set<() => void>();
 
 export const getBlogPostViewTransitionNames = (
@@ -163,6 +182,11 @@ export const isPendingBlogTransitionTarget = (
     return isBlogTransitionTargetMatch(pendingBlogTransitionTarget, { language, slug });
 };
 
+export const shouldDelayBlogCardProgressiveBlurReveal = (
+    isTransitionSource: boolean,
+    isTransitionTarget: boolean
+): boolean => !isTransitionSource && isTransitionTarget;
+
 export const setCurrentBlogPostTransitionTarget = (
     target: BlogTransitionTarget | null
 ): void => {
@@ -181,8 +205,6 @@ export const getLastKnownBlogPostTransitionTarget = (): BlogTransitionTarget | n
 export const getBlogTransitionStateVersion = (): number =>
     blogTransitionStateVersion;
 
-export const getIsFirstBlogTransition = (): boolean => isFirstBlogTransition;
-
 export const subscribeBlogTransitionState = (
     listener: () => void
 ): (() => void) => {
@@ -190,133 +212,6 @@ export const subscribeBlogTransitionState = (
     return () => {
         blogTransitionStateListeners.delete(listener);
     };
-};
-
-const buildScopedBlogTransitionStyles = (target: BlogTransitionTarget, direction: 'list-to-post' | 'post-to-list'): string => {
-    const names = getBlogPostViewTransitionNames(target.language, target.slug);
-    
-    const isListToPost = direction === 'list-to-post';
-    const imageIsolationCSS = isListToPost ? `
-/* List -> Post: hide the incoming slow-loading small thumb, show the new big image */
-::view-transition-old(${names.image}) { display: none !important; }
-::view-transition-new(${names.image}) { 
-  animation: none !important; 
-  opacity: 1 !important; 
-  mix-blend-mode: normal !important; 
-}
-` : `
-/* Post -> List: hide the incoming small thumb, hold onto the fading big old image */
-::view-transition-old(${names.image}) { 
-  animation: none !important; 
-  opacity: 1 !important; 
-  mix-blend-mode: normal !important; 
-}
-::view-transition-new(${names.image}) { display: none !important; }
-`;
-
-    return `
-::view-transition-group(${names.card}),
-::view-transition-group(${names.image}),
-::view-transition-group(${names.title}) {
-  animation-duration: ${BLOG_VIEW_TRANSITION_DURATION};
-  animation-timing-function: cubic-bezier(0.22, 0.82, 0.24, 1);
-}
-
-::view-transition-group(${names.card}) { z-index: 10 !important; }
-::view-transition-group(${names.image}) { z-index: 20 !important; }
-::view-transition-group(${names.title}) { z-index: 30 !important; }
-
-::view-transition-old(${names.image}) img[src^="data:image/"],
-::view-transition-new(${names.image}) img[src^="data:image/"] { 
-  opacity: 0 !important; 
-  visibility: hidden !important; 
-}
-
-${names.content ? `
-::view-transition-group(${names.content}) { z-index: 15 !important; }
-::view-transition-old(${names.content}),
-::view-transition-new(${names.content}) {
-  animation-duration: ${BLOG_VIEW_TRANSITION_DURATION};
-  animation-timing-function: cubic-bezier(0.22, 0.82, 0.24, 1);
-  mix-blend-mode: normal;
-}
-::view-transition-old(${names.content}) { z-index: 1 !important; }
-::view-transition-new(${names.content}) { z-index: 3 !important; }
-` : ''}
-
-::view-transition-old(${names.card}),
-::view-transition-new(${names.card}) {
-  mix-blend-mode: normal;
-}
-
-::view-transition-old(${names.card}),
-::view-transition-old(${names.title}) {
-  z-index: 1;
-}
-
-::view-transition-old(${names.image}) {
-  z-index: 2;
-}
-
-::view-transition-new(${names.card}),
-::view-transition-new(${names.title}) {
-  z-index: 2;
-}
-
-::view-transition-new(${names.image}) {
-  z-index: 10;
-}
-
-::view-transition-old(${names.card}),
-::view-transition-new(${names.card}) {
-  transform-origin: center top;
-}
-
-::view-transition-old(${names.image}),
-::view-transition-new(${names.image}) {
-  transform-origin: center center;
-  border-radius: 1rem;
-  height: 100%;
-  width: 100%;
-  object-fit: cover;
-  object-position: center;
-  overflow: hidden !important;
-}
-
-::view-transition-old(${names.title}),
-::view-transition-new(${names.title}) {
-  transform-origin: left top;
-  font-synthesis: none;
-}
-
-${imageIsolationCSS}
-`;
-};
-
-const applyScopedBlogTransitionStyles = (direction: 'list-to-post' | 'post-to-list'): void => {
-    if (typeof document === 'undefined') return;
-    if (!pendingBlogTransitionTarget) return;
-
-    const existingStyle = document.getElementById(BLOG_VIEW_TRANSITION_STYLE_ID) as HTMLStyleElement | null;
-    const styleElement = existingStyle ?? document.createElement('style');
-    styleElement.id = BLOG_VIEW_TRANSITION_STYLE_ID;
-    styleElement.textContent = buildScopedBlogTransitionStyles(pendingBlogTransitionTarget, direction);
-    if (!existingStyle) {
-        document.head.appendChild(styleElement);
-    }
-};
-
-const clearScopedBlogTransitionState = (): void => {
-    pendingBlogTransitionTarget = null;
-    blogTransitionStateVersion += 1;
-    blogTransitionStateListeners.forEach((listener) => listener());
-    if (typeof document === 'undefined') return;
-    const styleElement = document.getElementById(BLOG_VIEW_TRANSITION_STYLE_ID);
-    styleElement?.remove();
-};
-
-type ViewTransitionCapableDocument = Document & {
-    startViewTransition?: unknown;
 };
 
 export const supportsBlogViewTransitions = (): boolean => {
@@ -327,25 +222,32 @@ export const supportsBlogViewTransitions = (): boolean => {
     return !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 };
 
-const resolveBlogRouteKind = (pathname: string): BlogRouteKind => {
+export const getBlogRouteKindFromPath = (pathname: string): BlogRouteKind => {
     const match = pathname.match(BLOG_ROUTE_PATTERN);
     if (!match) return 'other';
     return match[1] ? 'post' : 'list';
 };
 
 export const isBlogListPath = (pathname: string): boolean =>
-    resolveBlogRouteKind(pathname) === 'list';
+    getBlogRouteKindFromPath(pathname) === 'list';
 
 export const isBlogRoutePath = (pathname: string): boolean =>
-    resolveBlogRouteKind(pathname) !== 'other';
+    getBlogRouteKindFromPath(pathname) !== 'other';
 
 export const isBlogListDetailTransition = (
     fromPathname: string,
     toPathname: string
 ): boolean => {
-    const fromKind = resolveBlogRouteKind(fromPathname);
-    const toKind = resolveBlogRouteKind(toPathname);
+    const fromKind = getBlogRouteKindFromPath(fromPathname);
+    const toKind = getBlogRouteKindFromPath(toPathname);
     return (fromKind === 'list' && toKind === 'post') || (fromKind === 'post' && toKind === 'list');
+};
+
+export const getCurrentBlogRouteKindFromDom = (): Exclude<BlogRouteKind, 'other'> | null => {
+    if (typeof document === 'undefined') return null;
+    if (document.querySelector('[data-blog-route-kind="list"]')) return 'list';
+    if (document.querySelector('[data-blog-route-kind="post"]')) return 'post';
+    return null;
 };
 
 export interface PrimaryClickLikeEvent {
@@ -367,15 +269,15 @@ export const isPrimaryUnmodifiedClick = (
     !event.shiftKey &&
     !event.defaultPrevented;
 
-const hasTransitionElement = (transitionName: string): boolean => {
-    if (typeof document === 'undefined') return false;
+const getTransitionElement = (transitionName: string): HTMLElement | null => {
+    if (typeof document === 'undefined') return null;
     const elements = document.querySelectorAll<HTMLElement>('*');
     for (const element of elements) {
         if (element.style?.viewTransitionName === transitionName) {
-            return true;
+            return element;
         }
     }
-    return false;
+    return null;
 };
 
 const hasRouteMarker = (kind: Exclude<BlogRouteKind, 'other'>): boolean => {
@@ -388,67 +290,60 @@ const hasReadyTransitionTarget = (
     expectedRouteKind?: Exclude<BlogRouteKind, 'other'>
 ): boolean => {
     const names = getBlogPostViewTransitionNames(target.language, target.slug);
-    // Keep readiness strict on the key moving pieces, but don't block on the decorative card shell.
-    const requiredNames = [names.image, names.title];
     const routeReady = expectedRouteKind ? hasRouteMarker(expectedRouteKind) : true;
-    return routeReady && requiredNames.every((name) => hasTransitionElement(name));
+    return routeReady &&
+        Boolean(getTransitionElement(names.card)) &&
+        Boolean(getTransitionElement(names.image)) &&
+        Boolean(getTransitionElement(names.title));
+};
+
+const waitForImageDecode = async (target: BlogTransitionTarget, timeoutMs: number): Promise<void> => {
+    const imageContainer = getTransitionElement(getBlogPostViewTransitionNames(target.language, target.slug).image);
+    const img = imageContainer?.querySelector('img:not([aria-hidden="true"])');
+    if (!(img instanceof HTMLImageElement)) return;
+    if (img.complete && img.naturalWidth > 0) return;
+    if (typeof img.decode !== 'function') return;
+
+    await Promise.race([
+        img.decode().catch(() => undefined),
+        new Promise<void>((resolve) => window.setTimeout(resolve, timeoutMs)),
+    ]);
+};
+
+const waitForFonts = async (timeoutMs: number): Promise<void> => {
+    if (typeof document === 'undefined') return;
+    const fontSet = (document as Document & { fonts?: { status?: string; ready?: Promise<unknown> } }).fonts;
+    const readyPromise = fontSet?.ready;
+    if (fontSet?.status !== 'loading' || !readyPromise || typeof readyPromise.then !== 'function') return;
+
+    await Promise.race([
+        readyPromise,
+        new Promise<void>((resolve) => window.setTimeout(resolve, timeoutMs)),
+    ]);
+};
+
+const waitForAnimationFrames = async (count: number): Promise<void> => {
+    if (typeof window === 'undefined') return;
+    for (let index = 0; index < count; index += 1) {
+        await new Promise<void>((resolve) => {
+            window.requestAnimationFrame(() => resolve());
+        });
+    }
 };
 
 export const waitForBlogTransitionTarget = async (
     target: BlogTransitionTarget,
     expectedRouteKind?: Exclude<BlogRouteKind, 'other'>,
-    timeoutMs = 320
+    timeoutMs = 240
 ): Promise<void> => {
     if (typeof window === 'undefined' || typeof document === 'undefined') return;
 
     const startedAt = typeof performance !== 'undefined' ? performance.now() : Date.now();
 
     await new Promise<void>((resolve) => {
-        const settleAndResolve = () => {
-            const finish = () => {
-                window.setTimeout(() => {
-                    resolve();
-                }, 10);
-            };
-
-            const checkImageAndFinish = () => {
-                const names = getBlogPostViewTransitionNames(target.language, target.slug);
-                const container = document.querySelector(`[style*="${names.image}"]`);
-                const img = container?.tagName === 'IMG' ? container : container?.querySelector('img:not([aria-hidden="true"])');
-                
-                const ensureOpacity = () => {
-                    // Also wait for React to actually apply the opacity-100 class after load
-                    if (img && img.classList.contains('opacity-0')) {
-                        window.requestAnimationFrame(ensureOpacity);
-                        return;
-                    }
-                    finish();
-                };
-
-                if (img instanceof HTMLImageElement && typeof img.decode === 'function') {
-                    void img.decode().catch(() => {}).finally(ensureOpacity);
-                    return;
-                }
-                ensureOpacity();
-            };
-
-            const fontSet = (document as Document & { fonts?: { status?: string; ready?: Promise<unknown> } }).fonts;
-            const maybeReady = fontSet?.ready;
-
-            if (fontSet?.status === 'loading' && maybeReady && typeof maybeReady.then === 'function') {
-                void Promise.race([
-                    maybeReady,
-                    new Promise<void>((fontResolve) => window.setTimeout(fontResolve, isFirstBlogTransition ? 400 : 180)),
-                ]).finally(checkImageAndFinish);
-                return;
-            }
-
-            checkImageAndFinish();
-        };
-
         const tick = () => {
             if (hasReadyTransitionTarget(target, expectedRouteKind)) {
-                settleAndResolve();
+                resolve();
                 return;
             }
 
@@ -458,58 +353,100 @@ export const waitForBlogTransitionTarget = async (
                 return;
             }
 
-            window.setTimeout(tick, 10);
+            window.requestAnimationFrame(tick);
         };
 
         tick();
     });
+
+    await Promise.all([
+        waitForFonts(Math.min(timeoutMs, 160)),
+        waitForImageDecode(target, Math.min(timeoutMs, 160)),
+    ]);
+
+    await waitForAnimationFrames(2);
 };
 
-export const startBlogViewTransition = (
-    applyUpdate?: () => void | Promise<void>,
-    sourcePathnameOverride?: string
-): void => {
+const startTransitionWithTypes = (
+    viewTransitionDocument: ViewTransitionCapableDocument,
+    startTransition: (value: unknown) => ViewTransitionWithFinished | undefined,
+    update?: () => void | Promise<void>,
+    type?: BlogViewTransitionType
+): ViewTransitionWithFinished | undefined => {
+    const updateCallback = () => update?.();
+
+    if (!type) {
+        return startTransition.call(viewTransitionDocument, updateCallback);
+    }
+
+    try {
+        return startTransition.call(viewTransitionDocument, {
+            update: updateCallback,
+            types: [type],
+        });
+    } catch {
+        const transition = startTransition.call(viewTransitionDocument, updateCallback);
+        transition?.types?.add?.(type);
+        return transition;
+    }
+};
+
+const clearBlogTransitionState = (): void => {
+    pendingBlogTransitionTarget = null;
+    blogTransitionStateVersion += 1;
+    blogTransitionStateListeners.forEach((listener) => listener());
+};
+
+export const startBlogViewTransition = ({
+    update,
+    type,
+}: StartViewTransitionOptions = {}): void => {
     if (!supportsBlogViewTransitions()) {
-        applyUpdate?.();
-        clearScopedBlogTransitionState();
+        update?.();
+        clearBlogTransitionState();
         return;
     }
+
     const viewTransitionDocument = document as ViewTransitionCapableDocument;
     const startTransition = viewTransitionDocument.startViewTransition as
-        | ((updateCallback: () => void | Promise<void>) => {
-            finished?: Promise<unknown>;
-        })
+        | ((value: unknown) => ViewTransitionWithFinished | undefined)
         | undefined;
 
     if (typeof startTransition !== 'function') {
-        applyUpdate?.();
-        clearScopedBlogTransitionState();
+        update?.();
+        clearBlogTransitionState();
         return;
     }
 
-    const currentPath = typeof window !== 'undefined' ? window.location.pathname : '/';
-    const sourceKind = resolveBlogRouteKind(sourcePathnameOverride || currentPath);
-    const direction = sourceKind === 'list' ? 'list-to-post' : 'post-to-list';
-    applyScopedBlogTransitionStyles(direction);
-
     try {
-        const transition = startTransition.call(viewTransitionDocument, () => {
-            return applyUpdate?.();
-        });
+        const transition = startTransitionWithTypes(viewTransitionDocument, startTransition, update, type);
 
         if (transition && typeof transition.finished?.finally === 'function') {
             void transition.finished.finally(() => {
-                isFirstBlogTransition = false;
-                clearScopedBlogTransitionState();
+                clearBlogTransitionState();
             });
             return;
         }
 
-        isFirstBlogTransition = false;
-        clearScopedBlogTransitionState();
+        clearBlogTransitionState();
     } catch {
-        isFirstBlogTransition = false;
-        applyUpdate?.();
-        clearScopedBlogTransitionState();
+        update?.();
+        clearBlogTransitionState();
     }
+};
+
+export const startPreparedBlogViewTransition = async ({
+    beforeTransition,
+    prepare,
+    update,
+    type,
+}: StartPreparedBlogViewTransitionOptions = {}): Promise<void> => {
+    try {
+        await prepare?.();
+    } catch {
+        // Ignore preload failures and rely on the navigation fallback behavior.
+    }
+
+    beforeTransition?.();
+    startBlogViewTransition({ update, type });
 };
