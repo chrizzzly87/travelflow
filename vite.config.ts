@@ -26,6 +26,16 @@ export default defineConfig(({ mode }) => {
                     changeOrigin: true,
                     secure: false,
                 },
+                '/api/billing/paddle/checkout': {
+                    target: 'http://localhost:8888',
+                    changeOrigin: true,
+                    secure: false,
+                },
+                '/api/billing/paddle/webhook': {
+                    target: 'http://localhost:8888',
+                    changeOrigin: true,
+                    secure: false,
+                },
                 '/api/trip-map-preview': {
                     target: 'http://localhost:8888',
                     changeOrigin: true,

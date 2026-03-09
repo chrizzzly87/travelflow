@@ -7,6 +7,9 @@ Shared helpers live in `netlify/edge-lib/`.
 
 | Function file | Route(s) | Purpose | Type |
 |---|---|---|---|
+| `paddle-config.ts` | `/api/billing/paddle/config` | Public billing bootstrap endpoint that exposes the active Paddle environment, configured tier availability, and non-secret configuration diagnostics for pricing and the dedicated checkout page. | API |
+| `paddle-checkout.ts` | `/api/billing/paddle/checkout` | Authenticated billing endpoint that creates Paddle checkout transactions for paid web tiers. | API |
+| `paddle-webhook.ts` | `/api/billing/paddle/webhook` | Verifies Paddle webhook signatures, deduplicates events, and syncs subscription lifecycle + tier state in Supabase. | API |
 | `ai-generate.ts` | `/api/ai/generate` | Server-side AI itinerary generation endpoint (Gemini, OpenAI, Anthropic, OpenRouter allowlisted models) | API |
 | `ai-generate-worker.ts` | `/api/internal/ai/generation-worker` | Internal async queue worker endpoint for server-owned trip-generation job execution | API |
 | `ai-benchmark.ts` | `/api/internal/ai/benchmark`, `/api/internal/ai/benchmark/export`, `/api/internal/ai/benchmark/cleanup`, `/api/internal/ai/benchmark/rating`, `/api/internal/ai/benchmark/telemetry`, `/api/internal/ai/benchmark/preferences` | Internal benchmark API (session/run persistence, execution, export, cleanup, persisted run ratings/comments, telemetry summaries, and admin preference persistence for benchmark model targets/presets) with bearer-token admin role enforcement (`get_current_user_access`). Session export supports `includeLogs=1` to bundle prompt/scenario + run logs. | API |
@@ -141,6 +144,16 @@ The CI validator (`scripts/validate-edge-functions.mjs`) enforces this rule at b
 | `VITE_SUPABASE_URL` | `trip-og-meta.ts`, `trip-og-image.tsx`, `trip-share-resolve.ts` (via `trip-og-data.ts`) | Supabase REST API base URL |
 | `VITE_SUPABASE_ANON_KEY` | `trip-og-meta.ts`, `trip-og-image.tsx`, `trip-share-resolve.ts` (via `trip-og-data.ts`) | Supabase anonymous auth key for shared-trip RPC reads |
 | `SUPABASE_SERVICE_ROLE_KEY` | `trip-og-meta.ts`, `trip-og-image.tsx`, `trip-share-resolve.ts` (via `trip-og-data.ts`), `admin-iam.ts`, `ai-generate.ts`, `ai-benchmark.ts` | Service-role access for shared-trip resolution, Auth Admin actions, and internal AI telemetry writes/reads |
+| `PADDLE_API_KEY` | `paddle-config.ts`, `paddle-checkout.ts` | Paddle API key used to create checkout transactions and validate live-vs-sandbox environment alignment |
+| `PADDLE_PRICE_ID_TIER_MID` | `paddle-checkout.ts`, `paddle-webhook.ts` | Paddle price ID mapped to internal `tier_mid` entitlements |
+| `PADDLE_PRICE_ID_TIER_PREMIUM` | `paddle-checkout.ts`, `paddle-webhook.ts` | Optional Paddle price ID mapped to `tier_premium` entitlements |
+| `PADDLE_ENV` | `paddle-config.ts`, `paddle-checkout.ts` | Paddle environment selector (`sandbox`/`live`) used to choose the correct Paddle API base URL and validate that configured keys/tokens belong to the same environment |
+| `PADDLE_CHECKOUT_DOMAIN` | `paddle-checkout.ts` | Optional checkout domain override passed to Paddle transaction `checkout.url` |
+| `VITE_PADDLE_CHECKOUT_ENABLED` | `paddle-config.ts` | Public feature flag surfaced to pricing and `/checkout` to enable/disable billing bootstrapping |
+| `VITE_PADDLE_CLIENT_TOKEN` | `paddle-config.ts` | Paddle.js client-side token presence + environment are surfaced as non-secret diagnostics for checkout bootstrapping |
+| `PADDLE_WEBHOOK_SECRET` | `paddle-webhook.ts` | Secret key for `Paddle-Signature` webhook verification |
+| `PADDLE_WEBHOOK_MAX_AGE_SECONDS` | `paddle-webhook.ts` | Optional timestamp tolerance for webhook signatures (default `300`) |
+| `PADDLE_WEBHOOK_SYNC_MODE` | `paddle-webhook.ts` | Optional webhook processing mode: `full` (default, writes Supabase) or `verify_only` (signature/payload verification only, no Supabase writes) |
 | `GEMINI_API_KEY` | `ai-generate.ts` | Preferred server-side Gemini key for `/api/ai/generate` |
 | `VITE_GEMINI_API_KEY` | `ai-generate.ts` (fallback), legacy browser path | Compatibility fallback if `GEMINI_API_KEY` is not set |
 | `TF_ADMIN_API_KEY` | `ai-benchmark.ts` | Emergency fallback key for internal benchmark endpoints when `TF_ENABLE_ADMIN_KEY_FALLBACK` is enabled |
@@ -195,4 +208,10 @@ All CDN-cached functions use `max-age=0` for browser to always revalidate with t
 | **Blank/generic OG previews** | Missing `VITE_GOOGLE_MAPS_API_KEY` or Supabase env vars | Set env vars in Netlify dashboard |
 | **Trip OG shows fallback card** | Supabase RPC returns null (trip deleted or token invalid) | Expected behavior — fallback is intentional |
 | **Direct `/trip/...` links show generic previews** | Missing `SUPABASE_SERVICE_ROLE_KEY` prevents active-share lookup by trip ID | Set `SUPABASE_SERVICE_ROLE_KEY` so trip routes can resolve share-backed OG data |
+| **`/api/billing/paddle/checkout` returns 400 for paid tier** | Missing Paddle price ID mapping (`PADDLE_PRICE_ID_TIER_*`) | Set the mapped price IDs in Netlify environment variables |
+| **`/api/billing/paddle/checkout` returns 500 with environment mismatch text** | `PADDLE_ENV=sandbox` is paired with live Paddle credentials (or vice versa) | Use sandbox API key + sandbox client token for `sandbox`; use live credentials only when `PADDLE_ENV=live` |
+| **Explorer works but Globetrotter button is disabled** | `PADDLE_PRICE_ID_TIER_PREMIUM` is intentionally unset | Create the premium recurring price in Paddle and add `PADDLE_PRICE_ID_TIER_PREMIUM` |
+| **Paddle webhook requests return 401** | Invalid/missing `PADDLE_WEBHOOK_SECRET` or timestamp outside allowed window | Copy the exact destination secret from Paddle and verify `PADDLE_WEBHOOK_MAX_AGE_SECONDS` |
+| **Webhook verifies but tier never updates** | `PADDLE_WEBHOOK_SYNC_MODE=verify_only` is still enabled | Switch `PADDLE_WEBHOOK_SYNC_MODE=full` after Supabase schema migration is applied |
+| **Pricing checkout returns 404 in local Vite dev** | Netlify edge route is not active on plain `pnpm dev` | Run `pnpm dev:netlify` and route requests through port `8888` |
 | **Stale social previews** | CDN cache not yet expired | Append `?v=2` to force refetch, or purge via Netlify dashboard |

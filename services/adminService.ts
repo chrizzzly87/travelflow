@@ -40,6 +40,9 @@ export interface AdminUserRecord {
     disabled_by?: string | null;
     active_trips?: number | null;
     total_trips?: number | null;
+    provider_subscription_id?: string | null;
+    provider_status?: string | null;
+    subscription_status?: string | null;
     system_role: 'admin' | 'user';
     tier_key: PlanTierKey;
     entitlements_override: Record<string, unknown> | null;
@@ -64,6 +67,65 @@ export interface AdminTripRecord {
     source_kind: string | null;
     created_at: string;
     updated_at: string;
+}
+
+export interface AdminBillingSubscriptionRecord {
+    user_id: string;
+    email: string | null;
+    tier_key: string | null;
+    provider: string | null;
+    provider_customer_id: string | null;
+    provider_subscription_id: string | null;
+    provider_price_id: string | null;
+    provider_status: string | null;
+    subscription_status: string | null;
+    current_period_start: string | null;
+    current_period_end: string | null;
+    cancel_at: string | null;
+    canceled_at: string | null;
+    grace_ends_at: string | null;
+    currency: string | null;
+    amount: number | null;
+    last_event_id: string | null;
+    last_event_type: string | null;
+    last_event_at: string | null;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface AdminBillingWebhookEventRecord {
+    event_id: string;
+    provider: string;
+    event_type: string;
+    occurred_at: string;
+    user_id: string | null;
+    user_email: string | null;
+    status: string;
+    error_message: string | null;
+    payload: Record<string, unknown> | null;
+    processed_at: string | null;
+    created_at: string;
+}
+
+export interface AdminBillingPaddleReconcileSummary {
+    fetched: number;
+    eligible: number;
+    processed: number;
+    ignored: number;
+    duplicates: number;
+    failed: number;
+    resolvedUsers: number;
+    unresolved: number;
+}
+
+export interface AdminBillingPaddleReconcileResult {
+    summary: AdminBillingPaddleReconcileSummary;
+    results: Array<{
+        subscriptionId: string | null;
+        eventId: string;
+        message: string;
+        statusCode: number;
+    }>;
 }
 
 export interface AdminAuditRecord {
@@ -162,6 +224,15 @@ const mapTermsRpcErrorMessage = (rawMessage: string | null | undefined, fallback
     return message;
 };
 
+const mapBillingRpcErrorMessage = (rawMessage: string | null | undefined, fallbackMessage: string): string => {
+    const message = (rawMessage || '').trim();
+    if (!message) return fallbackMessage;
+    if (/admin_list_billing_(subscriptions|webhook_events)/i.test(message) || /billing\.read/i.test(message)) {
+        return `${message}. Please re-run the latest /docs/supabase.sql migration for billing admin functions.`;
+    }
+    return message;
+};
+
 const VALID_PROFILE_GENDERS = new Set(['female', 'male', 'non-binary', 'prefer-not']);
 
 const normalizeProfileGender = (value: string | null | undefined): string | null => {
@@ -204,9 +275,12 @@ export const adminListUsers = async (
             user_id: `mock-user-${i}`,
             email: `user${i}@example.com`,
             system_role: i === 0 ? 'admin' : 'user',
-            tier_key: i % 3 === 0 ? 'tier_premium' : 'tier_free',
+            tier_key: i % 5 === 0 ? 'tier_premium' : i % 3 === 0 ? 'tier_mid' : 'tier_free',
             account_status: i === 14 ? 'disabled' : 'active',
             auth_provider: i % 2 === 0 ? 'email' : 'google',
+            provider_subscription_id: i % 5 === 0 ? `sub_mock_premium_${i}` : i % 3 === 0 ? `sub_mock_mid_${i}` : null,
+            provider_status: i % 5 === 0 ? 'canceled' : i % 3 === 0 ? 'active' : null,
+            subscription_status: i % 5 === 0 ? 'inactive' : i % 3 === 0 ? 'active' : null,
             created_at: new Date(now.getTime() - i * 86400000 * 3).toISOString(),
             updated_at: new Date(now.getTime() - i * 3600000).toISOString(),
             entitlements_override: null,
@@ -360,6 +434,9 @@ export const adminGetUserProfile = async (userId: string): Promise<AdminUserReco
             username: 'mockuserprofile',
             username_display: 'MockUserProfile',
             username_changed_at: null,
+            provider_subscription_id: null,
+            provider_status: null,
+            subscription_status: null,
         };
     }
     const client = requireSupabase();
@@ -422,6 +499,128 @@ export const adminListTrips = async (
     }
     if (error) throw new Error(error.message || 'Could not load trips.');
     return (Array.isArray(data) ? data : []) as AdminTripRecord[];
+};
+
+export const adminListBillingSubscriptions = async (
+    options: {
+        limit?: number;
+        offset?: number;
+        search?: string;
+    } = {}
+): Promise<AdminBillingSubscriptionRecord[]> => {
+    if (shouldUseAdminMockData()) {
+        const now = new Date();
+        return [
+            {
+                user_id: '00000000-0000-0000-0000-000000000101',
+                email: 'explorer@example.com',
+                tier_key: 'tier_mid',
+                provider: 'paddle',
+                provider_customer_id: 'ctm_mock_101',
+                provider_subscription_id: 'sub_mock_101',
+                provider_price_id: 'pri_mock_mid',
+                provider_status: 'active',
+                subscription_status: 'active',
+                current_period_start: new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000)).toISOString(),
+                current_period_end: new Date(now.getTime() + (23 * 24 * 60 * 60 * 1000)).toISOString(),
+                cancel_at: null,
+                canceled_at: null,
+                grace_ends_at: null,
+                currency: 'USD',
+                amount: 900,
+                last_event_id: 'evt_mock_active',
+                last_event_type: 'subscription.updated',
+                last_event_at: new Date(now.getTime() - (60 * 60 * 1000)).toISOString(),
+                created_at: new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000)).toISOString(),
+                updated_at: new Date(now.getTime() - (60 * 60 * 1000)).toISOString(),
+            },
+            {
+                user_id: '00000000-0000-0000-0000-000000000202',
+                email: 'grace@example.com',
+                tier_key: 'tier_premium',
+                provider: 'paddle',
+                provider_customer_id: 'ctm_mock_202',
+                provider_subscription_id: 'sub_mock_202',
+                provider_price_id: 'pri_mock_premium',
+                provider_status: 'canceled',
+                subscription_status: 'active',
+                current_period_start: new Date(now.getTime() - (14 * 24 * 60 * 60 * 1000)).toISOString(),
+                current_period_end: new Date(now.getTime() + (14 * 24 * 60 * 60 * 1000)).toISOString(),
+                cancel_at: null,
+                canceled_at: new Date(now.getTime() - (2 * 24 * 60 * 60 * 1000)).toISOString(),
+                grace_ends_at: new Date(now.getTime() + (5 * 24 * 60 * 60 * 1000)).toISOString(),
+                currency: 'USD',
+                amount: 1900,
+                last_event_id: 'evt_mock_grace',
+                last_event_type: 'subscription.canceled',
+                last_event_at: new Date(now.getTime() - (2 * 24 * 60 * 60 * 1000)).toISOString(),
+                created_at: new Date(now.getTime() - (45 * 24 * 60 * 60 * 1000)).toISOString(),
+                updated_at: new Date(now.getTime() - (2 * 24 * 60 * 60 * 1000)).toISOString(),
+            },
+        ];
+    }
+
+    const client = requireSupabase();
+    const { data, error } = await client.rpc('admin_list_billing_subscriptions', {
+        p_limit: options.limit ?? 250,
+        p_offset: options.offset ?? 0,
+        p_search: options.search ?? null,
+    });
+    if (error) {
+        throw new Error(mapBillingRpcErrorMessage(error.message, 'Could not load billing subscriptions.'));
+    }
+    return (Array.isArray(data) ? data : []) as AdminBillingSubscriptionRecord[];
+};
+
+export const adminListBillingWebhookEvents = async (
+    options: {
+        limit?: number;
+        offset?: number;
+        search?: string;
+    } = {}
+): Promise<AdminBillingWebhookEventRecord[]> => {
+    if (shouldUseAdminMockData()) {
+        const now = new Date();
+        return [
+            {
+                event_id: 'evt_mock_active',
+                provider: 'paddle',
+                event_type: 'subscription.updated',
+                occurred_at: new Date(now.getTime() - (60 * 60 * 1000)).toISOString(),
+                user_id: '00000000-0000-0000-0000-000000000101',
+                user_email: 'explorer@example.com',
+                status: 'processed',
+                error_message: null,
+                payload: { source: 'mock' },
+                processed_at: new Date(now.getTime() - (59 * 60 * 1000)).toISOString(),
+                created_at: new Date(now.getTime() - (59 * 60 * 1000)).toISOString(),
+            },
+            {
+                event_id: 'evt_mock_failed',
+                provider: 'paddle',
+                event_type: 'transaction.completed',
+                occurred_at: new Date(now.getTime() - (3 * 60 * 60 * 1000)).toISOString(),
+                user_id: null,
+                user_email: null,
+                status: 'failed',
+                error_message: 'Missing tf_user_id custom_data value.',
+                payload: { source: 'mock' },
+                processed_at: new Date(now.getTime() - (179 * 60 * 1000)).toISOString(),
+                created_at: new Date(now.getTime() - (179 * 60 * 1000)).toISOString(),
+            },
+        ];
+    }
+
+    const client = requireSupabase();
+    const { data, error } = await client.rpc('admin_list_billing_webhook_events', {
+        p_limit: options.limit ?? 250,
+        p_offset: options.offset ?? 0,
+        p_search: options.search ?? null,
+    });
+    if (error) {
+        throw new Error(mapBillingRpcErrorMessage(error.message, 'Could not load billing webhook events.'));
+    }
+    return (Array.isArray(data) ? data : []) as AdminBillingWebhookEventRecord[];
 };
 
 export const adminListUserTrips = async (
@@ -904,24 +1103,31 @@ const callAdminInternalApi = async <T extends Record<string, unknown>>(
                         : null;
         const fallbackText = responseText.trim();
         const normalizedFallback = fallbackText && fallbackText.length <= 280 ? fallbackText : null;
-        const isIdentityPath = path === '/api/internal/admin/iam';
+        const pathMessages = path === '/api/internal/admin/iam'
+            ? {
+                notFound: 'Admin identity route is unavailable in Vite-only dev. Run `pnpm dev:netlify` (or run it in a second terminal while `pnpm dev` is active) to test admin delete/invite/create actions.',
+                proxyFailure: 'Vite could not reach Netlify dev for admin identity actions (connection refused on localhost:8888). Start `pnpm dev:netlify` before testing delete/invite/create.',
+            }
+            : path === '/api/internal/admin/audit/replay-export'
+                ? {
+                    notFound: 'Admin audit export route is unavailable in Vite-only dev. Run `pnpm dev:netlify` (or run it in a second terminal while `pnpm dev` is active) to test replay exports.',
+                    proxyFailure: 'Vite could not reach Netlify dev for admin audit export actions (connection refused on localhost:8888). Start `pnpm dev:netlify` before testing replay export.',
+                }
+                : path === '/api/internal/admin/billing/paddle/reconcile'
+                    ? {
+                        notFound: 'Admin billing reconcile route is unavailable in Vite-only dev. Run `pnpm dev:netlify` (or run it in a second terminal while `pnpm dev` is active) to test Paddle reconciliation.',
+                        proxyFailure: 'Vite could not reach Netlify dev for admin billing reconciliation (connection refused on localhost:8888). Start `pnpm dev:netlify` before testing Paddle reconciliation.',
+                    }
+                    : null;
         const devNotFoundMessage = looksLikeViteNotFoundPage && import.meta.env.DEV
-            ? (
-                isIdentityPath
-                    ? 'Admin identity route is unavailable in Vite-only dev. Run `pnpm dev:netlify` (or run it in a second terminal while `pnpm dev` is active) to test admin delete/invite/create actions.'
-                    : 'Admin audit export route is unavailable in Vite-only dev. Run `pnpm dev:netlify` (or run it in a second terminal while `pnpm dev` is active) to test replay exports.'
-            )
+            ? pathMessages?.notFound ?? null
             : null;
         const looksLikeViteProxyFailure = import.meta.env.DEV
             && response.status === 500
             && !payloadError
             && (!normalizedFallback || normalizedFallback === 'Internal Server Error');
         const devProxyFailureMessage = looksLikeViteProxyFailure
-            ? (
-                isIdentityPath
-                    ? 'Vite could not reach Netlify dev for admin identity actions (connection refused on localhost:8888). Start `pnpm dev:netlify` before testing delete/invite/create.'
-                    : 'Vite could not reach Netlify dev for admin audit export actions (connection refused on localhost:8888). Start `pnpm dev:netlify` before testing replay export.'
-            )
+            ? pathMessages?.proxyFailure ?? null
             : null;
         const reason = payloadError
             || devNotFoundMessage
@@ -1043,4 +1249,59 @@ export const adminExportAuditReplay = async (
         exportAuditId: response?.data?.exportAuditId ?? null,
         bundle,
     };
+};
+
+export const adminReconcilePaddleSubscriptions = async (
+    optionsOrMaxSubscriptions: number | {
+        maxSubscriptions?: number;
+        subscriptionId?: string | null;
+    } = {},
+): Promise<AdminBillingPaddleReconcileResult> => {
+    const options = typeof optionsOrMaxSubscriptions === 'number'
+        ? { maxSubscriptions: optionsOrMaxSubscriptions }
+        : optionsOrMaxSubscriptions;
+
+    if (shouldUseAdminMockData()) {
+        await new Promise((resolve) => setTimeout(resolve, 350));
+        return {
+            summary: {
+                fetched: 3,
+                eligible: 2,
+                processed: 1,
+                ignored: 1,
+                duplicates: 0,
+                failed: 0,
+                resolvedUsers: 1,
+                unresolved: 1,
+            },
+            results: [
+                {
+                    subscriptionId: 'sub_mock_101',
+                    eventId: 'reconcile__sub_mock_101__active__20260308',
+                    message: 'Processed.',
+                    statusCode: 200,
+                },
+                {
+                    subscriptionId: 'sub_mock_202',
+                    eventId: 'reconcile__sub_mock_202__canceled__20260308',
+                    message: 'Could not resolve a TravelFlow user for the Paddle subscription event.',
+                    statusCode: 200,
+                },
+            ],
+        };
+    }
+
+    const response = await callAdminInternalApi<{
+        ok: boolean;
+        data?: AdminBillingPaddleReconcileResult;
+    }>('/api/internal/admin/billing/paddle/reconcile', {
+        maxSubscriptions: options.maxSubscriptions ?? 200,
+        subscriptionId: options.subscriptionId ?? null,
+    });
+
+    if (!response?.data?.summary || !Array.isArray(response?.data?.results)) {
+        throw new Error('Admin billing reconcile returned an invalid payload.');
+    }
+
+    return response.data;
 };

@@ -8,6 +8,7 @@ import { makeTrip } from '../../helpers/tripFixtures';
 
 const mocks = vi.hoisted(() => ({
   navigate: vi.fn(),
+  confirmDialog: vi.fn().mockResolvedValue(true),
   route: {
     templateId: 'template-1' as string | undefined,
     pathname: '/examples/template-1',
@@ -50,6 +51,12 @@ vi.mock('../../../hooks/useAuth', () => ({
   useAuth: () => ({ access: mocks.auth.access }),
 }));
 
+vi.mock('../../../components/AppDialogProvider', () => ({
+  useAppDialog: () => ({
+    confirm: mocks.confirmDialog,
+  }),
+}));
+
 vi.mock('../../../config/db', () => ({
   DB_ENABLED: true,
 }));
@@ -86,6 +93,16 @@ vi.mock('../../../components/TripView', () => ({
   },
 }));
 
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string, options?: { count?: number }) => {
+      if (key === 'shared.perMonth') return '/mo';
+      if (key === 'shared.days') return `${options?.count ?? 0} days`;
+      return key;
+    },
+  }),
+}));
+
 import { ExampleTripLoaderRoute } from '../../../routes/ExampleTripLoaderRoute';
 
 const makeRouteProps = (overrides?: Partial<React.ComponentProps<typeof ExampleTripLoaderRoute>>) => ({
@@ -109,6 +126,12 @@ describe('routes/ExampleTripLoaderRoute', () => {
     mocks.route.search = '';
     mocks.route.hash = '';
     mocks.route.state = null;
+    mocks.auth.access = {
+      tierKey: 'tier_free',
+      entitlements: {
+        tripExpirationDays: 14,
+      },
+    };
     mocks.dbCanCreateTrip.mockResolvedValue({
       allowCreate: true,
       activeTripCount: 1,
@@ -273,13 +296,12 @@ describe('routes/ExampleTripLoaderRoute', () => {
     });
   });
 
-  it('blocks copy flow and routes to pricing when trip limit is reached', async () => {
+  it('opens the upgrade dialog and routes into checkout when trip limit is reached', async () => {
     mocks.dbCanCreateTrip.mockResolvedValue({
       allowCreate: false,
       activeTripCount: 5,
       maxTripCount: 5,
     });
-    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => undefined);
 
     const activeTrip = makeTrip({
       id: 'example-limit',
@@ -300,13 +322,11 @@ describe('routes/ExampleTripLoaderRoute', () => {
       await latestTripViewProps().onCopyTrip();
     });
 
-    expect(alertSpy).toHaveBeenCalledWith(expect.stringContaining('Trip limit reached (5/5)'));
-    expect(mocks.navigate).toHaveBeenCalledWith('/pricing');
+    expect(mocks.confirmDialog).toHaveBeenCalledTimes(1);
+    expect(mocks.navigate).toHaveBeenCalledWith('/checkout?tier=tier_mid&source=example_trip_limit_dialog&return_to=%2Fexamples%2Ftemplate-1');
     expect(mocks.saveTrip).not.toHaveBeenCalled();
     expect(mocks.dbUpsertTrip).not.toHaveBeenCalled();
     expect(mocks.dbCreateTripVersion).not.toHaveBeenCalled();
     expect(mocks.trackEvent).not.toHaveBeenCalledWith('example_trip__banner--copy_trip', expect.anything());
-
-    alertSpy.mockRestore();
   });
 });

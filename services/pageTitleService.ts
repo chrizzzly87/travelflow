@@ -6,6 +6,7 @@ export interface PageTitleLabels {
     updates: string;
     blog: string;
     pricing: string;
+    checkout: string;
     faq: string;
     contact: string;
     imprint: string;
@@ -89,6 +90,7 @@ export const resolvePageTitle = ({
         return blogTitle ? titleWithAppName(blogTitle, appName) : titleWithAppName(labels.blog, appName);
     }
     if (normalizedPath === '/pricing') return titleWithAppName(labels.pricing, appName);
+    if (normalizedPath === '/checkout') return titleWithAppName(labels.checkout, appName);
     if (normalizedPath === '/faq') return titleWithAppName(labels.faq, appName);
     if (normalizedPath === '/contact') return titleWithAppName(labels.contact, appName);
     if (normalizedPath === '/imprint') return titleWithAppName(labels.imprint, appName);
@@ -120,6 +122,7 @@ export const resolvePageTitle = ({
         if (normalizedPath === '/admin/users') return titleWithAppName(`${labels.admin} · Users`, appName);
         if (normalizedPath === '/admin/trips') return titleWithAppName(`${labels.admin} · Trips`, appName);
         if (normalizedPath === '/admin/tiers') return titleWithAppName(`${labels.admin} · Tiers`, appName);
+        if (normalizedPath === '/admin/billing') return titleWithAppName(`${labels.admin} · Billing`, appName);
         if (normalizedPath === '/admin/audit') return titleWithAppName(`${labels.admin} · Audit`, appName);
         if (normalizedPath === '/admin/ai-benchmark') return titleWithAppName(`${labels.admin} · AI Benchmark`, appName);
         if (normalizedPath === '/admin/ai-telemetry') return titleWithAppName(`${labels.admin} · AI Telemetry`, appName);

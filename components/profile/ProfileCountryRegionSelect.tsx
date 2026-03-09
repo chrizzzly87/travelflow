@@ -131,11 +131,13 @@ export const ProfileCountryRegionSelect: React.FC<ProfileCountryRegionSelectProp
     return (
         <div className="space-y-1" ref={wrapperRef}>
             <div className="relative">
-                <div className="pointer-events-none absolute inset-y-0 start-3 flex items-center">
+                <div className="pointer-events-none absolute inset-y-0 start-0 flex h-11 w-12 items-center justify-center">
                     {selectedCountry ? (
-                        <FlagIcon code={selectedCountry.code} size="sm" fallback={null} />
+                        <FlagIcon code={selectedCountry.code} size="sm" fallback={null} className="block shrink-0" />
                     ) : (
-                        <GlobeHemisphereWest size={15} weight="duotone" className="text-slate-400" />
+                        <span className="flex h-4 w-4 items-center justify-center">
+                            <GlobeHemisphereWest size={16} weight="duotone" className="text-slate-400" />
+                        </span>
                     )}
                 </div>
                 <input
@@ -145,7 +147,7 @@ export const ProfileCountryRegionSelect: React.FC<ProfileCountryRegionSelectProp
                     disabled={disabled}
                     placeholder={placeholder}
                     autoComplete="off"
-                    className={`h-10 w-full rounded-lg border border-slate-300 bg-white px-9 pe-20 text-sm text-slate-900 outline-none transition-colors focus:border-accent-400 focus:ring-2 focus:ring-accent-200 disabled:cursor-not-allowed disabled:opacity-60 ${inputClassName}`.trim()}
+                    className={`h-11 w-full rounded-lg border border-slate-300 bg-white ps-12 pe-12 text-sm leading-5 text-slate-900 outline-none transition-colors focus:border-accent-400 focus:ring-2 focus:ring-accent-200 disabled:cursor-not-allowed disabled:opacity-60 ${inputClassName}`.trim()}
                     role="combobox"
                     aria-expanded={isOpen}
                     aria-controls={listboxId}
@@ -158,7 +160,7 @@ export const ProfileCountryRegionSelect: React.FC<ProfileCountryRegionSelectProp
                     }}
                     onKeyDown={handleKeyDown}
                 />
-                <div className="absolute inset-y-0 end-2 flex items-center gap-1">
+                <div className="absolute end-2 top-1/2 flex -translate-y-1/2 items-center justify-center">
                     <button
                         type="button"
                         onClick={() => {
@@ -169,7 +171,7 @@ export const ProfileCountryRegionSelect: React.FC<ProfileCountryRegionSelectProp
                                 inputRef.current?.focus();
                             }
                         }}
-                        className="inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
                         aria-label={toggleLabel}
                         tabIndex={-1}
                     >
@@ -199,7 +201,7 @@ export const ProfileCountryRegionSelect: React.FC<ProfileCountryRegionSelectProp
                                     }`}
                                 >
                                     <span className="inline-flex items-center gap-2">
-                                        <FlagIcon code={country.code} size="sm" fallback={null} />
+                                        <FlagIcon code={country.code} size="sm" fallback={null} className="shrink-0" />
                                         <span>{country.name}</span>
                                     </span>
                                     {country.code === value && (

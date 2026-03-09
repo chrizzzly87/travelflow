@@ -22,6 +22,7 @@ const homeTarget = target('route:home', () => import('../pages/MarketingHomePage
 
 const createTripClassicLabTarget = target('route:create-trip-lab-classic', () => import('../pages/CreateTripClassicLabPage'));
 const createTripWizardTarget = target('route:create-trip-wizard', () => import('../pages/CreateTripV3Page'));
+const checkoutTarget = target('route:checkout', () => import('../pages/CheckoutPage'));
 
 const featuresTarget = target('route:features', () => import('../pages/FeaturesPage'));
 const updatesTarget = target('route:updates', () => import('../pages/UpdatesPage'));
@@ -70,6 +71,10 @@ const rules: PrefetchRule[] = [
     {
         match: (pathname) => startsWithSegment(pathname, '/create-trip'),
         targets: [tripViewTarget],
+    },
+    {
+        match: (pathname) => pathname === '/checkout',
+        targets: [checkoutTarget],
     },
     {
         match: (pathname) => startsWithSegment(pathname, '/trip'),

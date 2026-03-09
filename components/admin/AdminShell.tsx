@@ -5,6 +5,7 @@ import {
     CaretRight,
     ChartLineUp,
     ChartPieSlice,
+    CreditCard,
     Flask,
     ImageSquare,
     List,
@@ -70,6 +71,7 @@ const itemIcon = (icon: (typeof ADMIN_NAV_ITEMS)[number]['icon']) => {
     if (icon === 'users') return <UsersThree size={16} weight="duotone" />;
     if (icon === 'trips') return <SuitcaseRolling size={16} weight="duotone" />;
     if (icon === 'tiers') return <StackSimple size={16} weight="duotone" />;
+    if (icon === 'billing') return <CreditCard size={16} weight="duotone" />;
     if (icon === 'audit') return <Scroll size={16} weight="duotone" />;
     if (icon === 'legal') return <Scales size={16} weight="duotone" />;
     if (icon === 'og_tools') return <ImageSquare size={16} weight="duotone" />;
@@ -332,8 +334,8 @@ export const AdminShell: React.FC<AdminShellProps> = ({
 
                 <main className="min-w-0 flex-1 min-h-dvh" data-tf-handoff-ready="true">
                     <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
-                        <div className="flex flex-col gap-3 px-4 py-4 md:px-6 lg:flex-row lg:items-end lg:justify-between">
-                            <div className="min-w-0">
+                        <div className="grid gap-3 px-4 py-4 md:px-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+                            <div className="min-w-0 self-start text-left">
                                 <div className="flex items-center gap-2">
                                     <button
                                         type="button"
@@ -350,9 +352,9 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                                     <p className="mt-1 max-w-3xl text-sm text-slate-600">{description}</p>
                                 )}
                             </div>
-                            <div className="flex w-full flex-col sm:flex-row flex-wrap items-start sm:items-center gap-3 lg:w-auto lg:flex-nowrap mt-3 lg:mt-0">
+                            <div className="mt-3 flex w-full flex-col flex-wrap items-start gap-3 sm:flex-row sm:items-center lg:mt-0 lg:w-auto lg:flex-nowrap lg:self-end">
                                 {showGlobalSearch && (
-                                    <div className="w-full sm:w-auto flex-1 lg:flex-none">
+                                    <div className="flex-1 w-full sm:w-auto lg:flex-none">
                                         <label className="sr-only" htmlFor="admin-global-search">Search</label>
                                         <input
                                             id="admin-global-search"
@@ -366,7 +368,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                                     </div>
                                 )}
                                 {showDateRange && (
-                                    <div className="w-full sm:w-auto shrink-0">
+                                    <div className="w-full shrink-0 sm:w-auto">
                                         <Select
                                             value={dateRange}
                                             onValueChange={(next) => onDateRangeChange?.(next as AdminDateRange)}
@@ -386,7 +388,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                                     </div>
                                 )}
                                 {actions && (
-                                    <div className="w-full sm:w-auto shrink-0 flex items-center justify-end gap-2">
+                                    <div className="flex w-full shrink-0 items-center justify-end gap-2 sm:w-auto">
                                         {actions}
                                     </div>
                                 )}

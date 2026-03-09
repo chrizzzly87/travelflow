@@ -124,6 +124,9 @@ const USER_ROW = {
   auth_provider: 'email',
   auth_providers: ['email'],
   is_anonymous: false,
+  provider_subscription_id: 'sub_active_1',
+  provider_status: 'active',
+  subscription_status: 'active',
   terms_accepted_version: '2026-03-03',
   terms_accepted_at: '2026-03-03T10:00:00Z',
   entitlements_override: {},
@@ -141,6 +144,23 @@ const USER_ROW_2 = {
   username_changed_at: daysAgoIso(9),
   total_trips: 3,
   active_trips: 3,
+  provider_subscription_id: 'sub_canceled_2',
+  provider_status: 'canceled',
+  subscription_status: 'inactive',
+} as const;
+
+const USER_ROW_3 = {
+  ...USER_ROW,
+  user_id: 'user-3',
+  email: 'traveler3@example.com',
+  first_name: 'Traveler',
+  last_name: 'Three',
+  display_name: 'Traveler Three',
+  username: 'traveler_three',
+  username_display: 'TravelerThree',
+  provider_subscription_id: null,
+  provider_status: null,
+  subscription_status: null,
 } as const;
 
 const createTripRow = (index: number) => ({
@@ -156,10 +176,10 @@ const createTripRow = (index: number) => ({
   updated_at: daysAgoIso(20 - index),
 });
 
-const renderPage = () => render(
+const renderPage = (initialEntries: string[] = ['/admin/users']) => render(
   React.createElement(
     MemoryRouter,
-    { initialEntries: ['/admin/users'] },
+    { initialEntries },
     React.createElement(AdminUsersPage),
   ),
 );
@@ -277,6 +297,21 @@ describe('pages/AdminUsersPage soft delete toasts', () => {
     await waitFor(() => {
       expect(mocks.adminResetUserTermsAcceptance).toHaveBeenCalledWith('user-1', 'admin.testing.reset_terms');
     });
+  }, 20000);
+
+  it('shows subscription status pills and honors the subscription query filter', async () => {
+    mocks.adminListUsers.mockResolvedValue([USER_ROW, USER_ROW_2, USER_ROW_3]);
+    mocks.adminGetUserProfile.mockResolvedValue(USER_ROW);
+
+    renderPage(['/admin/users?subscription=active']);
+
+    expect(await screen.findByRole('columnheader', { name: 'Subscription' })).toBeInTheDocument();
+    expect(await screen.findByText('sub_active_1')).toBeInTheDocument();
+    expect(screen.queryByText('Canceled')).not.toBeInTheDocument();
+    expect(screen.queryByText('No subscription')).not.toBeInTheDocument();
+    expect(screen.getByText('traveler@example.com')).toBeInTheDocument();
+    expect(screen.queryByText('traveler2@example.com')).not.toBeInTheDocument();
+    expect(screen.queryByText('traveler3@example.com')).not.toBeInTheDocument();
   }, 20000);
 
   it('paginates connected trips in the user detail drawer', async () => {

@@ -9,6 +9,7 @@ const LABELS: PageTitleLabels = {
   updates: 'News & Updates',
   blog: 'Blog',
   pricing: 'Pricing',
+  checkout: 'Secure checkout',
   faq: 'FAQ',
   contact: 'Contact',
   imprint: 'Imprint',
@@ -32,6 +33,7 @@ describe('services/pageTitleService', () => {
     expect(resolvePageTitle({ pathname: '/', appName: APP_NAME, labels: LABELS })).toBe('TravelFlow');
     expect(resolvePageTitle({ pathname: '/features', appName: APP_NAME, labels: LABELS })).toBe('Features · TravelFlow');
     expect(resolvePageTitle({ pathname: '/de/pricing', appName: APP_NAME, labels: LABELS })).toBe('Pricing · TravelFlow');
+    expect(resolvePageTitle({ pathname: '/checkout', appName: APP_NAME, labels: LABELS })).toBe('Secure checkout · TravelFlow');
     expect(resolvePageTitle({ pathname: '/de/blog/', appName: APP_NAME, labels: LABELS })).toBe('Blog · TravelFlow');
   });
 
@@ -54,6 +56,7 @@ describe('services/pageTitleService', () => {
     expect(resolvePageTitle({ pathname: '/profile/settings', appName: APP_NAME, labels: LABELS })).toBe('Profile settings · TravelFlow');
     expect(resolvePageTitle({ pathname: '/u/traveler', appName: APP_NAME, labels: LABELS })).toBe('Profile · TravelFlow');
     expect(resolvePageTitle({ pathname: '/admin/users', appName: APP_NAME, labels: LABELS })).toBe('Admin · Users · TravelFlow');
+    expect(resolvePageTitle({ pathname: '/admin/billing', appName: APP_NAME, labels: LABELS })).toBe('Admin · Billing · TravelFlow');
   });
 
   it('falls back to not-found title for unknown routes', () => {

@@ -12,6 +12,12 @@ vi.mock('../../services/analyticsService', () => ({
   getAnalyticsDebugAttributes: () => ({}),
 }));
 
+vi.mock('react-router-dom', () => ({
+  Link: ({ to, children, ...props }: { to: string; children: React.ReactNode }) => (
+    React.createElement('a', { href: to, ...props }, children)
+  ),
+}));
+
 const messages: Record<string, string> = {
   'connectivity.tripStrip.offline.messageNone': 'Offline mode enabled. Trip data is served from local cache.',
   'connectivity.tripStrip.offline.messageOne': 'Offline mode enabled. {count} change is queued for sync.',
@@ -34,18 +40,27 @@ const messages: Record<string, string> = {
   'tripView.generation.strip.running': 'Trip generation is running...',
   'tripView.generation.strip.retry': 'Retry generation',
   'tripView.generation.strip.retrying': 'Retrying...',
+  'shared.perMonth': '/mo',
+  'shared.days': '{count} days',
+  'shared.unlimited': 'Unlimited',
+  'shared.noExpiry': 'No expiry',
+  'shared.enabled': 'Included',
+  'shared.disabled': 'Not included',
+  'tiers.explorer.features.0': '{maxActiveTripsLabel} active trips',
+  'tiers.explorer.features.2': 'Trip retention: {tripExpirationLabel}',
+  'tiers.explorer.features.4': 'Editable collaboration shares: {editableSharesLabel}',
   'tripPaywall.strip.loginNoDate': 'Trip preview paused. Sign in to reactivate and unlock full planning mode.',
   'tripPaywall.reactivate.actions.login': 'Sign in to reactivate',
 };
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, options?: { count?: number }) => {
+    t: (key: string, options?: Record<string, unknown>) => {
       const template = messages[key] ?? key;
-      if (typeof options?.count === 'number') {
-        return template.replaceAll('{count}', String(options.count));
-      }
-      return template;
+      if (!options) return template;
+      return Object.entries(options).reduce((result, [name, value]) => (
+        result.replaceAll(`{${name}}`, String(value))
+      ), template);
     },
   }),
 }));
@@ -195,6 +210,22 @@ describe('TripViewStatusBanners connectivity strips', () => {
     expect(screen.getByText('Trip generation failed. Check diagnostics or retry with the default model.')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Retry generation' }));
     expect(onRetryGeneration).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows Explorer upgrade highlights when the trip is paywall locked', () => {
+    render(
+      <TripViewStatusBanners
+        {...makeProps({
+          isTripLockedByExpiry: true,
+          isPaywallLocked: true,
+          paywallStripUpgradeCheckoutPath: '/checkout?tier=tier_mid',
+        })}
+      />,
+    );
+
+    expect(screen.getByText('Explorer · $9/mo')).toBeInTheDocument();
+    expect(screen.getByText('30 active trips')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'checkout.tripEntryCta' })).toHaveAttribute('href', '/checkout?tier=tier_mid');
   });
 
   it('shows pending-auth sign-in action instead of retry button for queued claim trips', () => {

@@ -18,6 +18,7 @@ describe('config/routes', () => {
   it('builds static and param routes', () => {
     expect(buildPath('home')).toBe('/');
     expect(buildPath('imprint')).toBe('/imprint');
+    expect(buildPath('checkout')).toBe('/checkout');
     expect(buildPath('blogPost', { slug: 'spring-guide' })).toBe('/blog/spring-guide');
     expect(buildPath('tripDetail', { tripId: 'abc 123' })).toBe('/trip/abc%20123');
     expect(buildPath('publicProfile', { username: 'traveler_1' })).toBe('/u/traveler_1');
@@ -48,6 +49,7 @@ describe('config/routes', () => {
       buildPath('terms'),
       buildPath('cookies'),
       buildPath('createTrip'),
+      buildPath('checkout'),
       buildPath('createTripClassicLab'),
       buildPath('createTripWizard'),
       buildPath('tripDetail', { tripId: 'trip-id' }),
@@ -117,6 +119,7 @@ describe('config/routes', () => {
     expect(getNamespacesForMarketingPath('/inspirations')).toEqual(['common', 'pages']);
     expect(getNamespacesForToolPath('/create-trip')).toEqual(['common', 'createTrip']);
     expect(getNamespacesForToolPath('/profile?tab=recent')).toEqual(['common', 'profile']);
+    expect(getNamespacesForToolPath('/checkout?tier=tier_mid')).toEqual(['common', 'pricing', 'profile', 'auth']);
     expect(getNamespacesForToolPath('/u/traveler')).toEqual(['common', 'profile']);
     expect(getNamespacesForToolPath('/trip/abc')).toEqual(['common']);
   });

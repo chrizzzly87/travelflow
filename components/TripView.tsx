@@ -21,6 +21,7 @@ import {
 } from '../config/paywall';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
 import { removeLocalStorageItem } from '../services/browserStorageService';
+import { buildBillingCheckoutPath } from '../services/billingService';
 import { useLoginModal } from '../hooks/useLoginModal';
 import {
     buildLoginPathWithNext,
@@ -563,6 +564,7 @@ interface TripViewModalLayerProps {
         analyticsEvent: 'trip_paywall__strip--activate' | 'trip_paywall__overlay--activate',
         source: 'trip_paywall_strip' | 'trip_paywall_overlay'
     ) => void;
+    paywallOverlayUpgradeCheckoutPath: string;
     showGenerationOverlay: boolean;
     generationProgressMessage: string;
     loadingDestinationSummary: string;
@@ -647,6 +649,7 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
     tripId,
     paywallActivationMode,
     onPaywallActivateClick,
+    paywallOverlayUpgradeCheckoutPath,
     showGenerationOverlay,
     generationProgressMessage,
     loadingDestinationSummary,
@@ -774,6 +777,7 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
             tripId={tripId}
             paywallActivationMode={paywallActivationMode}
             onPaywallActivateClick={onPaywallActivateClick}
+            paywallOverlayUpgradeCheckoutPath={paywallOverlayUpgradeCheckoutPath}
             showGenerationOverlay={showGenerationOverlay}
             generationProgressMessage={generationProgressMessage}
             loadingDestinationSummary={loadingDestinationSummary}
@@ -1230,6 +1234,34 @@ const useTripViewRender = ({
             isTripDetailRoute,
         }),
         [isAnonymous, isAuthenticated, isTripDetailRoute]
+    );
+    const currentTripPath = useMemo(
+        () => buildPathFromLocationParts({
+            pathname: location.pathname,
+            search: location.search,
+            hash: location.hash,
+        }),
+        [location.hash, location.pathname, location.search],
+    );
+    const paywallStripUpgradeCheckoutPath = useMemo(
+        () => buildBillingCheckoutPath({
+            tierKey: 'tier_mid',
+            source: 'trip_paywall_strip',
+            claimId: pendingAuthQueueRequestId,
+            returnTo: currentTripPath,
+            tripId: trip.id,
+        }),
+        [currentTripPath, pendingAuthQueueRequestId, trip.id],
+    );
+    const paywallOverlayUpgradeCheckoutPath = useMemo(
+        () => buildBillingCheckoutPath({
+            tierKey: 'tier_mid',
+            source: 'trip_paywall_overlay',
+            claimId: pendingAuthQueueRequestId,
+            returnTo: currentTripPath,
+            tripId: trip.id,
+        }),
+        [currentTripPath, pendingAuthQueueRequestId, trip.id],
     );
 
     const handlePaywallActivateClick = useCallback((
@@ -2722,6 +2754,7 @@ const useTripViewRender = ({
                     expirationRelativeLabel={expirationRelativeLabel}
                     paywallActivationMode={paywallActivationMode}
                     onPaywallActivateClick={handlePaywallActivateClick}
+                    paywallStripUpgradeCheckoutPath={paywallStripUpgradeCheckoutPath}
                     tripId={trip.id}
                     connectivityState={showOwnedTripConnectivityStatus ? connectivitySnapshot.state : undefined}
                     connectivityReason={showOwnedTripConnectivityStatus ? connectivitySnapshot.reason : null}
@@ -2978,9 +3011,10 @@ const useTripViewRender = ({
                         onCopyTrip={onCopyTrip}
                         expirationLabel={expirationLabel}
                         tripId={trip.id}
-                        paywallActivationMode={paywallActivationMode}
-                        onPaywallActivateClick={handlePaywallActivateClick}
-                        showGenerationOverlay={showGenerationOverlay}
+                    paywallActivationMode={paywallActivationMode}
+                    onPaywallActivateClick={handlePaywallActivateClick}
+                    paywallOverlayUpgradeCheckoutPath={paywallOverlayUpgradeCheckoutPath}
+                    showGenerationOverlay={showGenerationOverlay}
                         generationProgressMessage={generationProgressMessage}
                         loadingDestinationSummary={loadingDestinationSummary}
                         tripDateRange={tripMeta.dateRange}
