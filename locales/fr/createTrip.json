@@ -157,18 +157,31 @@
     "style": "Style",
     "transport": "Transport"
   },
+  "modelPicker": {
+    "label": "Modèle IA",
+    "topPicks": "Sélection recommandée",
+    "allModels": "Tous les modèles",
+    "badges": {
+      "default": "Par défaut",
+      "fastAndGood": "Rapide et fiable",
+      "veryFast": "Très rapide !"
+    }
+  },
   "cta": {
     "label": "Créer mon voyage",
-    "loading": "Création..."
+    "loading": "Création...",
+    "offline": "Offline"
   },
   "errors": {
     "destinationRequired": "Ajoutez au moins une destination avant de créer votre voyage.",
-    "genericGenerate": "La génération du voyage a échoué. Veuillez réessayer."
+    "genericGenerate": "La génération du voyage a échoué. Veuillez réessayer.",
+    "offlineCreateDisabled": "Trip creation is unavailable while offline. Reconnect and try again."
   },
   "prefillBadge": "Prérempli depuis : {label}",
   "labsBanner": {
-    "title": "Besoin de tester d'autres concepts create-trip ?",
-    "description": "Routes labo directes pour les vérifications de régression et les comparaisons.",
+    "title": "Besoin d'aide pour votre prochain voyage ?",
+    "description": "Utilisez notre assistant guidé pour planifier étape par étape.",
+    "cta": "Essayer l'assistant",
     "links": {
       "legacy": "Formulaire Classic Legacy",
       "classicCard": "Route Classic Card",
@@ -177,6 +190,18 @@
       "designV1": "Design Variant V1",
       "designV2": "Design Variant V2",
       "designV3": "Design Variant V3"
+    }
+  },
+  "notifications": {
+    "prompt": {
+      "title": "Recevoir une notification quand votre voyage est pret ?",
+      "message": "La generation du voyage peut prendre environ une minute. Activez les notifications du navigateur et nous vous avertirons lorsque votre itineraire sera pret.",
+      "enable": "Activer les notifications",
+      "notNow": "Pas maintenant"
+    },
+    "ready": {
+      "title": "Voyage pret",
+      "body": "Votre itineraire est pret a etre consulte."
     }
   }
 }

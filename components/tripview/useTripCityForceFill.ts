@@ -24,7 +24,7 @@ export const useTripCityForceFill = ({
         if (targetIndex === -1) return;
 
         const targetCity = cities[targetIndex];
-        setPendingLabel(`Data: Changed city duration (fill space) in ${targetCity.title}`);
+        setPendingLabel(`Data: Changed city duration (fill space) in "${targetCity.title}"`);
 
         const previousCity = targetIndex > 0 ? cities[targetIndex - 1] : null;
         const nextCity = targetIndex < cities.length - 1 ? cities[targetIndex + 1] : null;

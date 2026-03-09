@@ -1,0 +1,300 @@
+import { describe, expect, it } from 'vitest';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
+import path from 'node:path';
+import {
+  buildSiteOgMetadata,
+  enumerateSiteOgPathnames,
+} from '../../netlify/edge-lib/site-og-metadata.ts';
+import {
+  buildSiteOgStaticRenderPayload,
+  collectSiteOgPathnames,
+  collectSiteOgStaticTargets,
+  computeSiteOgStaticPayloadHash,
+  resolveSiteOgStaticPathFilterOptions,
+  resolveSiteOgStaticTargetScope,
+} from '../../scripts/site-og-static-shared.ts';
+
+const ORIGIN = 'https://travelflowapp.netlify.app';
+const BLOG_OG_JPEG_MAX_WIDTH = 512;
+const BLOG_OG_JPEG_MAX_HEIGHT = 768;
+const BLOG_OG_JPEG_MAX_BYTES = 180_000;
+
+const getMetadata = (pathname: string) => buildSiteOgMetadata(new URL(pathname, ORIGIN));
+
+const JPEG_SOF_MARKERS = new Set<number>([
+  0xc0,
+  0xc1,
+  0xc2,
+  0xc3,
+  0xc5,
+  0xc6,
+  0xc7,
+  0xc9,
+  0xca,
+  0xcb,
+  0xcd,
+  0xce,
+  0xcf,
+]);
+
+const readJpegDimensions = (filePath: string): { width: number; height: number } => {
+  const buffer = readFileSync(filePath);
+  if (buffer.length < 4 || buffer[0] !== 0xff || buffer[1] !== 0xd8) {
+    throw new Error(`Invalid JPEG signature: ${filePath}`);
+  }
+
+  let offset = 2;
+  while (offset < buffer.length) {
+    if (buffer[offset] !== 0xff) {
+      offset += 1;
+      continue;
+    }
+
+    while (offset < buffer.length && buffer[offset] === 0xff) {
+      offset += 1;
+    }
+    if (offset >= buffer.length) break;
+
+    const marker = buffer[offset];
+    offset += 1;
+
+    if (marker === 0xd8 || marker === 0xd9) continue;
+    if (marker === 0xda) break;
+    if (offset + 1 >= buffer.length) break;
+
+    const segmentLength = buffer.readUInt16BE(offset);
+    if (segmentLength < 2 || offset + segmentLength > buffer.length) break;
+
+    if (JPEG_SOF_MARKERS.has(marker)) {
+      const height = buffer.readUInt16BE(offset + 3);
+      const width = buffer.readUInt16BE(offset + 5);
+      if (!width || !height) {
+        throw new Error(`Invalid JPEG dimensions in ${filePath}`);
+      }
+      return { width, height };
+    }
+
+    offset += segmentLength;
+  }
+
+  throw new Error(`Could not read JPEG dimensions for ${filePath}`);
+};
+
+describe('site OG metadata resolver', () => {
+  it('resolves homepage metadata', () => {
+    const metadata = getMetadata('/');
+
+    expect(metadata.routeKey).toBe('root');
+    expect(metadata.canonicalPath).toBe('/');
+    expect(metadata.canonicalUrl).toBe(`${ORIGIN}/`);
+    expect(metadata.ogImageParams.path).toBe('/');
+  });
+
+  it('resolves localized static route metadata', () => {
+    const metadata = getMetadata('/de/features');
+
+    expect(metadata.canonicalPath).toBe('/de/features');
+    expect(metadata.htmlLang).toBe('de');
+    expect(metadata.alternateLinks.some((link) => link.hreflang === 'de')).toBe(true);
+    expect(metadata.ogImageParams.path).toBe('/de/features');
+  });
+
+  it('marks Persian and Urdu localized routes as RTL in metadata and OG params', () => {
+    const persianMetadata = getMetadata('/fa/features');
+    expect(persianMetadata.canonicalPath).toBe('/fa/features');
+    expect(persianMetadata.htmlLang).toBe('fa');
+    expect(persianMetadata.htmlDir).toBe('rtl');
+    expect(persianMetadata.ogImageParams.lang).toBe('fa');
+    expect(persianMetadata.ogImageParams.dir).toBe('rtl');
+
+    const urduMetadata = getMetadata('/ur/pricing');
+    expect(urduMetadata.canonicalPath).toBe('/ur/pricing');
+    expect(urduMetadata.htmlLang).toBe('ur');
+    expect(urduMetadata.htmlDir).toBe('rtl');
+    expect(urduMetadata.ogImageParams.lang).toBe('ur');
+    expect(urduMetadata.ogImageParams.dir).toBe('rtl');
+  });
+
+  it('uses localized Persian and Urdu OG copy for localized marketing paths', () => {
+    const persianHomeMetadata = getMetadata('/fa');
+    expect(persianHomeMetadata.canonicalPath).toBe('/fa');
+    expect(persianHomeMetadata.description).toContain('سفرها');
+    expect(persianHomeMetadata.ogImageParams.description).toContain('سفرها');
+
+    const persianBlogMetadata = getMetadata('/fa/blog');
+    expect(persianBlogMetadata.ogImageParams.title).toBe('وبلاگ');
+
+    const urduHomeMetadata = getMetadata('/ur');
+    expect(urduHomeMetadata.canonicalPath).toBe('/ur');
+    expect(urduHomeMetadata.description).toContain('سفر');
+    expect(urduHomeMetadata.ogImageParams.description).toContain('سفر');
+
+    const urduBlogMetadata = getMetadata('/ur/blog');
+    expect(urduBlogMetadata.ogImageParams.title).toBe('بلاگ');
+
+    const persianThemesMetadata = getMetadata('/fa/inspirations/themes');
+    expect(persianThemesMetadata.ogImageParams.description).not.toBe(
+      'Find curated trip ideas that match your travel style — adventure, food, photography, and more.',
+    );
+
+    const urduThemesMetadata = getMetadata('/ur/inspirations/themes');
+    expect(urduThemesMetadata.ogImageParams.description).not.toBe(
+      'Find curated trip ideas that match your travel style — adventure, food, photography, and more.',
+    );
+  });
+
+  it('resolves blog, country detail, and example route metadata', () => {
+    const blogMeta = getMetadata('/blog/how-to-plan-multi-city-trip');
+    expect(blogMeta.ogImageParams.blog_image).toContain('/images/blog/how-to-plan-multi-city-trip-og-vertical.jpg');
+    expect(blogMeta.ogImageParams.path).toBe('/blog/how-to-plan-multi-city-trip');
+
+    const countryMeta = getMetadata('/inspirations/country/New%20Zealand');
+    expect(countryMeta.pageTitle.toLowerCase()).toContain('new zealand');
+    expect(countryMeta.canonicalPath).toBe('/inspirations/country/New%20Zealand');
+
+    const exampleMeta = getMetadata('/example/thailand-islands');
+    expect(exampleMeta.canonicalPath).toBe('/example/thailand-islands');
+    expect(exampleMeta.pageTitle).toContain('Temples');
+    expect(exampleMeta.ogDescription).toContain('example trip template');
+    expect(exampleMeta.ogImageUrl).toContain('/api/og/trip?');
+    expect(exampleMeta.ogImageUrl).toContain('title=26D+Temples+%26+Beaches');
+    expect(exampleMeta.ogImageUrl).toContain('map=https%3A%2F%2Ftravelflowapp.netlify.app%2Fimages%2Ftrip-maps%2Fthailand-islands.png');
+  });
+});
+
+describe('site OG static generation helpers', () => {
+  it('enumerates route pathnames for static OG generation', () => {
+    const pathnames = enumerateSiteOgPathnames({
+      blogSlugs: ['how-to-plan-multi-city-trip'],
+      countryNames: ['Japan'],
+      exampleTemplateIds: ['thailand-islands'],
+    });
+
+    expect(pathnames).toContain('/');
+    expect(pathnames).toContain('/de/blog');
+    expect(pathnames).toContain('/de/inspirations');
+    expect(pathnames).toContain('/example/thailand-islands');
+    expect(pathnames).not.toContain('/de/features');
+    expect(pathnames).not.toContain('/blog/how-to-plan-multi-city-trip');
+    expect(pathnames).not.toContain('/inspirations/country/Japan');
+  });
+
+  it('supports full-scope pathname enumeration', () => {
+    const pathnames = enumerateSiteOgPathnames({
+      blogSlugs: ['how-to-plan-multi-city-trip'],
+      countryNames: ['Japan'],
+      exampleTemplateIds: ['thailand-islands'],
+      scope: 'full',
+    });
+
+    expect(pathnames).toContain('/de/features');
+    expect(pathnames).toContain('/fa/features');
+    expect(pathnames).toContain('/ur/features');
+    expect(pathnames).toContain('/blog/how-to-plan-multi-city-trip');
+    expect(pathnames).toContain('/inspirations/country/Japan');
+  });
+
+  it('builds deterministic payload hashes and unique target route keys', () => {
+    const metadata = getMetadata('/example/thailand-islands');
+    const payload = buildSiteOgStaticRenderPayload(metadata);
+    const hashA = computeSiteOgStaticPayloadHash(payload);
+    const hashB = computeSiteOgStaticPayloadHash(payload);
+    const hashWithDifferentHost = computeSiteOgStaticPayloadHash({
+      ...payload,
+      displayHost: 'example.com',
+    });
+
+    expect(hashA).toBe(hashB);
+    expect(payload.displayHost).toBe('travelflowapp.netlify.app');
+    expect(hashWithDifferentHost).not.toBe(hashA);
+    expect(hashA).toMatch(/^[a-f0-9]{16}$/);
+
+    const allTargets = collectSiteOgStaticTargets();
+    expect(allTargets.length).toBeGreaterThan(0);
+    expect(allTargets.some((target) => target.pathname.startsWith('/fa/'))).toBe(false);
+    expect(allTargets.some((target) => target.pathname.startsWith('/ur/'))).toBe(false);
+
+    const routeKeySet = new Set(allTargets.map((target) => target.routeKey));
+    expect(routeKeySet.size).toBe(allTargets.length);
+
+    const exampleTarget = allTargets.find((target) => target.pathname === '/example/thailand-islands');
+    expect(exampleTarget).toBeTruthy();
+  });
+
+  it('filters static targets by locales and path include/exclude options', () => {
+    const allPathnames = collectSiteOgPathnames({ targetScope: 'full' });
+    expect(allPathnames).toContain('/de/features');
+    expect(allPathnames).toContain('/fr/features');
+
+    const germanOnly = collectSiteOgPathnames({ targetScope: 'full', locales: ['de'] });
+    expect(germanOnly.length).toBeGreaterThan(0);
+    expect(germanOnly.every((pathname) => pathname.startsWith('/de') || pathname === '/de')).toBe(true);
+
+    const filteredBlog = collectSiteOgPathnames({
+      targetScope: 'full',
+      includePrefixes: ['/blog', '/de/blog'],
+      excludePaths: ['/blog/how-to-plan-multi-city-trip'],
+    });
+    expect(filteredBlog.some((pathname) => pathname.startsWith('/blog'))).toBe(true);
+    expect(filteredBlog).not.toContain('/blog/how-to-plan-multi-city-trip');
+    expect(filteredBlog.every((pathname) => pathname.startsWith('/blog') || pathname.startsWith('/de/blog'))).toBe(true);
+
+    const persianBlogOverview = collectSiteOgPathnames({
+      locales: ['fa'],
+      includePaths: ['/blog'],
+    });
+    expect(persianBlogOverview).toEqual(['/fa/blog']);
+
+    const urduBlogSubset = collectSiteOgPathnames({
+      locales: ['ur'],
+      includePrefixes: ['/blog'],
+      excludePaths: ['/blog'],
+    });
+    expect(urduBlogSubset).not.toContain('/ur/blog');
+    expect(urduBlogSubset.every((pathname) => pathname.startsWith('/ur/blog/'))).toBe(true);
+  });
+
+  it('normalizes and sanitizes filter options', () => {
+    const resolved = resolveSiteOgStaticPathFilterOptions({
+      locales: ['DE', 'de', 'xx'],
+      includePaths: ['blog', '/blog', '/blog'],
+      includePrefixes: ['/blog/', 'inspirations'],
+      excludePaths: ['/example/test'],
+      excludePrefixes: ['example/', '/example/'],
+    });
+
+    expect(resolved.locales).toEqual(['de']);
+    expect(resolved.includePaths).toEqual(['/blog']);
+    expect(resolved.includePrefixes).toEqual(['/blog', '/inspirations']);
+    expect(resolved.excludePaths).toEqual(['/example/test']);
+    expect(resolved.excludePrefixes).toEqual(['/example']);
+    expect(resolved.targetScope).toBe('priority');
+    expect(resolved.hasFilters).toBe(true);
+  });
+
+  it('resolves static target scope from env override', () => {
+    expect(resolveSiteOgStaticTargetScope({}, { SITE_OG_STATIC_TARGET_SCOPE: 'full' } as NodeJS.ProcessEnv)).toBe('full');
+    expect(resolveSiteOgStaticTargetScope({}, { SITE_OG_STATIC_TARGET_SCOPE: 'invalid' } as NodeJS.ProcessEnv)).toBe('priority');
+  });
+});
+
+describe('blog OG source asset budget', () => {
+  it('keeps OG JPEG sources within whatsapp-friendly size and dimensions', () => {
+    const blogDir = path.join(process.cwd(), 'public', 'images', 'blog');
+    const files = readdirSync(blogDir)
+      .filter((fileName) => /-og-vertical\.jpe?g$/i.test(fileName))
+      .sort((left, right) => left.localeCompare(right));
+
+    expect(files.length).toBeGreaterThan(0);
+
+    for (const fileName of files) {
+      const fullPath = path.join(blogDir, fileName);
+      const sizeBytes = statSync(fullPath).size;
+      const { width, height } = readJpegDimensions(fullPath);
+
+      expect(sizeBytes).toBeLessThanOrEqual(BLOG_OG_JPEG_MAX_BYTES);
+      expect(width).toBeLessThanOrEqual(BLOG_OG_JPEG_MAX_WIDTH);
+      expect(height).toBeLessThanOrEqual(BLOG_OG_JPEG_MAX_HEIGHT);
+    }
+  });
+});

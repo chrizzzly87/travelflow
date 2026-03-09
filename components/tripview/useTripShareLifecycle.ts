@@ -2,6 +2,11 @@ import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 
 
 import { DB_ENABLED } from '../../config/db';
 import {
+    readLocalStorageItem,
+    removeLocalStorageItem,
+    writeLocalStorageItem,
+} from '../../services/browserStorageService';
+import {
     dbRevokeTripShares,
     dbSetTripSharingEnabled,
     ensureDbSession,
@@ -15,7 +20,7 @@ const getShareLinksStorageKey = (tripId: string) => `${SHARE_LINK_STORAGE_PREFIX
 const readStoredShareLinks = (tripId: string): Partial<Record<ShareMode, string>> => {
     if (typeof window === 'undefined') return {};
     try {
-        const raw = window.localStorage.getItem(getShareLinksStorageKey(tripId));
+        const raw = readLocalStorageItem(getShareLinksStorageKey(tripId));
         if (!raw) return {};
         const parsed = JSON.parse(raw) as Record<string, unknown>;
         const links: Partial<Record<ShareMode, string>> = {};
@@ -29,11 +34,7 @@ const readStoredShareLinks = (tripId: string): Partial<Record<ShareMode, string>
 
 const clearStoredShareLinks = (tripId: string) => {
     if (typeof window === 'undefined') return;
-    try {
-        window.localStorage.removeItem(getShareLinksStorageKey(tripId));
-    } catch {
-        // ignore storage issues
-    }
+    removeLocalStorageItem(getShareLinksStorageKey(tripId));
 };
 
 interface UseTripShareLifecycleOptions {
@@ -72,11 +73,7 @@ export const useTripShareLifecycle = ({
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
-        try {
-            window.localStorage.setItem(getShareLinksStorageKey(tripId), JSON.stringify(shareUrlsByMode));
-        } catch {
-            // ignore storage issues
-        }
+        writeLocalStorageItem(getShareLinksStorageKey(tripId), JSON.stringify(shareUrlsByMode));
     }, [tripId, shareUrlsByMode]);
 
     useEffect(() => {

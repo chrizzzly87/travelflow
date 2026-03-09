@@ -96,7 +96,8 @@
     "title": "Diese geteilte Reise ist nicht mehr verfügbar",
     "description": "Der Link ist möglicherweise abgelaufen oder wurde vom Reiseinhaber deaktiviert. Bitte frage nach einem neuen Link oder erstelle eine eigene Reise.",
     "backToHomepage": "Zur Startseite",
-    "createNewTrip": "Neue Reise erstellen"
+    "createNewTrip": "Neue Reise erstellen",
+    "offlineDescription": "This trip cannot be fetched right now because Supabase is unavailable. If you opened it before, local cached data may still load in planner routes."
   },
   "notFound": {
     "headline": "Sieht so aus, als wäre diese Seite schon im Urlaub!",

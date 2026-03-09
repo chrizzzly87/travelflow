@@ -5,6 +5,10 @@ import remarkGfm from 'remark-gfm';
 import { getLatestInAppRelease, getWebsiteVisibleItems, groupReleaseItemsByType } from '../services/releaseNotesService';
 import { ReleasePill } from './marketing/ReleasePill';
 import { useFocusTrap } from '../hooks/useFocusTrap';
+import {
+    readLocalStorageItem,
+    writeLocalStorageItem,
+} from '../services/browserStorageService';
 
 const RELEASE_NOTICE_DISMISSED_KEY = 'tf_release_notice_dismissed_release_id';
 
@@ -19,7 +23,7 @@ export const ReleaseNoticeDialog: React.FC<ReleaseNoticeDialogProps> = ({ enable
     const [dismissedReleaseId, setDismissedReleaseId] = useState<string | null>(() => {
         if (typeof window === 'undefined') return null;
         try {
-            return window.localStorage.getItem(RELEASE_NOTICE_DISMISSED_KEY);
+            return readLocalStorageItem(RELEASE_NOTICE_DISMISSED_KEY);
         } catch {
             return null;
         }
@@ -36,7 +40,7 @@ export const ReleaseNoticeDialog: React.FC<ReleaseNoticeDialogProps> = ({ enable
         setDismissedReleaseId(latestInAppRelease.id);
         if (typeof window === 'undefined') return;
         try {
-            window.localStorage.setItem(RELEASE_NOTICE_DISMISSED_KEY, latestInAppRelease.id);
+            writeLocalStorageItem(RELEASE_NOTICE_DISMISSED_KEY, latestInAppRelease.id);
         } catch {
             // ignore storage issues
         }

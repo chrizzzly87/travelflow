@@ -7,7 +7,9 @@ import { useTripViewSettingsSync } from '../../../components/tripview/useTripVie
 
 const BASE_VIEW_SETTINGS: IViewSettings = {
   layoutMode: 'horizontal',
+  timelineMode: 'calendar',
   timelineView: 'horizontal',
+  mapDockMode: 'docked',
   mapStyle: 'standard',
   routeMode: 'simple',
   showCityNames: true,
@@ -18,7 +20,9 @@ const BASE_VIEW_SETTINGS: IViewSettings = {
 
 const makeHookProps = (): Parameters<typeof useTripViewSettingsSync>[0] => ({
   layoutMode: 'horizontal',
+  timelineMode: 'calendar',
   timelineView: 'horizontal',
+  mapDockMode: 'docked',
   mapStyle: 'standard',
   routeMode: 'simple',
   showCityNames: true,
@@ -32,12 +36,15 @@ const makeHookProps = (): Parameters<typeof useTripViewSettingsSync>[0] => ({
   setMapStyle: vi.fn(),
   setRouteMode: vi.fn(),
   setLayoutMode: vi.fn(),
+  setTimelineMode: vi.fn(),
   setTimelineView: vi.fn(),
+  setMapDockMode: vi.fn(),
   setZoomLevel: vi.fn(),
   setSidebarWidth: vi.fn(),
   setTimelineHeight: vi.fn(),
   setShowCityNames: vi.fn(),
   suppressCommitRef: { current: false },
+  pendingManualViewSettingsPersistRef: { current: false },
   skipViewDiffRef: { current: false },
   appliedViewKeyRef: { current: null },
   prevViewRef: { current: null },
@@ -56,6 +63,7 @@ describe('components/tripview/useTripViewSettingsSync', () => {
     expect(window.localStorage.getItem('tf_map_style')).toBe('standard');
     expect(window.localStorage.getItem('tf_route_mode')).toBe('simple');
     expect(window.localStorage.getItem('tf_layout_mode')).toBe('horizontal');
+    expect(window.localStorage.getItem('tf_timeline_mode')).toBe('calendar');
     expect(window.localStorage.getItem('tf_timeline_view')).toBe('horizontal');
     expect(window.localStorage.getItem('tf_city_names')).toBe('true');
     expect(window.localStorage.getItem('tf_zoom_level')).toBe('1.25');
@@ -66,6 +74,7 @@ describe('components/tripview/useTripViewSettingsSync', () => {
 
     const params = new URLSearchParams(window.location.search);
     expect(params.get('layout')).toBe('horizontal');
+    expect(params.get('timelineMode')).toBe('calendar');
     expect(params.get('timelineView')).toBe('horizontal');
     expect(params.get('mapStyle')).toBe('standard');
     expect(params.get('routeMode')).toBe('simple');
@@ -85,6 +94,7 @@ describe('components/tripview/useTripViewSettingsSync', () => {
     const props = makeHookProps();
     const onViewSettingsChange = vi.fn();
     props.onViewSettingsChange = onViewSettingsChange;
+    props.pendingManualViewSettingsPersistRef.current = true;
 
     const replaceStateSpy = vi.spyOn(window.history, 'replaceState');
 
@@ -96,7 +106,9 @@ describe('components/tripview/useTripViewSettingsSync', () => {
 
     expect(onViewSettingsChange).toHaveBeenCalledWith({
       layoutMode: 'horizontal',
+      timelineMode: 'calendar',
       timelineView: 'horizontal',
+      mapDockMode: 'docked',
       mapStyle: 'standard',
       routeMode: 'simple',
       showCityNames: true,
@@ -110,11 +122,55 @@ describe('components/tripview/useTripViewSettingsSync', () => {
     vi.useRealTimers();
   });
 
+  it('does not emit callback updates until a manual view change is marked', () => {
+    vi.useFakeTimers();
+
+    const props = makeHookProps();
+    const onViewSettingsChange = vi.fn();
+    props.onViewSettingsChange = onViewSettingsChange;
+
+    const { rerender } = renderHook((hookProps: Parameters<typeof useTripViewSettingsSync>[0]) => {
+      useTripViewSettingsSync(hookProps);
+    }, { initialProps: props });
+
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+    expect(onViewSettingsChange).not.toHaveBeenCalled();
+
+    const manualProps = {
+      ...props,
+      pendingManualViewSettingsPersistRef: { current: true },
+      zoomLevel: 1.5,
+      currentViewSettings: {
+        ...BASE_VIEW_SETTINGS,
+        zoomLevel: 1.5,
+      },
+    };
+
+    rerender(manualProps);
+
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+
+    expect(onViewSettingsChange).toHaveBeenCalledTimes(1);
+    expect(onViewSettingsChange).toHaveBeenCalledWith({
+      ...BASE_VIEW_SETTINGS,
+      zoomLevel: 1.5,
+    });
+    expect(manualProps.pendingManualViewSettingsPersistRef.current).toBe(false);
+
+    vi.useRealTimers();
+  });
+
   it('applies initial view settings once and marks refs to suppress diff commits', () => {
     const props = makeHookProps();
     props.initialViewSettings = {
       layoutMode: 'vertical',
+      timelineMode: 'timeline',
       timelineView: 'vertical',
+      mapDockMode: 'floating',
       mapStyle: 'dark',
       routeMode: 'realistic',
       zoomLevel: 2.5,
@@ -135,7 +191,9 @@ describe('components/tripview/useTripViewSettingsSync', () => {
     expect(props.setMapStyle).toHaveBeenCalledWith('dark');
     expect(props.setRouteMode).toHaveBeenCalledWith('realistic');
     expect(props.setLayoutMode).toHaveBeenCalledWith('vertical');
+    expect(props.setTimelineMode).toHaveBeenCalledWith('timeline');
     expect(props.setTimelineView).toHaveBeenCalledWith('vertical');
+    expect(props.setMapDockMode).toHaveBeenCalledWith('floating');
     expect(props.setZoomLevel).toHaveBeenCalledWith(2.5);
     expect(props.setSidebarWidth).toHaveBeenCalledWith(640);
     expect(props.setTimelineHeight).toHaveBeenCalledWith(420);
@@ -148,5 +206,37 @@ describe('components/tripview/useTripViewSettingsSync', () => {
 
     expect(props.setMapStyle.mock.calls.length).toBe(mapStyleCalls);
     expect(props.setRouteMode.mock.calls.length).toBe(routeModeCalls);
+  });
+
+  it('does not re-emit unchanged settings when callback identity changes', () => {
+    vi.useFakeTimers();
+
+    const firstCallback = vi.fn();
+    const secondCallback = vi.fn();
+    const props = makeHookProps();
+    props.onViewSettingsChange = firstCallback;
+    props.pendingManualViewSettingsPersistRef.current = true;
+
+    const { rerender } = renderHook((hookProps: Parameters<typeof useTripViewSettingsSync>[0]) => {
+      useTripViewSettingsSync(hookProps);
+    }, { initialProps: props });
+
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+    expect(firstCallback).toHaveBeenCalledTimes(1);
+
+    rerender({
+      ...props,
+      pendingManualViewSettingsPersistRef: { current: true },
+      onViewSettingsChange: secondCallback,
+    });
+
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+
+    expect(secondCallback).not.toHaveBeenCalled();
+    vi.useRealTimers();
   });
 });

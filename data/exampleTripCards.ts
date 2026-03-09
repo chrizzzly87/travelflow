@@ -39,7 +39,7 @@ export interface ExampleTripCard {
   localized?: Partial<Record<AppLanguage, ExampleTripCardLocalization>>;
 }
 
-const SUPPORTED_EXAMPLE_LOCALES: AppLanguage[] = ['en', 'es', 'de', 'fr', 'it', 'pt', 'ru', 'pl'];
+const SUPPORTED_EXAMPLE_LOCALES: AppLanguage[] = ['en', 'es', 'de', 'fr', 'it', 'pt', 'ru', 'pl', 'fa', 'ur'];
 
 const DEFAULT_UI_COPY: ExampleTripUiCopy = {
   moreInspirationsCta: 'Discover more inspirations',
@@ -164,6 +164,34 @@ const EXAMPLE_TRIP_UI_COPY: Partial<Record<AppLanguage, ExampleTripUiCopy>> = {
     routeMapAlt: 'Mapa trasy: {title}',
     routeLegTitle: 'Odcinek trasy: {days} dni',
   },
+  fa: {
+    moreInspirationsCta: 'الهام‌های بیشتر را ببینید',
+    days: {
+      one: '{count} روز',
+      other: '{count} روز',
+    },
+    cities: {
+      one: '{count} شهر',
+      other: '{count} شهر',
+    },
+    roundTrip: 'رفت‌وبرگشت',
+    routeMapAlt: 'نقشه مسیر برای {title}',
+    routeLegTitle: 'بخش مسیر: {days} روز',
+  },
+  ur: {
+    moreInspirationsCta: 'مزید ترغیبات دیکھیں',
+    days: {
+      one: '{count} دن',
+      other: '{count} دن',
+    },
+    cities: {
+      one: '{count} شہر',
+      other: '{count} شہر',
+    },
+    roundTrip: 'آنا جانا سفر',
+    routeMapAlt: '{title} کے لیے روٹ میپ',
+    routeLegTitle: 'روٹ حصہ: {days} دن',
+  },
 };
 
 const TAG_TRANSLATIONS: Partial<Record<AppLanguage, Record<string, string>>> = {
@@ -286,6 +314,61 @@ const TAG_TRANSLATIONS: Partial<Record<AppLanguage, Record<string, string>>> = {
     'Road Trip': 'Road trip',
     Desert: 'Pustynia',
     Photography: 'Fotografia',
+  },
+  fa: {
+    Surf: 'موج‌سواری',
+    Culture: 'فرهنگ',
+    Wine: 'شراب',
+    Food: 'غذا',
+    Art: 'هنر',
+    History: 'تاریخ',
+    Beach: 'ساحل',
+    Adventure: 'ماجراجویی',
+    Nature: 'طبیعت',
+    Hiking: 'پیاده‌روی',
+    'Road Trip': 'سفر جاده‌ای',
+    Desert: 'بیابان',
+    Photography: 'عکاسی',
+  },
+  ur: {
+    Surf: 'سرفنگ',
+    Culture: 'ثقافت',
+    Wine: 'وائن',
+    Food: 'کھانا',
+    Art: 'فن',
+    History: 'تاریخ',
+    Beach: 'ساحل',
+    Adventure: 'مہم',
+    Nature: 'قدرت',
+    Hiking: 'ہائیکنگ',
+    'Road Trip': 'روڈ ٹرپ',
+    Desert: 'صحرا',
+    Photography: 'فوٹوگرافی',
+  },
+};
+
+const CARD_TITLE_TRANSLATIONS: Partial<Record<AppLanguage, Record<string, string>>> = {
+  fa: {
+    'portugal-coast': 'جاده‌گردی ساحل آتلانتیک',
+    'italy-classic': 'گرند تور ایتالیا',
+    'thailand-islands': 'معبدها و سواحل',
+    'southeast-asia-backpacking': 'بک‌پکینگ در جنوب‌شرق آسیا',
+    'japan-spring': 'مسیر شکوفه‌های گیلاس',
+    'peru-adventure': 'ماجراجویی آند و آمازون',
+    'new-zealand-wild': 'طبیعت بکر جزیره جنوبی',
+    'morocco-medina': 'مدینه‌ها و شب‌های صحرا',
+    'iceland-ring': 'مسیر حلقه‌ای رینگ‌رود',
+  },
+  ur: {
+    'portugal-coast': 'اٹلانٹک ساحلی روڈ ٹرپ',
+    'italy-classic': 'اطالوی گرینڈ ٹور',
+    'thailand-islands': 'مندر اور ساحل',
+    'southeast-asia-backpacking': 'جنوب مشرقی ایشیا بیک پیکنگ',
+    'japan-spring': 'چیری بلاسم ٹریل',
+    'peru-adventure': 'اینڈیز اور ایمیزون ایکسپلورر',
+    'new-zealand-wild': 'جنوبی جزیرہ وائلڈرنس',
+    'morocco-medina': 'مدینائیں اور صحارا کی راتیں',
+    'iceland-ring': 'رنگ روڈ سرکٹ',
   },
 };
 
@@ -618,8 +701,9 @@ export const getLocalizedExampleTripCard = (
 ): { title: string; tags: string[]; cities: string[] } => {
   const localeKey = normalizeLocale(locale);
   const localized = card.localized?.[localeKey] || card.localized?.en;
+  const translatedTitle = CARD_TITLE_TRANSLATIONS[localeKey]?.[card.id];
 
-  const title = localized?.title || card.title;
+  const title = localized?.title || translatedTitle || card.title;
   const tags = localized?.tags && localized.tags.length === card.tags.length
     ? localized.tags
     : card.tags.map((tag) => getLocalizedTag(tag, localeKey));

@@ -6,6 +6,11 @@ export type CommitOptions = {
     adminOverride?: boolean;
 };
 
+export type TripUpdateOptions = {
+    persist?: boolean;
+    preserveUpdatedAt?: boolean;
+};
+
 export type RouteCommonProps = {
     trip: ITrip | null;
     onTripLoaded: (trip: ITrip, view?: IViewSettings) => void;
@@ -17,7 +22,7 @@ export type RouteCommonProps = {
 };
 
 export type TripLoaderRouteProps = RouteCommonProps & {
-    onUpdateTrip: (trip: ITrip, options?: { persist?: boolean }) => void;
+    onUpdateTrip: (trip: ITrip, options?: TripUpdateOptions) => void;
     onCommitState: (trip: ITrip, view: IViewSettings | undefined, options?: CommitOptions) => void;
 };
 

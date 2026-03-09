@@ -9,10 +9,14 @@ const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },
 
 const AdminDashboardPage = lazyWithRecovery('AdminDashboardPage', () => import('./AdminDashboardPage').then((module) => ({ default: module.AdminDashboardPage })));
 const AdminAiBenchmarkPage = lazyWithRecovery('AdminAiBenchmarkPage', () => import('./AdminAiBenchmarkPage').then((module) => ({ default: module.AdminAiBenchmarkPage })));
+const AdminAiTelemetryPage = lazyWithRecovery('AdminAiTelemetryPage', () => import('./AdminAiTelemetryPage').then((module) => ({ default: module.AdminAiTelemetryPage })));
 const AdminUsersPage = lazyWithRecovery('AdminUsersPage', () => import('./AdminUsersPage').then((module) => ({ default: module.AdminUsersPage })));
 const AdminTripsPage = lazyWithRecovery('AdminTripsPage', () => import('./AdminTripsPage').then((module) => ({ default: module.AdminTripsPage })));
 const AdminTiersPage = lazyWithRecovery('AdminTiersPage', () => import('./AdminTiersPage').then((module) => ({ default: module.AdminTiersPage })));
 const AdminAuditPage = lazyWithRecovery('AdminAuditPage', () => import('./AdminAuditPage').then((module) => ({ default: module.AdminAuditPage })));
+const AdminOgToolsPage = lazyWithRecovery('AdminOgToolsPage', () => import('./AdminOgToolsPage').then((module) => ({ default: module.AdminOgToolsPage })));
+const AdminDesignSystemPlaygroundPage = lazyWithRecovery('AdminDesignSystemPlaygroundPage', () => import('./AdminDesignSystemPlaygroundPage').then((module) => ({ default: module.AdminDesignSystemPlaygroundPage })));
+const AdminLegalTermsPage = lazyWithRecovery('AdminLegalTermsPage', () => import('./AdminLegalTermsPage').then((module) => ({ default: module.AdminLegalTermsPage })));
 
 const RouteLoadingFallback: React.FC = () => (
     <div className="min-h-[42vh] w-full bg-slate-50" aria-hidden="true" />
@@ -27,7 +31,11 @@ export const AdminWorkspaceRouter: React.FC = () => (
             <Route path="trips" element={<AdminTripsPage />} />
             <Route path="tiers" element={<AdminTiersPage />} />
             <Route path="audit" element={<AdminAuditPage />} />
+            <Route path="legal" element={<AdminLegalTermsPage />} />
             <Route path="ai-benchmark" element={<AdminAiBenchmarkPage />} />
+            <Route path="ai-benchmark/telemetry" element={<AdminAiTelemetryPage />} />
+            <Route path="og-tools" element={<AdminOgToolsPage />} />
+            <Route path="design-system-playground" element={<AdminDesignSystemPlaygroundPage />} />
             <Route path="access" element={<Navigate to="/admin/users" replace />} />
             <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
         </Routes>

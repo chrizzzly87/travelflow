@@ -96,7 +96,8 @@
     "title": "Esta viagem partilhada já não está disponível",
     "description": "O link pode ter expirado ou ter sido desativado pelo proprietário da viagem. Peça um novo link ou crie a sua própria viagem para continuar a planear.",
     "backToHomepage": "Voltar à página inicial",
-    "createNewTrip": "Criar nova viagem"
+    "createNewTrip": "Criar nova viagem",
+    "offlineDescription": "This trip cannot be fetched right now because Supabase is unavailable. If you opened it before, local cached data may still load in planner routes."
   },
   "notFound": {
     "headline": "Parece que esta página já foi de férias!",

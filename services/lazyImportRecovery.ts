@@ -1,6 +1,11 @@
 import { trackEvent } from './analyticsService';
+import {
+    readSessionStorageItem,
+    removeSessionStorageItem,
+    writeSessionStorageItem,
+} from './browserStorageService';
 
-const RECOVERY_FLAG_PREFIX = 'tf_lazy_chunk_recovery:';
+const RECOVERY_FLAG_BASE = 'tf_lazy_chunk_recovery:';
 const RECOVERABLE_IMPORT_ERROR_PATTERNS: RegExp[] = [
     /failed to fetch dynamically imported module/i,
     /importing a module script failed/i,
@@ -28,15 +33,14 @@ const isRecoverableImportError = (error: unknown): boolean => {
     return false;
 };
 
-const getRecoveryFlagKey = (moduleKey: string): string => `${RECOVERY_FLAG_PREFIX}${moduleKey}`;
+const getRecoveryFlagKey = (moduleKey: string): string => `${RECOVERY_FLAG_BASE}${moduleKey}`;
 
 const markRecoveryAttempt = (moduleKey: string): boolean => {
     if (typeof window === 'undefined') return false;
     try {
         const key = getRecoveryFlagKey(moduleKey);
-        if (window.sessionStorage.getItem(key) === '1') return false;
-        window.sessionStorage.setItem(key, '1');
-        return true;
+        if (readSessionStorageItem(key) === '1') return false;
+        return writeSessionStorageItem(key, '1');
     } catch {
         return false;
     }
@@ -45,7 +49,7 @@ const markRecoveryAttempt = (moduleKey: string): boolean => {
 const clearRecoveryAttempt = (moduleKey: string) => {
     if (typeof window === 'undefined') return;
     try {
-        window.sessionStorage.removeItem(getRecoveryFlagKey(moduleKey));
+        removeSessionStorageItem(getRecoveryFlagKey(moduleKey));
     } catch {
         // ignore storage write failures
     }

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Flask } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
+import { readLocalStorageItem, writeLocalStorageItem } from '../../services/browserStorageService';
 
 const STORAGE_KEY = 'tf_early_access_dismissed';
 
@@ -9,7 +10,7 @@ export const EarlyAccessBanner: React.FC = () => {
     const { t } = useTranslation('common');
     const [dismissed, setDismissed] = useState(() => {
         try {
-            return localStorage.getItem(STORAGE_KEY) === '1';
+            return readLocalStorageItem(STORAGE_KEY) === '1';
         } catch {
             return false;
         }
@@ -21,7 +22,7 @@ export const EarlyAccessBanner: React.FC = () => {
         setDismissed(true);
         trackEvent('banner__early_access--dismiss');
         try {
-            localStorage.setItem(STORAGE_KEY, '1');
+            writeLocalStorageItem(STORAGE_KEY, '1');
         } catch {
             // ignore
         }

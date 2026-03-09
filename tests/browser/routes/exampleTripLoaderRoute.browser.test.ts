@@ -181,7 +181,9 @@ describe('routes/ExampleTripLoaderRoute', () => {
       template: 'template-1',
       country_count: 1,
     });
-    expect(latestTripViewProps()?.isExamplePreview).toBe(true);
+    await waitFor(() => {
+      expect(latestTripViewProps()?.isExamplePreview).toBe(true);
+    });
   });
 
   it('redirects to home when template factory cannot be loaded', async () => {
@@ -194,6 +196,37 @@ describe('routes/ExampleTripLoaderRoute', () => {
       expect(mocks.navigate).toHaveBeenCalledWith('/', { replace: true });
     });
     expect(props.onTripLoaded).not.toHaveBeenCalled();
+  });
+
+  it('does not change hook order when the example trip prop appears after initial null render', async () => {
+    const resolvedTrip = makeTrip({
+      id: 'example-late-load',
+      title: 'Example late load',
+      isExample: true,
+      exampleTemplateId: 'template-1',
+    });
+    const props = makeRouteProps();
+    const view = render(React.createElement(ExampleTripLoaderRoute, props));
+
+    expect(() => {
+      view.rerender(React.createElement(ExampleTripLoaderRoute, {
+        ...props,
+        trip: resolvedTrip,
+      }));
+    }).not.toThrow();
+
+    await waitFor(() => {
+      expect(latestTripViewProps()?.trip).toEqual(resolvedTrip);
+    });
+  });
+
+  it('renders a route loading shell while example template resources are still resolving', () => {
+    mocks.loadExampleTemplateFactory.mockImplementation(() => new Promise(() => {}));
+    const props = makeRouteProps();
+    const view = render(React.createElement(ExampleTripLoaderRoute, props));
+
+    expect(view.queryAllByTestId('trip-route-loading-shell').length).toBeGreaterThan(0);
+    expect(latestTripViewProps()).toBeUndefined();
   });
 
   it('handles copy and create-similar actions through TripView callbacks', async () => {

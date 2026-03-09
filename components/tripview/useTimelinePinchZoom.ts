@@ -5,6 +5,7 @@ interface UseTimelinePinchZoomOptions {
     zoomLevel: number;
     clampZoomLevel: (value: number) => number;
     setZoomLevel: Dispatch<SetStateAction<number>>;
+    onUserZoomChange?: () => void;
 }
 
 const getPinchDistance = (touches: React.TouchList): number | null => {
@@ -19,6 +20,7 @@ export const useTimelinePinchZoom = ({
     zoomLevel,
     clampZoomLevel,
     setZoomLevel,
+    onUserZoomChange,
 }: UseTimelinePinchZoomOptions) => {
     const pinchStartDistanceRef = useRef<number | null>(null);
     const pinchStartZoomRef = useRef<number | null>(null);
@@ -44,8 +46,9 @@ export const useTimelinePinchZoom = ({
 
         event.preventDefault();
         const nextZoom = clampZoomLevel(startZoom * (distance / startDistance));
+        onUserZoomChange?.();
         setZoomLevel((previous) => (Math.abs(previous - nextZoom) < 0.01 ? previous : nextZoom));
-    }, [clampZoomLevel, isMobile, setZoomLevel]);
+    }, [clampZoomLevel, isMobile, onUserZoomChange, setZoomLevel]);
 
     const handleTimelineTouchEnd = useCallback((event: React.TouchEvent<HTMLDivElement>) => {
         if (event.touches.length >= 2) return;

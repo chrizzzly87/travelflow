@@ -1,17 +1,21 @@
 import React, { Suspense, lazy, useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { Trans, useTranslation } from 'react-i18next';
 import { ITimelineItem, TransportMode, ActivityType, IHotel, RouteMode, ICoordinates } from '../types';
 import { X, MapPin, Clock, Trash2, Hotel, Search, AlertTriangle, ExternalLink, Sparkles, RefreshCw, Maximize, Minimize, Minus, Plus, Palette, Pencil } from 'lucide-react';
 import type { CityNotesEnhancementMode } from '../services/aiService';
 import { HexColorPicker } from 'react-colorful';
 import { ALL_ACTIVITY_TYPES, TRAVEL_COLOR, addDays, applyCityPaletteToItems, CITY_COLOR_PALETTES, DEFAULT_CITY_COLOR_PALETTE_ID, formatDate, getContrastTextColor, getHexFromColorClass, getStoredAppLanguage, getActivityColorByTypes, getCityColorPalette, isTailwindCityColorValue, normalizeActivityTypes, normalizeCityColorInput, DEFAULT_DISTANCE_UNIT, estimateTravelHours, formatDistance, formatDurationHours, getTravelLegMetricsForItem, getNormalizedCityName, COUNTRIES, shiftHexColor } from '../utils';
+import { getAnalyticsDebugAttributes } from '../services/analyticsService';
 import { useGoogleMaps } from './GoogleMapsLoader';
 import type { MarkdownAiAction } from './MarkdownEditor';
 import { ActivityTypeIcon, formatActivityTypeLabel, getActivityTypeButtonClass } from './ActivityTypeVisuals';
 import { TransportModeIcon } from './TransportModeIcon';
 import { useAppDialog } from './AppDialogProvider';
 import { normalizeTransportMode, TRANSPORT_MODE_UI_ORDER } from '../shared/transportModes';
+import { resolveCitySuggestion, searchCitySuggestions, type CityLookupSuggestion } from '../shared/cityLookup';
 import { FlagIcon } from './flags/FlagIcon';
+import { Switch } from './ui/switch';
 import { loadLazyComponentWithRecovery } from '../services/lazyImportRecovery';
 
 interface DetailsPanelProps {
@@ -35,6 +39,13 @@ interface DetailsPanelProps {
   readOnly?: boolean;
   cityColorPaletteId?: string;
   onCityColorPaletteChange?: (paletteId: string, options: { applyToCities: boolean }) => void;
+  onExportActivityCalendar?: (itemId: string) => void;
+}
+
+interface RouteDistanceTextInput {
+  routeDistanceLabel: string | null;
+  canRoute: boolean;
+  routeStatus?: 'calculating' | 'ready' | 'failed' | 'idle';
 }
 
 interface PendingCityNotesProposal {
@@ -60,6 +71,14 @@ interface HotelSearchResult {
     name: string;
     address: string;
 }
+
+type SearchByTextResponseShape = {
+    places?: Array<{
+        id?: string;
+        displayName?: string | { text?: string };
+        formattedAddress?: string;
+    }>;
+};
 
 const CITY_NOTES_AI_ACTIONS: MarkdownAiAction[] = [
     {
@@ -97,6 +116,17 @@ const loadAiService = async (): Promise<AiServiceModule> => {
 
 const EMPTY_TRIP_ITEMS: ITimelineItem[] = [];
 
+export const getRouteDistanceText = ({
+    routeDistanceLabel,
+    canRoute,
+    routeStatus,
+}: RouteDistanceTextInput): string => {
+    if (routeDistanceLabel) return routeDistanceLabel;
+    if (!canRoute) return 'N/A';
+    if (routeStatus === 'calculating') return 'Calculating…';
+    return 'N/A';
+};
+
 const appendNotes = (existing: string, addition: string): string => {
     const trimmedExisting = existing.trim();
     const trimmedAddition = addition.trim();
@@ -124,6 +154,34 @@ const getCityNameFromText = (text: string): string => {
     return firstPart || text.trim();
 };
 
+const resolvePlaceDisplayName = (displayName: unknown): string => {
+    if (typeof displayName === 'string') return displayName.trim();
+    if (displayName && typeof displayName === 'object') {
+        const text = (displayName as { text?: unknown }).text;
+        if (typeof text === 'string') return text.trim();
+    }
+    return '';
+};
+
+export const mapSearchByTextPlacesToHotelResults = (
+    response: SearchByTextResponseShape | null | undefined,
+): HotelSearchResult[] => {
+    const places = Array.isArray(response?.places) ? response.places : [];
+    return places
+        .map((place) => {
+            const name = resolvePlaceDisplayName(place?.displayName) || 'Hotel';
+            const address = (place?.formattedAddress || '').trim();
+            const id = (place?.id || '').trim() || `${name}-${address}`;
+            return {
+                id,
+                name,
+                address,
+            };
+        })
+        .filter((result) => result.id.length > 0)
+        .slice(0, 5);
+};
+
 export const DetailsPanel: React.FC<DetailsPanelProps> = ({ 
     item, 
     isOpen, 
@@ -141,7 +199,8 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
     variant = 'overlay',
     readOnly = false,
     cityColorPaletteId = DEFAULT_CITY_COLOR_PALETTE_ID,
-    onCityColorPaletteChange
+    onCityColorPaletteChange,
+    onExportActivityCalendar
 }) => {
   const canEdit = !readOnly;
   const [loading, setLoading] = useState(false);
@@ -157,8 +216,10 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
   const [cityDraft, setCityDraft] = useState<CityDraft | null>(null);
   const [cityInputValue, setCityInputValue] = useState('');
   const [citySearchError, setCitySearchError] = useState<string | null>(null);
+  const [citySuggestions, setCitySuggestions] = useState<CityLookupSuggestion[]>([]);
+  const [isSearchingCities, setIsSearchingCities] = useState(false);
   const cityInputRef = useRef<HTMLInputElement>(null);
-  const cityAutocompleteRef = useRef<any>(null);
+  const cityLookupRequestIdRef = useRef(0);
   const lastItemIdRef = useRef<string | null>(item?.id || null);
   const durationBaselineRef = useRef<DurationDraft | null>(null);
   const cityBaselineRef = useRef<CityDraft | null>(null);
@@ -169,10 +230,8 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
   const [isSearchingHotels, setIsSearchingHotels] = useState(false);
   const [hotelResults, setHotelResults] = useState<HotelSearchResult[]>([]);
   
-  // Places Service
-  const [placesService, setPlacesService] = useState<any>(null);
-  const placesServiceDivRef = useRef<HTMLDivElement>(null);
-  const [apiKeyError, setApiKeyError] = useState(false);
+  // Places search state
+  const [hotelSearchUnavailable, setHotelSearchUnavailable] = useState(false);
 
   // Custom Drawer State
   const initialRenderedRef = useRef(isOpen);
@@ -188,6 +247,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
 
   const { isLoaded } = useGoogleMaps();
   const { confirm: confirmDialog } = useAppDialog();
+  const { t } = useTranslation('common');
   const mapLanguage = getStoredAppLanguage();
 
   const applyItemChanges = (
@@ -226,11 +286,13 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
   };
 
   const closeCityEditor = (_options?: { revertPreview?: boolean }) => {
+      cityLookupRequestIdRef.current += 1;
       setIsCityEditorOpen(false);
       setCityDraft(null);
       setCityInputValue('');
       setCitySearchError(null);
-      cityAutocompleteRef.current = null;
+      setCitySuggestions([]);
+      setIsSearchingCities(false);
       cityBaselineRef.current = null;
       cityRoundTripContextRef.current = null;
   };
@@ -245,25 +307,6 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
       discardDraftEdits();
       onClose();
   };
-
-  // Initialize Google Places Service (TextSearch)
-  useEffect(() => {
-    if (!isOpen && variant === 'overlay') return;
-    if (!item && variant === 'sidebar') return; 
-    
-    setApiKeyError(false);
-
-    if (isLoaded && (window as any).google?.maps?.places && placesServiceDivRef.current) {
-        try {
-            // PlacesService requires a Map or an HTML Element (hidden div works)
-            const service = new (window as any).google.maps.places.PlacesService(placesServiceDivRef.current);
-            setPlacesService(service);
-        } catch (e) {
-            console.error("Places Service Init Failed", e);
-            setApiKeyError(true);
-        }
-    }
-  }, [isOpen, item, variant, isLoaded]);
 
   // Handle Mount/Unmount Animation for Overlay
   useEffect(() => {
@@ -288,6 +331,9 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
         setCityDraft(null);
         setCityInputValue('');
         setCitySearchError(null);
+        setCitySuggestions([]);
+        setIsSearchingCities(false);
+        cityLookupRequestIdRef.current += 1;
         durationBaselineRef.current = null;
         cityBaselineRef.current = null;
         cityRoundTripContextRef.current = null;
@@ -347,6 +393,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
     if (switchedItem) {
         setHotelQuery('');
         setHotelResults([]);
+        setHotelSearchUnavailable(false);
         setIsColorPickerOpen(false);
         setIsDurationEditorOpen(false);
         setDurationDraft(null);
@@ -366,47 +413,36 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
   }, [item]);
 
   useEffect(() => {
-      if (!isCityEditorOpen) return;
-      if (!isLoaded || !cityInputRef.current || !(window as any).google?.maps?.places) return;
-
-      let listener: { remove: () => void } | null = null;
-
-      try {
-          const autocomplete = new (window as any).google.maps.places.Autocomplete(cityInputRef.current, {
-              types: ['(cities)'],
-              fields: ['geometry', 'name', 'formatted_address'],
-          });
-          cityAutocompleteRef.current = autocomplete;
-
-          listener = autocomplete.addListener('place_changed', () => {
-              const place = autocomplete.getPlace();
-              if (!place) return;
-              const name = place.name || place.formatted_address?.split(',')[0] || cityInputRef.current?.value || '';
-              const geometry = place.geometry?.location;
-              const coordinates = geometry
-                  ? { lat: geometry.lat(), lng: geometry.lng() }
-                  : undefined;
-              const parsedCountry = getCountryFromText(place.formatted_address || '');
-              const nextDraft = buildCityDraft(name, {
-                  coordinates,
-                  countryName: parsedCountry.countryName,
-                  countryCode: parsedCountry.countryCode,
-              });
-
-              setCityInputValue(name);
-              setCityDraft(nextDraft);
-              setCitySearchError(null);
-          });
-      } catch (error) {
-          console.error('City autocomplete init failed', error);
-          setCitySearchError('City search is unavailable. You can still type manually.');
+      if (!isCityEditorOpen) {
+          setCitySuggestions([]);
+          setIsSearchingCities(false);
+          return;
       }
 
+      const query = cityInputValue.trim();
+      if (!isLoaded || query.length < 2) {
+          setCitySuggestions([]);
+          setIsSearchingCities(false);
+          return;
+      }
+
+      const requestId = cityLookupRequestIdRef.current + 1;
+      cityLookupRequestIdRef.current = requestId;
+      setIsSearchingCities(true);
+
+      const timeoutId = window.setTimeout(() => {
+          void (async () => {
+              const suggestions = await searchCitySuggestions(query, { language: mapLanguage, maxResults: 5 });
+              if (cityLookupRequestIdRef.current !== requestId) return;
+              setCitySuggestions(suggestions);
+              setIsSearchingCities(false);
+          })();
+      }, 220);
+
       return () => {
-          if (listener) listener.remove();
-          cityAutocompleteRef.current = null;
+          window.clearTimeout(timeoutId);
       };
-  }, [isCityEditorOpen, isLoaded]);
+  }, [cityInputValue, isCityEditorOpen, isLoaded, mapLanguage]);
 
   useEffect(() => {
       if (!aiStatus || isEnhancing) return;
@@ -440,6 +476,98 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
           .sort((a, b) => a.startDateOffset - b.startDateOffset),
       [tripItems]
   );
+  const handleSetItemApproved = (checked: boolean) => {
+      if (!canEdit || !displayItem) return;
+
+      if (displayItem.type === 'city') {
+          if (checked) {
+              const overlapEpsilon = 0.0001;
+              const targetStart = displayItem.startDateOffset;
+              const targetEnd = displayItem.startDateOffset + Math.max(0, displayItem.duration);
+              const fallbackGroupId = `city-option-${Number(displayItem.startDateOffset.toFixed(3))}`;
+
+              const conflictingSiblings = sortedCityItems.filter((entry) => {
+                  if (entry.id === displayItem.id) return false;
+                  if (entry.isApproved === false) return false;
+
+                  const entryStart = entry.startDateOffset;
+                  const entryEnd = entry.startDateOffset + Math.max(0, entry.duration);
+                  const overlaps = entryStart < (targetEnd - overlapEpsilon) && entryEnd > (targetStart + overlapEpsilon);
+                  if (!overlaps) return false;
+
+                  const sharesGroup = !!displayItem.cityPlanGroupId && entry.cityPlanGroupId === displayItem.cityPlanGroupId;
+                  const isTentativeOption = (
+                      displayItem.cityPlanStatus === 'uncertain' ||
+                      entry.cityPlanStatus === 'uncertain' ||
+                      !!displayItem.cityPlanGroupId ||
+                      !!entry.cityPlanGroupId
+                  );
+                  return sharesGroup || isTentativeOption;
+              });
+
+              const approvedGroupId = displayItem.cityPlanGroupId || (conflictingSiblings.length > 0 ? fallbackGroupId : undefined);
+              const changes: Array<{ id: string; updates: Partial<ITimelineItem> }> = [
+                  {
+                      id: displayItem.id,
+                      updates: {
+                          isApproved: true,
+                          cityPlanStatus: 'confirmed',
+                          ...(approvedGroupId ? { cityPlanGroupId: approvedGroupId } : {}),
+                      },
+                  },
+              ];
+
+              conflictingSiblings.forEach((entry) => {
+                  changes.push({
+                      id: entry.id,
+                      updates: {
+                          isApproved: false,
+                          cityPlanStatus: 'uncertain',
+                          cityPlanGroupId: entry.cityPlanGroupId || approvedGroupId,
+                      },
+                  });
+              });
+
+              applyItemChanges(changes);
+              return;
+          }
+
+          const normalizedStart = Number(displayItem.startDateOffset.toFixed(3));
+          const defaultGroupId = `city-option-${normalizedStart}`;
+          const nextGroupId = displayItem.cityPlanGroupId || defaultGroupId;
+          const siblingOptionIndexes = sortedCityItems
+              .filter(entry =>
+                  entry.id !== displayItem.id
+                  && entry.cityPlanStatus === 'uncertain'
+                  && entry.cityPlanGroupId === nextGroupId
+              )
+              .map(entry => (
+                  typeof entry.cityPlanOptionIndex === 'number' && Number.isFinite(entry.cityPlanOptionIndex)
+                      ? Number(entry.cityPlanOptionIndex)
+                      : -1
+              ));
+          const existingOptionIndex = (typeof displayItem.cityPlanOptionIndex === 'number' && Number.isFinite(displayItem.cityPlanOptionIndex))
+              ? Number(displayItem.cityPlanOptionIndex)
+              : undefined;
+          const nextOptionIndex = existingOptionIndex !== undefined
+              ? Math.max(0, Math.floor(existingOptionIndex))
+              : (Math.max(-1, ...siblingOptionIndexes) + 1);
+
+          handleUpdate(displayItem.id, {
+              isApproved: false,
+              cityPlanStatus: 'uncertain',
+              cityPlanGroupId: nextGroupId,
+              cityPlanOptionIndex: nextOptionIndex,
+          });
+          return;
+      }
+
+      if (displayItem.type === 'activity') {
+          handleUpdate(displayItem.id, {
+              isApproved: checked,
+          });
+      }
+  };
   const firstCityItem = sortedCityItems[0] || null;
   const lastCityItem = sortedCityItems.length > 1 ? sortedCityItems[sortedCityItems.length - 1] : null;
   const isRoundTripSequence = !!(
@@ -607,6 +735,8 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
       setCityDraft(baselineDraft);
       setCityInputValue(baseLocation);
       setCitySearchError(null);
+      setCitySuggestions([]);
+      setIsSearchingCities(false);
       window.setTimeout(() => cityInputRef.current?.focus(), 30);
   };
 
@@ -635,11 +765,19 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
       const normalizedCurrent = getNormalizedCityName(baseline.location || baseline.title);
       const normalizedNext = getNormalizedCityName(nextLocation);
       const isUnchanged = normalizedCurrent === normalizedNext;
+      let resolvedSuggestion: CityLookupSuggestion | null = null;
+      if (!isUnchanged && !cityDraft.coordinates && isLoaded) {
+          resolvedSuggestion = await resolveCitySuggestion(nextLocation, { language: mapLanguage });
+      }
+      if (!isUnchanged && !cityDraft.coordinates && !resolvedSuggestion) {
+          setCitySearchError('Could not resolve this city. Try selecting a suggestion or add country context.');
+          return;
+      }
       const nextDraft = buildCityDraft(nextLocation, {
-          title: getCityNameFromText(nextLocation),
-          coordinates: cityDraft.coordinates,
-          countryName: cityDraft.countryName,
-          countryCode: cityDraft.countryCode,
+          title: resolvedSuggestion?.name || getCityNameFromText(nextLocation),
+          coordinates: resolvedSuggestion?.coordinates ?? cityDraft.coordinates,
+          countryName: resolvedSuggestion?.countryName ?? cityDraft.countryName,
+          countryCode: resolvedSuggestion?.countryCode ?? cityDraft.countryCode,
       });
       const changes: Array<{ id: string; updates: Partial<ITimelineItem> }> = [];
       const primaryUpdates = resolveCityApplyPayload(displayItem, nextDraft);
@@ -650,10 +788,20 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
       const roundTripContext = cityRoundTripContextRef.current;
       if (roundTripContext?.isRoundTrip && roundTripContext.isFirstCity && roundTripContext.lastCityId && !isUnchanged) {
           const shouldSyncLastCity = await confirmDialog({
-              title: 'Update Roundtrip Endpoint?',
-              message: `This trip looks like a roundtrip. Also change the final city to "${nextDraft.title}"?`,
-              confirmLabel: 'Yes, Update Last City',
-              cancelLabel: 'No, Keep As Is',
+              title: t('appDialog.roundTripSync.title'),
+              message: (
+                  <div className="space-y-2">
+                      <p>{t('appDialog.roundTripSync.messageLead')}</p>
+                      <p><Trans
+                          ns="common"
+                          i18nKey="appDialog.roundTripSync.messageQuestion"
+                          values={{ title: nextDraft.title }}
+                          components={{ strong: <strong /> }}
+                      /></p>
+                  </div>
+              ),
+              confirmLabel: t('appDialog.roundTripSync.confirmLabel'),
+              cancelLabel: t('appDialog.roundTripSync.cancelLabel'),
           });
           if (shouldSyncLastCity) {
               const roundTripLastCity = tripItems.find(entry => entry.id === roundTripContext.lastCityId && entry.type === 'city') || null;
@@ -701,6 +849,20 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
           });
           return next;
       });
+      setCitySearchError(null);
+  };
+
+  const handleSelectCitySuggestion = (suggestion: CityLookupSuggestion) => {
+      const nextDraft = buildCityDraft(suggestion.label, {
+          title: suggestion.name,
+          coordinates: suggestion.coordinates,
+          countryName: suggestion.countryName,
+          countryCode: suggestion.countryCode,
+      });
+      setCityInputValue(suggestion.label);
+      setCityDraft(nextDraft);
+      setCitySuggestions([]);
+      setIsSearchingCities(false);
       setCitySearchError(null);
   };
 
@@ -794,34 +956,42 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
       handleUpdate(displayItem.id, { hotels: displayItem.hotels.filter(h => h.id !== hotelId) });
   };
   
-  const handleHotelSearch = () => {
-      if (!hotelQuery || !displayItem || !placesService) return;
+  const handleHotelSearch = async () => {
+      if (!hotelQuery || !displayItem || !isLoaded) return;
       setIsSearchingHotels(true);
-      
-      const searchString = `${hotelQuery} in ${displayItem.location || displayItem.title}`;
-      
-      try {
-          const request = {
-              query: searchString,
-              type: 'lodging' as any // Forcing type to match API expectation
-          };
+      setHotelSearchUnavailable(false);
 
-          placesService.textSearch(request, (results: any[], status: any) => {
-              setIsSearchingHotels(false);
-              if (status === (window as any).google.maps.places.PlacesServiceStatus.OK && results) {
-                  setHotelResults(results.map(p => ({ 
-                      id: typeof p.place_id === 'string' && p.place_id.trim().length > 0
-                          ? p.place_id
-                          : `${p.name || 'hotel'}-${p.formatted_address || ''}`,
-                      name: p.name || 'Hotel',
-                      address: p.formatted_address || '',
-                  })).slice(0, 5));
-              } else {
-                  setHotelResults([]);
-              }
+      const searchString = `${hotelQuery} in ${displayItem.location || displayItem.title}`;
+
+      try {
+          const importLibrary = (window as any).google?.maps?.importLibrary;
+          if (typeof importLibrary !== 'function') {
+              setHotelResults([]);
+              setHotelSearchUnavailable(true);
+              return;
+          }
+
+          const placesLibrary = await importLibrary('places');
+          const searchByText = placesLibrary?.Place?.searchByText;
+          if (typeof searchByText !== 'function') {
+              setHotelResults([]);
+              setHotelSearchUnavailable(true);
+              return;
+          }
+
+          const response = await searchByText({
+              textQuery: searchString,
+              includedType: 'lodging',
+              maxResultCount: 5,
+              fields: ['id', 'displayName', 'formattedAddress'],
+              language: mapLanguage,
           });
+          setHotelResults(mapSearchByTextPlacesToHotelResults(response as SearchByTextResponseShape));
       } catch (e) {
-          console.error("Hotel search error", e);
+          console.error('Hotel search error', e);
+          setHotelResults([]);
+          setHotelSearchUnavailable(true);
+      } finally {
           setIsSearchingHotels(false);
       }
   };
@@ -880,17 +1050,39 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
   };
   const handleTransportConvert = (mode: TransportMode) => {
       if (!canEdit) return;
-      handleUpdate(displayItem.id, { type: 'travel', transportMode: mode, title: `${mode.charAt(0).toUpperCase() + mode.slice(1)} Travel`, color: TRAVEL_COLOR, duration: Math.max(0.1, displayItem.duration) });
+      const currentMode = normalizeTransportMode(displayItem.transportMode);
+      const nextMode = normalizeTransportMode(mode);
+      if (currentMode === nextMode) return;
+      handleUpdate(displayItem.id, {
+          type: 'travel',
+          transportMode: nextMode,
+          title: `${nextMode.charAt(0).toUpperCase() + nextMode.slice(1)} Travel`,
+          color: TRAVEL_COLOR,
+          duration: Math.max(0.1, displayItem.duration),
+      });
   };
   const handlePaletteSelection = async (paletteId: string) => {
       if (!canEdit || !isCity || !onCityColorPaletteChange) return;
       if (paletteId === cityColorPaletteId) return;
 
       const applyToCities = await confirmDialog({
-          title: 'Apply palette to current cities?',
-          message: 'Choose “Apply automatically” to recolor all cities now. Choose “Manual selection” to keep existing city colors and only switch the active palette.',
-          confirmLabel: 'Apply automatically',
-          cancelLabel: 'Manual selection',
+          title: t('appDialog.cityPaletteApply.title'),
+          message: (
+              <div className="space-y-2">
+                  <p><Trans
+                      ns="common"
+                      i18nKey="appDialog.cityPaletteApply.messageAuto"
+                      components={{ strong: <strong /> }}
+                  /></p>
+                  <p><Trans
+                      ns="common"
+                      i18nKey="appDialog.cityPaletteApply.messageManual"
+                      components={{ strong: <strong /> }}
+                  /></p>
+              </div>
+          ),
+          confirmLabel: t('appDialog.cityPaletteApply.confirmLabel'),
+          cancelLabel: t('appDialog.cityPaletteApply.cancelLabel'),
       });
 
       onCityColorPaletteChange(paletteId, { applyToCities });
@@ -944,15 +1136,15 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
   const routeDistanceLabel = routeDistanceDisplayKm
       ? formatDistance(routeDistanceDisplayKm, DEFAULT_DISTANCE_UNIT, { maximumFractionDigits: 1 })
       : null;
-  const routeDistanceText = (() => {
-      if (routeDistanceLabel) return routeDistanceLabel;
-      const canRoute =
-          routeMode === 'realistic' &&
-          !!travelLegMetrics?.distanceKm &&
-          !['plane', 'boat', 'na'].includes(normalizedTransportMode);
-      if (routeStatus === 'calculating' || (canRoute && routeStatus !== 'failed')) return 'Calculating…';
-      return 'N/A';
-  })();
+  const canRoute =
+      routeMode === 'realistic' &&
+      !!travelLegMetrics?.distanceKm &&
+      !['plane', 'boat', 'na'].includes(normalizedTransportMode);
+  const routeDistanceText = getRouteDistanceText({
+      routeDistanceLabel,
+      canRoute,
+      routeStatus,
+  });
   const effectiveDistanceKm = routeDistanceDisplayKm ?? travelLegMetrics?.distanceKm ?? null;
   const estimatedHours = effectiveDistanceKm ? estimateTravelHours(effectiveDistanceKm, normalizedTransportMode) : null;
   const estimatedLabel = formatDurationHours(estimatedHours);
@@ -1002,6 +1194,8 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
       ? normalizedTransportMode
       : 'route';
   const showRouteDistance = routeMode === 'realistic';
+  const supportsApproval = isCity || isActivity;
+  const isItemApproved = supportsApproval ? displayItem.isApproved !== false : true;
 
   const Content = (
       <div className={`flex flex-col h-full w-full min-w-0 bg-gray-50 ${variant === 'sidebar' ? 'border-l border-gray-200' : 'rounded-t-[20px] sm:rounded-2xl'}`}>
@@ -1169,6 +1363,18 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                       </div>
                   )}
              </div>
+             {supportsApproval && (
+                <div className="mb-3 flex items-center gap-2 text-xs text-gray-600">
+                    <Switch
+                        checked={isItemApproved}
+                        onCheckedChange={handleSetItemApproved}
+                        disabled={!canEdit}
+                        className="h-5 w-9 data-[state=checked]:bg-emerald-600 data-[state=unchecked]:bg-amber-400"
+                        aria-label="Toggle item approval"
+                    />
+                    <span className="font-medium">{isItemApproved ? 'Approved' : 'Needs approval'}</span>
+                </div>
+             )}
              
              <textarea 
                 value={displayItem.title} 
@@ -1372,8 +1578,26 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                         />
                         <Search size={14} className="absolute left-3 top-3.5 text-gray-400" />
                     </div>
+                    {(isSearchingCities || citySuggestions.length > 0) && (
+                        <div className="mt-2 rounded-lg border border-gray-200 bg-white shadow-sm max-h-44 overflow-y-auto">
+                            {isSearchingCities && (
+                                <div className="px-3 py-2 text-xs text-gray-500">Searching cities...</div>
+                            )}
+                            {!isSearchingCities && citySuggestions.map((suggestion) => (
+                                <button
+                                    key={suggestion.id}
+                                    type="button"
+                                    onClick={() => handleSelectCitySuggestion(suggestion)}
+                                    className="w-full text-left px-3 py-2 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
+                                >
+                                    <div className="text-sm font-semibold text-gray-800">{suggestion.name}</div>
+                                    <div className="text-xs text-gray-500 truncate">{suggestion.label}</div>
+                                </button>
+                            ))}
+                        </div>
+                    )}
                     <p className="text-xs text-gray-500">
-                        Start typing and pick a city from the autocomplete list, then apply.
+                        Search for a city and pick a suggestion, then apply.
                     </p>
                     <div className="pt-2 border-t border-gray-50 flex items-center justify-end gap-2">
                         <button
@@ -1407,10 +1631,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                          </button>
                      </div>
                      <div className="mb-4 relative">
-                        {/* Hidden Places Service Container */}
-                        <div ref={placesServiceDivRef} className="hidden"></div>
-
-                        {apiKeyError ? <div className="p-3 bg-red-50 border border-red-100 rounded-lg text-xs text-red-600 flex items-start gap-2"><AlertTriangle size={14} className="mt-0.5 flex-shrink-0" /><div><strong>Maps Search Unavailable</strong><br/>No valid API Key.</div></div> : (
+                        {hotelSearchUnavailable ? <div className="p-3 bg-red-50 border border-red-100 rounded-lg text-xs text-red-600 flex items-start gap-2"><AlertTriangle size={14} className="mt-0.5 flex-shrink-0" /><div><strong>Maps Search Unavailable</strong><br/>Try again in a moment or add hotels manually.</div></div> : (
                             <>
                                 <div className="flex gap-2">
                                     <div className="relative flex-1">
@@ -1418,7 +1639,12 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                                             type="text"
                                             value={hotelQuery}
                                             onChange={canEdit ? ((e) => setHotelQuery(e.target.value)) : undefined}
-                                            onKeyDown={canEdit ? ((e) => e.key === 'Enter' && handleHotelSearch()) : undefined}
+                                            onKeyDown={canEdit ? ((e) => {
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    void handleHotelSearch();
+                                                }
+                                            }) : undefined}
                                             placeholder="Search hotels..."
                                             disabled={!canEdit}
                                             className={`w-full pl-8 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900 outline-none ${canEdit ? 'focus:ring-1 focus:ring-accent-500' : 'opacity-60 cursor-not-allowed'}`}
@@ -1426,8 +1652,8 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                                         <Search size={14} className="absolute left-2.5 top-2.5 text-gray-400" />
                                     </div>
                                     <button
-                                        onClick={handleHotelSearch}
-                                        disabled={!canEdit || isSearchingHotels || !hotelQuery || !placesService}
+                                        onClick={() => void handleHotelSearch()}
+                                        disabled={!canEdit || !isLoaded || isSearchingHotels || !hotelQuery}
                                         className={`px-3 py-2 bg-accent-600 text-white rounded-lg text-xs font-bold ${canEdit ? 'hover:bg-accent-700' : 'opacity-50 cursor-not-allowed'} disabled:opacity-50`}
                                     >
                                         {isSearchingHotels ? '...' : 'Find'}
@@ -1507,12 +1733,12 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                              <button 
                                  key={mode} 
                                  onClick={() => handleTransportConvert(mode)} 
-                                 disabled={!canEdit}
+                                 disabled={!canEdit || normalizedTransportMode === mode}
                                  className={`flex flex-col items-center justify-center w-full h-20 rounded-xl border-2 transition-all ${
                                     normalizedTransportMode === mode
                                         ? (mode === 'na' ? 'bg-gray-50 border-gray-300 text-gray-500' : 'bg-accent-50 border-accent-500 text-accent-700')
                                         : (mode === 'na' ? 'bg-gray-50 border-gray-200 text-gray-400' : 'bg-gray-50 border-gray-100 text-gray-400')
-                                 } ${canEdit ? 'hover:border-gray-200' : 'opacity-60 cursor-not-allowed'}`}
+                                 } ${(canEdit && normalizedTransportMode !== mode) ? 'hover:border-gray-200' : 'opacity-60 cursor-not-allowed'}`}
                              >
                                  <TransportModeIcon mode={mode} size={24} />
                                  <span className="text-[10px] font-bold mt-2 uppercase">{mode === 'na' ? 'N/A' : mode}</span>
@@ -1524,6 +1750,24 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
 
              {isActivity && (
                  <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                     <div className="mb-4 flex justify-end">
+                         <button
+                             type="button"
+                             onClick={() => onExportActivityCalendar?.(displayItem.id)}
+                             disabled={!onExportActivityCalendar}
+                             className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                                 onExportActivityCalendar
+                                     ? 'border-accent-200 bg-accent-50 text-accent-700 hover:bg-accent-100 hover:border-accent-300'
+                                     : 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
+                             }`}
+                             {...getAnalyticsDebugAttributes('trip_view__calendar_export--activity', {
+                                 source: 'details_panel',
+                                 item_id: displayItem.id,
+                             })}
+                         >
+                             Export to calendar (.ics)
+                         </button>
+                     </div>
                      <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Activity Types</h3>
                      <div className="flex flex-wrap gap-2 mb-6">
                         {ALL_ACTIVITY_TYPES.map(type => {

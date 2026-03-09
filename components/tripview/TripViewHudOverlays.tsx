@@ -2,21 +2,11 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Article, RocketLaunch, WarningCircle } from '@phosphor-icons/react';
 import { Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
+import type { TripPaywallActivationMode } from '../../config/paywall';
 import type { ShareMode } from '../../types';
 import { trackEvent } from '../../services/analyticsService';
-
-interface TripViewToastState {
-    title: string;
-    message: string;
-}
-
-interface TripViewActiveToastMeta {
-    Icon: React.ComponentType<{ size?: number }>;
-    iconClass: string;
-    toastBorderClass: string;
-    toastTitleClass: string;
-}
 
 interface TripViewHudOverlaysProps {
     shareStatus?: ShareMode;
@@ -24,7 +14,8 @@ interface TripViewHudOverlaysProps {
     isPaywallLocked: boolean;
     expirationLabel: string | null;
     tripId: string;
-    onPaywallLoginClick: (
+    paywallActivationMode: TripPaywallActivationMode;
+    onPaywallActivateClick: (
         event: React.MouseEvent<HTMLAnchorElement>,
         analyticsEvent: 'trip_paywall__strip--activate' | 'trip_paywall__overlay--activate',
         source: 'trip_paywall_strip' | 'trip_paywall_overlay'
@@ -34,10 +25,6 @@ interface TripViewHudOverlaysProps {
     loadingDestinationSummary: string;
     tripDateRange: string;
     tripTotalDaysLabel: string;
-    suppressToasts: boolean;
-    toastState: TripViewToastState | null;
-    activeToastMeta: TripViewActiveToastMeta | null;
-    onDismissToast: () => void;
 }
 
 export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
@@ -46,17 +33,17 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
     isPaywallLocked,
     expirationLabel,
     tripId,
-    onPaywallLoginClick,
+    paywallActivationMode,
+    onPaywallActivateClick,
     showGenerationOverlay,
     generationProgressMessage,
     loadingDestinationSummary,
     tripDateRange,
     tripTotalDaysLabel,
-    suppressToasts,
-    toastState,
-    activeToastMeta,
-    onDismissToast,
 }) => {
+    const { t } = useTranslation('common');
+    const paywallRequiresLogin = paywallActivationMode === 'login_modal';
+
     return (
         <>
             {shareStatus === 'view' && onCopyTrip && (
@@ -89,13 +76,16 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
 
                             <div className="relative flex items-start gap-3.5">
                                 <div className="min-w-0 flex-1">
-                                    <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-accent-700">Trip preview paused</p>
+                                    <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-accent-700">{t('tripPaywall.overlay.eyebrow')}</p>
                                     <div className="mt-1 text-lg font-semibold leading-tight text-slate-900">
-                                        Keep this plan alive and unlock every detail
+                                        {paywallRequiresLogin
+                                            ? t('tripPaywall.overlay.title.login')
+                                            : t('tripPaywall.overlay.title.direct')}
                                     </div>
                                     <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                                        Continue where you left off with a free TravelFlow account.
-                                        You will regain full editing, destination names, and map routing instantly.
+                                        {paywallRequiresLogin
+                                            ? t('tripPaywall.overlay.description.login')
+                                            : t('tripPaywall.overlay.description.direct')}
                                     </p>
                                 </div>
                                 <span className="mt-0.5 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-accent-200 bg-accent-50 text-accent-700">
@@ -113,18 +103,21 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                                 </Link>
                                 <Link
                                     to="/login"
-                                    onClick={(event) => onPaywallLoginClick(event, 'trip_paywall__overlay--activate', 'trip_paywall_overlay')}
+                                    onClick={(event) => onPaywallActivateClick(event, 'trip_paywall__overlay--activate', 'trip_paywall_overlay')}
                                     className="inline-flex h-9 items-center gap-1.5 rounded-md bg-accent-600 px-3 text-xs font-semibold text-white hover:bg-accent-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
                                 >
                                     <RocketLaunch size={14} weight="duotone" />
-                                    Reactivate trip
+                                    {paywallRequiresLogin
+                                        ? t('tripPaywall.reactivate.actions.login')
+                                        : t('tripPaywall.reactivate.actions.direct')}
                                 </Link>
                             </div>
 
                             <div className="relative mt-4 border-t border-slate-200 pt-3">
                                 <p className="text-[11px] leading-relaxed text-slate-500">
-                                    {expirationLabel ? `Expired on ${expirationLabel}. ` : ''}
-                                    Preview mode stays visible, while advanced planning controls unlock after activation.
+                                    {expirationLabel
+                                        ? t('tripPaywall.overlay.footer.withDate', { date: expirationLabel })
+                                        : t('tripPaywall.overlay.footer.noDate')}
                                 </p>
                             </div>
                         </div>
@@ -150,28 +143,6 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                         <div className="mt-3 h-1.5 rounded-full bg-gray-100 overflow-hidden">
                             <div className="h-full w-1/2 bg-gradient-to-r from-accent-500 to-accent-600 animate-pulse rounded-full" />
                         </div>
-                    </div>
-                </div>
-            )}
-
-            {!suppressToasts && toastState && activeToastMeta && (
-                <div className={`fixed bottom-6 right-6 z-[1600] w-[340px] max-w-[calc(100vw-2rem)] rounded-xl border bg-white/95 shadow-2xl backdrop-blur px-4 py-3 ${activeToastMeta.toastBorderClass}`}>
-                    <div className="flex items-start gap-3">
-                        <div className={`h-9 w-9 rounded-lg flex items-center justify-center shrink-0 ${activeToastMeta.iconClass}`}>
-                            <activeToastMeta.Icon size={16} />
-                        </div>
-                        <div className="min-w-0">
-                            <div className={`text-[11px] uppercase tracking-[0.08em] font-semibold ${activeToastMeta.toastTitleClass}`}>{toastState.title}</div>
-                            <div className="text-sm font-semibold text-gray-900 leading-snug">{toastState.message}</div>
-                        </div>
-                        <button
-                            type="button"
-                            onClick={onDismissToast}
-                            className="ml-auto text-xs text-gray-400 hover:text-gray-600"
-                            aria-label="Dismiss notification"
-                        >
-                            ×
-                        </button>
                     </div>
                 </div>
             )}

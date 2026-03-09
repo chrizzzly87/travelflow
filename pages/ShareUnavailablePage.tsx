@@ -10,6 +10,10 @@ export const ShareUnavailablePage: React.FC = () => {
     const { t } = useTranslation('pages');
     const location = useLocation();
     const locale = extractLocaleFromPath(location.pathname) ?? DEFAULT_LOCALE;
+    const reason = new URLSearchParams(location.search).get('reason');
+    const description = reason === 'offline'
+        ? t('shareUnavailable.offlineDescription')
+        : t('shareUnavailable.description');
 
     return (
         <MarketingLayout>
@@ -19,7 +23,7 @@ export const ShareUnavailablePage: React.FC = () => {
                 </div>
                 <h1 className="mt-4 text-3xl font-black tracking-tight text-slate-900">{t('shareUnavailable.title')}</h1>
                 <p className="mt-3 text-sm leading-6 text-slate-600">
-                    {t('shareUnavailable.description')}
+                    {description}
                 </p>
                 <div className="mt-6 flex flex-wrap gap-2">
                     <Link

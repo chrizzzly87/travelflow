@@ -1,0 +1,84 @@
+{
+  "imprint": {
+    "title": "Imprint",
+    "intro": "This legal imprint page is set up as a placeholder. Replace the fields below with your official business and contact details before production launch.",
+    "company": "Company:",
+    "companyValue": "TravelFlow (placeholder)",
+    "address": "Address:",
+    "addressValue": "Replace with legal business address",
+    "email": "Email:",
+    "emailValue": "legal@travelflow.example",
+    "responsible": "Responsible person:",
+    "responsibleValue": "Replace with legal representative",
+    "vat": "VAT / registration:",
+    "vatValue": "Replace with required local registration identifiers"
+  },
+  "privacy": {
+    "title": "Privacy Policy",
+    "intro": "This policy placeholder exists so legal navigation is complete. Replace this with your approved privacy policy text before launch.",
+    "items": [
+      "What personal data is collected and why.",
+      "How long data is stored and where.",
+      "Lawful basis for processing and user rights.",
+      "Contact details for privacy requests and deletion."
+    ]
+  },
+  "terms": {
+    "title": "Terms of Service",
+    "intro": "This terms page is a structural placeholder. Replace with your legal terms for account, billing, acceptable use, and liability limitations.",
+    "items": [
+      "Service scope and account responsibilities.",
+      "Subscription/paywall terms and billing policy.",
+      "Prohibited uses and suspension policy.",
+      "Warranty disclaimer and limitation of liability."
+    ]
+  },
+  "cookies": {
+    "title": "Cookie Policy",
+    "intro": "TravelFlow stores consent preferences locally and only activates analytics after optional consent is granted.",
+    "essential": "Essential storage (always active):",
+    "essentialValue": "tf_cookie_consent_choice_v1 in Local Storage to remember your banner selection.",
+    "optional": "Optional analytics:",
+    "optionalValue": "Umami is loaded only when you choose Accept all in the cookie banner.",
+    "mapping": "Consent mapping:",
+    "mappingValue": "Essential only keeps analytics disabled; Accept all enables analytics tracking.",
+    "notesTitle": "Analytics configuration notes",
+    "notes": [
+      "Tracker script URL is configured via VITE_UMAMI_SCRIPT_URL.",
+      "Website identifier is configured via VITE_UMAMI_WEBSITE_ID.",
+      "If you enable cookie-based analytics features in Umami later, list all resulting cookie names and durations here."
+    ],
+    "manageTitle": "Manage analytics consent",
+    "current": "Current preference:",
+    "stateAll": "Accept all",
+    "stateEssential": "Essential only",
+    "stateUnset": "Not set"
+  },
+  "termsPage": {
+    "heroEyebrow": "سروس کی شرائط · AGB",
+    "heroTitle": "سروس کی شرائط / Allgemeine Geschäftsbedingungen",
+    "heroIntro": "یہ شرائط {appName} کے استعمال پر لاگو ہوتی ہیں۔",
+    "heroBindingNote": "نیچے دیا گیا جرمن متن قانونی طور پر پابند ورژن ہے۔ انگریزی متن صرف سہولت کے لیے ہے۔",
+    "versionLabel": "ورژن",
+    "lastUpdatedLabel": "آخری اپ ڈیٹ",
+    "controllerInfoLead": "ذمہ دار ادارے کی معلومات",
+    "imprintLinkLabel": "امپرنٹ",
+    "privacyInfoLead": "ڈیٹا پروسیسنگ کی تفصیل",
+    "privacyLinkLabel": "پرائیویسی پالیسی",
+    "acceptRequiredTitle": "ضروری کارروائی: اکاؤنٹ جاری رکھنے کے لیے موجودہ شرائط قبول کریں۔",
+    "acceptRequiredDescription": "تصدیق سے پہلے آپ نیچے دونوں ورژن دیکھ سکتے ہیں۔",
+    "acceptSubmit": "موجودہ شرائط قبول کریں اور آگے بڑھیں",
+    "acceptSubmitting": "قبولیت محفوظ کی جا رہی ہے...",
+    "acceptError": "اس وقت شرائط کی قبولیت محفوظ نہیں ہو سکی۔ براہ کرم دوبارہ کوشش کریں۔",
+    "bindingSectionTitle": "لازمی ورژن (جرمن)",
+    "helperSectionTitle": "مددگار ترجمہ (انگریزی، غیر پابند)",
+    "globalForceTitle": "کارروائی درکار: اپڈیٹ شدہ شرائط کی قبولیت ضروری ہے۔",
+    "globalForceDescription": "اکاؤنٹ کی محفوظ خصوصیات جاری رکھنے کے لیے تازہ ترین شرائط دیکھیں اور اپنی قبولیت کی تصدیق کریں۔",
+    "globalInformTitle": "شرائط اپڈیٹ ہو گئی ہیں: تازہ ترین قانونی ورژن دیکھیں۔",
+    "globalInformDescription": "یہ اپڈیٹ صرف اطلاع کے لیے ہے (زبردستی دوبارہ قبولیت نہیں)، لیکن تازہ ترین متن کا جائزہ لینا چاہیے۔",
+    "globalReviewAction": "شرائط دیکھیں",
+    "globalDismissAction": "فی الحال بند کریں",
+    "acceptOptionalTitle": "اختیاری تصدیق: شرائط کے تازہ ترین ورژن کو قبول کریں۔",
+    "acceptOptionalDescription": "آپ ابھی قبولیت کی تصدیق کر کے اس ورژن کی اپڈیٹ اطلاعیں ہٹا سکتے ہیں۔"
+  }
+}

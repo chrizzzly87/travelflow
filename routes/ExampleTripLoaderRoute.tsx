@@ -3,7 +3,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { useAuth } from '../hooks/useAuth';
 import { DB_ENABLED } from '../config/db';
-import { ANONYMOUS_TRIP_EXPIRATION_DAYS, buildTripExpiryIso } from '../config/productLimits';
+import { resolveTripExpiryFromEntitlements } from '../config/productLimits';
 import { trackEvent } from '../services/analyticsService';
 import {
     dbCanCreateTrip,
@@ -18,7 +18,25 @@ import {
 } from '../utils';
 import type { ITrip, IViewSettings } from '../types';
 import type { ExampleTripLoaderRouteProps } from './tripRouteTypes';
-import { TripView } from '../components/TripView';
+import { LazyTripView } from '../components/tripview/LazyTripView';
+import { TripRouteLoadingShell } from '../components/tripview/TripRouteLoadingShell';
+
+const areViewSettingsEqual = (a?: IViewSettings, b?: IViewSettings): boolean => {
+    if (!a && !b) return true;
+    if (!a || !b) return false;
+    return (
+        a.layoutMode === b.layoutMode
+        && a.timelineMode === b.timelineMode
+        && a.timelineView === b.timelineView
+        && a.mapDockMode === b.mapDockMode
+        && a.mapStyle === b.mapStyle
+        && a.routeMode === b.routeMode
+        && a.showCityNames === b.showCityNames
+        && a.zoomLevel === b.zoomLevel
+        && a.sidebarWidth === b.sidebarWidth
+        && a.timelineHeight === b.timelineHeight
+    );
+};
 
 type ExampleTemplateFactory = (createdAtIso: string) => ITrip;
 type ExampleTripCardSummary = {
@@ -91,16 +109,6 @@ export const ExampleTripLoaderRoute: React.FC<ExampleTripLoaderRouteProps> = ({
             templateFactory: undefined,
         }));
     }, []);
-
-    const resolveTripExpiry = (createdAtMs: number, existingTripExpiry?: string | null): string | null => {
-        if (typeof existingTripExpiry === 'string' && existingTripExpiry) return existingTripExpiry;
-        const expirationDays = access?.entitlements.tripExpirationDays;
-        if (expirationDays === null) return null;
-        if (typeof expirationDays === 'number' && expirationDays > 0) {
-            return buildTripExpiryIso(createdAtMs, expirationDays);
-        }
-        return buildTripExpiryIso(createdAtMs, ANONYMOUS_TRIP_EXPIRATION_DAYS);
-    };
 
     useEffect(() => {
         if (!templateId) {
@@ -194,6 +202,8 @@ export const ExampleTripLoaderRoute: React.FC<ExampleTripLoaderRouteProps> = ({
                 exampleTemplateId: templateId,
                 exampleTemplateCountries: templateCountries,
                 sourceKind: 'example',
+                sourceOwnerType: 'system_catalog',
+                sourceOwnerHandle: 'travelflow_examples',
                 defaultView: resolvedView,
             };
 
@@ -237,9 +247,15 @@ export const ExampleTripLoaderRoute: React.FC<ExampleTripLoaderRouteProps> = ({
             isFavorite: false,
             isExample: false,
             status: 'active',
-            tripExpiresAt: resolveTripExpiry(now),
+            tripExpiresAt: resolveTripExpiryFromEntitlements(
+                now,
+                undefined,
+                access?.entitlements.tripExpirationDays
+            ),
             sourceKind: 'duplicate_trip',
             sourceTemplateId: templateId,
+            sourceOwnerType: 'system_catalog',
+            sourceOwnerHandle: 'travelflow_examples',
             exampleTemplateId: undefined,
             exampleTemplateCountries: undefined,
             forkedFromExampleTemplateId: templateId,
@@ -291,30 +307,40 @@ export const ExampleTripLoaderRoute: React.FC<ExampleTripLoaderRouteProps> = ({
         navigate(url);
     };
 
-    if (!activeTrip || !activeTrip.isExample) return null;
+    const handleRouteViewSettingsChange = useCallback((settings: IViewSettings) => {
+        if (areViewSettingsEqual(viewSettings, settings)) return;
+        setViewSettings((previous) => {
+            if (areViewSettingsEqual(previous, settings)) return previous;
+            return settings;
+        });
+        onViewSettingsChange(settings);
+    }, [onViewSettingsChange, viewSettings]);
+
+    if (!activeTrip || !activeTrip.isExample) {
+        return <TripRouteLoadingShell variant="loadingExampleTrip" />;
+    }
 
     return (
-        <TripView
-            trip={activeTrip}
-            initialViewSettings={viewSettings ?? activeTrip.defaultView}
-            onUpdateTrip={(updatedTrip) => onTripLoaded(updatedTrip, viewSettings ?? updatedTrip.defaultView)}
-            onViewSettingsChange={(settings) => {
-                setViewSettings(settings);
-                onViewSettingsChange(settings);
-            }}
-            onOpenManager={onOpenManager}
-            onOpenSettings={onOpenSettings}
-            appLanguage={appLanguage}
-            canShare={false}
-            onCopyTrip={handleCopyExampleTrip}
-            isExamplePreview
-            suppressToasts
-            suppressReleaseNotice
-            exampleTripBanner={{
-                title: templateCard?.title || activeTrip.title,
-                countries: templateCountries,
-                onCreateSimilarTrip: handleCreateSimilarTrip,
-            }}
-        />
+        <React.Suspense fallback={<TripRouteLoadingShell variant="preparingExamplePlanner" />}>
+            <LazyTripView
+                trip={activeTrip}
+                initialViewSettings={viewSettings ?? activeTrip.defaultView}
+                onUpdateTrip={(updatedTrip) => onTripLoaded(updatedTrip, viewSettings ?? updatedTrip.defaultView)}
+                onViewSettingsChange={handleRouteViewSettingsChange}
+                onOpenManager={onOpenManager}
+                onOpenSettings={onOpenSettings}
+                appLanguage={appLanguage}
+                canShare={false}
+                onCopyTrip={handleCopyExampleTrip}
+                isExamplePreview
+                suppressToasts
+                suppressReleaseNotice
+                exampleTripBanner={{
+                    title: templateCard?.title || activeTrip.title,
+                    countries: templateCountries,
+                    onCreateSimilarTrip: handleCreateSimilarTrip,
+                }}
+            />
+        </React.Suspense>
     );
 };

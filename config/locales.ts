@@ -1,8 +1,8 @@
 import { AppLanguage } from '../types';
 
-export const SUPPORTED_LOCALES: AppLanguage[] = ['en', 'es', 'de', 'fr', 'pt', 'ru', 'it', 'pl', 'ko'];
+export const SUPPORTED_LOCALES: AppLanguage[] = ['en', 'es', 'de', 'fr', 'pt', 'ru', 'it', 'pl', 'ko', 'fa', 'ur'];
 export const DEFAULT_LOCALE: AppLanguage = 'en';
-export const LOCALE_DROPDOWN_ORDER: AppLanguage[] = ['en', 'es', 'de', 'fr', 'it', 'pt', 'ru', 'pl', 'ko'];
+export const LOCALE_DROPDOWN_ORDER: AppLanguage[] = ['en', 'es', 'de', 'fr', 'it', 'pt', 'ru', 'pl', 'ko', 'fa', 'ur'];
 
 const HTML_LANG_MAP: Record<AppLanguage, string> = {
     en: 'en',
@@ -14,6 +14,8 @@ const HTML_LANG_MAP: Record<AppLanguage, string> = {
     it: 'it',
     pl: 'pl',
     ko: 'ko',
+    fa: 'fa',
+    ur: 'ur',
 };
 
 const INTL_LOCALE_MAP: Record<AppLanguage, string> = {
@@ -26,6 +28,8 @@ const INTL_LOCALE_MAP: Record<AppLanguage, string> = {
     it: 'it-IT',
     pl: 'pl-PL',
     ko: 'ko-KR',
+    fa: 'fa-IR',
+    ur: 'ur-PK',
 };
 
 const DIR_MAP: Record<AppLanguage, 'ltr' | 'rtl'> = {
@@ -38,6 +42,8 @@ const DIR_MAP: Record<AppLanguage, 'ltr' | 'rtl'> = {
     it: 'ltr',
     pl: 'ltr',
     ko: 'ltr',
+    fa: 'rtl',
+    ur: 'rtl',
 };
 
 export const isLocale = (value?: string | null): value is AppLanguage => {
@@ -65,6 +71,8 @@ export const LOCALE_LABELS: Record<AppLanguage, string> = {
     it: 'Italiano',
     pl: 'Polski',
     ko: '한국어',
+    fa: 'فارسی',
+    ur: 'اردو',
 };
 
 export const LOCALE_FLAGS: Record<AppLanguage, string> = {
@@ -77,6 +85,8 @@ export const LOCALE_FLAGS: Record<AppLanguage, string> = {
     it: 'IT',
     pl: 'PL',
     ko: 'KR',
+    fa: 'IR',
+    ur: 'PK',
 };
 
 export const formatLocaleOptionLabel = (locale: AppLanguage): string => {

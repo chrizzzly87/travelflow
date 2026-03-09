@@ -60,3 +60,45 @@ summary: "Implemented the first operational benchmark stack with persisted sessi
 - [ ] [Internal] 🚦 Increased benchmark parallel execution cap to 5 workers (with automatic queueing for additional selected models) and surfaced this directly in the model-selection UI.
 - [ ] [Internal] 💵 Added benchmark cost-display fallback to model-catalog estimates when exact provider `cost_usd` is unavailable, plus clarifying copy in the results section.
 - [ ] [Internal] 🧪 Downgraded `countryInfo` benchmark validation failures to non-blocking warnings, tightened AI prompt/schema guidance to require numeric `exchangeRate`, and hardened destination info UI to disable currency conversion when malformed exchange data is returned.
+- [ ] [Internal] 🛰️ Replaced the OpenRouter runtime stub with a real adapter call path (JSON extraction, usage/cost metadata capture, and transient 429/5xx retry handling) while keeping provider keys server-only.
+- [ ] [Internal] 🤖 Expanded the curated benchmark/runtime model catalog with newer Gemini/OpenAI/Anthropic entries plus curated OpenRouter free-model alternatives for broader comparison coverage.
+- [ ] [Internal] 🧪 Added regression tests for provider allowlist enforcement, OpenRouter runtime failure/retry behavior, and model-catalog default/sorting/grouping safeguards.
+- [ ] [Internal] 📡 Added persistent AI call telemetry (`ai_generation_events`) for runtime + benchmark execution, capturing provider/model/status/duration/token/cost/error metadata server-side.
+- [ ] [Internal] 📊 Added `/api/internal/ai/benchmark/telemetry` plus new admin dashboard telemetry cards/charts/filter controls for time window, source, and provider breakdown.
+- [ ] [Internal] 📈 Added Umami custom events for create-trip AI request success/failure and Gemini fallback outcomes to correlate UX and backend behavior.
+- [ ] [Internal] 🤖 Expanded Anthropic/OpenRouter model coverage with Claude Sonnet 4.6 plus curated OpenRouter additions (`GLM 5`, `DeepSeek V3.2`, `Grok 4.1 Fast`, `MiniMax M2.5`, `Kimi K2.5`).
+- [ ] [Internal] 🚚 Updated feature-branch Netlify deployment guidance to use `dotenv` local build + `netlify deploy --no-build` to prevent masked Supabase browser env values in auth testing.
+- [ ] [Internal] 🗄️ Added owner-scoped benchmark preferences persistence (`ai_benchmark_preferences`) plus `/api/internal/ai/benchmark/preferences` so admin model targets and benchmark presets are stored in DB instead of browser local storage.
+- [ ] [Internal] 🧩 Refactored `/admin/ai-benchmark` into a compact control surface with modal-based preset editing/creation and modal-based model target management using the global `AppModal` pattern.
+- [ ] [Internal] 📈 Added a fixed 7-day telemetry snapshot at the top of `/admin/ai-benchmark` (Tremor cards + charts) and auto-refresh telemetry reload when benchmark runs finish.
+- [ ] [Internal] 🧪 Added normalization tests for benchmark preference payload/model-target/preset handling to cover default preset generation and invalid-payload recovery.
+- [ ] [Internal] 🧭 Added a dedicated `/admin/ai-benchmark/telemetry` workspace route with richer filters, ranking cards (speed/cost/value), charts, and recent-call diagnostics.
+- [ ] [Internal] 🪶 Slimmed `/admin/ai-benchmark` telemetry into a lightweight 7-day quick-view (top fastest/cheapest/best-value model cards) plus direct deep-link to the full telemetry workspace.
+- [ ] [Internal] ✅ Changed telemetry model-ranking calculations to use successful calls only, so fastest/cheapest/value leaderboards no longer reward aborted/failed runs.
+- [ ] [Internal] 🔁 Added OpenAI runtime fallback from `v1/chat/completions` to `v1/responses` for non-chat model IDs to reduce `OPENAI_REQUEST_FAILED` errors on newer model entries.
+- [ ] [Internal] 🎨 Reworked the telemetry workspace with a compact filter strip, modern card wrappers, Tremor KPI cards, Tremor bar-list leaderboards, and deeper chart compositions for trend/provider/model analysis.
+- [ ] [Internal] 🧩 Standardized telemetry card styling with a shared admin surface component, removed heavy/dark card outlines, and enabled explicit Tremor chart tooltips/legends for clearer hover diagnostics.
+- [ ] [Internal] 🧵 Restored Tremor style generation in deferred admin CSS by wiring package class scanning and official Tremor theme tokens, so telemetry charts/bar lists render with Tremor block visuals instead of fallback unstyled output.
+- [ ] [Internal] ☀️ Fixed telemetry light-mode rendering by switching Tailwind dark variants to class-based mode (no OS dark auto-override) and refined chart compositions/colors for clearer call, latency, cost, and provider/model insights.
+- [ ] [Internal] 🎨 Added explicit Tremor color-utility safelisting (`bg/fill/stroke/text` for chart palettes) and aligned telemetry bar lists to consistent Tremor-style blue tracks so chart/bar colors no longer fall back to black/gray.
+- [ ] [Internal] 🍩 Added provider-share donut drilldown (provider → model), external legends with click selection, and contextual detail panels, plus new provider success-rate/cost-per-success/failure-code charts for deeper telemetry analysis.
+- [ ] [Internal] 🧭 Updated Netlify manual deploy guidance to prefer stable semantic aliases and added explicit post-deploy HTTP status checks for shared test links.
+- [ ] [Internal] 🛠️ Hardened provider runtime request handling so timeout budgets now cover both HTTP fetch and response-body parsing, reducing long-running stalled benchmark calls.
+- [ ] [Internal] 🔁 Updated OpenAI non-chat fallback calls to `v1/responses` without unsupported `temperature`, preventing immediate failures on newer reasoning model entries.
+- [ ] [Internal] 🛑 Improved benchmark cancellation flow to persist explicit cancellation telemetry and skip downstream trip-persistence side effects when a run is cancelled mid-flight.
+- [ ] [Internal] 🧾 Tightened itinerary contract guidance with an explicit canonical `countryInfo` shape and a pre-submit self-check, while normalizing array/map countryInfo variants during benchmark validation.
+- [ ] [Internal] ⏱️ Added benchmark timeout controls in `/admin/ai-benchmark` (default 60s, bounded range) and threaded per-run timeout settings through benchmark execution metadata.
+- [ ] [Internal] 🧩 Added compact benchmark prompt mode plus stricter Gemini/Anthropic parse-retry flow (time-budgeted retries + strict JSON retry instructions + 60s token budget cap) to reduce malformed JSON failures.
+- [ ] [Internal] ✂️ Tightened compact benchmark prompt caps with stricter max lengths for city/activity/travel descriptions and trip titles to reduce long-output parse/timeout risk.
+- [ ] [Internal] 🔁 Updated benchmark validation to accept terminal round-trip return cities with `days: 0` as a non-blocking warning, normalizing to one day during trip build.
+- [ ] [Internal] ⚡ Further optimized benchmark compact prompt rules (single checklist bullet per required section + compact base constraints) to lower 60s timeout and truncation risk.
+- [ ] [Internal] 🧪 Added Gemini/Anthropic parse diagnostics with provider finish-reason hints plus ultra-compact truncation-retry instructions for malformed long responses.
+- [ ] [Internal] 🏷️ Added Perplexity/Qwen benchmark provider families (`Sonnar`, `Sonnar Pro`, `Qwen 3.5 Plus`, `Qwen 3.5`) with short-name metadata plus bundled brand-logo assets (provider + routed model vendors) across admin benchmark and telemetry model surfaces.
+- [ ] [Internal] 🎚️ Added per-pill benchmark target controls to temporarily deactivate models for `Test all` and trigger a single-model run directly from the target chip.
+- [ ] [Internal] 🧰 Added quick `Activate all` / `Deactivate all` target actions in `/admin/ai-benchmark` so benchmark model pools can be toggled in one click.
+- [ ] [Internal] 🧯 Fixed edge bundling regression by switching benchmark model-catalog provider metadata import to explicit `.ts` extension for Deno-compatible module resolution.
+- [ ] [Internal] 🛠️ Updated Qwen benchmark/runtime model IDs to valid OpenRouter slugs (`qwen3.5-plus-02-15`, `qwen3.5-397b-a17b`) and added legacy-ID aliasing to keep older saved target payloads working.
+- [ ] [Internal] 🔧 Switched OpenRouter benchmark `response_format` to provider-compatible text mode so Perplexity and Qwen routes no longer fail on unsupported `json_object` schema validation.
+- [ ] [Internal] 🏷️ Added provider-logo labels in telemetry model bar charts plus provider-logo custom tooltips for Tremor provider charts (`Provider breakdown`, `Provider success rate`, `Provider cost per success`) where custom rendering is supported.
+- [ ] [Internal] 📅 Expanded `Total cost per day (Current Month)` to render full day-by-day month history (including zero-cost days) instead of only returned aggregate days.
+- [ ] [Internal] 📝 Added persisted per-run benchmark comments (save/edit/export), plus telemetry comment rollups grouped by provider/model for qualitative model evaluation.

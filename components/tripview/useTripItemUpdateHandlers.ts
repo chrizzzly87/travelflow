@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 
 import type { ITrip, ITimelineItem, IViewSettings, MapColorMode } from '../../types';
 import { applyCityPaletteToItems, normalizeActivityTypes } from '../../utils';
+import { normalizeTransportMode } from '../../shared/transportModes';
 
 interface UseTripItemUpdateHandlersOptions {
     trip: ITrip;
@@ -14,7 +15,7 @@ interface UseTripItemUpdateHandlersOptions {
     handleUpdateItems: (items: ITimelineItem[], options?: { deferCommit?: boolean; skipPendingLabel?: boolean }) => void;
     clearRouteStatusForItem: (itemId: string) => void;
     safeUpdateTrip: (updatedTrip: ITrip, options?: { persist?: boolean }) => void;
-    scheduleCommit: (updatedTrip?: ITrip, view?: IViewSettings) => void;
+    scheduleCommit: (updatedTrip?: ITrip, view?: IViewSettings, options?: { skipToast?: boolean }) => void;
 }
 
 export const useTripItemUpdateHandlers = ({
@@ -32,55 +33,69 @@ export const useTripItemUpdateHandlers = ({
 }: UseTripItemUpdateHandlersOptions) => {
     const handleUpdateItem = useCallback((id: string, updates: Partial<ITimelineItem>) => {
         const item = trip.items.find((candidate) => candidate.id === id);
+        if (!item) return;
         let sanitizedUpdates = updates;
 
         if (
-            item &&
             (item.type === 'travel' || item.type === 'travel-empty') &&
-            updates.transportMode !== undefined &&
-            updates.transportMode !== item.transportMode
+            updates.transportMode !== undefined
         ) {
-            sanitizedUpdates = {
-                ...updates,
-                routeDistanceKm: undefined,
-                routeDurationHours: undefined,
-            };
-            clearRouteStatusForItem(item.id);
+            const currentMode = normalizeTransportMode(item.transportMode);
+            const nextMode = normalizeTransportMode(updates.transportMode);
+            if (nextMode === currentMode) {
+                const { transportMode: _ignoredTransportMode, ...restUpdates } = updates;
+                sanitizedUpdates = restUpdates;
+            } else {
+                sanitizedUpdates = {
+                    ...updates,
+                    transportMode: nextMode,
+                    routeDistanceKm: undefined,
+                    routeDurationHours: undefined,
+                };
+                clearRouteStatusForItem(item.id);
+            }
         }
 
-        if (item) {
-            markUserEdit();
+        const hasEffectiveChanges = Object.entries(sanitizedUpdates).some(([key, nextValue]) => {
+            const previousValue = (item as Record<string, unknown>)[key];
+            if (Array.isArray(previousValue) || Array.isArray(nextValue)) {
+                return JSON.stringify(previousValue ?? null) !== JSON.stringify(nextValue ?? null);
+            }
+            return previousValue !== nextValue;
+        });
+        if (!hasEffectiveChanges) return;
 
-            if (item.type === 'city') {
-                if (updates.duration !== undefined || updates.startDateOffset !== undefined) {
-                    if (updates.duration !== undefined) {
-                        setPendingLabel(`Data: Changed city duration in ${item.title}`);
-                    } else {
-                        setPendingLabel(`Data: Rescheduled city ${item.title}`);
-                    }
-                } else if (updates.hotels !== undefined) {
-                    setPendingLabel(`Data: Updated accommodation in ${item.title}`);
-                } else if (updates.description !== undefined) {
-                    setPendingLabel(`Data: Updated notes for ${item.title}`);
-                } else if (updates.title !== undefined) {
-                    setPendingLabel(`Data: Renamed city ${item.title}`);
-                } else if (updates.location !== undefined || updates.coordinates !== undefined) {
-                    setPendingLabel(`Data: Changed city in ${item.title}`);
+        markUserEdit();
+
+        if (item.type === 'city') {
+            if (sanitizedUpdates.duration !== undefined || sanitizedUpdates.startDateOffset !== undefined) {
+                if (sanitizedUpdates.duration !== undefined) {
+                    setPendingLabel(`Data: Changed city duration in "${item.title}"`);
+                } else {
+                    setPendingLabel(`Data: Rescheduled city "${item.title}"`);
                 }
-            } else if (item.type === 'travel' || item.type === 'travel-empty') {
-                if (updates.transportMode !== undefined) {
-                    setPendingLabel('Data: Changed transport type');
-                } else if (updates.duration !== undefined || updates.startDateOffset !== undefined) {
-                    setPendingLabel('Data: Adjusted transport timing');
-                }
-            } else if (item.type === 'activity') {
-                if (updates.title !== undefined || updates.description !== undefined) {
-                    setPendingLabel(`Data: Updated activity ${item.title}`);
-                } else if (updates.activityType !== undefined) {
-                    setPendingLabel(`Data: Updated activity types for ${item.title}`);
-                } else if (updates.startDateOffset !== undefined || updates.duration !== undefined) {
-                    setPendingLabel(`Data: Rescheduled activity ${item.title}`);
-                }
+            } else if (sanitizedUpdates.hotels !== undefined) {
+                setPendingLabel(`Data: Updated accommodation in "${item.title}"`);
+            } else if (sanitizedUpdates.description !== undefined) {
+                setPendingLabel(`Data: Updated notes for "${item.title}"`);
+            } else if (sanitizedUpdates.title !== undefined) {
+                setPendingLabel(`Data: Renamed city "${item.title}"`);
+            } else if (sanitizedUpdates.location !== undefined || sanitizedUpdates.coordinates !== undefined) {
+                setPendingLabel(`Data: Changed city in "${item.title}"`);
+            }
+        } else if (item.type === 'travel' || item.type === 'travel-empty') {
+            if (sanitizedUpdates.transportMode !== undefined) {
+                setPendingLabel('Data: Changed transport type');
+            } else if (sanitizedUpdates.duration !== undefined || sanitizedUpdates.startDateOffset !== undefined) {
+                setPendingLabel('Data: Adjusted transport timing');
+            }
+        } else if (item.type === 'activity') {
+            if (sanitizedUpdates.title !== undefined || sanitizedUpdates.description !== undefined) {
+                setPendingLabel(`Data: Updated activity "${item.title}"`);
+            } else if (sanitizedUpdates.activityType !== undefined) {
+                setPendingLabel(`Data: Updated activity types for "${item.title}"`);
+            } else if (sanitizedUpdates.startDateOffset !== undefined || sanitizedUpdates.duration !== undefined) {
+                setPendingLabel(`Data: Rescheduled activity "${item.title}"`);
             }
         }
 

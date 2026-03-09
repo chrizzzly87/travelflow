@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import {
     AirplaneTilt,
     Bicycle,
@@ -45,18 +45,48 @@ import {
 import { useTranslation } from 'react-i18next';
 import { SiteHeader } from '../components/navigation/SiteHeader';
 import { SiteFooter } from '../components/marketing/SiteFooter';
+import { CreateTripWizardCtaBanner } from '../components/create-trip/CreateTripWizardCtaBanner';
 import { DateRangePicker } from '../components/DateRangePicker';
 import { IdealTravelTimeline } from '../components/IdealTravelTimeline';
 import { FlagIcon } from '../components/flags/FlagIcon';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { Drawer, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle } from '../components/ui/drawer';
-import { Select, SelectContent, SelectItem, SelectTrigger } from '../components/ui/select';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger } from '../components/ui/select';
 import { Switch } from '../components/ui/switch';
+import { ConnectivityStatusBanner } from '../components/ConnectivityStatusBanner';
 import { useDbSync } from '../hooks/useDbSync';
-import { generateItinerary } from '../services/aiService';
+import { useConnectivityStatus } from '../hooks/useConnectivityStatus';
+import { useNetworkStatus } from '../hooks/useNetworkStatus';
+import { useSyncStatus } from '../hooks/useSyncStatus';
+import { useAuth } from '../hooks/useAuth';
+import { buildClassicItineraryPrompt } from '../services/aiService';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
+import {
+    buildLoginPathWithNext,
+    rememberAuthReturnPath,
+    setPendingAuthRedirect,
+} from '../services/authNavigationService';
+import { ensureDbSession } from '../services/dbService';
+import { dbUpsertTrip } from '../services/dbApi';
+import { createTripGenerationRequest } from '../services/tripGenerationQueueService';
+import {
+    finishTripGenerationAttemptLog,
+    startTripGenerationAttemptLog,
+} from '../services/tripGenerationAttemptLogService';
+import {
+    createTripGenerationInputSnapshot,
+    createTripGenerationRequestId,
+    markTripGenerationFailed,
+    markTripGenerationRunning,
+    withLatestTripGenerationAttemptId,
+} from '../services/tripGenerationDiagnosticsService';
+import {
+    beginTripGenerationTabFeedback,
+    type TripGenerationTabFeedbackSession,
+} from '../services/tripGenerationTabFeedbackService';
+import { enqueueClassicAsyncTripGenerationJob } from '../services/tripGenerationAsyncEnqueueService';
+import { waitForTripAttemptPersistence, waitForTripPersistence } from '../services/tripGenerationPersistenceService';
 import { getCountrySeasonByName } from '../data/countryTravelData';
-import { buildPath } from '../config/routes';
 import { AppLanguage, ITrip, TripPrefillData } from '../types';
 import {
     addDays,
@@ -74,6 +104,12 @@ import {
     searchDestinationOptions,
 } from '../services/destinationService';
 import { decodeTripPrefill } from '../services/tripPrefillDecoder';
+import {
+    AI_MODEL_CATALOG,
+    DEFAULT_CREATE_TRIP_MODEL_ID,
+    getAiModelById,
+    getCreateTripModelOptions,
+} from '../config/aiModelCatalog';
 
 interface CreateTripClassicLabPageProps {
     onOpenManager: () => void;
@@ -183,6 +219,14 @@ const FLEX_WINDOW_OPTIONS: Array<{ id: FlexWindow; labelKey: string }> = [
 const DEFAULT_EFFECTIVE_STYLE_IDS = ['culture', 'food', 'nature', 'beaches', 'nightlife'];
 const DEFAULT_EFFECTIVE_TRAVELER: TravelerType = 'solo';
 const DEFAULT_EFFECTIVE_TRANSPORT: TransportMode = 'auto';
+const MODEL_PREFERENCE_NOTE_KEY_BY_ID: Record<string, string> = {
+    'openrouter:minimax/minimax-m2.5': 'modelPicker.badges.fastAndGood',
+    'perplexity:perplexity/sonar-pro': 'modelPicker.badges.veryFast',
+    [DEFAULT_CREATE_TRIP_MODEL_ID]: 'modelPicker.badges.default',
+};
+const CREATE_TRIP_PREFERRED_MODEL_ID_SET = new Set(Object.keys(MODEL_PREFERENCE_NOTE_KEY_BY_ID));
+const CREATE_TRIP_MODELS = getCreateTripModelOptions(AI_MODEL_CATALOG);
+const IS_DEV = Boolean((import.meta as any)?.env?.DEV);
 
 const toIsoDate = (date: Date): string => {
     const year = date.getFullYear();
@@ -244,7 +288,7 @@ const buildLoadingTripPreview = (params: {
 
     return {
         id: params.tripId,
-        title: `Planning ${params.destinationLabel || 'Trip'}...`,
+        title: params.destinationLabel || 'Trip draft',
         startDate: params.startDate,
         items,
         createdAt: now,
@@ -308,7 +352,13 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
     onLanguageLoaded,
 }) => {
     const { t, i18n } = useTranslation('createTrip');
+    const navigate = useNavigate();
+    const location = useLocation();
     const [searchParams] = useSearchParams();
+    const { isAuthenticated, isAnonymous } = useAuth();
+    const { snapshot: connectivitySnapshot } = useConnectivityStatus();
+    const { snapshot: syncSnapshot, retrySyncNow } = useSyncStatus();
+    const { isOnline: isBrowserOnline } = useNetworkStatus({ probeWhileOffline: false });
 
     useDbSync(onLanguageLoaded);
 
@@ -359,6 +409,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
     const [prefillHydrated, setPrefillHydrated] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
+    const [selectedModelId, setSelectedModelId] = useState<string>(DEFAULT_CREATE_TRIP_MODEL_ID);
 
     const [sectionExpanded, setSectionExpanded] = useState<Record<CollapsibleSection, boolean>>({
         traveler: false,
@@ -376,6 +427,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
     const snapshotNodeRefs = useRef<Array<HTMLDivElement | null>>([]);
     const submitErrorRef = useRef<HTMLDivElement | null>(null);
     const [snapshotRouteGeometry, setSnapshotRouteGeometry] = useState<SnapshotRouteGeometry | null>(null);
+    const generationTabFeedbackSessionRef = useRef<TripGenerationTabFeedbackSession | null>(null);
 
     const regionDisplayNames = useMemo(() => {
         try {
@@ -485,9 +537,24 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
         return dayCount / orderedDestinations.length;
     }, [dayCount, orderedDestinations.length]);
 
+    const selectedAiModel = useMemo(() => {
+        return getAiModelById(selectedModelId)
+            || getAiModelById(DEFAULT_CREATE_TRIP_MODEL_ID)
+            || CREATE_TRIP_MODELS[0]!;
+    }, [selectedModelId]);
+    const preferredCreateTripModels = useMemo(
+        () => CREATE_TRIP_MODELS.filter((model) => CREATE_TRIP_PREFERRED_MODEL_ID_SET.has(model.id)),
+        []
+    );
+    const remainingCreateTripModels = useMemo(
+        () => CREATE_TRIP_MODELS.filter((model) => !CREATE_TRIP_PREFERRED_MODEL_ID_SET.has(model.id)),
+        []
+    );
+
     const destinationComplete = orderedDestinations.length > 0;
     const datesComplete = Boolean(startDate && endDate);
     const canLockRoute = destinations.length > 1;
+    const isGenerationBlockedOffline = !isBrowserOnline;
 
     const travelerSummary = t(`traveler.options.${travelerType}`);
     const styleSummary = selectedStyles
@@ -1133,18 +1200,6 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
     const getFlexWindowOption = useCallback((value: FlexWindow) => (
         FLEX_WINDOW_OPTIONS.find((entry) => entry.id === value) ?? FLEX_WINDOW_OPTIONS[0]
     ), []);
-    const labRouteLinks = useMemo(
-        () => [
-            { key: 'legacy', path: buildPath('createTripClassicLegacyLab') },
-            { key: 'classicCard', path: buildPath('createTripClassicLab') },
-            { key: 'splitWorkspace', path: buildPath('createTripSplitWorkspaceLab') },
-            { key: 'journeyArchitect', path: buildPath('createTripJourneyArchitectLab') },
-            { key: 'designV1', path: buildPath('createTripDesignV1Lab') },
-            { key: 'designV2', path: buildPath('createTripDesignV2Lab') },
-            { key: 'designV3', path: buildPath('createTripDesignV3Lab') },
-        ] as const,
-        []
-    );
     const isLgbtqCoupleMode = settingsTraveler === 'couple' && coupleTravelerA !== '' && coupleTravelerB !== '' && (
         coupleTravelerA === 'non-binary'
         || coupleTravelerB === 'non-binary'
@@ -1442,8 +1497,25 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
         trackEvent('create_trip__toggle--route_lock', { enabled: checked });
     };
 
+    const handleModelChange = (modelId: string) => {
+        const model = getAiModelById(modelId);
+        if (!model || model.availability !== 'active') return;
+        setSelectedModelId(model.id);
+        trackEvent('create_trip__model--select', {
+            provider: model.provider,
+            model: model.model,
+            model_id: model.id,
+            is_default: model.id === DEFAULT_CREATE_TRIP_MODEL_ID,
+        });
+    };
+
     const handleGenerateTrip = async () => {
         if (isSubmitting) return;
+        if (isGenerationBlockedOffline) {
+            showSubmitError(t('errors.offlineCreateDisabled'));
+            trackEvent('create_trip__cta--blocked_offline');
+            return;
+        }
         if (orderedDestinations.length === 0) {
             showSubmitError(t('errors.destinationRequired'));
             return;
@@ -1457,13 +1529,136 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
             date_mode: dateInputMode,
             route_lock: routeLock,
             round_trip: roundTrip,
+            provider: selectedAiModel.provider,
+            model: selectedAiModel.model,
         });
+
+        const sessionUserId = await ensureDbSession();
+        if (!sessionUserId) {
+            const authRedirect = buildLoginPathWithNext({
+                pathname: location.pathname,
+                search: location.search,
+                hash: location.hash,
+                language: i18n.language,
+                resolvedLanguage: i18n.resolvedLanguage,
+            });
+            rememberAuthReturnPath(authRedirect.nextPath);
+            setPendingAuthRedirect(authRedirect.nextPath, 'create_trip_generate');
+            trackEvent('create_trip__cta--redirect_login', {
+                reason: 'missing_db_session',
+                has_authenticated_access: isAuthenticated,
+                is_anonymous_access: isAnonymous,
+            });
+            setIsSubmitting(false);
+            navigate(authRedirect.loginTarget);
+            return;
+        }
 
         const destinationPromptLabels = orderedDestinations.map((destination) => getDestinationPromptLabel(destination));
         const localizedDestinationLabels = orderedDestinations.map((destination) => getLocalizedDestinationLabel(destination));
         const destinationLabel = formatDestinationList(localizedDestinationLabels);
+        const destinationPrompt = destinationPromptLabels.join(', ');
+        const notesInterests = notes
+            .split(',')
+            .map((token) => token.trim())
+            .filter(Boolean);
+        const classicGenerateOptions = {
+            budget,
+            pace,
+            interests: notesInterests.length > 0 ? notesInterests : undefined,
+            roundTrip,
+            totalDays: dayCount,
+            aiTarget: {
+                provider: selectedAiModel.provider,
+                model: selectedAiModel.model,
+            },
+        };
+
+        if (!isAuthenticated) {
+            try {
+                const queuedRequest = await createTripGenerationRequest('classic', {
+                    version: 1,
+                    flow: 'classic',
+                    destinationLabel,
+                    startDate,
+                    endDate,
+                    destinationPrompt,
+                    options: classicGenerateOptions,
+                });
+                const queueRequestId = queuedRequest.requestId;
+                const requestId = createTripGenerationRequestId();
+                const optimisticTripId = generateTripId();
+                const optimisticBaseTrip = buildLoadingTripPreview({
+                    tripId: optimisticTripId,
+                    destinationLabel,
+                    focusLocations: localizedDestinationLabels,
+                    startDate,
+                    totalDays: dayCount,
+                    requestedStops: Math.max(orderedDestinations.length, 2),
+                    roundTrip,
+                });
+                const pendingAuthTrip = markTripGenerationFailed({
+                    ...optimisticBaseTrip,
+                    items: optimisticBaseTrip.items.map((item) => ({
+                        ...item,
+                        loading: false,
+                    })),
+                    updatedAt: Date.now(),
+                }, {
+                    flow: 'classic',
+                    source: 'create_trip_classic_lab_pending_auth',
+                    error: new Error('Sign in to start generation for this trip.'),
+                    provider: selectedAiModel.provider,
+                    model: selectedAiModel.model,
+                    requestId,
+                    metadata: {
+                        pendingAuth: true,
+                        queueRequestId,
+                        queueExpiresAt: queuedRequest.expiresAt,
+                        orchestration: 'auth_queue_claim',
+                    },
+                });
+                onTripGenerated(pendingAuthTrip);
+                trackEvent('create_trip__cta--queue_pending_auth', {
+                    request_id: queueRequestId,
+                    source: 'create_trip_classic_lab',
+                });
+                setIsSubmitting(false);
+                return;
+            } catch {
+                const authRedirect = buildLoginPathWithNext({
+                    pathname: location.pathname,
+                    search: location.search,
+                    hash: location.hash,
+                    language: i18n.language,
+                    resolvedLanguage: i18n.resolvedLanguage,
+                });
+                rememberAuthReturnPath(authRedirect.nextPath);
+                setPendingAuthRedirect(authRedirect.nextPath, 'create_trip_queue_fallback');
+                trackEvent('create_trip__cta--redirect_login', {
+                    reason: 'queue_request_failed',
+                    has_authenticated_access: isAuthenticated,
+                    is_anonymous_access: isAnonymous,
+                });
+                setIsSubmitting(false);
+                navigate(authRedirect.loginTarget);
+                return;
+            }
+        }
+
+        const generationSnapshot = createTripGenerationInputSnapshot({
+            flow: 'classic',
+            destinationLabel,
+            startDate,
+            endDate,
+            payload: {
+                destinationPrompt,
+                options: classicGenerateOptions,
+            },
+        });
+        const requestId = createTripGenerationRequestId();
         const optimisticTripId = generateTripId();
-        const optimisticTrip = buildLoadingTripPreview({
+        const optimisticBaseTrip = buildLoadingTripPreview({
             tripId: optimisticTripId,
             destinationLabel,
             focusLocations: localizedDestinationLabels,
@@ -1472,52 +1667,131 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
             requestedStops: Math.max(orderedDestinations.length, 2),
             roundTrip,
         });
-        const optimisticCreatedAt = optimisticTrip.createdAt;
+        let optimisticTrip = markTripGenerationRunning(optimisticBaseTrip, {
+            flow: 'classic',
+            source: 'create_trip_classic_lab',
+            inputSnapshot: generationSnapshot,
+            provider: selectedAiModel.provider,
+            model: selectedAiModel.model,
+            requestId,
+            state: 'queued',
+            metadata: {
+                orchestration: 'async_worker',
+            },
+        });
+        const optimisticAttempt = optimisticTrip.aiMeta?.generation?.latestAttempt || null;
+        const optimisticAttemptId = optimisticAttempt?.id || null;
+        let attemptId: string | null = null;
+        generationTabFeedbackSessionRef.current?.cancel();
+        generationTabFeedbackSessionRef.current = beginTripGenerationTabFeedback();
         onTripGenerated(optimisticTrip);
-
+        const persistedTripId = await dbUpsertTrip(optimisticTrip, undefined);
+        if (!persistedTripId) {
+            throw new Error('Trip was not persisted before async generation started.');
+        }
+        const persistedTripReady = await waitForTripPersistence(optimisticTripId, {
+            timeoutMs: 450,
+            intervalMs: 120,
+            maxAttempts: 3,
+        });
+        if (!persistedTripReady) {
+            throw new Error('Trip was not persisted before async generation started.');
+        }
+        const loggedAttempt = await startTripGenerationAttemptLog({
+            tripId: optimisticTripId,
+            flow: 'classic',
+            source: 'create_trip_classic_lab',
+            state: 'queued',
+            provider: selectedAiModel.provider,
+            model: selectedAiModel.model,
+            requestId,
+            startedAt: optimisticAttempt?.startedAt,
+            metadata: {
+                destination_label: destinationLabel,
+                orchestration: 'async_worker',
+            },
+        });
+        if (loggedAttempt?.id) {
+            optimisticTrip = withLatestTripGenerationAttemptId(optimisticTrip, loggedAttempt.id);
+            attemptId = loggedAttempt.id;
+            onTripGenerated(optimisticTrip);
+            const persistedCanonicalTripId = await dbUpsertTrip(optimisticTrip, undefined);
+            if (!persistedCanonicalTripId) {
+                throw new Error('Trip generation attempt was not persisted before queueing.');
+            }
+            const persistedCanonicalAttempt = await waitForTripAttemptPersistence(optimisticTripId, loggedAttempt.id, {
+                timeoutMs: 450,
+                intervalMs: 120,
+                maxAttempts: 3,
+            });
+            if (!persistedCanonicalAttempt) {
+                throw new Error('Trip generation attempt was not persisted before queueing.');
+            }
+        }
         try {
-            const destinationPrompt = destinationPromptLabels.join(', ');
-            const notesInterests = notes
-                .split(',')
-                .map((token) => token.trim())
-                .filter(Boolean);
-
-            const generatedTrip = await generateItinerary(destinationPrompt, startDate, {
-                budget,
-                pace,
-                interests: notesInterests.length > 0 ? notesInterests : undefined,
+            if (!attemptId) {
+                throw new Error('Could not start async generation attempt.');
+            }
+            const prompt = buildClassicItineraryPrompt(destinationPrompt, classicGenerateOptions);
+            const enqueueSucceeded = await enqueueClassicAsyncTripGenerationJob({
+                tripId: optimisticTripId,
+                attemptId,
+                startedAt: loggedAttempt?.startedAt || optimisticAttempt?.startedAt || null,
+                requestId,
+                source: 'create_trip_classic_lab_async',
+                queueRequestId: null,
+                startDate,
                 roundTrip,
-                totalDays: dayCount,
+                prompt,
+                provider: selectedAiModel.provider,
+                model: selectedAiModel.model,
+                inputSnapshot: generationSnapshot,
+                maxRetries: 0,
             });
-
-            onTripGenerated({
-                ...generatedTrip,
-                id: optimisticTripId,
-                createdAt: optimisticCreatedAt,
-                updatedAt: Date.now(),
-                roundTrip: generatedTrip.roundTrip ?? roundTrip,
-                sourceKind: generatedTrip.sourceKind || 'created',
-            });
+            if (!enqueueSucceeded) {
+                throw new Error('Could not enqueue async generation.');
+            }
+            generationTabFeedbackSessionRef.current?.cancel();
+            generationTabFeedbackSessionRef.current = null;
+            return;
         } catch (error) {
-            const message = getErrorMessage(error, t('errors.genericGenerate'));
-            const errorTitle = t('errors.genericGenerate');
-            onTripGenerated({
+            const failedTrip = markTripGenerationFailed({
                 ...optimisticTrip,
-                title: errorTitle,
+                items: optimisticTrip.items.map((item) => ({
+                    ...item,
+                    loading: false,
+                })),
                 updatedAt: Date.now(),
-                items: [
-                    {
-                        id: `loading-error-${optimisticTripId}`,
-                        type: 'city',
-                        title: errorTitle,
-                        startDateOffset: 0,
-                        duration: Math.max(1, dayCount),
-                        color: 'bg-rose-100 border-rose-300 text-rose-700',
-                        description: message,
-                        location: destinationLabel,
-                    },
-                ],
+            }, {
+                flow: 'classic',
+                source: 'create_trip_classic_lab',
+                error,
+                provider: selectedAiModel.provider,
+                model: selectedAiModel.model,
+                requestId,
+                attemptId: attemptId || optimisticAttemptId,
+                metadata: {
+                    orchestration: 'async_worker_enqueue',
+                },
             });
+            onTripGenerated(failedTrip);
+            generationTabFeedbackSessionRef.current?.complete('error');
+            generationTabFeedbackSessionRef.current = null;
+            if (loggedAttempt?.id) {
+                await finishTripGenerationAttemptLog({
+                    attemptId: loggedAttempt.id,
+                    state: 'failed',
+                    provider: failedTrip.aiMeta?.provider,
+                    model: failedTrip.aiMeta?.model,
+                    requestId: failedTrip.aiMeta?.generation?.latestAttempt?.requestId || requestId,
+                    durationMs: failedTrip.aiMeta?.generation?.latestAttempt?.durationMs || null,
+                    statusCode: failedTrip.aiMeta?.generation?.latestAttempt?.statusCode || null,
+                    failureKind: failedTrip.aiMeta?.generation?.latestAttempt?.failureKind || null,
+                    errorCode: failedTrip.aiMeta?.generation?.latestAttempt?.errorCode || null,
+                    errorMessage: failedTrip.aiMeta?.generation?.latestAttempt?.errorMessage || getErrorMessage(error, t('errors.genericGenerate')),
+                    finishedAt: failedTrip.aiMeta?.generation?.latestAttempt?.finishedAt || undefined,
+                });
+            }
         } finally {
             setIsSubmitting(false);
         }
@@ -1532,6 +1806,13 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
 
             <div className="relative z-10">
                 <SiteHeader variant="glass" onMyTripsClick={onOpenManager} />
+                <ConnectivityStatusBanner
+                    isPlannerRoute
+                    connectivity={connectivitySnapshot}
+                    sync={syncSnapshot}
+                    onRetrySync={() => retrySyncNow()}
+                    showDeveloperDetails={IS_DEV}
+                />
 
                 <main className="mx-auto w-full max-w-[1260px] px-4 pb-28 pt-8 sm:px-6 sm:pb-32 lg:px-8 lg:pb-14">
                     {prefillMeta?.label && (
@@ -2221,42 +2502,111 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                     <div className="mt-1 text-[11px] text-amber-100/90">{t('previewOnly.global')}</div>
                                 </div>
 
+                                <div className="space-y-1">
+                                    <label htmlFor="create-trip-model-desktop" className="text-[11px] font-semibold uppercase tracking-[0.11em] text-indigo-200/95">
+                                        {t('modelPicker.label')}
+                                    </label>
+                                    <Select value={selectedAiModel.id} onValueChange={handleModelChange}>
+                                        <SelectTrigger
+                                            id="create-trip-model-desktop"
+                                            className="h-auto min-h-11 w-full rounded-xl border-indigo-200/45 bg-white/95 text-left text-indigo-950 hover:bg-white"
+                                            {...getAnalyticsDebugAttributes('create_trip__model--select', {
+                                                provider: selectedAiModel.provider,
+                                                model: selectedAiModel.model,
+                                                model_id: selectedAiModel.id,
+                                                source: 'desktop_snapshot',
+                                            })}
+                                        >
+                                            <span className="flex min-w-0 flex-wrap items-center gap-1.5 pr-2">
+                                                <span className="truncate text-sm font-semibold">{selectedAiModel.label}</span>
+                                                <span className="rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-indigo-700">
+                                                    {selectedAiModel.providerShortName}
+                                                </span>
+                                                {MODEL_PREFERENCE_NOTE_KEY_BY_ID[selectedAiModel.id] && (
+                                                    <span className="rounded-full border border-emerald-300/70 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+                                                        {t(MODEL_PREFERENCE_NOTE_KEY_BY_ID[selectedAiModel.id])}
+                                                    </span>
+                                                )}
+                                            </span>
+                                        </SelectTrigger>
+                                        <SelectContent className="max-h-[26rem]">
+                                            {preferredCreateTripModels.length > 0 && (
+                                                <SelectGroup>
+                                                    <SelectLabel>{t('modelPicker.topPicks')}</SelectLabel>
+                                                    {preferredCreateTripModels.map((model) => {
+                                                        const noteKey = MODEL_PREFERENCE_NOTE_KEY_BY_ID[model.id];
+                                                        return (
+                                                            <SelectItem key={`create-trip-model-pref-${model.id}`} value={model.id} textValue={`${model.label} ${model.model}`}>
+                                                                <span className="flex w-full min-w-0 items-start justify-between gap-2">
+                                                                    <span className="min-w-0">
+                                                                        <span className="block truncate font-semibold">{model.label}</span>
+                                                                        <span className="block truncate text-[11px] text-slate-500">{model.model}</span>
+                                                                    </span>
+                                                                    <span className="inline-flex shrink-0 flex-wrap justify-end gap-1">
+                                                                        <span className="rounded-full border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-600">
+                                                                            {model.providerShortName}
+                                                                        </span>
+                                                                        {noteKey && (
+                                                                            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">
+                                                                                {t(noteKey)}
+                                                                            </span>
+                                                                        )}
+                                                                    </span>
+                                                                </span>
+                                                            </SelectItem>
+                                                        );
+                                                    })}
+                                                </SelectGroup>
+                                            )}
+                                            {preferredCreateTripModels.length > 0 && remainingCreateTripModels.length > 0 && (
+                                                <SelectSeparator />
+                                            )}
+                                            {remainingCreateTripModels.length > 0 && (
+                                                <SelectGroup>
+                                                    <SelectLabel>{t('modelPicker.allModels')}</SelectLabel>
+                                                    {remainingCreateTripModels.map((model) => (
+                                                        <SelectItem key={`create-trip-model-all-${model.id}`} value={model.id} textValue={`${model.label} ${model.model}`}>
+                                                            <span className="flex w-full min-w-0 items-start justify-between gap-2">
+                                                                <span className="min-w-0">
+                                                                    <span className="block truncate font-semibold">{model.label}</span>
+                                                                    <span className="block truncate text-[11px] text-slate-500">{model.model}</span>
+                                                                </span>
+                                                                <span className="rounded-full border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-600">
+                                                                    {model.providerShortName}
+                                                                </span>
+                                                            </span>
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectGroup>
+                                            )}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
                                 <button
                                     type="button"
                                     onClick={handleGenerateTrip}
-                                    disabled={isSubmitting || !destinationComplete}
+                                    disabled={isSubmitting || !destinationComplete || isGenerationBlockedOffline}
                                     className="inline-flex w-full items-center justify-center rounded-xl bg-white px-4 py-3 text-sm font-semibold text-indigo-900 transition-colors hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-60"
                                     {...getAnalyticsDebugAttributes('create_trip__cta--generate', {
                                         destination_count: orderedDestinations.length,
                                         date_mode: dateInputMode,
+                                        provider: selectedAiModel.provider,
+                                        model: selectedAiModel.model,
                                     })}
                                 >
-                                    {isSubmitting ? t('cta.loading') : t('cta.label')}
+                                    {isSubmitting ? t('cta.loading') : (isGenerationBlockedOffline ? t('cta.offline') : t('cta.label'))}
                                 </button>
                             </div>
                         </aside>
                     </section>
 
-                    <section className="mt-6 rounded-2xl border border-sky-200 bg-sky-50/80 px-4 py-4 text-slate-700 shadow-sm sm:px-5">
-                        <div className="flex items-start gap-2">
-                            <Info size={16} weight="duotone" className="mt-0.5 shrink-0 text-sky-700" />
-                            <div className="min-w-0">
-                                <p className="text-sm font-semibold text-slate-900">{t('labsBanner.title')}</p>
-                                <p className="mt-1 text-xs text-slate-600">{t('labsBanner.description')}</p>
-                                <div className="mt-3 flex flex-wrap gap-2">
-                                    {labRouteLinks.map((entry) => (
-                                        <Link
-                                            key={entry.key}
-                                            to={entry.path}
-                                            className="inline-flex items-center rounded-lg border border-sky-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-sky-800 transition-colors hover:border-sky-300 hover:bg-sky-100"
-                                        >
-                                            {t(`labsBanner.links.${entry.key}`)}
-                                        </Link>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    </section>
+                    <CreateTripWizardCtaBanner
+                        className="mt-6"
+                        title={t('labsBanner.title')}
+                        description={t('labsBanner.description')}
+                        ctaLabel={t('labsBanner.cta')}
+                    />
                 </main>
 
                 <div
@@ -2264,6 +2614,86 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                     style={{ bottom: `${mobileSnapshotFooterOffset}px` }}
                 >
                     <div className="mx-auto max-w-[1260px]">
+                        <div className="mb-2.5 space-y-1">
+                            <label htmlFor="create-trip-model-mobile" className="text-[10px] font-semibold uppercase tracking-[0.12em] text-indigo-200/95">
+                                {t('modelPicker.label')}
+                            </label>
+                            <Select value={selectedAiModel.id} onValueChange={handleModelChange}>
+                                <SelectTrigger
+                                    id="create-trip-model-mobile"
+                                    className="h-auto min-h-10 w-full rounded-xl border-white/20 bg-white/10 text-left text-white hover:bg-white/15"
+                                    {...getAnalyticsDebugAttributes('create_trip__model--select', {
+                                        provider: selectedAiModel.provider,
+                                        model: selectedAiModel.model,
+                                        model_id: selectedAiModel.id,
+                                        source: 'mobile_footer',
+                                    })}
+                                >
+                                    <span className="flex min-w-0 flex-wrap items-center gap-1.5 pr-2">
+                                        <span className="truncate text-sm font-semibold">{selectedAiModel.label}</span>
+                                        <span className="rounded-full border border-indigo-200/40 bg-indigo-300/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-indigo-100">
+                                            {selectedAiModel.providerShortName}
+                                        </span>
+                                        {MODEL_PREFERENCE_NOTE_KEY_BY_ID[selectedAiModel.id] && (
+                                            <span className="rounded-full border border-emerald-300/35 bg-emerald-400/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-100">
+                                                {t(MODEL_PREFERENCE_NOTE_KEY_BY_ID[selectedAiModel.id])}
+                                            </span>
+                                        )}
+                                    </span>
+                                </SelectTrigger>
+                                <SelectContent className="max-h-[24rem]">
+                                    {preferredCreateTripModels.length > 0 && (
+                                        <SelectGroup>
+                                            <SelectLabel>{t('modelPicker.topPicks')}</SelectLabel>
+                                            {preferredCreateTripModels.map((model) => {
+                                                const noteKey = MODEL_PREFERENCE_NOTE_KEY_BY_ID[model.id];
+                                                return (
+                                                    <SelectItem key={`create-trip-model-mobile-pref-${model.id}`} value={model.id} textValue={`${model.label} ${model.model}`}>
+                                                        <span className="flex w-full min-w-0 items-start justify-between gap-2">
+                                                            <span className="min-w-0">
+                                                                <span className="block truncate font-semibold">{model.label}</span>
+                                                                <span className="block truncate text-[11px] text-slate-500">{model.model}</span>
+                                                            </span>
+                                                            <span className="inline-flex shrink-0 flex-wrap justify-end gap-1">
+                                                                <span className="rounded-full border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-600">
+                                                                    {model.providerShortName}
+                                                                </span>
+                                                                {noteKey && (
+                                                                    <span className="rounded-full border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">
+                                                                        {t(noteKey)}
+                                                                    </span>
+                                                                )}
+                                                            </span>
+                                                        </span>
+                                                    </SelectItem>
+                                                );
+                                            })}
+                                        </SelectGroup>
+                                    )}
+                                    {preferredCreateTripModels.length > 0 && remainingCreateTripModels.length > 0 && (
+                                        <SelectSeparator />
+                                    )}
+                                    {remainingCreateTripModels.length > 0 && (
+                                        <SelectGroup>
+                                            <SelectLabel>{t('modelPicker.allModels')}</SelectLabel>
+                                            {remainingCreateTripModels.map((model) => (
+                                                <SelectItem key={`create-trip-model-mobile-all-${model.id}`} value={model.id} textValue={`${model.label} ${model.model}`}>
+                                                    <span className="flex w-full min-w-0 items-start justify-between gap-2">
+                                                        <span className="min-w-0">
+                                                            <span className="block truncate font-semibold">{model.label}</span>
+                                                            <span className="block truncate text-[11px] text-slate-500">{model.model}</span>
+                                                        </span>
+                                                        <span className="rounded-full border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-600">
+                                                            {model.providerShortName}
+                                                        </span>
+                                                    </span>
+                                                </SelectItem>
+                                            ))}
+                                        </SelectGroup>
+                                    )}
+                                </SelectContent>
+                            </Select>
+                        </div>
                         <div className="flex items-start gap-3.5">
                             <div className="min-w-0 flex-1 space-y-1.5">
                                 <div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-indigo-200/95">{t('snapshot.title')}</div>
@@ -2280,15 +2710,17 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                             <button
                                 type="button"
                                 onClick={handleGenerateTrip}
-                                disabled={isSubmitting || !destinationComplete}
+                                disabled={isSubmitting || !destinationComplete || isGenerationBlockedOffline}
                                 className="rounded-xl bg-white px-3.5 py-2.5 text-sm font-semibold text-indigo-900 shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
                                 {...getAnalyticsDebugAttributes('create_trip__cta--generate', {
                                     destination_count: orderedDestinations.length,
                                     date_mode: dateInputMode,
                                     source: 'mobile_footer',
+                                    provider: selectedAiModel.provider,
+                                    model: selectedAiModel.model,
                                 })}
                             >
-                                {isSubmitting ? t('cta.loading') : t('cta.label')}
+                                {isSubmitting ? t('cta.loading') : (isGenerationBlockedOffline ? t('cta.offline') : t('cta.label'))}
                             </button>
                         </div>
                         <button

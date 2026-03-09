@@ -31,7 +31,9 @@
     "ru": "Русский",
     "pt": "Português",
     "pl": "Polski",
-    "ko": "한국어"
+    "ko": "한국어",
+    "fa": "فارسی",
+    "ur": "اردو"
   },
   "buttons": {
     "startPlanning": "Jetzt planen",
@@ -57,14 +59,314 @@
     "cta": "Übersetzungsfehler melden",
     "ctaShort": "Melden"
   },
+  "networkStatus": {
+    "offlineTitle": "Du bist offline.",
+    "offlineDescription": "Anmeldung und Cloud-Synchronisierung sind derzeit nicht verfugbar. Wir prufen weiter und verbinden automatisch wieder.",
+    "offlineChecking": "Verbindung wird erneut gepruft..."
+  },
   "contact": {
     "title": "Kontakt",
-    "description": "Nutze diese Seite, um Übersetzungsfehler oder Feedback zur Lokalisierung zu melden.",
-    "formStatusTitle": "Kontaktformular folgt in Kürze",
-    "formStatusBody": "Das Kontaktformular ist noch nicht live. Bitte schreibe uns bis dahin per E-Mail.",
-    "emailLabel": "E-Mail",
-    "emailValue": "support@travelflow.app",
+    "description": "Melde dich bei Produktfragen, Bugs, Partnerschaften oder Übersetzungsfeedback.",
+    "emailLabel": "Primäre E-Mail",
+    "emailValue": "contact@wizz.art",
     "responseNote": "Wir antworten in der Regel innerhalb von 2 bis 3 Werktagen.",
-    "backHome": "Zur Startseite"
+    "backHome": "Zur Startseite",
+    "form": {
+      "title": "Nachricht senden",
+      "reasonLabel": "Anliegen",
+      "reasonPlaceholder": "Anliegen auswählen",
+      "reasonOptions": {
+        "bugReport": "Problem mit der Website/App",
+        "featureRequest": "Feature anfragen",
+        "billingAccount": "Abrechnung / Konto",
+        "dataPrivacy": "Datenschutzanfrage",
+        "partnership": "Partnerschaft",
+        "other": "Sonstiges"
+      },
+      "nameLabel": "Name (optional)",
+      "namePlaceholder": "Dein Name",
+      "emailLabel": "E-Mail",
+      "emailPlaceholder": "du@beispiel.de",
+      "messageLabel": "Nachricht",
+      "messagePlaceholder": "Beschreibe kurz, wie wir helfen können.",
+      "messageLimitHint": "Bis zu {max} Zeichen.",
+      "privacyNote": "Wir nutzen diese Angaben nur zur Bearbeitung und Beantwortung deiner Anfrage.",
+      "submit": "Nachricht senden",
+      "submitting": "Wird gesendet...",
+      "successTitle": "Nachricht gesendet",
+      "successBody": "Danke, deine Nachricht wurde erfolgreich übermittelt.",
+      "errorTitle": "Formular aktuell nicht verfügbar",
+      "errorBody": "Deine Nachricht konnte nicht über das Formular gesendet werden. Bitte schreibe uns direkt per E-Mail.",
+      "fallbackTitle": "Direkter E-Mail-Fallback",
+      "fallbackBody": "Wenn das Formularlimit erreicht ist oder der Versand fehlschlägt, erreichst du uns unter:",
+      "fallbackCta": "E-Mail an contact@wizz.art",
+      "validationReason": "Bitte wähle ein Anliegen.",
+      "validationEmail": "Bitte gib eine gültige E-Mail-Adresse ein.",
+      "validationMessage": "Bitte gib eine Nachricht ein.",
+      "validationMessageLength": "Deine Nachricht ist zu lang. Maximal {max} Zeichen.",
+      "subReasonLabel": "Thema (optional)",
+      "subReasonPlaceholder": "Thema auswählen (optional)",
+      "subReasonEmptyOption": "Kein spezifisches Thema",
+      "subReasonOptions": {
+        "bugReport": {
+          "pageNotLoadingWorking": "Seite lädt nicht oder funktioniert nicht",
+          "translationWrongMisleading": "Übersetzungen sind falsch oder irreführend",
+          "actionNotWorking": "Ein Button oder eine Aktion funktioniert nicht",
+          "layoutVisualIssue": "Layout- oder Darstellungsproblem",
+          "mapRoutingIssue": "Karten- oder Routenproblem",
+          "performanceIssue": "Langsame oder instabile Performance"
+        },
+        "featureRequest": {
+          "newFeature": "Komplett neues Feature",
+          "improveFeature": "Bestehendes Feature verbessern",
+          "workflowAutomation": "Workflow- oder Automatisierungsverbesserung",
+          "mobileExperience": "Mobile Nutzung verbessern",
+          "accessibility": "Barrierefreiheit verbessern"
+        },
+        "billingAccount": {
+          "subscriptionChange": "Abo ändern oder kündigen",
+          "invoiceReceipt": "Frage zu Rechnung oder Beleg",
+          "paymentFailed": "Zahlung fehlgeschlagen",
+          "refundQuestion": "Frage zur Rückerstattung",
+          "accountAccess": "Problem beim Kontozugriff"
+        },
+        "dataPrivacy": {
+          "dataExport": "Datenexport anfordern",
+          "dataDeletion": "Datenlöschung anfordern",
+          "consentCookies": "Frage zu Cookies/Einwilligung",
+          "legalQuestion": "Rechtliche/Datenschutz-Frage",
+          "securityConcern": "Sicherheitsbedenken"
+        },
+        "partnership": {
+          "affiliateInfluencer": "Affiliate- oder Creator-Kooperation",
+          "brandCampaign": "Markenkampagnen-Partnerschaft",
+          "mediaPress": "Presse- oder Medienanfrage",
+          "integrationPartner": "Integrationspartnerschaft",
+          "educationNonProfit": "Bildungs- oder Non-Profit-Kooperation"
+        },
+        "other": {
+          "generalFeedback": "Allgemeines Feedback",
+          "productQuestion": "Produktfrage",
+          "careerOpportunity": "Karrierechance",
+          "responsibleDisclosure": "Sicherheitsmeldung",
+          "somethingElse": "Etwas anderes"
+        }
+      },
+      "requiredFieldsNote": "* Pflichtfelder."
+    }
+  },
+  "appDialog": {
+    "tripArchive": {
+      "title": "Reise archivieren?",
+      "confirmLabel": "Reise archivieren",
+      "cancelLabel": "Abbrechen",
+      "messageQuestion": "Möchtest du <strong>\"{title}\"</strong> wirklich archivieren?",
+      "messageDetail": "Diese Reise wird aus deiner Liste entfernt und kann später wiederhergestellt werden."
+    },
+    "roundTripSync": {
+      "title": "Rundreise-Endpunkt aktualisieren?",
+      "messageLead": "Diese Reise sieht wie eine Rundreise aus.",
+      "messageQuestion": "Soll die letzte Stadt ebenfalls auf <strong>\"{title}\"</strong> geändert werden?",
+      "confirmLabel": "Ja, letzte Stadt aktualisieren",
+      "cancelLabel": "Nein, unverändert lassen"
+    },
+    "cityPaletteApply": {
+      "title": "Palette auf aktuelle Städte anwenden?",
+      "messageAuto": "Wähle <strong>Automatisch anwenden</strong>, um jetzt alle Städte neu zu färben.",
+      "messageManual": "Wähle <strong>Manuelle Auswahl</strong>, um bestehende Stadtfarben zu behalten und nur die aktive Palette zu wechseln.",
+      "confirmLabel": "Automatisch anwenden",
+      "cancelLabel": "Manuelle Auswahl"
+    },
+    "markdownLink": {
+      "title": "Link einfügen",
+      "messageLine1": "Gib eine URL für den ausgewählten Text ein oder füge einen neuen Link ein.",
+      "messageLine2": "Der Link wird in einem neuen Tab mit sicheren Standardeinstellungen geöffnet.",
+      "label": "URL",
+      "placeholder": "https://example.com",
+      "confirmLabel": "Link einfügen",
+      "cancelLabel": "Abbrechen",
+      "validationRequired": "Bitte gib eine URL ein.",
+      "validationProtocol": "Die URL muss mit http:// oder https:// beginnen",
+      "validationInvalid": "Bitte gib eine gültige URL ein."
+    }
+  },
+  "connectivity": {
+    "banner": {
+      "offline": {
+        "title": "You are offline. Changes will be queued.",
+        "messageNone": "Planner stays usable with cached data.",
+        "messageOne": "{count} change is queued and will sync after reconnect.",
+        "messageMany": "{count} changes are queued and will sync after reconnect.",
+        "browserTitle": "You are offline. Changes stay local.",
+        "browserMessage": "Reconnect to continue cloud sync. We will retry automatically.",
+        "serviceTitle": "Cloud sync is temporarily unavailable.",
+        "serviceMessage": "Your internet works, but the sync service is not responding. Edits stay queued and safe."
+      },
+      "degraded": {
+        "title": "Connection is unstable. Saving in resilient mode.",
+        "messageNone": "Planner stays usable while we retry in the background.",
+        "messageOne": "{count} queued change will sync when Supabase stabilizes.",
+        "messageMany": "{count} queued changes will sync when Supabase stabilizes.",
+        "serviceMessage": "Cloud sync is unstable right now. We keep retrying in the background."
+      },
+      "syncing": {
+        "title": "Sync in progress",
+        "messageOne": "{count} change is waiting to sync.",
+        "messageMany": "{count} changes are waiting to sync.",
+        "progressOne": "Syncing {count} queued change...",
+        "progressMany": "Syncing {count} queued changes..."
+      },
+      "forcedMode": "Supabase outage simulation is currently forced in debugger mode.",
+      "actions": {
+        "retrySync": "Retry failed sync",
+        "dismiss": "Dismiss connectivity banner",
+        "contact": "Kontakt",
+        "email": "Email support"
+      },
+      "retryHint": "Retrying Supabase connection every 30s while this tab stays open."
+    },
+    "tripStrip": {
+      "offline": {
+        "messageNone": "Offline mode enabled. Trip data is served from local cache.",
+        "messageOne": "Offline mode enabled. {count} change is queued for sync.",
+        "messageMany": "Offline mode enabled. {count} changes are queued for sync.",
+        "browser": "Offline mode enabled. Your latest edits are saved locally until reconnect.",
+        "service": "Cloud sync is currently unavailable. Your latest edits are queued safely."
+      },
+      "degraded": {
+        "messageNone": "Connection is degraded. Edits are protected with local queue fallback.",
+        "messageOne": "Connection is degraded. {count} change is queued for replay.",
+        "messageMany": "Connection is degraded. {count} changes are queued for replay.",
+        "service": "Connection is degraded. We are retrying queued edits in the background."
+      },
+      "forcedSuffix": "(forced by debugger)",
+      "retry": "Retry failed sync",
+      "serverBackup": "A newer server version was backed up before replay. You can restore it if needed.",
+      "restoreServerVersion": "Restore server version",
+      "syncingOne": "Syncing {count} queued change to Supabase...",
+      "syncingMany": "Syncing {count} queued changes to Supabase...",
+      "pendingOne": "{count} queued change is waiting for replay.",
+      "pendingMany": "{count} queued changes are waiting for replay."
+    },
+    "toast": {
+      "title": "Sync status",
+      "syncCompleted": "Queued trip changes synced successfully.",
+      "serverBackupRestored": "Server backup restored for this trip.",
+      "syncStartedOne": "Reconnect detected. Replaying {count} queued change.",
+      "syncStartedMany": "Reconnect detected. Replaying {count} queued changes.",
+      "syncPartialFailureOne": "{count} queued change still failed. You can retry.",
+      "syncPartialFailureMany": "{count} queued changes still failed. You can retry."
+    },
+    "globalBadge": {
+      "offline": "Offline",
+      "syncing": "Syncing...",
+      "online": "Online",
+      "details": {
+        "offlineBrowser": "You are offline. Edits are stored locally and replayed once you reconnect.",
+        "offlineService": "Your internet is up, but cloud sync appears unavailable. We will keep retrying queued edits.",
+        "syncingQueue": "Syncing queued edits now. Pending items: {count}.",
+        "online": "Connection is healthy and sync is up to date."
+      }
+    }
+  },
+  "tripPaywall": {
+    "strip": {
+      "directSinceDate": "Die Trip-Vorschau ist seit {date} pausiert. Reaktiviere jetzt, um den vollen Planungsmodus freizuschalten.",
+      "directNoDate": "Die Trip-Vorschau ist pausiert. Reaktiviere jetzt, um den vollen Planungsmodus freizuschalten.",
+      "loginSinceDate": "Die Trip-Vorschau ist seit {date} pausiert. Melde dich an, um zu reaktivieren und den vollen Planungsmodus freizuschalten.",
+      "loginNoDate": "Die Trip-Vorschau ist pausiert. Melde dich an, um zu reaktivieren und den vollen Planungsmodus freizuschalten."
+    },
+    "overlay": {
+      "eyebrow": "Trip-Vorschau pausiert",
+      "title": {
+        "direct": "Reaktiviere diesen Trip, um weiterzuplanen",
+        "login": "Melde dich an, um diesen Trip zu reaktivieren"
+      },
+      "description": {
+        "direct": "Du bist angemeldet. Reaktiviere jetzt, um Bearbeitung, Zielnamen und Kartenrouten wiederherzustellen.",
+        "login": "Melde dich an, um Bearbeitung, Zielnamen und Kartenrouten wiederherzustellen."
+      },
+      "footer": {
+        "withDate": "Abgelaufen am {date}. Der Vorschaumodus bleibt sichtbar, bis du reaktivierst.",
+        "noDate": "Der Vorschaumodus bleibt sichtbar, bis du reaktivierst."
+      }
+    },
+    "reactivate": {
+      "actions": {
+        "direct": "Trip reaktivieren",
+        "login": "Anmelden zum Reaktivieren"
+      },
+      "toast": {
+        "title": "Trip reaktiviert",
+        "description": "Der volle Planungsmodus ist wieder freigeschaltet."
+      }
+    }
+  },
+  "tripView": {
+    "visualHistory": {
+      "mapPreviewState": "Kartenvorschau: {from} -> {to}",
+      "mapPreviewStateValue": {
+        "docked": "angedockt",
+        "floating": "schwebend"
+      }
+    },
+    "generation": {
+      "strip": {
+        "failedDefault": "Trip generation failed. Check diagnostics or retry with the default model.",
+        "running": "Trip generation is running...",
+        "retry": "Retry generation",
+        "retrying": "Retrying...",
+        "slow": "Es dauert länger als gewöhnlich.",
+        "abortRetry": "Abbrechen & erneut versuchen",
+        "changeModel": "Modell ändern"
+      },
+      "tripInfo": {
+        "title": "AI generation",
+        "provider": "Provider",
+        "model": "Model",
+        "providerModel": "Provider model",
+        "requestId": "Request ID",
+        "runTime": "Run time",
+        "httpStatus": "HTTP status",
+        "started": "Started",
+        "finished": "Finished",
+        "failureKind": "Failure kind",
+        "errorCode": "Error code",
+        "errorMessage": "Error message",
+        "generatedAt": "Generated at",
+        "recentAttempts": "Recent attempts",
+        "modelFallback": "Model n/a",
+        "retry": "Retry generation with default model",
+        "retrying": "Retrying with default model...",
+        "state": {
+          "failed": "fehlgeschlagen",
+          "running": "läuft",
+          "queued": "wartend",
+          "succeeded": "erfolgreich"
+        },
+        "orchestration": "Ausführungsmodus"
+      },
+      "retry": {
+        "readOnly": "This trip is read-only, so generation retry is unavailable.",
+        "readOnlyTitle": "Retry unavailable",
+        "missingSnapshot": "Retry requires saved generation input, but this trip has no snapshot.",
+        "missingSnapshotTitle": "Retry unavailable",
+        "queued": "Trip generation retry started and is running in the background.",
+        "queuedTitle": "Retry started",
+        "completed": "Trip generation completed with the default model.",
+        "completedTitle": "Retry completed",
+        "failed": "Trip generation failed again. Review the diagnostics and retry later.",
+        "failedTitle": "Retry failed",
+        "unexpected": "Retry failed unexpectedly."
+      }
+    }
+  },
+  "tripRouteShell": {
+    "loadingTrip": "Reise wird geladen",
+    "preparingPlanner": "Planer wird vorbereitet",
+    "loadingSharedTrip": "Geteilte Reise wird geladen",
+    "preparingSharedPlanner": "Geteilter Planer wird vorbereitet",
+    "loadingExampleTrip": "Beispielreise wird geladen",
+    "preparingExamplePlanner": "Beispiel-Planer wird vorbereitet"
   }
 }

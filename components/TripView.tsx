@@ -1,17 +1,37 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo, Suspense, lazy } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { AppLanguage, ITrip, ITimelineItem, IViewSettings, ShareMode } from '../types';
+import { useTranslation } from 'react-i18next';
+import { AppLanguage, ITrip, ITimelineItem, IViewSettings, ShareMode, TripGenerationAttemptSummary, TripGenerationState } from '../types';
+import { getDefaultCreateTripModel } from '../config/aiModelCatalog';
+import { DB_ENABLED } from '../config/db';
 import { GoogleMapsLoader } from './GoogleMapsLoader';
 import { BASE_PIXELS_PER_DAY, DEFAULT_CITY_COLOR_PALETTE_ID, DEFAULT_DISTANCE_UNIT, buildShareUrl, formatDistance, getTimelineBounds, getTripDistanceKm, isInternalMapColorModeControlEnabled, normalizeMapColorMode } from '../utils';
 import { getExampleMapViewTransitionName, getExampleTitleViewTransitionName } from '../shared/viewTransitionNames';
-import { type DbTripAccessMetadata } from '../services/dbApi';
+import { dbGetTrip, type DbTripAccessMetadata } from '../services/dbApi';
 import {
+    buildTripCalendarExport,
+    downloadTripCalendarExport,
+    type TripCalendarExportScope,
+} from '../services/tripCalendarExportService';
+import {
+    buildDirectReactivatedTrip,
     buildPaywalledTripDisplay,
+    resolveTripPaywallActivationMode,
+    type TripPaywallActivationMode,
 } from '../config/paywall';
-import { trackEvent } from '../services/analyticsService';
+import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
+import { removeLocalStorageItem } from '../services/browserStorageService';
 import { useLoginModal } from '../hooks/useLoginModal';
-import { buildPathFromLocationParts } from '../services/authNavigationService';
+import {
+    buildLoginPathWithNext,
+    buildPathFromLocationParts,
+    rememberAuthReturnPath,
+    setPendingAuthRedirect,
+} from '../services/authNavigationService';
 import { useAuth } from '../hooks/useAuth';
+import { useConnectivityStatus } from '../hooks/useConnectivityStatus';
+import { useSyncStatus } from '../hooks/useSyncStatus';
+import { getLatestConflictBackupForTrip } from '../services/offlineChangeQueue';
 import { loadLazyComponentWithRecovery } from '../services/lazyImportRecovery';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import { useDeferredMapBootstrap } from './tripview/useDeferredMapBootstrap';
@@ -30,6 +50,8 @@ import { useTripEditModalState } from './tripview/useTripEditModalState';
 import { useTripLayoutControlsState } from './tripview/useTripLayoutControlsState';
 import { useTripCityForceFill } from './tripview/useTripCityForceFill';
 import { useTripFavoriteHandler } from './tripview/useTripFavoriteHandler';
+import { resolveTripToastUndoAction } from './tripview/tripToastUndoAction';
+import { buildQueuedTripGenerationRetryToastOptions } from './tripview/tripGenerationRetryToast';
 import { useTripItemMutationHandlers } from './tripview/useTripItemMutationHandlers';
 import { useTripItemUpdateHandlers } from './tripview/useTripItemUpdateHandlers';
 import { useTripRouteStatusState } from './tripview/useTripRouteStatusState';
@@ -41,9 +63,13 @@ import { useTripTitleEditorState } from './tripview/useTripTitleEditorState';
 import { useTripUpdateItemsHandler } from './tripview/useTripUpdateItemsHandler';
 import { useTripViewModeState } from './tripview/useTripViewModeState';
 import { useTimelinePinchZoom } from './tripview/useTimelinePinchZoom';
+import { buildVisualHistoryLabel, resolveVisualDiff, type ZoomChangeSource } from './tripview/viewChangeDiff';
+import { readFloatingMapPreviewState, writeFloatingMapPreviewState } from './tripview/floatingMapPreviewState';
+import { TRIP_SYNC_TOAST_EVENT, type SyncToastEventDetail } from '../services/tripSyncManager';
 import {
     ChangeTone,
     getToneMeta,
+    resolveChangeTone,
     stripHistoryPrefix,
     useTripHistoryPresentation,
 } from './tripview/useTripHistoryPresentation';
@@ -52,12 +78,31 @@ import { TripViewHeader } from './tripview/TripViewHeader';
 import { TripViewHudOverlays } from './tripview/TripViewHudOverlays';
 import { TripViewPlannerWorkspace } from './tripview/TripViewPlannerWorkspace';
 import { TripViewStatusBanners } from './tripview/TripViewStatusBanners';
-
-interface ToastState {
-    tone: ChangeTone;
-    title: string;
-    message: string;
-}
+import { showAppToast } from './ui/appToast';
+import {
+    TRIP_GENERATION_TIMEOUT_MS,
+    getTripGenerationElapsedMs,
+    getLatestTripGenerationAttempt,
+    getTripGenerationState,
+    markTripGenerationFailed,
+} from '../services/tripGenerationDiagnosticsService';
+import {
+    canTriggerTripGenerationAbortAndRetry,
+    canTriggerTripGenerationRetry,
+    retryTripGenerationWithDefaultModel,
+} from '../services/tripGenerationRetryService';
+import { abortActiveTripGenerationRequest } from '../services/aiService';
+import { buildBenchmarkScenarioImportUrl } from '../services/tripGenerationBenchmarkBridge';
+import { beginTripGenerationTabFeedback, type TripGenerationTabFeedbackSession } from '../services/tripGenerationTabFeedbackService';
+import {
+    getAsyncTripGenerationStallRecoveryAction,
+    shouldApplyPolledTripUpdate,
+    shouldPollTripGenerationState,
+} from '../services/tripGenerationPollingService';
+import { processQueuedTripGenerationAfterAuth } from '../services/tripGenerationQueueService';
+import { registerTripGenerationCompletionWatch } from '../services/tripGenerationCompletionWatchService';
+import { listTripGenerationJobsByTrip, triggerTripGenerationWorker } from '../services/tripGenerationJobService';
+import { finishTripGenerationAttemptLog } from '../services/tripGenerationAttemptLogService';
 
 const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
     moduleKey: string,
@@ -128,6 +173,27 @@ const RESIZER_WIDTH = 4;
 const MIN_ZOOM_LEVEL = 0.2;
 const MAX_ZOOM_LEVEL = 3;
 const HORIZONTAL_TIMELINE_AUTO_FIT_PADDING = 72;
+const VERTICAL_TIMELINE_AUTO_FIT_PADDING = 56;
+const TIMELINE_ZOOM_LEVEL_PRESETS = [
+    0.2,
+    0.25,
+    0.3,
+    0.4,
+    0.5,
+    0.6,
+    0.75,
+    0.9,
+    1,
+    1.1,
+    1.25,
+    1.5,
+    1.75,
+    2,
+    2.25,
+    2.5,
+    2.75,
+    3,
+];
 const NEGATIVE_OFFSET_EPSILON = 0.001;
 const MOBILE_VIEWPORT_MAX_WIDTH = 767;
 const VIEW_TRANSITION_DEBUG_EVENT = 'tf:view-transition-debug';
@@ -139,6 +205,17 @@ const GENERATION_PROGRESS_MESSAGES = [
     'Structuring your daily timeline...',
     'Finalizing logistics and details...',
 ];
+const TRIP_GENERATION_POLL_INTERVAL_MS = 8_000;
+const TRIP_GENERATION_QUEUE_NUDGE_INTERVAL_MS = 30_000;
+const TRIP_CALENDAR_EXPORT_EVENT_BY_SCOPE: Record<
+    TripCalendarExportScope,
+    'trip_view__calendar_export--activity' | 'trip_view__calendar_export--activities' | 'trip_view__calendar_export--cities' | 'trip_view__calendar_export--all'
+> = {
+    activity: 'trip_view__calendar_export--activity',
+    activities: 'trip_view__calendar_export--activities',
+    cities: 'trip_view__calendar_export--cities',
+    all: 'trip_view__calendar_export--all',
+};
 
 interface ViewTransitionDebugDetail {
     phase: string;
@@ -156,6 +233,29 @@ const isPlainLeftClick = (event: React.MouseEvent<HTMLAnchorElement>): boolean =
     !event.ctrlKey &&
     !event.shiftKey
 );
+
+type ViewTransitionDocument = Document & {
+    startViewTransition?: (update: () => void | Promise<void>) => unknown;
+};
+
+const runWithOptionalViewTransition = (update: () => void): void => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+        update();
+        return;
+    }
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        update();
+        return;
+    }
+    const transitionDocument = document as ViewTransitionDocument;
+    if (typeof transitionDocument.startViewTransition !== 'function') {
+        update();
+        return;
+    }
+    transitionDocument.startViewTransition(() => {
+        update();
+    });
+};
 
 const parseTripStartDate = (value: string): Date => {
     if (!value) return new Date();
@@ -261,7 +361,7 @@ const buildTripMetaSummary = (trip: ITrip): TripMetaSummary => {
 
 interface TripViewProps {
     trip: ITrip;
-    onUpdateTrip: (updatedTrip: ITrip, options?: { persist?: boolean }) => void;
+    onUpdateTrip: (updatedTrip: ITrip, options?: { persist?: boolean; preserveUpdatedAt?: boolean }) => void;
     onCommitState?: (updatedTrip: ITrip, view: IViewSettings, options?: { replace?: boolean; label?: string; adminOverride?: boolean }) => void;
     onOpenManager: () => void;
     onOpenSettings: () => void;
@@ -281,11 +381,16 @@ interface TripViewProps {
     suppressToasts?: boolean;
     suppressReleaseNotice?: boolean;
     adminAccess?: DbTripAccessMetadata;
+    tripAccess?: DbTripAccessMetadata;
     exampleTripBanner?: {
         title: string;
         countries: string[];
         onCreateSimilarTrip?: () => void;
     };
+}
+
+interface CommitScheduleOptions {
+    skipToast?: boolean;
 }
 
 interface ExampleTransitionLocationState {
@@ -398,7 +503,25 @@ interface TripViewModalLayerProps {
     onToggleFavorite: () => void;
     isExamplePreview: boolean;
     tripMeta: any;
+    ownerSummary: string | null;
+    ownerHint: string | null;
+    adminMeta: {
+        ownerUserId: string | null;
+        ownerUsername: string | null;
+        ownerEmail: string | null;
+        accessSource: string | null;
+    } | null;
     aiMeta: ITrip['aiMeta'];
+    generationState: TripGenerationState;
+    latestGenerationAttempt: TripGenerationAttemptSummary | null;
+    canRetryGeneration: boolean;
+    isRetryingGeneration: boolean;
+    retryModelId: string | null;
+    onRetryModelIdChange: (modelId: string) => void;
+    onRetryGeneration: (source: 'trip_info' | 'trip_strip', modelId?: string | null) => void;
+    onOpenBenchmarkWithSnapshot: () => void;
+    canOpenBenchmarkWithSnapshot: boolean;
+    tripInfoRetryAnalyticsAttributes: Record<string, string>;
     forkMeta: { label: string; url: string | null } | null;
     isTripInfoHistoryExpanded: boolean;
     onToggleTripInfoHistoryExpanded: () => void;
@@ -412,6 +535,9 @@ interface TripViewModalLayerProps {
     formatHistoryTime: (value: number) => string;
     countryInfo: ITrip['countryInfo'];
     isPaywallLocked: boolean;
+    onExportActivitiesCalendar: () => void;
+    onExportCitiesCalendar: () => void;
+    onExportAllCalendar: () => void;
     shouldEnableReleaseNotice: boolean;
     isShareOpen: boolean;
     shareMode: ShareMode;
@@ -423,13 +549,16 @@ interface TripViewModalLayerProps {
     isGeneratingShare: boolean;
     isHistoryOpen: boolean;
     historyModalItems: any[];
+    pendingSyncCount: number;
+    failedSyncCount: number;
     onCloseHistory: () => void;
     onHistoryGo: (item: any) => void;
     shareStatus?: ShareMode;
     onCopyTrip?: () => void;
     expirationLabel: string | null;
     tripId: string;
-    onPaywallLoginClick: (
+    paywallActivationMode: TripPaywallActivationMode;
+    onPaywallActivateClick: (
         event: React.MouseEvent<HTMLAnchorElement>,
         analyticsEvent: 'trip_paywall__strip--activate' | 'trip_paywall__overlay--activate',
         source: 'trip_paywall_strip' | 'trip_paywall_overlay'
@@ -439,10 +568,6 @@ interface TripViewModalLayerProps {
     loadingDestinationSummary: string;
     tripDateRange: string;
     tripTotalDaysLabel: string;
-    suppressToasts: boolean;
-    toastState: ToastState | null;
-    activeToastMeta: ReturnType<typeof getToneMeta> | null;
-    onDismissToast: () => void;
 }
 
 const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
@@ -471,7 +596,20 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
     onToggleFavorite,
     isExamplePreview,
     tripMeta,
+    ownerSummary,
+    ownerHint,
+    adminMeta,
     aiMeta,
+    generationState,
+    latestGenerationAttempt,
+    canRetryGeneration,
+    isRetryingGeneration,
+    retryModelId,
+    onRetryModelIdChange,
+    onRetryGeneration,
+    onOpenBenchmarkWithSnapshot,
+    canOpenBenchmarkWithSnapshot,
+    tripInfoRetryAnalyticsAttributes,
     forkMeta,
     isTripInfoHistoryExpanded,
     onToggleTripInfoHistoryExpanded,
@@ -485,6 +623,9 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
     formatHistoryTime,
     countryInfo,
     isPaywallLocked,
+    onExportActivitiesCalendar,
+    onExportCitiesCalendar,
+    onExportAllCalendar,
     shouldEnableReleaseNotice,
     isShareOpen,
     shareMode,
@@ -496,22 +637,21 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
     isGeneratingShare,
     isHistoryOpen,
     historyModalItems,
+    pendingSyncCount,
+    failedSyncCount,
     onCloseHistory,
     onHistoryGo,
     shareStatus,
     onCopyTrip,
     expirationLabel,
     tripId,
-    onPaywallLoginClick,
+    paywallActivationMode,
+    onPaywallActivateClick,
     showGenerationOverlay,
     generationProgressMessage,
     loadingDestinationSummary,
     tripDateRange,
     tripTotalDaysLabel,
-    suppressToasts,
-    toastState,
-    activeToastMeta,
-    onDismissToast,
 }) => (
     <>
         {isMobile && detailsPanelVisible && (
@@ -556,7 +696,20 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
                     onToggleFavorite={onToggleFavorite}
                     isExamplePreview={isExamplePreview}
                     tripMeta={tripMeta}
+                    ownerSummary={ownerSummary}
+                    ownerHint={ownerHint}
+                    adminMeta={adminMeta}
                     aiMeta={aiMeta}
+                    generationState={generationState}
+                    latestGenerationAttempt={latestGenerationAttempt}
+                    canRetryGeneration={canRetryGeneration}
+                    isRetryingGeneration={isRetryingGeneration}
+                    retryModelId={retryModelId}
+                    onRetryModelIdChange={onRetryModelIdChange}
+                    onRetryGeneration={(modelId) => onRetryGeneration('trip_info', modelId)}
+                    onOpenBenchmarkWithSnapshot={onOpenBenchmarkWithSnapshot}
+                    canOpenBenchmarkWithSnapshot={canOpenBenchmarkWithSnapshot}
+                    retryAnalyticsAttributes={tripInfoRetryAnalyticsAttributes}
                     forkMeta={forkMeta}
                     isTripInfoHistoryExpanded={isTripInfoHistoryExpanded}
                     onToggleTripInfoHistoryExpanded={onToggleTripInfoHistoryExpanded}
@@ -570,6 +723,9 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
                     formatHistoryTime={formatHistoryTime}
                     countryInfo={countryInfo}
                     isPaywallLocked={isPaywallLocked}
+                    onExportActivitiesCalendar={onExportActivitiesCalendar}
+                    onExportCitiesCalendar={onExportCitiesCalendar}
+                    onExportAllCalendar={onExportAllCalendar}
                 />
             </Suspense>
         )}
@@ -599,6 +755,8 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
                     isExamplePreview={isExamplePreview}
                     showAllHistory={showAllHistory}
                     items={historyModalItems}
+                    pendingSyncCount={pendingSyncCount}
+                    failedSyncCount={failedSyncCount}
                     onClose={onCloseHistory}
                     onUndo={onHistoryUndo}
                     onRedo={onHistoryRedo}
@@ -614,16 +772,13 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
             isPaywallLocked={isPaywallLocked}
             expirationLabel={expirationLabel}
             tripId={tripId}
-            onPaywallLoginClick={onPaywallLoginClick}
+            paywallActivationMode={paywallActivationMode}
+            onPaywallActivateClick={onPaywallActivateClick}
             showGenerationOverlay={showGenerationOverlay}
             generationProgressMessage={generationProgressMessage}
             loadingDestinationSummary={loadingDestinationSummary}
             tripDateRange={tripDateRange}
             tripTotalDaysLabel={tripTotalDaysLabel}
-            suppressToasts={suppressToasts}
-            toastState={toastState}
-            activeToastMeta={activeToastMeta}
-            onDismissToast={onDismissToast}
         />
     </>
 );
@@ -650,6 +805,7 @@ interface RenderDetailsPanelContentOptions {
     selectedCityForceFillLabel?: string;
     cityColorPaletteId: string;
     onCityColorPaletteChange?: (paletteId: string, options: { applyToCities: boolean }) => void;
+    onExportActivityCalendar?: (itemId: string) => void;
 }
 
 const renderDetailsPanelContent = ({
@@ -674,6 +830,7 @@ const renderDetailsPanelContent = ({
     selectedCityForceFillLabel,
     cityColorPaletteId,
     onCityColorPaletteChange,
+    onExportActivityCalendar,
 }: RenderDetailsPanelContentOptions): React.ReactNode => (
     showSelectedCitiesPanel ? (
         <Suspense fallback={<div className="h-full flex items-center justify-center text-xs text-gray-500">Loading selection panel...</div>}>
@@ -706,6 +863,7 @@ const renderDetailsPanelContent = ({
                 readOnly={!canEdit}
                 cityColorPaletteId={cityColorPaletteId}
                 onCityColorPaletteChange={onCityColorPaletteChange}
+                onExportActivityCalendar={onExportActivityCalendar}
             />
         </Suspense>
     )
@@ -730,19 +888,33 @@ const useTripViewRender = ({
     suppressToasts = false,
     suppressReleaseNotice = false,
     adminAccess,
+    tripAccess,
     exampleTripBanner,
 }: TripViewProps): React.ReactElement => {
     const navigate = useNavigate();
     const location = useLocation();
+    const { t, i18n } = useTranslation('common');
     const { openLoginModal } = useLoginModal();
-    const { isAuthenticated, isAnonymous, isAdmin, logout } = useAuth();
+    const { access, profile, isAuthenticated, isAnonymous, isAdmin, logout } = useAuth();
+    const { snapshot: connectivitySnapshot } = useConnectivityStatus();
+    const { snapshot: syncSnapshot, retrySyncNow } = useSyncStatus();
     const isTripDetailRoute = location.pathname.startsWith('/trip/');
     const locationState = location.state as ExampleTransitionLocationState | null;
     const useExampleSharedTransition = trip.isExample && (locationState?.useExampleSharedTransition ?? true);
     const mapViewTransitionName = getExampleMapViewTransitionName(useExampleSharedTransition);
     const titleViewTransitionName = getExampleTitleViewTransitionName(useExampleSharedTransition);
     const tripRef = useRef(trip);
+    const onUpdateTripRef = useRef(onUpdateTrip);
+    const retryGenerationTabFeedbackSessionRef = useRef<TripGenerationTabFeedbackSession | null>(null);
+    const pendingRetryGenerationStateRef = useRef(false);
+    const retryMutationInFlightRef = useRef(false);
+    const asyncStallRecoveryAttemptIdRef = useRef<string | null>(null);
+    const asyncStallRecoveryNudgeAttemptIdRef = useRef<string | null>(null);
+    const asyncStallRecoveryNudgeAtRef = useRef<number>(0);
     tripRef.current = trip;
+    onUpdateTripRef.current = onUpdateTrip;
+    const [generationNowMs, setGenerationNowMs] = useState(() => Date.now());
+    const [retryModelId, setRetryModelId] = useState<string>(getDefaultCreateTripModel().id);
     const isReleaseNoticeReady = useReleaseNoticeReady({ suppressReleaseNotice });
     const {
         tripExpiresAtMs,
@@ -770,20 +942,331 @@ const useTripViewRender = ({
     );
     const expectedCityLaneCount = displayTrip.items.filter((item) => item.type === 'city').length;
     const canEnableAdminOverride = isAdminFallbackView && Boolean(adminAccess?.canAdminWrite);
+    const canUseAdminGenerationOverride = isAdminFallbackView && adminOverrideEnabled && Boolean(adminAccess?.canAdminWrite);
+    const generationState = useMemo<TripGenerationState>(
+        () => getTripGenerationState(trip, generationNowMs),
+        [generationNowMs, trip]
+    );
+    const latestGenerationAttempt = useMemo<TripGenerationAttemptSummary | null>(
+        () => getLatestTripGenerationAttempt(trip),
+        [trip]
+    );
+    const latestGenerationAttemptOrchestration = useMemo(() => {
+        const metadata = latestGenerationAttempt?.metadata;
+        if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) return null;
+        const orchestration = metadata.orchestration;
+        return typeof orchestration === 'string' ? orchestration : null;
+    }, [latestGenerationAttempt?.metadata]);
+    const pendingAuthQueueRequestId = useMemo(() => {
+        const metadata = latestGenerationAttempt?.metadata;
+        if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) return null;
+        const queueRequestValue = metadata.queueRequestId;
+        const queueRequestId = typeof queueRequestValue === 'string' ? queueRequestValue.trim() : '';
+        if (!queueRequestId) return null;
+        const pendingAuthValue = metadata.pendingAuth;
+        return pendingAuthValue === true ? queueRequestId : null;
+    }, [latestGenerationAttempt?.metadata]);
+    const shouldPollGenerationState = shouldPollTripGenerationState(trip, generationNowMs);
+    useEffect(() => {
+        if (!shouldPollGenerationState) return undefined;
+        const timer = window.setInterval(() => {
+            setGenerationNowMs(Date.now());
+        }, 1_000);
+        return () => window.clearInterval(timer);
+    }, [shouldPollGenerationState, trip.id]);
+    useEffect(() => {
+        if (!DB_ENABLED) return undefined;
+        if (!shouldPollGenerationState) return undefined;
+        if (connectivitySnapshot.state === 'offline') return undefined;
+        if (tripAccess?.source === 'public_read') return undefined;
+
+        let cancelled = false;
+        let inFlight = false;
+        const poll = async () => {
+            if (cancelled || inFlight) return;
+            inFlight = true;
+            try {
+                const remote = await dbGetTrip(trip.id, { includeOwnerProfile: false });
+                if (cancelled || !remote?.trip) return;
+
+                const remoteTrip = remote.trip;
+                const localTrip = tripRef.current;
+                if (shouldApplyPolledTripUpdate(localTrip, remoteTrip, Date.now())) {
+                    onUpdateTripRef.current(remoteTrip, { preserveUpdatedAt: true });
+                }
+            } finally {
+                inFlight = false;
+            }
+        };
+
+        void poll();
+        const timer = window.setInterval(() => {
+            void poll();
+        }, TRIP_GENERATION_POLL_INTERVAL_MS);
+        return () => {
+            cancelled = true;
+            window.clearInterval(timer);
+        };
+    }, [
+        connectivitySnapshot.state,
+        shouldPollGenerationState,
+        trip.id,
+        tripAccess?.source,
+    ]);
+    useEffect(() => {
+        if (!DB_ENABLED) return undefined;
+        if (connectivitySnapshot.state === 'offline') return undefined;
+        if (tripAccess?.source === 'public_read') return undefined;
+        if (generationState !== 'queued') return undefined;
+        if (latestGenerationAttemptOrchestration !== 'async_worker') return undefined;
+
+        let cancelled = false;
+        const kickWorker = () => {
+            if (cancelled) return;
+            void triggerTripGenerationWorker({
+                tripId: trip.id,
+                limit: 1,
+                source: 'trip_view_generation_poll_nudge',
+            });
+        };
+
+        kickWorker();
+        const timer = window.setInterval(kickWorker, TRIP_GENERATION_QUEUE_NUDGE_INTERVAL_MS);
+        return () => {
+            cancelled = true;
+            window.clearInterval(timer);
+        };
+    }, [
+        connectivitySnapshot.state,
+        generationState,
+        latestGenerationAttemptOrchestration,
+        trip.id,
+        tripAccess?.source,
+    ]);
+    useEffect(() => () => {
+        retryGenerationTabFeedbackSessionRef.current?.cancel();
+        retryGenerationTabFeedbackSessionRef.current = null;
+        pendingRetryGenerationStateRef.current = false;
+    }, []);
+    const [isResolvingPendingAuthGeneration, setIsResolvingPendingAuthGeneration] = useState(false);
+    const generationElapsedMs = useMemo(
+        () => getTripGenerationElapsedMs(trip, generationNowMs),
+        [generationNowMs, trip]
+    );
+    useEffect(() => {
+        if (!latestGenerationAttempt?.id) {
+            asyncStallRecoveryAttemptIdRef.current = null;
+            asyncStallRecoveryNudgeAttemptIdRef.current = null;
+            asyncStallRecoveryNudgeAtRef.current = 0;
+            return;
+        }
+        if (generationState !== 'queued' && generationState !== 'running') {
+            asyncStallRecoveryAttemptIdRef.current = null;
+            asyncStallRecoveryNudgeAttemptIdRef.current = null;
+            asyncStallRecoveryNudgeAtRef.current = 0;
+            return;
+        }
+        if (latestGenerationAttemptOrchestration !== 'async_worker') {
+            asyncStallRecoveryAttemptIdRef.current = null;
+            asyncStallRecoveryNudgeAttemptIdRef.current = null;
+            asyncStallRecoveryNudgeAtRef.current = 0;
+            return;
+        }
+        if (typeof generationElapsedMs !== 'number' || generationElapsedMs < (TRIP_GENERATION_TIMEOUT_MS + 20_000)) {
+            return;
+        }
+        if (asyncStallRecoveryAttemptIdRef.current === latestGenerationAttempt.id) {
+            return;
+        }
+        if (!DB_ENABLED) return;
+        if (connectivitySnapshot.state === 'offline') return;
+        if (tripAccess?.source === 'public_read') return;
+
+        let cancelled = false;
+        const recoverStalledAttempt = async () => {
+            try {
+                const jobs = await listTripGenerationJobsByTrip(trip.id, {
+                    limit: 20,
+                    states: ['queued', 'leased'],
+                });
+                if (cancelled) return;
+                const nowMs = Date.now();
+                const stallRecoveryAction = getAsyncTripGenerationStallRecoveryAction({
+                    latestAttemptId: latestGenerationAttempt.id,
+                    generationElapsedMs,
+                    jobs,
+                    nowMs,
+                });
+                if (stallRecoveryAction === 'ignore') return;
+                if (stallRecoveryAction === 'nudge_worker') {
+                    const lastNudgeWasForSameAttempt = asyncStallRecoveryNudgeAttemptIdRef.current === latestGenerationAttempt.id;
+                    const nudgeCooldownMs = 15_000;
+                    if (lastNudgeWasForSameAttempt && (nowMs - asyncStallRecoveryNudgeAtRef.current) < nudgeCooldownMs) {
+                        return;
+                    }
+                    asyncStallRecoveryNudgeAttemptIdRef.current = latestGenerationAttempt.id;
+                    asyncStallRecoveryNudgeAtRef.current = nowMs;
+                    void triggerTripGenerationWorker({
+                        tripId: trip.id,
+                        limit: 1,
+                        source: 'trip_view_async_stall_recovery',
+                        force: true,
+                    });
+                    return;
+                }
+
+                asyncStallRecoveryAttemptIdRef.current = latestGenerationAttempt.id;
+                const failedTrip = markTripGenerationFailed(tripRef.current, {
+                    flow: latestGenerationAttempt.flow,
+                    source: 'trip_view_async_stall_recovery',
+                    requestId: latestGenerationAttempt.requestId || null,
+                    attemptId: latestGenerationAttempt.id,
+                    provider: latestGenerationAttempt.provider || tripRef.current.aiMeta?.provider || null,
+                    model: latestGenerationAttempt.model || tripRef.current.aiMeta?.model || null,
+                    providerModel: latestGenerationAttempt.providerModel || null,
+                    error: {
+                        code: 'ASYNC_WORKER_JOB_MISSING',
+                        status: 504,
+                        message: 'Generation queue job was not active anymore. Please retry.',
+                        failureKind: 'timeout',
+                    },
+                    metadata: {
+                        orchestration: 'async_worker',
+                        source: 'trip_view_async_stall_recovery',
+                    },
+                });
+                onUpdateTrip(failedTrip);
+                await finishTripGenerationAttemptLog({
+                    attemptId: latestGenerationAttempt.id,
+                    state: 'failed',
+                    provider: latestGenerationAttempt.provider || failedTrip.aiMeta?.provider || null,
+                    model: latestGenerationAttempt.model || failedTrip.aiMeta?.model || null,
+                    providerModel: latestGenerationAttempt.providerModel || null,
+                    requestId: latestGenerationAttempt.requestId || null,
+                    durationMs: failedTrip.aiMeta?.generation?.latestAttempt?.durationMs
+                        || latestGenerationAttempt.durationMs
+                        || generationElapsedMs,
+                    statusCode: 504,
+                    failureKind: 'timeout',
+                    errorCode: 'ASYNC_WORKER_JOB_MISSING',
+                    errorMessage: 'Generation queue job was not active anymore. Please retry.',
+                    finishedAt: failedTrip.aiMeta?.generation?.latestAttempt?.finishedAt || undefined,
+                    metadata: {
+                        source: 'trip_view_async_stall_recovery',
+                    },
+                });
+            } catch {
+                // best effort: keep queued state if diagnostics lookup fails.
+            }
+        };
+
+        void recoverStalledAttempt();
+        return () => {
+            cancelled = true;
+        };
+    }, [
+        connectivitySnapshot.state,
+        generationElapsedMs,
+        generationState,
+        latestGenerationAttempt?.durationMs,
+        latestGenerationAttempt?.flow,
+        latestGenerationAttempt?.id,
+        latestGenerationAttempt?.model,
+        latestGenerationAttempt?.provider,
+        latestGenerationAttempt?.providerModel,
+        latestGenerationAttempt?.requestId,
+        latestGenerationAttemptOrchestration,
+        onUpdateTrip,
+        trip.id,
+        tripAccess?.source,
+    ]);
+    useEffect(() => {
+        const session = retryGenerationTabFeedbackSessionRef.current;
+        const isGenerationInFlight = generationState === 'running' || generationState === 'queued';
+
+        if (isGenerationInFlight) {
+            pendingRetryGenerationStateRef.current = false;
+            if (!session && tripAccess?.source !== 'public_read') {
+                retryGenerationTabFeedbackSessionRef.current = beginTripGenerationTabFeedback();
+            }
+            return;
+        }
+
+        if (!session) return;
+        if (pendingRetryGenerationStateRef.current && generationState === 'failed') {
+            return;
+        }
+
+        if (generationState === 'succeeded') {
+            session.complete('success', { title: trip.title });
+            retryGenerationTabFeedbackSessionRef.current = null;
+            pendingRetryGenerationStateRef.current = false;
+            return;
+        }
+        if (generationState === 'failed') {
+            session.complete('error');
+            retryGenerationTabFeedbackSessionRef.current = null;
+            pendingRetryGenerationStateRef.current = false;
+            return;
+        }
+        session.cancel();
+        retryGenerationTabFeedbackSessionRef.current = null;
+        pendingRetryGenerationStateRef.current = false;
+    }, [generationState, trip.title, tripAccess?.source]);
+    const isGenerationSlow = (
+        (generationState === 'running' || generationState === 'queued')
+        && typeof generationElapsedMs === 'number'
+        && generationElapsedMs >= TRIP_GENERATION_TIMEOUT_MS
+    );
     const ownerUsersUrl = useMemo(() => {
         if (!isAdminFallbackView || !adminAccess?.ownerId) return null;
         return `/admin/trips?user=${encodeURIComponent(adminAccess.ownerId)}&drawer=user`;
     }, [adminAccess?.ownerId, isAdminFallbackView]);
 
-    const handlePaywallLoginClick = useCallback((
+    const paywallActivationMode = useMemo<TripPaywallActivationMode>(
+        () => resolveTripPaywallActivationMode({
+            isAuthenticated,
+            isAnonymous,
+            isTripDetailRoute,
+        }),
+        [isAnonymous, isAuthenticated, isTripDetailRoute]
+    );
+
+    const handlePaywallActivateClick = useCallback((
         event: React.MouseEvent<HTMLAnchorElement>,
         analyticsEvent: 'trip_paywall__strip--activate' | 'trip_paywall__overlay--activate',
         source: 'trip_paywall_strip' | 'trip_paywall_overlay'
     ) => {
-        trackEvent(analyticsEvent, { trip_id: trip.id });
+        trackEvent(analyticsEvent, {
+            trip_id: trip.id,
+            activation_mode: paywallActivationMode,
+        });
         if (!isPlainLeftClick(event)) return;
 
         event.preventDefault();
+        if (paywallActivationMode === 'direct_reactivate') {
+            const now = Date.now();
+            const reactivatedTrip = buildDirectReactivatedTrip({
+                trip: tripRef.current,
+                nowMs: now,
+                tripExpirationDays: access?.entitlements.tripExpirationDays,
+            });
+            onUpdateTrip(reactivatedTrip);
+            if (onCommitState) {
+                onCommitState(
+                    reactivatedTrip,
+                    reactivatedTrip.defaultView ?? initialViewSettings ?? trip.defaultView,
+                    { label: 'Lifecycle: Reactivated expired trip' }
+                );
+            }
+            showAppToast({
+                tone: 'add',
+                title: t('tripPaywall.reactivate.toast.title'),
+                description: t('tripPaywall.reactivate.toast.description'),
+            });
+            return;
+        }
+
         openLoginModal({
             source,
             nextPath: buildPathFromLocationParts({
@@ -793,7 +1276,72 @@ const useTripViewRender = ({
             }),
             reloadOnSuccess: true,
         });
-    }, [location.hash, location.pathname, location.search, openLoginModal, trip.id]);
+    }, [
+        access?.entitlements.tripExpirationDays,
+        initialViewSettings,
+        location.hash,
+        location.pathname,
+        location.search,
+        onCommitState,
+        onUpdateTrip,
+        openLoginModal,
+        paywallActivationMode,
+        t,
+        trip.defaultView,
+        trip.id,
+    ]);
+
+    const handleResolvePendingAuthGeneration = useCallback(async () => {
+        if (!pendingAuthQueueRequestId || isResolvingPendingAuthGeneration) return;
+
+        if (isAuthenticated && !isAnonymous) {
+            setIsResolvingPendingAuthGeneration(true);
+            try {
+                const result = await processQueuedTripGenerationAfterAuth(pendingAuthQueueRequestId);
+                registerTripGenerationCompletionWatch(result.tripId, 'auth_queue_claim_trip_view');
+                showAppToast({
+                    tone: 'add',
+                    title: 'Generation started',
+                    description: 'Trip generation started and is running in the background.',
+                });
+                navigate(`/trip/${result.tripId}`, { replace: true });
+            } catch (error) {
+                showAppToast({
+                    tone: 'warning',
+                    title: 'Generation unavailable',
+                    description: error instanceof Error ? error.message : 'Could not start trip generation.',
+                });
+            } finally {
+                setIsResolvingPendingAuthGeneration(false);
+            }
+            return;
+        }
+
+        const authRedirect = buildLoginPathWithNext({
+            pathname: location.pathname,
+            search: location.search,
+            hash: location.hash,
+            language: i18n.language,
+            resolvedLanguage: i18n.resolvedLanguage,
+        });
+        rememberAuthReturnPath(authRedirect.nextPath);
+        setPendingAuthRedirect(authRedirect.nextPath, 'trip_generation_pending_auth');
+        const query = new URLSearchParams();
+        query.set('next', authRedirect.nextPath);
+        query.set('claim', pendingAuthQueueRequestId);
+        navigate(`${authRedirect.loginPath}?${query.toString()}`);
+    }, [
+        i18n.language,
+        i18n.resolvedLanguage,
+        isAnonymous,
+        isAuthenticated,
+        isResolvingPendingAuthGeneration,
+        location.hash,
+        location.pathname,
+        location.search,
+        navigate,
+        pendingAuthQueueRequestId,
+    ]);
 
     const {
         canUseAuthenticatedSession,
@@ -833,6 +1381,7 @@ const useTripViewRender = ({
     ]);
 
     // View State
+    const [isRetryingGeneration, setIsRetryingGeneration] = useState(false);
     const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
     const [selectedCityIds, setSelectedCityIds] = useState<string[]>([]);
     const cityColorPaletteId = trip.cityColorPaletteId || DEFAULT_CITY_COLOR_PALETTE_ID;
@@ -843,7 +1392,6 @@ const useTripViewRender = ({
     );
     const { viewMode, setViewMode } = useTripViewModeState();
 
-    const [toastState, setToastState] = useState<ToastState | null>(null);
     const [isMobileViewport, setIsMobileViewport] = useState(() => {
         if (typeof window === 'undefined') return false;
         return window.innerWidth <= MOBILE_VIEWPORT_MAX_WIDTH;
@@ -865,17 +1413,21 @@ const useTripViewRender = ({
         prewarmTripInfoModal,
     });
     const editTitleInputRef = useRef<HTMLInputElement | null>(null);
-    const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const pendingHistoryLabelRef = useRef<string | null>(null);
     const commitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const pendingCommitRef = useRef<{ trip: ITrip; view: IViewSettings } | null>(null);
+    const pendingCommitRef = useRef<{ trip: ITrip; view: IViewSettings; skipToast?: boolean } | null>(null);
     const suppressCommitRef = useRef(false);
+    const pendingManualViewSettingsPersistRef = useRef(false);
+    const pendingManualVisualCommitRef = useRef(false);
+    const navigateHistoryRef = useRef<((action: 'undo' | 'redo', options?: { silent?: boolean }) => boolean) | null>(null);
     const skipViewDiffRef = useRef(false);
     const appliedViewKeyRef = useRef<string | null>(null);
     const prevViewRef = useRef<IViewSettings | null>(null);
     const {
         layoutMode,
         setLayoutMode,
+        timelineMode,
+        setTimelineMode,
         timelineView,
         setTimelineView,
         mapStyle,
@@ -896,6 +1448,51 @@ const useTripViewRender = ({
         initialViewSettings,
         defaultDetailsWidth: DEFAULT_DETAILS_WIDTH,
     });
+    const zoomChangeSourceRef = useRef<ZoomChangeSource>(null);
+    const [isZoomDirty, setIsZoomDirty] = useState(false);
+    const skipPersistMapDockModeRef = useRef(false);
+    const [mapDockMode, setMapDockMode] = useState<'docked' | 'floating'>(() => {
+        if (initialViewSettings?.mapDockMode === 'floating' || initialViewSettings?.mapDockMode === 'docked') {
+            return initialViewSettings.mapDockMode;
+        }
+        const persisted = readFloatingMapPreviewState().mode;
+        return persisted === 'floating' || persisted === 'docked' ? persisted : 'docked';
+    });
+    const markManualViewChange = useCallback(() => {
+        pendingManualViewSettingsPersistRef.current = true;
+        pendingManualVisualCommitRef.current = true;
+    }, []);
+    const markZoomDirty = useCallback((source: ZoomChangeSource = 'manual') => {
+        if (source) {
+            zoomChangeSourceRef.current = source;
+        }
+        if (source === 'manual') {
+            markManualViewChange();
+            setIsZoomDirty(true);
+        }
+    }, [markManualViewChange]);
+    const markAutoFitZoomChange = useCallback(() => {
+        zoomChangeSourceRef.current = 'auto';
+    }, []);
+    useEffect(() => {
+        setIsZoomDirty(false);
+        zoomChangeSourceRef.current = null;
+        pendingManualViewSettingsPersistRef.current = false;
+        pendingManualVisualCommitRef.current = false;
+    }, [trip.id]);
+    useEffect(() => {
+        if (!isMobileViewport || mapDockMode === 'docked') return;
+        skipPersistMapDockModeRef.current = true;
+        skipViewDiffRef.current = true;
+        setMapDockMode('docked');
+    }, [isMobileViewport, mapDockMode]);
+    useEffect(() => {
+        if (skipPersistMapDockModeRef.current) {
+            skipPersistMapDockModeRef.current = false;
+            return;
+        }
+        writeFloatingMapPreviewState({ mode: mapDockMode });
+    }, [mapDockMode]);
     const clampZoomLevel = useCallback((value: number) => {
         if (!Number.isFinite(value)) return 1;
         return Math.max(MIN_ZOOM_LEVEL, Math.min(MAX_ZOOM_LEVEL, value));
@@ -914,23 +1511,387 @@ const useTripViewRender = ({
         zoomLevel,
         clampZoomLevel,
         setZoomLevel,
+        onUserZoomChange: markZoomDirty,
     });
 
-    const showToast = useCallback((message: string, options?: { tone?: ChangeTone; title?: string }) => {
+    const showToast = useCallback((message: string, options?: {
+        tone?: ChangeTone;
+        title?: string;
+        iconVariant?: 'undo' | 'redo';
+        action?: { label: string; onClick: () => void };
+        disableDefaultUndo?: boolean;
+    }) => {
         if (suppressToasts) return;
-        setToastState({
+        const action = resolveTripToastUndoAction({
+            action: options?.action,
+            disableDefaultUndo: options?.disableDefaultUndo,
+            onUndo: () => navigateHistoryRef.current?.('undo') ?? false,
+        });
+        showAppToast({
             tone: options?.tone || 'info',
             title: options?.title || 'Saved',
-            message,
+            description: message,
+            duration: 3200,
+            iconVariant: options?.iconVariant,
+            action,
         });
-        if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-        toastTimerRef.current = setTimeout(() => setToastState(null), 2200);
     }, [suppressToasts]);
 
     useTripCopyNoticeToast({
         tripId: trip.id,
         showToast,
     });
+
+    useEffect(() => {
+        const handleSyncToast = (event: Event) => {
+            const detail = (event as CustomEvent<SyncToastEventDetail | undefined>).detail;
+            if (!detail) return;
+            if (detail.type === 'sync_started') {
+                const messageKey = detail.pendingCount === 1
+                    ? 'connectivity.toast.syncStartedOne'
+                    : 'connectivity.toast.syncStartedMany';
+                showToast(t(messageKey, { count: detail.pendingCount }), {
+                    tone: 'info',
+                    title: t('connectivity.toast.title'),
+                });
+                return;
+            }
+            if (detail.type === 'sync_completed') {
+                showToast(t('connectivity.toast.syncCompleted'), {
+                    tone: 'add',
+                    title: t('connectivity.toast.title'),
+                });
+                return;
+            }
+            if (detail.type === 'sync_partial_failure') {
+                const messageKey = detail.failedCount === 1
+                    ? 'connectivity.toast.syncPartialFailureOne'
+                    : 'connectivity.toast.syncPartialFailureMany';
+                showToast(t(messageKey, { count: detail.failedCount }), {
+                    tone: 'neutral',
+                    title: t('connectivity.toast.title'),
+                });
+            }
+        };
+
+        window.addEventListener(TRIP_SYNC_TOAST_EVENT, handleSyncToast as EventListener);
+        return () => {
+            window.removeEventListener(TRIP_SYNC_TOAST_EVENT, handleSyncToast as EventListener);
+        };
+    }, [showToast, t]);
+
+    const handleRestoreServerBackup = useCallback(() => {
+        const conflictBackup = getLatestConflictBackupForTrip(trip.id);
+        if (!conflictBackup) return;
+        const restoredTrip: ITrip = {
+            ...conflictBackup.serverTripSnapshot,
+            updatedAt: Date.now(),
+        };
+        onUpdateTrip(restoredTrip);
+        if (onCommitState) {
+            onCommitState(
+                restoredTrip,
+                restoredTrip.defaultView ?? initialViewSettings ?? trip.defaultView,
+                { label: 'Data: Restored server backup' }
+            );
+        }
+        showToast(t('connectivity.toast.serverBackupRestored'), {
+            tone: 'neutral',
+            title: t('connectivity.toast.title'),
+        });
+    }, [initialViewSettings, onCommitState, onUpdateTrip, showToast, t, trip.defaultView, trip.id]);
+
+    const canRetryGeneration = canTriggerTripGenerationRetry({
+        canEdit,
+        isAdminFallbackView,
+        adminOverrideEnabled,
+        canAdminWrite: adminAccess?.canAdminWrite,
+        hasInputSnapshot: Boolean(trip.aiMeta?.generation?.inputSnapshot),
+        generationState,
+        isRetryingGeneration,
+        pendingAuthQueueRequestId,
+    });
+    const canAbortAndRetryGeneration = isGenerationSlow && canTriggerTripGenerationAbortAndRetry({
+        canEdit,
+        isAdminFallbackView,
+        adminOverrideEnabled,
+        canAdminWrite: adminAccess?.canAdminWrite,
+        hasInputSnapshot: Boolean(trip.aiMeta?.generation?.inputSnapshot),
+        generationState,
+        isRetryingGeneration,
+        pendingAuthQueueRequestId,
+    });
+    const retryDisabledReason = useMemo(() => {
+        if (!trip.aiMeta?.generation?.inputSnapshot) {
+            return t('tripView.generation.retry.missingSnapshot');
+        }
+        if (generationState === 'running' || generationState === 'queued') {
+            return t('tripView.generation.strip.running');
+        }
+        if (isAdminFallbackView && !adminOverrideEnabled) {
+            return 'Enable admin editing override to restart generation.';
+        }
+        if (isAdminFallbackView && !adminAccess?.canAdminWrite) {
+            return 'You do not have trip write permission, so generation restart is unavailable.';
+        }
+        if (!(canEdit || canUseAdminGenerationOverride)) {
+            return t('tripView.generation.retry.readOnly');
+        }
+        return null;
+    }, [
+        adminAccess?.canAdminWrite,
+        adminOverrideEnabled,
+        canEdit,
+        canUseAdminGenerationOverride,
+        generationState,
+        isAdminFallbackView,
+        t,
+        trip.aiMeta?.generation?.inputSnapshot,
+    ]);
+
+    const currentViewSettings: IViewSettings = useMemo(() => ({
+        layoutMode,
+        timelineMode,
+        timelineView,
+        mapDockMode,
+        mapStyle,
+        routeMode,
+        showCityNames,
+        zoomLevel: Number(zoomLevel.toFixed(2)),
+        sidebarWidth: Math.round(sidebarWidth),
+        timelineHeight: Math.round(timelineHeight)
+    }), [layoutMode, timelineMode, timelineView, mapDockMode, mapStyle, routeMode, showCityNames, zoomLevel, sidebarWidth, timelineHeight]);
+
+    const tripInfoRetryAnalyticsAttributes = useMemo(
+        () => getAnalyticsDebugAttributes('trip_generation__trip_info--retry', {
+            trip_id: trip.id,
+            source: 'trip_info_modal',
+        }),
+        [trip.id]
+    );
+
+    const handleOpenBenchmarkWithSnapshot = useCallback(() => {
+        const snapshot = trip.aiMeta?.generation?.inputSnapshot;
+        const importUrl = buildBenchmarkScenarioImportUrl({
+            snapshot: snapshot || null,
+            source: 'trip_info',
+            tripId: trip.id,
+        });
+        if (!importUrl) {
+            showToast('No generation input snapshot found for benchmark export.', {
+                tone: 'neutral',
+                title: 'Benchmark export unavailable',
+            });
+            return;
+        }
+        trackEvent('trip_generation__trip_info--open_benchmark', {
+            trip_id: trip.id,
+            flow: snapshot?.flow || 'unknown',
+            source: 'trip_info_modal',
+        });
+        window.open(importUrl, '_blank', 'noopener,noreferrer');
+    }, [showToast, trip.aiMeta?.generation?.inputSnapshot, trip.id]);
+
+    const handleRetryGeneration = useCallback(async (
+        source: 'trip_info' | 'trip_strip',
+        modelIdOverride?: string | null,
+        baseTripOverride?: ITrip,
+    ) => {
+        if (isRetryingGeneration || retryMutationInFlightRef.current) return;
+        const baseTrip = baseTripOverride || trip;
+        const selectedRetryModelId = modelIdOverride || retryModelId || null;
+        if (source === 'trip_info') {
+            trackEvent('trip_generation__trip_info--retry', {
+                trip_id: trip.id,
+                source,
+                model_id: selectedRetryModelId || 'default',
+            });
+        }
+        if (!(canEdit || canUseAdminGenerationOverride)) {
+            const message = isAdminFallbackView && !adminOverrideEnabled
+                ? 'Enable admin editing override to restart generation.'
+                : isAdminFallbackView && !adminAccess?.canAdminWrite
+                    ? 'You do not have trip write permission, so generation restart is unavailable.'
+                    : t('tripView.generation.retry.readOnly');
+            showToast(message, {
+                tone: 'neutral',
+                title: t('tripView.generation.retry.readOnlyTitle'),
+            });
+            return;
+        }
+        if (!baseTrip.aiMeta?.generation?.inputSnapshot) {
+            showToast(t('tripView.generation.retry.missingSnapshot'), {
+                tone: 'neutral',
+                title: t('tripView.generation.retry.missingSnapshotTitle'),
+            });
+            return;
+        }
+
+        retryMutationInFlightRef.current = true;
+        setIsRetryingGeneration(true);
+        retryGenerationTabFeedbackSessionRef.current?.cancel();
+        retryGenerationTabFeedbackSessionRef.current = beginTripGenerationTabFeedback();
+        pendingRetryGenerationStateRef.current = true;
+        let keepRetryFeedbackActive = false;
+        try {
+            const result = await retryTripGenerationWithDefaultModel(baseTrip, {
+                source: source === 'trip_info' ? 'trip_info_modal' : 'trip_status_strip',
+                contextSource: 'trip_retry',
+                modelId: selectedRetryModelId,
+                onTripUpdate: (updatedTrip) => {
+                    if (shouldPollTripGenerationState(updatedTrip, Date.now())) {
+                        pendingRetryGenerationStateRef.current = false;
+                    }
+                    onUpdateTrip(updatedTrip);
+                },
+            });
+
+            if (onCommitState) {
+                onCommitState(
+                    result.trip,
+                    result.trip.defaultView ?? currentViewSettings,
+                    {
+                        label: result.state === 'queued'
+                            ? 'Data: Retried trip generation'
+                            : 'Data: Retried trip generation (failed)',
+                        adminOverride: isAdminFallbackView && adminOverrideEnabled,
+                    }
+                );
+            }
+
+            if (result.state === 'queued') {
+                keepRetryFeedbackActive = true;
+                showToast(
+                    t('tripView.generation.retry.queued'),
+                    buildQueuedTripGenerationRetryToastOptions(
+                        t('tripView.generation.retry.queuedTitle'),
+                    ),
+                );
+            } else if (result.state === 'succeeded') {
+                retryGenerationTabFeedbackSessionRef.current?.complete('success', {
+                    title: result.trip.title,
+                });
+                showToast(t('tripView.generation.retry.completed'), {
+                    tone: 'add',
+                    title: t('tripView.generation.retry.completedTitle'),
+                });
+            } else {
+                pendingRetryGenerationStateRef.current = false;
+                retryGenerationTabFeedbackSessionRef.current?.complete('error');
+                showToast(t('tripView.generation.retry.failed'), {
+                    tone: 'neutral',
+                    title: t('tripView.generation.retry.failedTitle'),
+                });
+            }
+        } catch (error) {
+            pendingRetryGenerationStateRef.current = false;
+            retryGenerationTabFeedbackSessionRef.current?.complete('error');
+            showToast(error instanceof Error ? error.message : t('tripView.generation.retry.unexpected'), {
+                tone: 'neutral',
+                title: t('tripView.generation.retry.failedTitle'),
+            });
+        } finally {
+            setIsRetryingGeneration(false);
+            retryMutationInFlightRef.current = false;
+            if (!keepRetryFeedbackActive) {
+                retryGenerationTabFeedbackSessionRef.current = null;
+                pendingRetryGenerationStateRef.current = false;
+            }
+        }
+    }, [
+        adminAccess?.canAdminWrite,
+        adminOverrideEnabled,
+        canEdit,
+        canUseAdminGenerationOverride,
+        currentViewSettings,
+        isAdminFallbackView,
+        isRetryingGeneration,
+        onCommitState,
+        onUpdateTrip,
+        retryModelId,
+        showToast,
+        t,
+        trip,
+    ]);
+
+    const handleAbortAndRetryGeneration = useCallback(async () => {
+        if (isRetryingGeneration) return;
+        const snapshot = trip.aiMeta?.generation?.inputSnapshot;
+        if (!snapshot) {
+            showToast(t('tripView.generation.retry.missingSnapshot'), {
+                tone: 'neutral',
+                title: t('tripView.generation.retry.missingSnapshotTitle'),
+            });
+            return;
+        }
+        const latestRequestId = latestGenerationAttempt?.requestId || null;
+        const abortedLiveRequest = abortActiveTripGenerationRequest({
+            tripId: trip.id,
+            requestId: latestRequestId,
+            reason: 'user_abort_retry',
+        });
+
+        const abortedTrip = markTripGenerationFailed(trip, {
+            flow: snapshot.flow,
+            source: 'trip_status_strip_abort_retry',
+            requestId: latestRequestId,
+            attemptId: latestGenerationAttempt?.id || null,
+            provider: latestGenerationAttempt?.provider || trip.aiMeta?.provider || null,
+            model: latestGenerationAttempt?.model || trip.aiMeta?.model || null,
+            providerModel: latestGenerationAttempt?.providerModel || null,
+            error: {
+                code: 'AI_GENERATION_ABORTED_BY_USER',
+                status: 499,
+                message: abortedLiveRequest
+                    ? 'Generation aborted by user after prolonged runtime.'
+                    : 'Generation marked as aborted by user after prolonged runtime.',
+                failureKind: 'abort',
+                aborted: true,
+            },
+            metadata: {
+                abortedByUser: true,
+                abortedLiveRequest,
+                selectedRetryModelId: retryModelId || null,
+            },
+        });
+
+        onUpdateTrip(abortedTrip);
+        if (onCommitState) {
+            onCommitState(
+                abortedTrip,
+                abortedTrip.defaultView ?? currentViewSettings,
+                {
+                    label: 'Data: Aborted long-running generation',
+                    adminOverride: isAdminFallbackView && adminOverrideEnabled,
+                }
+            );
+        }
+
+        trackEvent('trip_generation__trip_strip--abort_retry', {
+            trip_id: trip.id,
+            had_live_abort: abortedLiveRequest,
+            model_id: retryModelId || 'default',
+        });
+
+        await handleRetryGeneration('trip_strip', retryModelId, abortedTrip);
+    }, [
+        adminOverrideEnabled,
+        currentViewSettings,
+        handleRetryGeneration,
+        isAdminFallbackView,
+        isRetryingGeneration,
+        latestGenerationAttempt?.id,
+        latestGenerationAttempt?.model,
+        latestGenerationAttempt?.provider,
+        latestGenerationAttempt?.providerModel,
+        latestGenerationAttempt?.requestId,
+        onCommitState,
+        onUpdateTrip,
+        retryModelId,
+        showToast,
+        t,
+        trip,
+    ]);
 
     const requireEdit = useCallback(() => {
         if (isTripLockedByArchive) {
@@ -954,7 +1915,7 @@ const useTripViewRender = ({
         return false;
     }, [adminOverrideEnabled, canEdit, isAdminFallbackView, isTripLockedByArchive, isTripLockedByExpiry, showToast]);
 
-    const safeUpdateTrip = useCallback((updatedTrip: ITrip, options?: { persist?: boolean }) => {
+    const safeUpdateTrip = useCallback((updatedTrip: ITrip, options?: { persist?: boolean; preserveUpdatedAt?: boolean }) => {
         if (!requireEdit()) return;
         onUpdateTrip(updatedTrip, options);
     }, [onUpdateTrip, requireEdit]);
@@ -962,7 +1923,7 @@ const useTripViewRender = ({
     const showSavedToastForLabel = useCallback((label: string) => {
         const tone = resolveChangeTone(label);
         const { label: actionLabel } = getToneMeta(tone);
-        showToast(stripHistoryPrefix(label), { tone, title: `Saved · ${actionLabel}` });
+        showToast(stripHistoryPrefix(label), { tone, title: actionLabel });
     }, [showToast]);
     const {
         showAllHistory,
@@ -982,6 +1943,7 @@ const useTripViewRender = ({
         stripHistoryPrefix,
         showToast,
     });
+    navigateHistoryRef.current = navigateHistory;
 
     const setPendingLabel = useCallback((label: string) => {
         pendingHistoryLabelRef.current = label;
@@ -1023,27 +1985,14 @@ const useTripViewRender = ({
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
-        try {
-            window.localStorage.removeItem('tf_country_info_expanded');
-        } catch {
-            // ignore storage issues
-        }
+        removeLocalStorageItem('tf_country_info_expanded');
     }, []);
-
-    const currentViewSettings: IViewSettings = useMemo(() => ({
-        layoutMode,
-        timelineView,
-        mapStyle,
-        routeMode,
-        showCityNames,
-        zoomLevel,
-        sidebarWidth,
-        timelineHeight
-    }), [layoutMode, timelineView, mapStyle, routeMode, showCityNames, zoomLevel, sidebarWidth, timelineHeight]);
 
     useTripViewSettingsSync({
         layoutMode,
+        timelineMode,
         timelineView,
+        mapDockMode,
         mapStyle,
         routeMode,
         showCityNames,
@@ -1057,16 +2006,29 @@ const useTripViewRender = ({
         setMapStyle,
         setRouteMode,
         setLayoutMode,
+        setTimelineMode,
         setTimelineView,
+        setMapDockMode,
         setZoomLevel,
         setSidebarWidth,
         setTimelineHeight,
         setShowCityNames,
         suppressCommitRef,
+        pendingManualViewSettingsPersistRef,
         skipViewDiffRef,
         appliedViewKeyRef,
         prevViewRef,
     });
+
+    const resolveMapDockModeLabel = useCallback((
+        fromMode: 'docked' | 'floating',
+        toMode: 'docked' | 'floating',
+    ): string => (
+        t('tripView.visualHistory.mapPreviewState', {
+            from: t(`tripView.visualHistory.mapPreviewStateValue.${fromMode}`),
+            to: t(`tripView.visualHistory.mapPreviewStateValue.${toMode}`),
+        })
+    ), [t]);
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
@@ -1092,7 +2054,7 @@ const useTripViewRender = ({
 
     const tripMeta = useMemo(() => buildTripMetaSummary(trip), [trip.items, trip.startDate]);
     const tripSummary = tripMeta.summaryLine;
-    const isLoadingPreview = hasLoadingItems;
+    const isGenerationInFlight = generationState === 'running' || generationState === 'queued';
     const loadingDestinationSummary = useMemo(() => {
         const locations = displayTrip.items
             .filter((item) => item.type === 'city' && typeof item.location === 'string')
@@ -1105,7 +2067,7 @@ const useTripViewRender = ({
         return displayTrip.title.replace(/^Planning\s+/i, '').replace(/\.\.\.$/, '').trim() || 'Destination';
     }, [displayTrip.items, displayTrip.title]);
     const showGenerationOverlay = isTripDetailRoute
-        && isLoadingPreview
+        && isGenerationInFlight
         && !isAdminFallbackView
         && !isTripLockedByExpiry
         && !isTripLockedByArchive
@@ -1168,8 +2130,11 @@ const useTripViewRender = ({
         trackOpenHistory: (source) => trackEvent('app__trip_history--open', { source }),
     });
 
-    const scheduleCommit = useCallback((nextTrip?: ITrip, nextView?: IViewSettings) => {
-        if (!onCommitState) return;
+    const scheduleCommit = useCallback((
+        nextTrip?: ITrip,
+        nextView?: IViewSettings,
+        options?: CommitScheduleOptions,
+    ) => {
         if (!canEdit) return;
         if (isExamplePreview) return;
         if (suppressCommitRef.current) {
@@ -1179,24 +2144,30 @@ const useTripViewRender = ({
         }
         const tripToCommit = nextTrip || trip;
         const viewToCommit = nextView || currentViewSettings;
-        pendingCommitRef.current = { trip: tripToCommit, view: viewToCommit };
+        pendingCommitRef.current = { trip: tripToCommit, view: viewToCommit, skipToast: options?.skipToast };
         debugHistory('Scheduled commit', { label: pendingHistoryLabelRef.current || 'Data: Updated trip' });
 
         if (commitTimerRef.current) clearTimeout(commitTimerRef.current);
         const pendingLabel = pendingHistoryLabelRef.current || 'Data: Updated trip';
-        const commitDelay = /^Data:\s+(Added|Removed)\b/i.test(pendingLabel) ? 150 : 700;
+        const commitDelay = /^Data:\s+/i.test(pendingLabel) ? 150 : 700;
         commitTimerRef.current = setTimeout(() => {
-            const payload = pendingCommitRef.current || { trip: tripToCommit, view: viewToCommit };
+            const payload = pendingCommitRef.current || { trip: tripToCommit, view: viewToCommit, skipToast: options?.skipToast };
             const label = pendingHistoryLabelRef.current || 'Data: Updated trip';
             debugHistory('Committing', { label });
-            onCommitState(payload.trip, payload.view, {
-                replace: false,
-                label,
-                adminOverride: isAdminFallbackView && adminOverrideEnabled,
-            });
+            if (onCommitState) {
+                onCommitState(payload.trip, payload.view, {
+                    replace: false,
+                    label,
+                    adminOverride: isAdminFallbackView && adminOverrideEnabled,
+                });
+            }
             pendingHistoryLabelRef.current = null;
-            refreshHistory();
-            showSavedToastForLabel(label);
+            if (onCommitState) {
+                refreshHistory();
+            }
+            if (!payload.skipToast) {
+                showSavedToastForLabel(label);
+            }
             if (typeof window !== 'undefined') {
                 (window as any).__tfLastCommit = { label, ts: Date.now() };
                 const hook = (window as any).__tfOnCommit;
@@ -1228,24 +2199,58 @@ const useTripViewRender = ({
             return;
         }
 
-        const changes: string[] = [];
-        if (prev.mapStyle !== mapStyle) changes.push(`Map view: ${prev.mapStyle} → ${mapStyle}`);
-        if (prev.routeMode !== routeMode) changes.push(`Route view: ${prev.routeMode} → ${routeMode}`);
-        if (prev.showCityNames !== showCityNames) changes.push(`City names: ${prev.showCityNames ? 'on' : 'off'} → ${showCityNames ? 'on' : 'off'}`);
-        if (prev.layoutMode !== layoutMode) changes.push(`Map layout: ${prev.layoutMode} → ${layoutMode}`);
-        if (prev.timelineView !== timelineView) changes.push(`Timeline layout: ${prev.timelineView} → ${timelineView}`);
-        if (prev.zoomLevel !== zoomLevel) changes.push(zoomLevel > prev.zoomLevel ? 'Zoomed in' : 'Zoomed out');
+        const {
+            changes,
+            didZoomChange,
+            isAutoZoomOnlyChange,
+        } = resolveVisualDiff({
+            previous: prev,
+            current: currentViewSettings,
+            zoomChangeSource: zoomChangeSourceRef.current,
+            resolveMapDockModeLabel,
+        });
 
-        if (changes.length === 1) {
-            setPendingLabel(`Visual: ${changes[0]}`);
-            scheduleCommit(undefined, currentViewSettings);
-        } else if (changes.length > 1) {
-            setPendingLabel(`Visual: ${changes.join(' · ')}`);
+        if (isAutoZoomOnlyChange) {
+            if (
+                commitTimerRef.current
+                && pendingCommitRef.current
+                && pendingHistoryLabelRef.current
+                && /^Visual:\s*/i.test(pendingHistoryLabelRef.current)
+            ) {
+                pendingCommitRef.current = {
+                    ...pendingCommitRef.current,
+                    view: currentViewSettings,
+                };
+                debugHistory('Merged auto-fit zoom into pending visual commit');
+            }
+            prevViewRef.current = currentViewSettings;
+            zoomChangeSourceRef.current = null;
+            return;
+        }
+        const hasOnlyZoomLabel = changes.length === 1 && (
+            changes[0] === 'Zoomed in' || changes[0] === 'Zoomed out'
+        );
+        if (didZoomChange && hasOnlyZoomLabel && zoomChangeSourceRef.current !== 'manual' && !isZoomDirty) {
+            prevViewRef.current = currentViewSettings;
+            zoomChangeSourceRef.current = null;
+            return;
+        }
+        if (!pendingManualVisualCommitRef.current) {
+            prevViewRef.current = currentViewSettings;
+            zoomChangeSourceRef.current = null;
+            return;
+        }
+        pendingManualVisualCommitRef.current = false;
+
+        const nextVisualLabel = buildVisualHistoryLabel(pendingHistoryLabelRef.current, changes);
+        if (nextVisualLabel) {
+            setPendingLabel(nextVisualLabel);
             scheduleCommit(undefined, currentViewSettings);
         }
 
         prevViewRef.current = currentViewSettings;
-    }, [currentViewSettings, layoutMode, mapStyle, routeMode, showCityNames, timelineView, zoomLevel, setPendingLabel, scheduleCommit]);
+        zoomChangeSourceRef.current = null;
+    }, [currentViewSettings, debugHistory, isZoomDirty, resolveMapDockModeLabel, setPendingLabel, scheduleCommit]);
 
     const { handleToggleFavorite } = useTripFavoriteHandler({
         trip,
@@ -1289,6 +2294,14 @@ const useTripViewRender = ({
         setPendingLabel,
         handleUpdateItems,
     });
+
+    const handleMapCitySelect = useCallback((cityId: string) => {
+        handleTimelineSelect(cityId, { isCity: true });
+    }, [handleTimelineSelect]);
+
+    const handleMapActivitySelect = useCallback((activityId: string) => {
+        handleTimelineSelect(activityId, { isCity: false });
+    }, [handleTimelineSelect]);
 
     const {
         routeStatusById,
@@ -1352,6 +2365,45 @@ const useTripViewRender = ({
         handleUpdateItems,
         showToast,
         pendingHistoryLabelRef,
+        onUndoDelete: (deletedItem, context) => {
+            const deletedEntityLabel = deletedItem.type === 'city'
+                ? `city "${deletedItem.title}"`
+                : deletedItem.type === 'activity'
+                    ? `activity "${deletedItem.title}"`
+                    : `transport "${deletedItem.title}"`;
+            const didUndoImmediately = navigateHistory('undo', { silent: true });
+            if (didUndoImmediately) {
+                showToast(`Undid removal of ${deletedEntityLabel}`, {
+                    tone: 'add',
+                    title: 'Undo',
+                    iconVariant: 'undo',
+                    disableDefaultUndo: true,
+                });
+                return;
+            }
+
+            window.setTimeout(() => {
+                const didUndoAfterCommit = navigateHistory('undo', { silent: true });
+                if (didUndoAfterCommit) {
+                    showToast(`Undid removal of ${deletedEntityLabel}`, {
+                        tone: 'add',
+                        title: 'Undo',
+                        iconVariant: 'undo',
+                        disableDefaultUndo: true,
+                    });
+                    return;
+                }
+
+                setPendingLabel(`Data: Restored ${deletedEntityLabel}`);
+                handleUpdateItems(context.previousItems, { suppressCommitToast: true });
+                showToast(`Restored ${deletedEntityLabel}`, {
+                    tone: 'add',
+                    title: 'Undo',
+                    iconVariant: 'undo',
+                    disableDefaultUndo: true,
+                });
+            }, 200);
+        },
         onResetSuppressedCommit: () => {
             suppressCommitRef.current = false;
         },
@@ -1365,8 +2417,12 @@ const useTripViewRender = ({
         handleTimelineResizeKeyDown,
     } = useTripResizeControls({
         layoutMode,
+        mapDockMode,
+        timelineMode,
         timelineView,
         horizontalTimelineDayCount,
+        zoomLevel,
+        isZoomDirty,
         clampZoomLevel,
         setZoomLevel,
         sidebarWidth,
@@ -1386,7 +2442,11 @@ const useTripViewRender = ({
         resizerWidth: RESIZER_WIDTH,
         resizeKeyboardStep: RESIZE_KEYBOARD_STEP,
         horizontalTimelineAutoFitPadding: HORIZONTAL_TIMELINE_AUTO_FIT_PADDING,
+        verticalTimelineAutoFitPadding: VERTICAL_TIMELINE_AUTO_FIT_PADDING,
+        zoomLevelPresets: TIMELINE_ZOOM_LEVEL_PRESETS,
         basePixelsPerDay: BASE_PIXELS_PER_DAY,
+        onAutoFitZoomApplied: markAutoFitZoomChange,
+        onManualViewSettingsChange: markManualViewChange,
     });
 
     const isMobile = isMobileViewport;
@@ -1402,9 +2462,75 @@ const useTripViewRender = ({
         isMobileMapExpanded,
     });
     const canManageTripMetadata = canEdit && !shareStatus && !isExamplePreview;
+    const showOwnedTripConnectivityStatus = !shareStatus && !isExamplePreview && !isAdminFallbackView;
+    const latestConflictBackupEntry = useMemo(() => {
+        if (!showOwnedTripConnectivityStatus) return null;
+        return getLatestConflictBackupForTrip(trip.id);
+    }, [showOwnedTripConnectivityStatus, syncSnapshot.hasConflictBackups, syncSnapshot.lastRunAt, trip.id]);
+    const isAdminSession = access?.role === 'admin';
+    const ownerSummary = useMemo(() => {
+        const ownerUsername = tripAccess?.ownerUsername?.trim() || null;
+        const ownerEmail = tripAccess?.ownerEmail?.trim() || null;
+        const ownerId = tripAccess?.ownerId?.trim() || null;
+        const currentUserId = access?.userId?.trim() || null;
+        const currentUsername = profile?.username?.trim() || null;
+        const isOwner = Boolean(
+            tripAccess?.source === 'owner'
+            || (ownerId && currentUserId && ownerId === currentUserId)
+        );
+
+        if (ownerUsername) {
+            const normalizedHandle = ownerUsername.startsWith('@') ? ownerUsername : `@${ownerUsername}`;
+            return `${normalizedHandle}${isOwner ? ' (you)' : ''}`;
+        }
+        if (ownerEmail) {
+            return `${ownerEmail}${isOwner ? ' (you)' : ''}`;
+        }
+        if (ownerId && isAdminSession) {
+            return `${ownerId}${isOwner ? ' (you)' : ''}`;
+        }
+        if (isOwner && currentUsername) {
+            const normalizedHandle = currentUsername.startsWith('@') ? currentUsername : `@${currentUsername}`;
+            return `${normalizedHandle} (you)`;
+        }
+        if (isOwner) return 'You';
+        if (ownerId) return 'Traveler';
+        return null;
+    }, [
+        isAdminSession,
+        access?.userId,
+        profile?.username,
+        tripAccess?.ownerEmail,
+        tripAccess?.ownerId,
+        tripAccess?.ownerUsername,
+        tripAccess?.source,
+    ]);
+    const tripOwnerAdminMeta = useMemo(() => {
+        if (!isAdminSession) return null;
+        const ownerUserId = (tripAccess?.ownerId?.trim() || access?.userId?.trim() || null);
+        const ownerUsername = (tripAccess?.ownerUsername?.trim() || profile?.username?.trim() || null);
+        const ownerEmail = (tripAccess?.ownerEmail?.trim() || access?.email?.trim() || null);
+        const accessSource = tripAccess?.source || (ownerUserId ? 'owner' : null);
+        return {
+            ownerUserId,
+            ownerUsername,
+            ownerEmail,
+            accessSource,
+        };
+    }, [isAdminSession, tripAccess?.ownerId, tripAccess?.ownerUsername, tripAccess?.ownerEmail, tripAccess?.source, access?.userId, access?.email, profile?.username]);
+    const ownerHint = useMemo(() => {
+        if (tripAccess?.source === 'public_read') {
+            return 'You are viewing a public trip owned by another account. Archive and edit actions are disabled.';
+        }
+        if (tripAccess?.source === 'admin_fallback' && !adminOverrideEnabled) {
+            return 'This is an admin fallback view. Enable admin override above to edit as an admin.';
+        }
+        return null;
+    }, [adminOverrideEnabled, tripAccess?.source]);
 
     const timelineCanvas = (
         <TripTimelineCanvas
+            timelineMode={timelineMode}
             timelineView={timelineView}
             trip={displayTrip}
             onUpdateItems={handleUpdateItems}
@@ -1447,6 +2573,44 @@ const useTripViewRender = ({
         () => (selectedItemId ? routeStatusById[selectedItemId] : undefined),
         [routeStatusById, selectedItemId]
     );
+    const handleTripCalendarExport = useCallback((
+        scope: TripCalendarExportScope,
+        source: 'details_panel' | 'trip_info_modal' | 'print_view',
+        activityId?: string,
+    ) => {
+        const bundle = buildTripCalendarExport({
+            trip: displayTrip,
+            scope,
+            activityId,
+        });
+        if (!bundle) return;
+        const downloaded = downloadTripCalendarExport(bundle);
+        if (!downloaded) return;
+
+        trackEvent(TRIP_CALENDAR_EXPORT_EVENT_BY_SCOPE[scope], {
+            trip_id: trip.id,
+            source,
+            event_count: bundle.eventCount,
+            ...(activityId ? { item_id: activityId } : {}),
+        });
+    }, [displayTrip, trip.id]);
+
+    const handleExportSelectedActivityCalendar = useCallback((itemId: string) => {
+        handleTripCalendarExport('activity', 'details_panel', itemId);
+    }, [handleTripCalendarExport]);
+
+    const handleExportActivitiesCalendar = useCallback((source: 'trip_info_modal' | 'print_view') => {
+        handleTripCalendarExport('activities', source);
+    }, [handleTripCalendarExport]);
+
+    const handleExportCitiesCalendar = useCallback((source: 'trip_info_modal' | 'print_view') => {
+        handleTripCalendarExport('cities', source);
+    }, [handleTripCalendarExport]);
+
+    const handleExportAllCalendar = useCallback((source: 'trip_info_modal' | 'print_view') => {
+        handleTripCalendarExport('all', source);
+    }, [handleTripCalendarExport]);
+
     const detailsPanelContent = renderDetailsPanelContent({
         showSelectedCitiesPanel,
         selectedCitiesInTimeline,
@@ -1469,9 +2633,8 @@ const useTripViewRender = ({
         selectedCityForceFillLabel: selectedCityForceFill?.label,
         cityColorPaletteId,
         onCityColorPaletteChange: canEdit ? handleCityColorPaletteChange : undefined,
+        onExportActivityCalendar: handleExportSelectedActivityCalendar,
     });
-
-    const activeToastMeta = toastState ? getToneMeta(toastState.tone) : null;
 
     if (viewMode === 'print') {
         return (
@@ -1482,6 +2645,9 @@ const useTripViewRender = ({
                         isPaywalled={isPaywallLocked}
                         onClose={() => setViewMode('planner')}
                         onUpdateTrip={handleUpdateItems}
+                        onExportActivitiesCalendar={() => handleExportActivitiesCalendar('print_view')}
+                        onExportCitiesCalendar={() => handleExportCitiesCalendar('print_view')}
+                        onExportAllCalendar={() => handleExportAllCalendar('print_view')}
                     />
                 </Suspense>
             </GoogleMapsLoader>
@@ -1490,7 +2656,10 @@ const useTripViewRender = ({
 
     return (
         <GoogleMapsLoader language={appLanguage} enabled={isMapBootstrapEnabled}>
-            <div className="relative h-screen w-screen flex flex-col bg-gray-50 overflow-hidden text-gray-900 font-sans selection:bg-accent-100 selection:text-accent-900">
+            <div
+                className="relative h-screen w-screen flex flex-col bg-gray-50 overflow-hidden text-gray-900 font-sans selection:bg-accent-100 selection:text-accent-900"
+                data-tf-handoff-ready="true"
+            >
                 
                 <TripViewHeader
                     isMobile={isMobile}
@@ -1551,8 +2720,47 @@ const useTripViewRender = ({
                     isPaywallLocked={isPaywallLocked}
                     expirationLabel={expirationLabel}
                     expirationRelativeLabel={expirationRelativeLabel}
-                    onPaywallLoginClick={handlePaywallLoginClick}
+                    paywallActivationMode={paywallActivationMode}
+                    onPaywallActivateClick={handlePaywallActivateClick}
                     tripId={trip.id}
+                    connectivityState={showOwnedTripConnectivityStatus ? connectivitySnapshot.state : undefined}
+                    connectivityReason={showOwnedTripConnectivityStatus ? connectivitySnapshot.reason : null}
+                    connectivityForced={showOwnedTripConnectivityStatus ? connectivitySnapshot.isForced : false}
+                    pendingSyncCount={showOwnedTripConnectivityStatus ? syncSnapshot.pendingCount : 0}
+                    failedSyncCount={showOwnedTripConnectivityStatus ? syncSnapshot.failedCount : 0}
+                    isSyncingQueue={showOwnedTripConnectivityStatus ? syncSnapshot.isSyncing : false}
+                    onRetrySyncQueue={showOwnedTripConnectivityStatus
+                        ? (() => {
+                            void retrySyncNow();
+                        })
+                        : undefined}
+                    hasConflictBackupForTrip={showOwnedTripConnectivityStatus ? Boolean(latestConflictBackupEntry) : false}
+                    onRestoreConflictBackup={showOwnedTripConnectivityStatus && latestConflictBackupEntry ? handleRestoreServerBackup : undefined}
+                    generationState={generationState}
+                    generationElapsedMs={generationElapsedMs}
+                    generationTimeoutMs={TRIP_GENERATION_TIMEOUT_MS}
+                    generationFailureMessage={latestGenerationAttempt?.errorMessage || null}
+                    pendingAuthQueueRequestId={pendingAuthQueueRequestId}
+                    canRetryGeneration={canRetryGeneration}
+                    canAbortAndRetryGeneration={canAbortAndRetryGeneration}
+                    isRetryingGeneration={isRetryingGeneration}
+                    isResolvingPendingAuthGeneration={isResolvingPendingAuthGeneration}
+                    onResolvePendingAuthGeneration={() => {
+                        void handleResolvePendingAuthGeneration();
+                    }}
+                    onAbortAndRetryGeneration={() => {
+                        void handleAbortAndRetryGeneration();
+                    }}
+                    onOpenRetryModelSelector={() => {
+                        trackEvent('trip_generation__trip_strip--change_model', {
+                            trip_id: trip.id,
+                            source: 'trip_strip',
+                        });
+                        openTripInfoModal();
+                    }}
+                    onRetryGeneration={() => {
+                        void handleRetryGeneration('trip_strip');
+                    }}
                     exampleTripBanner={exampleTripBanner}
                 />
 
@@ -1568,9 +2776,61 @@ const useTripViewRender = ({
                         onTimelineTouchStart={handleTimelineTouchStart}
                         onTimelineTouchMove={handleTimelineTouchMove}
                         onTimelineTouchEnd={handleTimelineTouchEnd}
-                        onZoomOut={() => setZoomLevel((value) => clampZoomLevel(value - 0.1))}
-                        onZoomIn={() => setZoomLevel((value) => clampZoomLevel(value + 0.1))}
-                        onToggleTimelineView={() => setTimelineView((value) => (value === 'horizontal' ? 'vertical' : 'horizontal'))}
+                        onZoomOut={() => {
+                            trackEvent('trip_view__zoom', {
+                                direction: 'out',
+                                trip_id: trip.id,
+                                timeline_mode: timelineMode,
+                            });
+                            markZoomDirty();
+                            setZoomLevel((value) => clampZoomLevel(value - 0.1));
+                        }}
+                        onZoomIn={() => {
+                            trackEvent('trip_view__zoom', {
+                                direction: 'in',
+                                trip_id: trip.id,
+                                timeline_mode: timelineMode,
+                            });
+                            markZoomDirty();
+                            setZoomLevel((value) => clampZoomLevel(value + 0.1));
+                        }}
+                        onTimelineModeChange={(mode) => {
+                            if (mode === timelineMode) return;
+                            trackEvent(mode === 'calendar' ? 'trip_view__mode--calendar' : 'trip_view__mode--timeline', {
+                                trip_id: trip.id,
+                            });
+                            markManualViewChange();
+                            setTimelineMode(mode);
+                        }}
+                        onTimelineViewChange={(view) => {
+                            if (view === timelineView) return;
+                            trackEvent(
+                                view === 'horizontal'
+                                    ? 'trip_view__layout_direction--horizontal'
+                                    : 'trip_view__layout_direction--vertical',
+                                { trip_id: trip.id, target: 'timeline' }
+                            );
+                            markManualViewChange();
+                            setTimelineView(view);
+                        }}
+                        mapDockMode={mapDockMode}
+                        onMapDockModeChange={(mode) => {
+                            if (mode === mapDockMode) return;
+                            trackEvent(
+                                mode === 'floating'
+                                    ? 'trip_view__map_preview--minimize'
+                                    : 'trip_view__map_preview--maximize',
+                                {
+                                    trip_id: trip.id,
+                                    layout_mode: layoutMode,
+                                }
+                            );
+                            markManualViewChange();
+                            runWithOptionalViewTransition(() => {
+                                setMapDockMode(mode);
+                            });
+                        }}
+                        timelineMode={timelineMode}
                         timelineView={timelineView}
                         mapViewportRef={mapViewportRef}
                         isMapBootstrapEnabled={isMapBootstrapEnabled}
@@ -1579,15 +2839,39 @@ const useTripViewRender = ({
                         mapDeferredFallback={<MapDeferredFallback onLoadNow={enableMapBootstrap} />}
                         displayItems={displayTrip.items}
                         selectedItemId={selectedItemId}
+                        onMapCitySelect={handleMapCitySelect}
+                        onMapActivitySelect={handleMapActivitySelect}
                         layoutMode={layoutMode}
                         effectiveLayoutMode={effectiveLayoutMode}
-                        onLayoutModeChange={setLayoutMode}
+                        onLayoutModeChange={(mode) => {
+                            if (mode === layoutMode) return;
+                            trackEvent(
+                                mode === 'horizontal'
+                                    ? 'trip_view__layout_direction--horizontal'
+                                    : 'trip_view__layout_direction--vertical',
+                                { trip_id: trip.id, target: 'map' }
+                            );
+                            markManualViewChange();
+                            setLayoutMode(mode);
+                        }}
                         mapStyle={mapStyle}
-                        onMapStyleChange={setMapStyle}
+                        onMapStyleChange={(nextStyle) => {
+                            if (nextStyle === mapStyle) return;
+                            markManualViewChange();
+                            setMapStyle(nextStyle);
+                        }}
                         routeMode={routeMode}
-                        onRouteModeChange={setRouteMode}
+                        onRouteModeChange={(nextMode) => {
+                            if (nextMode === routeMode) return;
+                            markManualViewChange();
+                            setRouteMode(nextMode);
+                        }}
                         showCityNames={showCityNames}
-                        onShowCityNamesChange={setShowCityNames}
+                        onShowCityNamesChange={(nextValue) => {
+                            if (nextValue === showCityNames) return;
+                            markManualViewChange();
+                            setShowCityNames(nextValue);
+                        }}
                         mapColorMode={mapColorMode}
                         onMapColorModeChange={allowMapColorModeControls ? handleMapColorModeChange : undefined}
                         initialMapFocusQuery={initialMapFocusQuery}
@@ -1632,7 +2916,21 @@ const useTripViewRender = ({
                         onToggleFavorite={handleToggleFavorite}
                         isExamplePreview={isExamplePreview}
                         tripMeta={tripMeta}
+                        ownerSummary={ownerSummary}
+                        ownerHint={ownerHint}
+                        adminMeta={tripOwnerAdminMeta}
                         aiMeta={displayTrip.aiMeta}
+                        generationState={generationState}
+                        latestGenerationAttempt={latestGenerationAttempt}
+                        canRetryGeneration={canRetryGeneration}
+                        retryDisabledReason={retryDisabledReason}
+                        isRetryingGeneration={isRetryingGeneration}
+                        retryModelId={retryModelId}
+                        onRetryModelIdChange={setRetryModelId}
+                        onRetryGeneration={handleRetryGeneration}
+                        onOpenBenchmarkWithSnapshot={handleOpenBenchmarkWithSnapshot}
+                        canOpenBenchmarkWithSnapshot={Boolean(displayTrip.aiMeta?.generation?.inputSnapshot)}
+                        tripInfoRetryAnalyticsAttributes={tripInfoRetryAnalyticsAttributes}
                         forkMeta={forkMeta}
                         isTripInfoHistoryExpanded={isTripInfoHistoryExpanded}
                         onToggleTripInfoHistoryExpanded={() => setIsTripInfoHistoryExpanded((value) => !value)}
@@ -1653,6 +2951,9 @@ const useTripViewRender = ({
                         formatHistoryTime={formatHistoryTime}
                         countryInfo={displayTrip.countryInfo}
                         isPaywallLocked={isPaywallLocked}
+                        onExportActivitiesCalendar={() => handleExportActivitiesCalendar('trip_info_modal')}
+                        onExportCitiesCalendar={() => handleExportCitiesCalendar('trip_info_modal')}
+                        onExportAllCalendar={() => handleExportAllCalendar('trip_info_modal')}
                         shouldEnableReleaseNotice={shouldEnableReleaseNotice}
                         isShareOpen={isShareOpen}
                         shareMode={shareMode}
@@ -1664,6 +2965,8 @@ const useTripViewRender = ({
                         isGeneratingShare={isGeneratingShare}
                         isHistoryOpen={isHistoryOpen}
                         historyModalItems={historyModalItems}
+                        pendingSyncCount={showOwnedTripConnectivityStatus ? syncSnapshot.pendingCount : 0}
+                        failedSyncCount={showOwnedTripConnectivityStatus ? syncSnapshot.failedCount : 0}
                         onCloseHistory={() => setIsHistoryOpen(false)}
                         onHistoryGo={(item) => {
                             setIsHistoryOpen(false);
@@ -1675,16 +2978,13 @@ const useTripViewRender = ({
                         onCopyTrip={onCopyTrip}
                         expirationLabel={expirationLabel}
                         tripId={trip.id}
-                        onPaywallLoginClick={handlePaywallLoginClick}
+                        paywallActivationMode={paywallActivationMode}
+                        onPaywallActivateClick={handlePaywallActivateClick}
                         showGenerationOverlay={showGenerationOverlay}
                         generationProgressMessage={generationProgressMessage}
                         loadingDestinationSummary={loadingDestinationSummary}
                         tripDateRange={tripMeta.dateRange}
                         tripTotalDaysLabel={tripMeta.totalDaysLabel}
-                        suppressToasts={suppressToasts}
-                        toastState={toastState}
-                        activeToastMeta={activeToastMeta}
-                        onDismissToast={() => setToastState(null)}
                     />
 
                 </main>

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Clock, MapPin, Repeat } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import {
     formatExampleTripCountLabel,
     formatExampleTripUiText,
@@ -14,12 +15,17 @@ import { getExampleCityLaneViewTransitionName, getExampleMapViewTransitionName, 
 import { ProgressiveImage } from '../ProgressiveImage';
 import { buildBlurhashEndpointUrl, isImageCdnEnabled } from '../../utils/imageDelivery';
 import { FlagIcon } from '../flags/FlagIcon';
+import { trackEvent } from '../../services/analyticsService';
 
 interface ExampleTripCardProps {
     card: ExampleTripCardType;
     mapPreviewUrl?: string | null;
     miniCalendar?: ExampleTemplateMiniCalendar | null;
     enableSharedTransition?: boolean;
+    creatorHandle?: string | null;
+    creatorProfilePath?: string | null;
+    showCreatorAttribution?: boolean;
+    onCreatorClick?: () => void;
 }
 
 const HEX_COLOR_PATTERN = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i;
@@ -63,6 +69,10 @@ export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({
     mapPreviewUrl,
     miniCalendar = null,
     enableSharedTransition = false,
+    creatorHandle = null,
+    creatorProfilePath = null,
+    showCreatorAttribution = false,
+    onCreatorClick,
 }) => {
     const { i18n } = useTranslation();
     const currentLocale = i18n.resolvedLanguage || i18n.language;
@@ -81,6 +91,7 @@ export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({
         currentLocale,
         cityLanes.map((lane) => lane.title)
     );
+    const resolvedCreatorHandle = creatorHandle || card.username;
     const localizedTitle = localizedCard.title;
 
     React.useEffect(() => {
@@ -258,7 +269,22 @@ export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({
                 <div className={`h-6 w-6 rounded-full ${card.avatarColor} flex items-center justify-center text-white text-[10px] font-bold`}>
                     {card.username[0].toUpperCase()}
                 </div>
-                <span className="text-xs text-slate-500">{card.username}</span>
+                {showCreatorAttribution && creatorProfilePath ? (
+                    <Link
+                        to={creatorProfilePath}
+                        onClick={() => {
+                            onCreatorClick?.();
+                            trackEvent('example_trip__creator_handle', {
+                                creator_handle: resolvedCreatorHandle,
+                            });
+                        }}
+                        className="text-xs font-semibold text-slate-600 transition-colors hover:text-accent-700 hover:underline"
+                    >
+                        @{resolvedCreatorHandle}
+                    </Link>
+                ) : (
+                    <span className="text-xs text-slate-500">{card.username}</span>
+                )}
             </div>
         </article>
     );

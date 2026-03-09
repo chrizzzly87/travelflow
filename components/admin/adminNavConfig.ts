@@ -7,7 +7,7 @@ export interface AdminNavItem {
 }
 
 export type AdminNavSectionId = 'workspace' | 'operations' | 'tools';
-export type AdminNavItemIconKey = 'overview' | 'users' | 'trips' | 'tiers' | 'audit' | 'benchmark';
+export type AdminNavItemIconKey = 'overview' | 'users' | 'trips' | 'tiers' | 'audit' | 'legal' | 'benchmark' | 'telemetry' | 'og_tools' | 'design_system';
 
 export interface AdminNavSection {
     id: AdminNavSectionId;
@@ -51,11 +51,39 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
         icon: 'audit',
     },
     {
+        id: 'legal',
+        label: 'Legal Terms',
+        path: '/admin/legal',
+        section: 'operations',
+        icon: 'legal',
+    },
+    {
         id: 'ai_benchmark',
         label: 'AI Benchmark',
         path: '/admin/ai-benchmark',
         section: 'tools',
         icon: 'benchmark',
+    },
+    {
+        id: 'ai_telemetry',
+        label: 'AI Telemetry',
+        path: '/admin/ai-benchmark/telemetry',
+        section: 'tools',
+        icon: 'telemetry',
+    },
+    {
+        id: 'og_tools',
+        label: 'OG Tools',
+        path: '/admin/og-tools',
+        section: 'tools',
+        icon: 'og_tools',
+    },
+    {
+        id: 'design_system_playground',
+        label: 'Design Playground',
+        path: '/admin/design-system-playground',
+        section: 'tools',
+        icon: 'design_system',
     },
 ];
 

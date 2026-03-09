@@ -4,26 +4,38 @@ import { AppLanguage, ITrip, IViewSettings } from '../../types';
 import { useDbSync } from '../../hooks/useDbSync';
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from '../../config/locales';
 import { loadLazyComponentWithRecovery } from '../../services/lazyImportRecovery';
+import { MarketingRouteLoadingShell } from '../../components/bootstrap/MarketingRouteLoadingShell';
+import { TripRouteLoadingShell } from '../../components/tripview/TripRouteLoadingShell';
+import { DeferredAppRoutes } from './DeferredAppRoutes';
 
 const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
     moduleKey: string,
     importer: () => Promise<TModule>
 ) => lazy(() => loadLazyComponentWithRecovery(moduleKey, importer));
 
-const MarketingHomePage = lazyWithRecovery('MarketingHomePage', () => import('../../pages/MarketingHomePage').then((module) => ({ default: module.MarketingHomePage })));
 const TripLoaderRoute = lazyWithRecovery('TripLoaderRoute', () => import('../../routes/TripLoaderRoute').then((module) => ({ default: module.TripLoaderRoute })));
 const SharedTripLoaderRoute = lazyWithRecovery('SharedTripLoaderRoute', () => import('../../routes/SharedTripLoaderRoute').then((module) => ({ default: module.SharedTripLoaderRoute })));
 const ExampleTripLoaderRoute = lazyWithRecovery('ExampleTripLoaderRoute', () => import('../../routes/ExampleTripLoaderRoute').then((module) => ({ default: module.ExampleTripLoaderRoute })));
 const CreateTripClassicLabPage = lazyWithRecovery('CreateTripClassicLabPage', () => import('../../pages/CreateTripClassicLabPage').then((module) => ({ default: module.CreateTripClassicLabPage })));
-const DeferredAppRoutes = lazyWithRecovery('DeferredAppRoutes', () => import('./DeferredAppRoutes').then((module) => ({ default: module.DeferredAppRoutes })));
+const CreateTripV3Page = lazyWithRecovery('CreateTripV3Page', () => import('../../pages/CreateTripV3Page').then((module) => ({ default: module.CreateTripV3Page })));
 
 export const RouteLoadingFallback: React.FC = () => (
-    <div className="min-h-[42vh] w-full bg-slate-50" aria-hidden="true" />
+    <MarketingRouteLoadingShell />
 );
 
-const renderWithSuspense = (node: React.ReactElement) => (
-    <Suspense fallback={<RouteLoadingFallback />}>
-        {node}
+const HandoffReadyBoundary: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+    <div data-tf-handoff-ready="true">
+        {children}
+    </div>
+);
+
+const renderWithSuspense = (
+    node: React.ReactElement,
+    fallback: React.ReactElement = <RouteLoadingFallback />,
+    options?: { handoffReady?: boolean }
+) => (
+    <Suspense fallback={fallback}>
+        {options?.handoffReady === false ? node : <HandoffReadyBoundary>{node}</HandoffReadyBoundary>}
     </Suspense>
 );
 
@@ -55,6 +67,19 @@ const CreateTripClassicRoute: React.FC<{
                 onOpenManager={onOpenManager}
                 onLanguageLoaded={onLanguageLoaded}
             />
+        </Suspense>
+    );
+};
+
+const CreateTripWizardRoute: React.FC<{
+    onTripGenerated: (t: ITrip) => void;
+    onOpenManager: () => void;
+    onLanguageLoaded?: (lang: AppLanguage) => void;
+}> = ({ onTripGenerated, onOpenManager, onLanguageLoaded }) => {
+    useDbSync(onLanguageLoaded);
+    return (
+        <Suspense fallback={<RouteLoadingFallback />}>
+            <CreateTripV3Page onTripGenerated={onTripGenerated} onOpenManager={onOpenManager} />
         </Suspense>
     );
 };
@@ -93,10 +118,6 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
             <ScrollToTop />
             <Routes>
                 <Route
-                    path="/"
-                    element={renderWithSuspense(<MarketingHomePage />)}
-                />
-                <Route
                     path="/create-trip"
                     element={
                         renderWithSuspense(<CreateTripClassicRoute
@@ -120,6 +141,29 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
                     />
                 ))}
                 <Route
+                    path="/create-trip/wizard"
+                    element={
+                        renderWithSuspense(<CreateTripWizardRoute
+                            onTripGenerated={onTripGenerated}
+                            onOpenManager={onOpenManager}
+                            onLanguageLoaded={onAppLanguageLoaded}
+                        />)
+                    }
+                />
+                {LOCALIZED_TOOL_LOCALES.map((locale) => (
+                    <Route
+                        key={`tool:${locale}:create-trip-wizard`}
+                        path={`/${locale}/create-trip/wizard`}
+                        element={
+                            renderWithSuspense(<CreateTripWizardRoute
+                                onTripGenerated={onTripGenerated}
+                                onOpenManager={onOpenManager}
+                                onLanguageLoaded={onAppLanguageLoaded}
+                            />)
+                        }
+                    />
+                ))}
+                <Route
                     path="/trip/:tripId"
                     element={renderWithSuspense(
                         <TripLoaderRoute
@@ -132,7 +176,9 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
                             appLanguage={appLanguage}
                             onViewSettingsChange={onViewSettingsChange}
                             onLanguageLoaded={onAppLanguageLoaded}
-                        />
+                        />,
+                        <TripRouteLoadingShell variant="loadingTrip" />,
+                        { handoffReady: false }
                     )}
                 />
                 <Route
@@ -145,7 +191,9 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
                             onOpenSettings={onOpenSettings}
                             appLanguage={appLanguage}
                             onViewSettingsChange={onViewSettingsChange}
-                        />
+                        />,
+                        <TripRouteLoadingShell variant="loadingExampleTrip" />,
+                        { handoffReady: false }
                     )}
                 />
                 <Route
@@ -159,19 +207,21 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
                             appLanguage={appLanguage}
                             onViewSettingsChange={onViewSettingsChange}
                             onLanguageLoaded={onAppLanguageLoaded}
-                        />
+                        />,
+                        <TripRouteLoadingShell variant="loadingSharedTrip" />,
+                        { handoffReady: false }
                     )}
                 />
                 <Route path="/trip" element={<Navigate to="/create-trip" replace />} />
                 <Route
                     path="*"
-                    element={renderWithSuspense(
+                    element={
                         <DeferredAppRoutes
                             onAppLanguageLoaded={onAppLanguageLoaded}
                             onTripGenerated={onTripGenerated}
                             onOpenManager={onOpenManager}
                         />
-                    )}
+                    }
                 />
             </Routes>
         </>

@@ -17,8 +17,11 @@ import {
 describe('config/routes', () => {
   it('builds static and param routes', () => {
     expect(buildPath('home')).toBe('/');
+    expect(buildPath('imprint')).toBe('/imprint');
     expect(buildPath('blogPost', { slug: 'spring-guide' })).toBe('/blog/spring-guide');
     expect(buildPath('tripDetail', { tripId: 'abc 123' })).toBe('/trip/abc%20123');
+    expect(buildPath('publicProfile', { username: 'traveler_1' })).toBe('/u/traveler_1');
+    expect(buildPath('publicProfileStamps', { username: 'traveler_1' })).toBe('/u/traveler_1/stamps');
   });
 
   it('buildPath handles all declared route keys', () => {
@@ -46,12 +49,7 @@ describe('config/routes', () => {
       buildPath('cookies'),
       buildPath('createTrip'),
       buildPath('createTripClassicLab'),
-      buildPath('createTripClassicLegacyLab'),
-      buildPath('createTripSplitWorkspaceLab'),
-      buildPath('createTripJourneyArchitectLab'),
-      buildPath('createTripDesignV1Lab'),
-      buildPath('createTripDesignV2Lab'),
-      buildPath('createTripDesignV3Lab'),
+      buildPath('createTripWizard'),
       buildPath('tripDetail', { tripId: 'trip-id' }),
       buildPath('tripLegacy'),
       buildPath('exampleTrip', { templateId: 'template-id' }),
@@ -62,9 +60,13 @@ describe('config/routes', () => {
       buildPath('adminTiers'),
       buildPath('adminAudit'),
       buildPath('adminAiBenchmark'),
+      buildPath('adminDesignSystemPlayground'),
       buildPath('profile'),
+      buildPath('profileStamps'),
       buildPath('profileSettings'),
       buildPath('profileOnboarding'),
+      buildPath('publicProfile', { username: 'traveler' }),
+      buildPath('publicProfileStamps', { username: 'traveler' }),
     ];
 
     expect(routeResults.every((path) => path.startsWith('/'))).toBe(true);
@@ -90,6 +92,8 @@ describe('config/routes', () => {
     expect(isToolRoute('/features')).toBe(false);
 
     expect(isLocalizedMarketingPath('/de/features')).toBe(true);
+    expect(isLocalizedMarketingPath('/imprint')).toBe(true);
+    expect(isLocalizedMarketingPath('/impressum')).toBe(false);
     expect(isLocalizedMarketingPath('/trip/abc')).toBe(false);
   });
 
@@ -108,10 +112,12 @@ describe('config/routes', () => {
     expect(getNamespacesForMarketingPath('/pricing')).toEqual(['common', 'pricing']);
     expect(getNamespacesForMarketingPath('/de/blog/spring-guide')).toEqual(['common', 'blog']);
     expect(getNamespacesForMarketingPath('/terms')).toEqual(['common', 'legal']);
-    expect(getNamespacesForMarketingPath('/faq')).toEqual(['common', 'wip']);
+    expect(getNamespacesForMarketingPath('/faq')).toEqual(['common']);
     expect(getNamespacesForMarketingPath('/login')).toEqual(['common', 'auth']);
     expect(getNamespacesForMarketingPath('/inspirations')).toEqual(['common', 'pages']);
     expect(getNamespacesForToolPath('/create-trip')).toEqual(['common', 'createTrip']);
+    expect(getNamespacesForToolPath('/profile?tab=recent')).toEqual(['common', 'profile']);
+    expect(getNamespacesForToolPath('/u/traveler')).toEqual(['common', 'profile']);
     expect(getNamespacesForToolPath('/trip/abc')).toEqual(['common']);
   });
 

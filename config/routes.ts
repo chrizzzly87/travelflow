@@ -25,12 +25,7 @@ export type RouteKey =
     | 'cookies'
     | 'createTrip'
     | 'createTripClassicLab'
-    | 'createTripClassicLegacyLab'
-    | 'createTripSplitWorkspaceLab'
-    | 'createTripJourneyArchitectLab'
-    | 'createTripDesignV1Lab'
-    | 'createTripDesignV2Lab'
-    | 'createTripDesignV3Lab'
+    | 'createTripWizard'
     | 'tripDetail'
     | 'tripLegacy'
     | 'exampleTrip'
@@ -40,10 +35,15 @@ export type RouteKey =
     | 'adminTrips'
     | 'adminTiers'
     | 'adminAudit'
+    | 'adminLegal'
     | 'adminAiBenchmark'
+    | 'adminDesignSystemPlayground'
     | 'profile'
+    | 'profileStamps'
     | 'profileSettings'
-    | 'profileOnboarding';
+    | 'profileOnboarding'
+    | 'publicProfile'
+    | 'publicProfileStamps';
 
 type RouteParamsByKey = {
     inspirationsCountryDetail: { countryName: string };
@@ -51,6 +51,8 @@ type RouteParamsByKey = {
     tripDetail: { tripId: string };
     exampleTrip: { templateId: string };
     shareTrip: { token: string };
+    publicProfile: { username: string };
+    publicProfileStamps: { username: string };
 };
 
 const encodeSegment = (value: string): string => encodeURIComponent(value);
@@ -80,7 +82,7 @@ const MARKETING_PATH_PATTERNS: RegExp[] = [
     /^\/cookies$/,
 ];
 
-const TOOL_ROUTE_PREFIXES = ['/create-trip', '/trip', '/s', '/example', '/admin', '/profile', '/api'];
+const TOOL_ROUTE_PREFIXES = ['/create-trip', '/trip', '/s', '/example', '/admin', '/profile', '/u', '/api'];
 const ONBOARDING_EXEMPT_ROUTE_PREFIXES = ['/create-trip', '/trip', '/s', '/example'];
 
 export const LOCALIZED_MARKETING_ROUTE_KEYS: RouteKey[] = [
@@ -163,18 +165,8 @@ export const buildPath = <K extends RouteKey>(
             return '/create-trip';
         case 'createTripClassicLab':
             return '/create-trip/labs/classic-card';
-        case 'createTripClassicLegacyLab':
-            return '/create-trip/labs/classic-legacy';
-        case 'createTripSplitWorkspaceLab':
-            return '/create-trip/labs/split-workspace';
-        case 'createTripJourneyArchitectLab':
-            return '/create-trip/labs/journey-architect';
-        case 'createTripDesignV1Lab':
-            return '/create-trip/labs/design-v1';
-        case 'createTripDesignV2Lab':
-            return '/create-trip/labs/design-v2';
-        case 'createTripDesignV3Lab':
-            return '/create-trip/labs/design-v3';
+        case 'createTripWizard':
+            return '/create-trip/wizard';
         case 'tripDetail':
             return `/trip/${encodeSegment((params as RouteParamsByKey['tripDetail']).tripId)}`;
         case 'tripLegacy':
@@ -193,14 +185,24 @@ export const buildPath = <K extends RouteKey>(
             return '/admin/tiers';
         case 'adminAudit':
             return '/admin/audit';
+        case 'adminLegal':
+            return '/admin/legal';
         case 'adminAiBenchmark':
             return '/admin/ai-benchmark';
+        case 'adminDesignSystemPlayground':
+            return '/admin/design-system-playground';
         case 'profile':
             return '/profile';
+        case 'profileStamps':
+            return '/profile/stamps';
         case 'profileSettings':
             return '/profile/settings';
         case 'profileOnboarding':
             return '/profile/onboarding';
+        case 'publicProfile':
+            return `/u/${encodeSegment((params as RouteParamsByKey['publicProfile']).username)}`;
+        case 'publicProfileStamps':
+            return `/u/${encodeSegment((params as RouteParamsByKey['publicProfileStamps']).username)}/stamps`;
         default:
             return '/';
     }
@@ -284,7 +286,7 @@ export const getNamespacesForMarketingPath = (pathname: string): string[] => {
     if (stripped === '/pricing') return ['common', 'pricing'];
     if (stripped.startsWith('/blog')) return ['common', 'blog'];
     if (['/imprint', '/privacy', '/terms', '/cookies'].includes(stripped)) return ['common', 'legal'];
-    if (stripped === '/faq') return ['common', 'wip'];
+    if (stripped === '/faq') return ['common'];
     if (stripped === '/login') return ['common', 'auth'];
     return ['common', 'pages'];
 };
@@ -292,5 +294,7 @@ export const getNamespacesForMarketingPath = (pathname: string): string[] => {
 export const getNamespacesForToolPath = (pathname: string): string[] => {
     const stripped = stripLocalePrefix(pathname);
     if (stripped.startsWith('/create-trip')) return ['common', 'createTrip'];
+    if (stripped.startsWith('/profile')) return ['common', 'profile'];
+    if (stripped.startsWith('/u/')) return ['common', 'profile'];
     return ['common'];
 };

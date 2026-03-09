@@ -21,6 +21,7 @@ const mocks = vi.hoisted(() => ({
       },
     },
   },
+  connectivityState: 'online' as 'online' | 'degraded' | 'offline',
   useDbSync: vi.fn(),
   ensureDbSession: vi.fn(),
   dbGetSharedTrip: vi.fn(),
@@ -52,6 +53,20 @@ vi.mock('../../../hooks/useAuth', () => ({
 
 vi.mock('../../../hooks/useDbSync', () => ({
   useDbSync: mocks.useDbSync,
+}));
+
+vi.mock('../../../hooks/useConnectivityStatus', () => ({
+  useConnectivityStatus: () => ({
+    snapshot: {
+      state: mocks.connectivityState,
+      reason: null,
+      lastSuccessAt: null,
+      lastFailureAt: null,
+      consecutiveFailures: 0,
+      isForced: false,
+      forcedState: null,
+    },
+  }),
 }));
 
 vi.mock('../../../config/db', () => ({
@@ -116,6 +131,7 @@ describe('routes/SharedTripLoaderRoute', () => {
     mocks.route.pathname = '/s/share-token';
     mocks.route.search = '';
     mocks.route.hash = '';
+    mocks.connectivityState = 'online';
     mocks.ensureDbSession.mockResolvedValue('session-1');
     mocks.dbGetSharedTrip.mockResolvedValue(null);
     mocks.dbGetSharedTripVersion.mockResolvedValue(null);
@@ -133,6 +149,45 @@ describe('routes/SharedTripLoaderRoute', () => {
       expect(mocks.navigate).toHaveBeenCalledWith('/share-unavailable', { replace: true });
     });
     expect(props.onTripLoaded).not.toHaveBeenCalled();
+  });
+
+  it('redirects to offline fallback when connectivity is offline', async () => {
+    mocks.connectivityState = 'offline';
+    const props = makeRouteProps();
+
+    render(React.createElement(SharedTripLoaderRoute, props));
+
+    await waitFor(() => {
+      expect(mocks.navigate).toHaveBeenCalledWith('/share-unavailable?reason=offline', { replace: true });
+    });
+    expect(mocks.ensureDbSession).not.toHaveBeenCalled();
+    expect(props.onTripLoaded).not.toHaveBeenCalled();
+  });
+
+  it('does not change hook order when the shared trip prop appears after initial null render', async () => {
+    const resolvedTrip = makeTrip({ id: 'shared-late-load', title: 'Shared late load' });
+    const props = makeRouteProps();
+    const view = render(React.createElement(SharedTripLoaderRoute, props));
+
+    expect(() => {
+      view.rerender(React.createElement(SharedTripLoaderRoute, {
+        ...props,
+        trip: resolvedTrip,
+      }));
+    }).not.toThrow();
+
+    await waitFor(() => {
+      expect(latestTripViewProps()?.trip).toEqual(resolvedTrip);
+    });
+  });
+
+  it('renders a route loading shell while the shared trip loader is still resolving', () => {
+    mocks.dbGetSharedTrip.mockImplementation(() => new Promise(() => {}));
+    const props = makeRouteProps();
+    const view = render(React.createElement(SharedTripLoaderRoute, props));
+
+    expect(view.queryAllByTestId('trip-route-loading-shell').length).toBeGreaterThan(0);
+    expect(latestTripViewProps()).toBeUndefined();
   });
 
   it('loads shared version snapshots when a valid version id exists', async () => {

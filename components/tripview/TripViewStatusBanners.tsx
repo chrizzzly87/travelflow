@@ -1,9 +1,18 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { CopySimple, Sparkle } from '@phosphor-icons/react';
+import { AlertTriangle, WifiOff } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
-import type { ShareMode } from '../../types';
+import { normalizeLocale } from '../../config/locales';
+import type { TripPaywallActivationMode } from '../../config/paywall';
+import { buildLocalizedMarketingPath } from '../../config/routes';
+import type { ShareMode, TripGenerationState } from '../../types';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
+import type { ConnectivityState } from '../../services/supabaseHealthMonitor';
+import { Spinner } from '../ui/spinner';
+
+const IS_DEV = Boolean((import.meta as any)?.env?.DEV);
 
 interface TripViewStatusBannersProps {
     shareStatus?: ShareMode;
@@ -29,12 +38,35 @@ interface TripViewStatusBannersProps {
     isPaywallLocked: boolean;
     expirationLabel: string | null;
     expirationRelativeLabel: string | null;
-    onPaywallLoginClick: (
+    paywallActivationMode: TripPaywallActivationMode;
+    onPaywallActivateClick: (
         event: React.MouseEvent<HTMLAnchorElement>,
         analyticsEvent: 'trip_paywall__strip--activate' | 'trip_paywall__overlay--activate',
         source: 'trip_paywall_strip' | 'trip_paywall_overlay'
     ) => void;
     tripId: string;
+    connectivityState?: ConnectivityState;
+    connectivityReason?: string | null;
+    connectivityForced?: boolean;
+    pendingSyncCount?: number;
+    failedSyncCount?: number;
+    isSyncingQueue?: boolean;
+    onRetrySyncQueue?: () => void;
+    hasConflictBackupForTrip?: boolean;
+    onRestoreConflictBackup?: () => void;
+    generationState?: TripGenerationState | null;
+    generationElapsedMs?: number | null;
+    generationTimeoutMs?: number;
+    generationFailureMessage?: string | null;
+    pendingAuthQueueRequestId?: string | null;
+    canRetryGeneration?: boolean;
+    canAbortAndRetryGeneration?: boolean;
+    isRetryingGeneration?: boolean;
+    isResolvingPendingAuthGeneration?: boolean;
+    onResolvePendingAuthGeneration?: () => void;
+    onAbortAndRetryGeneration?: () => void;
+    onOpenRetryModelSelector?: () => void;
+    onRetryGeneration?: () => void;
     exampleTripBanner?: {
         title: string;
         countries: string[];
@@ -63,12 +95,252 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
     isPaywallLocked,
     expirationLabel,
     expirationRelativeLabel,
-    onPaywallLoginClick,
+    paywallActivationMode,
+    onPaywallActivateClick,
     tripId,
+    connectivityState,
+    connectivityReason,
+    connectivityForced = false,
+    pendingSyncCount = 0,
+    failedSyncCount = 0,
+    isSyncingQueue = false,
+    onRetrySyncQueue,
+    hasConflictBackupForTrip = false,
+    onRestoreConflictBackup,
+    generationState = null,
+    generationElapsedMs = null,
+    generationTimeoutMs = 60_000,
+    generationFailureMessage = null,
+    pendingAuthQueueRequestId = null,
+    canRetryGeneration = false,
+    canAbortAndRetryGeneration = false,
+    isRetryingGeneration = false,
+    isResolvingPendingAuthGeneration = false,
+    onResolvePendingAuthGeneration,
+    onAbortAndRetryGeneration,
+    onOpenRetryModelSelector,
+    onRetryGeneration,
     exampleTripBanner,
 }) => {
+    const { t, i18n } = useTranslation('common');
+    const shouldShowConnectivityStrip = Boolean(connectivityState && connectivityState !== 'online');
+    const shouldShowSyncStrip = pendingSyncCount > 0 || isSyncingQueue;
+    const showSyncStatusStrip = shouldShowConnectivityStrip || shouldShowSyncStrip;
+    const syncCountVariant = pendingSyncCount === 1 ? 'One' : 'Many';
+    const isBrowserOffline = connectivityReason === 'browser_offline';
+    const paywallRequiresLogin = paywallActivationMode === 'login_modal';
+    const activeLocale = normalizeLocale(i18n?.resolvedLanguage ?? i18n?.language ?? 'en');
+    const supportContactPath = buildLocalizedMarketingPath('contact', activeLocale);
+    const stripMessage = shouldShowConnectivityStrip ? (
+        connectivityState === 'offline'
+            ? t(isBrowserOffline ? 'connectivity.tripStrip.offline.browser' : 'connectivity.tripStrip.offline.service')
+            : t('connectivity.tripStrip.degraded.service')
+    ) : (
+        isSyncingQueue
+            ? t(`connectivity.tripStrip.syncing${syncCountVariant}`, { count: pendingSyncCount })
+            : t(`connectivity.tripStrip.pending${syncCountVariant}`, { count: pendingSyncCount })
+    );
+    const showContactAction = shouldShowConnectivityStrip && !isBrowserOffline;
+    const stripIcon = shouldShowConnectivityStrip
+        ? (
+            connectivityState === 'offline'
+                ? <WifiOff className="h-3.5 w-3.5 shrink-0" />
+                : <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+        )
+        : (isSyncingQueue ? <Spinner className="h-3.5 w-3.5 shrink-0" /> : null);
+    const isSlowGeneration = (
+        (generationState === 'running' || generationState === 'queued')
+        && typeof generationElapsedMs === 'number'
+        && generationElapsedMs >= generationTimeoutMs
+    );
+    const isPendingAuthGeneration = generationState === 'failed' && Boolean(pendingAuthQueueRequestId);
+
     return (
         <>
+            {showSyncStatusStrip && (
+                <div className={`px-4 py-2 text-xs sm:px-6 border-b flex items-center justify-between gap-3 ${
+                    connectivityState === 'offline'
+                        ? 'border-rose-200 bg-rose-50 text-rose-900'
+                        : connectivityState === 'degraded'
+                            ? 'border-amber-200 bg-amber-50 text-amber-900'
+                            : 'border-sky-200 bg-sky-50 text-sky-900'
+                }`}>
+                    <span className="inline-flex items-center gap-2">
+                        {stripIcon}
+                        {stripMessage}
+                        {connectivityForced && IS_DEV ? ` ${t('connectivity.tripStrip.forcedSuffix')}` : ''}
+                    </span>
+                    <div className="flex items-center gap-2">
+                        {showContactAction && (
+                            <a
+                                href={supportContactPath}
+                                onClick={() => {
+                                    trackEvent('trip_connectivity__banner--contact', {
+                                        trip_id: tripId,
+                                        pending_count: pendingSyncCount,
+                                        connectivity_state: connectivityState,
+                                        source: 'trip_strip',
+                                    });
+                                }}
+                                className="px-3 py-1 rounded-md bg-white text-xs font-semibold border border-current/20 hover:bg-white/80"
+                                {...getAnalyticsDebugAttributes('trip_connectivity__banner--contact', {
+                                    trip_id: tripId,
+                                    pending_count: pendingSyncCount,
+                                    connectivity_state: connectivityState,
+                                    source: 'trip_strip',
+                                })}
+                            >
+                                {t('connectivity.banner.actions.contact')}
+                            </a>
+                        )}
+                        {failedSyncCount > 0 && onRetrySyncQueue && (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    trackEvent('trip_connectivity__trip_strip--retry_sync', {
+                                        trip_id: tripId,
+                                        failed_count: failedSyncCount,
+                                        pending_count: pendingSyncCount,
+                                        connectivity_state: connectivityState || 'online',
+                                    });
+                                    onRetrySyncQueue();
+                                }}
+                                className="px-3 py-1 rounded-md bg-white text-xs font-semibold border border-current/20 hover:bg-white/80"
+                                {...getAnalyticsDebugAttributes('trip_connectivity__trip_strip--retry_sync', {
+                                    trip_id: tripId,
+                                    failed_count: failedSyncCount,
+                                    pending_count: pendingSyncCount,
+                                    connectivity_state: connectivityState || 'online',
+                                })}
+                            >
+                                {t('connectivity.tripStrip.retry')}
+                            </button>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {(generationState === 'failed' || generationState === 'running' || generationState === 'queued') && (
+                <div className={`px-4 py-2 text-xs sm:px-6 border-b flex items-center justify-between gap-3 ${
+                    generationState === 'failed'
+                        ? 'border-rose-200 bg-rose-50 text-rose-900'
+                        : 'border-amber-200 bg-amber-50 text-amber-900'
+                }`}>
+                    <span className="inline-flex items-center gap-2">
+                        {generationState === 'failed' ? (
+                            <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                        ) : (
+                            <Spinner className="h-3.5 w-3.5 shrink-0" />
+                        )}
+                        {generationState === 'failed'
+                            ? (
+                                isPendingAuthGeneration
+                                    ? t('tripPaywall.strip.loginNoDate')
+                                    : (generationFailureMessage || t('tripView.generation.strip.failedDefault'))
+                            )
+                            : (isSlowGeneration
+                                ? t('tripView.generation.strip.slow')
+                                : t('tripView.generation.strip.running'))}
+                    </span>
+                    <div className="flex items-center gap-2">
+                        {isPendingAuthGeneration && onResolvePendingAuthGeneration && (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    trackEvent('trip_generation__trip_strip--pending_auth_login', {
+                                        trip_id: tripId,
+                                        source: 'trip_strip',
+                                        has_claim: Boolean(pendingAuthQueueRequestId),
+                                    });
+                                    onResolvePendingAuthGeneration();
+                                }}
+                                disabled={isResolvingPendingAuthGeneration}
+                                className="px-3 py-1 rounded-md bg-white text-xs font-semibold border border-current/20 hover:bg-white/80 disabled:cursor-not-allowed disabled:opacity-50"
+                                {...getAnalyticsDebugAttributes('trip_generation__trip_strip--pending_auth_login', {
+                                    trip_id: tripId,
+                                    source: 'trip_strip',
+                                    has_claim: Boolean(pendingAuthQueueRequestId),
+                                })}
+                            >
+                                {t('tripPaywall.reactivate.actions.login')}
+                            </button>
+                        )}
+                        {isSlowGeneration && canAbortAndRetryGeneration && onAbortAndRetryGeneration && (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    trackEvent('trip_generation__trip_strip--abort_retry', {
+                                        trip_id: tripId,
+                                        source: 'trip_strip',
+                                    });
+                                    onAbortAndRetryGeneration();
+                                }}
+                                disabled={isRetryingGeneration}
+                                className="px-3 py-1 rounded-md bg-white text-xs font-semibold border border-current/20 hover:bg-white/80 disabled:cursor-not-allowed disabled:opacity-50"
+                                {...getAnalyticsDebugAttributes('trip_generation__trip_strip--abort_retry', {
+                                    trip_id: tripId,
+                                    source: 'trip_strip',
+                                })}
+                            >
+                                {t('tripView.generation.strip.abortRetry')}
+                            </button>
+                        )}
+                        {isSlowGeneration && onOpenRetryModelSelector && (
+                            <button
+                                type="button"
+                                onClick={onOpenRetryModelSelector}
+                                className="px-3 py-1 rounded-md bg-white text-xs font-semibold border border-current/20 hover:bg-white/80"
+                            >
+                                {t('tripView.generation.strip.changeModel')}
+                            </button>
+                        )}
+                        {generationState === 'failed' && !isPendingAuthGeneration && canRetryGeneration && onRetryGeneration && (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    trackEvent('trip_generation__trip_strip--retry', {
+                                        trip_id: tripId,
+                                        source: 'trip_strip',
+                                    });
+                                    onRetryGeneration();
+                                }}
+                                disabled={isRetryingGeneration}
+                                className="px-3 py-1 rounded-md bg-white text-xs font-semibold border border-current/20 hover:bg-white/80 disabled:cursor-not-allowed disabled:opacity-50"
+                                {...getAnalyticsDebugAttributes('trip_generation__trip_strip--retry', {
+                                    trip_id: tripId,
+                                    source: 'trip_strip',
+                                })}
+                            >
+                                {isRetryingGeneration
+                                    ? t('tripView.generation.strip.retrying')
+                                    : t('tripView.generation.strip.retry')}
+                            </button>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {hasConflictBackupForTrip && onRestoreConflictBackup && (
+                <div className="px-4 sm:px-6 py-2 border-b border-violet-200 bg-violet-50 text-violet-900 text-xs flex items-center justify-between gap-3">
+                    <span>{t('connectivity.tripStrip.serverBackup')}</span>
+                    <button
+                        type="button"
+                        onClick={() => {
+                            trackEvent('trip_connectivity__trip_strip--restore_backup', {
+                                trip_id: tripId,
+                            });
+                            onRestoreConflictBackup();
+                        }}
+                        className="px-3 py-1 rounded-md bg-violet-100 text-violet-900 text-xs font-semibold hover:bg-violet-200"
+                        {...getAnalyticsDebugAttributes('trip_connectivity__trip_strip--restore_backup', {
+                            trip_id: tripId,
+                        })}
+                    >
+                        {t('connectivity.tripStrip.restoreServerVersion')}
+                    </button>
+                </div>
+            )}
+
             {shareStatus && (
                 <div className="px-4 sm:px-6 py-2 border-b border-amber-200 bg-amber-50 text-amber-900 text-xs flex items-center justify-between">
                     <span>
@@ -206,7 +478,13 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
                 >
                     <span>
                         {isPaywallLocked
-                            ? `Trip preview paused${expirationLabel ? ` since ${expirationLabel}` : ''}. Reactivate to unlock full planning mode.`
+                            ? (paywallRequiresLogin
+                                ? (expirationLabel
+                                    ? t('tripPaywall.strip.loginSinceDate', { date: expirationLabel })
+                                    : t('tripPaywall.strip.loginNoDate'))
+                                : (expirationLabel
+                                    ? t('tripPaywall.strip.directSinceDate', { date: expirationLabel })
+                                    : t('tripPaywall.strip.directNoDate')))
                             : isTripLockedByExpiry
                                 ? `Trip expired${expirationLabel ? ` since ${expirationLabel}` : ''}. It stays read-only until reactivated.`
                                 : `${expirationRelativeLabel || 'Trip access is time-limited'}${expirationLabel ? ` · Ends ${expirationLabel}` : ''}.`}
@@ -214,10 +492,12 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
                     {isPaywallLocked && (
                         <Link
                             to="/login"
-                            onClick={(event) => onPaywallLoginClick(event, 'trip_paywall__strip--activate', 'trip_paywall_strip')}
+                            onClick={(event) => onPaywallActivateClick(event, 'trip_paywall__strip--activate', 'trip_paywall_strip')}
                             className="px-3 py-1 rounded-md bg-rose-100 text-rose-900 text-xs font-semibold hover:bg-rose-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
                         >
-                            Reactivate trip
+                            {paywallRequiresLogin
+                                ? t('tripPaywall.reactivate.actions.login')
+                                : t('tripPaywall.reactivate.actions.direct')}
                         </Link>
                     )}
                 </div>

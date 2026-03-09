@@ -4,7 +4,9 @@ import remarkGfm from 'remark-gfm';
 import { useTranslation } from 'react-i18next';
 import { MarketingLayout } from '../components/marketing/MarketingLayout';
 import { ReleasePill } from '../components/marketing/ReleasePill';
+import { useAuth } from '../hooks/useAuth';
 import { getPublishedReleaseNotes, getWebsiteVisibleItems, groupReleaseItemsByType } from '../services/releaseNotesService';
+import { readLocalStorageItem } from '../services/browserStorageService';
 
 const SIMULATED_LOGIN_STORAGE_KEY = 'tf_debug_simulated_login';
 const SIMULATED_LOGIN_DEBUG_EVENT = 'tf:simulated-login-debug';
@@ -41,7 +43,7 @@ const formatReleaseDate = (dateLike: string) => {
 const readStoredBoolean = (storageKey: string, fallbackValue: boolean): boolean => {
     if (typeof window === 'undefined') return fallbackValue;
     try {
-        const raw = window.localStorage.getItem(storageKey);
+        const raw = readLocalStorageItem(storageKey);
         if (raw === '1') return true;
         if (raw === '0') return false;
         return fallbackValue;
@@ -67,10 +69,11 @@ const readInitialSimulatedLogin = (): boolean => {
 
 export const UpdatesPage: React.FC = () => {
     const { t } = useTranslation('pages');
+    const { isAdmin } = useAuth();
     const releases = useMemo(() => getPublishedReleaseNotes(), []);
     const [isDebuggerOpen, setIsDebuggerOpen] = useState<boolean>(() => readInitialDebuggerOpen());
     const [isSimulatedLoggedIn, setIsSimulatedLoggedIn] = useState<boolean>(() => readInitialSimulatedLogin());
-    const showInternalNews = isDebuggerOpen || isSimulatedLoggedIn;
+    const showInternalNews = isAdmin || isDebuggerOpen || isSimulatedLoggedIn;
 
     useEffect(() => {
         const syncFromHost = () => {

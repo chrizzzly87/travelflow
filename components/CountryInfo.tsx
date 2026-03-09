@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ICountryInfo } from '../types';
 import { Banknote, Globe, Zap, FileText, ExternalLink, ArrowRightLeft } from 'lucide-react';
+import { readLocalStorageItem, writeLocalStorageItem } from '../services/browserStorageService';
 
 interface CountryInfoProps {
     info: Partial<ICountryInfo> | ICountryInfo;
@@ -38,24 +39,24 @@ export const CountryInfo: React.FC<CountryInfoProps> = ({ info }) => {
     // Converter State with Persistence
     const [amount, setAmount] = useState<number>(() => {
         if (typeof window === 'undefined') return 1;
-        const saved = localStorage.getItem('tf_country_amount');
+        const saved = readLocalStorageItem('tf_country_amount');
         const parsed = saved ? parseFloat(saved) : 1;
         return isNaN(parsed) ? 1 : parsed;
     });
 
     const [direction, setDirection] = useState<'eurToLocal' | 'localToEur'>(() => {
         if (typeof window === 'undefined') return 'eurToLocal';
-        const saved = localStorage.getItem('tf_country_dir');
+        const saved = readLocalStorageItem('tf_country_dir');
         return (saved === 'eurToLocal' || saved === 'localToEur') ? saved : 'eurToLocal';
     });
 
     // Persistence Effects
     useEffect(() => {
-        localStorage.setItem('tf_country_amount', amount.toString());
+        writeLocalStorageItem('tf_country_amount', amount.toString());
     }, [amount]);
 
     useEffect(() => {
-        localStorage.setItem('tf_country_dir', direction);
+        writeLocalStorageItem('tf_country_dir', direction);
     }, [direction]);
 
     const convertedValue = exchangeRate === null

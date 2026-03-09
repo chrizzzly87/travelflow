@@ -1,4 +1,10 @@
-import { stripLocalePrefix } from '../config/routes';
+import { buildLocalizedMarketingPath, extractLocaleFromPath, stripLocalePrefix } from '../config/routes';
+import { normalizeLocale } from '../config/locales';
+import {
+    readLocalStorageItem,
+    removeLocalStorageItem,
+    writeLocalStorageItem,
+} from './browserStorageService';
 
 const AUTH_RETURN_PATH_STORAGE_KEY = 'tf_auth_return_path_v1';
 const AUTH_PENDING_REDIRECT_STORAGE_KEY = 'tf_auth_pending_redirect_v1';
@@ -19,6 +25,37 @@ export const buildPathFromLocationParts = (parts: {
     return `${pathname || '/'}${search || ''}${hash || ''}`;
 };
 
+export const buildLoginPathWithNext = (parts: {
+    pathname: string;
+    search?: string;
+    hash?: string;
+    language?: string | null;
+    resolvedLanguage?: string | null;
+}): {
+    nextPath: string;
+    loginPath: string;
+    loginTarget: string;
+} => {
+    const pathname = parts.pathname || '/';
+    const nextPathCandidate = buildPathFromLocationParts({
+        pathname,
+        search: parts.search,
+        hash: parts.hash,
+    });
+    const nextPath = isSafeAuthReturnPath(nextPathCandidate) ? nextPathCandidate : '/create-trip';
+    const routeLocale = extractLocaleFromPath(pathname);
+    const preferredLocale = normalizeLocale(parts.resolvedLanguage ?? parts.language ?? null);
+    const locale = routeLocale ?? preferredLocale;
+    const loginPath = buildLocalizedMarketingPath('login', locale);
+    const query = new URLSearchParams();
+    query.set('next', nextPath);
+    return {
+        nextPath,
+        loginPath,
+        loginTarget: `${loginPath}?${query.toString()}`,
+    };
+};
+
 export const isLoginPathname = (pathname: string): boolean => {
     return AUTH_PATHNAMES.has(stripLocalePrefix(pathname || '/'));
 };
@@ -32,19 +69,19 @@ export const isSafeAuthReturnPath = (path: string | null | undefined): path is s
 export const rememberAuthReturnPath = (path: string | null | undefined): void => {
     if (typeof window === 'undefined') return;
     if (!isSafeAuthReturnPath(path)) return;
-    window.localStorage.setItem(AUTH_RETURN_PATH_STORAGE_KEY, path);
+    writeLocalStorageItem(AUTH_RETURN_PATH_STORAGE_KEY, path);
 };
 
 export const getRememberedAuthReturnPath = (): string | null => {
     if (typeof window === 'undefined') return null;
-    const stored = window.localStorage.getItem(AUTH_RETURN_PATH_STORAGE_KEY);
+    const stored = readLocalStorageItem(AUTH_RETURN_PATH_STORAGE_KEY);
     if (!isSafeAuthReturnPath(stored)) return null;
     return stored;
 };
 
 export const clearRememberedAuthReturnPath = (): void => {
     if (typeof window === 'undefined') return;
-    window.localStorage.removeItem(AUTH_RETURN_PATH_STORAGE_KEY);
+    removeLocalStorageItem(AUTH_RETURN_PATH_STORAGE_KEY);
 };
 
 interface PendingAuthRedirect {
@@ -80,14 +117,14 @@ export const setPendingAuthRedirect = (nextPath: string, source: string): void =
         source: source || 'unknown',
         createdAt: Date.now(),
     };
-    window.localStorage.setItem(AUTH_PENDING_REDIRECT_STORAGE_KEY, JSON.stringify(payload));
+    writeLocalStorageItem(AUTH_PENDING_REDIRECT_STORAGE_KEY, JSON.stringify(payload));
 };
 
 export const getPendingAuthRedirect = (): PendingAuthRedirect | null => {
     if (typeof window === 'undefined') return null;
-    const pending = parsePendingAuthRedirect(window.localStorage.getItem(AUTH_PENDING_REDIRECT_STORAGE_KEY));
+    const pending = parsePendingAuthRedirect(readLocalStorageItem(AUTH_PENDING_REDIRECT_STORAGE_KEY));
     if (!pending) {
-        window.localStorage.removeItem(AUTH_PENDING_REDIRECT_STORAGE_KEY);
+        removeLocalStorageItem(AUTH_PENDING_REDIRECT_STORAGE_KEY);
         return null;
     }
     return pending;
@@ -95,7 +132,7 @@ export const getPendingAuthRedirect = (): PendingAuthRedirect | null => {
 
 export const clearPendingAuthRedirect = (): void => {
     if (typeof window === 'undefined') return;
-    window.localStorage.removeItem(AUTH_PENDING_REDIRECT_STORAGE_KEY);
+    removeLocalStorageItem(AUTH_PENDING_REDIRECT_STORAGE_KEY);
 };
 
 export const resolvePreferredNextPath = (

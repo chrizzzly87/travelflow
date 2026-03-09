@@ -1,16 +1,26 @@
-import React, { useMemo, useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { useParams, Link, useLocation, Navigate, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Clock, User, Tag, ArrowRight, Compass, Article } from '@phosphor-icons/react';
+import { ArrowLeft, Clock, User, Tag, ArrowRight, Compass, Article, ArrowSquareOut } from '@phosphor-icons/react';
+import { Map as GoogleMap, useMap } from '@vis.gl/react-google-maps';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { MarketingLayout } from '../components/marketing/MarketingLayout';
+import { AddToCalendarCard } from '../components/AddToCalendarCard';
+import { GoogleMapsLoader, useGoogleMaps } from '../components/GoogleMapsLoader';
 import { ProgressiveImage } from '../components/ProgressiveImage';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../components/ui/accordion';
 import { FlagIcon } from '../components/flags/FlagIcon';
 import { getBlogPostBySlugWithFallback, getPublishedBlogPostsForLocales } from '../services/blogService';
+import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
+import { parseBlogCalendarCardConfig } from '../services/blogCalendarCardService';
+import type { BlogMapCardConfig, BlogMapCategory, BlogMapSpot } from '../services/blogMapCardService';
+import { buildGoogleMapsCategoryQuery, buildGoogleMapsEmbedUrl, buildGoogleMapsSearchUrl, buildGoogleMapsSpotQuery, parseBlogMapCardConfig } from '../services/blogMapCardService';
 import { buildLocalizedMarketingPath, buildPath, extractLocaleFromPath } from '../config/routes';
+import { APP_NAME } from '../config/appGlobals';
 import { DEFAULT_LOCALE, localeToIntlLocale } from '../config/locales';
+import { normalizeAppLanguage } from '../utils';
 import type { Components } from 'react-markdown';
 import {
     BLOG_VIEW_TRANSITION_CLASSES,
@@ -66,9 +76,534 @@ const toSlug = (text: string): string =>
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/(^-|-$)/g, '');
 
-const markdownComponents: Components = {
+const normalizeMarkdownImagePath = (value: string): string => {
+    if (!value) return value;
+    try {
+        const normalized = new URL(value, window.location.origin);
+        return normalized.pathname;
+    } catch {
+        return value.split('#')[0].split('?')[0];
+    }
+};
+
+const deriveMarkdownImageAlt = (alt: string | undefined, src: string, articleTitle: string): string => {
+    const cleanedAlt = (alt || '').trim();
+    if (cleanedAlt.length > 0) return cleanedAlt;
+
+    const normalizedSrc = normalizeMarkdownImagePath(src);
+    const filename = normalizedSrc.split('/').pop() || 'reisebild';
+    const readable = filename
+        .replace(/\.[a-z0-9]+$/i, '')
+        .replace(/[-_]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    return `${articleTitle}: ${readable || 'Reisebild'}`;
+};
+
+const flattenNodeText = (value: React.ReactNode): string => {
+    if (value === null || value === undefined || typeof value === 'boolean') return '';
+    if (typeof value === 'string' || typeof value === 'number') return String(value);
+    if (Array.isArray(value)) return value.map((entry) => flattenNodeText(entry)).join('');
+    if (React.isValidElement<{ children?: React.ReactNode }>(value)) {
+        return flattenNodeText(value.props.children);
+    }
+    return '';
+};
+
+const isInternalPath = (href: string): boolean => href.startsWith('/');
+const isExampleRoutePath = (href: string): boolean => href.startsWith('/example/');
+
+interface MarkdownCodeBlockPayload {
+    className: string;
+    rawCode: string;
+}
+
+const extractMarkdownCodeBlockPayload = (children: React.ReactNode): MarkdownCodeBlockPayload | null => {
+    const elementChild = React.Children.toArray(children)
+        .find((child) => React.isValidElement<Record<string, unknown>>(child));
+    if (!elementChild || !React.isValidElement<Record<string, unknown>>(elementChild)) return null;
+    const className = typeof elementChild.props?.className === 'string' ? elementChild.props.className : '';
+    const rawCode = flattenNodeText(elementChild.props?.children).replace(/\n$/, '');
+    if (!className && !rawCode) return null;
+    return { className, rawCode };
+};
+
+const BLOG_MAP_OVERLAP_RADIUS_METERS = 26;
+const BLOG_MAP_OVERLAP_COORDINATE_PRECISION = 5;
+const BLOG_MAP_MARKER_BORDER_FALLBACK = '#6366f1';
+const BLOG_MAP_MARKER_BG_FALLBACK = '#eef2ff';
+const BLOG_MAP_MARKER_TEXT_FALLBACK = '#312e81';
+const BLOG_MAP_CANVAS_STYLES: google.maps.MapTypeStyle[] = [
+    { featureType: 'poi', stylers: [{ visibility: 'off' }] },
+    { featureType: 'transit.station', stylers: [{ visibility: 'off' }] },
+];
+
+const resolveCssColorVar = (name: string, fallback: string): string => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return fallback;
+    const value = window.getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    return value || fallback;
+};
+
+const buildBlogMapCoordinateKey = (coordinates: google.maps.LatLngLiteral): string => (
+    `${coordinates.lat.toFixed(BLOG_MAP_OVERLAP_COORDINATE_PRECISION)},${coordinates.lng.toFixed(BLOG_MAP_OVERLAP_COORDINATE_PRECISION)}`
+);
+
+const offsetBlogMapCoordinates = (
+    origin: google.maps.LatLngLiteral,
+    overlapIndex: number,
+    overlapCount: number,
+): google.maps.LatLngLiteral => {
+    if (overlapCount <= 1 || overlapIndex < 0 || overlapIndex >= overlapCount) {
+        return origin;
+    }
+    const angle = (-Math.PI / 2) + ((2 * Math.PI * overlapIndex) / overlapCount);
+    const eastMeters = Math.cos(angle) * BLOG_MAP_OVERLAP_RADIUS_METERS;
+    const northMeters = Math.sin(angle) * BLOG_MAP_OVERLAP_RADIUS_METERS;
+    const metersPerDegreeLat = 111_320;
+    const safeCosine = Math.max(0.01, Math.cos((origin.lat * Math.PI) / 180));
+    const metersPerDegreeLng = metersPerDegreeLat * safeCosine;
+    return {
+        lat: origin.lat + (northMeters / metersPerDegreeLat),
+        lng: origin.lng + (eastMeters / metersPerDegreeLng),
+    };
+};
+
+const resolveBlogMapMarkerPositions = (
+    spots: BlogMapSpot[],
+    coordinatesBySpotId: Record<string, google.maps.LatLngLiteral | null | undefined>,
+): Array<{ spot: BlogMapSpot; position: google.maps.LatLngLiteral }> => {
+    const resolved = spots
+        .map((spot) => {
+            const position = coordinatesBySpotId[spot.id];
+            if (!position) return null;
+            return { spot, position };
+        })
+        .filter((entry): entry is { spot: BlogMapSpot; position: google.maps.LatLngLiteral } => Boolean(entry));
+
+    const groupedByCoordinates = new Map<string, number[]>();
+    resolved.forEach((entry, index) => {
+        const key = buildBlogMapCoordinateKey(entry.position);
+        const grouped = groupedByCoordinates.get(key) ?? [];
+        grouped.push(index);
+        groupedByCoordinates.set(key, grouped);
+    });
+
+    return resolved.map((entry, index) => {
+        const key = buildBlogMapCoordinateKey(entry.position);
+        const grouped = groupedByCoordinates.get(key) ?? [];
+        const overlapIndex = grouped.indexOf(index);
+        if (overlapIndex < 0 || grouped.length <= 1) return entry;
+        return {
+            spot: entry.spot,
+            position: offsetBlogMapCoordinates(entry.position, overlapIndex, grouped.length),
+        };
+    });
+};
+
+interface BlogMapInstanceBridgeProps {
+    mapId: string;
+    onMapInstanceChange: (map: google.maps.Map | null) => void;
+}
+
+const BlogMapInstanceBridge: React.FC<BlogMapInstanceBridgeProps> = ({ mapId, onMapInstanceChange }) => {
+    const map = useMap(mapId);
+
+    useEffect(() => {
+        onMapInstanceChange(map ?? null);
+        return () => {
+            onMapInstanceChange(null);
+        };
+    }, [map, onMapInstanceChange]);
+
+    return null;
+};
+
+interface BlogMapCanvasProps {
+    mapId: string;
+    config: BlogMapCardConfig;
+    activeCategory: BlogMapCategory;
+    locale: string;
+    postSlug: string;
+    fallbackEmbedSrc: string;
+}
+
+const BlogMapCanvas: React.FC<BlogMapCanvasProps> = ({
+    mapId,
+    config,
+    activeCategory,
+    locale,
+    postSlug,
+    fallbackEmbedSrc,
+}) => {
+    const { isLoaded, loadError } = useGoogleMaps();
+    const [mapInstance, setMapInstance] = useState<google.maps.Map | null>(null);
+    const [coordinatesBySpotId, setCoordinatesBySpotId] = useState<Record<string, google.maps.LatLngLiteral | null | undefined>>({});
+    const [isResolvingSpots, setIsResolvingSpots] = useState(false);
+    const markerOverlaysRef = useRef<google.maps.OverlayView[]>([]);
+
+    const mapZoom = Number.isFinite(config.mapZoom) ? Math.max(2, Math.min(18, Math.round(config.mapZoom as number))) : 13;
+    const mapCenter = config.mapCenter ?? { lat: 20, lng: 0 };
+    const markerSpots = useMemo(
+        () => resolveBlogMapMarkerPositions(activeCategory.spots, coordinatesBySpotId),
+        [activeCategory.spots, coordinatesBySpotId],
+    );
+
+    const geocodeSpotQuery = useCallback(async (
+        geocoder: google.maps.Geocoder,
+        spot: BlogMapSpot,
+    ): Promise<{ id: string; coordinates: google.maps.LatLngLiteral | null }> => {
+        const query = buildGoogleMapsSpotQuery(spot.query, config.regionContext);
+        if (!query) return { id: spot.id, coordinates: null };
+        return new Promise((resolve) => {
+            geocoder.geocode({ address: query }, (results, status) => {
+                if (status === 'OK' && results?.[0]?.geometry?.location) {
+                    const location = results[0].geometry.location;
+                    resolve({
+                        id: spot.id,
+                        coordinates: { lat: location.lat(), lng: location.lng() },
+                    });
+                    return;
+                }
+                resolve({ id: spot.id, coordinates: null });
+            });
+        });
+    }, [config.regionContext]);
+
+    useEffect(() => {
+        if (!isLoaded || !window.google?.maps?.Geocoder) return;
+        const unresolvedSpots = activeCategory.spots.filter((spot) => coordinatesBySpotId[spot.id] === undefined);
+        if (unresolvedSpots.length === 0) return;
+
+        let cancelled = false;
+        setIsResolvingSpots(true);
+        const geocoder = new window.google.maps.Geocoder();
+
+        void Promise.all(unresolvedSpots.map((spot) => geocodeSpotQuery(geocoder, spot)))
+            .then((results) => {
+                if (cancelled) return;
+                setCoordinatesBySpotId((current) => {
+                    const next = { ...current };
+                    results.forEach(({ id, coordinates }) => {
+                        next[id] = coordinates;
+                    });
+                    return next;
+                });
+            })
+            .finally(() => {
+                if (!cancelled) {
+                    setIsResolvingSpots(false);
+                }
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [activeCategory.spots, coordinatesBySpotId, geocodeSpotQuery, isLoaded]);
+
+    useEffect(() => {
+        markerOverlaysRef.current.forEach((overlay) => overlay.setMap(null));
+        markerOverlaysRef.current = [];
+        if (!mapInstance || !window.google?.maps?.OverlayView) return;
+        const markerBorderColor = resolveCssColorVar('--tf-accent-400', BLOG_MAP_MARKER_BORDER_FALLBACK);
+        const markerBackgroundColor = resolveCssColorVar('--tf-accent-50', BLOG_MAP_MARKER_BG_FALLBACK);
+        const markerTextColor = resolveCssColorVar('--tf-accent-700', BLOG_MAP_MARKER_TEXT_FALLBACK);
+        const markerBadgeTextColor = resolveCssColorVar('--tf-accent-50', '#ffffff');
+
+        markerSpots.forEach(({ spot, position }, markerIndex) => {
+            const overlay = new window.google.maps.OverlayView();
+            let markerNode: HTMLButtonElement | null = null;
+
+            const handleClick = (event: MouseEvent) => {
+                event.preventDefault();
+                event.stopPropagation();
+                trackEvent('blog__map_card--spot', {
+                    slug: postSlug,
+                    category: activeCategory.id,
+                    spot: spot.id,
+                    source: 'map_marker',
+                });
+                const mapsSearchUrl = buildGoogleMapsSearchUrl(spot.query);
+                window.open(mapsSearchUrl, '_blank', 'noopener,noreferrer');
+            };
+
+            overlay.onAdd = function onAdd() {
+                markerNode = document.createElement('button');
+                markerNode.type = 'button';
+                markerNode.style.position = 'absolute';
+                markerNode.style.transform = 'translate(-50%, -100%)';
+                markerNode.style.width = '30px';
+                markerNode.style.height = '30px';
+                markerNode.style.borderRadius = '9999px';
+                markerNode.style.border = `1.5px solid ${markerBorderColor}`;
+                markerNode.style.background = markerBackgroundColor;
+                markerNode.style.color = markerTextColor;
+                markerNode.style.display = 'flex';
+                markerNode.style.alignItems = 'center';
+                markerNode.style.justifyContent = 'center';
+                markerNode.style.cursor = 'pointer';
+                markerNode.style.userSelect = 'none';
+                markerNode.style.padding = '0';
+                markerNode.style.fontSize = '13px';
+                markerNode.style.fontWeight = '700';
+                markerNode.style.boxShadow = '0 2px 6px rgba(15,23,42,0.1)';
+                markerNode.style.zIndex = '25';
+                markerNode.textContent = activeCategory.icon || `${markerIndex + 1}`;
+                markerNode.setAttribute('aria-label', spot.name);
+                markerNode.addEventListener('click', handleClick);
+
+                const indexBadge = document.createElement('span');
+                indexBadge.textContent = String(markerIndex + 1);
+                indexBadge.style.position = 'absolute';
+                indexBadge.style.bottom = '-7px';
+                indexBadge.style.right = '-6px';
+                indexBadge.style.width = '14px';
+                indexBadge.style.height = '14px';
+                indexBadge.style.borderRadius = '9999px';
+                indexBadge.style.background = markerBorderColor;
+                indexBadge.style.color = markerBadgeTextColor;
+                indexBadge.style.fontSize = '9px';
+                indexBadge.style.fontWeight = '700';
+                indexBadge.style.display = 'flex';
+                indexBadge.style.alignItems = 'center';
+                indexBadge.style.justifyContent = 'center';
+                markerNode.appendChild(indexBadge);
+
+                const panes = this.getPanes();
+                panes.overlayMouseTarget.appendChild(markerNode);
+            };
+
+            overlay.draw = function draw() {
+                if (!markerNode) return;
+                const projection = this.getProjection();
+                if (!projection) return;
+                const point = projection.fromLatLngToDivPixel(new window.google.maps.LatLng(position.lat, position.lng));
+                if (!point) return;
+                markerNode.style.left = `${point.x}px`;
+                markerNode.style.top = `${point.y}px`;
+            };
+
+            overlay.onRemove = function onRemove() {
+                if (!markerNode) return;
+                markerNode.removeEventListener('click', handleClick);
+                markerNode.remove();
+                markerNode = null;
+            };
+
+            overlay.setMap(mapInstance);
+            markerOverlaysRef.current.push(overlay);
+        });
+
+        return () => {
+            markerOverlaysRef.current.forEach((overlay) => overlay.setMap(null));
+            markerOverlaysRef.current = [];
+        };
+    }, [activeCategory.icon, activeCategory.id, mapInstance, markerSpots, postSlug]);
+
+    useEffect(() => {
+        if (!mapInstance || !window.google?.maps?.LatLngBounds) return;
+        if (markerSpots.length === 0) {
+            mapInstance.setCenter(mapCenter);
+            mapInstance.setZoom(mapZoom);
+            return;
+        }
+        if (markerSpots.length === 1) {
+            mapInstance.panTo(markerSpots[0].position);
+            mapInstance.setZoom(Math.max(mapZoom, 15));
+            return;
+        }
+        const bounds = new window.google.maps.LatLngBounds();
+        markerSpots.forEach((entry) => bounds.extend(entry.position));
+        mapInstance.fitBounds(bounds, { top: 52, right: 52, bottom: 52, left: 52 });
+    }, [mapCenter, mapInstance, mapZoom, markerSpots]);
+
+    if (loadError) {
+        return (
+            <iframe
+                src={fallbackEmbedSrc}
+                title={`${config.title} - ${activeCategory.label}`}
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                className="h-full w-full border-0"
+                allowFullScreen
+            />
+        );
+    }
+
+    const shouldRenderMapCanvas = isLoaded || !!mapInstance;
+
+    return (
+        <div className="relative h-full w-full">
+            {shouldRenderMapCanvas && (
+                <GoogleMap
+                    id={mapId}
+                    defaultCenter={mapCenter}
+                    defaultZoom={mapZoom}
+                    disableDefaultUI
+                    gestureHandling="cooperative"
+                    clickableIcons={false}
+                    styles={BLOG_MAP_CANVAS_STYLES}
+                    reuseMaps
+                    className="h-full w-full"
+                >
+                    <BlogMapInstanceBridge mapId={mapId} onMapInstanceChange={setMapInstance} />
+                </GoogleMap>
+            )}
+            {(!isLoaded || isResolvingSpots) && (
+                <div className="absolute inset-0 flex items-center justify-center bg-slate-100/70 text-xs font-medium text-slate-600">
+                    {locale === 'de' ? 'Karte wird geladen…' : 'Loading map…'}
+                </div>
+            )}
+        </div>
+    );
+};
+
+const resolveInitialCategoryId = (config: BlogMapCardConfig): string => {
+    if (config.defaultCategoryId && config.categories.some((category) => category.id === config.defaultCategoryId)) {
+        return config.defaultCategoryId;
+    }
+    return config.categories[0]?.id || '';
+};
+
+interface BlogMapCardProps {
+    config: BlogMapCardConfig;
+    locale: string;
+    postSlug: string;
+}
+
+const BlogMapCard: React.FC<BlogMapCardProps> = ({ config, locale, postSlug }) => {
+    const [activeCategoryId, setActiveCategoryId] = useState<string>(() => resolveInitialCategoryId(config));
+
+    useEffect(() => {
+        if (config.categories.some((category) => category.id === activeCategoryId)) return;
+        setActiveCategoryId(resolveInitialCategoryId(config));
+    }, [activeCategoryId, config]);
+
+    const activeCategory = useMemo(() => {
+        return config.categories.find((category) => category.id === activeCategoryId) || config.categories[0];
+    }, [activeCategoryId, config.categories]);
+
+    if (!activeCategory) return null;
+
+    const mapId = `blog-map-${toSlug(postSlug || config.title || 'post')}`;
+    const categoryQuery = buildGoogleMapsCategoryQuery(activeCategory.spots, config.regionContext);
+    const fallbackSpotQuery = activeCategory.spots[0]?.query || '';
+    if (!fallbackSpotQuery && !categoryQuery) return null;
+    const embedSrc = buildGoogleMapsEmbedUrl(categoryQuery || fallbackSpotQuery, locale, {
+        center: config.mapCenter,
+        zoom: config.mapZoom,
+    });
+
+    return (
+        <section className="my-12 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
+            <h3 className="text-lg font-bold text-slate-900">
+                {config.title}
+            </h3>
+            {config.description && <p className="mt-2 text-sm text-slate-600">{config.description}</p>}
+
+            <div className="mt-5 grid gap-5 xl:grid-cols-2 xl:items-stretch">
+                <div className="order-2 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 min-h-[380px] xl:order-2 xl:h-full">
+                    <div className="h-full min-h-[380px] xl:min-h-full">
+                        <GoogleMapsLoader language={normalizeAppLanguage(locale)}>
+                            <BlogMapCanvas
+                                mapId={mapId}
+                                config={config}
+                                activeCategory={activeCategory}
+                                locale={locale}
+                                postSlug={postSlug}
+                                fallbackEmbedSrc={embedSrc}
+                            />
+                        </GoogleMapsLoader>
+                    </div>
+                </div>
+
+                <Accordion
+                    type="single"
+                    value={activeCategory.id}
+                    onValueChange={(nextCategoryId) => {
+                        if (!nextCategoryId || nextCategoryId === activeCategory.id) return;
+                        setActiveCategoryId(nextCategoryId);
+                        trackEvent('blog__map_card--category', {
+                            slug: postSlug,
+                            category: nextCategoryId,
+                        });
+                    }}
+                    className="order-1 min-w-0 rounded-xl border border-slate-200 bg-white"
+                >
+                    {config.categories.map((category) => (
+                        <AccordionItem key={category.id} value={category.id} className="border-b border-slate-200 last:border-b-0">
+                            <AccordionTrigger
+                                className="cursor-pointer px-4 py-3 text-sm font-semibold text-slate-800 hover:no-underline hover:text-accent-700 data-[state=open]:text-accent-700"
+                                {...getAnalyticsDebugAttributes('blog__map_card--category', {
+                                    slug: postSlug,
+                                    category: category.id,
+                                })}
+                            >
+                                <span className="inline-flex min-w-0 items-center gap-2">
+                                    {category.icon ? <span aria-hidden="true">{category.icon}</span> : null}
+                                    <span className="truncate">{category.label}</span>
+                                </span>
+                            </AccordionTrigger>
+                            <AccordionContent className="px-2 pb-2">
+                                <div className="divide-y divide-slate-200/80">
+                                    {category.spots.map((spot, spotIndex) => {
+                                        const mapsSearchUrl = buildGoogleMapsSearchUrl(spot.query);
+                                        return (
+                                            <a
+                                                key={spot.id}
+                                                href={mapsSearchUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                onClick={() => {
+                                                    trackEvent('blog__map_card--spot', {
+                                                        slug: postSlug,
+                                                        category: category.id,
+                                                        spot: spot.id,
+                                                    });
+                                                }}
+                                                className="group flex w-full items-start justify-between gap-3 rounded-lg px-2 py-2 text-left transition-colors hover:bg-accent-50/60"
+                                                {...getAnalyticsDebugAttributes('blog__map_card--spot', {
+                                                    slug: postSlug,
+                                                    category: category.id,
+                                                    spot: spot.id,
+                                                })}
+                                            >
+                                                <span className="inline-flex min-w-0 items-start gap-2">
+                                                    <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-accent-300 bg-accent-50 text-[10px] font-bold text-accent-700">
+                                                        {spotIndex + 1}
+                                                    </span>
+                                                    <span className="min-w-0">
+                                                        <span className="block min-w-0 break-words text-sm font-semibold text-slate-800 transition-colors group-hover:text-accent-800">
+                                                            {spot.name}
+                                                        </span>
+                                                        {spot.note && (
+                                                            <span className="mt-0.5 block text-xs text-slate-500 transition-colors group-hover:text-slate-600">
+                                                                {spot.note}
+                                                            </span>
+                                                        )}
+                                                    </span>
+                                                </span>
+                                                <ArrowSquareOut
+                                                    size={14}
+                                                    weight="bold"
+                                                    className="mt-0.5 shrink-0 text-accent-700 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+                                                />
+                                            </a>
+                                        );
+                                    })}
+                                </div>
+                            </AccordionContent>
+                        </AccordionItem>
+                    ))}
+                </Accordion>
+            </div>
+        </section>
+    );
+};
+
+const createMarkdownComponents = (mapContext: { locale: string; postSlug: string; articleTitle: string }): Components => ({
     h2: ({ children }) => {
-        const text = typeof children === 'string' ? children : String(children);
+        const text = flattenNodeText(children).trim();
         const id = toSlug(text);
         return (
             <h2
@@ -88,11 +623,41 @@ const markdownComponents: Components = {
     p: ({ children }) => (
         <p className="mb-4 text-base leading-relaxed text-slate-600">{children}</p>
     ),
-    a: ({ href, children }) => (
-        <a href={href} className="text-accent-600 underline decoration-accent-300 hover:text-accent-800 transition-colors" target="_blank" rel="noopener noreferrer">
-            {children}
-        </a>
-    ),
+    a: ({ href, children }) => {
+        const resolvedHref = (href || '').trim();
+        const linkLabel = flattenNodeText(children).trim();
+        const fallbackLabel = mapContext.locale === 'de' ? 'Beispielreise öffnen' : 'Open example trip';
+        const displayLabel = linkLabel || fallbackLabel;
+
+        if (resolvedHref && isExampleRoutePath(resolvedHref)) {
+            return (
+                <Link
+                    to={resolvedHref}
+                    className="group my-1 inline-flex w-full items-center justify-between gap-3 rounded-xl border border-accent-200 bg-accent-50 px-4 py-3 font-semibold text-accent-900 shadow-sm transition-colors hover:border-accent-300 hover:bg-accent-100"
+                >
+                    <span className="inline-flex min-w-0 items-center gap-2">
+                        <img src="/favicon-32.png" alt="" aria-hidden="true" className="h-5 w-5 rounded" loading="lazy" />
+                        <span className="truncate text-sm">{`${APP_NAME}: ${displayLabel}`}</span>
+                    </span>
+                    <ArrowSquareOut size={14} weight="bold" className="shrink-0 text-accent-700 transition-transform group-hover:translate-x-0.5" />
+                </Link>
+            );
+        }
+
+        if (resolvedHref && isInternalPath(resolvedHref)) {
+            return (
+                <Link to={resolvedHref} className="text-accent-600 underline decoration-accent-300 hover:text-accent-800 transition-colors">
+                    {children}
+                </Link>
+            );
+        }
+
+        return (
+            <a href={resolvedHref} className="text-accent-600 underline decoration-accent-300 hover:text-accent-800 transition-colors" target="_blank" rel="noopener noreferrer">
+                {children}
+            </a>
+        );
+    },
     ul: ({ children }) => (
         <ul className="mb-4 ml-6 list-disc space-y-1.5 text-base leading-relaxed text-slate-600">{children}</ul>
     ),
@@ -100,13 +665,55 @@ const markdownComponents: Components = {
         <ol className="mb-4 ml-6 list-decimal space-y-1.5 text-base leading-relaxed text-slate-600">{children}</ol>
     ),
     li: ({ children }) => <li>{children}</li>,
+    img: ({ src, alt }) => {
+        const resolvedSrc = (src || '').trim();
+        if (!resolvedSrc) return null;
+        const normalizedSrc = normalizeMarkdownImagePath(resolvedSrc);
+        const resolvedAlt = deriveMarkdownImageAlt(alt, resolvedSrc, mapContext.articleTitle);
+        return (
+            <figure className="mb-7">
+                <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 shadow-sm">
+                    <div className="relative w-full overflow-hidden bg-slate-100" style={{ aspectRatio: '3 / 2' }}>
+                        <ProgressiveImage
+                            src={resolvedSrc}
+                            alt={resolvedAlt}
+                            width={1536}
+                            height={1024}
+                            sizes="(min-width: 1280px) 48rem, (min-width: 1024px) 62vw, 100vw"
+                            srcSetWidths={[480, 768, 1024, 1536]}
+                            placeholderKey={normalizedSrc}
+                            loading="lazy"
+                            className="absolute inset-0 h-full w-full object-cover"
+                        />
+                    </div>
+                </div>
+                <figcaption className="mt-2 text-center text-xs font-medium text-slate-500">{resolvedAlt}</figcaption>
+            </figure>
+        );
+    },
+    pre: ({ children }) => {
+        const payload = extractMarkdownCodeBlockPayload(children);
+
+        if (payload?.className.includes('language-tf-map')) {
+            const config = parseBlogMapCardConfig(payload.rawCode);
+            if (config) return <BlogMapCard config={config} locale={mapContext.locale} postSlug={mapContext.postSlug} />;
+        }
+
+        if (payload?.className.includes('language-tf-calendar')) {
+            const config = parseBlogCalendarCardConfig(payload.rawCode);
+            if (config) return <AddToCalendarCard config={config} postSlug={mapContext.postSlug} />;
+        }
+
+        return <pre className="mb-4 overflow-x-auto rounded-xl bg-slate-900 p-4 text-sm font-mono text-slate-200">{children}</pre>;
+    },
     code: ({ children, className }) => {
         const isInline = !className;
         if (isInline) {
             return <code className="rounded bg-slate-100 px-1.5 py-0.5 text-sm font-mono text-slate-700">{children}</code>;
         }
+
         return (
-            <code className={`block overflow-x-auto rounded-xl bg-slate-900 p-4 text-sm font-mono text-slate-200 ${className}`}>
+            <code className={`text-sm font-mono text-slate-200 ${className}`}>
                 {children}
             </code>
         );
@@ -133,12 +740,20 @@ const markdownComponents: Components = {
         <td className="px-4 py-2.5 border-b border-slate-100 text-slate-600">{children}</td>
     ),
     hr: () => <hr className="my-8 border-slate-200" />,
-};
+});
 
 interface HeadingInfo {
     text: string;
     slug: string;
 }
+
+const normalizeHeadingLabel = (value: string): string => {
+    return value
+        .replace(/[*_~`]/g, '')
+        .replace(/\[(.*?)\]\((.*?)\)/g, '$1')
+        .replace(/\s+/g, ' ')
+        .trim();
+};
 
 const extractHeadings = (content: string): HeadingInfo[] => {
     const lines = content.split('\n');
@@ -146,7 +761,7 @@ const extractHeadings = (content: string): HeadingInfo[] => {
     for (const line of lines) {
         const match = line.match(/^##\s+(.+)$/);
         if (match) {
-            const text = match[1].trim();
+            const text = normalizeHeadingLabel(match[1]);
             headings.push({ text, slug: toSlug(text) });
         }
     }
@@ -154,36 +769,58 @@ const extractHeadings = (content: string): HeadingInfo[] => {
 };
 
 const useActiveHeading = (headingSlugs: string[]): string | null => {
-    const [activeId, setActiveId] = useState<string | null>(null);
-    const observerRef = useRef<IntersectionObserver | null>(null);
-
-    const handleIntersect = useCallback((entries: IntersectionObserverEntry[]) => {
-        const visible = entries
-            .filter((entry) => entry.isIntersecting)
-            .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
-
-        if (visible.length > 0) {
-            setActiveId(visible[0].target.id);
-        }
-    }, []);
+    const [activeId, setActiveId] = useState<string | null>(headingSlugs[0] ?? null);
 
     useEffect(() => {
-        if (headingSlugs.length === 0) return;
-
-        observerRef.current = new IntersectionObserver(handleIntersect, {
-            rootMargin: '-80px 0px -60% 0px',
-            threshold: 0,
-        });
-
-        for (const slug of headingSlugs) {
-            const element = document.getElementById(slug);
-            if (element) observerRef.current.observe(element);
+        if (headingSlugs.length === 0) {
+            setActiveId(null);
+            return undefined;
         }
 
-        return () => {
-            observerRef.current?.disconnect();
+        const headingElements = headingSlugs
+            .map((slug) => document.getElementById(slug))
+            .filter((element): element is HTMLElement => Boolean(element));
+
+        if (headingElements.length === 0) {
+            setActiveId(headingSlugs[0] ?? null);
+            return undefined;
+        }
+
+        let frameId: number | null = null;
+
+        const updateActiveHeading = () => {
+            frameId = null;
+            const anchorTop = Math.min(220, window.innerHeight * 0.3);
+            let nextId = headingElements[0].id;
+
+            for (const headingElement of headingElements) {
+                if (headingElement.getBoundingClientRect().top <= anchorTop) {
+                    nextId = headingElement.id;
+                    continue;
+                }
+                break;
+            }
+
+            setActiveId((currentId) => (currentId === nextId ? currentId : nextId));
         };
-    }, [headingSlugs, handleIntersect]);
+
+        const scheduleUpdate = () => {
+            if (frameId !== null) return;
+            frameId = window.requestAnimationFrame(updateActiveHeading);
+        };
+
+        updateActiveHeading();
+        window.addEventListener('scroll', scheduleUpdate, { passive: true });
+        window.addEventListener('resize', scheduleUpdate);
+
+        return () => {
+            if (frameId !== null) {
+                window.cancelAnimationFrame(frameId);
+            }
+            window.removeEventListener('scroll', scheduleUpdate);
+            window.removeEventListener('resize', scheduleUpdate);
+        };
+    }, [headingSlugs]);
 
     return activeId;
 };
@@ -225,9 +862,22 @@ export const BlogPostPage: React.FC = () => {
             .slice(0, 3);
     }, [locale, post]);
 
-    const headings = useMemo(() => (post ? extractHeadings(post.content) : []), [post]);
+    const headings = useMemo(() => {
+        if (!post) return [];
+        const overviewLabel = locale === 'de' ? 'Einleitung' : 'Overview';
+        return [{ text: overviewLabel, slug: 'overview' }, ...extractHeadings(post.content)];
+    }, [locale, post]);
     const headingSlugs = useMemo(() => headings.map((heading) => heading.slug), [headings]);
     const activeHeadingId = useActiveHeading(headingSlugs);
+    const markdownComponents = useMemo(
+        () =>
+            createMarkdownComponents({
+                locale,
+                postSlug: post?.slug || 'blog-post',
+                articleTitle: post?.title || '',
+            }),
+        [locale, post?.slug, post?.title]
+    );
 
     useEffect(() => {
         setHasHeaderImageError(false);
@@ -278,7 +928,7 @@ export const BlogPostPage: React.FC = () => {
                 primeBlogTransitionSnapshot();
             },
         });
-    }, [blogPath, navigate, post.images.card.sources.large, post.language, post.slug, viewTransitionsEnabled]);
+    }, [blogPath, navigate, post, viewTransitionsEnabled]);
 
     useEffect(() => {
         if (!post || !viewTransitionsEnabled) {
@@ -341,7 +991,7 @@ export const BlogPostPage: React.FC = () => {
     const contentLang = post.language;
 
     return (
-        <MarketingLayout>
+        <MarketingLayout rootClassName="overflow-x-clip">
             <div className="reading-progress-bar" />
 
             <div data-blog-route-kind="post" className="pb-16 md:pb-24">
@@ -370,8 +1020,8 @@ export const BlogPostPage: React.FC = () => {
                     className="relative w-full"
                     style={postTransitionNames && shouldAssignCardTransition ? getBlogTransitionStyle(postTransitionNames.card, BLOG_VIEW_TRANSITION_CLASSES.card, 'contain') : undefined}
                 >
-                    <div className="relative mb-8 h-56 w-full overflow-hidden rounded-2xl bg-slate-100 md:h-80 lg:h-[26rem]">
-                        {!hasHeaderImageError ? (
+                    <div className={`relative mb-8 h-56 overflow-hidden rounded-2xl md:h-80 lg:h-[26rem] ${hasHeaderImageError ? post.coverColor : 'bg-slate-100'}`}>
+                        {!hasHeaderImageError && (
                             <>
                                 <div
                                     className="absolute inset-0 overflow-hidden rounded-2xl"
@@ -395,65 +1045,59 @@ export const BlogPostPage: React.FC = () => {
                                 <div className={BLOG_HEADER_IMAGE_FADE} />
                                 <div className={BLOG_HEADER_IMAGE_PROGRESSIVE_BLUR} />
                             </>
-                        ) : (
-                            <div className={`absolute inset-0 rounded-2xl ${post.coverColor}`} />
                         )}
                     </div>
 
-                    <div className="flex gap-10 lg:gap-14">
+                    <div className="flex items-start gap-10 lg:gap-14">
+                        <div className="min-w-0 flex-1 max-w-3xl">
                         <article
                             lang={contentLang}
                             data-blog-content-lang={contentLang}
                             translate={showEnglishContentNotice ? 'no' : undefined}
-                            className="min-w-0 max-w-3xl flex-1"
                         >
-                            <header>
-                                <h1
-                                    className="text-3xl font-black tracking-tight text-slate-900 md:text-5xl"
-                                    style={
-                                        postTransitionNames
-                                            ? ({
-                                                fontFamily: 'var(--tf-font-heading)',
-                                                ...getBlogTransitionStyle(postTransitionNames.title, BLOG_VIEW_TRANSITION_CLASSES.title, 'nearest'),
-                                            } as React.CSSProperties)
-                                            : ({ fontFamily: 'var(--tf-font-heading)' } as React.CSSProperties)
-                                    }
-                                >
-                                    {post.title}
-                                </h1>
+                            <div id="overview" className="scroll-mt-24 h-px w-full" />
+                            <h1
+                                className="text-3xl font-black tracking-tight text-slate-900 md:text-5xl"
+                                style={
+                                    postTransitionNames
+                                        ? ({
+                                            fontFamily: 'var(--tf-font-heading)',
+                                            ...getBlogTransitionStyle(postTransitionNames.title, BLOG_VIEW_TRANSITION_CLASSES.title, 'nearest'),
+                                        } as React.CSSProperties)
+                                        : ({ fontFamily: 'var(--tf-font-heading)' } as React.CSSProperties)
+                                }
+                            >
+                                {post.title}
+                            </h1>
 
-                                <div
-                                    lang={locale}
-                                    className="mt-5 flex flex-wrap items-center gap-4 text-sm text-slate-500"
-                                >
-                                    <span className="inline-flex items-center gap-1.5">
-                                        <User size={14} weight="duotone" className="text-accent-400" />
-                                        {post.author}
-                                    </span>
-                                    <span>{formattedDate}</span>
-                                    <span className="inline-flex items-center gap-1.5">
-                                        <Clock size={14} weight="duotone" className="text-accent-400" />
-                                        {t('index.readTime', { minutes: post.readingTimeMin })}
-                                    </span>
-                                </div>
+                            <div lang={locale} className="mt-5 flex flex-wrap items-center gap-4 text-sm text-slate-500">
+                                <span className="inline-flex items-center gap-1.5">
+                                    <User size={14} weight="duotone" className="text-accent-400" />
+                                    {post.author}
+                                </span>
+                                <span>{formattedDate}</span>
+                                <span className="inline-flex items-center gap-1.5">
+                                    <Clock size={14} weight="duotone" className="text-accent-400" />
+                                    {t('index.readTime', { minutes: post.readingTimeMin })}
+                                </span>
+                            </div>
 
-                                <div className="mt-4 flex flex-wrap gap-1.5">
-                                    {post.tags.map((tag) => (
-                                        <Link
-                                            key={tag}
-                                            to={buildLocalizedMarketingPath('blog', locale)}
-                                            className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-500 hover:bg-slate-200 transition-colors"
-                                        >
-                                            <Tag size={10} weight="duotone" />
-                                            {tag}
-                                        </Link>
-                                    ))}
-                                </div>
+                            <div className="mt-4 flex flex-wrap gap-1.5">
+                                {post.tags.map((tag) => (
+                                    <Link
+                                        key={tag}
+                                        to={buildLocalizedMarketingPath('blog', locale)}
+                                        className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-500 hover:bg-slate-200 transition-colors"
+                                    >
+                                        <Tag size={10} weight="duotone" />
+                                        {tag}
+                                    </Link>
+                                ))}
+                            </div>
 
-                                <p className="mt-6 border-l-4 border-accent-200 pl-4 text-lg leading-relaxed text-slate-600">
-                                    {post.summary}
-                                </p>
-                            </header>
+                            <p className="mt-6 border-l-4 border-accent-200 pl-4 text-lg leading-relaxed text-slate-600">
+                                {post.summary}
+                            </p>
 
                             <div className="mt-10">
                                 <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
@@ -461,9 +1105,10 @@ export const BlogPostPage: React.FC = () => {
                                 </ReactMarkdown>
                             </div>
                         </article>
+                        </div>
 
-                        <aside className="hidden w-64 shrink-0 lg:block" style={BLOG_DEFERRED_SECTION_STYLE}>
-                        <div className="sticky top-24 space-y-8">
+                        <aside className="hidden w-64 shrink-0 self-start lg:sticky lg:top-24 lg:block lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
+                        <div className="space-y-8 pr-1">
                             {headings.length > 0 && (
                                 <nav>
                                     <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">{t('post.inThisArticle')}</h4>
@@ -479,8 +1124,8 @@ export const BlogPostPage: React.FC = () => {
                                                     />
                                                     <a
                                                         href={`#${heading.slug}`}
-                                                        onClick={(e) => {
-                                                            e.preventDefault();
+                                                        onClick={(event) => {
+                                                            event.preventDefault();
                                                             document.getElementById(heading.slug)?.scrollIntoView({ behavior: 'smooth' });
                                                             window.history.pushState(null, '', `#${heading.slug}`);
                                                         }}

@@ -31,7 +31,9 @@
     "ru": "Русский",
     "pt": "Português",
     "pl": "Polski",
-    "ko": "한국어"
+    "ko": "한국어",
+    "fa": "فارسی",
+    "ur": "اردو"
   },
   "buttons": {
     "startPlanning": "여행 계획 시작",
@@ -57,14 +59,314 @@
     "cta": "번역 오류 제보하기",
     "ctaShort": "제보"
   },
+  "networkStatus": {
+    "offlineTitle": "오프라인 상태입니다.",
+    "offlineDescription": "지금은 로그인과 클라우드 동기화를 사용할 수 없습니다. 연결을 계속 확인하고 자동으로 다시 연결합니다.",
+    "offlineChecking": "연결 상태를 다시 확인하는 중..."
+  },
   "contact": {
     "title": "문의",
-    "description": "번역 오류 제보나 현지화 관련 피드백을 보내 주세요.",
-    "formStatusTitle": "문의 양식 준비 중",
-    "formStatusBody": "전용 양식이 아직 준비되지 않았습니다. 그동안 이메일로 연락해 주세요.",
-    "emailLabel": "이메일",
-    "emailValue": "support@travelflow.app",
-    "responseNote": "보통 영업일 기준 2~3일 이내에 답변드립니다.",
-    "backHome": "홈페이지로 돌아가기"
+    "description": "제품 문의, 버그 제보, 파트너십, 번역 피드백을 보내주세요.",
+    "emailLabel": "기본 이메일",
+    "emailValue": "contact@wizz.art",
+    "responseNote": "보통 영업일 기준 2-3일 이내에 답변드립니다.",
+    "backHome": "홈페이지로 돌아가기",
+    "form": {
+      "title": "메시지 보내기",
+      "reasonLabel": "문의 유형",
+      "reasonPlaceholder": "문의 유형 선택",
+      "reasonOptions": {
+        "bugReport": "웹사이트/앱 문제",
+        "featureRequest": "기능 요청",
+        "billingAccount": "결제 / 계정",
+        "dataPrivacy": "데이터/개인정보 요청",
+        "partnership": "파트너십",
+        "other": "기타"
+      },
+      "nameLabel": "이름 (선택)",
+      "namePlaceholder": "이름",
+      "emailLabel": "이메일",
+      "emailPlaceholder": "you@example.com",
+      "messageLabel": "메시지",
+      "messagePlaceholder": "어떤 도움이 필요한지 알려주세요.",
+      "messageLimitHint": "최대 {max}자까지 입력할 수 있습니다.",
+      "privacyNote": "입력한 정보는 요청 처리 및 답변 목적으로만 사용됩니다.",
+      "submit": "메시지 보내기",
+      "submitting": "전송 중...",
+      "successTitle": "메시지를 보냈습니다",
+      "successBody": "감사합니다. 메시지가 정상적으로 전송되었습니다.",
+      "errorTitle": "현재 양식을 사용할 수 없습니다",
+      "errorBody": "양식을 통해 메시지를 전송하지 못했습니다. 이메일로 직접 연락해 주세요.",
+      "fallbackTitle": "이메일 대체 연락처",
+      "fallbackBody": "양식 한도 초과 또는 전송 실패 시 아래 이메일로 연락해 주세요:",
+      "fallbackCta": "contact@wizz.art로 이메일 보내기",
+      "validationReason": "문의 유형을 선택해 주세요.",
+      "validationEmail": "유효한 이메일 주소를 입력해 주세요.",
+      "validationMessage": "메시지를 입력해 주세요.",
+      "validationMessageLength": "메시지가 너무 깁니다. 최대 {max}자까지 가능합니다.",
+      "subReasonLabel": "주제 (선택)",
+      "subReasonPlaceholder": "주제를 선택하세요 (선택)",
+      "subReasonEmptyOption": "특정 주제 없음",
+      "subReasonOptions": {
+        "bugReport": {
+          "pageNotLoadingWorking": "페이지가 로드되지 않거나 동작하지 않음",
+          "translationWrongMisleading": "번역이 잘못되었거나 오해를 유발함",
+          "actionNotWorking": "버튼 또는 동작이 작동하지 않음",
+          "layoutVisualIssue": "레이아웃 또는 시각적 문제",
+          "mapRoutingIssue": "지도 또는 경로 문제",
+          "performanceIssue": "느리거나 불안정한 성능"
+        },
+        "featureRequest": {
+          "newFeature": "완전히 새로운 기능",
+          "improveFeature": "기존 기능 개선",
+          "workflowAutomation": "워크플로 또는 자동화 개선",
+          "mobileExperience": "모바일 경험 개선",
+          "accessibility": "접근성 개선"
+        },
+        "billingAccount": {
+          "subscriptionChange": "구독 변경 또는 취소",
+          "invoiceReceipt": "청구서 또는 영수증 문의",
+          "paymentFailed": "결제 실패",
+          "refundQuestion": "환불 문의",
+          "accountAccess": "계정 접근 문제"
+        },
+        "dataPrivacy": {
+          "dataExport": "내 데이터 내보내기 요청",
+          "dataDeletion": "데이터 삭제 요청",
+          "consentCookies": "쿠키/동의 관련 문의",
+          "legalQuestion": "법률/개인정보 문의",
+          "securityConcern": "보안 우려"
+        },
+        "partnership": {
+          "affiliateInfluencer": "제휴 또는 크리에이터 협업",
+          "brandCampaign": "브랜드 캠페인 파트너십",
+          "mediaPress": "미디어 또는 보도 문의",
+          "integrationPartner": "통합 파트너십",
+          "educationNonProfit": "교육 또는 비영리 협업"
+        },
+        "other": {
+          "generalFeedback": "일반 피드백",
+          "productQuestion": "제품 문의",
+          "careerOpportunity": "채용/커리어 기회",
+          "responsibleDisclosure": "보안 제보",
+          "somethingElse": "기타"
+        }
+      },
+      "requiredFieldsNote": "* 필수 입력 항목입니다."
+    }
+  },
+  "appDialog": {
+    "tripArchive": {
+      "title": "여행을 보관할까요?",
+      "confirmLabel": "여행 보관",
+      "cancelLabel": "취소",
+      "messageQuestion": "<strong>\"{title}\"</strong> 여행을 정말 보관하시겠어요?",
+      "messageDetail": "이 여행은 목록에서 숨겨지며 나중에 다시 복원할 수 있습니다."
+    },
+    "roundTripSync": {
+      "title": "왕복 여행의 마지막 도시를 업데이트할까요?",
+      "messageLead": "이 여행은 왕복 여행으로 보입니다.",
+      "messageQuestion": "마지막 도시도 <strong>\"{title}\"</strong>(으)로 변경할까요?",
+      "confirmLabel": "네, 마지막 도시 업데이트",
+      "cancelLabel": "아니요, 그대로 둘게요"
+    },
+    "cityPaletteApply": {
+      "title": "현재 도시에 팔레트를 적용할까요?",
+      "messageAuto": "<strong>자동 적용</strong>을 선택하면 지금 모든 도시 색상을 다시 칠합니다.",
+      "messageManual": "<strong>수동 선택</strong>을 선택하면 현재 도시 색상을 유지하고 활성 팔레트만 변경합니다.",
+      "confirmLabel": "자동 적용",
+      "cancelLabel": "수동 선택"
+    },
+    "markdownLink": {
+      "title": "링크 삽입",
+      "messageLine1": "선택한 텍스트에 사용할 URL을 입력하거나 새 링크를 삽입하세요.",
+      "messageLine2": "링크는 보안 기본 설정으로 새 탭에서 열립니다.",
+      "label": "URL",
+      "placeholder": "https://example.com",
+      "confirmLabel": "링크 삽입",
+      "cancelLabel": "취소",
+      "validationRequired": "URL을 입력해 주세요.",
+      "validationProtocol": "URL은 http:// 또는 https://로 시작해야 합니다",
+      "validationInvalid": "유효한 URL을 입력해 주세요."
+    }
+  },
+  "connectivity": {
+    "banner": {
+      "offline": {
+        "title": "You are offline. Changes will be queued.",
+        "messageNone": "Planner stays usable with cached data.",
+        "messageOne": "{count} change is queued and will sync after reconnect.",
+        "messageMany": "{count} changes are queued and will sync after reconnect.",
+        "browserTitle": "You are offline. Changes stay local.",
+        "browserMessage": "Reconnect to continue cloud sync. We will retry automatically.",
+        "serviceTitle": "Cloud sync is temporarily unavailable.",
+        "serviceMessage": "Your internet works, but the sync service is not responding. Edits stay queued and safe."
+      },
+      "degraded": {
+        "title": "Connection is unstable. Saving in resilient mode.",
+        "messageNone": "Planner stays usable while we retry in the background.",
+        "messageOne": "{count} queued change will sync when Supabase stabilizes.",
+        "messageMany": "{count} queued changes will sync when Supabase stabilizes.",
+        "serviceMessage": "Cloud sync is unstable right now. We keep retrying in the background."
+      },
+      "syncing": {
+        "title": "Sync in progress",
+        "messageOne": "{count} change is waiting to sync.",
+        "messageMany": "{count} changes are waiting to sync.",
+        "progressOne": "Syncing {count} queued change...",
+        "progressMany": "Syncing {count} queued changes..."
+      },
+      "forcedMode": "Supabase outage simulation is currently forced in debugger mode.",
+      "actions": {
+        "retrySync": "Retry failed sync",
+        "dismiss": "Dismiss connectivity banner",
+        "contact": "문의",
+        "email": "Email support"
+      },
+      "retryHint": "Retrying Supabase connection every 30s while this tab stays open."
+    },
+    "tripStrip": {
+      "offline": {
+        "messageNone": "Offline mode enabled. Trip data is served from local cache.",
+        "messageOne": "Offline mode enabled. {count} change is queued for sync.",
+        "messageMany": "Offline mode enabled. {count} changes are queued for sync.",
+        "browser": "Offline mode enabled. Your latest edits are saved locally until reconnect.",
+        "service": "Cloud sync is currently unavailable. Your latest edits are queued safely."
+      },
+      "degraded": {
+        "messageNone": "Connection is degraded. Edits are protected with local queue fallback.",
+        "messageOne": "Connection is degraded. {count} change is queued for replay.",
+        "messageMany": "Connection is degraded. {count} changes are queued for replay.",
+        "service": "Connection is degraded. We are retrying queued edits in the background."
+      },
+      "forcedSuffix": "(forced by debugger)",
+      "retry": "Retry failed sync",
+      "serverBackup": "A newer server version was backed up before replay. You can restore it if needed.",
+      "restoreServerVersion": "Restore server version",
+      "syncingOne": "Syncing {count} queued change to Supabase...",
+      "syncingMany": "Syncing {count} queued changes to Supabase...",
+      "pendingOne": "{count} queued change is waiting for replay.",
+      "pendingMany": "{count} queued changes are waiting for replay."
+    },
+    "toast": {
+      "title": "Sync status",
+      "syncCompleted": "Queued trip changes synced successfully.",
+      "serverBackupRestored": "Server backup restored for this trip.",
+      "syncStartedOne": "Reconnect detected. Replaying {count} queued change.",
+      "syncStartedMany": "Reconnect detected. Replaying {count} queued changes.",
+      "syncPartialFailureOne": "{count} queued change still failed. You can retry.",
+      "syncPartialFailureMany": "{count} queued changes still failed. You can retry."
+    },
+    "globalBadge": {
+      "offline": "Offline",
+      "syncing": "Syncing...",
+      "online": "Online",
+      "details": {
+        "offlineBrowser": "You are offline. Edits are stored locally and replayed once you reconnect.",
+        "offlineService": "Your internet is up, but cloud sync appears unavailable. We will keep retrying queued edits.",
+        "syncingQueue": "Syncing queued edits now. Pending items: {count}.",
+        "online": "Connection is healthy and sync is up to date."
+      }
+    }
+  },
+  "tripPaywall": {
+    "strip": {
+      "directSinceDate": "{date}부터 여행 미리보기가 일시 중지되었습니다. 지금 다시 활성화하여 전체 계획 모드를 잠금 해제하세요.",
+      "directNoDate": "여행 미리보기가 일시 중지되었습니다. 지금 다시 활성화하여 전체 계획 모드를 잠금 해제하세요.",
+      "loginSinceDate": "{date}부터 여행 미리보기가 일시 중지되었습니다. 로그인하여 다시 활성화하고 전체 계획 모드를 잠금 해제하세요.",
+      "loginNoDate": "여행 미리보기가 일시 중지되었습니다. 로그인하여 다시 활성화하고 전체 계획 모드를 잠금 해제하세요."
+    },
+    "overlay": {
+      "eyebrow": "여행 미리보기 일시 중지",
+      "title": {
+        "direct": "계획을 계속하려면 이 여행을 다시 활성화하세요",
+        "login": "이 여행을 다시 활성화하려면 로그인하세요"
+      },
+      "description": {
+        "direct": "이미 로그인되어 있습니다. 지금 다시 활성화하면 편집, 목적지 이름, 지도 경로가 복원됩니다.",
+        "login": "로그인하면 편집, 목적지 이름, 지도 경로가 복원됩니다."
+      },
+      "footer": {
+        "withDate": "{date}에 만료되었습니다. 다시 활성화할 때까지 미리보기 모드는 계속 표시됩니다.",
+        "noDate": "다시 활성화할 때까지 미리보기 모드는 계속 표시됩니다."
+      }
+    },
+    "reactivate": {
+      "actions": {
+        "direct": "여행 다시 활성화",
+        "login": "로그인 후 활성화"
+      },
+      "toast": {
+        "title": "여행이 다시 활성화되었습니다",
+        "description": "전체 계획 모드를 다시 사용할 수 있습니다."
+      }
+    }
+  },
+  "tripView": {
+    "visualHistory": {
+      "mapPreviewState": "Map preview: {from} -> {to}",
+      "mapPreviewStateValue": {
+        "docked": "docked",
+        "floating": "floating"
+      }
+    },
+    "generation": {
+      "strip": {
+        "failedDefault": "Trip generation failed. Check diagnostics or retry with the default model.",
+        "running": "Trip generation is running...",
+        "retry": "Retry generation",
+        "retrying": "Retrying...",
+        "slow": "평소보다 오래 걸리고 있습니다.",
+        "abortRetry": "중단 후 재시도",
+        "changeModel": "모델 변경"
+      },
+      "tripInfo": {
+        "title": "AI generation",
+        "provider": "Provider",
+        "model": "Model",
+        "providerModel": "Provider model",
+        "requestId": "Request ID",
+        "runTime": "Run time",
+        "httpStatus": "HTTP status",
+        "started": "Started",
+        "finished": "Finished",
+        "failureKind": "Failure kind",
+        "errorCode": "Error code",
+        "errorMessage": "Error message",
+        "generatedAt": "Generated at",
+        "recentAttempts": "Recent attempts",
+        "modelFallback": "Model n/a",
+        "retry": "Retry generation with default model",
+        "retrying": "Retrying with default model...",
+        "state": {
+          "failed": "failed",
+          "running": "running",
+          "queued": "queued",
+          "succeeded": "succeeded"
+        },
+        "orchestration": "실행 모드"
+      },
+      "retry": {
+        "readOnly": "This trip is read-only, so generation retry is unavailable.",
+        "readOnlyTitle": "Retry unavailable",
+        "missingSnapshot": "Retry requires saved generation input, but this trip has no snapshot.",
+        "missingSnapshotTitle": "Retry unavailable",
+        "queued": "Trip generation retry started and is running in the background.",
+        "queuedTitle": "Retry started",
+        "completed": "Trip generation completed with the default model.",
+        "completedTitle": "Retry completed",
+        "failed": "Trip generation failed again. Review the diagnostics and retry later.",
+        "failedTitle": "Retry failed",
+        "unexpected": "Retry failed unexpectedly."
+      }
+    }
+  },
+  "tripRouteShell": {
+    "loadingTrip": "여행 불러오는 중",
+    "preparingPlanner": "플래너 준비 중",
+    "loadingSharedTrip": "공유 여행 불러오는 중",
+    "preparingSharedPlanner": "공유 플래너 준비 중",
+    "loadingExampleTrip": "예시 여행 불러오는 중",
+    "preparingExamplePlanner": "예시 플래너 준비 중"
   }
 }

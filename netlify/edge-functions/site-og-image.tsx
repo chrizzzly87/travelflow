@@ -1,41 +1,19 @@
 import React from "https://esm.sh/react@18.3.1";
 import { ImageResponse } from "https://deno.land/x/og_edge/mod.ts";
 import { APP_NAME } from "../../config/appGlobals.ts";
+import {
+  buildLocalHeadingFontUrls,
+  buildLocalRtlHeadingFontUrls,
+  type BaseHeadingFontWeight,
+} from "../edge-lib/og-font-utils.ts";
 
 const IMAGE_WIDTH = 1200;
 const IMAGE_HEIGHT = 630;
 const SITE_NAME = APP_NAME;
-const HEADLINE_FONT_FAMILY = "Bricolage Grotesque";
-const LOCAL_HEADLINE_FONT_400_LATIN_EXT_WOFF_PATH =
-  "/fonts/bricolage-grotesque/bricolage-grotesque-latin-ext-400-normal.woff";
-const LOCAL_HEADLINE_FONT_400_WOFF_PATH =
-  "/fonts/bricolage-grotesque/bricolage-grotesque-latin-400-normal.woff";
-const LOCAL_HEADLINE_FONT_700_LATIN_EXT_WOFF_PATH =
-  "/fonts/bricolage-grotesque/bricolage-grotesque-latin-ext-700-normal.woff";
-const LOCAL_HEADLINE_FONT_700_WOFF_PATH =
-  "/fonts/bricolage-grotesque/bricolage-grotesque-latin-700-normal.woff";
-const CDN_HEADLINE_FONT_400_LATIN_EXT_WOFF_URL =
-  "https://unpkg.com/@fontsource/bricolage-grotesque@5.2.10/files/bricolage-grotesque-latin-ext-400-normal.woff";
-const CDN_HEADLINE_FONT_400_WOFF_URL =
-  "https://unpkg.com/@fontsource/bricolage-grotesque@5.2.10/files/bricolage-grotesque-latin-400-normal.woff";
-const GOOGLE_HEADLINE_FONT_400_WOFF_URL =
-  "https://fonts.gstatic.com/l/font?kit=3y9U6as8bTXq_nANBjzKo3IeZx8z6up5BeSl5jBNz_19PpbpMXuECpwUxJBOm_OJWiaaD30YfKfjZZoLvRviyM4&skey=7f69194495102d00&v=v9";
-const CDN_HEADLINE_FONT_700_LATIN_EXT_WOFF_URL =
-  "https://unpkg.com/@fontsource/bricolage-grotesque@5.2.10/files/bricolage-grotesque-latin-ext-700-normal.woff";
-const CDN_HEADLINE_FONT_700_WOFF_URL =
-  "https://unpkg.com/@fontsource/bricolage-grotesque@5.2.10/files/bricolage-grotesque-latin-700-normal.woff";
-const GOOGLE_HEADLINE_FONT_700_WOFF_URL =
-  "https://fonts.gstatic.com/l/font?kit=3y9U6as8bTXq_nANBjzKo3IeZx8z6up5BeSl5jBNz_19PpbpMXuECpwUxJBOm_OJWiaaD30YfKfjZZoLvfzlyM4&skey=7f69194495102d00&v=v9";
-const LOCAL_HEADLINE_FONT_800_LATIN_EXT_WOFF_PATH =
-  "/fonts/bricolage-grotesque/bricolage-grotesque-latin-ext-800-normal.woff";
-const LOCAL_HEADLINE_FONT_800_WOFF_PATH =
-  "/fonts/bricolage-grotesque/bricolage-grotesque-latin-800-normal.woff";
-const CDN_HEADLINE_FONT_800_LATIN_EXT_WOFF_URL =
-  "https://unpkg.com/@fontsource/bricolage-grotesque@5.2.10/files/bricolage-grotesque-latin-ext-800-normal.woff";
-const CDN_HEADLINE_FONT_800_WOFF_URL =
-  "https://unpkg.com/@fontsource/bricolage-grotesque@5.2.10/files/bricolage-grotesque-latin-800-normal.woff";
-const GOOGLE_HEADLINE_FONT_800_WOFF_URL =
-  "https://fonts.gstatic.com/l/font?kit=3y9U6as8bTXq_nANBjzKo3IeZx8z6up5BeSl5jBNz_19PpbpMXuECpwUxJBOm_OJWiaaD30YfKfjZZoLvZvlyM4&skey=7f69194495102d00&v=v9";
+const LATIN_HEADLINE_FONT_FAMILY = "Bricolage Grotesque";
+const RTL_HEADLINE_FONT_FAMILY = "Vazirmatn";
+type HeadingFontScript = "latin" | "rtl";
+type OgDirection = "ltr" | "rtl";
 
 const DEFAULT_TITLE = APP_NAME;
 const DEFAULT_SUBLINE = "Plan and share travel routes with timeline and map previews.";
@@ -51,7 +29,6 @@ type LoadedHeadingFont = {
   weight: 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900;
 };
 
-type BaseHeadingFontWeight = 400 | 700 | 800;
 type OgHeadingFontWeight = LoadedHeadingFont["weight"];
 const BASE_HEADING_FONT_WEIGHTS: readonly BaseHeadingFontWeight[] = [400, 700, 800];
 const OG_HEADING_FONT_WEIGHTS: readonly OgHeadingFontWeight[] = [100, 200, 300, 400, 500, 600, 700, 800, 900];
@@ -61,10 +38,19 @@ const WOFF_SIGNATURE = "wOFF";
 const WOFF2_SIGNATURE = "wOF2";
 const OTF_SIGNATURE = "OTTO";
 const TTC_SIGNATURE = "ttcf";
+const FONT_FETCH_TIMEOUT_MS = 900;
+
+const withTimeout = async <T,>(promise: Promise<T>, timeoutMs: number): Promise<T> => {
+  const timeoutPromise = new Promise<never>((_resolve, reject) => {
+    setTimeout(() => reject(new Error("font-fetch-timeout")), timeoutMs);
+  });
+
+  return Promise.race([promise, timeoutPromise]);
+};
 
 const fetchFontArrayBuffer = async (fontUrl: string): Promise<ArrayBuffer | null> => {
   try {
-    const response = await fetch(fontUrl);
+    const response = await withTimeout(fetch(fontUrl), FONT_FETCH_TIMEOUT_MS);
     if (!response.ok) return null;
     return await response.arrayBuffer();
   } catch {
@@ -74,47 +60,15 @@ const fetchFontArrayBuffer = async (fontUrl: string): Promise<ArrayBuffer | null
 
 // og_edge picks the first matching font per weight and does not merge unicode-range subsets.
 // Keep full latin files first so ASCII headlines do not fall back to system fonts.
-const buildHeadingFontUrls = (requestUrl: URL, weight: BaseHeadingFontWeight): string[] => {
-  const local400LatinExt = new URL(LOCAL_HEADLINE_FONT_400_LATIN_EXT_WOFF_PATH, requestUrl.origin).toString();
-  const local400 = new URL(LOCAL_HEADLINE_FONT_400_WOFF_PATH, requestUrl.origin).toString();
-  const local700LatinExt = new URL(LOCAL_HEADLINE_FONT_700_LATIN_EXT_WOFF_PATH, requestUrl.origin).toString();
-  const local700 = new URL(LOCAL_HEADLINE_FONT_700_WOFF_PATH, requestUrl.origin).toString();
-  const cdn400LatinExt = CDN_HEADLINE_FONT_400_LATIN_EXT_WOFF_URL;
-  const cdn400 = CDN_HEADLINE_FONT_400_WOFF_URL;
-  const cdn700LatinExt = CDN_HEADLINE_FONT_700_LATIN_EXT_WOFF_URL;
-  const local800 = new URL(LOCAL_HEADLINE_FONT_800_WOFF_PATH, requestUrl.origin).toString();
-  const local800LatinExt = new URL(LOCAL_HEADLINE_FONT_800_LATIN_EXT_WOFF_PATH, requestUrl.origin).toString();
-  const cdn700 = CDN_HEADLINE_FONT_700_WOFF_URL;
-  const cdn800LatinExt = CDN_HEADLINE_FONT_800_LATIN_EXT_WOFF_URL;
-  const cdn800 = CDN_HEADLINE_FONT_800_WOFF_URL;
-
-  if (weight === 800) {
-    return [
-      local800,
-      local800LatinExt,
-      GOOGLE_HEADLINE_FONT_800_WOFF_URL,
-      cdn800,
-      cdn800LatinExt,
-    ];
+const buildHeadingFontUrls = (
+  requestUrl: URL,
+  weight: BaseHeadingFontWeight,
+  script: HeadingFontScript,
+): string[] => {
+  if (script === "rtl") {
+    return buildLocalRtlHeadingFontUrls(requestUrl.origin, weight);
   }
-
-  if (weight === 700) {
-    return [
-      local700,
-      local700LatinExt,
-      GOOGLE_HEADLINE_FONT_700_WOFF_URL,
-      cdn700,
-      cdn700LatinExt,
-    ];
-  }
-
-  return [
-    local400,
-    local400LatinExt,
-    GOOGLE_HEADLINE_FONT_400_WOFF_URL,
-    cdn400,
-    cdn400LatinExt,
-  ];
+  return buildLocalHeadingFontUrls(requestUrl.origin, weight);
 };
 
 const isSupportedOgFont = (fontData: ArrayBuffer): boolean => {
@@ -131,8 +85,9 @@ const isSupportedOgFont = (fontData: ArrayBuffer): boolean => {
 const loadHeadingFontByWeight = async (
   requestUrl: URL,
   weight: BaseHeadingFontWeight,
+  script: HeadingFontScript,
 ): Promise<ArrayBuffer | null> => {
-  for (const fontUrl of buildHeadingFontUrls(requestUrl, weight)) {
+  for (const fontUrl of buildHeadingFontUrls(requestUrl, weight, script)) {
     const fontData = await fetchFontArrayBuffer(fontUrl);
     if (fontData && isSupportedOgFont(fontData)) return fontData;
   }
@@ -175,8 +130,11 @@ const toExpandedOgHeadingFonts = (
   });
 };
 
-const loadHeadingFonts = async (requestUrl: URL): Promise<LoadedHeadingFont[]> => {
-  const cacheKey = requestUrl.origin;
+const loadHeadingFonts = async (
+  requestUrl: URL,
+  script: HeadingFontScript,
+): Promise<LoadedHeadingFont[]> => {
+  const cacheKey = `${requestUrl.origin}:${script}`;
   let fontPromise = headingFontPromiseByOrigin.get(cacheKey);
 
   if (!fontPromise) {
@@ -184,7 +142,7 @@ const loadHeadingFonts = async (requestUrl: URL): Promise<LoadedHeadingFont[]> =
       const fontResults = await Promise.all(
         BASE_HEADING_FONT_WEIGHTS.map(async (weight) => ({
           weight,
-          data: await loadHeadingFontByWeight(requestUrl, weight),
+          data: await loadHeadingFontByWeight(requestUrl, weight, script),
         })),
       );
 
@@ -212,6 +170,25 @@ const getSearchParam = (url: URL, key: string): string | null => {
   return url.searchParams.get(key) ?? url.searchParams.get(`amp;${key}`);
 };
 
+const normalizeLanguageTag = (value: string | null): string | null => {
+  if (!value) return null;
+  const trimmed = value.trim().toLowerCase();
+  if (!trimmed) return null;
+  return trimmed;
+};
+
+const isRtlLanguageTag = (languageTag: string | null): boolean => {
+  if (!languageTag) return false;
+  return /^(fa|ur)(-|$)/i.test(languageTag);
+};
+
+const normalizeDirection = (value: string | null): OgDirection | null => {
+  if (!value) return null;
+  const trimmed = value.trim().toLowerCase();
+  if (trimmed === "rtl" || trimmed === "ltr") return trimmed;
+  return null;
+};
+
 const normalizePath = (value: string | null): string => {
   if (!value) return "/";
   const trimmed = value.trim();
@@ -226,6 +203,20 @@ const normalizePath = (value: string | null): string => {
   }
   if (trimmed.startsWith("/")) return trimmed;
   return `/${trimmed}`;
+};
+
+const normalizeDisplayHost = (value: string | null, fallbackHost: string): string => {
+  if (!value) return fallbackHost;
+  const trimmed = value.trim().toLowerCase();
+  if (!trimmed) return fallbackHost;
+
+  try {
+    const parsed = new URL(`https://${trimmed}`);
+    if (parsed.host !== trimmed) return fallbackHost;
+    return parsed.host;
+  } catch {
+    return fallbackHost;
+  }
 };
 
 const BLOG_IMAGE_PATH_REGEX = /^\/images\/blog\/[a-z0-9-]+-og-vertical\.(png|jpe?g)$/;
@@ -385,13 +376,20 @@ const TOPO_CONTOUR_OVERLAY_URI = svgToDataUri(
 export default async (request: Request): Promise<Response> => {
   try {
     const url = new URL(request.url);
-    const headingFonts = await loadHeadingFonts(url);
+    const languageTag = normalizeLanguageTag(getSearchParam(url, "lang"));
+    const requestedDirection = normalizeDirection(getSearchParam(url, "dir"));
+    const ogDirection: OgDirection = requestedDirection ?? (isRtlLanguageTag(languageTag) ? "rtl" : "ltr");
+    const isRtl = ogDirection === "rtl";
+    const headingFontScript: HeadingFontScript = isRtl ? "rtl" : "latin";
+    const headlineFontFamily = isRtl ? RTL_HEADLINE_FONT_FAMILY : LATIN_HEADLINE_FONT_FAMILY;
+    const headingFonts = await loadHeadingFonts(url, headingFontScript);
 
     const title = sanitizeText(getSearchParam(url, "title"), 110) || DEFAULT_TITLE;
     const subline = sanitizeText(getSearchParam(url, "description"), 160) || DEFAULT_SUBLINE;
     const pillText = sanitizeText(getSearchParam(url, "pill"), 30) || SITE_NAME;
     const pagePath = normalizePath(getSearchParam(url, "path"));
-    const displayUrl = truncateText(`${url.host}${pagePath}`, 62);
+    const displayHost = normalizeDisplayHost(getSearchParam(url, "display_host"), url.host);
+    const displayUrl = truncateText(`${displayHost}${pagePath}`, 62);
     const blogImagePath = normalizeBlogImagePath(getSearchParam(url, "blog_image"));
     const blogTint = normalizeOptionalHexColor(getSearchParam(url, "blog_tint"));
     const blogTintIntensity = normalizeTintIntensity(getSearchParam(url, "blog_tint_intensity"), 60);
@@ -411,9 +409,12 @@ export default async (request: Request): Promise<Response> => {
             width: "100%",
             height: "100%",
             display: "flex",
+            flexDirection: isRtl ? "row-reverse" : "row",
             padding: 28,
             color: "#0f172a",
-            fontFamily: `"${HEADLINE_FONT_FAMILY}", "Avenir Next", "Segoe UI", sans-serif`,
+            direction: ogDirection,
+            textAlign: isRtl ? "right" : "left",
+            fontFamily: `"${headlineFontFamily}", "TravelFlow Global Fallback", "Avenir Next", "Segoe UI", sans-serif`,
             fontWeight: 400,
             background:
               "linear-gradient(165deg, #f8fafc 0%, #eef2ff 62%, #e0e7ff 100%)",
@@ -435,15 +436,16 @@ export default async (request: Request): Promise<Response> => {
               style={{
                 display: "flex",
                 alignItems: "center",
+                flexDirection: isRtl ? "row-reverse" : "row",
                 gap: 10,
-                alignSelf: "flex-start",
+                alignSelf: isRtl ? "flex-end" : "flex-start",
                 padding: "10px 18px",
                 borderRadius: 9999,
                 background: ACCENT_600,
                 color: "#ffffff",
                 fontSize: 20,
                 fontWeight: 700,
-                fontFamily: `"${HEADLINE_FONT_FAMILY}", "Avenir Next", "Segoe UI", sans-serif`,
+                fontFamily: `"${headlineFontFamily}", "TravelFlow Global Fallback", "Avenir Next", "Segoe UI", sans-serif`,
               }}
             >
               <img src={FOOTER_PLANE_ICON_URI} alt="" style={{ width: 16, height: 16, display: "flex" }} />
@@ -462,11 +464,11 @@ export default async (request: Request): Promise<Response> => {
                 fontWeight: 800,
                 textWrap: "pretty",
                 color: "#0f172a",
-                fontFamily: `"${HEADLINE_FONT_FAMILY}", "Avenir Next", "Segoe UI", sans-serif`,
+                fontFamily: `"${headlineFontFamily}", "TravelFlow Global Fallback", "Avenir Next", "Segoe UI", sans-serif`,
               }}
             >
               {titleLines.map((line, i) => (
-                <div key={`title-${i}`} style={{ display: "flex" }}>
+                <div key={`title-${i}`} style={{ display: "flex", justifyContent: isRtl ? "flex-end" : "flex-start" }}>
                   {line}
                 </div>
               ))}
@@ -490,6 +492,7 @@ export default async (request: Request): Promise<Response> => {
                 marginTop: "auto",
                 display: "flex",
                 alignItems: "center",
+                flexDirection: isRtl ? "row-reverse" : "row",
                 justifyContent: "space-between",
                 borderTop: "1px solid rgba(148, 163, 184, 0.36)",
                 paddingTop: 20,
@@ -500,6 +503,7 @@ export default async (request: Request): Promise<Response> => {
                 style={{
                   display: "flex",
                   alignItems: "center",
+                  flexDirection: isRtl ? "row-reverse" : "row",
                   gap: 12,
                 }}
               >
@@ -523,7 +527,7 @@ export default async (request: Request): Promise<Response> => {
                     fontWeight: 700,
                     color: "#111827",
                     display: "flex",
-                    fontFamily: `"${HEADLINE_FONT_FAMILY}", "Avenir Next", "Segoe UI", sans-serif`,
+                    fontFamily: `"${headlineFontFamily}", "TravelFlow Global Fallback", "Avenir Next", "Segoe UI", sans-serif`,
                   }}
                 >
                   {SITE_NAME}
@@ -539,6 +543,7 @@ export default async (request: Request): Promise<Response> => {
                   overflow: "hidden",
                   textOverflow: "ellipsis",
                   whiteSpace: "nowrap",
+                  direction: "ltr",
                 }}
               >
                 {displayUrl}
@@ -550,7 +555,8 @@ export default async (request: Request): Promise<Response> => {
             style={{
               width: "33%",
               height: "100%",
-              paddingLeft: 20,
+              paddingLeft: isRtl ? 0 : 20,
+              paddingRight: isRtl ? 20 : 0,
               display: "flex",
             }}
           >
@@ -626,7 +632,7 @@ export default async (request: Request): Promise<Response> => {
         ...(headingFonts.length
           ? {
               fonts: headingFonts.map((font) => ({
-                  name: HEADLINE_FONT_FAMILY,
+                  name: headlineFontFamily,
                   data: font.data,
                   style: "normal",
                   weight: font.weight,

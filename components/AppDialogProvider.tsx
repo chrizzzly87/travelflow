@@ -5,7 +5,7 @@ type DialogTone = 'default' | 'danger';
 
 export interface ConfirmDialogOptions {
     title?: string;
-    message: string;
+    message: React.ReactNode;
     confirmLabel?: string;
     cancelLabel?: string;
     tone?: DialogTone;
@@ -13,7 +13,7 @@ export interface ConfirmDialogOptions {
 
 export interface PromptDialogOptions {
     title?: string;
-    message?: string;
+    message?: React.ReactNode;
     label?: string;
     placeholder?: string;
     defaultValue?: string;
@@ -50,6 +50,13 @@ const focusableSelector = 'button, [href], input, select, textarea, [tabindex]:n
 const getToneButtonClass = (tone?: DialogTone): string => {
     if (tone === 'danger') return 'bg-red-600 hover:bg-red-700 focus:ring-red-400';
     return 'bg-accent-600 hover:bg-accent-700 focus:ring-accent-400';
+};
+
+const hasRenderableContent = (value: React.ReactNode): boolean => {
+    if (value === null || value === undefined || typeof value === 'boolean') return false;
+    if (typeof value === 'string') return value.trim().length > 0;
+    if (Array.isArray(value)) return value.some((entry) => hasRenderableContent(entry));
+    return true;
 };
 
 export const AppDialogProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -192,26 +199,42 @@ export const AppDialogProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }, [activeRequest, closeWithResult, promptValue]);
 
     const contextValue = useMemo<AppDialogApi>(() => ({ confirm, prompt }), [confirm, prompt]);
-    const descriptionText = activeRequest
+    const descriptionContent = activeRequest
         ? (activeRequest.kind === 'confirm' ? activeRequest.options.message : (activeRequest.options.message || ''))
         : '';
+    const hasDescriptionContent = hasRenderableContent(descriptionContent);
+    const descriptionNode = hasDescriptionContent
+        ? (
+            typeof descriptionContent === 'string'
+                ? <div className="whitespace-pre-wrap">{descriptionContent}</div>
+                : descriptionContent
+        )
+        : null;
 
     return (
         <AppDialogContext.Provider value={contextValue}>
             {children}
             {activeRequest && createPortal(
-                <div className="fixed inset-0 z-[20000] flex items-center justify-center p-4">
+                <div className="fixed inset-0 z-[20000] flex items-end justify-center p-3 sm:items-center sm:p-4">
                     <div
                         className="absolute inset-0 bg-black/45 backdrop-blur-[2px]"
+                        role="button"
+                        tabIndex={0}
+                        aria-label="Close dialog"
                         onClick={() => closeWithResult(activeRequest.kind === 'confirm' ? false : null)}
+                        onKeyDown={(event) => {
+                            if (event.key !== 'Enter' && event.key !== ' ') return;
+                            event.preventDefault();
+                            closeWithResult(activeRequest.kind === 'confirm' ? false : null);
+                        }}
                     />
                     <div
                         ref={dialogRef}
                         role="dialog"
                         aria-modal="true"
                         aria-labelledby="app-dialog-title"
-                        aria-describedby={descriptionText ? 'app-dialog-description' : undefined}
-                        className="relative z-10 w-full max-w-md rounded-2xl bg-white shadow-2xl border border-gray-100 overflow-hidden"
+                        aria-describedby={hasDescriptionContent ? 'app-dialog-description' : undefined}
+                        className="relative z-10 w-full max-w-md overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-2xl"
                     >
                         <div className="px-5 py-4 border-b border-gray-100">
                             <h2 id="app-dialog-title" className="text-base font-bold text-gray-900">
@@ -219,10 +242,13 @@ export const AppDialogProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                             </h2>
                         </div>
                         <div className="px-5 py-4 space-y-3">
-                            {descriptionText && (
-                                <p id="app-dialog-description" className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">
-                                    {descriptionText}
-                                </p>
+                            {descriptionNode && (
+                                <div
+                                    id="app-dialog-description"
+                                    className="space-y-3 text-sm leading-relaxed text-gray-600 [&_ul]:list-disc [&_ul]:space-y-1 [&_ul]:pl-5 [&_strong]:font-semibold [&_em]:italic"
+                                >
+                                    {descriptionNode}
+                                </div>
                             )}
                             {activeRequest.kind === 'prompt' && (
                                 <div className="space-y-1.5">

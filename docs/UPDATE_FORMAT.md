@@ -85,7 +85,8 @@ Write visible items from the user's perspective — focus on the benefit, not th
 ## Versioning policy
 - Every new published release must use a new version.
 - Versions must be strictly increasing over publish time.
-- Published versions must be gapless and canonical by `published_at` order (`v0.1.0`, `v0.2.0`, `v0.3.0`, ...).
+- Published versions should be gapless and canonical by `published_at` order (`v0.1.0`, `v0.2.0`, `v0.3.0`, ...).
+- By default, non-canonical/gapless sequence issues are warnings in `updates:validate`; set `UPDATES_VALIDATE_STRICT_CANONICAL=1` to enforce as hard failures.
 - Reusing a previous version is not allowed and should fail validation.
 - Draft versions are provisional and do not reserve a published version number.
 

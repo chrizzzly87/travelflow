@@ -1,7 +1,13 @@
 import { ITrip, ITimelineItem } from '../types';
-import { isTripExpiredByTimestamp } from './productLimits';
+import { isTripExpiredByTimestamp, resolveTripExpiryFromEntitlements } from './productLimits';
+import {
+    readLocalStorageItem,
+    removeLocalStorageItem,
+    writeLocalStorageItem,
+} from '../services/browserStorageService';
 
 export type TripLifecycleState = 'active' | 'expired' | 'archived';
+export type TripPaywallActivationMode = 'direct_reactivate' | 'login_modal';
 export const TRIP_EXPIRY_DEBUG_EVENT = 'tf:trip-expiry-debug-updated';
 
 const DEBUG_EXPIRED_OVERRIDES_STORAGE_KEY = 'tf_debug_trip_expired_overrides_v1';
@@ -15,6 +21,18 @@ interface LifecycleOptions {
 
 interface PaywallOptions extends LifecycleOptions {
     lifecycleState?: TripLifecycleState;
+}
+
+interface ActivationModeOptions {
+    isAuthenticated: boolean;
+    isAnonymous: boolean;
+    isTripDetailRoute: boolean;
+}
+
+interface BuildDirectReactivatedTripOptions {
+    trip: ITrip;
+    nowMs: number;
+    tripExpirationDays?: number | null;
 }
 
 const PAYWALL_LOCATION_LABEL = 'Location hidden';
@@ -76,7 +94,7 @@ const maskTripItemForPaywall = (item: ITimelineItem, cityIndexByItemId: Map<stri
 const readDebugTripExpiryOverrides = (): TripExpiryOverrides => {
     if (typeof window === 'undefined') return {};
     try {
-        const raw = window.localStorage.getItem(DEBUG_EXPIRED_OVERRIDES_STORAGE_KEY);
+        const raw = readLocalStorageItem(DEBUG_EXPIRED_OVERRIDES_STORAGE_KEY);
         if (!raw) return {};
         const parsed = JSON.parse(raw);
         if (!parsed || typeof parsed !== 'object') return {};
@@ -96,10 +114,10 @@ const writeDebugTripExpiryOverrides = (overrides: TripExpiryOverrides) => {
     if (typeof window === 'undefined') return;
     try {
         if (Object.keys(overrides).length === 0) {
-            window.localStorage.removeItem(DEBUG_EXPIRED_OVERRIDES_STORAGE_KEY);
+            removeLocalStorageItem(DEBUG_EXPIRED_OVERRIDES_STORAGE_KEY);
             return;
         }
-        window.localStorage.setItem(DEBUG_EXPIRED_OVERRIDES_STORAGE_KEY, JSON.stringify(overrides));
+        writeLocalStorageItem(DEBUG_EXPIRED_OVERRIDES_STORAGE_KEY, JSON.stringify(overrides));
     } catch {
         // ignore storage issues
     }
@@ -152,6 +170,31 @@ export const shouldShowTripPaywall = (
     const lifecycle = options.lifecycleState ?? getTripLifecycleState(trip, options);
     return lifecycle === 'expired';
 };
+
+export const resolveTripPaywallActivationMode = ({
+    isAuthenticated,
+    isAnonymous,
+    isTripDetailRoute,
+}: ActivationModeOptions): TripPaywallActivationMode => {
+    if (!isAuthenticated || isAnonymous) return 'login_modal';
+    if (!isTripDetailRoute) return 'login_modal';
+    return 'direct_reactivate';
+};
+
+export const buildDirectReactivatedTrip = ({
+    trip,
+    nowMs,
+    tripExpirationDays,
+}: BuildDirectReactivatedTripOptions): ITrip => ({
+    ...trip,
+    status: 'active',
+    tripExpiresAt: resolveTripExpiryFromEntitlements(
+        nowMs,
+        undefined,
+        tripExpirationDays
+    ),
+    updatedAt: nowMs,
+});
 
 export const buildPaywalledTripDisplay = (trip: ITrip): ITrip => {
     const cityIndexByItemId = new Map<string, number>();

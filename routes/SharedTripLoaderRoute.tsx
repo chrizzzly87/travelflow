@@ -3,8 +3,9 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { useAuth } from '../hooks/useAuth';
 import { useDbSync } from '../hooks/useDbSync';
+import { useConnectivityStatus } from '../hooks/useConnectivityStatus';
 import { DB_ENABLED } from '../config/db';
-import { ANONYMOUS_TRIP_EXPIRATION_DAYS, buildTripExpiryIso } from '../config/productLimits';
+import { resolveTripExpiryFromEntitlements } from '../config/productLimits';
 import { getTripLifecycleState } from '../config/paywall';
 import {
     dbCanCreateTrip,
@@ -14,7 +15,6 @@ import {
     dbGetTripVersion,
     dbUpdateSharedTrip,
     dbUpsertTrip,
-    ensureDbSession,
 } from '../services/dbApi';
 import { appendHistoryEntry, findHistoryEntryByUrl } from '../services/historyService';
 import { saveTrip } from '../services/storageService';
@@ -27,7 +27,25 @@ import {
 } from '../utils';
 import type { ITrip, IViewSettings } from '../types';
 import type { CommitOptions, SharedTripLoaderRouteProps } from './tripRouteTypes';
-import { TripView } from '../components/TripView';
+import { LazyTripView } from '../components/tripview/LazyTripView';
+import { TripRouteLoadingShell } from '../components/tripview/TripRouteLoadingShell';
+
+const areViewSettingsEqual = (a?: IViewSettings, b?: IViewSettings): boolean => {
+    if (!a && !b) return true;
+    if (!a || !b) return false;
+    return (
+        a.layoutMode === b.layoutMode
+        && a.timelineMode === b.timelineMode
+        && a.timelineView === b.timelineView
+        && a.mapDockMode === b.mapDockMode
+        && a.mapStyle === b.mapStyle
+        && a.routeMode === b.routeMode
+        && a.showCityNames === b.showCityNames
+        && a.zoomLevel === b.zoomLevel
+        && a.sidebarWidth === b.sidebarWidth
+        && a.timelineHeight === b.timelineHeight
+    );
+};
 
 type SharedTripSnapshotState = { hasNewer: boolean; latestUrl: string } | null;
 
@@ -76,7 +94,11 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
     const location = useLocation();
     const navigate = useNavigate();
     const { access } = useAuth();
+    const { snapshot: connectivitySnapshot } = useConnectivityStatus();
     const lastLoadRef = useRef<string | null>(null);
+    const lastRouteTargetRef = useRef<string | null>(null);
+    const latestViewSettingsRef = useRef<IViewSettings | undefined>(undefined);
+    const hasInSessionViewOverrideRef = useRef(false);
     const [routeState, setRouteState] = useState<SharedTripRouteState>(() => createInitialSharedTripRouteState());
     const {
         shareMode,
@@ -85,10 +107,10 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
         snapshotState,
         sourceShareVersionId,
     } = routeState;
-    const resetRouteState = useCallback(() => {
+    const resetRouteState = useCallback((options?: { preserveViewSettings?: boolean }) => {
         setRouteState((prev) => ({
             ...prev,
-            viewSettings: undefined,
+            viewSettings: options?.preserveViewSettings ? prev.viewSettings : undefined,
             snapshotState: null,
             sourceShareVersionId: null,
         }));
@@ -97,15 +119,9 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
         setRouteState(next);
     }, []);
 
-    const resolveTripExpiry = (createdAtMs: number, existingTripExpiry?: string | null): string | null => {
-        if (typeof existingTripExpiry === 'string' && existingTripExpiry) return existingTripExpiry;
-        const expirationDays = access?.entitlements.tripExpirationDays;
-        if (expirationDays === null) return null;
-        if (typeof expirationDays === 'number' && expirationDays > 0) {
-            return buildTripExpiryIso(createdAtMs, expirationDays);
-        }
-        return buildTripExpiryIso(createdAtMs, ANONYMOUS_TRIP_EXPIRATION_DAYS);
-    };
+    useEffect(() => {
+        latestViewSettingsRef.current = viewSettings;
+    }, [viewSettings]);
 
     const versionId = useMemo(() => {
         const params = new URLSearchParams(location.search);
@@ -116,20 +132,45 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
 
     useEffect(() => {
         if (!token) return;
-        const loadKey = `${token}:${location.search}`;
+        const loadKey = `${token}:${location.search}:${connectivitySnapshot.state}`;
         if (lastLoadRef.current === loadKey) return;
         lastLoadRef.current = loadKey;
+        const routeTargetKey = `${token}:${versionId || ''}`;
+        const didRouteTargetChange = lastRouteTargetRef.current !== routeTargetKey;
+        lastRouteTargetRef.current = routeTargetKey;
 
         const load = async () => {
+            const connectivityState = connectivitySnapshot.state;
             if (!DB_ENABLED) {
                 navigate('/share-unavailable', { replace: true });
                 return;
             }
 
-            resetRouteState();
-            await ensureDbSession();
+            if (connectivityState === 'offline') {
+                navigate('/share-unavailable?reason=offline', { replace: true });
+                return;
+            }
+
+            // Keep in-session view choices while reconnecting on the same shared
+            // route target so delayed loader refreshes do not override controls.
+            resetRouteState({ preserveViewSettings: !didRouteTargetChange });
+            if (didRouteTargetChange) {
+                latestViewSettingsRef.current = undefined;
+                hasInSessionViewOverrideRef.current = false;
+            }
+
+            const resolveEffectiveView = (resolvedView?: IViewSettings, fallbackView?: IViewSettings) => {
+                if (!didRouteTargetChange && hasInSessionViewOverrideRef.current) {
+                    return latestViewSettingsRef.current ?? resolvedView ?? fallbackView;
+                }
+                return resolvedView ?? fallbackView;
+            };
             const shared = await dbGetSharedTrip(token);
             if (!shared) {
+                if (connectivityState !== 'online') {
+                    navigate('/share-unavailable?reason=offline', { replace: true });
+                    return;
+                }
                 navigate('/share-unavailable', { replace: true });
                 return;
             }
@@ -149,7 +190,7 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
             if (versionId && isUuid(versionId)) {
                 const sharedVersion = await dbGetSharedTripVersion(token, versionId);
                 if (sharedVersion?.trip) {
-                    const resolvedView = sharedVersion.view ?? sharedVersion.trip.defaultView;
+                    const resolvedView = resolveEffectiveView(sharedVersion.view, sharedVersion.trip.defaultView);
                     const latestVersionId = sharedVersion.latestVersionId ?? shared.latestVersionId ?? null;
                     const nextState: SharedTripRouteState = {
                         ...baseRouteState,
@@ -171,7 +212,7 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
                     const sharedUpdatedAt = typeof shared.trip.updatedAt === 'number' ? shared.trip.updatedAt : null;
                     const snapshotUpdatedAt = typeof version.trip.updatedAt === 'number' ? version.trip.updatedAt : null;
                     const newerByTimestamp = sharedUpdatedAt !== null && snapshotUpdatedAt !== null && sharedUpdatedAt > snapshotUpdatedAt;
-                    const resolvedView = version.view ?? version.trip.defaultView;
+                    const resolvedView = resolveEffectiveView(version.view, version.trip.defaultView);
                     const nextState: SharedTripRouteState = {
                         ...baseRouteState,
                         viewSettings: resolvedView,
@@ -190,7 +231,7 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
             if (versionId) {
                 const localEntry = findHistoryEntryByUrl(shared.trip.id, buildShareUrl(token, versionId));
                 if (localEntry?.snapshot?.trip) {
-                    const resolvedView = localEntry.snapshot.view ?? localEntry.snapshot.trip.defaultView;
+                    const resolvedView = resolveEffectiveView(localEntry.snapshot.view, localEntry.snapshot.trip.defaultView);
                     const nextState: SharedTripRouteState = {
                         ...baseRouteState,
                         viewSettings: resolvedView,
@@ -206,7 +247,7 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
                 }
             }
 
-            const resolvedView = shared.view ?? shared.trip.defaultView;
+            const resolvedView = resolveEffectiveView(shared.view, shared.trip.defaultView);
             applyRouteState({
                 ...baseRouteState,
                 viewSettings: resolvedView,
@@ -216,7 +257,7 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
         };
 
         void load();
-    }, [applyRouteState, token, versionId, location.search, navigate, onTripLoaded, resetRouteState]);
+    }, [applyRouteState, connectivitySnapshot.state, token, versionId, location.search, navigate, onTripLoaded, resetRouteState]);
 
     const handleCommitShared = (updatedTrip: ITrip, view: IViewSettings | undefined, options?: CommitOptions) => {
         if (shareMode !== 'edit' || !token) return;
@@ -225,8 +266,6 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
         createLocalHistoryEntry(navigate, updatedTrip, view, label, options, commitTs, buildShareUrl(token));
 
         const commit = async () => {
-            const sessionId = await ensureDbSession();
-            if (!sessionId) return;
             const version = await dbUpdateSharedTrip(token, updatedTrip, view, label);
             if (!version) return;
         };
@@ -256,7 +295,11 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
             updatedAt: now,
             isFavorite: false,
             status: 'active',
-            tripExpiresAt: resolveTripExpiry(now),
+            tripExpiresAt: resolveTripExpiryFromEntitlements(
+                now,
+                undefined,
+                access?.entitlements.tripExpirationDays
+            ),
             sourceKind: 'duplicate_shared',
             forkedFromTripId: trip.id,
             forkedFromShareToken: token || undefined,
@@ -286,26 +329,35 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
         navigate(buildTripUrl(cloned.id));
     };
 
-    if (!trip) return null;
+    const handleRouteViewSettingsChange = useCallback((settings: IViewSettings) => {
+        const currentViewSettings = routeState.viewSettings;
+        if (areViewSettingsEqual(currentViewSettings, settings)) return;
+        hasInSessionViewOverrideRef.current = true;
+        setRouteState((prev) => ({ ...prev, viewSettings: settings }));
+        onViewSettingsChange(settings);
+    }, [onViewSettingsChange, routeState.viewSettings]);
+
+    if (!trip) {
+        return <TripRouteLoadingShell variant="loadingSharedTrip" />;
+    }
 
     return (
-        <TripView
-            trip={trip}
-            initialViewSettings={viewSettings ?? trip.defaultView}
-            onUpdateTrip={(updatedTrip) => onTripLoaded(updatedTrip, viewSettings ?? updatedTrip.defaultView)}
-            onCommitState={handleCommitShared}
-            onViewSettingsChange={(settings) => {
-                setRouteState((prev) => ({ ...prev, viewSettings: settings }));
-                onViewSettingsChange(settings);
-            }}
-            onOpenManager={onOpenManager}
-            onOpenSettings={onOpenSettings}
-            appLanguage={appLanguage}
-            readOnly={shareMode === 'view'}
-            canShare={false}
-            shareStatus={shareMode}
-            shareSnapshotMeta={snapshotState ?? undefined}
-            onCopyTrip={allowCopy ? handleCopyTrip : undefined}
-        />
+        <React.Suspense fallback={<TripRouteLoadingShell variant="preparingSharedPlanner" />}>
+            <LazyTripView
+                trip={trip}
+                initialViewSettings={viewSettings ?? trip.defaultView}
+                onUpdateTrip={(updatedTrip) => onTripLoaded(updatedTrip, viewSettings ?? updatedTrip.defaultView)}
+                onCommitState={handleCommitShared}
+                onViewSettingsChange={handleRouteViewSettingsChange}
+                onOpenManager={onOpenManager}
+                onOpenSettings={onOpenSettings}
+                appLanguage={appLanguage}
+                readOnly={shareMode === 'view'}
+                canShare={false}
+                shareStatus={shareMode}
+                shareSnapshotMeta={snapshotState ?? undefined}
+                onCopyTrip={allowCopy ? handleCopyTrip : undefined}
+            />
+        </React.Suspense>
     );
 };

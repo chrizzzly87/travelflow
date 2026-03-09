@@ -1,12 +1,17 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type MutableRefObject } from 'react';
 import { DB_ENABLED } from '../config/db';
 import { AppLanguage } from '../types';
+import { getConnectivitySnapshot, subscribeConnectivityStatus } from '../services/supabaseHealthMonitor';
 
 /** Has the DB sync already run in this session? */
 let hasSynced = false;
+let syncInFlightPromise: Promise<boolean> | null = null;
+let recoverySyncPromise: Promise<void> | null = null;
 
 type DbServiceModule = typeof import('../services/dbService');
 let dbServicePromise: Promise<DbServiceModule> | null = null;
+
+export const DB_SYNC_RETRY_INTERVAL_MS = 15000;
 
 const loadDbService = async (): Promise<DbServiceModule> => {
     if (!dbServicePromise) {
@@ -15,40 +20,140 @@ const loadDbService = async (): Promise<DbServiceModule> => {
     return dbServicePromise;
 };
 
+const runBootstrap = async (onLanguageLoadedRef: MutableRefObject<((lang: AppLanguage) => void) | undefined>): Promise<boolean> => {
+    if (hasSynced) return true;
+    if (syncInFlightPromise) return syncInFlightPromise;
+
+    syncInFlightPromise = (async () => {
+        try {
+            const db = await loadDbService();
+            const sessionUserId = await db.ensureExistingDbSession();
+            if (!sessionUserId) {
+                return false;
+            }
+
+            await db.uploadLocalTripsToDb();
+            await db.syncTripsFromDb();
+
+            const settings = await db.dbGetUserSettings();
+            if (settings) {
+                db.applyUserSettingsToLocalStorage(settings);
+                if (settings.language && onLanguageLoadedRef.current) {
+                    onLanguageLoadedRef.current(settings.language);
+                }
+            }
+
+            hasSynced = true;
+            return true;
+        } catch (error) {
+            console.warn('DB bootstrap sync failed', error);
+            return false;
+        } finally {
+            syncInFlightPromise = null;
+        }
+    })();
+
+    return syncInFlightPromise;
+};
+
+const runRecoverySync = async (): Promise<void> => {
+    if (recoverySyncPromise) return recoverySyncPromise;
+
+    recoverySyncPromise = (async () => {
+        const db = await loadDbService();
+        const sessionUserId = await db.ensureExistingDbSession();
+        if (!sessionUserId) return;
+        await db.uploadLocalTripsToDb();
+        await db.syncTripsFromDb();
+    })().finally(() => {
+        recoverySyncPromise = null;
+    });
+
+    return recoverySyncPromise;
+};
+
 /**
- * Runs the DB bootstrap (session, upload local trips, sync from DB, load user
- * settings) exactly once per browser session. Safe to call from multiple
- * components — the first invocation wins, subsequent calls are no-ops.
+ * Runs DB bootstrap once per session (when user session is available), then
+ * performs reconnect recovery sync whenever connectivity transitions back
+ * online during the same session.
  */
 export const useDbSync = (onLanguageLoaded?: (lang: AppLanguage) => void) => {
     const calledRef = useRef(false);
+    const onLanguageLoadedRef = useRef(onLanguageLoaded);
+    const previousConnectivityStateRef = useRef(getConnectivitySnapshot().state);
+    onLanguageLoadedRef.current = onLanguageLoaded;
 
     useEffect(() => {
         if (!DB_ENABLED) return;
-        if (hasSynced || calledRef.current) return;
+        if (calledRef.current) return;
         calledRef.current = true;
-        hasSynced = true;
 
         let cancelled = false;
+        let retryTimer: ReturnType<typeof setTimeout> | null = null;
 
-        const init = async () => {
-            const db = await loadDbService();
-            await db.ensureDbSession();
-            await db.uploadLocalTripsToDb();
-            await db.syncTripsFromDb();
-            const settings = await db.dbGetUserSettings();
-            if (!cancelled && settings) {
-                db.applyUserSettingsToLocalStorage(settings);
-                if (settings.language && onLanguageLoaded) {
-                    onLanguageLoaded(settings.language);
-                }
+        const clearRetryTimer = () => {
+            if (!retryTimer) return;
+            clearTimeout(retryTimer);
+            retryTimer = null;
+        };
+
+        const scheduleRetry = () => {
+            if (cancelled || hasSynced) return;
+            clearRetryTimer();
+            retryTimer = setTimeout(() => {
+                void attemptSync();
+            }, DB_SYNC_RETRY_INTERVAL_MS);
+        };
+
+        const attemptSync = async () => {
+            if (cancelled || hasSynced) return;
+            if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+                scheduleRetry();
+                return;
+            }
+            const didSync = await runBootstrap(onLanguageLoadedRef);
+            if (!didSync && !cancelled) {
+                scheduleRetry();
             }
         };
 
-        void init();
+        const unsubscribeConnectivity = subscribeConnectivityStatus((snapshot) => {
+            const previous = previousConnectivityStateRef.current;
+            previousConnectivityStateRef.current = snapshot.state;
+
+            if (!hasSynced) {
+                if (snapshot.state === 'online') {
+                    clearRetryTimer();
+                    void attemptSync();
+                }
+                return;
+            }
+
+            if (previous !== 'online' && snapshot.state === 'online') {
+                void runRecoverySync();
+            }
+        });
+
+        const handleOnline = () => {
+            clearRetryTimer();
+            void attemptSync();
+        };
+
+        void attemptSync();
+        window.addEventListener('online', handleOnline);
 
         return () => {
             cancelled = true;
+            clearRetryTimer();
+            window.removeEventListener('online', handleOnline);
+            unsubscribeConnectivity();
         };
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
+};
+
+export const __resetUseDbSyncStateForTests = (): void => {
+    hasSynced = false;
+    syncInFlightPromise = null;
+    recoverySyncPromise = null;
+    dbServicePromise = null;
 };

@@ -20,13 +20,8 @@ const exampleTemplatesTarget = target('data:example-trip-templates', () => impor
 const exampleCardsTarget = target('data:example-trip-cards', () => import('../data/exampleTripCards'));
 const homeTarget = target('route:home', () => import('../pages/MarketingHomePage'));
 
-const createTripFormTarget = target('route:create-trip', () => import('../components/CreateTripForm'));
 const createTripClassicLabTarget = target('route:create-trip-lab-classic', () => import('../pages/CreateTripClassicLabPage'));
-const createTripSplitLabTarget = target('route:create-trip-lab-split', () => import('../pages/CreateTripSplitWorkspaceLabPage'));
-const createTripArchitectLabTarget = target('route:create-trip-lab-architect', () => import('../pages/CreateTripJourneyArchitectLabPage'));
-const createTripV1Target = target('route:create-trip-v1', () => import('../pages/CreateTripV1Page'));
-const createTripV2Target = target('route:create-trip-v2', () => import('../pages/CreateTripV2Page'));
-const createTripV3Target = target('route:create-trip-v3', () => import('../pages/CreateTripV3Page'));
+const createTripWizardTarget = target('route:create-trip-wizard', () => import('../pages/CreateTripV3Page'));
 
 const featuresTarget = target('route:features', () => import('../pages/FeaturesPage'));
 const updatesTarget = target('route:updates', () => import('../pages/UpdatesPage'));
@@ -69,28 +64,8 @@ const rules: PrefetchRule[] = [
         targets: [createTripClassicLabTarget, tripViewTarget],
     },
     {
-        match: (pathname) => pathname === '/create-trip/labs/classic-legacy',
-        targets: [createTripFormTarget, tripViewTarget],
-    },
-    {
-        match: (pathname) => pathname === '/create-trip/labs/split-workspace',
-        targets: [createTripSplitLabTarget, tripViewTarget],
-    },
-    {
-        match: (pathname) => pathname === '/create-trip/labs/journey-architect',
-        targets: [createTripArchitectLabTarget, tripViewTarget],
-    },
-    {
-        match: (pathname) => pathname === '/create-trip/labs/design-v1' || pathname === '/create-trip/v1',
-        targets: [createTripV1Target, tripViewTarget],
-    },
-    {
-        match: (pathname) => pathname === '/create-trip/labs/design-v2' || pathname === '/create-trip/v2',
-        targets: [createTripV2Target, tripViewTarget],
-    },
-    {
-        match: (pathname) => pathname === '/create-trip/labs/design-v3' || pathname === '/create-trip/v3',
-        targets: [createTripV3Target, tripViewTarget],
+        match: (pathname) => pathname === '/create-trip/wizard',
+        targets: [createTripWizardTarget, tripViewTarget],
     },
     {
         match: (pathname) => startsWithSegment(pathname, '/create-trip'),

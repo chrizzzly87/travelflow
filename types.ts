@@ -3,14 +3,24 @@ import type { TransportMode as CanonicalTransportMode } from './shared/transport
 
 export type ItemType = 'city' | 'activity' | 'travel' | 'travel-empty';
 export type TransportMode = CanonicalTransportMode;
+export type CityPlanStatus = 'confirmed' | 'uncertain';
 export type ActivityType = 
     'general' | 'food' | 'culture' | 'sightseeing' | 'relaxation' | 'nightlife' | 
     'sports' | 'hiking' | 'wildlife' | 'shopping' | 'adventure' | 'beach' | 'nature';
 
-export type MapStyle = 'minimal' | 'standard' | 'dark' | 'satellite' | 'clean';
+export type MapStyle = 'minimal' | 'standard' | 'dark' | 'satellite' | 'clean' | 'cleanDark';
 export type RouteMode = 'simple' | 'realistic';
 export type RouteStatus = 'calculating' | 'ready' | 'failed' | 'idle';
-export type AppLanguage = 'en' | 'es' | 'de' | 'fr' | 'pt' | 'ru' | 'it' | 'pl' | 'ko';
+export type RouteFailureReason =
+  | 'unsupported_mode'
+  | 'invalid_distance'
+  | 'distance_cap_exceeded'
+  | 'zero_results'
+  | 'no_route_path'
+  | 'straight_path'
+  | 'api_unavailable'
+  | 'request_error';
+export type AppLanguage = 'en' | 'es' | 'de' | 'fr' | 'pt' | 'ru' | 'it' | 'pl' | 'ko' | 'fa' | 'ur';
 export type MapColorMode = 'brand' | 'trip';
 export type SystemRole = 'admin' | 'user';
 export type PlanTierKey = 'tier_free' | 'tier_mid' | 'tier_premium';
@@ -35,6 +45,12 @@ export interface UserAccessContext {
     entitlements: Entitlements;
     onboardingCompleted: boolean;
     accountStatus: 'active' | 'disabled' | 'deleted';
+    termsCurrentVersion: string | null;
+    termsRequiresReaccept: boolean;
+    termsAcceptedVersion: string | null;
+    termsAcceptedAt: string | null;
+    termsAcceptanceRequired: boolean;
+    termsNoticeRequired: boolean;
 }
 
 export interface ICoordinates {
@@ -48,12 +64,76 @@ export interface IAiInsights {
     tips: string;
 }
 
+export type TripGenerationFlow = 'classic' | 'wizard' | 'surprise';
+export type TripGenerationState = 'queued' | 'running' | 'succeeded' | 'failed';
+export type TripGenerationFailureKind = 'timeout' | 'abort' | 'quality' | 'provider' | 'network' | 'unknown';
+export type TripGenerationJobState = 'queued' | 'leased' | 'completed' | 'failed' | 'dead';
+
+export interface TripGenerationInputSnapshot {
+    flow: TripGenerationFlow;
+    destinationLabel?: string;
+    startDate?: string;
+    endDate?: string;
+    payload: Record<string, unknown>;
+    createdAt: string;
+}
+
+export interface TripGenerationAttemptSummary {
+    id: string;
+    flow: TripGenerationFlow;
+    source: string;
+    state: TripGenerationState;
+    startedAt: string;
+    finishedAt?: string | null;
+    durationMs?: number | null;
+    requestId?: string | null;
+    provider?: string | null;
+    model?: string | null;
+    providerModel?: string | null;
+    statusCode?: number | null;
+    failureKind?: TripGenerationFailureKind | null;
+    errorCode?: string | null;
+    errorMessage?: string | null;
+    metadata?: Record<string, unknown> | null;
+}
+
+export interface TripGenerationMeta {
+    state: TripGenerationState;
+    latestAttempt?: TripGenerationAttemptSummary | null;
+    attempts?: TripGenerationAttemptSummary[];
+    inputSnapshot?: TripGenerationInputSnapshot | null;
+    retryCount?: number;
+    retryRequestedAt?: string | null;
+    lastSucceededAt?: string | null;
+    lastFailedAt?: string | null;
+}
+
+export interface TripGenerationJobSummary {
+    id: string;
+    tripId: string;
+    ownerId: string;
+    attemptId: string;
+    state: TripGenerationJobState;
+    priority: number;
+    retryCount: number;
+    maxRetries: number;
+    runAfter: string;
+    leaseExpiresAt?: string | null;
+    leasedBy?: string | null;
+    payload?: Record<string, unknown> | null;
+    lastErrorCode?: string | null;
+    lastErrorMessage?: string | null;
+    createdAt: string;
+    updatedAt: string;
+}
+
 export interface ITripAiMeta {
     provider: string;
     model: string;
     generatedAt: string;
     benchmarkSessionId?: string | null;
     benchmarkRunId?: string | null;
+    generation?: TripGenerationMeta;
 }
 
 export interface IHotel {
@@ -88,6 +168,12 @@ export interface ITimelineItem {
   cost?: string;
   countryCode?: string;
   countryName?: string;
+
+  // Optional city planning metadata for tentative/alternative stops.
+  cityPlanStatus?: CityPlanStatus;
+  cityPlanGroupId?: string;
+  cityPlanOptionIndex?: number;
+  isApproved?: boolean;
   
   // Specific properties
   transportMode?: TransportMode; 
@@ -113,6 +199,9 @@ export interface ITrip {
   createdAt: number;
   updatedAt: number;
   isFavorite?: boolean;
+  isPinned?: boolean;
+  pinnedAt?: number;
+  showOnPublicProfile?: boolean;
   forkedFromTripId?: string;
   forkedFromShareToken?: string;
   forkedFromShareVersionId?: string;
@@ -125,6 +214,8 @@ export interface ITrip {
   tripExpiresAt?: string | null;
   sourceKind?: 'created' | 'duplicate_shared' | 'duplicate_trip' | 'example' | 'ai_benchmark';
   sourceTemplateId?: string | null;
+  sourceOwnerType?: 'user' | 'system_catalog';
+  sourceOwnerHandle?: string | null;
   requiredTierKey?: TripAccessClassKey;
   isExample?: boolean;
   exampleTemplateId?: string;
@@ -145,9 +236,11 @@ export type DeleteStrategy = 'extend-prev' | 'extend-next' | 'move-rest';
 
 export interface IViewSettings {
     layoutMode: 'vertical' | 'horizontal';
-    timelineView: 'horizontal' | 'vertical'; // Dashboard vs List
+    timelineMode?: 'calendar' | 'timeline';
+    timelineView: 'horizontal' | 'vertical'; // Calendar orientation
     mapStyle: MapStyle;
     zoomLevel: number;
+    mapDockMode?: 'docked' | 'floating';
     routeMode?: RouteMode;
     showCityNames?: boolean;
     sidebarWidth?: number;
@@ -178,6 +271,7 @@ export interface IUserSettings {
     mapStyle?: MapStyle;
     routeMode?: RouteMode;
     layoutMode?: 'vertical' | 'horizontal';
+    timelineMode?: 'calendar' | 'timeline';
     timelineView?: 'horizontal' | 'vertical';
     showCityNames?: boolean;
     zoomLevel?: number;

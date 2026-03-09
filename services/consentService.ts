@@ -1,27 +1,35 @@
-export const CONSENT_STORAGE_KEY = 'tf_cookie_consent_choice_v1';
+import {
+    purgeOptionalBrowserStorage,
+    readLocalStorageItem,
+    writeLocalStorageItem,
+} from './browserStorageService';
+import {
+    CONSENT_STORAGE_KEY,
+    type ConsentChoice,
+    isConsentChoice,
+    readConsentChoiceFromStorage,
+} from './consentState';
+
+export { CONSENT_STORAGE_KEY } from './consentState';
+export type { ConsentChoice } from './consentState';
+
 const CONSENT_CHANGE_EVENT = 'tf:cookie-consent-change';
-
-export type ConsentChoice = 'all' | 'essential';
-
-const isConsentChoice = (value: unknown): value is ConsentChoice => value === 'all' || value === 'essential';
 
 export const readStoredConsent = (): ConsentChoice | null => {
     if (typeof window === 'undefined') return null;
-    try {
-        const stored = window.localStorage.getItem(CONSENT_STORAGE_KEY);
-        return isConsentChoice(stored) ? stored : null;
-    } catch (e) {
-        return null;
-    }
+    const directRead = readConsentChoiceFromStorage();
+    if (isConsentChoice(directRead)) return directRead;
+    const storageRead = readLocalStorageItem(CONSENT_STORAGE_KEY);
+    return isConsentChoice(storageRead) ? storageRead : null;
 };
 
 export const saveConsent = (choice: ConsentChoice): void => {
     if (typeof window === 'undefined') return;
 
-    try {
-        window.localStorage.setItem(CONSENT_STORAGE_KEY, choice);
-    } catch (e) {
-        // ignore storage issues
+    writeLocalStorageItem(CONSENT_STORAGE_KEY, choice);
+
+    if (choice === 'essential') {
+        purgeOptionalBrowserStorage();
     }
 
     window.dispatchEvent(new CustomEvent<ConsentChoice>(CONSENT_CHANGE_EVENT, { detail: choice }));

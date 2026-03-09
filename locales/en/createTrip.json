@@ -157,18 +157,31 @@
     "style": "Style",
     "transport": "Transport"
   },
+  "modelPicker": {
+    "label": "AI model",
+    "topPicks": "Top picks",
+    "allModels": "All models",
+    "badges": {
+      "default": "Default",
+      "fastAndGood": "Fast and good",
+      "veryFast": "Very fast!"
+    }
+  },
   "cta": {
     "label": "Create my trip",
-    "loading": "Creating..."
+    "loading": "Creating...",
+    "offline": "Offline"
   },
   "errors": {
     "destinationRequired": "Add at least one destination before creating your trip.",
-    "genericGenerate": "Trip generation failed. Please try again."
+    "genericGenerate": "Trip generation failed. Please try again.",
+    "offlineCreateDisabled": "Trip creation is unavailable while offline. Reconnect and try again."
   },
   "prefillBadge": "Pre-filled from: {label}",
   "labsBanner": {
-    "title": "Need to test other create-trip concepts?",
-    "description": "Direct lab routes for regression checks and side-by-side experiments.",
+    "title": "Need some guidance on your next trip?",
+    "description": "Use our wizard for step-by-step planning support.",
+    "cta": "Try our wizard",
     "links": {
       "legacy": "Classic Legacy form",
       "classicCard": "Classic Card route",
@@ -177,6 +190,18 @@
       "designV1": "Design Variant V1",
       "designV2": "Design Variant V2",
       "designV3": "Design Variant V3"
+    }
+  },
+  "notifications": {
+    "prompt": {
+      "title": "Get a notification when your trip is ready?",
+      "message": "Trip generation can take around a minute. Enable browser notifications and we will alert you when your itinerary is ready.",
+      "enable": "Enable notifications",
+      "notNow": "Not now"
+    },
+    "ready": {
+      "title": "Trip ready",
+      "body": "Your itinerary is ready to review."
     }
   }
 }

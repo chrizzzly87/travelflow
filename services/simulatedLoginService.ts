@@ -1,3 +1,9 @@
+import {
+    readLocalStorageItem,
+    removeLocalStorageItem,
+    writeLocalStorageItem,
+} from './browserStorageService';
+
 export const SIMULATED_LOGIN_STORAGE_KEY = 'tf_debug_simulated_login';
 export const SIMULATED_LOGIN_DEBUG_EVENT = 'tf:simulated-login-debug';
 
@@ -6,7 +12,7 @@ let simulatedLoginOverride: boolean | null = null;
 const readSimulatedLoginOverride = (): boolean => {
     if (typeof window === 'undefined') return false;
     try {
-        return window.localStorage.getItem(SIMULATED_LOGIN_STORAGE_KEY) === '1';
+        return readLocalStorageItem(SIMULATED_LOGIN_STORAGE_KEY) === '1';
     } catch {
         return false;
     }
@@ -20,6 +26,10 @@ const dispatchSimulatedLoginEvent = (loggedIn: boolean) => {
 };
 
 export const isSimulatedLoggedIn = (): boolean => {
+    if (typeof window !== 'undefined') {
+        simulatedLoginOverride = readSimulatedLoginOverride();
+        return simulatedLoginOverride;
+    }
     if (simulatedLoginOverride === null) {
         simulatedLoginOverride = readSimulatedLoginOverride();
     }
@@ -31,9 +41,9 @@ export const setSimulatedLoggedIn = (enabled: boolean): boolean => {
     if (typeof window !== 'undefined') {
         try {
             if (simulatedLoginOverride) {
-                window.localStorage.setItem(SIMULATED_LOGIN_STORAGE_KEY, '1');
+                writeLocalStorageItem(SIMULATED_LOGIN_STORAGE_KEY, '1');
             } else {
-                window.localStorage.removeItem(SIMULATED_LOGIN_STORAGE_KEY);
+                removeLocalStorageItem(SIMULATED_LOGIN_STORAGE_KEY);
             }
         } catch {
             // ignore storage issues

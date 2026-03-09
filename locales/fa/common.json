@@ -1,0 +1,173 @@
+{
+  "nav": {
+    "features": "ویژگی‌ها",
+    "inspirations": "الهام‌ها",
+    "updates": "خبرها و به‌روزرسانی‌ها",
+    "blog": "وبلاگ",
+    "pricing": "قیمت‌گذاری",
+    "login": "ورود",
+    "createTrip": "ساخت سفر",
+    "myTrips": "سفرهای من",
+    "openMenu": "باز کردن منو",
+    "admin": "ادمین",
+    "logout": "خروج"
+  },
+  "footer": {
+    "rightsReserved": "© {year} {appName}. همه حقوق محفوظ است.",
+    "contact": "تماس",
+    "imprint": "اطلاعات حقوقی",
+    "privacy": "حریم خصوصی",
+    "terms": "شرایط استفاده",
+    "cookies": "کوکی‌ها",
+    "legalNotice": "محتوای حقوقی فعلاً نمونه است و پیش از انتشار عمومی باید با متن تأییدشده نهایی جایگزین شود."
+  },
+  "language": {
+    "label": "زبان",
+    "en": "English",
+    "es": "Español",
+    "de": "Deutsch",
+    "fr": "Français",
+    "it": "Italiano",
+    "ru": "Русский",
+    "pt": "Português",
+    "pl": "Polski",
+    "ko": "한국어",
+    "fa": "فارسی",
+    "ur": "اردو"
+  },
+  "buttons": {
+    "startPlanning": "شروع برنامه‌ریزی",
+    "seeExampleTrips": "مشاهده سفرهای نمونه",
+    "startPlanningFree": "برنامه‌ریزی را شروع کنید — رایگان است",
+    "done": "انجام شد",
+    "essentialOnly": "فقط ضروری",
+    "acceptAll": "پذیرفتن همه",
+    "backToBlog": "بازگشت به وبلاگ",
+    "all": "همه"
+  },
+  "earlyAccess": {
+    "tag": "پیش‌نمایش اولیه",
+    "message": "{appName} در حال توسعه فعال است. امکانات ممکن است تغییر کنند و برخی بخش‌ها هنوز کاملاً پایدار نباشند.",
+    "dismiss": "بستن بنر"
+  },
+  "cookieBanner": {
+    "message": "برای پایدار نگه داشتن {appName} از کوکی‌های ضروری و برای بهبود تجربه شما از کوکی‌های اختیاری استفاده می‌کنیم. سیاست",
+    "policyLinkLabel": "کوکی‌ها"
+  },
+  "translationNotice": {
+    "message": "این صفحه به‌تازگی با کمک هوش مصنوعی ترجمه شده و ممکن است هنوز خطاهای ترجمه داشته باشد.",
+    "cta": "گزارش خطای ترجمه",
+    "ctaShort": "گزارش"
+  },
+  "contact": {
+    "title": "تماس",
+    "description": "از این صفحه برای گزارش خطاهای ترجمه یا ارسال بازخورد بومی‌سازی استفاده کنید.",
+    "formStatusTitle": "فرم تماس به‌زودی اضافه می‌شود",
+    "formStatusBody": "فرم اختصاصی هنوز فعال نیست. تا آن زمان لطفاً از طریق ایمیل با ما تماس بگیرید.",
+    "emailLabel": "ایمیل",
+    "emailValue": "support@travelflow.app",
+    "responseNote": "معمولاً طی ۲ تا ۳ روز کاری پاسخ می‌دهیم.",
+    "backHome": "بازگشت به صفحه اصلی"
+  },
+  "connectivity": {
+    "banner": {
+      "offline": {
+        "title": "You are offline. Changes will be queued.",
+        "messageNone": "Planner stays usable with cached data.",
+        "messageOne": "{count} change is queued and will sync after reconnect.",
+        "messageMany": "{count} changes are queued and will sync after reconnect."
+      },
+      "degraded": {
+        "title": "Connection is unstable. Saving in resilient mode.",
+        "messageNone": "Planner stays usable while we retry in the background.",
+        "messageOne": "{count} queued change will sync when Supabase stabilizes.",
+        "messageMany": "{count} queued changes will sync when Supabase stabilizes."
+      },
+      "syncing": {
+        "title": "Sync in progress",
+        "messageOne": "{count} change is waiting to sync.",
+        "messageMany": "{count} changes are waiting to sync.",
+        "progressOne": "Syncing {count} queued change...",
+        "progressMany": "Syncing {count} queued changes..."
+      },
+      "forcedMode": "Supabase outage simulation is currently forced in debugger mode.",
+      "actions": {
+        "retrySync": "Retry failed sync",
+        "dismiss": "Dismiss connectivity banner",
+        "contact": "تماس",
+        "email": "Email support"
+      },
+      "retryHint": "Retrying Supabase connection every 30s while this tab stays open."
+    },
+    "tripStrip": {
+      "offline": {
+        "messageNone": "Offline mode enabled. Trip data is served from local cache.",
+        "messageOne": "Offline mode enabled. {count} change is queued for sync.",
+        "messageMany": "Offline mode enabled. {count} changes are queued for sync."
+      },
+      "degraded": {
+        "messageNone": "Connection is degraded. Edits are protected with local queue fallback.",
+        "messageOne": "Connection is degraded. {count} change is queued for replay.",
+        "messageMany": "Connection is degraded. {count} changes are queued for replay."
+      },
+      "forcedSuffix": "(forced by debugger)",
+      "retry": "Retry failed sync",
+      "serverBackup": "A newer server version was backed up before replay. You can restore it if needed.",
+      "restoreServerVersion": "Restore server version",
+      "syncingOne": "Syncing {count} queued change to Supabase...",
+      "syncingMany": "Syncing {count} queued changes to Supabase...",
+      "pendingOne": "{count} queued change is waiting for replay.",
+      "pendingMany": "{count} queued changes are waiting for replay."
+    },
+    "toast": {
+      "title": "Sync status",
+      "syncCompleted": "Queued trip changes synced successfully.",
+      "serverBackupRestored": "Server backup restored for this trip.",
+      "syncStartedOne": "Reconnect detected. Replaying {count} queued change.",
+      "syncStartedMany": "Reconnect detected. Replaying {count} queued changes.",
+      "syncPartialFailureOne": "{count} queued change still failed. You can retry.",
+      "syncPartialFailureMany": "{count} queued changes still failed. You can retry."
+    }
+  },
+  "tripPaywall": {
+    "strip": {
+      "directSinceDate": "پیش‌نمایش سفر از {date} متوقف شده است. همین حالا دوباره فعال کنید تا حالت کامل برنامه‌ریزی باز شود.",
+      "directNoDate": "پیش‌نمایش سفر متوقف شده است. همین حالا دوباره فعال کنید تا حالت کامل برنامه‌ریزی باز شود.",
+      "loginSinceDate": "پیش‌نمایش سفر از {date} متوقف شده است. وارد شوید تا دوباره فعال شود و حالت کامل برنامه‌ریزی باز شود.",
+      "loginNoDate": "پیش‌نمایش سفر متوقف شده است. وارد شوید تا دوباره فعال شود و حالت کامل برنامه‌ریزی باز شود."
+    },
+    "overlay": {
+      "eyebrow": "پیش‌نمایش سفر متوقف است",
+      "title": {
+        "direct": "برای ادامه برنامه‌ریزی، این سفر را دوباره فعال کنید",
+        "login": "برای فعال‌سازی دوباره این سفر وارد شوید"
+      },
+      "description": {
+        "direct": "شما وارد شده‌اید. همین حالا دوباره فعال کنید تا ویرایش، نام مقصدها و مسیرهای نقشه برگردد.",
+        "login": "وارد شوید تا ویرایش، نام مقصدها و مسیرهای نقشه برگردد."
+      },
+      "footer": {
+        "withDate": "در {date} منقضی شده است. حالت پیش‌نمایش تا زمان فعال‌سازی دوباره قابل مشاهده می‌ماند.",
+        "noDate": "حالت پیش‌نمایش تا زمان فعال‌سازی دوباره قابل مشاهده می‌ماند."
+      }
+    },
+    "reactivate": {
+      "actions": {
+        "direct": "فعال‌سازی دوباره سفر",
+        "login": "ورود برای فعال‌سازی"
+      },
+      "toast": {
+        "title": "سفر دوباره فعال شد",
+        "description": "حالت کامل برنامه‌ریزی دوباره باز شد."
+      }
+    }
+  },
+  "tripRouteShell": {
+    "loadingTrip": "Loading trip",
+    "preparingPlanner": "Preparing planner",
+    "loadingSharedTrip": "Loading shared trip",
+    "preparingSharedPlanner": "Preparing shared planner",
+    "loadingExampleTrip": "Loading example trip",
+    "preparingExamplePlanner": "Preparing example planner"
+  }
+}

@@ -5,13 +5,20 @@ import { useTranslation } from 'react-i18next';
 import { DEFAULT_LOCALE } from '../../config/locales';
 import { buildLocalizedMarketingPath, extractLocaleFromPath } from '../../config/routes';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
+import {
+    readSessionStorageItem,
+    writeSessionStorageItem,
+} from '../../services/browserStorageService';
 
 const SESSION_DISMISS_KEY = 'tf_translation_notice_dismissed_session';
+const CONTACT_PREFILL_REASON = 'bug_report';
+const CONTACT_PREFILL_SUB_REASON = 'translation_wrong_misleading';
+const CONTACT_PREFILL_SOURCE = 'translation_notice_banner';
 
 const isDismissedForSession = (): boolean => {
     if (typeof window === 'undefined') return false;
     try {
-        return window.sessionStorage.getItem(SESSION_DISMISS_KEY) === '1';
+        return readSessionStorageItem(SESSION_DISMISS_KEY) === '1';
     } catch {
         return false;
     }
@@ -30,7 +37,7 @@ export const TranslationNoticeBanner: React.FC = () => {
         trackEvent('i18n_notice__dismiss', { locale: activeLocale });
         if (typeof window === 'undefined') return;
         try {
-            window.sessionStorage.setItem(SESSION_DISMISS_KEY, '1');
+            writeSessionStorageItem(SESSION_DISMISS_KEY, '1');
         } catch {
             // ignore
         }
@@ -45,9 +52,24 @@ export const TranslationNoticeBanner: React.FC = () => {
                 </p>
                 <Link
                     to={buildLocalizedMarketingPath('contact', activeLocale)}
-                    onClick={() => trackEvent('i18n_notice__contact')}
+                    state={{
+                        reason: CONTACT_PREFILL_REASON,
+                        subReason: CONTACT_PREFILL_SUB_REASON,
+                        source: CONTACT_PREFILL_SOURCE,
+                    }}
+                    onClick={() => trackEvent('i18n_notice__contact', {
+                        locale: activeLocale,
+                        reason: CONTACT_PREFILL_REASON,
+                        sub_reason: CONTACT_PREFILL_SUB_REASON,
+                        source: CONTACT_PREFILL_SOURCE,
+                    })}
                     className="shrink-0 rounded-lg border border-amber-300 bg-white px-2 py-1 text-xs font-semibold text-amber-800 transition-colors hover:bg-amber-100 sm:px-2.5"
-                    {...getAnalyticsDebugAttributes('i18n_notice__contact')}
+                    {...getAnalyticsDebugAttributes('i18n_notice__contact', {
+                        locale: activeLocale,
+                        reason: CONTACT_PREFILL_REASON,
+                        sub_reason: CONTACT_PREFILL_SUB_REASON,
+                        source: CONTACT_PREFILL_SOURCE,
+                    })}
                 >
                     <span className="sm:hidden">{t('translationNotice.ctaShort')}</span>
                     <span className="hidden sm:inline">{t('translationNotice.cta')}</span>

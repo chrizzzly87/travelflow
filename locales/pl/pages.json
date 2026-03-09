@@ -96,7 +96,8 @@
     "title": "Ta udostępniona podróż nie jest już dostępna",
     "description": "Link mógł wygasnąć albo został dezaktywowany przez właściciela podróży. Poproś o nowy link lub utwórz własną podróż, aby kontynuować planowanie.",
     "backToHomepage": "Wróć do strony głównej",
-    "createNewTrip": "Utwórz nową podróż"
+    "createNewTrip": "Utwórz nową podróż",
+    "offlineDescription": "This trip cannot be fetched right now because Supabase is unavailable. If you opened it before, local cached data may still load in planner routes."
   },
   "notFound": {
     "headline": "Wygląda na to, że ta strona już wyjechała na wakacje!",

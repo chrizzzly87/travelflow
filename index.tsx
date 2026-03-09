@@ -3,6 +3,10 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import './index.css';
 import './i18n';
+import { applyDocumentLocale, DEFAULT_LOCALE, normalizeLocale } from './config/locales';
+import { extractLocaleFromPath, isToolRoute } from './config/routes';
+import { hasRenderableHandoffNode } from './services/bootstrapHandoffService';
+import { preloadCriticalRouteModules } from './services/criticalRoutePreload';
 
 interface ErrorBoundaryProps {
   children?: ReactNode;
@@ -27,7 +31,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
   render() {
     if (this.state.hasError) {
       return (
-        <div className="p-8 font-sans text-center">
+        <div className="p-8 font-sans text-center" data-tf-handoff-ready="true">
           <h1 className="text-2xl font-bold text-red-600 mb-4">Something went wrong</h1>
           <p className="text-gray-600 mb-4">The application encountered an error while loading.</p>
           <pre className="bg-gray-100 p-4 rounded text-left text-sm overflow-auto max-w-2xl mx-auto">
@@ -47,12 +51,77 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
   }
 }
 
+const setupBootstrapShellHandoff = (rootElement: HTMLElement) => {
+  if (typeof document === 'undefined') return;
+
+  const shell = document.getElementById('app-bootstrap-shell');
+  if (!shell) return;
+
+  let rafId: number | undefined;
+  let observer: MutationObserver | undefined;
+  let didScheduleRemoval = false;
+
+  const finalizeRemoval = () => {
+    shell.remove();
+    if (rafId !== undefined) {
+      window.cancelAnimationFrame(rafId);
+      rafId = undefined;
+    }
+    observer?.disconnect();
+    document.documentElement.setAttribute('data-tf-react-shell-visible', 'true');
+  };
+
+  const scheduleRemoval = () => {
+    if (didScheduleRemoval) return;
+    didScheduleRemoval = true;
+    rafId = window.requestAnimationFrame(() => {
+      finalizeRemoval();
+    });
+  };
+
+  if (hasRenderableHandoffNode(rootElement)) {
+    scheduleRemoval();
+    return;
+  }
+
+  observer = new MutationObserver(() => {
+    if (!hasRenderableHandoffNode(rootElement)) return;
+    observer?.disconnect();
+    scheduleRemoval();
+  });
+
+  observer.observe(rootElement, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ['data-tf-handoff-ready'],
+  });
+};
+
 const rootElement = document.getElementById('root');
 if (!rootElement) {
   throw new Error("Could not find root element to mount to");
 }
 
+if (typeof window !== 'undefined') {
+  const localeFromPath = extractLocaleFromPath(window.location.pathname);
+  let storedLocale = DEFAULT_LOCALE;
+  try {
+    storedLocale = normalizeLocale(window.localStorage.getItem('tf_app_language'));
+  } catch {
+    storedLocale = DEFAULT_LOCALE;
+  }
+  const initialLocale = isToolRoute(window.location.pathname)
+    ? localeFromPath ?? storedLocale
+    : localeFromPath ?? DEFAULT_LOCALE;
+  applyDocumentLocale(initialLocale);
+}
+
 const root = ReactDOM.createRoot(rootElement);
+setupBootstrapShellHandoff(rootElement);
+if (typeof window !== 'undefined') {
+  preloadCriticalRouteModules(window.location.pathname);
+}
 root.render(
   <React.StrictMode>
     <ErrorBoundary>

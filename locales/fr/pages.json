@@ -96,7 +96,8 @@
     "title": "Ce voyage partagé n'est plus disponible",
     "description": "Le lien a peut-être expiré ou a été désactivé par le propriétaire du voyage. Demandez un nouveau lien ou créez votre propre voyage.",
     "backToHomepage": "Retour à l'accueil",
-    "createNewTrip": "Créer un nouveau voyage"
+    "createNewTrip": "Créer un nouveau voyage",
+    "offlineDescription": "This trip cannot be fetched right now because Supabase is unavailable. If you opened it before, local cached data may still load in planner routes."
   },
   "notFound": {
     "headline": "On dirait que cette page est déjà partie en vacances !",

@@ -5,17 +5,26 @@ import {
     X,
 } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { Checkbox } from '../ui/checkbox';
 import { useAuth } from '../../hooks/useAuth';
+import { buildLocalizedMarketingPath } from '../../config/routes';
 import type { OAuthProviderId } from '../../services/authService';
+import { acceptCurrentTerms } from '../../services/authService';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import { buildPasswordResetRedirectUrl } from '../../services/authNavigationService';
+import {
+    isRememberLoginEnabled,
+    setRememberLoginEnabled,
+} from '../../services/authSessionPersistenceService';
 import {
     clearPendingOAuthProvider,
     getLastUsedOAuthProvider,
     setPendingOAuthProvider,
 } from '../../services/authUiPreferencesService';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
+import { useNetworkStatus } from '../../hooks/useNetworkStatus';
+import { getAuthRequestTimeoutMs, getAuthRestoreTimeoutMs } from '../../services/networkStatus';
 import { normalizeAppLanguage } from '../../utils';
 import { SocialProviderIcon } from './SocialProviderIcon';
 
@@ -83,6 +92,12 @@ const normalizeErrorCode = (error: unknown): string => {
     return 'default';
 };
 
+type TimedRequestOutcome<T> = (
+    | { status: 'success'; value: T }
+    | { status: 'error'; error: unknown }
+    | { status: 'timeout' }
+);
+
 export const AuthModal: React.FC<AuthModalProps> = ({
     isOpen,
     source,
@@ -101,17 +116,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         loginWithOAuth,
         sendPasswordResetEmail,
     } = useAuth();
+    const { isOnline, isSlowConnection } = useNetworkStatus({ probeWhileOffline: false });
 
     const [mode, setMode] = useState<AuthMode>('login');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [infoMessage, setInfoMessage] = useState<string | null>(null);
+    const [rememberLogin, setRememberLogin] = useState<boolean>(() => isRememberLoginEnabled());
     const [lastUsedProvider, setLastUsedProviderState] = useState<OAuthProviderId | null>(() => getLastUsedOAuthProvider());
     const [sessionRestoreState, setSessionRestoreState] = useState<'idle' | 'restoring' | 'restored'>('idle');
     const hasHandledSuccessRef = useRef(false);
     const hasInteractiveAttemptRef = useRef(false);
+    const pendingRequestRef = useRef(0);
     const dialogRef = useRef<HTMLDivElement | null>(null);
     const closeButtonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -122,6 +141,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     });
 
     const oauthButtons = useMemo(() => getOAuthButtons(i18n.language), [i18n.language]);
+    const authLocale = useMemo(() => normalizeAppLanguage(i18n.language), [i18n.language]);
+    const termsPath = useMemo(() => buildLocalizedMarketingPath('terms', authLocale), [authLocale]);
+    const privacyPath = useMemo(() => buildLocalizedMarketingPath('privacy', authLocale), [authLocale]);
+    const emailInputId = 'auth-modal-email';
+    const secondaryInputId = 'auth-modal-secondary';
+    const rememberLoginInputId = 'auth-modal-remember-login';
 
     const oauthRedirectTo = useMemo(() => {
         if (typeof window === 'undefined') return undefined;
@@ -156,6 +181,22 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         [navigate, nextPath, onClose, reloadOnSuccess, source]
     );
 
+    const runTimedRequest = useCallback(async <T,>(
+        request: () => Promise<T>,
+        timeoutMs: number
+    ): Promise<TimedRequestOutcome<T>> => {
+        let timeoutId = 0;
+        const timeoutPromise = new Promise<TimedRequestOutcome<T>>((resolve) => {
+            timeoutId = window.setTimeout(() => resolve({ status: 'timeout' }), timeoutMs);
+        });
+        const requestPromise = request()
+            .then((value) => ({ status: 'success', value } as const))
+            .catch((error: unknown) => ({ status: 'error', error } as const));
+        const result = await Promise.race([requestPromise, timeoutPromise]);
+        window.clearTimeout(timeoutId);
+        return result;
+    }, []);
+
     useEffect(() => {
         if (!isOpen) return;
         trackEvent('auth__modal--open', { source });
@@ -169,6 +210,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             setSessionRestoreState('idle');
             hasHandledSuccessRef.current = false;
             hasInteractiveAttemptRef.current = false;
+            setHasAcceptedTerms(false);
+            pendingRequestRef.current += 1;
             return;
         }
 
@@ -232,6 +275,27 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         return () => window.clearTimeout(timer);
     }, [completeSuccessfulAuth, isOpen, sessionRestoreState]);
 
+    useEffect(() => {
+        if (!isOpen) return;
+        if (sessionRestoreState !== 'restoring') return;
+        const timer = window.setTimeout(() => {
+            if (sessionRestoreState !== 'restoring') return;
+            setSessionRestoreState('idle');
+            setErrorMessage(t(
+                isOnline
+                    ? (isSlowConnection ? 'errors.restore_timeout_slow_network' : 'errors.restore_timeout')
+                    : 'errors.offline'
+            ));
+            setInfoMessage(null);
+            trackEvent('auth__modal--restore_timeout', {
+                source,
+                is_online: isOnline,
+                is_slow_network: isSlowConnection,
+            });
+        }, getAuthRestoreTimeoutMs(isSlowConnection));
+        return () => window.clearTimeout(timer);
+    }, [isOnline, isOpen, isSlowConnection, sessionRestoreState, source, t]);
+
     if (!isOpen) return null;
     const isRestoreBlocked = sessionRestoreState === 'restoring' || sessionRestoreState === 'restored';
 
@@ -245,67 +309,156 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
     const handlePasswordSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
+        if (isSubmitting) return;
         if (isRestoreBlocked) return;
-        if (!email.trim() || !password.trim()) {
+        if (!isOnline) {
+            setErrorMessage(t('errors.offline'));
+            setInfoMessage(null);
+            return;
+        }
+        const formData = new FormData(event.currentTarget);
+        const submittedEmail = (formData.get('email')?.toString() || email).trim();
+        const submittedPassword = formData.get('password')?.toString() || password;
+
+        if (!submittedEmail || !submittedPassword.trim()) {
             setErrorMessage(t('errors.default'));
             return;
         }
+        if (mode === 'register' && !hasAcceptedTerms) {
+            setErrorMessage(t('errors.terms_required'));
+            return;
+        }
+        if (submittedEmail !== email) setEmail(submittedEmail);
+        if (submittedPassword !== password) setPassword(submittedPassword);
+        setRememberLoginEnabled(rememberLogin);
         clearPendingOAuthProvider();
 
+        const requestId = pendingRequestRef.current + 1;
+        pendingRequestRef.current = requestId;
         hasInteractiveAttemptRef.current = true;
         setSessionRestoreState('idle');
         setIsSubmitting(true);
         setErrorMessage(null);
-        setInfoMessage(null);
+        setInfoMessage(isSlowConnection ? t('states.slowNetworkDetected') : null);
+        const timeoutMs = getAuthRequestTimeoutMs(isSlowConnection);
 
-        if (mode === 'login') {
-            const response = await loginWithPassword(email.trim(), password);
-            if (response.error) {
-                const errorCode = normalizeErrorCode(response.error);
-                setErrorMessage(t(`errors.${errorCode}`, t('errors.default')));
+        try {
+            if (mode === 'login') {
+                const outcome = await runTimedRequest(
+                    () => loginWithPassword(submittedEmail, submittedPassword),
+                    timeoutMs
+                );
+                if (pendingRequestRef.current !== requestId) return;
+                if (outcome.status === 'timeout') {
+                    setErrorMessage(t(isSlowConnection ? 'errors.request_timeout_slow_network' : 'errors.request_timeout'));
+                    setInfoMessage(null);
+                    return;
+                }
+                if (outcome.status === 'error') {
+                    setErrorMessage(t('errors.default'));
+                    setInfoMessage(null);
+                    return;
+                }
+                if (outcome.value.error) {
+                    const errorCode = normalizeErrorCode(outcome.value.error);
+                    setErrorMessage(t(`errors.${errorCode}`, t('errors.default')));
+                } else {
+                    setInfoMessage(null);
+                }
             } else {
-                setInfoMessage(t('states.alreadyAuthenticated'));
+                const outcome = await runTimedRequest(
+                    () => registerWithPassword(submittedEmail, submittedPassword, { emailRedirectTo: oauthRedirectTo }),
+                    timeoutMs
+                );
+                if (pendingRequestRef.current !== requestId) return;
+                if (outcome.status === 'timeout') {
+                    setErrorMessage(t(isSlowConnection ? 'errors.request_timeout_slow_network' : 'errors.request_timeout'));
+                    setInfoMessage(null);
+                    return;
+                }
+                if (outcome.status === 'error') {
+                    setErrorMessage(t('errors.default'));
+                    setInfoMessage(null);
+                    return;
+                }
+                if (outcome.value.error) {
+                    const errorCode = normalizeErrorCode(outcome.value.error);
+                    setErrorMessage(t(`errors.${errorCode}`, t('errors.default')));
+                } else if (!outcome.value.data.session) {
+                    setInfoMessage(t('states.emailConfirmationSent'));
+                } else {
+                    const acceptance = await acceptCurrentTerms({
+                        locale: authLocale,
+                        source: 'signup_auth_modal',
+                    });
+                    if (acceptance.error) {
+                        setInfoMessage(t('states.termsAcceptancePending'));
+                    } else {
+                        setInfoMessage(null);
+                    }
+                }
             }
-            setIsSubmitting(false);
-            return;
+        } finally {
+            if (pendingRequestRef.current === requestId) {
+                setIsSubmitting(false);
+            }
         }
-
-        const response = await registerWithPassword(
-            email.trim(),
-            password,
-            { emailRedirectTo: oauthRedirectTo }
-        );
-        if (response.error) {
-            const errorCode = normalizeErrorCode(response.error);
-            setErrorMessage(t(`errors.${errorCode}`, t('errors.default')));
-        } else if (!response.data.session) {
-            setInfoMessage(t('states.emailConfirmationSent'));
-        } else {
-            setInfoMessage(t('states.alreadyAuthenticated'));
-        }
-        setIsSubmitting(false);
     };
 
     const handleOAuthLogin = async (provider: OAuthProviderId) => {
         if (isRestoreBlocked) return;
-        hasInteractiveAttemptRef.current = true;
-        setSessionRestoreState('idle');
-        setErrorMessage(null);
-        setInfoMessage(null);
-        setPendingOAuthProvider(provider);
-        trackEvent('auth__method--select', { method: provider, source: 'modal' });
-        const response = await loginWithOAuth(provider, oauthRedirectTo);
-        if (response.error) {
-            clearPendingOAuthProvider();
-            const errorCode = normalizeErrorCode(response.error);
-            setErrorMessage(t(`errors.${errorCode}`, t('errors.default')));
+        if (!isOnline) {
+            setErrorMessage(t('errors.offline'));
+            setInfoMessage(null);
             return;
         }
+        const requestId = pendingRequestRef.current + 1;
+        pendingRequestRef.current = requestId;
+        hasInteractiveAttemptRef.current = true;
+        setSessionRestoreState('idle');
+        setIsSubmitting(true);
+        setErrorMessage(null);
+        setInfoMessage(isSlowConnection ? t('states.slowNetworkDetected') : null);
+        setRememberLoginEnabled(rememberLogin);
+        setPendingOAuthProvider(provider);
+        trackEvent('auth__method--select', { method: provider, source: 'modal' });
+        const outcome = await runTimedRequest(
+            () => loginWithOAuth(provider, oauthRedirectTo),
+            getAuthRequestTimeoutMs(isSlowConnection)
+        );
+        if (pendingRequestRef.current !== requestId) return;
+        if (outcome.status === 'timeout') {
+            clearPendingOAuthProvider();
+            setErrorMessage(t(isSlowConnection ? 'errors.request_timeout_slow_network' : 'errors.request_timeout'));
+            setInfoMessage(null);
+            setIsSubmitting(false);
+            return;
+        }
+        if (outcome.status === 'error') {
+            clearPendingOAuthProvider();
+            setErrorMessage(t('errors.default'));
+            setInfoMessage(null);
+            setIsSubmitting(false);
+            return;
+        }
+        if (outcome.value.error) {
+            clearPendingOAuthProvider();
+            const errorCode = normalizeErrorCode(outcome.value.error);
+            setErrorMessage(t(`errors.${errorCode}`, t('errors.default')));
+            setIsSubmitting(false);
+            return;
+        }
+        setIsSubmitting(false);
         setInfoMessage(t('actions.submitting'));
     };
 
     const handlePasswordResetRequest = async (intent: 'forgot_password' | 'set_password') => {
         if (isRestoreBlocked) return;
+        if (!isOnline) {
+            setErrorMessage(t('errors.offline'));
+            setInfoMessage(null);
+            return;
+        }
         const normalizedEmail = email.trim();
         if (!normalizedEmail) {
             setErrorMessage(t('errors.email_required_for_reset'));
@@ -313,17 +466,31 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             return;
         }
 
+        const requestId = pendingRequestRef.current + 1;
+        pendingRequestRef.current = requestId;
         setIsSubmitting(true);
         setErrorMessage(null);
-        setInfoMessage(null);
+        setInfoMessage(isSlowConnection ? t('states.slowNetworkDetected') : null);
         trackEvent('auth__password_reset--request', { source: 'modal', intent });
 
-        const response = await sendPasswordResetEmail(normalizedEmail, {
-            redirectTo: passwordResetRedirectTo,
-            intent,
-        });
-
-        if (response.error) {
+        const outcome = await runTimedRequest(
+            () => sendPasswordResetEmail(normalizedEmail, { redirectTo: passwordResetRedirectTo, intent }),
+            getAuthRequestTimeoutMs(isSlowConnection)
+        );
+        if (pendingRequestRef.current !== requestId) return;
+        if (outcome.status === 'timeout') {
+            setErrorMessage(t(isSlowConnection ? 'errors.request_timeout_slow_network' : 'errors.request_timeout'));
+            setInfoMessage(null);
+            setIsSubmitting(false);
+            return;
+        }
+        if (outcome.status === 'error') {
+            setErrorMessage(t('errors.password_reset_failed'));
+            trackEvent('auth__password_reset--failed', { source: 'modal', intent });
+            setIsSubmitting(false);
+            return;
+        }
+        if (outcome.value.error) {
             setErrorMessage(t('errors.password_reset_failed'));
             trackEvent('auth__password_reset--failed', { source: 'modal', intent });
             setIsSubmitting(false);
@@ -333,6 +500,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         setInfoMessage(t(intent === 'set_password' ? 'states.setPasswordSent' : 'states.passwordResetSent'));
         trackEvent('auth__password_reset--requested', { source: 'modal', intent });
         setIsSubmitting(false);
+    };
+
+    const handleFormKeyDown = (event: React.KeyboardEvent<HTMLFormElement>) => {
+        if (event.key !== 'Enter') return;
+        if (event.nativeEvent.isComposing) return;
+        if (!(event.target instanceof HTMLInputElement)) return;
+        event.preventDefault();
+        event.currentTarget.requestSubmit();
+    };
+
+    const handleRememberLoginToggle = (checked: boolean) => {
+        setRememberLogin(checked);
+        setRememberLoginEnabled(checked);
+        trackEvent('auth__remember_login--toggle', { source: 'modal', remember_login: checked });
     };
 
     return (
@@ -377,6 +558,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </div>
 
                 <div className="px-5 py-4">
+                    {!isOnline && (
+                        <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900" aria-live="polite">
+                            <p className="font-semibold">{t('states.offlineNoticeTitle')}</p>
+                            <p className="mt-1">{t('states.offlineNoticeBody')}</p>
+                        </div>
+                    )}
                     {sessionRestoreState === 'restoring' && (
                         <div className="mb-4 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900" aria-live="polite">
                             <span className="inline-flex items-center gap-2 font-semibold">
@@ -416,22 +603,40 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                                 </button>
                             </div>
 
-                            <form className="mt-5 space-y-4" onSubmit={handlePasswordSubmit}>
-                                <label className="block">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('labels.email')}</span>
+                            <form className="mt-5 space-y-4" onSubmit={handlePasswordSubmit} onKeyDown={handleFormKeyDown}>
+                                <div className="block">
+                                    <label
+                                        htmlFor={emailInputId}
+                                        className="block text-xs font-semibold uppercase tracking-wide text-slate-500"
+                                    >
+                                        {t('labels.email')}
+                                    </label>
                                     <input
+                                        id={emailInputId}
+                                        name="email"
                                         type="email"
-                                        autoComplete="email"
+                                        autoComplete={mode === 'login' ? 'username' : 'email'}
+                                        inputMode="email"
+                                        autoCapitalize="none"
+                                        autoCorrect="off"
+                                        spellCheck={false}
                                         value={email}
                                         onChange={(event) => setEmail(event.target.value)}
                                         disabled={isSubmitting || isRestoreBlocked}
                                         required
                                         className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-accent-500"
                                     />
-                                </label>
-                                <label className="block">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('labels.password')}</span>
+                                </div>
+                                <div className="block">
+                                    <label
+                                        htmlFor={secondaryInputId}
+                                        className="block text-xs font-semibold uppercase tracking-wide text-slate-500"
+                                    >
+                                        {t('labels.password')}
+                                    </label>
                                     <input
+                                        id={secondaryInputId}
+                                        name="password"
                                         type="password"
                                         autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
                                         value={password}
@@ -441,14 +646,28 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                                         minLength={8}
                                         className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-accent-500"
                                     />
-                                </label>
+                                </div>
                                 {mode === 'login' && (
                                     <div className="space-y-2">
+                                        <label
+                                            htmlFor={rememberLoginInputId}
+                                            className="inline-flex cursor-pointer items-center gap-2 text-sm font-semibold text-slate-800"
+                                        >
+                                            <Checkbox
+                                                id={rememberLoginInputId}
+                                                checked={rememberLogin}
+                                                onCheckedChange={(checked) => handleRememberLoginToggle(checked === true)}
+                                                disabled={isSubmitting || isRestoreBlocked}
+                                                aria-label={t('labels.rememberLogin')}
+                                                {...getAnalyticsDebugAttributes('auth__remember_login--toggle', { source: 'modal' })}
+                                            />
+                                            <span>{t('labels.rememberLogin')}</span>
+                                        </label>
                                         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
                                             <button
                                                 type="button"
                                                 onClick={() => void handlePasswordResetRequest('forgot_password')}
-                                                disabled={isSubmitting || isRestoreBlocked}
+                                                disabled={isSubmitting || isRestoreBlocked || !isOnline}
                                                 className="font-semibold text-accent-700 hover:text-accent-800 disabled:cursor-not-allowed disabled:opacity-60"
                                                 {...getAnalyticsDebugAttributes('auth__password_reset--request', { source: 'modal', intent: 'forgot_password' })}
                                             >
@@ -457,7 +676,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                                             <button
                                                 type="button"
                                                 onClick={() => void handlePasswordResetRequest('set_password')}
-                                                disabled={isSubmitting || isRestoreBlocked}
+                                                disabled={isSubmitting || isRestoreBlocked || !isOnline}
                                                 className="font-semibold text-accent-700 hover:text-accent-800 disabled:cursor-not-allowed disabled:opacity-60"
                                                 {...getAnalyticsDebugAttributes('auth__password_reset--request', { source: 'modal', intent: 'set_password' })}
                                             >
@@ -467,10 +686,35 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                                         <p className="text-xs text-slate-500">{t('copy.passwordResetHint')}</p>
                                     </div>
                                 )}
+                                {mode === 'register' && (
+                                    <label className="flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
+                                        <input
+                                            type="checkbox"
+                                            checked={hasAcceptedTerms}
+                                            onChange={(event) => {
+                                                setHasAcceptedTerms(event.target.checked);
+                                                trackEvent(event.target.checked ? 'auth__terms_consent--accept' : 'auth__terms_consent--reject', { source: 'auth_modal' });
+                                            }}
+                                            className="mt-0.5 h-4 w-4 rounded border-slate-300"
+                                            {...getAnalyticsDebugAttributes('auth__terms_consent--accept', { source: 'auth_modal' })}
+                                        />
+                                        <span>
+                                            {t('copy.termsConsentPrefix')}{' '}
+                                            <Link className="font-semibold text-accent-700 hover:underline" to={termsPath} target="_blank" rel="noreferrer">
+                                                {t('copy.termsConsentTerms')}
+                                            </Link>{' '}
+                                            {t('copy.termsConsentJoiner')}{' '}
+                                            <Link className="font-semibold text-accent-700 hover:underline" to={privacyPath} target="_blank" rel="noreferrer">
+                                                {t('copy.termsConsentPrivacy')}
+                                            </Link>
+                                            .
+                                        </span>
+                                    </label>
+                                )}
 
                                 <button
                                     type="submit"
-                                    disabled={isSubmitting || isRestoreBlocked}
+                                    disabled={isSubmitting || isRestoreBlocked || !isOnline}
                                     className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-accent-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-accent-700 disabled:cursor-not-allowed disabled:opacity-60"
                                 >
                                     {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
@@ -492,7 +736,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                                             key={item.provider}
                                             type="button"
                                             onClick={() => void handleOAuthLogin(item.provider)}
-                                            disabled={isSubmitting || isRestoreBlocked}
+                                            disabled={isSubmitting || isRestoreBlocked || !isOnline}
                                             className={`relative inline-flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold text-slate-700 transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
                                                 isLastUsed
                                                     ? 'border-slate-400 bg-white'

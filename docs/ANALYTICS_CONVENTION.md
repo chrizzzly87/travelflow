@@ -65,6 +65,10 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 | `navigation__{target}` | target = `brand`, `features`, `inspirations`, `updates`, `blog`, `pricing`, `login`, `logout`, `admin`, `create_trip`, `my_trips` | — | `SiteHeader.tsx` |
 | `mobile_nav__menu--open` | — | — | `MobileMenu.tsx` |
 | `mobile_nav__{target}` | same targets as above | — | `MobileMenu.tsx` |
+| `navigation__account_menu--public_profile` | — | — | `AccountMenu.tsx` |
+| `navigation__account_menu--public_profile_setup` | — | — | `AccountMenu.tsx` |
+| `mobile_nav__public_profile` | — | — | `MobileMenu.tsx` |
+| `mobile_nav__public_profile_setup` | — | — | `MobileMenu.tsx` |
 
 ### Home
 | Event | Detail | Payload | File |
@@ -84,8 +88,8 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 ### Trip Paywall
 | Event | Detail | Payload | File |
 |-------|--------|---------|------|
-| `trip_paywall__strip--activate` | — | `{ trip_id }` | `TripView.tsx` |
-| `trip_paywall__overlay--activate` | — | `{ trip_id }` | `TripView.tsx` |
+| `trip_paywall__strip--activate` | — | `{ trip_id, activation_mode }` | `TripView.tsx` |
+| `trip_paywall__overlay--activate` | — | `{ trip_id, activation_mode }` | `TripView.tsx` |
 | `trip_paywall__overlay--faq` | — | `{ trip_id }` | `TripView.tsx` |
 
 ### Consent
@@ -140,6 +144,9 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 | `admin__menu--{target}` | `dashboard`, `ai_benchmark`, `access` | — | `AdminMenu.tsx` |
 | `admin__menu--brand` | — | — | `AdminMenu.tsx` |
 | `admin__menu--back_to_platform` | — | — | `AdminMenu.tsx` |
+| `admin__design_playground--open` | — | — | `AdminDesignSystemPlaygroundPage.tsx` |
+| `admin__design_playground_component_group--view` | — | `{ group_id }` | `AdminDesignSystemPlaygroundPage.tsx` |
+| `admin__design_playground_toast--trigger` | — | `{ scenario_id }` | `AdminDesignSystemPlaygroundPage.tsx` |
 
 ### Trip View
 | Event | Detail | Payload | File |
@@ -148,6 +155,66 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 | `trip_view__auth--logout` | — | `{ trip_id }` | `TripView.tsx` |
 | `trip_view__admin_override--toggle` | — | `{ trip_id, enabled }` | `TripView.tsx` |
 | `trip_view__admin_owner--open_users` | — | `{ trip_id, owner_id }` | `TripView.tsx` |
+| `trip_view__mode--calendar` | — | `{ trip_id }` | `TripView.tsx` |
+| `trip_view__mode--timeline` | — | `{ trip_id }` | `TripView.tsx` |
+| `trip_view__layout_direction--horizontal` | — | `{ trip_id, target }` | `TripView.tsx`, `ItineraryMap.tsx` |
+| `trip_view__layout_direction--vertical` | — | `{ trip_id, target }` | `TripView.tsx`, `ItineraryMap.tsx` |
+| `trip_view__zoom` | — | `{ trip_id, direction, timeline_mode }` | `TripView.tsx` |
+| `trip_view__map_preview--minimize` | — | `{ trip_id, layout_mode }` | `TripView.tsx` |
+| `trip_view__map_preview--maximize` | — | `{ trip_id, layout_mode }` | `TripView.tsx` |
+| `trip_view__map_preview--reposition` | — | `{ trip_id }` | `TripViewPlannerWorkspace.tsx` |
+| `trip_view__timeline_city--open` | — | `{ trip_id, city_id }` | `TripTimelineListView.tsx` |
+| `trip_view__timeline_activity--open` | — | `{ trip_id, item_id, city_id }` | `TripTimelineListView.tsx` |
+| `trip_view__timeline_transfer--open` | — | `{ trip_id, item_id, city_id, mode }` | `TripTimelineListView.tsx` |
+| `trip_view__calendar_export--activity` | — | `{ trip_id, source, item_id, event_count }` | `TripView.tsx` |
+| `trip_view__calendar_export--activities` | — | `{ trip_id, source, event_count }` | `TripView.tsx` |
+| `trip_view__calendar_export--cities` | — | `{ trip_id, source, event_count }` | `TripView.tsx` |
+| `trip_view__calendar_export--all` | — | `{ trip_id, source, event_count }` | `TripView.tsx` |
+
+### Profile
+| Event | Detail | Payload | File |
+|-------|--------|---------|------|
+| `profile__hero_cta--inspirations_country` | — | `{ country }` | `ProfilePage.tsx` |
+| `profile__summary--edit_profile` | — | — | `ProfilePage.tsx` |
+| `profile__summary--view_public_profile` | — | — | `ProfilePage.tsx` |
+| `profile__summary--view_public_profile_setup` | — | — | `ProfilePage.tsx` |
+| `profile__trip_visibility--public` | — | `{ trip_id, tab }` | `ProfilePage.tsx` |
+| `profile__trip_visibility--private` | — | `{ trip_id, tab }` | `ProfilePage.tsx` |
+| `profile__trip_visibility--batch_toggle` | — | `{ tab, selected_count }` | `ProfilePage.tsx` |
+| `profile__trip_favorite--batch_toggle` | — | `{ tab, selected_count }` | `ProfilePage.tsx` |
+| `profile__trip_archive--single` | — | `{ trip_id, tab }` | `ProfilePage.tsx` |
+| `profile__trip_archive--batch` | — | `{ trip_id, tab }` | `ProfilePage.tsx` |
+| `profile__trip_select--visible` | — | `{ tab, selected_count }` | `ProfilePage.tsx` |
+| `profile__trip_select--expired` | — | `{ tab, selected_count }` | `ProfilePage.tsx` |
+| `profile__trip_select--examples` | — | `{ tab, selected_count }` | `ProfilePage.tsx` |
+| `profile__trip_select--end` | — | `{ tab }` | `ProfilePage.tsx` |
+| `my_trips__trip_archive--single` | — | `{ trip_id }` | `TripManager.tsx` |
+| `public_profile__view` | — | `{ username }` | `PublicProfilePage.tsx` |
+| `public_profile__trip--open` | — | `{ username, trip_id }` | `PublicProfilePage.tsx` |
+| `profile_settings__username_check--{state}` | `available`, `taken`, `reserved`, `invalid`, `unchanged`, `cooldown` | `{ username }` | `ProfileSettingsPage.tsx` |
+| `profile_settings__username_edit--open` | — | — | `ProfileSettingsPage.tsx` |
+| `profile_settings__username_edit--blocked_cooldown` | — | — | `ProfileSettingsPage.tsx` |
+| `profile_settings__save--attempt` | — | `{ mode, username_changed, public_profile_enabled, default_public_trip_visibility }` | `ProfileSettingsPage.tsx` |
+| `profile_settings__public_profile--{state}` | `enabled`, `disabled` | — | `ProfileSettingsPage.tsx` |
+| `profile_settings__default_visibility--{state}` | `enabled`, `disabled` | — | `ProfileSettingsPage.tsx` |
+| `profile_settings__public_url--open` | — | — | `ProfileSettingsPage.tsx` |
+| `profile_settings__country_region--select` | — | `{ country_code }` | `ProfileSettingsPage.tsx` |
+| `profile__passport_cover--select` | — | `{ stamp_id }` | `ProfileStampsPage.tsx` |
+| `profile__passport_cover--unselect` | — | `{ stamp_id }` | `ProfileStampsPage.tsx` |
+| `profile__passport_cover--selection_limit` | — | `{ stamp_id }` | `ProfileStampsPage.tsx` |
+| `public_profile__summary--open_passport` | — | — | `PublicProfilePage.tsx` |
+| `trip_preview_card__creator_handle` | — | `{ creator_handle, trip_id }` | `ProfileTripCard.tsx` |
+| `example_trip__creator_handle` | — | `{ creator_handle }` | `ExampleTripCard.tsx` |
+
+### Trip Connectivity
+| Event | Detail | Payload | File |
+|-------|--------|---------|------|
+| `trip_connectivity__banner--dismiss` | — | `{ connectivity_state, pending_count }` | `ConnectivityStatusBanner.tsx` |
+| `trip_connectivity__banner--retry_sync` | — | `{ connectivity_state, pending_count, failed_count }` | `ConnectivityStatusBanner.tsx` |
+| `trip_connectivity__banner--contact` | — | `{ connectivity_state, pending_count }` | `ConnectivityStatusBanner.tsx` |
+| `trip_connectivity__banner--email` | — | `{ connectivity_state, pending_count }` | `ConnectivityStatusBanner.tsx` |
+| `trip_connectivity__trip_strip--retry_sync` | — | `{ trip_id, connectivity_state, pending_count, failed_count }` | `TripViewStatusBanners.tsx` |
+| `trip_connectivity__trip_strip--restore_backup` | — | `{ trip_id }` | `TripViewStatusBanners.tsx` |
 
 ### Not Found
 | Event | Detail | Payload | File |
@@ -155,6 +222,27 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 | `not_found__view` | — | `{ locale, path }` | `NotFoundPage.tsx` |
 | `not_found__cta--plan_yours` | — | `{ locale }` | `NotFoundPage.tsx` |
 | `not_found__link--contact` | — | `{ locale }` | `NotFoundPage.tsx` |
+
+### Contact
+| Event | Detail | Payload | File |
+|-------|--------|---------|------|
+| `contact__form--submit` | — | `{ reason, sub_reason, locale, has_user, source }` | `ContactPage.tsx` |
+| `contact__form--success` | — | `{ reason, sub_reason, locale, has_user, status, source }` | `ContactPage.tsx` |
+| `contact__form--failed` | — | `{ reason, sub_reason, locale, has_user, status, error_type, source }` | `ContactPage.tsx` |
+| `contact__fallback--email` | — | `{ reason, sub_reason, locale, has_user, status, error_type, source }` | `ContactPage.tsx` |
+| `contact__faq_item--open` | — | `{ item_id, section_id, source }` | `ContactPage.tsx` |
+| `contact__faq_item--close` | — | `{ item_id, section_id, source }` | `ContactPage.tsx` |
+| `contact__faq_link--item` | — | `{ item_id, section_id, source }` | `ContactPage.tsx` |
+| `contact__faq_link--full_page` | — | `{ source }` | `ContactPage.tsx` |
+
+### FAQ
+| Event | Detail | Payload | File |
+|-------|--------|---------|------|
+| `faq__view` | — | `{ locale, hash }` | `FaqPage.tsx` |
+| `faq__section_link` | — | `{ section_id, source }` | `FaqPage.tsx` |
+| `faq__item--open` | — | `{ item_id, section_id, source }` | `FaqPage.tsx` |
+| `faq__item--close` | — | `{ item_id, section_id, source }` | `FaqPage.tsx` |
+| `faq__cta--contact` | — | `{ source }` | `FaqPage.tsx` |
 
 ### Inspirations
 | Event | Detail | Payload | File |
@@ -177,19 +265,24 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 ### Create Trip
 | Event | Detail | Payload | File |
 |-------|--------|---------|------|
-| `create_trip__cta--generate` | — | `{ destination_count, date_mode, route_lock, round_trip }` | `CreateTripClassicLabPage.tsx` |
+| `create_trip__cta--generate` | — | `{ destination_count, date_mode, route_lock, round_trip, provider, model }` | `CreateTripClassicLabPage.tsx` |
+| `create_trip__model--select` | — | `{ provider, model, model_id, is_default }` | `CreateTripClassicLabPage.tsx` |
 | `create_trip__toggle--roundtrip` | — | `{ enabled }` | `CreateTripClassicLabPage.tsx` |
 | `create_trip__toggle--route_lock` | — | `{ enabled }` | `CreateTripClassicLabPage.tsx` |
 | `create_trip__section--expand` | — | `{ section_id, expanded }` | `CreateTripClassicLabPage.tsx` |
+| `create_trip__notifications--prompt` | — | — | `CreateTripClassicLabPage.tsx` |
+| `create_trip__notifications--enable` | — | — | `CreateTripClassicLabPage.tsx` |
+| `create_trip__notifications--not_now` | — | — | `CreateTripClassicLabPage.tsx` |
+| `create_trip__notifications--permission` | — | `{ permission }` | `CreateTripClassicLabPage.tsx` |
+| `create_trip__notifications--sent` | — | — | `CreateTripClassicLabPage.tsx` |
 
 ### Create Trip
 | Event | Detail | Payload | File |
 |-------|--------|---------|------|
-| `create_trip__guest_queue--queued` | — | `{ flow, request_id }` | `CreateTripForm.tsx` |
-| `create_trip__guest_queue--queue_failed` | — | `{ flow }` | `CreateTripForm.tsx` |
-| `create_trip__guest_queue--modal_open` | — | `{ request_id }` | `CreateTripForm.tsx` |
-| `create_trip__guest_queue--continue_auth` | — | `{ request_id }` | `CreateTripForm.tsx` |
-| `create_trip__guest_queue--dismiss` | — | `{ request_id }` | `CreateTripForm.tsx` |
+| `create_trip__ai_request--success` | — | `{ provider, model, status, duration_ms, request_id }` | `aiService.ts` |
+| `create_trip__ai_request--failed` | — | `{ provider, model, status, duration_ms, error_code }` | `aiService.ts` |
+| `create_trip__ai_request--fallback_success` | — | `{ provider, model, status, duration_ms }` | `aiService.ts` |
+| `create_trip__ai_request--fallback_failed` | — | `{ provider, model, status, duration_ms, error_code }` | `aiService.ts` |
 
 ## Adding new events
 

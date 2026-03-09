@@ -1,11 +1,23 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ArrowRight, SpinnerGap as Loader2 } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
-import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { Checkbox } from '../components/ui/checkbox';
 import { MarketingLayout } from '../components/marketing/MarketingLayout';
 import { useAuth } from '../hooks/useAuth';
+import { buildLocalizedMarketingPath } from '../config/routes';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
-import { processQueuedTripGenerationAfterAuth, runOpportunisticTripQueueCleanup } from '../services/tripGenerationQueueService';
+import {
+    processAnonymousAssetClaimAfterAuth,
+    resolveAnonymousAssetClaimErrorCode,
+    runOpportunisticAnonymousAssetClaimCleanup,
+} from '../services/anonymousAssetClaimService';
+import {
+    processQueuedTripGenerationAfterAuth,
+    QueuedTripGenerationError,
+    runOpportunisticTripQueueCleanup,
+} from '../services/tripGenerationQueueService';
+import { registerTripGenerationCompletionWatch } from '../services/tripGenerationCompletionWatchService';
 import type { OAuthProviderId } from '../services/authService';
 import {
     buildPasswordResetRedirectUrl,
@@ -15,10 +27,15 @@ import {
     resolvePreferredNextPath,
 } from '../services/authNavigationService';
 import {
+    isRememberLoginEnabled,
+    setRememberLoginEnabled,
+} from '../services/authSessionPersistenceService';
+import {
     clearPendingOAuthProvider,
     getLastUsedOAuthProvider,
     setPendingOAuthProvider,
 } from '../services/authUiPreferencesService';
+import { acceptCurrentTerms } from '../services/authService';
 import { normalizeAppLanguage } from '../utils';
 import { SocialProviderIcon } from '../components/auth/SocialProviderIcon';
 
@@ -83,6 +100,9 @@ const buildLoginRedirectUrl = (claimRequestId: string | null, nextPath: string):
     if (nextPath) redirectUrl.searchParams.set('next', nextPath);
     return redirectUrl.toString();
 };
+const LOGIN_PAGE_EMAIL_INPUT_ID = 'login-page-email';
+const LOGIN_PAGE_SECONDARY_INPUT_ID = 'login-page-secondary';
+const LOGIN_PAGE_REMEMBER_CHECKBOX_ID = 'login-page-remember-login';
 
 export const LoginPage: React.FC = () => {
     const { t, i18n } = useTranslation('auth');
@@ -103,15 +123,21 @@ export const LoginPage: React.FC = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [isQueueProcessing, setIsQueueProcessing] = useState(false);
-    const [hasQueueAttempted, setHasQueueAttempted] = useState(false);
+    const [isPostAuthProcessing, setIsPostAuthProcessing] = useState(false);
+    const [hasPostAuthAttempted, setHasPostAuthAttempted] = useState(false);
+    const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [infoMessage, setInfoMessage] = useState<string | null>(null);
+    const [rememberLogin, setRememberLogin] = useState<boolean>(() => isRememberLoginEnabled());
     const [lastUsedProvider, setLastUsedProvider] = useState<OAuthProviderId | null>(() => getLastUsedOAuthProvider());
 
     const oauthButtons = useMemo(() => getOAuthButtons(i18n.language), [i18n.language]);
+    const authLocale = useMemo(() => normalizeAppLanguage(i18n.language), [i18n.language]);
+    const termsPath = useMemo(() => buildLocalizedMarketingPath('terms', authLocale), [authLocale]);
+    const privacyPath = useMemo(() => buildLocalizedMarketingPath('privacy', authLocale), [authLocale]);
 
     const claimRequestId = (searchParams.get('claim') || '').trim() || null;
+    const assetClaimId = (searchParams.get('asset_claim') || '').trim() || null;
     const stateFrom = (location.state as { from?: string } | null)?.from || '';
     const rememberedNextPath = useMemo(() => getRememberedAuthReturnPath(), []);
     const nextPath = resolvePreferredNextPath(
@@ -131,9 +157,10 @@ export const LoginPage: React.FC = () => {
     );
 
     useEffect(() => {
-        trackEvent('auth__page--view', { has_claim: Boolean(claimRequestId) });
+        trackEvent('auth__page--view', { has_claim: Boolean(claimRequestId), has_asset_claim: Boolean(assetClaimId) });
+        void runOpportunisticAnonymousAssetClaimCleanup();
         void runOpportunisticTripQueueCleanup();
-    }, [claimRequestId]);
+    }, [assetClaimId, claimRequestId]);
 
     useEffect(() => {
         rememberAuthReturnPath(nextPath);
@@ -151,71 +178,120 @@ export const LoginPage: React.FC = () => {
         const callbackError = searchParams.get('error_description') || searchParams.get('error');
         if (callbackError) {
             clearPendingOAuthProvider();
-            trackEvent('auth__callback--error', { has_claim: Boolean(claimRequestId) });
+            trackEvent('auth__callback--error', { has_claim: Boolean(claimRequestId), has_asset_claim: Boolean(assetClaimId) });
             setErrorMessage(decodeURIComponent(callbackError));
             return;
         }
         const hasCallbackCode = Boolean(searchParams.get('code'));
         if (hasCallbackCode || (typeof window !== 'undefined' && window.location.hash.includes('access_token='))) {
-            trackEvent('auth__callback--received', { has_claim: Boolean(claimRequestId) });
+            trackEvent('auth__callback--received', { has_claim: Boolean(claimRequestId), has_asset_claim: Boolean(assetClaimId) });
         }
-    }, [searchParams, claimRequestId]);
+    }, [searchParams, assetClaimId, claimRequestId]);
 
-    const processQueuedRequest = useCallback(async () => {
-        if (!claimRequestId) return;
-        if (hasQueueAttempted) return;
+    const processPostAuthClaims = useCallback(async () => {
+        if (!assetClaimId && !claimRequestId) return;
+        if (hasPostAuthAttempted) return;
 
-        setHasQueueAttempted(true);
-        setIsQueueProcessing(true);
+        setHasPostAuthAttempted(true);
+        setIsPostAuthProcessing(true);
         setErrorMessage(null);
         setInfoMessage(t('states.queuedProcessing'));
 
         try {
-            const result = await processQueuedTripGenerationAfterAuth(claimRequestId);
-            trackEvent('auth__queue--fulfilled', { request_id: claimRequestId });
-            setInfoMessage(t('states.queuedSuccess'));
+            if (assetClaimId) {
+                try {
+                    const claimResult = await processAnonymousAssetClaimAfterAuth(assetClaimId);
+                    trackEvent('auth__asset_claim--fulfilled', {
+                        claim_id: assetClaimId,
+                        status: claimResult?.status ?? 'claimed',
+                        transferred_trips: claimResult?.transferredTrips ?? 0,
+                    });
+                } catch (error) {
+                    trackEvent('auth__asset_claim--failed', {
+                        claim_id: assetClaimId,
+                        error_code: resolveAnonymousAssetClaimErrorCode(error),
+                    });
+                }
+            }
+
+            if (claimRequestId) {
+                const result = await processQueuedTripGenerationAfterAuth(claimRequestId);
+                registerTripGenerationCompletionWatch(result.tripId, 'auth_queue_claim_login');
+                trackEvent('auth__queue--fulfilled', { request_id: claimRequestId });
+                setInfoMessage(t('states.queuedSuccess'));
+                clearRememberedAuthReturnPath();
+                navigate(`/trip/${result.tripId}`, { replace: true });
+                return;
+            }
+
+            setInfoMessage(null);
             clearRememberedAuthReturnPath();
-            navigate(`/trip/${result.tripId}`, { replace: true });
+            navigate(nextPath, { replace: true });
         } catch (error) {
-            trackEvent('auth__queue--failed', { request_id: claimRequestId });
+            const failedTripId = error instanceof QueuedTripGenerationError ? error.tripId : null;
+            trackEvent('auth__queue--failed', {
+                request_id: claimRequestId,
+                has_trip_id: Boolean(failedTripId),
+            });
+            if (failedTripId) {
+                clearRememberedAuthReturnPath();
+                navigate(`/trip/${failedTripId}`, { replace: true });
+                return;
+            }
             setErrorMessage(t('errors.queue_claim_failed'));
         } finally {
-            setIsQueueProcessing(false);
+            setIsPostAuthProcessing(false);
         }
-    }, [claimRequestId, hasQueueAttempted, navigate, t]);
+    }, [assetClaimId, claimRequestId, hasPostAuthAttempted, navigate, nextPath, t]);
 
     useEffect(() => {
         if (isLoading) return;
         if (!isAuthenticated || isAnonymous) return;
-        if (claimRequestId) {
-            void processQueuedRequest();
+        if (assetClaimId || claimRequestId) {
+            void processPostAuthClaims();
             return;
         }
         clearRememberedAuthReturnPath();
         navigate(nextPath, { replace: true });
     }, [
+        assetClaimId,
         claimRequestId,
         isAnonymous,
         isAuthenticated,
         isLoading,
         navigate,
         nextPath,
-        processQueuedRequest,
+        processPostAuthClaims,
     ]);
 
     const handleModeChange = (nextMode: AuthMode) => {
         setMode(nextMode);
         setErrorMessage(null);
         setInfoMessage(null);
+        if (nextMode === 'login') {
+            setHasAcceptedTerms(false);
+        }
         trackEvent('auth__method--select', { method: nextMode });
     };
 
     const handlePasswordSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        if (!email.trim() || !password.trim()) {
+        if (isSubmitting || isPostAuthProcessing) return;
+        const formData = new FormData(event.currentTarget);
+        const submittedEmail = (formData.get('email')?.toString() || email).trim();
+        const submittedPassword = formData.get('password')?.toString() || password;
+
+        if (!submittedEmail || !submittedPassword.trim()) {
             setErrorMessage(t('errors.default'));
             return;
         }
+        if (mode === 'register' && !hasAcceptedTerms) {
+            setErrorMessage(t('errors.terms_required'));
+            return;
+        }
+        if (submittedEmail !== email) setEmail(submittedEmail);
+        if (submittedPassword !== password) setPassword(submittedPassword);
+        setRememberLoginEnabled(rememberLogin);
         clearPendingOAuthProvider();
 
         setIsSubmitting(true);
@@ -223,20 +299,20 @@ export const LoginPage: React.FC = () => {
         setInfoMessage(null);
 
         if (mode === 'login') {
-            const response = await loginWithPassword(email.trim(), password);
+            const response = await loginWithPassword(submittedEmail, submittedPassword);
             if (response.error) {
                 const errorCode = normalizeErrorCode(response.error);
                 setErrorMessage(t(`errors.${errorCode}`, t('errors.default')));
             } else {
-                setInfoMessage(t('states.alreadyAuthenticated'));
+                setInfoMessage(null);
             }
             setIsSubmitting(false);
             return;
         }
 
         const response = await registerWithPassword(
-            email.trim(),
-            password,
+            submittedEmail,
+            submittedPassword,
             { emailRedirectTo: oauthRedirectTo }
         );
         if (response.error) {
@@ -245,7 +321,15 @@ export const LoginPage: React.FC = () => {
         } else if (!response.data.session) {
             setInfoMessage(t('states.emailConfirmationSent'));
         } else {
-            setInfoMessage(t('states.alreadyAuthenticated'));
+            const acceptance = await acceptCurrentTerms({
+                locale: authLocale,
+                source: 'signup_login_page',
+            });
+            if (acceptance.error) {
+                setInfoMessage(t('states.termsAcceptancePending'));
+            } else {
+                setInfoMessage(null);
+            }
         }
         setIsSubmitting(false);
     };
@@ -253,6 +337,7 @@ export const LoginPage: React.FC = () => {
     const handleOAuthLogin = async (provider: OAuthProviderId) => {
         setErrorMessage(null);
         setInfoMessage(null);
+        setRememberLoginEnabled(rememberLogin);
         setPendingOAuthProvider(provider);
         trackEvent('auth__method--select', { method: provider });
         const response = await loginWithOAuth(provider, oauthRedirectTo);
@@ -295,6 +380,20 @@ export const LoginPage: React.FC = () => {
         setIsSubmitting(false);
     };
 
+    const handleFormKeyDown = (event: React.KeyboardEvent<HTMLFormElement>) => {
+        if (event.key !== 'Enter') return;
+        if (event.nativeEvent.isComposing) return;
+        if (!(event.target instanceof HTMLInputElement)) return;
+        event.preventDefault();
+        event.currentTarget.requestSubmit();
+    };
+
+    const handleRememberLoginToggle = (checked: boolean) => {
+        setRememberLogin(checked);
+        setRememberLoginEnabled(checked);
+        trackEvent('auth__remember_login--toggle', { remember_login: checked });
+    };
+
     return (
         <MarketingLayout>
             <div className="mx-auto grid max-w-5xl gap-6 lg:grid-cols-[1fr_360px]">
@@ -331,21 +430,39 @@ export const LoginPage: React.FC = () => {
                         </button>
                     </div>
 
-                    <form className="mt-6 space-y-4" onSubmit={handlePasswordSubmit}>
-                        <label className="block">
-                            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('labels.email')}</span>
+                    <form className="mt-6 space-y-4" onSubmit={handlePasswordSubmit} onKeyDown={handleFormKeyDown}>
+                        <div className="block">
+                            <label
+                                htmlFor={LOGIN_PAGE_EMAIL_INPUT_ID}
+                                className="block text-xs font-semibold uppercase tracking-wide text-slate-500"
+                            >
+                                {t('labels.email')}
+                            </label>
                             <input
+                                id={LOGIN_PAGE_EMAIL_INPUT_ID}
+                                name="email"
                                 type="email"
-                                autoComplete="email"
+                                autoComplete={mode === 'login' ? 'username' : 'email'}
+                                inputMode="email"
+                                autoCapitalize="none"
+                                autoCorrect="off"
+                                spellCheck={false}
                                 value={email}
                                 onChange={(event) => setEmail(event.target.value)}
                                 required
                                 className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-accent-500"
                             />
-                        </label>
-                        <label className="block">
-                            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('labels.password')}</span>
+                        </div>
+                        <div className="block">
+                            <label
+                                htmlFor={LOGIN_PAGE_SECONDARY_INPUT_ID}
+                                className="block text-xs font-semibold uppercase tracking-wide text-slate-500"
+                            >
+                                {t('labels.password')}
+                            </label>
                             <input
+                                id={LOGIN_PAGE_SECONDARY_INPUT_ID}
+                                name="password"
                                 type="password"
                                 autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
                                 value={password}
@@ -354,14 +471,28 @@ export const LoginPage: React.FC = () => {
                                 minLength={8}
                                 className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-accent-500"
                             />
-                        </label>
+                        </div>
                         {mode === 'login' && (
                             <div className="space-y-2">
+                                <label
+                                    htmlFor={LOGIN_PAGE_REMEMBER_CHECKBOX_ID}
+                                    className="inline-flex cursor-pointer items-center gap-2 text-sm font-semibold text-slate-800"
+                                >
+                                    <Checkbox
+                                        id={LOGIN_PAGE_REMEMBER_CHECKBOX_ID}
+                                        checked={rememberLogin}
+                                        onCheckedChange={(checked) => handleRememberLoginToggle(checked === true)}
+                                        disabled={isSubmitting || isPostAuthProcessing}
+                                        aria-label={t('labels.rememberLogin')}
+                                        {...getAnalyticsDebugAttributes('auth__remember_login--toggle')}
+                                    />
+                                    <span>{t('labels.rememberLogin')}</span>
+                                </label>
                                 <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
                                     <button
                                         type="button"
                                         onClick={() => void handlePasswordResetRequest('forgot_password')}
-                                        disabled={isSubmitting || isQueueProcessing}
+                                        disabled={isSubmitting || isPostAuthProcessing}
                                         className="font-semibold text-accent-700 hover:text-accent-800 disabled:cursor-not-allowed disabled:opacity-60"
                                         {...getAnalyticsDebugAttributes('auth__password_reset--request', { source: 'page', intent: 'forgot_password' })}
                                     >
@@ -370,7 +501,7 @@ export const LoginPage: React.FC = () => {
                                     <button
                                         type="button"
                                         onClick={() => void handlePasswordResetRequest('set_password')}
-                                        disabled={isSubmitting || isQueueProcessing}
+                                        disabled={isSubmitting || isPostAuthProcessing}
                                         className="font-semibold text-accent-700 hover:text-accent-800 disabled:cursor-not-allowed disabled:opacity-60"
                                         {...getAnalyticsDebugAttributes('auth__password_reset--request', { source: 'page', intent: 'set_password' })}
                                     >
@@ -380,14 +511,39 @@ export const LoginPage: React.FC = () => {
                                 <p className="text-xs text-slate-500">{t('copy.passwordResetHint')}</p>
                             </div>
                         )}
+                        {mode === 'register' && (
+                            <label className="flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
+                                <input
+                                    type="checkbox"
+                                    checked={hasAcceptedTerms}
+                                    onChange={(event) => {
+                                        setHasAcceptedTerms(event.target.checked);
+                                        trackEvent(event.target.checked ? 'auth__terms_consent--accept' : 'auth__terms_consent--reject', { source: 'login_page' });
+                                    }}
+                                    className="mt-0.5 h-4 w-4 rounded border-slate-300"
+                                    {...getAnalyticsDebugAttributes('auth__terms_consent--accept', { source: 'login_page' })}
+                                />
+                                <span>
+                                    {t('copy.termsConsentPrefix')}{' '}
+                                    <Link className="font-semibold text-accent-700 hover:underline" to={termsPath} target="_blank" rel="noreferrer">
+                                        {t('copy.termsConsentTerms')}
+                                    </Link>{' '}
+                                    {t('copy.termsConsentJoiner')}{' '}
+                                    <Link className="font-semibold text-accent-700 hover:underline" to={privacyPath} target="_blank" rel="noreferrer">
+                                        {t('copy.termsConsentPrivacy')}
+                                    </Link>
+                                    .
+                                </span>
+                            </label>
+                        )}
 
                         <button
                             type="submit"
-                            disabled={isSubmitting || isQueueProcessing}
+                            disabled={isSubmitting || isPostAuthProcessing}
                             className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-accent-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-accent-700 disabled:cursor-not-allowed disabled:opacity-60"
                             {...getAnalyticsDebugAttributes(`auth__password--${mode}`)}
                         >
-                            {(isSubmitting || isQueueProcessing) ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
+                            {(isSubmitting || isPostAuthProcessing) ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
                             {isSubmitting ? t('actions.submitting') : mode === 'login' ? t('actions.submitLogin') : t('actions.submitRegister')}
                         </button>
                     </form>
@@ -406,7 +562,7 @@ export const LoginPage: React.FC = () => {
                                     key={item.provider}
                                     type="button"
                                     onClick={() => void handleOAuthLogin(item.provider)}
-                                    disabled={isSubmitting || isQueueProcessing}
+                                    disabled={isSubmitting || isPostAuthProcessing}
                                     className={`relative inline-flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold text-slate-700 transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
                                         isLastUsed
                                             ? 'border-slate-400 bg-white'

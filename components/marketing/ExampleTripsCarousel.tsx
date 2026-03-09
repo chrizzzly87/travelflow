@@ -122,6 +122,8 @@ export const ExampleTripsCarousel: React.FC = () => {
             exampleTemplateId: templateId,
             exampleTemplateCountries: templateCountries,
             sourceKind: 'example',
+            sourceOwnerType: 'system_catalog',
+            sourceOwnerHandle: 'travelflow_examples',
             defaultView: resolvedView,
         };
 

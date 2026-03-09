@@ -28,7 +28,7 @@ GEMINI_API_KEY=your_gemini_api_key_here
 VITE_GOOGLE_MAPS_API_KEY=your_google_maps_api_key_here
 # Optional local fallback (browser-side Gemini path for non-Netlify dev)
 VITE_GEMINI_API_KEY=your_gemini_api_key_here
-# Future provider adapters / benchmark tooling
+# Optional provider adapters / benchmark tooling
 OPENAI_API_KEY=your_openai_api_key_here
 ANTHROPIC_API_KEY=your_anthropic_api_key_here
 OPENROUTER_API_KEY=your_openrouter_api_key_here
@@ -52,10 +52,14 @@ pnpm dev
 For internal edge API routes (for example `/api/internal/ai/benchmark`), run Netlify dev instead:
 
 ```bash
-pnpm dlx netlify dev
+pnpm dev:netlify
 ```
 
 Then open the app via `http://localhost:8888` so `/api/*` routes are handled by Netlify Edge Functions.
+
+For async trip-generation worker parity and local troubleshooting, use:
+
+- [docs/AI_TRIP_GENERATION_LOCAL_DEV.md](/Users/chrizzzly/.codex/worktrees/bece/travelflow-codex/docs/AI_TRIP_GENERATION_LOCAL_DEV.md)
 
 ## Routes
 
@@ -146,6 +150,7 @@ All available `pnpm` commands in this repo:
 - `pnpm test:run` — Run the full Vitest suite once.
 - `pnpm test:core` — Run core-module Vitest coverage gate (85/80 thresholds).
 - `pnpm test:e2e` — Run Playwright end-to-end smoke tests.
+- `pnpm test:e2e:offline` — Run opt-in Playwright outage/offline resilience checks (navigator.onLine emulation + forced outage banner flows).
 - `pnpm build:images` — Generate missing inspiration source images, then create responsive derivatives and optimize oversized assets.
 - `pnpm inspirations:images:optimize` — Optimize inspiration images only (`--skip-generation`).
 - `pnpm inspirations:images:jobs` — Build inspiration image batch job file only.
@@ -226,10 +231,10 @@ For branch/PR preview workflow and caveats, see `docs/NETLIFY_FEATURE_BRANCH_DEP
    - `VITE_GOOGLE_MAPS_API_KEY`
    - `VITE_SUPABASE_URL`
    - `VITE_SUPABASE_ANON_KEY`
-   - `SUPABASE_SERVICE_ROLE_KEY` (required for `/api/internal/admin/iam` provisioning actions)
+   - `SUPABASE_SERVICE_ROLE_KEY` (required for `/api/internal/admin/iam` provisioning actions and AI telemetry persistence/reads)
    - `OPENAI_API_KEY` (active for OpenAI models in `/api/ai/generate`)
    - `ANTHROPIC_API_KEY` (active for Anthropic models in `/api/ai/generate`)
-   - `OPENROUTER_API_KEY` (reserved for upcoming OpenRouter adapter)
+   - `OPENROUTER_API_KEY` (active for curated OpenRouter models in `/api/ai/generate`)
    - `TF_ADMIN_API_KEY` (required for internal benchmark API endpoints in deployed environments)
 5. Deploy.
 
@@ -285,6 +290,31 @@ Sitemap behavior:
    - `blog_image=/images/blog/<slug>-og-vertical.jpg`
    - optional `blog_tint=#<hex>` + `blog_tint_intensity=<0-100>` (strict percent scale; blog pages default to accent tint at 60)
    - optional `blog_rev=<revision>` (cache-bust token; default comes from `data/blogImageMedia.ts`)
+5. Use the admin inspector at `http://localhost:8888/admin/og-tools` to:
+   - inspect same-origin route metadata (`canonical`, `og:*`, `twitter:*`)
+   - verify static vs dynamic OG source mode (`x-travelflow-og-source`)
+   - build filtered static OG generation commands
+
+Filtered static OG generation examples:
+- `pnpm og:site:build -- --locales=en,de --include-prefixes=/blog,/de/blog`
+- `pnpm og:site:build -- --exclude-prefixes=/example`
+
+Default static OG scope (fast path):
+- localized home (`/` + locale homes)
+- localized blog overview (`/blog`)
+- localized inspirations overview (`/inspirations`)
+- `/example/*` templates
+- Note: `/example/*` keeps runtime trip-card OG rendering for visual parity with shared trip previews.
+
+Release-safe default verification:
+- `pnpm og:site:build && pnpm og:site:validate`
+
+Full static coverage override (all supported static/detail routes):
+- `pnpm og:site:build:full && pnpm og:site:validate:full`
+
+Faster local builds (skip static OG generation/validation):
+- `SITE_OG_STATIC_BUILD_MODE=skip pnpm build`
+- `SITE_OG_STATIC_BUILD_MODE=full pnpm build` (force full local parity)
 
 Example direct image URL:
 `http://localhost:8888/api/og/trip?s=demo-share&title=Japan%20Spring%20Loop&mapStyle=clean&routeMode=realistic&showStops=1&showCities=1`

@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { readSessionStorageItem, removeSessionStorageItem } from '../../services/browserStorageService';
 
 type CopyNoticeToastTone = 'add' | 'info' | 'neutral' | 'remove';
 
@@ -13,28 +14,19 @@ export const useTripCopyNoticeToast = ({
 }: UseTripCopyNoticeToastParams) => {
     useEffect(() => {
         if (typeof window === 'undefined') return;
-        let raw: string | null = null;
-        try {
-            raw = window.sessionStorage.getItem('tf_trip_copy_notice');
-        } catch {
-            raw = null;
-        }
+        const raw = readSessionStorageItem('tf_trip_copy_notice');
         if (!raw) return;
         try {
             const payload = JSON.parse(raw);
             if (payload?.tripId !== tripId) return;
-            window.sessionStorage.removeItem('tf_trip_copy_notice');
+            removeSessionStorageItem('tf_trip_copy_notice');
             const sourceTitle = typeof payload.sourceTitle === 'string' && payload.sourceTitle.trim().length > 0
                 ? payload.sourceTitle.trim()
                 : null;
             const message = sourceTitle ? `Copied "${sourceTitle}"` : 'Trip copied successfully';
             showToast(message, { tone: 'add', title: 'Copied' });
         } catch {
-            try {
-                window.sessionStorage.removeItem('tf_trip_copy_notice');
-            } catch {
-                // ignore
-            }
+            removeSessionStorageItem('tf_trip_copy_notice');
         }
     }, [tripId, showToast]);
 };

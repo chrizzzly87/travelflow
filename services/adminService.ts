@@ -1,6 +1,21 @@
 import type { PlanTierKey } from '../types';
-import { dbGetAccessToken, ensureDbSession } from './dbService';
+import {
+    LEGAL_TERMS_BINDING_LOCALE,
+    LEGAL_TERMS_FALLBACK_CONTENT_DE,
+    LEGAL_TERMS_FALLBACK_CONTENT_EN,
+    LEGAL_TERMS_FALLBACK_LAST_UPDATED,
+    LEGAL_TERMS_FALLBACK_SUMMARY,
+    LEGAL_TERMS_FALLBACK_TITLE,
+    LEGAL_TERMS_FALLBACK_VERSION,
+} from '../config/legalTermsDefaults';
+import type { LegalTermsVersionRecord } from './legalTermsService';
+import type { AdminForensicsReplayBundle } from './adminForensicsService';
+import { dbGetAccessToken, ensureExistingDbSession } from './dbService';
+import { normalizeProfileCountryCode } from './profileCountryService';
+import { isSimulatedLoggedIn } from './simulatedLoginService';
 import { supabase } from './supabaseClient';
+
+type AdminTripGenerationState = 'failed' | 'running' | 'queued' | 'succeeded';
 
 export interface AdminUserRecord {
     user_id: string;
@@ -14,6 +29,8 @@ export interface AdminUserRecord {
     first_name?: string | null;
     last_name?: string | null;
     username?: string | null;
+    username_display?: string | null;
+    username_changed_at?: string | null;
     gender?: string | null;
     country?: string | null;
     city?: string | null;
@@ -26,6 +43,10 @@ export interface AdminUserRecord {
     system_role: 'admin' | 'user';
     tier_key: PlanTierKey;
     entitlements_override: Record<string, unknown> | null;
+    terms_accepted_version?: string | null;
+    terms_accepted_at?: string | null;
+    terms_accepted_locale?: string | null;
+    terms_acceptance_source?: string | null;
     created_at: string;
     updated_at: string;
     onboarding_completed_at?: string | null;
@@ -37,6 +58,7 @@ export interface AdminTripRecord {
     owner_email: string | null;
     title: string | null;
     status: 'active' | 'archived' | 'expired';
+    generation_state: AdminTripGenerationState | null;
     trip_expires_at: string | null;
     archived_at: string | null;
     source_kind: string | null;
@@ -57,6 +79,51 @@ export interface AdminAuditRecord {
     created_at: string;
 }
 
+export interface AdminUserChangeRecord {
+    id: string;
+    owner_user_id: string;
+    owner_email: string | null;
+    action: string;
+    source: string | null;
+    target_type: string;
+    target_id: string | null;
+    before_data: Record<string, unknown> | null;
+    after_data: Record<string, unknown> | null;
+    metadata: Record<string, unknown> | null;
+    created_at: string;
+}
+
+export interface AdminTripVersionSnapshotRecord {
+    trip_id: string;
+    before_version_id: string | null;
+    after_version_id: string | null;
+    before_snapshot: Record<string, unknown> | null;
+    after_snapshot: Record<string, unknown> | null;
+    before_view_settings: Record<string, unknown> | null;
+    after_view_settings: Record<string, unknown> | null;
+    before_label: string | null;
+    after_label: string | null;
+    before_created_at: string | null;
+    after_created_at: string | null;
+}
+
+export interface AdminAuditReplayExportRequest {
+    search?: string | null;
+    dateRange?: '24h' | '7d' | '30d' | 'all' | 'custom' | null;
+    customStartDate?: string | null;
+    customEndDate?: string | null;
+    actionFilters?: string[] | null;
+    targetFilters?: string[] | null;
+    actorFilters?: Array<'admin' | 'user'> | null;
+    selectedEventIds?: string[] | null;
+    sourceLimit?: number | null;
+}
+
+export interface AdminAuditReplayExportResponse {
+    exportAuditId: string | null;
+    bundle: AdminForensicsReplayBundle;
+}
+
 export interface AdminTierReapplyPreview {
     affected_users: number;
     affected_trips: number;
@@ -66,11 +133,33 @@ export interface AdminTierReapplyPreview {
     users_with_overrides: number;
 }
 
+export interface AdminPublishTermsVersionInput {
+    version: string;
+    title: string;
+    summary?: string | null;
+    bindingLocale?: string | null;
+    lastUpdated: string;
+    effectiveAt?: string | null;
+    requiresReaccept: boolean;
+    contentDe: string;
+    contentEn: string;
+    makeCurrent?: boolean;
+}
+
 const requireSupabase = () => {
     if (!supabase) {
         throw new Error('Supabase is not configured.');
     }
     return supabase;
+};
+
+const mapTermsRpcErrorMessage = (rawMessage: string | null | undefined, fallbackMessage: string): string => {
+    const message = (rawMessage || '').trim();
+    if (!message) return fallbackMessage;
+    if (/column reference "is_current" is ambiguous/i.test(message)) {
+        return `${message}. Please re-run the latest /docs/supabase.sql migration for Terms admin functions.`;
+    }
+    return message;
 };
 
 const VALID_PROFILE_GENDERS = new Set(['female', 'male', 'non-binary', 'prefer-not']);
@@ -82,6 +171,26 @@ const normalizeProfileGender = (value: string | null | undefined): string | null
     return VALID_PROFILE_GENDERS.has(normalized) ? normalized : null;
 };
 
+const normalizeUsernameHandle = (value: string | null | undefined): string | null => {
+    if (typeof value !== 'string') return null;
+    const normalized = value.trim().replace(/^@+/, '');
+    return normalized || null;
+};
+
+const isRpcOverloadSelectionError = (message: string | null | undefined, fnName: string): boolean => {
+    const normalized = (message || '').toLowerCase();
+    if (!normalized) return false;
+    return normalized.includes(`function public.${fnName}`)
+        || normalized.includes('could not choose the best candidate function')
+        || normalized.includes('is not unique')
+        || normalized.includes('function matching');
+};
+
+export const shouldUseAdminMockData = (
+    isDevRuntime = import.meta.env.DEV,
+    simulatedLoginEnabled = isSimulatedLoggedIn()
+): boolean => isDevRuntime && simulatedLoginEnabled;
+
 export const adminListUsers = async (
     options: {
         limit?: number;
@@ -89,6 +198,27 @@ export const adminListUsers = async (
         search?: string;
     } = {}
 ): Promise<AdminUserRecord[]> => {
+    if (shouldUseAdminMockData()) {
+        const now = new Date();
+        const mockUsers: AdminUserRecord[] = Array.from({ length: 15 }).map((_, i) => ({
+            user_id: `mock-user-${i}`,
+            email: `user${i}@example.com`,
+            system_role: i === 0 ? 'admin' : 'user',
+            tier_key: i % 3 === 0 ? 'tier_premium' : 'tier_free',
+            account_status: i === 14 ? 'disabled' : 'active',
+            auth_provider: i % 2 === 0 ? 'email' : 'google',
+            created_at: new Date(now.getTime() - i * 86400000 * 3).toISOString(),
+            updated_at: new Date(now.getTime() - i * 3600000).toISOString(),
+            entitlements_override: null,
+            first_name: `TestName${i}`,
+            last_name: `LastName${i}`,
+            username: `test_user_${i}`,
+            username_display: `TestUser${i}`,
+            username_changed_at: null,
+        }));
+        return mockUsers;
+    }
+
     const client = requireSupabase();
     const { data, error } = await client.rpc('admin_list_users', {
         p_limit: options.limit ?? 250,
@@ -100,6 +230,10 @@ export const adminListUsers = async (
 };
 
 export const adminUpdateUserTier = async (userId: string, tierKey: PlanTierKey): Promise<void> => {
+    if (shouldUseAdminMockData()) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        return;
+    }
     const client = requireSupabase();
     const { error } = await client.rpc('admin_update_user_tier', {
         p_user_id: userId,
@@ -109,6 +243,10 @@ export const adminUpdateUserTier = async (userId: string, tierKey: PlanTierKey):
 };
 
 export const adminUpdateUserOverrides = async (userId: string, overrides: Record<string, unknown>): Promise<void> => {
+    if (shouldUseAdminMockData()) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        return;
+    }
     const client = requireSupabase();
     const { error } = await client.rpc('admin_update_user_overrides', {
         p_user_id: userId,
@@ -132,24 +270,98 @@ export const adminUpdateUserProfile = async (
         tierKey?: PlanTierKey | null;
     }
 ): Promise<void> => {
+    if (shouldUseAdminMockData()) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        return;
+    }
+    const normalizedCountry = typeof payload.country === 'string'
+        ? normalizeProfileCountryCode(payload.country)
+        : '';
+    if (typeof payload.country === 'string' && payload.country.trim() && !normalizedCountry) {
+        throw new Error('Country/Region must be a valid ISO 3166-1 alpha-2 country code.');
+    }
     const client = requireSupabase();
-    const { error } = await client.rpc('admin_update_user_profile', {
+    const rpcPayload = {
         p_user_id: userId,
         p_first_name: payload.firstName ?? null,
         p_last_name: payload.lastName ?? null,
-        p_username: payload.username ?? null,
+        p_username: normalizeUsernameHandle(payload.username),
         p_gender: normalizeProfileGender(payload.gender),
-        p_country: payload.country ?? null,
+        p_country: typeof payload.country === 'string'
+            ? (normalizedCountry || null)
+            : null,
         p_city: payload.city ?? null,
         p_preferred_language: payload.preferredLanguage ?? null,
         p_account_status: payload.accountStatus ?? null,
         p_system_role: payload.systemRole ?? null,
         p_tier_key: payload.tierKey ?? null,
+    };
+
+    let { error } = await client.rpc('admin_update_user_profile', {
+        ...rpcPayload,
+        p_bypass_username_cooldown: true,
     });
+
+    if (error && /function/i.test(error.message || '') && /admin_update_user_profile/i.test(error.message || '')) {
+        const fallback = await client.rpc('admin_update_user_profile', rpcPayload);
+        error = fallback.error;
+    }
+
     if (error) throw new Error(error.message || 'Could not update user profile.');
 };
 
+export const adminResetUserUsernameCooldown = async (
+    userId: string,
+    reason: string | null = 'admin.manual_reset'
+): Promise<void> => {
+    if (shouldUseAdminMockData()) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        return;
+    }
+    const client = requireSupabase();
+    const { error } = await client.rpc('admin_reset_user_username_cooldown', {
+        p_user_id: userId,
+        p_reason: reason,
+    });
+    if (error) throw new Error(error.message || 'Could not reset username cooldown.');
+};
+
+export const adminResetUserTermsAcceptance = async (
+    userId: string,
+    reason: string | null = 'admin.testing.reset_terms'
+): Promise<void> => {
+    if (shouldUseAdminMockData()) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        return;
+    }
+    const client = requireSupabase();
+    const { error } = await client.rpc('admin_reset_user_terms_acceptance', {
+        p_user_id: userId,
+        p_reason: reason,
+    });
+    if (error) throw new Error(error.message || 'Could not reset terms acceptance.');
+};
+
 export const adminGetUserProfile = async (userId: string): Promise<AdminUserRecord | null> => {
+    if (shouldUseAdminMockData()) {
+        const now = new Date();
+        return {
+            user_id: userId,
+            email: `user-mock@example.com`,
+            system_role: 'user',
+            tier_key: 'tier_free',
+            account_status: 'active',
+            auth_provider: 'email',
+            created_at: new Date(now.getTime() - 86400000 * 3).toISOString(),
+            updated_at: new Date(now.getTime() - 3600000).toISOString(),
+            entitlements_override: null,
+            first_name: `MockUser`,
+            last_name: `Profile`,
+            username: 'mockuserprofile',
+            username_display: 'MockUserProfile',
+            username_changed_at: null,
+        };
+    }
     const client = requireSupabase();
     const { data, error } = await client.rpc('admin_get_user_profile', {
         p_user_id: userId,
@@ -166,31 +378,96 @@ export const adminListTrips = async (
         search?: string;
         ownerId?: string | null;
         status?: 'active' | 'archived' | 'expired' | 'all';
+        generationState?: AdminTripGenerationState | 'all';
     } = {}
 ): Promise<AdminTripRecord[]> => {
+    if (shouldUseAdminMockData()) {
+        const now = new Date();
+        const mockTrips: AdminTripRecord[] = Array.from({ length: 45 }).map((_, i) => ({
+            trip_id: `mock-trip-${i}`,
+            owner_id: `mock-user-${i % 15}`,
+            owner_email: `user${i % 15}@example.com`,
+            title: `Mock Trip to ${['Paris', 'Tokyo', 'London', 'New York', 'Rome'][i % 5]}`,
+            status: i % 10 === 0 ? 'expired' : i % 8 === 0 ? 'archived' : 'active',
+            generation_state: i % 9 === 0 ? 'failed' : i % 7 === 0 ? 'running' : 'succeeded',
+            trip_expires_at: null,
+            archived_at: null,
+            source_kind: null,
+            created_at: new Date(now.getTime() - i * 86400000 * 1.5).toISOString(),
+            updated_at: new Date(now.getTime() - i * 3600000).toISOString(),
+        }));
+        return mockTrips;
+    }
+
     const client = requireSupabase();
-    const { data, error } = await client.rpc('admin_list_trips', {
+    const rpcArgsWithGeneration = {
         p_limit: options.limit ?? 300,
         p_offset: options.offset ?? 0,
         p_search: options.search ?? null,
         p_owner_id: options.ownerId ?? null,
         p_status: options.status && options.status !== 'all' ? options.status : null,
-    });
+        p_generation_state: options.generationState && options.generationState !== 'all' ? options.generationState : '',
+    };
+    let { data, error } = await client.rpc('admin_list_trips', rpcArgsWithGeneration);
+    if (error && isRpcOverloadSelectionError(error.message, 'admin_list_trips')) {
+        const fallback = await client.rpc('admin_list_trips', {
+            p_limit: rpcArgsWithGeneration.p_limit,
+            p_offset: rpcArgsWithGeneration.p_offset,
+            p_search: rpcArgsWithGeneration.p_search,
+            p_owner_id: rpcArgsWithGeneration.p_owner_id,
+            p_status: rpcArgsWithGeneration.p_status,
+        });
+        data = fallback.data;
+        error = fallback.error;
+    }
     if (error) throw new Error(error.message || 'Could not load trips.');
     return (Array.isArray(data) ? data : []) as AdminTripRecord[];
 };
 
 export const adminListUserTrips = async (
     userId: string,
-    options: { limit?: number; offset?: number; status?: 'active' | 'archived' | 'expired' | 'all' } = {}
+    options: {
+        limit?: number;
+        offset?: number;
+        status?: 'active' | 'archived' | 'expired' | 'all';
+        generationState?: AdminTripGenerationState | 'all';
+    } = {}
 ): Promise<AdminTripRecord[]> => {
+    if (shouldUseAdminMockData()) {
+        const now = new Date();
+        return Array.from({ length: 3 }).map((_, i) => ({
+            trip_id: `mock-trip-${i}`,
+            owner_id: userId,
+            owner_email: `user-mock@example.com`,
+            title: `User's Mock Trip ${i}`,
+            status: 'active',
+            generation_state: i === 0 ? 'failed' : 'succeeded',
+            trip_expires_at: null,
+            archived_at: null,
+            source_kind: null,
+            created_at: new Date(now.getTime() - i * 86400000).toISOString(),
+            updated_at: new Date(now.getTime() - 3600000).toISOString(),
+        }));
+    }
     const client = requireSupabase();
-    const { data, error } = await client.rpc('admin_list_user_trips', {
+    const rpcArgsWithGeneration = {
         p_user_id: userId,
         p_limit: options.limit ?? 200,
         p_offset: options.offset ?? 0,
         p_status: options.status && options.status !== 'all' ? options.status : null,
-    });
+        p_generation_state: options.generationState && options.generationState !== 'all' ? options.generationState : '',
+    };
+    let { data, error } = await client.rpc('admin_list_user_trips', rpcArgsWithGeneration);
+    if (error && isRpcOverloadSelectionError(error.message, 'admin_list_user_trips')) {
+        const fallback = await client.rpc('admin_list_user_trips', {
+            p_user_id: rpcArgsWithGeneration.p_user_id,
+            p_limit: rpcArgsWithGeneration.p_limit,
+            p_offset: rpcArgsWithGeneration.p_offset,
+            p_status: rpcArgsWithGeneration.p_status,
+        });
+        data = fallback.data;
+        error = fallback.error;
+    }
     if (error) throw new Error(error.message || 'Could not load user trips.');
     return (Array.isArray(data) ? data : []) as AdminTripRecord[];
 };
@@ -203,6 +480,10 @@ export const adminUpdateTrip = async (
         ownerId?: string | null;
     }
 ): Promise<void> => {
+    if (shouldUseAdminMockData()) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        return;
+    }
     const client = requireSupabase();
     const { error } = await client.rpc('admin_update_trip', {
         p_trip_id: tripId,
@@ -216,7 +497,55 @@ export const adminUpdateTrip = async (
     if (error) throw new Error(error.message || 'Could not update trip.');
 };
 
+export const adminOverrideTripCommit = async (payload: {
+    tripId: string;
+    data: Record<string, unknown>;
+    viewSettings?: Record<string, unknown> | null;
+    title?: string | null;
+    startDate?: string | null;
+    isFavorite?: boolean | null;
+    label?: string | null;
+    metadata?: Record<string, unknown> | null;
+}): Promise<void> => {
+    if (shouldUseAdminMockData()) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        return;
+    }
+    const client = requireSupabase();
+    const normalizedStartDate = typeof payload.startDate === 'string'
+        ? payload.startDate.trim().slice(0, 10) || null
+        : null;
+    const rpcPayload = {
+        p_trip_id: payload.tripId,
+        p_data: payload.data,
+        p_view: payload.viewSettings ?? null,
+        p_title: payload.title ?? null,
+        p_start_date: normalizedStartDate,
+        p_is_favorite: typeof payload.isFavorite === 'boolean' ? payload.isFavorite : null,
+        p_label: payload.label ?? null,
+        p_metadata: payload.metadata ?? null,
+    };
+    let { error } = await client.rpc('admin_override_trip_commit', rpcPayload);
+    if (error && /function/i.test(error.message || '') && /admin_override_trip_commit/i.test(error.message || '')) {
+        const fallback = await client.rpc('admin_override_trip_commit', {
+            p_trip_id: payload.tripId,
+            p_data: payload.data,
+            p_view: payload.viewSettings ?? null,
+            p_title: payload.title ?? null,
+            p_start_date: normalizedStartDate,
+            p_is_favorite: typeof payload.isFavorite === 'boolean' ? payload.isFavorite : null,
+            p_label: payload.label ?? null,
+        });
+        error = fallback.error;
+    }
+    if (error) throw new Error(error.message || 'Could not create admin override commit.');
+};
+
 export const adminHardDeleteTrip = async (tripId: string): Promise<void> => {
+    if (shouldUseAdminMockData()) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        return;
+    }
     const client = requireSupabase();
     const { error } = await client.rpc('admin_hard_delete_trip', {
         p_trip_id: tripId,
@@ -228,6 +557,10 @@ export const adminUpdatePlanEntitlements = async (
     tierKey: PlanTierKey,
     entitlements: Record<string, unknown>
 ): Promise<void> => {
+    if (shouldUseAdminMockData()) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        return;
+    }
     const client = requireSupabase();
     const { error } = await client.rpc('admin_update_plan_entitlements', {
         p_tier_key: tierKey,
@@ -239,6 +572,10 @@ export const adminUpdatePlanEntitlements = async (
 export const adminReapplyTierToUsers = async (
     tierKey: PlanTierKey
 ): Promise<{ affected_users: number; affected_trips: number }> => {
+    if (shouldUseAdminMockData()) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        return { affected_users: 10, affected_trips: 15 };
+    }
     const client = requireSupabase();
     const { data, error } = await client.rpc('admin_reapply_tier_to_users', {
         p_tier_key: tierKey,
@@ -250,6 +587,17 @@ export const adminReapplyTierToUsers = async (
 };
 
 export const adminPreviewTierReapply = async (tierKey: PlanTierKey): Promise<AdminTierReapplyPreview> => {
+    if (shouldUseAdminMockData()) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        return {
+            affected_users: 100,
+            affected_trips: 150,
+            active_trips: 50,
+            expired_trips: 50,
+            archived_trips: 50,
+            users_with_overrides: 5,
+        };
+    }
     const client = requireSupabase();
     const { data, error } = await client.rpc('admin_preview_tier_reapply', {
         p_tier_key: tierKey,
@@ -290,16 +638,241 @@ export const adminListAuditLogs = async (
     return (Array.isArray(data) ? data : []) as AdminAuditRecord[];
 };
 
-const callAdminIdentityApi = async (
+export const adminListUserChangeLogs = async (
+    options: {
+        limit?: number;
+        offset?: number;
+        action?: string;
+        ownerUserId?: string;
+    } = {}
+): Promise<AdminUserChangeRecord[]> => {
+    const client = requireSupabase();
+    const { data, error } = await client.rpc('admin_list_user_change_logs', {
+        p_limit: options.limit ?? 200,
+        p_offset: options.offset ?? 0,
+        p_action: options.action ?? null,
+        p_owner_user_id: options.ownerUserId ?? null,
+    });
+    if (error) throw new Error(error.message || 'Could not load user change logs.');
+    return (Array.isArray(data) ? data : []) as AdminUserChangeRecord[];
+};
+
+export const adminGetUserChangeLog = async (eventId: string): Promise<AdminUserChangeRecord | null> => {
+    const client = requireSupabase();
+    const { data, error } = await client.rpc('admin_get_user_change_log', {
+        p_event_id: eventId,
+    });
+    if (error) throw new Error(error.message || 'Could not load user change log.');
+    const row = Array.isArray(data) ? data[0] : data;
+    return row ? (row as AdminUserChangeRecord) : null;
+};
+
+export const adminGetTripVersionSnapshots = async (
+    payload: {
+        tripId: string;
+        afterVersionId?: string | null;
+        beforeVersionId?: string | null;
+    }
+): Promise<AdminTripVersionSnapshotRecord | null> => {
+    const tripId = payload.tripId.trim();
+    if (!tripId) return null;
+
+    if (shouldUseAdminMockData()) {
+        return {
+            trip_id: tripId,
+            before_version_id: payload.beforeVersionId ?? 'mock-before',
+            after_version_id: payload.afterVersionId ?? 'mock-after',
+            before_snapshot: { id: tripId, title: 'Before snapshot', items: [] },
+            after_snapshot: { id: tripId, title: 'After snapshot', items: [] },
+            before_view_settings: { mapStyle: 'minimal', timelineView: 'vertical' },
+            after_view_settings: { mapStyle: 'clean', timelineView: 'horizontal' },
+            before_label: 'Mock before',
+            after_label: 'Mock after',
+            before_created_at: new Date(Date.now() - 60_000).toISOString(),
+            after_created_at: new Date().toISOString(),
+        };
+    }
+
+    const client = requireSupabase();
+    const { data, error } = await client.rpc('admin_get_trip_version_snapshots', {
+        p_trip_id: tripId,
+        p_after_version_id: payload.afterVersionId ?? null,
+        p_before_version_id: payload.beforeVersionId ?? null,
+    });
+    if (error) throw new Error(error.message || 'Could not load trip version snapshots.');
+    const row = Array.isArray(data) ? data[0] : data;
+    return row ? (row as AdminTripVersionSnapshotRecord) : null;
+};
+
+const normalizeTermsVersionRecord = (row: Record<string, unknown> | null | undefined): LegalTermsVersionRecord | null => {
+    if (!row) return null;
+    const normalizeText = (value: unknown): string => (typeof value === 'string' ? value.trim() : '');
+    const normalizeOptionalText = (value: unknown): string | null => {
+        const normalized = normalizeText(value);
+        return normalized.length > 0 ? normalized : null;
+    };
+
+    const version = normalizeText(row.version);
+    const title = normalizeText(row.title);
+    const lastUpdated = normalizeText(row.last_updated);
+    const effectiveAt = normalizeText(row.effective_at);
+    const createdAt = normalizeText(row.created_at);
+    if (!version || !title || !lastUpdated || !effectiveAt || !createdAt) return null;
+
+    return {
+        version,
+        title,
+        summary: normalizeOptionalText(row.summary),
+        bindingLocale: normalizeText(row.binding_locale) || 'de',
+        lastUpdated,
+        effectiveAt,
+        requiresReaccept: Boolean(row.requires_reaccept),
+        isCurrent: Boolean(row.is_current),
+        contentDe: normalizeText(row.content_de),
+        contentEn: normalizeText(row.content_en),
+        createdAt,
+        createdBy: normalizeOptionalText(row.created_by),
+    };
+};
+
+export const adminListTermsVersions = async (): Promise<LegalTermsVersionRecord[]> => {
+    if (shouldUseAdminMockData()) {
+        const now = new Date().toISOString();
+        return [{
+            version: LEGAL_TERMS_FALLBACK_VERSION,
+            title: LEGAL_TERMS_FALLBACK_TITLE,
+            summary: LEGAL_TERMS_FALLBACK_SUMMARY,
+            bindingLocale: LEGAL_TERMS_BINDING_LOCALE,
+            lastUpdated: LEGAL_TERMS_FALLBACK_LAST_UPDATED,
+            effectiveAt: now,
+            requiresReaccept: true,
+            isCurrent: true,
+            contentDe: LEGAL_TERMS_FALLBACK_CONTENT_DE,
+            contentEn: LEGAL_TERMS_FALLBACK_CONTENT_EN,
+            createdAt: now,
+            createdBy: 'mock-admin',
+        }];
+    }
+
+    const client = requireSupabase();
+    const { data, error } = await client
+        .from('legal_terms_versions')
+        .select('version,title,summary,binding_locale,last_updated,effective_at,requires_reaccept,is_current,content_de,content_en,created_at,created_by')
+        .order('effective_at', { ascending: false });
+
+    if (error) throw new Error(error.message || 'Could not load terms versions.');
+    if (!Array.isArray(data)) return [];
+
+    return data
+        .map((row) => normalizeTermsVersionRecord(row as Record<string, unknown>))
+        .filter((row): row is LegalTermsVersionRecord => Boolean(row));
+};
+
+export const adminPublishTermsVersion = async (
+    payload: AdminPublishTermsVersionInput
+): Promise<LegalTermsVersionRecord> => {
+    const version = payload.version.trim();
+    const title = payload.title.trim();
+    const contentDe = payload.contentDe.trim();
+    const contentEn = payload.contentEn.trim();
+    const lastUpdated = payload.lastUpdated.trim();
+    const bindingLocale = (payload.bindingLocale || 'de').trim() || 'de';
+    const summary = typeof payload.summary === 'string' ? payload.summary.trim() : '';
+
+    if (!version) throw new Error('Version is required.');
+    if (!title) throw new Error('Title is required.');
+    if (!lastUpdated) throw new Error('Last updated date is required.');
+    if (!contentDe || !contentEn) throw new Error('Both DE and EN terms content are required.');
+
+    if (shouldUseAdminMockData()) {
+        const now = new Date().toISOString();
+        return {
+            version,
+            title,
+            summary: summary || null,
+            bindingLocale,
+            lastUpdated,
+            effectiveAt: payload.effectiveAt || now,
+            requiresReaccept: payload.requiresReaccept,
+            isCurrent: payload.makeCurrent ?? true,
+            contentDe,
+            contentEn,
+            createdAt: now,
+            createdBy: 'mock-admin',
+        };
+    }
+
+    const client = requireSupabase();
+    const { data, error } = await client.rpc('admin_publish_terms_version', {
+        p_version: version,
+        p_title: title,
+        p_summary: summary || null,
+        p_binding_locale: bindingLocale,
+        p_last_updated: lastUpdated,
+        p_effective_at: payload.effectiveAt || new Date().toISOString(),
+        p_requires_reaccept: payload.requiresReaccept,
+        p_content_de: contentDe,
+        p_content_en: contentEn,
+        p_make_current: payload.makeCurrent ?? true,
+    });
+
+    if (error) throw new Error(mapTermsRpcErrorMessage(error.message, 'Could not publish terms version.'));
+    const row = normalizeTermsVersionRecord((Array.isArray(data) ? data[0] : data) as Record<string, unknown> | null);
+    if (!row) throw new Error('Terms publish RPC returned no version payload.');
+    return row;
+};
+
+export const adminSetCurrentTermsVersion = async (
+    version: string,
+    options?: { requiresReaccept?: boolean | null; effectiveAt?: string | null }
+): Promise<LegalTermsVersionRecord> => {
+    const normalizedVersion = version.trim();
+    if (!normalizedVersion) throw new Error('Version is required.');
+
+    if (shouldUseAdminMockData()) {
+        const now = new Date().toISOString();
+        return {
+            version: normalizedVersion,
+            title: LEGAL_TERMS_FALLBACK_TITLE,
+            summary: LEGAL_TERMS_FALLBACK_SUMMARY,
+            bindingLocale: LEGAL_TERMS_BINDING_LOCALE,
+            lastUpdated: LEGAL_TERMS_FALLBACK_LAST_UPDATED,
+            effectiveAt: options?.effectiveAt || now,
+            requiresReaccept: typeof options?.requiresReaccept === 'boolean' ? options.requiresReaccept : true,
+            isCurrent: true,
+            contentDe: LEGAL_TERMS_FALLBACK_CONTENT_DE,
+            contentEn: LEGAL_TERMS_FALLBACK_CONTENT_EN,
+            createdAt: now,
+            createdBy: 'mock-admin',
+        };
+    }
+
+    const client = requireSupabase();
+    const { data, error } = await client.rpc('admin_set_current_terms_version', {
+        p_version: normalizedVersion,
+        p_effective_at: options?.effectiveAt || new Date().toISOString(),
+        p_requires_reaccept: typeof options?.requiresReaccept === 'boolean'
+            ? options.requiresReaccept
+            : null,
+    });
+
+    if (error) throw new Error(mapTermsRpcErrorMessage(error.message, 'Could not switch current terms version.'));
+    const row = normalizeTermsVersionRecord((Array.isArray(data) ? data[0] : data) as Record<string, unknown> | null);
+    if (!row) throw new Error('Terms version switch RPC returned no payload.');
+    return row;
+};
+
+const callAdminInternalApi = async <T extends Record<string, unknown>>(
+    path: string,
     body: Record<string, unknown>
-): Promise<{ ok: boolean; error?: string; data?: Record<string, unknown> }> => {
-    await ensureDbSession();
+): Promise<T> => {
+    await ensureExistingDbSession();
     const token = await dbGetAccessToken();
     if (!token) {
         throw new Error('No active access token found for admin operation.');
     }
 
-    const response = await fetch('/api/internal/admin/iam', {
+    const response = await fetch(path, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -331,26 +904,35 @@ const callAdminIdentityApi = async (
                         : null;
         const fallbackText = responseText.trim();
         const normalizedFallback = fallbackText && fallbackText.length <= 280 ? fallbackText : null;
+        const isIdentityPath = path === '/api/internal/admin/iam';
         const devNotFoundMessage = looksLikeViteNotFoundPage && import.meta.env.DEV
-            ? 'Admin identity route is unavailable in Vite-only dev. Run `npm run dev:netlify` (or run it in a second terminal while `npm run dev` is active) to test admin delete/invite/create actions.'
+            ? (
+                isIdentityPath
+                    ? 'Admin identity route is unavailable in Vite-only dev. Run `pnpm dev:netlify` (or run it in a second terminal while `pnpm dev` is active) to test admin delete/invite/create actions.'
+                    : 'Admin audit export route is unavailable in Vite-only dev. Run `pnpm dev:netlify` (or run it in a second terminal while `pnpm dev` is active) to test replay exports.'
+            )
             : null;
         const looksLikeViteProxyFailure = import.meta.env.DEV
             && response.status === 500
             && !payloadError
             && (!normalizedFallback || normalizedFallback === 'Internal Server Error');
         const devProxyFailureMessage = looksLikeViteProxyFailure
-            ? 'Vite could not reach Netlify dev for admin identity actions (connection refused on localhost:8888). Start `npm run dev:netlify` before testing delete/invite/create.'
+            ? (
+                isIdentityPath
+                    ? 'Vite could not reach Netlify dev for admin identity actions (connection refused on localhost:8888). Start `pnpm dev:netlify` before testing delete/invite/create.'
+                    : 'Vite could not reach Netlify dev for admin audit export actions (connection refused on localhost:8888). Start `pnpm dev:netlify` before testing replay export.'
+            )
             : null;
         const reason = payloadError
             || devNotFoundMessage
             || devProxyFailureMessage
             || normalizedFallback
             || response.statusText
-            || 'Admin identity API request failed.';
-        const errorMessage = `Admin identity API request failed (${response.status}): ${reason}`;
+            || 'Admin internal API request failed.';
+        const errorMessage = `Admin internal API request failed (${response.status}): ${reason}`;
         throw new Error(errorMessage);
     }
-    return payload as { ok: boolean; error?: string; data?: Record<string, unknown> };
+    return payload as T;
 };
 
 export const adminCreateUserInvite = async (payload: {
@@ -360,7 +942,11 @@ export const adminCreateUserInvite = async (payload: {
     tierKey?: PlanTierKey;
     redirectTo?: string;
 }): Promise<void> => {
-    await callAdminIdentityApi({
+    if (shouldUseAdminMockData()) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        return;
+    }
+    await callAdminInternalApi<{ ok: boolean }>('/api/internal/admin/iam', {
         action: 'invite',
         email: payload.email,
         firstName: payload.firstName ?? null,
@@ -377,7 +963,11 @@ export const adminCreateUserDirect = async (payload: {
     lastName?: string;
     tierKey?: PlanTierKey;
 }): Promise<void> => {
-    await callAdminIdentityApi({
+    if (shouldUseAdminMockData()) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        return;
+    }
+    await callAdminInternalApi<{ ok: boolean }>('/api/internal/admin/iam', {
         action: 'create',
         email: payload.email,
         password: payload.password,
@@ -388,8 +978,69 @@ export const adminCreateUserDirect = async (payload: {
 };
 
 export const adminHardDeleteUser = async (userId: string): Promise<void> => {
-    await callAdminIdentityApi({
+    if (shouldUseAdminMockData()) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        return;
+    }
+    await callAdminInternalApi<{ ok: boolean }>('/api/internal/admin/iam', {
         action: 'delete',
         userId,
     });
+};
+
+export const adminExportAuditReplay = async (
+    payload: AdminAuditReplayExportRequest
+): Promise<AdminAuditReplayExportResponse> => {
+    if (shouldUseAdminMockData()) {
+        const generatedAt = new Date().toISOString();
+        return {
+            exportAuditId: null,
+            bundle: {
+                schema: 'admin_forensics_replay_v1',
+                generated_at: generatedAt,
+                filters: {
+                    search: payload.search ?? null,
+                    date_range: payload.dateRange ?? '30d',
+                    action_filters: payload.actionFilters ?? [],
+                    target_filters: payload.targetFilters ?? [],
+                    actor_filters: payload.actorFilters ?? [],
+                    source_limit: payload.sourceLimit ?? 500,
+                },
+                totals: {
+                    event_count: 0,
+                    correlation_count: 0,
+                },
+                events: [],
+                correlations: [],
+            },
+        };
+    }
+
+    const response = await callAdminInternalApi<{
+        ok: boolean;
+        data?: {
+            exportAuditId?: string | null;
+            bundle?: AdminForensicsReplayBundle;
+        };
+    }>('/api/internal/admin/audit/replay-export', {
+        search: payload.search ?? null,
+        dateRange: payload.dateRange ?? '30d',
+        customStartDate: payload.customStartDate ?? null,
+        customEndDate: payload.customEndDate ?? null,
+        actionFilters: payload.actionFilters ?? [],
+        targetFilters: payload.targetFilters ?? [],
+        actorFilters: payload.actorFilters ?? [],
+        selectedEventIds: payload.selectedEventIds ?? [],
+        sourceLimit: payload.sourceLimit ?? 500,
+    });
+
+    const bundle = response?.data?.bundle;
+    if (!bundle || bundle.schema !== 'admin_forensics_replay_v1') {
+        throw new Error('Admin replay export returned an invalid bundle.');
+    }
+
+    return {
+        exportAuditId: response?.data?.exportAuditId ?? null,
+        bundle,
+    };
 };

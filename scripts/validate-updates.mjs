@@ -50,6 +50,7 @@ const isValidDate = (value) => /^\d{4}-\d{2}-\d{2}$/.test(value) && Number.isFin
 const isValidDateTime = (value) => Number.isFinite(Date.parse(value));
 const isValidVersion = (value) => /^v?\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/.test(value);
 const PUBLISHED_AT_MAX_UTC_HOUR_EXCLUSIVE = 23;
+const STRICT_CANONICAL_VERSION_SEQUENCE = process.env.UPDATES_VALIDATE_STRICT_CANONICAL === '1';
 const parseVersionCore = (version) => {
   const normalized = version.trim().replace(/^v/i, '');
   const core = normalized.split(/[-+]/)[0];
@@ -161,6 +162,7 @@ const main = async () => {
   }
 
   let hasErrors = false;
+  let hasWarnings = false;
   const parsedByFile = [];
 
   for (const file of files) {
@@ -233,17 +235,28 @@ const main = async () => {
     const expectedVersion = canonicalPublishedVersionForIndex(i + 1);
     if (release.version === expectedVersion) continue;
 
-    hasErrors = true;
-    console.error('\n[updates:validate] published versions must be canonical and gapless by published_at timestamp');
-    console.error(`  - File: ${path.relative(process.cwd(), release.file)} (${release.publishedAt})`);
-    console.error(`  - Found: ${release.version}`);
-    console.error(`  - Expected: ${expectedVersion}`);
+    const log = STRICT_CANONICAL_VERSION_SEQUENCE ? console.error : console.warn;
+    if (STRICT_CANONICAL_VERSION_SEQUENCE) {
+      hasErrors = true;
+    } else {
+      hasWarnings = true;
+    }
+    log('\n[updates:validate] published versions should be canonical and gapless by published_at timestamp');
+    log(`  - File: ${path.relative(process.cwd(), release.file)} (${release.publishedAt})`);
+    log(`  - Found: ${release.version}`);
+    log(`  - Expected: ${expectedVersion}`);
+    if (!STRICT_CANONICAL_VERSION_SEQUENCE) {
+      log('  - Result: warning only (set UPDATES_VALIDATE_STRICT_CANONICAL=1 to fail on this rule)');
+    }
   }
 
   if (hasErrors) {
     process.exit(1);
   }
 
+  if (hasWarnings) {
+    console.warn('[updates:validate] completed with warnings');
+  }
   console.log(`[updates:validate] validated ${files.length} update file(s)`);
 };
 

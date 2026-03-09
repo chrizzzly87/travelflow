@@ -11,7 +11,22 @@ export default defineConfig(({ mode }) => {
             strictPort: false,
             host: '0.0.0.0',
             proxy: {
+                '/api/internal/ai/generation-worker': {
+                    target: 'http://localhost:8888',
+                    changeOrigin: true,
+                    secure: false,
+                },
                 '/api/internal/admin/iam': {
+                    target: 'http://localhost:8888',
+                    changeOrigin: true,
+                    secure: false,
+                },
+                '/api/internal/admin/audit/replay-export': {
+                    target: 'http://localhost:8888',
+                    changeOrigin: true,
+                    secure: false,
+                },
+                '/api/trip-map-preview': {
                     target: 'http://localhost:8888',
                     changeOrigin: true,
                     secure: false,

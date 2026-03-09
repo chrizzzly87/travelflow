@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { createSupabaseAuthStorageAdapter } from './authSessionPersistenceService';
 
 const normalizeEnvValue = (value: unknown): string =>
     typeof value === 'string' ? value.trim() : '';
@@ -23,6 +24,7 @@ const rawSupabaseUrl = normalizeEnvValue(import.meta.env.VITE_SUPABASE_URL);
 const supabaseUrl = toValidHttpUrl(rawSupabaseUrl);
 const supabaseAnonKey = normalizeEnvValue(import.meta.env.VITE_SUPABASE_ANON_KEY);
 const hasSupabaseAnonKey = !isUnsetEnvValue(supabaseAnonKey);
+const supabaseAuthStorage = createSupabaseAuthStorageAdapter();
 
 export const isSupabaseEnabled = Boolean(supabaseUrl && hasSupabaseAnonKey);
 
@@ -35,7 +37,8 @@ export const supabase = supabaseUrl && hasSupabaseAnonKey
         auth: {
             persistSession: true,
             autoRefreshToken: true,
-            detectSessionInUrl: true
+            detectSessionInUrl: true,
+            storage: supabaseAuthStorage,
         }
     })
     : null;

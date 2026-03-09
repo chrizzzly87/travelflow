@@ -3,7 +3,15 @@ import { getFreePlanEntitlements } from '../config/planCatalog';
 import type { PlanTierKey, SystemRole, UserAccessContext } from '../types';
 import { trackEvent } from './analyticsService';
 import { appendAuthTraceEntry } from './authTraceService';
+import { clearLocalhostSupabaseBridgeCookies } from './authSessionPersistenceService';
+import { appendClientErrorLog } from './clientErrorLogger';
+import {
+    removeLocalStorageItem,
+    removeSessionStorageItem,
+} from './browserStorageService';
+import { dbCreateAnonymousAssetClaim } from './dbApi';
 import { supabase } from './supabaseClient';
+import { markConnectivityFailure, markConnectivitySuccess } from './supabaseHealthMonitor';
 
 export type OAuthProviderId = 'google' | 'apple' | 'facebook' | 'kakao';
 
@@ -57,8 +65,24 @@ const hashEmail = (email?: string | null): string | null => {
     return simpleHash(normalized);
 };
 
-const clearSupabaseAuthStorage = (): void => {
+const reportAuthSupabaseFailure = (error: unknown, operation: string): void => {
+    markConnectivityFailure(error, {
+        source: 'auth_service',
+        operation,
+    });
+    appendClientErrorLog({
+        errorType: `supabase_auth_${operation}`,
+        error,
+    });
+};
+
+const reportAuthSupabaseSuccess = (operation: string): void => {
+    markConnectivitySuccess(`auth:${operation}`);
+};
+
+export const clearSupabaseAuthStorage = (): void => {
     if (typeof window === 'undefined') return;
+    clearLocalhostSupabaseBridgeCookies();
     const shouldClear = (key: string): boolean => (
         key.startsWith('sb-') &&
         (
@@ -67,21 +91,29 @@ const clearSupabaseAuthStorage = (): void => {
             key.includes('code-verifier')
         )
     );
+    const collectStorageKeys = (storage: Storage): string[] => {
+        const keys: string[] = [];
+        for (let index = 0; index < storage.length; index += 1) {
+            const key = storage.key(index);
+            if (key) keys.push(key);
+        }
+        return keys;
+    };
     try {
-        const localKeys = Object.keys(window.localStorage);
+        const localKeys = collectStorageKeys(window.localStorage);
         for (const key of localKeys) {
             if (shouldClear(key)) {
-                window.localStorage.removeItem(key);
+                removeLocalStorageItem(key);
             }
         }
     } catch {
         // best effort
     }
     try {
-        const sessionKeys = Object.keys(window.sessionStorage);
+        const sessionKeys = collectStorageKeys(window.sessionStorage);
         for (const key of sessionKeys) {
             if (shouldClear(key)) {
-                window.sessionStorage.removeItem(key);
+                removeSessionStorageItem(key);
             }
         }
     } catch {
@@ -173,6 +205,17 @@ const buildAuthFlow = (): AuthFlowContext => ({
     attemptId: buildFlowId(),
 });
 
+const appendQueryParamToUrl = (urlValue: string, key: string, value: string): string => {
+    try {
+        const base = typeof window !== 'undefined' ? window.location.origin : 'https://travelflow.app';
+        const nextUrl = new URL(urlValue, base);
+        nextUrl.searchParams.set(key, value);
+        return nextUrl.toString();
+    } catch {
+        return urlValue;
+    }
+};
+
 const getMetadataProviders = (session: Session | null): string[] => {
     const metadata = session?.user?.app_metadata as Record<string, unknown> | undefined;
     const provider = typeof metadata?.provider === 'string' ? metadata.provider.trim().toLowerCase() : '';
@@ -201,6 +244,9 @@ const hasNonAnonymousIdentity = (session: Session | null): boolean => {
 const getAnonymousFlag = (session: Session | null): boolean => {
     const user = session?.user as (Session['user'] & { is_anonymous?: boolean }) | undefined;
     if (!user) return false;
+    const email = typeof user.email === 'string' ? user.email.trim() : '';
+    const phone = typeof user.phone === 'string' ? user.phone.trim() : '';
+    if (email || phone) return false;
     if (user.is_anonymous === true) return true;
 
     const metadata = session?.user?.app_metadata as Record<string, unknown> | undefined;
@@ -219,6 +265,12 @@ const defaultAccessContext = (session: Session | null): UserAccessContext => ({
     entitlements: FREE_ENTITLEMENTS,
     onboardingCompleted: true,
     accountStatus: 'active',
+    termsCurrentVersion: null,
+    termsRequiresReaccept: true,
+    termsAcceptedVersion: null,
+    termsAcceptedAt: null,
+    termsAcceptanceRequired: false,
+    termsNoticeRequired: false,
 });
 
 const logAuthFlow = async (options: LogAuthFlowOptions): Promise<void> => {
@@ -279,6 +331,7 @@ export const getCurrentAccessContext = async (): Promise<UserAccessContext> => {
 
     const { data: authData, error: authError } = await supabase.auth.getUser();
     if (authError) {
+        reportAuthSupabaseFailure(authError, 'get_current_user');
         if (isLikelyStaleSessionError(authError)) {
             await recoverLocalAuthState();
             return defaultAccessContext(null);
@@ -290,7 +343,30 @@ export const getCurrentAccessContext = async (): Promise<UserAccessContext> => {
         await recoverLocalAuthState();
         return defaultAccessContext(null);
     }
-    if (!getAnonymousFlag(session)) {
+    const metadata = authUser.user_metadata as Record<string, unknown> | undefined;
+    const metadataEmail = typeof metadata?.email === 'string' ? metadata.email : null;
+    const isAnonymousSession = getAnonymousFlag(session);
+
+    if (isAnonymousSession) {
+        return {
+            userId: authUser.id || session.user.id || null,
+            email: authUser.email || session.user.email || metadataEmail || null,
+            isAnonymous: true,
+            role: 'user',
+            tierKey: 'tier_free',
+            entitlements: FREE_ENTITLEMENTS,
+            onboardingCompleted: true,
+            accountStatus: 'active',
+            termsCurrentVersion: null,
+            termsRequiresReaccept: true,
+            termsAcceptedVersion: null,
+            termsAcceptedAt: null,
+            termsAcceptanceRequired: false,
+            termsNoticeRequired: false,
+        };
+    }
+
+    if (!isAnonymousSession) {
         const profileBindingState = await resolveProfileBindingState(authUser.id);
         if (profileBindingState === 'missing') {
             await recoverLocalAuthState();
@@ -301,6 +377,7 @@ export const getCurrentAccessContext = async (): Promise<UserAccessContext> => {
     try {
         const { data, error } = await supabase.rpc('get_current_user_access');
         if (error) {
+            reportAuthSupabaseFailure(error, 'get_current_user_access');
             if (isLikelyStaleSessionError(error)) {
                 await recoverLocalAuthState();
                 return defaultAccessContext(null);
@@ -315,8 +392,6 @@ export const getCurrentAccessContext = async (): Promise<UserAccessContext> => {
             await recoverLocalAuthState();
             return defaultAccessContext(null);
         }
-        const metadata = authUser.user_metadata as Record<string, unknown> | undefined;
-        const metadataEmail = typeof metadata?.email === 'string' ? metadata.email : null;
 
         const role: SystemRole = row.system_role === 'admin' ? 'admin' : 'user';
         const tierKey: PlanTierKey = row.tier_key === 'tier_mid'
@@ -324,6 +399,8 @@ export const getCurrentAccessContext = async (): Promise<UserAccessContext> => {
             : row.tier_key === 'tier_premium'
                 ? 'tier_premium'
                 : 'tier_free';
+
+        reportAuthSupabaseSuccess('get_current_user_access');
 
         return {
             userId: resolvedUserId,
@@ -340,10 +417,87 @@ export const getCurrentAccessContext = async (): Promise<UserAccessContext> => {
                 : row.account_status === 'deleted'
                     ? 'deleted'
                     : 'active',
+            termsCurrentVersion: typeof row.terms_current_version === 'string' && row.terms_current_version.trim().length > 0
+                ? row.terms_current_version
+                : null,
+            termsRequiresReaccept: Object.prototype.hasOwnProperty.call(row, 'terms_requires_reaccept')
+                ? Boolean(row.terms_requires_reaccept)
+                : true,
+            termsAcceptedVersion: typeof row.terms_accepted_version === 'string' && row.terms_accepted_version.trim().length > 0
+                ? row.terms_accepted_version
+                : null,
+            termsAcceptedAt: typeof row.terms_accepted_at === 'string' && row.terms_accepted_at.trim().length > 0
+                ? row.terms_accepted_at
+                : null,
+            termsAcceptanceRequired: Boolean(row.terms_acceptance_required),
+            termsNoticeRequired: Boolean(row.terms_notice_required),
         };
-    } catch {
+    } catch (error) {
+        reportAuthSupabaseFailure(error, 'get_current_user_access_exception');
         return defaultAccessContext(session);
     }
+};
+
+export interface AcceptedTermsRecord {
+    termsVersion: string;
+    acceptedAt: string;
+}
+
+export const acceptCurrentTerms = async (
+    options?: { locale?: string | null; source?: string | null }
+): Promise<{ data: AcceptedTermsRecord | null; error: Error | null }> => {
+    if (!supabase) {
+        return {
+            data: null,
+            error: new Error('Supabase auth is not configured.'),
+        };
+    }
+
+    const { data, error } = await supabase.rpc('accept_current_terms', {
+        p_locale: typeof options?.locale === 'string' ? options.locale : null,
+        p_source: typeof options?.source === 'string' ? options.source : null,
+    });
+
+    if (error) {
+        reportAuthSupabaseFailure(error, 'accept_current_terms');
+        return {
+            data: null,
+            error: new Error(error.message || 'Could not persist terms acceptance.'),
+        };
+    }
+
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!row || typeof row !== 'object') {
+        reportAuthSupabaseFailure(new Error('accept_current_terms returned no payload'), 'accept_current_terms_payload');
+        return {
+            data: null,
+            error: new Error('Could not persist terms acceptance.'),
+        };
+    }
+
+    const acceptedVersion = typeof row.terms_version === 'string' && row.terms_version.trim().length > 0
+        ? row.terms_version
+        : null;
+    const acceptedAt = typeof row.accepted_at === 'string' && row.accepted_at.trim().length > 0
+        ? row.accepted_at
+        : null;
+
+    if (!acceptedVersion || !acceptedAt) {
+        reportAuthSupabaseFailure(new Error('accept_current_terms returned incomplete payload'), 'accept_current_terms_payload');
+        return {
+            data: null,
+            error: new Error('Could not persist terms acceptance.'),
+        };
+    }
+
+    reportAuthSupabaseSuccess('accept_current_terms');
+    return {
+        data: {
+            termsVersion: acceptedVersion,
+            acceptedAt,
+        },
+        error: null,
+    };
 };
 
 export const subscribeToAuthState = (
@@ -381,6 +535,7 @@ export const signInWithEmailPassword = async (
         recoveredFromSessionNotFound = !retry.error;
     }
     if (error) {
+        reportAuthSupabaseFailure(error, 'sign_in_password');
         await logAuthFlow({
             ...flow,
             step: 'login_password',
@@ -391,6 +546,7 @@ export const signInWithEmailPassword = async (
         });
         return { data, error, ...flow };
     }
+    reportAuthSupabaseSuccess('sign_in_password');
     await logAuthFlow({
         ...flow,
         step: 'login_password',
@@ -416,6 +572,7 @@ export const upgradeAnonymousUserWithEmailPassword = async (
         password,
     });
     if (error) {
+        reportAuthSupabaseFailure(error, 'upgrade_anonymous_password');
         await logAuthFlow({
             ...flow,
             step: 'anonymous_upgrade_password',
@@ -426,6 +583,7 @@ export const upgradeAnonymousUserWithEmailPassword = async (
         });
         return { data, error, ...flow };
     }
+    reportAuthSupabaseSuccess('upgrade_anonymous_password');
     await logAuthFlow({
         ...flow,
         step: 'anonymous_upgrade_password',
@@ -464,6 +622,7 @@ export const signUpWithEmailPassword = async (
     });
 
     if (error) {
+        reportAuthSupabaseFailure(error, 'sign_up_password');
         await logAuthFlow({
             ...flow,
             step: 'signup_password',
@@ -475,6 +634,7 @@ export const signUpWithEmailPassword = async (
         return { data, error, ...flow };
     }
 
+    reportAuthSupabaseSuccess('sign_up_password');
     await logAuthFlow({ ...flow, step: 'signup_password', result: 'success', provider: 'password', email });
     return { data, error: null, ...flow };
 };
@@ -490,9 +650,23 @@ export const signInWithOAuth = async (
     const flow = buildAuthFlow();
     await logAuthFlow({ ...flow, step: 'oauth_start', result: 'start', provider });
 
+    let redirectTo = options?.redirectTo;
+    try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const isAnonymousSession = getAnonymousFlag(sessionData?.session ?? null);
+        if (isAnonymousSession) {
+            const claim = await dbCreateAnonymousAssetClaim(60);
+            if (claim?.claimId && redirectTo) {
+                redirectTo = appendQueryParamToUrl(redirectTo, 'asset_claim', claim.claimId);
+            }
+        }
+    } catch {
+        // Continue OAuth even if claim creation fails.
+    }
+
     const startStandardOAuth = () => supabase.auth.signInWithOAuth({
         provider,
-        options: { redirectTo: options?.redirectTo },
+        options: { redirectTo },
     });
 
     // NOTE: OAuth identity-linking from anonymous sessions has produced
@@ -502,6 +676,7 @@ export const signInWithOAuth = async (
     const response = await startStandardOAuth();
 
     if (response.error) {
+        reportAuthSupabaseFailure(response.error, 'sign_in_oauth');
         await logAuthFlow({
             ...flow,
             step: 'oauth_start',
@@ -509,6 +684,8 @@ export const signInWithOAuth = async (
             provider,
             errorCode: normalizeErrorCode(response.error),
         });
+    } else {
+        reportAuthSupabaseSuccess('sign_in_oauth');
     }
 
     return { ...response, ...flow };
@@ -527,6 +704,7 @@ export const signOut = async () => {
     // with a clean state instead of staying stuck until hard refresh.
     if (isSessionNotFound) {
         clearSupabaseAuthStorage();
+        reportAuthSupabaseFailure(response.error, 'sign_out_session_not_found');
         await logAuthFlow({
             ...flow,
             step: 'logout',
@@ -538,6 +716,7 @@ export const signOut = async () => {
     }
 
     if (response.error) {
+        reportAuthSupabaseFailure(response.error, 'sign_out');
         await logAuthFlow({
             ...flow,
             step: 'logout',
@@ -549,6 +728,7 @@ export const signOut = async () => {
     }
 
     clearSupabaseAuthStorage();
+    reportAuthSupabaseSuccess('sign_out');
     await logAuthFlow({ ...flow, step: 'logout', result: 'success', provider: 'supabase' });
     return response;
 };
@@ -576,6 +756,7 @@ export const requestPasswordResetEmail = async (
     });
 
     if (response.error) {
+        reportAuthSupabaseFailure(response.error, 'request_password_reset');
         await logAuthFlow({
             ...flow,
             step: 'password_reset_request',
@@ -588,6 +769,7 @@ export const requestPasswordResetEmail = async (
         return { ...response, ...flow };
     }
 
+    reportAuthSupabaseSuccess('request_password_reset');
     await logAuthFlow({
         ...flow,
         step: 'password_reset_request',
@@ -616,6 +798,7 @@ export const updateCurrentUserPassword = async (
     const response = await supabase.auth.updateUser({ password });
 
     if (response.error) {
+        reportAuthSupabaseFailure(response.error, 'update_password');
         await logAuthFlow({
             ...flow,
             step: 'password_update',
@@ -626,6 +809,7 @@ export const updateCurrentUserPassword = async (
         return { ...response, ...flow };
     }
 
+    reportAuthSupabaseSuccess('update_password');
     await logAuthFlow({
         ...flow,
         step: 'password_update',
@@ -637,6 +821,11 @@ export const updateCurrentUserPassword = async (
 
 export const getCurrentUser = async (): Promise<User | null> => {
     if (!supabase) return null;
-    const { data } = await supabase.auth.getUser();
+    const { data, error } = await supabase.auth.getUser();
+    if (error) {
+        reportAuthSupabaseFailure(error, 'get_current_user_simple');
+        return null;
+    }
+    reportAuthSupabaseSuccess('get_current_user_simple');
     return data.user ?? null;
 };

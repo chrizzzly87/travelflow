@@ -1,11 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { CaretDown, CheckCircle, Circle, PlusCircle } from '@phosphor-icons/react';
+import { CaretDown, PlusCircle } from '@phosphor-icons/react';
 import { createPortal } from 'react-dom';
+import { Checkbox } from '../ui/checkbox';
 
 export interface AdminFilterMenuOption {
     value: string;
     label: string;
     count?: number;
+    group?: string;
 }
 
 interface AdminFilterMenuProps {
@@ -13,8 +15,12 @@ interface AdminFilterMenuProps {
     options: AdminFilterMenuOption[];
     selectedValues: string[];
     onSelectedValuesChange: (nextValues: string[]) => void;
+    icon?: React.ReactNode;
     allowMultiple?: boolean;
     className?: string;
+    selectAllLabel?: string;
+    clearLabel?: string;
+    showBulkActions?: boolean;
 }
 
 export const AdminFilterMenu: React.FC<AdminFilterMenuProps> = ({
@@ -22,8 +28,12 @@ export const AdminFilterMenu: React.FC<AdminFilterMenuProps> = ({
     options,
     selectedValues,
     onSelectedValuesChange,
+    icon,
     allowMultiple = true,
     className,
+    selectAllLabel = 'Select all',
+    clearLabel = 'Clear filters',
+    showBulkActions = true,
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     const triggerRef = useRef<HTMLButtonElement | null>(null);
@@ -36,12 +46,28 @@ export const AdminFilterMenu: React.FC<AdminFilterMenuProps> = ({
 
     const selectedSet = useMemo(() => new Set(selectedValues), [selectedValues]);
     const selectedCount = selectedValues.length;
+    const allSelected = options.length > 0 && selectedCount === options.length;
     const selectedLabels = useMemo(
         () => options
             .filter((option) => selectedSet.has(option.value))
             .map((option) => option.label),
         [options, selectedSet]
     );
+    const groupedOptions = useMemo(() => {
+        const groups: Array<{ id: string; label: string | null; options: AdminFilterMenuOption[] }> = [];
+        const byGroupId = new Map<string, { id: string; label: string | null; options: AdminFilterMenuOption[] }>();
+        options.forEach((option) => {
+            const normalizedGroup = option.group?.trim() || null;
+            const id = normalizedGroup || '__ungrouped__';
+            if (!byGroupId.has(id)) {
+                const nextGroup = { id, label: normalizedGroup, options: [] as AdminFilterMenuOption[] };
+                byGroupId.set(id, nextGroup);
+                groups.push(nextGroup);
+            }
+            byGroupId.get(id)?.options.push(option);
+        });
+        return groups;
+    }, [options]);
 
     const updateMenuPosition = useCallback(() => {
         const trigger = triggerRef.current;
@@ -123,84 +149,121 @@ export const AdminFilterMenu: React.FC<AdminFilterMenuProps> = ({
                     updateMenuPosition();
                     setIsOpen((current) => !current);
                 }}
-                className="inline-flex h-10 items-center gap-2 whitespace-nowrap rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-800 transition-colors hover:border-slate-400"
+                className={`inline-flex h-8 w-fit items-center justify-center whitespace-nowrap rounded-md border border-dashed border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 focus:outline-none focus:ring-1 focus:ring-slate-300 disabled:cursor-not-allowed disabled:opacity-50 ${className || ''}`}
                 aria-label={`Filter by ${label.toLowerCase()}`}
                 aria-expanded={isOpen}
             >
-                <PlusCircle size={14} className="text-slate-500" />
+                {icon || <PlusCircle size={14} className="mr-2 text-slate-500 shrink-0" weight="duotone" />}
                 <span>{label}</span>
-                <span className="h-4 w-px bg-slate-200" />
-                {(selectedCount <= 0 || selectedCount >= options.length) && (
-                    <span className="text-slate-600">All</span>
+                
+                {(selectedCount > 0 || (selectedCount === 0 && !allowMultiple)) && (
+                    <div className="mx-2 flex h-4 items-center">
+                        <div className="h-full w-[1px] bg-slate-200" />
+                    </div>
                 )}
-                {selectedCount > 0 && selectedCount < options.length && selectedCount <= 2 && (
-                    <span className="inline-flex items-center gap-1">
+                
+                {selectedCount > 0 && selectedCount <= 2 && (
+                    <div className="flex gap-1">
                         {selectedLabels.map((selectedLabel) => (
                             <span
                                 key={`${label}-${selectedLabel}`}
-                                className="rounded-md bg-slate-100 px-1.5 py-0.5 text-xs font-semibold text-slate-700"
+                                className="inline-flex items-center rounded-sm bg-slate-100 px-1 font-normal text-slate-800"
                             >
                                 {selectedLabel}
                             </span>
                         ))}
+                    </div>
+                )}
+                
+                {selectedCount > 2 && (
+                    <span className="inline-flex items-center rounded-sm bg-slate-100 px-1 font-normal text-slate-800">
+                        {selectedCount} selected
                     </span>
                 )}
-                {selectedCount > 2 && selectedCount < options.length && (
-                    <span className="text-slate-600">{selectedCount} selected</span>
+                
+                {selectedCount === 0 && !allowMultiple && (
+                    <span className="font-normal text-slate-500">All</span>
                 )}
-                <CaretDown size={14} className={isOpen ? 'rotate-180 text-slate-500 transition-transform' : 'text-slate-500 transition-transform'} />
             </button>
 
             {isOpen && typeof document !== 'undefined' && createPortal(
                 <div
                     ref={menuRef}
-                    className="fixed z-[1700] rounded-xl border border-slate-200 bg-white shadow-2xl"
+                    className="fixed z-[1700] overflow-hidden rounded-md border border-slate-200 bg-white text-slate-950 shadow-md animate-in fade-in-80"
                     style={{
                         top: `${menuPosition.top}px`,
                         left: `${menuPosition.left}px`,
                         width: `${menuPosition.width}px`,
                     }}
                 >
-                    <div className="border-b border-slate-100 px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                    <div className="px-2 py-1.5 text-xs font-medium text-slate-500">
                         {label}
                     </div>
-                    <div className="max-h-72 overflow-y-auto p-1.5">
-                        {options.map((option) => {
-                            const checked = selectedSet.has(option.value);
-                            return (
+                    <div className="h-px bg-slate-100" />
+                    <div className="max-h-72 overflow-y-auto p-1">
+                        {groupedOptions.map((group, groupIndex) => (
+                            <div key={`${label}-${group.id}`}>
+                                {group.label && (
+                                    <div className="px-2 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                                        {group.label}
+                                    </div>
+                                )}
+                                {group.options.map((option) => {
+                                    const checked = selectedSet.has(option.value);
+                                    return (
+                                        <label
+                                            key={`${label}-${option.value}`}
+                                            className="relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-2 pr-2 text-sm outline-none hover:bg-slate-100 hover:text-slate-900 group"
+                                        >
+                                            <div className="mr-2 flex h-4 w-4 items-center justify-center shrink-0">
+                                                <Checkbox
+                                                    checked={checked}
+                                                    onCheckedChange={() => toggleOption(option.value)}
+                                                    className="h-4 w-4"
+                                                    tabIndex={-1}
+                                                />
+                                            </div>
+                                            <span className="truncate">{option.label}</span>
+                                            {typeof option.count === 'number' && (
+                                                <span className="ml-auto text-xs text-slate-500">{option.count}</span>
+                                            )}
+                                        </label>
+                                    );
+                                })}
+                                {group.label && groupIndex < groupedOptions.length - 1 && (
+                                    <div className="my-1 h-px bg-slate-100" />
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                    {allowMultiple && showBulkActions && options.length > 0 && (
+                        <>
+                            <div className="h-px bg-slate-100" />
+                            <div className="grid grid-cols-2 gap-1 p-1">
                                 <button
-                                    key={`${label}-${option.value}`}
                                     type="button"
-                                    onClick={() => toggleOption(option.value)}
-                                    className="flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+                                    onClick={() => {
+                                        const allValues = options.map((option) => option.value);
+                                        onSelectedValuesChange(allValues);
+                                    }}
+                                    disabled={allSelected}
+                                    className="relative flex w-full select-none items-center justify-center rounded-sm py-1.5 text-sm font-medium outline-none hover:bg-slate-100 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-50"
                                 >
-                                    <span className="inline-flex items-center gap-2">
-                                        {checked ? (
-                                            <CheckCircle size={16} weight="fill" className="text-accent-700" />
-                                        ) : (
-                                            <Circle size={16} className="text-slate-400" />
-                                        )}
-                                        {option.label}
-                                    </span>
-                                    {typeof option.count === 'number' && (
-                                        <span className="text-xs font-semibold text-slate-500">{option.count}</span>
-                                    )}
+                                    {selectAllLabel}
                                 </button>
-                            );
-                        })}
-                    </div>
-                    <div className="border-t border-slate-100 p-1.5">
-                        <button
-                            type="button"
-                            onClick={() => {
-                                onSelectedValuesChange([]);
-                                setIsOpen(false);
-                            }}
-                            className="w-full rounded-lg px-2.5 py-2 text-left text-sm font-semibold text-slate-600 hover:bg-slate-50"
-                        >
-                            Clear filters
-                        </button>
-                    </div>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        onSelectedValuesChange([]);
+                                    }}
+                                    disabled={selectedCount === 0}
+                                    className="relative flex w-full select-none items-center justify-center rounded-sm py-1.5 text-sm font-medium outline-none hover:bg-slate-100 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                    {clearLabel}
+                                </button>
+                            </div>
+                        </>
+                    )}
                 </div>,
                 document.body
             )}

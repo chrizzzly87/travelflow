@@ -6,6 +6,7 @@ This document defines the canonical paywall behavior for trips and the single de
 - Paywall decision function: `config/paywall.ts` -> `shouldShowTripPaywall(trip, options?)`
 - Lifecycle resolver: `config/paywall.ts` -> `getTripLifecycleState(trip, options?)`
 - Paywalled display projection: `config/paywall.ts` -> `buildPaywalledTripDisplay(trip)`
+- Activation mode resolver: `config/paywall.ts` -> `resolveTripPaywallActivationMode(options)`
 
 ## State Matrix
 | Lifecycle state | Paywall shown | UI behavior | Data behavior |
@@ -26,6 +27,17 @@ This document defines the canonical paywall behavior for trips and the single de
 - Print view follows the same paywall masking and map-hiding behavior as planner view.
 - Country info panel is hidden and replaced with a paywall message.
 
+## Temporary Reactivation Bridge (Current)
+- The activation CTA currently supports two explicit modes:
+  - `direct_reactivate`: authenticated, non-anonymous users on `/trip/:id`.
+  - `login_modal`: everyone else.
+- In `direct_reactivate`, CTA click immediately updates trip lifecycle to `active` and recalculates `tripExpiresAt` from current user entitlements (`tripExpirationDays`), without opening auth modal.
+- In `login_modal`, CTA keeps existing login-modal behavior and resume flow.
+- This bridge is temporary until subscription-backed upgrade logic is implemented.
+- Subscription follow-up tracking:
+  - implementation issue: [#216](https://github.com/chrizzzly87/travelflow/issues/216)
+  - payment/provider research dependency: [#174](https://github.com/chrizzzly87/travelflow/issues/174)
+
 ## Data Contract
 - Trip expiry is trip-scoped (`tripExpiresAt` / `trip_expires_at`), not session-scoped.
 - Active-trip cap excludes `archived` and counts non-archived trips.
@@ -44,6 +56,11 @@ Planned additions should be integrated into the same decision layer:
 - reactivation permissions
 - grace period logic
 - A/B flags for paywall intensity
+
+Planned subscription behavior:
+- Users with upgraded subscriptions should remain unexpired while subscription is active.
+- If a paid subscription is canceled, trip expiry should switch to a 7-day grace window before returning to expired state.
+- This future implementation should replace the temporary direct-reactivation bridge while keeping the same CTA trigger points and analytics events.
 
 Suggested extension shape:
 - `shouldShowTripPaywall(trip, { lifecycleState, entitlements, nowMs, expiredOverride })`

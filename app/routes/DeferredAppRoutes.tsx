@@ -5,6 +5,8 @@ import { useAuth } from '../../hooks/useAuth';
 import { useDbSync } from '../../hooks/useDbSync';
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from '../../config/locales';
 import { loadLazyComponentWithRecovery } from '../../services/lazyImportRecovery';
+import { MarketingRouteLoadingShell } from '../../components/bootstrap/MarketingRouteLoadingShell';
+import { MarketingHomePage } from '../../pages/MarketingHomePage';
 import '../../styles/deferred-routes.css';
 
 const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
@@ -12,7 +14,6 @@ const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },
     importer: () => Promise<TModule>
 ) => lazy(() => loadLazyComponentWithRecovery(moduleKey, importer));
 
-const MarketingHomePage = lazyWithRecovery('MarketingHomePage', () => import('../../pages/MarketingHomePage').then((module) => ({ default: module.MarketingHomePage })));
 const FeaturesPage = lazyWithRecovery('FeaturesPage', () => import('../../pages/FeaturesPage').then((module) => ({ default: module.FeaturesPage })));
 const UpdatesPage = lazyWithRecovery('UpdatesPage', () => import('../../pages/UpdatesPage').then((module) => ({ default: module.UpdatesPage })));
 const BlogPage = lazyWithRecovery('BlogPage', () => import('../../pages/BlogPage').then((module) => ({ default: module.BlogPage })));
@@ -32,6 +33,9 @@ const PrivacyPage = lazyWithRecovery('PrivacyPage', () => import('../../pages/Pr
 const TermsPage = lazyWithRecovery('TermsPage', () => import('../../pages/TermsPage').then((module) => ({ default: module.TermsPage })));
 const CookiesPage = lazyWithRecovery('CookiesPage', () => import('../../pages/CookiesPage').then((module) => ({ default: module.CookiesPage })));
 const ProfilePage = lazyWithRecovery('ProfilePage', () => import('../../pages/ProfilePage').then((module) => ({ default: module.ProfilePage })));
+const ProfileStampsPage = lazyWithRecovery('ProfileStampsPage', () => import('../../pages/ProfileStampsPage').then((module) => ({ default: module.ProfileStampsPage })));
+const PublicProfilePage = lazyWithRecovery('PublicProfilePage', () => import('../../pages/PublicProfilePage').then((module) => ({ default: module.PublicProfilePage })));
+const PublicProfileStampsPage = lazyWithRecovery('PublicProfileStampsPage', () => import('../../pages/PublicProfileStampsPage').then((module) => ({ default: module.PublicProfileStampsPage })));
 const ProfileSettingsPage = lazyWithRecovery('ProfileSettingsPage', () => import('../../pages/ProfileSettingsPage').then((module) => ({ default: module.ProfileSettingsPage })));
 const ProfileOnboardingPage = lazyWithRecovery('ProfileOnboardingPage', () => import('../../pages/ProfileOnboardingPage').then((module) => ({ default: module.ProfileOnboardingPage })));
 const AdminAccessDeniedPage = lazyWithRecovery('AdminAccessDeniedPage', () => import('../../pages/AdminAccessDeniedPage').then((module) => ({ default: module.AdminAccessDeniedPage })));
@@ -40,23 +44,43 @@ const PricingPage = lazyWithRecovery('PricingPage', () => import('../../pages/Pr
 const FaqPage = lazyWithRecovery('FaqPage', () => import('../../pages/FaqPage').then((module) => ({ default: module.FaqPage })));
 const ShareUnavailablePage = lazyWithRecovery('ShareUnavailablePage', () => import('../../pages/ShareUnavailablePage').then((module) => ({ default: module.ShareUnavailablePage })));
 const NotFoundPage = lazyWithRecovery('NotFoundPage', () => import('../../pages/NotFoundPage').then((module) => ({ default: module.NotFoundPage })));
-const CreateTripForm = lazyWithRecovery('CreateTripForm', () => import('../../components/CreateTripForm').then((module) => ({ default: module.CreateTripForm })));
 const CreateTripClassicLabPage = lazyWithRecovery('CreateTripClassicLabPage', () => import('../../pages/CreateTripClassicLabPage').then((module) => ({ default: module.CreateTripClassicLabPage })));
-const CreateTripSplitWorkspaceLabPage = lazyWithRecovery('CreateTripSplitWorkspaceLabPage', () => import('../../pages/CreateTripSplitWorkspaceLabPage').then((module) => ({ default: module.CreateTripSplitWorkspaceLabPage })));
-const CreateTripJourneyArchitectLabPage = lazyWithRecovery('CreateTripJourneyArchitectLabPage', () => import('../../pages/CreateTripJourneyArchitectLabPage').then((module) => ({ default: module.CreateTripJourneyArchitectLabPage })));
-const CreateTripV1Page = lazyWithRecovery('CreateTripV1Page', () => import('../../pages/CreateTripV1Page').then((module) => ({ default: module.CreateTripV1Page })));
-const CreateTripV2Page = lazyWithRecovery('CreateTripV2Page', () => import('../../pages/CreateTripV2Page').then((module) => ({ default: module.CreateTripV2Page })));
 const CreateTripV3Page = lazyWithRecovery('CreateTripV3Page', () => import('../../pages/CreateTripV3Page').then((module) => ({ default: module.CreateTripV3Page })));
 
 const RouteLoadingFallback: React.FC = () => (
-    <div className="min-h-[42vh] w-full bg-slate-50" aria-hidden="true" />
+    <MarketingRouteLoadingShell />
+);
+
+const HandoffReadyBoundary: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+    <div data-tf-handoff-ready="true">
+        {children}
+    </div>
 );
 
 const renderWithSuspense = (node: React.ReactElement) => (
     <Suspense fallback={<RouteLoadingFallback />}>
-        {node}
+        <HandoffReadyBoundary>{node}</HandoffReadyBoundary>
     </Suspense>
 );
+
+const AuthenticatedMarketingHomeRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
+    const { isLoading, isAuthenticated } = useAuth();
+
+    if (isLoading) return <RouteLoadingFallback />;
+    if (isAuthenticated) {
+        return <Navigate to="/profile" replace />;
+    }
+    return children;
+};
+
+const wrapMarketingRouteElement = (path: string, element: React.ReactElement): React.ReactElement => {
+    if (path !== '/') return element;
+    return (
+        <AuthenticatedMarketingHomeRoute>
+            {element}
+        </AuthenticatedMarketingHomeRoute>
+    );
+};
 
 const LOCALIZED_MARKETING_LOCALES: AppLanguage[] = SUPPORTED_LOCALES.filter((locale) => locale !== DEFAULT_LOCALE);
 
@@ -107,46 +131,7 @@ const CreateTripClassicRoute: React.FC<{
     );
 };
 
-const CreateTripLegacyRoute: React.FC<{
-    onTripGenerated: (t: ITrip) => void;
-    onOpenManager: () => void;
-    onLanguageLoaded?: (lang: AppLanguage) => void;
-}> = ({ onTripGenerated, onOpenManager, onLanguageLoaded }) => {
-    useDbSync(onLanguageLoaded);
-    return (
-        <Suspense fallback={<RouteLoadingFallback />}>
-            <CreateTripForm onTripGenerated={onTripGenerated} onOpenManager={onOpenManager} />
-        </Suspense>
-    );
-};
-
-const CreateTripDesignV1Route: React.FC<{
-    onTripGenerated: (t: ITrip) => void;
-    onOpenManager: () => void;
-    onLanguageLoaded?: (lang: AppLanguage) => void;
-}> = ({ onTripGenerated, onOpenManager, onLanguageLoaded }) => {
-    useDbSync(onLanguageLoaded);
-    return (
-        <Suspense fallback={<RouteLoadingFallback />}>
-            <CreateTripV1Page onTripGenerated={onTripGenerated} onOpenManager={onOpenManager} />
-        </Suspense>
-    );
-};
-
-const CreateTripDesignV2Route: React.FC<{
-    onTripGenerated: (t: ITrip) => void;
-    onOpenManager: () => void;
-    onLanguageLoaded?: (lang: AppLanguage) => void;
-}> = ({ onTripGenerated, onOpenManager, onLanguageLoaded }) => {
-    useDbSync(onLanguageLoaded);
-    return (
-        <Suspense fallback={<RouteLoadingFallback />}>
-            <CreateTripV2Page onTripGenerated={onTripGenerated} onOpenManager={onOpenManager} />
-        </Suspense>
-    );
-};
-
-const CreateTripDesignV3Route: React.FC<{
+const CreateTripWizardRoute: React.FC<{
     onTripGenerated: (t: ITrip) => void;
     onOpenManager: () => void;
     onLanguageLoaded?: (lang: AppLanguage) => void;
@@ -221,7 +206,7 @@ export const DeferredAppRoutes: React.FC<DeferredAppRoutesProps> = ({
                 <Route
                     key={`marketing:${path}`}
                     path={path}
-                    element={renderWithSuspense(element)}
+                    element={renderWithSuspense(wrapMarketingRouteElement(path, element))}
                 />
             ))}
             {LOCALIZED_MARKETING_LOCALES.flatMap((locale) =>
@@ -229,7 +214,7 @@ export const DeferredAppRoutes: React.FC<DeferredAppRoutesProps> = ({
                     <Route
                         key={`marketing:${locale}:${path}`}
                         path={getLocalizedMarketingRoutePath(path, locale)}
-                        element={renderWithSuspense(element)}
+                        element={renderWithSuspense(wrapMarketingRouteElement(path, element))}
                     />
                 ))
             )}
@@ -245,93 +230,24 @@ export const DeferredAppRoutes: React.FC<DeferredAppRoutesProps> = ({
                 }
             />
             <Route
-                path="/create-trip/labs/classic-legacy"
+                path="/create-trip/wizard"
                 element={
-                    renderWithSuspense(<CreateTripLegacyRoute
+                    renderWithSuspense(<CreateTripWizardRoute
                         onTripGenerated={onTripGenerated}
                         onOpenManager={onOpenManager}
                         onLanguageLoaded={onAppLanguageLoaded}
                     />)
                 }
             />
-            <Route
-                path="/create-trip/labs/split-workspace"
-                element={
-                    renderWithSuspense(<CreateTripSplitWorkspaceLabPage
-                        onOpenManager={onOpenManager}
-                        onLanguageLoaded={onAppLanguageLoaded}
-                    />)
-                }
-            />
-            <Route
-                path="/create-trip/labs/journey-architect"
-                element={
-                    renderWithSuspense(<CreateTripJourneyArchitectLabPage
-                        onOpenManager={onOpenManager}
-                        onLanguageLoaded={onAppLanguageLoaded}
-                    />)
-                }
-            />
-            <Route
-                path="/create-trip/labs/design-v1"
-                element={
-                    renderWithSuspense(<CreateTripDesignV1Route
-                        onTripGenerated={onTripGenerated}
-                        onOpenManager={onOpenManager}
-                        onLanguageLoaded={onAppLanguageLoaded}
-                    />)
-                }
-            />
-            <Route
-                path="/create-trip/labs/design-v2"
-                element={
-                    renderWithSuspense(<CreateTripDesignV2Route
-                        onTripGenerated={onTripGenerated}
-                        onOpenManager={onOpenManager}
-                        onLanguageLoaded={onAppLanguageLoaded}
-                    />)
-                }
-            />
-            <Route
-                path="/create-trip/labs/design-v3"
-                element={
-                    renderWithSuspense(<CreateTripDesignV3Route
-                        onTripGenerated={onTripGenerated}
-                        onOpenManager={onOpenManager}
-                        onLanguageLoaded={onAppLanguageLoaded}
-                    />)
-                }
-            />
-            <Route
-                path="/create-trip/v1"
-                element={
-                    renderWithSuspense(<CreateTripDesignV1Route
-                        onTripGenerated={onTripGenerated}
-                        onOpenManager={onOpenManager}
-                        onLanguageLoaded={onAppLanguageLoaded}
-                    />)
-                }
-            />
-            <Route
-                path="/create-trip/v2"
-                element={
-                    renderWithSuspense(<CreateTripDesignV2Route
-                        onTripGenerated={onTripGenerated}
-                        onOpenManager={onOpenManager}
-                        onLanguageLoaded={onAppLanguageLoaded}
-                    />)
-                }
-            />
-            <Route
-                path="/create-trip/v3"
-                element={
-                    renderWithSuspense(<CreateTripDesignV3Route
-                        onTripGenerated={onTripGenerated}
-                        onOpenManager={onOpenManager}
-                        onLanguageLoaded={onAppLanguageLoaded}
-                    />)
-                }
-            />
+            <Route path="/create-trip/labs/classic-legacy" element={<Navigate to="/create-trip" replace />} />
+            <Route path="/create-trip/labs/split-workspace" element={<Navigate to="/create-trip" replace />} />
+            <Route path="/create-trip/labs/journey-architect" element={<Navigate to="/create-trip" replace />} />
+            <Route path="/create-trip/labs/design-v1" element={<Navigate to="/create-trip" replace />} />
+            <Route path="/create-trip/labs/design-v2" element={<Navigate to="/create-trip" replace />} />
+            <Route path="/create-trip/labs/design-v3" element={<Navigate to="/create-trip/wizard" replace />} />
+            <Route path="/create-trip/v1" element={<Navigate to="/create-trip" replace />} />
+            <Route path="/create-trip/v2" element={<Navigate to="/create-trip" replace />} />
+            <Route path="/create-trip/v3" element={<Navigate to="/create-trip/wizard" replace />} />
 
             <Route
                 path="/profile/onboarding"
@@ -350,12 +266,28 @@ export const DeferredAppRoutes: React.FC<DeferredAppRoutesProps> = ({
                 )}
             />
             <Route
+                path="/profile/stamps"
+                element={renderWithSuspense(
+                    <AuthenticatedRoute>
+                        <ProfileStampsPage />
+                    </AuthenticatedRoute>
+                )}
+            />
+            <Route
                 path="/profile/settings"
                 element={renderWithSuspense(
                     <AuthenticatedRoute>
                         <ProfileSettingsPage />
                     </AuthenticatedRoute>
                 )}
+            />
+            <Route
+                path="/u/:username"
+                element={renderWithSuspense(<PublicProfilePage />)}
+            />
+            <Route
+                path="/u/:username/stamps"
+                element={renderWithSuspense(<PublicProfileStampsPage />)}
             />
             <Route
                 path="/admin/access-denied"
