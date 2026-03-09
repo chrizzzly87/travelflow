@@ -3,6 +3,9 @@
 ## Status
 - Open GitHub implementation issue: [#216](https://github.com/chrizzzly87/travelflow/issues/216)
 - Related payment-provider spike: [#174](https://github.com/chrizzzly87/travelflow/issues/174)
+- Payment-provider decision (2026-03-02): **Primary Paddle**, **secondary Lemon Squeezy** (see `docs/open-issues/payment-provider-analysis-174.md`).
+- Paddle implementation guide (2026-03-06): `docs/open-issues/paddle-setup-testing-guide-216.md` (includes `verify_only` webhook mode for sandbox E2E before Supabase migration is merged).
+- Paddle standalone schema subset (2026-03-07): `docs/open-issues/paddle-billing-subset-216.sql`.
 
 ## Current Temporary Contract
 1. Expired trip CTA uses `direct_reactivate` for authenticated non-anonymous users on `/trip/:id`.

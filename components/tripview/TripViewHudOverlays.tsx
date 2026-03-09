@@ -1,9 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Article, RocketLaunch, WarningCircle } from '@phosphor-icons/react';
+import { Article, Check, RocketLaunch, Sparkle, WarningCircle } from '@phosphor-icons/react';
 import { Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+import { PLAN_CATALOG } from '../../config/planCatalog';
 import type { TripPaywallActivationMode } from '../../config/paywall';
 import type { ShareMode } from '../../types';
 import { trackEvent } from '../../services/analyticsService';
@@ -20,6 +21,7 @@ interface TripViewHudOverlaysProps {
         analyticsEvent: 'trip_paywall__strip--activate' | 'trip_paywall__overlay--activate',
         source: 'trip_paywall_strip' | 'trip_paywall_overlay'
     ) => void;
+    paywallOverlayUpgradeCheckoutPath?: string | null;
     showGenerationOverlay: boolean;
     generationProgressMessage: string;
     loadingDestinationSummary: string;
@@ -35,14 +37,40 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
     tripId,
     paywallActivationMode,
     onPaywallActivateClick,
+    paywallOverlayUpgradeCheckoutPath = null,
     showGenerationOverlay,
     generationProgressMessage,
     loadingDestinationSummary,
     tripDateRange,
     tripTotalDaysLabel,
 }) => {
-    const { t } = useTranslation('common');
+    const { t } = useTranslation(['common', 'pricing']);
     const paywallRequiresLogin = paywallActivationMode === 'login_modal';
+    const explorerTier = PLAN_CATALOG.tier_mid;
+    const explorerHighlights = React.useMemo(() => {
+        const unlimitedLabel = t('shared.unlimited', { ns: 'pricing' });
+        const noExpiryLabel = t('shared.noExpiry', { ns: 'pricing' });
+        const enabledLabel = t('shared.enabled', { ns: 'pricing' });
+        const disabledLabel = t('shared.disabled', { ns: 'pricing' });
+        const interpolationValues = {
+            maxActiveTripsLabel: explorerTier.entitlements.maxActiveTrips === null
+                ? unlimitedLabel
+                : String(explorerTier.entitlements.maxActiveTrips),
+            maxTotalTripsLabel: explorerTier.entitlements.maxTotalTrips === null
+                ? unlimitedLabel
+                : String(explorerTier.entitlements.maxTotalTrips),
+            tripExpirationLabel: explorerTier.entitlements.tripExpirationDays === null
+                ? noExpiryLabel
+                : t('shared.days', { ns: 'pricing', count: explorerTier.entitlements.tripExpirationDays }),
+            sharingLabel: explorerTier.entitlements.canShare ? enabledLabel : disabledLabel,
+            editableSharesLabel: explorerTier.entitlements.canCreateEditableShares ? enabledLabel : disabledLabel,
+            proCreationLabel: explorerTier.entitlements.canCreateProTrips ? enabledLabel : disabledLabel,
+        };
+        return [0, 2, 4].map((index) => t(`tiers.explorer.features.${index}`, {
+            ns: 'pricing',
+            ...interpolationValues,
+        }));
+    }, [t]);
 
     return (
         <>
@@ -69,57 +97,87 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
 
             {isPaywallLocked && (
                 <div className="fixed inset-0 z-[1490] flex items-end sm:items-center justify-center p-3 sm:p-4 pointer-events-none">
-                    <div className="pointer-events-auto w-full max-w-xl rounded-2xl bg-gradient-to-br from-accent-200/60 via-rose-100/70 to-amber-100/80 p-[1px] shadow-2xl">
-                        <div className="relative overflow-hidden rounded-[15px] border border-white/70 bg-white/95 px-5 py-5 backdrop-blur">
-                            <div className="pointer-events-none absolute -right-10 -top-14 h-40 w-40 rounded-full bg-accent-200/40 blur-2xl" />
-                            <div className="pointer-events-none absolute -bottom-16 -left-10 h-44 w-44 rounded-full bg-rose-100/70 blur-2xl" />
-
-                            <div className="relative flex items-start gap-3.5">
-                                <div className="min-w-0 flex-1">
-                                    <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-accent-700">{t('tripPaywall.overlay.eyebrow')}</p>
-                                    <div className="mt-1 text-lg font-semibold leading-tight text-slate-900">
-                                        {paywallRequiresLogin
-                                            ? t('tripPaywall.overlay.title.login')
-                                            : t('tripPaywall.overlay.title.direct')}
+                    <div className="pointer-events-auto w-full max-w-3xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+                        <div className="grid gap-0 md:grid-cols-[minmax(0,1fr)_320px]">
+                            <div className="px-5 py-5 sm:px-6 sm:py-6">
+                                <div className="flex items-start justify-between gap-4">
+                                    <div className="min-w-0">
+                                        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-accent-700">
+                                            {t('tripPaywall.overlay.eyebrow')}
+                                        </p>
+                                        <h2 className="mt-2 text-2xl font-semibold leading-tight tracking-tight text-slate-900">
+                                            {paywallRequiresLogin
+                                                ? t('tripPaywall.overlay.title.login')
+                                                : t('tripPaywall.overlay.title.direct')}
+                                        </h2>
                                     </div>
-                                    <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                                        {paywallRequiresLogin
-                                            ? t('tripPaywall.overlay.description.login')
-                                            : t('tripPaywall.overlay.description.direct')}
-                                    </p>
+                                    <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-accent-200 bg-accent-50 text-accent-700">
+                                        <WarningCircle size={20} weight="duotone" />
+                                    </span>
                                 </div>
-                                <span className="mt-0.5 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-accent-200 bg-accent-50 text-accent-700">
-                                    <WarningCircle size={20} weight="duotone" />
-                                </span>
-                            </div>
-                            <div className="relative mt-4 flex flex-wrap justify-end gap-2">
-                                <Link
-                                    to="/faq"
-                                    onClick={() => trackEvent('trip_paywall__overlay--faq', { trip_id: tripId })}
-                                    className="inline-flex h-9 items-center gap-1.5 rounded-md border border-accent-200 bg-white px-3 text-xs font-semibold text-accent-700 hover:bg-accent-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
-                                >
-                                    <Article size={14} weight="duotone" />
-                                    Visit FAQ
-                                </Link>
-                                <Link
-                                    to="/login"
-                                    onClick={(event) => onPaywallActivateClick(event, 'trip_paywall__overlay--activate', 'trip_paywall_overlay')}
-                                    className="inline-flex h-9 items-center gap-1.5 rounded-md bg-accent-600 px-3 text-xs font-semibold text-white hover:bg-accent-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
-                                >
-                                    <RocketLaunch size={14} weight="duotone" />
+
+                                <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
                                     {paywallRequiresLogin
-                                        ? t('tripPaywall.reactivate.actions.login')
-                                        : t('tripPaywall.reactivate.actions.direct')}
-                                </Link>
+                                        ? t('tripPaywall.overlay.description.login')
+                                        : t('tripPaywall.overlay.description.direct')}
+                                </p>
+
+                                <div className="mt-4 flex flex-wrap gap-2">
+                                    <span className="inline-flex items-center rounded-full border border-accent-200 bg-accent-50 px-3 py-1 text-xs font-semibold text-accent-800">
+                                        {explorerTier.publicName} · ${explorerTier.monthlyPriceUsd}{t('shared.perMonth', { ns: 'pricing' })}
+                                    </span>
+                                    <span className="inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-600">
+                                        {expirationLabel
+                                            ? t('tripPaywall.overlay.footer.withDate', { date: expirationLabel })
+                                            : t('tripPaywall.overlay.footer.noDate')}
+                                    </span>
+                                </div>
+
+                                <div className="mt-6 flex flex-wrap gap-2">
+                                    <Link
+                                        to="/faq"
+                                        onClick={() => trackEvent('trip_paywall__overlay--faq', { trip_id: tripId })}
+                                        className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
+                                    >
+                                        <Article size={15} weight="duotone" />
+                                        Visit FAQ
+                                    </Link>
+                                    {paywallOverlayUpgradeCheckoutPath && (
+                                        <Link
+                                            to={paywallOverlayUpgradeCheckoutPath}
+                                            onClick={() => trackEvent('trip_paywall__overlay--upgrade', { trip_id: tripId })}
+                                            className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-accent-200 bg-accent-50 px-4 text-sm font-semibold text-accent-800 hover:bg-accent-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
+                                        >
+                                            <Sparkle size={15} weight="duotone" />
+                                            {t('checkout.tripEntryCta', { ns: 'pricing' })}
+                                        </Link>
+                                    )}
+                                    <Link
+                                        to="/login"
+                                        onClick={(event) => onPaywallActivateClick(event, 'trip_paywall__overlay--activate', 'trip_paywall_overlay')}
+                                        className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-accent-600 px-4 text-sm font-semibold text-white hover:bg-accent-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
+                                    >
+                                        <RocketLaunch size={15} weight="duotone" />
+                                        {paywallRequiresLogin
+                                            ? t('tripPaywall.reactivate.actions.login')
+                                            : t('tripPaywall.reactivate.actions.direct')}
+                                    </Link>
+                                </div>
                             </div>
 
-                            <div className="relative mt-4 border-t border-slate-200 pt-3">
-                                <p className="text-[11px] leading-relaxed text-slate-500">
-                                    {expirationLabel
-                                        ? t('tripPaywall.overlay.footer.withDate', { date: expirationLabel })
-                                        : t('tripPaywall.overlay.footer.noDate')}
+                            <aside className="border-t border-slate-200 bg-slate-50/80 px-5 py-5 md:border-l md:border-t-0 sm:px-6 sm:py-6">
+                                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                                    {t('checkout.whatsIncluded', { ns: 'pricing' })}
                                 </p>
-                            </div>
+                                <ul className="mt-4 space-y-3">
+                                    {explorerHighlights.map((feature) => (
+                                        <li key={feature} className="flex items-start gap-3 text-sm leading-6 text-slate-700">
+                                            <Check size={16} weight="bold" className="mt-1 shrink-0 text-accent-600" />
+                                            <span>{feature}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </aside>
                         </div>
                     </div>
                 </div>

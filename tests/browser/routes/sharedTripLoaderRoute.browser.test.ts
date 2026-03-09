@@ -8,6 +8,7 @@ import { makeTrip } from '../../helpers/tripFixtures';
 
 const mocks = vi.hoisted(() => ({
   navigate: vi.fn(),
+  confirmDialog: vi.fn().mockResolvedValue(true),
   route: {
     token: 'share-token',
     pathname: '/s/share-token',
@@ -49,6 +50,12 @@ vi.mock('react-router-dom', () => ({
 
 vi.mock('../../../hooks/useAuth', () => ({
   useAuth: () => ({ access: mocks.auth.access }),
+}));
+
+vi.mock('../../../components/AppDialogProvider', () => ({
+  useAppDialog: () => ({
+    confirm: mocks.confirmDialog,
+  }),
 }));
 
 vi.mock('../../../hooks/useDbSync', () => ({
@@ -108,6 +115,16 @@ vi.mock('../../../components/TripView', () => ({
   },
 }));
 
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string, options?: { count?: number }) => {
+      if (key === 'shared.perMonth') return '/mo';
+      if (key === 'shared.days') return `${options?.count ?? 0} days`;
+      return key;
+    },
+  }),
+}));
+
 import { SharedTripLoaderRoute } from '../../../routes/SharedTripLoaderRoute';
 
 const makeRouteProps = (overrides?: Partial<React.ComponentProps<typeof SharedTripLoaderRoute>>) => ({
@@ -132,6 +149,12 @@ describe('routes/SharedTripLoaderRoute', () => {
     mocks.route.search = '';
     mocks.route.hash = '';
     mocks.connectivityState = 'online';
+    mocks.auth.access = {
+      tierKey: 'tier_free',
+      entitlements: {
+        tripExpirationDays: 14,
+      },
+    };
     mocks.ensureDbSession.mockResolvedValue('session-1');
     mocks.dbGetSharedTrip.mockResolvedValue(null);
     mocks.dbGetSharedTripVersion.mockResolvedValue(null);
@@ -286,6 +309,50 @@ describe('routes/SharedTripLoaderRoute', () => {
     });
     expect(mocks.dbGetSharedTripVersion).not.toHaveBeenCalled();
     expect(latestTripViewProps()?.shareSnapshotMeta?.hasNewer).toBe(true);
+  });
+
+  it('opens the upgrade dialog and routes into checkout when copy hits the trip limit', async () => {
+    const baseView: IViewSettings = {
+      layoutMode: 'horizontal',
+      timelineView: 'horizontal',
+      mapStyle: 'standard',
+      routeMode: 'simple',
+      showCityNames: true,
+      zoomLevel: 1,
+      sidebarWidth: 480,
+      timelineHeight: 320,
+    };
+    const sharedTrip = makeTrip({ id: 'shared-trip', defaultView: baseView, status: 'active' });
+
+    mocks.dbGetSharedTrip.mockResolvedValue({
+      trip: sharedTrip,
+      view: baseView,
+      mode: 'view',
+      allowCopy: true,
+      latestVersionId: 'latest-version-id',
+    });
+    mocks.dbCanCreateTrip.mockResolvedValue({
+      allowCreate: false,
+      activeTripCount: 5,
+      maxTripCount: 5,
+    });
+
+    const props = makeRouteProps({ trip: sharedTrip });
+    render(React.createElement(SharedTripLoaderRoute, props));
+
+    await waitFor(() => {
+      expect(latestTripViewProps()?.onCopyTrip).toBeTypeOf('function');
+    });
+
+    await act(async () => {
+      await latestTripViewProps().onCopyTrip();
+    });
+
+    expect(mocks.confirmDialog).toHaveBeenCalledTimes(1);
+    expect(mocks.navigate).toHaveBeenCalledWith('/checkout?tier=tier_mid&source=shared_trip_limit_dialog&return_to=%2Fs%2Fshare-token');
+    expect(mocks.saveTrip).not.toHaveBeenCalled();
+    expect(mocks.dbUpsertTrip).not.toHaveBeenCalled();
+    expect(mocks.dbCreateTripVersion).not.toHaveBeenCalled();
   });
 
   it('commits in edit mode by appending local history and updating shared db state', async () => {

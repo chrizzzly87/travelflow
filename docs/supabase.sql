@@ -114,9 +114,37 @@ create table if not exists public.subscriptions (
   user_id uuid primary key references auth.users on delete cascade,
   plan_id uuid references public.plans(id),
   status text not null default 'active',
+  provider text,
+  provider_customer_id text,
+  provider_subscription_id text,
+  provider_price_id text,
+  provider_product_id text,
+  provider_status text,
+  current_period_start timestamptz,
   current_period_end timestamptz,
+  cancel_at timestamptz,
+  canceled_at timestamptz,
+  grace_ends_at timestamptz,
+  currency text,
+  amount integer,
+  last_event_id text,
+  last_event_type text,
+  last_event_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
+);
+
+create table if not exists public.billing_webhook_events (
+  event_id text primary key,
+  provider text not null,
+  event_type text not null,
+  occurred_at timestamptz not null,
+  user_id uuid references auth.users on delete set null,
+  status text not null default 'received',
+  error_message text,
+  payload jsonb not null default '{}'::jsonb,
+  processed_at timestamptz,
+  created_at timestamptz not null default now()
 );
 
 create table if not exists public.legal_terms_versions (
@@ -236,6 +264,59 @@ alter table public.ai_benchmark_runs add column if not exists satisfaction_ratin
 alter table public.ai_benchmark_runs add column if not exists satisfaction_updated_at timestamptz;
 alter table public.ai_benchmark_runs add column if not exists run_comment text;
 alter table public.ai_benchmark_runs add column if not exists run_comment_updated_at timestamptz;
+alter table public.subscriptions add column if not exists provider text;
+alter table public.subscriptions add column if not exists provider_customer_id text;
+alter table public.subscriptions add column if not exists provider_subscription_id text;
+alter table public.subscriptions add column if not exists provider_price_id text;
+alter table public.subscriptions add column if not exists provider_product_id text;
+alter table public.subscriptions add column if not exists provider_status text;
+alter table public.subscriptions add column if not exists current_period_start timestamptz;
+alter table public.subscriptions add column if not exists current_period_end timestamptz;
+alter table public.subscriptions add column if not exists cancel_at timestamptz;
+alter table public.subscriptions add column if not exists canceled_at timestamptz;
+alter table public.subscriptions add column if not exists grace_ends_at timestamptz;
+alter table public.subscriptions add column if not exists currency text;
+alter table public.subscriptions add column if not exists amount integer;
+alter table public.subscriptions add column if not exists last_event_id text;
+alter table public.subscriptions add column if not exists last_event_type text;
+alter table public.subscriptions add column if not exists last_event_at timestamptz;
+
+alter table public.billing_webhook_events add column if not exists provider text;
+alter table public.billing_webhook_events add column if not exists event_type text;
+alter table public.billing_webhook_events add column if not exists occurred_at timestamptz;
+alter table public.billing_webhook_events add column if not exists user_id uuid references auth.users on delete set null;
+update public.billing_webhook_events
+   set provider = 'paddle'
+ where provider is null;
+update public.billing_webhook_events
+   set event_type = 'unknown'
+ where event_type is null;
+update public.billing_webhook_events
+   set occurred_at = coalesce(occurred_at, now())
+ where occurred_at is null;
+alter table public.billing_webhook_events alter column provider set not null;
+alter table public.billing_webhook_events alter column event_type set not null;
+alter table public.billing_webhook_events alter column occurred_at set not null;
+alter table public.billing_webhook_events add column if not exists status text;
+alter table public.billing_webhook_events alter column status set default 'received';
+update public.billing_webhook_events
+   set status = 'received'
+ where status is null;
+alter table public.billing_webhook_events alter column status set not null;
+alter table public.billing_webhook_events add column if not exists error_message text;
+alter table public.billing_webhook_events add column if not exists payload jsonb;
+alter table public.billing_webhook_events alter column payload set default '{}'::jsonb;
+update public.billing_webhook_events
+   set payload = '{}'::jsonb
+ where payload is null;
+alter table public.billing_webhook_events alter column payload set not null;
+alter table public.billing_webhook_events add column if not exists processed_at timestamptz;
+alter table public.billing_webhook_events add column if not exists created_at timestamptz;
+update public.billing_webhook_events
+   set created_at = now()
+ where created_at is null;
+alter table public.billing_webhook_events alter column created_at set default now();
+alter table public.billing_webhook_events alter column created_at set not null;
 
 do $$
 begin
@@ -263,6 +344,21 @@ begin
     alter table public.ai_benchmark_runs
       add constraint ai_benchmark_runs_satisfaction_rating_check
       check (satisfaction_rating in ('good', 'medium', 'bad'));
+  end if;
+end;
+$$;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'billing_webhook_events_status_check'
+      and conrelid = 'public.billing_webhook_events'::regclass
+  ) then
+    alter table public.billing_webhook_events
+      add constraint billing_webhook_events_status_check
+      check (status in ('received', 'processed', 'ignored', 'failed'));
   end if;
 end;
 $$;
@@ -419,6 +515,13 @@ create index if not exists ai_generation_events_created_idx on public.ai_generat
 create index if not exists ai_generation_events_source_created_idx on public.ai_generation_events(source, created_at desc);
 create index if not exists ai_generation_events_provider_created_idx on public.ai_generation_events(provider, created_at desc);
 create index if not exists ai_generation_events_status_created_idx on public.ai_generation_events(status, created_at desc);
+create unique index if not exists subscriptions_provider_subscription_uidx
+  on public.subscriptions(provider_subscription_id)
+  where provider_subscription_id is not null;
+create index if not exists subscriptions_provider_customer_idx on public.subscriptions(provider_customer_id);
+create index if not exists subscriptions_last_event_at_idx on public.subscriptions(last_event_at desc);
+create index if not exists billing_webhook_events_occurred_at_idx on public.billing_webhook_events(occurred_at desc);
+create index if not exists billing_webhook_events_user_occurred_at_idx on public.billing_webhook_events(user_id, occurred_at desc);
 create index if not exists legal_terms_versions_effective_idx on public.legal_terms_versions(effective_at desc);
 create unique index if not exists legal_terms_versions_single_current_idx on public.legal_terms_versions((is_current)) where is_current;
 create index if not exists legal_terms_acceptance_user_created_idx on public.legal_terms_acceptance_events(user_id, accepted_at desc);
@@ -729,6 +832,7 @@ alter table public.profiles enable row level security;
 alter table public.user_settings enable row level security;
 alter table public.plans enable row level security;
 alter table public.subscriptions enable row level security;
+alter table public.billing_webhook_events enable row level security;
 alter table public.legal_terms_versions enable row level security;
 alter table public.legal_terms_acceptance_events enable row level security;
 alter table public.ai_benchmark_sessions enable row level security;
@@ -904,6 +1008,12 @@ create policy "Subscriptions are user-owned"
 on public.subscriptions for all
 using (user_id = auth.uid())
 with check (user_id = auth.uid());
+
+-- Billing webhook event policies
+drop policy if exists "Billing webhook events are user-owned" on public.billing_webhook_events;
+create policy "Billing webhook events are user-owned"
+on public.billing_webhook_events for select
+using (user_id = auth.uid());
 
 -- AI benchmark session policies
 drop policy if exists "AI benchmark sessions owner read" on public.ai_benchmark_sessions;
@@ -3813,6 +3923,7 @@ values
   ('tiers.read', 'Read tiers', 'tiers', 'Inspect tier templates and entitlement baselines.'),
   ('tiers.write', 'Write tiers', 'tiers', 'Update tier entitlement templates and max-trip policies.'),
   ('tiers.reapply', 'Reapply tiers', 'tiers', 'Run tier backfill/reapply operations against existing users/trips.'),
+  ('billing.read', 'Read billing', 'billing', 'Inspect subscription state and billing webhook delivery records.'),
   ('audit.read', 'Read audit log', 'audit', 'Read immutable admin audit trail entries.'),
   ('audit.write', 'Write audit log', 'audit', 'Write immutable admin audit entries.'),
   ('admin.identity.write', 'Manage admin identity actions', 'identity', 'Run invite/direct-create/hard-delete identity operations.')
@@ -3835,6 +3946,7 @@ values
   ('support_admin', 'trips.read'),
   ('support_admin', 'trips.write'),
   ('support_admin', 'tiers.read'),
+  ('support_admin', 'billing.read'),
   ('support_admin', 'audit.read'),
   ('support_admin', 'audit.write')
 on conflict (role_key, permission_key) do nothing;
@@ -3844,6 +3956,7 @@ values
   ('read_only_admin', 'users.read'),
   ('read_only_admin', 'trips.read'),
   ('read_only_admin', 'tiers.read'),
+  ('read_only_admin', 'billing.read'),
   ('read_only_admin', 'audit.read')
 on conflict (role_key, permission_key) do nothing;
 
@@ -4539,6 +4652,9 @@ returns table(
   onboarding_completed_at timestamptz,
   active_trips integer,
   total_trips integer,
+  provider_subscription_id text,
+  provider_status text,
+  subscription_status text,
   system_role text,
   tier_key text,
   entitlements_override jsonb,
@@ -4613,6 +4729,9 @@ begin
     p.onboarding_completed_at,
     coalesce(trip_counts.active_trips, 0)::integer,
     coalesce(trip_counts.total_trips, 0)::integer,
+    s.provider_subscription_id,
+    s.provider_status,
+    s.status as subscription_status,
     p.system_role,
     p.tier_key,
     p.entitlements_override,
@@ -4640,6 +4759,7 @@ begin
     from public.trips t
     where t.owner_id = p.id
   ) trip_counts on true
+  left join public.subscriptions s on s.user_id = p.id
   where (
     p_search is null
     or p_search = ''
@@ -4647,6 +4767,9 @@ begin
     or coalesce(p.first_name, '') ilike ('%' || p_search || '%')
     or coalesce(p.last_name, '') ilike ('%' || p_search || '%')
     or coalesce(p.username, '') ilike ('%' || p_search || '%')
+    or coalesce(s.provider_subscription_id, '') ilike ('%' || p_search || '%')
+    or coalesce(s.provider_status, '') ilike ('%' || p_search || '%')
+    or coalesce(s.status, '') ilike ('%' || p_search || '%')
     or p.id::text ilike ('%' || p_search || '%')
   )
   order by p.created_at desc
@@ -4683,6 +4806,9 @@ returns table(
   onboarding_completed_at timestamptz,
   active_trips integer,
   total_trips integer,
+  provider_subscription_id text,
+  provider_status text,
+  subscription_status text,
   system_role text,
   tier_key text,
   entitlements_override jsonb,
@@ -4757,6 +4883,9 @@ begin
     p.onboarding_completed_at,
     coalesce(trip_counts.active_trips, 0)::integer,
     coalesce(trip_counts.total_trips, 0)::integer,
+    s.provider_subscription_id,
+    s.provider_status,
+    s.status as subscription_status,
     p.system_role,
     p.tier_key,
     p.entitlements_override,
@@ -4784,6 +4913,7 @@ begin
     from public.trips t
     where t.owner_id = p.id
   ) trip_counts on true
+  left join public.subscriptions s on s.user_id = p.id
   where p.id = p_user_id
   limit 1;
 end;
@@ -5345,6 +5475,147 @@ begin
   )
   order by base.updated_at desc
   limit greatest(coalesce(p_limit, 200), 1)
+  offset greatest(coalesce(p_offset, 0), 0);
+end;
+$$;
+
+create or replace function public.admin_list_billing_subscriptions(
+  p_limit integer default 250,
+  p_offset integer default 0,
+  p_search text default null
+)
+returns table(
+  user_id uuid,
+  email text,
+  tier_key text,
+  provider text,
+  provider_customer_id text,
+  provider_subscription_id text,
+  provider_price_id text,
+  provider_status text,
+  subscription_status text,
+  current_period_start timestamptz,
+  current_period_end timestamptz,
+  cancel_at timestamptz,
+  canceled_at timestamptz,
+  grace_ends_at timestamptz,
+  currency text,
+  amount integer,
+  last_event_id text,
+  last_event_type text,
+  last_event_at timestamptz,
+  created_at timestamptz,
+  updated_at timestamptz
+)
+language plpgsql
+security definer
+set search_path = public, auth
+set row_security = off
+as $$
+begin
+  if not public.has_admin_permission('billing.read') then
+    raise exception 'Not allowed';
+  end if;
+
+  return query
+  select
+    s.user_id,
+    u.email::text,
+    p.tier_key,
+    s.provider,
+    s.provider_customer_id,
+    s.provider_subscription_id,
+    s.provider_price_id,
+    s.provider_status,
+    s.status as subscription_status,
+    s.current_period_start,
+    s.current_period_end,
+    s.cancel_at,
+    s.canceled_at,
+    s.grace_ends_at,
+    s.currency,
+    s.amount,
+    s.last_event_id,
+    s.last_event_type,
+    s.last_event_at,
+    s.created_at,
+    s.updated_at
+  from public.subscriptions s
+  left join public.profiles p on p.id = s.user_id
+  left join auth.users u on u.id = s.user_id
+  where (
+    p_search is null
+    or p_search = ''
+    or s.user_id::text ilike ('%' || p_search || '%')
+    or coalesce(u.email, '') ilike ('%' || p_search || '%')
+    or coalesce(s.provider_subscription_id, '') ilike ('%' || p_search || '%')
+    or coalesce(s.provider_customer_id, '') ilike ('%' || p_search || '%')
+    or coalesce(s.provider_status, '') ilike ('%' || p_search || '%')
+    or coalesce(s.last_event_type, '') ilike ('%' || p_search || '%')
+    or coalesce(p.tier_key, '') ilike ('%' || p_search || '%')
+  )
+  order by coalesce(s.updated_at, s.created_at) desc
+  limit greatest(coalesce(p_limit, 250), 1)
+  offset greatest(coalesce(p_offset, 0), 0);
+end;
+$$;
+
+create or replace function public.admin_list_billing_webhook_events(
+  p_limit integer default 250,
+  p_offset integer default 0,
+  p_search text default null
+)
+returns table(
+  event_id text,
+  provider text,
+  event_type text,
+  occurred_at timestamptz,
+  user_id uuid,
+  user_email text,
+  status text,
+  error_message text,
+  payload jsonb,
+  processed_at timestamptz,
+  created_at timestamptz
+)
+language plpgsql
+security definer
+set search_path = public, auth
+set row_security = off
+as $$
+begin
+  if not public.has_admin_permission('billing.read') then
+    raise exception 'Not allowed';
+  end if;
+
+  return query
+  select
+    e.event_id,
+    e.provider,
+    e.event_type,
+    e.occurred_at,
+    e.user_id,
+    u.email::text as user_email,
+    e.status,
+    e.error_message,
+    e.payload,
+    e.processed_at,
+    e.created_at
+  from public.billing_webhook_events e
+  left join auth.users u on u.id = e.user_id
+  where (
+    p_search is null
+    or p_search = ''
+    or e.event_id ilike ('%' || p_search || '%')
+    or coalesce(u.email, '') ilike ('%' || p_search || '%')
+    or coalesce(e.user_id::text, '') ilike ('%' || p_search || '%')
+    or coalesce(e.event_type, '') ilike ('%' || p_search || '%')
+    or coalesce(e.status, '') ilike ('%' || p_search || '%')
+    or coalesce(e.error_message, '') ilike ('%' || p_search || '%')
+    or coalesce(e.payload::text, '') ilike ('%' || p_search || '%')
+  )
+  order by e.occurred_at desc, e.created_at desc
+  limit greatest(coalesce(p_limit, 250), 1)
   offset greatest(coalesce(p_offset, 0), 0);
 end;
 $$;
@@ -6302,6 +6573,8 @@ grant execute on function public.trip_generation_job_requeue(uuid, text, timesta
 grant execute on function public.trip_generation_job_requeue(uuid, text, timestamptz, boolean) to service_role;
 grant execute on function public.admin_list_trips(integer, integer, text, uuid, text, text) to authenticated;
 grant execute on function public.admin_list_user_trips(uuid, integer, integer, text, text) to authenticated;
+grant execute on function public.admin_list_billing_subscriptions(integer, integer, text) to authenticated;
+grant execute on function public.admin_list_billing_webhook_events(integer, integer, text) to authenticated;
 grant execute on function public.admin_get_trip_for_view(text) to authenticated;
 grant execute on function public.admin_override_trip_commit(text, jsonb, jsonb, text, date, boolean, text, jsonb) to authenticated;
 grant execute on function public.admin_update_trip(text, text, timestamptz, uuid, boolean, boolean, boolean) to authenticated;
