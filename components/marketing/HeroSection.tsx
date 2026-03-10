@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import { PlaneWindowAnimation } from './PlaneWindowAnimation';
 import { buildPath } from '../../config/routes';
+import { warmRouteAssets } from '../../services/navigationPrefetch';
 
 /** Animated hand-drawn zigzag underline SVG */
 const ZigzagUnderline: React.FC = () => (
@@ -62,6 +63,10 @@ export const HeroSection: React.FC = () => {
     const heroCtaDebugAttributes = (ctaName: string) =>
         getAnalyticsDebugAttributes(`home__hero_cta--${ctaName}`);
 
+    const prewarmCreateTripRoute = () => {
+        void warmRouteAssets(buildPath('createTrip'), 'manual');
+    };
+
     return (
         <section className="relative pt-8 pb-16 md:pt-16 md:pb-24">
             <div className="pointer-events-none absolute -right-32 -top-20 h-[420px] w-[420px] rounded-full bg-accent-300/40 blur-[100px]" />
@@ -96,6 +101,9 @@ export const HeroSection: React.FC = () => {
                         <Link
                             to={buildPath('createTrip')}
                             onClick={() => handleCtaClick('start_planning')}
+                            onMouseEnter={prewarmCreateTripRoute}
+                            onFocus={prewarmCreateTripRoute}
+                            onTouchStart={prewarmCreateTripRoute}
                             className="group relative rounded-2xl bg-accent-600 px-7 py-3.5 text-base font-bold text-white shadow-lg shadow-accent-200 transition-all hover:bg-accent-700 hover:shadow-xl hover:shadow-accent-300 hover:scale-[1.02] active:scale-[0.98]"
                             {...heroCtaDebugAttributes('start_planning')}
                         >
