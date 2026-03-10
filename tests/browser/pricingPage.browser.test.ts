@@ -2,8 +2,14 @@
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 
 const mocks = vi.hoisted(() => ({
+  location: {
+    pathname: '/pricing',
+    search: '',
+  },
+  navigate: vi.fn(),
   auth: {
     isAuthenticated: false,
     access: {
@@ -34,6 +40,22 @@ const mocks = vi.hoisted(() => ({
     canceledAt: null,
     graceEndsAt: null,
   }),
+  lookupPaddleDiscount: vi.fn().mockResolvedValue({
+    code: 'SPRING20',
+    type: 'percentage',
+    amount: 20,
+    currencyCode: 'USD',
+    description: 'Spring 20% off',
+    appliesToAllRecurring: true,
+    maximumRecurringIntervals: null,
+    applicableToTier: true,
+    estimate: {
+      originalAmount: 900,
+      discountedAmount: 720,
+      savingsAmount: 180,
+      currencyCode: 'USD',
+    },
+  }),
   trackEvent: vi.fn(),
 }));
 
@@ -41,6 +63,8 @@ vi.mock('react-router-dom', () => ({
   Link: ({ to, children, ...props }: { to: string; children: React.ReactNode }) => (
     React.createElement('a', { href: to, ...props }, children)
   ),
+  useLocation: () => mocks.location,
+  useNavigate: () => mocks.navigate,
 }));
 
 vi.mock('../../components/marketing/MarketingLayout', () => ({
@@ -57,6 +81,7 @@ vi.mock('../../services/billingService', async () => {
     ...actual,
     getCurrentSubscriptionSummary: mocks.getCurrentSubscriptionSummary,
     getPaddleSubscriptionManagementUrls: mocks.getPaddleSubscriptionManagementUrls,
+    lookupPaddleDiscount: mocks.lookupPaddleDiscount,
   };
 });
 
@@ -99,6 +124,8 @@ describe('pages/PricingPage', () => {
     cleanup();
     vi.clearAllMocks();
     mocks.auth.isAuthenticated = false;
+    mocks.location.pathname = '/pricing';
+    mocks.location.search = '';
     mocks.auth.access = {
       tierKey: 'tier_free',
       isAnonymous: false,
@@ -126,6 +153,7 @@ describe('pages/PricingPage', () => {
       },
       issues: [],
     });
+    mocks.lookupPaddleDiscount.mockClear();
   });
 
   it('routes paid plans into the dedicated checkout page', async () => {
@@ -137,6 +165,44 @@ describe('pages/PricingPage', () => {
         '/checkout?tier=tier_mid&source=pricing_page&return_to=%2Fpricing',
       );
     });
+  });
+
+  it('applies a voucher code from the URL to paid checkout links', async () => {
+    mocks.location.search = '?voucher=SPRING20';
+    mocks.fetchPaddlePublicConfig.mockResolvedValue({
+      provider: 'paddle',
+      environment: 'sandbox',
+      checkoutEnabled: true,
+      clientTokenConfigured: true,
+      tierAvailability: {
+        tier_mid: true,
+        tier_premium: true,
+      },
+      issues: [],
+    });
+
+    render(React.createElement(PricingPage));
+
+    await waitFor(() => {
+      expect(mocks.lookupPaddleDiscount).toHaveBeenCalledWith('SPRING20', 'tier_mid');
+      expect(screen.getByRole('link', { name: 'tiers.explorer.cta' })).toHaveAttribute(
+        'href',
+        '/checkout?tier=tier_mid&source=pricing_page&return_to=%2Fpricing&discount=SPRING20',
+      );
+    });
+  });
+
+  it('lets users apply a voucher code from pricing', async () => {
+    const user = userEvent.setup();
+    render(React.createElement(PricingPage));
+
+    await user.type(screen.getByPlaceholderText('voucher.placeholder'), 'spring20');
+    await user.click(screen.getByRole('button', { name: 'voucher.applyCta' }));
+
+    expect(mocks.navigate).toHaveBeenCalledWith({
+      pathname: '/pricing',
+      search: '?discount=SPRING20',
+    }, { replace: false });
   });
 
   it('keeps unconfigured paid tiers disabled on pricing', async () => {

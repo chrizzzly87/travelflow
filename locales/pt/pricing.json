@@ -151,5 +151,21 @@
     "travelerDetailsSavedDescription": "Your checkout profile details are now up to date.",
     "travelerDetailsPaymentReady": "Secure payment is ready below. Edit these details only if something changed.",
     "travelerDetailsAutoContinue": "Secure payment opens automatically as soon as your saved details are confirmed."
+  },
+  "voucher": {
+    "eyebrow": "Código promocional",
+    "title": "Aplique um desconto antes do checkout",
+    "description": "Use um link de voucher do Paddle ou digite seu código aqui. Nós o mantemos ao seguir para o checkout.",
+    "placeholder": "Digite o código",
+    "applyCta": "Aplicar código",
+    "applying": "Verificando código…",
+    "clearCta": "Remover código",
+    "appliedMessage": "O voucher {code} está pronto.",
+    "appliedDescription": "Mostramos a economia nos planos compatíveis e a mantemos até o checkout.",
+    "invalidMessage": "Este voucher não está disponível para os planos pagos atuais.",
+    "cardEyebrow": "Voucher {code}",
+    "cardSavingsMessage": "Economize {savings} no primeiro pagamento. Total estimado no checkout: {discounted}.",
+    "appliedEyebrow": "Voucher {code}",
+    "checkoutSavingsMessage": "Total estimado no checkout: {discounted}. Você economiza {savings} no primeiro pagamento."
   }
 }

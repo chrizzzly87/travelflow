@@ -9,6 +9,7 @@ declare global {
             Checkout?: {
                 open: (config: {
                     transactionId: string;
+                    discountCode?: string;
                     customer?: {
                         email?: string;
                     };
@@ -36,6 +37,8 @@ const PADDLE_CHECKOUT_SOURCE_QUERY_KEY = 'source';
 const PADDLE_CHECKOUT_CLAIM_QUERY_KEY = 'claim';
 const PADDLE_CHECKOUT_RETURN_QUERY_KEY = 'return_to';
 const PADDLE_CHECKOUT_TRIP_QUERY_KEY = 'trip_id';
+const PADDLE_CHECKOUT_DISCOUNT_QUERY_KEY = 'discount';
+const PADDLE_CHECKOUT_VOUCHER_QUERY_KEY = 'voucher';
 const DEFAULT_PADDLE_CHECKOUT_LOCALE = 'en';
 const PADDLE_INLINE_FRAME_STYLE = [
     'width: 100%',
@@ -90,6 +93,7 @@ export interface InitializePaddleJsOptions {
 export interface OpenPaddleInlineCheckoutOptions {
     transactionId: string;
     customerEmail?: string | null;
+    discountCode?: string | null;
 }
 
 export interface PaddleCheckoutLocationContext {
@@ -99,6 +103,7 @@ export interface PaddleCheckoutLocationContext {
     claimId: string | null;
     returnTo: string | null;
     tripId: string | null;
+    discountCode: string | null;
 }
 
 export interface PaddleCheckoutUrlContext {
@@ -107,6 +112,7 @@ export interface PaddleCheckoutUrlContext {
     claimId?: string | null;
     returnTo?: string | null;
     tripId?: string | null;
+    discountCode?: string | null;
 }
 
 export interface PaddlePublicConfigIssue {
@@ -160,7 +166,7 @@ const buildInlineCheckoutSettings = (locale: AppLanguage | string | null | undef
     frameStyle: PADDLE_INLINE_FRAME_STYLE,
     frameTarget: PADDLE_INLINE_FRAME_TARGET_CLASS,
     locale: resolvePaddleCheckoutLocale(locale),
-    showAddDiscounts: false,
+    showAddDiscounts: true,
     theme: 'light',
     variant: 'one-page',
 });
@@ -265,6 +271,8 @@ export const readPaddleCheckoutLocationContext = (search: string): PaddleCheckou
         claimId: asTrimmedString(params.get(PADDLE_CHECKOUT_CLAIM_QUERY_KEY)),
         returnTo: asTrimmedString(params.get(PADDLE_CHECKOUT_RETURN_QUERY_KEY)),
         tripId: asTrimmedString(params.get(PADDLE_CHECKOUT_TRIP_QUERY_KEY)),
+        discountCode: asTrimmedString(params.get(PADDLE_CHECKOUT_DISCOUNT_QUERY_KEY))
+            || asTrimmedString(params.get(PADDLE_CHECKOUT_VOUCHER_QUERY_KEY)),
     };
 };
 
@@ -290,6 +298,9 @@ export const appendPaddleCheckoutContext = (
         }
         if (asTrimmedString(context.tripId)) {
             parsed.searchParams.set(PADDLE_CHECKOUT_TRIP_QUERY_KEY, context.tripId!.trim());
+        }
+        if (asTrimmedString(context.discountCode)) {
+            parsed.searchParams.set(PADDLE_CHECKOUT_DISCOUNT_QUERY_KEY, context.discountCode!.trim());
         }
         return parsed.toString();
     } catch {
@@ -369,6 +380,7 @@ export const initializePaddleJs = async ({
 export const openPaddleInlineCheckout = ({
     transactionId,
     customerEmail,
+    discountCode,
 }: OpenPaddleInlineCheckoutOptions): boolean => {
     if (!isBrowser() || !window.Paddle?.Checkout || typeof window.Paddle.Checkout.open !== 'function') {
         return false;
@@ -378,10 +390,12 @@ export const openPaddleInlineCheckout = ({
     if (!trimmedTransactionId) return false;
 
     const trimmedCustomerEmail = asTrimmedString(customerEmail);
+    const trimmedDiscountCode = asTrimmedString(discountCode);
 
     try {
         window.Paddle.Checkout.open({
             transactionId: trimmedTransactionId,
+            discountCode: trimmedDiscountCode || undefined,
             customer: trimmedCustomerEmail ? { email: trimmedCustomerEmail } : undefined,
         });
         return true;

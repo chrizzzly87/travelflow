@@ -2,7 +2,6 @@ import { collectPaddleEnvironmentIssues, extractSubscriptionSnapshot } from '../
 import {
   authorizeBillingUser,
   asTrimmedString,
-  fetchPaddleJson,
   getAuthToken,
   getCurrentUserSubscriptionSummary,
   getPaddleApiConfig,
@@ -10,13 +9,14 @@ import {
   json,
   resolvePaddleApiBaseUrl,
 } from '../edge-lib/paddle-request.ts';
+import {
+  getSubscriptionPriceIds,
+  pickBestFallbackSubscription,
+  resolveFallbackSubscriptionDetail,
+  loadPaddleSubscriptionDetail,
+  type PaddleSubscriptionRecord,
+} from '../edge-lib/paddle-subscription-resolution.ts';
 import { extractServiceError, getSupabaseServiceConfig, processPaddleBillingEvent } from '../edge-lib/paddle-webhook-sync.ts';
-
-type PaddleSubscriptionRecord = Record<string, unknown>;
-type PaddleCustomerRecord = Record<string, unknown>;
-
-const FALLBACK_ELIGIBLE_STATUSES = new Set(['active', 'trialing', 'past_due', 'paused', 'canceled']);
-const STATUS_PRIORITY = ['active', 'trialing', 'past_due', 'paused', 'canceled'];
 
 const extractManagementResponse = (
   summary: Awaited<ReturnType<typeof getCurrentUserSubscriptionSummary>>,
@@ -41,129 +41,6 @@ const extractManagementResponse = (
   };
 };
 
-const getConfiguredPriceIds = (priceMap: { tier_mid: string | null; tier_premium: string | null }): string[] => {
-  const ids = [priceMap.tier_mid, priceMap.tier_premium].filter((value): value is string => Boolean(value));
-  return Array.from(new Set(ids));
-};
-
-const getSubscriptionItems = (subscription: Record<string, unknown>): Array<Record<string, unknown>> => {
-  return Array.isArray(subscription.items)
-    ? subscription.items.filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === 'object')
-    : [];
-};
-
-const getSubscriptionPriceIds = (subscription: Record<string, unknown>): string[] => {
-  return getSubscriptionItems(subscription)
-    .map((item) => {
-      const price = item.price && typeof item.price === 'object' ? item.price as Record<string, unknown> : null;
-      return asTrimmedString(price?.id) || asTrimmedString(item.price_id);
-    })
-    .filter((value): value is string => Boolean(value));
-};
-
-const getSubscriptionStatus = (subscription: Record<string, unknown>): string => {
-  return (asTrimmedString(subscription.status) || '').toLowerCase();
-};
-
-const getSubscriptionTimestamp = (subscription: Record<string, unknown>): number => {
-  const candidates = [
-    asTrimmedString(subscription.updated_at),
-    asTrimmedString(subscription.next_billed_at),
-    asTrimmedString(subscription.canceled_at),
-    asTrimmedString(subscription.created_at),
-  ];
-  for (const candidate of candidates) {
-    if (!candidate) continue;
-    const parsed = Date.parse(candidate);
-    if (Number.isFinite(parsed)) return parsed;
-  }
-  return 0;
-};
-
-const pickBestFallbackSubscription = (
-  subscriptions: PaddleSubscriptionRecord[],
-  configuredPriceIds: Set<string>,
-): PaddleSubscriptionRecord | null => {
-  const eligible = subscriptions.filter((subscription) => {
-    const status = getSubscriptionStatus(subscription);
-    if (!FALLBACK_ELIGIBLE_STATUSES.has(status)) return false;
-    return getSubscriptionPriceIds(subscription).some((priceId) => configuredPriceIds.has(priceId));
-  });
-
-  eligible.sort((left, right) => {
-    const leftStatus = STATUS_PRIORITY.indexOf(getSubscriptionStatus(left));
-    const rightStatus = STATUS_PRIORITY.indexOf(getSubscriptionStatus(right));
-    if (leftStatus !== rightStatus) return leftStatus - rightStatus;
-    return getSubscriptionTimestamp(right) - getSubscriptionTimestamp(left);
-  });
-
-  return eligible[0] || null;
-};
-
-const listPaddleCustomersByEmail = async (
-  baseUrl: string,
-  apiKey: string,
-  email: string,
-): Promise<PaddleCustomerRecord[]> => {
-  const { response, payload } = await fetchPaddleJson(
-    `${baseUrl}/customers?email=${encodeURIComponent(email)}&per_page=50`,
-    apiKey,
-  );
-  const typedPayload = payload as { data?: unknown } | null;
-  if (!response.ok) {
-    throw new Error(extractServiceError(typedPayload, `Could not look up Paddle customers (${response.status}).`));
-  }
-  return Array.isArray(typedPayload?.data)
-    ? typedPayload.data.filter((row): row is PaddleCustomerRecord => Boolean(row) && typeof row === 'object')
-    : [];
-};
-
-const listPaddleSubscriptionsForCustomer = async (
-  baseUrl: string,
-  apiKey: string,
-  customerId: string,
-  configuredPriceIds: string[],
-): Promise<PaddleSubscriptionRecord[]> => {
-  const params = new URLSearchParams({
-    customer_id: customerId,
-    per_page: '50',
-  });
-  if (configuredPriceIds.length > 0) {
-    params.set('price_id', configuredPriceIds.join(','));
-  }
-
-  const { response, payload } = await fetchPaddleJson(
-    `${baseUrl}/subscriptions?${params.toString()}`,
-    apiKey,
-  );
-  const typedPayload = payload as { data?: unknown } | null;
-  if (!response.ok) {
-    throw new Error(extractServiceError(typedPayload, `Could not look up Paddle subscriptions (${response.status}).`));
-  }
-  return Array.isArray(typedPayload?.data)
-    ? typedPayload.data.filter((row): row is PaddleSubscriptionRecord => Boolean(row) && typeof row === 'object')
-    : [];
-};
-
-const loadPaddleSubscriptionDetail = async (
-  baseUrl: string,
-  apiKey: string,
-  subscriptionId: string,
-): Promise<PaddleSubscriptionRecord> => {
-  const { response, payload } = await fetchPaddleJson(
-    `${baseUrl}/subscriptions/${encodeURIComponent(subscriptionId)}`,
-    apiKey,
-  );
-  const typedPayload = payload as { data?: unknown } | null;
-  if (!response.ok) {
-    throw new Error(extractServiceError(typedPayload, `Could not load Paddle management URLs (${response.status}).`));
-  }
-  const data = typedPayload?.data;
-  if (!data || typeof data !== 'object' || Array.isArray(data)) {
-    throw new Error('Paddle returned an incomplete subscription payload.');
-  }
-  return data as PaddleSubscriptionRecord;
-};
 
 const buildSyntheticEventType = (status: string | null): string => {
   switch ((status || '').toLowerCase()) {
@@ -241,40 +118,6 @@ const syncResolvedSubscription = async (
       data: subscriptionForSync,
     },
   });
-};
-
-const resolveFallbackSubscriptionDetail = async ({
-  baseUrl,
-  apiKey,
-  email,
-  priceMap,
-}: {
-  baseUrl: string;
-  apiKey: string;
-  email: string;
-  priceMap: { tier_mid: string | null; tier_premium: string | null };
-}): Promise<PaddleSubscriptionRecord | null> => {
-  const customers = await listPaddleCustomersByEmail(baseUrl, apiKey, email);
-  if (customers.length === 0) return null;
-
-  const configuredPriceIds = getConfiguredPriceIds(priceMap);
-  const configuredPriceIdSet = new Set(configuredPriceIds);
-
-  let resolved: PaddleSubscriptionRecord | null = null;
-  for (const customer of customers) {
-    const customerId = asTrimmedString(customer.id);
-    if (!customerId) continue;
-    const subscriptions = await listPaddleSubscriptionsForCustomer(baseUrl, apiKey, customerId, configuredPriceIds);
-    const candidate = pickBestFallbackSubscription(subscriptions, configuredPriceIdSet);
-    if (candidate) {
-      resolved = candidate;
-      break;
-    }
-  }
-
-  const subscriptionId = asTrimmedString(resolved?.id);
-  if (!subscriptionId) return null;
-  return loadPaddleSubscriptionDetail(baseUrl, apiKey, subscriptionId);
 };
 
 export const __paddleSubscriptionManageInternals = {

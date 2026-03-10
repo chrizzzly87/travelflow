@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Check } from '@phosphor-icons/react';
 import { Trans, useTranslation } from 'react-i18next';
 
@@ -14,6 +14,9 @@ import {
     buildBillingCheckoutPath,
     getCurrentSubscriptionSummary,
     getPaddleSubscriptionManagementUrls,
+    lookupPaddleDiscount,
+    readBillingDiscountCodeFromSearch,
+    type BillingDiscountLookup,
     type BillingCheckoutTierKey,
     type BillingSubscriptionSummary,
 } from '../services/billingService';
@@ -59,14 +62,22 @@ const asDisplayCount = (value: number | null, unlimitedLabel: string): string =>
 
 export const PricingPage: React.FC = () => {
     const { t } = useTranslation('pricing');
+    const location = useLocation();
+    const navigate = useNavigate();
+    const activeDiscountCode = readBillingDiscountCodeFromSearch(location.search);
     const { access, isAuthenticated } = useAuth();
     const [paddlePublicConfig, setPaddlePublicConfig] = useState<PaddlePublicConfig | null>(null);
     const [subscriptionSummary, setSubscriptionSummary] = useState<BillingSubscriptionSummary | null>(null);
     const [isSubscriptionSummaryLoading, setIsSubscriptionSummaryLoading] = useState(false);
+    const [voucherInput, setVoucherInput] = useState(activeDiscountCode || '');
+    const [voucherLookups, setVoucherLookups] = useState<Partial<Record<BillingCheckoutTierKey, BillingDiscountLookup>>>({});
+    const [voucherErrorMessage, setVoucherErrorMessage] = useState<string | null>(null);
+    const [isVoucherLoading, setIsVoucherLoading] = useState(false);
     const unlimitedLabel = t('shared.unlimited');
     const noExpiryLabel = t('shared.noExpiry');
     const enabledLabel = t('shared.enabled');
     const disabledLabel = t('shared.disabled');
+    const voucherInvalidMessage = t('voucher.invalidMessage');
     const activeTierKey = access?.tierKey ?? 'tier_free';
     const hasPaidTier = activeTierKey === 'tier_mid' || activeTierKey === 'tier_premium';
     const isEligibleAccount = isAuthenticated && access?.isAnonymous !== true;
@@ -129,6 +140,61 @@ export const PricingPage: React.FC = () => {
         };
     }, [hasPaidTier, isEligibleAccount]);
 
+    useEffect(() => {
+        const discountCode = activeDiscountCode;
+        if (!discountCode) {
+            setVoucherLookups({});
+            setVoucherErrorMessage(null);
+            setIsVoucherLoading(false);
+            return;
+        }
+
+        let cancelled = false;
+        setIsVoucherLoading(true);
+
+        void Promise.allSettled([
+            lookupPaddleDiscount(discountCode, 'tier_mid'),
+            lookupPaddleDiscount(discountCode, 'tier_premium'),
+        ]).then((results) => {
+            if (cancelled) return;
+
+            const nextLookups: Partial<Record<BillingCheckoutTierKey, BillingDiscountLookup>> = {};
+            const resolvedErrors: string[] = [];
+
+            if (results[0].status === 'fulfilled') {
+                nextLookups.tier_mid = results[0].value;
+            } else {
+                resolvedErrors.push(results[0].reason instanceof Error ? results[0].reason.message : voucherInvalidMessage);
+            }
+
+            if (results[1].status === 'fulfilled') {
+                nextLookups.tier_premium = results[1].value;
+            } else {
+                resolvedErrors.push(results[1].reason instanceof Error ? results[1].reason.message : voucherInvalidMessage);
+            }
+
+            setVoucherLookups(nextLookups);
+            setVoucherErrorMessage(
+                Object.keys(nextLookups).length > 0
+                    ? null
+                    : resolvedErrors[0] || voucherInvalidMessage
+            );
+        }).catch((error) => {
+            if (!cancelled) {
+                setVoucherLookups({});
+                setVoucherErrorMessage(error instanceof Error ? error.message : voucherInvalidMessage);
+            }
+        }).finally(() => {
+            if (!cancelled) {
+                setIsVoucherLoading(false);
+            }
+        });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [activeDiscountCode, voucherInvalidMessage]);
+
     const resolveTierFeatures = (tierKey: typeof PLAN_ORDER[number]) => {
         const tier = PLAN_CATALOG[tierKey];
         const interpolationValues = {
@@ -149,6 +215,45 @@ export const PricingPage: React.FC = () => {
             : [];
     };
 
+    const formatMoney = (amountMinor: number, currencyCode: string) => (
+        new Intl.NumberFormat(undefined, {
+            style: 'currency',
+            currency: currencyCode,
+        }).format(amountMinor / 100)
+    );
+
+    const handleApplyVoucher = () => {
+        const normalized = voucherInput.trim().toUpperCase();
+        const params = new URLSearchParams(location.search);
+        params.delete('voucher');
+        if (!normalized) {
+            params.delete('discount');
+        } else {
+            params.set('discount', normalized);
+        }
+
+        navigate({
+            pathname: location.pathname,
+            search: params.toString() ? `?${params.toString()}` : '',
+        }, { replace: false });
+
+        trackEvent(normalized ? 'pricing__voucher--apply' : 'pricing__voucher--clear', {
+            code: normalized || null,
+        });
+    };
+
+    const handleClearVoucher = () => {
+        const params = new URLSearchParams(location.search);
+        params.delete('discount');
+        params.delete('voucher');
+        setVoucherInput('');
+        navigate({
+            pathname: location.pathname,
+            search: params.toString() ? `?${params.toString()}` : '',
+        }, { replace: false });
+        trackEvent('pricing__voucher--clear');
+    };
+
     return (
         <MarketingLayout>
             <div className="py-8 md:py-16">
@@ -164,6 +269,58 @@ export const PricingPage: React.FC = () => {
                     </p>
                 </div>
 
+                <div className="mx-auto mb-8 max-w-6xl rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                        <div className="max-w-2xl">
+                            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{t('voucher.eyebrow')}</p>
+                            <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-900">{t('voucher.title')}</h2>
+                            <p className="mt-1 text-sm text-slate-600">{t('voucher.description')}</p>
+                        </div>
+                        <div className="w-full max-w-xl">
+                            <div className="flex flex-col gap-3 sm:flex-row">
+                                <input
+                                    type="text"
+                                    value={voucherInput}
+                                    onChange={(event) => setVoucherInput(event.target.value.toUpperCase())}
+                                    placeholder={t('voucher.placeholder')}
+                                    autoCapitalize="characters"
+                                    className="h-11 flex-1 rounded-xl border border-slate-300 bg-white px-4 text-sm font-medium text-slate-900 shadow-sm transition-colors placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={handleApplyVoucher}
+                                    disabled={isVoucherLoading}
+                                    className="inline-flex h-11 items-center justify-center rounded-xl bg-accent-600 px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-accent-700 disabled:cursor-wait disabled:opacity-70"
+                                    {...getAnalyticsDebugAttributes('pricing__voucher--apply')}
+                                >
+                                    {isVoucherLoading ? t('voucher.applying') : t('voucher.applyCta')}
+                                </button>
+                                {activeDiscountCode ? (
+                                    <button
+                                        type="button"
+                                        onClick={handleClearVoucher}
+                                        className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
+                                        {...getAnalyticsDebugAttributes('pricing__voucher--clear')}
+                                    >
+                                        {t('voucher.clearCta')}
+                                    </button>
+                                ) : null}
+                            </div>
+                            {activeDiscountCode && Object.keys(voucherLookups).length > 0 ? (
+                                <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+                                    <span className="font-semibold">{t('voucher.appliedMessage', { code: activeDiscountCode })}</span>{' '}
+                                    {t('voucher.appliedDescription')}
+                                </div>
+                            ) : null}
+                            {voucherErrorMessage ? (
+                                <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                                    {voucherErrorMessage}
+                                </div>
+                            ) : null}
+                        </div>
+                    </div>
+                </div>
+
                 <div className="mx-auto grid max-w-6xl grid-cols-1 gap-6 md:grid-cols-3">
                     {PLAN_ORDER.map((tierKey) => {
                         const tier = PLAN_CATALOG[tierKey];
@@ -171,6 +328,9 @@ export const PricingPage: React.FC = () => {
                         const isPaidTier = tier.monthlyPriceUsd > 0;
                         const supportsCheckout = (tier.key === 'tier_mid' || tier.key === 'tier_premium')
                             && isPaddleTierCheckoutConfigured(paddlePublicConfig, tier.key as BillingCheckoutTierKey);
+                        const discountLookup = isPaidTier && (tier.key === 'tier_mid' || tier.key === 'tier_premium')
+                            ? voucherLookups[tier.key as BillingCheckoutTierKey] || null
+                            : null;
                         const featureList = resolveTierFeatures(tier.key);
                         const isCurrentTier = isAuthenticated && activeTierKey === tier.key;
                         const freeTierTarget = isAuthenticated ? buildPath('profile') : buildPath('login');
@@ -178,6 +338,7 @@ export const PricingPage: React.FC = () => {
                             tierKey: tier.key as BillingCheckoutTierKey,
                             source: 'pricing_page',
                             returnTo: buildPath('pricing'),
+                            discountCode: activeDiscountCode,
                         });
                         const billingDecision = isPaidTier && isEligibleAccount
                             ? resolveBillingTierDecision({
@@ -303,6 +464,19 @@ export const PricingPage: React.FC = () => {
                                             <div className="text-sm font-medium text-slate-500">{t('shared.perMonth')}</div>
                                         </div>
                                     </div>
+                                    {discountLookup?.applicableToTier && discountLookup.estimate ? (
+                                        <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-left">
+                                            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">
+                                                {t('voucher.cardEyebrow', { code: discountLookup.code })}
+                                            </p>
+                                            <p className="mt-1 text-sm font-medium text-emerald-900">
+                                                {t('voucher.cardSavingsMessage', {
+                                                    savings: formatMoney(discountLookup.estimate.savingsAmount || 0, discountLookup.estimate.currencyCode || 'USD'),
+                                                    discounted: formatMoney(discountLookup.estimate.discountedAmount || 0, discountLookup.estimate.currencyCode || 'USD'),
+                                                })}
+                                            </p>
+                                        </div>
+                                    ) : null}
 
                                     <h2 className="mt-5 text-2xl font-bold tracking-tight text-slate-900">
                                         {t(`tiers.${tier.publicSlug}.name`)}

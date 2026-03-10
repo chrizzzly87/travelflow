@@ -15,6 +15,8 @@ const BILLING_CHECKOUT_SOURCE_QUERY_KEY = 'source';
 const BILLING_CHECKOUT_CLAIM_QUERY_KEY = 'claim';
 const BILLING_CHECKOUT_RETURN_QUERY_KEY = 'return_to';
 const BILLING_CHECKOUT_TRIP_QUERY_KEY = 'trip_id';
+const BILLING_CHECKOUT_DISCOUNT_QUERY_KEY = 'discount';
+const BILLING_CHECKOUT_VOUCHER_QUERY_KEY = 'voucher';
 
 interface StartPaddleCheckoutPayload {
   tierKey: BillingCheckoutTierKey;
@@ -22,6 +24,7 @@ interface StartPaddleCheckoutPayload {
   claimId?: string | null;
   returnTo?: string | null;
   tripId?: string | null;
+  discountCode?: string | null;
 }
 
 interface PaddleCheckoutResponse {
@@ -122,6 +125,45 @@ interface BillingManagementResponse {
   message?: string;
 }
 
+interface BillingTransactionSyncResponse {
+  ok?: boolean;
+  data?: {
+    provider?: string;
+    transactionId?: string | null;
+    providerSubscriptionId?: string | null;
+    providerStatus?: string | null;
+    localSync?: {
+      status?: string;
+      duplicate?: boolean;
+      reason?: string | null;
+    } | null;
+  };
+  error?: string;
+  message?: string;
+}
+
+interface BillingDiscountLookupResponse {
+  ok?: boolean;
+  data?: {
+    code?: string;
+    type?: string | null;
+    amount?: number | null;
+    currencyCode?: string | null;
+    description?: string | null;
+    appliesToAllRecurring?: boolean;
+    maximumRecurringIntervals?: number | null;
+    applicableToTier?: boolean;
+    estimate?: {
+      originalAmount?: number | null;
+      discountedAmount?: number | null;
+      savingsAmount?: number | null;
+      currencyCode?: string | null;
+    } | null;
+  };
+  error?: string;
+  message?: string;
+}
+
 export interface PaddleCheckoutSession {
   provider: 'paddle';
   environment: string;
@@ -136,6 +178,7 @@ export interface BillingCheckoutPathOptions {
   claimId?: string | null;
   returnTo?: string | null;
   tripId?: string | null;
+  discountCode?: string | null;
 }
 
 export interface BillingSubscriptionSummary {
@@ -201,6 +244,35 @@ export interface PaddleSubscriptionManagementUrls {
   graceEndsAt: string | null;
 }
 
+export interface BillingTransactionSyncResult {
+  provider: 'paddle';
+  transactionId: string;
+  providerSubscriptionId: string | null;
+  providerStatus: string | null;
+  localSync: {
+    status: string;
+    duplicate: boolean;
+    reason: string | null;
+  } | null;
+}
+
+export interface BillingDiscountLookup {
+  code: string;
+  type: string | null;
+  amount: number | null;
+  currencyCode: string | null;
+  description: string | null;
+  appliesToAllRecurring: boolean;
+  maximumRecurringIntervals: number | null;
+  applicableToTier: boolean;
+  estimate: {
+    originalAmount: number | null;
+    discountedAmount: number | null;
+    savingsAmount: number | null;
+    currencyCode: string | null;
+  } | null;
+}
+
 const asTrimmedString = (value: unknown): string | null =>
   typeof value === 'string' && value.trim() ? value.trim() : null;
 
@@ -213,6 +285,7 @@ export const buildBillingCheckoutPath = ({
   claimId,
   returnTo,
   tripId,
+  discountCode,
 }: BillingCheckoutPathOptions): string => {
   const params = new URLSearchParams();
   params.set(BILLING_CHECKOUT_TIER_QUERY_KEY, tierKey);
@@ -237,7 +310,18 @@ export const buildBillingCheckoutPath = ({
     params.set(BILLING_CHECKOUT_TRIP_QUERY_KEY, normalizedTripId.slice(0, 120));
   }
 
+  const normalizedDiscountCode = asTrimmedString(discountCode);
+  if (normalizedDiscountCode) {
+    params.set(BILLING_CHECKOUT_DISCOUNT_QUERY_KEY, normalizedDiscountCode.slice(0, 80));
+  }
+
   return `${buildPath('checkout')}?${params.toString()}`;
+};
+
+export const readBillingDiscountCodeFromSearch = (search: string): string | null => {
+  const params = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search);
+  return asTrimmedString(params.get(BILLING_CHECKOUT_DISCOUNT_QUERY_KEY))
+    || asTrimmedString(params.get(BILLING_CHECKOUT_VOUCHER_QUERY_KEY));
 };
 
 const parseCheckoutResponse = (payload: unknown): PaddleCheckoutResponse => {
@@ -263,6 +347,16 @@ const parseUpgradeChangeResponse = (payload: unknown): BillingUpgradeChangeRespo
 const parseManagementResponse = (payload: unknown): BillingManagementResponse => {
   if (!payload || typeof payload !== 'object') return {};
   return payload as BillingManagementResponse;
+};
+
+const parseTransactionSyncResponse = (payload: unknown): BillingTransactionSyncResponse => {
+  if (!payload || typeof payload !== 'object') return {};
+  return payload as BillingTransactionSyncResponse;
+};
+
+const parseDiscountLookupResponse = (payload: unknown): BillingDiscountLookupResponse => {
+  if (!payload || typeof payload !== 'object') return {};
+  return payload as BillingDiscountLookupResponse;
 };
 
 const normalizeErrorMessage = (
@@ -356,6 +450,7 @@ export const startPaddleCheckoutSession = async (
       claimId: asTrimmedString(payload.claimId),
       returnTo: isSafeInternalPath(asTrimmedString(payload.returnTo)) ? asTrimmedString(payload.returnTo) : null,
       tripId: asTrimmedString(payload.tripId),
+      discountCode: asTrimmedString(payload.discountCode),
     }),
   });
 
@@ -525,5 +620,90 @@ export const getPaddleSubscriptionManagementUrls = async (): Promise<PaddleSubsc
     cancelAt: data?.cancelAt ?? null,
     canceledAt: data?.canceledAt ?? null,
     graceEndsAt: data?.graceEndsAt ?? null,
+  };
+};
+
+export const syncPaddleTransaction = async (transactionId: string): Promise<BillingTransactionSyncResult> => {
+  const { parsed } = await postBillingJson(
+    '/api/billing/paddle/transaction-sync',
+    { transactionId: asTrimmedString(transactionId) },
+    parseTransactionSyncResponse,
+    'Could not sync Paddle transaction',
+  );
+
+  const data = parsed.data;
+  if (data?.provider !== 'paddle' || typeof data.transactionId !== 'string') {
+    throw new Error('Paddle transaction sync returned an incomplete payload.');
+  }
+
+  return {
+    provider: 'paddle',
+    transactionId: data.transactionId,
+    providerSubscriptionId: data.providerSubscriptionId ?? null,
+    providerStatus: data.providerStatus ?? null,
+    localSync: data.localSync
+      ? {
+        status: data.localSync.status || 'unknown',
+        duplicate: data.localSync.duplicate === true,
+        reason: data.localSync.reason ?? null,
+      }
+      : null,
+  };
+};
+
+export const lookupPaddleDiscount = async (
+  code: string,
+  tierKey: BillingCheckoutTierKey,
+): Promise<BillingDiscountLookup> => {
+  const normalizedCode = asTrimmedString(code);
+  if (!normalizedCode) {
+    throw new Error('A voucher code is required.');
+  }
+
+  const response = await fetch(
+    `/api/billing/paddle/discount-lookup?code=${encodeURIComponent(normalizedCode)}&tier=${encodeURIComponent(tierKey)}`,
+    {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    },
+  );
+  const responseText = await response.text().catch(() => '');
+  let parsed = parseDiscountLookupResponse({});
+  if (responseText) {
+    try {
+      parsed = parseDiscountLookupResponse(JSON.parse(responseText));
+    } catch {
+      parsed = parseDiscountLookupResponse({});
+    }
+  }
+
+  if (!response.ok || parsed.ok === false) {
+    throw new Error(normalizeErrorMessage(parsed as PaddleCheckoutResponse, response.status, 'Could not validate Paddle voucher'));
+  }
+
+  const data = parsed.data;
+  if (!data?.code) {
+    throw new Error('Paddle voucher lookup returned an incomplete payload.');
+  }
+
+  return {
+    code: data.code,
+    type: data.type ?? null,
+    amount: typeof data.amount === 'number' ? data.amount : null,
+    currencyCode: data.currencyCode ?? null,
+    description: data.description ?? null,
+    appliesToAllRecurring: data.appliesToAllRecurring === true,
+    maximumRecurringIntervals: typeof data.maximumRecurringIntervals === 'number' ? data.maximumRecurringIntervals : null,
+    applicableToTier: data.applicableToTier !== false,
+    estimate: data.estimate
+      ? {
+        originalAmount: typeof data.estimate.originalAmount === 'number' ? data.estimate.originalAmount : null,
+        discountedAmount: typeof data.estimate.discountedAmount === 'number' ? data.estimate.discountedAmount : null,
+        savingsAmount: typeof data.estimate.savingsAmount === 'number' ? data.estimate.savingsAmount : null,
+        currencyCode: data.estimate.currencyCode ?? null,
+      }
+      : null,
   };
 };

@@ -12,8 +12,11 @@ import {
   applyPaddleSubscriptionUpgrade,
   buildBillingCheckoutPath,
   getPaddleSubscriptionManagementUrls,
+  lookupPaddleDiscount,
   previewPaddleSubscriptionUpgrade,
+  readBillingDiscountCodeFromSearch,
   startPaddleCheckoutSession,
+  syncPaddleTransaction,
 } from '../../services/billingService';
 
 describe('billingService startPaddleCheckoutSession', () => {
@@ -69,6 +72,7 @@ describe('billingService startPaddleCheckoutSession', () => {
         claimId: null,
         returnTo: null,
         tripId: null,
+        discountCode: null,
       }),
     });
   });
@@ -94,7 +98,13 @@ describe('billingService startPaddleCheckoutSession', () => {
       claimId: '123e4567-e89b-12d3-a456-426614174000',
       returnTo: '/trip/trip_123?view=map',
       tripId: 'trip_123',
-    })).toBe('/checkout?tier=tier_mid&source=trip_paywall_strip&claim=123e4567-e89b-12d3-a456-426614174000&return_to=%2Ftrip%2Ftrip_123%3Fview%3Dmap&trip_id=trip_123');
+      discountCode: 'SPRING20',
+    })).toBe('/checkout?tier=tier_mid&source=trip_paywall_strip&claim=123e4567-e89b-12d3-a456-426614174000&return_to=%2Ftrip%2Ftrip_123%3Fview%3Dmap&trip_id=trip_123&discount=SPRING20');
+  });
+
+  it('reads voucher codes from canonical and legacy URL query keys', () => {
+    expect(readBillingDiscountCodeFromSearch('?discount=SPRING20')).toBe('SPRING20');
+    expect(readBillingDiscountCodeFromSearch('?voucher=VIP50')).toBe('VIP50');
   });
 
   it('previews a Paddle subscription upgrade for paid users', async () => {
@@ -193,6 +203,77 @@ describe('billingService startPaddleCheckoutSession', () => {
       cancelAt: null,
       canceledAt: null,
       graceEndsAt: null,
+    });
+  });
+
+  it('syncs a Paddle transaction into the local billing store', async () => {
+    dbServiceMocks.ensureExistingDbSession.mockResolvedValue('123e4567-e89b-12d3-a456-426614174000');
+    dbServiceMocks.dbGetAccessToken.mockResolvedValue('token-123');
+
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      ok: true,
+      data: {
+        provider: 'paddle',
+        transactionId: 'txn_123',
+        providerSubscriptionId: 'sub_123',
+        providerStatus: 'active',
+        localSync: {
+          status: 'processed',
+          duplicate: false,
+          reason: null,
+        },
+      },
+    }), { status: 200 })));
+
+    await expect(syncPaddleTransaction('txn_123')).resolves.toEqual({
+      provider: 'paddle',
+      transactionId: 'txn_123',
+      providerSubscriptionId: 'sub_123',
+      providerStatus: 'active',
+      localSync: {
+        status: 'processed',
+        duplicate: false,
+        reason: null,
+      },
+    });
+  });
+
+  it('looks up Paddle voucher estimates for a supported tier', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      ok: true,
+      data: {
+        code: 'SPRING20',
+        type: 'percentage',
+        amount: 20,
+        currencyCode: 'USD',
+        description: 'Spring 20% off',
+        appliesToAllRecurring: true,
+        maximumRecurringIntervals: null,
+        applicableToTier: true,
+        estimate: {
+          originalAmount: 900,
+          discountedAmount: 720,
+          savingsAmount: 180,
+          currencyCode: 'USD',
+        },
+      },
+    }), { status: 200 })));
+
+    await expect(lookupPaddleDiscount('SPRING20', 'tier_mid')).resolves.toEqual({
+      code: 'SPRING20',
+      type: 'percentage',
+      amount: 20,
+      currencyCode: 'USD',
+      description: 'Spring 20% off',
+      appliesToAllRecurring: true,
+      maximumRecurringIntervals: null,
+      applicableToTier: true,
+      estimate: {
+        originalAmount: 900,
+        discountedAmount: 720,
+        savingsAmount: 180,
+        currencyCode: 'USD',
+      },
     });
   });
 });

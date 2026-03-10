@@ -60,6 +60,33 @@ const mocks = vi.hoisted(() => ({
   previewPaddleSubscriptionUpgrade: vi.fn(),
   applyPaddleSubscriptionUpgrade: vi.fn(),
   getPaddleSubscriptionManagementUrls: vi.fn(),
+  lookupPaddleDiscount: vi.fn().mockResolvedValue({
+    code: 'SPRING20',
+    type: 'percentage',
+    amount: 20,
+    currencyCode: 'USD',
+    description: 'Spring 20% off',
+    appliesToAllRecurring: true,
+    maximumRecurringIntervals: null,
+    applicableToTier: true,
+    estimate: {
+      originalAmount: 900,
+      discountedAmount: 720,
+      savingsAmount: 180,
+      currencyCode: 'USD',
+    },
+  }),
+  syncPaddleTransaction: vi.fn().mockResolvedValue({
+    provider: 'paddle',
+    transactionId: 'txn_123',
+    providerSubscriptionId: 'sub_123',
+    providerStatus: 'active',
+    localSync: {
+      status: 'processed',
+      duplicate: false,
+      reason: null,
+    },
+  }),
   startPaddleCheckoutSession: vi.fn().mockResolvedValue({
     provider: 'paddle',
     environment: 'sandbox',
@@ -165,7 +192,9 @@ vi.mock('../../services/billingService', async () => {
     previewPaddleSubscriptionUpgrade: mocks.previewPaddleSubscriptionUpgrade,
     applyPaddleSubscriptionUpgrade: mocks.applyPaddleSubscriptionUpgrade,
     getPaddleSubscriptionManagementUrls: mocks.getPaddleSubscriptionManagementUrls,
+    lookupPaddleDiscount: mocks.lookupPaddleDiscount,
     startPaddleCheckoutSession: mocks.startPaddleCheckoutSession,
+    syncPaddleTransaction: mocks.syncPaddleTransaction,
   };
 });
 
@@ -298,6 +327,8 @@ describe('pages/CheckoutPage', () => {
       canceledAt: null,
       graceEndsAt: null,
     });
+    mocks.lookupPaddleDiscount.mockClear();
+    mocks.syncPaddleTransaction.mockClear();
   });
 
   it('preserves trip and claim metadata when starting checkout from the dedicated route', async () => {
@@ -310,6 +341,7 @@ describe('pages/CheckoutPage', () => {
         claimId: 'claim_123',
         returnTo: '/trip/trip_123',
         tripId: 'trip_123',
+        discountCode: null,
       });
     });
 
@@ -429,6 +461,7 @@ describe('pages/CheckoutPage', () => {
       expect(mocks.openPaddleInlineCheckout).toHaveBeenCalledWith({
         transactionId: 'txn_123',
         customerEmail: 'ada@example.com',
+        discountCode: null,
       });
     });
     expect(screen.queryByText('checkout.errorConfig')).toBeNull();
@@ -442,6 +475,7 @@ describe('pages/CheckoutPage', () => {
       expect(mocks.openPaddleInlineCheckout).toHaveBeenCalledWith({
         transactionId: 'txn_old',
         customerEmail: 'ada@example.com',
+        discountCode: null,
       });
     });
 
@@ -455,6 +489,7 @@ describe('pages/CheckoutPage', () => {
       expect(mocks.openPaddleInlineCheckout).toHaveBeenLastCalledWith({
         transactionId: 'txn_new',
         customerEmail: 'ada@example.com',
+        discountCode: null,
       });
     });
 
@@ -478,6 +513,7 @@ describe('pages/CheckoutPage', () => {
     checkoutEventCallback?.({ name: 'checkout.completed' });
 
     await waitFor(() => {
+      expect(mocks.syncPaddleTransaction).toHaveBeenCalledWith('txn_123');
       expect(mocks.getPaddleSubscriptionManagementUrls).toHaveBeenCalled();
       expect(mocks.auth.refreshAccess).toHaveBeenCalled();
     });
@@ -491,6 +527,21 @@ describe('pages/CheckoutPage', () => {
     expect(await screen.findByRole('link', { name: 'checkout.successOpenTrip' })).toHaveAttribute('href', '/trip/trip_claimed_123');
     expect(screen.getByRole('link', { name: 'checkout.successCreateTrip' })).toHaveAttribute('href', '/create-trip');
     expect(screen.queryByRole('link', { name: 'checkout.successOpenProfile' })).toBeNull();
+  });
+
+  it('passes voucher codes into inline Paddle checkout and discount lookup', async () => {
+    mocks.location.search = '?tier=tier_mid&source=pricing_page&_ptxn=txn_123&discount=SPRING20';
+
+    render(React.createElement(CheckoutPage));
+
+    await waitFor(() => {
+      expect(mocks.lookupPaddleDiscount).toHaveBeenCalledWith('SPRING20', 'tier_mid');
+      expect(mocks.openPaddleInlineCheckout).toHaveBeenCalledWith({
+        transactionId: 'txn_123',
+        customerEmail: 'ada@example.com',
+        discountCode: 'SPRING20',
+      });
+    });
   });
 
   it('renders an upgrade review flow for existing paid users and confirms the upgrade inline', async () => {

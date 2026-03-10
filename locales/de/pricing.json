@@ -151,5 +151,21 @@
     "manageBillingDescription": "Dieser Abo-Status kann gerade nicht direkt hier geändert werden. Öffne Paddle, um das Abo sicher zu verwalten.",
     "renewalDateLabel": "Verlängert sich am",
     "currentPlanCta": "Bereits abonniert"
+  },
+  "voucher": {
+    "eyebrow": "Gutscheincode",
+    "title": "Rabatt vor dem Checkout anwenden",
+    "description": "Nutze einen Paddle-Gutscheinlink oder gib deinen Code hier ein. Beim Wechsel in den Checkout bleibt er erhalten.",
+    "placeholder": "Gutscheincode eingeben",
+    "applyCta": "Code anwenden",
+    "applying": "Code wird geprüft…",
+    "clearCta": "Code entfernen",
+    "appliedMessage": "Gutschein {code} ist aktiv.",
+    "appliedDescription": "Die Ersparnis wird bei passenden Tarifen angezeigt und bis in den Checkout übernommen.",
+    "invalidMessage": "Dieser Gutschein ist für die aktuellen Bezahl-Tarife nicht verfügbar.",
+    "cardEyebrow": "Gutschein {code}",
+    "cardSavingsMessage": "Spare {savings} bei der ersten Zahlung. Geschätzter Checkout-Gesamtpreis: {discounted}.",
+    "appliedEyebrow": "Gutschein {code}",
+    "checkoutSavingsMessage": "Geschätzter Checkout-Gesamtpreis: {discounted}. Du sparst {savings} bei der ersten Zahlung."
   }
 }

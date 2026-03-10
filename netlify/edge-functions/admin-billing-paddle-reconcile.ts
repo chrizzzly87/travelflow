@@ -1,4 +1,5 @@
 import { normalizePaddleEnvironment, readPaddlePriceMapFromEnv } from '../edge-lib/paddle-billing.ts';
+import { pickBestFallbackSubscription } from '../edge-lib/paddle-subscription-resolution.ts';
 import {
   extractServiceError as extractSyncServiceError,
   getSupabaseServiceConfig,
@@ -18,7 +19,7 @@ const DEFAULT_MAX_SUBSCRIPTIONS = 200;
 const MAX_SUBSCRIPTIONS = 1000;
 const RECONCILE_STATUSES = new Set(['active', 'trialing', 'past_due', 'paused', 'canceled']);
 const RETRYABLE_STATUS_CODES = new Set([429, 500, 502, 503, 504]);
-const MAX_PADDLE_API_ATTEMPTS = 3;
+const MAX_PADDLE_API_ATTEMPTS = 5;
 
 interface AdminReconcileRequestBody {
   maxSubscriptions?: number | null;
@@ -317,6 +318,40 @@ const isEligibleSubscription = (subscription: PaddleSubscription, configuredPric
   return priceIds.some((priceId) => configuredPriceIds.has(priceId));
 };
 
+const resolveReconcileGroupKey = (subscription: PaddleSubscription): string => {
+  const customData = subscription.custom_data && typeof subscription.custom_data === 'object'
+    ? subscription.custom_data as Record<string, unknown>
+    : null;
+  const tfUserId = asTrimmedString(customData?.tf_user_id);
+  if (tfUserId) {
+    return `user:${tfUserId}`;
+  }
+
+  const customerId = asTrimmedString(subscription.customer_id);
+  if (customerId) {
+    return `customer:${customerId}`;
+  }
+
+  return `subscription:${asTrimmedString(subscription.id) || 'unknown'}`;
+};
+
+const collapseSubscriptionsForReconcile = (
+  subscriptions: PaddleSubscription[],
+  priceMap: { tier_mid: string | null; tier_premium: string | null },
+): PaddleSubscription[] => {
+  const grouped = new Map<string, PaddleSubscription[]>();
+  for (const subscription of subscriptions) {
+    const key = resolveReconcileGroupKey(subscription);
+    const current = grouped.get(key) || [];
+    current.push(subscription);
+    grouped.set(key, current);
+  }
+
+  return Array.from(grouped.values())
+    .map((group) => (pickBestFallbackSubscription(group, priceMap) as PaddleSubscription | null) || group[0])
+    .filter((subscription): subscription is PaddleSubscription => Boolean(subscription));
+};
+
 const buildSyntheticEventType = (status: string | null): string => {
   switch ((status || '').toLowerCase()) {
     case 'active':
@@ -390,7 +425,7 @@ const fetchPaddleJson = async (
       return { response, payload };
     }
 
-    const waitMs = parseRetryAfterMs(response) ?? (700 * (attempt + 1));
+    const waitMs = parseRetryAfterMs(response) ?? (1200 * (attempt + 1));
     await sleep(waitMs);
     attempt += 1;
   }
@@ -534,6 +569,7 @@ export const __adminBillingPaddleReconcileInternals = {
   buildSyntheticEventType,
   buildSyntheticEnvelope,
   isEligibleSubscription,
+  collapseSubscriptionsForReconcile,
   getSubscriptionPriceIds,
 };
 
@@ -594,7 +630,10 @@ export default async (request: Request): Promise<Response> => {
 
     const eligibleSubscriptions = subscriptionId
       ? subscriptions
-      : subscriptions.filter((subscription) => isEligibleSubscription(subscription, configuredPriceIdSet));
+      : collapseSubscriptionsForReconcile(
+          subscriptions.filter((subscription) => isEligibleSubscription(subscription, configuredPriceIdSet)),
+          paddleConfig.priceMap,
+        );
 
     const summary: ReconcileSummary = {
       fetched: subscriptions.length,

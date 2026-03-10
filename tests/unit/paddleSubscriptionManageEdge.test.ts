@@ -55,7 +55,10 @@ describe('paddle subscription manage edge internals', () => {
           items: [{ price_id: 'pri_other' }],
         },
       ],
-      new Set(['pri_mid']),
+      {
+        tier_mid: 'pri_mid',
+        tier_premium: 'pri_premium',
+      },
     );
 
     expect(result).toMatchObject({

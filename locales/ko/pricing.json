@@ -151,5 +151,21 @@
     "travelerDetailsSavedDescription": "Your checkout profile details are now up to date.",
     "travelerDetailsPaymentReady": "Secure payment is ready below. Edit these details only if something changed.",
     "travelerDetailsAutoContinue": "Secure payment opens automatically as soon as your saved details are confirmed."
+  },
+  "voucher": {
+    "eyebrow": "할인 코드",
+    "title": "체크아웃 전에 할인을 적용하세요",
+    "description": "Paddle 바우처 링크를 사용하거나 여기에서 코드를 입력하세요. 체크아웃으로 넘어가도 유지됩니다.",
+    "placeholder": "할인 코드 입력",
+    "applyCta": "코드 적용",
+    "applying": "코드를 확인하는 중…",
+    "clearCta": "코드 제거",
+    "appliedMessage": "바우처 {code}가 준비되었습니다.",
+    "appliedDescription": "적용 가능한 유료 플랜에서 절약 금액을 보여주고 체크아웃까지 유지합니다.",
+    "invalidMessage": "이 바우처는 현재 유료 플랜에 사용할 수 없습니다.",
+    "cardEyebrow": "바우처 {code}",
+    "cardSavingsMessage": "첫 결제에서 {savings} 절약. 예상 체크아웃 합계: {discounted}.",
+    "appliedEyebrow": "바우처 {code}",
+    "checkoutSavingsMessage": "예상 체크아웃 합계: {discounted}. 첫 결제에서 {savings} 절약됩니다."
   }
 }

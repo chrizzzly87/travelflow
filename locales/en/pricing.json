@@ -151,5 +151,21 @@
     "manageBillingDescription": "This subscription state cannot be changed inline right now. Open Paddle billing to manage the subscription safely.",
     "renewalDateLabel": "Renews",
     "currentPlanCta": "Already subscribed"
+  },
+  "voucher": {
+    "eyebrow": "Voucher code",
+    "title": "Apply a discount before checkout",
+    "description": "Use a Paddle voucher link or enter your code here. We keep it attached when you continue to checkout.",
+    "placeholder": "Enter voucher code",
+    "applyCta": "Apply code",
+    "applying": "Checking code…",
+    "clearCta": "Remove code",
+    "appliedMessage": "Voucher {code} is ready.",
+    "appliedDescription": "Your savings are shown on eligible paid plans and stay attached through checkout.",
+    "invalidMessage": "This voucher is not available for the current paid plans.",
+    "cardEyebrow": "Voucher {code}",
+    "cardSavingsMessage": "Save {savings} on the first payment. Estimated checkout total: {discounted}.",
+    "appliedEyebrow": "Voucher {code}",
+    "checkoutSavingsMessage": "Estimated checkout total: {discounted}. You save {savings} on the first payment."
   }
 }

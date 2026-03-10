@@ -151,5 +151,21 @@
     "travelerDetailsSavedDescription": "Your checkout profile details are now up to date.",
     "travelerDetailsPaymentReady": "Secure payment is ready below. Edit these details only if something changed.",
     "travelerDetailsAutoContinue": "Secure payment opens automatically as soon as your saved details are confirmed."
+  },
+  "voucher": {
+    "eyebrow": "Промокод",
+    "title": "Примените скидку перед checkout",
+    "description": "Используйте ссылку с ваучером Paddle или введите код здесь. Мы сохраним его до перехода в checkout.",
+    "placeholder": "Введите промокод",
+    "applyCta": "Применить код",
+    "applying": "Проверяем код…",
+    "clearCta": "Убрать код",
+    "appliedMessage": "Промокод {code} готов.",
+    "appliedDescription": "Экономия показывается на подходящих тарифах и сохраняется до checkout.",
+    "invalidMessage": "Этот промокод недоступен для текущих платных тарифов.",
+    "cardEyebrow": "Промокод {code}",
+    "cardSavingsMessage": "Сэкономьте {savings} на первом платеже. Оценка суммы в checkout: {discounted}.",
+    "appliedEyebrow": "Промокод {code}",
+    "checkoutSavingsMessage": "Оценка суммы в checkout: {discounted}. Вы экономите {savings} на первом платеже."
   }
 }

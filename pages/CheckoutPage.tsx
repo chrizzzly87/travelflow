@@ -16,9 +16,12 @@ import {
     buildBillingCheckoutPath,
     getCurrentSubscriptionSummary,
     getPaddleSubscriptionManagementUrls,
+    lookupPaddleDiscount,
     previewPaddleSubscriptionUpgrade,
     applyPaddleSubscriptionUpgrade,
     startPaddleCheckoutSession,
+    syncPaddleTransaction,
+    type BillingDiscountLookup,
     type BillingSubscriptionSummary,
     type BillingUpgradePreview,
     type BillingCheckoutSource,
@@ -174,6 +177,7 @@ export const CheckoutPage: React.FC = () => {
     const [isUpgradePreviewLoading, setIsUpgradePreviewLoading] = useState(false);
     const [isUpgradeSubmitting, setIsUpgradeSubmitting] = useState(false);
     const [isBillingManagementLoading, setIsBillingManagementLoading] = useState(false);
+    const [discountLookup, setDiscountLookup] = useState<BillingDiscountLookup | null>(null);
     const inlineCheckoutSectionRef = useRef<HTMLDivElement | null>(null);
     const claimProcessingRequestIdRef = useRef<string | null>(null);
     const autoStartedCheckoutKeyRef = useRef<string | null>(null);
@@ -460,6 +464,16 @@ export const CheckoutPage: React.FC = () => {
             for (let attempt = 0; attempt < 6; attempt += 1) {
                 if (cancelled) return;
 
+                if (checkoutLocationContext.transactionId && attempt < 4) {
+                    try {
+                        await syncPaddleTransaction(checkoutLocationContext.transactionId);
+                    } catch (error) {
+                        if (!cancelled) {
+                            console.warn('Checkout post-payment transaction sync failed.', error);
+                        }
+                    }
+                }
+
                 if (attempt === 0 || attempt === 2) {
                     try {
                         await getPaddleSubscriptionManagementUrls();
@@ -513,7 +527,7 @@ export const CheckoutPage: React.FC = () => {
         return () => {
             cancelled = true;
         };
-    }, [checkoutCompleted, completedFlowMode, isEligibleAccount, postPaymentSyncState, refreshAccess, selectedTierKey]);
+    }, [checkoutCompleted, checkoutLocationContext.transactionId, completedFlowMode, isEligibleAccount, postPaymentSyncState, refreshAccess, selectedTierKey]);
 
     useEffect(() => {
         const claimId = checkoutLocationContext.claimId;
@@ -587,6 +601,7 @@ export const CheckoutPage: React.FC = () => {
             const opened = openPaddleInlineCheckout({
                 transactionId,
                 customerEmail: accountEmail || authEmail,
+                discountCode: checkoutLocationContext.discountCode,
             });
 
             if (!opened) {
@@ -608,6 +623,7 @@ export const CheckoutPage: React.FC = () => {
         accountEmail,
         activeLocale,
         authEmail,
+        checkoutLocationContext.discountCode,
         checkoutLocationContext.transactionId,
         handlePaddleCheckoutEvent,
         hasInlineCheckout,
@@ -647,6 +663,32 @@ export const CheckoutPage: React.FC = () => {
     }, [isUpgradeFlow, selectedTierKey, t]);
 
     useEffect(() => {
+        const discountCode = checkoutLocationContext.discountCode;
+        if (!discountCode || !supportsSelectedTier) {
+            setDiscountLookup(null);
+            return;
+        }
+
+        let cancelled = false;
+        void lookupPaddleDiscount(discountCode, selectedTierKey)
+            .then((lookup) => {
+                if (!cancelled) {
+                    setDiscountLookup(lookup);
+                }
+            })
+            .catch((error) => {
+                if (!cancelled) {
+                    console.warn('Checkout discount lookup failed.', error);
+                    setDiscountLookup(null);
+                }
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [checkoutLocationContext.discountCode, selectedTierKey, supportsSelectedTier]);
+
+    useEffect(() => {
         if (!hasInlineCheckout || !inlineCheckoutSectionRef.current) return;
         if (typeof inlineCheckoutSectionRef.current.scrollIntoView === 'function') {
             inlineCheckoutSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -667,6 +709,18 @@ export const CheckoutPage: React.FC = () => {
     }, [activeLocale, form, profile]);
 
     const planFeatures = resolveTierFeatures(selectedTierKey);
+    const discountSavingsLabel = discountLookup?.estimate
+        ? new Intl.NumberFormat(activeLocale, {
+            style: 'currency',
+            currency: discountLookup.estimate.currencyCode || 'USD',
+        }).format((discountLookup.estimate.savingsAmount || 0) / 100)
+        : null;
+    const discountCheckoutTotalLabel = discountLookup?.estimate
+        ? new Intl.NumberFormat(activeLocale, {
+            style: 'currency',
+            currency: discountLookup.estimate.currencyCode || 'USD',
+        }).format((discountLookup.estimate.discountedAmount || 0) / 100)
+        : null;
     const checkoutButtonLabel = hasInlineCheckout
         ? t('checkout.refreshPayment', { ns: 'pricing' })
         : t('checkout.continueToPayment', { ns: 'pricing' });
@@ -680,7 +734,7 @@ export const CheckoutPage: React.FC = () => {
     const currentPaidTierName = currentPaidTierKey !== 'tier_free'
         ? t(`tiers.${PLAN_CATALOG[currentPaidTierKey].publicSlug}.name`, { ns: 'pricing' })
         : null;
-    const autoCheckoutKey = `${selectedTierKey}:${source}:${checkoutLocationContext.claimId || ''}:${checkoutLocationContext.tripId || ''}:${session?.user?.id || 'guest'}`;
+    const autoCheckoutKey = `${selectedTierKey}:${source}:${checkoutLocationContext.claimId || ''}:${checkoutLocationContext.tripId || ''}:${checkoutLocationContext.discountCode || ''}:${session?.user?.id || 'guest'}`;
 
     const completedPanel = checkoutCompleted ? (
         <div ref={inlineCheckoutSectionRef} className="space-y-5">
@@ -871,9 +925,10 @@ export const CheckoutPage: React.FC = () => {
                 claimId: checkoutLocationContext.claimId,
                 returnTo: returnToPath,
                 tripId: checkoutLocationContext.tripId,
+                discountCode: checkoutLocationContext.discountCode,
             }), { replace: true });
         }
-    }, [checkoutLocationContext.claimId, checkoutLocationContext.tripId, hasInlineCheckout, navigate, returnToPath, selectedTierKey, source]);
+    }, [checkoutLocationContext.claimId, checkoutLocationContext.discountCode, checkoutLocationContext.tripId, hasInlineCheckout, navigate, returnToPath, selectedTierKey, source]);
 
     const handleSaveTravelerDetails = useCallback(async () => {
         trackEvent('checkout__traveler_details--save', {
@@ -892,6 +947,7 @@ export const CheckoutPage: React.FC = () => {
             claimId: checkoutLocationContext.claimId,
             returnTo: returnToPath,
             tripId: checkoutLocationContext.tripId,
+            discountCode: checkoutLocationContext.discountCode,
         }));
     };
 
@@ -1017,6 +1073,7 @@ export const CheckoutPage: React.FC = () => {
                 claimId: checkoutLocationContext.claimId,
                 returnTo: returnToPath,
                 tripId: checkoutLocationContext.tripId,
+                discountCode: checkoutLocationContext.discountCode,
             });
 
             const checkoutUrl = appendPaddleCheckoutContext(sessionPayload.checkoutUrl, {
@@ -1025,6 +1082,7 @@ export const CheckoutPage: React.FC = () => {
                 claimId: checkoutLocationContext.claimId,
                 returnTo: returnToPath,
                 tripId: checkoutLocationContext.tripId,
+                discountCode: checkoutLocationContext.discountCode,
             });
             const sameOriginCheckoutPath = resolveSameOriginPaddleCheckoutPath(checkoutUrl);
             if (sameOriginCheckoutPath) {
@@ -1045,6 +1103,7 @@ export const CheckoutPage: React.FC = () => {
         }
     }, [
         checkoutLocationContext.claimId,
+        checkoutLocationContext.discountCode,
         checkoutLocationContext.tripId,
         navigate,
         paddlePublicConfig,
@@ -1711,6 +1770,20 @@ export const CheckoutPage: React.FC = () => {
                                         <div className="text-sm text-slate-500">{t('shared.perMonth', { ns: 'pricing' })}</div>
                                     </div>
                                 </div>
+                                {discountLookup?.applicableToTier && discountLookup.estimate && discountSavingsLabel && discountCheckoutTotalLabel ? (
+                                    <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+                                        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">
+                                            {t('voucher.appliedEyebrow', { ns: 'pricing', code: discountLookup.code })}
+                                        </p>
+                                        <p className="mt-2 text-sm font-medium text-emerald-900">
+                                            {t('voucher.checkoutSavingsMessage', {
+                                                ns: 'pricing',
+                                                savings: discountSavingsLabel,
+                                                discounted: discountCheckoutTotalLabel,
+                                            })}
+                                        </p>
+                                    </div>
+                                ) : null}
                                 </section>
 
                                 <section className="mt-8">

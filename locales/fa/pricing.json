@@ -111,5 +111,21 @@
     "successReturnToTrip": "Back to your trip",
     "successCreateTrip": "Create a trip",
     "successOpenProfile": "Open profile"
+  },
+  "voucher": {
+    "eyebrow": "کد تخفیف",
+    "title": "پیش از پرداخت تخفیف را اعمال کنید",
+    "description": "از لینک ووچر Paddle استفاده کنید یا کد را اینجا وارد کنید. تا زمان پرداخت حفظ می‌شود.",
+    "placeholder": "کد تخفیف را وارد کنید",
+    "applyCta": "اعمال کد",
+    "applying": "در حال بررسی کد…",
+    "clearCta": "حذف کد",
+    "appliedMessage": "ووچر {code} آماده است.",
+    "appliedDescription": "مقدار صرفه‌جویی روی پلن‌های سازگار نمایش داده می‌شود و تا پرداخت حفظ می‌شود.",
+    "invalidMessage": "این ووچر برای پلن‌های پولی فعلی در دسترس نیست.",
+    "cardEyebrow": "ووچر {code}",
+    "cardSavingsMessage": "در پرداخت اول {savings} صرفه‌جویی کنید. مبلغ تخمینی پرداخت: {discounted}.",
+    "appliedEyebrow": "ووچر {code}",
+    "checkoutSavingsMessage": "مبلغ تخمینی پرداخت: {discounted}. در پرداخت اول {savings} صرفه‌جویی می‌کنید."
   }
 }

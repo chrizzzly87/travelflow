@@ -58,7 +58,7 @@ describe('paddleClient', () => {
           frameStyle: 'width: 100%; min-width: 312px; background-color: transparent; border: none',
           frameTarget: 'tf-paddle-inline-frame',
           locale: 'de',
-          showAddDiscounts: false,
+          showAddDiscounts: true,
           theme: 'light',
           variant: 'one-page',
         },
@@ -144,20 +144,22 @@ describe('paddleClient', () => {
         claimId: '123e4567-e89b-12d3-a456-426614174000',
         returnTo: '/trip/trip_123',
         tripId: 'trip_123',
+        discountCode: 'SPRING20',
       },
     )).toBe(
-      'https://issue-174-paddle-sandbox--travelflowapp.netlify.app/pricing?_ptxn=txn_123&tier=tier_mid&source=trip_paywall_strip&claim=123e4567-e89b-12d3-a456-426614174000&return_to=%2Ftrip%2Ftrip_123&trip_id=trip_123',
+      'https://issue-174-paddle-sandbox--travelflowapp.netlify.app/pricing?_ptxn=txn_123&tier=tier_mid&source=trip_paywall_strip&claim=123e4567-e89b-12d3-a456-426614174000&return_to=%2Ftrip%2Ftrip_123&trip_id=trip_123&discount=SPRING20',
     );
   });
 
   it('reads checkout transaction and route state from the URL', () => {
-    expect(readPaddleCheckoutLocationContext('?_ptxn=txn_123&tier=tier_premium&source=pricing_page&claim=claim_123&return_to=%2Fpricing&trip_id=trip_123')).toEqual({
+    expect(readPaddleCheckoutLocationContext('?_ptxn=txn_123&tier=tier_premium&source=pricing_page&claim=claim_123&return_to=%2Fpricing&trip_id=trip_123&voucher=VIP50')).toEqual({
       transactionId: 'txn_123',
       tierKey: 'tier_premium',
       source: 'pricing_page',
       claimId: 'claim_123',
       returnTo: '/pricing',
       tripId: 'trip_123',
+      discountCode: 'VIP50',
     });
   });
 
@@ -195,10 +197,12 @@ describe('paddleClient', () => {
     expect(openPaddleInlineCheckout({
       transactionId: 'txn_123',
       customerEmail: 'ada@example.com',
+      discountCode: 'SPRING20',
     })).toBe(true);
 
     expect(open).toHaveBeenCalledWith({
       transactionId: 'txn_123',
+      discountCode: 'SPRING20',
       customer: { email: 'ada@example.com' },
     });
   });
