@@ -119,6 +119,7 @@ describe('netlify/functions/ai-generate-worker-cron', () => {
     process.env.VITE_SUPABASE_URL = 'https://supabase.example';
     process.env.SUPABASE_SERVICE_ROLE_KEY = 'service-role-secret';
     process.env.AI_GENERATION_ASYNC_WORKER_BATCH = '1';
+    process.env.AI_GENERATION_ASYNC_CANARY_MAX_WAIT_MS = '0';
 
     const fetchMock = vi.fn()
       .mockResolvedValueOnce(jsonResponse([], { status: 200 }))
@@ -206,6 +207,7 @@ describe('netlify/functions/ai-generate-worker-cron', () => {
     process.env.VITE_SUPABASE_URL = 'https://supabase.example';
     process.env.SUPABASE_SERVICE_ROLE_KEY = 'service-role-secret';
     process.env.AI_GENERATION_ASYNC_WORKER_BATCH = '1';
+    process.env.AI_GENERATION_ASYNC_CANARY_MAX_WAIT_MS = '0';
 
     const fetchMock = vi.fn()
       .mockResolvedValueOnce(jsonResponse([], { status: 200 }))

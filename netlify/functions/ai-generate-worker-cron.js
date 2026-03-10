@@ -5,9 +5,9 @@ import {
   getAsyncWorkerHealthConfig,
   insertAsyncWorkerHealthCheck,
   listRecentAsyncWorkerHealthChecks,
-  readAsyncWorkerCanaryEvaluation,
   readStaleQueuedJobSnapshot,
   shouldRunAsyncWorkerCanary,
+  waitForAsyncWorkerCanaryEvaluation,
 } from "../edge-lib/async-worker-health.ts";
 
 const JSON_HEADERS = {
@@ -193,6 +193,8 @@ export const handler = async () => {
   const cronStartedAtIso = cronStartedAt.toISOString();
   const workerLimitBase = resolveInteger(process.env.AI_GENERATION_ASYNC_WORKER_BATCH || "1", 1, 1, 5);
   const triggerTimeoutMs = resolveInteger(process.env.AI_GENERATION_ASYNC_TRIGGER_TIMEOUT_MS || "180000", 180_000, 5_000, 240_000);
+  const canaryPollIntervalMs = resolveInteger(process.env.AI_GENERATION_ASYNC_CANARY_POLL_INTERVAL_MS || "1000", 1000, 0, 5000);
+  const canaryMaxWaitMs = resolveInteger(process.env.AI_GENERATION_ASYNC_CANARY_MAX_WAIT_MS || "12000", 12_000, 0, 30_000);
 
   const recentChecks = await listRecentAsyncWorkerHealthChecks(healthConfig, 25);
   await cleanupStaleAsyncWorkerCanaries(healthConfig, cronStartedAt);
@@ -323,7 +325,10 @@ export const handler = async () => {
           },
         });
       } else {
-        const evaluation = await readAsyncWorkerCanaryEvaluation(healthConfig, canaryContext, new Date());
+        const evaluation = await waitForAsyncWorkerCanaryEvaluation(healthConfig, canaryContext, {
+          maxWaitMs: canaryMaxWaitMs,
+          pollIntervalMs: canaryPollIntervalMs,
+        });
         const cleanedUp = evaluation.status === "ok"
           ? await deleteAsyncWorkerCanaryTrip(healthConfig, canaryContext.tripId)
           : false;
@@ -348,6 +353,8 @@ export const handler = async () => {
             jobState: evaluation.jobState,
             errorCode: evaluation.errorCode,
             errorMessage: evaluation.errorMessage,
+            canaryMaxWaitMs,
+            canaryPollIntervalMs,
             cleanedUp,
           },
         });

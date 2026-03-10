@@ -15,3 +15,4 @@ summary: "Async trip generation now hands the first worker kickoff to a server-o
 - [x] [Improved] 👀 Returning to a trip later now has a better chance of loading the finished itinerary immediately because the first worker start no longer depends on the open tab staying alive.
 - [ ] [Internal] 🧱 Added a dedicated authenticated enqueue endpoint that queues the job and immediately dispatches the background worker in one server-owned step, while leaving cron/watchdog recovery as a backup.
 - [ ] [Internal] 🧪 Hardened the async worker cron canary tests so production deploys stay stable when a dedicated canary owner is configured.
+- [ ] [Internal] ⏱️ Taught the async worker canary to wait briefly for terminal worker results so healthy background processing no longer reports false failures.
