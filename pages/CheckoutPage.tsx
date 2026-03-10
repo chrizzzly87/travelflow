@@ -37,7 +37,7 @@ import {
     type PaddleCheckoutEvent,
     type PaddlePublicConfig,
 } from '../services/paddleClient';
-import { acceptCurrentTerms } from '../services/authService';
+import { acceptCurrentTerms, isSupabaseAuthNotConfiguredError } from '../services/authService';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
 import { updateCurrentUserProfile } from '../services/profileService';
 import { registerTripGenerationCompletionWatch } from '../services/tripGenerationCompletionWatchService';
@@ -151,6 +151,7 @@ export const CheckoutPage: React.FC = () => {
     const [authPassword, setAuthPassword] = useState('');
     const [authErrorMessage, setAuthErrorMessage] = useState<string | null>(null);
     const [authInfoMessage, setAuthInfoMessage] = useState<string | null>(null);
+    const [showAuthSupportMessage, setShowAuthSupportMessage] = useState(false);
     const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
     const [isAuthSubmitting, setIsAuthSubmitting] = useState(false);
     const [paddlePublicConfig, setPaddlePublicConfig] = useState<PaddlePublicConfig | null>(null);
@@ -221,6 +222,7 @@ export const CheckoutPage: React.FC = () => {
         : `${location.pathname}${location.search}${location.hash}`;
     const termsPath = useMemo(() => buildLocalizedMarketingPath('terms', activeLocale), [activeLocale]);
     const privacyPath = useMemo(() => buildLocalizedMarketingPath('privacy', activeLocale), [activeLocale]);
+    const contactPath = useMemo(() => buildLocalizedMarketingPath('contact', activeLocale), [activeLocale]);
     const unlimitedLabel = t('shared.unlimited', { ns: 'pricing' });
     const noExpiryLabel = t('shared.noExpiry', { ns: 'pricing' });
     const enabledLabel = t('shared.enabled', { ns: 'pricing' });
@@ -641,6 +643,7 @@ export const CheckoutPage: React.FC = () => {
         setAuthMode(nextMode);
         setAuthErrorMessage(null);
         setAuthInfoMessage(null);
+        setShowAuthSupportMessage(false);
         if (nextMode === 'login') {
             setHasAcceptedTerms(false);
         }
@@ -668,6 +671,7 @@ export const CheckoutPage: React.FC = () => {
 
         setAuthErrorMessage(null);
         setAuthInfoMessage(null);
+        setShowAuthSupportMessage(false);
         setIsAuthSubmitting(true);
 
         try {
@@ -705,6 +709,14 @@ export const CheckoutPage: React.FC = () => {
             });
             if (acceptance.error) {
                 setAuthInfoMessage(t('states.termsAcceptancePending', { ns: 'auth' }));
+            }
+        } catch (error) {
+            if (isSupabaseAuthNotConfiguredError(error)) {
+                setShowAuthSupportMessage(true);
+                setAuthErrorMessage(null);
+                setAuthInfoMessage(null);
+            } else {
+                setAuthErrorMessage(t('errors.default', { ns: 'auth' }));
             }
         } finally {
             setIsAuthSubmitting(false);
@@ -1043,7 +1055,22 @@ export const CheckoutPage: React.FC = () => {
                                             </label>
                                         ) : null}
 
-                                        {authErrorMessage ? (
+                                        {showAuthSupportMessage ? (
+                                            <div className="border-s-4 border-rose-500 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+                                                <p className="font-semibold">{t('errors.auth_unavailable_title', { ns: 'auth' })}</p>
+                                                <p className="mt-1">{t('errors.auth_unavailable_body', { ns: 'auth' })}</p>
+                                                <Link
+                                                    className="mt-3 inline-flex font-semibold text-rose-900 underline underline-offset-4"
+                                                    to={contactPath}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    onClick={() => trackEvent('checkout__auth_config_error--contact', { source, tier: selectedTierKey })}
+                                                    {...getAnalyticsDebugAttributes('checkout__auth_config_error--contact', { source, tier: selectedTierKey })}
+                                                >
+                                                    {t('actions.contactSupport', { ns: 'auth' })}
+                                                </Link>
+                                            </div>
+                                        ) : authErrorMessage ? (
                                             <div className="border-s-4 border-rose-500 bg-rose-50 px-4 py-3 text-sm text-rose-900">
                                                 {authErrorMessage}
                                             </div>

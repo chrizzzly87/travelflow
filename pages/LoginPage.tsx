@@ -35,7 +35,7 @@ import {
     getLastUsedOAuthProvider,
     setPendingOAuthProvider,
 } from '../services/authUiPreferencesService';
-import { acceptCurrentTerms } from '../services/authService';
+import { acceptCurrentTerms, isSupabaseAuthNotConfiguredError } from '../services/authService';
 import { normalizeAppLanguage } from '../utils';
 import { SocialProviderIcon } from '../components/auth/SocialProviderIcon';
 
@@ -128,6 +128,7 @@ export const LoginPage: React.FC = () => {
     const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [infoMessage, setInfoMessage] = useState<string | null>(null);
+    const [showAuthSupportMessage, setShowAuthSupportMessage] = useState(false);
     const [rememberLogin, setRememberLogin] = useState<boolean>(() => isRememberLoginEnabled());
     const [lastUsedProvider, setLastUsedProvider] = useState<OAuthProviderId | null>(() => getLastUsedOAuthProvider());
 
@@ -135,6 +136,7 @@ export const LoginPage: React.FC = () => {
     const authLocale = useMemo(() => normalizeAppLanguage(i18n.language), [i18n.language]);
     const termsPath = useMemo(() => buildLocalizedMarketingPath('terms', authLocale), [authLocale]);
     const privacyPath = useMemo(() => buildLocalizedMarketingPath('privacy', authLocale), [authLocale]);
+    const contactPath = useMemo(() => buildLocalizedMarketingPath('contact', authLocale), [authLocale]);
 
     const claimRequestId = (searchParams.get('claim') || '').trim() || null;
     const assetClaimId = (searchParams.get('asset_claim') || '').trim() || null;
@@ -268,6 +270,7 @@ export const LoginPage: React.FC = () => {
         setMode(nextMode);
         setErrorMessage(null);
         setInfoMessage(null);
+        setShowAuthSupportMessage(false);
         if (nextMode === 'login') {
             setHasAcceptedTerms(false);
         }
@@ -297,57 +300,82 @@ export const LoginPage: React.FC = () => {
         setIsSubmitting(true);
         setErrorMessage(null);
         setInfoMessage(null);
+        setShowAuthSupportMessage(false);
 
-        if (mode === 'login') {
-            const response = await loginWithPassword(submittedEmail, submittedPassword);
+        try {
+            if (mode === 'login') {
+                const response = await loginWithPassword(submittedEmail, submittedPassword);
+                if (response.error) {
+                    const errorCode = normalizeErrorCode(response.error);
+                    setErrorMessage(t(`errors.${errorCode}`, t('errors.default')));
+                } else {
+                    setInfoMessage(null);
+                }
+                return;
+            }
+
+            const response = await registerWithPassword(
+                submittedEmail,
+                submittedPassword,
+                { emailRedirectTo: oauthRedirectTo }
+            );
             if (response.error) {
                 const errorCode = normalizeErrorCode(response.error);
                 setErrorMessage(t(`errors.${errorCode}`, t('errors.default')));
             } else {
-                setInfoMessage(null);
+                if (!response.data.session) {
+                    setInfoMessage(t('states.emailConfirmationSent'));
+                } else {
+                    const acceptance = await acceptCurrentTerms({
+                        locale: authLocale,
+                        source: 'signup_login_page',
+                    });
+                    if (acceptance.error) {
+                        setInfoMessage(t('states.termsAcceptancePending'));
+                    } else {
+                        setInfoMessage(null);
+                    }
+                }
             }
-            setIsSubmitting(false);
-            return;
-        }
-
-        const response = await registerWithPassword(
-            submittedEmail,
-            submittedPassword,
-            { emailRedirectTo: oauthRedirectTo }
-        );
-        if (response.error) {
-            const errorCode = normalizeErrorCode(response.error);
-            setErrorMessage(t(`errors.${errorCode}`, t('errors.default')));
-        } else if (!response.data.session) {
-            setInfoMessage(t('states.emailConfirmationSent'));
-        } else {
-            const acceptance = await acceptCurrentTerms({
-                locale: authLocale,
-                source: 'signup_login_page',
-            });
-            if (acceptance.error) {
-                setInfoMessage(t('states.termsAcceptancePending'));
+        } catch (error) {
+            if (isSupabaseAuthNotConfiguredError(error)) {
+                setShowAuthSupportMessage(true);
+                setErrorMessage(null);
+                setInfoMessage(null);
             } else {
-                setInfoMessage(null);
+                setErrorMessage(t('errors.default'));
             }
+        } finally {
+            setIsSubmitting(false);
         }
-        setIsSubmitting(false);
     };
 
     const handleOAuthLogin = async (provider: OAuthProviderId) => {
         setErrorMessage(null);
         setInfoMessage(null);
+        setShowAuthSupportMessage(false);
         setRememberLoginEnabled(rememberLogin);
         setPendingOAuthProvider(provider);
         trackEvent('auth__method--select', { method: provider });
-        const response = await loginWithOAuth(provider, oauthRedirectTo);
-        if (response.error) {
+        try {
+            const response = await loginWithOAuth(provider, oauthRedirectTo);
+            if (response.error) {
+                clearPendingOAuthProvider();
+                const errorCode = normalizeErrorCode(response.error);
+                setErrorMessage(t(`errors.${errorCode}`, t('errors.default')));
+                return;
+            }
+            setInfoMessage(t('actions.submitting'));
+        } catch (error) {
             clearPendingOAuthProvider();
-            const errorCode = normalizeErrorCode(response.error);
-            setErrorMessage(t(`errors.${errorCode}`, t('errors.default')));
-            return;
+            if (isSupabaseAuthNotConfiguredError(error)) {
+                setShowAuthSupportMessage(true);
+                setErrorMessage(null);
+                setInfoMessage(null);
+            } else {
+                setErrorMessage(t('errors.default'));
+            }
         }
-        setInfoMessage(t('actions.submitting'));
     };
 
     const handlePasswordResetRequest = async (intent: 'forgot_password' | 'set_password') => {
@@ -361,22 +389,30 @@ export const LoginPage: React.FC = () => {
         setIsSubmitting(true);
         setErrorMessage(null);
         setInfoMessage(null);
+        setShowAuthSupportMessage(false);
         trackEvent('auth__password_reset--request', { source: 'page', intent });
+        try {
+            const response = await sendPasswordResetEmail(normalizedEmail, {
+                redirectTo: passwordResetRedirectTo,
+                intent,
+            });
 
-        const response = await sendPasswordResetEmail(normalizedEmail, {
-            redirectTo: passwordResetRedirectTo,
-            intent,
-        });
-
-        if (response.error) {
-            setErrorMessage(t('errors.password_reset_failed'));
-            trackEvent('auth__password_reset--failed', { source: 'page', intent });
-            setIsSubmitting(false);
-            return;
+            if (response.error) {
+                setErrorMessage(t('errors.password_reset_failed'));
+                trackEvent('auth__password_reset--failed', { source: 'page', intent });
+            } else {
+                setInfoMessage(t(intent === 'set_password' ? 'states.setPasswordSent' : 'states.passwordResetSent'));
+                trackEvent('auth__password_reset--requested', { source: 'page', intent });
+            }
+        } catch (error) {
+            if (isSupabaseAuthNotConfiguredError(error)) {
+                setShowAuthSupportMessage(true);
+                setErrorMessage(null);
+                setInfoMessage(null);
+            } else {
+                setErrorMessage(t('errors.password_reset_failed'));
+            }
         }
-
-        setInfoMessage(t(intent === 'set_password' ? 'states.setPasswordSent' : 'states.passwordResetSent'));
-        trackEvent('auth__password_reset--requested', { source: 'page', intent });
         setIsSubmitting(false);
     };
 
@@ -602,11 +638,26 @@ export const LoginPage: React.FC = () => {
                         )}
                     </div>
 
-                    {errorMessage && (
+                    {showAuthSupportMessage ? (
+                        <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+                            <p className="font-semibold">{t('errors.auth_unavailable_title')}</p>
+                            <p className="mt-1">{t('errors.auth_unavailable_body')}</p>
+                            <Link
+                                to={contactPath}
+                                target="_blank"
+                                rel="noreferrer"
+                                onClick={() => trackEvent('auth__config_error--contact', { source: 'page' })}
+                                className="mt-3 inline-flex font-semibold text-rose-900 underline underline-offset-4"
+                                {...getAnalyticsDebugAttributes('auth__config_error--contact', { source: 'page' })}
+                            >
+                                {t('actions.contactSupport')}
+                            </Link>
+                        </div>
+                    ) : errorMessage ? (
                         <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
                             {errorMessage}
                         </div>
-                    )}
+                    ) : null}
                     {infoMessage && (
                         <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
                             {infoMessage}

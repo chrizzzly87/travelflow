@@ -15,6 +15,8 @@ import { markConnectivityFailure, markConnectivitySuccess } from './supabaseHeal
 
 export type OAuthProviderId = 'google' | 'apple' | 'facebook' | 'kakao';
 
+export const SUPABASE_AUTH_NOT_CONFIGURED_ERROR_MESSAGE = 'Supabase auth is not configured.';
+
 export interface AuthFlowContext {
     flowId: string;
     attemptId: string;
@@ -78,6 +80,14 @@ const reportAuthSupabaseFailure = (error: unknown, operation: string): void => {
 
 const reportAuthSupabaseSuccess = (operation: string): void => {
     markConnectivitySuccess(`auth:${operation}`);
+};
+
+export const isSupabaseAuthNotConfiguredError = (error: unknown): boolean => {
+    if (!error || typeof error !== 'object') return false;
+    const message = 'message' in error && typeof error.message === 'string'
+        ? error.message.trim()
+        : '';
+    return message === SUPABASE_AUTH_NOT_CONFIGURED_ERROR_MESSAGE;
 };
 
 export const clearSupabaseAuthStorage = (): void => {
@@ -515,7 +525,7 @@ export const signInWithEmailPassword = async (
     password: string
 ) => {
     if (!supabase) {
-        throw new Error('Supabase auth is not configured.');
+        throw new Error(SUPABASE_AUTH_NOT_CONFIGURED_ERROR_MESSAGE);
     }
     const flow = buildAuthFlow();
     await logAuthFlow({ ...flow, step: 'login_password', result: 'start', provider: 'password', email });
@@ -563,7 +573,7 @@ export const upgradeAnonymousUserWithEmailPassword = async (
     password: string
 ) => {
     if (!supabase) {
-        throw new Error('Supabase auth is not configured.');
+        throw new Error(SUPABASE_AUTH_NOT_CONFIGURED_ERROR_MESSAGE);
     }
     const flow = buildAuthFlow();
     await logAuthFlow({ ...flow, step: 'anonymous_upgrade_password', result: 'start', provider: 'password', email });
@@ -600,7 +610,7 @@ export const signUpWithEmailPassword = async (
     options?: { emailRedirectTo?: string }
 ) => {
     if (!supabase) {
-        throw new Error('Supabase auth is not configured.');
+        throw new Error(SUPABASE_AUTH_NOT_CONFIGURED_ERROR_MESSAGE);
     }
     const flow = buildAuthFlow();
     await logAuthFlow({ ...flow, step: 'signup_password', result: 'start', provider: 'password', email });
@@ -644,7 +654,7 @@ export const signInWithOAuth = async (
     options?: { redirectTo?: string }
 ) => {
     if (!supabase) {
-        throw new Error('Supabase auth is not configured.');
+        throw new Error(SUPABASE_AUTH_NOT_CONFIGURED_ERROR_MESSAGE);
     }
 
     const flow = buildAuthFlow();
@@ -738,7 +748,7 @@ export const requestPasswordResetEmail = async (
     options?: { redirectTo?: string; intent?: 'forgot_password' | 'set_password' }
 ) => {
     if (!supabase) {
-        throw new Error('Supabase auth is not configured.');
+        throw new Error(SUPABASE_AUTH_NOT_CONFIGURED_ERROR_MESSAGE);
     }
     const flow = buildAuthFlow();
     const intent = options?.intent || 'forgot_password';
@@ -785,7 +795,7 @@ export const updateCurrentUserPassword = async (
     password: string
 ) => {
     if (!supabase) {
-        throw new Error('Supabase auth is not configured.');
+        throw new Error(SUPABASE_AUTH_NOT_CONFIGURED_ERROR_MESSAGE);
     }
     const flow = buildAuthFlow();
     await logAuthFlow({

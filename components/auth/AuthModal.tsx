@@ -22,6 +22,7 @@ import {
     getLastUsedOAuthProvider,
     setPendingOAuthProvider,
 } from '../../services/authUiPreferencesService';
+import { isSupabaseAuthNotConfiguredError } from '../../services/authService';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import { getAuthRequestTimeoutMs, getAuthRestoreTimeoutMs } from '../../services/networkStatus';
@@ -125,6 +126,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [infoMessage, setInfoMessage] = useState<string | null>(null);
+    const [showAuthSupportMessage, setShowAuthSupportMessage] = useState(false);
     const [rememberLogin, setRememberLogin] = useState<boolean>(() => isRememberLoginEnabled());
     const [lastUsedProvider, setLastUsedProviderState] = useState<OAuthProviderId | null>(() => getLastUsedOAuthProvider());
     const [sessionRestoreState, setSessionRestoreState] = useState<'idle' | 'restoring' | 'restored'>('idle');
@@ -144,6 +146,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     const authLocale = useMemo(() => normalizeAppLanguage(i18n.language), [i18n.language]);
     const termsPath = useMemo(() => buildLocalizedMarketingPath('terms', authLocale), [authLocale]);
     const privacyPath = useMemo(() => buildLocalizedMarketingPath('privacy', authLocale), [authLocale]);
+    const contactPath = useMemo(() => buildLocalizedMarketingPath('contact', authLocale), [authLocale]);
     const emailInputId = 'auth-modal-email';
     const secondaryInputId = 'auth-modal-secondary';
     const rememberLoginInputId = 'auth-modal-remember-login';
@@ -207,6 +210,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             setIsSubmitting(false);
             setErrorMessage(null);
             setInfoMessage(null);
+            setShowAuthSupportMessage(false);
             setSessionRestoreState('idle');
             hasHandledSuccessRef.current = false;
             hasInteractiveAttemptRef.current = false;
@@ -304,6 +308,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         setMode(nextMode);
         setErrorMessage(null);
         setInfoMessage(null);
+        setShowAuthSupportMessage(false);
         trackEvent('auth__method--select', { method: nextMode, source: 'modal' });
     };
 
@@ -340,6 +345,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         setIsSubmitting(true);
         setErrorMessage(null);
         setInfoMessage(isSlowConnection ? t('states.slowNetworkDetected') : null);
+        setShowAuthSupportMessage(false);
         const timeoutMs = getAuthRequestTimeoutMs(isSlowConnection);
 
         try {
@@ -355,7 +361,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     return;
                 }
                 if (outcome.status === 'error') {
-                    setErrorMessage(t('errors.default'));
+                    if (isSupabaseAuthNotConfiguredError(outcome.error)) {
+                        setShowAuthSupportMessage(true);
+                        setErrorMessage(null);
+                    } else {
+                        setErrorMessage(t('errors.default'));
+                    }
                     setInfoMessage(null);
                     return;
                 }
@@ -419,6 +430,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         setIsSubmitting(true);
         setErrorMessage(null);
         setInfoMessage(isSlowConnection ? t('states.slowNetworkDetected') : null);
+        setShowAuthSupportMessage(false);
         setRememberLoginEnabled(rememberLogin);
         setPendingOAuthProvider(provider);
         trackEvent('auth__method--select', { method: provider, source: 'modal' });
@@ -436,7 +448,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         }
         if (outcome.status === 'error') {
             clearPendingOAuthProvider();
-            setErrorMessage(t('errors.default'));
+            if (isSupabaseAuthNotConfiguredError(outcome.error)) {
+                setShowAuthSupportMessage(true);
+                setErrorMessage(null);
+            } else {
+                setErrorMessage(t('errors.default'));
+            }
             setInfoMessage(null);
             setIsSubmitting(false);
             return;
@@ -471,6 +488,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         setIsSubmitting(true);
         setErrorMessage(null);
         setInfoMessage(isSlowConnection ? t('states.slowNetworkDetected') : null);
+        setShowAuthSupportMessage(false);
         trackEvent('auth__password_reset--request', { source: 'modal', intent });
 
         const outcome = await runTimedRequest(
@@ -485,7 +503,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             return;
         }
         if (outcome.status === 'error') {
-            setErrorMessage(t('errors.password_reset_failed'));
+            if (isSupabaseAuthNotConfiguredError(outcome.error)) {
+                setShowAuthSupportMessage(true);
+                setErrorMessage(null);
+            } else {
+                setErrorMessage(t('errors.password_reset_failed'));
+            }
             trackEvent('auth__password_reset--failed', { source: 'modal', intent });
             setIsSubmitting(false);
             return;
@@ -757,11 +780,26 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                         </>
                     )}
 
-                    {errorMessage && (
+                    {showAuthSupportMessage ? (
+                        <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+                            <p className="font-semibold">{t('errors.auth_unavailable_title')}</p>
+                            <p className="mt-1">{t('errors.auth_unavailable_body')}</p>
+                            <Link
+                                to={contactPath}
+                                target="_blank"
+                                rel="noreferrer"
+                                onClick={() => trackEvent('auth__config_error--contact', { source: 'modal' })}
+                                className="mt-3 inline-flex font-semibold text-rose-900 underline underline-offset-4"
+                                {...getAnalyticsDebugAttributes('auth__config_error--contact', { source: 'modal' })}
+                            >
+                                {t('actions.contactSupport')}
+                            </Link>
+                        </div>
+                    ) : errorMessage ? (
                         <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
                             {errorMessage}
                         </div>
-                    )}
+                    ) : null}
                     {infoMessage && (
                         <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
                             {infoMessage}

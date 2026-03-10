@@ -136,6 +136,7 @@ vi.mock('../../services/analyticsService', () => ({
 
 vi.mock('../../services/authService', () => ({
   acceptCurrentTerms: mocks.acceptCurrentTerms,
+  isSupabaseAuthNotConfiguredError: (error: unknown) => error instanceof Error && error.message === 'Supabase auth is not configured.',
 }));
 
 vi.mock('../../services/billingService', async () => {
@@ -308,6 +309,27 @@ describe('pages/CheckoutPage', () => {
     });
 
     expect(mocks.startPaddleCheckoutSession).not.toHaveBeenCalled();
+  });
+
+  it('shows a support banner when checkout auth config is missing', async () => {
+    const user = userEvent.setup();
+    mocks.auth.session = null;
+    mocks.auth.isAuthenticated = false;
+    mocks.auth.access = { isAnonymous: true, tierKey: 'tier_free' };
+    mocks.auth.profile = null;
+    mocks.auth.loginWithPassword.mockRejectedValueOnce(new Error('Supabase auth is not configured.'));
+
+    render(React.createElement(CheckoutPage));
+
+    await user.type(screen.getByRole('textbox', { name: 'labels.email' }), 'traveler@example.com');
+    await user.type(screen.getByLabelText('labels.password'), 'password123');
+    await user.click(screen.getByRole('button', { name: 'actions.submitLogin' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('errors.auth_unavailable_title')).toBeInTheDocument();
+    });
+    expect(screen.getByText('errors.auth_unavailable_body')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'actions.contactSupport' })).toBeInTheDocument();
   });
 
   it('adds the signup terms-finalization marker to register email redirects', async () => {
