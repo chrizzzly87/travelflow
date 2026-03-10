@@ -68,6 +68,8 @@ export const ASYNC_WORKER_HEARTBEAT_STALE_MS = 3 * 60 * 1000;
 export const ASYNC_WORKER_CANARY_INTERVAL_MS = 15 * 60 * 1000;
 export const ASYNC_WORKER_CANARY_STALE_MS = 30 * 60 * 1000;
 export const ASYNC_WORKER_CANARY_CLEANUP_MS = 60 * 60 * 1000;
+export const ASYNC_WORKER_CANARY_POLL_INTERVAL_MS = 1000;
+export const ASYNC_WORKER_CANARY_MAX_WAIT_MS = 12 * 1000;
 export const ASYNC_WORKER_CANARY_SOURCE = "async_worker_canary";
 export const ASYNC_WORKER_CANARY_SOURCE_KIND = "internal_canary";
 const MAX_HEALTH_FAILURE_MESSAGE_LENGTH = 800;
@@ -119,6 +121,10 @@ const safeJsonParse = async (response: Response): Promise<unknown> => {
     return null;
   }
 };
+
+const sleep = (delayMs: number): Promise<void> => new Promise((resolve) => {
+  setTimeout(resolve, delayMs);
+});
 
 const buildServiceHeaders = (
   serviceRoleKey: string,
@@ -570,6 +576,35 @@ export const readAsyncWorkerCanaryEvaluation = async (
     errorCode,
     errorMessage,
   };
+};
+
+export const waitForAsyncWorkerCanaryEvaluation = async (
+  config: { url: string; serviceRoleKey: string },
+  canary: AsyncWorkerCanaryContext,
+  options?: {
+    maxWaitMs?: number;
+    pollIntervalMs?: number;
+    now?: () => Date;
+  },
+): Promise<AsyncWorkerCanaryEvaluation> => {
+  const now = options?.now || (() => new Date());
+  const maxWaitMs = Math.max(0, Math.round(options?.maxWaitMs ?? ASYNC_WORKER_CANARY_MAX_WAIT_MS));
+  const pollIntervalMs = Math.max(0, Math.round(options?.pollIntervalMs ?? ASYNC_WORKER_CANARY_POLL_INTERVAL_MS));
+  const deadlineMs = now().getTime() + maxWaitMs;
+
+  let evaluation = await readAsyncWorkerCanaryEvaluation(config, canary, now());
+  while (
+    evaluation.failureCode === "WORKER_CANARY_NOT_TERMINAL" &&
+    now().getTime() < deadlineMs
+  ) {
+    const remainingMs = deadlineMs - now().getTime();
+    const delayMs = Math.max(0, Math.min(pollIntervalMs, remainingMs));
+    if (delayMs <= 0) break;
+    await sleep(delayMs);
+    evaluation = await readAsyncWorkerCanaryEvaluation(config, canary, now());
+  }
+
+  return evaluation;
 };
 
 export const deleteAsyncWorkerCanaryTrip = async (
