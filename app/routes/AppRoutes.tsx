@@ -36,13 +36,20 @@ const HandoffReadyBoundary: React.FC<{ children: React.ReactNode }> = ({ childre
     );
 };
 
+const renderWithHandoff = (
+    node: React.ReactElement,
+    options?: { handoffReady?: boolean }
+) => (
+    options?.handoffReady === false ? node : <HandoffReadyBoundary>{node}</HandoffReadyBoundary>
+);
+
 const renderWithSuspense = (
     node: React.ReactElement,
     fallback: React.ReactElement = <RouteLoadingFallback />,
     options?: { handoffReady?: boolean }
 ) => (
     <Suspense fallback={fallback}>
-        {options?.handoffReady === false ? node : <HandoffReadyBoundary>{node}</HandoffReadyBoundary>}
+        {renderWithHandoff(node, options)}
     </Suspense>
 );
 
@@ -68,13 +75,11 @@ const CreateTripClassicRoute: React.FC<{
 }> = ({ onTripGenerated, onOpenManager, onLanguageLoaded }) => {
     useDbSync(onLanguageLoaded);
     return (
-        <Suspense fallback={<RouteLoadingFallback />}>
-            <CreateTripClassicLabPage
-                onTripGenerated={onTripGenerated}
-                onOpenManager={onOpenManager}
-                onLanguageLoaded={onLanguageLoaded}
-            />
-        </Suspense>
+        <CreateTripClassicLabPage
+            onTripGenerated={onTripGenerated}
+            onOpenManager={onOpenManager}
+            onLanguageLoaded={onLanguageLoaded}
+        />
     );
 };
 
@@ -85,9 +90,7 @@ const CreateTripWizardRoute: React.FC<{
 }> = ({ onTripGenerated, onOpenManager, onLanguageLoaded }) => {
     useDbSync(onLanguageLoaded);
     return (
-        <Suspense fallback={<RouteLoadingFallback />}>
-            <CreateTripV3Page onTripGenerated={onTripGenerated} onOpenManager={onOpenManager} />
-        </Suspense>
+        <CreateTripV3Page onTripGenerated={onTripGenerated} onOpenManager={onOpenManager} />
     );
 };
 
@@ -123,114 +126,117 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
     return (
         <>
             <ScrollToTop />
-            <Routes>
-                <Route
-                    path="/create-trip"
-                    element={
-                        renderWithSuspense(<CreateTripClassicRoute
-                            onTripGenerated={onTripGenerated}
-                            onOpenManager={onOpenManager}
-                            onLanguageLoaded={onAppLanguageLoaded}
-                        />)
-                    }
-                />
-                {LOCALIZED_TOOL_LOCALES.map((locale) => (
+            <Suspense fallback={<RouteLoadingFallback />}>
+                <Routes>
                     <Route
-                        key={`tool:${locale}:create-trip`}
-                        path={`/${locale}/create-trip`}
-                        element={
-                            renderWithSuspense(<CreateTripClassicRoute
+                        path="/create-trip"
+                        element={renderWithHandoff(
+                            <CreateTripClassicRoute
                                 onTripGenerated={onTripGenerated}
                                 onOpenManager={onOpenManager}
                                 onLanguageLoaded={onAppLanguageLoaded}
-                            />)
-                        }
+                            />
+                        )}
                     />
-                ))}
-                <Route
-                    path="/create-trip/wizard"
-                    element={
-                        renderWithSuspense(<CreateTripWizardRoute
-                            onTripGenerated={onTripGenerated}
-                            onOpenManager={onOpenManager}
-                            onLanguageLoaded={onAppLanguageLoaded}
-                        />)
-                    }
-                />
-                {LOCALIZED_TOOL_LOCALES.map((locale) => (
-                    <Route
-                        key={`tool:${locale}:create-trip-wizard`}
-                        path={`/${locale}/create-trip/wizard`}
-                        element={
-                            renderWithSuspense(<CreateTripWizardRoute
-                                onTripGenerated={onTripGenerated}
-                                onOpenManager={onOpenManager}
-                                onLanguageLoaded={onAppLanguageLoaded}
-                            />)
-                        }
-                    />
-                ))}
-                <Route
-                    path="/trip/:tripId"
-                    element={renderWithSuspense(
-                        <TripLoaderRoute
-                            trip={trip}
-                            onTripLoaded={onTripLoaded}
-                            onUpdateTrip={onUpdateTrip}
-                            onCommitState={onCommitState}
-                            onOpenManager={onOpenManager}
-                            onOpenSettings={onOpenSettings}
-                            appLanguage={appLanguage}
-                            onViewSettingsChange={onViewSettingsChange}
-                            onLanguageLoaded={onAppLanguageLoaded}
-                        />,
-                        <TripRouteLoadingShell variant="loadingTrip" />,
-                        { handoffReady: false }
-                    )}
-                />
-                <Route
-                    path="/example/:templateId"
-                    element={renderWithSuspense(
-                        <ExampleTripLoaderRoute
-                            trip={trip}
-                            onTripLoaded={onTripLoaded}
-                            onOpenManager={onOpenManager}
-                            onOpenSettings={onOpenSettings}
-                            appLanguage={appLanguage}
-                            onViewSettingsChange={onViewSettingsChange}
-                        />,
-                        <TripRouteLoadingShell variant="loadingExampleTrip" />,
-                        { handoffReady: false }
-                    )}
-                />
-                <Route
-                    path="/s/:token"
-                    element={renderWithSuspense(
-                        <SharedTripLoaderRoute
-                            trip={trip}
-                            onTripLoaded={onTripLoaded}
-                            onOpenManager={onOpenManager}
-                            onOpenSettings={onOpenSettings}
-                            appLanguage={appLanguage}
-                            onViewSettingsChange={onViewSettingsChange}
-                            onLanguageLoaded={onAppLanguageLoaded}
-                        />,
-                        <TripRouteLoadingShell variant="loadingSharedTrip" />,
-                        { handoffReady: false }
-                    )}
-                />
-                <Route path="/trip" element={<Navigate to="/create-trip" replace />} />
-                <Route
-                    path="*"
-                    element={
-                        <DeferredAppRoutes
-                            onAppLanguageLoaded={onAppLanguageLoaded}
-                            onTripGenerated={onTripGenerated}
-                            onOpenManager={onOpenManager}
+                    {LOCALIZED_TOOL_LOCALES.map((locale) => (
+                        <Route
+                            key={`tool:${locale}:create-trip`}
+                            path={`/${locale}/create-trip`}
+                            element={renderWithHandoff(
+                                <CreateTripClassicRoute
+                                    onTripGenerated={onTripGenerated}
+                                    onOpenManager={onOpenManager}
+                                    onLanguageLoaded={onAppLanguageLoaded}
+                                />
+                            )}
                         />
-                    }
-                />
-            </Routes>
+                    ))}
+                    <Route
+                        path="/create-trip/wizard"
+                        element={renderWithHandoff(
+                            <CreateTripWizardRoute
+                                onTripGenerated={onTripGenerated}
+                                onOpenManager={onOpenManager}
+                                onLanguageLoaded={onAppLanguageLoaded}
+                            />
+                        )}
+                    />
+                    {LOCALIZED_TOOL_LOCALES.map((locale) => (
+                        <Route
+                            key={`tool:${locale}:create-trip-wizard`}
+                            path={`/${locale}/create-trip/wizard`}
+                            element={renderWithHandoff(
+                                <CreateTripWizardRoute
+                                    onTripGenerated={onTripGenerated}
+                                    onOpenManager={onOpenManager}
+                                    onLanguageLoaded={onAppLanguageLoaded}
+                                />
+                            )}
+                        />
+                    ))}
+                    <Route
+                        path="/trip/:tripId"
+                        element={renderWithSuspense(
+                            <TripLoaderRoute
+                                trip={trip}
+                                onTripLoaded={onTripLoaded}
+                                onUpdateTrip={onUpdateTrip}
+                                onCommitState={onCommitState}
+                                onOpenManager={onOpenManager}
+                                onOpenSettings={onOpenSettings}
+                                appLanguage={appLanguage}
+                                onViewSettingsChange={onViewSettingsChange}
+                                onLanguageLoaded={onAppLanguageLoaded}
+                            />,
+                            <TripRouteLoadingShell variant="loadingTrip" />,
+                            { handoffReady: false }
+                        )}
+                    />
+                    <Route
+                        path="/example/:templateId"
+                        element={renderWithSuspense(
+                            <ExampleTripLoaderRoute
+                                trip={trip}
+                                onTripLoaded={onTripLoaded}
+                                onOpenManager={onOpenManager}
+                                onOpenSettings={onOpenSettings}
+                                appLanguage={appLanguage}
+                                onViewSettingsChange={onViewSettingsChange}
+                            />,
+                            <TripRouteLoadingShell variant="loadingExampleTrip" />,
+                            { handoffReady: false }
+                        )}
+                    />
+                    <Route
+                        path="/s/:token"
+                        element={renderWithSuspense(
+                            <SharedTripLoaderRoute
+                                trip={trip}
+                                onTripLoaded={onTripLoaded}
+                                onOpenManager={onOpenManager}
+                                onOpenSettings={onOpenSettings}
+                                appLanguage={appLanguage}
+                                onViewSettingsChange={onViewSettingsChange}
+                                onLanguageLoaded={onAppLanguageLoaded}
+                            />,
+                            <TripRouteLoadingShell variant="loadingSharedTrip" />,
+                            { handoffReady: false }
+                        )}
+                    />
+                    <Route path="/trip" element={<Navigate to="/create-trip" replace />} />
+                    <Route
+                        path="*"
+                        element={
+                            <DeferredAppRoutes
+                                wrapInSuspense={false}
+                                onAppLanguageLoaded={onAppLanguageLoaded}
+                                onTripGenerated={onTripGenerated}
+                                onOpenManager={onOpenManager}
+                            />
+                        }
+                    />
+                </Routes>
+            </Suspense>
         </>
     );
 };

@@ -14,6 +14,7 @@ This backlog stays open as a continuous performance track across routes.
   - `App.tsx` prewarms route chunks on link intent (`mouseover`, `focusin`, `touchstart`).
   - `App.tsx` prewarms select marketing routes in dev only (`IS_DEV` delayed warmup).
   - `components/marketing/ExampleTripsCarousel.tsx` prewarms `TripView` chunk for example-card flows.
+- For cold navigations between already-rendered routes, prefer a shared revealed `Suspense` boundary over nested route-level fallback shells. Warmups reduce chunk latency, but the wrong boundary shape can still flash the bootstrap shell even when prefetch is working.
 - `viewTransitionName` attributes and `::view-transition-*` CSS may remain in code; they are inert unless a `startViewTransition` call executes.
 - When testing any transition reintroduction, gate it behind a reversible flag and validate both directions:
   - homepage -> example trip

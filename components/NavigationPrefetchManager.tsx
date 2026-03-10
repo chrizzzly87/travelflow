@@ -12,6 +12,7 @@ import {
     warmRouteAssets,
 } from '../services/navigationPrefetch';
 import { isFirstLoadCriticalPath } from '../app/prefetch/isFirstLoadCriticalPath';
+import { hasCompletedInitialRouteHandoff } from '../services/marketingRouteShellState';
 
 interface PrefetchIntent {
     path: string;
@@ -56,6 +57,7 @@ export const NavigationPrefetchManager: React.FC<NavigationPrefetchManagerProps>
     const location = useLocation();
     const prefetchEnabled = isNavPrefetchEnabled();
     const isPrefetchActive = prefetchEnabled && enabled;
+    const shouldSuppressPassiveWarmups = isFirstLoadCriticalPath(location.pathname) && !hasCompletedInitialRouteHandoff();
 
     const emitPrefetchLinkHighlight = (element: Element, path: string, reason: PrefetchReason) => {
         if (typeof window === 'undefined') return;
@@ -134,7 +136,7 @@ export const NavigationPrefetchManager: React.FC<NavigationPrefetchManagerProps>
         if (typeof document === 'undefined') return;
 
         const onPointerEnter = (event: Event) => {
-            if (isFirstLoadCriticalPath(window.location.pathname)) return;
+            if (shouldSuppressPassiveWarmups) return;
             const intent = resolvePrefetchIntent(event.target);
             if (!intent) return;
             if (intent.path === window.location.pathname) return;
@@ -150,7 +152,6 @@ export const NavigationPrefetchManager: React.FC<NavigationPrefetchManagerProps>
         };
 
         const onPointerDown = (event: PointerEvent) => {
-            if (isFirstLoadCriticalPath(window.location.pathname)) return;
             const intent = resolvePrefetchIntent(event.target);
             if (!intent) return;
             if (intent.path === window.location.pathname) return;
@@ -160,7 +161,6 @@ export const NavigationPrefetchManager: React.FC<NavigationPrefetchManagerProps>
         };
 
         const onTouchStart = (event: TouchEvent) => {
-            if (isFirstLoadCriticalPath(window.location.pathname)) return;
             const intent = resolvePrefetchIntent(event.target);
             if (!intent) return;
             if (intent.path === window.location.pathname) return;
@@ -180,12 +180,12 @@ export const NavigationPrefetchManager: React.FC<NavigationPrefetchManagerProps>
             document.removeEventListener('pointerdown', onPointerDown, true);
             document.removeEventListener('touchstart', onTouchStart, true);
         };
-    }, [isPrefetchActive]);
+    }, [isPrefetchActive, shouldSuppressPassiveWarmups]);
 
     useEffect(() => {
         if (!isPrefetchActive) return;
         if (typeof window === 'undefined') return;
-        if (isFirstLoadCriticalPath(location.pathname)) {
+        if (shouldSuppressPassiveWarmups) {
             return;
         }
 
@@ -229,7 +229,7 @@ export const NavigationPrefetchManager: React.FC<NavigationPrefetchManagerProps>
             mutationObserver.disconnect();
             observer.disconnect();
         };
-    }, [isPrefetchActive, location.pathname]);
+    }, [isPrefetchActive, location.pathname, shouldSuppressPassiveWarmups]);
 
     useEffect(() => {
         if (!isPrefetchActive) return;

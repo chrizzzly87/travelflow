@@ -14,6 +14,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useLoginModal } from '../../hooks/useLoginModal';
 import { buildPathFromLocationParts } from '../../services/authNavigationService';
 import { loadLazyComponentWithRecovery } from '../../services/lazyImportRecovery';
+import { warmRouteAssets } from '../../services/navigationPrefetch';
 import { AppBrand } from './AppBrand';
 
 const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
@@ -123,6 +124,10 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
     const navDebugAttributes = (target: string) =>
         getAnalyticsDebugAttributes(`navigation__${target}`);
 
+    const prewarmCreateTripRoute = () => {
+        void warmRouteAssets(buildLocalizedCreateTripPath(activeLocale), 'manual');
+    };
+
     const isGlass = variant === 'glass';
 
     const headerClass = isGlass
@@ -226,6 +231,9 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
                             <NavLink
                                 to={buildLocalizedCreateTripPath(activeLocale)}
                                 onClick={() => handleNavClick('create_trip')}
+                                onMouseEnter={prewarmCreateTripRoute}
+                                onFocus={prewarmCreateTripRoute}
+                                onTouchStart={prewarmCreateTripRoute}
                                 className="rounded-lg bg-accent-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-accent-700"
                                 {...navDebugAttributes('create_trip')}
                             >
