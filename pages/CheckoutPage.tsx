@@ -31,6 +31,7 @@ import {
     initializePaddleJs,
     isPaddleTierCheckoutConfigured,
     navigateToPaddleCheckout,
+    openPaddleInlineCheckout,
     PADDLE_INLINE_FRAME_TARGET_CLASS,
     readPaddleCheckoutLocationContext,
     resolveSameOriginPaddleCheckoutPath,
@@ -177,6 +178,7 @@ export const CheckoutPage: React.FC = () => {
     const claimProcessingRequestIdRef = useRef<string | null>(null);
     const autoStartedCheckoutKeyRef = useRef<string | null>(null);
     const travelerDetailsInitializedRef = useRef(false);
+    const openedInlineTransactionRef = useRef<string | null>(null);
 
     const activeLocale = useMemo(
         () => normalizeLocale(i18n.resolvedLanguage ?? i18n.language ?? DEFAULT_LOCALE),
@@ -366,6 +368,9 @@ export const CheckoutPage: React.FC = () => {
         setPostPaymentClaimState('idle');
         setPostPaymentClaimErrorMessage(null);
         claimProcessingRequestIdRef.current = null;
+        if (!checkoutLocationContext.transactionId) {
+            openedInlineTransactionRef.current = null;
+        }
     }, [checkoutLocationContext.transactionId]);
 
     useEffect(() => {
@@ -577,6 +582,35 @@ export const CheckoutPage: React.FC = () => {
             cancelled = true;
         };
     }, [activeLocale, handlePaddleCheckoutEvent, hasInlineCheckout, paddlePublicConfig, t]);
+
+    useEffect(() => {
+        const transactionId = checkoutLocationContext.transactionId;
+        if (!transactionId || !hasInlineCheckout || !paddlePublicConfig || paddlePublicConfig.issues.length > 0) {
+            return;
+        }
+        if (openedInlineTransactionRef.current === transactionId) {
+            return;
+        }
+
+        const opened = openPaddleInlineCheckout({
+            transactionId,
+            customerEmail: accountEmail || authEmail,
+        });
+        if (!opened) {
+            setIsInlineCheckoutLoading(false);
+            setCheckoutErrorMessage(t('checkout.errorConfig', { ns: 'pricing' }));
+            return;
+        }
+
+        openedInlineTransactionRef.current = transactionId;
+    }, [
+        accountEmail,
+        authEmail,
+        checkoutLocationContext.transactionId,
+        hasInlineCheckout,
+        paddlePublicConfig,
+        t,
+    ]);
 
     useEffect(() => {
         if (!isUpgradeFlow) {

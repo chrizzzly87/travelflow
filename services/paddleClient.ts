@@ -87,6 +87,11 @@ export interface InitializePaddleJsOptions {
     locale?: AppLanguage | string | null;
 }
 
+export interface OpenPaddleInlineCheckoutOptions {
+    transactionId: string;
+    customerEmail?: string | null;
+}
+
 export interface PaddleCheckoutLocationContext {
     tierKey: PaddleCheckoutTierKey | null;
     transactionId: string | null;
@@ -361,6 +366,30 @@ export const initializePaddleJs = async ({
     }
 };
 
+export const openPaddleInlineCheckout = ({
+    transactionId,
+    customerEmail,
+}: OpenPaddleInlineCheckoutOptions): boolean => {
+    if (!isBrowser() || !window.Paddle?.Checkout || typeof window.Paddle.Checkout.open !== 'function') {
+        return false;
+    }
+
+    const trimmedTransactionId = transactionId.trim();
+    if (!trimmedTransactionId) return false;
+
+    const trimmedCustomerEmail = asTrimmedString(customerEmail);
+
+    try {
+        window.Paddle.Checkout.open({
+            transactionId: trimmedTransactionId,
+            customer: trimmedCustomerEmail ? { email: trimmedCustomerEmail } : undefined,
+        });
+        return true;
+    } catch {
+        return false;
+    }
+};
+
 export const fetchPaddlePublicConfig = async (): Promise<PaddlePublicConfig> => {
     if (!isBrowser()) {
         throw new Error('Paddle public config is only available in the browser.');
@@ -411,6 +440,7 @@ export const __paddleClientInternals = {
     buildInlineCheckoutSettings,
     extractPaddleCheckoutItemName,
     ensurePaddleScript,
+    openPaddleInlineCheckout,
     parsePaddlePublicConfig,
     readPaddleClientToken,
     readPaddleCheckoutLocationContext,

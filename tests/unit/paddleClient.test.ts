@@ -9,6 +9,7 @@ import {
   initializePaddleJs,
   isPaddleClientConfigured,
   isPaddleTierCheckoutConfigured,
+  openPaddleInlineCheckout,
   readPaddleCheckoutLocationContext,
   resolveSameOriginPaddleCheckoutPath,
 } from '../../services/paddleClient';
@@ -181,6 +182,25 @@ describe('paddleClient', () => {
         ],
       },
     })).toBe('Explorer');
+  });
+
+  it('opens Paddle inline checkout for the current transaction id', () => {
+    const open = vi.fn();
+    window.Paddle = {
+      Initialize: vi.fn(),
+      Environment: { set: vi.fn() },
+      Checkout: { open },
+    };
+
+    expect(openPaddleInlineCheckout({
+      transactionId: 'txn_123',
+      customerEmail: 'ada@example.com',
+    })).toBe(true);
+
+    expect(open).toHaveBeenCalledWith({
+      transactionId: 'txn_123',
+      customer: { email: 'ada@example.com' },
+    });
   });
 
   it('treats config issues as blocking for tier checkout availability', () => {

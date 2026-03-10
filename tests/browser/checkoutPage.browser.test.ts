@@ -54,6 +54,7 @@ const mocks = vi.hoisted(() => ({
     issues: [],
   }),
   initializePaddleJs: vi.fn().mockResolvedValue(true),
+  openPaddleInlineCheckout: vi.fn().mockReturnValue(true),
   navigateToPaddleCheckout: vi.fn(),
   getCurrentSubscriptionSummary: vi.fn().mockResolvedValue(null),
   previewPaddleSubscriptionUpgrade: vi.fn(),
@@ -174,6 +175,7 @@ vi.mock('../../services/paddleClient', async () => {
     ...actual,
     fetchPaddlePublicConfig: mocks.fetchPaddlePublicConfig,
     initializePaddleJs: mocks.initializePaddleJs,
+    openPaddleInlineCheckout: mocks.openPaddleInlineCheckout,
     navigateToPaddleCheckout: mocks.navigateToPaddleCheckout,
   };
 });
@@ -423,6 +425,33 @@ describe('pages/CheckoutPage', () => {
     expect(screen.getByDisplayValue('Ada')).toBeInTheDocument();
     expect(screen.getByDisplayValue('Lovelace')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'checkout.travelerDetailsEditCta' })).toBeInTheDocument();
+  });
+
+  it('opens Paddle inline checkout again when the transaction id changes after editing', async () => {
+    mocks.location.search = '?tier=tier_mid&source=pricing_page&_ptxn=txn_old';
+    const { rerender } = render(React.createElement(CheckoutPage));
+
+    await waitFor(() => {
+      expect(mocks.openPaddleInlineCheckout).toHaveBeenCalledWith({
+        transactionId: 'txn_old',
+        customerEmail: 'ada@example.com',
+      });
+    });
+
+    mocks.location.search = '?tier=tier_mid&source=pricing_page';
+    rerender(React.createElement(CheckoutPage));
+
+    mocks.location.search = '?tier=tier_mid&source=pricing_page&_ptxn=txn_new';
+    rerender(React.createElement(CheckoutPage));
+
+    await waitFor(() => {
+      expect(mocks.openPaddleInlineCheckout).toHaveBeenLastCalledWith({
+        transactionId: 'txn_new',
+        customerEmail: 'ada@example.com',
+      });
+    });
+
+    expect(mocks.openPaddleInlineCheckout).toHaveBeenCalledTimes(2);
   });
 
   it('starts the claimed trip after payment and prioritizes trip actions on success', async () => {
