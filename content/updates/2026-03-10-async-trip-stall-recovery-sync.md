@@ -13,4 +13,4 @@ summary: "Trip stall recovery now refreshes the remote trip before writing a syn
 ## Changes
 - [x] [Fixed] 🧾 Trip retries no longer mislabel a finished plan as failed when background generation completes just before the planner refreshes.
 - [ ] [Internal] 🛟 Async stall recovery now refreshes the remote trip before writing the queue-missing fallback failure, avoiding false attempt-log errors after a successful worker completion.
-- [ ] [Internal] 🔎 Worker auth and background dispatch now emit safe diagnostics for unauthorized and failed internal generation kicks, making queued-trip incidents faster to trace in production.
+- [ ] [Internal] 🧵 Async generation background kicks now statically bundle the worker processor and emit safer auth diagnostics, so accepted queue nudges execute more reliably on Netlify and are faster to trace when they fail.

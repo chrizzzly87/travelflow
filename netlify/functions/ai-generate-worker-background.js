@@ -1,3 +1,5 @@
+import { processGenerationWorkerRequest } from "../edge-functions/ai-generate-worker.ts";
+
 const normalizeFlag = (value) => {
   if (typeof value !== "string") return "";
   return value.trim().toLowerCase();
@@ -84,7 +86,6 @@ export const handler = async (event) => {
       workerLimit,
       workerUrl,
     });
-    const { processGenerationWorkerRequest } = await import("../edge-functions/ai-generate-worker.ts");
     const response = await processGenerationWorkerRequest(new Request(workerUrl, {
       method: "POST",
       headers: {
