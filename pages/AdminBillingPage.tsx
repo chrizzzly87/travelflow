@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowsClockwise, CreditCard, LinkBreak, ShieldCheck, SpinnerGap, WarningCircle } from '@phosphor-icons/react';
+import { BarChart, BarList, DonutChart, Metric, Text, Title } from '@tremor/react';
 import { Link, useSearchParams } from 'react-router-dom';
 
 import { useAppDialog } from '../components/AppDialogProvider';
@@ -14,16 +15,24 @@ import {
     adminListBillingSubscriptions,
     adminReconcilePaddleSubscriptions,
     adminListBillingWebhookEvents,
+    adminGetBillingDashboard,
+    type AdminBillingDashboardRecord,
     type AdminBillingPaddleReconcileSummary,
     type AdminBillingSubscriptionRecord,
     type AdminBillingWebhookEventRecord,
 } from '../services/adminService';
 import {
     adminBillingStatusClassName,
+    buildAdminBillingAtRiskChartData,
+    buildAdminBillingCurrentMrrCards,
+    buildAdminBillingMrrByTierChartData,
+    buildAdminBillingStatusMixChartData,
+    buildAdminBillingTierMixChartData,
     filterAdminBillingSubscriptionsByRange,
     filterAdminBillingWebhookEventsByRange,
     formatAdminBillingAmount,
     humanizeAdminBillingStatus,
+    humanizeTierKey,
     normalizeAdminBillingStatus,
     summarizeAdminBilling,
     resolveAdminBillingStatusTone,
@@ -46,15 +55,6 @@ const formatCompactDate = (value: string | null | undefined): string => {
     return new Intl.DateTimeFormat(undefined, {
         dateStyle: 'medium',
     }).format(new Date(timestamp));
-};
-
-const humanizeTierKey = (value: string | null | undefined): string => {
-    const normalized = (value || '').trim();
-    if (!normalized) return 'Free';
-    if (normalized === 'tier_mid') return 'Explorer';
-    if (normalized === 'tier_premium') return 'Globetrotter';
-    if (normalized === 'tier_free') return 'Backpacker';
-    return normalized.replace(/^tier_/, '').replace(/[_-]+/g, ' ');
 };
 
 const humanizeEventType = (value: string | null | undefined): string => {
@@ -92,6 +92,7 @@ export const AdminBillingPage: React.FC = () => {
         if (value === '7d' || value === '30d' || value === '90d' || value === 'all') return value;
         return '30d';
     });
+    const [dashboard, setDashboard] = useState<AdminBillingDashboardRecord | null>(null);
     const [subscriptions, setSubscriptions] = useState<AdminBillingSubscriptionRecord[]>([]);
     const [events, setEvents] = useState<AdminBillingWebhookEventRecord[]>([]);
     const [selectedSubscriptionStatuses, setSelectedSubscriptionStatuses] = useState<string[]>([]);
@@ -115,10 +116,12 @@ export const AdminBillingPage: React.FC = () => {
         setIsLoading(true);
         setErrorMessage(null);
         try {
-            const [nextSubscriptions, nextEvents] = await Promise.all([
+            const [nextDashboard, nextSubscriptions, nextEvents] = await Promise.all([
+                adminGetBillingDashboard(),
                 adminListBillingSubscriptions({ limit: SUBSCRIPTIONS_CACHE_LIMIT, search: searchValue || undefined }),
                 adminListBillingWebhookEvents({ limit: EVENTS_CACHE_LIMIT, search: searchValue || undefined }),
             ]);
+            setDashboard(nextDashboard);
             setSubscriptions(nextSubscriptions);
             setEvents(nextEvents);
         } catch (error) {
@@ -194,6 +197,26 @@ export const AdminBillingPage: React.FC = () => {
     const metrics = useMemo(
         () => summarizeAdminBilling(filteredSubscriptions, filteredEvents),
         [filteredEvents, filteredSubscriptions],
+    );
+    const dashboardCurrentMrrCards = useMemo(
+        () => dashboard ? buildAdminBillingCurrentMrrCards(dashboard) : [],
+        [dashboard],
+    );
+    const dashboardMrrByTierData = useMemo(
+        () => dashboard ? buildAdminBillingMrrByTierChartData(dashboard) : [],
+        [dashboard],
+    );
+    const dashboardTierMixData = useMemo(
+        () => dashboard ? buildAdminBillingTierMixChartData(dashboard) : [],
+        [dashboard],
+    );
+    const dashboardStatusMixData = useMemo(
+        () => dashboard ? buildAdminBillingStatusMixChartData(dashboard) : [],
+        [dashboard],
+    );
+    const dashboardAtRiskData = useMemo(
+        () => dashboard ? buildAdminBillingAtRiskChartData(dashboard) : [],
+        [dashboard],
     );
 
     const handleReconcile = async () => {
@@ -330,9 +353,9 @@ export const AdminBillingPage: React.FC = () => {
                         <div>
                             <p className="text-sm font-medium text-slate-600">Active paid</p>
                             <div className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">
-                                <AdminCountUpNumber value={metrics.activeSubscriptions} />
+                                <AdminCountUpNumber value={dashboard?.active_subscriptions ?? metrics.activeSubscriptions} />
                             </div>
-                            <p className="mt-2 text-sm text-slate-500">Current paid subscriptions in the selected window.</p>
+                            <p className="mt-2 text-sm text-slate-500">Current MRR-eligible subscriptions after the latest billing sync.</p>
                         </div>
                         <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-accent-200 bg-accent-50 text-accent-700">
                             <ShieldCheck size={18} weight="duotone" />
@@ -343,11 +366,11 @@ export const AdminBillingPage: React.FC = () => {
                 <AdminSurfaceCard>
                     <div className="flex items-start justify-between gap-3">
                         <div>
-                            <p className="text-sm font-medium text-slate-600">Grace period</p>
+                            <p className="text-sm font-medium text-slate-600">Scheduled cancellations</p>
                             <div className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">
-                                <AdminCountUpNumber value={metrics.graceSubscriptions} />
+                                <AdminCountUpNumber value={(dashboard?.scheduled_cancellations ?? 0) + (dashboard?.grace_subscriptions ?? metrics.graceSubscriptions)} />
                             </div>
-                            <p className="mt-2 text-sm text-slate-500">Canceled subscriptions that still retain access.</p>
+                            <p className="mt-2 text-sm text-slate-500">Includes subscriptions scheduled to cancel and grace-access accounts.</p>
                         </div>
                         <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-amber-200 bg-amber-50 text-amber-700">
                             <CreditCard size={18} weight="duotone" />
@@ -360,7 +383,7 @@ export const AdminBillingPage: React.FC = () => {
                         <div>
                             <p className="text-sm font-medium text-slate-600">Failed webhooks</p>
                             <div className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">
-                                <AdminCountUpNumber value={metrics.failedWebhookEvents} />
+                                <AdminCountUpNumber value={dashboard?.failed_webhook_events ?? metrics.failedWebhookEvents} />
                             </div>
                             <p className="mt-2 text-sm text-slate-500">Events that need replay or payload inspection.</p>
                         </div>
@@ -385,6 +408,121 @@ export const AdminBillingPage: React.FC = () => {
                     </div>
                 </AdminSurfaceCard>
             </div>
+
+            {dashboard ? (
+                <>
+                    <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                        {dashboardCurrentMrrCards.map((card) => (
+                            <AdminSurfaceCard key={`mrr-${card.currency}`}>
+                                <Text>Current MRR ({card.currency})</Text>
+                                <Metric className="mt-2">{card.amountLabel}</Metric>
+                                <Text className="mt-2">{card.subscriptions} running subscriptions</Text>
+                            </AdminSurfaceCard>
+                        ))}
+                    </div>
+
+                    <div className="mt-6 grid gap-6 xl:grid-cols-2">
+                        <AdminSurfaceCard>
+                            <div className="space-y-4">
+                                <div>
+                                    <Title>Current MRR by tier</Title>
+                                    <Text>Current monthly recurring revenue grouped by tier and currency. Canceled access grace is excluded.</Text>
+                                </div>
+                                {dashboardMrrByTierData.length > 0 ? (
+                                    <BarChart
+                                        data={dashboardMrrByTierData}
+                                        index="label"
+                                        categories={['amount']}
+                                        colors={['indigo']}
+                                        valueFormatter={(value) => Number(value).toLocaleString(undefined, {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2,
+                                        })}
+                                        yAxisWidth={72}
+                                        className="h-72"
+                                    />
+                                ) : (
+                                    <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-sm text-slate-500">
+                                        No MRR chart data yet.
+                                    </div>
+                                )}
+                            </div>
+                        </AdminSurfaceCard>
+
+                        <AdminSurfaceCard>
+                            <div className="space-y-4">
+                                <div>
+                                    <Title>At-risk revenue</Title>
+                                    <Text>Revenue currently exposed to churn or collection risk, grouped by status bucket.</Text>
+                                </div>
+                                {dashboardAtRiskData.length > 0 ? (
+                                    <BarList
+                                        data={dashboardAtRiskData}
+                                        className="h-72"
+                                        color="rose"
+                                        valueFormatter={(value) => Number(value).toLocaleString(undefined, {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2,
+                                        })}
+                                    />
+                                ) : (
+                                    <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-sm text-slate-500">
+                                        No at-risk revenue recorded in the selected data set.
+                                    </div>
+                                )}
+                            </div>
+                        </AdminSurfaceCard>
+                    </div>
+
+                    <div className="mt-6 grid gap-6 xl:grid-cols-2">
+                        <AdminSurfaceCard>
+                            <div className="space-y-4">
+                                <div>
+                                    <Title>Subscription mix</Title>
+                                    <Text>Paid subscription distribution by plan tier.</Text>
+                                </div>
+                                {dashboardTierMixData.length > 0 ? (
+                                    <DonutChart
+                                        data={dashboardTierMixData}
+                                        category="count"
+                                        index="tier"
+                                        colors={['indigo', 'amber', 'slate']}
+                                        valueFormatter={(value) => `${value}`}
+                                        className="h-72"
+                                    />
+                                ) : (
+                                    <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-sm text-slate-500">
+                                        No subscription mix data yet.
+                                    </div>
+                                )}
+                            </div>
+                        </AdminSurfaceCard>
+
+                        <AdminSurfaceCard>
+                            <div className="space-y-4">
+                                <div>
+                                    <Title>Status mix</Title>
+                                    <Text>Billing lifecycle distribution across currently synced subscriptions.</Text>
+                                </div>
+                                {dashboardStatusMixData.length > 0 ? (
+                                    <DonutChart
+                                        data={dashboardStatusMixData}
+                                        category="count"
+                                        index="status"
+                                        colors={['emerald', 'indigo', 'amber', 'rose', 'slate']}
+                                        valueFormatter={(value) => `${value}`}
+                                        className="h-72"
+                                    />
+                                ) : (
+                                    <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-sm text-slate-500">
+                                        No status mix data yet.
+                                    </div>
+                                )}
+                            </div>
+                        </AdminSurfaceCard>
+                    </div>
+                </>
+            ) : null}
 
             <section className="mt-6 flex flex-wrap items-center gap-2">
                 <AdminFilterMenu

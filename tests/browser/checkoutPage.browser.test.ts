@@ -19,6 +19,7 @@ const mocks = vi.hoisted(() => ({
     },
     access: {
       isAnonymous: false,
+      tierKey: 'tier_free',
     },
     isAuthenticated: true,
     isLoading: false,
@@ -54,6 +55,10 @@ const mocks = vi.hoisted(() => ({
   }),
   initializePaddleJs: vi.fn().mockResolvedValue(true),
   navigateToPaddleCheckout: vi.fn(),
+  getCurrentSubscriptionSummary: vi.fn().mockResolvedValue(null),
+  previewPaddleSubscriptionUpgrade: vi.fn(),
+  applyPaddleSubscriptionUpgrade: vi.fn(),
+  getPaddleSubscriptionManagementUrls: vi.fn(),
   startPaddleCheckoutSession: vi.fn().mockResolvedValue({
     provider: 'paddle',
     environment: 'sandbox',
@@ -137,6 +142,10 @@ vi.mock('../../services/billingService', async () => {
   const actual = await vi.importActual('../../services/billingService');
   return {
     ...actual,
+    getCurrentSubscriptionSummary: mocks.getCurrentSubscriptionSummary,
+    previewPaddleSubscriptionUpgrade: mocks.previewPaddleSubscriptionUpgrade,
+    applyPaddleSubscriptionUpgrade: mocks.applyPaddleSubscriptionUpgrade,
+    getPaddleSubscriptionManagementUrls: mocks.getPaddleSubscriptionManagementUrls,
     startPaddleCheckoutSession: mocks.startPaddleCheckoutSession,
   };
 });
@@ -198,7 +207,7 @@ describe('pages/CheckoutPage', () => {
     mocks.auth.isAuthenticated = true;
     mocks.auth.isLoading = false;
     mocks.auth.isProfileLoading = false;
-    mocks.auth.access = { isAnonymous: false };
+    mocks.auth.access = { isAnonymous: false, tierKey: 'tier_free' };
     mocks.auth.profile = {
       firstName: 'Ada',
       lastName: 'Lovelace',
@@ -213,6 +222,46 @@ describe('pages/CheckoutPage', () => {
       gender: '',
     };
     mocks.auth.refreshAccess.mockResolvedValue(undefined);
+    mocks.getCurrentSubscriptionSummary.mockResolvedValue(null);
+    mocks.previewPaddleSubscriptionUpgrade.mockResolvedValue({
+      mode: 'upgrade',
+      currentTierKey: 'tier_mid',
+      targetTierKey: 'tier_premium',
+      providerSubscriptionId: 'sub_123',
+      providerStatus: 'active',
+      currentAmount: 900,
+      currentCurrency: 'USD',
+      recurringAmount: 1900,
+      recurringCurrency: 'USD',
+      immediateAmount: 1000,
+      immediateCurrency: 'USD',
+      prorationMessage: 'upgrade now',
+    });
+    mocks.applyPaddleSubscriptionUpgrade.mockResolvedValue({
+      mode: 'upgrade_applied',
+      currentTierKey: 'tier_mid',
+      targetTierKey: 'tier_premium',
+      providerSubscriptionId: 'sub_123',
+      providerStatus: 'active',
+      recurringAmount: 1900,
+      recurringCurrency: 'USD',
+      localSync: {
+        status: 'processed',
+        duplicate: false,
+        reason: null,
+      },
+    });
+    mocks.getPaddleSubscriptionManagementUrls.mockResolvedValue({
+      provider: 'paddle',
+      providerSubscriptionId: 'sub_123',
+      cancelUrl: 'https://vendors.paddle.test/cancel',
+      updatePaymentMethodUrl: 'https://vendors.paddle.test/manage',
+      providerStatus: 'active',
+      currentPeriodEnd: '2026-04-01T00:00:00.000Z',
+      cancelAt: null,
+      canceledAt: null,
+      graceEndsAt: null,
+    });
   });
 
   it('preserves trip and claim metadata when starting checkout from the dedicated route', async () => {
@@ -244,7 +293,7 @@ describe('pages/CheckoutPage', () => {
     const user = userEvent.setup();
     mocks.auth.session = null;
     mocks.auth.isAuthenticated = false;
-    mocks.auth.access = { isAnonymous: true };
+    mocks.auth.access = { isAnonymous: true, tierKey: 'tier_free' };
 
     render(React.createElement(CheckoutPage));
 
@@ -265,7 +314,7 @@ describe('pages/CheckoutPage', () => {
     const user = userEvent.setup();
     mocks.auth.session = null;
     mocks.auth.isAuthenticated = false;
-    mocks.auth.access = { isAnonymous: true };
+    mocks.auth.access = { isAnonymous: true, tierKey: 'tier_free' };
     mocks.auth.registerWithPassword.mockResolvedValueOnce({
       error: null,
       data: { session: null },
@@ -294,6 +343,7 @@ describe('pages/CheckoutPage', () => {
     mocks.location.search = '?tier=tier_mid&source=pricing_page&signup_accept_terms=1';
     mocks.auth.access = {
       isAnonymous: false,
+      tierKey: 'tier_free',
       termsAcceptanceRequired: true,
     };
 
@@ -347,5 +397,64 @@ describe('pages/CheckoutPage', () => {
     expect(await screen.findByRole('link', { name: 'checkout.successOpenTrip' })).toHaveAttribute('href', '/trip/trip_claimed_123');
     expect(screen.getByRole('link', { name: 'checkout.successCreateTrip' })).toHaveAttribute('href', '/create-trip');
     expect(screen.queryByRole('link', { name: 'checkout.successOpenProfile' })).toBeNull();
+  });
+
+  it('renders an upgrade review flow for existing paid users and confirms the upgrade inline', async () => {
+    const user = userEvent.setup();
+    mocks.location.search = '?tier=tier_premium&source=pricing_page';
+    mocks.auth.access = {
+      isAnonymous: false,
+      tierKey: 'tier_mid',
+    };
+    mocks.getCurrentSubscriptionSummary.mockResolvedValue({
+      userId: 'user_123',
+      provider: 'paddle',
+      providerCustomerId: 'ctm_123',
+      providerSubscriptionId: 'sub_123',
+      providerPriceId: 'pri_mid',
+      providerProductId: 'pro_mid',
+      providerStatus: 'active',
+      status: 'active',
+      currentPeriodStart: '2026-03-01T00:00:00.000Z',
+      currentPeriodEnd: '2026-04-01T00:00:00.000Z',
+      cancelAt: null,
+      canceledAt: null,
+      graceEndsAt: null,
+      currency: 'USD',
+      amount: 900,
+      lastEventId: 'evt_123',
+      lastEventType: 'subscription.updated',
+      lastEventAt: '2026-03-08T10:00:00.000Z',
+    });
+    mocks.fetchPaddlePublicConfig.mockResolvedValue({
+      provider: 'paddle',
+      environment: 'sandbox',
+      checkoutEnabled: true,
+      clientTokenConfigured: true,
+      tierAvailability: {
+        tier_mid: true,
+        tier_premium: true,
+      },
+      issues: [],
+    });
+
+    render(React.createElement(CheckoutPage));
+
+    await waitFor(() => {
+      expect(mocks.previewPaddleSubscriptionUpgrade).toHaveBeenCalledWith('tier_premium');
+      expect(screen.getByText('checkout.upgradeTitle')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('button', { name: 'checkout.upgradeConfirmCta' }));
+
+    await waitFor(() => {
+      expect(mocks.applyPaddleSubscriptionUpgrade).toHaveBeenCalledWith({
+        tierKey: 'tier_premium',
+        source: 'pricing_page',
+        claimId: null,
+        returnTo: '/pricing',
+        tripId: null,
+      });
+    });
   });
 });

@@ -14,10 +14,17 @@ import { buildLocalizedMarketingPath, buildPath } from '../config/routes';
 import { useAuth } from '../hooks/useAuth';
 import {
     buildBillingCheckoutPath,
+    getCurrentSubscriptionSummary,
+    getPaddleSubscriptionManagementUrls,
+    previewPaddleSubscriptionUpgrade,
+    applyPaddleSubscriptionUpgrade,
     startPaddleCheckoutSession,
+    type BillingSubscriptionSummary,
+    type BillingUpgradePreview,
     type BillingCheckoutSource,
     type BillingCheckoutTierKey,
 } from '../services/billingService';
+import { resolveBillingTierDecision } from '../lib/billing/subscriptionState';
 import {
     appendPaddleCheckoutContext,
     fetchPaddlePublicConfig,
@@ -152,9 +159,16 @@ export const CheckoutPage: React.FC = () => {
     const [isAutoAcceptingSignupTerms, setIsAutoAcceptingSignupTerms] = useState(false);
     const [hasHydratedForm, setHasHydratedForm] = useState(false);
     const [checkoutCompleted, setCheckoutCompleted] = useState(false);
+    const [completedFlowMode, setCompletedFlowMode] = useState<'acquisition' | 'upgrade' | null>(null);
     const [postPaymentTripId, setPostPaymentTripId] = useState<string | null>(null);
     const [postPaymentClaimState, setPostPaymentClaimState] = useState<'idle' | 'processing' | 'ready' | 'error'>('idle');
     const [postPaymentClaimErrorMessage, setPostPaymentClaimErrorMessage] = useState<string | null>(null);
+    const [subscriptionSummary, setSubscriptionSummary] = useState<BillingSubscriptionSummary | null>(null);
+    const [isSubscriptionSummaryLoading, setIsSubscriptionSummaryLoading] = useState(false);
+    const [upgradePreview, setUpgradePreview] = useState<BillingUpgradePreview | null>(null);
+    const [isUpgradePreviewLoading, setIsUpgradePreviewLoading] = useState(false);
+    const [isUpgradeSubmitting, setIsUpgradeSubmitting] = useState(false);
+    const [isBillingManagementLoading, setIsBillingManagementLoading] = useState(false);
     const inlineCheckoutSectionRef = useRef<HTMLDivElement | null>(null);
     const claimProcessingRequestIdRef = useRef<string | null>(null);
 
@@ -172,6 +186,21 @@ export const CheckoutPage: React.FC = () => {
     const selectedTier = PLAN_CATALOG[selectedTierKey];
     const source = (checkoutLocationContext.source || 'checkout_page') as BillingCheckoutSource | string;
     const isEligibleAccount = isAuthenticated && access?.isAnonymous !== true;
+    const currentPaidTierKey = access?.tierKey === 'tier_mid' || access?.tierKey === 'tier_premium'
+        ? access.tierKey
+        : 'tier_free';
+    const billingDecision = useMemo(() => (
+        isEligibleAccount
+            ? resolveBillingTierDecision({
+                currentTierKey: currentPaidTierKey,
+                targetTierKey: selectedTierKey,
+                subscription: subscriptionSummary,
+            })
+            : null
+    ), [currentPaidTierKey, isEligibleAccount, selectedTierKey, subscriptionSummary]);
+    const isUpgradeFlow = Boolean(isEligibleAccount && currentPaidTierKey !== 'tier_free' && billingDecision?.action === 'upgrade');
+    const isCurrentPlanFlow = Boolean(isEligibleAccount && currentPaidTierKey !== 'tier_free' && billingDecision?.action === 'current');
+    const isManageOnlyFlow = Boolean(isEligibleAccount && currentPaidTierKey !== 'tier_free' && billingDecision?.action === 'manage');
     const hasInlineCheckout = Boolean(checkoutLocationContext.transactionId);
     const supportsSelectedTier = isPaddleTierCheckoutConfigured(paddlePublicConfig, selectedTierKey);
     const fromTripCheckout = source === 'trip_paywall_strip' || source === 'trip_paywall_overlay';
@@ -251,6 +280,36 @@ export const CheckoutPage: React.FC = () => {
     }, []);
 
     useEffect(() => {
+        if (!isEligibleAccount) {
+            setSubscriptionSummary(null);
+            setIsSubscriptionSummaryLoading(false);
+            return;
+        }
+
+        let cancelled = false;
+        setIsSubscriptionSummaryLoading(true);
+        void getCurrentSubscriptionSummary()
+            .then((summary) => {
+                if (cancelled) return;
+                setSubscriptionSummary(summary);
+            })
+            .catch((error) => {
+                if (cancelled) return;
+                console.warn('Failed to load current subscription summary on checkout.', error);
+                setSubscriptionSummary(null);
+            })
+            .finally(() => {
+                if (!cancelled) {
+                    setIsSubscriptionSummaryLoading(false);
+                }
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [isEligibleAccount, checkoutCompleted]);
+
+    useEffect(() => {
         trackEvent('checkout__page--view', {
             tier: selectedTierKey,
             source,
@@ -268,6 +327,7 @@ export const CheckoutPage: React.FC = () => {
 
     useEffect(() => {
         setCheckoutCompleted(false);
+        setCompletedFlowMode(null);
         setPostPaymentTripId(null);
         setPostPaymentClaimState('idle');
         setPostPaymentClaimErrorMessage(null);
@@ -333,6 +393,7 @@ export const CheckoutPage: React.FC = () => {
         }
         if (event.name === 'checkout.completed') {
             setCheckoutCompleted(true);
+            setCompletedFlowMode('acquisition');
             setPostPaymentClaimErrorMessage(null);
             showAppToast({
                 tone: 'success',
@@ -410,6 +471,37 @@ export const CheckoutPage: React.FC = () => {
     }, [activeLocale, handlePaddleCheckoutEvent, hasInlineCheckout, paddlePublicConfig, t]);
 
     useEffect(() => {
+        if (!isUpgradeFlow) {
+            setUpgradePreview(null);
+            setIsUpgradePreviewLoading(false);
+            return;
+        }
+
+        let cancelled = false;
+        setIsUpgradePreviewLoading(true);
+        setCheckoutErrorMessage(null);
+        void previewPaddleSubscriptionUpgrade(selectedTierKey)
+            .then((preview) => {
+                if (cancelled) return;
+                setUpgradePreview(preview);
+            })
+            .catch((error) => {
+                if (cancelled) return;
+                setUpgradePreview(null);
+                setCheckoutErrorMessage(error instanceof Error ? error.message : t('checkout.errorConfig', { ns: 'pricing' }));
+            })
+            .finally(() => {
+                if (!cancelled) {
+                    setIsUpgradePreviewLoading(false);
+                }
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [isUpgradeFlow, selectedTierKey, t]);
+
+    useEffect(() => {
         if (!hasInlineCheckout || !inlineCheckoutSectionRef.current) return;
         if (typeof inlineCheckoutSectionRef.current.scrollIntoView === 'function') {
             inlineCheckoutSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -439,6 +531,92 @@ export const CheckoutPage: React.FC = () => {
         && Boolean(checkoutLocationContext.claimId)
         && isSafeInternalPath(returnToPath)
         && returnToPath !== buildPath('pricing');
+    const shouldShowAcquisitionFlow = !isUpgradeFlow && !isCurrentPlanFlow && !isManageOnlyFlow;
+    const currentPaidTierName = currentPaidTierKey !== 'tier_free'
+        ? t(`tiers.${PLAN_CATALOG[currentPaidTierKey].publicSlug}.name`, { ns: 'pricing' })
+        : null;
+
+    const completedPanel = checkoutCompleted ? (
+        <div ref={inlineCheckoutSectionRef} className="space-y-5">
+            <div className="rounded-2xl bg-emerald-50 px-6 py-6 shadow-sm ring-1 ring-emerald-100">
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">
+                    {t('checkout.successEyebrow', { ns: 'pricing' })}
+                </p>
+                <h3 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900">
+                    {completedFlowMode === 'upgrade'
+                        ? t('checkout.upgradeCompletedTitle', { ns: 'pricing' })
+                        : t('checkout.paymentCompletedTitle', { ns: 'pricing' })}
+                </h3>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-700">
+                    {completedFlowMode === 'upgrade'
+                        ? t('checkout.upgradeCompletedDescription', { ns: 'pricing' })
+                        : t('checkout.successDescription', { ns: 'pricing' })}
+                </p>
+
+                {postPaymentClaimState === 'processing' ? (
+                    <div className="mt-5 flex items-center gap-3 rounded-xl bg-white/80 px-4 py-3 text-sm text-slate-700 ring-1 ring-emerald-100">
+                        <SpinnerGap size={16} className="animate-spin text-accent-600" />
+                        <span>{t('checkout.successClaimProcessing', { ns: 'pricing' })}</span>
+                    </div>
+                ) : null}
+
+                {postPaymentClaimState === 'error' && postPaymentClaimErrorMessage ? (
+                    <div className="mt-5 border-s-4 border-amber-500 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                        <p className="font-semibold">{t('checkout.successClaimNeedsAttention', { ns: 'pricing' })}</p>
+                        <p className="mt-1">{postPaymentClaimErrorMessage}</p>
+                    </div>
+                ) : null}
+
+                <div className="mt-6 flex flex-wrap gap-3">
+                    {shouldShowPostPaymentTripAction ? (
+                        <Link
+                            to={buildPath('tripDetail', { tripId: postPaymentTripId! })}
+                            className={cn(checkoutActionClassName, 'bg-accent-600 text-white hover:bg-accent-700')}
+                            onClick={() => trackEvent('checkout__success_cta--trip', { tier: selectedTierKey, source })}
+                            {...getAnalyticsDebugAttributes('checkout__success_cta--trip')}
+                        >
+                            <ArrowSquareOut size={18} weight="duotone" />
+                            {t('checkout.successOpenTrip', { ns: 'pricing' })}
+                        </Link>
+                    ) : null}
+
+                    {shouldShowTripReturnAction ? (
+                        <Link
+                            to={returnToPath}
+                            className={cn(checkoutActionClassName, 'border border-slate-300 bg-white text-slate-900 hover:bg-slate-50')}
+                            onClick={() => trackEvent('checkout__success_cta--return_trip', { tier: selectedTierKey, source })}
+                            {...getAnalyticsDebugAttributes('checkout__success_cta--return_trip')}
+                        >
+                            <ArrowSquareOut size={18} weight="duotone" />
+                            {t('checkout.successReturnToTrip', { ns: 'pricing' })}
+                        </Link>
+                    ) : null}
+
+                    <Link
+                        to={createTripPath}
+                        className={cn(checkoutActionClassName, shouldShowPostPaymentTripAction ? 'border border-slate-300 bg-white text-slate-900 hover:bg-slate-50' : 'bg-accent-600 text-white hover:bg-accent-700')}
+                        onClick={() => trackEvent('checkout__success_cta--create_trip', { tier: selectedTierKey, source })}
+                        {...getAnalyticsDebugAttributes('checkout__success_cta--create_trip')}
+                    >
+                        <SuitcaseRolling size={18} weight="duotone" />
+                        {t('checkout.successCreateTrip', { ns: 'pricing' })}
+                    </Link>
+
+                    {shouldShowProfileAction ? (
+                        <Link
+                            to={profileActionPath}
+                            className={cn(checkoutActionClassName, 'border border-slate-300 bg-white text-slate-900 hover:bg-slate-50')}
+                            onClick={() => trackEvent('checkout__success_cta--profile', { tier: selectedTierKey, source })}
+                            {...getAnalyticsDebugAttributes('checkout__success_cta--profile')}
+                        >
+                            <UserCircle size={18} weight="duotone" />
+                            {t('checkout.successOpenProfile', { ns: 'pricing' })}
+                        </Link>
+                    ) : null}
+                </div>
+            </div>
+        </div>
+    ) : null;
 
     const setField = <K extends keyof CheckoutProfileFormState>(key: K, value: CheckoutProfileFormState[K]) => {
         setForm((current) => ({ ...current, [key]: value }));
@@ -559,6 +737,7 @@ export const CheckoutPage: React.FC = () => {
 
         try {
             setCheckoutCompleted(false);
+            setCompletedFlowMode(null);
             setPostPaymentTripId(null);
             setPostPaymentClaimState('idle');
             setPostPaymentClaimErrorMessage(null);
@@ -640,6 +819,100 @@ export const CheckoutPage: React.FC = () => {
         form.preferredLanguage,
     ]);
 
+    const handleOpenBillingManagement = useCallback(async (target: 'manage' | 'cancel' = 'manage') => {
+        if (isBillingManagementLoading) return;
+        setIsBillingManagementLoading(true);
+        try {
+            const managementUrls = await getPaddleSubscriptionManagementUrls();
+            const destination = target === 'cancel'
+                ? managementUrls.cancelUrl || managementUrls.updatePaymentMethodUrl
+                : managementUrls.updatePaymentMethodUrl || managementUrls.cancelUrl;
+
+            if (!destination) {
+                throw new Error(t('checkout.manageBillingUnavailable', { ns: 'pricing' }));
+            }
+
+            trackEvent(target === 'cancel' ? 'checkout__manage_billing--cancel' : 'checkout__manage_billing--open', {
+                tier: selectedTierKey,
+                source,
+            });
+            window.location.assign(destination);
+        } catch (error) {
+            const message = error instanceof Error ? error.message : t('checkout.manageBillingUnavailable', { ns: 'pricing' });
+            setCheckoutErrorMessage(message);
+            showAppToast({
+                tone: 'warning',
+                title: t('checkout.errorTitle', { ns: 'pricing' }),
+                description: message,
+            });
+        } finally {
+            setIsBillingManagementLoading(false);
+        }
+    }, [isBillingManagementLoading, selectedTierKey, source, t]);
+
+    const handleApplyUpgrade = useCallback(async () => {
+        if (isUpgradeSubmitting) return;
+        setCheckoutErrorMessage(null);
+        setIsUpgradeSubmitting(true);
+
+        try {
+            setCheckoutCompleted(false);
+            const result = await applyPaddleSubscriptionUpgrade({
+                tierKey: selectedTierKey,
+                source,
+                claimId: checkoutLocationContext.claimId,
+                returnTo: returnToPath,
+                tripId: checkoutLocationContext.tripId,
+            });
+            setUpgradePreview((current) => current ? {
+                ...current,
+                targetTierKey: result.targetTierKey,
+                recurringAmount: result.recurringAmount,
+                recurringCurrency: result.recurringCurrency,
+            } : current);
+            setCheckoutCompleted(true);
+            setCompletedFlowMode('upgrade');
+            await refreshAccess();
+            await refreshProfile();
+            showAppToast({
+                tone: 'success',
+                title: t('checkout.upgradeCompletedTitle', { ns: 'pricing' }),
+                description: t('checkout.upgradeCompletedDescription', { ns: 'pricing' }),
+            });
+            trackEvent('checkout__upgrade--success', {
+                from_tier: currentPaidTierKey,
+                to_tier: selectedTierKey,
+                source,
+            });
+        } catch (error) {
+            const message = error instanceof Error ? error.message : t('checkout.errorConfig', { ns: 'pricing' });
+            setCheckoutErrorMessage(message);
+            showAppToast({
+                tone: 'warning',
+                title: t('checkout.errorTitle', { ns: 'pricing' }),
+                description: message,
+            });
+            trackEvent('checkout__upgrade--failed', {
+                from_tier: currentPaidTierKey,
+                to_tier: selectedTierKey,
+                source,
+            });
+        } finally {
+            setIsUpgradeSubmitting(false);
+        }
+    }, [
+        checkoutLocationContext.claimId,
+        checkoutLocationContext.tripId,
+        currentPaidTierKey,
+        isUpgradeSubmitting,
+        refreshAccess,
+        refreshProfile,
+        returnToPath,
+        selectedTierKey,
+        source,
+        t,
+    ]);
+
     return (
         <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
             <SiteHeader hideCreateTrip />
@@ -679,6 +952,8 @@ export const CheckoutPage: React.FC = () => {
                             </div>
                         ) : null}
 
+                        {shouldShowAcquisitionFlow ? (
+                        <>
                         <CheckoutStepSection
                             step={1}
                             state={currentStep > 1 ? 'complete' : 'active'}
@@ -885,81 +1160,7 @@ export const CheckoutPage: React.FC = () => {
                             {!hasInlineCheckout ? (
                                 <p className="text-sm text-slate-500">{t('checkout.paymentLocked', { ns: 'pricing' })}</p>
                             ) : checkoutCompleted ? (
-                                <div ref={inlineCheckoutSectionRef} className="space-y-5">
-                                    <div className="rounded-2xl bg-emerald-50 px-6 py-6 shadow-sm ring-1 ring-emerald-100">
-                                        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">
-                                            {t('checkout.successEyebrow', { ns: 'pricing' })}
-                                        </p>
-                                        <h3 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900">
-                                            {t('checkout.paymentCompletedTitle', { ns: 'pricing' })}
-                                        </h3>
-                                        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-700">
-                                            {t('checkout.successDescription', { ns: 'pricing' })}
-                                        </p>
-
-                                        {postPaymentClaimState === 'processing' ? (
-                                            <div className="mt-5 flex items-center gap-3 rounded-xl bg-white/80 px-4 py-3 text-sm text-slate-700 ring-1 ring-emerald-100">
-                                                <SpinnerGap size={16} className="animate-spin text-accent-600" />
-                                                <span>{t('checkout.successClaimProcessing', { ns: 'pricing' })}</span>
-                                            </div>
-                                        ) : null}
-
-                                        {postPaymentClaimState === 'error' && postPaymentClaimErrorMessage ? (
-                                            <div className="mt-5 border-s-4 border-amber-500 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-                                                <p className="font-semibold">{t('checkout.successClaimNeedsAttention', { ns: 'pricing' })}</p>
-                                                <p className="mt-1">{postPaymentClaimErrorMessage}</p>
-                                            </div>
-                                        ) : null}
-
-                                        <div className="mt-6 flex flex-wrap gap-3">
-                                            {shouldShowPostPaymentTripAction ? (
-                                                <Link
-                                                    to={buildPath('tripDetail', { tripId: postPaymentTripId! })}
-                                                    className={cn(checkoutActionClassName, 'bg-accent-600 text-white hover:bg-accent-700')}
-                                                    onClick={() => trackEvent('checkout__success_cta--trip', { tier: selectedTierKey, source })}
-                                                    {...getAnalyticsDebugAttributes('checkout__success_cta--trip')}
-                                                >
-                                                    <ArrowSquareOut size={18} weight="duotone" />
-                                                    {t('checkout.successOpenTrip', { ns: 'pricing' })}
-                                                </Link>
-                                            ) : null}
-
-                                            {shouldShowTripReturnAction ? (
-                                                <Link
-                                                    to={returnToPath}
-                                                    className={cn(checkoutActionClassName, 'border border-slate-300 bg-white text-slate-900 hover:bg-slate-50')}
-                                                    onClick={() => trackEvent('checkout__success_cta--return_trip', { tier: selectedTierKey, source })}
-                                                    {...getAnalyticsDebugAttributes('checkout__success_cta--return_trip')}
-                                                >
-                                                    <ArrowSquareOut size={18} weight="duotone" />
-                                                    {t('checkout.successReturnToTrip', { ns: 'pricing' })}
-                                                </Link>
-                                            ) : null}
-
-                                            <Link
-                                                to={createTripPath}
-                                                className={cn(checkoutActionClassName, shouldShowPostPaymentTripAction ? 'border border-slate-300 bg-white text-slate-900 hover:bg-slate-50' : 'bg-accent-600 text-white hover:bg-accent-700')}
-                                                onClick={() => trackEvent('checkout__success_cta--create_trip', { tier: selectedTierKey, source })}
-                                                {...getAnalyticsDebugAttributes('checkout__success_cta--create_trip')}
-                                            >
-                                                <SuitcaseRolling size={18} weight="duotone" />
-                                                {t('checkout.successCreateTrip', { ns: 'pricing' })}
-                                            </Link>
-
-                                            {shouldShowProfileAction ? (
-                                                <Link
-                                                    to={profileActionPath}
-                                                    className={cn(checkoutActionClassName, 'border border-slate-300 bg-white text-slate-900 hover:bg-slate-50')}
-                                                    onClick={() => trackEvent('checkout__success_cta--profile', { tier: selectedTierKey, source })}
-                                                    {...getAnalyticsDebugAttributes('checkout__success_cta--profile')}
-                                                >
-                                                    <UserCircle size={18} weight="duotone" />
-                                                    {t('checkout.successOpenProfile', { ns: 'pricing' })}
-                                                </Link>
-                                            ) : null}
-                                        </div>
-                                    </div>
-                                </div>
+                                completedPanel
                             ) : (
                                 <div ref={inlineCheckoutSectionRef} className="space-y-5">
                                     <div className="relative overflow-hidden rounded-md border border-slate-200 bg-white">
@@ -982,6 +1183,141 @@ export const CheckoutPage: React.FC = () => {
                                 </div>
                             )}
                         </CheckoutStepSection>
+                        </>
+                        ) : (
+                        <div className="space-y-6">
+                            {isSubscriptionSummaryLoading ? (
+                                <div className="rounded-2xl border border-slate-200 bg-white px-6 py-8 shadow-sm">
+                                    <div className="inline-flex items-center gap-3 text-sm font-medium text-slate-600">
+                                        <SpinnerGap size={18} className="animate-spin" />
+                                        {t('checkout.loadingSubscriptionState', { ns: 'pricing' })}
+                                    </div>
+                                </div>
+                            ) : checkoutCompleted ? (
+                                completedPanel
+                            ) : isUpgradeFlow ? (
+                                <CheckoutStepSection
+                                    step={1}
+                                    state="active"
+                                    title={t('checkout.upgradeTitle', { ns: 'pricing' })}
+                                >
+                                    <div className="max-w-3xl space-y-6">
+                                        <div className="rounded-2xl border border-slate-200 bg-white px-5 py-5 shadow-sm">
+                                            <p className={checkoutSectionLabelClassName}>{t('checkout.upgradeSummaryLabel', { ns: 'pricing' })}</p>
+                                            <div className="mt-3 flex flex-wrap items-end justify-between gap-4">
+                                                <div>
+                                                    <p className="text-sm text-slate-500">
+                                                        {t('checkout.upgradeFromTo', {
+                                                            ns: 'pricing',
+                                                            currentPlan: currentPaidTierName || '—',
+                                                            targetPlan: t(`tiers.${selectedTier.publicSlug}.name`, { ns: 'pricing' }),
+                                                        })}
+                                                    </p>
+                                                    <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">
+                                                        {t('checkout.upgradeReviewTitle', { ns: 'pricing' })}
+                                                    </h2>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-sm text-slate-500">{t('checkout.newRecurringTotal', { ns: 'pricing' })}</p>
+                                                    <p className="text-2xl font-semibold text-slate-900">
+                                                        {upgradePreview?.recurringAmount !== null && upgradePreview?.recurringAmount !== undefined
+                                                            ? `${upgradePreview.recurringCurrency || ''} ${(upgradePreview.recurringAmount / 100).toFixed(2)}`
+                                                            : `$${selectedTier.monthlyPriceUsd.toFixed(2)}`}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <p className="mt-4 text-sm leading-6 text-slate-600">
+                                                {upgradePreview?.prorationMessage || t('checkout.upgradePreviewDescription', { ns: 'pricing' })}
+                                            </p>
+                                            {upgradePreview?.immediateAmount !== null && upgradePreview?.immediateAmount !== undefined ? (
+                                                <div className="mt-4 rounded-xl border border-accent-200 bg-accent-50 px-4 py-3 text-sm text-slate-700">
+                                                    <span className="font-semibold text-slate-900">{t('checkout.dueNowLabel', { ns: 'pricing' })}</span>{' '}
+                                                    {`${upgradePreview.immediateCurrency || ''} ${(upgradePreview.immediateAmount / 100).toFixed(2)}`}
+                                                </div>
+                                            ) : null}
+                                        </div>
+
+                                        {checkoutErrorMessage ? (
+                                            <div className="border-s-4 border-rose-500 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+                                                {checkoutErrorMessage}
+                                            </div>
+                                        ) : null}
+
+                                        <div className="flex flex-wrap gap-3">
+                                            <button
+                                                type="button"
+                                                onClick={() => void handleApplyUpgrade()}
+                                                disabled={isUpgradeSubmitting || isUpgradePreviewLoading}
+                                                className={cn(checkoutActionClassName, 'bg-accent-600 text-white hover:bg-accent-700')}
+                                                {...getAnalyticsDebugAttributes('checkout__upgrade--confirm')}
+                                            >
+                                                {isUpgradeSubmitting ? <SpinnerGap size={18} className="animate-spin" /> : <CreditCard size={18} weight="duotone" />}
+                                                {t('checkout.upgradeConfirmCta', { ns: 'pricing' })}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => void handleOpenBillingManagement('manage')}
+                                                disabled={isBillingManagementLoading}
+                                                className={cn(checkoutActionClassName, 'border border-slate-300 bg-white text-slate-900 hover:bg-slate-50')}
+                                                {...getAnalyticsDebugAttributes('checkout__upgrade--manage_billing')}
+                                            >
+                                                {isBillingManagementLoading ? <SpinnerGap size={18} className="animate-spin" /> : <ArrowSquareOut size={18} weight="duotone" />}
+                                                {t('checkout.manageBillingCta', { ns: 'pricing' })}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </CheckoutStepSection>
+                            ) : (
+                                <CheckoutStepSection
+                                    step={1}
+                                    state="active"
+                                    title={isCurrentPlanFlow
+                                        ? t('checkout.currentPlanTitle', { ns: 'pricing' })
+                                        : t('checkout.manageBillingTitle', { ns: 'pricing' })}
+                                >
+                                    <div className="max-w-3xl space-y-5">
+                                        <div className="rounded-2xl border border-slate-200 bg-white px-5 py-5 shadow-sm">
+                                            <p className="text-sm leading-6 text-slate-600">
+                                                {isCurrentPlanFlow
+                                                    ? t('checkout.currentPlanDescription', {
+                                                        ns: 'pricing',
+                                                        planName: currentPaidTierName || t(`tiers.${selectedTier.publicSlug}.name`, { ns: 'pricing' }),
+                                                    })
+                                                    : t('checkout.manageBillingDescription', { ns: 'pricing' })}
+                                            </p>
+                                            {subscriptionSummary?.currentPeriodEnd ? (
+                                                <p className="mt-3 text-sm text-slate-500">
+                                                    {t('checkout.renewalDateLabel', { ns: 'pricing' })}: {new Date(subscriptionSummary.currentPeriodEnd).toLocaleDateString()}
+                                                </p>
+                                            ) : null}
+                                        </div>
+
+                                        <div className="flex flex-wrap gap-3">
+                                            {isCurrentPlanFlow ? (
+                                                <button
+                                                    type="button"
+                                                    disabled
+                                                    className={cn(checkoutActionClassName, 'cursor-not-allowed border border-accent-200 bg-accent-50 text-accent-700')}
+                                                >
+                                                    {t('checkout.currentPlanCta', { ns: 'pricing' })}
+                                                </button>
+                                            ) : null}
+                                            <button
+                                                type="button"
+                                                onClick={() => void handleOpenBillingManagement('manage')}
+                                                disabled={isBillingManagementLoading}
+                                                className={cn(checkoutActionClassName, 'bg-accent-600 text-white hover:bg-accent-700')}
+                                                {...getAnalyticsDebugAttributes('checkout__manage_billing--cta')}
+                                            >
+                                                {isBillingManagementLoading ? <SpinnerGap size={18} className="animate-spin" /> : <ArrowSquareOut size={18} weight="duotone" />}
+                                                {t('checkout.manageBillingCta', { ns: 'pricing' })}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </CheckoutStepSection>
+                            )}
+                        </div>
+                        )}
                     </div>
 
                     <aside className="order-2 lg:order-2">

@@ -1,5 +1,10 @@
-import { computePaddleSignature, normalizePaddleEnvironment, readPaddlePriceMapFromEnv } from '../edge-lib/paddle-billing.ts';
-import paddleWebhookHandler from './paddle-webhook.ts';
+import { normalizePaddleEnvironment, readPaddlePriceMapFromEnv } from '../edge-lib/paddle-billing.ts';
+import {
+  extractServiceError as extractSyncServiceError,
+  getSupabaseServiceConfig,
+  processPaddleBillingEvent,
+  safeJsonParse as safeSyncJsonParse,
+} from '../edge-lib/paddle-webhook-sync.ts';
 
 const JSON_HEADERS = {
   'Content-Type': 'application/json; charset=utf-8',
@@ -7,7 +12,6 @@ const JSON_HEADERS = {
 };
 
 const AUTH_HEADER = 'authorization';
-const PADDLE_SIGNATURE_HEADER = 'Paddle-Signature';
 const PADDLE_API_BASE_URL_LIVE = 'https://api.paddle.com';
 const PADDLE_API_BASE_URL_SANDBOX = 'https://sandbox-api.paddle.com';
 const DEFAULT_MAX_SUBSCRIPTIONS = 200;
@@ -85,15 +89,7 @@ const json = (status: number, payload: unknown): Response =>
     headers: JSON_HEADERS,
   });
 
-const safeJsonParse = async (response: Response): Promise<unknown> => {
-  const text = await response.text();
-  if (!text) return null;
-  try {
-    return JSON.parse(text);
-  } catch {
-    return null;
-  }
-};
+const safeJsonParse = safeSyncJsonParse;
 
 const toErrorMessage = (error: unknown): string => {
   if (error instanceof Error && error.message) return error.message;
@@ -102,11 +98,11 @@ const toErrorMessage = (error: unknown): string => {
 };
 
 const extractServiceError = (payload: unknown, fallback: string): string => {
+  const syncMessage = extractSyncServiceError(payload, '');
+  if (syncMessage) return syncMessage;
   if (payload && typeof payload === 'object') {
     const typed = payload as Record<string, unknown>;
-    if (typeof typed.message === 'string' && typed.message.trim()) return typed.message.trim();
     if (typeof typed.error_description === 'string' && typed.error_description.trim()) return typed.error_description.trim();
-    if (typeof typed.error === 'string' && typed.error.trim()) return typed.error.trim();
   }
   return fallback;
 };
@@ -258,11 +254,9 @@ const authorizeAdminRequest = async (
 
 const getPaddleApiConfig = () => {
   const apiKey = readEnv('PADDLE_API_KEY').trim();
-  const webhookSecret = readEnv('PADDLE_WEBHOOK_SECRET').trim();
-  if (!apiKey || !webhookSecret) return null;
+  if (!apiKey) return null;
   return {
     apiKey,
-    webhookSecret,
     environment: normalizePaddleEnvironment(readEnv('PADDLE_ENV')),
     priceMap: readPaddlePriceMapFromEnv(readEnv),
   };
@@ -403,39 +397,53 @@ const fetchPaddleJson = async (
 };
 
 const invokeWebhookSync = async (
-  webhookSecret: string,
+  serviceConfig: { url: string; serviceRoleKey: string },
   rawBody: string,
 ): Promise<ReconcileInvocationResult> => {
-  const timestamp = Math.floor(Date.now() / 1000);
-  const signature = await computePaddleSignature(webhookSecret, timestamp, rawBody);
-  const request = new Request('https://internal.travelflow/api/billing/paddle/webhook', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      [PADDLE_SIGNATURE_HEADER]: `ts=${timestamp};h1=${signature}`,
-    },
-    body: rawBody,
-  });
+  let payload: Record<string, unknown> | null = null;
+  try {
+    payload = JSON.parse(rawBody) as Record<string, unknown>;
+  } catch {
+    return {
+      processed: false,
+      ignored: false,
+      duplicate: false,
+      failed: true,
+      userId: null,
+      message: 'Synthetic reconcile payload was not valid JSON.',
+      statusCode: 400,
+    };
+  }
 
-  const response = await paddleWebhookHandler(request);
-  const payload = await safeJsonParse(response) as Record<string, unknown> | null;
-  const message = typeof payload?.reason === 'string'
-    ? payload.reason
-    : typeof payload?.error === 'string'
-      ? payload.error
-      : response.ok
-        ? 'Processed.'
-        : `Webhook sync failed (${response.status}).`;
-  const userId = typeof payload?.userId === 'string' ? payload.userId : null;
-  return {
-    processed: payload?.status === 'processed',
-    ignored: payload?.status === 'ignored',
-    duplicate: payload?.duplicate === true,
-    failed: !response.ok || payload?.status === 'failed',
-    userId,
-    message,
-    statusCode: response.status,
-  };
+  try {
+    const result = await processPaddleBillingEvent(serviceConfig, {
+      eventId: typeof payload.event_id === 'string' ? payload.event_id : 'reconcile_unknown',
+      eventType: typeof payload.event_type === 'string' ? payload.event_type : 'subscription.updated',
+      occurredAtIso: typeof payload.occurred_at === 'string' ? payload.occurred_at : new Date().toISOString(),
+      eventData: payload.data,
+      rawEventPayload: payload,
+    });
+
+    return {
+      processed: result.status === 'processed',
+      ignored: result.status === 'ignored',
+      duplicate: result.duplicate,
+      failed: false,
+      userId: result.userId,
+      message: result.reason,
+      statusCode: 200,
+    };
+  } catch (error) {
+    return {
+      processed: false,
+      ignored: false,
+      duplicate: false,
+      failed: true,
+      userId: null,
+      message: toErrorMessage(error),
+      statusCode: 500,
+    };
+  }
 };
 
 const listPaddleSubscriptions = async (
@@ -545,7 +553,7 @@ export default async (request: Request): Promise<Response> => {
   }
 
   const authorization = await authorizeAdminRequest(supabaseConfig, authToken);
-  if (!authorization.ok) {
+  if ('response' in authorization) {
     return authorization.response;
   }
 
@@ -558,7 +566,12 @@ export default async (request: Request): Promise<Response> => {
 
   const paddleConfig = getPaddleApiConfig();
   if (!paddleConfig) {
-    return json(500, { ok: false, error: 'Paddle API key or webhook secret is not configured.' });
+    return json(500, { ok: false, error: 'Paddle API key is not configured.' });
+  }
+
+  const serviceConfig = getSupabaseServiceConfig();
+  if (!serviceConfig) {
+    return json(500, { ok: false, error: 'Supabase service role configuration missing.' });
   }
 
   const configuredPriceIds = getConfiguredPriceIds(paddleConfig);
@@ -598,7 +611,7 @@ export default async (request: Request): Promise<Response> => {
 
     for (const subscription of eligibleSubscriptions) {
       const { rawBody, eventId } = buildSyntheticEnvelope(subscription);
-      const invocation = await invokeWebhookSync(paddleConfig.webhookSecret, rawBody);
+      const invocation = await invokeWebhookSync(serviceConfig, rawBody);
       if (invocation.processed) summary.processed += 1;
       if (invocation.ignored) summary.ignored += 1;
       if (invocation.duplicate) summary.duplicates += 1;

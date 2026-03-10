@@ -10,6 +10,7 @@ import { PROFILE_GENDER_OPTIONS } from '../config/profileFields';
 import { LOCALE_DROPDOWN_ORDER, LOCALE_FLAGS, LOCALE_LABELS, normalizeLocale } from '../config/locales';
 import type { AppLanguage } from '../types';
 import { useAuth } from '../hooks/useAuth';
+import { getCurrentSubscriptionSummary, getPaddleSubscriptionManagementUrls } from '../services/billingService';
 import {
     checkUsernameAvailability,
     updateCurrentUserProfile,
@@ -128,6 +129,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
     const {
         isLoading,
         isAuthenticated,
+        access,
         refreshAccess,
         refreshProfile,
         profile: cachedProfile,
@@ -153,6 +155,10 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
         error: null,
     });
     const [requiredFieldErrors, setRequiredFieldErrors] = useState<RequiredFieldErrors>(EMPTY_REQUIRED_FIELD_ERRORS);
+    const [subscriptionSummary, setSubscriptionSummary] = useState<Awaited<ReturnType<typeof getCurrentSubscriptionSummary>>>(null);
+    const [isBillingLoading, setIsBillingLoading] = useState(false);
+    const [isManageBillingSubmitting, setIsManageBillingSubmitting] = useState(false);
+    const [isCancelBillingSubmitting, setIsCancelBillingSubmitting] = useState(false);
 
     const appLocale = useMemo(
         () => normalizeLocale(i18n.resolvedLanguage ?? i18n.language ?? 'en'),
@@ -190,7 +196,42 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
         setHasHydratedForm(true);
     }, [cachedProfile, isAuthenticated, isAuthProfileLoading, mode, refreshProfile]);
 
+    useEffect(() => {
+        if (!isAuthenticated) {
+            setSubscriptionSummary(null);
+            setIsBillingLoading(false);
+            return;
+        }
+
+        let cancelled = false;
+        setIsBillingLoading(true);
+        void getCurrentSubscriptionSummary()
+            .then((summary) => {
+                if (cancelled) return;
+                setSubscriptionSummary(summary);
+            })
+            .catch((error) => {
+                if (cancelled) return;
+                console.warn('Failed to load profile billing summary.', error);
+                setSubscriptionSummary(null);
+            })
+            .finally(() => {
+                if (!cancelled) {
+                    setIsBillingLoading(false);
+                }
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [isAuthenticated]);
+
     const isProfileLoading = isAuthProfileLoading || !hasHydratedForm;
+    const currentTierLabel = access?.tierKey === 'tier_premium'
+        ? 'Globetrotter'
+        : access?.tierKey === 'tier_mid'
+            ? 'Explorer'
+            : 'Backpacker';
 
     const normalizedUsername = useMemo(() => normalizeUsernameInput(form.username), [form.username]);
     const normalizedUsernameDisplay = useMemo(() => normalizeUsernameDisplayInput(form.username), [form.username]);
@@ -259,6 +300,33 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                         : current
                 ));
             }
+        }
+    };
+
+    const openBillingManagement = async (target: 'manage' | 'cancel') => {
+        const setLoading = target === 'cancel' ? setIsCancelBillingSubmitting : setIsManageBillingSubmitting;
+        const loading = target === 'cancel' ? isCancelBillingSubmitting : isManageBillingSubmitting;
+        if (loading) return;
+
+        setLoading(true);
+        try {
+            const managementUrls = await getPaddleSubscriptionManagementUrls();
+            const destination = target === 'cancel'
+                ? managementUrls.cancelUrl || managementUrls.updatePaymentMethodUrl
+                : managementUrls.updatePaymentMethodUrl || managementUrls.cancelUrl;
+            if (!destination) {
+                throw new Error(t('settings.billing.manageUnavailable'));
+            }
+            trackEvent(target === 'cancel' ? 'profile_settings__billing--cancel' : 'profile_settings__billing--manage');
+            window.location.assign(destination);
+        } catch (error) {
+            showAppToast({
+                tone: 'warning',
+                title: t('settings.billing.errorTitle'),
+                description: error instanceof Error ? error.message : t('settings.billing.manageUnavailable'),
+            });
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -935,6 +1003,67 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                     </NavLink>
                                 )}
                             </div>
+
+                            <section id="billing-management" className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-4">
+                                <div className="flex flex-wrap items-start justify-between gap-4">
+                                    <div className="space-y-1">
+                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.billing.eyebrow')}</p>
+                                        <h2 className="text-base font-semibold text-slate-900">{t('settings.billing.title')}</h2>
+                                        <p className="max-w-2xl text-sm leading-6 text-slate-600">{t('settings.billing.description')}</p>
+                                    </div>
+                                    <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700">
+                                        {currentTierLabel}
+                                    </span>
+                                </div>
+
+                                <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                                    <div className="rounded-lg border border-slate-200 bg-white px-3 py-3">
+                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.billing.currentPlanLabel')}</p>
+                                        <p className="mt-1 text-sm font-semibold text-slate-900">{currentTierLabel}</p>
+                                    </div>
+                                    <div className="rounded-lg border border-slate-200 bg-white px-3 py-3">
+                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.billing.statusLabel')}</p>
+                                        <p className="mt-1 text-sm font-semibold text-slate-900">{subscriptionSummary?.providerStatus || t('settings.billing.noSubscription')}</p>
+                                    </div>
+                                    <div className="rounded-lg border border-slate-200 bg-white px-3 py-3">
+                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.billing.renewalLabel')}</p>
+                                        <p className="mt-1 text-sm font-semibold text-slate-900">
+                                            {subscriptionSummary?.currentPeriodEnd
+                                                ? new Date(subscriptionSummary.currentPeriodEnd).toLocaleDateString(appLocale)
+                                                : '—'}
+                                        </p>
+                                    </div>
+                                    <div className="rounded-lg border border-slate-200 bg-white px-3 py-3">
+                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.billing.subscriptionIdLabel')}</p>
+                                        <p className="mt-1 truncate font-mono text-xs text-slate-700" title={subscriptionSummary?.providerSubscriptionId || ''}>
+                                            {subscriptionSummary?.providerSubscriptionId || '—'}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="mt-4 flex flex-wrap gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => void openBillingManagement('manage')}
+                                        disabled={isBillingLoading || isManageBillingSubmitting || !subscriptionSummary?.providerSubscriptionId}
+                                        className="inline-flex h-10 items-center gap-2 rounded-lg bg-accent-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-accent-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                        {...getAnalyticsDebugAttributes('profile_settings__billing--manage')}
+                                    >
+                                        {isManageBillingSubmitting ? <SpinnerGap size={15} className="animate-spin" /> : null}
+                                        {t('settings.billing.manageCta')}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => void openBillingManagement('cancel')}
+                                        disabled={isBillingLoading || isCancelBillingSubmitting || !subscriptionSummary?.providerSubscriptionId}
+                                        className="inline-flex h-10 items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-900 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                        {...getAnalyticsDebugAttributes('profile_settings__billing--cancel')}
+                                    >
+                                        {isCancelBillingSubmitting ? <SpinnerGap size={15} className="animate-spin" /> : null}
+                                        {t('settings.billing.cancelCta')}
+                                    </button>
+                                </div>
+                            </section>
 
                             <div className="mt-6 flex flex-wrap items-center gap-3">
                                 <button

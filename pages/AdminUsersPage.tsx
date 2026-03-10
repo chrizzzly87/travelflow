@@ -3720,6 +3720,74 @@ export const AdminUsersPage: React.FC = () => {
                                 </div>
                                 </section>
 
+                                <section className="mt-4 space-y-3 rounded-xl border border-slate-200 p-3">
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                    <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Billing subscription</h3>
+                                    <a
+                                        href={`/admin/billing?q=${encodeURIComponent(selectedUser.provider_subscription_id || selectedUser.user_id)}`}
+                                        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                    >
+                                        Open billing workspace
+                                        <ArrowSquareOut size={12} />
+                                    </a>
+                                </div>
+                                <div className="grid gap-3 sm:grid-cols-2">
+                                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Subscription status</span>
+                                        <div className="mt-2 flex flex-wrap items-center gap-2">
+                                            <span className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold ${subscriptionStatusPillClass(resolveUserSubscriptionStatus(selectedUser))}`}>
+                                                {getUserSubscriptionStatusLabel(resolveUserSubscriptionStatus(selectedUser))}
+                                            </span>
+                                            <span className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold ${tierPillClass(selectedUser.tier_key)}`}>
+                                                {PLAN_CATALOG[selectedUser.tier_key].publicName}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Recurring amount</span>
+                                        <div className="mt-2 text-sm font-semibold text-slate-900">
+                                            {selectedUser.subscription_amount !== null && selectedUser.subscription_amount !== undefined
+                                                ? `${selectedUser.subscription_currency || '—'} ${(selectedUser.subscription_amount / 100).toFixed(2)}`
+                                                : '—'}
+                                        </div>
+                                    </div>
+                                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Provider subscription ID</span>
+                                        <div className="mt-2 break-all font-mono text-[11px] text-slate-700">
+                                            {selectedUser.provider_subscription_id || '—'}
+                                        </div>
+                                    </div>
+                                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Paddle price ID</span>
+                                        <div className="mt-2 break-all font-mono text-[11px] text-slate-700">
+                                            {selectedUser.provider_price_id || '—'}
+                                        </div>
+                                    </div>
+                                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Current period end</span>
+                                        <div className="mt-2 text-sm font-semibold text-slate-900">{formatOptionalTimestamp(selectedUser.current_period_end)}</div>
+                                    </div>
+                                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Cancellation / grace</span>
+                                        <div className="mt-2 space-y-1 text-xs text-slate-600">
+                                            <div>Cancel at: {formatOptionalTimestamp(selectedUser.cancel_at)}</div>
+                                            <div>Canceled at: {formatOptionalTimestamp(selectedUser.canceled_at)}</div>
+                                            <div>Grace ends: {formatOptionalTimestamp(selectedUser.grace_ends_at)}</div>
+                                        </div>
+                                    </div>
+                                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 sm:col-span-2">
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Latest billing event</span>
+                                        <div className="mt-2 grid gap-2 text-xs text-slate-600 sm:grid-cols-[minmax(0,1fr)_auto]">
+                                            <div className="space-y-1">
+                                                <div className="font-semibold text-slate-900">{selectedUser.subscription_last_event_type || 'No event recorded'}</div>
+                                                <div>{formatOptionalTimestamp(selectedUser.subscription_last_event_at)}</div>
+                                                <div className="break-all font-mono text-[11px] text-slate-500">{selectedUser.subscription_last_event_id || '—'}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                </section>
+
                                 <section className="mt-4 space-y-2 rounded-xl border border-slate-200 p-3">
                                 <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Entitlement overrides (advanced)</h3>
                                 <p className="text-xs text-slate-500">

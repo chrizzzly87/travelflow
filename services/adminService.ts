@@ -41,8 +41,19 @@ export interface AdminUserRecord {
     active_trips?: number | null;
     total_trips?: number | null;
     provider_subscription_id?: string | null;
+    provider_price_id?: string | null;
     provider_status?: string | null;
     subscription_status?: string | null;
+    current_period_start?: string | null;
+    current_period_end?: string | null;
+    cancel_at?: string | null;
+    canceled_at?: string | null;
+    grace_ends_at?: string | null;
+    subscription_currency?: string | null;
+    subscription_amount?: number | null;
+    subscription_last_event_id?: string | null;
+    subscription_last_event_type?: string | null;
+    subscription_last_event_at?: string | null;
     system_role: 'admin' | 'user';
     tier_key: PlanTierKey;
     entitlements_override: Record<string, unknown> | null;
@@ -105,6 +116,27 @@ export interface AdminBillingWebhookEventRecord {
     payload: Record<string, unknown> | null;
     processed_at: string | null;
     created_at: string;
+}
+
+export interface AdminBillingDashboardMetricRow {
+    currency?: string | null;
+    tier_key?: string | null;
+    status?: string | null;
+    amount?: number | null;
+    count?: number | null;
+    subscriptions?: number | null;
+}
+
+export interface AdminBillingDashboardRecord {
+    active_subscriptions: number;
+    scheduled_cancellations: number;
+    grace_subscriptions: number;
+    failed_webhook_events: number;
+    current_mrr_by_currency: AdminBillingDashboardMetricRow[];
+    current_mrr_by_tier: AdminBillingDashboardMetricRow[];
+    subscription_mix: AdminBillingDashboardMetricRow[];
+    status_mix: AdminBillingDashboardMetricRow[];
+    at_risk_revenue: AdminBillingDashboardMetricRow[];
 }
 
 export interface AdminBillingPaddleReconcileSummary {
@@ -227,7 +259,7 @@ const mapTermsRpcErrorMessage = (rawMessage: string | null | undefined, fallback
 const mapBillingRpcErrorMessage = (rawMessage: string | null | undefined, fallbackMessage: string): string => {
     const message = (rawMessage || '').trim();
     if (!message) return fallbackMessage;
-    if (/admin_list_billing_(subscriptions|webhook_events)/i.test(message) || /billing\.read/i.test(message)) {
+    if (/admin_(list_billing_(subscriptions|webhook_events)|get_billing_dashboard)/i.test(message) || /billing\.read/i.test(message)) {
         return `${message}. Please re-run the latest /docs/supabase.sql migration for billing admin functions.`;
     }
     return message;
@@ -621,6 +653,65 @@ export const adminListBillingWebhookEvents = async (
         throw new Error(mapBillingRpcErrorMessage(error.message, 'Could not load billing webhook events.'));
     }
     return (Array.isArray(data) ? data : []) as AdminBillingWebhookEventRecord[];
+};
+
+export const adminGetBillingDashboard = async (): Promise<AdminBillingDashboardRecord> => {
+    if (shouldUseAdminMockData()) {
+        return {
+            active_subscriptions: 12,
+            scheduled_cancellations: 2,
+            grace_subscriptions: 1,
+            failed_webhook_events: 1,
+            current_mrr_by_currency: [
+                { currency: 'USD', amount: 12800, subscriptions: 9 },
+                { currency: 'EUR', amount: 3800, subscriptions: 3 },
+            ],
+            current_mrr_by_tier: [
+                { tier_key: 'tier_mid', currency: 'USD', amount: 5400, subscriptions: 6 },
+                { tier_key: 'tier_premium', currency: 'USD', amount: 7400, subscriptions: 3 },
+                { tier_key: 'tier_mid', currency: 'EUR', amount: 1800, subscriptions: 2 },
+                { tier_key: 'tier_premium', currency: 'EUR', amount: 2000, subscriptions: 1 },
+            ],
+            subscription_mix: [
+                { tier_key: 'tier_mid', count: 8 },
+                { tier_key: 'tier_premium', count: 4 },
+            ],
+            status_mix: [
+                { status: 'active', count: 9 },
+                { status: 'trialing', count: 1 },
+                { status: 'past_due', count: 2 },
+                { status: 'grace', count: 1 },
+            ],
+            at_risk_revenue: [
+                { status: 'past_due', currency: 'USD', amount: 1900, subscriptions: 1 },
+                { status: 'grace', currency: 'EUR', amount: 2000, subscriptions: 1 },
+            ],
+        };
+    }
+
+    const client = requireSupabase();
+    const { data, error } = await client.rpc('admin_get_billing_dashboard');
+    if (error) {
+        throw new Error(mapBillingRpcErrorMessage(error.message, 'Could not load billing dashboard.'));
+    }
+
+    const row = Array.isArray(data) ? data[0] : data;
+    const typed = (row && typeof row === 'object') ? row as Record<string, unknown> : {};
+    const asMetricRows = (value: unknown): AdminBillingDashboardMetricRow[] => Array.isArray(value)
+        ? value.filter((entry): entry is AdminBillingDashboardMetricRow => Boolean(entry) && typeof entry === 'object')
+        : [];
+
+    return {
+        active_subscriptions: typeof typed.active_subscriptions === 'number' ? typed.active_subscriptions : 0,
+        scheduled_cancellations: typeof typed.scheduled_cancellations === 'number' ? typed.scheduled_cancellations : 0,
+        grace_subscriptions: typeof typed.grace_subscriptions === 'number' ? typed.grace_subscriptions : 0,
+        failed_webhook_events: typeof typed.failed_webhook_events === 'number' ? typed.failed_webhook_events : 0,
+        current_mrr_by_currency: asMetricRows(typed.current_mrr_by_currency),
+        current_mrr_by_tier: asMetricRows(typed.current_mrr_by_tier),
+        subscription_mix: asMetricRows(typed.subscription_mix),
+        status_mix: asMetricRows(typed.status_mix),
+        at_risk_revenue: asMetricRows(typed.at_risk_revenue),
+    };
 };
 
 export const adminListUserTrips = async (

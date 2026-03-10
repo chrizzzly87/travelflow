@@ -6,6 +6,10 @@ import { cleanup, render, screen, waitFor } from '@testing-library/react';
 const mocks = vi.hoisted(() => ({
   auth: {
     isAuthenticated: false,
+    access: {
+      tierKey: 'tier_free',
+      isAnonymous: false,
+    },
   },
   fetchPaddlePublicConfig: vi.fn().mockResolvedValue({
     provider: 'paddle',
@@ -18,6 +22,7 @@ const mocks = vi.hoisted(() => ({
     },
     issues: [],
   }),
+  getCurrentSubscriptionSummary: vi.fn().mockResolvedValue(null),
   trackEvent: vi.fn(),
 }));
 
@@ -34,6 +39,14 @@ vi.mock('../../components/marketing/MarketingLayout', () => ({
 vi.mock('../../hooks/useAuth', () => ({
   useAuth: () => mocks.auth,
 }));
+
+vi.mock('../../services/billingService', async () => {
+  const actual = await vi.importActual('../../services/billingService');
+  return {
+    ...actual,
+    getCurrentSubscriptionSummary: mocks.getCurrentSubscriptionSummary,
+  };
+});
 
 vi.mock('../../services/analyticsService', () => ({
   getAnalyticsDebugAttributes: () => ({}),
@@ -74,6 +87,11 @@ describe('pages/PricingPage', () => {
     cleanup();
     vi.clearAllMocks();
     mocks.auth.isAuthenticated = false;
+    mocks.auth.access = {
+      tierKey: 'tier_free',
+      isAnonymous: false,
+    };
+    mocks.getCurrentSubscriptionSummary.mockResolvedValue(null);
     mocks.fetchPaddlePublicConfig.mockResolvedValue({
       provider: 'paddle',
       environment: 'sandbox',
@@ -103,6 +121,55 @@ describe('pages/PricingPage', () => {
 
     await waitFor(() => {
       expect(screen.getByRole('button', { name: 'tiers.globetrotter.cta' })).toBeDisabled();
+    });
+  });
+
+  it('shows current-plan and upgrade states for an existing paid subscriber', async () => {
+    mocks.auth.isAuthenticated = true;
+    mocks.auth.access = {
+      tierKey: 'tier_mid',
+      isAnonymous: false,
+    };
+    mocks.fetchPaddlePublicConfig.mockResolvedValue({
+      provider: 'paddle',
+      environment: 'sandbox',
+      checkoutEnabled: true,
+      clientTokenConfigured: true,
+      tierAvailability: {
+        tier_mid: true,
+        tier_premium: true,
+      },
+      issues: [],
+    });
+    mocks.getCurrentSubscriptionSummary.mockResolvedValue({
+      userId: 'user_1',
+      provider: 'paddle',
+      providerCustomerId: 'ctm_123',
+      providerSubscriptionId: 'sub_123',
+      providerPriceId: 'pri_mid',
+      providerProductId: 'pro_mid',
+      providerStatus: 'active',
+      status: 'active',
+      currentPeriodStart: '2026-03-01T00:00:00.000Z',
+      currentPeriodEnd: '2026-04-01T00:00:00.000Z',
+      cancelAt: null,
+      canceledAt: null,
+      graceEndsAt: null,
+      currency: 'USD',
+      amount: 900,
+      lastEventId: 'evt_1',
+      lastEventType: 'subscription.updated',
+      lastEventAt: '2026-03-08T10:00:00.000Z',
+    });
+
+    render(React.createElement(PricingPage));
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'shared.currentPlanCta' })).toBeDisabled();
+      expect(screen.getByRole('link', { name: 'shared.upgradeCta' })).toHaveAttribute(
+        'href',
+        '/checkout?tier=tier_premium&source=pricing_page&return_to=%2Fpricing',
+      );
     });
   });
 });

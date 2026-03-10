@@ -213,7 +213,21 @@
     "countryRegionEmpty": "Nie znaleziono pasującego kraju lub regionu.",
     "countryRegionToggle": "Przełącz opcje kraju/regionu",
     "usernameChange": "Zmień nazwę użytkownika",
-    "usernameSuggestionsTitle": "Wypróbuj jedną z dostępnych opcji:"
+    "usernameSuggestionsTitle": "Wypróbuj jedną z dostępnych opcji:",
+    "billing": {
+      "eyebrow": "Billing",
+      "title": "Subscription management",
+      "description": "Review your current plan, renewal timing, and Paddle-managed billing actions in one place.",
+      "currentPlanLabel": "Current plan",
+      "statusLabel": "Subscription status",
+      "renewalLabel": "Current period end",
+      "subscriptionIdLabel": "Subscription ID",
+      "noSubscription": "No paid subscription",
+      "manageCta": "Manage billing in Paddle",
+      "cancelCta": "Cancel in Paddle",
+      "errorTitle": "Billing action unavailable",
+      "manageUnavailable": "Could not open Paddle billing management for this account."
+    }
   },
   "stamps": {
     "eyebrow": "Kolekcja paszportów",
@@ -322,5 +336,11 @@
     "undoErrorSingle": "Could not restore this trip.",
     "undoErrorBatch": "Could not restore selected trips.",
     "successSingleMessage": "Twoja podróż \"{title}\" została pomyślnie zarchiwizowana."
+  },
+  "billingShortcut": {
+    "eyebrow": "Billing",
+    "title": "Manage your subscription",
+    "description": "Open billing settings to view your current plan, payment state, and cancellation options.",
+    "cta": "Open billing settings"
   }
 }

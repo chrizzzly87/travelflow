@@ -9,7 +9,16 @@
     "noExpiry": "만료 없음",
     "enabled": "포함",
     "disabled": "미포함",
-    "days": "{count}일"
+    "days": "{count}일",
+    "checkoutUnavailable": "Checkout unavailable right now",
+    "loadingPlanState": "Checking your plan…",
+    "currentPlanCta": "Current plan",
+    "currentPlanHelper": "You already have this subscription.",
+    "upgradeCta": "Upgrade",
+    "upgradeHelper": "Upgrade in place without starting a second subscription.",
+    "manageBillingCta": "Manage billing",
+    "manageBillingHelper": "This billing state needs to be managed in Paddle.",
+    "downgradeHelper": "Downgrades stay managed in Paddle billing for now."
   },
   "tiers": {
     "backpacker": {
@@ -110,6 +119,25 @@
     "successOpenTrip": "여행 열기",
     "successReturnToTrip": "여행으로 돌아가기",
     "successCreateTrip": "여행 만들기",
-    "successOpenProfile": "프로필 열기"
+    "successOpenProfile": "프로필 열기",
+    "loadingSubscriptionState": "Checking your current subscription...",
+    "manageBillingUnavailable": "Billing management is not available for this account yet.",
+    "upgradeCompletedTitle": "Plan updated",
+    "upgradeCompletedDescription": "Your subscription was updated and the new tier is syncing now.",
+    "upgradeTitle": "Upgrade subscription",
+    "upgradeSummaryLabel": "Plan change",
+    "upgradeFromTo": "{fromTier} to {toTier}",
+    "upgradeReviewTitle": "Review the updated billing total before confirming.",
+    "newRecurringTotal": "New recurring total",
+    "upgradePreviewDescription": "The change applies immediately and Paddle handles the prorated adjustment.",
+    "dueNowLabel": "Due now",
+    "upgradeConfirmCta": "Confirm upgrade",
+    "manageBillingCta": "Manage billing in Paddle",
+    "currentPlanTitle": "Current subscription",
+    "manageBillingTitle": "Manage subscription",
+    "currentPlanDescription": "You already have {planName}. Use Paddle billing if you need to cancel or change payment details.",
+    "manageBillingDescription": "This subscription state cannot be changed inline right now. Open Paddle billing to manage the subscription safely.",
+    "renewalDateLabel": "Renews",
+    "currentPlanCta": "Already subscribed"
   }
 }

@@ -1,6 +1,11 @@
 import { isIsoDateInRange } from '../components/admin/adminDateRange';
 import type { AdminDateRange } from '../components/admin/AdminShell';
-import type { AdminBillingSubscriptionRecord, AdminBillingWebhookEventRecord } from './adminService';
+import type {
+    AdminBillingDashboardMetricRow,
+    AdminBillingDashboardRecord,
+    AdminBillingSubscriptionRecord,
+    AdminBillingWebhookEventRecord,
+} from './adminService';
 
 export type AdminBillingStatusTone = 'accent' | 'success' | 'warning' | 'danger' | 'neutral';
 
@@ -69,6 +74,10 @@ export const formatAdminBillingAmount = (
     }
 };
 
+export const formatAdminBillingMajorAmount = (amount: number | null | undefined, currency: string | null | undefined, locale = 'en-US'): string => (
+    formatAdminBillingAmount(typeof amount === 'number' ? amount : null, currency || null, locale)
+);
+
 export const normalizeAdminBillingStatus = (
     providerStatus: string | null | undefined,
     subscriptionStatus?: string | null | undefined,
@@ -99,6 +108,76 @@ export const summarizeAdminBilling = (
     failedWebhookEvents: events.filter((record) => (record.status || '').trim().toLowerCase() === 'failed').length,
     unlinkedWebhookEvents: events.filter((record) => !record.user_id).length,
 });
+
+const toMetricCount = (value: AdminBillingDashboardMetricRow['count'] | AdminBillingDashboardMetricRow['subscriptions']): number => (
+    typeof value === 'number' && Number.isFinite(value) ? value : 0
+);
+
+const toMetricAmount = (value: AdminBillingDashboardMetricRow['amount']): number => (
+    typeof value === 'number' && Number.isFinite(value) ? value : 0
+);
+
+export const buildAdminBillingCurrentMrrCards = (
+    dashboard: AdminBillingDashboardRecord,
+    locale = 'en-US',
+): Array<{ currency: string; amountMinor: number; amountLabel: string; subscriptions: number }> => (
+    dashboard.current_mrr_by_currency
+        .map((row) => {
+            const currency = (row.currency || 'USD').toUpperCase();
+            const amountMinor = toMetricAmount(row.amount);
+            return {
+                currency,
+                amountMinor,
+                amountLabel: formatAdminBillingMajorAmount(amountMinor, currency, locale),
+                subscriptions: toMetricCount(row.subscriptions),
+            };
+        })
+        .sort((left, right) => right.amountMinor - left.amountMinor)
+);
+
+export const buildAdminBillingTierMixChartData = (
+    dashboard: AdminBillingDashboardRecord,
+): Array<{ tier: string; count: number }> => (
+    dashboard.subscription_mix.map((row) => ({
+        tier: humanizeTierKey(row.tier_key),
+        count: toMetricCount(row.count),
+    }))
+);
+
+export const buildAdminBillingStatusMixChartData = (
+    dashboard: AdminBillingDashboardRecord,
+): Array<{ status: string; count: number }> => (
+    dashboard.status_mix.map((row) => ({
+        status: humanizeAdminBillingStatus(row.status),
+        count: toMetricCount(row.count),
+    }))
+);
+
+export const buildAdminBillingMrrByTierChartData = (
+    dashboard: AdminBillingDashboardRecord,
+): Array<{ label: string; amount: number }> => (
+    dashboard.current_mrr_by_tier.map((row) => ({
+        label: `${humanizeTierKey(row.tier_key)} · ${(row.currency || 'USD').toUpperCase()}`,
+        amount: toMetricAmount(row.amount) / MINOR_UNIT_SCALE_FALLBACK,
+    }))
+);
+
+export const buildAdminBillingAtRiskChartData = (
+    dashboard: AdminBillingDashboardRecord,
+): Array<{ label: string; amount: number }> => (
+    dashboard.at_risk_revenue.map((row) => ({
+        label: `${humanizeAdminBillingStatus(row.status)} · ${(row.currency || 'USD').toUpperCase()}`,
+        amount: toMetricAmount(row.amount) / MINOR_UNIT_SCALE_FALLBACK,
+    }))
+);
+
+export const humanizeTierKey = (value: string | null | undefined): string => {
+    const normalized = (value || '').trim();
+    if (!normalized || normalized === 'tier_free') return 'Backpacker';
+    if (normalized === 'tier_mid') return 'Explorer';
+    if (normalized === 'tier_premium') return 'Globetrotter';
+    return normalized.replace(/^tier_/, '').replace(/[_-]+/g, ' ');
+};
 
 export const resolveAdminBillingStatusTone = (status: string | null | undefined): AdminBillingStatusTone => {
     const normalized = normalizeAdminBillingStatus(status);

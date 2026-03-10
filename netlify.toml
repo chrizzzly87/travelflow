@@ -48,6 +48,18 @@ exit 1
   function = "paddle-checkout"
 
 [[edge_functions]]
+  path = "/api/billing/paddle/subscription-preview"
+  function = "paddle-subscription-preview"
+
+[[edge_functions]]
+  path = "/api/billing/paddle/subscription-change"
+  function = "paddle-subscription-change"
+
+[[edge_functions]]
+  path = "/api/billing/paddle/subscription-manage"
+  function = "paddle-subscription-manage"
+
+[[edge_functions]]
   path = "/api/billing/paddle/webhook"
   function = "paddle-webhook"
 

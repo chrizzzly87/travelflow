@@ -213,7 +213,21 @@
     "countryRegionEmpty": "Kein passendes Land oder keine passende Region gefunden.",
     "countryRegionToggle": "Optionen für Land/Region umschalten",
     "usernameChange": "Benutzernamen ändern",
-    "usernameSuggestionsTitle": "Probieren Sie eine dieser verfügbaren Optionen aus:"
+    "usernameSuggestionsTitle": "Probieren Sie eine dieser verfügbaren Optionen aus:",
+    "billing": {
+      "eyebrow": "Billing",
+      "title": "Abo-Verwaltung",
+      "description": "Prüfe deinen aktuellen Tarif, den Verlängerungszeitpunkt und alle von Paddle verwalteten Billing-Aktionen an einem Ort.",
+      "currentPlanLabel": "Aktueller Tarif",
+      "statusLabel": "Abo-Status",
+      "renewalLabel": "Aktuelles Periodenende",
+      "subscriptionIdLabel": "Abo-ID",
+      "noSubscription": "Kein bezahltes Abo",
+      "manageCta": "Billing in Paddle verwalten",
+      "cancelCta": "In Paddle kündigen",
+      "errorTitle": "Billing-Aktion nicht verfügbar",
+      "manageUnavailable": "Die Paddle-Billing-Verwaltung konnte für dieses Konto nicht geöffnet werden."
+    }
   },
   "stamps": {
     "eyebrow": "Passabholung",
@@ -322,5 +336,11 @@
     "undoErrorSingle": "Could not restore this trip.",
     "undoErrorBatch": "Could not restore selected trips.",
     "successSingleMessage": "Deine Reise \"{title}\" wurde erfolgreich archiviert."
+  },
+  "billingShortcut": {
+    "eyebrow": "Billing",
+    "title": "Abo verwalten",
+    "description": "Öffne die Billing-Einstellungen, um Tarif, Zahlungsstatus und Kündigungsoptionen an einem Ort zu sehen.",
+    "cta": "Billing-Einstellungen öffnen"
   }
 }

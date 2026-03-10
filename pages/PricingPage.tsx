@@ -9,7 +9,13 @@ import { buildPath } from '../config/routes';
 import { MarketingLayout } from '../components/marketing/MarketingLayout';
 import { useAuth } from '../hooks/useAuth';
 import { cn } from '../lib/utils';
-import { buildBillingCheckoutPath, type BillingCheckoutTierKey } from '../services/billingService';
+import { resolveBillingTierDecision } from '../lib/billing/subscriptionState';
+import {
+    buildBillingCheckoutPath,
+    getCurrentSubscriptionSummary,
+    type BillingCheckoutTierKey,
+    type BillingSubscriptionSummary,
+} from '../services/billingService';
 import {
     fetchPaddlePublicConfig,
     isPaddleTierCheckoutConfigured,
@@ -54,11 +60,14 @@ export const PricingPage: React.FC = () => {
     const { t } = useTranslation('pricing');
     const { access, isAuthenticated } = useAuth();
     const [paddlePublicConfig, setPaddlePublicConfig] = useState<PaddlePublicConfig | null>(null);
+    const [subscriptionSummary, setSubscriptionSummary] = useState<BillingSubscriptionSummary | null>(null);
+    const [isSubscriptionSummaryLoading, setIsSubscriptionSummaryLoading] = useState(false);
     const unlimitedLabel = t('shared.unlimited');
     const noExpiryLabel = t('shared.noExpiry');
     const enabledLabel = t('shared.enabled');
     const disabledLabel = t('shared.disabled');
     const activeTierKey = access?.tierKey ?? 'tier_free';
+    const isEligibleAccount = isAuthenticated && access?.isAnonymous !== true;
     useEffect(() => {
         let cancelled = false;
         void fetchPaddlePublicConfig()
@@ -74,6 +83,36 @@ export const PricingPage: React.FC = () => {
             cancelled = true;
         };
     }, []);
+
+    useEffect(() => {
+        if (!isEligibleAccount) {
+            setSubscriptionSummary(null);
+            setIsSubscriptionSummaryLoading(false);
+            return;
+        }
+
+        let cancelled = false;
+        setIsSubscriptionSummaryLoading(true);
+        void getCurrentSubscriptionSummary()
+            .then((summary) => {
+                if (cancelled) return;
+                setSubscriptionSummary(summary);
+            })
+            .catch((error) => {
+                if (cancelled) return;
+                console.warn('Failed to load current billing summary on pricing.', error);
+                setSubscriptionSummary(null);
+            })
+            .finally(() => {
+                if (!cancelled) {
+                    setIsSubscriptionSummaryLoading(false);
+                }
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [isEligibleAccount]);
 
     const resolveTierFeatures = (tierKey: typeof PLAN_ORDER[number]) => {
         const tier = PLAN_CATALOG[tierKey];
@@ -125,6 +164,104 @@ export const PricingPage: React.FC = () => {
                             source: 'pricing_page',
                             returnTo: buildPath('pricing'),
                         });
+                        const billingDecision = isPaidTier && isEligibleAccount
+                            ? resolveBillingTierDecision({
+                                currentTierKey: activeTierKey,
+                                targetTierKey: tier.key as BillingCheckoutTierKey,
+                                subscription: subscriptionSummary,
+                            })
+                            : null;
+                        const ctaState = (() => {
+                            if (!isPaidTier) {
+                                return {
+                                    label: t(`tiers.${tier.publicSlug}.cta`),
+                                    href: freeTierTarget,
+                                    disabled: false,
+                                    className: 'block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-center text-sm font-semibold text-slate-900 shadow-sm transition-colors hover:bg-slate-50',
+                                    analyticsId: `pricing__tier--${tier.publicSlug}`,
+                                    helperText: null as string | null,
+                                };
+                            }
+
+                            if (!supportsCheckout) {
+                                return {
+                                    label: t(`tiers.${tier.publicSlug}.cta`),
+                                    href: checkoutTarget,
+                                    disabled: true,
+                                    className: 'w-full cursor-not-allowed rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-400',
+                                    analyticsId: `pricing__tier--${tier.publicSlug}`,
+                                    helperText: t('shared.checkoutUnavailable'),
+                                };
+                            }
+
+                            if (!isEligibleAccount || activeTierKey === 'tier_free') {
+                                return {
+                                    label: t(`tiers.${tier.publicSlug}.cta`),
+                                    href: checkoutTarget,
+                                    disabled: false,
+                                    className: 'block w-full rounded-xl bg-accent-600 px-4 py-3 text-center text-sm font-semibold text-white shadow-sm transition-colors hover:bg-accent-700',
+                                    analyticsId: `pricing__tier--${tier.publicSlug}`,
+                                    helperText: null as string | null,
+                                };
+                            }
+
+                            if (isSubscriptionSummaryLoading) {
+                                return {
+                                    label: t('shared.loadingPlanState'),
+                                    href: checkoutTarget,
+                                    disabled: true,
+                                    className: 'w-full cursor-wait rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-500',
+                                    analyticsId: 'pricing__plan_cta--loading',
+                                    helperText: null as string | null,
+                                };
+                            }
+
+                            if (billingDecision?.action === 'current') {
+                                return {
+                                    label: t('shared.currentPlanCta'),
+                                    href: checkoutTarget,
+                                    disabled: true,
+                                    className: 'w-full cursor-not-allowed rounded-xl border border-accent-200 bg-accent-50 px-4 py-3 text-sm font-semibold text-accent-700',
+                                    analyticsId: 'pricing__plan_cta--current',
+                                    helperText: t('shared.currentPlanHelper'),
+                                };
+                            }
+
+                            if (billingDecision?.action === 'upgrade') {
+                                return {
+                                    label: t('shared.upgradeCta'),
+                                    href: checkoutTarget,
+                                    disabled: false,
+                                    className: 'block w-full rounded-xl bg-accent-600 px-4 py-3 text-center text-sm font-semibold text-white shadow-sm transition-colors hover:bg-accent-700',
+                                    analyticsId: 'pricing__plan_cta--upgrade',
+                                    helperText: t('shared.upgradeHelper'),
+                                };
+                            }
+
+                            if (billingDecision?.action === 'manage') {
+                                return {
+                                    label: t('shared.manageBillingCta'),
+                                    href: `${buildPath('profileSettings')}#billing-management`,
+                                    disabled: false,
+                                    className: 'block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-center text-sm font-semibold text-slate-900 shadow-sm transition-colors hover:bg-slate-50',
+                                    analyticsId: billingDecision.reason === 'downgrade_requires_management'
+                                        ? 'pricing__plan_cta--downgrade_manage'
+                                        : 'pricing__plan_cta--manage_billing',
+                                    helperText: billingDecision.reason === 'downgrade_requires_management'
+                                        ? t('shared.downgradeHelper')
+                                        : t('shared.manageBillingHelper'),
+                                };
+                            }
+
+                            return {
+                                label: t(`tiers.${tier.publicSlug}.cta`),
+                                href: checkoutTarget,
+                                disabled: false,
+                                className: 'block w-full rounded-xl bg-accent-600 px-4 py-3 text-center text-sm font-semibold text-white shadow-sm transition-colors hover:bg-accent-700',
+                                analyticsId: `pricing__tier--${tier.publicSlug}`,
+                                helperText: null as string | null,
+                            };
+                        })();
 
                         return (
                             <article
@@ -172,34 +309,40 @@ export const PricingPage: React.FC = () => {
 
                                 <div className="mt-8 border-t border-slate-200 pt-5">
                                     {isPaidTier ? (
-                                        supportsCheckout ? (
-                                            <Link
-                                                to={checkoutTarget}
-                                                onClick={() => trackEvent(`pricing__tier--${tier.publicSlug}`)}
-                                                className="block w-full rounded-xl bg-accent-600 px-4 py-3 text-center text-sm font-semibold text-white shadow-sm transition-colors hover:bg-accent-700"
-                                                {...getAnalyticsDebugAttributes(`pricing__tier--${tier.publicSlug}`)}
-                                            >
-                                                {t(`tiers.${tier.publicSlug}.cta`)}
-                                            </Link>
-                                        ) : (
+                                        ctaState.disabled ? (
                                             <button
                                                 type="button"
                                                 disabled
-                                                className="w-full cursor-not-allowed rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-400"
+                                                className={ctaState.className}
                                             >
-                                                {t(`tiers.${tier.publicSlug}.cta`)}
+                                                {ctaState.label}
                                             </button>
+                                        ) : (
+                                            <Link
+                                                to={ctaState.href}
+                                                onClick={() => trackEvent(ctaState.analyticsId, {
+                                                    tier: tier.key,
+                                                    current_tier: activeTierKey,
+                                                })}
+                                                className={ctaState.className}
+                                                {...getAnalyticsDebugAttributes(ctaState.analyticsId)}
+                                            >
+                                                {ctaState.label}
+                                            </Link>
                                         )
                                     ) : (
                                         <Link
-                                            to={freeTierTarget}
-                                            onClick={() => trackEvent(`pricing__tier--${tier.publicSlug}`)}
-                                            className="block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-center text-sm font-semibold text-slate-900 shadow-sm transition-colors hover:bg-slate-50"
-                                            {...getAnalyticsDebugAttributes(`pricing__tier--${tier.publicSlug}`)}
+                                            to={ctaState.href}
+                                            onClick={() => trackEvent(ctaState.analyticsId)}
+                                            className={ctaState.className}
+                                            {...getAnalyticsDebugAttributes(ctaState.analyticsId)}
                                         >
-                                            {t(`tiers.${tier.publicSlug}.cta`)}
+                                            {ctaState.label}
                                         </Link>
                                     )}
+                                    {ctaState.helperText ? (
+                                        <p className="mt-3 text-xs leading-5 text-slate-500">{ctaState.helperText}</p>
+                                    ) : null}
                                 </div>
                                 </div>
                             </article>
