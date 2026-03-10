@@ -23,6 +23,17 @@ const mocks = vi.hoisted(() => ({
     issues: [],
   }),
   getCurrentSubscriptionSummary: vi.fn().mockResolvedValue(null),
+  getPaddleSubscriptionManagementUrls: vi.fn().mockResolvedValue({
+    provider: 'paddle',
+    providerSubscriptionId: 'sub_123',
+    cancelUrl: 'https://vendors.paddle.test/cancel',
+    updatePaymentMethodUrl: 'https://vendors.paddle.test/manage',
+    providerStatus: 'active',
+    currentPeriodEnd: '2026-04-01T00:00:00.000Z',
+    cancelAt: null,
+    canceledAt: null,
+    graceEndsAt: null,
+  }),
   trackEvent: vi.fn(),
 }));
 
@@ -45,6 +56,7 @@ vi.mock('../../services/billingService', async () => {
   return {
     ...actual,
     getCurrentSubscriptionSummary: mocks.getCurrentSubscriptionSummary,
+    getPaddleSubscriptionManagementUrls: mocks.getPaddleSubscriptionManagementUrls,
   };
 });
 
@@ -92,6 +104,17 @@ describe('pages/PricingPage', () => {
       isAnonymous: false,
     };
     mocks.getCurrentSubscriptionSummary.mockResolvedValue(null);
+    mocks.getPaddleSubscriptionManagementUrls.mockResolvedValue({
+      provider: 'paddle',
+      providerSubscriptionId: 'sub_123',
+      cancelUrl: 'https://vendors.paddle.test/cancel',
+      updatePaymentMethodUrl: 'https://vendors.paddle.test/manage',
+      providerStatus: 'active',
+      currentPeriodEnd: '2026-04-01T00:00:00.000Z',
+      cancelAt: null,
+      canceledAt: null,
+      graceEndsAt: null,
+    });
     mocks.fetchPaddlePublicConfig.mockResolvedValue({
       provider: 'paddle',
       environment: 'sandbox',
@@ -170,6 +193,54 @@ describe('pages/PricingPage', () => {
         'href',
         '/checkout?tier=tier_premium&source=pricing_page&return_to=%2Fpricing',
       );
+    });
+  });
+
+  it('attempts a one-time billing repair when a paid account is missing the local summary row', async () => {
+    mocks.auth.isAuthenticated = true;
+    mocks.auth.access = {
+      tierKey: 'tier_mid',
+      isAnonymous: false,
+    };
+    mocks.getCurrentSubscriptionSummary
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({
+        userId: 'user_1',
+        provider: 'paddle',
+        providerCustomerId: 'ctm_123',
+        providerSubscriptionId: 'sub_123',
+        providerPriceId: 'pri_mid',
+        providerProductId: 'pro_mid',
+        providerStatus: 'active',
+        status: 'active',
+        currentPeriodStart: '2026-03-01T00:00:00.000Z',
+        currentPeriodEnd: '2026-04-01T00:00:00.000Z',
+        cancelAt: null,
+        canceledAt: null,
+        graceEndsAt: null,
+        currency: 'USD',
+        amount: 900,
+        lastEventId: 'evt_1',
+        lastEventType: 'subscription.updated',
+        lastEventAt: '2026-03-08T10:00:00.000Z',
+      });
+    mocks.fetchPaddlePublicConfig.mockResolvedValue({
+      provider: 'paddle',
+      environment: 'sandbox',
+      checkoutEnabled: true,
+      clientTokenConfigured: true,
+      tierAvailability: {
+        tier_mid: true,
+        tier_premium: true,
+      },
+      issues: [],
+    });
+
+    render(React.createElement(PricingPage));
+
+    await waitFor(() => {
+      expect(mocks.getPaddleSubscriptionManagementUrls).toHaveBeenCalledTimes(1);
+      expect(screen.getByRole('button', { name: 'shared.currentPlanCta' })).toBeDisabled();
     });
   });
 });

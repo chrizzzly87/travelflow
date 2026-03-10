@@ -159,6 +159,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
     const [isBillingLoading, setIsBillingLoading] = useState(false);
     const [isManageBillingSubmitting, setIsManageBillingSubmitting] = useState(false);
     const [isCancelBillingSubmitting, setIsCancelBillingSubmitting] = useState(false);
+    const billingRepairAttemptedRef = useRef(false);
 
     const appLocale = useMemo(
         () => normalizeLocale(i18n.resolvedLanguage ?? i18n.language ?? 'en'),
@@ -201,16 +202,28 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
         if (!isAuthenticated) {
             setSubscriptionSummary(null);
             setIsBillingLoading(false);
+            billingRepairAttemptedRef.current = false;
             return;
         }
 
         let cancelled = false;
         setIsBillingLoading(true);
-        void getCurrentSubscriptionSummary()
-            .then((summary) => {
-                if (cancelled) return;
-                setSubscriptionSummary(summary);
-            })
+        void (async () => {
+            let summary = await getCurrentSubscriptionSummary();
+            if (!summary && hasPaidTier && !billingRepairAttemptedRef.current) {
+                billingRepairAttemptedRef.current = true;
+                try {
+                    await getPaddleSubscriptionManagementUrls();
+                    summary = await getCurrentSubscriptionSummary();
+                } catch (error) {
+                    if (!cancelled) {
+                        console.warn('Failed to repair billing summary from Paddle management lookup.', error);
+                    }
+                }
+            }
+            if (cancelled) return;
+            setSubscriptionSummary(summary);
+        })()
             .catch((error) => {
                 if (cancelled) return;
                 console.warn('Failed to load profile billing summary.', error);
@@ -225,7 +238,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
         return () => {
             cancelled = true;
         };
-    }, [isAuthenticated]);
+    }, [hasPaidTier, isAuthenticated]);
 
     const isProfileLoading = isAuthProfileLoading || !hasHydratedForm;
     const currentTierLabel = access?.tierKey === 'tier_premium'

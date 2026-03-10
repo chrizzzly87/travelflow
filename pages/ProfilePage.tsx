@@ -951,24 +951,6 @@ export const ProfilePage: React.FC = () => {
                     locale={appLocale}
                 />
 
-                <section className="rounded-xl border border-slate-200 bg-white px-4 py-4 shadow-sm">
-                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                        <div>
-                            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{t('billingShortcut.eyebrow')}</p>
-                            <h2 className="mt-1 text-lg font-semibold text-slate-900">{t('billingShortcut.title')}</h2>
-                            <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-600">{t('billingShortcut.description')}</p>
-                        </div>
-                        <NavLink
-                            to={`${buildPath('profileSettings')}#billing-management`}
-                            className="inline-flex h-10 items-center justify-center rounded-lg bg-accent-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-accent-700"
-                            onClick={() => trackEvent('profile__billing_shortcut--open')}
-                            {...getAnalyticsDebugAttributes('profile__billing_shortcut--open')}
-                        >
-                            {t('billingShortcut.cta')}
-                        </NavLink>
-                    </div>
-                </section>
-
                 <section className="space-y-2">
                     <h2 className="text-sm font-black tracking-tight text-slate-900">{t('actions.title')}</h2>
                     <div className="flex flex-wrap items-center gap-2">

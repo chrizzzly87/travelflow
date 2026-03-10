@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Check } from '@phosphor-icons/react';
 import { Trans, useTranslation } from 'react-i18next';
@@ -13,6 +13,7 @@ import { resolveBillingTierDecision } from '../lib/billing/subscriptionState';
 import {
     buildBillingCheckoutPath,
     getCurrentSubscriptionSummary,
+    getPaddleSubscriptionManagementUrls,
     type BillingCheckoutTierKey,
     type BillingSubscriptionSummary,
 } from '../services/billingService';
@@ -67,7 +68,9 @@ export const PricingPage: React.FC = () => {
     const enabledLabel = t('shared.enabled');
     const disabledLabel = t('shared.disabled');
     const activeTierKey = access?.tierKey ?? 'tier_free';
+    const hasPaidTier = activeTierKey === 'tier_mid' || activeTierKey === 'tier_premium';
     const isEligibleAccount = isAuthenticated && access?.isAnonymous !== true;
+    const billingRepairAttemptedRef = useRef(false);
     useEffect(() => {
         let cancelled = false;
         void fetchPaddlePublicConfig()
@@ -88,16 +91,28 @@ export const PricingPage: React.FC = () => {
         if (!isEligibleAccount) {
             setSubscriptionSummary(null);
             setIsSubscriptionSummaryLoading(false);
+            billingRepairAttemptedRef.current = false;
             return;
         }
 
         let cancelled = false;
         setIsSubscriptionSummaryLoading(true);
-        void getCurrentSubscriptionSummary()
-            .then((summary) => {
-                if (cancelled) return;
-                setSubscriptionSummary(summary);
-            })
+        void (async () => {
+            let summary = await getCurrentSubscriptionSummary();
+            if (!summary && hasPaidTier && !billingRepairAttemptedRef.current) {
+                billingRepairAttemptedRef.current = true;
+                try {
+                    await getPaddleSubscriptionManagementUrls();
+                    summary = await getCurrentSubscriptionSummary();
+                } catch (error) {
+                    if (!cancelled) {
+                        console.warn('Pricing billing summary repair failed.', error);
+                    }
+                }
+            }
+            if (cancelled) return;
+            setSubscriptionSummary(summary);
+        })()
             .catch((error) => {
                 if (cancelled) return;
                 console.warn('Failed to load current billing summary on pricing.', error);
@@ -112,7 +127,7 @@ export const PricingPage: React.FC = () => {
         return () => {
             cancelled = true;
         };
-    }, [isEligibleAccount]);
+    }, [hasPaidTier, isEligibleAccount]);
 
     const resolveTierFeatures = (tierKey: typeof PLAN_ORDER[number]) => {
         const tier = PLAN_CATALOG[tierKey];

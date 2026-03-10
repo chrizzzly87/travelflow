@@ -550,4 +550,36 @@ describe('pages/ProfileSettingsPage username governance', () => {
       expect(assignMock).toHaveBeenCalledWith('https://vendors.paddle.test/cancel');
     });
   });
+
+  it('tries one billing-summary repair on mount for paid users without a local subscription row', async () => {
+    mocks.getCurrentSubscriptionSummary
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({
+        userId: 'user-1',
+        provider: 'paddle',
+        providerCustomerId: 'ctm_123',
+        providerSubscriptionId: 'sub_123',
+        providerPriceId: 'pri_123',
+        providerProductId: 'pro_123',
+        providerStatus: 'active',
+        status: 'active',
+        currentPeriodStart: '2026-03-01T00:00:00.000Z',
+        currentPeriodEnd: '2026-04-01T00:00:00.000Z',
+        cancelAt: null,
+        canceledAt: null,
+        graceEndsAt: null,
+        currency: 'USD',
+        amount: 900,
+        lastEventId: 'evt_123',
+        lastEventType: 'subscription.updated',
+        lastEventAt: '2026-03-08T10:00:00.000Z',
+      });
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(mocks.getPaddleSubscriptionManagementUrls).toHaveBeenCalledTimes(1);
+      expect(screen.getByText('active')).toBeInTheDocument();
+    });
+  });
 });

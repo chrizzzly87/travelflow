@@ -68,6 +68,22 @@ const mocks = vi.hoisted(() => ({
   }),
   updateCurrentUserProfile: vi.fn().mockResolvedValue(undefined),
   acceptCurrentTerms: vi.fn().mockResolvedValue({ data: { termsVersion: '2026-03', acceptedAt: '2026-03-08T10:00:00Z' }, error: null }),
+  getCurrentAccessContext: vi.fn().mockResolvedValue({
+    userId: 'user_123',
+    email: 'ada@example.com',
+    isAnonymous: false,
+    role: 'user',
+    tierKey: 'tier_mid',
+    entitlements: {},
+    onboardingCompleted: true,
+    accountStatus: 'active',
+    termsCurrentVersion: '2026-03',
+    termsRequiresReaccept: false,
+    termsAcceptedVersion: '2026-03',
+    termsAcceptedAt: '2026-03-08T10:00:00Z',
+    termsAcceptanceRequired: false,
+    termsNoticeRequired: false,
+  }),
   processQueuedTripGenerationAfterAuth: vi.fn().mockResolvedValue({ tripId: 'trip_claimed_123' }),
   registerTripGenerationCompletionWatch: vi.fn(),
   trackEvent: vi.fn(),
@@ -136,6 +152,7 @@ vi.mock('../../services/analyticsService', () => ({
 
 vi.mock('../../services/authService', () => ({
   acceptCurrentTerms: mocks.acceptCurrentTerms,
+  getCurrentAccessContext: mocks.getCurrentAccessContext,
   isSupabaseAuthNotConfiguredError: (error: unknown) => error instanceof Error && error.message === 'Supabase auth is not configured.',
 }));
 
@@ -223,6 +240,22 @@ describe('pages/CheckoutPage', () => {
       gender: '',
     };
     mocks.auth.refreshAccess.mockResolvedValue(undefined);
+    mocks.getCurrentAccessContext.mockResolvedValue({
+      userId: 'user_123',
+      email: 'ada@example.com',
+      isAnonymous: false,
+      role: 'user',
+      tierKey: 'tier_mid',
+      entitlements: {},
+      onboardingCompleted: true,
+      accountStatus: 'active',
+      termsCurrentVersion: '2026-03',
+      termsRequiresReaccept: false,
+      termsAcceptedVersion: '2026-03',
+      termsAcceptedAt: '2026-03-08T10:00:00Z',
+      termsAcceptanceRequired: false,
+      termsNoticeRequired: false,
+    });
     mocks.getCurrentSubscriptionSummary.mockResolvedValue(null);
     mocks.previewPaddleSubscriptionUpgrade.mockResolvedValue({
       mode: 'upgrade',
@@ -266,11 +299,7 @@ describe('pages/CheckoutPage', () => {
   });
 
   it('preserves trip and claim metadata when starting checkout from the dedicated route', async () => {
-    const user = userEvent.setup();
-
     render(React.createElement(CheckoutPage));
-
-    await user.click(screen.getByRole('button', { name: 'checkout.continueToPayment' }));
 
     await waitFor(() => {
       expect(mocks.startPaddleCheckoutSession).toHaveBeenCalledWith({
@@ -393,7 +422,7 @@ describe('pages/CheckoutPage', () => {
 
     expect(screen.getByDisplayValue('Ada')).toBeInTheDocument();
     expect(screen.getByDisplayValue('Lovelace')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'checkout.refreshPayment' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'checkout.travelerDetailsEditCta' })).toBeInTheDocument();
   });
 
   it('starts the claimed trip after payment and prioritizes trip actions on success', async () => {
@@ -412,6 +441,10 @@ describe('pages/CheckoutPage', () => {
 
     checkoutEventCallback?.({ name: 'checkout.completed' });
 
+    await waitFor(() => {
+      expect(mocks.getPaddleSubscriptionManagementUrls).toHaveBeenCalled();
+      expect(mocks.auth.refreshAccess).toHaveBeenCalled();
+    });
     await waitFor(() => {
       expect(mocks.processQueuedTripGenerationAfterAuth).toHaveBeenCalledWith('claim_123');
     });
@@ -480,6 +513,28 @@ describe('pages/CheckoutPage', () => {
         returnTo: '/pricing',
         tripId: null,
       });
+    });
+  });
+
+  it('lets users unlock and save completed traveler details before payment', async () => {
+    const user = userEvent.setup();
+
+    render(React.createElement(CheckoutPage));
+
+    await waitFor(() => {
+      expect(mocks.startPaddleCheckoutSession).toHaveBeenCalledTimes(1);
+    });
+
+    await user.click(screen.getByRole('button', { name: 'checkout.travelerDetailsEditCta' }));
+    const cityInput = screen.getByRole('textbox', { name: 'settings.fields.city' });
+    await user.clear(cityInput);
+    await user.type(cityInput, 'Hamburg');
+    await user.click(screen.getByRole('button', { name: 'checkout.travelerDetailsSaveCta' }));
+
+    await waitFor(() => {
+      expect(mocks.updateCurrentUserProfile).toHaveBeenCalledWith(expect.objectContaining({
+        city: 'Hamburg',
+      }));
     });
   });
 });

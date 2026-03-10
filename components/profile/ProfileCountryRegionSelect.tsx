@@ -147,7 +147,7 @@ export const ProfileCountryRegionSelect: React.FC<ProfileCountryRegionSelectProp
                     disabled={disabled}
                     placeholder={placeholder}
                     autoComplete="off"
-                    className={`h-11 w-full rounded-lg border border-slate-300 bg-white ps-11 pe-12 text-sm leading-none text-slate-900 outline-none transition-colors focus:border-accent-400 focus:ring-2 focus:ring-accent-200 disabled:cursor-not-allowed disabled:opacity-60 ${inputClassName}`.trim()}
+                    className={`h-11 w-full rounded-lg border border-slate-300 bg-white ps-11 pe-12 text-sm leading-6 text-slate-900 outline-none transition-colors focus:border-accent-400 focus:ring-2 focus:ring-accent-200 disabled:cursor-not-allowed disabled:opacity-60 ${inputClassName}`.trim()}
                     role="combobox"
                     aria-expanded={isOpen}
                     aria-controls={listboxId}
@@ -196,7 +196,7 @@ export const ProfileCountryRegionSelect: React.FC<ProfileCountryRegionSelectProp
                                     aria-selected={country.code === value}
                                     onMouseDown={(event) => event.preventDefault()}
                                     onClick={() => selectCountry(country)}
-                                    className={`flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm transition-colors ${
+                                    className={`flex min-h-11 w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm transition-colors ${
                                         index === activeIndex ? 'bg-accent-50 text-accent-900' : 'text-slate-700 hover:bg-slate-50'
                                     }`}
                                 >

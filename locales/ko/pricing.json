@@ -138,6 +138,18 @@
     "currentPlanDescription": "You already have {planName}. Use Paddle billing if you need to cancel or change payment details.",
     "manageBillingDescription": "This subscription state cannot be changed inline right now. Open Paddle billing to manage the subscription safely.",
     "renewalDateLabel": "Renews",
-    "currentPlanCta": "Already subscribed"
+    "currentPlanCta": "Already subscribed",
+    "paymentSyncingMessage": "We're syncing your new plan to this account now.",
+    "paymentSyncDelayedTitle": "Plan sync is still finishing",
+    "paymentSyncDelayedDescription": "Your payment succeeded, but TravelFlow is still waiting for the subscription state to settle. Refresh in a moment or open billing settings if this does not update soon.",
+    "paymentSyncReadyTitle": "Plan synced.",
+    "paymentSyncReadyDescription": "Your new tier is now active on this account.",
+    "travelerDetailsLockedDescription": "These traveler details are already saved on your account. Update them only if something needs to change before payment.",
+    "travelerDetailsEditCta": "Edit",
+    "travelerDetailsSaveCta": "Save details",
+    "travelerDetailsSavedTitle": "Traveler details saved",
+    "travelerDetailsSavedDescription": "Your checkout profile details are now up to date.",
+    "travelerDetailsPaymentReady": "Secure payment is ready below. Edit these details only if something changed.",
+    "travelerDetailsAutoContinue": "Secure payment opens automatically as soon as your saved details are confirmed."
   }
 }

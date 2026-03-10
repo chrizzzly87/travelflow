@@ -111,6 +111,7 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 |-------|--------|---------|------|
 | `features__bottom_cta` | — | — | `FeaturesPage.tsx` |
 | `pricing__tier--{name}` | `backpacker` (others disabled until billing launch) | — | `PricingPage.tsx` |
+| `pricing__plan_cta--{state}` | `loading`, `current`, `upgrade`, `manage_billing`, `downgrade_manage` | `{ tier, current_tier }` | `PricingPage.tsx` |
 
 ### Auth
 | Event | Detail | Payload | File |
@@ -199,12 +200,26 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 | `profile_settings__default_visibility--{state}` | `enabled`, `disabled` | — | `ProfileSettingsPage.tsx` |
 | `profile_settings__public_url--open` | — | — | `ProfileSettingsPage.tsx` |
 | `profile_settings__country_region--select` | — | `{ country_code }` | `ProfileSettingsPage.tsx` |
+| `profile_settings__billing--{action}` | `manage`, `cancel` | — | `ProfileSettingsPage.tsx` |
 | `profile__passport_cover--select` | — | `{ stamp_id }` | `ProfileStampsPage.tsx` |
 | `profile__passport_cover--unselect` | — | `{ stamp_id }` | `ProfileStampsPage.tsx` |
 | `profile__passport_cover--selection_limit` | — | `{ stamp_id }` | `ProfileStampsPage.tsx` |
 | `public_profile__summary--open_passport` | — | — | `PublicProfilePage.tsx` |
 | `trip_preview_card__creator_handle` | — | `{ creator_handle, trip_id }` | `ProfileTripCard.tsx` |
 | `example_trip__creator_handle` | — | `{ creator_handle }` | `ExampleTripCard.tsx` |
+
+### Checkout
+| Event | Detail | Payload | File |
+|-------|--------|---------|------|
+| `checkout__page--view` | — | `{ tier, source, has_claim, transaction_present, authenticated }` | `CheckoutPage.tsx` |
+| `checkout__auth_tab--{mode}` | `login`, `register` | `{ tier, source }` | `CheckoutPage.tsx` |
+| `checkout__auth--{mode}` | `login`, `register` | — | `CheckoutPage.tsx` |
+| `checkout__payment--{state}` | `start`, `refresh` | `{ tier, source, from_trip }` | `CheckoutPage.tsx` |
+| `checkout__upgrade--{state}` | `confirm`, `success`, `failed`, `manage_billing` | `{ from_tier?, to_tier?, source }` | `CheckoutPage.tsx` |
+| `checkout__manage_billing--{target}` | `open`, `cancel` | `{ tier, source }` | `CheckoutPage.tsx` |
+| `checkout__traveler_details--{action}` | `edit`, `save` | `{ tier, source }` | `CheckoutPage.tsx` |
+| `checkout__success_cta--{target}` | `trip`, `return_trip`, `create_trip`, `profile` | `{ tier, source }` | `CheckoutPage.tsx` |
+| `checkout__claim_trip--{state}` | `start`, `success`, `failed` | `{ tier, source }` | `CheckoutPage.tsx` |
 
 ### Trip Connectivity
 | Event | Detail | Payload | File |
