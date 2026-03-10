@@ -5586,6 +5586,7 @@ begin
 end;
 $$;
 
+drop function if exists public.admin_list_billing_subscriptions(integer, integer, text);
 create or replace function public.admin_list_billing_subscriptions(
   p_limit integer default 250,
   p_offset integer default 0,
@@ -5667,6 +5668,7 @@ begin
 end;
 $$;
 
+drop function if exists public.admin_get_billing_dashboard();
 create or replace function public.admin_get_billing_dashboard()
 returns table(
   active_subscriptions integer,
@@ -5837,6 +5839,7 @@ begin
 end;
 $$;
 
+drop function if exists public.admin_list_billing_webhook_events(integer, integer, text);
 create or replace function public.admin_list_billing_webhook_events(
   p_limit integer default 250,
   p_offset integer default 0,
@@ -6202,6 +6205,7 @@ begin
 end;
 $$;
 
+drop function if exists public.admin_list_audit_logs(integer, integer, text, text, uuid);
 create or replace function public.admin_list_audit_logs(
   p_limit integer default 200,
   p_offset integer default 0,
@@ -8182,3 +8186,150 @@ grant execute on function public.profile_resolve_public_handle(text) to anon, au
 grant execute on function public.upsert_trip(text, jsonb, jsonb, text, date, boolean, boolean, text, text, text, timestamptz, text, text) to anon, authenticated;
 grant execute on function public.archive_trip_for_user(text, text, jsonb) to authenticated;
 grant execute on function public.log_user_action_failure(text, text, text, text, text, text, jsonb) to authenticated;
+
+-- Existing-project compatibility adjustments for function search_path and stricter authenticated policies.
+alter function public.resolve_default_entitlements(text) set search_path = public;
+alter function public.set_updated_at() set search_path = public;
+alter function public.set_trip_version_number() set search_path = public;
+
+alter table public.username_blocked_terms enable row level security;
+drop policy if exists "Username blocked terms admin manage" on public.username_blocked_terms;
+create policy "Username blocked terms admin manage"
+on public.username_blocked_terms
+for all
+to authenticated
+using (
+  not coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false)
+  and public.is_admin(auth.uid())
+)
+with check (
+  not coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false)
+  and public.is_admin(auth.uid())
+);
+
+alter table public.username_reserved_handles enable row level security;
+drop policy if exists "Username reserved handles admin manage" on public.username_reserved_handles;
+create policy "Username reserved handles admin manage"
+on public.username_reserved_handles
+for all
+to authenticated
+using (
+  not coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false)
+  and public.is_admin(auth.uid())
+)
+with check (
+  not coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false)
+  and public.is_admin(auth.uid())
+);
+
+alter policy "Admin allowlist admin manage"
+on public.admin_allowlist
+to authenticated
+using (
+  not coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false)
+  and public.is_admin(auth.uid())
+)
+with check (
+  not coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false)
+  and public.is_admin(auth.uid())
+);
+
+alter policy "Auth flow logs admin read"
+on public.auth_flow_logs
+to authenticated
+using (
+  not coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false)
+  and public.is_admin(auth.uid())
+);
+
+alter policy "Admin roles admin read"
+on public.admin_roles
+to authenticated
+using (
+  not coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false)
+  and public.is_admin(auth.uid())
+);
+
+alter policy "Admin permissions admin read"
+on public.admin_permissions
+to authenticated
+using (
+  not coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false)
+  and public.is_admin(auth.uid())
+);
+
+alter policy "Admin role permissions admin read"
+on public.admin_role_permissions
+to authenticated
+using (
+  not coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false)
+  and public.is_admin(auth.uid())
+);
+
+alter policy "Admin user roles admin read"
+on public.admin_user_roles
+to authenticated
+using (
+  not coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false)
+  and public.is_admin(auth.uid())
+);
+
+alter policy "Admin user roles admin manage"
+on public.admin_user_roles
+to authenticated
+using (
+  not coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false)
+  and public.is_admin(auth.uid())
+)
+with check (
+  not coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false)
+  and public.is_admin(auth.uid())
+);
+
+alter policy "Admin audit logs admin read"
+on public.admin_audit_logs
+to authenticated
+using (
+  not coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false)
+  and public.is_admin(auth.uid())
+);
+
+alter policy "User settings are user-owned"
+on public.user_settings
+to authenticated
+using (
+  not coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false)
+  and user_id = auth.uid()
+)
+with check (
+  not coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false)
+  and user_id = auth.uid()
+);
+
+alter policy "Subscriptions are user-owned"
+on public.subscriptions
+to authenticated
+using (
+  not coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false)
+  and user_id = auth.uid()
+)
+with check (
+  not coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false)
+  and user_id = auth.uid()
+);
+
+alter policy "Legal terms acceptance owner read"
+on public.legal_terms_acceptance_events
+to authenticated
+using (
+  not coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false)
+  and (user_id = auth.uid() or public.is_admin(auth.uid()))
+);
+
+alter policy "Profile user events owner read"
+on public.profile_user_events
+to authenticated
+using (
+  not coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false)
+  and (owner_id = auth.uid() or public.is_admin(auth.uid()))
+);

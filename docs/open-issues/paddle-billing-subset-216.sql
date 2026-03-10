@@ -152,6 +152,7 @@ create index if not exists billing_webhook_events_user_occurred_at_idx on public
 create or replace function public.set_updated_at()
 returns trigger
 language plpgsql
+set search_path = public
 as $$
 begin
   new.updated_at = now();
@@ -170,8 +171,15 @@ alter table public.billing_webhook_events enable row level security;
 drop policy if exists "Subscriptions are user-owned" on public.subscriptions;
 create policy "Subscriptions are user-owned"
 on public.subscriptions for all
-using (user_id = auth.uid())
-with check (user_id = auth.uid());
+to authenticated
+using (
+  not coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false)
+  and user_id = auth.uid()
+)
+with check (
+  not coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false)
+  and user_id = auth.uid()
+);
 
 drop policy if exists "Billing webhook events are user-owned" on public.billing_webhook_events;
 create policy "Billing webhook events are user-owned"
@@ -203,6 +211,7 @@ where exists (
 )
 on conflict (role_key, permission_key) do nothing;
 
+drop function if exists public.admin_list_billing_subscriptions(integer, integer, text);
 create or replace function public.admin_list_billing_subscriptions(
   p_limit integer default 250,
   p_offset integer default 0,
@@ -284,6 +293,7 @@ begin
 end;
 $$;
 
+drop function if exists public.admin_list_billing_webhook_events(integer, integer, text);
 create or replace function public.admin_list_billing_webhook_events(
   p_limit integer default 250,
   p_offset integer default 0,
@@ -1315,6 +1325,7 @@ begin
 end;
 $$;
 
+drop function if exists public.admin_list_billing_subscriptions(integer, integer, text);
 create or replace function public.admin_list_billing_subscriptions(
   p_limit integer default 250,
   p_offset integer default 0,
@@ -1398,6 +1409,7 @@ $$;
 
 
 -- Billing admin KPI and chart aggregates.
+drop function if exists public.admin_get_billing_dashboard();
 create or replace function public.admin_get_billing_dashboard()
 returns table(
   active_subscriptions integer,
@@ -1568,6 +1580,7 @@ begin
 end;
 $$;
 
+drop function if exists public.admin_list_billing_webhook_events(integer, integer, text);
 create or replace function public.admin_list_billing_webhook_events(
   p_limit integer default 250,
   p_offset integer default 0,
@@ -1935,6 +1948,7 @@ $$;
 
 
 -- Include Paddle billing lifecycle events in the admin audit timeline.
+drop function if exists public.admin_list_audit_logs(integer, integer, text, text, uuid);
 create or replace function public.admin_list_audit_logs(
   p_limit integer default 200,
   p_offset integer default 0,
