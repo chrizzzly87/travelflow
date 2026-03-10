@@ -113,6 +113,7 @@ describe('netlify/functions/ai-generate-worker-cron', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-03-10T10:10:00.000Z'));
     process.env.AI_GENERATION_ASYNC_WORKER_ENABLED = 'true';
+    delete process.env.AI_GENERATION_ASYNC_CANARY_OWNER_ID;
     process.env.TF_ADMIN_API_KEY = 'secret';
     process.env.URL = 'https://travelflowapp.netlify.app';
     process.env.VITE_SUPABASE_URL = 'https://supabase.example';
@@ -187,6 +188,78 @@ describe('netlify/functions/ai-generate-worker-cron', () => {
       check_type: 'watchdog',
       status: 'warning',
       stale_queued_count: 2,
+    });
+    expect(JSON.parse(String(canaryInsert[1].body))).toMatchObject({
+      check_type: 'canary',
+      status: 'ok',
+      canary_latency_ms: expect.any(Number),
+    });
+  });
+
+  it('uses the explicit canary owner env without querying admin owners', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-03-10T10:10:00.000Z'));
+    process.env.AI_GENERATION_ASYNC_WORKER_ENABLED = 'true';
+    process.env.AI_GENERATION_ASYNC_CANARY_OWNER_ID = '3280e9e8-3bc0-462a-84a1-9b5ba699685a';
+    process.env.TF_ADMIN_API_KEY = 'secret';
+    process.env.URL = 'https://travelflowapp.netlify.app';
+    process.env.VITE_SUPABASE_URL = 'https://supabase.example';
+    process.env.SUPABASE_SERVICE_ROLE_KEY = 'service-role-secret';
+    process.env.AI_GENERATION_ASYNC_WORKER_BATCH = '1';
+
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(jsonResponse([], { status: 200 }))
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
+      .mockResolvedValueOnce(new Response('[]', {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'content-range': '0-0/0',
+        },
+      }))
+      .mockResolvedValueOnce(new Response(null, { status: 201 }))
+      .mockResolvedValueOnce(new Response(null, { status: 201 }))
+      .mockResolvedValueOnce(new Response(null, { status: 201 }))
+      .mockResolvedValueOnce(jsonResponse({ ok: true, accepted: true }, { status: 202 }))
+      .mockResolvedValueOnce(new Response(null, { status: 201 }))
+      .mockResolvedValueOnce(jsonResponse([{
+        id: 'job-canary',
+        state: 'failed',
+        last_error_code: 'ASYNC_WORKER_PAYLOAD_INVALID',
+        last_error_message: 'Job payload is invalid for async generation worker.',
+      }], { status: 200 }))
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
+      .mockResolvedValueOnce(new Response(null, { status: 201 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const response = await handler();
+    const payload = JSON.parse(String(response.body));
+
+    expect(response.statusCode).toBe(202);
+    expect(payload.health).toMatchObject({
+      status: 'ok',
+      staleQueuedCount: 0,
+      selfHealAttempted: false,
+      canary: {
+        status: 'ok',
+        code: 'ASYNC_WORKER_PAYLOAD_INVALID',
+      },
+    });
+
+    expect(fetchMock.mock.calls.some(([url]) => String(url).includes('/admin_user_roles'))).toBe(false);
+
+    const backgroundCall = fetchMock.mock.calls[6] as [string, RequestInit];
+    expect(backgroundCall[0]).toBe('https://travelflowapp.netlify.app/.netlify/functions/ai-generate-worker-background');
+    expect(backgroundCall[1].body).toBe(JSON.stringify({ limit: 2 }));
+
+    const heartbeatInsert = fetchMock.mock.calls[7] as [string, RequestInit];
+    const canaryInsert = fetchMock.mock.calls[10] as [string, RequestInit];
+
+    expect(JSON.parse(String(heartbeatInsert[1].body))).toMatchObject({
+      check_type: 'heartbeat',
+      status: 'ok',
+      stale_queued_count: 0,
+      dispatch_http_status: 202,
     });
     expect(JSON.parse(String(canaryInsert[1].body))).toMatchObject({
       check_type: 'canary',
