@@ -1,10 +1,10 @@
 ---
 id: rel-2026-03-10-worker-health-tooltips-and-map-reset
-version: v0.0.0
+version: v0.90.0
 title: "Worker health is easier to read and new trips open with a clean map"
 date: 2026-03-10
-published_at: 2026-03-10T20:30:00Z
-status: draft
+published_at: 2026-03-10T19:46:31Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Clarified async worker health signals in admin and reset the planner map when opening a different trip so stale routes and pins do not leak across trips."
