@@ -9,6 +9,12 @@ import {
 
 export type AuthSessionPersistence = 'persistent' | 'session';
 
+export interface PersistedSupabaseSessionHint {
+    userId: string;
+    email: string | null;
+    expiresAt: number | null;
+}
+
 const AUTH_SESSION_PERSISTENCE_KEY = 'tf_auth_session_persistence_v1';
 const LOCALHOST_BRIDGE_COOKIE_ROOT = 'tf_localhost_supabase_auth_bridge_';
 const LOCALHOST_BRIDGE_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 30;
@@ -69,6 +75,141 @@ const removeCookie = (cookieName: string): void => {
 const isSupabaseAuthTokenKey = (keyName: string): boolean =>
     keyName.startsWith('sb-') && keyName.includes('auth-token');
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+    typeof value === 'object' && value !== null;
+
+const parseStoredJson = (value: string): unknown => {
+    try {
+        return JSON.parse(value);
+    } catch {
+        return value;
+    }
+};
+
+const normalizeUserEmail = (value: unknown): string | null =>
+    typeof value === 'string' && value.trim().length > 0 ? value.trim() : null;
+
+const collectStorageKeys = (storage: Storage | null): string[] => {
+    if (!storage) return [];
+    const keys: string[] = [];
+    try {
+        for (let index = 0; index < storage.length; index += 1) {
+            const keyName = storage.key(index);
+            if (keyName) keys.push(keyName);
+        }
+    } catch {
+        return [];
+    }
+    return keys;
+};
+
+const readCookieValue = (cookieName: string): string | null => {
+    if (!isBrowserRuntime()) return null;
+    const cookieParts = document.cookie ? document.cookie.split(';') : [];
+    for (const cookiePart of cookieParts) {
+        const [rawName, ...rawValueParts] = cookiePart.trim().split('=');
+        if (!rawName || rawName !== cookieName) continue;
+        const rawValue = rawValueParts.join('=');
+        try {
+            return decodeURIComponent(rawValue);
+        } catch {
+            return null;
+        }
+    }
+    return null;
+};
+
+const getPersistedSessionCandidate = (value: unknown): Record<string, unknown> | null => {
+    if (isRecord(value) && isRecord(value.user)) return value;
+    if (isRecord(value) && isRecord(value.currentSession) && isRecord(value.currentSession.user)) {
+        return value.currentSession;
+    }
+    if (isRecord(value) && isRecord(value.session) && isRecord(value.session.user)) {
+        return value.session;
+    }
+    return null;
+};
+
+const isAnonymousPersistedUser = (value: unknown): boolean => {
+    if (!isRecord(value)) return false;
+    const email = normalizeUserEmail(value.email);
+    const phone = normalizeUserEmail(value.phone);
+    if (email || phone) return false;
+    if (value.is_anonymous === true) return true;
+
+    const metadata = isRecord(value.app_metadata) ? value.app_metadata : null;
+    if (metadata?.is_anonymous === true) return true;
+
+    const provider = typeof metadata?.provider === 'string'
+        ? metadata.provider.trim().toLowerCase()
+        : '';
+    if (provider === 'anonymous') return true;
+
+    const metadataProviders = Array.isArray(metadata?.providers)
+        ? metadata.providers
+            .filter((entry): entry is string => typeof entry === 'string')
+            .map((entry) => entry.trim().toLowerCase())
+        : [];
+    if (metadataProviders.includes('anonymous')) return true;
+
+    const identityProviders = Array.isArray(value.identities)
+        ? value.identities
+            .map((identity) => (isRecord(identity) && typeof identity.provider === 'string'
+                ? identity.provider.trim().toLowerCase()
+                : ''))
+            .filter(Boolean)
+        : [];
+
+    return identityProviders.includes('anonymous');
+};
+
+const toPersistedSupabaseSessionHint = (value: unknown): PersistedSupabaseSessionHint | null => {
+    const session = getPersistedSessionCandidate(value);
+    if (!session) return null;
+    const user = isRecord(session.user) ? session.user : null;
+    if (!user) return null;
+
+    const userId = typeof user.id === 'string' ? user.id.trim() : '';
+    if (!userId || isAnonymousPersistedUser(user)) return null;
+
+    const expiresAt = typeof session.expires_at === 'number' && Number.isFinite(session.expires_at)
+        ? session.expires_at
+        : null;
+
+    return {
+        userId,
+        email: normalizeUserEmail(user.email),
+        expiresAt,
+    };
+};
+
+const readSupabaseSessionHintFromMedium = (medium: AuthSessionPersistence): PersistedSupabaseSessionHint | null => {
+    if (!isBrowserRuntime()) return null;
+    const storage = medium === 'persistent' ? window.localStorage : window.sessionStorage;
+    for (const keyName of collectStorageKeys(storage)) {
+        if (!isSupabaseAuthTokenKey(keyName)) continue;
+        const rawValue = readFromMedium(medium, keyName);
+        if (!rawValue) continue;
+        const hint = toPersistedSupabaseSessionHint(parseStoredJson(rawValue));
+        if (hint) return hint;
+    }
+    return null;
+};
+
+const readSupabaseSessionHintFromLocalhostBridgeCookies = (): PersistedSupabaseSessionHint | null => {
+    if (!isLocalhostRuntime()) return null;
+    const cookieParts = document.cookie ? document.cookie.split(';') : [];
+    for (const cookiePart of cookieParts) {
+        const [rawName] = cookiePart.trim().split('=');
+        if (!rawName || !rawName.startsWith(LOCALHOST_BRIDGE_COOKIE_ROOT)) continue;
+        const rawValue = readCookieValue(rawName);
+        if (!rawValue) continue;
+        const hint = toPersistedSupabaseSessionHint(parseStoredJson(rawValue));
+        if (hint) return hint;
+    }
+    return null;
+};
+
 const readFromMedium = (medium: AuthSessionPersistence, keyName: string): string | null => (
     medium === 'session'
         ? readSessionStorageItem(keyName)
@@ -108,6 +249,21 @@ export const isRememberLoginEnabled = (): boolean =>
 
 export const setRememberLoginEnabled = (rememberLogin: boolean): void => {
     setAuthSessionPersistencePreference(rememberLogin ? 'persistent' : 'session');
+};
+
+export const readPersistedSupabaseSessionHint = (): PersistedSupabaseSessionHint | null => {
+    if (!isBrowserRuntime()) return null;
+    const persistenceMode = getAuthSessionPersistencePreference();
+    const mediumOrder: AuthSessionPersistence[] = persistenceMode === 'persistent'
+        ? ['persistent', 'session']
+        : ['session', 'persistent'];
+
+    for (const medium of mediumOrder) {
+        const hint = readSupabaseSessionHintFromMedium(medium);
+        if (hint) return hint;
+    }
+
+    return readSupabaseSessionHintFromLocalhostBridgeCookies();
 };
 
 const syncLocalhostBridgeCookieFromStorage = (keyName: string, value: string): void => {

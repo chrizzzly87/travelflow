@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import {
   createSupabaseAuthStorageAdapter,
   getAuthSessionPersistencePreference,
+  readPersistedSupabaseSessionHint,
   setAuthSessionPersistencePreference,
   setRememberLoginEnabled,
 } from '../../services/authSessionPersistenceService';
@@ -63,5 +64,41 @@ describe('services/authSessionPersistenceService', () => {
     expect(readSessionStorageItem(SUPABASE_AUTH_KEY)).toBe('session-token');
     expect(readLocalStorageItem(SUPABASE_AUTH_KEY)).toBeNull();
   });
-});
 
+  it('reads a persisted signed-in session hint from auth token storage', () => {
+    window.localStorage.setItem(SUPABASE_AUTH_KEY, JSON.stringify({
+      access_token: 'access-token',
+      refresh_token: 'refresh-token',
+      expires_at: 2_000_000_000,
+      user: {
+        id: 'user-123',
+        email: 'traveler@example.com',
+        app_metadata: { provider: 'email', providers: ['email'] },
+      },
+    }));
+
+    expect(readPersistedSupabaseSessionHint()).toEqual({
+      userId: 'user-123',
+      email: 'traveler@example.com',
+      expiresAt: 2_000_000_000,
+    });
+  });
+
+  it('ignores anonymous or malformed persisted auth session payloads', () => {
+    window.localStorage.setItem(SUPABASE_AUTH_KEY, JSON.stringify({
+      access_token: 'access-token',
+      refresh_token: 'refresh-token',
+      expires_at: 2_000_000_000,
+      user: {
+        id: 'anon-user',
+        app_metadata: { provider: 'anonymous', providers: ['anonymous'] },
+        identities: [{ provider: 'anonymous' }],
+      },
+    }));
+
+    expect(readPersistedSupabaseSessionHint()).toBeNull();
+
+    window.localStorage.setItem(SUPABASE_AUTH_KEY, '{bad-json');
+    expect(readPersistedSupabaseSessionHint()).toBeNull();
+  });
+});
