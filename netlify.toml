@@ -92,6 +92,10 @@ exit 1
   function = "ai-generate-worker"
 
 [[edge_functions]]
+  path = "/api/internal/admin/ai-worker-health"
+  function = "admin-ai-worker-health"
+
+[[edge_functions]]
   path = "/api/internal/admin/iam"
   function = "admin-iam"
 
