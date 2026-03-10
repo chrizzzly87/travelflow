@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import { buildImageCdnUrl, buildImageSrcSet } from '../utils/imageDelivery';
 
 type BlogViewTransitionPart = 'card' | 'image' | 'title';
@@ -82,6 +83,17 @@ export const BLOG_VIEW_TRANSITION_CLASSES = {
     image: 'blog-image-transition',
     title: 'blog-title-transition',
 } as const;
+
+const supportsCssFeature = (query: string): boolean => {
+    if (typeof window === 'undefined' || typeof window.CSS === 'undefined') return false;
+    if (typeof window.CSS.supports !== 'function') return false;
+
+    try {
+        return window.CSS.supports(query);
+    } catch {
+        return false;
+    }
+};
 
 let pendingBlogTransitionTarget: BlogTransitionTarget | null = null;
 let currentBlogPostTransitionTarget: BlogTransitionTarget | null = null;
@@ -235,7 +247,7 @@ export const markBlogRouteKindSeen = (kind: SeenBlogRouteKind): void => {
 
 export const shouldUseColdBlogTransitionFallbackForKind = (
     kind: SeenBlogRouteKind
-): boolean => !seenBlogRouteKinds.has(kind);
+): boolean => supportsNestedBlogViewTransitionGroups() && !seenBlogRouteKinds.has(kind);
 
 export const setPendingBlogTransitionMode = (
     mode: PendingBlogTransitionMode
@@ -276,6 +288,32 @@ export const supportsBlogViewTransitions = (): boolean => {
     if (typeof window.matchMedia !== 'function') return true;
     return !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 };
+
+const supportsBlogViewTransitionClasses = (): boolean =>
+    supportsBlogViewTransitions() &&
+    supportsCssFeature('view-transition-class: blog-card-transition') &&
+    supportsCssFeature('selector(::view-transition-group(.blog-card-transition))');
+
+const supportsNestedBlogViewTransitionGroups = (): boolean =>
+    supportsBlogViewTransitionClasses() &&
+    supportsCssFeature('view-transition-group: contain') &&
+    supportsCssFeature('view-transition-group: nearest') &&
+    supportsCssFeature('selector(::view-transition-group-children(blog-card-transition))');
+
+export const getBlogTransitionStyle = (
+    transitionName: string,
+    transitionClass?: string,
+    transitionGroup?: string
+): CSSProperties =>
+    ({
+        viewTransitionName: transitionName,
+        ...(transitionClass && supportsBlogViewTransitionClasses()
+            ? { ['viewTransitionClass' as any]: transitionClass }
+            : {}),
+        ...(transitionGroup && supportsNestedBlogViewTransitionGroups()
+            ? { ['viewTransitionGroup' as any]: transitionGroup }
+            : {}),
+    } as CSSProperties);
 
 export const warmResponsiveBlogImage = ({
     src,
