@@ -128,6 +128,48 @@ export interface AdminBillingPaddleReconcileResult {
     }>;
 }
 
+export type AdminAsyncWorkerHealthCheckType = 'heartbeat' | 'watchdog' | 'canary';
+export type AdminAsyncWorkerHealthStatus = 'ok' | 'warning' | 'failed';
+
+export interface AdminAsyncWorkerHealthCheckRecord {
+    id: string;
+    checkType: AdminAsyncWorkerHealthCheckType;
+    status: AdminAsyncWorkerHealthStatus;
+    startedAt: string;
+    finishedAt: string | null;
+    staleQueuedCount: number;
+    oldestQueuedAgeMs: number | null;
+    dispatchAttempted: boolean;
+    dispatchHttpStatus: number | null;
+    canaryLatencyMs: number | null;
+    failureCode: string | null;
+    failureMessage: string | null;
+    metadata: Record<string, unknown> | null;
+    createdAt: string;
+}
+
+export interface AdminAsyncWorkerHealthSummary {
+    overallStatus: AdminAsyncWorkerHealthStatus;
+    statusReason: string;
+    heartbeatFresh: boolean;
+    canaryFresh: boolean;
+    canaryDue: boolean;
+    staleQueuedCount: number;
+    oldestQueuedAgeMs: number | null;
+    lastHeartbeatAt: string | null;
+    lastHeartbeatStatus: AdminAsyncWorkerHealthStatus | null;
+    lastSelfHealAt: string | null;
+    lastSelfHealStatus: AdminAsyncWorkerHealthStatus | null;
+    lastCanaryAt: string | null;
+    lastCanaryStatus: AdminAsyncWorkerHealthStatus | null;
+    lastCanaryLatencyMs: number | null;
+}
+
+export interface AdminAsyncWorkerHealthResponse {
+    summary: AdminAsyncWorkerHealthSummary;
+    checks: AdminAsyncWorkerHealthCheckRecord[];
+}
+
 export interface AdminAuditRecord {
     id: string;
     actor_user_id: string | null;
@@ -1061,9 +1103,37 @@ export const adminSetCurrentTermsVersion = async (
     return row;
 };
 
-const callAdminInternalApi = async <T extends Record<string, unknown>>(
+const resolveInternalApiDevMessages = (path: string): { notFound: string; proxyFailure: string } | null => {
+    if (path === '/api/internal/admin/iam') {
+        return {
+            notFound: 'Admin identity route is unavailable in Vite-only dev. Run `pnpm dev:netlify` (or run it in a second terminal while `pnpm dev` is active) to test admin delete/invite/create actions.',
+            proxyFailure: 'Vite could not reach Netlify dev for admin identity actions (connection refused on localhost:8888). Start `pnpm dev:netlify` before testing delete/invite/create.',
+        };
+    }
+    if (path === '/api/internal/admin/audit/replay-export') {
+        return {
+            notFound: 'Admin audit export route is unavailable in Vite-only dev. Run `pnpm dev:netlify` (or run it in a second terminal while `pnpm dev` is active) to test replay exports.',
+            proxyFailure: 'Vite could not reach Netlify dev for admin audit export actions (connection refused on localhost:8888). Start `pnpm dev:netlify` before testing replay export.',
+        };
+    }
+    if (path === '/api/internal/admin/billing/paddle/reconcile') {
+        return {
+            notFound: 'Admin billing reconcile route is unavailable in Vite-only dev. Run `pnpm dev:netlify` (or run it in a second terminal while `pnpm dev` is active) to test Paddle reconciliation.',
+            proxyFailure: 'Vite could not reach Netlify dev for admin billing reconciliation (connection refused on localhost:8888). Start `pnpm dev:netlify` before testing Paddle reconciliation.',
+        };
+    }
+    if (path.startsWith('/api/internal/admin/ai-worker-health')) {
+        return {
+            notFound: 'Admin worker health route is unavailable in Vite-only dev. Run `pnpm dev:netlify` (or keep it running alongside `pnpm dev`) to test worker watchdog dashboards.',
+            proxyFailure: 'Vite could not reach Netlify dev for worker health requests (connection refused on localhost:8888). Start `pnpm dev:netlify` before testing worker health.',
+        };
+    }
+    return null;
+};
+
+const callAdminInternalApiRequest = async <T extends Record<string, unknown>>(
     path: string,
-    body: Record<string, unknown>
+    options: { method: 'GET' | 'POST'; body?: Record<string, unknown> | null }
 ): Promise<T> => {
     await ensureExistingDbSession();
     const token = await dbGetAccessToken();
@@ -1072,12 +1142,12 @@ const callAdminInternalApi = async <T extends Record<string, unknown>>(
     }
 
     const response = await fetch(path, {
-        method: 'POST',
+        method: options.method,
         headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(body),
+        body: options.method === 'POST' ? JSON.stringify(options.body || {}) : undefined,
     });
 
     const responseText = await response.text().catch(() => '');
@@ -1103,22 +1173,7 @@ const callAdminInternalApi = async <T extends Record<string, unknown>>(
                         : null;
         const fallbackText = responseText.trim();
         const normalizedFallback = fallbackText && fallbackText.length <= 280 ? fallbackText : null;
-        const pathMessages = path === '/api/internal/admin/iam'
-            ? {
-                notFound: 'Admin identity route is unavailable in Vite-only dev. Run `pnpm dev:netlify` (or run it in a second terminal while `pnpm dev` is active) to test admin delete/invite/create actions.',
-                proxyFailure: 'Vite could not reach Netlify dev for admin identity actions (connection refused on localhost:8888). Start `pnpm dev:netlify` before testing delete/invite/create.',
-            }
-            : path === '/api/internal/admin/audit/replay-export'
-                ? {
-                    notFound: 'Admin audit export route is unavailable in Vite-only dev. Run `pnpm dev:netlify` (or run it in a second terminal while `pnpm dev` is active) to test replay exports.',
-                    proxyFailure: 'Vite could not reach Netlify dev for admin audit export actions (connection refused on localhost:8888). Start `pnpm dev:netlify` before testing replay export.',
-                }
-                : path === '/api/internal/admin/billing/paddle/reconcile'
-                    ? {
-                        notFound: 'Admin billing reconcile route is unavailable in Vite-only dev. Run `pnpm dev:netlify` (or run it in a second terminal while `pnpm dev` is active) to test Paddle reconciliation.',
-                        proxyFailure: 'Vite could not reach Netlify dev for admin billing reconciliation (connection refused on localhost:8888). Start `pnpm dev:netlify` before testing Paddle reconciliation.',
-                    }
-                    : null;
+        const pathMessages = resolveInternalApiDevMessages(path);
         const devNotFoundMessage = looksLikeViteNotFoundPage && import.meta.env.DEV
             ? pathMessages?.notFound ?? null
             : null;
@@ -1140,6 +1195,20 @@ const callAdminInternalApi = async <T extends Record<string, unknown>>(
     }
     return payload as T;
 };
+
+const callAdminInternalApi = async <T extends Record<string, unknown>>(
+    path: string,
+    body: Record<string, unknown>
+): Promise<T> => callAdminInternalApiRequest<T>(path, {
+    method: 'POST',
+    body,
+});
+
+const callAdminInternalApiGet = async <T extends Record<string, unknown>>(
+    path: string,
+): Promise<T> => callAdminInternalApiRequest<T>(path, {
+    method: 'GET',
+});
 
 export const adminCreateUserInvite = async (payload: {
     email: string;
@@ -1304,4 +1373,37 @@ export const adminReconcilePaddleSubscriptions = async (
     }
 
     return response.data;
+};
+
+export const adminGetAiWorkerHealth = async (
+    options?: { limit?: number | null }
+): Promise<AdminAsyncWorkerHealthResponse> => {
+    const limit = Number.isFinite(Number(options?.limit))
+        ? Math.max(1, Math.min(50, Math.round(Number(options?.limit))))
+        : 25;
+    const payload = await callAdminInternalApiGet<{
+        ok?: boolean;
+        summary?: AdminAsyncWorkerHealthSummary;
+        checks?: AdminAsyncWorkerHealthCheckRecord[];
+    }>(`/api/internal/admin/ai-worker-health?limit=${limit}`);
+
+    return {
+        summary: payload.summary || {
+            overallStatus: 'warning',
+            statusReason: 'Worker health summary is unavailable.',
+            heartbeatFresh: false,
+            canaryFresh: false,
+            canaryDue: true,
+            staleQueuedCount: 0,
+            oldestQueuedAgeMs: null,
+            lastHeartbeatAt: null,
+            lastHeartbeatStatus: null,
+            lastSelfHealAt: null,
+            lastSelfHealStatus: null,
+            lastCanaryAt: null,
+            lastCanaryStatus: null,
+            lastCanaryLatencyMs: null,
+        },
+        checks: Array.isArray(payload.checks) ? payload.checks : [],
+    };
 };

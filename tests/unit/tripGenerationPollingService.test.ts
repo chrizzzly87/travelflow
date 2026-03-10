@@ -7,6 +7,7 @@ import {
     getAsyncTripGenerationStallRecoveryAction,
     shouldApplyPolledTripUpdate,
     shouldPollTripGenerationState,
+    shouldUseRemoteTripForAsyncStallRecovery,
 } from '../../services/tripGenerationPollingService';
 
 const buildTrip = (patch?: Partial<ITrip>): ITrip => ({
@@ -383,6 +384,138 @@ describe('tripGenerationPollingService.shouldPollTripGenerationState', () => {
         });
 
         expect(shouldPollTripGenerationState(runningTrip, Date.now())).toBe(true);
+    });
+});
+
+describe('tripGenerationPollingService.shouldUseRemoteTripForAsyncStallRecovery', () => {
+    it('uses a newer remote succeeded trip instead of forcing a local stall failure', () => {
+        const nowMs = Date.now();
+        const attemptStartedAt = new Date(nowMs - 12 * 60_000).toISOString();
+        const succeededAt = new Date(nowMs - 2_000).toISOString();
+
+        const localTrip = buildTrip({
+            updatedAt: nowMs - 8_000,
+            aiMeta: {
+                provider: 'openai',
+                model: 'gpt-5.4',
+                generation: {
+                    state: 'queued',
+                    latestAttempt: {
+                        id: 'attempt-queued',
+                        flow: 'classic',
+                        source: 'trip_status_strip',
+                        state: 'queued',
+                        startedAt: attemptStartedAt,
+                        metadata: {
+                            orchestration: 'async_worker',
+                        },
+                    },
+                    attempts: [],
+                    inputSnapshot: null,
+                    retryCount: 1,
+                    retryRequestedAt: attemptStartedAt,
+                    lastSucceededAt: null,
+                    lastFailedAt: null,
+                },
+            },
+        });
+
+        const remoteTrip = buildTrip({
+            updatedAt: nowMs,
+            items: [
+                {
+                    id: 'city-real-1',
+                    type: 'city',
+                    title: 'Bangkok',
+                    startDateOffset: 0,
+                    duration: 2,
+                    color: 'bg-sky-100 border-sky-300 text-sky-800',
+                    description: 'Materialized itinerary content.',
+                    location: 'Bangkok',
+                    coordinates: { lat: 13.7563, lng: 100.5018 },
+                },
+            ],
+            aiMeta: {
+                provider: 'openai',
+                model: 'gpt-5.4',
+                generatedAt: succeededAt,
+                generation: {
+                    state: 'succeeded',
+                    latestAttempt: {
+                        id: 'attempt-queued',
+                        flow: 'classic',
+                        source: 'queue_claim_async_worker',
+                        state: 'succeeded',
+                        startedAt: attemptStartedAt,
+                        finishedAt: succeededAt,
+                    },
+                    attempts: [],
+                    inputSnapshot: null,
+                    retryCount: 1,
+                    retryRequestedAt: attemptStartedAt,
+                    lastSucceededAt: succeededAt,
+                    lastFailedAt: null,
+                },
+            },
+        });
+
+        expect(shouldUseRemoteTripForAsyncStallRecovery(localTrip, remoteTrip, nowMs)).toBe(true);
+    });
+
+    it('keeps stall recovery active when the refreshed remote trip is still in flight', () => {
+        const nowMs = Date.now();
+        const localAttemptStartedAt = new Date(nowMs - 12 * 60_000).toISOString();
+        const remoteAttemptStartedAt = new Date(nowMs - 5_000).toISOString();
+
+        const localTrip = buildTrip({
+            updatedAt: nowMs - 8_000,
+            aiMeta: {
+                provider: 'openai',
+                model: 'gpt-5.4',
+                generation: {
+                    state: 'queued',
+                    latestAttempt: {
+                        id: 'attempt-queued',
+                        flow: 'classic',
+                        source: 'trip_status_strip',
+                        state: 'queued',
+                        startedAt: localAttemptStartedAt,
+                    },
+                    attempts: [],
+                    inputSnapshot: null,
+                    retryCount: 1,
+                    retryRequestedAt: localAttemptStartedAt,
+                    lastSucceededAt: null,
+                    lastFailedAt: null,
+                },
+            },
+        });
+
+        const remoteTrip = buildTrip({
+            updatedAt: nowMs,
+            aiMeta: {
+                provider: 'openai',
+                model: 'gpt-5.4',
+                generation: {
+                    state: 'queued',
+                    latestAttempt: {
+                        id: 'attempt-queued',
+                        flow: 'classic',
+                        source: 'queue_claim_async_worker',
+                        state: 'queued',
+                        startedAt: remoteAttemptStartedAt,
+                    },
+                    attempts: [],
+                    inputSnapshot: null,
+                    retryCount: 1,
+                    retryRequestedAt: remoteAttemptStartedAt,
+                    lastSucceededAt: null,
+                    lastFailedAt: null,
+                },
+            },
+        });
+
+        expect(shouldUseRemoteTripForAsyncStallRecovery(localTrip, remoteTrip, nowMs)).toBe(false);
     });
 });
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { X, SpinnerGap as Loader2 } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
@@ -41,6 +41,7 @@ const isPlainLeftClick = (event: React.MouseEvent<HTMLAnchorElement>): boolean =
 );
 
 export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTripsClick, onMyTripsIntent }) => {
+    const [pendingLocale, setPendingLocale] = useState<AppLanguage | null>(null);
     const hasTrips = useHasSavedTrips();
     const { t, i18n } = useTranslation('common');
     const location = useLocation();
@@ -61,6 +62,19 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
         if (routeLocale) return routeLocale;
         return normalizeLocale(i18n.resolvedLanguage ?? i18n.language ?? DEFAULT_LOCALE);
     }, [i18n.language, i18n.resolvedLanguage, location.pathname]);
+    const selectedLocale = pendingLocale ?? activeLocale;
+
+    useEffect(() => {
+        if (!pendingLocale) return;
+        if (pendingLocale === activeLocale) {
+            setPendingLocale(null);
+            return;
+        }
+        const timeoutId = window.setTimeout(() => {
+            setPendingLocale(null);
+        }, 1500);
+        return () => window.clearTimeout(timeoutId);
+    }, [activeLocale, pendingLocale]);
 
     useEffect(() => {
         if (isOpen) {
@@ -131,10 +145,12 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
     const handleLocaleChange = (nextLocaleRaw: string) => {
         const nextLocale = normalizeLocale(nextLocaleRaw);
         if (nextLocale === activeLocale) {
+            setPendingLocale(null);
             onClose();
             return;
         }
 
+        setPendingLocale(nextLocale);
         onClose();
 
         if (!isToolRoute(location.pathname)) {
@@ -230,7 +246,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
                     <div className="border-b border-slate-100 px-4 py-3">
                         <LanguageSelect
                             ariaLabel={t('language.label')}
-                            value={activeLocale}
+                            value={selectedLocale}
                             onChange={handleLocaleChange}
                             triggerClassName="h-10 w-full rounded-xl border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 shadow-sm focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
                             contentAlign="start"

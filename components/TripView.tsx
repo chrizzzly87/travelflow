@@ -97,6 +97,7 @@ import { buildBenchmarkScenarioImportUrl } from '../services/tripGenerationBench
 import { beginTripGenerationTabFeedback, type TripGenerationTabFeedbackSession } from '../services/tripGenerationTabFeedbackService';
 import {
     getAsyncTripGenerationStallRecoveryAction,
+    shouldUseRemoteTripForAsyncStallRecovery,
     shouldApplyPolledTripUpdate,
     shouldPollTripGenerationState,
 } from '../services/tripGenerationPollingService';
@@ -1117,6 +1118,18 @@ const useTripViewRender = ({
                         force: true,
                     });
                     return;
+                }
+
+                try {
+                    const remote = await dbGetTrip(trip.id, { includeOwnerProfile: false });
+                    if (cancelled) return;
+                    const remoteTrip = remote?.trip || null;
+                    if (shouldUseRemoteTripForAsyncStallRecovery(tripRef.current, remoteTrip, nowMs) && remoteTrip) {
+                        onUpdateTrip(remoteTrip);
+                        return;
+                    }
+                } catch {
+                    if (cancelled) return;
                 }
 
                 asyncStallRecoveryAttemptIdRef.current = latestGenerationAttempt.id;

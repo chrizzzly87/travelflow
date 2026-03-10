@@ -112,4 +112,42 @@ describe('ai-generate-worker claim handling', () => {
       'x-tf-worker-dispatch-mode': 'user',
     });
   });
+
+  it('returns auth diagnostics when dispatch authorization fails', async () => {
+    stubDenoEnv({
+      AI_GENERATION_ASYNC_WORKER_ENABLED: 'true',
+      TF_ADMIN_API_KEY: 'expected-key',
+      VITE_SUPABASE_URL: 'https://supabase.example',
+      SUPABASE_SERVICE_ROLE_KEY: 'service-role-secret',
+    });
+
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+
+    const request = new Request('https://travelflowapp.netlify.app/api/internal/ai/generation-worker?limit=1', {
+      method: 'POST',
+      headers: {
+        'x-tf-admin-key': 'wrong-key',
+        'Content-Type': 'application/json',
+      },
+      body: '{}',
+    });
+
+    const response = await handleGenerationWorkerRequest(request);
+    const payload = await response.json();
+
+    expect(response.status).toBe(401);
+    expect(payload).toMatchObject({
+      ok: false,
+      code: 'WORKER_UNAUTHORIZED',
+      details: {
+        hasConfiguredAdminKey: true,
+        configuredAdminKeyLength: 'expected-key'.length,
+        providedAdminKeyLength: 'wrong-key'.length,
+        hasAuthorizationHeader: false,
+        bearerUserResolved: false,
+      },
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
 });
