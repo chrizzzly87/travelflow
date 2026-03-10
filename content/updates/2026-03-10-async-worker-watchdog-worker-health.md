@@ -1,10 +1,10 @@
 ---
 id: rel-2026-03-10-async-worker-watchdog-worker-health
-version: v0.0.0
+version: v0.88.0
 title: "Async trip generation now watches for stalled queues and self-recovers faster"
 date: 2026-03-10
-published_at: 2026-03-10T15:30:00Z
-status: draft
+published_at: 2026-03-10T15:32:50Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Async trip generation now records worker heartbeats, auto-rekicks stale queued jobs, and runs a safe end-to-end canary so queue regressions are easier to catch before trips sit in limbo."
