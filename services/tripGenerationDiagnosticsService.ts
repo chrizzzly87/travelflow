@@ -713,38 +713,66 @@ export const markTripGenerationFailed = (trip: ITrip, params: TripGenerationFail
         : trip.items;
 
     const existingAttempts = getGenerationAttemptHistory(trip);
-    const attempts = withBoundedAttempts(updateAttemptById(existingAttempts, params.attemptId, (attempt) => {
-        const startedMs = Date.parse(attempt.startedAt);
-        const finishedMs = Date.parse(finishedAt);
-        const durationMs = params.durationMs
-            ?? typedError.durationMs
-            ?? (Number.isFinite(startedMs) && Number.isFinite(finishedMs)
-                ? Math.max(0, finishedMs - startedMs)
-                : null);
-        return {
-            ...attempt,
-            state: 'failed',
-            requestId: params.requestId || typedError.requestId || attempt.requestId || null,
-            provider: params.provider || typedError.provider || attempt.provider || null,
-            model: params.model || typedError.model || attempt.model || null,
-            providerModel: params.providerModel || typedError.providerModel || attempt.providerModel || null,
-            finishedAt,
-            durationMs,
-            statusCode: params.statusCode ?? classification.statusCode ?? attempt.statusCode ?? null,
-            failureKind: classification.kind,
-            errorCode: classification.code,
-            errorMessage: classification.message,
-            metadata: mergeAttemptMetadata(
-                attempt.metadata,
-                params.metadata,
-                typedError.requestPayload ? { requestPayload: typedError.requestPayload } : null,
-            ),
-        };
-    }));
-
-    const latestAttempt = getLatestAttempt(attempts);
     const fallbackProvider = params.provider || typedError.provider || trip.aiMeta?.provider || FALLBACK_PROVIDER;
     const fallbackModel = params.model || typedError.model || trip.aiMeta?.model || FALLBACK_MODEL;
+    const shouldCreateFailedAttempt = params.attemptId
+        ? !existingAttempts.some((attempt) => attempt.id === params.attemptId)
+        : existingAttempts.length === 0;
+    const attempts = shouldCreateFailedAttempt
+        ? withBoundedAttempts([
+            ...existingAttempts,
+            {
+                id: params.attemptId || createTripGenerationAttemptId(),
+                flow: params.flow,
+                source: params.source,
+                state: 'failed',
+                startedAt: finishedAt,
+                finishedAt,
+                durationMs: params.durationMs ?? typedError.durationMs ?? null,
+                requestId: params.requestId || typedError.requestId || null,
+                provider: fallbackProvider,
+                model: fallbackModel,
+                providerModel: params.providerModel || typedError.providerModel || null,
+                statusCode: params.statusCode ?? classification.statusCode ?? null,
+                failureKind: classification.kind,
+                errorCode: classification.code,
+                errorMessage: classification.message,
+                metadata: mergeAttemptMetadata(
+                    null,
+                    params.metadata,
+                    typedError.requestPayload ? { requestPayload: typedError.requestPayload } : null,
+                ),
+            },
+        ])
+        : withBoundedAttempts(updateAttemptById(existingAttempts, params.attemptId, (attempt) => {
+            const startedMs = Date.parse(attempt.startedAt);
+            const finishedMs = Date.parse(finishedAt);
+            const durationMs = params.durationMs
+                ?? typedError.durationMs
+                ?? (Number.isFinite(startedMs) && Number.isFinite(finishedMs)
+                    ? Math.max(0, finishedMs - startedMs)
+                    : null);
+            return {
+                ...attempt,
+                state: 'failed',
+                requestId: params.requestId || typedError.requestId || attempt.requestId || null,
+                provider: params.provider || typedError.provider || attempt.provider || fallbackProvider,
+                model: params.model || typedError.model || attempt.model || fallbackModel,
+                providerModel: params.providerModel || typedError.providerModel || attempt.providerModel || null,
+                finishedAt,
+                durationMs,
+                statusCode: params.statusCode ?? classification.statusCode ?? attempt.statusCode ?? null,
+                failureKind: classification.kind,
+                errorCode: classification.code,
+                errorMessage: classification.message,
+                metadata: mergeAttemptMetadata(
+                    attempt.metadata,
+                    params.metadata,
+                    typedError.requestPayload ? { requestPayload: typedError.requestPayload } : null,
+                ),
+            };
+        }));
+    const latestAttempt = getLatestAttempt(attempts);
     const aiMeta = ensureAiMeta(trip, fallbackProvider, fallbackModel);
 
     return {

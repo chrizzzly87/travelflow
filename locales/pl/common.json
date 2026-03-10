@@ -357,6 +357,25 @@
         "failedTitle": "Retry failed",
         "unexpected": "Retry failed unexpectedly."
       }
+    },
+    "pendingAuth": {
+      "eyebrowLoading": "Przygotowywanie podróży",
+      "titleLoading": "Przygotowujemy Twoją podróż",
+      "descriptionLoading": "Zapisujemy Twoje wybory i przygotowujemy najlepszy sposób wygenerowania planu.",
+      "eyebrowLocked": "Wymagane konto",
+      "titleLocked": "Tworzenie podróży jest dostępne tylko dla zarejestrowanych użytkowników",
+      "descriptionLocked": "Zaloguj się lub utwórz konto, aby przejąć ten szkic i uruchomić pełne generowanie.",
+      "cta": "Zaloguj się lub utwórz konto",
+      "benefitsTitle": "Po co tworzyć konto",
+      "benefits": {
+        "keep": "Zachowaj tę podróż i wróć do niej później.",
+        "background": "Pozwól, aby generowanie dokończyło się w tle.",
+        "sync": "Edytuj, ponawiaj i synchronizuj na wszystkich urządzeniach."
+      }
+    },
+    "warningSummary": {
+      "title": "Uwagi dotyczące dopasowania podróżnego",
+      "description": "Niektóre przystanki zawierają praktyczne ostrzeżenia dopasowane do profilu podróżnego."
     }
   },
   "tripRouteShell": {

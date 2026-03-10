@@ -308,6 +308,12 @@ export const beginTripGenerationTabFeedback = (): TripGenerationTabFeedbackSessi
             stopAnimationTimers(session);
 
             if (document.visibilityState === 'hidden') {
+                if (outcome === 'success') {
+                    const tripTitle = options?.title?.trim();
+                    sendTripReadyNotification({
+                        title: tripTitle ? `Trip ready: ${tripTitle}` : 'Trip ready',
+                    });
+                }
                 applyCompletionState(session, outcome, options);
                 return;
             }

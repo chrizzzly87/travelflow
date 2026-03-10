@@ -35,6 +35,7 @@ interface TripViewStatusBannersProps {
     };
     onOpenLatestSnapshot: () => void;
     tripExpiresAtMs: number | null;
+    shouldShowExpirationBanner?: boolean;
     isExampleTrip: boolean;
     isPaywallLocked: boolean;
     expirationLabel: string | null;
@@ -93,6 +94,7 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
     shareSnapshotMeta,
     onOpenLatestSnapshot,
     tripExpiresAtMs,
+    shouldShowExpirationBanner = true,
     isExampleTrip,
     isPaywallLocked,
     expirationLabel,
@@ -182,6 +184,11 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
         && generationElapsedMs >= generationTimeoutMs
     );
     const isPendingAuthGeneration = generationState === 'failed' && Boolean(pendingAuthQueueRequestId);
+    const shouldShowGenerationStrip = (
+        generationState === 'running'
+        || generationState === 'queued'
+        || (generationState === 'failed' && !isPendingAuthGeneration)
+    );
 
     return (
         <>
@@ -248,7 +255,7 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
                 </div>
             )}
 
-            {(generationState === 'failed' || generationState === 'running' || generationState === 'queued') && (
+            {shouldShowGenerationStrip && (
                 <div className={`px-4 py-2 text-xs sm:px-6 border-b flex items-center justify-between gap-3 ${
                     generationState === 'failed'
                         ? 'border-rose-200 bg-rose-50 text-rose-900'
@@ -271,28 +278,6 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
                                 : t('tripView.generation.strip.running'))}
                     </span>
                     <div className="flex items-center gap-2">
-                        {isPendingAuthGeneration && onResolvePendingAuthGeneration && (
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    trackEvent('trip_generation__trip_strip--pending_auth_login', {
-                                        trip_id: tripId,
-                                        source: 'trip_strip',
-                                        has_claim: Boolean(pendingAuthQueueRequestId),
-                                    });
-                                    onResolvePendingAuthGeneration();
-                                }}
-                                disabled={isResolvingPendingAuthGeneration}
-                                className="px-3 py-1 rounded-md bg-white text-xs font-semibold border border-current/20 hover:bg-white/80 disabled:cursor-not-allowed disabled:opacity-50"
-                                {...getAnalyticsDebugAttributes('trip_generation__trip_strip--pending_auth_login', {
-                                    trip_id: tripId,
-                                    source: 'trip_strip',
-                                    has_claim: Boolean(pendingAuthQueueRequestId),
-                                })}
-                            >
-                                {t('tripPaywall.reactivate.actions.login')}
-                            </button>
-                        )}
                         {isSlowGeneration && canAbortAndRetryGeneration && onAbortAndRetryGeneration && (
                             <button
                                 type="button"
@@ -496,7 +481,7 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
                 </div>
             )}
 
-            {(tripExpiresAtMs || isTripLockedByExpiry) && !isExampleTrip && (
+            {shouldShowExpirationBanner && (tripExpiresAtMs || isTripLockedByExpiry) && !isExampleTrip && (
                 <div
                     className={`border-b ${
                         isTripLockedByExpiry

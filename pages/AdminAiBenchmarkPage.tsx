@@ -199,7 +199,7 @@ const BENCHMARK_TIMEOUT_MAX_SECONDS = 180;
 const BENCHMARK_TIMEOUT_DEFAULT_SECONDS = 60;
 const BENCHMARK_RUN_COMMENT_MAX_LENGTH = 2000;
 const COST_ESTIMATE_FOOTNOTE = 'Estimate for one classic itinerary generation; real cost varies by prompt/output size.';
-const BENCHMARK_EFFECTIVE_DEFAULTS = {
+const BENCHMARK_BASELINE_PREFERENCE_DEFAULTS = {
     travelerSetup: 'solo',
     tripStyle: 'everything_except_remote_work',
     transportPreference: 'automatic',
@@ -1363,7 +1363,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                 totalDays,
                 roundTrip,
                 routeLock,
-                previewControls: {
+                preferenceSignals: {
                     travelerSetup,
                     tripStyle: tripStyleMask,
                     transportPreference: transportMask,
@@ -1374,13 +1374,13 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                 },
             },
             metadata: {
-                ignored_inputs: {
+                preference_signals: {
                     travelerSetup,
                     tripStyle: tripStyleMask,
                     transportPreference: transportMask,
                     routeLock,
                 },
-                effective_defaults: BENCHMARK_EFFECTIVE_DEFAULTS,
+                baseline_defaults: BENCHMARK_BASELINE_PREFERENCE_DEFAULTS,
                 execution: {
                     timeoutSeconds: benchmarkTimeoutSeconds,
                     compactOutput: compactBenchmarkOutput,

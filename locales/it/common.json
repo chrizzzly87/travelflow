@@ -359,6 +359,25 @@
         "failedTitle": "Retry failed",
         "unexpected": "Retry failed unexpectedly."
       }
+    },
+    "pendingAuth": {
+      "eyebrowLoading": "Preparazione del viaggio",
+      "titleLoading": "Stiamo preparando il tuo viaggio",
+      "descriptionLoading": "Stiamo salvando le tue scelte e preparando il modo migliore per generare l'itinerario.",
+      "eyebrowLocked": "Account richiesto",
+      "titleLocked": "La creazione dei viaggi è riservata agli utenti registrati",
+      "descriptionLocked": "Accedi o crea un account per riscattare questa bozza e avviare la generazione completa.",
+      "cta": "Accedi o crea un account",
+      "benefitsTitle": "Perché creare un account",
+      "benefits": {
+        "keep": "Conserva questo viaggio e tornaci più tardi.",
+        "background": "Lascia che la generazione finisca in background.",
+        "sync": "Modifica, ritenta e sincronizzalo su tutti i tuoi dispositivi."
+      }
+    },
+    "warningSummary": {
+      "title": "Note di compatibilità del viaggiatore",
+      "description": "Alcune tappe includono avvisi pratici in base al tuo profilo di viaggio."
     }
   },
   "tripRouteShell": {

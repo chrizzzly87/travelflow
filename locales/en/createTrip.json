@@ -203,5 +203,124 @@
       "title": "Trip ready",
       "body": "Your itinerary is ready to review."
     }
+  },
+  "wizard": {
+    "flowLabel": "Adaptive wizard",
+    "stepBadge": "Step {current} of {total}",
+    "actions": {
+      "back": "Back",
+      "continue": "Continue",
+      "generate": "Generate trip",
+      "blank": "Create blank"
+    },
+    "intent": {
+      "eyebrow": "Start with what you know",
+      "title": "What do you already know about this trip?",
+      "description": "We will reorder the wizard around your answer so you only see the most relevant questions first.",
+      "options": {
+        "known_destinations_exact_dates": {
+          "title": "I know the destinations and exact dates",
+          "description": "Start with your destinations, then confirm the exact travel window."
+        },
+        "known_destinations_flexible_dates": {
+          "title": "I know the destinations, but the dates are flexible",
+          "description": "Start with the route, then define the season window and trip length."
+        },
+        "known_dates_need_destination": {
+          "title": "I know the travel window, but I need destination help",
+          "description": "Lock the timing first, then narrow down destinations that fit."
+        },
+        "need_inspiration": {
+          "title": "I need inspiration for both",
+          "description": "Start with the traveler profile and trip style, then shape destinations and timing from there."
+        }
+      }
+    },
+    "destination": {
+      "title": "Which destinations are on the table?",
+      "knownDescription": "Add the places you already have in mind. If order matters, lock the route and choose your starting point.",
+      "helpDescription": "Start with a few strong candidates and we will shape the rest around timing, traveler setup, and transport realism.",
+      "addAnother": "Add another destination...",
+      "typeToSearch": "Type to search destinations",
+      "quickPicks": "Popular picks",
+      "startLabel": "Starting point",
+      "selectionHint": "When fixed route is on, we keep the selected order and rotate it around your chosen starting point."
+    },
+    "dates": {
+      "title": "What does your timing look like?",
+      "exactDescription": "Confirm the exact dates you want the itinerary to cover.",
+      "flexDescription": "Set your target duration and preferred season so we can plan around flexible timing.",
+      "hybridDescription": "Choose exact dates if they are fixed, or switch to a flexible season window.",
+      "modeLabel": "Date certainty",
+      "seasonFit": {
+        "great": "Great season match",
+        "shoulder": "Shoulder season",
+        "off": "Off-season risk"
+      },
+      "exactLength": "{days} days",
+      "flexLength": "About {weeks} weeks ({days} days)"
+    },
+    "preferences": {
+      "title": "Who is traveling and what should shape the route?",
+      "description": "These inputs change route logic, activity mix, and transport recommendations.",
+      "travelerLabel": "Traveler setup",
+      "stylesLabel": "Trip style",
+      "vibesLabel": "Activity focus",
+      "transportLabel": "Transport preferences",
+      "transportHint": "Keep Automatic selected if you want the planner to choose the most practical option for each leg."
+    },
+    "details": {
+      "title": "Refine the brief",
+      "description": "Add practical guardrails so the planner adapts instead of guessing.",
+      "budgetLabel": "Budget",
+      "paceLabel": "Pace",
+      "specificCitiesLabel": "Specific cities or stops",
+      "specificCitiesPlaceholder": "e.g. Rome, Florence, Bologna",
+      "notesLabel": "Extra notes",
+      "notesPlaceholder": "Food preferences, celebration plans, mobility needs, child routines, remote-work constraints…",
+      "roundTripTitle": "Return to start",
+      "roundTripDescription": "End in the same place you begin when that fits the trip.",
+      "routeLockTitle": "Fixed route order",
+      "routeLockDescription": "Keep the destination order instead of letting the planner reshuffle it.",
+      "islandOnly": "Keep island planning only"
+    },
+    "review": {
+      "title": "Review your trip brief",
+      "description": "Check the main constraints before generation starts.",
+      "route": "Route",
+      "styles": "Trip style",
+      "vibes": "Activity focus",
+      "notesFallback": "No extra notes yet.",
+      "flexDates": "About {weeks} weeks in {window} ({days} days)"
+    },
+    "loading": {
+      "title": "Planning your trip",
+      "message": "We are turning your brief into a realistic itinerary.",
+      "stopTitle": "Planning stop {index}",
+      "stopDescription": "AI is building this part of your itinerary.",
+      "locationFallback": "Destination",
+      "titleFallback": "Trip draft"
+    },
+    "vibes": {
+      "options": {
+        "food": "Food & markets",
+        "culture": "Culture & history",
+        "nature": "Nature & scenery",
+        "adventure": "Adventure",
+        "relaxation": "Relaxation",
+        "nightlife": "Nightlife"
+      }
+    },
+    "budgetOptions": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "luxury": "Luxury"
+    },
+    "paceOptions": {
+      "relaxed": "Relaxed",
+      "balanced": "Balanced",
+      "fast": "Fast"
+    }
   }
 }
