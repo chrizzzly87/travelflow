@@ -88,6 +88,10 @@ exit 1
   function = "ai-benchmark"
 
 [[edge_functions]]
+  path = "/api/internal/ai/generation-enqueue"
+  function = "ai-generate-enqueue"
+
+[[edge_functions]]
   path = "/api/internal/ai/generation-worker"
   function = "ai-generate-worker"
 
