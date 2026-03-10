@@ -221,4 +221,28 @@ describe('pages/AdminBillingPage', () => {
 
     expect(screen.getByText(/Fetched sub_01kk6fcs5t4f75tddavgjx1rtz and replayed it through the billing sync/i)).toBeInTheDocument();
   });
+
+  it('renders processed webhook sync notes without error styling', async () => {
+    mocks.adminListBillingWebhookEvents.mockResolvedValue([
+      {
+        event_id: 'manual_reconcile_evt_123',
+        provider: 'paddle',
+        event_type: 'subscription.activated',
+        occurred_at: new Date().toISOString(),
+        user_id: '00000000-0000-0000-0000-000000000001',
+        user_email: 'explorer@example.com',
+        status: 'processed',
+        error_message: 'Applied subscription lifecycle update (active)',
+        payload: {},
+        processed_at: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+      },
+    ]);
+
+    renderPage();
+
+    const note = await screen.findByText('Applied subscription lifecycle update (active)');
+    expect(note.className).toContain('border-accent-200');
+    expect(note.className).not.toContain('border-rose-200');
+  });
 });

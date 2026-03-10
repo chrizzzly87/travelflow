@@ -417,7 +417,7 @@ describe('pages/CheckoutPage', () => {
     expect(Math.min(...mocks.auth.refreshAccess.mock.invocationCallOrder)).toBeLessThan(mocks.navigate.mock.invocationCallOrder[0]);
   });
 
-  it('keeps traveler details editable when an inline checkout transaction already exists', () => {
+  it('keeps traveler details editable when an inline checkout transaction already exists', async () => {
     mocks.location.search = '?tier=tier_mid&source=pricing_page&_ptxn=txn_123';
 
     render(React.createElement(CheckoutPage));
@@ -425,6 +425,13 @@ describe('pages/CheckoutPage', () => {
     expect(screen.getByDisplayValue('Ada')).toBeInTheDocument();
     expect(screen.getByDisplayValue('Lovelace')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'checkout.travelerDetailsEditCta' })).toBeInTheDocument();
+    await waitFor(() => {
+      expect(mocks.openPaddleInlineCheckout).toHaveBeenCalledWith({
+        transactionId: 'txn_123',
+        customerEmail: 'ada@example.com',
+      });
+    });
+    expect(screen.queryByText('checkout.errorConfig')).toBeNull();
   });
 
   it('opens Paddle inline checkout again when the transaction id changes after editing', async () => {

@@ -21,3 +21,4 @@ summary: "Existing paid users can now upgrade plans in place, manage Paddle bill
 - [x] [Improved] 🧾 Admin billing now shows richer subscription details, current monthly recurring revenue by currency, status mix, and at-risk revenue charts.
 - [x] [Improved] 🕵️ Admin user and audit views now surface billing lifecycle details so subscription mismatches and webhook-driven changes are easier to inspect.
 - [ ] [Internal] 🔄 Added Paddle subscription preview, in-place subscription change, and billing-management endpoints plus the supporting Supabase RPCs for upgrade orchestration.
+- [ ] [Internal] 🧭 Admin billing webhook cards now render processed sync notes with the correct non-error tone and handle long reconciliation event IDs more cleanly.

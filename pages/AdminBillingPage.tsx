@@ -80,6 +80,20 @@ const statusPill = (value: string | null | undefined) => {
     ].join(' ');
 };
 
+const webhookMessageClassName = (status: string | null | undefined) => {
+    const normalizedStatus = normalizeAdminBillingStatus(status);
+    if (normalizedStatus === 'failed') {
+        return 'mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-900';
+    }
+    if (normalizedStatus === 'past_due' || normalizedStatus === 'paused' || normalizedStatus === 'ignored') {
+        return 'mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900';
+    }
+    if (normalizedStatus === 'processed' || normalizedStatus === 'received') {
+        return 'mt-3 rounded-lg border border-accent-200 bg-accent-50/70 px-3 py-2 text-sm text-slate-800';
+    }
+    return 'mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700';
+};
+
 const SUBSCRIPTIONS_CACHE_LIMIT = 250;
 const EVENTS_CACHE_LIMIT = 250;
 
@@ -648,7 +662,7 @@ export const AdminBillingPage: React.FC = () => {
                         <div className="divide-y divide-slate-200">
                             {filteredEvents.map((record) => (
                                 <article key={record.event_id} className="py-4 first:pt-5 last:pb-0">
-                                    <div className="flex flex-wrap items-start justify-between gap-3">
+                                    <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(220px,auto)] md:items-start">
                                         <div className="min-w-0 flex-1">
                                             <div className="flex flex-wrap items-center gap-2">
                                                 <span className="font-semibold text-slate-900">{humanizeEventType(record.event_type)}</span>
@@ -669,13 +683,13 @@ export const AdminBillingPage: React.FC = () => {
                                                 )}
                                             </div>
                                         </div>
-                                        <span className="truncate rounded-md bg-slate-100 px-2 py-1 font-mono text-[11px] text-slate-600">
+                                        <span className="max-w-full break-all rounded-md bg-slate-100 px-2 py-1 font-mono text-[11px] leading-5 text-slate-600 md:justify-self-end">
                                             {record.event_id}
                                         </span>
                                     </div>
 
                                     {record.error_message ? (
-                                        <p className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-900">
+                                        <p className={webhookMessageClassName(record.status)}>
                                             {record.error_message}
                                         </p>
                                     ) : null}

@@ -565,48 +565,51 @@ export const CheckoutPage: React.FC = () => {
     }, [checkoutCompleted, checkoutLocationContext.claimId, completedFlowMode, isEligibleAccount, postPaymentSyncState, selectedTierKey, source, t]);
 
     useEffect(() => {
-        if (!hasInlineCheckout || !paddlePublicConfig || paddlePublicConfig.issues.length > 0) return;
+        const transactionId = checkoutLocationContext.transactionId;
+        if (!transactionId || !hasInlineCheckout || !paddlePublicConfig || paddlePublicConfig.issues.length > 0) return;
+        if (openedInlineTransactionRef.current === transactionId) return;
+
         let cancelled = false;
         setIsInlineCheckoutLoading(true);
+
         void initializePaddleJs({
             environment: paddlePublicConfig.environment,
             eventCallback: handlePaddleCheckoutEvent,
             locale: activeLocale,
         }).then((ready) => {
-            if (!ready && !cancelled) {
+            if (cancelled) return;
+            if (!ready) {
                 setIsInlineCheckoutLoading(false);
                 setCheckoutErrorMessage(t('checkout.errorConfig', { ns: 'pricing' }));
+                return;
             }
+
+            const opened = openPaddleInlineCheckout({
+                transactionId,
+                customerEmail: accountEmail || authEmail,
+            });
+
+            if (!opened) {
+                setIsInlineCheckoutLoading(false);
+                setCheckoutErrorMessage(t('checkout.errorConfig', { ns: 'pricing' }));
+                return;
+            }
+
+            openedInlineTransactionRef.current = transactionId;
+            setCheckoutErrorMessage((current) => (
+                current === t('checkout.errorConfig', { ns: 'pricing' }) ? null : current
+            ));
         });
+
         return () => {
             cancelled = true;
         };
-    }, [activeLocale, handlePaddleCheckoutEvent, hasInlineCheckout, paddlePublicConfig, t]);
-
-    useEffect(() => {
-        const transactionId = checkoutLocationContext.transactionId;
-        if (!transactionId || !hasInlineCheckout || !paddlePublicConfig || paddlePublicConfig.issues.length > 0) {
-            return;
-        }
-        if (openedInlineTransactionRef.current === transactionId) {
-            return;
-        }
-
-        const opened = openPaddleInlineCheckout({
-            transactionId,
-            customerEmail: accountEmail || authEmail,
-        });
-        if (!opened) {
-            setIsInlineCheckoutLoading(false);
-            setCheckoutErrorMessage(t('checkout.errorConfig', { ns: 'pricing' }));
-            return;
-        }
-
-        openedInlineTransactionRef.current = transactionId;
     }, [
         accountEmail,
+        activeLocale,
         authEmail,
         checkoutLocationContext.transactionId,
+        handlePaddleCheckoutEvent,
         hasInlineCheckout,
         paddlePublicConfig,
         t,
