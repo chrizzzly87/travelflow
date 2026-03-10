@@ -15,4 +15,11 @@ describe('admin navigation config', () => {
     expect(designPlayground?.path).toBe('/admin/design-system-playground');
     expect(designPlayground?.section).toBe('tools');
   });
+
+  it('includes worker health entry in tools section', () => {
+    const workerHealth = ADMIN_NAV_ITEMS.find((item) => item.id === 'ai_worker_health');
+    expect(workerHealth).toBeTruthy();
+    expect(workerHealth?.path).toBe('/admin/ai-benchmark/worker-health');
+    expect(workerHealth?.section).toBe('tools');
+  });
 });
