@@ -103,6 +103,7 @@ const buildLoginRedirectUrl = (claimRequestId: string | null, nextPath: string):
 const LOGIN_PAGE_EMAIL_INPUT_ID = 'login-page-email';
 const LOGIN_PAGE_SECONDARY_INPUT_ID = 'login-page-secondary';
 const LOGIN_PAGE_REMEMBER_CHECKBOX_ID = 'login-page-remember-login';
+const AUTH_INPUT_CLASS_NAME = 'mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-accent-500 [&:user-invalid]:border-rose-400 [&:user-invalid]:bg-rose-50 [&:user-invalid]:text-rose-900 [&:user-invalid]:focus:ring-rose-200';
 
 export const LoginPage: React.FC = () => {
     const { t, i18n } = useTranslation('auth');
@@ -486,7 +487,7 @@ export const LoginPage: React.FC = () => {
                                 value={email}
                                 onChange={(event) => setEmail(event.target.value)}
                                 required
-                                className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-accent-500"
+                                className={AUTH_INPUT_CLASS_NAME}
                             />
                         </div>
                         <div className="block">
@@ -505,7 +506,7 @@ export const LoginPage: React.FC = () => {
                                 onChange={(event) => setPassword(event.target.value)}
                                 required
                                 minLength={8}
-                                className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-accent-500"
+                                className={AUTH_INPUT_CLASS_NAME}
                             />
                         </div>
                         {mode === 'login' && (
