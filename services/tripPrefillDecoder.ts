@@ -5,6 +5,31 @@ const VALID_BUDGETS = ['Low', 'Medium', 'High', 'Luxury'];
 const VALID_PACES = ['Relaxed', 'Balanced', 'Fast'];
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
+const LEGACY_BUDGET_MAP: Record<string, string> = {
+    Budget: 'Low',
+    Medium: 'Medium',
+    Premium: 'High',
+    Luxury: 'Luxury',
+};
+
+const LEGACY_PACE_MAP: Record<string, string> = {
+    Relaxed: 'Relaxed',
+    Balanced: 'Balanced',
+    Intensive: 'Fast',
+};
+
+const normalizeBudget = (value: unknown): string | null => {
+    if (typeof value !== 'string') return null;
+    if (VALID_BUDGETS.includes(value)) return value;
+    return LEGACY_BUDGET_MAP[value] || null;
+};
+
+const normalizePace = (value: unknown): string | null => {
+    if (typeof value !== 'string') return null;
+    if (VALID_PACES.includes(value)) return value;
+    return LEGACY_PACE_MAP[value] || null;
+};
+
 export const decodeTripPrefill = (encoded: string): TripPrefillData | null => {
     try {
         const base64 = encoded.replace(/-/g, '+').replace(/_/g, '/');
@@ -40,12 +65,10 @@ export const decodeTripPrefill = (encoded: string): TripPrefillData | null => {
         if (typeof parsed.endDate === 'string' && ISO_DATE_RE.test(parsed.endDate) && !isNaN(Date.parse(parsed.endDate))) {
             result.endDate = parsed.endDate;
         }
-        if (typeof parsed.budget === 'string' && VALID_BUDGETS.includes(parsed.budget)) {
-            result.budget = parsed.budget;
-        }
-        if (typeof parsed.pace === 'string' && VALID_PACES.includes(parsed.pace)) {
-            result.pace = parsed.pace;
-        }
+        const normalizedBudget = normalizeBudget(parsed.budget);
+        if (normalizedBudget) result.budget = normalizedBudget;
+        const normalizedPace = normalizePace(parsed.pace);
+        if (normalizedPace) result.pace = normalizedPace;
         if (typeof parsed.cities === 'string') result.cities = parsed.cities;
         if (typeof parsed.notes === 'string') result.notes = parsed.notes;
         if (typeof parsed.roundTrip === 'boolean') result.roundTrip = parsed.roundTrip;

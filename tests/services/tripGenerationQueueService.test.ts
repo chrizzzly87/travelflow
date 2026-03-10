@@ -155,6 +155,16 @@ describe('processQueuedTripGenerationAfterAuth', () => {
               endDate: '2026-04-14',
               options: {
                 countries: ['Portugal'],
+                budget: 'High',
+                pace: 'Balanced',
+                travelerType: 'family',
+                travelerDetails: {
+                  familyAdults: 2,
+                  familyChildren: 2,
+                  familyBabies: 0,
+                },
+                transportPreferences: ['train'],
+                hasTransportOverride: true,
               },
             },
             status: 'queued',
@@ -172,6 +182,14 @@ describe('processQueuedTripGenerationAfterAuth', () => {
     expect(result.tripId).toBe('trip-queued-1');
     expect(result.trip.aiMeta?.generation?.state).toBe('queued');
     expect(buildWizardItineraryPromptMock).toHaveBeenCalledTimes(1);
+    expect(buildWizardItineraryPromptMock).toHaveBeenCalledWith(expect.objectContaining({
+      countries: ['Portugal'],
+      budget: 'High',
+      pace: 'Balanced',
+      travelerType: 'family',
+      transportPreferences: ['train'],
+      hasTransportOverride: true,
+    }));
     expect(enqueueAsyncTripGenerationJobMock).toHaveBeenCalledWith(expect.objectContaining({
       flow: 'wizard',
       prompt: 'wizard prompt',

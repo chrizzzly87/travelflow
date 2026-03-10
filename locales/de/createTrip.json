@@ -203,5 +203,124 @@
       "title": "Reise bereit",
       "body": "Deine Reiseroute ist fertig und kann geprüft werden."
     }
+  },
+  "wizard": {
+    "flowLabel": "Adaptiver Assistent",
+    "stepBadge": "Schritt {current} von {total}",
+    "actions": {
+      "back": "Zurück",
+      "continue": "Weiter",
+      "generate": "Reise generieren",
+      "blank": "Leer starten"
+    },
+    "intent": {
+      "eyebrow": "Starte mit dem, was du schon weißt",
+      "title": "Was weißt du bereits über diese Reise?",
+      "description": "Wir ordnen den Assistenten nach deiner Antwort neu, damit du zuerst nur die relevantesten Fragen siehst.",
+      "options": {
+        "known_destinations_exact_dates": {
+          "title": "Ich kenne Ziele und genaue Daten",
+          "description": "Starte mit deinen Zielen und bestätige danach das exakte Zeitfenster."
+        },
+        "known_destinations_flexible_dates": {
+          "title": "Ich kenne die Ziele, bin bei den Daten aber flexibel",
+          "description": "Starte mit der Route und lege danach Saisonfenster und Reisedauer fest."
+        },
+        "known_dates_need_destination": {
+          "title": "Ich kenne den Zeitraum, brauche aber Hilfe bei den Zielen",
+          "description": "Lege zuerst das Timing fest und grenze danach passende Ziele ein."
+        },
+        "need_inspiration": {
+          "title": "Ich brauche Inspiration für beides",
+          "description": "Starte mit Reisegruppe und Stil und entwickle daraus Ziele und Timing."
+        }
+      }
+    },
+    "destination": {
+      "title": "Welche Ziele kommen infrage?",
+      "knownDescription": "Füge Orte hinzu, die du schon im Kopf hast. Wenn die Reihenfolge wichtig ist, fixiere die Route und wähle den Startpunkt.",
+      "helpDescription": "Starte mit ein paar starken Kandidaten, dann formen wir den Rest anhand von Zeitraum, Reisegruppe und Transportlogik.",
+      "addAnother": "Weiteres Ziel hinzufügen...",
+      "typeToSearch": "Tippe, um Ziele zu suchen",
+      "quickPicks": "Beliebte Ziele",
+      "startLabel": "Startpunkt",
+      "selectionHint": "Wenn die Route fixiert ist, behalten wir die gewählte Reihenfolge bei und drehen sie um deinen Startpunkt."
+    },
+    "dates": {
+      "title": "Wie sieht dein Zeitfenster aus?",
+      "exactDescription": "Bestätige die genauen Daten, die die Route abdecken soll.",
+      "flexDescription": "Lege Zieldauer und bevorzugte Saison fest, damit wir mit flexiblem Timing planen können.",
+      "hybridDescription": "Wähle feste Daten, wenn sie gesetzt sind, oder wechsle zu einem flexiblen Saisonfenster.",
+      "modeLabel": "Datensicherheit",
+      "seasonFit": {
+        "great": "Sehr gute Saison",
+        "shoulder": "Nebensaison",
+        "off": "Eher unpassende Saison"
+      },
+      "exactLength": "{days} Tage",
+      "flexLength": "Etwa {weeks} Wochen ({days} Tage)"
+    },
+    "preferences": {
+      "title": "Wer reist mit und was soll die Route prägen?",
+      "description": "Diese Angaben verändern Routenlogik, Aktivitätsmix und Transportempfehlungen.",
+      "travelerLabel": "Reisegruppe",
+      "stylesLabel": "Reisestil",
+      "vibesLabel": "Aktivitätsschwerpunkt",
+      "transportLabel": "Transportpräferenzen",
+      "transportHint": "Lass Automatisch aktiv, wenn der Planer pro Strecke selbst die praktischste Option wählen soll."
+    },
+    "details": {
+      "title": "Briefing verfeinern",
+      "description": "Setze praktische Leitplanken, damit der Planer sich anpasst statt zu raten.",
+      "budgetLabel": "Budget",
+      "paceLabel": "Tempo",
+      "specificCitiesLabel": "Bestimmte Städte oder Stopps",
+      "specificCitiesPlaceholder": "z. B. Rom, Florenz, Bologna",
+      "notesLabel": "Zusätzliche Hinweise",
+      "notesPlaceholder": "Essenswünsche, Anlass, Mobilitätsbedarf, Routinen mit Kindern, Remote-Work-Vorgaben…",
+      "roundTripTitle": "Zum Start zurückkehren",
+      "roundTripDescription": "Die Reise endet am Startort, wenn das sinnvoll zur Route passt.",
+      "routeLockTitle": "Feste Reihenfolge",
+      "routeLockDescription": "Die Zielreihenfolge bleibt bestehen und wird nicht neu optimiert.",
+      "islandOnly": "Nur Inselplanung beibehalten"
+    },
+    "review": {
+      "title": "Reisebriefing prüfen",
+      "description": "Kontrolliere die wichtigsten Vorgaben, bevor die Generierung startet.",
+      "route": "Route",
+      "styles": "Reisestil",
+      "vibes": "Aktivitätsschwerpunkt",
+      "notesFallback": "Noch keine zusätzlichen Hinweise.",
+      "flexDates": "Etwa {weeks} Wochen in {window} ({days} Tage)"
+    },
+    "loading": {
+      "title": "Deine Reise wird geplant",
+      "message": "Wir verwandeln dein Briefing in eine realistische Route.",
+      "stopTitle": "Stopp {index} wird geplant",
+      "stopDescription": "Die KI erstellt gerade diesen Teil deiner Route.",
+      "locationFallback": "Reiseziel",
+      "titleFallback": "Reiseentwurf"
+    },
+    "vibes": {
+      "options": {
+        "food": "Food & Märkte",
+        "culture": "Kultur & Geschichte",
+        "nature": "Natur & Landschaft",
+        "adventure": "Abenteuer",
+        "relaxation": "Erholung",
+        "nightlife": "Nachtleben"
+      }
+    },
+    "budgetOptions": {
+      "low": "Niedrig",
+      "medium": "Mittel",
+      "high": "Hoch",
+      "luxury": "Luxus"
+    },
+    "paceOptions": {
+      "relaxed": "Entspannt",
+      "balanced": "Ausgewogen",
+      "fast": "Schnell"
+    }
   }
 }

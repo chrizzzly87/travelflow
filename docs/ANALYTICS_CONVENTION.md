@@ -275,6 +275,11 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 | `create_trip__notifications--not_now` | — | — | `CreateTripClassicLabPage.tsx` |
 | `create_trip__notifications--permission` | — | `{ permission }` | `CreateTripClassicLabPage.tsx` |
 | `create_trip__notifications--sent` | — | — | `CreateTripClassicLabPage.tsx` |
+| `create_trip_wizard__branch--select` | — | `{ branch }` | `CreateTripV3Page.tsx` |
+| `create_trip_wizard__date_mode--select` | — | `{ mode }` | `CreateTripV3Page.tsx` |
+| `create_trip_wizard__traveler--select` | — | `{ traveler_type }` | `CreateTripV3Page.tsx` |
+| `create_trip_wizard__transport--toggle` | — | `{ mode, enabled }` | `CreateTripV3Page.tsx` |
+| `create_trip_wizard__cta--generate` | — | `{ branch, destination_count, date_mode, traveler_type, transport_override }` | `CreateTripV3Page.tsx` |
 
 ### Create Trip
 | Event | Detail | Payload | File |

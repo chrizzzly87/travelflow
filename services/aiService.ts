@@ -4,6 +4,12 @@ import type { AiProviderId } from "../config/aiProviderCatalog";
 import { getDefaultCreateTripModel } from "../config/aiModelCatalog";
 import { buildDurationPromptGuidance, parseFlexibleDurationDays, parseFlexibleDurationHours } from "../shared/durationParsing";
 import { buildTransportModePromptGuidance, MODEL_TRANSPORT_MODE_VALUES, normalizeTransportMode } from "../shared/transportModes";
+import type {
+    CreateTripPreferenceSignals,
+    CreateTripTransportPreference,
+    CreateTripTravelerDetails,
+    CreateTripTravelerType,
+} from "../shared/createTripPreferences";
 import {
     ALL_ACTIVITY_TYPES,
     applyCityPaletteToItems,
@@ -161,16 +167,13 @@ const cityNotesSchema = {
     required: ["notes"]
 };
 
-export interface GenerateOptions {
+export interface GenerateOptions extends CreateTripPreferenceSignals {
     roundTrip?: boolean;
     totalDays?: number;
     numCities?: number;
-    specificCities?: string;
     budget?: string;
     pace?: string;
     interests?: string[];
-    selectedIslandNames?: string[];
-    enforceIslandOnly?: boolean;
     aiTarget?: {
         provider: AiProviderId;
         model: string;
@@ -179,25 +182,23 @@ export interface GenerateOptions {
     generationContext?: TripGenerationRequestContext;
 }
 
-export interface WizardGenerateOptions {
+export interface WizardGenerateOptions extends CreateTripPreferenceSignals {
     countries: string[];
     startDate?: string;
     endDate?: string;
     roundTrip?: boolean;
     totalDays?: number;
-    notes?: string;
+    budget?: string;
+    pace?: string;
+    interests?: string[];
     travelStyles?: string[];
     travelVibes?: string[];
     travelLogistics?: string[];
-    idealMonths?: string[];
-    shoulderMonths?: string[];
-    recommendedDurationDays?: number;
-    selectedIslandNames?: string[];
-    enforceIslandOnly?: boolean;
     aiTarget?: {
         provider: AiProviderId;
         model: string;
     };
+    promptMode?: GenerateOptions['promptMode'];
     generationContext?: TripGenerationRequestContext;
 }
 
@@ -346,6 +347,7 @@ const BASE_ITINERARY_RULES_PROMPT = `
          ### Must See (3-4 items)
          ### Must Try (3-4 local foods)
          ### Must Do (3-4 activities)
+         If needed, you MAY add an additional final section named "### Heads Up" with 1-2 concise practical cautions.
          Use - [ ] for all items to make them checkboxes.
       4. Provide Country Info (Currency, Exchange Rate to EUR, Languages, Sockets, Visa Link, Auswärtiges Amt Link).
          - countryInfo MUST be a single OBJECT (not an array, not a map keyed by country code).
@@ -374,6 +376,7 @@ const BASE_ITINERARY_RULES_PROMPT_COMPACT = `
          ### Must See
          ### Must Try
          ### Must Do
+         If needed, you MAY add an additional final section named "### Heads Up" with 1 concise practical caution.
          Use - [ ] checkboxes with exactly 1 bullet per heading. Keep each bullet 3-6 words.
       4. Provide Country Info (Currency, Exchange Rate to EUR, Languages, Sockets, Visa Link, Auswärtiges Amt Link).
          - countryInfo MUST be a single OBJECT (not an array, not a map keyed by country code).
@@ -426,6 +429,7 @@ const STRICT_JSON_OBJECT_CONTRACT_PROMPT = `
       10. countryInfo.exchangeRate must be NUMBER only (example valid: 163; invalid: "1 EUR ≈ 160 JPY").
       11. Before finalizing your answer, run a self-check:
          - Every city.description contains all three headings: "### Must See", "### Must Try", "### Must Do".
+         - Only add "### Heads Up" when a practical warning is genuinely needed.
          - countryInfo is a single object and languages is an array.
          - Return exactly one JSON object and nothing else.
     `;
@@ -476,6 +480,339 @@ const buildIslandConstraintPrompt = (
     - Nearby mainland or non-selected islands are allowed only if they clearly improve route quality.
     `;
     return prompt;
+};
+
+const CREATE_TRIP_SPECIALIST_POLICY_PROMPT = `
+      TravelFlow planning policy:
+      - You are a specialized travel agent and trip generator for TravelFlow.
+      - Treat traveler setup, style, transport, timing, and notes as real planning constraints, not decoration.
+      - Favor realistic sequencing, practical transfer days, and activities that fit the traveler profile.
+      - If a user-selected destination creates suitability, safety, or logistics concerns, do NOT silently drop it.
+      - Keep requested destinations when possible, adapt the route and recommendations, and add a short practical warning under an optional "### Heads Up" section inside the relevant city.description.
+    `;
+
+const TRANSPORT_PREFERENCE_LABELS: Record<CreateTripTransportPreference, string> = {
+    auto: 'automatic transport choice',
+    plane: 'plane',
+    car: 'car',
+    train: 'train',
+    bus: 'bus',
+    cycle: 'cycling',
+    walk: 'walking',
+    camper: 'campervan road trip',
+};
+
+const normalizePromptList = (values: Array<string | null | undefined>): string[] => (
+    values.map((value) => (typeof value === 'string' ? value.trim() : ''))
+        .filter(Boolean)
+);
+
+const appendPromptSentence = (buffer: string[], sentence: string | null | undefined): void => {
+    const trimmed = typeof sentence === 'string' ? sentence.trim() : '';
+    if (!trimmed) return;
+    buffer.push(trimmed.endsWith('.') ? trimmed : `${trimmed}.`);
+};
+
+const getTripStyleSignals = (options: Pick<WizardGenerateOptions, 'tripStyleTags' | 'travelStyles'>): string[] => (
+    normalizePromptList([
+        ...(options.tripStyleTags || []),
+        ...(options.travelStyles || []),
+    ]).filter((value, index, source) => source.indexOf(value) === index)
+);
+
+const getTripVibeSignals = (options: Pick<WizardGenerateOptions, 'tripVibeTags' | 'travelVibes'>): string[] => (
+    normalizePromptList([
+        ...(options.tripVibeTags || []),
+        ...(options.travelVibes || []),
+    ]).filter((value, index, source) => source.indexOf(value) === index)
+);
+
+const getTripLogisticsSignals = (options: Pick<WizardGenerateOptions, 'travelLogistics'>): string[] => (
+    normalizePromptList(options.travelLogistics || [])
+        .filter((value, index, source) => source.indexOf(value) === index)
+);
+
+const describeTravelerProfile = (
+    travelerType: CreateTripTravelerType | undefined,
+    travelerDetails: CreateTripTravelerDetails | undefined,
+): string | null => {
+    if (!travelerType) return null;
+    const details = travelerDetails || {};
+
+    if (travelerType === 'solo') {
+        const descriptors = normalizePromptList([
+            details.soloGender,
+            details.soloAge ? `${details.soloAge} years old` : null,
+            details.soloComfort ? `${details.soloComfort} comfort preference` : null,
+        ]);
+        return descriptors.length > 0
+            ? `Traveler setup: solo traveler (${descriptors.join(', ')})`
+            : 'Traveler setup: solo traveler';
+    }
+
+    if (travelerType === 'couple') {
+        const descriptors = normalizePromptList([
+            details.coupleTravelerA ? `traveler A ${details.coupleTravelerA}` : null,
+            details.coupleTravelerB ? `traveler B ${details.coupleTravelerB}` : null,
+            details.coupleOccasion && details.coupleOccasion !== 'none'
+                ? `${details.coupleOccasion} trip`
+                : null,
+        ]);
+        return descriptors.length > 0
+            ? `Traveler setup: couple (${descriptors.join(', ')})`
+            : 'Traveler setup: couple';
+    }
+
+    if (travelerType === 'friends') {
+        const descriptors = normalizePromptList([
+            typeof details.friendsCount === 'number' ? `${details.friendsCount} travelers` : null,
+            details.friendsEnergy ? `${details.friendsEnergy} group energy` : null,
+        ]);
+        return descriptors.length > 0
+            ? `Traveler setup: friends group (${descriptors.join(', ')})`
+            : 'Traveler setup: friends group';
+    }
+
+    const familyDescriptors = normalizePromptList([
+        typeof details.familyAdults === 'number' ? `${details.familyAdults} adults` : null,
+        typeof details.familyChildren === 'number' ? `${details.familyChildren} children` : null,
+        typeof details.familyBabies === 'number' ? `${details.familyBabies} babies` : null,
+    ]);
+    return familyDescriptors.length > 0
+        ? `Traveler setup: family (${familyDescriptors.join(', ')})`
+        : 'Traveler setup: family';
+};
+
+const isLgbtqCouple = (
+    travelerType: CreateTripTravelerType | undefined,
+    travelerDetails: CreateTripTravelerDetails | undefined,
+): boolean => {
+    if (travelerType !== 'couple') return false;
+    const travelerA = travelerDetails?.coupleTravelerA;
+    const travelerB = travelerDetails?.coupleTravelerB;
+
+    if (travelerA === 'non-binary' || travelerB === 'non-binary') return true;
+    if ((travelerA === 'female' || travelerA === 'male') && travelerA === travelerB) return true;
+    return false;
+};
+
+const buildTravelerConstraintPrompt = (
+    travelerType: CreateTripTravelerType | undefined,
+    travelerDetails: CreateTripTravelerDetails | undefined,
+): string => {
+    if (!travelerType) return '';
+
+    const lines: string[] = [];
+    appendPromptSentence(lines, describeTravelerProfile(travelerType, travelerDetails));
+
+    if (travelerType === 'family') {
+        const familyChildren = travelerDetails?.familyChildren ?? 0;
+        const familyBabies = travelerDetails?.familyBabies ?? 0;
+        if (familyChildren > 0 || familyBabies > 0) {
+            appendPromptSentence(
+                lines,
+                'Because children or babies are traveling, avoid long overnight buses, repeated hotel changes, and exhausting multi-hour walking transfers'
+            );
+            appendPromptSentence(
+                lines,
+                'Prefer family-friendly cities, gentler pacing, practical meal breaks, and child-suitable activities'
+            );
+        }
+    }
+
+    if (travelerType === 'friends' && travelerDetails?.friendsEnergy === 'chill') {
+        appendPromptSentence(lines, 'Favor shared experiences with relaxed pacing over constant transit or back-to-back late nights');
+    }
+
+    if (travelerType === 'solo' && travelerDetails?.soloComfort === 'private') {
+        appendPromptSentence(lines, 'Prefer calmer neighborhoods, smoother arrivals, and lower-friction logistics over party-heavy routing');
+    }
+
+    if (isLgbtqCouple(travelerType, travelerDetails)) {
+        appendPromptSentence(
+            lines,
+            'This appears to be an LGBTQ+ couple, so prefer destinations, neighborhoods, and activities with stronger inclusivity reputations'
+        );
+        appendPromptSentence(
+            lines,
+            'If a selected stop may create legal, social, or safety constraints for this traveler profile, keep it when user-requested but add a short practical note in an optional "### Heads Up" section'
+        );
+    }
+
+    return lines.length > 0 ? `${lines.join(' ')} ` : '';
+};
+
+const buildRouteConstraintPrompt = (
+    options: Pick<GenerateOptions, 'destinationOrder' | 'startDestination' | 'routeLock' | 'specificCities'>,
+): string => {
+    const lines: string[] = [];
+    const destinationOrder = normalizePromptList(options.destinationOrder || []);
+
+    if (destinationOrder.length > 0 && options.routeLock) {
+        appendPromptSentence(lines, `Destination order is fixed. Follow this order exactly: ${destinationOrder.join(' -> ')}`);
+    } else if (destinationOrder.length > 1) {
+        appendPromptSentence(lines, `Selected destination order preference: ${destinationOrder.join(' -> ')}`);
+    }
+
+    if (typeof options.startDestination === 'string' && options.startDestination.trim()) {
+        appendPromptSentence(lines, `Prefer starting the trip from ${options.startDestination.trim()} when feasible`);
+    }
+
+    if (typeof options.specificCities === 'string' && options.specificCities.trim()) {
+        appendPromptSentence(lines, `Specific requested cities or stops: ${options.specificCities.trim()}`);
+    }
+
+    return lines.length > 0 ? `${lines.join(' ')} ` : '';
+};
+
+const buildTimingConstraintPrompt = (
+    options: Pick<GenerateOptions, 'dateInputMode' | 'flexWindow' | 'flexWeeks' | 'idealMonths' | 'shoulderMonths' | 'recommendedDurationDays'>,
+): string => {
+    const lines: string[] = [];
+
+    if (options.dateInputMode === 'flex') {
+        if (typeof options.flexWeeks === 'number' && Number.isFinite(options.flexWeeks) && options.flexWeeks > 0) {
+            appendPromptSentence(lines, `Dates are flexible and the target trip length is about ${options.flexWeeks} week(s)`);
+        } else {
+            appendPromptSentence(lines, 'Dates are flexible');
+        }
+
+        if (typeof options.flexWindow === 'string' && options.flexWindow.trim()) {
+            appendPromptSentence(lines, `Preferred seasonal window: ${options.flexWindow.trim()}`);
+        }
+    }
+
+    const idealMonths = normalizePromptList(options.idealMonths || []);
+    if (idealMonths.length > 0) {
+        appendPromptSentence(lines, `Preferred months from season data: ${idealMonths.join(', ')}`);
+    }
+
+    const shoulderMonths = normalizePromptList(options.shoulderMonths || []);
+    if (shoulderMonths.length > 0) {
+        appendPromptSentence(lines, `Backup shoulder months: ${shoulderMonths.join(', ')}`);
+    }
+
+    if (typeof options.recommendedDurationDays === 'number' && Number.isFinite(options.recommendedDurationDays) && options.recommendedDurationDays > 0) {
+        appendPromptSentence(lines, `Keep pacing aligned to a recommended duration of about ${options.recommendedDurationDays} days`);
+    }
+
+    return lines.length > 0 ? `${lines.join(' ')} ` : '';
+};
+
+const buildStyleConstraintPrompt = (
+    options: Pick<WizardGenerateOptions, 'tripStyleTags' | 'tripVibeTags' | 'travelStyles' | 'travelVibes' | 'travelLogistics'>,
+): string => {
+    const lines: string[] = [];
+    const tripStyles = getTripStyleSignals(options);
+    const tripVibes = getTripVibeSignals(options);
+    const logisticsSignals = getTripLogisticsSignals(options);
+
+    if (tripStyles.length > 0) {
+        appendPromptSentence(lines, `Trip style signals: ${tripStyles.join(', ')}`);
+    }
+    if (tripVibes.length > 0) {
+        appendPromptSentence(lines, `Trip vibe and activity signals: ${tripVibes.join(', ')}`);
+    }
+    if (logisticsSignals.length > 0) {
+        appendPromptSentence(lines, `Logistics preference signals: ${logisticsSignals.join(', ')}`);
+    }
+
+    if (tripStyles.length > 0 || tripVibes.length > 0) {
+        appendPromptSentence(lines, 'Choose city sequence, pacing, and activities so they clearly reflect these signals');
+    }
+
+    return lines.length > 0 ? `${lines.join(' ')} ` : '';
+};
+
+const buildTransportConstraintPrompt = (
+    transportPreferences: CreateTripTransportPreference[] | undefined,
+    hasTransportOverride: boolean | undefined,
+    travelerType: CreateTripTravelerType | undefined,
+    travelerDetails: CreateTripTravelerDetails | undefined,
+): string => {
+    const explicitPreferences = (transportPreferences || []).filter((mode) => mode !== 'auto');
+    if (!hasTransportOverride && explicitPreferences.length === 0) return '';
+
+    const lines: string[] = [];
+    if (explicitPreferences.length > 0) {
+        appendPromptSentence(
+            lines,
+            `Preferred transport modes: ${explicitPreferences.map((mode) => TRANSPORT_PREFERENCE_LABELS[mode]).join(', ')}`
+        );
+        appendPromptSentence(
+            lines,
+            'Favor these modes when choosing travelSegments, and only switch away when required for realism, distance, or geography'
+        );
+    } else {
+        appendPromptSentence(lines, 'No fixed transport override is selected, so choose the most practical transport per leg');
+    }
+
+    if (explicitPreferences.includes('camper')) {
+        appendPromptSentence(
+            lines,
+            'Camper preference means favor scenic road-trip routing, fewer base changes, and use "car" as the travelSegments.transportMode for campervan legs'
+        );
+    }
+
+    if (explicitPreferences.includes('cycle')) {
+        appendPromptSentence(lines, 'Cycling preference means favor shorter regional hops and avoid unrealistic long-distance bicycle legs');
+    }
+
+    if (explicitPreferences.includes('walk')) {
+        appendPromptSentence(lines, 'Walking preference means keep the route compact and urban instead of spreading stops far apart');
+    }
+
+    if (travelerType === 'family' && (travelerDetails?.familyChildren ?? 0) + (travelerDetails?.familyBabies ?? 0) > 0 && explicitPreferences.includes('bus')) {
+        appendPromptSentence(lines, 'Because young travelers are included, avoid extremely long bus days even if bus is preferred');
+    }
+
+    return lines.length > 0 ? `${lines.join(' ')} ` : '';
+};
+
+const buildPreferenceSignalsPrompt = (
+    options: Pick<
+        WizardGenerateOptions,
+        | 'dateInputMode'
+        | 'destinationOrder'
+        | 'enforceIslandOnly'
+        | 'flexWeeks'
+        | 'flexWindow'
+        | 'hasTransportOverride'
+        | 'idealMonths'
+        | 'notes'
+        | 'recommendedDurationDays'
+        | 'routeLock'
+        | 'selectedIslandNames'
+        | 'shoulderMonths'
+        | 'specificCities'
+        | 'startDestination'
+        | 'transportPreferences'
+        | 'travelerDetails'
+        | 'travelerType'
+        | 'tripStyleTags'
+        | 'tripVibeTags'
+        | 'travelLogistics'
+        | 'travelStyles'
+        | 'travelVibes'
+    >,
+): string => {
+    const prompt = [
+        CREATE_TRIP_SPECIALIST_POLICY_PROMPT.trim(),
+        buildTravelerConstraintPrompt(options.travelerType, options.travelerDetails).trim(),
+        buildStyleConstraintPrompt(options).trim(),
+        buildTransportConstraintPrompt(options.transportPreferences, options.hasTransportOverride, options.travelerType, options.travelerDetails).trim(),
+        buildTimingConstraintPrompt(options).trim(),
+        buildRouteConstraintPrompt({
+            destinationOrder: options.destinationOrder,
+            startDestination: options.startDestination,
+            routeLock: options.routeLock,
+            specificCities: options.specificCities,
+        }).trim(),
+        buildIslandConstraintPrompt(options.selectedIslandNames, options.enforceIslandOnly).trim(),
+        options.notes?.trim() ? `Additional traveler notes: ${options.notes.trim()}.` : '',
+    ].filter(Boolean).join(' ');
+
+    return prompt ? `${prompt} ` : '';
 };
 
 const buildTripFromModelData = (
@@ -1032,7 +1369,27 @@ export const buildClassicItineraryPrompt = (prompt: string, options?: GenerateOp
         if (options.budget) detailedPrompt += ` Budget level: ${options.budget}. `;
         if (options.pace) detailedPrompt += ` Travel pace: ${options.pace}. `;
         if (options.interests && options.interests.length > 0) detailedPrompt += ` Focus on these interests: ${options.interests.join(", ")}. `;
-        detailedPrompt += buildIslandConstraintPrompt(options.selectedIslandNames, options.enforceIslandOnly);
+        detailedPrompt += buildPreferenceSignalsPrompt({
+            dateInputMode: options.dateInputMode,
+            destinationOrder: options.destinationOrder,
+            enforceIslandOnly: options.enforceIslandOnly,
+            flexWeeks: options.flexWeeks,
+            flexWindow: options.flexWindow,
+            hasTransportOverride: options.hasTransportOverride,
+            idealMonths: options.idealMonths,
+            notes: options.notes,
+            recommendedDurationDays: options.recommendedDurationDays,
+            routeLock: options.routeLock,
+            selectedIslandNames: options.selectedIslandNames,
+            shoulderMonths: options.shoulderMonths,
+            specificCities: options.specificCities,
+            startDestination: options.startDestination,
+            transportPreferences: options.transportPreferences,
+            travelerDetails: options.travelerDetails,
+            travelerType: options.travelerType,
+            tripStyleTags: options.tripStyleTags,
+            tripVibeTags: options.tripVibeTags,
+        });
         if (options.promptMode === 'benchmark_compact') {
             detailedPrompt += BENCHMARK_COMPACT_OUTPUT_PROMPT;
         }
@@ -1058,43 +1415,51 @@ export const buildWizardItineraryPrompt = (options: WizardGenerateOptions): stri
     if (options.totalDays) {
         detailedPrompt += `The full itinerary MUST cover exactly ${options.totalDays} total days across all city stays. `;
     }
-    if (options.recommendedDurationDays) {
-        detailedPrompt += `Wizard recommended duration is ${options.recommendedDurationDays} days. Keep overall pacing aligned to this recommendation. `;
+    if (options.budget) {
+        detailedPrompt += `Budget level: ${options.budget}. `;
     }
-
-    const styleSignals = (options.travelStyles || []).filter(Boolean);
-    const vibeSignals = (options.travelVibes || []).filter(Boolean);
-    const logisticsSignals = (options.travelLogistics || []).filter(Boolean);
-
-    if (styleSignals.length > 0) {
-        detailedPrompt += `Traveler profile styles: ${styleSignals.join(', ')}. `;
+    if (options.pace) {
+        detailedPrompt += `Travel pace: ${options.pace}. `;
     }
-    if (vibeSignals.length > 0) {
-        detailedPrompt += `Preferred trip vibes/interests: ${vibeSignals.join(', ')}. `;
+    if (options.interests && options.interests.length > 0) {
+        detailedPrompt += `Focus on these interests: ${options.interests.join(', ')}. `;
     }
-    if (logisticsSignals.length > 0) {
-        detailedPrompt += `Trip logistics preferences: ${logisticsSignals.join(', ')}. `;
-    }
-    if (options.idealMonths && options.idealMonths.length > 0) {
-        detailedPrompt += `Best common travel months from local season data: ${options.idealMonths.join(', ')}. `;
-    }
-    if (options.shoulderMonths && options.shoulderMonths.length > 0) {
-        detailedPrompt += `Shoulder backup months: ${options.shoulderMonths.join(', ')}. `;
-    }
-    if (options.notes && options.notes.trim()) {
-        detailedPrompt += `Additional user notes: ${options.notes.trim()}. `;
-    }
-    detailedPrompt += buildIslandConstraintPrompt(options.selectedIslandNames, options.enforceIslandOnly);
+    detailedPrompt += buildPreferenceSignalsPrompt({
+        dateInputMode: options.dateInputMode,
+        destinationOrder: options.destinationOrder || countries,
+        enforceIslandOnly: options.enforceIslandOnly,
+        flexWeeks: options.flexWeeks,
+        flexWindow: options.flexWindow,
+        hasTransportOverride: options.hasTransportOverride,
+        idealMonths: options.idealMonths,
+        notes: options.notes,
+        recommendedDurationDays: options.recommendedDurationDays,
+        routeLock: options.routeLock,
+        selectedIslandNames: options.selectedIslandNames,
+        shoulderMonths: options.shoulderMonths,
+        specificCities: options.specificCities,
+        startDestination: options.startDestination,
+        transportPreferences: options.transportPreferences,
+        travelerDetails: options.travelerDetails,
+        travelerType: options.travelerType,
+        tripStyleTags: options.tripStyleTags,
+        tripVibeTags: options.tripVibeTags,
+        travelLogistics: options.travelLogistics,
+        travelStyles: options.travelStyles,
+        travelVibes: options.travelVibes,
+    });
 
     detailedPrompt += `
       Wizard-specific constraints:
       - Prioritize destinations and city sequence that match the selected profile signals.
       - Keep transitions realistic and avoid overpacked travel days.
-      - Pick activities that clearly reflect both style and vibe signals.
+      - Pick activities that clearly reflect both style and vibe signals and stay credible for the traveler setup.
       - If multiple countries are selected, distribute time fairly while minimizing inefficient backtracking.
+      - Use transport preferences to influence route choice and transfer recommendations.
     `;
 
-    detailedPrompt += BASE_ITINERARY_RULES_PROMPT;
+    detailedPrompt += buildItineraryRulesPrompt(options.promptMode);
+    detailedPrompt += STRICT_JSON_OBJECT_CONTRACT_PROMPT;
     return detailedPrompt;
 };
 

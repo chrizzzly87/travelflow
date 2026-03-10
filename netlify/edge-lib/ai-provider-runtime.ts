@@ -184,6 +184,12 @@ IMPORTANT RETRY INSTRUCTIONS:
 - Keep activities.description at or below 90 characters.
 `.trim();
 
+const SYSTEM_JSON_ONLY_PLANNER_PROMPT =
+  "You are TravelFlow, a specialized travel planner and trip generator. Return only one valid JSON object that matches the requested itinerary schema. No markdown fences and no prose.";
+
+const SYSTEM_STRICT_MINIFIED_JSON_ONLY_PLANNER_PROMPT =
+  "You are TravelFlow, a specialized travel planner and trip generator. Return exactly one minified JSON object that matches the requested itinerary schema. No prose, no markdown fences, and no explanations.";
+
 const ULTRA_COMPACT_RETRY_INSTRUCTION = `
 TRUNCATION RECOVERY MODE:
 - Keep the JSON intentionally short to avoid token truncation.
@@ -688,7 +694,7 @@ const generateWithOpenAi = async (
           messages: [
             {
               role: "system",
-              content: "Return only a valid JSON object. Do not include markdown fences.",
+              content: SYSTEM_JSON_ONLY_PLANNER_PROMPT,
             },
             {
               role: "user",
@@ -772,7 +778,7 @@ const generateWithOpenAi = async (
           input: [
             {
               role: "system",
-              content: "Return only a valid JSON object. Do not include markdown fences.",
+              content: SYSTEM_JSON_ONLY_PLANNER_PROMPT,
             },
             {
               role: "user",
@@ -883,8 +889,8 @@ const generateWithAnthropic = async (
             max_tokens: maxOutputTokens,
             temperature: strictParseRetry ? 0 : 0.2,
             system: strictParseRetry
-              ? "Return exactly one minified JSON object. No prose, no markdown fences."
-              : "Return only a valid JSON object. Do not include markdown fences.",
+              ? SYSTEM_STRICT_MINIFIED_JSON_ONLY_PLANNER_PROMPT
+              : SYSTEM_JSON_ONLY_PLANNER_PROMPT,
             messages: [
               {
                 role: "user",
@@ -1070,8 +1076,8 @@ const generateWithOpenRouter = async (
               {
                 role: "system",
                 content: forceStrictJson
-                  ? "Return exactly one minified JSON object that follows the requested schema. No prose, no markdown, no explanations."
-                  : "Return only a valid JSON object. Do not include markdown fences.",
+                  ? SYSTEM_STRICT_MINIFIED_JSON_ONLY_PLANNER_PROMPT
+                  : SYSTEM_JSON_ONLY_PLANNER_PROMPT,
               },
               {
                 role: "user",
