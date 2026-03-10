@@ -16,7 +16,7 @@ interface AccountMenuProps {
     showLabel?: boolean;
     fullWidth?: boolean;
     menuPlacement?: 'bottom-end' | 'right-end';
-    labelMode?: 'route' | 'identity';
+    labelMode?: 'route' | 'identity' | 'profile';
     showRecentTripsSection?: boolean;
     showCurrentPageSummary?: boolean;
     className?: string;
@@ -153,7 +153,11 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
         () => buildAccountTriggerName(profile, email, userId),
         [email, profile, userId]
     );
-    const triggerLabel = labelMode === 'identity' ? accountTriggerName : accountLabel;
+    const triggerLabel = labelMode === 'identity'
+        ? accountTriggerName
+        : labelMode === 'profile'
+            ? 'Profile'
+            : accountLabel;
     const shouldShowLabel = showLabel ?? !compact;
 
     useEffect(() => {

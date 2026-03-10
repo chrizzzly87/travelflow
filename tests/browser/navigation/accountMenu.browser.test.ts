@@ -158,6 +158,18 @@ describe('components/navigation/AccountMenu recent trips', () => {
     expect(screen.queryByText(/Current page:/i)).not.toBeInTheDocument();
   });
 
+  it('renders a stable Profile trigger label when requested', () => {
+    render(React.createElement(AccountMenu, {
+      email: 'traveler@example.com',
+      userId: 'user-1',
+      isAdmin: false,
+      labelMode: 'profile',
+    }));
+
+    expect(screen.getByRole('button', { name: /profile/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /traveler/i })).toBeNull();
+  });
+
   it('uses profile first/last-name initials for avatar when available', () => {
     mocks.profile = {
       firstName: 'Chris',

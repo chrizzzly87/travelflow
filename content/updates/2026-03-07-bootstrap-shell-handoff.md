@@ -20,6 +20,8 @@ summary: "Kept the branded header visible through the React handoff and removed 
 - [x] [Fixed] ⚡ First clicks from the homepage now restore direct route warmup on user interaction, reducing the cold blink when jumping into create-trip and other pages.
 - [x] [Fixed] 🧭 Moving from create-trip into a marketing page now warms the deferred route loader too, reducing the first-time blink on pages you have not opened yet.
 - [x] [Fixed] 🪄 Switching between the homepage, create-trip, and other marketing pages now keeps the current page visible until the next route is ready, removing the short loading-shell blink on cold clicks.
+- [x] [Fixed] 👤 Signed-in navigation now keeps the account trigger short as “Profile” instead of swapping to usernames or email addresses.
+- [x] [Fixed] 🌐 Switching a translated page back to English now sticks on the first try instead of snapping back to the previous locale during the route handoff.
 - [ ] [Internal] 🧱 Replaced the marketing route fallback with the real React site header and matching brand icon so the bootstrap handoff no longer jumps between different header layouts.
 - [ ] [Internal] 🛠️ Fixed the bootstrap container markup so removing the pre-hydration shell no longer tears down the React root during the handoff.
 - [ ] [Internal] ⏱️ Moved the bootstrap handoff trigger to the actual resolved route content for marketing and create-trip flows, so the static shell stays in place until the real page is ready to replace it.
@@ -32,6 +34,7 @@ summary: "Kept the branded header visible through the React handoff and removed 
 - [ ] [Internal] 🧩 Added the deferred route-table chunk to marketing/profile prefetch targets so first-time navigations warm both the destination page and the lazy router module it depends on.
 - [ ] [Internal] 🪄 Re-enabled passive hover warmups on critical routes after the first real handoff and added direct CTA warmups for create-trip intent on the homepage and header.
 - [ ] [Internal] 🧱 Re-grouped marketing and create-trip routes under a shared suspense boundary in the main router while letting deferred routes opt out of their own inner fallback, so cross-route transitions no longer flash the bootstrap shell for short chunk waits.
+- [ ] [Internal] 🧭 Added a temporary pending-locale selection state to the desktop and mobile nav controls so the locale picker stays aligned with the user’s choice while the route locale catches up.
 - [ ] [Internal] 🎨 Tuned the brand badge padding and wordmark gap so the bootstrap shell and live header now match the published logo proportions more closely.
 - [ ] [Internal] 🛫 Swapped the scaled favicon for a dedicated white plane glyph inside an explicit indigo badge, so the live header and bootstrap shell now use the same cleaner logo geometry.
 - [ ] [Internal] 📱 Matched the bootstrap shell to the live mobile header by keeping the brand badge radius consistent at small sizes and showing the burger control until the desktop navigation breakpoint.
