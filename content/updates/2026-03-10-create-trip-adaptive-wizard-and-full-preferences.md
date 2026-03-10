@@ -1,10 +1,10 @@
 ---
 id: rel-2026-03-10-create-trip-adaptive-wizard-and-full-preferences
-version: v0.0.0
+version: v0.91.0
 title: "Create Trip now adapts the wizard flow and uses the full planning brief"
 date: 2026-03-10
-published_at: 2026-03-10T16:45:00Z
-status: draft
+published_at: 2026-03-10T21:02:22Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Trip creation now starts from what the traveler already knows, carries traveler and transport constraints through generation, and uses stricter prompt rules for more reliable itinerary output."
