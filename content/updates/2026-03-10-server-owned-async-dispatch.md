@@ -1,10 +1,10 @@
 ---
 id: rel-2026-03-10-server-owned-async-dispatch
-version: v0.0.0
+version: v0.89.0
 title: "Async trip generation now starts server-side as soon as jobs are queued"
 date: 2026-03-10
-published_at: 2026-03-10T16:00:00Z
-status: draft
+published_at: 2026-03-10T18:54:59Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Async trip generation now hands the first worker kickoff to a server-owned enqueue path so trips can keep moving even when the browser tab closes right after start."
