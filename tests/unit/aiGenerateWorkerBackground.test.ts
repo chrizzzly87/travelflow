@@ -32,6 +32,12 @@ describe('netlify/functions/ai-generate-worker-background', () => {
     expect(JSON.parse(String(response.body))).toMatchObject({
       ok: false,
       code: 'WORKER_UNAUTHORIZED',
+      details: {
+        hasConfiguredAdminKey: true,
+        configuredAdminKeyLength: 'expected-key'.length,
+        providedAdminKeyLength: 'wrong-key'.length,
+        hasAuthorizationHeader: false,
+      },
     });
   });
 

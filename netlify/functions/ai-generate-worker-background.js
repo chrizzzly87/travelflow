@@ -23,6 +23,13 @@ const jsonResponse = (statusCode, payload) => ({
   body: JSON.stringify(payload),
 });
 
+const buildAuthDiagnostics = (expectedKey, providedKey, headers) => ({
+  hasConfiguredAdminKey: expectedKey.length > 0,
+  configuredAdminKeyLength: expectedKey.length,
+  providedAdminKeyLength: providedKey.length,
+  hasAuthorizationHeader: Boolean(asHeaderValue(headers, "authorization")),
+});
+
 const resolveWorkerUrl = (event) => {
   const providedUrl = asHeaderValue(event?.headers, "x-forwarded-proto")
     && asHeaderValue(event?.headers, "host")
@@ -59,17 +66,24 @@ export const handler = async (event) => {
 
   const expectedKey = (process.env.TF_ADMIN_API_KEY || "").trim();
   const providedKey = asHeaderValue(event?.headers, "x-tf-admin-key");
+  const authDiagnostics = buildAuthDiagnostics(expectedKey, providedKey, event?.headers);
   if (!expectedKey || !providedKey || expectedKey !== providedKey) {
+    console.error("[ai-generate-worker-background] unauthorized invocation", authDiagnostics);
     return jsonResponse(401, {
       ok: false,
       error: "Unauthorized background worker trigger.",
       code: "WORKER_UNAUTHORIZED",
+      details: authDiagnostics,
     });
   }
 
   const workerLimit = resolveWorkerLimit(event);
   const workerUrl = `${resolveWorkerUrl(event)}?limit=${workerLimit}`;
   try {
+    console.info("[ai-generate-worker-background] invoking processor", {
+      workerLimit,
+      workerUrl,
+    });
     const { processGenerationWorkerRequest } = await import("../edge-functions/ai-generate-worker.ts");
     const response = await processGenerationWorkerRequest(new Request(workerUrl, {
       method: "POST",
@@ -80,6 +94,12 @@ export const handler = async (event) => {
       body: "{}",
     }));
     const payloadText = await response.text();
+    if (!response.ok) {
+      console.error("[ai-generate-worker-background] processor returned non-ok response", {
+        statusCode: response.status,
+        bodyPreview: payloadText.slice(0, 400),
+      });
+    }
     return {
       statusCode: response.status,
       headers: {
@@ -90,6 +110,11 @@ export const handler = async (event) => {
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Background worker invocation failed.";
+    console.error("[ai-generate-worker-background] processor invocation failed", {
+      error: message,
+      workerUrl,
+      workerLimit,
+    });
     return jsonResponse(502, {
       ok: false,
       code: "WORKER_INVOKE_FAILED",
