@@ -489,6 +489,8 @@ const CREATE_TRIP_SPECIALIST_POLICY_PROMPT = `
       - Favor realistic sequencing, practical transfer days, and activities that fit the traveler profile.
       - If a user-selected destination creates suitability, safety, or logistics concerns, do NOT silently drop it.
       - Keep requested destinations when possible, adapt the route and recommendations, and add a short practical warning under an optional "### Heads Up" section inside the relevant city.description.
+      - When traveler profile and destination fit are clearly in tension, surface it explicitly instead of implying it.
+      - For material profile-specific concerns such as LGBTQ+ legal or social restrictions, accessibility problems, or family-unfriendly logistics, add a final "### Heads Up" section to each affected city.description.
     `;
 
 const TRANSPORT_PREFERENCE_LABELS: Record<CreateTripTransportPreference, string> = {
@@ -635,7 +637,7 @@ const buildTravelerConstraintPrompt = (
         );
         appendPromptSentence(
             lines,
-            'If a selected stop may create legal, social, or safety constraints for this traveler profile, keep it when user-requested but add a short practical note in an optional "### Heads Up" section'
+            'If a selected stop may create material legal, social, or safety constraints for this traveler profile, keep it when user-requested but you MUST add a short practical note in a final "### Heads Up" section for that city description'
         );
     }
 

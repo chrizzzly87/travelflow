@@ -46,6 +46,13 @@ interface TripInfoAdminMeta {
     accessSource?: string | null;
 }
 
+interface TripTravelerWarning {
+    cityName: string;
+    notes: string[];
+}
+
+const EMPTY_TRAVELER_WARNINGS: TripTravelerWarning[] = [];
+
 export interface TripInfoModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -89,6 +96,7 @@ export interface TripInfoModalProps {
     ownerSummary?: string | null;
     ownerHint?: string | null;
     adminMeta?: TripInfoAdminMeta | null;
+    travelerWarnings?: TripTravelerWarning[];
     onExportActivitiesCalendar?: () => void;
     onExportCitiesCalendar?: () => void;
     onExportAllCalendar?: () => void;
@@ -137,6 +145,7 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
     ownerSummary,
     ownerHint,
     adminMeta,
+    travelerWarnings = EMPTY_TRAVELER_WARNINGS,
     onExportActivitiesCalendar,
     onExportCitiesCalendar,
     onExportAllCalendar,
@@ -367,6 +376,32 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                     <p className="mt-2 text-[11px] text-gray-600">{ownerHint}</p>
                 )}
             </section>
+
+            {travelerWarnings.length > 0 && (
+                <section className="rounded-xl border border-amber-200 bg-amber-50/70 p-3">
+                    <h4 className="text-sm font-semibold text-amber-900">{t('tripView.warningSummary.title')}</h4>
+                    <p className="mt-1 text-xs leading-5 text-amber-800">
+                        {t('tripView.warningSummary.description')}
+                    </p>
+                    <div className="mt-3 space-y-2">
+                        {travelerWarnings.map((warning) => (
+                            <div key={`${warning.cityName}-${warning.notes.join('|')}`} className="rounded-lg border border-amber-200 bg-white px-3 py-2">
+                                <p className="text-xs font-semibold uppercase tracking-[0.08em] text-amber-700">
+                                    {warning.cityName}
+                                </p>
+                                <ul className="mt-1 space-y-1 text-sm leading-5 text-slate-700">
+                                    {warning.notes.map((note) => (
+                                        <li key={`${warning.cityName}-${note}`} className="flex items-start gap-2">
+                                            <span className="mt-1 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" />
+                                            <span>{note}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+            )}
 
             <section className="rounded-xl border border-gray-200 p-3">
                 <h4 className="mb-2 text-sm font-semibold text-gray-800">Calendar exports</h4>

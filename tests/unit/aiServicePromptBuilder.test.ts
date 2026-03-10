@@ -94,5 +94,6 @@ describe('services/aiService buildWizardItineraryPrompt', () => {
     expect(prompt).toContain('Specific requested cities or stops: Lisbon, Porto');
     expect(prompt).toContain('Output contract requirements (must be strictly followed):');
     expect(prompt).toContain('legal, social, or safety constraints for this traveler profile');
+    expect(prompt).toContain('you MUST add a short practical note in a final "### Heads Up" section');
   });
 });

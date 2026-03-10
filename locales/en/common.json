@@ -359,6 +359,25 @@
         "failedTitle": "Retry failed",
         "unexpected": "Retry failed unexpectedly."
       }
+    },
+    "pendingAuth": {
+      "eyebrowLoading": "Trip setup in progress",
+      "titleLoading": "Preparing your trip",
+      "descriptionLoading": "Saving your selections and checking the best way to build your itinerary.",
+      "eyebrowLocked": "Account required",
+      "titleLocked": "Creating trips is only for registered users",
+      "descriptionLocked": "Sign in or create an account to claim this draft and start full trip generation.",
+      "cta": "Sign in or create account",
+      "benefitsTitle": "Why create an account",
+      "benefits": {
+        "keep": "Keep this trip and come back to it later.",
+        "background": "Let generation finish in the background.",
+        "sync": "Edit, retry, and sync it across devices."
+      }
+    },
+    "warningSummary": {
+      "title": "Traveler fit notes",
+      "description": "Some stops include practical cautions based on your traveler setup."
     }
   },
   "tripRouteShell": {
