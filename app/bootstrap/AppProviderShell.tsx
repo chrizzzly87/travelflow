@@ -12,7 +12,7 @@ interface AppProviderShellProps {
 
 export const AppProviderShell: React.FC<AppProviderShellProps> = ({ children }) => {
     return (
-        <Router history={appHistory} unstable_useTransitions={false}>
+        <Router history={appHistory}>
             <AuthProvider>
                 <AppDialogProvider>
                     <LoginModalProvider>
