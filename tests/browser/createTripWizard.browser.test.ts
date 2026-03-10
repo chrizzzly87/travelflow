@@ -9,6 +9,12 @@ const mocks = vi.hoisted(() => ({
   startClientAsyncTripGeneration: vi.fn().mockResolvedValue({}),
   createTripGenerationRequest: vi.fn(),
   ensureDbSession: vi.fn().mockResolvedValue('session-1'),
+  confirm: vi.fn().mockResolvedValue(false),
+  getTripReadyNotificationPermission: vi.fn().mockReturnValue('default' as NotificationPermission),
+  requestTripReadyNotificationPermission: vi.fn().mockResolvedValue('granted' as NotificationPermission),
+  authState: {
+    isAuthenticated: true,
+  },
 }));
 
 vi.mock('../../components/navigation/SiteHeader', () => ({
@@ -97,10 +103,19 @@ vi.mock('../../services/dbService', () => ({
   ensureDbSession: (...args: unknown[]) => mocks.ensureDbSession(...args),
 }));
 
-vi.mock('../../hooks/useAuth', () => ({
-  useAuth: () => ({
-    isAuthenticated: true,
+vi.mock('../../components/AppDialogProvider', () => ({
+  useAppDialog: () => ({
+    confirm: (...args: unknown[]) => mocks.confirm(...args),
   }),
+}));
+
+vi.mock('../../services/tripGenerationTabFeedbackService', () => ({
+  getTripReadyNotificationPermission: (...args: unknown[]) => mocks.getTripReadyNotificationPermission(...args),
+  requestTripReadyNotificationPermission: (...args: unknown[]) => mocks.requestTripReadyNotificationPermission(...args),
+}));
+
+vi.mock('../../hooks/useAuth', () => ({
+  useAuth: () => mocks.authState,
 }));
 
 vi.mock('react-i18next', () => ({
@@ -135,22 +150,37 @@ vi.mock('react-i18next', () => ({
 
 import { CreateTripV3Page } from '../../pages/CreateTripV3Page';
 
-const renderPage = () => render(
+const renderPage = (props?: Partial<React.ComponentProps<typeof CreateTripV3Page>>) => render(
   React.createElement(
     MemoryRouter,
     { initialEntries: ['/create-trip/wizard'] },
     React.createElement(CreateTripV3Page, {
       onTripGenerated: vi.fn(),
       onOpenManager: vi.fn(),
+      ...props,
     })
   )
 );
+
+const getPrimaryAction = (label: RegExp) => {
+  const matches = screen.getAllByRole('button', { name: label });
+  return matches[matches.length - 1];
+};
+
+const clickPopularPick = async (user: ReturnType<typeof userEvent.setup>, label: string) => {
+  const matches = screen.getAllByText(label);
+  await user.click(matches[0]);
+};
 
 describe('pages/CreateTripV3Page', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.ensureDbSession.mockResolvedValue('session-1');
     mocks.startClientAsyncTripGeneration.mockResolvedValue({});
+    mocks.confirm.mockResolvedValue(false);
+    mocks.getTripReadyNotificationPermission.mockReturnValue('default');
+    mocks.requestTripReadyNotificationPermission.mockResolvedValue('granted');
+    mocks.authState.isAuthenticated = true;
   });
 
   it('reorders the first step based on the selected branch', async () => {
@@ -168,20 +198,20 @@ describe('pages/CreateTripV3Page', () => {
     renderPage();
 
     await user.click(screen.getByText('wizard.intent.options.known_destinations_flexible_dates.title'));
-    await user.click(screen.getByText('Japan'));
-    await user.click(screen.getByRole('button', { name: /wizard\.actions\.continue/i }));
-    await user.click(screen.getByRole('button', { name: /wizard\.actions\.continue/i }));
+    await clickPopularPick(user, 'Japan');
+    await user.click(getPrimaryAction(/wizard\.actions\.continue/i));
+    await user.click(getPrimaryAction(/wizard\.actions\.continue/i));
 
     await user.click(screen.getByText('traveler.options.family'));
     await user.click(screen.getByText('transport.options.train'));
-    await user.click(screen.getByRole('button', { name: /wizard\.actions\.continue/i }));
+    await user.click(getPrimaryAction(/wizard\.actions\.continue/i));
 
     await user.click(screen.getByText('wizard.budgetOptions.high'));
     await user.click(screen.getByText('wizard.paceOptions.fast'));
     await user.type(screen.getByPlaceholderText('wizard.details.notesPlaceholder'), 'No overnight buses');
-    await user.click(screen.getByRole('button', { name: /wizard\.actions\.continue/i }));
+    await user.click(getPrimaryAction(/wizard\.actions\.continue/i));
 
-    await user.click(screen.getByRole('button', { name: /wizard\.actions\.generate/i }));
+    await user.click(getPrimaryAction(/wizard\.actions\.generate/i));
 
     await waitFor(() => {
       expect(mocks.startClientAsyncTripGeneration).toHaveBeenCalledTimes(1);
@@ -203,4 +233,25 @@ describe('pages/CreateTripV3Page', () => {
       hasTransportOverride: true,
     }));
   });
+
+  it('asks for browser notification permission before generation when permission is undecided', async () => {
+    const user = userEvent.setup();
+    mocks.confirm.mockResolvedValue(true);
+    renderPage();
+
+    await user.click(screen.getByText('wizard.intent.options.known_destinations_flexible_dates.title'));
+    await clickPopularPick(user, 'Japan');
+    await user.click(getPrimaryAction(/wizard\.actions\.continue/i));
+    await user.click(getPrimaryAction(/wizard\.actions\.continue/i));
+    await user.click(getPrimaryAction(/wizard\.actions\.continue/i));
+    await user.click(getPrimaryAction(/wizard\.actions\.continue/i));
+    await user.click(getPrimaryAction(/wizard\.actions\.generate/i));
+
+    await waitFor(() => {
+      expect(mocks.confirm).toHaveBeenCalledTimes(1);
+    });
+    expect(mocks.requestTripReadyNotificationPermission).toHaveBeenCalledTimes(1);
+    expect(mocks.startClientAsyncTripGeneration).toHaveBeenCalledTimes(1);
+  });
+
 });

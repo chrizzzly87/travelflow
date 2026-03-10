@@ -14,4 +14,6 @@ summary: "Trip creation now starts from what the traveler already knows, carries
 - [x] [Improved] 🧭 Trip creation now starts by asking what you already know, then reorders the wizard around destinations, dates, or inspiration instead of forcing one fixed flow.
 - [x] [Improved] 👨‍👩‍👧‍👦 Traveler setup, trip style, transport preferences, route constraints, and flexible timing now actively shape routes, activities, and suitability warnings in generated itineraries.
 - [x] [Improved] 🧾 The planner now uses stricter itinerary instructions so trip generation is more likely to return the expected JSON structure without losing practical travel guidance.
+- [x] [Fixed] 🔐 Anonymous trip starts now keep the sign-in reactivation state on the trip banner instead of falling through to a generic failed-generation message.
+- [x] [Improved] 🔔 Trip creation now asks whether you want a browser notification before generation starts and can notify you when the itinerary finishes in a background tab.
 - [ ] [Internal] 🧪 Added shared create-trip draft payloads, benchmark metadata updates, and regression coverage for prompt building, prefill decoding, and the adaptive wizard flow.

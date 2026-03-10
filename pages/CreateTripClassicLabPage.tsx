@@ -43,6 +43,7 @@ import {
     X,
 } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
+import { useAppDialog } from '../components/AppDialogProvider';
 import { SiteHeader } from '../components/navigation/SiteHeader';
 import { SiteFooter } from '../components/marketing/SiteFooter';
 import { CreateTripWizardCtaBanner } from '../components/create-trip/CreateTripWizardCtaBanner';
@@ -82,6 +83,8 @@ import {
 } from '../services/tripGenerationDiagnosticsService';
 import {
     beginTripGenerationTabFeedback,
+    getTripReadyNotificationPermission,
+    requestTripReadyNotificationPermission,
     type TripGenerationTabFeedbackSession,
 } from '../services/tripGenerationTabFeedbackService';
 import { enqueueClassicAsyncTripGenerationJob } from '../services/tripGenerationAsyncEnqueueService';
@@ -332,6 +335,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
     const { t, i18n } = useTranslation('createTrip');
     const navigate = useNavigate();
     const location = useLocation();
+    const { confirm } = useAppDialog();
     const [searchParams] = useSearchParams();
     const { isAuthenticated, isAnonymous } = useAuth();
     const { snapshot: connectivitySnapshot } = useConnectivityStatus();
@@ -406,6 +410,19 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
     const submitErrorRef = useRef<HTMLDivElement | null>(null);
     const [snapshotRouteGeometry, setSnapshotRouteGeometry] = useState<SnapshotRouteGeometry | null>(null);
     const generationTabFeedbackSessionRef = useRef<TripGenerationTabFeedbackSession | null>(null);
+
+    const maybeRequestTripReadyNotifications = useCallback(async () => {
+        if (getTripReadyNotificationPermission() !== 'default') return;
+
+        const shouldEnable = await confirm({
+            title: t('notifications.prompt.title'),
+            message: t('notifications.prompt.message'),
+            confirmLabel: t('notifications.prompt.enable'),
+            cancelLabel: t('notifications.prompt.notNow'),
+        });
+        if (!shouldEnable) return;
+        await requestTripReadyNotificationPermission();
+    }, [confirm, t]);
 
     const regionDisplayNames = useMemo(() => {
         try {
@@ -1540,6 +1557,8 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
             showSubmitError(t('errors.destinationRequired'));
             return;
         }
+
+        await maybeRequestTripReadyNotifications();
 
         setIsSubmitting(true);
         setSubmitError(null);

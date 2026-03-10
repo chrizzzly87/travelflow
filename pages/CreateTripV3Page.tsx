@@ -33,6 +33,7 @@ import {
 import { CountrySelect } from '../components/CountrySelect';
 import { DateRangePicker } from '../components/DateRangePicker';
 import { MonthSeasonStrip } from '../components/MonthSeasonStrip';
+import { useAppDialog } from '../components/AppDialogProvider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Switch } from '../components/ui/switch';
 import {
@@ -71,6 +72,10 @@ import {
 } from '../services/authNavigationService';
 import { ensureDbSession } from '../services/dbService';
 import { createTripGenerationRequest } from '../services/tripGenerationQueueService';
+import {
+    getTripReadyNotificationPermission,
+    requestTripReadyNotificationPermission,
+} from '../services/tripGenerationTabFeedbackService';
 import { useAuth } from '../hooks/useAuth';
 import { HeroWebGLBackground } from '../components/HeroWebGLBackground';
 import { SiteFooter } from '../components/marketing/SiteFooter';
@@ -380,6 +385,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
     const { t, i18n } = useTranslation('createTrip');
     const navigate = useNavigate();
     const location = useLocation();
+    const { confirm } = useAppDialog();
     const { isAuthenticated } = useAuth();
     const [searchParams] = useSearchParams();
     const defaultDates = getDefaultTripDates();
@@ -432,6 +438,19 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
         startDate: defaultDates.startDate,
         endDate: defaultDates.endDate,
     });
+
+    const maybeRequestTripReadyNotifications = useCallback(async () => {
+        if (getTripReadyNotificationPermission() !== 'default') return;
+
+        const shouldEnable = await confirm({
+            title: t('notifications.prompt.title'),
+            message: t('notifications.prompt.message'),
+            confirmLabel: t('notifications.prompt.enable'),
+            cancelLabel: t('notifications.prompt.notNow'),
+        });
+        if (!shouldEnable) return;
+        await requestTripReadyNotificationPermission();
+    }, [confirm, t]);
 
     const regionDisplayNames = useMemo(() => {
         try {
@@ -1114,6 +1133,8 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
     const canGenerate = selectedCountries.length > 0 && !isGenerating;
 
     const handleGenerate = async () => {
+        await maybeRequestTripReadyNotifications();
+
         const sessionUserId = await ensureDbSession();
         if (!sessionUserId) {
             const authRedirect = buildLoginPathWithNext({
