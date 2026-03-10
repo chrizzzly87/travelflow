@@ -63,6 +63,10 @@
         font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
       }
 
+      .tf-boot-shell[data-tf-surface-mode="neutral"] {
+        background: #f8fafc;
+      }
+
       .tf-boot-header {
         border-bottom: 1px solid rgba(226, 232, 240, 0.7);
         background: rgba(255, 255, 255, 0.9);
@@ -147,6 +151,7 @@
       }
 
       .tf-boot-nav-skeleton,
+      .tf-boot-nav-ghost,
       .tf-boot-control-skeleton,
       .tf-boot-control-flag {
         border-radius: 999px;
@@ -155,11 +160,16 @@
         animation: tf-boot-shimmer 1.4s linear infinite;
       }
 
-      .tf-boot-nav-skeleton--features { width: 64px; height: 12px; }
-      .tf-boot-nav-skeleton--inspirations { width: 78px; height: 12px; }
-      .tf-boot-nav-skeleton--updates { width: 110px; height: 12px; }
-      .tf-boot-nav-skeleton--blog { width: 34px; height: 12px; }
-      .tf-boot-nav-skeleton--pricing { width: 52px; height: 12px; }
+      .tf-boot-nav-skeleton--features,
+      .tf-boot-nav-ghost--features { width: 64px; height: 12px; }
+      .tf-boot-nav-skeleton--inspirations,
+      .tf-boot-nav-ghost--inspirations { width: 78px; height: 12px; }
+      .tf-boot-nav-skeleton--updates,
+      .tf-boot-nav-ghost--updates { width: 110px; height: 12px; }
+      .tf-boot-nav-skeleton--blog,
+      .tf-boot-nav-ghost--blog { width: 34px; height: 12px; }
+      .tf-boot-nav-skeleton--pricing,
+      .tf-boot-nav-ghost--pricing { width: 52px; height: 12px; }
 
       .tf-boot-control-flag {
         width: 18px;
@@ -223,6 +233,12 @@
         border-radius: 8px;
         white-space: nowrap;
         pointer-events: none;
+      }
+
+      .tf-boot-nav-link--ghost,
+      .tf-boot-action-chip--ghost,
+      .tf-boot-action-button--ghost {
+        visibility: hidden;
       }
 
       .tf-boot-action-chip {

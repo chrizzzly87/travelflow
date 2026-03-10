@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useLayoutEffect, useRef } from 'react';
+import React, { Suspense, lazy, useEffect, useLayoutEffect, useRef } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { AppLanguage, ITrip, IViewSettings } from '../../types';
 import { useDbSync } from '../../hooks/useDbSync';
@@ -7,6 +7,7 @@ import { loadLazyComponentWithRecovery } from '../../services/lazyImportRecovery
 import { MarketingRouteLoadingShell } from '../../components/bootstrap/MarketingRouteLoadingShell';
 import { TripRouteLoadingShell } from '../../components/tripview/TripRouteLoadingShell';
 import { DeferredAppRoutes } from './DeferredAppRoutes';
+import { markInitialRouteHandoffCompleted } from '../../services/marketingRouteShellState';
 
 const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
     moduleKey: string,
@@ -23,11 +24,17 @@ export const RouteLoadingFallback: React.FC = () => (
     <MarketingRouteLoadingShell />
 );
 
-const HandoffReadyBoundary: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <div data-tf-handoff-ready="true">
-        {children}
-    </div>
-);
+const HandoffReadyBoundary: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    useEffect(() => {
+        markInitialRouteHandoffCompleted();
+    }, []);
+
+    return (
+        <div data-tf-handoff-ready="true">
+            {children}
+        </div>
+    );
+};
 
 const renderWithSuspense = (
     node: React.ReactElement,

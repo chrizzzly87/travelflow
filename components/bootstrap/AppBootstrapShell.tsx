@@ -1,12 +1,16 @@
 import React from 'react';
 
 type AppBootstrapShellVariant = 'marketing' | 'trip';
+type AppBootstrapShellChromeMode = 'skeleton' | 'ghost';
+type AppBootstrapShellSurfaceMode = 'default' | 'neutral';
 
 interface AppBootstrapShellProps {
   variant?: AppBootstrapShellVariant;
   testId?: string;
   shellState?: string;
   handoffReady?: boolean;
+  chromeMode?: AppBootstrapShellChromeMode;
+  surfaceMode?: AppBootstrapShellSurfaceMode;
 }
 
 const TRIP_DAYS = [0, 1, 2, 3, 4];
@@ -17,12 +21,16 @@ export const AppBootstrapShell: React.FC<AppBootstrapShellProps> = ({
   testId,
   shellState,
   handoffReady = false,
+  chromeMode = 'skeleton',
+  surfaceMode = 'default',
 }) => (
   <div
     className="tf-boot-shell"
     data-testid={testId}
     data-shell-variant={variant}
     data-shell-state={shellState}
+    data-tf-chrome-mode={chromeMode}
+    data-tf-surface-mode={surfaceMode}
     data-tf-handoff-ready={handoffReady ? 'true' : undefined}
     aria-hidden="true"
   >
@@ -35,23 +43,45 @@ export const AppBootstrapShell: React.FC<AppBootstrapShellProps> = ({
           <span className="tf-boot-wordmark">TravelFlow</span>
         </div>
         <nav className="tf-boot-nav" aria-hidden="true">
-          <span className="tf-boot-nav-link"><span className="tf-boot-nav-skeleton tf-boot-nav-skeleton--features"></span></span>
-          <span className="tf-boot-nav-link"><span className="tf-boot-nav-skeleton tf-boot-nav-skeleton--inspirations"></span></span>
-          <span className="tf-boot-nav-link"><span className="tf-boot-nav-skeleton tf-boot-nav-skeleton--updates"></span></span>
-          <span className="tf-boot-nav-link"><span className="tf-boot-nav-skeleton tf-boot-nav-skeleton--blog"></span></span>
-          <span className="tf-boot-nav-link"><span className="tf-boot-nav-skeleton tf-boot-nav-skeleton--pricing"></span></span>
+          {chromeMode === 'skeleton' ? (
+            <>
+              <span className="tf-boot-nav-link"><span className="tf-boot-nav-skeleton tf-boot-nav-skeleton--features"></span></span>
+              <span className="tf-boot-nav-link"><span className="tf-boot-nav-skeleton tf-boot-nav-skeleton--inspirations"></span></span>
+              <span className="tf-boot-nav-link"><span className="tf-boot-nav-skeleton tf-boot-nav-skeleton--updates"></span></span>
+              <span className="tf-boot-nav-link"><span className="tf-boot-nav-skeleton tf-boot-nav-skeleton--blog"></span></span>
+              <span className="tf-boot-nav-link"><span className="tf-boot-nav-skeleton tf-boot-nav-skeleton--pricing"></span></span>
+            </>
+          ) : chromeMode === 'ghost' ? (
+            <>
+              <span className="tf-boot-nav-link tf-boot-nav-link--ghost"><span className="tf-boot-nav-ghost tf-boot-nav-ghost--features"></span></span>
+              <span className="tf-boot-nav-link tf-boot-nav-link--ghost"><span className="tf-boot-nav-ghost tf-boot-nav-ghost--inspirations"></span></span>
+              <span className="tf-boot-nav-link tf-boot-nav-link--ghost"><span className="tf-boot-nav-ghost tf-boot-nav-ghost--updates"></span></span>
+              <span className="tf-boot-nav-link tf-boot-nav-link--ghost"><span className="tf-boot-nav-ghost tf-boot-nav-ghost--blog"></span></span>
+              <span className="tf-boot-nav-link tf-boot-nav-link--ghost"><span className="tf-boot-nav-ghost tf-boot-nav-ghost--pricing"></span></span>
+            </>
+          ) : null}
         </nav>
         <div className="tf-boot-actions">
-          <span className="tf-boot-action-chip tf-boot-action-chip--locale">
-            <span className="tf-boot-control-flag" aria-hidden="true"></span>
-            <span className="tf-boot-control-skeleton tf-boot-control-skeleton--locale"></span>
-          </span>
-          <span className="tf-boot-action-chip tf-boot-action-chip--login">
-            <span className="tf-boot-control-skeleton tf-boot-control-skeleton--login"></span>
-          </span>
-          <span className="tf-boot-action-button">
-            <span className="tf-boot-control-skeleton tf-boot-control-skeleton--cta"></span>
-          </span>
+          {chromeMode === 'skeleton' ? (
+            <>
+              <span className="tf-boot-action-chip tf-boot-action-chip--locale">
+                <span className="tf-boot-control-flag" aria-hidden="true"></span>
+                <span className="tf-boot-control-skeleton tf-boot-control-skeleton--locale"></span>
+              </span>
+              <span className="tf-boot-action-chip tf-boot-action-chip--login">
+                <span className="tf-boot-control-skeleton tf-boot-control-skeleton--login"></span>
+              </span>
+              <span className="tf-boot-action-button">
+                <span className="tf-boot-control-skeleton tf-boot-control-skeleton--cta"></span>
+              </span>
+            </>
+          ) : chromeMode === 'ghost' ? (
+            <>
+              <span className="tf-boot-action-chip tf-boot-action-chip--locale tf-boot-action-chip--ghost" />
+              <span className="tf-boot-action-chip tf-boot-action-chip--login tf-boot-action-chip--ghost" />
+              <span className="tf-boot-action-button tf-boot-action-button--ghost" />
+            </>
+          ) : null}
           <span className="tf-boot-action-burger" aria-hidden="true">
             <svg className="tf-boot-action-burger-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
               <path d="M4 7h16" />
