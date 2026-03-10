@@ -5,6 +5,7 @@ import {
     BLOG_VIEW_TRANSITION_CLASSES,
     BLOG_VIEW_TRANSITION_DURATION,
     createBlogTransitionNavigationState,
+    getBlogTransitionStyle,
     getBlogRouteKindFromPath,
     getBlogTransitionNavigationState,
     getBlogTransitionStateVersion,
@@ -38,6 +39,7 @@ import {
 let originalStartViewTransition: unknown;
 let originalMatchMedia: typeof window.matchMedia;
 let originalImage: typeof window.Image;
+let originalCss: typeof window.CSS;
 
 const createReducedMotionMediaQueryList = (matches: boolean): MediaQueryList => ({
     matches,
@@ -54,6 +56,7 @@ beforeEach(() => {
     originalStartViewTransition = (document as Document & { startViewTransition?: unknown }).startViewTransition;
     originalMatchMedia = window.matchMedia;
     originalImage = window.Image;
+    originalCss = window.CSS;
 });
 
 afterEach(() => {
@@ -64,11 +67,36 @@ afterEach(() => {
     });
     window.matchMedia = originalMatchMedia;
     window.Image = originalImage;
+    Object.defineProperty(window, 'CSS', {
+        configurable: true,
+        writable: true,
+        value: originalCss,
+    });
     document.body.innerHTML = '';
     setPendingBlogTransitionTarget(null);
     setCurrentBlogPostTransitionTarget(null);
     resetBlogTransitionWarmStateForTests();
 });
+
+const mockCssSupports = (supportedQueries: string[] | null): void => {
+    if (!supportedQueries) {
+        Object.defineProperty(window, 'CSS', {
+            configurable: true,
+            writable: true,
+            value: undefined,
+        });
+        return;
+    }
+
+    const supported = new Set(supportedQueries);
+    Object.defineProperty(window, 'CSS', {
+        configurable: true,
+        writable: true,
+        value: {
+            supports: vi.fn((query: string) => supported.has(query)),
+        },
+    });
+};
 
 describe('shared/blogViewTransitions', () => {
     it('creates stable view transition names with language + slug tokens', () => {
@@ -241,6 +269,54 @@ describe('shared/blogViewTransitions', () => {
         expect(supportsBlogViewTransitions()).toBe(false);
     });
 
+    it('degrades transition styles and cold-start fallback when only the base API is available', () => {
+        Object.defineProperty(document, 'startViewTransition', {
+            configurable: true,
+            writable: true,
+            value: vi.fn(),
+        });
+        window.matchMedia = vi.fn().mockReturnValue(createReducedMotionMediaQueryList(false)) as unknown as typeof window.matchMedia;
+
+        mockCssSupports([
+            'view-transition-class: blog-card-transition',
+            'selector(::view-transition-group(.blog-card-transition))',
+        ]);
+        expect(supportsBlogViewTransitions()).toBe(true);
+        expect(getBlogTransitionStyle('blog-post-card-en-weekend-getaway', BLOG_VIEW_TRANSITION_CLASSES.card, 'contain')).toEqual({
+            viewTransitionName: 'blog-post-card-en-weekend-getaway',
+            viewTransitionClass: BLOG_VIEW_TRANSITION_CLASSES.card,
+        });
+        expect(shouldUseColdBlogTransitionFallbackForKind('post')).toBe(false);
+
+        mockCssSupports([
+            'view-transition-class: blog-card-transition',
+            'selector(::view-transition-group(.blog-card-transition))',
+            'view-transition-group: contain',
+            'view-transition-group: nearest',
+            'selector(::view-transition-group-children(blog-card-transition))',
+        ]);
+        expect(getBlogTransitionStyle('blog-post-image-en-weekend-getaway', BLOG_VIEW_TRANSITION_CLASSES.image, 'nearest')).toEqual({
+            viewTransitionName: 'blog-post-image-en-weekend-getaway',
+            viewTransitionClass: BLOG_VIEW_TRANSITION_CLASSES.image,
+            viewTransitionGroup: 'nearest',
+        });
+        expect(shouldUseColdBlogTransitionFallbackForKind('post')).toBe(true);
+    });
+
+    it('builds transition styles that degrade cleanly when transition CSS features are unavailable', () => {
+        Object.defineProperty(document, 'startViewTransition', {
+            configurable: true,
+            writable: true,
+            value: vi.fn(),
+        });
+        window.matchMedia = vi.fn().mockReturnValue(createReducedMotionMediaQueryList(false)) as unknown as typeof window.matchMedia;
+
+        mockCssSupports(null);
+        expect(getBlogTransitionStyle('blog-post-title-en-weekend-getaway', BLOG_VIEW_TRANSITION_CLASSES.title, 'nearest')).toEqual({
+            viewTransitionName: 'blog-post-title-en-weekend-getaway',
+        });
+    });
+
     it('warms responsive blog images once per image configuration', () => {
         const uniqueSrc = `/images/blog/japan-card-${Math.random().toString(36).slice(2)}.webp`;
         const createdImages: Array<{
@@ -290,6 +366,20 @@ describe('shared/blogViewTransitions', () => {
     });
 
     it('falls back to title-only transitions when the destination blog route kind has not been seen yet', () => {
+        Object.defineProperty(document, 'startViewTransition', {
+            configurable: true,
+            writable: true,
+            value: vi.fn(),
+        });
+        window.matchMedia = vi.fn().mockReturnValue(createReducedMotionMediaQueryList(false)) as unknown as typeof window.matchMedia;
+        mockCssSupports([
+            'view-transition-class: blog-card-transition',
+            'selector(::view-transition-group(.blog-card-transition))',
+            'view-transition-group: contain',
+            'view-transition-group: nearest',
+            'selector(::view-transition-group-children(blog-card-transition))',
+        ]);
+
         expect(shouldUseColdBlogTransitionFallbackForKind('list')).toBe(true);
         expect(shouldUseColdBlogTransitionFallbackForKind('post')).toBe(true);
 
@@ -304,6 +394,22 @@ describe('shared/blogViewTransitions', () => {
 
         setPendingBlogTransitionTarget(null);
         expect(shouldUseTitleOnlyBlogTransition('en', 'best-time-visit-japan')).toBe(false);
+    });
+
+    it('skips the title-only cold fallback when nested groups are unavailable', () => {
+        Object.defineProperty(document, 'startViewTransition', {
+            configurable: true,
+            writable: true,
+            value: vi.fn(),
+        });
+        window.matchMedia = vi.fn().mockReturnValue(createReducedMotionMediaQueryList(false)) as unknown as typeof window.matchMedia;
+        mockCssSupports([
+            'view-transition-class: blog-card-transition',
+            'selector(::view-transition-group(.blog-card-transition))',
+        ]);
+
+        expect(shouldUseColdBlogTransitionFallbackForKind('list')).toBe(false);
+        expect(shouldUseColdBlogTransitionFallbackForKind('post')).toBe(false);
     });
 
     it('starts a view transition with typed options when supported and falls back otherwise', async () => {

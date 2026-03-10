@@ -15,6 +15,7 @@ import { AppLanguage } from '../types';
 import {
     BLOG_VIEW_TRANSITION_CLASSES,
     createBlogTransitionNavigationState,
+    getBlogTransitionStyle,
     getBlogTransitionNavigationState,
     getPendingBlogTransitionTarget,
     getBlogPostViewTransitionNames,
@@ -52,17 +53,6 @@ const ensureBlogPostRouteModule = (): Promise<unknown> => {
     }
     return blogPostRouteModulePromise;
 };
-
-const getBlogTransitionStyle = (
-    transitionName: string,
-    transitionClass: string,
-    transitionGroup?: string
-): React.CSSProperties =>
-    ({
-        viewTransitionName: transitionName,
-        ['viewTransitionClass' as any]: transitionClass,
-        ...(transitionGroup ? { ['viewTransitionGroup' as any]: transitionGroup } : {}),
-    } as React.CSSProperties);
 
 const BlogCard: React.FC<{
     post: BlogPost;
