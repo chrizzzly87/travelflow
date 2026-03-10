@@ -131,9 +131,9 @@ export const ProfileCountryRegionSelect: React.FC<ProfileCountryRegionSelectProp
     return (
         <div className="space-y-1" ref={wrapperRef}>
             <div className="relative">
-                <div className="pointer-events-none absolute inset-y-0 start-0 flex h-11 w-12 items-center justify-center">
+                <div className="pointer-events-none absolute inset-y-0 start-0 flex w-11 items-center justify-center">
                     {selectedCountry ? (
-                        <FlagIcon code={selectedCountry.code} size="sm" fallback={null} className="block shrink-0" />
+                        <FlagIcon code={selectedCountry.code} size="sm" fallback={null} className="block" />
                     ) : (
                         <span className="flex h-4 w-4 items-center justify-center">
                             <GlobeHemisphereWest size={16} weight="duotone" className="text-slate-400" />
@@ -147,7 +147,7 @@ export const ProfileCountryRegionSelect: React.FC<ProfileCountryRegionSelectProp
                     disabled={disabled}
                     placeholder={placeholder}
                     autoComplete="off"
-                    className={`h-11 w-full rounded-lg border border-slate-300 bg-white ps-12 pe-12 text-sm leading-5 text-slate-900 outline-none transition-colors focus:border-accent-400 focus:ring-2 focus:ring-accent-200 disabled:cursor-not-allowed disabled:opacity-60 ${inputClassName}`.trim()}
+                    className={`h-11 w-full rounded-lg border border-slate-300 bg-white ps-11 pe-12 text-sm leading-none text-slate-900 outline-none transition-colors focus:border-accent-400 focus:ring-2 focus:ring-accent-200 disabled:cursor-not-allowed disabled:opacity-60 ${inputClassName}`.trim()}
                     role="combobox"
                     aria-expanded={isOpen}
                     aria-controls={listboxId}
@@ -160,7 +160,7 @@ export const ProfileCountryRegionSelect: React.FC<ProfileCountryRegionSelectProp
                     }}
                     onKeyDown={handleKeyDown}
                 />
-                <div className="absolute end-2 top-1/2 flex -translate-y-1/2 items-center justify-center">
+                <div className="absolute inset-y-0 end-0 flex w-10 items-center justify-center">
                     <button
                         type="button"
                         onClick={() => {

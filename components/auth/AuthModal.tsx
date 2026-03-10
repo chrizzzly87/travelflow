@@ -149,7 +149,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     const emailInputId = 'auth-modal-email';
     const secondaryInputId = 'auth-modal-secondary';
     const rememberLoginInputId = 'auth-modal-remember-login';
-    const authInputClassName = 'mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-accent-500 [&:user-invalid]:border-rose-400 [&:user-invalid]:bg-rose-50 [&:user-invalid]:text-rose-900 [&:user-invalid]:focus:ring-rose-200';
+    const fieldClassName = 'mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-accent-500 [&:user-invalid]:border-rose-400 [&:user-invalid]:bg-rose-50 [&:user-invalid]:text-rose-900 [&:user-invalid]:focus:ring-rose-200';
 
     const oauthRedirectTo = useMemo(() => {
         if (typeof window === 'undefined') return undefined;
@@ -647,7 +647,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                                         onChange={(event) => setEmail(event.target.value)}
                                         disabled={isSubmitting || isRestoreBlocked}
                                         required
-                                        className={authInputClassName}
+                                        className={fieldClassName}
                                     />
                                 </div>
                                 <div className="block">
@@ -667,7 +667,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                                         disabled={isSubmitting || isRestoreBlocked}
                                         required
                                         minLength={8}
-                                        className={authInputClassName}
+                                        className={fieldClassName}
                                     />
                                 </div>
                                 {mode === 'login' && (

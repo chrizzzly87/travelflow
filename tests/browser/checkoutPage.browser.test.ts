@@ -381,6 +381,9 @@ describe('pages/CheckoutPage', () => {
     await waitFor(() => {
       expect(mocks.navigate).toHaveBeenCalledWith('/checkout?tier=tier_mid&source=pricing_page', { replace: true });
     });
+
+    expect(mocks.auth.refreshAccess).toHaveBeenCalled();
+    expect(Math.min(...mocks.auth.refreshAccess.mock.invocationCallOrder)).toBeLessThan(mocks.navigate.mock.invocationCallOrder[0]);
   });
 
   it('keeps traveler details editable when an inline checkout transaction already exists', () => {

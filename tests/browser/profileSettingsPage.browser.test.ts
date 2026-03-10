@@ -527,4 +527,27 @@ describe('pages/ProfileSettingsPage username governance', () => {
       expect(assignMock).toHaveBeenCalledWith('https://vendors.paddle.test/manage');
     });
   });
+
+  it('allows Paddle management lookup even when the local subscription row is missing', async () => {
+    const assignMock = vi.fn();
+    Object.defineProperty(window, 'location', {
+      value: { ...window.location, assign: assignMock },
+      writable: true,
+    });
+
+    mocks.getCurrentSubscriptionSummary.mockResolvedValueOnce(null);
+    const user = userEvent.setup();
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByText('settings.billing.title')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('button', { name: 'settings.billing.cancelCta' }));
+
+    await waitFor(() => {
+      expect(mocks.getPaddleSubscriptionManagementUrls).toHaveBeenCalled();
+      expect(assignMock).toHaveBeenCalledWith('https://vendors.paddle.test/cancel');
+    });
+  });
 });

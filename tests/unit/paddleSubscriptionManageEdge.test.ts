@@ -32,4 +32,35 @@ describe('paddle subscription manage edge internals', () => {
       graceEndsAt: null,
     });
   });
+
+  it('prefers active configured subscriptions when falling back to Paddle lookup', () => {
+    const result = __paddleSubscriptionManageInternals.pickBestFallbackSubscription(
+      [
+        {
+          id: 'sub_canceled',
+          status: 'canceled',
+          updated_at: '2026-03-10T10:00:00.000Z',
+          items: [{ price_id: 'pri_mid' }],
+        },
+        {
+          id: 'sub_active',
+          status: 'active',
+          updated_at: '2026-03-09T10:00:00.000Z',
+          items: [{ price_id: 'pri_mid' }],
+        },
+        {
+          id: 'sub_other_price',
+          status: 'active',
+          updated_at: '2026-03-11T10:00:00.000Z',
+          items: [{ price_id: 'pri_other' }],
+        },
+      ],
+      new Set(['pri_mid']),
+    );
+
+    expect(result).toMatchObject({
+      id: 'sub_active',
+      status: 'active',
+    });
+  });
 });

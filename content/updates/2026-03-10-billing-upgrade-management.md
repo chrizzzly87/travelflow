@@ -13,6 +13,7 @@ summary: "Existing paid users can now upgrade plans in place, manage Paddle bill
 ## Changes
 - [x] [Improved] ⬆️ Existing paid users can now upgrade from Explorer to Globetrotter inside the app without starting a second subscription from scratch.
 - [x] [Improved] 💳 Profile settings now surface the current plan, renewal state, and direct billing-management and cancellation links so subscribers can find Paddle controls quickly.
+- [x] [Fixed] 🧭 Checkout email confirmation now returns users back into the billing flow reliably, and billing management can recover Paddle subscription links even when local sync lags behind.
 - [x] [Fixed] 🛟 Account access now shows a clear support path when a preview or deployment is missing the required account-service connection, and auth forms flag invalid email input more clearly.
 - [x] [Improved] 🧾 Admin billing now shows richer subscription details, current monthly recurring revenue by currency, status mix, and at-risk revenue charts.
 - [x] [Improved] 🕵️ Admin user and audit views now surface billing lifecycle details so subscription mismatches and webhook-driven changes are easier to inspect.

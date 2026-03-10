@@ -164,6 +164,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
         () => normalizeLocale(i18n.resolvedLanguage ?? i18n.language ?? 'en'),
         [i18n.language, i18n.resolvedLanguage]
     );
+    const hasPaidTier = access?.tierKey === 'tier_mid' || access?.tierKey === 'tier_premium';
 
     const heading = mode === 'onboarding' ? t('settings.onboardingTitle') : t('settings.title');
     const description = mode === 'onboarding'
@@ -1023,7 +1024,9 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                     </div>
                                     <div className="rounded-lg border border-slate-200 bg-white px-3 py-3">
                                         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.billing.statusLabel')}</p>
-                                        <p className="mt-1 text-sm font-semibold text-slate-900">{subscriptionSummary?.providerStatus || t('settings.billing.noSubscription')}</p>
+                                        <p className="mt-1 text-sm font-semibold text-slate-900">
+                                            {subscriptionSummary?.providerStatus || (hasPaidTier ? '—' : t('settings.billing.noSubscription'))}
+                                        </p>
                                     </div>
                                     <div className="rounded-lg border border-slate-200 bg-white px-3 py-3">
                                         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.billing.renewalLabel')}</p>
@@ -1045,7 +1048,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                     <button
                                         type="button"
                                         onClick={() => void openBillingManagement('manage')}
-                                        disabled={isBillingLoading || isManageBillingSubmitting || !subscriptionSummary?.providerSubscriptionId}
+                                        disabled={isBillingLoading || isManageBillingSubmitting || !hasPaidTier}
                                         className="inline-flex h-10 items-center gap-2 rounded-lg bg-accent-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-accent-700 disabled:cursor-not-allowed disabled:opacity-60"
                                         {...getAnalyticsDebugAttributes('profile_settings__billing--manage')}
                                     >
@@ -1055,7 +1058,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                     <button
                                         type="button"
                                         onClick={() => void openBillingManagement('cancel')}
-                                        disabled={isBillingLoading || isCancelBillingSubmitting || !subscriptionSummary?.providerSubscriptionId}
+                                        disabled={isBillingLoading || isCancelBillingSubmitting || !hasPaidTier}
                                         className="inline-flex h-10 items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-900 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                                         {...getAnalyticsDebugAttributes('profile_settings__billing--cancel')}
                                     >

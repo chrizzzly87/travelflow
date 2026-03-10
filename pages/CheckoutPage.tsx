@@ -356,16 +356,21 @@ export const CheckoutPage: React.FC = () => {
         void acceptCurrentTerms({
             locale: activeLocale,
             source: 'signup_checkout_email_confirmation',
-        }).then(({ error }) => {
+        }).then(async ({ error }) => {
             if (cancelled) return;
             if (error) {
                 setCheckoutErrorMessage(error.message || t('checkout.errorConfig', { ns: 'pricing' }));
                 return;
             }
+            try {
+                await refreshAccess();
+            } catch (refreshError) {
+                if (!cancelled) {
+                    console.warn('Checkout terms refresh failed after confirmation redirect.', refreshError);
+                }
+            }
+            if (cancelled) return;
             navigate(cleanedTarget, { replace: true });
-            void refreshAccess().catch((refreshError) => {
-                console.warn('Checkout terms refresh failed after confirmation redirect.', refreshError);
-            });
         }).finally(() => {
             if (!cancelled) {
                 setIsAutoAcceptingSignupTerms(false);
