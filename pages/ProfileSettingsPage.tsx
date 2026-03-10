@@ -125,7 +125,7 @@ const formatDateLabel = (value: string, locale: string): string => {
 
 export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode = 'settings' }) => {
     const navigate = useNavigate();
-    const { t, i18n } = useTranslation('profile');
+    const { t, i18n } = useTranslation(['profile', 'pricing']);
     const {
         isLoading,
         isAuthenticated,
@@ -228,10 +228,10 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
 
     const isProfileLoading = isAuthProfileLoading || !hasHydratedForm;
     const currentTierLabel = access?.tierKey === 'tier_premium'
-        ? 'Globetrotter'
+        ? t('tiers.globetrotter.name', { ns: 'pricing' })
         : access?.tierKey === 'tier_mid'
-            ? 'Explorer'
-            : 'Backpacker';
+            ? t('tiers.explorer.name', { ns: 'pricing' })
+            : t('tiers.backpacker.name', { ns: 'pricing' });
 
     const normalizedUsername = useMemo(() => normalizeUsernameInput(form.username), [form.username]);
     const normalizedUsernameDisplay = useMemo(() => normalizeUsernameDisplayInput(form.username), [form.username]);
