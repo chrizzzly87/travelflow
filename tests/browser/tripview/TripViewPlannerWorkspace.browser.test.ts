@@ -176,6 +176,38 @@ describe('components/tripview/TripViewPlannerWorkspace', () => {
     expect(unmounts).toHaveBeenCalledTimes(0);
   });
 
+  it('remounts the map component when the trip id changes so a new trip starts clean', () => {
+    const mounts = vi.fn();
+    const unmounts = vi.fn();
+    const PersistentMap: React.FC = () => {
+      React.useEffect(() => {
+        mounts();
+        return () => {
+          unmounts();
+        };
+      }, []);
+      return React.createElement('div', { 'data-testid': 'map-component' }, 'map');
+    };
+
+    const initialProps = {
+      ...baseProps(),
+      isMapBootstrapEnabled: true,
+      ItineraryMapComponent: PersistentMap,
+    };
+
+    const { rerender } = render(React.createElement(TripViewPlannerWorkspace, initialProps));
+    expect(mounts).toHaveBeenCalledTimes(1);
+    expect(unmounts).toHaveBeenCalledTimes(0);
+
+    rerender(React.createElement(TripViewPlannerWorkspace, {
+      ...initialProps,
+      tripId: 'trip-2',
+    }));
+
+    expect(mounts).toHaveBeenCalledTimes(2);
+    expect(unmounts).toHaveBeenCalledTimes(1);
+  });
+
   it('does not apply a default view transition name when none is provided', () => {
     const capturedViewTransitionNames: Array<string | undefined> = [];
     const props = baseProps();
