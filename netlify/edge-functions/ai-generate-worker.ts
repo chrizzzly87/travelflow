@@ -182,6 +182,14 @@ const extractBearerToken = (authorizationHeader: string | null): string | null =
   return token ? token : null;
 };
 
+interface WorkerAuthorizationDiagnostics {
+  hasConfiguredAdminKey: boolean;
+  configuredAdminKeyLength: number;
+  providedAdminKeyLength: number;
+  hasAuthorizationHeader: boolean;
+  bearerUserResolved: boolean;
+}
+
 const resolveAuthenticatedWorkerUserId = async (
   config: { url: string; serviceRoleKey: string },
   authorizationHeader: string | null,
@@ -1060,14 +1068,29 @@ const claimJobs = async (
 const ensureWorkerAuthorized = async (
   request: Request,
   config: { url: string; serviceRoleKey: string },
-): Promise<{ authorized: boolean; mode: "admin" | "user" | "none"; userId: string | null }> => {
+): Promise<{
+  authorized: boolean;
+  mode: "admin" | "user" | "none";
+  userId: string | null;
+  diagnostics: WorkerAuthorizationDiagnostics;
+}> => {
   const expected = readEnv("TF_ADMIN_API_KEY").trim();
   const provided = request.headers.get(WORKER_HEADER)?.trim() || "";
+  const diagnosticsBase = {
+    hasConfiguredAdminKey: expected.length > 0,
+    configuredAdminKeyLength: expected.length,
+    providedAdminKeyLength: provided.length,
+    hasAuthorizationHeader: Boolean(request.headers.get("authorization")),
+  };
   if (expected && provided && expected === provided) {
     return {
       authorized: true,
       mode: "admin",
       userId: null,
+      diagnostics: {
+        ...diagnosticsBase,
+        bearerUserResolved: false,
+      },
     };
   }
 
@@ -1077,6 +1100,10 @@ const ensureWorkerAuthorized = async (
       authorized: true,
       mode: "user",
       userId,
+      diagnostics: {
+        ...diagnosticsBase,
+        bearerUserResolved: true,
+      },
     };
   }
 
@@ -1084,6 +1111,10 @@ const ensureWorkerAuthorized = async (
     authorized: false,
     mode: "none",
     userId: null,
+    diagnostics: {
+      ...diagnosticsBase,
+      bearerUserResolved: false,
+    },
   };
 };
 
@@ -1601,10 +1632,12 @@ export const processGenerationWorkerRequest = async (request: Request): Promise<
 
   const auth = await ensureWorkerAuthorized(request, config);
   if (!auth.authorized) {
+    console.error("[ai-generate-worker] unauthorized process request", auth.diagnostics);
     return json(401, {
       ok: false,
       error: "Unauthorized worker request.",
       code: "WORKER_UNAUTHORIZED",
+      details: auth.diagnostics,
     });
   }
 
@@ -1680,10 +1713,12 @@ export const handleGenerationWorkerRequest = async (request: Request): Promise<R
 
   const auth = await ensureWorkerAuthorized(request, config);
   if (!auth.authorized) {
+    console.error("[ai-generate-worker] unauthorized dispatch request", auth.diagnostics);
     return json(401, {
       ok: false,
       error: "Unauthorized worker request.",
       code: "WORKER_UNAUTHORIZED",
+      details: auth.diagnostics,
     });
   }
 

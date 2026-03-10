@@ -65,6 +65,17 @@ export const shouldApplyPolledTripUpdate = (
     return remoteAttemptStartedAtMs >= localAttemptStartedAtMs;
 };
 
+export const shouldUseRemoteTripForAsyncStallRecovery = (
+    localTrip: ITrip,
+    remoteTrip: ITrip | null | undefined,
+    nowMs: number,
+): boolean => {
+    if (!remoteTrip) return false;
+    const remoteState = getTripGenerationState(remoteTrip, nowMs);
+    if (remoteState !== 'failed' && remoteState !== 'succeeded') return false;
+    return shouldApplyPolledTripUpdate(localTrip, remoteTrip, nowMs);
+};
+
 export const getAsyncTripGenerationStallRecoveryAction = (input: {
     latestAttemptId: string | null | undefined;
     generationElapsedMs: number | null | undefined;
