@@ -47,6 +47,7 @@ export const TripViewHeader: React.FC<TripViewHeaderProps> = ({
     isTripLockedByExpiry,
 }) => {
     const { t } = useTranslation('common');
+    const headerSecondaryButtonClassName = 'inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60';
     const titleStyle = titleViewTransitionName
         ? ({ viewTransitionName: titleViewTransitionName } as React.CSSProperties)
         : undefined;
@@ -103,7 +104,7 @@ export const TripViewHeader: React.FC<TripViewHeaderProps> = ({
                     onMouseEnter={onPrewarmTripInfo}
                     onFocus={onPrewarmTripInfo}
                     onTouchStart={onPrewarmTripInfo}
-                    className="group flex min-w-0 flex-1 items-start gap-2 rounded-xl px-2 py-1 text-left transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-200"
+                    className="group flex min-w-0 flex-1 items-start gap-2 rounded-xl px-2 py-1 text-left transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
                     aria-label={titleTooltip}
                     data-tooltip={titleTooltip}
                     {...getAnalyticsDebugAttributes('trip_view__trip_info--open', { source: 'header_title' })}
@@ -137,7 +138,7 @@ export const TripViewHeader: React.FC<TripViewHeaderProps> = ({
                         trackEvent('navigation__my_trips', { source: 'trip_view_header' });
                         onOpenManager();
                     }}
-                    className={`flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50 ${isMobile ? 'h-10 w-10 justify-center px-0' : ''}`}
+                    className={`${headerSecondaryButtonClassName} ${isMobile ? 'h-10 w-10 justify-center px-0' : ''}`}
                     aria-label={t('tripView.header.trips')}
                     data-tooltip={t('tripView.header.tripsTooltip')}
                     {...getAnalyticsDebugAttributes('navigation__my_trips', { source: 'trip_view_header' })}
@@ -178,7 +179,7 @@ export const TripViewHeader: React.FC<TripViewHeaderProps> = ({
                         type="button"
                         onClick={onHeaderAuthAction}
                         disabled={isHeaderAuthSubmitting}
-                        className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                        className={headerSecondaryButtonClassName}
                         aria-label={t('nav.login')}
                     >
                         {t('nav.login')}

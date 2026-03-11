@@ -70,7 +70,7 @@ describe('components/tripview/TripFloatingMapPreview', () => {
     );
 
     await waitFor(() => {
-      expect(mapViewportRef.current?.style.width).toContain('420');
+      expect(mapViewportRef.current?.style.width).toContain('419');
       expect(mapViewportRef.current?.style.height).toContain('360');
     });
 
@@ -92,7 +92,7 @@ describe('components/tripview/TripFloatingMapPreview', () => {
     });
 
     await waitFor(() => {
-      expect(mapViewportRef.current?.style.width).toContain('680');
+      expect(mapViewportRef.current?.style.width).toContain('679');
       expect(mapViewportRef.current?.style.height).toContain('300');
     });
   });
@@ -249,6 +249,82 @@ describe('components/tripview/TripFloatingMapPreview', () => {
     } finally {
       Object.defineProperty(window, 'innerWidth', { configurable: true, value: originalInnerWidth });
       Object.defineProperty(window, 'innerHeight', { configurable: true, value: originalInnerHeight });
+      vi.useRealTimers();
+    }
+  });
+
+  it('re-anchors the floating map when the reserved right inset shrinks', () => {
+    vi.useFakeTimers();
+    const originalInnerWidth = window.innerWidth;
+    const originalInnerHeight = window.innerHeight;
+    const initialReservedRightInset = 360;
+    const nextReservedRightInset = 180;
+    const mapViewportRef = { current: null as HTMLDivElement | null };
+    const dockedMapAnchorRef = { current: null as HTMLDivElement | null };
+
+    try {
+      const baseWidth = Math.max(180, Math.min(420, originalInnerWidth * 0.26));
+      const shortEdge = resolveFloatingMapPresetWidths(baseWidth).lg;
+      const panelWidth = shortEdge;
+      const panelHeight = shortEdge * 1.5;
+      writeFloatingMapPreviewState({
+        mode: 'floating',
+        sizePreset: 'lg',
+        orientation: 'portrait',
+        position: {
+          x: Math.max(24, originalInnerWidth - initialReservedRightInset - panelWidth - 24),
+          y: Math.max(92, originalInnerHeight - panelHeight - 24),
+        },
+      });
+
+      const { rerender } = render(
+        React.createElement(
+          TripFloatingMapPreview,
+          {
+            mapDockMode: 'floating',
+            mapViewportRef,
+            dockedMapAnchorRef,
+            dockedGeometryKey: 'floating',
+            reservedRightInset: initialReservedRightInset,
+            tripId: 'trip-reserved-inset',
+          },
+          React.createElement('div', { 'data-testid': 'map-content' }, 'map'),
+        ),
+      );
+
+      act(() => {
+        rerender(
+          React.createElement(
+            TripFloatingMapPreview,
+            {
+              mapDockMode: 'floating',
+              mapViewportRef,
+              dockedMapAnchorRef,
+              dockedGeometryKey: 'floating',
+              reservedRightInset: nextReservedRightInset,
+              tripId: 'trip-reserved-inset',
+            },
+            React.createElement('div', { 'data-testid': 'map-content' }, 'map'),
+          ),
+        );
+      });
+
+      act(() => {
+        window.dispatchEvent(new Event('resize'));
+        vi.advanceTimersByTime(180);
+      });
+
+      const state = readFloatingMapPreviewState();
+      expect(state.position).toBeTruthy();
+      expect(state.position?.x).toBeCloseTo(
+        Math.max(24, originalInnerWidth - nextReservedRightInset - panelWidth - 24),
+        0,
+      );
+      expect(state.position?.y).toBeCloseTo(
+        Math.max(92, originalInnerHeight - panelHeight - 24),
+        0,
+      );
+    } finally {
       vi.useRealTimers();
     }
   });

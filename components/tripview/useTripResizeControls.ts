@@ -8,7 +8,6 @@ interface UseTripResizeControlsOptions {
     mapDockMode: 'docked' | 'floating';
     timelineMode: 'calendar' | 'timeline';
     timelineView: 'horizontal' | 'vertical';
-    horizontalTimelineDayCount: number;
     zoomLevel: number;
     isZoomDirty: boolean;
     clampZoomLevel: (value: number) => number;
@@ -32,7 +31,6 @@ interface UseTripResizeControlsOptions {
     horizontalTimelineAutoFitPadding: number;
     verticalTimelineAutoFitPadding: number;
     zoomLevelPresets: number[];
-    basePixelsPerDay: number;
     onAutoFitZoomApplied?: () => void;
     onManualViewSettingsChange?: () => void;
     onPaneResize?: () => void;
@@ -40,6 +38,37 @@ interface UseTripResizeControlsOptions {
 
 const MIN_AUTO_FIT_TIMELINE_WIDTH = 160;
 const MIN_AUTO_FIT_TIMELINE_HEIGHT = 220;
+
+const parseDimensionValue = (value?: string): number | null => {
+    if (!value) return null;
+    const parsed = Number.parseFloat(value);
+    return Number.isFinite(parsed) ? parsed : null;
+};
+
+const resolveTimelineSurface = (viewport: HTMLDivElement): HTMLElement =>
+    viewport.querySelector<HTMLElement>('.timeline-scroll') ?? viewport;
+
+const resolveTimelineContentExtent = (
+    surface: HTMLElement,
+    axis: 'width' | 'height',
+): number => {
+    const contentElement = surface.firstElementChild instanceof HTMLElement
+        ? surface.firstElementChild
+        : null;
+    const explicitExtent = parseDimensionValue(
+        axis === 'width' ? contentElement?.style.width : contentElement?.style.height,
+    );
+
+    if (explicitExtent !== null && explicitExtent > 0) {
+        return explicitExtent;
+    }
+
+    const scrollExtent = axis === 'width'
+        ? Math.max(surface.scrollWidth, contentElement?.scrollWidth ?? 0)
+        : Math.max(surface.scrollHeight, contentElement?.scrollHeight ?? 0);
+
+    return scrollExtent;
+};
 
 const resolveAutoFitZoom = (
     targetZoom: number,
@@ -69,7 +98,6 @@ export const useTripResizeControls = ({
     mapDockMode,
     timelineMode,
     timelineView,
-    horizontalTimelineDayCount,
     zoomLevel,
     isZoomDirty,
     clampZoomLevel,
@@ -93,7 +121,6 @@ export const useTripResizeControls = ({
     horizontalTimelineAutoFitPadding,
     verticalTimelineAutoFitPadding,
     zoomLevelPresets,
-    basePixelsPerDay,
     onAutoFitZoomApplied,
     onManualViewSettingsChange,
     onPaneResize,
@@ -181,24 +208,28 @@ export const useTripResizeControls = ({
 
         const timelineViewport = verticalLayoutTimelineRef.current;
         if (!timelineViewport) return false;
+        const timelineSurface = resolveTimelineSurface(timelineViewport);
 
-        const dayCount = Math.max(1, horizontalTimelineDayCount);
-        let targetPixelsPerDay: number | null = null;
+        let targetZoom: number | null = null;
 
         if (fitMode === 'horizontal') {
-            const measuredWidth = timelineViewport.clientWidth;
+            const measuredWidth = timelineSurface.clientWidth || timelineViewport.clientWidth;
             if (measuredWidth <= 0) return false;
+            const contentWidth = resolveTimelineContentExtent(timelineSurface, 'width');
+            if (contentWidth <= 0) return false;
             const usableTimelineWidth = Math.max(MIN_AUTO_FIT_TIMELINE_WIDTH, measuredWidth - horizontalTimelineAutoFitPadding);
-            targetPixelsPerDay = usableTimelineWidth / dayCount;
+            targetZoom = zoomLevel * (usableTimelineWidth / contentWidth);
         } else {
-            const measuredHeight = timelineViewport.clientHeight;
+            const measuredHeight = timelineSurface.clientHeight || timelineViewport.clientHeight;
             if (measuredHeight <= 0) return false;
+            const contentHeight = resolveTimelineContentExtent(timelineSurface, 'height');
+            if (contentHeight <= 0) return false;
             const usableTimelineHeight = Math.max(MIN_AUTO_FIT_TIMELINE_HEIGHT, measuredHeight - verticalTimelineAutoFitPadding);
-            targetPixelsPerDay = usableTimelineHeight / dayCount;
+            targetZoom = zoomLevel * (usableTimelineHeight / contentHeight);
         }
 
         const nextZoom = resolveAutoFitZoom(
-            targetPixelsPerDay / basePixelsPerDay,
+            targetZoom,
             clampZoomLevel,
             zoomLevelPresets,
         );
@@ -213,10 +244,8 @@ export const useTripResizeControls = ({
         setZoomLevel((previous) => (Math.abs(previous - nextZoom) < 0.01 ? previous : nextZoom));
         return true;
     }, [
-        basePixelsPerDay,
         clampZoomLevel,
         horizontalTimelineAutoFitPadding,
-        horizontalTimelineDayCount,
         isZoomDirty,
         onAutoFitZoomApplied,
         setZoomLevel,
