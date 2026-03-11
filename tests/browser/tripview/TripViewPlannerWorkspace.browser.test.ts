@@ -93,14 +93,14 @@ describe('components/tripview/TripViewPlannerWorkspace', () => {
     expect(screen.getByLabelText('Horizontal timeline direction')).toBeInTheDocument();
     expect(screen.getByLabelText('Vertical timeline direction')).toBeInTheDocument();
     expect(screen.getByLabelText('Zoom out timeline')).toBeInTheDocument();
-    expect(screen.getByRole('status')).toHaveTextContent('×1');
+    expect(screen.getByRole('status')).toHaveTextContent('×1.0');
     expect(screen.getByLabelText('Fit timeline to available space')).toBeInTheDocument();
     expect(screen.getByLabelText('Zoom in timeline')).toBeInTheDocument();
 
     const modeGroup = calendarModeButton.parentElement;
     const controlsRoot = modeGroup?.parentElement;
     expect(controlsRoot?.lastElementChild).toBe(modeGroup);
-    expect(modeGroup).toHaveClass('gap-1');
+    expect(modeGroup).toHaveClass('gap-0.5');
   });
 
   it('hides calendar-only controls in timeline list mode', () => {

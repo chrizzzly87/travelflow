@@ -33,6 +33,7 @@ const FLOATING_MAP_SETTLE_DURATION_MS = 380;
 const FLOATING_MAP_RESIZE_SETTLE_MS = 140;
 const FLOATING_MAP_BORDER_RADIUS = '1rem';
 const FLOATING_MAP_NAV_TOP_OFFSET = 92;
+const DOCKED_MAP_EDGE_GUARD_PX = 1;
 const FLOATING_MAP_ASPECT_RATIO: Record<FloatingMapOrientation, number> = {
     portrait: 2 / 3,
     landscape: 3 / 2,
@@ -254,9 +255,9 @@ const resolveDockedMapRect = (anchor: HTMLDivElement | null): { x: number; y: nu
     const rect = anchor.getBoundingClientRect();
     if (rect.width <= 0 || rect.height <= 0) return null;
     return {
-        x: rect.left,
+        x: rect.left + DOCKED_MAP_EDGE_GUARD_PX,
         y: rect.top,
-        width: rect.width,
+        width: Math.max(0, rect.width - DOCKED_MAP_EDGE_GUARD_PX),
         height: rect.height,
     };
 };
@@ -395,14 +396,27 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
         const currentPosition = floatingMapPositionRef.current
             ?? initialStoredPositionRef.current
             ?? resolveDefaultFloatingMapPosition(floatingMapWidth, floatingMapHeight, reservedRightInset);
-        const clampedPosition = clampFloatingMapPosition(currentPosition, floatingMapWidth, floatingMapHeight, reservedRightInset);
-        floatingMapPositionRef.current = clampedPosition;
-        floatingMapAnchorRef.current = resolveFloatingMapSideAnchor(
-            clampedPosition,
+        const resolvedAnchor = floatingMapAnchorRef.current
+            ?? resolveFloatingMapSideAnchor(
+                currentPosition,
+                floatingMapWidth,
+                floatingMapHeight,
+                reservedRightInset,
+            );
+        const anchoredPosition = resolveFloatingMapPositionForAnchor(
+            resolvedAnchor,
             floatingMapWidth,
             floatingMapHeight,
             reservedRightInset,
         );
+        const clampedPosition = clampFloatingMapPosition(
+            anchoredPosition,
+            floatingMapWidth,
+            floatingMapHeight,
+            reservedRightInset,
+        );
+        floatingMapPositionRef.current = clampedPosition;
+        floatingMapAnchorRef.current = resolvedAnchor;
         initialStoredPositionRef.current = clampedPosition;
         applySurfaceGeometry(
             {

@@ -64,7 +64,7 @@ interface TripViewPlannerWorkspaceProps {
 }
 
 const TRIP_FLOATING_MAP_PREVIEW_BETA_ENABLED = true;
-const formatZoomLevelLabel = (value: number): string => `×${value.toFixed(2).replace(/\.?0+$/, '')}`;
+const formatZoomLevelLabel = (value: number): string => `×${value.toFixed(1)}`;
 
 export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> = ({
     isPaywallLocked,
@@ -140,14 +140,14 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
         : undefined;
 
     const timelineControls = (
-        <div className="flex flex-wrap items-center justify-end gap-2 pointer-events-auto">
+        <div className="flex flex-wrap items-center justify-end gap-1.5 pointer-events-auto">
             {timelineMode === 'calendar' && (
                 <>
-                    <div className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white/90 p-1 shadow-sm backdrop-blur">
+                    <div className="inline-flex items-center gap-0.5 rounded-lg border border-gray-200 bg-white/90 p-0.5 shadow-sm backdrop-blur">
                         <button
                             type="button"
                             onClick={() => onTimelineViewChange('horizontal')}
-                            className={`rounded-md p-1.5 transition-colors ${
+                            className={`rounded-md p-1 transition-colors ${
                                 timelineView === 'horizontal'
                                     ? 'bg-accent-600 text-white'
                                     : 'text-gray-600 hover:bg-gray-100'
@@ -161,7 +161,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                         <button
                             type="button"
                             onClick={() => onTimelineViewChange('vertical')}
-                            className={`rounded-md p-1.5 transition-colors ${
+                            className={`rounded-md p-1 transition-colors ${
                                 timelineView === 'vertical'
                                     ? 'bg-accent-600 text-white'
                                     : 'text-gray-600 hover:bg-gray-100'
@@ -173,11 +173,11 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                             <ArrowUpDown size={16} />
                         </button>
                     </div>
-                    <div className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white/90 p-1 shadow-sm backdrop-blur">
+                    <div className="inline-flex items-center gap-0.5 rounded-lg border border-gray-200 bg-white/90 p-0.5 shadow-sm backdrop-blur">
                         <button
                             type="button"
                             onClick={onZoomOut}
-                            className="rounded-md p-1.5 text-gray-600 transition-colors hover:bg-gray-100"
+                            className="rounded-md p-1 text-gray-600 transition-colors hover:bg-gray-100"
                             aria-label="Zoom out timeline"
                             {...getAnalyticsDebugAttributes('trip_view__zoom', { direction: 'out' })}
                         >
@@ -186,14 +186,14 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                         <span
                             role="status"
                             aria-live="polite"
-                            className="rounded-md px-2.5 py-1 text-xs font-semibold text-slate-700"
+                            className="min-w-[3.35rem] rounded-md px-1.5 py-0.5 text-center text-[11px] font-semibold tabular-nums text-slate-700"
                         >
                             {formatZoomLevelLabel(zoomLevel)}
                         </span>
                         <button
                             type="button"
                             onClick={onZoomIn}
-                            className="rounded-md p-1.5 text-gray-600 transition-colors hover:bg-gray-100"
+                            className="rounded-md p-1 text-gray-600 transition-colors hover:bg-gray-100"
                             aria-label="Zoom in timeline"
                             {...getAnalyticsDebugAttributes('trip_view__zoom', { direction: 'in' })}
                         >
@@ -202,7 +202,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                         <button
                             type="button"
                             onClick={onZoomFit}
-                            className="rounded-md px-2 py-1 text-xs font-semibold text-gray-600 transition-colors hover:bg-gray-100"
+                            className="rounded-md px-1.5 py-0.5 text-[11px] font-semibold text-gray-600 transition-colors hover:bg-gray-100"
                             aria-label={t('tripView.zoom.fitAria')}
                             {...getAnalyticsDebugAttributes('trip_view__zoom_fit', { surface: 'timeline_controls' })}
                         >
@@ -211,11 +211,11 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                     </div>
                 </>
             )}
-            <div className="ms-auto inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white/90 p-1 shadow-sm backdrop-blur">
+            <div className="ms-auto inline-flex items-center gap-0.5 rounded-lg border border-gray-200 bg-white/90 p-0.5 shadow-sm backdrop-blur">
                 <button
                     type="button"
                     onClick={() => onTimelineModeChange('calendar')}
-                    className={`inline-flex items-center rounded-md p-1.5 text-xs font-semibold transition-colors ${
+                    className={`inline-flex items-center rounded-md p-1 text-xs font-semibold transition-colors ${
                         timelineMode === 'calendar'
                             ? 'bg-accent-600 text-white'
                             : 'text-gray-600 hover:bg-gray-100'
@@ -230,7 +230,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                 <button
                     type="button"
                     onClick={() => onTimelineModeChange('timeline')}
-                    className={`inline-flex items-center rounded-md p-1.5 text-xs font-semibold transition-colors ${
+                    className={`inline-flex items-center rounded-md p-1 text-xs font-semibold transition-colors ${
                         timelineMode === 'timeline'
                             ? 'bg-accent-600 text-white'
                             : 'text-gray-600 hover:bg-gray-100'

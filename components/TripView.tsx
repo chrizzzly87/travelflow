@@ -5,7 +5,7 @@ import { AppLanguage, ITrip, ITimelineItem, IViewSettings, ShareMode, TripGenera
 import { getDefaultCreateTripModel } from '../config/aiModelCatalog';
 import { DB_ENABLED } from '../config/db';
 import { GoogleMapsLoader } from './GoogleMapsLoader';
-import { BASE_PIXELS_PER_DAY, DEFAULT_CITY_COLOR_PALETTE_ID, DEFAULT_DISTANCE_UNIT, buildShareUrl, formatDistance, getTimelineBounds, getTripDistanceKm, isInternalMapColorModeControlEnabled, normalizeMapColorMode } from '../utils';
+import { BASE_PIXELS_PER_DAY, DEFAULT_CITY_COLOR_PALETTE_ID, DEFAULT_DISTANCE_UNIT, buildShareUrl, formatDistance, getTripDistanceKm, isInternalMapColorModeControlEnabled, normalizeMapColorMode } from '../utils';
 import { getExampleMapViewTransitionName, getExampleTitleViewTransitionName } from '../shared/viewTransitionNames';
 import { dbGetTrip, type DbTripAccessMetadata } from '../services/dbApi';
 import {
@@ -164,27 +164,30 @@ const MIN_TIMELINE_HEIGHT = 200;
 const MIN_BOTTOM_MAP_HEIGHT = 200;
 const MIN_MAP_WIDTH = 320;
 const MIN_TIMELINE_COLUMN_WIDTH = 420;
-const MIN_DETAILS_WIDTH = 360;
-const HARD_MIN_DETAILS_WIDTH = 260;
-const DEFAULT_DETAILS_WIDTH = 440;
+const MIN_DETAILS_WIDTH = 400;
+const HARD_MIN_DETAILS_WIDTH = 300;
+const DEFAULT_DETAILS_WIDTH = 480;
 const RESIZE_KEYBOARD_STEP = 16;
 const RESIZER_WIDTH = 4;
-const MIN_ZOOM_LEVEL = 0.25;
+const MIN_ZOOM_LEVEL = 0.2;
 const MAX_ZOOM_LEVEL = 3;
 const HORIZONTAL_TIMELINE_AUTO_FIT_PADDING = 72;
 const VERTICAL_TIMELINE_AUTO_FIT_PADDING = 56;
 const TIMELINE_ZOOM_LEVEL_PRESETS = [
-    0.25,
-    0.5,
-    0.75,
+    0.2,
+    0.4,
+    0.6,
+    0.8,
     1,
-    1.25,
-    1.5,
-    1.75,
+    1.2,
+    1.4,
+    1.6,
+    1.8,
     2,
-    2.25,
-    2.5,
-    2.75,
+    2.2,
+    2.4,
+    2.6,
+    2.8,
     3,
 ];
 const NEGATIVE_OFFSET_EPSILON = 0.001;
@@ -1644,10 +1647,6 @@ const useTripViewRender = ({
         if (!Number.isFinite(value)) return 1;
         return Math.max(MIN_ZOOM_LEVEL, Math.min(MAX_ZOOM_LEVEL, value));
     }, []);
-    const horizontalTimelineDayCount = useMemo(() => {
-        const bounds = getTimelineBounds(trip.items);
-        return Math.max(1, bounds.dayCount);
-    }, [trip.items]);
     const pixelsPerDay = BASE_PIXELS_PER_DAY * zoomLevel;
     const {
         handleTimelineTouchStart,
@@ -2580,7 +2579,6 @@ const useTripViewRender = ({
         mapDockMode: effectiveMapDockMode,
         timelineMode,
         timelineView,
-        horizontalTimelineDayCount,
         zoomLevel,
         isZoomDirty,
         clampZoomLevel,
@@ -2604,7 +2602,6 @@ const useTripViewRender = ({
         horizontalTimelineAutoFitPadding: HORIZONTAL_TIMELINE_AUTO_FIT_PADDING,
         verticalTimelineAutoFitPadding: VERTICAL_TIMELINE_AUTO_FIT_PADDING,
         zoomLevelPresets: TIMELINE_ZOOM_LEVEL_PRESETS,
-        basePixelsPerDay: BASE_PIXELS_PER_DAY,
         onAutoFitZoomApplied: markAutoFitZoomChange,
         onManualViewSettingsChange: markManualViewChange,
         onPaneResize: () => {
@@ -2615,13 +2612,13 @@ const useTripViewRender = ({
     useEffect(() => {
         if (typeof window === 'undefined') return;
         if (isMobile) return;
-        if (paneLayoutCustomizedRef.current) return;
         if (effectiveLayoutMode !== 'horizontal' || effectiveMapDockMode !== 'docked') return;
 
         const rebalanceDockedPaneWidths = () => {
+            const availableWidth = window.innerWidth - (detailsPanelVisible ? RESIZER_WIDTH * 2 : RESIZER_WIDTH);
+            const targetPaneWidth = Math.floor(availableWidth / (detailsPanelVisible ? 3 : 2));
+
             if (detailsPanelVisible) {
-                const availableWidth = window.innerWidth - (RESIZER_WIDTH * 2);
-                const targetPaneWidth = Math.floor(availableWidth / 3);
                 const nextDetailsWidth = clampDetailsWidth(targetPaneWidth);
                 const nextSidebarWidth = clampSidebarWidth(targetPaneWidth, nextDetailsWidth);
                 setDetailsWidth(nextDetailsWidth);
@@ -2629,9 +2626,7 @@ const useTripViewRender = ({
                 return;
             }
 
-            const availableWidth = window.innerWidth - RESIZER_WIDTH;
-            const targetTimelineWidth = Math.floor(availableWidth / 2);
-            setSidebarWidth(clampSidebarWidth(targetTimelineWidth, 0));
+            setSidebarWidth(clampSidebarWidth(targetPaneWidth, 0));
         };
 
         rebalanceDockedPaneWidths();
