@@ -252,7 +252,7 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
                     trackEvent('navigation__account_menu--toggle', { open: next });
                 }}
                 className={[
-                    'inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-colors',
+                    'inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm transition-colors',
                     'hover:border-slate-300 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2',
                     compact ? 'h-9 py-1.5' : 'h-10 py-2',
                     fullWidth ? 'w-full justify-between' : '',

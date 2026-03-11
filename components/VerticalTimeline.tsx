@@ -41,6 +41,8 @@ const CITY_VERTICAL_CONNECTOR_TRACK_OFFSET_PX = 10;
 const TRANSFER_LANE_WIDTH_PX = 160; // Tailwind `w-40`
 const TRANSFER_PILL_ATTACH_INSET_PX = 5;
 const TRANSFER_PILL_EDGE_ATTACH_INSET_PX = 3;
+const VERTICAL_DAY_RAIL_WIDTH_PX = 64;
+const VERTICAL_MONTH_RAIL_WIDTH_PX = 24;
 
 const parseLocalTripDate = (value: string): Date | null => {
   if (!value) return null;
@@ -510,6 +512,9 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
 
   // Determine Zoom Level aesthetics
   const isZoomedOut = pixelsPerDay < 50;
+  const isUltraZoomedOut = pixelsPerDay < 34;
+  const showMonthRail = isUltraZoomedOut;
+  const leftRailWidthPx = VERTICAL_DAY_RAIL_WIDTH_PX + (showMonthRail ? VERTICAL_MONTH_RAIL_WIDTH_PX : 0);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -591,59 +596,111 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
             )}
             
             {/* Header (Dates) - Vertical Column */}
-            <div className="sticky left-0 z-20 flex h-full w-16 flex-shrink-0 flex-col border-r border-gray-200 bg-white shadow-sm">
-                {/* Header matches Stays/Travel/Activities headers */}
-                <div className="sticky top-0 h-8 flex items-center justify-center z-40 bg-white/95 backdrop-blur border-b border-gray-100 flex-shrink-0">
-                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Day</span>
-                </div>
+            <div
+                className="sticky left-0 z-20 flex h-full flex-shrink-0 border-r border-gray-200 bg-white shadow-sm"
+                style={{ width: `${leftRailWidthPx}px` }}
+            >
+                {showMonthRail && (
+                    <div
+                        className="relative flex h-full flex-shrink-0 flex-col border-r border-gray-100 bg-slate-50/80"
+                        style={{ width: `${VERTICAL_MONTH_RAIL_WIDTH_PX}px` }}
+                    >
+                        <div className="sticky top-0 h-8 border-b border-gray-100 bg-slate-50/90 backdrop-blur" />
+                        <div className="relative w-full flex-1">
+                            {renderedDaySlots.map((slot, index) => {
+                                const isToday = slot.isToday;
+                                const showsMonthLabel = index === 0 || renderedDaySlots[index - 1]?.monthName !== slot.monthName;
 
-                <div className="relative w-full flex-1">
-                    {renderedDaySlots.map((slot) => {
-                        const isToday = slot.isToday;
-                        
-                        return (
-                            <div 
-                                key={slot.index} 
-                                className={`flex-shrink-0 border-b border-gray-100 flex flex-col justify-center px-1 select-none group absolute w-full
-                                    ${isToday ? 'bg-red-50/70' : slot.isWeekend ? 'bg-gray-50' : 'bg-white'}
-                                `}
-                                style={{ 
-                                    height: `${slot.size}px`,
-                                    top: `${slot.start}px`,
-                                    left: 0
-                                }}
-                            >
-                                {isZoomedOut ? (
-                                    <div className="flex h-full w-full flex-col items-center justify-center text-center">
-                                        <span className={`text-xs font-bold uppercase leading-none ${isToday ? 'text-red-500' : slot.isWeekend ? 'text-red-400' : 'text-gray-400'}`}>
-                                            {slot.date.toLocaleDateString('en-US', { weekday: 'narrow' })}
-                                        </span>
-                                        <span className={`text-sm font-semibold leading-tight ${isToday ? 'text-red-700' : 'text-gray-700'}`}>
-                                            {slot.dayNum}
-                                        </span>
+                                return (
+                                    <div
+                                        key={`month-rail-${slot.index}`}
+                                        className={`absolute inset-x-0 border-b border-gray-100 ${
+                                            isToday ? 'bg-red-50/70' : slot.isWeekend ? 'bg-gray-50' : 'bg-slate-50/80'
+                                        }`}
+                                        style={{
+                                            height: `${slot.size}px`,
+                                            top: `${slot.start}px`,
+                                        }}
+                                    >
+                                        {showsMonthLabel && (
+                                            <span
+                                                className="absolute left-1/2 top-3 origin-center -translate-x-1/2 -rotate-90 whitespace-nowrap text-[9px] font-bold uppercase tracking-[0.16em] text-slate-400"
+                                                aria-label={slot.monthName}
+                                            >
+                                                {slot.monthShort}
+                                            </span>
+                                        )}
                                     </div>
-                                ) : (
-                                    // Detailed View (Standard)
-                                    <div className="text-center">
-                                        <span className={`text-[10px] font-bold uppercase block leading-none ${isToday ? 'text-red-500' : slot.isWeekend ? 'text-red-400' : 'text-gray-400'}`}>
-                                            {slot.dayName}
-                                        </span>
-                                        <span className={`text-lg font-bold block leading-tight ${isToday ? 'text-red-700' : 'text-gray-700'}`}>
-                                            {slot.dayNum}
-                                        </span>
-                                        <span className={`text-[10px] uppercase leading-none ${isToday ? 'text-red-500' : 'text-gray-400'}`}>
-                                            {slot.monthShort}
-                                        </span>
-                                    </div>
-                                )}
-                            </div>
-                        );
-                    })}
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
+
+                <div
+                    className="flex h-full flex-shrink-0 flex-col"
+                    style={{ width: `${VERTICAL_DAY_RAIL_WIDTH_PX}px` }}
+                >
+                    <div className="sticky top-0 z-40 flex h-8 flex-shrink-0 items-center justify-center border-b border-gray-100 bg-white/95 backdrop-blur">
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Day</span>
+                    </div>
+
+                    <div className="relative w-full flex-1">
+                        {renderedDaySlots.map((slot) => {
+                            const isToday = slot.isToday;
+
+                            return (
+                                <div
+                                    key={slot.index}
+                                    className={`absolute flex w-full select-none items-center justify-center border-b border-gray-100 px-1 ${
+                                        isToday ? 'bg-red-50/70' : slot.isWeekend ? 'bg-gray-50' : 'bg-white'
+                                    }`}
+                                    style={{
+                                        height: `${slot.size}px`,
+                                        top: `${slot.start}px`,
+                                        left: 0,
+                                    }}
+                                >
+                                    {isUltraZoomedOut ? (
+                                        <div className="flex h-full w-full items-center justify-center gap-1.5 text-center">
+                                            <span className={`text-xs font-bold uppercase leading-none ${isToday ? 'text-red-500' : slot.isWeekend ? 'text-red-400' : 'text-gray-400'}`}>
+                                                {slot.date.toLocaleDateString('en-US', { weekday: 'narrow' })}
+                                            </span>
+                                            <span className={`text-sm font-semibold leading-none ${isToday ? 'text-red-700' : 'text-gray-700'}`}>
+                                                {slot.dayNum}
+                                            </span>
+                                        </div>
+                                    ) : isZoomedOut ? (
+                                        <div className="flex h-full w-full flex-col items-center justify-center text-center">
+                                            <span className={`text-xs font-bold uppercase leading-none ${isToday ? 'text-red-500' : slot.isWeekend ? 'text-red-400' : 'text-gray-400'}`}>
+                                                {slot.date.toLocaleDateString('en-US', { weekday: 'narrow' })}
+                                            </span>
+                                            <span className={`text-sm font-semibold leading-tight ${isToday ? 'text-red-700' : 'text-gray-700'}`}>
+                                                {slot.dayNum}
+                                            </span>
+                                        </div>
+                                    ) : (
+                                        <div className="text-center">
+                                            <span className={`block text-[10px] font-bold uppercase leading-none ${isToday ? 'text-red-500' : slot.isWeekend ? 'text-red-400' : 'text-gray-400'}`}>
+                                                {slot.dayName}
+                                            </span>
+                                            <span className={`block text-lg font-bold leading-tight ${isToday ? 'text-red-700' : 'text-gray-700'}`}>
+                                                {slot.dayNum}
+                                            </span>
+                                            <span className={`text-[10px] uppercase leading-none ${isToday ? 'text-red-500' : 'text-gray-400'}`}>
+                                                {slot.monthShort}
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
                 </div>
             </div>
 
             {/* Grid Background Lines (Horizontal) */}
-            <div className="absolute top-8 bottom-0 left-16 right-0 pointer-events-none flex flex-col z-0">
+            <div className="absolute top-8 bottom-0 right-0 pointer-events-none z-0 flex flex-col" style={{ left: `${leftRailWidthPx}px` }}>
                 {renderedDaySlots.map((slot) => (
                     <div 
                         key={slot.index}
