@@ -14,6 +14,7 @@ import { extractServiceError } from '../edge-lib/paddle-webhook-sync.ts';
 
 type CheckoutTierKey = Extract<PlanTierKey, 'tier_mid' | 'tier_premium'>;
 type PaddleDiscountRecord = Record<string, unknown>;
+type PaddleDiscountMatch = { discount: PaddleDiscountRecord; matchedBy: 'code' | 'description' } | null;
 
 const parseTierKey = (value: unknown): CheckoutTierKey | null => {
   if (value === 'tier_mid') return 'tier_mid';
@@ -38,6 +39,23 @@ const asInteger = (value: unknown): number | null => {
 const normalizeCode = (value: unknown): string | null => {
   const normalized = asTrimmedString(value);
   return normalized ? normalized.toUpperCase() : null;
+};
+
+const findMatchingDiscount = (
+  discounts: PaddleDiscountRecord[],
+  code: string,
+): PaddleDiscountMatch => {
+  const exactCodeMatch = discounts.find((candidate) => normalizeCode(candidate.code) === code);
+  if (exactCodeMatch) {
+    return { discount: exactCodeMatch, matchedBy: 'code' };
+  }
+
+  const descriptionMatch = discounts.find((candidate) => normalizeCode(candidate.description) === code);
+  if (descriptionMatch) {
+    return { discount: descriptionMatch, matchedBy: 'description' };
+  }
+
+  return null;
 };
 
 const isCheckoutEnabled = (discount: PaddleDiscountRecord): boolean =>
@@ -142,6 +160,7 @@ export const __paddleDiscountLookupInternals = {
   isDiscountApplicableToTarget,
   normalizeCode,
   parseTierKey,
+  findMatchingDiscount,
 };
 
 export default async (request: Request): Promise<Response> => {
@@ -183,10 +202,20 @@ export default async (request: Request): Promise<Response> => {
       listDiscounts(baseUrl, paddleConfig.apiKey),
       loadPriceDetail(baseUrl, paddleConfig.apiKey, targetPriceId),
     ]);
-    const discount = discounts.find((candidate) => normalizeCode(candidate.code) === code);
+    const match = findMatchingDiscount(discounts, code);
+    const discount = match?.discount;
 
-    if (!discount || !isDiscountActive(discount) || !isCheckoutEnabled(discount)) {
+    if (!discount) {
       return json(404, { ok: false, error: 'Voucher code not found or not available for checkout.' });
+    }
+    if (!isDiscountActive(discount)) {
+      return json(409, { ok: false, error: 'This Paddle discount exists, but it is not active right now.' });
+    }
+    if (match?.matchedBy === 'description' && !normalizeCode(discount.code)) {
+      return json(409, { ok: false, error: 'This Paddle discount exists, but it does not expose a redeemable checkout code yet.' });
+    }
+    if (!isCheckoutEnabled(discount)) {
+      return json(409, { ok: false, error: 'This Paddle discount exists, but it is not enabled for checkout.' });
     }
 
     const applicableToTier = isDiscountApplicableToTarget(discount, targetPriceId, priceDetail.productId);

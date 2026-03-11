@@ -548,6 +548,61 @@ describe('pages/CheckoutPage', () => {
     });
   });
 
+  it('previews voucher savings before applying the code', async () => {
+    const user = userEvent.setup();
+    mocks.auth.profile = {
+      firstName: '',
+      lastName: '',
+      bio: '',
+      country: '',
+      city: '',
+      preferredLanguage: 'en',
+      publicProfileEnabled: true,
+      defaultPublicTripVisibility: true,
+      username: 'ada',
+      usernameDisplay: 'ada',
+      gender: '',
+    };
+
+    render(React.createElement(CheckoutPage));
+
+    await user.type(screen.getByPlaceholderText('voucher.placeholder'), 'spring20');
+
+    await waitFor(() => {
+      expect(mocks.lookupPaddleDiscount).toHaveBeenCalledWith('SPRING20', 'tier_mid');
+    });
+
+    expect(await screen.findByText('voucher.appliedMessage')).toBeInTheDocument();
+    expect(screen.getByText('voucher.checkoutSavingsMessage')).toBeInTheDocument();
+  });
+
+  it('blocks voucher navigation when the code is invalid', async () => {
+    const user = userEvent.setup();
+    mocks.auth.profile = {
+      firstName: '',
+      lastName: '',
+      bio: '',
+      country: '',
+      city: '',
+      preferredLanguage: 'en',
+      publicProfileEnabled: true,
+      defaultPublicTripVisibility: true,
+      username: 'ada',
+      usernameDisplay: 'ada',
+      gender: '',
+    };
+    mocks.lookupPaddleDiscount.mockRejectedValue(new Error('This Paddle discount exists, but it is not enabled for checkout.'));
+
+    render(React.createElement(CheckoutPage));
+
+    await user.type(screen.getByPlaceholderText('voucher.placeholder'), 'chrisistcool');
+
+    await waitFor(() => {
+      expect(mocks.lookupPaddleDiscount).toHaveBeenLastCalledWith('CHRISISTCOOL', 'tier_mid');
+    });
+    expect(mocks.navigate).not.toHaveBeenCalledWith(expect.stringContaining('discount=CHRISISTCOOL'));
+  });
+
   it('renders an upgrade review flow for existing paid users and confirms the upgrade inline', async () => {
     const user = userEvent.setup();
     mocks.location.search = '?tier=tier_premium&source=pricing_page';
@@ -673,7 +728,7 @@ describe('pages/CheckoutPage', () => {
     });
   });
 
-  it('lets users unlock and save completed traveler details before payment', async () => {
+  it('keeps a manual continue action after saving edited traveler details', async () => {
     const user = userEvent.setup();
 
     render(React.createElement(CheckoutPage));
@@ -692,6 +747,14 @@ describe('pages/CheckoutPage', () => {
       expect(mocks.updateCurrentUserProfile).toHaveBeenCalledWith(expect.objectContaining({
         city: 'Hamburg',
       }));
+    });
+
+    expect(screen.getByRole('button', { name: 'checkout.continueToPayment' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'checkout.continueToPayment' }));
+
+    await waitFor(() => {
+      expect(mocks.startPaddleCheckoutSession).toHaveBeenCalledTimes(2);
     });
   });
 });

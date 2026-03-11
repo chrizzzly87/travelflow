@@ -28,6 +28,34 @@ describe('paddle discount lookup edge internals', () => {
     }, 'pri_mid', 'pro_mid')).toBe(false);
   });
 
+  it('matches discounts by code first and then by description for diagnostics', () => {
+    expect(__paddleDiscountLookupInternals.findMatchingDiscount([
+      {
+        code: 'SPRING20',
+        description: 'Spring 20',
+      },
+    ], 'SPRING20')).toEqual({
+      discount: {
+        code: 'SPRING20',
+        description: 'Spring 20',
+      },
+      matchedBy: 'code',
+    });
+
+    expect(__paddleDiscountLookupInternals.findMatchingDiscount([
+      {
+        code: null,
+        description: 'CHRISISTCOOL',
+      },
+    ], 'CHRISISTCOOL')).toEqual({
+      discount: {
+        code: null,
+        description: 'CHRISISTCOOL',
+      },
+      matchedBy: 'description',
+    });
+  });
+
   it('builds percentage and flat estimates from Paddle discount values', () => {
     expect(__paddleDiscountLookupInternals.buildEstimate({
       type: 'percentage',
