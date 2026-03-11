@@ -124,7 +124,7 @@ const markdownToHtml = (markdown: string): string => {
                 if (currentTask) {
                     const checked = currentTask[1].toLowerCase() === 'x';
                     const content = inlineMarkdownToHtml(currentTask[2]);
-                    items.push(`<li><input type="checkbox" ${checked ? 'checked' : ''} contenteditable="false" /> ${content}</li>`);
+                    items.push(`<li data-task-list-item="true"><input type="checkbox" ${checked ? 'checked' : ''} contenteditable="false" /> ${content}</li>`);
                     i += 1;
                     continue;
                 }
@@ -144,7 +144,8 @@ const markdownToHtml = (markdown: string): string => {
                 break;
             }
 
-            blocks.push(`<${listTag}>${items.join('')}</${listTag}>`);
+            const taskListAttribute = taskMatch ? ' data-task-list="true"' : '';
+            blocks.push(`<${listTag}${taskListAttribute}>${items.join('')}</${listTag}>`);
             continue;
         }
 
@@ -562,7 +563,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                         syncMarkdownFromEditor();
                     }
                 }}
-                className="h-48 p-3 overflow-y-auto text-sm text-gray-800 leading-relaxed outline-none [&_h1]:mt-4 [&_h1]:mb-2 [&_h1]:pt-2 [&_h1]:text-base [&_h1]:font-black [&_h1]:tracking-tight [&_h1]:text-gray-800 [&_h1]:border-t [&_h1]:border-gray-100 [&_h2]:mt-4 [&_h2]:mb-2 [&_h2]:pt-2 [&_h2]:text-sm [&_h2]:font-extrabold [&_h2]:tracking-wide [&_h2]:text-gray-800 [&_h2]:border-t [&_h2]:border-gray-100 [&_h3]:mt-4 [&_h3]:mb-2 [&_h3]:pt-2 [&_h3]:text-xs [&_h3]:font-extrabold [&_h3]:uppercase [&_h3]:tracking-wide [&_h3]:text-gray-700 [&_h3]:border-t [&_h3]:border-gray-100 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:my-1 [&_a]:text-accent-600 [&_a]:underline [&_input[type='checkbox']]:mr-2"
+                className="h-48 overflow-y-auto p-3 text-sm leading-relaxed text-gray-800 outline-none [&_h1]:mt-4 [&_h1]:mb-2 [&_h1]:border-t [&_h1]:border-gray-100 [&_h1]:pt-2 [&_h1]:text-base [&_h1]:font-black [&_h1]:tracking-tight [&_h1]:text-gray-800 [&_h2]:mt-4 [&_h2]:mb-2 [&_h2]:border-t [&_h2]:border-gray-100 [&_h2]:pt-2 [&_h2]:text-sm [&_h2]:font-extrabold [&_h2]:tracking-wide [&_h2]:text-gray-800 [&_h3]:mt-4 [&_h3]:mb-2 [&_h3]:border-t [&_h3]:border-gray-100 [&_h3]:pt-2 [&_h3]:text-xs [&_h3]:font-extrabold [&_h3]:uppercase [&_h3]:tracking-wide [&_h3]:text-gray-700 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:my-1 [&_a]:text-accent-600 [&_a]:underline [&_input[type='checkbox']]:mr-2 [&_input[type='checkbox']]:h-4 [&_input[type='checkbox']]:w-4 [&_input[type='checkbox']]:rounded-[4px] [&_input[type='checkbox']]:border-slate-500 [&_input[type='checkbox']]:accent-accent-600 [&_ul[data-task-list='true']]:list-none [&_ul[data-task-list='true']]:pl-0 [&_li[data-task-list-item='true']]:list-none [&_li[data-task-list-item='true']]:pl-0"
             />
 
             <div className="px-3 py-1.5 bg-gray-50 border-t border-gray-200 text-[10px] text-gray-400 flex justify-between">
