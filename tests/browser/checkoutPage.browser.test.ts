@@ -568,6 +568,10 @@ describe('pages/CheckoutPage', () => {
 
     await user.type(screen.getByPlaceholderText('voucher.placeholder'), 'spring20');
 
+    expect(mocks.lookupPaddleDiscount).not.toHaveBeenCalledWith('SPRING20', 'tier_mid');
+
+    await user.click(screen.getByRole('button', { name: 'voucher.applyCta' }));
+
     await waitFor(() => {
       expect(mocks.lookupPaddleDiscount).toHaveBeenCalledWith('SPRING20', 'tier_mid');
     });
@@ -596,6 +600,10 @@ describe('pages/CheckoutPage', () => {
     render(React.createElement(CheckoutPage));
 
     await user.type(screen.getByPlaceholderText('voucher.placeholder'), 'chrisistcool');
+
+    expect(mocks.lookupPaddleDiscount).not.toHaveBeenCalledWith('CHRISISTCOOL', 'tier_mid');
+
+    await user.click(screen.getByRole('button', { name: 'voucher.applyCta' }));
 
     await waitFor(() => {
       expect(mocks.lookupPaddleDiscount).toHaveBeenLastCalledWith('CHRISISTCOOL', 'tier_mid');

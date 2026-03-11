@@ -743,45 +743,6 @@ export const CheckoutPage: React.FC = () => {
     }, [checkoutLocationContext.discountCode, selectedTierKey, supportsSelectedTier, t]);
 
     useEffect(() => {
-        const code = discountInput.trim().toUpperCase();
-        const appliedCode = (checkoutLocationContext.discountCode || '').trim().toUpperCase();
-
-        if (!code || code === appliedCode || !supportsSelectedTier) {
-            setDiscountPreviewLookup(null);
-            setDiscountPreviewErrorMessage(null);
-            setIsDiscountPreviewLoading(false);
-            return;
-        }
-
-        let cancelled = false;
-        const timer = window.setTimeout(() => {
-            setIsDiscountPreviewLoading(true);
-            setDiscountPreviewErrorMessage(null);
-            void lookupPaddleDiscount(code, selectedTierKey)
-                .then((lookup) => {
-                    if (cancelled) return;
-                    setDiscountPreviewLookup(lookup);
-                    setDiscountPreviewErrorMessage(lookup.applicableToTier ? null : t('voucher.invalidMessage', { ns: 'pricing' }));
-                })
-                .catch((error) => {
-                    if (cancelled) return;
-                    setDiscountPreviewLookup(null);
-                    setDiscountPreviewErrorMessage(error instanceof Error ? error.message : t('voucher.invalidMessage', { ns: 'pricing' }));
-                })
-                .finally(() => {
-                    if (!cancelled) {
-                        setIsDiscountPreviewLoading(false);
-                    }
-                });
-        }, 280);
-
-        return () => {
-            cancelled = true;
-            window.clearTimeout(timer);
-        };
-    }, [checkoutLocationContext.discountCode, discountInput, selectedTierKey, supportsSelectedTier, t]);
-
-    useEffect(() => {
         if (!hasInlineCheckout || !inlineCheckoutSectionRef.current) return;
         if (typeof inlineCheckoutSectionRef.current.scrollIntoView === 'function') {
             inlineCheckoutSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1155,6 +1116,13 @@ export const CheckoutPage: React.FC = () => {
             tripId: checkoutLocationContext.tripId,
         }));
     }, [checkoutLocationContext.claimId, checkoutLocationContext.tripId, navigate, returnToPath, selectedTierKey, source]);
+
+    const handleDiscountInputChange = useCallback((value: string) => {
+        setDiscountInput(value.toUpperCase());
+        setDiscountPreviewLookup(null);
+        setDiscountPreviewErrorMessage(null);
+        setIsDiscountPreviewLoading(false);
+    }, []);
 
     const handleAuthModeChange = (nextMode: CheckoutAuthMode) => {
         setAuthMode(nextMode);
@@ -2035,7 +2003,7 @@ export const CheckoutPage: React.FC = () => {
                                                 <input
                                                     type="text"
                                                     value={discountInput}
-                                                    onChange={(event) => setDiscountInput(event.target.value.toUpperCase())}
+                                                    onChange={(event) => handleDiscountInputChange(event.target.value)}
                                                     placeholder={t('voucher.placeholder', { ns: 'pricing' })}
                                                     autoCapitalize="characters"
                                                     className="h-11 flex-1 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-900 shadow-sm transition-colors placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"

@@ -17,7 +17,7 @@ summary: "Existing paid users can now upgrade plans in place, manage Paddle bill
 - [x] [Improved] 🧾 Checkout now locks already-complete traveler details by default, lets you reopen them only when needed, and moves straight into secure payment when your saved account details are already ready.
 - [x] [Fixed] 🔄 Completed payments and stale paid accounts now run a stronger billing repair flow so pricing, checkout, and billing settings stop showing paid users as if they were still on the free tier.
 - [x] [Fixed] 💳 Reopening traveler details during checkout now cleanly restarts the secure payment step, and saved details keep a clear manual path back into payment if the automatic handoff does not fire.
-- [x] [Improved] 🎟️ Discount links and voucher codes now stay inside checkout, preview eligible savings before you apply them, and explain invalid Paddle voucher setups more clearly.
+- [x] [Improved] 🎟️ Discount links and voucher codes now stay inside checkout, show eligible savings when you apply them, and explain invalid Paddle voucher setups more clearly.
 - [x] [Fixed] 🛟 Account access now shows a clear support path when a preview or deployment is missing the required account-service connection, and auth forms flag invalid email input more clearly.
 - [x] [Improved] 🧾 Admin billing now shows richer subscription details, current monthly recurring revenue by currency, status mix, and at-risk revenue charts.
 - [x] [Improved] 🕵️ Admin user and audit views now surface billing lifecycle details so subscription mismatches and webhook-driven changes are easier to inspect.
