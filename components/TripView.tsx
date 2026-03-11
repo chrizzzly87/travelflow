@@ -102,6 +102,7 @@ import { processQueuedTripGenerationAfterAuth } from '../services/tripGeneration
 import { registerTripGenerationCompletionWatch } from '../services/tripGenerationCompletionWatchService';
 import { listTripGenerationJobsByTrip, triggerTripGenerationWorker } from '../services/tripGenerationJobService';
 import { finishTripGenerationAttemptLog } from '../services/tripGenerationAttemptLogService';
+import { toggleMarkdownTaskByLine } from './markdownPresentation';
 
 const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
     moduleKey: string,
@@ -361,29 +362,6 @@ const buildTripMetaSummary = (trip: ITrip): TripMetaSummary => {
 };
 
 const HEADS_UP_SECTION_REGEX = /### Heads Up\s*([\s\S]*?)(?=\n###\s|\s*$)/i;
-const MARKDOWN_TASK_LINE_REGEX = /^(\s*(?:>\s*)*(?:[-*+]|\d+[.)])\s+\[)( |x|X)(\].*)$/;
-
-const toggleMarkdownTaskByIndex = (markdown: string, taskIndex: number, checked: boolean): string | null => {
-    const taskLineNumbers = markdown
-        .split('\n')
-        .map((line, index) => (MARKDOWN_TASK_LINE_REGEX.test(line) ? index + 1 : -1))
-        .filter((lineNumber) => lineNumber > 0);
-    const lineNumber = taskLineNumbers[taskIndex];
-    if (typeof lineNumber !== 'number') return null;
-
-    const lines = markdown.split('\n');
-    const lineIndex = lineNumber - 1;
-    const currentLine = lines[lineIndex];
-    if (!currentLine) return null;
-    const nextLine = currentLine.replace(
-        MARKDOWN_TASK_LINE_REGEX,
-        `$1${checked ? 'x' : ' '}$3`,
-    );
-    if (nextLine === currentLine) return null;
-
-    lines[lineIndex] = nextLine;
-    return lines.join('\n');
-};
 
 export const extractTripTravelerWarnings = (items: ITimelineItem[]): TripTravelerWarningSummary[] => (
     items
@@ -2804,10 +2782,10 @@ const useTripViewRender = ({
         return null;
     }, [adminOverrideEnabled, tripAccess?.source]);
 
-    const handleTimelineTaskToggle = useCallback((itemId: string, taskIndex: number, checked: boolean) => {
+    const handleTimelineTaskToggle = useCallback((itemId: string, taskLineNumber: number, checked: boolean) => {
         const item = trip.items.find((candidate) => candidate.id === itemId);
         if (!item || typeof item.description !== 'string') return;
-        const nextDescription = toggleMarkdownTaskByIndex(item.description, taskIndex, checked);
+        const nextDescription = toggleMarkdownTaskByLine(item.description, taskLineNumber, checked);
         if (!nextDescription) return;
         handleUpdateItem(itemId, { description: nextDescription });
     }, [handleUpdateItem, trip.items]);

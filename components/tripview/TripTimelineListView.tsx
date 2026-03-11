@@ -7,11 +7,24 @@ import { Checkbox } from '../ui/checkbox';
 import type { ITrip } from '../../types';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import { buildTimelineListModel } from './timelineListViewModel';
+import {
+    findMarkdownTaskLineNumbers,
+    MARKDOWN_H1_CLASS,
+    MARKDOWN_H2_CLASS,
+    MARKDOWN_H3_CLASS,
+    MARKDOWN_HEADS_UP_BANNER_CLASS,
+    MARKDOWN_HEADS_UP_LIST_CLASS,
+    MARKDOWN_TASK_ITEM_CLASS,
+    MARKDOWN_TASK_LIST_CLASS,
+    MARKDOWN_TASK_ROW_CLASS,
+    MARKDOWN_TASK_TEXT_CLASS,
+    remarkHeadsUpBanners,
+} from '../markdownPresentation';
 
 interface TripTimelineListViewProps {
     trip: ITrip;
     selectedItemId: string | null;
-    onToggleTaskCheckbox?: (itemId: string, taskIndex: number, checked: boolean) => void;
+    onToggleTaskCheckbox?: (itemId: string, taskLineNumber: number, checked: boolean) => void;
     onSelect: (id: string | null, options?: { multi?: boolean; isCity?: boolean }) => void;
     selectionVisibilityKey?: string;
 }
@@ -56,11 +69,28 @@ const areTransferPositionsEqual = (
 const buildMarkdownComponents = (
     tripId: string,
     itemId: string,
-    onToggleTaskCheckbox?: (itemId: string, taskIndex: number, checked: boolean) => void,
+    markdown: string,
+    onToggleTaskCheckbox?: (itemId: string, taskLineNumber: number, checked: boolean) => void,
 ) => {
-    let taskIndex = 0;
+    const taskLineNumbers = findMarkdownTaskLineNumbers(markdown);
+    let renderedTaskCount = 0;
+    const hasClassName = (node: any, className: string): boolean => {
+        const classNames = node?.properties?.className;
+        if (Array.isArray(classNames)) return classNames.includes(className);
+        if (typeof classNames === 'string') return classNames.split(/\s+/).includes(className);
+        return false;
+    };
+    const stripCheckboxChild = (children: React.ReactNode): React.ReactNode[] => (
+        React.Children.toArray(children).filter((child) => {
+            if (typeof child === 'string') return child.trim().length > 0;
+            return !(React.isValidElement(child) && child.props.type === 'checkbox');
+        })
+    );
 
     return {
+    h1: ({ node, ...props }: any) => <h1 {...props} className={MARKDOWN_H1_CLASS} />,
+    h2: ({ node, ...props }: any) => <h2 {...props} className={MARKDOWN_H2_CLASS} />,
+    h3: ({ node, ...props }: any) => <h3 {...props} className={MARKDOWN_H3_CLASS} />,
     a: ({ node, ...props }: any) => (
         <a
             {...props}
@@ -71,57 +101,110 @@ const buildMarkdownComponents = (
     ),
     p: ({ node, ...props }: any) => <p {...props} className="my-1 leading-6" />,
     ul: ({ node, ...props }: any) => {
-        const hasTaskItems = Array.isArray(node?.children)
-            && node.children.some((child: any) => typeof child?.checked === 'boolean');
+        const isHeadsUpList = Boolean(node?.properties?.['data-heads-up-list']);
+        const hasTaskItems = hasClassName(node, 'contains-task-list')
+            || (Array.isArray(node?.children) && node.children.some((child: any) => typeof child?.checked === 'boolean' || hasClassName(child, 'task-list-item')));
         return (
             <ul
                 {...props}
-                className={hasTaskItems ? 'my-2 space-y-2 ps-0' : 'my-2 list-disc ps-5 space-y-1.5'}
+                data-heads-up-list={isHeadsUpList ? 'true' : undefined}
+                className={isHeadsUpList ? MARKDOWN_HEADS_UP_LIST_CLASS : hasTaskItems ? MARKDOWN_TASK_LIST_CLASS : 'my-2 list-disc ps-5 space-y-1.5'}
             />
         );
     },
     ol: ({ node, ...props }: any) => <ol {...props} className="my-2 list-decimal ps-5 space-y-1.5" />,
-    li: ({ node, checked, ...props }: any) => (
-        <li
-            {...props}
-            data-task-list-item={typeof checked === 'boolean' ? 'true' : undefined}
-            className={`leading-6 ${typeof checked === 'boolean' ? 'list-none ps-0' : ''}`}
-        />
-    ),
+    li: ({ node, checked, children, ...props }: any) => {
+        const isHeadsUpBanner = Boolean(node?.properties?.['data-heads-up-banner']);
+        const isTaskItem = typeof checked === 'boolean' || hasClassName(node, 'task-list-item');
+        const childArray = React.Children.toArray(children);
+        const taskCheckboxChild = childArray.find((child) => React.isValidElement(child) && child.props.type === 'checkbox');
+        const resolvedChecked = typeof checked === 'boolean'
+            ? checked
+            : (React.isValidElement(taskCheckboxChild) ? Boolean(taskCheckboxChild.props.checked) : false);
+        const contentChildren = stripCheckboxChild(childArray);
+
+        if (isHeadsUpBanner) {
+            return (
+                <li
+                    {...props}
+                    data-heads-up-banner="true"
+                    className={MARKDOWN_HEADS_UP_BANNER_CLASS}
+                >
+                    {contentChildren}
+                </li>
+            );
+        }
+
+        if (isTaskItem) {
+            const fallbackLineNumber = taskLineNumbers[renderedTaskCount];
+            const taskLineNumber = typeof node?.position?.start?.line === 'number'
+                ? node.position.start.line
+                : fallbackLineNumber;
+            renderedTaskCount += 1;
+
+            return (
+                <li
+                    {...props}
+                    data-task-list-item="true"
+                    className={MARKDOWN_TASK_ITEM_CLASS}
+                >
+                    <label
+                        className={MARKDOWN_TASK_ROW_CLASS}
+                        onClick={(event) => {
+                            event.stopPropagation();
+                        }}
+                        onPointerDown={(event) => {
+                            event.stopPropagation();
+                        }}
+                    >
+                        <Checkbox
+                            checked={resolvedChecked}
+                            disabled={!onToggleTaskCheckbox}
+                            className="mt-0.5 h-4 w-4 shrink-0"
+                            aria-label={resolvedChecked ? 'Completed task' : 'Open task'}
+                            onClick={(event) => {
+                                event.stopPropagation();
+                            }}
+                            onPointerDown={(event) => {
+                                event.stopPropagation();
+                            }}
+                            onCheckedChange={(nextChecked) => {
+                                if (!onToggleTaskCheckbox) return;
+                                if (typeof taskLineNumber !== 'number') return;
+                                const normalizedChecked = nextChecked === true;
+                                trackEvent('trip_view__timeline_task--toggle', {
+                                    trip_id: tripId,
+                                    item_id: itemId,
+                                    task_line_number: taskLineNumber,
+                                    checked: normalizedChecked,
+                                });
+                                onToggleTaskCheckbox(itemId, taskLineNumber, normalizedChecked);
+                            }}
+                            {...getAnalyticsDebugAttributes('trip_view__timeline_task--toggle', {
+                                trip_id: tripId,
+                                item_id: itemId,
+                                task_line_number: typeof taskLineNumber === 'number' ? taskLineNumber : undefined,
+                                checked: resolvedChecked,
+                            })}
+                        />
+                        <span className={MARKDOWN_TASK_TEXT_CLASS}>{contentChildren}</span>
+                    </label>
+                </li>
+            );
+        }
+
+        return (
+            <li
+                {...props}
+                className="my-1 leading-6"
+            >
+                {children}
+            </li>
+        );
+    },
     input: ({ node, type, checked, ...props }: any) => {
         if (type === 'checkbox') {
-            const currentTaskIndex = taskIndex;
-            taskIndex += 1;
-            const handleTaskToggle = (event: React.MouseEvent<HTMLButtonElement>) => {
-                event.preventDefault();
-                event.stopPropagation();
-                const nextChecked = !Boolean(checked);
-                if (!onToggleTaskCheckbox) return;
-                trackEvent('trip_view__timeline_task--toggle', {
-                    trip_id: tripId,
-                    item_id: itemId,
-                    task_index: currentTaskIndex,
-                    checked: nextChecked,
-                });
-                onToggleTaskCheckbox(itemId, currentTaskIndex, nextChecked);
-            };
-            return (
-                <span className="me-2 inline-flex align-middle">
-                    <Checkbox
-                        checked={Boolean(checked)}
-                        disabled={!onToggleTaskCheckbox}
-                        className="mt-0.5 h-4 w-4"
-                        aria-label={checked ? 'Completed task' : 'Open task'}
-                        onClick={handleTaskToggle}
-                        {...getAnalyticsDebugAttributes('trip_view__timeline_task--toggle', {
-                            trip_id: tripId,
-                            item_id: itemId,
-                            task_index: currentTaskIndex,
-                            checked: Boolean(checked),
-                        })}
-                    />
-                </span>
-            );
+            return null;
         }
         return <input type={type} {...props} />;
     },
@@ -522,8 +605,8 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
                                         {citySummaryMarkdown && (
                                             <div className="pb-2 text-sm text-slate-600">
                                                 <ReactMarkdown
-                                                    remarkPlugins={[remarkGfm]}
-                                                    components={buildMarkdownComponents(trip.id, section.city.id, onToggleTaskCheckbox)}
+                                                    remarkPlugins={[remarkGfm, remarkHeadsUpBanners]}
+                                                    components={buildMarkdownComponents(trip.id, section.city.id, citySummaryMarkdown, onToggleTaskCheckbox)}
                                                 >
                                                     {citySummaryMarkdown}
                                                 </ReactMarkdown>
@@ -579,8 +662,8 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
                                                                     {activity.item.description && (
                                                                         <div className="mt-2 max-w-3xl text-sm text-slate-600">
                                                                             <ReactMarkdown
-                                                                                remarkPlugins={[remarkGfm]}
-                                                                                components={buildMarkdownComponents(trip.id, activity.item.id, onToggleTaskCheckbox)}
+                                                                                remarkPlugins={[remarkGfm, remarkHeadsUpBanners]}
+                                                                                components={buildMarkdownComponents(trip.id, activity.item.id, activity.item.description, onToggleTaskCheckbox)}
                                                                             >
                                                                                 {activity.item.description}
                                                                             </ReactMarkdown>

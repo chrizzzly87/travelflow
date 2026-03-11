@@ -38,7 +38,7 @@ describe('components/tripview/TripTimelineListView', () => {
 
     const heratCity = makeCityItem({ id: 'city-b', title: 'Herat', startDateOffset: 2.3, duration: 2, color: 'bg-amber-400' });
     heratCity.countryName = 'Iran';
-    heratCity.description = 'Historic center with **old citadel walls**.\n- [x] Markt öffnen\n- [ ] Schlosspark besuchen\n~~Altprogramm~~';
+    heratCity.description = '### Must See\n- [x] Markt öffnen\n- [ ] Schlosspark besuchen\n\n### Heads Up\n- [ ] Stay near the main square after sunset.\n\nHistoric center with **old citadel walls**.\n~~Altprogramm~~';
     const kabulCity = makeCityItem({ id: 'city-a', title: 'Kabul', startDateOffset: 0, duration: 2, color: 'bg-rose-400' });
     kabulCity.countryName = 'Afghanistan';
 
@@ -101,9 +101,11 @@ describe('components/tripview/TripTimelineListView', () => {
     });
 
     expect(screen.queryByText('From Kabul via Train')).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Must See' })).toHaveClass('font-black');
     expect(screen.getByText('old citadel walls', { exact: false })).toBeInTheDocument();
     const checkboxes = screen.getAllByRole('checkbox');
     expect(checkboxes).toHaveLength(2);
+    expect(screen.getByText('Stay near the main square after sunset.').closest('li')).toHaveAttribute('data-heads-up-banner', 'true');
     expect(screen.getByText('Altprogramm')).toBeInTheDocument();
     expect(screen.queryByText('**Citadel**')).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'book ahead' })).toHaveAttribute('href', 'https://example.com');
@@ -128,11 +130,11 @@ describe('components/tripview/TripTimelineListView', () => {
     });
 
     return user.click(checkboxes[0]).then(() => {
-      expect(onToggleTaskCheckbox).toHaveBeenCalledWith('city-b', 0, false);
+      expect(onToggleTaskCheckbox).toHaveBeenCalledWith('city-b', 2, false);
       expect(analyticsMocks.trackEvent).toHaveBeenCalledWith('trip_view__timeline_task--toggle', {
         trip_id: 'trip-1',
         item_id: 'city-b',
-        task_index: 0,
+        task_line_number: 2,
         checked: false,
       });
     });
