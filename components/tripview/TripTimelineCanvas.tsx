@@ -15,7 +15,7 @@ interface TripTimelineCanvasProps {
     timelineView: 'vertical' | 'horizontal';
     trip: ITrip;
     onUpdateItems: (items: ITimelineItem[], options?: { deferCommit?: boolean }) => void;
-    onToggleTaskCheckbox?: (itemId: string, taskIndex: number, checked: boolean) => void;
+    onToggleTaskCheckbox?: (itemId: string, taskLineNumber: number, checked: boolean) => void;
     onSelect: (id: string | null, options?: { multi?: boolean; isCity?: boolean }) => void;
     selectedItemId: string | null;
     selectedCityIds: string[];
