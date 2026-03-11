@@ -547,6 +547,7 @@ interface TripViewModalLayerProps {
     generationState: TripGenerationState;
     latestGenerationAttempt: TripGenerationAttemptSummary | null;
     canRetryGeneration: boolean;
+    retryDisabledReason: string | null;
     isRetryingGeneration: boolean;
     retryModelId: string | null;
     onRetryModelIdChange: (modelId: string) => void;
@@ -555,22 +556,22 @@ interface TripViewModalLayerProps {
     canOpenBenchmarkWithSnapshot: boolean;
     tripInfoRetryAnalyticsAttributes: Record<string, string>;
     forkMeta: { label: string; url: string | null } | null;
-    isTripInfoHistoryExpanded: boolean;
-    onToggleTripInfoHistoryExpanded: () => void;
     showAllHistory: boolean;
     onToggleShowAllHistory: () => void;
     onHistoryUndo: () => void;
     onHistoryRedo: () => void;
-    infoHistoryItems: any[];
-    onGoToHistoryEntry: (url: string) => void;
-    onOpenFullHistory: () => void;
+    historyModalItems: any[];
+    onGoToHistoryEntry: (item: any) => void;
     formatHistoryTime: (value: number) => string;
+    pendingSyncCount: number;
+    failedSyncCount: number;
     countryInfo: ITrip['countryInfo'];
     isPaywallLocked: boolean;
     travelerWarnings: TripTravelerWarningSummary[];
     onExportActivitiesCalendar: () => void;
     onExportCitiesCalendar: () => void;
     onExportAllCalendar: () => void;
+    onOpenPrintLayout: () => void;
     shouldEnableReleaseNotice: boolean;
     isShareOpen: boolean;
     shareMode: ShareMode;
@@ -581,9 +582,6 @@ interface TripViewModalLayerProps {
     onGenerateShare: () => void;
     isGeneratingShare: boolean;
     isHistoryOpen: boolean;
-    historyModalItems: any[];
-    pendingSyncCount: number;
-    failedSyncCount: number;
     onCloseHistory: () => void;
     onHistoryGo: (item: any) => void;
     shareStatus?: ShareMode;
@@ -640,6 +638,7 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
     generationState,
     latestGenerationAttempt,
     canRetryGeneration,
+    retryDisabledReason,
     isRetryingGeneration,
     retryModelId,
     onRetryModelIdChange,
@@ -648,22 +647,22 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
     canOpenBenchmarkWithSnapshot,
     tripInfoRetryAnalyticsAttributes,
     forkMeta,
-    isTripInfoHistoryExpanded,
-    onToggleTripInfoHistoryExpanded,
     showAllHistory,
     onToggleShowAllHistory,
     onHistoryUndo,
     onHistoryRedo,
-    infoHistoryItems,
+    historyModalItems,
     onGoToHistoryEntry,
-    onOpenFullHistory,
     formatHistoryTime,
+    pendingSyncCount,
+    failedSyncCount,
     countryInfo,
     isPaywallLocked,
     travelerWarnings,
     onExportActivitiesCalendar,
     onExportCitiesCalendar,
     onExportAllCalendar,
+    onOpenPrintLayout,
     shouldEnableReleaseNotice,
     isShareOpen,
     shareMode,
@@ -674,9 +673,6 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
     onGenerateShare,
     isGeneratingShare,
     isHistoryOpen,
-    historyModalItems,
-    pendingSyncCount,
-    failedSyncCount,
     onCloseHistory,
     onHistoryGo,
     shareStatus,
@@ -745,6 +741,7 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
                     generationState={generationState}
                     latestGenerationAttempt={latestGenerationAttempt}
                     canRetryGeneration={canRetryGeneration}
+                    retryDisabledReason={retryDisabledReason}
                     isRetryingGeneration={isRetryingGeneration}
                     retryModelId={retryModelId}
                     onRetryModelIdChange={onRetryModelIdChange}
@@ -753,22 +750,22 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
                     canOpenBenchmarkWithSnapshot={canOpenBenchmarkWithSnapshot}
                     retryAnalyticsAttributes={tripInfoRetryAnalyticsAttributes}
                     forkMeta={forkMeta}
-                    isTripInfoHistoryExpanded={isTripInfoHistoryExpanded}
-                    onToggleTripInfoHistoryExpanded={onToggleTripInfoHistoryExpanded}
                     showAllHistory={showAllHistory}
                     onToggleShowAllHistory={onToggleShowAllHistory}
                     onHistoryUndo={onHistoryUndo}
                     onHistoryRedo={onHistoryRedo}
-                    infoHistoryItems={infoHistoryItems}
+                    historyItems={historyModalItems}
                     onGoToHistoryEntry={onGoToHistoryEntry}
-                    onOpenFullHistory={onOpenFullHistory}
                     formatHistoryTime={formatHistoryTime}
+                    pendingSyncCount={pendingSyncCount}
+                    failedSyncCount={failedSyncCount}
                     countryInfo={countryInfo}
                     isPaywallLocked={isPaywallLocked}
                     travelerWarnings={travelerWarnings}
                     onExportActivitiesCalendar={onExportActivitiesCalendar}
                     onExportCitiesCalendar={onExportCitiesCalendar}
                     onExportAllCalendar={onExportAllCalendar}
+                    onOpenPrintLayout={onOpenPrintLayout}
                 />
             </Suspense>
         )}
@@ -3072,29 +3069,30 @@ const useTripViewRender = ({
                         canOpenBenchmarkWithSnapshot={Boolean(displayTrip.aiMeta?.generation?.inputSnapshot)}
                         tripInfoRetryAnalyticsAttributes={tripInfoRetryAnalyticsAttributes}
                         forkMeta={forkMeta}
-                        isTripInfoHistoryExpanded={isTripInfoHistoryExpanded}
-                        onToggleTripInfoHistoryExpanded={() => setIsTripInfoHistoryExpanded((value) => !value)}
                         showAllHistory={showAllHistory}
                         onToggleShowAllHistory={() => setShowAllHistory((value) => !value)}
                         onHistoryUndo={() => navigateHistory('undo')}
                         onHistoryRedo={() => navigateHistory('redo')}
-                        infoHistoryItems={tripInfoHistoryItems}
-                        onGoToHistoryEntry={(url) => {
+                        historyModalItems={historyModalItems}
+                        onGoToHistoryEntry={(item) => {
                             closeTripInfoModal();
                             suppressCommitRef.current = true;
-                            navigate(url);
-                        }}
-                        onOpenFullHistory={() => {
-                            closeTripInfoModal();
-                            openHistoryPanel('trip_info');
+                            navigate(item.url);
+                            showToast(item.details, { tone: item.tone, title: 'Opened from history' });
                         }}
                         formatHistoryTime={formatHistoryTime}
+                        pendingSyncCount={showOwnedTripConnectivityStatus ? syncSnapshot.pendingCount : 0}
+                        failedSyncCount={showOwnedTripConnectivityStatus ? syncSnapshot.failedCount : 0}
                         countryInfo={displayTrip.countryInfo}
                         isPaywallLocked={isPaywallLocked}
                         travelerWarnings={travelerWarnings}
                         onExportActivitiesCalendar={() => handleExportActivitiesCalendar('trip_info_modal')}
                         onExportCitiesCalendar={() => handleExportCitiesCalendar('trip_info_modal')}
                         onExportAllCalendar={() => handleExportAllCalendar('trip_info_modal')}
+                        onOpenPrintLayout={() => {
+                            closeTripInfoModal();
+                            setViewMode('print');
+                        }}
                         shouldEnableReleaseNotice={shouldEnableReleaseNotice}
                         isShareOpen={isShareOpen}
                         shareMode={shareMode}
@@ -3105,9 +3103,6 @@ const useTripViewRender = ({
                         onGenerateShare={handleGenerateShare}
                         isGeneratingShare={isGeneratingShare}
                         isHistoryOpen={isHistoryOpen}
-                        historyModalItems={historyModalItems}
-                        pendingSyncCount={showOwnedTripConnectivityStatus ? syncSnapshot.pendingCount : 0}
-                        failedSyncCount={showOwnedTripConnectivityStatus ? syncSnapshot.failedCount : 0}
                         onCloseHistory={() => setIsHistoryOpen(false)}
                         onHistoryGo={(item) => {
                             setIsHistoryOpen(false);
