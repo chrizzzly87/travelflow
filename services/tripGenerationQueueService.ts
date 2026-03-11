@@ -59,6 +59,7 @@ interface TripGenerationRequestRow {
     status: string;
     owner_user_id: string | null;
     expires_at: string;
+    result_trip_id?: string | null;
 }
 
 export class QueuedTripGenerationError extends Error {
@@ -73,6 +74,16 @@ export class QueuedTripGenerationError extends Error {
     }
 }
 
+export class QueuedTripGenerationAlreadyClaimedError extends QueuedTripGenerationError {
+    requestId: string | null;
+
+    constructor(message: string, details?: { tripId?: string | null; requestId?: string | null; cause?: unknown }) {
+        super(message, { tripId: details?.tripId, cause: details?.cause });
+        this.name = 'QueuedTripGenerationAlreadyClaimedError';
+        this.requestId = details?.requestId || null;
+    }
+}
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
     Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 
@@ -81,6 +92,22 @@ const asText = (value: unknown, fallback = ''): string => {
     const next = value.trim();
     return next || fallback;
 };
+
+const sleep = (durationMs: number): Promise<void> => (
+    new Promise((resolve) => {
+        setTimeout(resolve, durationMs);
+    })
+);
+
+const isAlreadyClaimedQueueError = (error: { code?: string | null; message?: string | null } | null | undefined): boolean => {
+    const code = typeof error?.code === 'string' ? error.code.trim().toUpperCase() : '';
+    const message = typeof error?.message === 'string' ? error.message.trim().toLowerCase() : '';
+    return code === 'P0001' || message.includes('already claimed') || message.includes('already processed');
+};
+
+export const isQueuedTripGenerationAlreadyClaimedError = (error: unknown): error is QueuedTripGenerationAlreadyClaimedError => (
+    error instanceof QueuedTripGenerationAlreadyClaimedError
+);
 
 const DEFAULT_CREATE_MODEL = getDefaultCreateTripModel();
 
@@ -214,6 +241,88 @@ const buildPlaceholderTrip = (
         status: 'active',
         tripExpiresAt: null,
     };
+};
+
+const readQueuedRequestRow = async (requestId: string): Promise<TripGenerationRequestRow | null> => {
+    if (!supabase) return null;
+
+    const { data, error } = await supabase
+        .from('trip_generation_requests')
+        .select('id, flow, payload, status, owner_user_id, expires_at, result_trip_id')
+        .eq('id', requestId)
+        .maybeSingle();
+
+    if (error || !data) return null;
+
+    const row = data as Record<string, unknown>;
+    const flow = row.flow;
+    if (flow !== 'classic' && flow !== 'wizard' && flow !== 'surprise') return null;
+
+    const resolvedRequestId = asText(row.id) || requestId;
+    const expiresAt = asText(row.expires_at);
+    if (!resolvedRequestId || !expiresAt) return null;
+
+    return {
+        request_id: resolvedRequestId,
+        flow,
+        payload: row.payload,
+        status: asText(row.status),
+        owner_user_id: asText(row.owner_user_id) || null,
+        expires_at: expiresAt,
+        result_trip_id: asText(row.result_trip_id) || null,
+    };
+};
+
+const buildRecoveredQueuedTripResult = (
+    row: TripGenerationRequestRow,
+): { tripId: string; trip: ITrip } | null => {
+    const tripId = asText(row.result_trip_id);
+    if (!tripId) return null;
+
+    try {
+        const parsedPayload = parseQueuedPayload(row.flow, row.payload);
+        return {
+            tripId,
+            trip: buildPlaceholderTrip(parsedPayload, tripId),
+        };
+    } catch {
+        const now = Date.now();
+        return {
+            tripId,
+            trip: {
+                id: tripId,
+                title: 'Trip',
+                startDate: new Date(now).toISOString().slice(0, 10),
+                items: [],
+                createdAt: now,
+                updatedAt: now,
+                isFavorite: false,
+                sourceKind: 'created',
+                status: 'active',
+                tripExpiresAt: null,
+            },
+        };
+    }
+};
+
+const recoverExistingQueuedClaimResult = async (
+    requestId: string,
+    initialRow?: TripGenerationRequestRow | null,
+): Promise<{ tripId: string; trip: ITrip } | null> => {
+    const firstPass = initialRow ? buildRecoveredQueuedTripResult(initialRow) : null;
+    if (firstPass) return firstPass;
+
+    const maxAttempts = 5;
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+        const row = await readQueuedRequestRow(requestId);
+        const recovered = row ? buildRecoveredQueuedTripResult(row) : null;
+        if (recovered) return recovered;
+        if (attempt < maxAttempts - 1) {
+            await sleep(250);
+        }
+    }
+
+    return null;
 };
 
 interface AsyncClaimParams {
@@ -447,15 +556,42 @@ export const processQueuedTripGenerationAfterAuth = async (
         p_request_id: requestId,
     });
     if (error) {
+        if (isAlreadyClaimedQueueError(error)) {
+            const recovered = await recoverExistingQueuedClaimResult(requestId);
+            if (recovered) {
+                return recovered;
+            }
+            throw new QueuedTripGenerationAlreadyClaimedError(
+                'Queued request is already being processed.',
+                {
+                    requestId,
+                    cause: error,
+                },
+            );
+        }
         throw new Error(error.message || 'Could not claim queued trip request.');
     }
 
     const row = (Array.isArray(data) ? data[0] : data) as TripGenerationRequestRow | null;
     if (!row?.request_id) {
+        const recovered = await recoverExistingQueuedClaimResult(requestId);
+        if (recovered) {
+            return recovered;
+        }
         throw new Error('Queued request is missing, expired, or already processed.');
     }
     if (row.status !== 'queued') {
-        throw new Error('Queued request is already claimed or processed.');
+        const recovered = await recoverExistingQueuedClaimResult(requestId, row);
+        if (recovered) {
+            return recovered;
+        }
+        throw new QueuedTripGenerationAlreadyClaimedError(
+            'Queued request is already claimed or processed.',
+            {
+                requestId,
+                tripId: asText(row.result_trip_id) || null,
+            },
+        );
     }
 
     const flow = row.flow;

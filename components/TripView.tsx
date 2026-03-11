@@ -6,6 +6,7 @@ import { getDefaultCreateTripModel } from '../config/aiModelCatalog';
 import { DB_ENABLED } from '../config/db';
 import { GoogleMapsLoader } from './GoogleMapsLoader';
 import { BASE_PIXELS_PER_DAY, DEFAULT_CITY_COLOR_PALETTE_ID, DEFAULT_DISTANCE_UNIT, buildShareUrl, formatDistance, getTimelineBounds, getTripDistanceKm, isInternalMapColorModeControlEnabled, normalizeMapColorMode } from '../utils';
+import { buildTripMapLocationContextQueries } from '../shared/tripMapCityResolution';
 import { getExampleMapViewTransitionName, getExampleTitleViewTransitionName } from '../shared/viewTransitionNames';
 import { dbGetTrip, type DbTripAccessMetadata } from '../services/dbApi';
 import {
@@ -98,7 +99,10 @@ import {
     shouldApplyPolledTripUpdate,
     shouldPollTripGenerationState,
 } from '../services/tripGenerationPollingService';
-import { processQueuedTripGenerationAfterAuth } from '../services/tripGenerationQueueService';
+import {
+    isQueuedTripGenerationAlreadyClaimedError,
+    processQueuedTripGenerationAfterAuth,
+} from '../services/tripGenerationQueueService';
 import { registerTripGenerationCompletionWatch } from '../services/tripGenerationCompletionWatchService';
 import { listTripGenerationJobsByTrip, triggerTripGenerationWorker } from '../services/tripGenerationJobService';
 import { finishTripGenerationAttemptLog } from '../services/tripGenerationAttemptLogService';
@@ -1443,6 +1447,26 @@ const useTripViewRender = ({
                 });
                 navigate(`/trip/${result.tripId}`, { replace: true });
             } catch (error) {
+                if (isQueuedTripGenerationAlreadyClaimedError(error)) {
+                    if (error.tripId) {
+                        registerTripGenerationCompletionWatch(error.tripId, 'auth_queue_claim_trip_view');
+                        navigate(`/trip/${error.tripId}`, { replace: true });
+                        return;
+                    }
+
+                    if (pendingAuthClaimQueryId === pendingAuthQueueRequestId) {
+                        const query = new URLSearchParams(location.search);
+                        query.delete('claim');
+                        const nextSearch = query.toString();
+                        navigate(buildPathFromLocationParts({
+                            pathname: location.pathname,
+                            search: nextSearch ? `?${nextSearch}` : '',
+                            hash: location.hash,
+                        }), { replace: true });
+                    }
+                    return;
+                }
+
                 showAppToast({
                     tone: 'warning',
                     title: 'Generation unavailable',
@@ -1464,8 +1488,12 @@ const useTripViewRender = ({
         isAnonymous,
         isAuthenticated,
         isResolvingPendingAuthGeneration,
+        location.hash,
+        location.pathname,
+        location.search,
         navigate,
         openLoginModal,
+        pendingAuthClaimQueryId,
         pendingAuthLoginReturnPath,
         pendingAuthQueueRequestId,
     ]);
@@ -2212,6 +2240,10 @@ const useTripViewRender = ({
         }
         return displayTrip.title.replace(/^Planning\s+/i, '').replace(/\.\.\.$/, '').trim() || 'Destination';
     }, [displayTrip.items, displayTrip.title]);
+    const effectiveMapFocusQuery = useMemo(() => {
+        const queries = buildTripMapLocationContextQueries(trip, initialMapFocusQuery);
+        return queries.join(' || ');
+    }, [initialMapFocusQuery, trip]);
     const showGenerationOverlay = isTripDetailRoute
         && isGenerationInFlight
         && !isAdminFallbackView
@@ -3022,7 +3054,7 @@ const useTripViewRender = ({
                         }}
                         mapColorMode={mapColorMode}
                         onMapColorModeChange={allowMapColorModeControls ? handleMapColorModeChange : undefined}
-                        initialMapFocusQuery={initialMapFocusQuery}
+                        initialMapFocusQuery={effectiveMapFocusQuery}
                         onRouteMetrics={handleRouteMetrics}
                         onRouteStatus={handleRouteStatus}
                         tripId={trip.id}
