@@ -7,7 +7,10 @@ import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from '../../config/locales';
 import { loadLazyComponentWithRecovery } from '../../services/lazyImportRecovery';
 import { MarketingRouteLoadingShell } from '../../components/bootstrap/MarketingRouteLoadingShell';
 import { MarketingHomePage } from '../../pages/MarketingHomePage';
+import { PublicProfilePage } from '../../pages/PublicProfilePage';
+import { PublicProfileStampsPage } from '../../pages/PublicProfileStampsPage';
 import '../../styles/deferred-routes.css';
+import { suspendUntilAuthBootstrapSettles } from '../../services/authBootstrapSuspense';
 import { markInitialRouteHandoffCompleted } from '../../services/marketingRouteShellState';
 
 const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
@@ -35,8 +38,6 @@ const TermsPage = lazyWithRecovery('TermsPage', () => import('../../pages/TermsP
 const CookiesPage = lazyWithRecovery('CookiesPage', () => import('../../pages/CookiesPage').then((module) => ({ default: module.CookiesPage })));
 const ProfilePage = lazyWithRecovery('ProfilePage', () => import('../../pages/ProfilePage').then((module) => ({ default: module.ProfilePage })));
 const ProfileStampsPage = lazyWithRecovery('ProfileStampsPage', () => import('../../pages/ProfileStampsPage').then((module) => ({ default: module.ProfileStampsPage })));
-const PublicProfilePage = lazyWithRecovery('PublicProfilePage', () => import('../../pages/PublicProfilePage').then((module) => ({ default: module.PublicProfilePage })));
-const PublicProfileStampsPage = lazyWithRecovery('PublicProfileStampsPage', () => import('../../pages/PublicProfileStampsPage').then((module) => ({ default: module.PublicProfileStampsPage })));
 const ProfileSettingsPage = lazyWithRecovery('ProfileSettingsPage', () => import('../../pages/ProfileSettingsPage').then((module) => ({ default: module.ProfileSettingsPage })));
 const ProfileOnboardingPage = lazyWithRecovery('ProfileOnboardingPage', () => import('../../pages/ProfileOnboardingPage').then((module) => ({ default: module.ProfileOnboardingPage })));
 const CheckoutPage = lazyWithRecovery('CheckoutPage', () => import('../../pages/CheckoutPage').then((module) => ({ default: module.CheckoutPage })));
@@ -65,16 +66,14 @@ const HandoffReadyBoundary: React.FC<{ children: React.ReactNode }> = ({ childre
     );
 };
 
-const renderWithSuspense = (node: React.ReactElement) => (
-    <Suspense fallback={<RouteLoadingFallback />}>
-        <HandoffReadyBoundary>{node}</HandoffReadyBoundary>
-    </Suspense>
+const renderWithHandoff = (node: React.ReactElement) => (
+    <HandoffReadyBoundary>{node}</HandoffReadyBoundary>
 );
 
 const AuthenticatedMarketingHomeRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
     const { isLoading, isAuthenticated } = useAuth();
 
-    if (isLoading) return <RouteLoadingFallback />;
+    suspendUntilAuthBootstrapSettles(isLoading);
     if (isAuthenticated) {
         return <Navigate to="/profile" replace />;
     }
@@ -129,13 +128,11 @@ const CreateTripClassicRoute: React.FC<{
 }> = ({ onTripGenerated, onOpenManager, onLanguageLoaded }) => {
     useDbSync(onLanguageLoaded);
     return (
-        <Suspense fallback={<RouteLoadingFallback />}>
-            <CreateTripClassicLabPage
-                onTripGenerated={onTripGenerated}
-                onOpenManager={onOpenManager}
-                onLanguageLoaded={onLanguageLoaded}
-            />
-        </Suspense>
+        <CreateTripClassicLabPage
+            onTripGenerated={onTripGenerated}
+            onOpenManager={onOpenManager}
+            onLanguageLoaded={onLanguageLoaded}
+        />
     );
 };
 
@@ -146,9 +143,7 @@ const CreateTripWizardRoute: React.FC<{
 }> = ({ onTripGenerated, onOpenManager, onLanguageLoaded }) => {
     useDbSync(onLanguageLoaded);
     return (
-        <Suspense fallback={<RouteLoadingFallback />}>
-            <CreateTripV3Page onTripGenerated={onTripGenerated} onOpenManager={onOpenManager} />
-        </Suspense>
+        <CreateTripV3Page onTripGenerated={onTripGenerated} onOpenManager={onOpenManager} />
     );
 };
 
@@ -156,7 +151,7 @@ const AuthenticatedRoute: React.FC<{ children: React.ReactElement }> = ({ childr
     const { isLoading, isAuthenticated } = useAuth();
     const location = useLocation();
 
-    if (isLoading) return <RouteLoadingFallback />;
+    suspendUntilAuthBootstrapSettles(isLoading);
     if (!isAuthenticated) {
         return (
             <Navigate
@@ -174,7 +169,7 @@ const AdminRoute: React.FC<{ children: React.ReactElement }> = ({ children }) =>
     const { isLoading, isAdmin, isAuthenticated } = useAuth();
     const location = useLocation();
 
-    if (isLoading) return <RouteLoadingFallback />;
+    suspendUntilAuthBootstrapSettles(isLoading);
     if (!isAuthenticated) {
         return (
             <Navigate
@@ -198,23 +193,25 @@ const AdminRoute: React.FC<{ children: React.ReactElement }> = ({ children }) =>
 };
 
 export interface DeferredAppRoutesProps {
+    wrapInSuspense?: boolean;
     onAppLanguageLoaded: (lang: AppLanguage) => void;
     onTripGenerated: (trip: ITrip) => void;
     onOpenManager: () => void;
 }
 
 export const DeferredAppRoutes: React.FC<DeferredAppRoutesProps> = ({
+    wrapInSuspense = true,
     onAppLanguageLoaded,
     onTripGenerated,
     onOpenManager,
 }) => {
-    return (
+    const routes = (
         <Routes>
             {MARKETING_ROUTE_CONFIGS.map(({ path, element }) => (
                 <Route
                     key={`marketing:${path}`}
                     path={path}
-                    element={renderWithSuspense(wrapMarketingRouteElement(path, element))}
+                    element={renderWithHandoff(wrapMarketingRouteElement(path, element))}
                 />
             ))}
             {LOCALIZED_MARKETING_LOCALES.flatMap((locale) =>
@@ -222,7 +219,7 @@ export const DeferredAppRoutes: React.FC<DeferredAppRoutesProps> = ({
                     <Route
                         key={`marketing:${locale}:${path}`}
                         path={getLocalizedMarketingRoutePath(path, locale)}
-                        element={renderWithSuspense(wrapMarketingRouteElement(path, element))}
+                        element={renderWithHandoff(wrapMarketingRouteElement(path, element))}
                     />
                 ))
             )}
@@ -230,7 +227,7 @@ export const DeferredAppRoutes: React.FC<DeferredAppRoutesProps> = ({
             <Route
                 path="/create-trip/labs/classic-card"
                 element={
-                    renderWithSuspense(<CreateTripClassicRoute
+                    renderWithHandoff(<CreateTripClassicRoute
                         onTripGenerated={onTripGenerated}
                         onOpenManager={onOpenManager}
                         onLanguageLoaded={onAppLanguageLoaded}
@@ -240,7 +237,7 @@ export const DeferredAppRoutes: React.FC<DeferredAppRoutesProps> = ({
             <Route
                 path="/create-trip/wizard"
                 element={
-                    renderWithSuspense(<CreateTripWizardRoute
+                    renderWithHandoff(<CreateTripWizardRoute
                         onTripGenerated={onTripGenerated}
                         onOpenManager={onOpenManager}
                         onLanguageLoaded={onAppLanguageLoaded}
@@ -259,11 +256,11 @@ export const DeferredAppRoutes: React.FC<DeferredAppRoutesProps> = ({
 
             <Route
                 path="/checkout"
-                element={renderWithSuspense(<CheckoutPage />)}
+                element={renderWithHandoff(<CheckoutPage />)}
             />
             <Route
                 path="/profile/onboarding"
-                element={renderWithSuspense(
+                element={renderWithHandoff(
                     <AuthenticatedRoute>
                         <ProfileOnboardingPage />
                     </AuthenticatedRoute>
@@ -271,7 +268,7 @@ export const DeferredAppRoutes: React.FC<DeferredAppRoutesProps> = ({
             />
             <Route
                 path="/profile"
-                element={renderWithSuspense(
+                element={renderWithHandoff(
                     <AuthenticatedRoute>
                         <ProfilePage />
                     </AuthenticatedRoute>
@@ -279,7 +276,7 @@ export const DeferredAppRoutes: React.FC<DeferredAppRoutesProps> = ({
             />
             <Route
                 path="/profile/stamps"
-                element={renderWithSuspense(
+                element={renderWithHandoff(
                     <AuthenticatedRoute>
                         <ProfileStampsPage />
                     </AuthenticatedRoute>
@@ -287,7 +284,7 @@ export const DeferredAppRoutes: React.FC<DeferredAppRoutesProps> = ({
             />
             <Route
                 path="/profile/settings"
-                element={renderWithSuspense(
+                element={renderWithHandoff(
                     <AuthenticatedRoute>
                         <ProfileSettingsPage />
                     </AuthenticatedRoute>
@@ -295,15 +292,15 @@ export const DeferredAppRoutes: React.FC<DeferredAppRoutesProps> = ({
             />
             <Route
                 path="/u/:username"
-                element={renderWithSuspense(<PublicProfilePage />)}
+                element={renderWithHandoff(<PublicProfilePage />)}
             />
             <Route
                 path="/u/:username/stamps"
-                element={renderWithSuspense(<PublicProfileStampsPage />)}
+                element={renderWithHandoff(<PublicProfileStampsPage />)}
             />
             <Route
                 path="/admin/access-denied"
-                element={renderWithSuspense(
+                element={renderWithHandoff(
                     <AuthenticatedRoute>
                         <AdminAccessDeniedPage />
                     </AuthenticatedRoute>
@@ -311,13 +308,23 @@ export const DeferredAppRoutes: React.FC<DeferredAppRoutesProps> = ({
             />
             <Route
                 path="/admin/*"
-                element={renderWithSuspense(
+                element={renderWithHandoff(
                     <AdminRoute>
                         <AdminWorkspaceRouter />
                     </AdminRoute>
                 )}
             />
-            <Route path="*" element={renderWithSuspense(<NotFoundPage />)} />
+            <Route path="*" element={renderWithHandoff(<NotFoundPage />)} />
         </Routes>
+    );
+
+    if (!wrapInSuspense) {
+        return routes;
+    }
+
+    return (
+        <Suspense fallback={<RouteLoadingFallback />}>
+            {routes}
+        </Suspense>
     );
 };

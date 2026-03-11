@@ -290,6 +290,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
         return (
             <Suspense fallback={mapLoadingFallback}>
                 <ItineraryMapComponent
+                    key={tripId}
                     items={displayItems}
                     selectedItemId={selectedItemId}
                     onCityMarkerSelect={onMapCitySelect}

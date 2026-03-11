@@ -58,7 +58,7 @@ const debugPrefetch = import.meta.env.VITE_PREFETCH_DEBUG === 'true';
 export const isNavPrefetchEnabled = (): boolean => {
     if (navPrefetchEnabledByEnv === 'true') return true;
     if (navPrefetchEnabledByEnv === 'false') return false;
-    return isProd;
+    return isProd || import.meta.env.DEV;
 };
 
 const defaultStats = (): PrefetchStats => ({

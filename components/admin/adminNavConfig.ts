@@ -79,6 +79,13 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
         icon: 'telemetry',
     },
     {
+        id: 'ai_worker_health',
+        label: 'Worker Health',
+        path: '/admin/ai-benchmark/worker-health',
+        section: 'tools',
+        icon: 'telemetry',
+    },
+    {
         id: 'og_tools',
         label: 'OG Tools',
         path: '/admin/og-tools',

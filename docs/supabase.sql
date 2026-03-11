@@ -245,6 +245,23 @@ create table if not exists public.ai_generation_events (
   created_at timestamptz not null default now()
 );
 
+create table if not exists public.async_worker_health_checks (
+  id uuid primary key default gen_random_uuid(),
+  check_type text not null check (check_type in ('heartbeat', 'watchdog', 'canary')),
+  status text not null check (status in ('ok', 'warning', 'failed')),
+  started_at timestamptz not null default now(),
+  finished_at timestamptz,
+  stale_queued_count integer not null default 0,
+  oldest_queued_age_ms integer,
+  dispatch_attempted boolean not null default false,
+  dispatch_http_status integer,
+  canary_latency_ms integer,
+  failure_code text,
+  failure_message text,
+  metadata jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+
 -- Forward-compatible schema upgrades
 alter table public.trips add column if not exists sharing_enabled boolean not null default true;
 alter table public.trips add column if not exists status text not null default 'active';
@@ -515,6 +532,9 @@ create index if not exists ai_generation_events_created_idx on public.ai_generat
 create index if not exists ai_generation_events_source_created_idx on public.ai_generation_events(source, created_at desc);
 create index if not exists ai_generation_events_provider_created_idx on public.ai_generation_events(provider, created_at desc);
 create index if not exists ai_generation_events_status_created_idx on public.ai_generation_events(status, created_at desc);
+create index if not exists async_worker_health_checks_started_idx on public.async_worker_health_checks(started_at desc);
+create index if not exists async_worker_health_checks_type_started_idx on public.async_worker_health_checks(check_type, started_at desc);
+create index if not exists async_worker_health_checks_status_started_idx on public.async_worker_health_checks(status, started_at desc);
 create unique index if not exists subscriptions_provider_subscription_uidx
   on public.subscriptions(provider_subscription_id)
   where provider_subscription_id is not null;
@@ -839,6 +859,7 @@ alter table public.ai_benchmark_sessions enable row level security;
 alter table public.ai_benchmark_runs enable row level security;
 alter table public.ai_benchmark_preferences enable row level security;
 alter table public.ai_generation_events enable row level security;
+alter table public.async_worker_health_checks enable row level security;
 
 -- Trips policies
 drop policy if exists "Trips are readable by owner or collaborators" on public.trips;

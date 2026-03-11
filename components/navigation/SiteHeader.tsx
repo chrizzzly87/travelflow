@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useMemo, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { List, Folder, SpinnerGap as Loader2 } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
@@ -14,6 +14,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useLoginModal } from '../../hooks/useLoginModal';
 import { buildPathFromLocationParts } from '../../services/authNavigationService';
 import { loadLazyComponentWithRecovery } from '../../services/lazyImportRecovery';
+import { warmRouteAssets } from '../../services/navigationPrefetch';
 import { AppBrand } from './AppBrand';
 
 const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
@@ -63,6 +64,7 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
     hideCreateTrip = false,
 }) => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [pendingLocale, setPendingLocale] = useState<AppLanguage | null>(null);
     const hasTrips = useHasSavedTrips();
     const location = useLocation();
     const navigate = useNavigate();
@@ -75,10 +77,28 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
         if (routeLocale) return routeLocale;
         return normalizeLocale(i18n.resolvedLanguage ?? i18n.language ?? DEFAULT_LOCALE);
     }, [i18n.language, i18n.resolvedLanguage, location.pathname]);
+    const selectedLocale = pendingLocale ?? activeLocale;
+
+    useEffect(() => {
+        if (!pendingLocale) return;
+        if (pendingLocale === activeLocale) {
+            setPendingLocale(null);
+            return;
+        }
+        const timeoutId = window.setTimeout(() => {
+            setPendingLocale(null);
+        }, 1500);
+        return () => window.clearTimeout(timeoutId);
+    }, [activeLocale, pendingLocale]);
 
     const handleLocaleChange = (nextLocaleRaw: string) => {
         const nextLocale = normalizeLocale(nextLocaleRaw);
-        if (nextLocale === activeLocale) return;
+        if (nextLocale === activeLocale) {
+            setPendingLocale(null);
+            return;
+        }
+
+        setPendingLocale(nextLocale);
 
         if (!isToolRoute(location.pathname)) {
             void preloadLocaleNamespaces(nextLocale, getNamespacesForMarketingPath(location.pathname));
@@ -123,6 +143,10 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
     const navDebugAttributes = (target: string) =>
         getAnalyticsDebugAttributes(`navigation__${target}`);
 
+    const prewarmCreateTripRoute = () => {
+        void warmRouteAssets(buildLocalizedCreateTripPath(selectedLocale), 'manual');
+    };
+
     const isGlass = variant === 'glass';
 
     const headerClass = isGlass
@@ -165,7 +189,7 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
                         <div className="relative hidden md:block">
                             <LanguageSelect
                                 ariaLabel={t('language.label')}
-                                value={activeLocale}
+                                value={selectedLocale}
                                 onChange={handleLocaleChange}
                                 triggerClassName="h-9 rounded-lg border-slate-200 bg-white py-2 pl-3 pr-3 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:border-slate-300 focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
                             />
@@ -183,6 +207,7 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
                                     email={access?.email || null}
                                     userId={access?.userId || null}
                                     isAdmin={isAdmin}
+                                    labelMode="profile"
                                     className="hidden lg:block"
                                 />
                             </Suspense>
@@ -226,6 +251,9 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
                             <NavLink
                                 to={buildLocalizedCreateTripPath(activeLocale)}
                                 onClick={() => handleNavClick('create_trip')}
+                                onMouseEnter={prewarmCreateTripRoute}
+                                onFocus={prewarmCreateTripRoute}
+                                onTouchStart={prewarmCreateTripRoute}
                                 className="rounded-lg bg-accent-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-accent-700"
                                 {...navDebugAttributes('create_trip')}
                             >

@@ -117,6 +117,32 @@ describe('tripGenerationDiagnosticsService', () => {
     expect(failedTrip.items.some((item) => item.loading)).toBe(false);
   });
 
+  it('creates a failed attempt when metadata is attached before any running attempt exists', () => {
+    const failedTrip = markTripGenerationFailed(buildTrip(), {
+      flow: 'wizard',
+      source: 'create_trip_pending_auth',
+      requestId: 'request-pending-auth',
+      provider: 'openai',
+      model: 'gpt-4.1',
+      error: new Error('Sign in to start generation for this trip.'),
+      metadata: {
+        pendingAuth: true,
+        queueRequestId: 'queue-request-1',
+        orchestration: 'auth_queue_claim',
+      },
+    });
+
+    expect(failedTrip.aiMeta?.generation?.state).toBe('failed');
+    expect(failedTrip.aiMeta?.generation?.latestAttempt?.requestId).toBe('request-pending-auth');
+    expect(failedTrip.aiMeta?.generation?.latestAttempt?.provider).toBe('openai');
+    expect(failedTrip.aiMeta?.generation?.latestAttempt?.model).toBe('gpt-4.1');
+    expect(failedTrip.aiMeta?.generation?.latestAttempt?.metadata).toEqual(expect.objectContaining({
+      pendingAuth: true,
+      queueRequestId: 'queue-request-1',
+      orchestration: 'auth_queue_claim',
+    }));
+  });
+
   it('treats running generation as failed when stale timeout window is exceeded', () => {
     const nowMs = Date.parse('2026-03-04T10:00:00.000Z');
     const startedAt = new Date(

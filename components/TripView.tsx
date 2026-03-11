@@ -24,10 +24,7 @@ import { removeLocalStorageItem } from '../services/browserStorageService';
 import { buildBillingCheckoutPath } from '../services/billingService';
 import { useLoginModal } from '../hooks/useLoginModal';
 import {
-    buildLoginPathWithNext,
     buildPathFromLocationParts,
-    rememberAuthReturnPath,
-    setPendingAuthRedirect,
 } from '../services/authNavigationService';
 import { useAuth } from '../hooks/useAuth';
 import { useConnectivityStatus } from '../hooks/useConnectivityStatus';
@@ -97,6 +94,7 @@ import { buildBenchmarkScenarioImportUrl } from '../services/tripGenerationBench
 import { beginTripGenerationTabFeedback, type TripGenerationTabFeedbackSession } from '../services/tripGenerationTabFeedbackService';
 import {
     getAsyncTripGenerationStallRecoveryAction,
+    shouldUseRemoteTripForAsyncStallRecovery,
     shouldApplyPolledTripUpdate,
     shouldPollTripGenerationState,
 } from '../services/tripGenerationPollingService';
@@ -319,6 +317,11 @@ interface TripMetaSummary {
     summaryLine: string;
 }
 
+export interface TripTravelerWarningSummary {
+    cityName: string;
+    notes: string[];
+}
+
 const buildTripMetaSummary = (trip: ITrip): TripMetaSummary => {
     const cityItems = trip.items
         .filter((item) => item.type === 'city')
@@ -359,6 +362,34 @@ const buildTripMetaSummary = (trip: ITrip): TripMetaSummary => {
         summaryLine: `${dateRange} • ${totalDaysLabel} days • ${citiesLabel}${distancePart}`,
     };
 };
+
+const HEADS_UP_SECTION_REGEX = /### Heads Up\s*([\s\S]*?)(?=\n###\s|\s*$)/i;
+
+export const extractTripTravelerWarnings = (items: ITimelineItem[]): TripTravelerWarningSummary[] => (
+    items
+        .filter((item) => item.type === 'city')
+        .map((item) => {
+            const description = typeof item.description === 'string' ? item.description.trim() : '';
+            if (!description) return null;
+
+            const match = description.match(HEADS_UP_SECTION_REGEX);
+            if (!match) return null;
+
+            const notes = match[1]
+                .split('\n')
+                .map((line) => line.trim())
+                .map((line) => line.replace(/^- \[[ xX]\]\s*/, '').replace(/^-+\s*/, '').trim())
+                .filter(Boolean);
+
+            if (notes.length === 0) return null;
+
+            return {
+                cityName: item.title || item.location || 'Stop',
+                notes,
+            } satisfies TripTravelerWarningSummary;
+        })
+        .filter((warning): warning is TripTravelerWarningSummary => Boolean(warning))
+);
 
 interface TripViewProps {
     trip: ITrip;
@@ -536,6 +567,7 @@ interface TripViewModalLayerProps {
     formatHistoryTime: (value: number) => string;
     countryInfo: ITrip['countryInfo'];
     isPaywallLocked: boolean;
+    travelerWarnings: TripTravelerWarningSummary[];
     onExportActivitiesCalendar: () => void;
     onExportCitiesCalendar: () => void;
     onExportAllCalendar: () => void;
@@ -570,6 +602,9 @@ interface TripViewModalLayerProps {
     loadingDestinationSummary: string;
     tripDateRange: string;
     tripTotalDaysLabel: string;
+    pendingAuthModalStage: 'hidden' | 'loading' | 'locked';
+    onContinuePendingAuth: () => void;
+    isPendingAuthContinueDisabled: boolean;
 }
 
 const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
@@ -625,6 +660,7 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
     formatHistoryTime,
     countryInfo,
     isPaywallLocked,
+    travelerWarnings,
     onExportActivitiesCalendar,
     onExportCitiesCalendar,
     onExportAllCalendar,
@@ -655,6 +691,9 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
     loadingDestinationSummary,
     tripDateRange,
     tripTotalDaysLabel,
+    pendingAuthModalStage,
+    onContinuePendingAuth,
+    isPendingAuthContinueDisabled,
 }) => (
     <>
         {isMobile && detailsPanelVisible && (
@@ -726,6 +765,7 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
                     formatHistoryTime={formatHistoryTime}
                     countryInfo={countryInfo}
                     isPaywallLocked={isPaywallLocked}
+                    travelerWarnings={travelerWarnings}
                     onExportActivitiesCalendar={onExportActivitiesCalendar}
                     onExportCitiesCalendar={onExportCitiesCalendar}
                     onExportAllCalendar={onExportAllCalendar}
@@ -783,6 +823,9 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
             loadingDestinationSummary={loadingDestinationSummary}
             tripDateRange={tripDateRange}
             tripTotalDaysLabel={tripTotalDaysLabel}
+            pendingAuthModalStage={pendingAuthModalStage}
+            onContinuePendingAuth={onContinuePendingAuth}
+            isPendingAuthContinueDisabled={isPendingAuthContinueDisabled}
         />
     </>
 );
@@ -897,7 +940,7 @@ const useTripViewRender = ({
 }: TripViewProps): React.ReactElement => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { t, i18n } = useTranslation('common');
+    const { t } = useTranslation('common');
     const { openLoginModal } = useLoginModal();
     const { access, profile, isAuthenticated, isAnonymous, isAdmin, logout } = useAuth();
     const { snapshot: connectivitySnapshot } = useConnectivityStatus();
@@ -970,6 +1013,28 @@ const useTripViewRender = ({
         const pendingAuthValue = metadata.pendingAuth;
         return pendingAuthValue === true ? queueRequestId : null;
     }, [latestGenerationAttempt?.metadata]);
+    const isPendingAuthGeneration = generationState === 'failed' && Boolean(pendingAuthQueueRequestId);
+    const pendingAuthClaimQueryId = useMemo(() => {
+        const claimValue = new URLSearchParams(location.search).get('claim');
+        return typeof claimValue === 'string' && claimValue.trim().length > 0
+            ? claimValue.trim()
+            : null;
+    }, [location.search]);
+    const pendingAuthLoginReturnPath = useMemo(() => {
+        const query = new URLSearchParams(location.search);
+        if (pendingAuthQueueRequestId) {
+            query.set('claim', pendingAuthQueueRequestId);
+        } else {
+            query.delete('claim');
+        }
+
+        const nextSearch = query.toString();
+        return buildPathFromLocationParts({
+            pathname: location.pathname,
+            search: nextSearch ? `?${nextSearch}` : '',
+            hash: location.hash,
+        });
+    }, [location.hash, location.pathname, location.search, pendingAuthQueueRequestId]);
     const shouldPollGenerationState = shouldPollTripGenerationState(trip, generationNowMs);
     useEffect(() => {
         if (!shouldPollGenerationState) return undefined;
@@ -1053,10 +1118,25 @@ const useTripViewRender = ({
         pendingRetryGenerationStateRef.current = false;
     }, []);
     const [isResolvingPendingAuthGeneration, setIsResolvingPendingAuthGeneration] = useState(false);
+    const [hasSeenPendingAuthLoadingState, setHasSeenPendingAuthLoadingState] = useState(false);
+    const autoClaimedPendingAuthQueueRequestIdRef = useRef<string | null>(null);
     const generationElapsedMs = useMemo(
         () => getTripGenerationElapsedMs(trip, generationNowMs),
         [generationNowMs, trip]
     );
+    useEffect(() => {
+        if (!isPendingAuthGeneration || !pendingAuthQueueRequestId) {
+            setHasSeenPendingAuthLoadingState(false);
+            autoClaimedPendingAuthQueueRequestIdRef.current = null;
+            return;
+        }
+
+        setHasSeenPendingAuthLoadingState(false);
+        const timer = window.setTimeout(() => {
+            setHasSeenPendingAuthLoadingState(true);
+        }, 1800);
+        return () => window.clearTimeout(timer);
+    }, [isPendingAuthGeneration, pendingAuthQueueRequestId]);
     useEffect(() => {
         if (!latestGenerationAttempt?.id) {
             asyncStallRecoveryAttemptIdRef.current = null;
@@ -1117,6 +1197,18 @@ const useTripViewRender = ({
                         force: true,
                     });
                     return;
+                }
+
+                try {
+                    const remote = await dbGetTrip(trip.id, { includeOwnerProfile: false });
+                    if (cancelled) return;
+                    const remoteTrip = remote?.trip || null;
+                    if (shouldUseRemoteTripForAsyncStallRecovery(tripRef.current, remoteTrip, nowMs) && remoteTrip) {
+                        onUpdateTrip(remoteTrip);
+                        return;
+                    }
+                } catch {
+                    if (cancelled) return;
                 }
 
                 asyncStallRecoveryAttemptIdRef.current = latestGenerationAttempt.id;
@@ -1221,6 +1313,19 @@ const useTripViewRender = ({
         (generationState === 'running' || generationState === 'queued')
         && typeof generationElapsedMs === 'number'
         && generationElapsedMs >= TRIP_GENERATION_TIMEOUT_MS
+    );
+    const pendingAuthModalStage: 'hidden' | 'loading' | 'locked' = !isPendingAuthGeneration
+        ? 'hidden'
+        : (isResolvingPendingAuthGeneration || !hasSeenPendingAuthLoadingState)
+            ? 'loading'
+            : 'locked';
+    const hasSuccessfulGeneration = generationState === 'succeeded'
+        || Boolean(trip.aiMeta?.generation?.lastSucceededAt);
+    const shouldShowExpirationBanner = !isPendingAuthGeneration
+        && (isTripLockedByExpiry || !latestGenerationAttempt || hasSuccessfulGeneration);
+    const travelerWarnings = useMemo(
+        () => extractTripTravelerWarnings(trip.items),
+        [trip.items]
     );
     const ownerUsersUrl = useMemo(() => {
         if (!isAdminFallbackView || !adminAccess?.ownerId) return null;
@@ -1343,35 +1448,44 @@ const useTripViewRender = ({
                     title: 'Generation unavailable',
                     description: error instanceof Error ? error.message : 'Could not start trip generation.',
                 });
+                autoClaimedPendingAuthQueueRequestIdRef.current = null;
             } finally {
                 setIsResolvingPendingAuthGeneration(false);
             }
             return;
         }
 
-        const authRedirect = buildLoginPathWithNext({
-            pathname: location.pathname,
-            search: location.search,
-            hash: location.hash,
-            language: i18n.language,
-            resolvedLanguage: i18n.resolvedLanguage,
+        openLoginModal({
+            source: 'trip_generation_pending_auth_modal',
+            nextPath: pendingAuthLoginReturnPath,
+            reloadOnSuccess: true,
         });
-        rememberAuthReturnPath(authRedirect.nextPath);
-        setPendingAuthRedirect(authRedirect.nextPath, 'trip_generation_pending_auth');
-        const query = new URLSearchParams();
-        query.set('next', authRedirect.nextPath);
-        query.set('claim', pendingAuthQueueRequestId);
-        navigate(`${authRedirect.loginPath}?${query.toString()}`);
     }, [
-        i18n.language,
-        i18n.resolvedLanguage,
         isAnonymous,
         isAuthenticated,
         isResolvingPendingAuthGeneration,
-        location.hash,
-        location.pathname,
-        location.search,
         navigate,
+        openLoginModal,
+        pendingAuthLoginReturnPath,
+        pendingAuthQueueRequestId,
+    ]);
+    useEffect(() => {
+        if (!pendingAuthQueueRequestId) return;
+        if (!isPendingAuthGeneration) return;
+        if (!isAuthenticated || isAnonymous) return;
+        if (pendingAuthClaimQueryId !== pendingAuthQueueRequestId) return;
+        if (isResolvingPendingAuthGeneration) return;
+        if (autoClaimedPendingAuthQueueRequestIdRef.current === pendingAuthQueueRequestId) return;
+
+        autoClaimedPendingAuthQueueRequestIdRef.current = pendingAuthQueueRequestId;
+        void handleResolvePendingAuthGeneration();
+    }, [
+        handleResolvePendingAuthGeneration,
+        isAnonymous,
+        isAuthenticated,
+        isPendingAuthGeneration,
+        isResolvingPendingAuthGeneration,
+        pendingAuthClaimQueryId,
         pendingAuthQueueRequestId,
     ]);
 
@@ -2748,6 +2862,7 @@ const useTripViewRender = ({
                         navigate(shareSnapshotMeta.latestUrl);
                     }}
                     tripExpiresAtMs={tripExpiresAtMs}
+                    shouldShowExpirationBanner={shouldShowExpirationBanner}
                     isExampleTrip={trip.isExample}
                     isPaywallLocked={isPaywallLocked}
                     expirationLabel={expirationLabel}
@@ -2984,6 +3099,7 @@ const useTripViewRender = ({
                         formatHistoryTime={formatHistoryTime}
                         countryInfo={displayTrip.countryInfo}
                         isPaywallLocked={isPaywallLocked}
+                        travelerWarnings={travelerWarnings}
                         onExportActivitiesCalendar={() => handleExportActivitiesCalendar('trip_info_modal')}
                         onExportCitiesCalendar={() => handleExportCitiesCalendar('trip_info_modal')}
                         onExportAllCalendar={() => handleExportAllCalendar('trip_info_modal')}
@@ -3011,14 +3127,19 @@ const useTripViewRender = ({
                         onCopyTrip={onCopyTrip}
                         expirationLabel={expirationLabel}
                         tripId={trip.id}
-                    paywallActivationMode={paywallActivationMode}
-                    onPaywallActivateClick={handlePaywallActivateClick}
-                    paywallOverlayUpgradeCheckoutPath={paywallOverlayUpgradeCheckoutPath}
-                    showGenerationOverlay={showGenerationOverlay}
+                        paywallActivationMode={paywallActivationMode}
+                        onPaywallActivateClick={handlePaywallActivateClick}
+                        paywallOverlayUpgradeCheckoutPath={paywallOverlayUpgradeCheckoutPath}
+                        showGenerationOverlay={showGenerationOverlay}
                         generationProgressMessage={generationProgressMessage}
                         loadingDestinationSummary={loadingDestinationSummary}
                         tripDateRange={tripMeta.dateRange}
                         tripTotalDaysLabel={tripMeta.totalDaysLabel}
+                        pendingAuthModalStage={pendingAuthModalStage}
+                        onContinuePendingAuth={() => {
+                            void handleResolvePendingAuthGeneration();
+                        }}
+                        isPendingAuthContinueDisabled={isResolvingPendingAuthGeneration}
                     />
 
                 </main>

@@ -1,5 +1,6 @@
 
 import type { TransportMode as CanonicalTransportMode } from './shared/transportModes';
+import type { CreateTripPrefillDraft } from './shared/createTripPreferences';
 
 export type ItemType = 'city' | 'activity' | 'travel' | 'travel-empty';
 export type TransportMode = CanonicalTransportMode;
@@ -296,6 +297,7 @@ export interface TripPrefillData {
         source?: string;
         author?: string;
         label?: string;
+        draft?: CreateTripPrefillDraft | Record<string, unknown>;
         [key: string]: unknown;
     };
 }

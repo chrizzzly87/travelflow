@@ -11,9 +11,18 @@ interface CountrySelectProps {
     value: string;
     onChange: (value: string) => void;
     disabled?: boolean;
+    labels?: {
+        fieldLabel?: string;
+        placeholder?: string;
+        addAnotherPlaceholder?: string;
+        idealTravelTime?: string;
+        islandOf?: (country: string) => string;
+        noMatches?: string;
+        typeToSearch?: string;
+    };
 }
 
-export const CountrySelect: React.FC<CountrySelectProps> = ({ value, onChange, disabled }) => {
+export const CountrySelect: React.FC<CountrySelectProps> = ({ value, onChange, disabled, labels }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [search, setSearch] = useState('');
     const wrapperRef = useRef<HTMLDivElement>(null);
@@ -92,7 +101,7 @@ export const CountrySelect: React.FC<CountrySelectProps> = ({ value, onChange, d
     return (
         <div className="relative" ref={wrapperRef}>
              <label htmlFor={searchInputId} className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5 mb-1.5">
-                <MapPin size={14} className="text-accent-500"/> Destination(s)
+                <MapPin size={14} className="text-accent-500"/> {labels?.fieldLabel || 'Destination(s)'}
             </label>
             
             <div 
@@ -114,7 +123,7 @@ export const CountrySelect: React.FC<CountrySelectProps> = ({ value, onChange, d
                             />
                             {season && (
                                 <div className="pointer-events-none absolute left-0 top-[calc(100%+8px)] z-[80] hidden w-[280px] rounded-xl border border-gray-200 bg-white p-3 shadow-xl group-hover:block">
-                                    <div className="text-xs font-semibold text-gray-900">Ideal travel time</div>
+                                    <div className="text-xs font-semibold text-gray-900">{labels?.idealTravelTime || 'Ideal travel time'}</div>
                                     <IdealTravelTimeline idealMonths={season.bestMonths} shoulderMonths={season.shoulderMonths} />
                                 </div>
                             )}
@@ -134,7 +143,9 @@ export const CountrySelect: React.FC<CountrySelectProps> = ({ value, onChange, d
                             setSearch(e.target.value);
                             openDropdown();
                         }}
-                        placeholder={selectedCountries.length === 0 ? "Search countries or islands..." : "Add another destination..."}
+                        placeholder={selectedCountries.length === 0
+                            ? (labels?.placeholder || 'Search countries or islands...')
+                            : (labels?.addAnotherPlaceholder || 'Add another destination...')}
                         className="bg-transparent border-none outline-none w-full text-gray-800 font-medium placeholder-gray-400 text-sm h-8"
                         onFocus={openDropdown}
                     />
@@ -164,7 +175,9 @@ export const CountrySelect: React.FC<CountrySelectProps> = ({ value, onChange, d
                                 <div className="min-w-0">
                                     <div className="font-medium text-gray-700 truncate">{country.name}</div>
                                     {country.kind === 'island' && country.parentCountryName && (
-                                        <div className="text-xs text-gray-500 truncate">Island of {country.parentCountryName}</div>
+                                        <div className="text-xs text-gray-500 truncate">
+                                            {labels?.islandOf ? labels.islandOf(country.parentCountryName) : `Island of ${country.parentCountryName}`}
+                                        </div>
                                     )}
                                 </div>
                             </div>
@@ -172,7 +185,7 @@ export const CountrySelect: React.FC<CountrySelectProps> = ({ value, onChange, d
                         </button>
                     )) : (
                         <div className="p-4 text-center text-gray-400 text-sm">
-                            {search ? "No matching destinations" : "Type to search"}
+                            {search ? (labels?.noMatches || 'No matching destinations') : (labels?.typeToSearch || 'Type to search')}
                         </div>
                     )}
                 </div>,

@@ -49,8 +49,6 @@ const messages: Record<string, string> = {
   'tiers.explorer.features.0': '{maxActiveTripsLabel} active trips',
   'tiers.explorer.features.2': 'Trip retention: {tripExpirationLabel}',
   'tiers.explorer.features.4': 'Editable collaboration shares: {editableSharesLabel}',
-  'tripPaywall.strip.loginNoDate': 'Trip preview paused. Sign in to reactivate and unlock full planning mode.',
-  'tripPaywall.reactivate.actions.login': 'Sign in to reactivate',
 };
 
 vi.mock('react-i18next', () => ({
@@ -228,26 +226,33 @@ describe('TripViewStatusBanners connectivity strips', () => {
     expect(screen.getByRole('link', { name: 'checkout.tripEntryCta' })).toHaveAttribute('href', '/checkout?tier=tier_mid');
   });
 
-  it('shows pending-auth sign-in action instead of retry button for queued claim trips', () => {
-    const onResolvePendingAuthGeneration = vi.fn();
-    const onRetryGeneration = vi.fn();
+  it('hides the failed-generation strip for pending-auth claim trips because the modal handles it', () => {
     render(
       <TripViewStatusBanners
         {...makeProps({
           generationState: 'failed',
           generationFailureMessage: 'Sign in to start generation for this trip.',
           pendingAuthQueueRequestId: 'queue-claim-123',
-          onResolvePendingAuthGeneration,
-          canRetryGeneration: true,
-          onRetryGeneration,
         })}
       />,
     );
 
-    expect(screen.getByText('Trip preview paused. Sign in to reactivate and unlock full planning mode.')).toBeInTheDocument();
+    expect(screen.queryByText('Trip generation failed. Check diagnostics or retry with the default model.')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Retry generation' })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Sign in to reactivate' }));
-    expect(onResolvePendingAuthGeneration).toHaveBeenCalledTimes(1);
-    expect(onRetryGeneration).not.toHaveBeenCalled();
+  });
+
+  it('hides the expiration strip until the trip is ready to be shown', () => {
+    render(
+      <TripViewStatusBanners
+        {...makeProps({
+          tripExpiresAtMs: Date.parse('2026-03-24T00:00:00.000Z'),
+          expirationLabel: 'Mar 24, 2026',
+          expirationRelativeLabel: 'Expires in 14 days',
+          shouldShowExpirationBanner: false,
+        })}
+      />,
+    );
+
+    expect(screen.queryByText(/Expires in 14 days/i)).not.toBeInTheDocument();
   });
 });

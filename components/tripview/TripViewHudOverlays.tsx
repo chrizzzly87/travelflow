@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { PLAN_CATALOG } from '../../config/planCatalog';
 import type { TripPaywallActivationMode } from '../../config/paywall';
 import type { ShareMode } from '../../types';
-import { trackEvent } from '../../services/analyticsService';
+import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 
 interface TripViewHudOverlaysProps {
     shareStatus?: ShareMode;
@@ -27,6 +27,9 @@ interface TripViewHudOverlaysProps {
     loadingDestinationSummary: string;
     tripDateRange: string;
     tripTotalDaysLabel: string;
+    pendingAuthModalStage?: 'hidden' | 'loading' | 'locked';
+    onContinuePendingAuth?: () => void;
+    isPendingAuthContinueDisabled?: boolean;
 }
 
 export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
@@ -43,9 +46,13 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
     loadingDestinationSummary,
     tripDateRange,
     tripTotalDaysLabel,
+    pendingAuthModalStage = 'hidden',
+    onContinuePendingAuth,
+    isPendingAuthContinueDisabled = false,
 }) => {
     const { t } = useTranslation(['common', 'pricing']);
     const paywallRequiresLogin = paywallActivationMode === 'login_modal';
+    const showPendingAuthModal = pendingAuthModalStage !== 'hidden';
     const explorerTier = PLAN_CATALOG.tier_mid;
     const explorerHighlights = React.useMemo(() => {
         const unlimitedLabel = t('shared.unlimited', { ns: 'pricing' });
@@ -179,6 +186,104 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                                 </ul>
                             </aside>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {showPendingAuthModal && (
+                <div className="fixed inset-0 z-[1495] flex items-end justify-center bg-slate-950/45 p-3 backdrop-blur-sm sm:items-center sm:p-4">
+                    <div
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="trip-pending-auth-title"
+                        className="w-full max-w-xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
+                    >
+                        {pendingAuthModalStage === 'loading' ? (
+                            <div className="px-5 py-5 sm:px-6 sm:py-6">
+                                <div className="flex items-start gap-4">
+                                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-accent-50 text-accent-700">
+                                        <Loader2 size={20} className="animate-spin" />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-accent-700">
+                                            {t('tripView.pendingAuth.eyebrowLoading')}
+                                        </p>
+                                        <h2 id="trip-pending-auth-title" className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">
+                                            {t('tripView.pendingAuth.titleLoading')}
+                                        </h2>
+                                        <p className="mt-2 text-sm leading-6 text-slate-600">
+                                            {t('tripView.pendingAuth.descriptionLoading')}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-500">
+                                    {loadingDestinationSummary} • {tripDateRange} • {tripTotalDaysLabel} days
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="grid gap-0 md:grid-cols-[minmax(0,1fr)_240px]">
+                                <div className="px-5 py-5 sm:px-6 sm:py-6">
+                                    <div className="flex items-start justify-between gap-4">
+                                        <div className="min-w-0">
+                                            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-accent-700">
+                                                {t('tripView.pendingAuth.eyebrowLocked')}
+                                            </p>
+                                            <h2 id="trip-pending-auth-title" className="mt-2 text-2xl font-semibold leading-tight tracking-tight text-slate-900">
+                                                {t('tripView.pendingAuth.titleLocked')}
+                                            </h2>
+                                        </div>
+                                        <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-accent-200 bg-accent-50 text-accent-700">
+                                            <WarningCircle size={20} weight="duotone" />
+                                        </span>
+                                    </div>
+
+                                    <p className="mt-3 text-sm leading-6 text-slate-600">
+                                        {t('tripView.pendingAuth.descriptionLocked')}
+                                    </p>
+
+                                    <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-500">
+                                        {loadingDestinationSummary} • {tripDateRange} • {tripTotalDaysLabel} days
+                                    </div>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            trackEvent('trip_generation__pending_auth_modal--continue', {
+                                                trip_id: tripId,
+                                                source: 'trip_pending_auth_modal',
+                                            });
+                                            onContinuePendingAuth?.();
+                                        }}
+                                        disabled={isPendingAuthContinueDisabled}
+                                        className="mt-5 inline-flex h-11 items-center justify-center rounded-xl bg-accent-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-accent-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+                                        {...getAnalyticsDebugAttributes('trip_generation__pending_auth_modal--continue', {
+                                            trip_id: tripId,
+                                            source: 'trip_pending_auth_modal',
+                                        })}
+                                    >
+                                        {t('tripView.pendingAuth.cta')}
+                                    </button>
+                                </div>
+
+                                <aside className="border-t border-slate-200 bg-slate-50/80 px-5 py-5 md:border-l md:border-t-0 sm:px-6 sm:py-6">
+                                    <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                                        {t('tripView.pendingAuth.benefitsTitle')}
+                                    </p>
+                                    <ul className="mt-4 space-y-3">
+                                        {[
+                                            t('tripView.pendingAuth.benefits.keep'),
+                                            t('tripView.pendingAuth.benefits.background'),
+                                            t('tripView.pendingAuth.benefits.sync'),
+                                        ].map((benefit) => (
+                                            <li key={benefit} className="flex items-start gap-3 text-sm leading-6 text-slate-700">
+                                                <Check size={16} weight="bold" className="mt-1 shrink-0 text-accent-600" />
+                                                <span>{benefit}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </aside>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

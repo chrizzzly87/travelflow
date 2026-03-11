@@ -1,5 +1,5 @@
 import type { TripGenerationFlow, TripGenerationInputSnapshot } from '../types';
-import { enqueueTripGenerationJob } from './tripGenerationJobService';
+import { supabase } from './supabaseClient';
 
 interface EnqueueAsyncTripGenerationInput {
     flow: TripGenerationFlow;
@@ -22,33 +22,64 @@ interface EnqueueAsyncTripGenerationInput {
 export const enqueueAsyncTripGenerationJob = async (
     input: EnqueueAsyncTripGenerationInput,
 ): Promise<boolean> => {
-    const enqueueResult = await enqueueTripGenerationJob({
-        tripId: input.tripId,
-        attemptId: input.attemptId,
-        maxRetries: input.maxRetries ?? 0,
-        priority: Number.isFinite(Number(input.priority)) ? Number(input.priority) : 25,
-        payload: {
-            version: 1,
-            flow: input.flow,
-            source: input.source,
-            requestId: input.requestId,
-            queueRequestId: input.queueRequestId || null,
-            tripId: input.tripId,
-            attemptId: input.attemptId,
-            startedAt: input.startedAt || null,
-            startDate: input.startDate,
-            roundTrip: input.roundTrip,
-            prompt: input.prompt,
-            target: {
-                provider: input.provider,
-                model: input.model,
-            },
-            inputSnapshot: input.inputSnapshot,
-        },
-    });
+    if (typeof window === 'undefined') return false;
+    if (!supabase) return false;
 
-    if (!enqueueResult?.id) return false;
-    return enqueueResult.state === 'queued' || enqueueResult.state === 'leased';
+    let accessToken = '';
+    try {
+        const { data, error } = await supabase.auth.getSession();
+        if (error) return false;
+        accessToken = data.session?.access_token || '';
+    } catch {
+        return false;
+    }
+    if (!accessToken) return false;
+
+    try {
+        const response = await fetch('/api/internal/ai/generation-enqueue', {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                tripId: input.tripId,
+                attemptId: input.attemptId,
+                maxRetries: input.maxRetries ?? 0,
+                priority: Number.isFinite(Number(input.priority)) ? Number(input.priority) : 25,
+                payload: {
+                    version: 1,
+                    flow: input.flow,
+                    source: input.source,
+                    requestId: input.requestId,
+                    queueRequestId: input.queueRequestId || null,
+                    tripId: input.tripId,
+                    attemptId: input.attemptId,
+                    startedAt: input.startedAt || null,
+                    startDate: input.startDate,
+                    roundTrip: input.roundTrip,
+                    prompt: input.prompt,
+                    target: {
+                        provider: input.provider,
+                        model: input.model,
+                    },
+                    inputSnapshot: input.inputSnapshot,
+                },
+            }),
+            keepalive: true,
+        });
+        if (!response.ok) return false;
+
+        const payload = await response.json().catch(() => null) as {
+            ok?: boolean;
+            job?: { state?: string | null } | null;
+        } | null;
+        const state = payload?.job?.state || null;
+        if (payload?.ok !== true) return false;
+        return state === 'queued' || state === 'leased' || state === 'completed';
+    } catch {
+        return false;
+    }
 };
 
 type EnqueueClassicAsyncTripGenerationInput = Omit<EnqueueAsyncTripGenerationInput, 'flow'>;

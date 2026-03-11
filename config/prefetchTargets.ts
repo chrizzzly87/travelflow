@@ -19,6 +19,7 @@ const tripViewTarget = target('component:trip-view', () => import('../components
 const exampleTemplatesTarget = target('data:example-trip-templates', () => import('../data/exampleTripTemplates'));
 const exampleCardsTarget = target('data:example-trip-cards', () => import('../data/exampleTripCards'));
 const homeTarget = target('route:home', () => import('../pages/MarketingHomePage'));
+const deferredAppRoutesTarget = target('route:deferred-app-routes', () => import('../app/routes/DeferredAppRoutes'));
 
 const createTripClassicLabTarget = target('route:create-trip-lab-classic', () => import('../pages/CreateTripClassicLabPage'));
 const createTripWizardTarget = target('route:create-trip-wizard', () => import('../pages/CreateTripV3Page'));
@@ -74,7 +75,7 @@ const rules: PrefetchRule[] = [
     },
     {
         match: (pathname) => pathname === '/checkout',
-        targets: [checkoutTarget],
+        targets: [deferredAppRoutesTarget, checkoutTarget],
     },
     {
         match: (pathname) => startsWithSegment(pathname, '/trip'),
@@ -86,99 +87,99 @@ const rules: PrefetchRule[] = [
     },
     {
         match: (pathname) => pathname === '/features',
-        targets: [featuresTarget],
+        targets: [deferredAppRoutesTarget, featuresTarget],
     },
     {
         match: (pathname) => pathname === '/updates',
-        targets: [updatesTarget],
+        targets: [deferredAppRoutesTarget, updatesTarget],
     },
     {
         match: (pathname) => pathname === '/pricing',
-        targets: [pricingTarget],
+        targets: [deferredAppRoutesTarget, pricingTarget],
     },
     {
         match: (pathname) => pathname === '/faq',
-        targets: [faqTarget],
+        targets: [deferredAppRoutesTarget, faqTarget],
     },
     {
         match: (pathname) => pathname === '/share-unavailable',
-        targets: [shareUnavailableTarget],
+        targets: [deferredAppRoutesTarget, shareUnavailableTarget],
     },
     {
         match: (pathname) => pathname === '/login',
-        targets: [loginTarget],
+        targets: [deferredAppRoutesTarget, loginTarget],
     },
     {
         match: (pathname) => pathname === '/auth/reset-password',
-        targets: [resetPasswordTarget],
+        targets: [deferredAppRoutesTarget, resetPasswordTarget],
     },
     {
         match: (pathname) => pathname === '/contact',
-        targets: [contactTarget],
+        targets: [deferredAppRoutesTarget, contactTarget],
     },
     {
         match: (pathname) => pathname === '/imprint',
-        targets: [imprintTarget],
+        targets: [deferredAppRoutesTarget, imprintTarget],
     },
     {
         match: (pathname) => pathname === '/privacy',
-        targets: [privacyTarget],
+        targets: [deferredAppRoutesTarget, privacyTarget],
     },
     {
         match: (pathname) => pathname === '/terms',
-        targets: [termsTarget],
+        targets: [deferredAppRoutesTarget, termsTarget],
     },
     {
         match: (pathname) => pathname === '/cookies',
-        targets: [cookiesTarget],
+        targets: [deferredAppRoutesTarget, cookiesTarget],
     },
     {
         match: (pathname) => pathname === '/profile',
-        targets: [profileTarget],
+        targets: [deferredAppRoutesTarget, profileTarget],
     },
     {
         match: (pathname) => pathname === '/profile/settings',
-        targets: [profileSettingsTarget],
+        targets: [deferredAppRoutesTarget, profileSettingsTarget],
     },
     {
         match: (pathname) => pathname === '/profile/onboarding',
-        targets: [profileOnboardingTarget],
+        targets: [deferredAppRoutesTarget, profileOnboardingTarget],
     },
     {
         match: (pathname) => pathname === '/inspirations',
-        targets: [inspirationsTarget],
+        targets: [deferredAppRoutesTarget, inspirationsTarget],
     },
     {
         match: (pathname) => pathname === '/inspirations/themes',
-        targets: [inspirationsThemesTarget],
+        targets: [deferredAppRoutesTarget, inspirationsThemesTarget],
     },
     {
         match: (pathname) => pathname === '/inspirations/best-time-to-travel',
-        targets: [inspirationsBestTimeTarget],
+        targets: [deferredAppRoutesTarget, inspirationsBestTimeTarget],
     },
     {
         match: (pathname) => pathname === '/inspirations/countries',
-        targets: [inspirationsCountriesTarget],
+        targets: [deferredAppRoutesTarget, inspirationsCountriesTarget],
     },
     {
         match: (pathname) => pathname === '/inspirations/events-and-festivals',
-        targets: [inspirationsFestivalsTarget],
+        targets: [deferredAppRoutesTarget, inspirationsFestivalsTarget],
     },
     {
         match: (pathname) => pathname === '/inspirations/weekend-getaways',
-        targets: [inspirationsWeekendsTarget],
+        targets: [deferredAppRoutesTarget, inspirationsWeekendsTarget],
     },
     {
         match: (pathname) => startsWithSegment(pathname, '/inspirations/country'),
-        targets: [inspirationsCountryDetailTarget],
+        targets: [deferredAppRoutesTarget, inspirationsCountryDetailTarget],
     },
     {
         match: (pathname) => pathname === '/blog',
-        targets: [blogTarget],
+        targets: [deferredAppRoutesTarget, blogTarget],
     },
     {
         match: (pathname) => startsWithSegment(pathname, '/blog'),
-        targets: [blogPostTarget],
+        targets: [deferredAppRoutesTarget, blogPostTarget],
     },
 ];
 

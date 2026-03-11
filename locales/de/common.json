@@ -359,6 +359,25 @@
         "failedTitle": "Retry failed",
         "unexpected": "Retry failed unexpectedly."
       }
+    },
+    "pendingAuth": {
+      "eyebrowLoading": "Trip wird vorbereitet",
+      "titleLoading": "Wir bereiten deine Reise vor",
+      "descriptionLoading": "Wir speichern deine Auswahl und prüfen den besten Aufbau für deine Route.",
+      "eyebrowLocked": "Konto erforderlich",
+      "titleLocked": "Trip-Erstellung ist nur für registrierte Nutzer möglich",
+      "descriptionLocked": "Melde dich an oder erstelle ein Konto, um diesen Entwurf zu übernehmen und die vollständige Generierung zu starten.",
+      "cta": "Anmelden oder Konto erstellen",
+      "benefitsTitle": "Darum lohnt sich ein Konto",
+      "benefits": {
+        "keep": "Behalte diesen Trip und greife später wieder darauf zu.",
+        "background": "Lass die Generierung im Hintergrund fertiglaufen.",
+        "sync": "Bearbeite, wiederhole und synchronisiere ihn auf allen Geräten."
+      }
+    },
+    "warningSummary": {
+      "title": "Hinweise zur Traveller-Passung",
+      "description": "Einige Stopps enthalten praktische Hinweise passend zu deinem Traveller-Setup."
     }
   },
   "tripRouteShell": {

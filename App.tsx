@@ -44,6 +44,7 @@ import { AppProviderShell } from './app/bootstrap/AppProviderShell';
 import { MarketingRouteLoadingShell } from './components/bootstrap/MarketingRouteLoadingShell';
 import { AppRoutes } from './app/routes/AppRoutes';
 import { isFirstLoadCriticalPath } from './app/prefetch/isFirstLoadCriticalPath';
+import { hasCompletedInitialRouteHandoff } from './services/marketingRouteShellState';
 import { useConnectivityStatus } from './hooks/useConnectivityStatus';
 import { enqueueTripCommitAndSync } from './services/tripSyncManager';
 import { GlobalConnectivityBadge } from './components/GlobalConnectivityBadge';
@@ -356,7 +357,7 @@ const AppContent: React.FC = () => {
         [location.pathname]
     );
     const isWarmupEnabled = useWarmupGate({ interactionOnly: isFirstLoadCritical });
-    const shouldSuppressSpeculationRules = isFirstLoadCritical;
+    const shouldSuppressSpeculationRules = isFirstLoadCritical && !hasCompletedInitialRouteHandoff();
 
     useAuthNavigationBootstrap();
     useNavigationContextBootstrap();

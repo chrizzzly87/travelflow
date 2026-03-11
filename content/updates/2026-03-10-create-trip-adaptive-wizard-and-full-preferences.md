@@ -1,0 +1,20 @@
+---
+id: rel-2026-03-10-create-trip-adaptive-wizard-and-full-preferences
+version: v0.91.0
+title: "Create Trip now adapts the wizard flow and uses the full planning brief"
+date: 2026-03-10
+published_at: 2026-03-10T21:02:22Z
+status: published
+notify_in_app: false
+in_app_hours: 24
+summary: "Trip creation now starts from what the traveler already knows, carries traveler and transport constraints through generation, and uses stricter prompt rules for more reliable itinerary output."
+---
+
+## Changes
+- [x] [Improved] 🧭 Trip creation now starts by asking what you already know, then reorders the wizard around destinations, dates, or inspiration instead of forcing one fixed flow.
+- [x] [Improved] 👨‍👩‍👧‍👦 Traveler setup, trip style, transport preferences, route constraints, and flexible timing now actively shape routes, activities, and suitability warnings in generated itineraries.
+- [x] [Improved] 🧾 The planner now uses stricter itinerary instructions so trip generation is more likely to return the expected JSON structure without losing practical travel guidance.
+- [x] [Fixed] 🔐 Anonymous trip starts now move from a short loading state into a dedicated account-required modal, so signing in to claim and start the trip feels clearer and more intentional.
+- [x] [Improved] 🔔 Trip creation now asks whether you want a browser notification before generation starts and can notify you when the itinerary finishes in a background tab.
+- [x] [Improved] ⚠️ Traveler-fit cautions from itinerary generation are now easier to review in trip information, instead of being buried only inside city descriptions.
+- [ ] [Internal] 🧪 Added shared create-trip draft payloads, benchmark metadata updates, and regression coverage for prompt building, prefill decoding, and the adaptive wizard flow.

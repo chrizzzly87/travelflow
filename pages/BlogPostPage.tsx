@@ -25,6 +25,7 @@ import type { Components } from 'react-markdown';
 import {
     BLOG_VIEW_TRANSITION_CLASSES,
     createBlogTransitionNavigationState,
+    getBlogTransitionStyle,
     getBlogPostViewTransitionNames,
     isPendingBlogTransitionTarget,
     isPrimaryUnmodifiedClick,
@@ -58,17 +59,6 @@ const ensureBlogListRouteModule = (): Promise<unknown> => {
     }
     return blogListRouteModulePromise;
 };
-
-const getBlogTransitionStyle = (
-    transitionName: string,
-    transitionClass: string,
-    transitionGroup?: string
-): React.CSSProperties =>
-    ({
-        viewTransitionName: transitionName,
-        ['viewTransitionClass' as any]: transitionClass,
-        ...(transitionGroup ? { ['viewTransitionGroup' as any]: transitionGroup } : {}),
-    } as React.CSSProperties);
 
 const toSlug = (text: string): string =>
     text

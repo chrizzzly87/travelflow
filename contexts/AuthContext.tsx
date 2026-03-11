@@ -4,6 +4,7 @@ import { useLocation } from 'react-router-dom';
 import { getFreePlanEntitlements } from '../config/planCatalog';
 import { trackEvent } from '../services/analyticsService';
 import { appendAuthTraceEntry } from '../services/authTraceService';
+import { markAuthBootstrapSettled } from '../services/authBootstrapSuspense';
 import type { UserAccessContext } from '../types';
 import { stripLocalePrefix } from '../config/routes';
 import { isSimulatedLoggedIn, setSimulatedLoggedIn } from '../services/simulatedLoginService';
@@ -246,6 +247,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             // ignore storage write failures
         }
     }, [isDevAdminBypassDisabled]);
+
+    useEffect(() => {
+        if (!isLoading) {
+            markAuthBootstrapSettled();
+        }
+    }, [isLoading]);
 
     useEffect(() => {
         const sessionUserId = session?.user?.id;

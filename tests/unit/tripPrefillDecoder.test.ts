@@ -79,4 +79,18 @@ describe('services/tripPrefillDecoder', () => {
       countries: ['Germany'],
     });
   });
+
+  it('normalizes legacy wizard budget and pace values for backward compatibility', () => {
+    const encoded = encode({
+      countries: ['Portugal'],
+      budget: 'Premium',
+      pace: 'Intensive',
+    });
+
+    expect(decodeTripPrefill(encoded)).toEqual({
+      countries: ['Portugal'],
+      budget: 'High',
+      pace: 'Fast',
+    });
+  });
 });
