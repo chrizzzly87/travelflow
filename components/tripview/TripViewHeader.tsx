@@ -47,8 +47,8 @@ export const TripViewHeader: React.FC<TripViewHeaderProps> = ({
     isTripLockedByExpiry,
 }) => {
     const { t } = useTranslation('common');
-    const headerSecondaryButtonClassName = 'inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60';
-    const headerPrimaryButtonClassName = 'inline-flex items-center gap-2 rounded-lg bg-accent-600 px-3 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-accent-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60';
+    const headerSecondaryButtonClassName = 'inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60';
+    const headerPrimaryButtonClassName = 'inline-flex items-center gap-2 rounded-md bg-accent-600 px-3 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-accent-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60';
     const titleStyle = titleViewTransitionName
         ? ({ viewTransitionName: titleViewTransitionName } as React.CSSProperties)
         : undefined;
@@ -108,6 +108,7 @@ export const TripViewHeader: React.FC<TripViewHeaderProps> = ({
                     className="group flex min-w-0 flex-1 items-start gap-2 rounded-xl px-2 py-1 text-left transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
                     aria-label={titleTooltip}
                     data-tooltip={titleTooltip}
+                    data-no-press-scale="true"
                     {...getAnalyticsDebugAttributes('trip_view__trip_info--open', { source: 'header_title' })}
                 >
                     <div className="min-w-0 flex-1">
@@ -174,7 +175,7 @@ export const TripViewHeader: React.FC<TripViewHeaderProps> = ({
                         labelMode="profile"
                         showRecentTripsSection={false}
                         showCurrentPageSummary={false}
-                        triggerClassName="gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
+                        triggerClassName="gap-2 rounded-md px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
                     />
                 ) : (
                     <button

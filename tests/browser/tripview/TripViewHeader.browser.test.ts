@@ -78,6 +78,7 @@ describe('components/tripview/TripViewHeader', () => {
     );
 
     const titleButton = screen.getByRole('button', { name: 'Open trip details and edit the title' });
+    expect(titleButton).toHaveAttribute('data-no-press-scale', 'true');
     fireEvent.mouseEnter(titleButton);
     fireEvent.click(titleButton);
     fireEvent.click(screen.getByRole('button', { name: 'Trips' }));

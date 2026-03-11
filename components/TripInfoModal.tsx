@@ -125,10 +125,12 @@ interface SummaryCardProps {
     wide?: boolean;
 }
 
-const modalInputClassName = 'w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:ring-2 focus:ring-accent-500';
-const modalSecondaryButtonClassName = 'inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60';
-const modalPrimaryButtonClassName = 'inline-flex items-center justify-center gap-2 rounded-xl bg-accent-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-accent-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60';
-const tabClassName = 'relative -mb-px flex-none rounded-none border-b-2 border-transparent px-0 py-3 text-sm font-semibold text-slate-500 transition-colors hover:text-slate-900 data-[state=active]:border-accent-600 data-[state=active]:text-accent-700 data-[state=active]:after:opacity-0 data-[state=active]:[&_svg]:text-accent-600 [&_svg]:text-slate-400';
+const modalInputClassName = 'h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 shadow-sm transition-colors placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60';
+const modalSecondaryButtonClassName = 'inline-flex h-11 items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60';
+const modalPrimaryButtonClassName = 'inline-flex h-11 items-center justify-center gap-2 rounded-md bg-accent-600 px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-accent-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60';
+const modalSectionClassName = 'space-y-4 border-t border-slate-200 pt-6';
+const modalSubtlePanelClassName = 'rounded-md bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-600';
+const tabClassName = 'relative flex-none gap-2 px-0 text-sm font-semibold text-slate-500 transition-colors hover:text-slate-900 data-[state=active]:bg-transparent data-[state=active]:text-accent-700 data-[state=active]:[&_svg]:text-accent-600 [&_svg]:text-slate-400';
 
 const SummaryCard: React.FC<SummaryCardProps> = ({ label, value, wide = false }) => (
     <div className={`space-y-1 ${wide ? 'sm:col-span-2' : ''}`}>
@@ -152,7 +154,7 @@ const ActionCard: React.FC<ActionCardProps> = ({
     onAction,
     actionAttributes,
 }) => (
-    <div className="flex flex-col gap-4 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col gap-4 py-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0 flex-1">
             <h4 className="text-sm font-semibold text-slate-900">{title}</h4>
             <p className="mt-1 text-sm leading-6 text-slate-600">{description}</p>
@@ -391,8 +393,8 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                 </div>
 
                 <div className="min-h-0 flex-1 overflow-y-auto p-5">
-                    <TabsContent value="general" className="space-y-4">
-                        <section className="rounded-2xl border border-slate-200 bg-white p-5">
+                    <TabsContent value="general" className="space-y-8">
+                        <section className="space-y-4">
                             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                                 <div className="min-w-0 flex-1">
                                     <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
@@ -430,7 +432,7 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                                             </button>
                                         </div>
                                     ) : (
-                                        <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-lg font-bold text-slate-900">
+                                        <div className="flex min-h-11 items-center rounded-md border border-slate-300 bg-white px-3 text-lg font-bold text-slate-900 shadow-sm">
                                             {tripTitle}
                                         </div>
                                     )}
@@ -445,7 +447,7 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                             </div>
                         </section>
 
-                        <section className="rounded-2xl border border-slate-200 bg-white p-5">
+                        <section className={modalSectionClassName}>
                             <div className="mb-3 flex items-center justify-between gap-2">
                                 <h3 className="text-base font-semibold text-slate-900">{t('tripView.infoDialog.general.sections.meta')}</h3>
                                 {generationPill && (
@@ -472,7 +474,7 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                         </section>
 
                         {(aiMeta || generationPill || latestAttempt || recentAttempts.length > 0) && (
-                            <section className="rounded-2xl border border-slate-200 bg-white p-5">
+                            <section className={modalSectionClassName}>
                                 <div className="mb-3 flex items-center gap-2">
                                     <Sparkles size={16} className="text-accent-600" />
                                     <h3 className="text-base font-semibold text-slate-900">{t('tripView.generation.tripInfo.title')}</h3>
@@ -488,9 +490,9 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                                         <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
                                             {t('tripView.generation.tripInfo.recentAttempts')}
                                         </p>
-                                        <ul className="space-y-2">
+                                        <ul className="divide-y divide-slate-200 border-y border-slate-200">
                                             {recentAttempts.map((attempt) => (
-                                                <li key={attempt.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-600">
+                                                <li key={attempt.id} className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm text-slate-600">
                                                     <span className="font-semibold text-slate-900">{attempt.state}</span>
                                                     <span>{attempt.model || t('tripView.generation.tripInfo.modelFallback')}</span>
                                                     <span>{formatDurationMs(attempt.durationMs)}</span>
@@ -507,7 +509,7 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                                                     {t('tripView.generation.tripInfo.model')}
                                                 </p>
                                                 <Select value={selectedRetryModelId} onValueChange={onRetryModelIdChange}>
-                                                    <SelectTrigger className="h-11 rounded-xl border-slate-300 text-sm">
+                                                    <SelectTrigger className="h-11 rounded-md border-slate-300 text-sm">
                                                         <SelectValue placeholder={t('tripView.generation.tripInfo.modelFallback')} />
                                                     </SelectTrigger>
                                                     <SelectContent>
@@ -564,7 +566,7 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                         )}
 
                         {forkMeta && (
-                            <section className="rounded-2xl border border-accent-100 bg-gradient-to-br from-accent-50 via-white to-white p-5">
+                            <section className={modalSectionClassName}>
                                 <div className="flex items-center gap-2">
                                     <MapPinned size={16} className="text-accent-700" />
                                     <h3 className="text-base font-semibold text-slate-900">{t('tripView.infoDialog.general.sections.source')}</h3>
@@ -588,14 +590,14 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                         )}
                     </TabsContent>
 
-                    <TabsContent value="history" className="space-y-4">
+                    <TabsContent value="history" className="space-y-6">
                         {isExamplePreview ? (
-                            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-600">
+                            <div className={modalSubtlePanelClassName}>
                                 {t('tripView.infoDialog.history.example')}
                             </div>
                         ) : (
                             <>
-                                <section className="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-white p-5">
+                                <section className="flex flex-wrap items-center gap-2">
                                     <button
                                         type="button"
                                         onClick={onHistoryUndo}
@@ -620,12 +622,12 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                                 </section>
 
                                 {hasUnsyncedChanges && (
-                                    <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900">
+                                    <section className="rounded-md bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">
                                         {failedSyncCount > 0 ? failedSyncLabel : pendingSyncLabel}
                                     </section>
                                 )}
 
-                                <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+                                <section className="overflow-hidden border-y border-slate-200">
                                     {visibleHistoryItems.length === 0 ? (
                                         <div className="p-6 text-sm text-slate-500">{t('tripView.infoDialog.history.empty')}</div>
                                     ) : (
@@ -635,7 +637,7 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                                                 const showUnsyncedBadge = hasUnsyncedChanges && index === 0;
                                                 return (
                                                     <li key={item.id} className={`flex items-start gap-3 p-4 ${item.isCurrent ? 'bg-accent-50/60' : 'bg-white'}`}>
-                                                        <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${item.meta.iconClass}`}>
+                                                        <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md ${item.meta.iconClass}`}>
                                                             <Icon size={16} />
                                                         </div>
                                                         <div className="min-w-0 flex-1">
@@ -675,7 +677,7 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                     </TabsContent>
 
                     <TabsContent value="export" className="space-y-4">
-                        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white divide-y divide-slate-200">
+                        <div className="divide-y divide-slate-200 border-y border-slate-200">
                             <ActionCard
                                 title={t('tripView.infoDialog.export.activities.title')}
                                 description={t('tripView.infoDialog.export.activities.description')}
@@ -706,9 +708,9 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                         </div>
                     </TabsContent>
 
-                    <TabsContent value="destination" className="space-y-4">
+                    <TabsContent value="destination" className="space-y-6">
                         {travelerWarnings.length > 0 && (
-                            <section className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
+                            <section className="rounded-md bg-amber-50 px-4 py-4">
                                 <div className="flex items-center gap-2">
                                     <ShieldAlert size={16} className="text-amber-700" />
                                     <h3 className="text-base font-semibold text-amber-950">{t('tripView.warningSummary.title')}</h3>
@@ -736,21 +738,21 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                             </section>
                         )}
 
-                        <section className="rounded-2xl border border-slate-200 bg-white p-5">
+                        <section className={travelerWarnings.length > 0 ? modalSectionClassName : 'space-y-4'}>
                             {countryInfo ? (
                                 <CountryInfo info={countryInfo} />
                             ) : isPaywallLocked ? (
-                                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-600">
+                                <div className={modalSubtlePanelClassName}>
                                     {t('tripView.infoDialog.destination.locked')}
                                 </div>
                             ) : (
-                                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-600">
+                                <div className={modalSubtlePanelClassName}>
                                     {t('tripView.infoDialog.destination.empty')}
                                 </div>
                             )}
                         </section>
 
-                        <section className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-5">
+                        <section className={modalSectionClassName}>
                             <div className="flex items-center gap-2">
                                 <AlertTriangle size={16} className="text-slate-600" />
                                 <h3 className="text-base font-semibold text-slate-900">{t('tripView.infoDialog.destination.futureChecksTitle')}</h3>
@@ -769,8 +771,8 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                     </TabsContent>
 
                     {canShowDebugTab && (
-                        <TabsContent value="debug" className="space-y-4">
-                            <section className="rounded-2xl border border-slate-200 bg-white p-5">
+                        <TabsContent value="debug" className="space-y-8">
+                            <section className="space-y-4">
                                 <h3 className="text-base font-semibold text-slate-900">Admin access</h3>
                                 <dl className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
                                     <SummaryCard label="Owner username" value={adminMeta?.ownerUsername || 'n/a'} />
@@ -780,7 +782,7 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                                 </dl>
                             </section>
 
-                            <section className="rounded-2xl border border-slate-200 bg-white p-5">
+                            <section className={modalSectionClassName}>
                                 <h3 className="text-base font-semibold text-slate-900">AI generation diagnostics</h3>
                                 <dl className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
                                     <SummaryCard label={t('tripView.generation.tripInfo.provider')} value={latestAttempt?.provider || aiMeta?.provider || '—'} />
@@ -797,27 +799,27 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                                 </dl>
                             </section>
 
-                            <section className="rounded-2xl border border-slate-200 bg-white p-5">
+                            <section className={modalSectionClassName}>
                                 <h3 className="text-base font-semibold text-slate-900">Raw payloads</h3>
                                 <div className="mt-4 space-y-4">
                                     {requestPayload && (
-                                        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                                        <div className="space-y-2">
                                             <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Request payload JSON</p>
-                                            <pre className="mt-2 max-h-72 overflow-auto rounded-xl bg-slate-900 p-3 text-[11px] text-slate-100">
+                                            <pre className="max-h-72 overflow-auto rounded-md bg-slate-900 p-3 text-[11px] text-slate-100">
                                                 {JSON.stringify(requestPayload, null, 2)}
                                             </pre>
                                         </div>
                                     )}
                                     {inputSnapshot && (
-                                        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                                        <div className="space-y-2">
                                             <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Input snapshot JSON</p>
-                                            <pre className="mt-2 max-h-72 overflow-auto rounded-xl bg-slate-900 p-3 text-[11px] text-slate-100">
+                                            <pre className="max-h-72 overflow-auto rounded-md bg-slate-900 p-3 text-[11px] text-slate-100">
                                                 {JSON.stringify(inputSnapshot, null, 2)}
                                             </pre>
                                         </div>
                                     )}
                                     {!requestPayload && !inputSnapshot && (
-                                        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+                                        <div className={modalSubtlePanelClassName}>
                                             No raw request payloads were captured for this trip.
                                         </div>
                                     )}

@@ -129,6 +129,9 @@ describe('components/TripInfoModal', () => {
 
     const titleField = screen.getByRole('textbox', { name: 'Trip title' });
     expect(titleField).toHaveValue('Sample Trip');
+    expect(titleField).toHaveClass('rounded-md');
+    expect(titleField).toHaveClass('h-11');
+    expect(screen.getByRole('button', { name: 'Add to favorites' })).toHaveClass('rounded-md');
 
     const debugTab = screen.getByRole('tab', { name: 'Debug' });
     fireEvent.mouseDown(debugTab, { button: 0 });
