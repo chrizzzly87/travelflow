@@ -16,5 +16,6 @@ summary: "Reworked the trip-page header, flattened the trip details dialog layou
 - [x] [Fixed] 🗺️ The planner now restores your desktop map layout more reliably after mobile resizing, keeps docked panes balanced across resize changes, keeps the floating map anchored when side panels grow or shrink, and adds a seam guard so docked maps stay out of the resize rail.
 - [x] [Improved] 🔎 Calendar zoom controls now show the current scale in compact 0.2 steps, keep the familiar control sizing, and fill spare space with upcoming dates in both horizontal and vertical calendar layouts so the planner stays useful at smaller zoom levels.
 - [x] [Improved] ✅ Timeline and notes checklists are easier to read, can be checked directly from the planner, and keep those checkbox changes saved with the trip.
+- [x] [Improved] 📝 Timeline and notes markdown now give section headings stronger emphasis, align checklist rows more cleanly, and turn Heads Up tips into simple banner notes instead of checkbox lists.
 - [x] [Improved] ⌨️ Selected city cards now support keyboard navigation between stays with Tab and arrow keys, and Enter or Space can open or close the linked details panel.
 - [ ] [Internal] 🧪 Added regression coverage for the docked-map geometry retry, planner keyboard city navigation, fit zoom controls, rendered filler-day slots, and the updated pane-resize behavior.
