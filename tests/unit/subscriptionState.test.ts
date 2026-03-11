@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
-import { comparePaidTierOrder, normalizeManagedBillingStatus, resolveBillingTierDecision, resolveEffectiveBillingTierKey } from '../../lib/billing/subscriptionState';
+import {
+  comparePaidTierOrder,
+  normalizeManagedBillingStatus,
+  resolveBillingAccessUntil,
+  resolveBillingLifecycleState,
+  resolveBillingTierDecision,
+  resolveEffectiveBillingTierKey,
+} from '../../lib/billing/subscriptionState';
 
 describe('lib/billing/subscriptionState', () => {
   it('normalizes supported managed billing statuses', () => {
@@ -124,5 +131,47 @@ describe('lib/billing/subscriptionState', () => {
         tier_premium: 'pri_premium',
       },
     })).toBe('tier_mid');
+  });
+
+  it('derives billing access cutoff from grace, period end, and cancel timestamps', () => {
+    expect(resolveBillingAccessUntil({
+      provider_status: 'canceled',
+      grace_ends_at: '2026-03-20T10:00:00.000Z',
+      current_period_end: '2026-03-18T10:00:00.000Z',
+      cancel_at: '2026-03-17T10:00:00.000Z',
+    })).toBe('2026-03-20T10:00:00.000Z');
+
+    expect(resolveBillingAccessUntil({
+      provider_status: 'active',
+      current_period_end: '2026-03-18T10:00:00.000Z',
+    })).toBe('2026-03-18T10:00:00.000Z');
+  });
+
+  it('classifies active subscriptions by lifecycle state', () => {
+    expect(resolveBillingLifecycleState({
+      provider_status: 'active',
+    })).toBe('active');
+
+    expect(resolveBillingLifecycleState({
+      provider_status: 'trialing',
+    })).toBe('trialing');
+  });
+
+  it('classifies canceled subscriptions with future grace as canceled_grace', () => {
+    expect(resolveBillingLifecycleState({
+      provider_status: 'canceled',
+      grace_ends_at: '2026-03-20T10:00:00.000Z',
+    }, Date.parse('2026-03-10T10:00:00.000Z'))).toBe('canceled_grace');
+  });
+
+  it('classifies canceled subscriptions with expired grace as inactive', () => {
+    expect(resolveBillingLifecycleState({
+      provider_status: 'canceled',
+      grace_ends_at: '2026-03-05T10:00:00.000Z',
+    }, Date.parse('2026-03-10T10:00:00.000Z'))).toBe('inactive');
+  });
+
+  it('treats missing subscriptions as none', () => {
+    expect(resolveBillingLifecycleState(null)).toBe('none');
   });
 });

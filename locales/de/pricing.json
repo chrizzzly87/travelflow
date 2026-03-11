@@ -18,7 +18,14 @@
     "upgradeHelper": "Upgrade direkt im bestehenden Abo, ohne zweites Abonnement.",
     "manageBillingCta": "Billing verwalten",
     "manageBillingHelper": "Dieser Billing-Status muss in Paddle verwaltet werden.",
-    "downgradeHelper": "Downgrades werden vorerst direkt in Paddle verwaltet."
+    "downgradeHelper": "Downgrades werden vorerst direkt in Paddle verwaltet.",
+    "resubscribeCta": "Abo erneuern",
+    "canceledGraceTitle": "Dein Abo ist gekuendigt, der Zugriff ist aber noch aktiv.",
+    "canceledGraceHelper": "Dein bezahlter Zugriff bleibt noch bis {date} aktiv. Danach werden bezahlte Trips abgelaufen und nur noch lesbar, bis du das Abo erneuerst.",
+    "canceledGraceShort": "Dein Zugriff bleibt noch fuer eine begrenzte Kulanzzeit aktiv.",
+    "inactiveTitle": "Dein bezahltes Abo ist nicht mehr aktiv.",
+    "inactiveHelper": "Erneuere dein Abo, um bezahlte Trips, Bearbeitung und Teilen fuer dieses Konto wieder freizuschalten.",
+    "inactiveShort": "Erneuere dein Abo, um den bezahlten Zugriff fuer dieses Konto wiederherzustellen."
   },
   "tiers": {
     "backpacker": {

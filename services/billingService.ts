@@ -143,6 +143,20 @@ interface BillingTransactionSyncResponse {
   message?: string;
 }
 
+interface BillingSubscriptionRefreshResponse {
+  ok?: boolean;
+  data?: {
+    summary?: BillingSubscriptionSummaryResponse['data'] | null;
+    localSync?: {
+      status?: string;
+      duplicate?: boolean;
+      reason?: string | null;
+    } | null;
+  };
+  error?: string;
+  message?: string;
+}
+
 interface BillingDiscountLookupResponse {
   ok?: boolean;
   data?: {
@@ -257,6 +271,15 @@ export interface BillingTransactionSyncResult {
   } | null;
 }
 
+export interface BillingSubscriptionRefreshResult {
+  summary: BillingSubscriptionSummary | null;
+  localSync: {
+    status: string;
+    duplicate: boolean;
+    reason: string | null;
+  } | null;
+}
+
 export interface BillingDiscountLookup {
   code: string;
   type: string | null;
@@ -358,6 +381,11 @@ const parseTransactionSyncResponse = (payload: unknown): BillingTransactionSyncR
 const parseDiscountLookupResponse = (payload: unknown): BillingDiscountLookupResponse => {
   if (!payload || typeof payload !== 'object') return {};
   return payload as BillingDiscountLookupResponse;
+};
+
+const parseSubscriptionRefreshResponse = (payload: unknown): BillingSubscriptionRefreshResponse => {
+  if (!payload || typeof payload !== 'object') return {};
+  return payload as BillingSubscriptionRefreshResponse;
 };
 
 const normalizeErrorMessage = (
@@ -537,6 +565,50 @@ export const getCurrentSubscriptionSummary = async (): Promise<BillingSubscripti
     lastEventId: summary.last_event_id ?? null,
     lastEventType: summary.last_event_type ?? null,
     lastEventAt: summary.last_event_at ?? null,
+  };
+};
+
+export const refreshCurrentPaddleSubscription = async (): Promise<BillingSubscriptionRefreshResult> => {
+  const { parsed } = await postBillingJson(
+    '/api/billing/paddle/subscription-refresh',
+    {},
+    parseSubscriptionRefreshResponse,
+    'Could not refresh Paddle subscription state',
+  );
+
+  const summaryPayload = parsed.data?.summary;
+  const summary = summaryPayload?.user_id
+    ? {
+      userId: summaryPayload.user_id,
+      provider: summaryPayload.provider ?? null,
+      providerCustomerId: summaryPayload.provider_customer_id ?? null,
+      providerSubscriptionId: summaryPayload.provider_subscription_id ?? null,
+      providerPriceId: summaryPayload.provider_price_id ?? null,
+      providerProductId: summaryPayload.provider_product_id ?? null,
+      providerStatus: summaryPayload.provider_status ?? null,
+      status: summaryPayload.status ?? null,
+      currentPeriodStart: summaryPayload.current_period_start ?? null,
+      currentPeriodEnd: summaryPayload.current_period_end ?? null,
+      cancelAt: summaryPayload.cancel_at ?? null,
+      canceledAt: summaryPayload.canceled_at ?? null,
+      graceEndsAt: summaryPayload.grace_ends_at ?? null,
+      currency: summaryPayload.currency ?? null,
+      amount: typeof summaryPayload.amount === 'number' ? summaryPayload.amount : null,
+      lastEventId: summaryPayload.last_event_id ?? null,
+      lastEventType: summaryPayload.last_event_type ?? null,
+      lastEventAt: summaryPayload.last_event_at ?? null,
+    } satisfies BillingSubscriptionSummary
+    : null;
+
+  return {
+    summary,
+    localSync: parsed.data?.localSync
+      ? {
+        status: parsed.data.localSync.status || 'unknown',
+        duplicate: parsed.data.localSync.duplicate === true,
+        reason: parsed.data.localSync.reason ?? null,
+      }
+      : null,
   };
 };
 

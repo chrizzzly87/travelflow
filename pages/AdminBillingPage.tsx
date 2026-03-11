@@ -34,6 +34,7 @@ import {
     humanizeAdminBillingStatus,
     humanizeTierKey,
     normalizeAdminBillingStatus,
+    resolveAdminBillingLifecycleStatus,
     summarizeAdminBilling,
     resolveAdminBillingStatusTone,
 } from '../services/adminBillingPresentation';
@@ -164,7 +165,7 @@ export const AdminBillingPage: React.FC = () => {
     const subscriptionStatusOptions = useMemo<AdminFilterMenuOption[]>(() => {
         const counts = new Map<string, number>();
         subscriptions.forEach((record) => {
-            const key = (record.provider_status || record.subscription_status || 'unknown').trim().toLowerCase() || 'unknown';
+            const key = resolveAdminBillingLifecycleStatus(record);
             counts.set(key, (counts.get(key) || 0) + 1);
         });
         return Array.from(counts.entries())
@@ -205,7 +206,7 @@ export const AdminBillingPage: React.FC = () => {
         if (selectedSubscriptionStatuses.length === 0) return rangedSubscriptions;
         const selectedSet = new Set(selectedSubscriptionStatuses);
         return rangedSubscriptions.filter((record) => {
-            const key = (record.provider_status || record.subscription_status || 'unknown').trim().toLowerCase() || 'unknown';
+            const key = resolveAdminBillingLifecycleStatus(record);
             return selectedSet.has(key);
         });
     }, [rangedSubscriptions, selectedSubscriptionStatuses]);
@@ -619,8 +620,8 @@ export const AdminBillingPage: React.FC = () => {
                                             </td>
                                             <td className="border-b border-slate-200 py-4 pe-4">
                                                 <div className="flex flex-col gap-2">
-                                                    <span className={statusPill(record.provider_status || record.subscription_status)}>
-                                                        {humanizeAdminBillingStatus(record.provider_status || record.subscription_status)}
+                                                    <span className={statusPill(resolveAdminBillingLifecycleStatus(record))}>
+                                                        {humanizeAdminBillingStatus(resolveAdminBillingLifecycleStatus(record))}
                                                     </span>
                                                     <span className="text-xs text-slate-500">App: {humanizeAdminBillingStatus(record.subscription_status)}</span>
                                                 </div>

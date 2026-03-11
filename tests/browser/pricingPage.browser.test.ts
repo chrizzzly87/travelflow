@@ -14,6 +14,17 @@ const mocks = vi.hoisted(() => ({
     access: {
       tierKey: 'tier_free',
       isAnonymous: false,
+      billing: {
+        providerSubscriptionId: null,
+        providerStatus: null,
+        subscriptionStatus: null,
+        currentPeriodEnd: null,
+        cancelAt: null,
+        canceledAt: null,
+        graceEndsAt: null,
+        accessUntil: null,
+        lifecycleState: 'none',
+      },
     },
     refreshAccess: vi.fn().mockResolvedValue(undefined),
   },
@@ -33,6 +44,10 @@ const mocks = vi.hoisted(() => ({
     issues: [],
   }),
   getCurrentSubscriptionSummary: vi.fn().mockResolvedValue(null),
+  refreshCurrentPaddleSubscription: vi.fn().mockResolvedValue({
+    summary: null,
+    localSync: null,
+  }),
   getPaddleSubscriptionManagementUrls: vi.fn().mockResolvedValue({
     provider: 'paddle',
     providerSubscriptionId: 'sub_123',
@@ -84,6 +99,7 @@ vi.mock('../../services/billingService', async () => {
   return {
     ...actual,
     getCurrentSubscriptionSummary: mocks.getCurrentSubscriptionSummary,
+    refreshCurrentPaddleSubscription: mocks.refreshCurrentPaddleSubscription,
     getPaddleSubscriptionManagementUrls: mocks.getPaddleSubscriptionManagementUrls,
     lookupPaddleDiscount: mocks.lookupPaddleDiscount,
   };
@@ -133,9 +149,24 @@ describe('pages/PricingPage', () => {
     mocks.auth.access = {
       tierKey: 'tier_free',
       isAnonymous: false,
+      billing: {
+        providerSubscriptionId: null,
+        providerStatus: null,
+        subscriptionStatus: null,
+        currentPeriodEnd: null,
+        cancelAt: null,
+        canceledAt: null,
+        graceEndsAt: null,
+        accessUntil: null,
+        lifecycleState: 'none',
+      },
     };
     mocks.auth.refreshAccess.mockResolvedValue(undefined);
     mocks.getCurrentSubscriptionSummary.mockResolvedValue(null);
+    mocks.refreshCurrentPaddleSubscription.mockResolvedValue({
+      summary: null,
+      localSync: null,
+    });
     mocks.getPaddleSubscriptionManagementUrls.mockResolvedValue({
       provider: 'paddle',
       providerSubscriptionId: 'sub_123',
@@ -375,7 +406,7 @@ describe('pages/PricingPage', () => {
     render(React.createElement(PricingPage));
 
     await waitFor(() => {
-      expect(mocks.getPaddleSubscriptionManagementUrls).toHaveBeenCalledTimes(1);
+      expect(mocks.refreshCurrentPaddleSubscription).toHaveBeenCalledTimes(1);
       expect(screen.getByRole('button', { name: 'shared.currentPlanCta' })).toBeDisabled();
     });
   });

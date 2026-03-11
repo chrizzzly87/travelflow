@@ -30,6 +30,10 @@ const mocks = vi.hoisted(() => ({
   updateCurrentUserProfile: vi.fn(),
   checkUsernameAvailability: vi.fn(),
   getCurrentSubscriptionSummary: vi.fn(),
+  refreshCurrentPaddleSubscription: vi.fn().mockResolvedValue({
+    summary: null,
+    localSync: null,
+  }),
   getPaddleSubscriptionManagementUrls: vi.fn(),
   fetchPaddlePublicConfig: vi.fn(),
   trackEvent: vi.fn(),
@@ -60,6 +64,7 @@ vi.mock('../../services/billingService', async () => {
   return {
     ...actual,
     getCurrentSubscriptionSummary: mocks.getCurrentSubscriptionSummary,
+    refreshCurrentPaddleSubscription: mocks.refreshCurrentPaddleSubscription,
     getPaddleSubscriptionManagementUrls: mocks.getPaddleSubscriptionManagementUrls,
   };
 });
@@ -128,7 +133,20 @@ describe('pages/ProfileSettingsPage username governance', () => {
     vi.clearAllMocks();
 
     mocks.auth.profile = buildProfile();
-    mocks.auth.access = { tierKey: 'tier_mid' };
+    mocks.auth.access = {
+      tierKey: 'tier_mid',
+      billing: {
+        providerSubscriptionId: 'sub_123',
+        providerStatus: 'active',
+        subscriptionStatus: 'active',
+        currentPeriodEnd: '2026-04-01T00:00:00.000Z',
+        cancelAt: null,
+        canceledAt: null,
+        graceEndsAt: null,
+        accessUntil: '2026-04-01T00:00:00.000Z',
+        lifecycleState: 'active',
+      },
+    };
     mocks.updateCurrentUserProfile.mockResolvedValue(buildProfile());
     mocks.checkUsernameAvailability.mockResolvedValue({
       normalizedUsername: 'traveler',
@@ -182,6 +200,10 @@ describe('pages/ProfileSettingsPage username governance', () => {
       },
       issues: [],
     });
+    mocks.refreshCurrentPaddleSubscription.mockResolvedValue({
+      summary: null,
+      localSync: null,
+    });
   });
 
   it('keeps username locked by default and unlocks editing via the tiny edit action', async () => {
@@ -228,7 +250,20 @@ describe('pages/ProfileSettingsPage username governance', () => {
   });
 
   it('shows the synced paid plan label even when access is still stale-free', async () => {
-    mocks.auth.access = { tierKey: 'tier_free' };
+    mocks.auth.access = {
+      tierKey: 'tier_free',
+      billing: {
+        providerSubscriptionId: 'sub_123',
+        providerStatus: 'active',
+        subscriptionStatus: 'active',
+        currentPeriodEnd: '2026-04-01T00:00:00.000Z',
+        cancelAt: null,
+        canceledAt: null,
+        graceEndsAt: null,
+        accessUntil: '2026-04-01T00:00:00.000Z',
+        lifecycleState: 'active',
+      },
+    };
 
     renderPage();
 
@@ -586,6 +621,20 @@ describe('pages/ProfileSettingsPage username governance', () => {
   });
 
   it('tries one billing-summary repair on mount for paid users without a local subscription row', async () => {
+    mocks.auth.access = {
+      tierKey: 'tier_free',
+      billing: {
+        providerSubscriptionId: 'sub_123',
+        providerStatus: 'active',
+        subscriptionStatus: 'active',
+        currentPeriodEnd: '2026-04-01T00:00:00.000Z',
+        cancelAt: null,
+        canceledAt: null,
+        graceEndsAt: null,
+        accessUntil: '2026-04-01T00:00:00.000Z',
+        lifecycleState: 'active',
+      },
+    };
     mocks.getCurrentSubscriptionSummary
       .mockResolvedValueOnce(null)
       .mockResolvedValueOnce(null)
@@ -610,12 +659,39 @@ describe('pages/ProfileSettingsPage username governance', () => {
         lastEventType: 'subscription.updated',
         lastEventAt: '2026-03-08T10:00:00.000Z',
       });
+    mocks.refreshCurrentPaddleSubscription.mockResolvedValueOnce({
+      summary: {
+        userId: 'user-1',
+        provider: 'paddle',
+        providerCustomerId: 'ctm_123',
+        providerSubscriptionId: 'sub_123',
+        providerPriceId: 'pri_123',
+        providerProductId: 'pro_123',
+        providerStatus: 'active',
+        status: 'active',
+        currentPeriodStart: '2026-03-01T00:00:00.000Z',
+        currentPeriodEnd: '2026-04-01T00:00:00.000Z',
+        cancelAt: null,
+        canceledAt: null,
+        graceEndsAt: null,
+        currency: 'USD',
+        amount: 900,
+        lastEventId: null,
+        lastEventType: null,
+        lastEventAt: null,
+      },
+      localSync: {
+        status: 'processed',
+        duplicate: false,
+        reason: null,
+      },
+    });
 
     renderPage();
 
     await waitFor(() => {
-      expect(mocks.getPaddleSubscriptionManagementUrls).toHaveBeenCalledTimes(1);
-      expect(screen.getByText('active')).toBeInTheDocument();
+      expect(mocks.refreshCurrentPaddleSubscription).toHaveBeenCalledTimes(1);
+      expect(screen.getByText('settings.billing.statuses.active')).toBeInTheDocument();
     });
   });
 });

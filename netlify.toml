@@ -64,6 +64,10 @@ exit 1
   function = "paddle-subscription-manage"
 
 [[edge_functions]]
+  path = "/api/billing/paddle/subscription-refresh"
+  function = "paddle-subscription-refresh"
+
+[[edge_functions]]
   path = "/api/billing/paddle/transaction-sync"
   function = "paddle-transaction-sync"
 

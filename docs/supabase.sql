@@ -1641,25 +1641,44 @@ set row_security = off
 as $$
 declare
   v_tier_key text;
+  v_effective_tier_key text;
   v_override jsonb;
   v_plan_entitlements jsonb;
+  v_provider_status text;
+  v_subscription_status text;
+  v_grace_ends_at timestamptz;
+  v_normalized_status text;
 begin
-  select p.tier_key, p.entitlements_override
-    into v_tier_key, v_override
+  select
+    p.tier_key,
+    p.entitlements_override,
+    s.provider_status,
+    s.status,
+    s.grace_ends_at
+    into v_tier_key, v_override, v_provider_status, v_subscription_status, v_grace_ends_at
     from public.profiles p
+    left join public.subscriptions s on s.user_id = p.id
    where p.id = p_user_id;
 
   v_tier_key := coalesce(v_tier_key, 'tier_free');
+  v_effective_tier_key := v_tier_key;
   v_override := coalesce(v_override, '{}'::jsonb);
+  v_normalized_status := lower(coalesce(nullif(v_provider_status, ''), nullif(v_subscription_status, ''), 'none'));
+
+  if v_normalized_status in ('paused', 'inactive') then
+    v_effective_tier_key := 'tier_free';
+  elsif v_normalized_status = 'canceled' and (v_grace_ends_at is null or v_grace_ends_at <= now()) then
+    v_effective_tier_key := 'tier_free';
+  end if;
 
   select pl.entitlements
     into v_plan_entitlements
     from public.plans pl
-   where pl.key = v_tier_key
+   where pl.key = v_effective_tier_key
    limit 1;
 
   if v_plan_entitlements is null then
-    v_plan_entitlements := public.resolve_default_entitlements(v_tier_key);
+    v_plan_entitlements := public.resolve_default_entitlements(v_effective_tier_key);
   end if;
 
   return coalesce(v_plan_entitlements, '{}'::jsonb) || coalesce(v_override, '{}'::jsonb);
@@ -4212,6 +4231,14 @@ returns table(
   entitlements jsonb,
   account_status text,
   onboarding_completed boolean,
+  provider_subscription_id text,
+  provider_status text,
+  subscription_status text,
+  current_period_end timestamptz,
+  cancel_at timestamptz,
+  canceled_at timestamptz,
+  grace_ends_at timestamptz,
+  billing_access_until timestamptz,
   terms_current_version text,
   terms_requires_reaccept boolean,
   terms_accepted_version text,
@@ -4229,15 +4256,25 @@ declare
   v_email text;
   v_role text;
   v_tier text;
+  v_effective_tier text;
   v_is_anonymous boolean;
   v_account_status text;
   v_onboarding_completed boolean;
+  v_provider_subscription_id text;
+  v_provider_status text;
+  v_subscription_status text;
+  v_current_period_end timestamptz;
+  v_cancel_at timestamptz;
+  v_canceled_at timestamptz;
+  v_grace_ends_at timestamptz;
+  v_billing_access_until timestamptz;
   v_terms_current_version text;
   v_terms_requires_reaccept boolean;
   v_terms_accepted_version text;
   v_terms_accepted_at timestamptz;
   v_terms_acceptance_required boolean;
   v_terms_notice_required boolean;
+  v_normalized_subscription_status text;
 begin
   v_uid := auth.uid();
   if v_uid is null then
@@ -4252,6 +4289,13 @@ begin
     p.system_role,
     p.tier_key,
     p.account_status,
+    s.provider_subscription_id,
+    s.provider_status,
+    s.status,
+    s.current_period_end,
+    s.cancel_at,
+    s.canceled_at,
+    s.grace_ends_at,
     p.terms_accepted_version,
     p.terms_accepted_at,
     (
@@ -4262,11 +4306,38 @@ begin
       and coalesce(btrim(p.city), '') <> ''
       and coalesce(btrim(p.preferred_language), '') <> ''
     )
-    into v_role, v_tier, v_account_status, v_terms_accepted_version, v_terms_accepted_at, v_onboarding_completed
+    into
+      v_role,
+      v_tier,
+      v_account_status,
+      v_provider_subscription_id,
+      v_provider_status,
+      v_subscription_status,
+      v_current_period_end,
+      v_cancel_at,
+      v_canceled_at,
+      v_grace_ends_at,
+      v_terms_accepted_version,
+      v_terms_accepted_at,
+      v_onboarding_completed
     from public.profiles p
+    left join public.subscriptions s on s.user_id = p.id
    where p.id = v_uid;
 
   v_is_anonymous := coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false);
+  v_normalized_subscription_status := lower(coalesce(nullif(v_provider_status, ''), nullif(v_subscription_status, ''), 'none'));
+  v_effective_tier := coalesce(v_tier, 'tier_free');
+
+  if v_normalized_subscription_status in ('paused', 'inactive') then
+    v_effective_tier := 'tier_free';
+  elsif v_normalized_subscription_status = 'canceled' and (v_grace_ends_at is null or v_grace_ends_at <= now()) then
+    v_effective_tier := 'tier_free';
+  end if;
+
+  v_billing_access_until := case
+    when v_normalized_subscription_status = 'canceled' then coalesce(v_grace_ends_at, v_current_period_end, v_cancel_at)
+    else v_current_period_end
+  end;
 
   select
     ltv.version,
@@ -4300,10 +4371,18 @@ begin
     v_email,
     v_is_anonymous,
     coalesce(v_role, 'user'),
-    coalesce(v_tier, 'tier_free'),
+    coalesce(v_effective_tier, 'tier_free'),
     public.get_effective_entitlements(v_uid),
     coalesce(v_account_status, 'active'),
     coalesce(v_onboarding_completed, false),
+    v_provider_subscription_id,
+    nullif(v_provider_status, ''),
+    nullif(v_subscription_status, ''),
+    v_current_period_end,
+    v_cancel_at,
+    v_canceled_at,
+    v_grace_ends_at,
+    v_billing_access_until,
     v_terms_current_version,
     coalesce(v_terms_requires_reaccept, true),
     v_terms_accepted_version,

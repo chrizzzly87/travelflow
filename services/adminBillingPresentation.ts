@@ -79,17 +79,29 @@ export const formatAdminBillingMajorAmount = (amount: number | null | undefined,
 );
 
 export const normalizeAdminBillingStatus = (
-    providerStatus: string | null | undefined,
-    subscriptionStatus?: string | null | undefined,
+  providerStatus: string | null | undefined,
+  subscriptionStatus?: string | null | undefined,
 ): string => {
     const normalized = (providerStatus || subscriptionStatus || '').trim().toLowerCase();
     if (!normalized) return 'none';
-    return BILLING_STATUS_SYNONYMS[normalized] || normalized;
+  return BILLING_STATUS_SYNONYMS[normalized] || normalized;
+};
+
+export const resolveAdminBillingLifecycleStatus = (
+    record: Pick<AdminBillingSubscriptionRecord, 'provider_status' | 'subscription_status' | 'grace_ends_at'>,
+    nowMs = Date.now(),
+): string => {
+    const normalized = normalizeAdminBillingStatus(record.provider_status, record.subscription_status);
+    if (normalized === 'canceled' && isAdminBillingGraceActive({ grace_ends_at: record.grace_ends_at }, nowMs)) {
+        return 'grace';
+    }
+    return normalized;
 };
 
 export const humanizeAdminBillingStatus = (value: string | null | undefined): string => {
     const normalized = normalizeAdminBillingStatus(value);
     if (normalized === 'none') return 'No subscription';
+    if (normalized === 'grace') return 'Grace period';
     if (normalized === 'past_due') return 'Past due';
     return normalized
         .replace(/[_-]+/g, ' ')
@@ -182,6 +194,7 @@ export const humanizeTierKey = (value: string | null | undefined): string => {
 export const resolveAdminBillingStatusTone = (status: string | null | undefined): AdminBillingStatusTone => {
     const normalized = normalizeAdminBillingStatus(status);
     if (normalized === 'active' || normalized === 'processed' || normalized === 'trialing') return 'accent';
+    if (normalized === 'grace') return 'warning';
     if (normalized === 'past_due' || normalized === 'ignored' || normalized === 'paused') return 'warning';
     if (normalized === 'failed' || normalized === 'canceled' || normalized === 'cancelled') return 'danger';
     if (normalized === 'received') return 'success';

@@ -1,4 +1,4 @@
-import type { PlanTierKey } from '../../types';
+import type { PlanTierKey, UserBillingLifecycleState } from '../../types';
 
 export type ManagedBillingStatus =
   | 'active'
@@ -25,12 +25,16 @@ export interface BillingSubscriptionLike {
   provider_status?: string | null;
   providerStatus?: string | null;
   status?: string | null;
+  current_period_end?: string | null;
+  currentPeriodEnd?: string | null;
   cancel_at?: string | null;
   cancelAt?: string | null;
   canceled_at?: string | null;
   canceledAt?: string | null;
   grace_ends_at?: string | null;
   graceEndsAt?: string | null;
+  billing_access_until?: string | null;
+  billingAccessUntil?: string | null;
 }
 
 export interface BillingTierDecision {
@@ -51,6 +55,20 @@ export interface BillingTierDecision {
 
 const PAID_TIER_ORDER: Array<Extract<PlanTierKey, 'tier_mid' | 'tier_premium'>> = ['tier_mid', 'tier_premium'];
 
+const readDateValue = (value: string | null | undefined): string | null => (
+  typeof value === 'string' && value.trim() ? value.trim() : null
+);
+
+const resolveAccessUntilCandidate = (
+  subscription: BillingSubscriptionLike | null | undefined,
+): string | null => (
+  readDateValue(subscription?.billingAccessUntil ?? subscription?.billing_access_until)
+  || readDateValue(subscription?.graceEndsAt ?? subscription?.grace_ends_at)
+  || readDateValue(subscription?.currentPeriodEnd ?? subscription?.current_period_end)
+  || readDateValue(subscription?.cancelAt ?? subscription?.cancel_at)
+  || null
+);
+
 export const normalizeManagedBillingStatus = (
   providerStatus?: string | null,
   subscriptionStatus?: string | null,
@@ -63,6 +81,58 @@ export const normalizeManagedBillingStatus = (
   if (normalized === 'paused') return 'paused';
   if (normalized === 'canceled' || normalized === 'cancelled') return 'canceled';
   if (normalized === 'inactive') return 'inactive';
+  return 'unknown';
+};
+
+export const resolveBillingAccessUntil = (
+  subscription: BillingSubscriptionLike | null | undefined,
+): string | null => {
+  const explicit = readDateValue(subscription?.billingAccessUntil ?? subscription?.billing_access_until);
+  if (explicit) return explicit;
+
+  const status = normalizeManagedBillingStatus(
+    subscription?.providerStatus ?? subscription?.provider_status,
+    subscription?.status,
+  );
+
+  if (status === 'canceled') {
+    return readDateValue(subscription?.graceEndsAt ?? subscription?.grace_ends_at)
+      || readDateValue(subscription?.currentPeriodEnd ?? subscription?.current_period_end)
+      || readDateValue(subscription?.cancelAt ?? subscription?.cancel_at);
+  }
+
+  return readDateValue(subscription?.currentPeriodEnd ?? subscription?.current_period_end);
+};
+
+export const resolveBillingLifecycleState = (
+  subscription: BillingSubscriptionLike | null | undefined,
+  nowMs = Date.now(),
+): UserBillingLifecycleState => {
+  const status = normalizeManagedBillingStatus(
+    subscription?.providerStatus ?? subscription?.provider_status,
+    subscription?.status,
+  );
+
+  if (status === 'none') return 'none';
+  if (status === 'unknown') return 'unknown';
+
+  if (status === 'active') return 'active';
+  if (status === 'trialing') return 'trialing';
+  if (status === 'past_due') return 'past_due';
+  if (status === 'paused') return 'paused';
+  if (status === 'inactive') return 'inactive';
+
+  if (status === 'canceled') {
+    const accessUntil = resolveAccessUntilCandidate(subscription);
+    if (accessUntil) {
+      const accessUntilMs = Date.parse(accessUntil);
+      if (Number.isFinite(accessUntilMs) && accessUntilMs > nowMs) {
+        return 'canceled_grace';
+      }
+    }
+    return 'inactive';
+  }
+
   return 'unknown';
 };
 
@@ -139,6 +209,7 @@ export const resolveBillingTierDecision = ({
     subscription?.providerStatus ?? subscription?.provider_status,
     subscription?.status,
   );
+  const lifecycleState = resolveBillingLifecycleState(subscription, nowMs);
 
   if (currentTierKey === 'tier_free') {
     if (!hasManageablePaidSubscription(subscription, status)) {
@@ -180,7 +251,13 @@ export const resolveBillingTierDecision = ({
     };
   }
 
-  if (status === 'past_due' || status === 'paused' || status === 'canceled' || status === 'inactive' || status === 'unknown') {
+  if (
+    status === 'past_due'
+    || status === 'paused'
+    || lifecycleState === 'canceled_grace'
+    || status === 'inactive'
+    || status === 'unknown'
+  ) {
     return {
       action: 'manage',
       status,

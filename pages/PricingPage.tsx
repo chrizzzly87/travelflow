@@ -9,12 +9,17 @@ import { buildPath } from '../config/routes';
 import { MarketingLayout } from '../components/marketing/MarketingLayout';
 import { useAuth } from '../hooks/useAuth';
 import { cn } from '../lib/utils';
-import { resolveBillingTierDecision, resolveEffectiveBillingTierKey } from '../lib/billing/subscriptionState';
+import {
+    resolveBillingAccessUntil,
+    resolveBillingLifecycleState,
+    resolveBillingTierDecision,
+    resolveEffectiveBillingTierKey,
+} from '../lib/billing/subscriptionState';
 import {
     buildBillingCheckoutPath,
     getCurrentSubscriptionSummary,
-    getPaddleSubscriptionManagementUrls,
     readBillingDiscountCodeFromSearch,
+    refreshCurrentPaddleSubscription,
     type BillingCheckoutTierKey,
     type BillingSubscriptionSummary,
 } from '../services/billingService';
@@ -71,6 +76,7 @@ export const PricingPage: React.FC = () => {
     const enabledLabel = t('shared.enabled');
     const disabledLabel = t('shared.disabled');
     const activeTierKey = access?.tierKey ?? 'tier_free';
+    const accessBilling = access?.billing ?? null;
     const isEligibleAccount = isAuthenticated && access?.isAnonymous !== true;
     const billingRepairAttemptedRef = useRef(false);
 
@@ -115,15 +121,20 @@ export const PricingPage: React.FC = () => {
         setIsSubscriptionSummaryLoading(true);
         void (async () => {
             let summary = await loadSubscriptionSummaryWithRetry();
-            if (!summary && !billingRepairAttemptedRef.current) {
+            const shouldAttemptRepair = !billingRepairAttemptedRef.current && (
+                !summary
+                || Boolean(accessBilling?.providerSubscriptionId)
+                || (access?.tierKey !== 'tier_free')
+            );
+            if (shouldAttemptRepair) {
                 billingRepairAttemptedRef.current = true;
                 try {
-                    await getPaddleSubscriptionManagementUrls();
+                    const repaired = await refreshCurrentPaddleSubscription();
                     await refreshAccess();
-                    summary = await loadSubscriptionSummaryWithRetry();
+                    summary = repaired.summary ?? await loadSubscriptionSummaryWithRetry();
                 } catch (error) {
                     if (!cancelled && !(error instanceof Error && error.message.includes('No paid Paddle subscription is linked'))) {
-                        console.warn('Pricing billing summary repair failed.', error);
+                        console.warn('Pricing billing summary refresh failed.', error);
                     }
                 }
             }
@@ -144,11 +155,51 @@ export const PricingPage: React.FC = () => {
         return () => {
             cancelled = true;
         };
-    }, [isEligibleAccount, loadSubscriptionSummaryWithRetry, refreshAccess]);
+    }, [access?.tierKey, accessBilling?.providerSubscriptionId, isEligibleAccount, loadSubscriptionSummaryWithRetry, refreshAccess]);
+
+    const billingState = {
+        providerSubscriptionId: subscriptionSummary?.providerSubscriptionId ?? accessBilling?.providerSubscriptionId ?? null,
+        providerStatus: subscriptionSummary?.providerStatus ?? accessBilling?.providerStatus ?? null,
+        status: subscriptionSummary?.status ?? accessBilling?.subscriptionStatus ?? null,
+        currentPeriodEnd: subscriptionSummary?.currentPeriodEnd ?? accessBilling?.currentPeriodEnd ?? null,
+        cancelAt: subscriptionSummary?.cancelAt ?? accessBilling?.cancelAt ?? null,
+        canceledAt: subscriptionSummary?.canceledAt ?? accessBilling?.canceledAt ?? null,
+        graceEndsAt: subscriptionSummary?.graceEndsAt ?? accessBilling?.graceEndsAt ?? null,
+        accessUntil: subscriptionSummary
+            ? resolveBillingAccessUntil({
+                providerStatus: subscriptionSummary.providerStatus,
+                status: subscriptionSummary.status,
+                currentPeriodEnd: subscriptionSummary.currentPeriodEnd,
+                cancelAt: subscriptionSummary.cancelAt,
+                canceledAt: subscriptionSummary.canceledAt,
+                graceEndsAt: subscriptionSummary.graceEndsAt,
+            })
+            : accessBilling?.accessUntil ?? null,
+        providerPriceId: subscriptionSummary?.providerPriceId ?? null,
+    };
+    const billingLifecycleState = resolveBillingLifecycleState({
+        providerStatus: billingState.providerStatus,
+        status: billingState.status,
+        currentPeriodEnd: billingState.currentPeriodEnd,
+        cancelAt: billingState.cancelAt,
+        canceledAt: billingState.canceledAt,
+        graceEndsAt: billingState.graceEndsAt,
+        billingAccessUntil: billingState.accessUntil,
+    });
 
     const effectiveActiveTierKey = resolveEffectiveBillingTierKey({
         currentTierKey: activeTierKey,
-        subscription: subscriptionSummary,
+        subscription: {
+            providerSubscriptionId: billingState.providerSubscriptionId,
+            providerPriceId: billingState.providerPriceId,
+            providerStatus: billingState.providerStatus,
+            status: billingState.status,
+            currentPeriodEnd: billingState.currentPeriodEnd,
+            cancelAt: billingState.cancelAt,
+            canceledAt: billingState.canceledAt,
+            graceEndsAt: billingState.graceEndsAt,
+            billingAccessUntil: billingState.accessUntil,
+        },
         priceIds: paddlePublicConfig?.priceIds,
     });
 
@@ -187,6 +238,44 @@ export const PricingPage: React.FC = () => {
                     </p>
                 </div>
 
+                {(billingLifecycleState === 'canceled_grace' || billingLifecycleState === 'inactive') && isEligibleAccount && (
+                    <div className={cn(
+                        'mx-auto mb-8 max-w-5xl rounded-2xl border px-6 py-5',
+                        billingLifecycleState === 'canceled_grace'
+                            ? 'border-amber-200 bg-amber-50'
+                            : 'border-accent-200 bg-accent-50/70',
+                    )}>
+                        <div className="flex flex-wrap items-start justify-between gap-4">
+                            <div className="space-y-2">
+                                <p className="text-sm font-semibold text-slate-900">
+                                    {billingLifecycleState === 'canceled_grace'
+                                        ? t('shared.canceledGraceTitle')
+                                        : t('shared.inactiveTitle')}
+                                </p>
+                                <p className="max-w-3xl text-sm leading-6 text-slate-700">
+                                    {billingLifecycleState === 'canceled_grace'
+                                        ? t('shared.canceledGraceHelper', {
+                                            date: billingState.accessUntil
+                                                ? new Date(billingState.accessUntil).toLocaleDateString()
+                                                : '—',
+                                        })
+                                        : t('shared.inactiveHelper')}
+                                </p>
+                            </div>
+                            <Link
+                                to={`${buildPath('profileSettings')}#billing-management`}
+                                className="inline-flex h-10 items-center rounded-lg bg-accent-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-accent-700"
+                                onClick={() => trackEvent('pricing__plan_cta--resubscribe', {
+                                    tier: effectiveActiveTierKey,
+                                    current_tier: effectiveActiveTierKey,
+                                })}
+                            >
+                                {t('shared.resubscribeCta')}
+                            </Link>
+                        </div>
+                    </div>
+                )}
+
                 <div className="mx-auto grid max-w-6xl grid-cols-1 gap-6 md:grid-cols-3">
                     {PLAN_ORDER.map((tierKey) => {
                         const tier = PLAN_CATALOG[tierKey];
@@ -203,11 +292,23 @@ export const PricingPage: React.FC = () => {
                             returnTo: buildPath('pricing'),
                             discountCode: activeDiscountCode,
                         });
+                        const resubscribeTarget = billingState.providerSubscriptionId
+                            ? `${buildPath('profileSettings')}#billing-management`
+                            : checkoutTarget;
                         const billingDecision = isPaidTier && isEligibleAccount
                             ? resolveBillingTierDecision({
                                 currentTierKey: effectiveActiveTierKey,
                                 targetTierKey: tier.key as BillingCheckoutTierKey,
-                                subscription: subscriptionSummary,
+                                subscription: {
+                                    providerSubscriptionId: billingState.providerSubscriptionId,
+                                    providerStatus: billingState.providerStatus,
+                                    status: billingState.status,
+                                    currentPeriodEnd: billingState.currentPeriodEnd,
+                                    cancelAt: billingState.cancelAt,
+                                    canceledAt: billingState.canceledAt,
+                                    graceEndsAt: billingState.graceEndsAt,
+                                    billingAccessUntil: billingState.accessUntil,
+                                },
                             })
                             : null;
                         const ctaState = (() => {
@@ -256,6 +357,18 @@ export const PricingPage: React.FC = () => {
                             }
 
                             if (billingDecision?.action === 'current') {
+                                if (billingLifecycleState === 'canceled_grace' || billingLifecycleState === 'inactive') {
+                                    return {
+                                        label: t('shared.resubscribeCta'),
+                                        href: resubscribeTarget,
+                                        disabled: false,
+                                        className: 'block w-full rounded-xl bg-accent-600 px-4 py-3 text-center text-sm font-semibold text-white shadow-sm transition-colors hover:bg-accent-700',
+                                        analyticsId: 'pricing__plan_cta--resubscribe',
+                                        helperText: billingLifecycleState === 'canceled_grace'
+                                            ? t('shared.canceledGraceShort')
+                                            : t('shared.inactiveShort'),
+                                    };
+                                }
                                 return {
                                     label: t('shared.currentPlanCta'),
                                     href: checkoutTarget,
@@ -278,6 +391,18 @@ export const PricingPage: React.FC = () => {
                             }
 
                             if (billingDecision?.action === 'manage') {
+                                if (billingLifecycleState === 'canceled_grace' || billingLifecycleState === 'inactive') {
+                                    return {
+                                        label: t('shared.resubscribeCta'),
+                                        href: resubscribeTarget,
+                                        disabled: false,
+                                        className: 'block w-full rounded-xl bg-accent-600 px-4 py-3 text-center text-sm font-semibold text-white shadow-sm transition-colors hover:bg-accent-700',
+                                        analyticsId: 'pricing__plan_cta--resubscribe',
+                                        helperText: billingLifecycleState === 'canceled_grace'
+                                            ? t('shared.canceledGraceShort')
+                                            : t('shared.inactiveShort'),
+                                    };
+                                }
                                 return {
                                     label: t('shared.manageBillingCta'),
                                     href: `${buildPath('profileSettings')}#billing-management`,

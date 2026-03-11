@@ -62,6 +62,10 @@ const mocks = vi.hoisted(() => ({
   updatePaddleInlineCheckout: vi.fn().mockReturnValue(true),
   navigateToPaddleCheckout: vi.fn(),
   getCurrentSubscriptionSummary: vi.fn().mockResolvedValue(null),
+  refreshCurrentPaddleSubscription: vi.fn().mockResolvedValue({
+    summary: null,
+    localSync: null,
+  }),
   previewPaddleSubscriptionUpgrade: vi.fn(),
   applyPaddleSubscriptionUpgrade: vi.fn(),
   getPaddleSubscriptionManagementUrls: vi.fn(),
@@ -194,6 +198,7 @@ vi.mock('../../services/billingService', async () => {
   return {
     ...actual,
     getCurrentSubscriptionSummary: mocks.getCurrentSubscriptionSummary,
+    refreshCurrentPaddleSubscription: mocks.refreshCurrentPaddleSubscription,
     previewPaddleSubscriptionUpgrade: mocks.previewPaddleSubscriptionUpgrade,
     applyPaddleSubscriptionUpgrade: mocks.applyPaddleSubscriptionUpgrade,
     getPaddleSubscriptionManagementUrls: mocks.getPaddleSubscriptionManagementUrls,
@@ -262,7 +267,21 @@ describe('pages/CheckoutPage', () => {
     mocks.auth.isAuthenticated = true;
     mocks.auth.isLoading = false;
     mocks.auth.isProfileLoading = false;
-    mocks.auth.access = { isAnonymous: false, tierKey: 'tier_free' };
+    mocks.auth.access = {
+      isAnonymous: false,
+      tierKey: 'tier_free',
+      billing: {
+        providerSubscriptionId: null,
+        providerStatus: null,
+        subscriptionStatus: null,
+        currentPeriodEnd: null,
+        cancelAt: null,
+        canceledAt: null,
+        graceEndsAt: null,
+        accessUntil: null,
+        lifecycleState: 'none',
+      },
+    };
     mocks.auth.profile = {
       firstName: 'Ada',
       lastName: 'Lovelace',
@@ -294,6 +313,10 @@ describe('pages/CheckoutPage', () => {
       termsNoticeRequired: false,
     });
     mocks.getCurrentSubscriptionSummary.mockResolvedValue(null);
+    mocks.refreshCurrentPaddleSubscription.mockResolvedValue({
+      summary: null,
+      localSync: null,
+    });
     mocks.previewPaddleSubscriptionUpgrade.mockResolvedValue({
       mode: 'upgrade',
       currentTierKey: 'tier_mid',
@@ -363,7 +386,21 @@ describe('pages/CheckoutPage', () => {
     const user = userEvent.setup();
     mocks.auth.session = null;
     mocks.auth.isAuthenticated = false;
-    mocks.auth.access = { isAnonymous: true, tierKey: 'tier_free' };
+    mocks.auth.access = {
+      isAnonymous: true,
+      tierKey: 'tier_free',
+      billing: {
+        providerSubscriptionId: null,
+        providerStatus: null,
+        subscriptionStatus: null,
+        currentPeriodEnd: null,
+        cancelAt: null,
+        canceledAt: null,
+        graceEndsAt: null,
+        accessUntil: null,
+        lifecycleState: 'none',
+      },
+    };
 
     render(React.createElement(CheckoutPage));
 
@@ -384,7 +421,21 @@ describe('pages/CheckoutPage', () => {
     const user = userEvent.setup();
     mocks.auth.session = null;
     mocks.auth.isAuthenticated = false;
-    mocks.auth.access = { isAnonymous: true, tierKey: 'tier_free' };
+    mocks.auth.access = {
+      isAnonymous: true,
+      tierKey: 'tier_free',
+      billing: {
+        providerSubscriptionId: null,
+        providerStatus: null,
+        subscriptionStatus: null,
+        currentPeriodEnd: null,
+        cancelAt: null,
+        canceledAt: null,
+        graceEndsAt: null,
+        accessUntil: null,
+        lifecycleState: 'none',
+      },
+    };
     mocks.auth.profile = null;
     mocks.auth.loginWithPassword.mockRejectedValueOnce(new Error('Supabase auth is not configured.'));
 
@@ -405,7 +456,21 @@ describe('pages/CheckoutPage', () => {
     const user = userEvent.setup();
     mocks.auth.session = null;
     mocks.auth.isAuthenticated = false;
-    mocks.auth.access = { isAnonymous: true, tierKey: 'tier_free' };
+    mocks.auth.access = {
+      isAnonymous: true,
+      tierKey: 'tier_free',
+      billing: {
+        providerSubscriptionId: null,
+        providerStatus: null,
+        subscriptionStatus: null,
+        currentPeriodEnd: null,
+        cancelAt: null,
+        canceledAt: null,
+        graceEndsAt: null,
+        accessUntil: null,
+        lifecycleState: 'none',
+      },
+    };
     mocks.auth.registerWithPassword.mockResolvedValueOnce({
       error: null,
       data: { session: null },
@@ -436,6 +501,17 @@ describe('pages/CheckoutPage', () => {
       isAnonymous: false,
       tierKey: 'tier_free',
       termsAcceptanceRequired: true,
+      billing: {
+        providerSubscriptionId: null,
+        providerStatus: null,
+        subscriptionStatus: null,
+        currentPeriodEnd: null,
+        cancelAt: null,
+        canceledAt: null,
+        graceEndsAt: null,
+        accessUntil: null,
+        lifecycleState: 'none',
+      },
     };
 
     render(React.createElement(CheckoutPage));
@@ -680,6 +756,17 @@ describe('pages/CheckoutPage', () => {
     mocks.auth.access = {
       isAnonymous: false,
       tierKey: 'tier_mid',
+      billing: {
+        providerSubscriptionId: 'sub_123',
+        providerStatus: 'active',
+        subscriptionStatus: 'active',
+        currentPeriodEnd: '2026-04-01T00:00:00.000Z',
+        cancelAt: null,
+        canceledAt: null,
+        graceEndsAt: null,
+        accessUntil: '2026-04-01T00:00:00.000Z',
+        lifecycleState: 'active',
+      },
     };
     mocks.getCurrentSubscriptionSummary.mockResolvedValue({
       userId: 'user_123',
@@ -742,6 +829,17 @@ describe('pages/CheckoutPage', () => {
     mocks.auth.access = {
       isAnonymous: false,
       tierKey: 'tier_free',
+      billing: {
+        providerSubscriptionId: 'sub_123',
+        providerStatus: 'active',
+        subscriptionStatus: 'active',
+        currentPeriodEnd: '2026-04-01T00:00:00.000Z',
+        cancelAt: null,
+        canceledAt: null,
+        graceEndsAt: null,
+        accessUntil: '2026-04-01T00:00:00.000Z',
+        lifecycleState: 'active',
+      },
     };
     mocks.fetchPaddlePublicConfig.mockResolvedValue({
       provider: 'paddle',
@@ -781,6 +879,14 @@ describe('pages/CheckoutPage', () => {
     mocks.getCurrentSubscriptionSummary
       .mockResolvedValueOnce(null)
       .mockResolvedValue(repairedSummary);
+    mocks.refreshCurrentPaddleSubscription.mockResolvedValueOnce({
+      summary: repairedSummary,
+      localSync: {
+        status: 'processed',
+        duplicate: false,
+        reason: null,
+      },
+    });
     mocks.startPaddleCheckoutSession.mockRejectedValueOnce(Object.assign(
       new Error('A Paddle subscription already exists for this account and needs to be managed from billing settings.'),
       { code: 'existing_paid_subscription_requires_refresh' },
@@ -790,7 +896,7 @@ describe('pages/CheckoutPage', () => {
 
     await waitFor(() => {
       expect(mocks.startPaddleCheckoutSession).toHaveBeenCalled();
-      expect(mocks.getPaddleSubscriptionManagementUrls).toHaveBeenCalled();
+      expect(mocks.refreshCurrentPaddleSubscription).toHaveBeenCalled();
       expect(mocks.auth.refreshAccess).toHaveBeenCalled();
     });
 

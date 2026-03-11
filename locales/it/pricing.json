@@ -18,7 +18,14 @@
     "upgradeHelper": "Upgrade in place without starting a second subscription.",
     "manageBillingCta": "Manage billing",
     "manageBillingHelper": "This billing state needs to be managed in Paddle.",
-    "downgradeHelper": "Downgrades stay managed in Paddle billing for now."
+    "downgradeHelper": "Downgrades stay managed in Paddle billing for now.",
+    "resubscribeCta": "Resubscribe",
+    "canceledGraceTitle": "Your plan is canceled, but access is still active.",
+    "canceledGraceHelper": "You keep paid access until {date}. After that, paid trips become expired and read-only until you resubscribe.",
+    "canceledGraceShort": "Access remains active for a limited grace period.",
+    "inactiveTitle": "Your paid subscription is no longer active.",
+    "inactiveHelper": "Resubscribe to restore paid trip access, editing, and sharing on this account.",
+    "inactiveShort": "Resubscribe to restore paid access on this account."
   },
   "tiers": {
     "backpacker": {

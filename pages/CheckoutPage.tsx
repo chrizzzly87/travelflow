@@ -19,6 +19,7 @@ import {
     lookupPaddleDiscount,
     previewPaddleSubscriptionUpgrade,
     applyPaddleSubscriptionUpgrade,
+    refreshCurrentPaddleSubscription,
     startPaddleCheckoutSession,
     syncPaddleTransaction,
     type BillingApiError,
@@ -187,6 +188,7 @@ export const CheckoutPage: React.FC = () => {
         loginWithPassword,
         registerWithPassword,
     } = useAuth();
+    const accessBilling = access?.billing ?? null;
 
     const [form, setForm] = useState<CheckoutProfileFormState>(EMPTY_FORM);
     const [checkoutErrorMessage, setCheckoutErrorMessage] = useState<string | null>(null);
@@ -403,15 +405,20 @@ export const CheckoutPage: React.FC = () => {
         setIsSubscriptionSummaryLoading(true);
         void (async () => {
             let summary = await loadSubscriptionSummaryWithRetry();
-            if (!summary && !billingRepairAttemptedRef.current) {
+            const shouldAttemptRepair = !billingRepairAttemptedRef.current && (
+                !summary
+                || Boolean(accessBilling?.providerSubscriptionId)
+                || (access?.tierKey !== 'tier_free')
+            );
+            if (shouldAttemptRepair) {
                 billingRepairAttemptedRef.current = true;
                 try {
-                    await getPaddleSubscriptionManagementUrls();
+                    const repaired = await refreshCurrentPaddleSubscription();
                     await refreshAccess();
-                    summary = await loadSubscriptionSummaryWithRetry();
+                    summary = repaired.summary ?? await loadSubscriptionSummaryWithRetry();
                 } catch (error) {
                     if (!cancelled && !isMissingLinkedSubscriptionError(error)) {
-                        console.warn('Checkout billing summary repair failed.', error);
+                        console.warn('Checkout billing summary refresh failed.', error);
                     }
                 }
             }
@@ -432,7 +439,7 @@ export const CheckoutPage: React.FC = () => {
         return () => {
             cancelled = true;
         };
-    }, [checkoutCompleted, isEligibleAccount, loadSubscriptionSummaryWithRetry, refreshAccess]);
+    }, [access?.tierKey, accessBilling?.providerSubscriptionId, checkoutCompleted, isEligibleAccount, loadSubscriptionSummaryWithRetry, refreshAccess]);
 
     useEffect(() => {
         trackEvent('checkout__page--view', {
@@ -1037,7 +1044,10 @@ export const CheckoutPage: React.FC = () => {
 
     const repairBillingState = useCallback(async (): Promise<BillingSubscriptionSummary | null> => {
         try {
-            await getPaddleSubscriptionManagementUrls();
+            const repaired = await refreshCurrentPaddleSubscription();
+            if (repaired.summary) {
+                setSubscriptionSummary(repaired.summary);
+            }
         } catch (error) {
             if (!isMissingLinkedSubscriptionError(error)) {
                 throw error;

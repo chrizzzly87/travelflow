@@ -226,7 +226,28 @@
       "manageCta": "Billing in Paddle verwalten",
       "cancelCta": "In Paddle kündigen",
       "errorTitle": "Billing-Aktion nicht verfügbar",
-      "manageUnavailable": "Die Paddle-Billing-Verwaltung konnte für dieses Konto nicht geöffnet werden."
+      "manageUnavailable": "Die Paddle-Billing-Verwaltung konnte für dieses Konto nicht geöffnet werden.",
+      "statuses": {
+        "active": "Aktiv",
+        "trialing": "Testphase",
+        "pastDue": "Zahlung ueberfaellig",
+        "paused": "Pausiert",
+        "canceledGrace": "Gekuendigt (Kulanzzeit)",
+        "inactive": "Inaktiv",
+        "unknown": "Unbekannt"
+      },
+      "resubscribeCta": "Abo erneuern",
+      "canceledGrace": {
+        "title": "Dein Abo wurde gekuendigt.",
+        "description": "Dein bezahlter Zugriff bleibt noch bis {date} aktiv. Danach werden bezahlte Trips abgelaufen und nur noch lesbar, bis du das Abo erneuerst.",
+        "impact": "Bearbeiten und Teilen sind nach Ende der Kulanzzeit eingeschraenkt. Deine Trip-Daten bleiben im Konto gespeichert."
+      },
+      "inactive": {
+        "title": "Der bezahlte Zugriff ist inaktiv.",
+        "description": "Erneuere dein Abo, um bezahlte Trips, Bearbeitung und Teilen fuer dieses Konto wieder freizuschalten.",
+        "impact": "Bezahlte Trips bleiben gespeichert, sind aber abgelaufen und nur lesbar, bis Billing wieder aktiv ist.",
+        "promoHint": "Erneuere dein Abo mit dem Code {code}, um den bezahlten Zugriff wiederherzustellen."
+      }
     }
   },
   "stamps": {

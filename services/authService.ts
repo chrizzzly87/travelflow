@@ -1,6 +1,7 @@
 import type { AuthChangeEvent, Session, User } from '@supabase/supabase-js';
 import { getFreePlanEntitlements } from '../config/planCatalog';
 import type { PlanTierKey, SystemRole, UserAccessContext } from '../types';
+import { resolveBillingAccessUntil, resolveBillingLifecycleState } from '../lib/billing/subscriptionState';
 import { trackEvent } from './analyticsService';
 import { appendAuthTraceEntry } from './authTraceService';
 import { clearLocalhostSupabaseBridgeCookies } from './authSessionPersistenceService';
@@ -281,6 +282,17 @@ const defaultAccessContext = (session: Session | null): UserAccessContext => ({
     termsAcceptedAt: null,
     termsAcceptanceRequired: false,
     termsNoticeRequired: false,
+    billing: {
+        providerSubscriptionId: null,
+        providerStatus: null,
+        subscriptionStatus: null,
+        currentPeriodEnd: null,
+        cancelAt: null,
+        canceledAt: null,
+        graceEndsAt: null,
+        accessUntil: null,
+        lifecycleState: 'none',
+    },
 });
 
 const logAuthFlow = async (options: LogAuthFlowOptions): Promise<void> => {
@@ -373,6 +385,17 @@ export const getCurrentAccessContext = async (): Promise<UserAccessContext> => {
             termsAcceptedAt: null,
             termsAcceptanceRequired: false,
             termsNoticeRequired: false,
+            billing: {
+                providerSubscriptionId: null,
+                providerStatus: null,
+                subscriptionStatus: null,
+                currentPeriodEnd: null,
+                cancelAt: null,
+                canceledAt: null,
+                graceEndsAt: null,
+                accessUntil: null,
+                lifecycleState: 'none',
+            },
         };
     }
 
@@ -409,6 +432,39 @@ export const getCurrentAccessContext = async (): Promise<UserAccessContext> => {
             : row.tier_key === 'tier_premium'
                 ? 'tier_premium'
                 : 'tier_free';
+        const billingSnapshot = {
+            providerSubscriptionId: typeof row.provider_subscription_id === 'string' && row.provider_subscription_id.trim().length > 0
+                ? row.provider_subscription_id
+                : null,
+            providerStatus: typeof row.provider_status === 'string' && row.provider_status.trim().length > 0
+                ? row.provider_status
+                : null,
+            subscriptionStatus: typeof row.subscription_status === 'string' && row.subscription_status.trim().length > 0
+                ? row.subscription_status
+                : null,
+            currentPeriodEnd: typeof row.current_period_end === 'string' && row.current_period_end.trim().length > 0
+                ? row.current_period_end
+                : null,
+            cancelAt: typeof row.cancel_at === 'string' && row.cancel_at.trim().length > 0
+                ? row.cancel_at
+                : null,
+            canceledAt: typeof row.canceled_at === 'string' && row.canceled_at.trim().length > 0
+                ? row.canceled_at
+                : null,
+            graceEndsAt: typeof row.grace_ends_at === 'string' && row.grace_ends_at.trim().length > 0
+                ? row.grace_ends_at
+                : null,
+            accessUntil: typeof row.billing_access_until === 'string' && row.billing_access_until.trim().length > 0
+                ? row.billing_access_until
+                : resolveBillingAccessUntil(row as Record<string, unknown> & {
+                    current_period_end?: string | null;
+                    cancel_at?: string | null;
+                    canceled_at?: string | null;
+                    grace_ends_at?: string | null;
+                    provider_status?: string | null;
+                    subscription_status?: string | null;
+                }),
+        };
 
         reportAuthSupabaseSuccess('get_current_user_access');
 
@@ -441,6 +497,18 @@ export const getCurrentAccessContext = async (): Promise<UserAccessContext> => {
                 : null,
             termsAcceptanceRequired: Boolean(row.terms_acceptance_required),
             termsNoticeRequired: Boolean(row.terms_notice_required),
+            billing: {
+                ...billingSnapshot,
+                lifecycleState: resolveBillingLifecycleState({
+                    provider_status: billingSnapshot.providerStatus,
+                    status: billingSnapshot.subscriptionStatus,
+                    current_period_end: billingSnapshot.currentPeriodEnd,
+                    cancel_at: billingSnapshot.cancelAt,
+                    canceled_at: billingSnapshot.canceledAt,
+                    grace_ends_at: billingSnapshot.graceEndsAt,
+                    billing_access_until: billingSnapshot.accessUntil,
+                }),
+            },
         };
     } catch (error) {
         reportAuthSupabaseFailure(error, 'get_current_user_access_exception');
