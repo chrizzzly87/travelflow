@@ -331,6 +331,16 @@ describe('pages/PublicProfilePage', () => {
     ).toBe('noindex, nofollow');
   });
 
+  it('keeps the public profile loading state visually neutral while the handle lookup is pending', () => {
+    mocks.resolvePublicProfileByHandle.mockImplementation(() => new Promise(() => {}));
+
+    const view = renderPublicProfilePage('/u/unknown-handle');
+
+    expect(screen.getByTestId('public-profile-loading-placeholder')).toBeInTheDocument();
+    expect(view.container.querySelector('.animate-pulse')).toBeNull();
+    expect(screen.queryByText('publicProfile.notFoundInvalidPassportTitle')).toBeNull();
+  });
+
   it('shows the same public CTAs for authenticated users on not found state', async () => {
     mocks.resolvePublicProfileByHandle.mockResolvedValue({
       status: 'not_found',
