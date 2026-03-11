@@ -2812,25 +2812,17 @@ const useTripViewRender = ({
                     tripTitle={trip.title}
                     tripSummary={tripSummary}
                     titleViewTransitionName={titleViewTransitionName}
-                    isEditingTitle={isEditingTitle}
-                    editTitleValue={editTitleValue}
-                    onEditTitleValueChange={setEditTitleValue}
-                    onCommitTitleEdit={handleCommitTitleEdit}
-                    onStartTitleEdit={handleStartTitleEdit}
-                    editTitleInputRef={editTitleInputRef}
                     canManageTripMetadata={canManageTripMetadata}
-                    canEdit={canEdit}
-                    isFavorite={trip.isFavorite}
-                    onToggleFavorite={handleToggleFavorite}
                     onHeaderAuthAction={() => {
                         void handleHeaderAuthAction();
                     }}
                     isHeaderAuthSubmitting={isHeaderAuthSubmitting}
                     canUseAuthenticatedSession={canUseAuthenticatedSession}
+                    accountEmail={access?.email || null}
+                    accountUserId={access?.userId || null}
+                    isAdminSession={isAdminSession}
                     onOpenTripInfo={openTripInfoModal}
                     onPrewarmTripInfo={prewarmTripInfoModal}
-                    onSetPrintMode={() => setViewMode('print')}
-                    onOpenHistoryPanel={openHistoryPanel}
                     onOpenManager={onOpenManager}
                     canShare={canShare}
                     onShare={() => {

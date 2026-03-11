@@ -378,6 +378,112 @@
     "warningSummary": {
       "title": "Observações de compatibilidade do viajante",
       "description": "Algumas paradas incluem alertas práticos com base no seu perfil de viajante."
+    },
+    "header": {
+      "titleTooltipEditable": "Open trip details and edit the title",
+      "titleTooltipReadonly": "Open trip details",
+      "editTitleCta": "Edit title",
+      "openDetailsCta": "Open details",
+      "trips": "Trips",
+      "tripsTooltip": "Back to your trips",
+      "share": "Share",
+      "shareDisabled": "Activate this trip to share it"
+    },
+    "zoom": {
+      "fit": "Fit",
+      "fitAria": "Fit timeline to available space",
+      "presetAria": "Set timeline zoom to {value}"
+    },
+    "infoDialog": {
+      "title": "Trip details",
+      "description": "Edit core info, review history, export the trip, and check destination context.",
+      "close": "Close trip details dialog",
+      "tabs": {
+        "general": "General",
+        "history": "History",
+        "export": "Export",
+        "destination": "Destination",
+        "debug": "Debug"
+      },
+      "general": {
+        "titleLabel": "Trip title",
+        "editHint": "Click into the title to rename the trip or adjust the essentials here.",
+        "readOnlyHintExample": "Example trips stay read-only here. Copy the trip first if you want to rename it or save it as a favorite.",
+        "readOnlyHintShared": "This shared trip is read-only. You can review the details here, but editing is disabled.",
+        "favoriteAdd": "Add to favorites",
+        "favoriteRemove": "Remove from favorites",
+        "favoriteOn": "Favorite",
+        "favoriteOff": "Favorite",
+        "retryInProgress": "Retry is already in progress.",
+        "openBenchmark": "Open in AI Benchmark",
+        "sections": {
+          "meta": "Trip meta",
+          "source": "Trip source"
+        },
+        "meta": {
+          "duration": "Duration",
+          "totalDays": "Total days",
+          "totalDaysValue": "{count} days",
+          "cities": "Cities",
+          "totalDistance": "Total distance",
+          "owner": "Owner",
+          "access": "Access"
+        },
+        "sourceSharedDescription": "This itinerary was copied from a shared trip snapshot.",
+        "sourceTripDescription": "This itinerary was copied from another trip in your workspace.",
+        "viewSource": "View source"
+      },
+      "history": {
+        "example": "Example trips do not save history snapshots. Copy this trip first if you want to keep edits and revisit them later.",
+        "undo": "Undo",
+        "redo": "Redo",
+        "showAll": "Show all",
+        "showRecent": "Show recent",
+        "empty": "No history entries yet.",
+        "current": "Current",
+        "notSynced": "Not synced",
+        "go": "Go",
+        "pendingSyncOne": "1 latest change is saved locally and not synced yet.",
+        "pendingSyncMany": "{count} latest changes are saved locally and not synced yet.",
+        "failedSyncOne": "1 queued change still failed to sync. Retry sync to publish it.",
+        "failedSyncMany": "{count} queued changes still failed to sync. Retry sync to publish them."
+      },
+      "export": {
+        "activities": {
+          "title": "Activities calendar",
+          "description": "Export planned activities as an .ics file so you can drop them into your calendar app.",
+          "action": "Export activities (.ics)"
+        },
+        "cities": {
+          "title": "Cities calendar",
+          "description": "Create a cleaner trip skeleton with city arrivals and stays only.",
+          "action": "Export cities (.ics)"
+        },
+        "everything": {
+          "title": "Complete calendar bundle",
+          "description": "Download one calendar file with cities, transfers, and activities together.",
+          "action": "Download everything (.ics)"
+        },
+        "print": {
+          "title": "Print layout",
+          "description": "Open a print-friendly version of this trip for PDFs, handouts, or trip briefings.",
+          "action": "Open print layout"
+        }
+      },
+      "destination": {
+        "locked": "Destination details unlock once this trip is activated.",
+        "empty": "No destination information is available for this trip yet.",
+        "futureChecksTitle": "Future destination checks",
+        "futureChecksDescription": "This tab is ready for more trip-specific guidance as we add richer destination data.",
+        "futureChecks": {
+          "visa": "Visa",
+          "entryRules": "Entry rules",
+          "safety": "Safety",
+          "customs": "Customs",
+          "connectivity": "Connectivity",
+          "health": "Health"
+        }
+      }
     }
   },
   "tripRouteShell": {
