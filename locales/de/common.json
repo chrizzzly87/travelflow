@@ -378,6 +378,112 @@
     "warningSummary": {
       "title": "Hinweise zur Traveller-Passung",
       "description": "Einige Stopps enthalten praktische Hinweise passend zu deinem Traveller-Setup."
+    },
+    "header": {
+      "titleTooltipEditable": "Trip-Details öffnen und Titel bearbeiten",
+      "titleTooltipReadonly": "Trip-Details öffnen",
+      "editTitleCta": "Titel bearbeiten",
+      "openDetailsCta": "Details öffnen",
+      "trips": "Trips",
+      "tripsTooltip": "Zurück zu deinen Trips",
+      "share": "Share",
+      "shareDisabled": "Aktiviere diesen Trip, um ihn zu teilen"
+    },
+    "zoom": {
+      "fit": "Einpassen",
+      "fitAria": "Timeline an den verfügbaren Platz anpassen",
+      "presetAria": "Timeline-Zoom auf {value} setzen"
+    },
+    "infoDialog": {
+      "title": "Trip-Details",
+      "description": "Bearbeite Basisinfos, prüfe den Verlauf, exportiere den Trip und sieh dir Zielkontext an.",
+      "close": "Dialog für Trip-Details schließen",
+      "tabs": {
+        "general": "Allgemein",
+        "history": "Verlauf",
+        "export": "Export",
+        "destination": "Ziel",
+        "debug": "Debug"
+      },
+      "general": {
+        "titleLabel": "Trip-Titel",
+        "editHint": "Klicke in den Titel, um den Trip umzubenennen oder die wichtigsten Angaben direkt hier anzupassen.",
+        "readOnlyHintExample": "Beispiel-Trips sind hier schreibgeschützt. Kopiere den Trip zuerst, wenn du ihn umbenennen oder als Favorit speichern möchtest.",
+        "readOnlyHintShared": "Dieser geteilte Trip ist schreibgeschützt. Du kannst die Details prüfen, aber nicht bearbeiten.",
+        "favoriteAdd": "Zu Favoriten hinzufügen",
+        "favoriteRemove": "Aus Favoriten entfernen",
+        "favoriteOn": "Favorit",
+        "favoriteOff": "Favorit",
+        "retryInProgress": "Ein neuer Versuch läuft bereits.",
+        "openBenchmark": "Im AI Benchmark öffnen",
+        "sections": {
+          "meta": "Trip-Meta",
+          "source": "Trip-Quelle"
+        },
+        "meta": {
+          "duration": "Zeitraum",
+          "totalDays": "Tage gesamt",
+          "totalDaysValue": "{count} Tage",
+          "cities": "Städte",
+          "totalDistance": "Gesamtdistanz",
+          "owner": "Besitzer",
+          "access": "Zugriff"
+        },
+        "sourceSharedDescription": "Dieser Reiseplan wurde aus einer geteilten Trip-Version kopiert.",
+        "sourceTripDescription": "Dieser Reiseplan wurde aus einem anderen Trip in deinem Workspace kopiert.",
+        "viewSource": "Quelle ansehen"
+      },
+      "history": {
+        "example": "Beispiel-Trips speichern keine Verlaufsstände. Kopiere den Trip zuerst, wenn du Änderungen behalten und später wieder öffnen willst.",
+        "undo": "Rückgängig",
+        "redo": "Wiederholen",
+        "showAll": "Alle anzeigen",
+        "showRecent": "Aktuelle anzeigen",
+        "empty": "Noch keine Verlaufseinträge.",
+        "current": "Aktuell",
+        "notSynced": "Nicht synchronisiert",
+        "go": "Öffnen",
+        "pendingSyncOne": "Die letzte Änderung ist lokal gespeichert und noch nicht synchronisiert.",
+        "pendingSyncMany": "Die letzten {count} Änderungen sind lokal gespeichert und noch nicht synchronisiert.",
+        "failedSyncOne": "1 wartende Änderung konnte noch nicht synchronisiert werden. Starte den Sync erneut, um sie zu veröffentlichen.",
+        "failedSyncMany": "{count} wartende Änderungen konnten noch nicht synchronisiert werden. Starte den Sync erneut, um sie zu veröffentlichen."
+      },
+      "export": {
+        "activities": {
+          "title": "Aktivitäten-Kalender",
+          "description": "Exportiere geplante Aktivitäten als .ics-Datei für deine Kalender-App.",
+          "action": "Aktivitäten exportieren (.ics)"
+        },
+        "cities": {
+          "title": "Städte-Kalender",
+          "description": "Erstelle eine schlankere Reisestruktur nur mit Ankünften und Aufenthalten.",
+          "action": "Städte exportieren (.ics)"
+        },
+        "everything": {
+          "title": "Kompletter Kalender",
+          "description": "Lade eine Kalenderdatei mit Städten, Transfers und Aktivitäten zusammen herunter.",
+          "action": "Alles herunterladen (.ics)"
+        },
+        "print": {
+          "title": "Drucklayout",
+          "description": "Öffne eine druckoptimierte Ansicht dieses Trips für PDFs, Ausdrucke oder Reisebriefings.",
+          "action": "Drucklayout öffnen"
+        }
+      },
+      "destination": {
+        "locked": "Zielinformationen werden freigeschaltet, sobald dieser Trip aktiviert ist.",
+        "empty": "Für diesen Trip sind noch keine Zielinformationen verfügbar.",
+        "futureChecksTitle": "Zukünftige Ziel-Checks",
+        "futureChecksDescription": "Dieser Bereich ist bereit für weitere tripspezifische Hinweise, sobald wir umfangreichere Zieldaten ergänzen.",
+        "futureChecks": {
+          "visa": "Visum",
+          "entryRules": "Einreise",
+          "safety": "Sicherheit",
+          "customs": "Zoll",
+          "connectivity": "Konnektivität",
+          "health": "Gesundheit"
+        }
+      }
     }
   },
   "tripRouteShell": {
