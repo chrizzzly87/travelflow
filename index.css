@@ -1145,7 +1145,7 @@ html:active-view-transition-type(blog-collapse)::view-transition-new(.blog-card-
     transition-duration: 150ms;
     transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
   }
-  button:not(:disabled):active {
+  button:not(:disabled):not([data-no-press-scale='true']):active {
     transform: scale(0.97);
   }
 }

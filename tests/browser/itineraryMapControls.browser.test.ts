@@ -41,6 +41,7 @@ describe('components/ItineraryMap map controls availability', () => {
     expect(verticalLayoutButton).toBeInTheDocument();
     expect(horizontalLayoutButton).toBeInTheDocument();
     expect(verticalLayoutButton.parentElement).toBe(horizontalLayoutButton.parentElement);
+    expect(verticalLayoutButton.parentElement).toHaveClass('flex-col');
 
     const fitButton = screen.getByLabelText('Fit to itinerary');
     const styleButton = screen.getByLabelText('Map style');
