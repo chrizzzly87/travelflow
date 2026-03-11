@@ -3,6 +3,8 @@ import {
   isAuthBootstrapCriticalPath,
   resolveAuthContextValue,
   shouldAutoClearSimulatedLoginOnRealSession,
+  shouldDeferAuthBootstrap,
+  shouldEagerlyLoadAuthProfile,
   shouldEnableDevAdminBypass,
   shouldUseDevAdminBypassSession,
 } from '../../contexts/AuthContext';
@@ -24,6 +26,35 @@ describe('contexts/AuthContext auth bootstrap critical paths', () => {
   it('treats public profile routes as critical bootstrap paths', () => {
     expect(isAuthBootstrapCriticalPath('/u/traveler')).toBe(true);
     expect(isAuthBootstrapCriticalPath('/de/u/traveler')).toBe(true);
+  });
+});
+
+describe('contexts/AuthContext deferred bootstrap rules', () => {
+  it('defers non-critical marketing routes when no auth callback payload is present', () => {
+    expect(shouldDeferAuthBootstrap('/', false)).toBe(true);
+    expect(shouldDeferAuthBootstrap('/pricing', false)).toBe(true);
+  });
+
+  it('keeps bootstrap immediate for auth-critical routes and callbacks', () => {
+    expect(shouldDeferAuthBootstrap('/create-trip', false)).toBe(false);
+    expect(shouldDeferAuthBootstrap('/profile', false)).toBe(false);
+    expect(shouldDeferAuthBootstrap('/login', false)).toBe(false);
+    expect(shouldDeferAuthBootstrap('/', true)).toBe(false);
+  });
+});
+
+describe('contexts/AuthContext eager profile hydration rules', () => {
+  it('loads the signed-in profile immediately for routes that render account details', () => {
+    expect(shouldEagerlyLoadAuthProfile('/profile')).toBe(true);
+    expect(shouldEagerlyLoadAuthProfile('/checkout')).toBe(true);
+    expect(shouldEagerlyLoadAuthProfile('/create-trip')).toBe(true);
+    expect(shouldEagerlyLoadAuthProfile('/u/traveler')).toBe(true);
+  });
+
+  it('skips eager profile loading on non-critical marketing routes', () => {
+    expect(shouldEagerlyLoadAuthProfile('/')).toBe(false);
+    expect(shouldEagerlyLoadAuthProfile('/pricing')).toBe(false);
+    expect(shouldEagerlyLoadAuthProfile('/blog')).toBe(false);
   });
 });
 
