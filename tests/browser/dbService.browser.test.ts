@@ -17,6 +17,7 @@ describe('services/dbService applyUserSettingsToLocalStorage', () => {
       showCityNames: false,
       zoomLevel: 2.5,
       sidebarWidth: 640,
+      detailsWidth: 520,
       timelineHeight: 420,
     });
 
@@ -28,6 +29,7 @@ describe('services/dbService applyUserSettingsToLocalStorage', () => {
     expect(window.localStorage.getItem('tf_city_names')).toBe('false');
     expect(window.localStorage.getItem('tf_zoom_level')).toBe('2.50');
     expect(window.localStorage.getItem('tf_sidebar_width')).toBe('640');
+    expect(window.localStorage.getItem('tf_details_width')).toBe('520');
     expect(window.localStorage.getItem('tf_timeline_height')).toBe('420');
   });
 

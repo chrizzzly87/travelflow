@@ -20,6 +20,7 @@ interface VerticalTimelineProps {
   pixelsPerDay: number;
   readOnly?: boolean;
   enableExampleSharedTransition?: boolean;
+  selectionVisibilityKey?: string;
 }
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
@@ -78,7 +79,8 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
   onAddCity,
   pixelsPerDay,
   readOnly = false,
-  enableExampleSharedTransition = false
+  enableExampleSharedTransition = false,
+  selectionVisibilityKey,
 }) => {
   const canEdit = !readOnly;
   const containerRef = useRef<HTMLDivElement>(null);
@@ -482,6 +484,10 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
   const isZoomedOut = pixelsPerDay < 50;
 
   useEffect(() => {
+    lastAutoScrollSelectionRef.current = null;
+  }, [selectionVisibilityKey]);
+
+  useEffect(() => {
     if (!selectedItemId) return;
     if (lastAutoScrollSelectionRef.current === selectedItemId) return;
 
@@ -503,7 +509,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
         behavior: 'smooth',
     });
     lastAutoScrollSelectionRef.current = selectedItemId;
-  }, [selectedItemId, trip.items, pixelsPerDay, visualStartOffset]);
+  }, [selectedItemId, selectionVisibilityKey, trip.items, pixelsPerDay, visualStartOffset]);
 
   return (
     <div 

@@ -95,6 +95,9 @@ export const applyViewSettingsToSearchParams = (
     if (typeof view.sidebarWidth === 'number' && Number.isFinite(view.sidebarWidth)) params.set('sidebarWidth', String(Math.round(view.sidebarWidth)));
     else params.delete('sidebarWidth');
 
+    if (typeof view.detailsWidth === 'number' && Number.isFinite(view.detailsWidth)) params.set('detailsWidth', String(Math.round(view.detailsWidth)));
+    else params.delete('detailsWidth');
+
     if (typeof view.timelineHeight === 'number' && Number.isFinite(view.timelineHeight)) params.set('timelineHeight', String(Math.round(view.timelineHeight)));
     else params.delete('timelineHeight');
 };

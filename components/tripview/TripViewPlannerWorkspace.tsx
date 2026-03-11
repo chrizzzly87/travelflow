@@ -1,5 +1,6 @@
 import React, { Suspense, useCallback, useRef } from 'react';
 import { ArrowLeftRight, ArrowUpDown, CalendarDays, Focus, Layers, List, Maximize2, Minimize2, ZoomIn, ZoomOut } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { getAnalyticsDebugAttributes } from '../../services/analyticsService';
 import { TripFloatingMapPreview } from './TripFloatingMapPreview';
 
@@ -17,8 +18,12 @@ interface TripViewPlannerWorkspaceProps {
     onTimelineTouchEnd: (event: React.TouchEvent<HTMLDivElement>) => void;
     onZoomOut: () => void;
     onZoomIn: () => void;
+    onZoomPresetSelect: (value: number) => void;
+    onZoomFit: () => void;
     onTimelineModeChange: (mode: 'calendar' | 'timeline') => void;
     onTimelineViewChange: (view: 'horizontal' | 'vertical') => void;
+    zoomLevel: number;
+    zoomLevelPresets: number[];
     mapDockMode: 'docked' | 'floating';
     onMapDockModeChange: (mode: 'docked' | 'floating') => void;
     timelineMode: 'calendar' | 'timeline';
@@ -61,6 +66,7 @@ interface TripViewPlannerWorkspaceProps {
 }
 
 const TRIP_FLOATING_MAP_PREVIEW_BETA_ENABLED = true;
+const DISPLAY_ZOOM_PRESETS = [0.25, 0.5, 1, 1.25, 1.5, 2];
 
 export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> = ({
     isPaywallLocked,
@@ -74,8 +80,12 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
     onTimelineTouchEnd,
     onZoomOut,
     onZoomIn,
+    onZoomPresetSelect,
+    onZoomFit,
     onTimelineModeChange,
     onTimelineViewChange,
+    zoomLevel,
+    zoomLevelPresets,
     mapDockMode,
     onMapDockModeChange,
     timelineMode,
@@ -116,10 +126,12 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
     onDetailsResizeKeyDown,
     onTimelineResizeKeyDown,
 }) => {
+    const { t } = useTranslation('common');
     const dockedMapAnchorRef = useRef<HTMLDivElement | null>(null);
     const isFloatingMapPreviewEnabled = !isMobile && TRIP_FLOATING_MAP_PREVIEW_BETA_ENABLED;
     const effectiveMapDockMode: 'docked' | 'floating' = isFloatingMapPreviewEnabled ? mapDockMode : 'docked';
     const dockedGeometryKey = `${effectiveLayoutMode}:${layoutMode}:${sidebarWidth}:${detailsWidth}:${timelineHeight}:${detailsPanelVisible ? '1' : '0'}`;
+    const visibleZoomPresets = DISPLAY_ZOOM_PRESETS.filter((value) => zoomLevelPresets.includes(value));
 
     const toggleMapDockMode = useCallback(() => {
         if (!isFloatingMapPreviewEnabled) return;
@@ -172,6 +184,38 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                             {...getAnalyticsDebugAttributes('trip_view__zoom', { direction: 'out' })}
                         >
                             <ZoomOut size={16} />
+                        </button>
+                        {visibleZoomPresets.map((preset) => {
+                            const isActive = Math.abs(zoomLevel - preset) < 0.01;
+                            return (
+                                <button
+                                    key={`timeline-zoom-preset-${preset}`}
+                                    type="button"
+                                    onClick={() => onZoomPresetSelect(preset)}
+                                    className={`rounded-md px-2 py-1 text-xs font-semibold transition-colors ${
+                                        isActive
+                                            ? 'bg-accent-600 text-white'
+                                            : 'text-gray-600 hover:bg-gray-100'
+                                    }`}
+                                    aria-label={t('tripView.zoom.presetAria', { value: `×${preset}` })}
+                                    aria-pressed={isActive}
+                                    {...getAnalyticsDebugAttributes('trip_view__zoom', {
+                                        direction: 'preset',
+                                        zoom: preset,
+                                    })}
+                                >
+                                    ×{preset}
+                                </button>
+                            );
+                        })}
+                        <button
+                            type="button"
+                            onClick={onZoomFit}
+                            className="rounded-md px-2 py-1 text-xs font-semibold text-gray-600 transition-colors hover:bg-gray-100"
+                            aria-label={t('tripView.zoom.fitAria')}
+                            {...getAnalyticsDebugAttributes('trip_view__zoom_fit', { surface: 'timeline_controls' })}
+                        >
+                            {t('tripView.zoom.fit')}
                         </button>
                         <button
                             type="button"
@@ -378,9 +422,20 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                                         </div>
                                     </div>
                                     {detailsPanelVisible && (
-                                        <div style={{ width: detailsWidth }} className="h-full bg-white border-s border-gray-200 z-20 shrink-0 relative overflow-hidden">
-                                            {detailsPanelContent}
-                                        </div>
+                                        <>
+                                            <button
+                                                type="button"
+                                                className="w-1 bg-gray-100 hover:bg-accent-500 cursor-col-resize transition-colors z-30 flex items-center justify-center group appearance-none border-0 p-0"
+                                                onMouseDown={(event) => onStartResizing('details', event.clientX)}
+                                                onKeyDown={onDetailsResizeKeyDown}
+                                                aria-label="Resize details panel"
+                                            >
+                                                <div className="h-8 w-1 group-hover:bg-accent-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+                                            </button>
+                                            <div style={{ width: detailsWidth }} className="h-full bg-white border-s border-gray-200 z-20 shrink-0 relative overflow-hidden">
+                                                {detailsPanelContent}
+                                            </div>
+                                        </>
                                     )}
                                 </>
                             ) : effectiveLayoutMode === 'horizontal' ? (

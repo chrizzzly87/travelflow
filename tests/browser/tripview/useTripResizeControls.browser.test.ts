@@ -8,6 +8,7 @@ const DEFAULT_ZOOM_PRESETS = [0.2, 0.5, 0.75, 1, 1.25, 1.5, 2, 3];
 const makeHookOptions = (
   overrides: Partial<Parameters<typeof useTripResizeControls>[0]> = {},
 ): Parameters<typeof useTripResizeControls>[0] => ({
+  isMobile: false,
   layoutMode: 'horizontal',
   mapDockMode: 'docked',
   timelineMode: 'calendar',
@@ -236,6 +237,48 @@ describe('components/tripview/useTripResizeControls', () => {
     });
 
     expect(setZoomLevel).not.toHaveBeenCalled();
+  });
+
+  it('allows manual fit even when zoom is marked dirty', () => {
+    const setZoomLevel = vi.fn();
+    const { result } = renderHook(() => useTripResizeControls(makeHookOptions({
+      setZoomLevel,
+      isZoomDirty: true,
+      timelineView: 'horizontal',
+      horizontalTimelineDayCount: 5,
+      zoomLevel: 1,
+    })));
+
+    attachTimelineViewport(result, { width: 1200, height: 640 });
+    setZoomLevel.mockClear();
+
+    act(() => {
+      result.current.fitTimelineZoom(undefined, { force: true });
+    });
+
+    expect(setZoomLevel).toHaveBeenCalledTimes(1);
+  });
+
+  it('clamps sidebar width on resize so the docked map keeps its minimum width', () => {
+    Object.defineProperty(window, 'innerWidth', {
+      configurable: true,
+      value: 1200,
+    });
+    const setSidebarWidth = vi.fn();
+    renderHook(() => useTripResizeControls(makeHookOptions({
+      sidebarWidth: 900,
+      detailsWidth: 400,
+      setSidebarWidth,
+      layoutMode: 'horizontal',
+      mapDockMode: 'docked',
+      detailsPanelVisible: true,
+      minMapWidth: 420,
+      minSidebarWidth: 320,
+    })));
+
+    expect(setSidebarWidth).toHaveBeenCalled();
+    const updater = setSidebarWidth.mock.calls[0][0] as (value: number) => number;
+    expect(updater(900)).toBe(368);
   });
 
   it('auto-fits timeline zoom when map dock mode changes', () => {

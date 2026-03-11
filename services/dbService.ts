@@ -375,6 +375,7 @@ const normalizeViewSettingsPayload = (value: unknown): IViewSettings | null => {
         routeMode: isRouteModeValue(view.routeMode) ? view.routeMode : undefined,
         showCityNames: typeof view.showCityNames === 'boolean' ? view.showCityNames : undefined,
         sidebarWidth: normalizeFiniteNumber(view.sidebarWidth),
+        detailsWidth: normalizeFiniteNumber(view.detailsWidth),
         timelineHeight: normalizeFiniteNumber(view.timelineHeight),
     };
 };
@@ -1970,6 +1971,7 @@ export const dbGetUserSettings = async (): Promise<IUserSettings | null> => {
         showCityNames: data.show_city_names ?? undefined,
         zoomLevel: typeof data.zoom_level === 'number' ? data.zoom_level : undefined,
         sidebarWidth: typeof data.sidebar_width === 'number' ? data.sidebar_width : undefined,
+        detailsWidth: typeof data.details_width === 'number' ? data.details_width : undefined,
         timelineHeight: typeof data.timeline_height === 'number' ? data.timeline_height : undefined,
     } as IUserSettings;
 };
@@ -1990,6 +1992,7 @@ export const dbUpsertUserSettings = async (settings: IUserSettings) => {
         show_city_names: settings.showCityNames,
         zoom_level: settings.zoomLevel,
         sidebar_width: settings.sidebarWidth,
+        details_width: settings.detailsWidth,
         timeline_height: settings.timelineHeight,
     };
 
@@ -2300,5 +2303,6 @@ export const applyUserSettingsToLocalStorage = (settings: IUserSettings | null) 
     if (typeof settings.showCityNames === 'boolean') writeLocalStorageItem('tf_city_names', String(settings.showCityNames));
     if (typeof settings.zoomLevel === 'number') writeLocalStorageItem('tf_zoom_level', settings.zoomLevel.toFixed(2));
     if (typeof settings.sidebarWidth === 'number') writeLocalStorageItem('tf_sidebar_width', String(settings.sidebarWidth));
+    if (typeof settings.detailsWidth === 'number') writeLocalStorageItem('tf_details_width', String(settings.detailsWidth));
     if (typeof settings.timelineHeight === 'number') writeLocalStorageItem('tf_timeline_height', String(settings.timelineHeight));
 };

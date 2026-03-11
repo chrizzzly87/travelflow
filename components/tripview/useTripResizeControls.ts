@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, type Dispatch, type SetStateAction } fr
 import { writeLocalStorageItem } from '../../services/browserStorageService';
 
 interface UseTripResizeControlsOptions {
+    isMobile: boolean;
     layoutMode: 'vertical' | 'horizontal';
     mapDockMode: 'docked' | 'floating';
     timelineMode: 'calendar' | 'timeline';
@@ -34,6 +35,7 @@ interface UseTripResizeControlsOptions {
     basePixelsPerDay: number;
     onAutoFitZoomApplied?: () => void;
     onManualViewSettingsChange?: () => void;
+    onPaneResize?: () => void;
 }
 
 const MIN_AUTO_FIT_TIMELINE_WIDTH = 160;
@@ -69,6 +71,7 @@ const resolveAutoFitZoom = (
 };
 
 export const useTripResizeControls = ({
+    isMobile,
     layoutMode,
     mapDockMode,
     timelineMode,
@@ -100,19 +103,42 @@ export const useTripResizeControls = ({
     basePixelsPerDay,
     onAutoFitZoomApplied,
     onManualViewSettingsChange,
+    onPaneResize,
 }: UseTripResizeControlsOptions) => {
     const verticalLayoutTimelineRef = useRef<HTMLDivElement | null>(null);
     const isResizingRef = useRef<'sidebar' | 'details' | 'timeline-h' | null>(null);
     const detailsResizeStartXRef = useRef(0);
     const detailsResizeStartWidthRef = useRef(detailsWidth);
-    const previousLayoutModeRef = useRef(layoutMode);
     const previousMapDockModeRef = useRef(mapDockMode);
     const previousTimelineModeRef = useRef(timelineMode);
     const previousTimelineViewRef = useRef(timelineView);
     const hasAutoFitRunRef = useRef(false);
 
+    const clampSidebarWidth = useCallback((rawWidth: number, nextDetailsWidth = detailsWidth) => {
+        if (typeof window === 'undefined') return Math.max(minSidebarWidth, rawWidth);
+        if (isMobile) return Math.max(minSidebarWidth, rawWidth);
+        if (layoutMode !== 'horizontal' || mapDockMode !== 'docked') {
+            return Math.max(minSidebarWidth, rawWidth);
+        }
+
+        const reservedForDetails = detailsPanelVisible ? nextDetailsWidth : 0;
+        const maxSidebar = window.innerWidth - reservedForDetails - minMapWidth - (resizerWidth * 2);
+        const boundedMax = Math.max(minSidebarWidth, maxSidebar);
+        return Math.max(minSidebarWidth, Math.min(boundedMax, rawWidth));
+    }, [
+        detailsPanelVisible,
+        detailsWidth,
+        isMobile,
+        layoutMode,
+        mapDockMode,
+        minMapWidth,
+        minSidebarWidth,
+        resizerWidth,
+    ]);
+
     const clampDetailsWidth = useCallback((rawWidth: number) => {
         if (typeof window === 'undefined') return Math.max(minDetailsWidth, rawWidth);
+        if (isMobile) return Math.max(minDetailsWidth, rawWidth);
 
         if (layoutMode === 'horizontal') {
             const maxWidth = window.innerWidth - sidebarWidth - minMapWidth - (resizerWidth * 2);
@@ -127,6 +153,7 @@ export const useTripResizeControls = ({
         return Math.max(boundedMin, Math.min(boundedMax, rawWidth));
     }, [
         hardMinDetailsWidth,
+        isMobile,
         layoutMode,
         minDetailsWidth,
         minMapWidth,
@@ -140,13 +167,21 @@ export const useTripResizeControls = ({
     }, [clampDetailsWidth, setDetailsWidth]);
 
     useEffect(() => {
-        const handleResize = () => setDetailsWidth((previous) => clampDetailsWidth(previous));
+        setSidebarWidth((previous) => clampSidebarWidth(previous));
+    }, [clampSidebarWidth, setSidebarWidth]);
+
+    useEffect(() => {
+        const handleResize = () => {
+            setSidebarWidth((previous) => clampSidebarWidth(previous));
+            setDetailsWidth((previous) => clampDetailsWidth(previous));
+        };
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
-    }, [clampDetailsWidth, setDetailsWidth]);
+    }, [clampDetailsWidth, clampSidebarWidth, setDetailsWidth, setSidebarWidth]);
 
-    const autoFitTimelineZoom = useCallback((mode: 'horizontal' | 'vertical') => {
-        if (isZoomDirty) return false;
+    const fitTimelineZoom = useCallback((mode?: 'horizontal' | 'vertical', options?: { force?: boolean }) => {
+        const fitMode: 'horizontal' | 'vertical' = mode || (timelineView === 'vertical' ? 'vertical' : 'horizontal');
+        if (!options?.force && isZoomDirty) return false;
 
         const timelineViewport = verticalLayoutTimelineRef.current;
         if (!timelineViewport) return false;
@@ -154,7 +189,7 @@ export const useTripResizeControls = ({
         const dayCount = Math.max(1, horizontalTimelineDayCount);
         let targetPixelsPerDay: number | null = null;
 
-        if (mode === 'horizontal') {
+        if (fitMode === 'horizontal') {
             const measuredWidth = timelineViewport.clientWidth;
             if (measuredWidth <= 0) return false;
             const usableTimelineWidth = Math.max(MIN_AUTO_FIT_TIMELINE_WIDTH, measuredWidth - horizontalTimelineAutoFitPadding);
@@ -178,7 +213,9 @@ export const useTripResizeControls = ({
         if (Math.abs(zoomLevel - nextZoom) < 0.01) {
             return false;
         }
-        onAutoFitZoomApplied?.();
+        if (!options?.force) {
+            onAutoFitZoomApplied?.();
+        }
         setZoomLevel((previous) => (Math.abs(previous - nextZoom) < 0.01 ? previous : nextZoom));
         return true;
     }, [
@@ -189,6 +226,7 @@ export const useTripResizeControls = ({
         isZoomDirty,
         onAutoFitZoomApplied,
         setZoomLevel,
+        timelineView,
         verticalTimelineAutoFitPadding,
         zoomLevel,
         zoomLevelPresets,
@@ -214,21 +252,20 @@ export const useTripResizeControls = ({
         if (shouldAttemptAutoFit) {
             const fitMode: 'horizontal' | 'vertical' = timelineView === 'vertical' ? 'vertical' : 'horizontal';
             const runAutoFit = () => {
-                if (!autoFitTimelineZoom(fitMode)) {
+                if (!fitTimelineZoom(fitMode)) {
                     requestAnimationFrame(() => {
-                        autoFitTimelineZoom(fitMode);
+                        fitTimelineZoom(fitMode);
                     });
                 }
             };
             requestAnimationFrame(runAutoFit);
         }
 
-        previousLayoutModeRef.current = layoutMode;
         previousMapDockModeRef.current = mapDockMode;
         previousTimelineModeRef.current = timelineMode;
         previousTimelineViewRef.current = timelineView;
         hasAutoFitRunRef.current = true;
-    }, [autoFitTimelineZoom, isZoomDirty, layoutMode, mapDockMode, timelineMode, timelineView]);
+    }, [fitTimelineZoom, isZoomDirty, mapDockMode, timelineMode, timelineView]);
 
     const startResizing = useCallback((type: 'sidebar' | 'details' | 'timeline-h', startClientX?: number) => {
         isResizingRef.current = type;
@@ -262,14 +299,14 @@ export const useTripResizeControls = ({
 
         if (isResizingRef.current === 'sidebar') {
             onManualViewSettingsChange?.();
-            const reservedForDetails = detailsPanelVisible ? detailsWidth : 0;
-            const maxSidebar = window.innerWidth - reservedForDetails - minMapWidth - (resizerWidth * 2);
-            const boundedMax = Math.max(minSidebarWidth, maxSidebar);
-            setSidebarWidth(Math.max(minSidebarWidth, Math.min(boundedMax, event.clientX)));
+            onPaneResize?.();
+            setSidebarWidth(clampSidebarWidth(event.clientX));
             return;
         }
 
         if (isResizingRef.current === 'details') {
+            onManualViewSettingsChange?.();
+            onPaneResize?.();
             const deltaX = event.clientX - detailsResizeStartXRef.current;
             const nextWidth = detailsResizeStartWidthRef.current + deltaX;
             setDetailsWidth(clampDetailsWidth(nextWidth));
@@ -277,18 +314,16 @@ export const useTripResizeControls = ({
         }
 
         onManualViewSettingsChange?.();
+        onPaneResize?.();
         const maxTimelineHeight = window.innerHeight - minBottomMapHeight;
         setTimelineHeight(Math.max(minTimelineHeight, Math.min(maxTimelineHeight, window.innerHeight - event.clientY)));
     }, [
         clampDetailsWidth,
-        detailsPanelVisible,
-        detailsWidth,
+        clampSidebarWidth,
         minBottomMapHeight,
-        minMapWidth,
-        minSidebarWidth,
         minTimelineHeight,
-        resizerWidth,
         onManualViewSettingsChange,
+        onPaneResize,
         setDetailsWidth,
         setSidebarWidth,
         setTimelineHeight,
@@ -299,21 +334,16 @@ export const useTripResizeControls = ({
 
         event.preventDefault();
         onManualViewSettingsChange?.();
+        onPaneResize?.();
         const direction = event.key === 'ArrowRight' ? 1 : -1;
-        const reservedForDetails = detailsPanelVisible ? detailsWidth : 0;
-        const maxSidebar = window.innerWidth - reservedForDetails - minMapWidth - (resizerWidth * 2);
-        const boundedMax = Math.max(minSidebarWidth, maxSidebar);
         setSidebarWidth((previous) =>
-            Math.max(minSidebarWidth, Math.min(boundedMax, previous + (direction * resizeKeyboardStep)))
+            clampSidebarWidth(previous + (direction * resizeKeyboardStep))
         );
     }, [
-        detailsPanelVisible,
-        detailsWidth,
-        minMapWidth,
-        minSidebarWidth,
+        clampSidebarWidth,
         onManualViewSettingsChange,
+        onPaneResize,
         resizeKeyboardStep,
-        resizerWidth,
         setSidebarWidth,
     ]);
 
@@ -321,21 +351,24 @@ export const useTripResizeControls = ({
         if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
 
         event.preventDefault();
+        onManualViewSettingsChange?.();
+        onPaneResize?.();
         const direction = event.key === 'ArrowRight' ? 1 : -1;
         setDetailsWidth((previous) => clampDetailsWidth(previous + (direction * resizeKeyboardStep)));
-    }, [clampDetailsWidth, resizeKeyboardStep, setDetailsWidth]);
+    }, [clampDetailsWidth, onManualViewSettingsChange, onPaneResize, resizeKeyboardStep, setDetailsWidth]);
 
     const handleTimelineResizeKeyDown = useCallback((event: React.KeyboardEvent<HTMLButtonElement>) => {
         if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
 
         event.preventDefault();
         onManualViewSettingsChange?.();
+        onPaneResize?.();
         const direction = event.key === 'ArrowUp' ? 1 : -1;
         const maxTimelineHeight = window.innerHeight - minBottomMapHeight;
         setTimelineHeight((previous) =>
             Math.max(minTimelineHeight, Math.min(maxTimelineHeight, previous + (direction * resizeKeyboardStep)))
         );
-    }, [minBottomMapHeight, minTimelineHeight, onManualViewSettingsChange, resizeKeyboardStep, setTimelineHeight]);
+    }, [minBottomMapHeight, minTimelineHeight, onManualViewSettingsChange, onPaneResize, resizeKeyboardStep, setTimelineHeight]);
 
     useEffect(() => {
         window.addEventListener('mousemove', handleMouseMove);
@@ -352,5 +385,6 @@ export const useTripResizeControls = ({
         handleSidebarResizeKeyDown,
         handleDetailsResizeKeyDown,
         handleTimelineResizeKeyDown,
+        fitTimelineZoom,
     };
 };
