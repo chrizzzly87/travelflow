@@ -26,6 +26,7 @@ interface TripTimelineCanvasProps {
     routeStatusById: Record<string, RouteStatus>;
     pixelsPerDay: number;
     enableExampleSharedTransition: boolean;
+    selectionVisibilityKey: string;
 }
 
 export const TripTimelineCanvas: React.FC<TripTimelineCanvasProps> = ({
@@ -44,6 +45,7 @@ export const TripTimelineCanvas: React.FC<TripTimelineCanvasProps> = ({
     routeStatusById,
     pixelsPerDay,
     enableExampleSharedTransition,
+    selectionVisibilityKey,
 }) => {
     if (timelineMode === 'timeline') {
         return (
@@ -51,6 +53,7 @@ export const TripTimelineCanvas: React.FC<TripTimelineCanvasProps> = ({
                 trip={trip}
                 selectedItemId={selectedItemId}
                 onSelect={onSelect}
+                selectionVisibilityKey={selectionVisibilityKey}
             />
         );
     }
@@ -71,6 +74,7 @@ export const TripTimelineCanvas: React.FC<TripTimelineCanvasProps> = ({
                     onSwapSelectedCities={onSwapSelectedCities}
                     pixelsPerDay={pixelsPerDay}
                     enableExampleSharedTransition={enableExampleSharedTransition}
+                    selectionVisibilityKey={selectionVisibilityKey}
                 />
             </Suspense>
         );
@@ -91,6 +95,7 @@ export const TripTimelineCanvas: React.FC<TripTimelineCanvasProps> = ({
             routeStatusById={routeStatusById}
             pixelsPerDay={pixelsPerDay}
             enableExampleSharedTransition={enableExampleSharedTransition}
+            selectionVisibilityKey={selectionVisibilityKey}
         />
     );
 };

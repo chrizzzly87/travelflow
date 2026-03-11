@@ -5,6 +5,17 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 
 import { TripViewPlannerWorkspace } from '../../../components/tripview/TripViewPlannerWorkspace';
 
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string, options?: Record<string, unknown>) => {
+      if (key === 'tripView.zoom.fit') return 'Fit';
+      if (key === 'tripView.zoom.fitAria') return 'Fit timeline to available space';
+      if (key === 'tripView.zoom.presetAria') return `Set timeline zoom to ${options?.value ?? ''}`;
+      return key;
+    },
+  }),
+}));
+
 type PlannerProps = React.ComponentProps<typeof TripViewPlannerWorkspace>;
 
 const baseProps = (): PlannerProps => ({
@@ -19,8 +30,12 @@ const baseProps = (): PlannerProps => ({
   onTimelineTouchEnd: vi.fn(),
   onZoomOut: vi.fn(),
   onZoomIn: vi.fn(),
+  onZoomPresetSelect: vi.fn(),
+  onZoomFit: vi.fn(),
   onTimelineModeChange: vi.fn(),
   onTimelineViewChange: vi.fn(),
+  zoomLevel: 1,
+  zoomLevelPresets: [0.25, 0.5, 1, 1.25, 1.5, 2],
   mapDockMode: 'docked',
   onMapDockModeChange: vi.fn(),
   timelineMode: 'calendar',
@@ -80,6 +95,8 @@ describe('components/tripview/TripViewPlannerWorkspace', () => {
     expect(screen.getByLabelText('Horizontal timeline direction')).toBeInTheDocument();
     expect(screen.getByLabelText('Vertical timeline direction')).toBeInTheDocument();
     expect(screen.getByLabelText('Zoom out timeline')).toBeInTheDocument();
+    expect(screen.getByLabelText('Set timeline zoom to ×1')).toBeInTheDocument();
+    expect(screen.getByLabelText('Fit timeline to available space')).toBeInTheDocument();
     expect(screen.getByLabelText('Zoom in timeline')).toBeInTheDocument();
 
     const modeGroup = calendarModeButton.parentElement;
@@ -99,7 +116,17 @@ describe('components/tripview/TripViewPlannerWorkspace', () => {
     expect(screen.queryByLabelText('Horizontal timeline direction')).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Vertical timeline direction')).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Zoom out timeline')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Fit timeline to available space')).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Zoom in timeline')).not.toBeInTheDocument();
+  });
+
+  it('calls the fit handler from the zoom controls', () => {
+    const props = baseProps();
+
+    render(React.createElement(TripViewPlannerWorkspace, props));
+    fireEvent.click(screen.getByLabelText('Fit timeline to available space'));
+
+    expect(props.onZoomFit).toHaveBeenCalledTimes(1);
   });
 
   it('minimizes map into floating mode when toggle is clicked', () => {
@@ -114,6 +141,7 @@ describe('components/tripview/TripViewPlannerWorkspace', () => {
   it('renders floating map container in floating dock mode', () => {
     const props = baseProps();
     props.mapDockMode = 'floating';
+    props.detailsPanelVisible = true;
 
     render(React.createElement(TripViewPlannerWorkspace, props));
 
@@ -121,11 +149,13 @@ describe('components/tripview/TripViewPlannerWorkspace', () => {
     expect(screen.getByTestId('floating-map-drag-handle')).toBeInTheDocument();
     expect(screen.getByTestId('planner-timeline-pane')).toBeInTheDocument();
     expect(screen.getByLabelText('Maximize map preview')).toBeInTheDocument();
+    expect(screen.getByLabelText('Resize details panel')).toBeInTheDocument();
   });
 
   it('renders a dedicated floating map drag handle control', () => {
     const props = baseProps();
     props.mapDockMode = 'floating';
+    props.detailsPanelVisible = true;
 
     render(React.createElement(TripViewPlannerWorkspace, props));
 

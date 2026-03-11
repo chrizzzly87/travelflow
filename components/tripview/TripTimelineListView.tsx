@@ -12,6 +12,7 @@ interface TripTimelineListViewProps {
     trip: ITrip;
     selectedItemId: string | null;
     onSelect: (id: string | null, options?: { multi?: boolean; isCity?: boolean }) => void;
+    selectionVisibilityKey?: string;
 }
 
 const formatTripDayLabel = (tripStartDate: string, dayOffset: number): string => {
@@ -114,6 +115,7 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
     trip,
     selectedItemId,
     onSelect,
+    selectionVisibilityKey,
 }) => {
     const model = useMemo(() => buildTimelineListModel(trip), [trip]);
     const sectionContainerRef = useRef<HTMLDivElement | null>(null);
@@ -259,6 +261,11 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
     }, [trip.id, model.sections.length]);
 
     useEffect(() => {
+        lastAutoScrolledSelectedItemRef.current = null;
+        userScrollSelectionEnabledRef.current = false;
+    }, [selectionVisibilityKey]);
+
+    useEffect(() => {
         const viewport = viewportRef.current;
         if (!viewport) return;
 
@@ -319,7 +326,7 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
             block: 'center',
             behavior: 'smooth',
         });
-    }, [model.sections.length, selectedItemId]);
+    }, [model.sections.length, selectedItemId, selectionVisibilityKey]);
 
     return (
         <div

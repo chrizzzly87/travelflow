@@ -439,4 +439,44 @@ describe('components/tripview/TripTimelineListView', () => {
       vi.useRealTimers();
     }
   });
+
+  it('re-runs selected item reveal when pane geometry changes', () => {
+    const trip = makeTrip({
+      startDate: '2026-03-01',
+      items: [
+        makeCityItem({ id: 'city-a', title: 'Kabul', startDateOffset: 0, duration: 2, color: 'bg-rose-400' }),
+        makeActivityItem('activity-a-1', 'Kabul', 0.5),
+      ],
+    });
+    const onSelect = vi.fn();
+    const scrollIntoView = vi.fn();
+    const originalScrollIntoView = HTMLElement.prototype.scrollIntoView;
+    HTMLElement.prototype.scrollIntoView = scrollIntoView;
+
+    try {
+      const { rerender } = render(
+        React.createElement(TripTimelineListView, {
+          trip,
+          selectedItemId: 'activity-a-1',
+          onSelect,
+          selectionVisibilityKey: 'layout-a',
+        }),
+      );
+
+      expect(scrollIntoView).toHaveBeenCalledTimes(1);
+
+      rerender(
+        React.createElement(TripTimelineListView, {
+          trip,
+          selectedItemId: 'activity-a-1',
+          onSelect,
+          selectionVisibilityKey: 'layout-b',
+        }),
+      );
+
+      expect(scrollIntoView).toHaveBeenCalledTimes(2);
+    } finally {
+      HTMLElement.prototype.scrollIntoView = originalScrollIntoView;
+    }
+  });
 });
