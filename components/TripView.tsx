@@ -169,21 +169,15 @@ const HARD_MIN_DETAILS_WIDTH = 260;
 const DEFAULT_DETAILS_WIDTH = 440;
 const RESIZE_KEYBOARD_STEP = 16;
 const RESIZER_WIDTH = 4;
-const MIN_ZOOM_LEVEL = 0.2;
+const MIN_ZOOM_LEVEL = 0.25;
 const MAX_ZOOM_LEVEL = 3;
 const HORIZONTAL_TIMELINE_AUTO_FIT_PADDING = 72;
 const VERTICAL_TIMELINE_AUTO_FIT_PADDING = 56;
 const TIMELINE_ZOOM_LEVEL_PRESETS = [
-    0.2,
     0.25,
-    0.3,
-    0.4,
     0.5,
-    0.6,
     0.75,
-    0.9,
     1,
-    1.1,
     1.25,
     1.5,
     1.75,
@@ -364,6 +358,29 @@ const buildTripMetaSummary = (trip: ITrip): TripMetaSummary => {
 };
 
 const HEADS_UP_SECTION_REGEX = /### Heads Up\s*([\s\S]*?)(?=\n###\s|\s*$)/i;
+const MARKDOWN_TASK_LINE_REGEX = /^(\s*(?:>\s*)*(?:[-*+]|\d+[.)])\s+\[)( |x|X)(\].*)$/;
+
+const toggleMarkdownTaskByIndex = (markdown: string, taskIndex: number, checked: boolean): string | null => {
+    const taskLineNumbers = markdown
+        .split('\n')
+        .map((line, index) => (MARKDOWN_TASK_LINE_REGEX.test(line) ? index + 1 : -1))
+        .filter((lineNumber) => lineNumber > 0);
+    const lineNumber = taskLineNumbers[taskIndex];
+    if (typeof lineNumber !== 'number') return null;
+
+    const lines = markdown.split('\n');
+    const lineIndex = lineNumber - 1;
+    const currentLine = lines[lineIndex];
+    if (!currentLine) return null;
+    const nextLine = currentLine.replace(
+        MARKDOWN_TASK_LINE_REGEX,
+        `$1${checked ? 'x' : ' '}$3`,
+    );
+    if (nextLine === currentLine) return null;
+
+    lines[lineIndex] = nextLine;
+    return lines.join('\n');
+};
 
 export const extractTripTravelerWarnings = (items: ITimelineItem[]): TripTravelerWarningSummary[] => (
     items
@@ -2555,6 +2572,8 @@ const useTripViewRender = ({
         handleDetailsResizeKeyDown,
         handleTimelineResizeKeyDown,
         fitTimelineZoom,
+        clampSidebarWidth,
+        clampDetailsWidth,
     } = useTripResizeControls({
         isMobile,
         layoutMode,
@@ -2596,15 +2615,33 @@ const useTripViewRender = ({
     useEffect(() => {
         if (typeof window === 'undefined') return;
         if (isMobile) return;
-        if (!detailsPanelVisible) return;
         if (paneLayoutCustomizedRef.current) return;
         if (effectiveLayoutMode !== 'horizontal' || effectiveMapDockMode !== 'docked') return;
 
-        const availableWidth = window.innerWidth - (RESIZER_WIDTH * 2);
-        const targetPaneWidth = Math.floor(availableWidth / 3);
-        setSidebarWidth(targetPaneWidth);
-        setDetailsWidth(targetPaneWidth);
+        const rebalanceDockedPaneWidths = () => {
+            if (detailsPanelVisible) {
+                const availableWidth = window.innerWidth - (RESIZER_WIDTH * 2);
+                const targetPaneWidth = Math.floor(availableWidth / 3);
+                const nextDetailsWidth = clampDetailsWidth(targetPaneWidth);
+                const nextSidebarWidth = clampSidebarWidth(targetPaneWidth, nextDetailsWidth);
+                setDetailsWidth(nextDetailsWidth);
+                setSidebarWidth(nextSidebarWidth);
+                return;
+            }
+
+            const availableWidth = window.innerWidth - RESIZER_WIDTH;
+            const targetTimelineWidth = Math.floor(availableWidth / 2);
+            setSidebarWidth(clampSidebarWidth(targetTimelineWidth, 0));
+        };
+
+        rebalanceDockedPaneWidths();
+        window.addEventListener('resize', rebalanceDockedPaneWidths);
+        return () => {
+            window.removeEventListener('resize', rebalanceDockedPaneWidths);
+        };
     }, [
+        clampDetailsWidth,
+        clampSidebarWidth,
         detailsPanelVisible,
         effectiveLayoutMode,
         effectiveMapDockMode,
@@ -2630,6 +2667,28 @@ const useTripViewRender = ({
         if (!didApply) return;
         markZoomDirty('manual');
     }, [fitTimelineZoom, markZoomDirty]);
+
+    const resolveSteppedZoomLevel = useCallback((
+        currentZoomLevel: number,
+        direction: 'in' | 'out',
+    ) => {
+        const normalizedPresets = TIMELINE_ZOOM_LEVEL_PRESETS
+            .map((value) => clampZoomLevel(value))
+            .filter((value, index, values) => values.indexOf(value) === index)
+            .sort((left, right) => left - right);
+
+        if (direction === 'in') {
+            return normalizedPresets.find((preset) => preset > (currentZoomLevel + 0.001))
+                ?? normalizedPresets[normalizedPresets.length - 1]
+                ?? clampZoomLevel(currentZoomLevel);
+        }
+
+        return [...normalizedPresets]
+            .reverse()
+            .find((preset) => preset < (currentZoomLevel - 0.001))
+            ?? normalizedPresets[0]
+            ?? clampZoomLevel(currentZoomLevel);
+    }, [clampZoomLevel]);
 
     const {
         mapViewportRef,
@@ -2708,12 +2767,21 @@ const useTripViewRender = ({
         return null;
     }, [adminOverrideEnabled, tripAccess?.source]);
 
+    const handleTimelineTaskToggle = useCallback((itemId: string, taskIndex: number, checked: boolean) => {
+        const item = trip.items.find((candidate) => candidate.id === itemId);
+        if (!item || typeof item.description !== 'string') return;
+        const nextDescription = toggleMarkdownTaskByIndex(item.description, taskIndex, checked);
+        if (!nextDescription) return;
+        handleUpdateItem(itemId, { description: nextDescription });
+    }, [handleUpdateItem, trip.items]);
+
     const timelineCanvas = (
         <TripTimelineCanvas
             timelineMode={timelineMode}
             timelineView={timelineView}
             trip={displayTrip}
             onUpdateItems={handleUpdateItems}
+            onToggleTaskCheckbox={canEdit ? handleTimelineTaskToggle : undefined}
             onSelect={handleTimelineSelect}
             selectedItemId={selectedItemId}
             selectedCityIds={selectedCityIds}
@@ -2958,7 +3026,7 @@ const useTripViewRender = ({
                                 timeline_mode: timelineMode,
                             });
                             markZoomDirty();
-                            setZoomLevel((value) => clampZoomLevel(value - 0.1));
+                            setZoomLevel((value) => resolveSteppedZoomLevel(value, 'out'));
                         }}
                         onZoomIn={() => {
                             trackEvent('trip_view__zoom', {
@@ -2967,17 +3035,7 @@ const useTripViewRender = ({
                                 timeline_mode: timelineMode,
                             });
                             markZoomDirty();
-                            setZoomLevel((value) => clampZoomLevel(value + 0.1));
-                        }}
-                        onZoomPresetSelect={(value) => {
-                            trackEvent('trip_view__zoom', {
-                                direction: 'preset',
-                                trip_id: trip.id,
-                                timeline_mode: timelineMode,
-                                zoom_level: value,
-                            });
-                            markZoomDirty();
-                            setZoomLevel(clampZoomLevel(value));
+                            setZoomLevel((value) => resolveSteppedZoomLevel(value, 'in'));
                         }}
                         onZoomFit={() => {
                             trackEvent('trip_view__zoom_fit', {
@@ -3006,7 +3064,6 @@ const useTripViewRender = ({
                             setTimelineView(view);
                         }}
                         zoomLevel={zoomLevel}
-                        zoomLevelPresets={TIMELINE_ZOOM_LEVEL_PRESETS}
                         mapDockMode={mapDockMode}
                         onMapDockModeChange={(mode) => {
                             if (mode === mapDockMode) return;
