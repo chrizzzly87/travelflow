@@ -32,6 +32,10 @@ interface TimelineProps {
   readOnly?: boolean;
   enableExampleSharedTransition?: boolean;
   selectionVisibilityKey?: string;
+  isDetailsPanelVisible?: boolean;
+  onNavigatePreviousCity?: () => void;
+  onNavigateNextCity?: () => void;
+  onToggleDetailsPanel?: () => void;
 }
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
@@ -106,6 +110,10 @@ export const Timeline: React.FC<TimelineProps> = ({
   readOnly = false,
   enableExampleSharedTransition = false,
   selectionVisibilityKey,
+  isDetailsPanelVisible = false,
+  onNavigatePreviousCity,
+  onNavigateNextCity,
+  onToggleDetailsPanel,
 }) => {
   const canEdit = !readOnly;
   const containerRef = useRef<HTMLDivElement>(null);
@@ -895,6 +903,10 @@ export const Timeline: React.FC<TimelineProps> = ({
                                     cityStackIndex={cityStack?.stackIndex || 0}
                                     cityStackCount={cityStack?.stackCount || 1}
                                     cityVisualColorHex={cityVisualColorHex}
+                                    isDetailsPanelVisible={isDetailsPanelVisible}
+                                    onNavigatePreviousCity={onNavigatePreviousCity}
+                                    onNavigateNextCity={onNavigateNextCity}
+                                    onToggleDetailsPanel={onToggleDetailsPanel}
                                 />
                             );
                         })}

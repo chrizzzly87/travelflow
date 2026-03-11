@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, type Dispatch, type SetStateAction } from 'react';
+import { useCallback, useEffect, useMemo, useState, type Dispatch, type SetStateAction } from 'react';
 
 import type { ITimelineItem } from '../../types';
 import { reorderSelectedCities } from '../../utils';
@@ -28,6 +28,7 @@ export const useTripSelectionController = ({
     setPendingLabel,
     handleUpdateItems,
 }: UseTripSelectionControllerOptions) => {
+    const [isDetailsPanelOpen, setIsDetailsPanelOpen] = useState(true);
     const selectedCitiesInTimeline = useMemo(() => {
         if (selectedCityIds.length === 0) return [];
 
@@ -38,12 +39,34 @@ export const useTripSelectionController = ({
     }, [displayTripItems, selectedCityIds]);
 
     const showSelectedCitiesPanel = selectedCitiesInTimeline.length > 1;
-    const detailsPanelVisible = showSelectedCitiesPanel || !!selectedItemId;
+    const hasSelection = showSelectedCitiesPanel || !!selectedItemId;
+    const detailsPanelVisible = hasSelection && isDetailsPanelOpen;
 
     const clearSelection = useCallback(() => {
+        setIsDetailsPanelOpen(true);
         setSelectedItemId(null);
         setSelectedCityIds([]);
     }, [setSelectedCityIds, setSelectedItemId]);
+
+    const openDetailsPanel = useCallback(() => {
+        if (!hasSelection) return;
+        setIsDetailsPanelOpen(true);
+    }, [hasSelection]);
+
+    const closeDetailsPanel = useCallback(() => {
+        if (!hasSelection) return;
+        setIsDetailsPanelOpen(false);
+    }, [hasSelection]);
+
+    const toggleDetailsPanel = useCallback(() => {
+        if (!hasSelection) return;
+        setIsDetailsPanelOpen((previous) => !previous);
+    }, [hasSelection]);
+
+    useEffect(() => {
+        if (hasSelection) return;
+        setIsDetailsPanelOpen(true);
+    }, [hasSelection]);
 
     useEffect(() => {
         const handleEscape = (event: KeyboardEvent) => {
@@ -71,23 +94,27 @@ export const useTripSelectionController = ({
 
         const selectedItem = tripItems.find((item) => item.id === id);
         if (!selectedItem) {
+            setIsDetailsPanelOpen(true);
             setSelectedItemId(id);
             setSelectedCityIds([]);
             return;
         }
 
         if (selectedItem.type !== 'city') {
+            setIsDetailsPanelOpen(true);
             setSelectedItemId(id);
             setSelectedCityIds([]);
             return;
         }
 
         if (!options?.multi) {
+            setIsDetailsPanelOpen(true);
             setSelectedItemId(id);
             setSelectedCityIds([id]);
             return;
         }
 
+        setIsDetailsPanelOpen(true);
         setSelectedCityIds((previous) => {
             const baseSelection = previous.length > 0
                 ? previous
@@ -146,6 +173,9 @@ export const useTripSelectionController = ({
         selectedCitiesInTimeline,
         showSelectedCitiesPanel,
         detailsPanelVisible,
+        openDetailsPanel,
+        closeDetailsPanel,
+        toggleDetailsPanel,
         clearSelection,
         handleTimelineSelect,
         applySelectedCityOrder,

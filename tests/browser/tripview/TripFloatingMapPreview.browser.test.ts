@@ -70,7 +70,7 @@ describe('components/tripview/TripFloatingMapPreview', () => {
     );
 
     await waitFor(() => {
-      expect(mapViewportRef.current?.style.width).toContain('419');
+      expect(mapViewportRef.current?.style.width).toContain('416');
       expect(mapViewportRef.current?.style.height).toContain('360');
     });
 
@@ -92,8 +92,65 @@ describe('components/tripview/TripFloatingMapPreview', () => {
     });
 
     await waitFor(() => {
-      expect(mapViewportRef.current?.style.width).toContain('679');
+      expect(mapViewportRef.current?.style.width).toContain('676');
       expect(mapViewportRef.current?.style.height).toContain('300');
+    });
+  });
+
+  it('waits for a measurable docked anchor after switching from floating to docked mode', async () => {
+    const mapViewportRef = { current: null as HTMLDivElement | null };
+    const anchor = document.createElement('div');
+    const dockedMapAnchorRef = { current: anchor as HTMLDivElement | null };
+    const floatingRect = makeRect(420, 180, 300, 460);
+    const dockedRect = makeRect(160, 88, 520, 360);
+    let measurementCount = 0;
+
+    vi.spyOn(anchor, 'getBoundingClientRect').mockImplementation(() => {
+      measurementCount += 1;
+      return measurementCount < 3 ? makeRect(0, 0, 0, 0) : dockedRect;
+    });
+
+    const { rerender } = render(
+      React.createElement(
+        TripFloatingMapPreview,
+        {
+          mapDockMode: 'floating',
+          mapViewportRef,
+          dockedMapAnchorRef,
+          dockedGeometryKey: 'floating',
+          tripId: 'trip-dock-retry',
+        },
+        React.createElement('div', { 'data-testid': 'map-content' }, 'map'),
+      ),
+    );
+
+    act(() => {
+      if (mapViewportRef.current) {
+        mapViewportRef.current.style.left = `${floatingRect.left}px`;
+        mapViewportRef.current.style.top = `${floatingRect.top}px`;
+        mapViewportRef.current.style.width = `${floatingRect.width}px`;
+        mapViewportRef.current.style.height = `${floatingRect.height}px`;
+      }
+      rerender(
+        React.createElement(
+          TripFloatingMapPreview,
+          {
+            mapDockMode: 'docked',
+            mapViewportRef,
+            dockedMapAnchorRef,
+            dockedGeometryKey: 'horizontal:docked',
+            tripId: 'trip-dock-retry',
+          },
+          React.createElement('div', { 'data-testid': 'map-content' }, 'map'),
+        ),
+      );
+    });
+
+    await waitFor(() => {
+      expect(mapViewportRef.current?.style.transform).toContain('translateX(164px)');
+      expect(mapViewportRef.current?.style.transform).toContain('translateY(88px)');
+      expect(mapViewportRef.current?.style.width).toContain('516');
+      expect(mapViewportRef.current?.style.height).toContain('360');
     });
   });
 
@@ -327,6 +384,71 @@ describe('components/tripview/TripFloatingMapPreview', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it('re-anchors the floating map when the reserved right inset changes without requiring a window resize', () => {
+    const originalInnerWidth = window.innerWidth;
+    const originalInnerHeight = window.innerHeight;
+    const initialReservedRightInset = 360;
+    const nextReservedRightInset = 180;
+    const mapViewportRef = { current: null as HTMLDivElement | null };
+    const dockedMapAnchorRef = { current: null as HTMLDivElement | null };
+    const baseWidth = Math.max(180, Math.min(420, originalInnerWidth * 0.26));
+    const shortEdge = resolveFloatingMapPresetWidths(baseWidth).lg;
+    const panelWidth = shortEdge;
+    const panelHeight = shortEdge * 1.5;
+
+    writeFloatingMapPreviewState({
+      mode: 'floating',
+      sizePreset: 'lg',
+      orientation: 'portrait',
+      position: {
+        x: Math.max(24, originalInnerWidth - initialReservedRightInset - panelWidth - 24),
+        y: Math.max(92, originalInnerHeight - panelHeight - 24),
+      },
+    });
+
+    const { rerender } = render(
+      React.createElement(
+        TripFloatingMapPreview,
+        {
+          mapDockMode: 'floating',
+          mapViewportRef,
+          dockedMapAnchorRef,
+          dockedGeometryKey: 'floating',
+          reservedRightInset: initialReservedRightInset,
+          tripId: 'trip-reserved-inset-no-resize',
+        },
+        React.createElement('div', { 'data-testid': 'map-content' }, 'map'),
+      ),
+    );
+
+    act(() => {
+      rerender(
+        React.createElement(
+          TripFloatingMapPreview,
+          {
+            mapDockMode: 'floating',
+            mapViewportRef,
+            dockedMapAnchorRef,
+            dockedGeometryKey: 'floating',
+            reservedRightInset: nextReservedRightInset,
+            tripId: 'trip-reserved-inset-no-resize',
+          },
+          React.createElement('div', { 'data-testid': 'map-content' }, 'map'),
+        ),
+      );
+    });
+
+    const state = readFloatingMapPreviewState();
+    expect(state.position?.x).toBeCloseTo(
+      Math.max(24, originalInnerWidth - nextReservedRightInset - panelWidth - 24),
+      0,
+    );
+    expect(state.position?.y).toBeCloseTo(
+      Math.max(92, originalInnerHeight - panelHeight - 24),
+      0,
+    );
   });
 
   it('debounces floating resize persistence during rapid viewport resize bursts', () => {

@@ -21,6 +21,10 @@ interface VerticalTimelineProps {
   readOnly?: boolean;
   enableExampleSharedTransition?: boolean;
   selectionVisibilityKey?: string;
+  isDetailsPanelVisible?: boolean;
+  onNavigatePreviousCity?: () => void;
+  onNavigateNextCity?: () => void;
+  onToggleDetailsPanel?: () => void;
 }
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
@@ -81,6 +85,10 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
   readOnly = false,
   enableExampleSharedTransition = false,
   selectionVisibilityKey,
+  isDetailsPanelVisible = false,
+  onNavigatePreviousCity,
+  onNavigateNextCity,
+  onToggleDetailsPanel,
 }) => {
   const canEdit = !readOnly;
   const containerRef = useRef<HTMLDivElement>(null);
@@ -517,7 +525,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
       ref={containerRef}
       onClick={() => handleBlockSelect(null)}
     >
-        <div className="relative flex" style={{ height: `${Math.max(totalHeight, 800)}px` }}>
+        <div className="relative flex min-h-full" style={{ height: `${totalHeight}px` }}>
             {todayRowIndex !== null && (
                 <>
                     <div
@@ -685,6 +693,10 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                                      cityStackIndex={cityStack?.stackIndex || 0}
                                      cityStackCount={cityStack?.stackCount || 1}
                                      cityVisualColorHex={cityVisualColorHex}
+                                     isDetailsPanelVisible={isDetailsPanelVisible}
+                                     onNavigatePreviousCity={onNavigatePreviousCity}
+                                     onNavigateNextCity={onNavigateNextCity}
+                                     onToggleDetailsPanel={onToggleDetailsPanel}
                                  />
                              );
                          })}

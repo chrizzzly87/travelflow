@@ -33,7 +33,7 @@ const FLOATING_MAP_SETTLE_DURATION_MS = 380;
 const FLOATING_MAP_RESIZE_SETTLE_MS = 140;
 const FLOATING_MAP_BORDER_RADIUS = '1rem';
 const FLOATING_MAP_NAV_TOP_OFFSET = 92;
-const DOCKED_MAP_EDGE_GUARD_PX = 1;
+const DOCKED_MAP_EDGE_GUARD_PX = 4;
 const FLOATING_MAP_ASPECT_RATIO: Record<FloatingMapOrientation, number> = {
     portrait: 2 / 3,
     landscape: 3 / 2,
@@ -289,6 +289,7 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
     const viewportResizeRafRef = useRef<number | null>(null);
     const floatingResizePersistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const dockedResizeRafRef = useRef<number | null>(null);
+    const dockedModeSyncRafRef = useRef<number | null>(null);
     const dockedResizeSettleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const floatingMapDragControls = useDragControls();
     const floatingMapPositionRef = useRef<{ x: number; y: number } | null>(null);
@@ -304,6 +305,7 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
     );
     const lastDockedMapRectRef = useRef<{ x: number; y: number; width: number; height: number } | null>(null);
     const previousMapDockModeRef = useRef<'docked' | 'floating'>(mapDockMode);
+    const previousReservedRightInsetRef = useRef(reservedRightInset);
     const hasSkippedInitialDockedSettleAnimationRef = useRef(false);
     const didMoveFloatingMapRef = useRef(false);
     const didTrackFloatingMapRepositionRef = useRef(false);
@@ -378,17 +380,25 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
         surfaceHeight.set(target.height);
     }, [floatingMapX, floatingMapY, surfaceHeight, surfaceWidth]);
 
+    const syncDockedSurfaceGeometry = useCallback((
+        animateToPosition: boolean,
+        requireMeasuredRect = false,
+    ): 'measured' | 'fallback' | false => {
+        const measuredDockedRect = resolveDockedMapRect(dockedMapAnchorRef.current);
+        const dockedRect = measuredDockedRect ?? (requireMeasuredRect ? null : lastDockedMapRectRef.current);
+        if (!dockedRect) return false;
+        lastDockedMapRectRef.current = dockedRect;
+        applySurfaceGeometry(dockedRect, animateToPosition);
+        floatingMapRotation.set(0);
+        setIsFloatingMapDragging(false);
+        setIsFloatingMapSettling(false);
+        setIsHandlePressed(false);
+        return measuredDockedRect ? 'measured' : 'fallback';
+    }, [applySurfaceGeometry, dockedMapAnchorRef, floatingMapRotation]);
+
     const syncSurfaceGeometry = useCallback((animateToPosition: boolean): boolean => {
         if (mapDockMode === 'docked') {
-            const dockedRect = resolveDockedMapRect(dockedMapAnchorRef.current) ?? lastDockedMapRectRef.current;
-            if (!dockedRect) return false;
-            lastDockedMapRectRef.current = dockedRect;
-            applySurfaceGeometry(dockedRect, animateToPosition);
-            floatingMapRotation.set(0);
-            setIsFloatingMapDragging(false);
-            setIsFloatingMapSettling(false);
-            setIsHandlePressed(false);
-            return true;
+            return Boolean(syncDockedSurfaceGeometry(animateToPosition));
         }
 
         const floatingMapHeight = floatingMapSurfaceHeight;
@@ -428,7 +438,45 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
             animateToPosition,
         );
         return true;
-    }, [applySurfaceGeometry, dockedMapAnchorRef, floatingMapRotation, floatingMapSurfaceHeight, floatingMapSurfaceWidth, mapDockMode, reservedRightInset]);
+    }, [
+        applySurfaceGeometry,
+        floatingMapSurfaceHeight,
+        floatingMapSurfaceWidth,
+        mapDockMode,
+        reservedRightInset,
+        syncDockedSurfaceGeometry,
+    ]);
+
+    const scheduleDockedGeometrySync = useCallback((
+        animateToPosition: boolean,
+        remainingFrames = 3,
+    ) => {
+        if (typeof window === 'undefined') return;
+        if (dockedModeSyncRafRef.current !== null) {
+            window.cancelAnimationFrame(dockedModeSyncRafRef.current);
+            dockedModeSyncRafRef.current = null;
+        }
+
+        const runSyncAttempt = (framesLeft: number, shouldAnimate: boolean) => {
+            const result = syncDockedSurfaceGeometry(shouldAnimate, true);
+            if (result === 'measured') {
+                dockedModeSyncRafRef.current = null;
+                return;
+            }
+            if (framesLeft <= 0) {
+                syncDockedSurfaceGeometry(false);
+                dockedModeSyncRafRef.current = null;
+                return;
+            }
+            dockedModeSyncRafRef.current = window.requestAnimationFrame(() => {
+                runSyncAttempt(framesLeft - 1, shouldAnimate);
+            });
+        };
+
+        dockedModeSyncRafRef.current = window.requestAnimationFrame(() => {
+            runSyncAttempt(remainingFrames, animateToPosition);
+        });
+    }, [syncDockedSurfaceGeometry]);
 
     useEffect(() => {
         floatingMapSizePresetRef.current = floatingMapSizePreset;
@@ -452,6 +500,10 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
                     window.cancelAnimationFrame(dockedResizeRafRef.current);
                     dockedResizeRafRef.current = null;
                 }
+                if (dockedModeSyncRafRef.current !== null) {
+                    window.cancelAnimationFrame(dockedModeSyncRafRef.current);
+                    dockedModeSyncRafRef.current = null;
+                }
             }
         };
     }, [clearDockedResizeSettleTimer, clearFloatingMapSettleTimer, clearFloatingResizePersistTimer]);
@@ -460,30 +512,30 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
         const modeChanged = previousMapDockModeRef.current !== mapDockMode;
 
         if (!hasResolvedInitialGeometry) {
-            const didResolve = syncSurfaceGeometry(false);
-            if (didResolve) {
-                setHasResolvedInitialGeometry(true);
+            if (mapDockMode === 'docked') {
+                scheduleDockedGeometrySync(false);
+            } else {
+                syncSurfaceGeometry(false);
             }
+            setHasResolvedInitialGeometry(true);
             previousMapDockModeRef.current = mapDockMode;
             return;
         }
 
-        const didSync = syncSurfaceGeometry(modeChanged);
-        if (!didSync) {
-            // Keep geometry in sync once the anchor has measurable size.
-            syncSurfaceGeometry(false);
+        if (mapDockMode === 'docked') {
+            scheduleDockedGeometrySync(modeChanged);
+            previousMapDockModeRef.current = mapDockMode;
+            return;
         }
 
+        syncSurfaceGeometry(modeChanged);
         previousMapDockModeRef.current = mapDockMode;
-    }, [hasResolvedInitialGeometry, mapDockMode, syncSurfaceGeometry]);
+    }, [hasResolvedInitialGeometry, mapDockMode, scheduleDockedGeometrySync, syncSurfaceGeometry]);
 
     useEffect(() => {
         if (mapDockMode !== 'docked' || typeof window === 'undefined') return;
-        const rafId = window.requestAnimationFrame(() => {
-            syncSurfaceGeometry(false);
-        });
-        return () => window.cancelAnimationFrame(rafId);
-    }, [dockedGeometryKey, mapDockMode, syncSurfaceGeometry]);
+        scheduleDockedGeometrySync(false);
+    }, [dockedGeometryKey, mapDockMode, scheduleDockedGeometrySync]);
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
@@ -606,6 +658,10 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
                 window.cancelAnimationFrame(dockedResizeRafRef.current);
                 dockedResizeRafRef.current = null;
             }
+            if (dockedModeSyncRafRef.current !== null) {
+                window.cancelAnimationFrame(dockedModeSyncRafRef.current);
+                dockedModeSyncRafRef.current = null;
+            }
             clearDockedResizeSettleTimer();
         };
     }, [applySurfaceGeometry, clearDockedResizeSettleTimer, dockedGeometryKey, dockedMapAnchorRef, mapDockMode]);
@@ -633,6 +689,20 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
             orientation,
         });
     }, []);
+
+    useEffect(() => {
+        if (mapDockMode !== 'floating') return;
+        const didReservedRightInsetChange = previousReservedRightInsetRef.current !== reservedRightInset;
+        previousReservedRightInsetRef.current = reservedRightInset;
+        if (!didReservedRightInsetChange) return;
+        const didSync = syncSurfaceGeometry(false);
+        if (!didSync || !floatingMapPositionRef.current) return;
+        persistFloatingMapState(
+            floatingMapPositionRef.current,
+            normalizeFloatingMapSizePreset(floatingMapSizePresetRef.current),
+            floatingMapOrientationRef.current,
+        );
+    }, [mapDockMode, persistFloatingMapState, reservedRightInset, syncSurfaceGeometry]);
 
     const applyAnchoredSurfaceGeometry = useCallback((
         targetSize: { width: number; height: number },

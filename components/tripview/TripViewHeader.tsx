@@ -47,7 +47,7 @@ export const TripViewHeader: React.FC<TripViewHeaderProps> = ({
     isTripLockedByExpiry,
 }) => {
     const { t } = useTranslation('common');
-    const headerSecondaryButtonClassName = 'inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60';
+    const headerSecondaryButtonClassName = 'inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 shadow-sm transition-colors hover:border-slate-300 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60';
     const titleStyle = titleViewTransitionName
         ? ({ viewTransitionName: titleViewTransitionName } as React.CSSProperties)
         : undefined;
@@ -131,7 +131,7 @@ export const TripViewHeader: React.FC<TripViewHeaderProps> = ({
                 </button>
             </div>
 
-            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            <div className="flex shrink-0 items-center gap-2">
                 <button
                     type="button"
                     onClick={() => {
@@ -173,6 +173,7 @@ export const TripViewHeader: React.FC<TripViewHeaderProps> = ({
                         labelMode="profile"
                         showRecentTripsSection={false}
                         showCurrentPageSummary={false}
+                        triggerClassName="gap-2 rounded-lg px-3 text-sm font-medium text-slate-600"
                     />
                 ) : (
                     <button
