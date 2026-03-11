@@ -6,6 +6,10 @@ import { appendAuthTraceEntry } from './authTraceService';
 import { clearLocalhostSupabaseBridgeCookies } from './authSessionPersistenceService';
 import { appendClientErrorLog } from './clientErrorLogger';
 import {
+    acceptCurrentTermsInE2EAuthSandbox,
+    shouldEnableE2EAuthSandbox,
+} from './e2eAuthSandboxService';
+import {
     removeLocalStorageItem,
     removeSessionStorageItem,
 } from './browserStorageService';
@@ -446,6 +450,13 @@ export interface AcceptedTermsRecord {
 export const acceptCurrentTerms = async (
     options?: { locale?: string | null; source?: string | null }
 ): Promise<{ data: AcceptedTermsRecord | null; error: Error | null }> => {
+    if (shouldEnableE2EAuthSandbox()) {
+        return {
+            data: acceptCurrentTermsInE2EAuthSandbox(),
+            error: null,
+        };
+    }
+
     if (!supabase) {
         return {
             data: null,

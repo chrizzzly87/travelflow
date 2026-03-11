@@ -23,6 +23,8 @@ import { dbCreateTripVersion, dbUpsertTrip, ensureDbSession } from './dbService'
 import { supabase } from './supabaseClient';
 import { generateTripId } from '../utils';
 import { enqueueAsyncTripGenerationJob } from './tripGenerationAsyncEnqueueService';
+import { shouldEnableE2EAuthSandbox } from './e2eAuthSandboxService';
+import { resolveE2ETripClaimSandboxScenario } from './e2eTripClaimSandboxService';
 
 interface BaseQueuedPayload {
     version: 1;
@@ -559,6 +561,26 @@ export const createTripGenerationRequest = async (
 export const processQueuedTripGenerationAfterAuth = async (
     requestId: string
 ): Promise<{ tripId: string; trip: ITrip }> => {
+    if (shouldEnableE2EAuthSandbox()) {
+        const scenario = resolveE2ETripClaimSandboxScenario(requestId);
+        if (scenario?.outcome === 'claimed_by_another_user') {
+            throw new QueuedTripGenerationAlreadyClaimedError(
+                'Queued request was already claimed by another user.',
+                {
+                    requestId,
+                    claimedByAnotherUser: true,
+                },
+            );
+        }
+        if (scenario?.outcome === 'recovered_existing_claim' && scenario.trip && scenario.tripId) {
+            return {
+                tripId: scenario.tripId,
+                trip: scenario.trip,
+            };
+        }
+        throw new Error('E2E claim sandbox has no scenario for this queued request.');
+    }
+
     if (!supabase) {
         throw new Error('Supabase is not configured.');
     }

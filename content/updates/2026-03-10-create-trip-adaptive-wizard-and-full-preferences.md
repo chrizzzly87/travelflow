@@ -20,4 +20,5 @@ summary: "Trip creation now starts from what the traveler already knows, carries
 - [x] [Fixed] 🔐 Anonymous trip starts now move from a short loading state into a dedicated account-required modal, so signing in to claim and start the trip feels clearer and more intentional.
 - [x] [Improved] 🔔 Trip creation now asks whether you want a browser notification before generation starts and can notify you when the itinerary finishes in a background tab.
 - [x] [Improved] ⚠️ Traveler-fit cautions from itinerary generation are now easier to review in trip information, instead of being buried only inside city descriptions.
+- [ ] [Internal] 🧪 Added an opt-in Playwright auth sandbox and claim-conflict end-to-end coverage so queued-trip login/register handoffs can be tested without real accounts.
 - [ ] [Internal] 🧪 Added shared create-trip draft payloads, benchmark metadata updates, and regression coverage for prompt building, prefill decoding, and the adaptive wizard flow.
