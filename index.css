@@ -1139,6 +1139,15 @@ html:active-view-transition-type(blog-collapse)::view-transition-new(.blog-card-
   body {
     @apply bg-background text-foreground;
   }
+  button {
+    will-change: transform;
+    transition-property: transform, color, background-color, border-color, opacity, box-shadow;
+    transition-duration: 150ms;
+    transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  button:not(:disabled):active {
+    transform: scale(0.97);
+  }
 }
 
 .profile-passport-cover--interactive {

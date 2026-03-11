@@ -1,11 +1,12 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { ITrip, ITimelineItem, IDragState } from '../types';
-import { addDays, buildApprovedCityRoute, buildCityOverlapLayout, computeVerticalTransferConnectorAnchors, findTravelBetweenCities, getHexFromColorClass, getTimelineBounds, TRAVEL_COLOR, TRAVEL_EMPTY_COLOR } from '../utils';
+import { buildApprovedCityRoute, buildCityOverlapLayout, computeVerticalTransferConnectorAnchors, findTravelBetweenCities, getHexFromColorClass, getTimelineBounds, TRAVEL_COLOR, TRAVEL_EMPTY_COLOR } from '../utils';
 import { TimelineBlock } from './TimelineBlock';
 import { Plus } from 'lucide-react';
 import { TransportModeIcon } from './TransportModeIcon';
 import { normalizeTransportMode } from '../shared/transportModes';
 import { getExampleCityLaneViewTransitionName } from '../shared/viewTransitionNames';
+import { buildRenderedTimelineDaySlots } from './tripview/timelineRenderedSlots';
 
 interface VerticalTimelineProps {
   trip: ITrip;
@@ -112,12 +113,15 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
   });
 
   const [hoverTravelStart, setHoverTravelStart] = useState<number | null>(null);
+  const [containerHeight, setContainerHeight] = useState(0);
 
   const timelineBounds = React.useMemo(() => getTimelineBounds(trip.items), [trip.items]);
   const visualStartOffset = timelineBounds.startOffset;
   const tripLength = timelineBounds.dayCount;
   const totalHeight = tripLength * pixelsPerDay;
   const parsedTripStartDate = React.useMemo(() => parseLocalTripDate(trip.startDate), [trip.startDate]);
+  const renderedTimelineHeightTarget = Math.max(0, containerHeight - 32);
+  const extraTimelineHeight = Math.max(0, renderedTimelineHeightTarget - totalHeight);
 
   const tripDayRange = React.useMemo(() => {
     let minStart = Number.POSITIVE_INFINITY;
@@ -155,6 +159,22 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
 
     return offset - visualStartOffset;
   }, [parsedTripStartDate, tripLength, tripDayRange.end, tripDayRange.start, visualStartOffset]);
+  const renderedDaySlots = React.useMemo(() => {
+    const baseStartDate = parsedTripStartDate || new Date(trip.startDate);
+    return buildRenderedTimelineDaySlots({
+      tripLength,
+      visualStartOffset,
+      pixelsPerDay,
+      fillerSize: extraTimelineHeight,
+      todayIndex: todayRowIndex,
+      baseStartDate,
+    });
+  }, [extraTimelineHeight, parsedTripStartDate, pixelsPerDay, todayRowIndex, trip.startDate, tripLength, visualStartOffset]);
+  const renderedTimelineHeight = React.useMemo(
+    () => renderedDaySlots.reduce((maxHeight, slot) => Math.max(maxHeight, slot.start + slot.size), 0),
+    [renderedDaySlots],
+  );
+  const todaySlot = todayRowIndex !== null ? renderedDaySlots[todayRowIndex] : null;
   
   const cities = trip.items.filter(i => i.type === 'city').sort((a, b) => a.startDateOffset - b.startDateOffset);
   const travelItems = trip.items.filter(i => i.type === 'travel' || i.type === 'travel-empty').sort((a, b) => a.startDateOffset - b.startDateOffset);
@@ -492,6 +512,22 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
   const isZoomedOut = pixelsPerDay < 50;
 
   useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const updateContainerHeight = () => {
+      setContainerHeight(container.clientHeight);
+    };
+
+    updateContainerHeight();
+
+    if (typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(updateContainerHeight);
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
     lastAutoScrollSelectionRef.current = null;
   }, [selectionVisibilityKey]);
 
@@ -525,14 +561,14 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
       ref={containerRef}
       onClick={() => handleBlockSelect(null)}
     >
-        <div className="relative flex min-h-full" style={{ height: `${totalHeight}px` }}>
-            {todayRowIndex !== null && (
+        <div className="relative flex min-h-full" style={{ height: `${renderedTimelineHeight + 32}px` }}>
+            {todaySlot && (
                 <>
                     <div
                         className="absolute left-0 right-0 pointer-events-none z-[2]"
                         style={{
-                            top: `${32 + (todayRowIndex * pixelsPerDay)}px`,
-                            height: `${pixelsPerDay}px`,
+                            top: `${32 + todaySlot.start}px`,
+                            height: `${todaySlot.size}px`,
                         }}
                         aria-hidden="true"
                     >
@@ -541,8 +577,8 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                     <div
                         className="absolute left-0 right-0 pointer-events-none z-[25]"
                         style={{
-                            top: `${32 + (todayRowIndex * pixelsPerDay)}px`,
-                            height: `${pixelsPerDay}px`,
+                            top: `${32 + todaySlot.start}px`,
+                            height: `${todaySlot.size}px`,
                         }}
                         aria-hidden="true"
                     >
@@ -555,51 +591,48 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
             )}
             
             {/* Header (Dates) - Vertical Column */}
-            <div className="w-16 flex-shrink-0 border-r border-gray-200 bg-white z-20 shadow-sm sticky left-0 flex flex-col h-full">
+            <div className="sticky left-0 z-20 flex h-full w-16 flex-shrink-0 flex-col border-r border-gray-200 bg-white shadow-sm">
                 {/* Header matches Stays/Travel/Activities headers */}
                 <div className="sticky top-0 h-8 flex items-center justify-center z-40 bg-white/95 backdrop-blur border-b border-gray-100 flex-shrink-0">
                     <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Day</span>
                 </div>
 
                 <div className="relative w-full flex-1">
-                    {Array.from({ length: tripLength }).map((_, i) => {
-                        const date = addDays(parsedTripStartDate || new Date(trip.startDate), visualStartOffset + i);
-                        const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-                        const isToday = i === todayRowIndex;
+                    {renderedDaySlots.map((slot) => {
+                        const isToday = slot.isToday;
                         
                         return (
                             <div 
-                                key={i} 
+                                key={slot.index} 
                                 className={`flex-shrink-0 border-b border-gray-100 flex flex-col justify-center px-1 select-none group absolute w-full
-                                    ${isToday ? 'bg-red-50/70' : isWeekend ? 'bg-gray-50' : 'bg-white'}
+                                    ${isToday ? 'bg-red-50/70' : slot.isWeekend ? 'bg-gray-50' : 'bg-white'}
                                 `}
                                 style={{ 
-                                    height: `${pixelsPerDay}px`,
-                                    top: `${i * pixelsPerDay}px`,
+                                    height: `${slot.size}px`,
+                                    top: `${slot.start}px`,
                                     left: 0
                                 }}
                             >
                                 {isZoomedOut ? (
-                                    // Compact View: "M  12"
-                                    <div className="flex items-center justify-between w-full px-1">
-                                        <span className={`text-xs font-bold uppercase ${isToday ? 'text-red-500' : isWeekend ? 'text-red-400' : 'text-gray-400'}`}>
-                                            {date.toLocaleDateString('en-US', { weekday: 'narrow' })}
+                                    <div className="flex h-full w-full flex-col items-center justify-center text-center">
+                                        <span className={`text-xs font-bold uppercase leading-none ${isToday ? 'text-red-500' : slot.isWeekend ? 'text-red-400' : 'text-gray-400'}`}>
+                                            {slot.date.toLocaleDateString('en-US', { weekday: 'narrow' })}
                                         </span>
-                                        <span className={`text-sm font-semibold ${isToday ? 'text-red-700' : 'text-gray-700'}`}>
-                                            {date.getDate()}
+                                        <span className={`text-sm font-semibold leading-tight ${isToday ? 'text-red-700' : 'text-gray-700'}`}>
+                                            {slot.dayNum}
                                         </span>
                                     </div>
                                 ) : (
                                     // Detailed View (Standard)
                                     <div className="text-center">
-                                        <span className={`text-[10px] font-bold uppercase block leading-none ${isToday ? 'text-red-500' : isWeekend ? 'text-red-400' : 'text-gray-400'}`}>
-                                            {date.toLocaleDateString('en-US', { weekday: 'short' })}
+                                        <span className={`text-[10px] font-bold uppercase block leading-none ${isToday ? 'text-red-500' : slot.isWeekend ? 'text-red-400' : 'text-gray-400'}`}>
+                                            {slot.dayName}
                                         </span>
                                         <span className={`text-lg font-bold block leading-tight ${isToday ? 'text-red-700' : 'text-gray-700'}`}>
-                                            {date.getDate()}
+                                            {slot.dayNum}
                                         </span>
                                         <span className={`text-[10px] uppercase leading-none ${isToday ? 'text-red-500' : 'text-gray-400'}`}>
-                                            {date.toLocaleDateString('en-US', { month: 'short' })}
+                                            {slot.monthShort}
                                         </span>
                                     </div>
                                 )}
@@ -611,20 +644,20 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
 
             {/* Grid Background Lines (Horizontal) */}
             <div className="absolute top-8 bottom-0 left-16 right-0 pointer-events-none flex flex-col z-0">
-                {Array.from({ length: tripLength }).map((_, i) => (
+                {renderedDaySlots.map((slot) => (
                     <div 
-                        key={i} 
+                        key={slot.index}
                         className="flex-shrink-0 border-b border-dashed border-gray-100 w-full"
-                        style={{ height: `${pixelsPerDay}px` }}
+                        style={{ height: `${slot.size}px` }}
                     />
                 ))}
             </div>
 
             {/* Content Area - Columns */}
-            <div className="flex-1 flex flex-row h-full relative z-10">
+            <div className="relative z-10 flex h-full min-w-0 flex-1 flex-row">
                 
                 {/* Cities Column */}
-                <div className="relative w-32 border-r border-gray-100 group/cities">
+                <div className="relative flex min-h-0 w-32 flex-shrink-0 flex-col border-r border-gray-100 group/cities">
                      {/* Sticky Header */}
                      <div className="sticky top-0 h-8 flex items-center justify-center z-30 bg-white/90 backdrop-blur w-full border-b border-gray-100">
                          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Stays</span>
@@ -637,7 +670,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                          </button>
                      </div>
 
-                     <div className="relative w-full h-full">
+                     <div className="relative min-h-0 flex-1">
                          {cities.map((city, index) => {
                              const cityStack = cityStackLayout.get(city.id);
                              const optionKey = (typeof city.cityPlanOptionIndex === 'number' && Number.isFinite(city.cityPlanOptionIndex))
@@ -704,7 +737,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                 </div>
 
                 {/* Travel Column */}
-                <div className="relative w-40 border-r border-gray-100 group/travel overflow-visible">
+                <div className="relative flex min-h-0 w-40 flex-shrink-0 flex-col overflow-visible border-r border-gray-100 group/travel">
                      <div className="sticky top-0 h-8 flex items-center justify-center z-30 bg-white/90 backdrop-blur w-full border-b border-gray-100">
                          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Transfer</span>
                          <button 
@@ -718,7 +751,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                           </button>
                      </div>
 
-                    <div className="relative w-full h-full overflow-visible" ref={travelLaneRef}>
+                    <div className="relative min-h-0 flex-1 overflow-visible" ref={travelLaneRef}>
                          {travelLinks.map(link => {
                              const fromEnd = link.fromCity.startDateOffset + link.fromCity.duration;
                              const toStart = link.toCity.startDateOffset;
@@ -840,7 +873,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
 
                 {/* Activities Column (Expands) */}
                 {/* Activities Column (Expands) */}
-                <div className="flex-1 relative min-w-[200px] group/activities">
+                <div className="relative flex min-h-0 min-w-[200px] flex-1 flex-col group/activities">
                      <div className="sticky top-0 h-8 flex items-center justify-center z-30 bg-white/90 backdrop-blur w-full border-b border-gray-100">
                          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Activities</span>
                          <button 
@@ -858,10 +891,10 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                          For now, let's just render the blocks.
                      */}
                      
-                     <div className="h-full overflow-x-auto p-2">
-                         <div className="flex flex-row gap-3 h-full items-start min-w-fit">
+                     <div className="relative min-h-0 flex-1 overflow-x-auto overflow-y-hidden p-2">
+                         <div className="flex min-h-full min-w-fit flex-row items-start gap-3">
                              {activityLanes.map((lane, laneIdx) => (
-                                 <div key={laneIdx} className="relative h-full w-[220px] shrink-0 rounded-lg border border-transparent">
+                                 <div key={laneIdx} className="relative w-[220px] shrink-0 rounded-lg border border-transparent" style={{ height: `${renderedTimelineHeight}px` }}>
                                      {lane.map(item => (
                                          <TimelineBlock
                                              key={item.id}

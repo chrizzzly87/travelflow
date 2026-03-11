@@ -403,7 +403,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
                         : `${isTravel ? 'text-xs w-full whitespace-normal line-clamp-2' : (isCity ? 'text-[12px] md:text-[14px] w-full whitespace-normal line-clamp-2' : 'text-sm whitespace-normal')}
                            ${!isTravel && 'line-clamp-2'}
                            ${vertical 
-                               ? (item.duration * pixelsPerDay < 60 ? 'truncate whitespace-nowrap' : 'w-full break-words') 
+                               ? (item.duration * pixelsPerDay < 60 ? 'w-full truncate whitespace-nowrap text-center' : 'w-full break-words text-center') 
                                : 'truncate'}`
                     }
                 `}
