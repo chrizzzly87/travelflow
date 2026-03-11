@@ -7,12 +7,13 @@ published_at: 2026-03-11T16:20:00Z
 status: draft
 notify_in_app: true
 in_app_hours: 24
-summary: "Reworked the trip-page header, moved trip details into a larger tabbed dialog, stabilized map and pane resizing across mobile and desktop, and added clearer calendar zoom controls."
+summary: "Reworked the trip-page header, flattened the trip details dialog layout, stabilized map and pane resizing across mobile and desktop, and improved calendar zoom and checklist behavior."
 ---
 
 ## Changes
 - [x] [Improved] 🧭 Trip pages now give the title more room in the header, let you open trip details directly from the title, and bring the Profile menu back to the far right while renaming the planner shortcut to Trips.
-- [x] [Improved] 🗂️ Trip details now open in a larger tabbed dialog with dedicated sections for general trip info, edit history, exports, destination context, and admin-only diagnostics.
-- [x] [Fixed] 🗺️ The planner now restores your desktop map layout more reliably after mobile resizing, keeps the map and details panes resizable, and gives the details panel a proper third-column role.
-- [x] [Improved] 🔎 Calendar zoom controls now show labeled scale presets and include a Fit action so you can frame the whole trip faster.
+- [x] [Improved] 🗂️ Trip details now open in a larger tabbed dialog with a flatter, clearer layout for general info, edit history, exports, destination context, and admin-only diagnostics.
+- [x] [Fixed] 🗺️ The planner now restores your desktop map layout more reliably after mobile resizing, keeps docked panes balanced across resize changes, and prevents the floating map from covering the open details sidebar.
+- [x] [Improved] 🔎 Calendar zoom controls now show the current scale, step through cleaner zoom levels, and let Fit work both for zooming in and zooming back out to frame the whole trip.
+- [x] [Improved] ✅ Timeline and notes checklists are easier to read, can be checked directly from the planner, and keep those checkbox changes saved with the trip.
 - [ ] [Internal] 🧪 Added regression coverage for the new header entrypoint, tabbed trip dialog, persisted pane sizing, fit zoom controls, and selection visibility after layout changes.
