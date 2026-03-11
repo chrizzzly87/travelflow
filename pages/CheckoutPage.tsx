@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, ArrowSquareOut, Check, CheckCircle, CreditCard, NotePencil, SpinnerGap, SuitcaseRolling, UserCircle } from '@phosphor-icons/react';
+import { ArrowLeft, ArrowSquareOut, Check, CheckCircle, CreditCard, NotePencil, SpinnerGap, SuitcaseRolling, UserCircle, X } from '@phosphor-icons/react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
@@ -39,6 +39,7 @@ import {
     PADDLE_INLINE_FRAME_TARGET_CLASS,
     readPaddleCheckoutLocationContext,
     resolveSameOriginPaddleCheckoutPath,
+    updatePaddleInlineCheckout,
     type PaddleCheckoutEvent,
     type PaddlePublicConfig,
 } from '../services/paddleClient';
@@ -82,10 +83,44 @@ const asDisplayCount = (value: number | null, unlimitedLabel: string): string =>
 const isSafeInternalPath = (value: string | null | undefined): value is string => Boolean(value && value.startsWith('/') && !value.startsWith('//'));
 const isPaidTierKey = (value: string | null | undefined): value is BillingCheckoutTierKey => value === 'tier_mid' || value === 'tier_premium';
 const asTrimmedString = (value: unknown): string => typeof value === 'string' ? value.trim() : '';
+const asOptionalObject = (value: unknown): Record<string, unknown> | null =>
+    value && typeof value === 'object' ? value as Record<string, unknown> : null;
 const isMissingLinkedSubscriptionError = (error: unknown): boolean =>
     error instanceof Error && error.message.includes('No paid Paddle subscription is linked');
 const isExistingSubscriptionCheckoutError = (error: unknown): boolean =>
     Boolean(error && typeof error === 'object' && (((error as BillingApiError).code === 'existing_paid_subscription') || ((error as BillingApiError).code === 'existing_paid_subscription_requires_refresh')));
+
+const extractPaddleEventDiscountCode = (event: PaddleCheckoutEvent): string | null => {
+    const data = asOptionalObject(event.data);
+    const discount = asOptionalObject(data?.discount);
+    return asTrimmedString(discount?.code)
+        || asTrimmedString(discount?.voucher_code)
+        || asTrimmedString(data?.discount_code)
+        || asTrimmedString(data?.voucher_code)
+        || null;
+};
+
+const resolveDiscountBadgeLabel = (
+    locale: string,
+    lookup: BillingDiscountLookup | null,
+    fallbackCode: string | null,
+): string | null => {
+    const formatCurrency = (amount: number, currencyCode: string) => `-${new Intl.NumberFormat(locale, {
+        style: 'currency',
+        currency: currencyCode,
+    }).format(amount / 100)}`;
+
+    if (lookup?.estimate?.savingsAmount && lookup.estimate.currencyCode) {
+        return formatCurrency(lookup.estimate.savingsAmount, lookup.estimate.currencyCode);
+    }
+    if (lookup?.type === 'percentage' && lookup.amount) {
+        return `-${lookup.amount}%`;
+    }
+    if (lookup?.type === 'flat' && lookup.amount && lookup.currencyCode) {
+        return formatCurrency(lookup.amount, lookup.currencyCode);
+    }
+    return fallbackCode ? fallbackCode.toUpperCase() : null;
+};
 
 const checkoutInputClassName = 'mt-1 h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 shadow-sm transition-colors placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 [&:user-invalid]:border-rose-400 [&:user-invalid]:bg-rose-50 [&:user-invalid]:text-rose-900 [&:user-invalid]:focus-visible:ring-rose-200';
 const checkoutFieldLabelClassName = 'text-sm font-medium text-slate-700';
@@ -486,9 +521,43 @@ export const CheckoutPage: React.FC = () => {
         t,
     ]);
 
+    const syncCheckoutDiscountCode = useCallback((discountCode: string | null) => {
+        const normalizedNextCode = asTrimmedString(discountCode).toUpperCase();
+        const normalizedCurrentCode = (checkoutLocationContext.discountCode || '').trim().toUpperCase();
+        if (normalizedNextCode === normalizedCurrentCode) {
+            return;
+        }
+
+        navigate(buildBillingCheckoutPath({
+            tierKey: selectedTierKey,
+            source,
+            claimId: checkoutLocationContext.claimId,
+            returnTo: returnToPath,
+            tripId: checkoutLocationContext.tripId,
+            discountCode: normalizedNextCode || null,
+        }));
+    }, [checkoutLocationContext.claimId, checkoutLocationContext.discountCode, checkoutLocationContext.tripId, navigate, returnToPath, selectedTierKey, source]);
+
     const handlePaddleCheckoutEvent = useCallback((event: PaddleCheckoutEvent) => {
         if (typeof event.name === 'string' && event.name.startsWith('checkout.')) {
             setIsInlineCheckoutLoading(false);
+        }
+        if (event.name === 'checkout.discount.applied') {
+            const eventDiscountCode = extractPaddleEventDiscountCode(event);
+            if (eventDiscountCode) {
+                setDiscountInput(eventDiscountCode.toUpperCase());
+                setDiscountPreviewErrorMessage(null);
+                setAppliedDiscountErrorMessage(null);
+                syncCheckoutDiscountCode(eventDiscountCode);
+            }
+        }
+        if (event.name === 'checkout.discount.removed') {
+            setDiscountInput('');
+            setDiscountLookup(null);
+            setDiscountPreviewLookup(null);
+            setDiscountPreviewErrorMessage(null);
+            setAppliedDiscountErrorMessage(null);
+            syncCheckoutDiscountCode(null);
         }
         if (event.name === 'checkout.completed') {
             setCheckoutCompleted(true);
@@ -501,7 +570,7 @@ export const CheckoutPage: React.FC = () => {
                 description: t('checkout.paymentCompletedDescription', { ns: 'pricing' }),
             });
         }
-    }, [t]);
+    }, [syncCheckoutDiscountCode, t]);
 
     useEffect(() => {
         if (!checkoutCompleted || completedFlowMode !== 'acquisition' || !isEligibleAccount || postPaymentSyncState !== 'idle') {
@@ -720,6 +789,10 @@ export const CheckoutPage: React.FC = () => {
             setAppliedDiscountErrorMessage(null);
             return;
         }
+        if (discountLookup?.code === discountCode.toUpperCase() && discountLookup.applicableToTier) {
+            setAppliedDiscountErrorMessage(null);
+            return;
+        }
 
         let cancelled = false;
         void lookupPaddleDiscount(discountCode, selectedTierKey)
@@ -740,7 +813,7 @@ export const CheckoutPage: React.FC = () => {
         return () => {
             cancelled = true;
         };
-    }, [checkoutLocationContext.discountCode, selectedTierKey, supportsSelectedTier, t]);
+    }, [checkoutLocationContext.discountCode, discountLookup, selectedTierKey, supportsSelectedTier, t]);
 
     useEffect(() => {
         if (!hasInlineCheckout || !inlineCheckoutSectionRef.current) return;
@@ -779,24 +852,14 @@ export const CheckoutPage: React.FC = () => {
     const autoCheckoutKey = `${selectedTierKey}:${source}:${checkoutLocationContext.claimId || ''}:${checkoutLocationContext.tripId || ''}:${checkoutLocationContext.discountCode || ''}:${session?.user?.id || 'guest'}`;
     const normalizedAppliedDiscountCode = (checkoutLocationContext.discountCode || '').trim().toUpperCase();
     const normalizedDiscountInput = discountInput.trim().toUpperCase();
+    const hasAppliedDiscountCode = Boolean(normalizedAppliedDiscountCode);
     const activeDiscountLookup = normalizedDiscountInput && normalizedDiscountInput === normalizedAppliedDiscountCode
         ? discountLookup
         : discountPreviewLookup;
     const activeDiscountErrorMessage = normalizedDiscountInput && normalizedDiscountInput === normalizedAppliedDiscountCode
         ? appliedDiscountErrorMessage
         : discountPreviewErrorMessage;
-    const activeDiscountSavingsLabel = activeDiscountLookup?.estimate
-        ? new Intl.NumberFormat(activeLocale, {
-            style: 'currency',
-            currency: activeDiscountLookup.estimate.currencyCode || 'USD',
-        }).format((activeDiscountLookup.estimate.savingsAmount || 0) / 100)
-        : null;
-    const activeDiscountCheckoutTotalLabel = activeDiscountLookup?.estimate
-        ? new Intl.NumberFormat(activeLocale, {
-            style: 'currency',
-            currency: activeDiscountLookup.estimate.currencyCode || 'USD',
-        }).format((activeDiscountLookup.estimate.discountedAmount || 0) / 100)
-        : null;
+    const appliedDiscountBadgeLabel = resolveDiscountBadgeLabel(activeLocale, activeDiscountLookup, normalizedAppliedDiscountCode);
 
     const completedPanel = checkoutCompleted ? (
         <div ref={inlineCheckoutSectionRef} className="space-y-5">
@@ -1077,6 +1140,7 @@ export const CheckoutPage: React.FC = () => {
         }
 
         setDiscountPreviewLookup(lookup);
+        setDiscountLookup(lookup);
         setIsDiscountPreviewLoading(false);
         if (!lookup.applicableToTier) {
             setDiscountPreviewErrorMessage(t('voucher.invalidMessage', { ns: 'pricing' }));
@@ -1088,18 +1152,15 @@ export const CheckoutPage: React.FC = () => {
             tier: selectedTierKey,
             source,
         });
-        navigate(buildBillingCheckoutPath({
-            tierKey: selectedTierKey,
-            source,
-            claimId: checkoutLocationContext.claimId,
-            returnTo: returnToPath,
-            tripId: checkoutLocationContext.tripId,
-            discountCode: normalized || null,
-        }));
-    }, [checkoutLocationContext.claimId, checkoutLocationContext.tripId, discountInput, navigate, normalizedAppliedDiscountCode, returnToPath, selectedTierKey, source, t]);
+        if (hasInlineCheckout) {
+            updatePaddleInlineCheckout({ discountCode: normalized });
+        }
+        syncCheckoutDiscountCode(normalized || null);
+    }, [discountInput, hasInlineCheckout, normalizedAppliedDiscountCode, selectedTierKey, source, syncCheckoutDiscountCode, t]);
 
     const handleClearVoucher = useCallback(() => {
         setDiscountInput('');
+        setDiscountLookup(null);
         setDiscountPreviewLookup(null);
         setDiscountPreviewErrorMessage(null);
         setAppliedDiscountErrorMessage(null);
@@ -1108,14 +1169,11 @@ export const CheckoutPage: React.FC = () => {
             tier: selectedTierKey,
             source,
         });
-        navigate(buildBillingCheckoutPath({
-            tierKey: selectedTierKey,
-            source,
-            claimId: checkoutLocationContext.claimId,
-            returnTo: returnToPath,
-            tripId: checkoutLocationContext.tripId,
-        }));
-    }, [checkoutLocationContext.claimId, checkoutLocationContext.tripId, navigate, returnToPath, selectedTierKey, source]);
+        if (hasInlineCheckout) {
+            updatePaddleInlineCheckout({ discountCode: null });
+        }
+        syncCheckoutDiscountCode(null);
+    }, [hasInlineCheckout, selectedTierKey, source, syncCheckoutDiscountCode]);
 
     const handleDiscountInputChange = useCallback((value: string) => {
         setDiscountInput(value.toUpperCase());
@@ -1398,6 +1456,7 @@ export const CheckoutPage: React.FC = () => {
 
         try {
             setCheckoutCompleted(false);
+            setPostPaymentSyncState('syncing');
             const result = await applyPaddleSubscriptionUpgrade({
                 tierKey: selectedTierKey,
                 source,
@@ -1415,6 +1474,13 @@ export const CheckoutPage: React.FC = () => {
             setCompletedFlowMode('upgrade');
             await refreshAccess();
             await refreshProfile();
+            try {
+                const refreshedSummary = await getCurrentSubscriptionSummary();
+                setSubscriptionSummary(refreshedSummary);
+            } catch (summaryError) {
+                console.warn('Checkout upgrade subscription refresh failed.', summaryError);
+            }
+            setPostPaymentSyncState('synced');
             showAppToast({
                 tone: 'success',
                 title: t('checkout.upgradeCompletedTitle', { ns: 'pricing' }),
@@ -1438,6 +1504,7 @@ export const CheckoutPage: React.FC = () => {
                 to_tier: selectedTierKey,
                 source,
             });
+            setPostPaymentSyncState('idle');
         } finally {
             setIsUpgradeSubmitting(false);
         }
@@ -1997,76 +2064,62 @@ export const CheckoutPage: React.FC = () => {
                                 {shouldShowAcquisitionFlow ? (
                                     <section className="mt-8 border-t border-slate-200 pt-4">
                                         <p className={checkoutSectionLabelClassName}>{t('voucher.eyebrow', { ns: 'pricing' })}</p>
-                                        <p className="mt-2 text-sm text-slate-600">{t('voucher.description', { ns: 'pricing' })}</p>
                                         <div className="mt-4 flex flex-col gap-3">
-                                            <div className="flex gap-3">
-                                                <input
-                                                    type="text"
-                                                    value={discountInput}
-                                                    onChange={(event) => handleDiscountInputChange(event.target.value)}
-                                                    placeholder={t('voucher.placeholder', { ns: 'pricing' })}
-                                                    autoCapitalize="characters"
-                                                    className="h-11 flex-1 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-900 shadow-sm transition-colors placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
-                                                />
-                                                <button
-                                                    type="button"
-                                                    onClick={handleApplyVoucher}
-                                                    disabled={isDiscountPreviewLoading}
-                                                    className={cn(checkoutActionClassName, 'shrink-0 bg-accent-600 text-white hover:bg-accent-700')}
-                                                    {...getAnalyticsDebugAttributes('checkout__voucher--apply')}
-                                                >
-                                                    {isDiscountPreviewLoading ? (
-                                                        <>
-                                                            <SpinnerGap size={16} className="animate-spin" />
-                                                            {t('voucher.applying', { ns: 'pricing' })}
-                                                        </>
-                                                    ) : t('voucher.applyCta', { ns: 'pricing' })}
-                                                </button>
-                                            </div>
-                                            {normalizedDiscountInput ? (
+                                            {hasAppliedDiscountCode ? (
                                                 <div className="flex flex-wrap items-center gap-2">
-                                                    {isDiscountPreviewLoading ? (
-                                                        <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
+                                                    <span className="inline-flex max-w-full items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                                                        {isDiscountPreviewLoading ? (
                                                             <SpinnerGap size={12} className="animate-spin" />
-                                                            {t('voucher.applying', { ns: 'pricing' })}
-                                                        </span>
-                                                    ) : activeDiscountLookup?.applicableToTier ? (
-                                                        <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
-                                                            {t('voucher.appliedMessage', { ns: 'pricing', code: activeDiscountLookup.code })}
-                                                        </span>
-                                                    ) : null}
+                                                        ) : null}
+                                                        <span className="truncate">{appliedDiscountBadgeLabel || normalizedAppliedDiscountCode}</span>
+                                                        <button
+                                                            type="button"
+                                                            onClick={handleClearVoucher}
+                                                            className="inline-flex h-5 w-5 items-center justify-center rounded-full text-emerald-700 transition-colors hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
+                                                            aria-label={t('voucher.clearCta', { ns: 'pricing' })}
+                                                            {...getAnalyticsDebugAttributes('checkout__voucher--clear')}
+                                                        >
+                                                            <X size={12} weight="bold" />
+                                                        </button>
+                                                    </span>
                                                 </div>
-                                            ) : null}
-                                            {normalizedDiscountInput && !isDiscountPreviewLoading && activeDiscountErrorMessage ? (
+                                            ) : (
+                                                <div className="flex gap-3">
+                                                    <input
+                                                        type="text"
+                                                        value={discountInput}
+                                                        onChange={(event) => handleDiscountInputChange(event.target.value)}
+                                                        placeholder={t('voucher.placeholder', { ns: 'pricing' })}
+                                                        autoCapitalize="characters"
+                                                        className="h-11 flex-1 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-900 shadow-sm transition-colors placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleApplyVoucher}
+                                                        disabled={isDiscountPreviewLoading}
+                                                        className={cn(checkoutActionClassName, 'shrink-0 bg-accent-600 text-white hover:bg-accent-700')}
+                                                        {...getAnalyticsDebugAttributes('checkout__voucher--apply')}
+                                                    >
+                                                        {isDiscountPreviewLoading ? (
+                                                            <>
+                                                                <SpinnerGap size={16} className="animate-spin" />
+                                                                {t('voucher.applying', { ns: 'pricing' })}
+                                                            </>
+                                                        ) : t('voucher.applyCta', { ns: 'pricing' })}
+                                                    </button>
+                                                </div>
+                                            )}
+                                            {!hasAppliedDiscountCode && normalizedDiscountInput && !isDiscountPreviewLoading && activeDiscountErrorMessage ? (
                                                 <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
                                                     {activeDiscountErrorMessage}
                                                 </div>
                                             ) : null}
-                                            {checkoutLocationContext.discountCode ? (
-                                                <button
-                                                    type="button"
-                                                    onClick={handleClearVoucher}
-                                                    className="self-start text-sm font-semibold text-slate-500 transition-colors hover:text-slate-900"
-                                                    {...getAnalyticsDebugAttributes('checkout__voucher--clear')}
-                                                >
-                                                    {t('voucher.clearCta', { ns: 'pricing' })}
-                                                </button>
+                                            {hasAppliedDiscountCode && activeDiscountErrorMessage ? (
+                                                <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                                                    {activeDiscountErrorMessage}
+                                                </div>
                                             ) : null}
                                         </div>
-                                        {activeDiscountLookup?.applicableToTier && activeDiscountLookup.estimate && activeDiscountSavingsLabel && activeDiscountCheckoutTotalLabel ? (
-                                            <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
-                                                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">
-                                                    {t('voucher.appliedEyebrow', { ns: 'pricing', code: activeDiscountLookup.code })}
-                                                </p>
-                                                <p className="mt-2 text-sm font-medium text-emerald-900">
-                                                    {t('voucher.checkoutSavingsMessage', {
-                                                        ns: 'pricing',
-                                                        savings: activeDiscountSavingsLabel,
-                                                        discounted: activeDiscountCheckoutTotalLabel,
-                                                    })}
-                                                </p>
-                                            </div>
-                                        ) : null}
                                     </section>
                                 ) : null}
 

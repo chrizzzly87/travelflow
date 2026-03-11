@@ -12,6 +12,7 @@ import {
   openPaddleInlineCheckout,
   readPaddleCheckoutLocationContext,
   resolveSameOriginPaddleCheckoutPath,
+  updatePaddleInlineCheckout,
 } from '../../services/paddleClient';
 
 const ORIGINAL_TOKEN = import.meta.env.VITE_PADDLE_CLIENT_TOKEN;
@@ -204,6 +205,23 @@ describe('paddleClient', () => {
       transactionId: 'txn_123',
       discountCode: 'SPRING20',
       customer: { email: 'ada@example.com' },
+    });
+  });
+
+  it('updates the active Paddle inline checkout discount code without reopening checkout', () => {
+    const updateCheckout = vi.fn();
+    window.Paddle = {
+      Initialize: vi.fn(),
+      Environment: { set: vi.fn() },
+      Checkout: { open: vi.fn(), updateCheckout },
+    };
+
+    expect(updatePaddleInlineCheckout({
+      discountCode: 'SPRING20',
+    })).toBe(true);
+
+    expect(updateCheckout).toHaveBeenCalledWith({
+      discountCode: 'SPRING20',
     });
   });
 

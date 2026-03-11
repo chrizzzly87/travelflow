@@ -14,6 +14,9 @@ declare global {
                         email?: string;
                     };
                 }) => void;
+                updateCheckout?: (config: {
+                    discountCode?: string | null;
+                }) => void;
             };
             Initialize: (config: {
                 token: string;
@@ -93,6 +96,10 @@ export interface InitializePaddleJsOptions {
 export interface OpenPaddleInlineCheckoutOptions {
     transactionId: string;
     customerEmail?: string | null;
+    discountCode?: string | null;
+}
+
+export interface UpdatePaddleInlineCheckoutOptions {
     discountCode?: string | null;
 }
 
@@ -415,6 +422,25 @@ export const openPaddleInlineCheckout = ({
     }
 };
 
+export const updatePaddleInlineCheckout = ({
+    discountCode,
+}: UpdatePaddleInlineCheckoutOptions): boolean => {
+    if (!isBrowser() || !window.Paddle?.Checkout || typeof window.Paddle.Checkout.updateCheckout !== 'function') {
+        return false;
+    }
+
+    const trimmedDiscountCode = asTrimmedString(discountCode);
+
+    try {
+        window.Paddle.Checkout.updateCheckout({
+            discountCode: trimmedDiscountCode || null,
+        });
+        return true;
+    } catch {
+        return false;
+    }
+};
+
 export const fetchPaddlePublicConfig = async (): Promise<PaddlePublicConfig> => {
     if (!isBrowser()) {
         throw new Error('Paddle public config is only available in the browser.');
@@ -471,6 +497,7 @@ export const __paddleClientInternals = {
     readPaddleCheckoutLocationContext,
     resolveSameOriginPaddleCheckoutPath,
     resolvePaddleCheckoutLocale,
+    updatePaddleInlineCheckout,
     resetForTest: () => {
         paddleScriptPromise = null;
         initializedToken = null;

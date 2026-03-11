@@ -59,6 +59,7 @@ const mocks = vi.hoisted(() => ({
   }),
   initializePaddleJs: vi.fn().mockResolvedValue(true),
   openPaddleInlineCheckout: vi.fn().mockReturnValue(true),
+  updatePaddleInlineCheckout: vi.fn().mockReturnValue(true),
   navigateToPaddleCheckout: vi.fn(),
   getCurrentSubscriptionSummary: vi.fn().mockResolvedValue(null),
   previewPaddleSubscriptionUpgrade: vi.fn(),
@@ -209,6 +210,7 @@ vi.mock('../../services/paddleClient', async () => {
     fetchPaddlePublicConfig: mocks.fetchPaddlePublicConfig,
     initializePaddleJs: mocks.initializePaddleJs,
     openPaddleInlineCheckout: mocks.openPaddleInlineCheckout,
+    updatePaddleInlineCheckout: mocks.updatePaddleInlineCheckout,
     navigateToPaddleCheckout: mocks.navigateToPaddleCheckout,
   };
 });
@@ -548,7 +550,7 @@ describe('pages/CheckoutPage', () => {
     });
   });
 
-  it('previews voucher savings before applying the code', async () => {
+  it('applies a voucher only after clicking apply and collapses it into a removable badge', async () => {
     const user = userEvent.setup();
     mocks.auth.profile = {
       firstName: '',
@@ -576,8 +578,15 @@ describe('pages/CheckoutPage', () => {
       expect(mocks.lookupPaddleDiscount).toHaveBeenCalledWith('SPRING20', 'tier_mid');
     });
 
-    expect(await screen.findByText('voucher.appliedMessage')).toBeInTheDocument();
-    expect(screen.getByText('voucher.checkoutSavingsMessage')).toBeInTheDocument();
+    expect(mocks.navigate).toHaveBeenCalledWith(expect.stringContaining('discount=SPRING20'));
+
+    mocks.location.search = '?tier=tier_mid&source=trip_paywall_strip&claim=claim_123&return_to=%2Ftrip%2Ftrip_123&trip_id=trip_123&discount=SPRING20';
+    cleanup();
+    render(React.createElement(CheckoutPage));
+
+    expect(await screen.findByText('-$1.80')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'voucher.clearCta' })).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText('voucher.placeholder')).toBeNull();
   });
 
   it('blocks voucher navigation when the code is invalid', async () => {
@@ -609,6 +618,60 @@ describe('pages/CheckoutPage', () => {
       expect(mocks.lookupPaddleDiscount).toHaveBeenLastCalledWith('CHRISISTCOOL', 'tier_mid');
     });
     expect(mocks.navigate).not.toHaveBeenCalledWith(expect.stringContaining('discount=CHRISISTCOOL'));
+  });
+
+  it('syncs voucher apply and removal events from Paddle checkout into the sidebar state', async () => {
+    const user = userEvent.setup();
+    let checkoutEventCallback: ((event: { name: string; data?: unknown }) => void) | null = null;
+    mocks.location.search = '?tier=tier_mid&source=pricing_page&_ptxn=txn_123';
+    mocks.lookupPaddleDiscount.mockResolvedValue({
+      code: 'VIP50',
+      type: 'percentage',
+      amount: 50,
+      currencyCode: 'USD',
+      description: 'VIP 50% off',
+      appliesToAllRecurring: true,
+      maximumRecurringIntervals: null,
+      applicableToTier: true,
+      estimate: {
+        originalAmount: 900,
+        discountedAmount: 450,
+        savingsAmount: 450,
+        currencyCode: 'USD',
+      },
+    });
+    mocks.initializePaddleJs.mockImplementation(async ({ eventCallback }: { eventCallback: (event: { name: string; data?: unknown }) => void }) => {
+      checkoutEventCallback = eventCallback;
+      return true;
+    });
+
+    render(React.createElement(CheckoutPage));
+
+    await waitFor(() => {
+      expect(mocks.openPaddleInlineCheckout).toHaveBeenCalled();
+    });
+
+    checkoutEventCallback?.({
+      name: 'checkout.discount.applied',
+      data: {
+        discount: {
+          code: 'VIP50',
+        },
+      },
+    });
+
+    await waitFor(() => {
+      expect(mocks.navigate).toHaveBeenCalledWith(expect.stringContaining('discount=VIP50'));
+    });
+
+    mocks.location.search = '?tier=tier_mid&source=pricing_page&_ptxn=txn_123&discount=VIP50';
+    cleanup();
+    render(React.createElement(CheckoutPage));
+    expect(await screen.findByRole('button', { name: 'voucher.clearCta' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'voucher.clearCta' }));
+
+    expect(mocks.updatePaddleInlineCheckout).toHaveBeenCalledWith({ discountCode: null });
   });
 
   it('renders an upgrade review flow for existing paid users and confirms the upgrade inline', async () => {
