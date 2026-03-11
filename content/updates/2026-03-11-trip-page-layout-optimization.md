@@ -1,10 +1,10 @@
 ---
 id: rel-2026-03-11-trip-page-layout-optimization
-version: v0.0.0
+version: v0.92.0
 title: "Trip pages feel smoother, clearer, and easier to steer"
 date: 2026-03-11
-published_at: 2026-03-11T16:20:00Z
-status: draft
+published_at: 2026-03-11T20:47:06Z
+status: published
 notify_in_app: true
 in_app_hours: 24
 summary: "Trip pages now give titles and controls more room, make details easier to open and edit, stabilize map and pane layouts across resize changes, and improve zoom, checklist, and keyboard flow in the planner."
