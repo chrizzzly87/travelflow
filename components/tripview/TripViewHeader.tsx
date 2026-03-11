@@ -47,7 +47,8 @@ export const TripViewHeader: React.FC<TripViewHeaderProps> = ({
     isTripLockedByExpiry,
 }) => {
     const { t } = useTranslation('common');
-    const headerSecondaryButtonClassName = 'inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 shadow-sm transition-colors hover:border-slate-300 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60';
+    const headerSecondaryButtonClassName = 'inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60';
+    const headerPrimaryButtonClassName = 'inline-flex items-center gap-2 rounded-lg bg-accent-600 px-3 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-accent-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60';
     const titleStyle = titleViewTransitionName
         ? ({ viewTransitionName: titleViewTransitionName } as React.CSSProperties)
         : undefined;
@@ -153,10 +154,10 @@ export const TripViewHeader: React.FC<TripViewHeaderProps> = ({
                         onClick={onShare}
                         disabled={isTripLockedByExpiry}
                         title={isTripLockedByExpiry ? t('tripView.header.shareDisabled') : undefined}
-                        className={`rounded-xl shadow-sm flex items-center gap-2 text-sm font-medium ${isMobile ? 'h-10 w-10 justify-center px-0' : 'px-4 py-2'} ${
+                        className={`${headerPrimaryButtonClassName} ${isMobile ? 'h-10 w-10 justify-center px-0' : ''} ${
                             isTripLockedByExpiry
                                 ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                                : 'bg-accent-600 text-white hover:bg-accent-700'
+                                : ''
                         }`}
                         aria-label={t('tripView.header.share')}
                         data-tooltip={!isMobile ? t('tripView.header.share') : undefined}
@@ -173,7 +174,7 @@ export const TripViewHeader: React.FC<TripViewHeaderProps> = ({
                         labelMode="profile"
                         showRecentTripsSection={false}
                         showCurrentPageSummary={false}
-                        triggerClassName="gap-2 rounded-lg px-3 text-sm font-medium text-slate-600"
+                        triggerClassName="gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
                     />
                 ) : (
                     <button

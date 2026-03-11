@@ -17,13 +17,18 @@ type AppBrowserHistory = ReturnType<typeof UNSAFE_createBrowserHistory>;
 type HistoryListener = Parameters<AppBrowserHistory['listen']>[0];
 type HistoryUpdate = Parameters<HistoryListener>[0];
 
-const wrapHistoryListenerWithBlogTransitions = (
-    listener: HistoryListener,
+const dispatchHistoryUpdateWithBlogTransitions = (
+    listeners: Iterable<HistoryListener>,
     fromPathname: string,
     update: HistoryUpdate
 ): void => {
     const toPathname = update.location.pathname;
     const currentTarget = getCurrentBlogPostTransitionTarget() ?? getLastKnownBlogPostTransitionTarget();
+    const notifyListeners = () => {
+        for (const listener of listeners) {
+            listener(update);
+        }
+    };
 
     if (
         String(update.action).toUpperCase() !== 'POP' ||
@@ -31,7 +36,7 @@ const wrapHistoryListenerWithBlogTransitions = (
         !currentTarget ||
         !isBlogListDetailTransition(fromPathname, toPathname)
     ) {
-        listener(update);
+        notifyListeners();
         return;
     }
 
@@ -46,7 +51,7 @@ const wrapHistoryListenerWithBlogTransitions = (
         type,
         update: () => {
             flushSync(() => {
-                listener(update);
+                notifyListeners();
             });
         },
     });
@@ -56,16 +61,38 @@ export const createBlogTransitionAwareBrowserHistory = (
     history: AppBrowserHistory = UNSAFE_createBrowserHistory({ v5Compat: true })
 ): AppBrowserHistory => {
     let previousPathname = history.location.pathname;
+    const listeners = new Set<HistoryListener>();
+    let unsubscribeTargetListener: (() => void) | null = null;
+
+    const ensureTargetListener = (target: AppBrowserHistory) => {
+        if (unsubscribeTargetListener) return;
+        unsubscribeTargetListener = target.listen((update: HistoryUpdate) => {
+            const fromPathname = previousPathname;
+            previousPathname = update.location.pathname;
+            dispatchHistoryUpdateWithBlogTransitions(listeners, fromPathname, update);
+        });
+    };
+
+    const teardownTargetListener = () => {
+        if (!unsubscribeTargetListener) return;
+        unsubscribeTargetListener();
+        unsubscribeTargetListener = null;
+        previousPathname = history.location.pathname;
+    };
 
     return new Proxy(history, {
         get(target, prop, receiver) {
             if (prop === 'listen') {
-                return (listener: HistoryListener) =>
-                    target.listen((update: HistoryUpdate) => {
-                        const fromPathname = previousPathname;
-                        previousPathname = update.location.pathname;
-                        wrapHistoryListenerWithBlogTransitions(listener, fromPathname, update);
-                    });
+                return (listener: HistoryListener) => {
+                    listeners.add(listener);
+                    ensureTargetListener(target);
+                    return () => {
+                        listeners.delete(listener);
+                        if (listeners.size === 0) {
+                            teardownTargetListener();
+                        }
+                    };
+                };
             }
 
             const value = Reflect.get(target, prop, receiver);
