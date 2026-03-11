@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect, useMemo, Suspense, lazy } from 'react';
+import React, { useState, useRef, useCallback, useEffect, useLayoutEffect, useMemo, Suspense, lazy } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { AppLanguage, ITrip, ITimelineItem, IViewSettings, ShareMode, TripGenerationAttemptSummary, TripGenerationState } from '../types';
@@ -2425,6 +2425,9 @@ const useTripViewRender = ({
         selectedCitiesInTimeline,
         showSelectedCitiesPanel,
         detailsPanelVisible,
+        openDetailsPanel,
+        closeDetailsPanel,
+        toggleDetailsPanel,
         clearSelection,
         handleTimelineSelect,
         applySelectedCityOrder,
@@ -2463,11 +2466,7 @@ const useTripViewRender = ({
     const isMobile = isMobileViewport;
     const effectiveLayoutMode: 'vertical' | 'horizontal' = isMobile ? 'vertical' : layoutMode;
     const effectiveMapDockMode: 'docked' | 'floating' = isMobile ? 'docked' : mapDockMode;
-    const paneLayoutCustomizedRef = useRef(Boolean(
-        initialViewSettings?.detailsWidth
-        || initialViewSettings?.sidebarWidth
-        || initialViewSettings?.timelineHeight
-    ));
+    const paneLayoutCustomizedRef = useRef(false);
 
     const {
         handleUpdateItem,
@@ -2609,9 +2608,10 @@ const useTripViewRender = ({
         },
     });
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         if (typeof window === 'undefined') return;
         if (isMobile) return;
+        if (paneLayoutCustomizedRef.current) return;
         if (effectiveLayoutMode !== 'horizontal' || effectiveMapDockMode !== 'docked') return;
 
         const rebalanceDockedPaneWidths = () => {
@@ -2645,6 +2645,48 @@ const useTripViewRender = ({
         setSidebarWidth,
     ]);
 
+    const focusCityBlockById = useCallback((cityId: string) => {
+        if (typeof document === 'undefined') return;
+        requestAnimationFrame(() => {
+            const nextBlock = Array.from(document.querySelectorAll<HTMLElement>('[data-city-id]'))
+                .find((element) => element.dataset.cityId === cityId);
+            nextBlock?.focus();
+        });
+    }, []);
+
+    const orderedCityIds = useMemo(
+        () => displayTrip.items
+            .filter((item) => item.type === 'city')
+            .sort((left, right) => left.startDateOffset - right.startDateOffset)
+            .map((item) => item.id),
+        [displayTrip.items]
+    );
+
+    const handleNavigateSelectedCity = useCallback((direction: 'previous' | 'next') => {
+        const activeCityId = selectedItemId && orderedCityIds.includes(selectedItemId)
+            ? selectedItemId
+            : selectedCitiesInTimeline[0]?.id;
+        if (!activeCityId) return;
+
+        const activeIndex = orderedCityIds.indexOf(activeCityId);
+        if (activeIndex === -1) return;
+
+        const nextIndex = direction === 'next' ? activeIndex + 1 : activeIndex - 1;
+        if (nextIndex < 0 || nextIndex >= orderedCityIds.length) return;
+
+        const nextCityId = orderedCityIds[nextIndex];
+        openDetailsPanel();
+        handleTimelineSelect(nextCityId, { isCity: true });
+        focusCityBlockById(nextCityId);
+    }, [
+        focusCityBlockById,
+        handleTimelineSelect,
+        openDetailsPanel,
+        orderedCityIds,
+        selectedCitiesInTimeline,
+        selectedItemId,
+    ]);
+
     const paneGeometrySyncKey = useMemo(
         () => [
             effectiveLayoutMode,
@@ -2658,7 +2700,7 @@ const useTripViewRender = ({
     );
 
     const handleFitTimelineZoom = useCallback(() => {
-        const didApply = fitTimelineZoom(undefined, { force: true });
+        const didApply = fitTimelineZoom(undefined, { force: true, source: 'manual' });
         if (!didApply) return;
         markZoomDirty('manual');
     }, [fitTimelineZoom, markZoomDirty]);
@@ -2789,6 +2831,10 @@ const useTripViewRender = ({
             pixelsPerDay={pixelsPerDay}
             enableExampleSharedTransition={useExampleSharedTransition}
             selectionVisibilityKey={paneGeometrySyncKey}
+            isDetailsPanelVisible={detailsPanelVisible}
+            onNavigatePreviousCity={() => handleNavigateSelectedCity('previous')}
+            onNavigateNextCity={() => handleNavigateSelectedCity('next')}
+            onToggleDetailsPanel={toggleDetailsPanel}
         />
     );
 
@@ -2858,7 +2904,7 @@ const useTripViewRender = ({
     const detailsPanelContent = renderDetailsPanelContent({
         showSelectedCitiesPanel,
         selectedCitiesInTimeline,
-        onCloseSelection: clearSelection,
+        onCloseSelection: showSelectedCitiesPanel ? clearSelection : closeDetailsPanel,
         onApplySelectedCityOrder: applySelectedCityOrder,
         onReverseSelectedCities: handleReverseSelectedCities,
         timelineView,
@@ -3140,7 +3186,7 @@ const useTripViewRender = ({
                         isMobile={isMobile}
                         detailsPanelVisible={detailsPanelVisible}
                         detailsPanelContent={detailsPanelContent}
-                        onCloseDetailsDrawer={clearSelection}
+                        onCloseDetailsDrawer={closeDetailsPanel}
                         addActivityState={addActivityState}
                         onCloseAddActivity={() => setAddActivityState({ ...addActivityState, isOpen: false })}
                         onAddActivity={handleAddActivityItem}

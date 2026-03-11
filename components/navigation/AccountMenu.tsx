@@ -20,6 +20,7 @@ interface AccountMenuProps {
     showRecentTripsSection?: boolean;
     showCurrentPageSummary?: boolean;
     className?: string;
+    triggerClassName?: string;
 }
 
 type AnalyticsEventName = `${string}__${string}` | `${string}__${string}--${string}`;
@@ -132,6 +133,7 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
     showRecentTripsSection = true,
     showCurrentPageSummary = true,
     className,
+    triggerClassName,
 }) => {
     const navigate = useNavigate();
     const location = useLocation();
@@ -251,9 +253,10 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
                 }}
                 className={[
                     'inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-colors',
-                    'hover:border-slate-300 hover:text-slate-900',
+                    'hover:border-slate-300 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2',
                     compact ? 'h-9 py-1.5' : 'h-10 py-2',
                     fullWidth ? 'w-full justify-between' : '',
+                    triggerClassName || '',
                 ].join(' ')}
                 {...getAnalyticsDebugAttributes('navigation__account_menu--toggle')}
                 aria-haspopup="menu"

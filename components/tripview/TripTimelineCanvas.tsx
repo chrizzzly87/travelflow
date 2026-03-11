@@ -28,6 +28,10 @@ interface TripTimelineCanvasProps {
     pixelsPerDay: number;
     enableExampleSharedTransition: boolean;
     selectionVisibilityKey: string;
+    isDetailsPanelVisible: boolean;
+    onNavigatePreviousCity: () => void;
+    onNavigateNextCity: () => void;
+    onToggleDetailsPanel: () => void;
 }
 
 export const TripTimelineCanvas: React.FC<TripTimelineCanvasProps> = ({
@@ -48,6 +52,10 @@ export const TripTimelineCanvas: React.FC<TripTimelineCanvasProps> = ({
     pixelsPerDay,
     enableExampleSharedTransition,
     selectionVisibilityKey,
+    isDetailsPanelVisible,
+    onNavigatePreviousCity,
+    onNavigateNextCity,
+    onToggleDetailsPanel,
 }) => {
     if (timelineMode === 'timeline') {
         return (
@@ -78,6 +86,10 @@ export const TripTimelineCanvas: React.FC<TripTimelineCanvasProps> = ({
                     pixelsPerDay={pixelsPerDay}
                     enableExampleSharedTransition={enableExampleSharedTransition}
                     selectionVisibilityKey={selectionVisibilityKey}
+                    isDetailsPanelVisible={isDetailsPanelVisible}
+                    onNavigatePreviousCity={onNavigatePreviousCity}
+                    onNavigateNextCity={onNavigateNextCity}
+                    onToggleDetailsPanel={onToggleDetailsPanel}
                 />
             </Suspense>
         );
@@ -99,6 +111,10 @@ export const TripTimelineCanvas: React.FC<TripTimelineCanvasProps> = ({
             pixelsPerDay={pixelsPerDay}
             enableExampleSharedTransition={enableExampleSharedTransition}
             selectionVisibilityKey={selectionVisibilityKey}
+            isDetailsPanelVisible={isDetailsPanelVisible}
+            onNavigatePreviousCity={onNavigatePreviousCity}
+            onNavigateNextCity={onNavigateNextCity}
+            onToggleDetailsPanel={onToggleDetailsPanel}
         />
     );
 };

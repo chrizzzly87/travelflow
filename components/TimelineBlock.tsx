@@ -28,6 +28,10 @@ interface TimelineBlockProps {
   cityStackIndex?: number;
   cityStackCount?: number;
   cityVisualColorHex?: string;
+  isDetailsPanelVisible?: boolean;
+  onNavigatePreviousCity?: () => void;
+  onNavigateNextCity?: () => void;
+  onToggleDetailsPanel?: () => void;
 }
 
 export const TimelineBlock: React.FC<TimelineBlockProps> = ({
@@ -52,6 +56,10 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
   cityStackIndex = 0,
   cityStackCount = 1,
   cityVisualColorHex,
+  isDetailsPanelVisible = false,
+  onNavigatePreviousCity,
+  onNavigateNextCity,
+  onToggleDetailsPanel,
 }) => {
   const isTravel = item.type === 'travel';
   const isEmptyTravel = item.type === 'travel-empty';
@@ -126,6 +134,28 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
   const handleClick = (e: React.MouseEvent) => {
       e.stopPropagation();
       onSelect(item.id, { multi: isCity && (e.shiftKey || e.metaKey || e.ctrlKey), isCity });
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+      if (!isCity || isLoadingItem || !isSelected) return;
+
+      const shouldMovePrevious = event.key === 'ArrowLeft' || event.key === 'ArrowUp' || (event.key === 'Tab' && event.shiftKey);
+      const shouldMoveNext = event.key === 'ArrowRight' || event.key === 'ArrowDown' || (event.key === 'Tab' && !event.shiftKey);
+      if (shouldMovePrevious) {
+          event.preventDefault();
+          onNavigatePreviousCity?.();
+          return;
+      }
+      if (shouldMoveNext) {
+          event.preventDefault();
+          onNavigateNextCity?.();
+          return;
+      }
+
+      if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onToggleDetailsPanel?.();
+      }
   };
 
   const baseCursor = canEdit
@@ -296,10 +326,15 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
         ${isInactiveActivity ? 'border-dashed shadow-none' : ''}
         ${isUnsetTravelMode ? 'border-dashed border-slate-200 bg-slate-50/70 text-slate-500' : ''}
         ${isEmptyTravel ? (canEdit ? 'border-dashed cursor-pointer hover:bg-gray-50' : 'border-dashed cursor-not-allowed opacity-70') : ''}
+        ${isCity && isSelected ? 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2' : ''}
       `}
       style={finalStyle}
       onPointerDown={handlePointerDown}
       onClick={handleClick}
+      onKeyDown={handleKeyDown}
+      role={isCity ? 'button' : undefined}
+      tabIndex={isCity && isSelected ? 0 : -1}
+      aria-expanded={isCity && isSelected ? isDetailsPanelVisible : undefined}
       data-tooltip={cityTooltipText}
       data-city-block={isCity ? 'true' : undefined}
       data-city-stack-index={isCity ? String(normalizedCityStackIndex) : undefined}

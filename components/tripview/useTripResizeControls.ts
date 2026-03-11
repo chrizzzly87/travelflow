@@ -38,6 +38,7 @@ interface UseTripResizeControlsOptions {
 
 const MIN_AUTO_FIT_TIMELINE_WIDTH = 160;
 const MIN_AUTO_FIT_TIMELINE_HEIGHT = 220;
+const AUTO_FIT_OVERFLOW_TOLERANCE = 0.12;
 
 const parseDimensionValue = (value?: string): number | null => {
     if (!value) return null;
@@ -88,6 +89,14 @@ const resolveAutoFitZoom = (
     const fittingPreset = [...normalizedPresets]
         .reverse()
         .find((presetZoom) => presetZoom <= (clampedTarget + 0.001));
+    const overflowPreset = normalizedPresets.find((presetZoom) => presetZoom > (clampedTarget + 0.001));
+
+    if (fittingPreset && overflowPreset) {
+        const overflowRatio = (overflowPreset - clampedTarget) / Math.max(clampedTarget, 0.001);
+        if (overflowRatio <= AUTO_FIT_OVERFLOW_TOLERANCE) {
+            return overflowPreset;
+        }
+    }
 
     return fittingPreset ?? normalizedPresets[0];
 };
@@ -202,7 +211,10 @@ export const useTripResizeControls = ({
         return () => window.removeEventListener('resize', handleResize);
     }, [clampDetailsWidth, clampSidebarWidth, setDetailsWidth, setSidebarWidth]);
 
-    const fitTimelineZoom = useCallback((mode?: 'horizontal' | 'vertical', options?: { force?: boolean }) => {
+    const fitTimelineZoom = useCallback((
+        mode?: 'horizontal' | 'vertical',
+        options?: { force?: boolean; source?: 'auto' | 'manual' },
+    ) => {
         const fitMode: 'horizontal' | 'vertical' = mode || (timelineView === 'vertical' ? 'vertical' : 'horizontal');
         if (!options?.force && isZoomDirty) return false;
 
@@ -238,7 +250,7 @@ export const useTripResizeControls = ({
         if (Math.abs(zoomLevel - nextZoom) < 0.01) {
             return false;
         }
-        if (!options?.force) {
+        if (options?.source !== 'manual') {
             onAutoFitZoomApplied?.();
         }
         setZoomLevel((previous) => (Math.abs(previous - nextZoom) < 0.01 ? previous : nextZoom));
@@ -264,24 +276,37 @@ export const useTripResizeControls = ({
         const didTimelineModeChange = previousTimelineMode !== timelineMode;
         const didTimelineViewChange = previousTimelineView !== timelineView;
         const shouldAttemptAutoFit = timelineMode === 'calendar'
-            && !isZoomDirty
             && (
-                isFirstRenderAutoFit
-                || didMapDockModeChange
-                || didTimelineModeChange
-                || didTimelineViewChange
+                (didTimelineViewChange)
+                || (!isZoomDirty && (
+                    isFirstRenderAutoFit
+                    || didMapDockModeChange
+                    || didTimelineModeChange
+                ))
             );
+
+        const shouldForceAutoFit = didTimelineViewChange;
 
         if (shouldAttemptAutoFit) {
             const fitMode: 'horizontal' | 'vertical' = timelineView === 'vertical' ? 'vertical' : 'horizontal';
+            const fitOptions = {
+                force: shouldForceAutoFit,
+                source: 'auto' as const,
+            };
             const runAutoFit = () => {
-                if (!fitTimelineZoom(fitMode)) {
+                if (!fitTimelineZoom(fitMode, fitOptions)) {
                     requestAnimationFrame(() => {
-                        fitTimelineZoom(fitMode);
+                        fitTimelineZoom(fitMode, fitOptions);
                     });
                 }
             };
-            requestAnimationFrame(runAutoFit);
+            requestAnimationFrame(() => {
+                if (didTimelineViewChange) {
+                    requestAnimationFrame(runAutoFit);
+                    return;
+                }
+                runAutoFit();
+            });
         }
 
         previousMapDockModeRef.current = mapDockMode;
@@ -296,10 +321,11 @@ export const useTripResizeControls = ({
             detailsResizeStartWidthRef.current = detailsWidth;
             detailsResizeStartXRef.current = startClientX || 0;
         }
+        onPaneResize?.();
 
         document.body.style.cursor = type === 'timeline-h' ? 'row-resize' : 'col-resize';
         document.body.style.userSelect = 'none';
-    }, [detailsWidth]);
+    }, [detailsWidth, onPaneResize]);
 
     const stopResizing = useCallback(() => {
         if (isResizingRef.current === 'sidebar') {

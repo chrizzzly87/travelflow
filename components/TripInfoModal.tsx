@@ -128,7 +128,7 @@ interface SummaryCardProps {
 const modalInputClassName = 'w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:ring-2 focus:ring-accent-500';
 const modalSecondaryButtonClassName = 'inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60';
 const modalPrimaryButtonClassName = 'inline-flex items-center justify-center gap-2 rounded-xl bg-accent-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-accent-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60';
-const tabClassName = 'flex-none rounded-none px-0 py-3 text-sm font-semibold text-slate-500 transition-colors hover:text-slate-900 data-[state=active]:text-accent-700 data-[state=active]:after:bg-accent-600 data-[state=active]:[&_svg]:text-accent-600 [&_svg]:text-slate-400';
+const tabClassName = 'relative -mb-px flex-none rounded-none border-b-2 border-transparent px-0 py-3 text-sm font-semibold text-slate-500 transition-colors hover:text-slate-900 data-[state=active]:border-accent-600 data-[state=active]:text-accent-700 data-[state=active]:after:opacity-0 data-[state=active]:[&_svg]:text-accent-600 [&_svg]:text-slate-400';
 
 const SummaryCard: React.FC<SummaryCardProps> = ({ label, value, wide = false }) => (
     <div className={`space-y-1 ${wide ? 'sm:col-span-2' : ''}`}>

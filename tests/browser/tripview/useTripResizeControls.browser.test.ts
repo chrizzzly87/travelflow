@@ -210,7 +210,7 @@ describe('components/tripview/useTripResizeControls', () => {
     expect(zoomUpdater(1)).toBe(3);
   });
 
-  it('does not auto-fit timeline zoom once user zoom is marked dirty', () => {
+  it('still auto-fits timeline zoom when the calendar direction changes even after manual zoom', () => {
     const setZoomLevel = vi.fn();
     const initialProps = makeHookOptions({
       setZoomLevel,
@@ -222,7 +222,7 @@ describe('components/tripview/useTripResizeControls', () => {
       initialProps,
     });
 
-    attachTimelineViewport(result, { width: 1100, height: 620 });
+    attachTimelineViewport(result, { width: 1100, height: 620, scrollHeight: 1440 });
     setZoomLevel.mockClear();
 
     act(() => {
@@ -232,7 +232,7 @@ describe('components/tripview/useTripResizeControls', () => {
       });
     });
 
-    expect(setZoomLevel).not.toHaveBeenCalled();
+    expect(setZoomLevel).toHaveBeenCalledTimes(1);
   });
 
   it('does not auto-fit timeline zoom in timeline list mode', () => {
@@ -274,7 +274,7 @@ describe('components/tripview/useTripResizeControls', () => {
     setZoomLevel.mockClear();
 
     act(() => {
-      result.current.fitTimelineZoom(undefined, { force: true });
+      result.current.fitTimelineZoom(undefined, { force: true, source: 'manual' });
     });
 
     expect(setZoomLevel).toHaveBeenCalledTimes(1);
@@ -293,7 +293,7 @@ describe('components/tripview/useTripResizeControls', () => {
     setZoomLevel.mockClear();
 
     act(() => {
-      result.current.fitTimelineZoom(undefined, { force: true });
+      result.current.fitTimelineZoom(undefined, { force: true, source: 'manual' });
     });
 
     expect(setZoomLevel).toHaveBeenCalledTimes(1);
@@ -365,7 +365,7 @@ describe('components/tripview/useTripResizeControls', () => {
       initialProps,
     });
 
-    attachTimelineViewport(result, { width: 1120, height: 620 });
+    attachTimelineViewport(result, { width: 1120, height: 620, scrollWidth: 1680 });
     setZoomLevel.mockClear();
 
     act(() => {
