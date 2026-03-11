@@ -30,12 +30,10 @@ const baseProps = (): PlannerProps => ({
   onTimelineTouchEnd: vi.fn(),
   onZoomOut: vi.fn(),
   onZoomIn: vi.fn(),
-  onZoomPresetSelect: vi.fn(),
   onZoomFit: vi.fn(),
   onTimelineModeChange: vi.fn(),
   onTimelineViewChange: vi.fn(),
   zoomLevel: 1,
-  zoomLevelPresets: [0.25, 0.5, 1, 1.25, 1.5, 2],
   mapDockMode: 'docked',
   onMapDockModeChange: vi.fn(),
   timelineMode: 'calendar',
@@ -95,7 +93,7 @@ describe('components/tripview/TripViewPlannerWorkspace', () => {
     expect(screen.getByLabelText('Horizontal timeline direction')).toBeInTheDocument();
     expect(screen.getByLabelText('Vertical timeline direction')).toBeInTheDocument();
     expect(screen.getByLabelText('Zoom out timeline')).toBeInTheDocument();
-    expect(screen.getByLabelText('Set timeline zoom to ×1')).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('×1');
     expect(screen.getByLabelText('Fit timeline to available space')).toBeInTheDocument();
     expect(screen.getByLabelText('Zoom in timeline')).toBeInTheDocument();
 

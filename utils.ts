@@ -1613,8 +1613,12 @@ export const decompressTrip = (encoded: string): ISharedState | null => {
     try {
         const json = LZString.decompressFromEncodedURIComponent(encoded);
         if (!json) return null;
+        const trimmedJson = json.trim();
+        if (!trimmedJson.startsWith('{') && !trimmedJson.startsWith('[')) {
+            return null;
+        }
 
-        const parsed = JSON.parse(json);
+        const parsed = JSON.parse(trimmedJson);
 
         // Backward compatibility: If parsed object has 'id' and 'items', it's just a trip
         if (parsed.id && Array.isArray(parsed.items)) {
@@ -1628,7 +1632,6 @@ export const decompressTrip = (encoded: string): ISharedState | null => {
 
         return null;
     } catch (e) {
-        console.error("Decompression failed", e);
         return null; // Invalid data
     }
 };

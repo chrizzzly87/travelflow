@@ -15,6 +15,7 @@ interface TripFloatingMapPreviewProps {
     mapViewportRef: React.RefObject<HTMLDivElement | null>;
     dockedMapAnchorRef: React.RefObject<HTMLDivElement | null>;
     dockedGeometryKey: string;
+    reservedRightInset?: number;
     tripId: string;
     children: React.ReactNode;
 }
@@ -106,7 +107,7 @@ const resolveFloatingMapWidth = (): number => {
     );
 };
 
-const resolveFloatingMapBounds = (panelWidth: number, panelHeight: number) => {
+const resolveFloatingMapBounds = (panelWidth: number, panelHeight: number, reservedRightInset = 0) => {
     const minX = FLOATING_MAP_MARGIN;
     const minY = Math.max(FLOATING_MAP_MARGIN, resolveFloatingMapTopBoundary());
     if (typeof window === 'undefined') {
@@ -120,7 +121,7 @@ const resolveFloatingMapBounds = (panelWidth: number, panelHeight: number) => {
     return {
         minX,
         minY,
-        maxX: Math.max(minX, window.innerWidth - panelWidth - FLOATING_MAP_MARGIN),
+        maxX: Math.max(minX, window.innerWidth - reservedRightInset - panelWidth - FLOATING_MAP_MARGIN),
         maxY: Math.max(minY, window.innerHeight - panelHeight - FLOATING_MAP_MARGIN),
     };
 };
@@ -129,8 +130,9 @@ const clampFloatingMapPosition = (
     nextPosition: { x: number; y: number },
     panelWidth: number,
     panelHeight: number,
+    reservedRightInset = 0,
 ): { x: number; y: number } => {
-    const { minX, minY, maxX, maxY } = resolveFloatingMapBounds(panelWidth, panelHeight);
+    const { minX, minY, maxX, maxY } = resolveFloatingMapBounds(panelWidth, panelHeight, reservedRightInset);
     return {
         x: clampValue(nextPosition.x, minX, maxX),
         y: clampValue(nextPosition.y, minY, maxY),
@@ -146,8 +148,9 @@ const resolveFloatingMapSideAnchor = (
     position: { x: number; y: number },
     panelWidth: number,
     panelHeight: number,
+    reservedRightInset = 0,
 ): FloatingMapSideAnchor => {
-    const { minX, minY, maxX, maxY } = resolveFloatingMapBounds(panelWidth, panelHeight);
+    const { minX, minY, maxX, maxY } = resolveFloatingMapBounds(panelWidth, panelHeight, reservedRightInset);
     const centerX = minX + ((maxX - minX) / 2);
     const distanceLeft = Math.abs(position.x - minX);
     const distanceRight = Math.abs(position.x - maxX);
@@ -170,8 +173,9 @@ const resolveFloatingMapPositionForAnchor = (
     anchor: FloatingMapSideAnchor,
     panelWidth: number,
     panelHeight: number,
+    reservedRightInset = 0,
 ): { x: number; y: number } => {
-    const bounds = resolveFloatingMapBounds(panelWidth, panelHeight);
+    const bounds = resolveFloatingMapBounds(panelWidth, panelHeight, reservedRightInset);
     const centerX = bounds.minX + ((bounds.maxX - bounds.minX) / 2);
     return {
         x: anchor.horizontal === 'right'
@@ -189,8 +193,12 @@ type FloatingMapSnapTarget = {
     anchor: FloatingMapSideAnchor;
 };
 
-const resolveFloatingMapSnapTargets = (panelWidth: number, panelHeight: number): FloatingMapSnapTarget[] => {
-    const { minX, minY, maxX, maxY } = resolveFloatingMapBounds(panelWidth, panelHeight);
+const resolveFloatingMapSnapTargets = (
+    panelWidth: number,
+    panelHeight: number,
+    reservedRightInset = 0,
+): FloatingMapSnapTarget[] => {
+    const { minX, minY, maxX, maxY } = resolveFloatingMapBounds(panelWidth, panelHeight, reservedRightInset);
     const centerX = minX + ((maxX - minX) / 2);
     return [
         { x: minX, y: minY, anchor: { horizontal: 'left', vertical: 'top' } },
@@ -205,13 +213,14 @@ const resolveNearestFloatingMapSnapTarget = (
     position: { x: number; y: number },
     panelWidth: number,
     panelHeight: number,
+    reservedRightInset = 0,
 ): FloatingMapSnapTarget => {
-    const points = resolveFloatingMapSnapTargets(panelWidth, panelHeight);
+    const points = resolveFloatingMapSnapTargets(panelWidth, panelHeight, reservedRightInset);
     if (points.length === 0) {
-        const clampedPosition = clampFloatingMapPosition(position, panelWidth, panelHeight);
+        const clampedPosition = clampFloatingMapPosition(position, panelWidth, panelHeight, reservedRightInset);
         return {
             ...clampedPosition,
-            anchor: resolveFloatingMapSideAnchor(clampedPosition, panelWidth, panelHeight),
+            anchor: resolveFloatingMapSideAnchor(clampedPosition, panelWidth, panelHeight, reservedRightInset),
         };
     }
     return points.reduce((closest, candidate) => {
@@ -221,17 +230,22 @@ const resolveNearestFloatingMapSnapTarget = (
     }, points[0]);
 };
 
-const resolveDefaultFloatingMapPosition = (panelWidth: number, panelHeight: number): { x: number; y: number } => {
+const resolveDefaultFloatingMapPosition = (
+    panelWidth: number,
+    panelHeight: number,
+    reservedRightInset = 0,
+): { x: number; y: number } => {
     if (typeof window === 'undefined') {
         return { x: FLOATING_MAP_MARGIN, y: FLOATING_MAP_MARGIN };
     }
     return clampFloatingMapPosition(
         {
-            x: window.innerWidth - panelWidth - FLOATING_MAP_MARGIN,
+            x: window.innerWidth - reservedRightInset - panelWidth - FLOATING_MAP_MARGIN,
             y: window.innerHeight - panelHeight - FLOATING_MAP_MARGIN,
         },
         panelWidth,
         panelHeight,
+        reservedRightInset,
     );
 };
 
@@ -252,6 +266,7 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
     mapViewportRef,
     dockedMapAnchorRef,
     dockedGeometryKey,
+    reservedRightInset = 0,
     tripId,
     children,
 }) => {
@@ -379,13 +394,14 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
         const floatingMapWidth = floatingMapSurfaceWidth;
         const currentPosition = floatingMapPositionRef.current
             ?? initialStoredPositionRef.current
-            ?? resolveDefaultFloatingMapPosition(floatingMapWidth, floatingMapHeight);
-        const clampedPosition = clampFloatingMapPosition(currentPosition, floatingMapWidth, floatingMapHeight);
+            ?? resolveDefaultFloatingMapPosition(floatingMapWidth, floatingMapHeight, reservedRightInset);
+        const clampedPosition = clampFloatingMapPosition(currentPosition, floatingMapWidth, floatingMapHeight, reservedRightInset);
         floatingMapPositionRef.current = clampedPosition;
         floatingMapAnchorRef.current = resolveFloatingMapSideAnchor(
             clampedPosition,
             floatingMapWidth,
             floatingMapHeight,
+            reservedRightInset,
         );
         initialStoredPositionRef.current = clampedPosition;
         applySurfaceGeometry(
@@ -398,7 +414,7 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
             animateToPosition,
         );
         return true;
-    }, [applySurfaceGeometry, dockedMapAnchorRef, floatingMapRotation, floatingMapSurfaceHeight, floatingMapSurfaceWidth, mapDockMode]);
+    }, [applySurfaceGeometry, dockedMapAnchorRef, floatingMapRotation, floatingMapSurfaceHeight, floatingMapSurfaceWidth, mapDockMode, reservedRightInset]);
 
     useEffect(() => {
         floatingMapSizePresetRef.current = floatingMapSizePreset;
@@ -472,7 +488,7 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
                     const currentWidth = surfaceWidth.get();
                     const currentHeight = surfaceHeight.get();
                     const sideAnchor = floatingMapAnchorRef.current
-                        ?? resolveFloatingMapSideAnchor(currentPosition, currentWidth, currentHeight);
+                        ?? resolveFloatingMapSideAnchor(currentPosition, currentWidth, currentHeight, reservedRightInset);
                     const normalizedPreset = normalizeFloatingMapSizePreset(floatingMapSizePresetRef.current);
                     const nextShortEdge = resolveWidthForPreset(nextBaseWidth, normalizedPreset);
                     const nextDimensions = resolveFloatingMapDimensions(nextShortEdge, floatingMapOrientationRef.current);
@@ -480,6 +496,7 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
                         sideAnchor,
                         nextDimensions.width,
                         nextDimensions.height,
+                        reservedRightInset,
                     );
 
                     floatingMapAnchorRef.current = sideAnchor;
@@ -529,6 +546,7 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
         floatingMapX,
         floatingMapY,
         mapDockMode,
+        reservedRightInset,
         surfaceHeight,
         surfaceWidth,
         syncSurfaceGeometry,
@@ -613,9 +631,14 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
         };
         const currentWidth = surfaceWidth.get();
         const currentHeight = surfaceHeight.get();
-        const sideAnchor = resolveFloatingMapSideAnchor(currentPosition, currentWidth, currentHeight);
+        const sideAnchor = resolveFloatingMapSideAnchor(currentPosition, currentWidth, currentHeight, reservedRightInset);
         const normalizedPreset = normalizeFloatingMapSizePreset(targetSizePreset);
-        const anchoredPosition = resolveFloatingMapPositionForAnchor(sideAnchor, targetSize.width, targetSize.height);
+        const anchoredPosition = resolveFloatingMapPositionForAnchor(
+            sideAnchor,
+            targetSize.width,
+            targetSize.height,
+            reservedRightInset,
+        );
 
         floatingMapPositionRef.current = anchoredPosition;
         floatingMapAnchorRef.current = sideAnchor;
@@ -631,7 +654,7 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
             height: targetSize.height,
         }, true);
         persistFloatingMapState(anchoredPosition, normalizedPreset, targetOrientation);
-    }, [applySurfaceGeometry, floatingMapX, floatingMapY, persistFloatingMapState, surfaceHeight, surfaceWidth]);
+    }, [applySurfaceGeometry, floatingMapX, floatingMapY, persistFloatingMapState, reservedRightInset, surfaceHeight, surfaceWidth]);
 
     const toggleFloatingMapSize = useCallback(() => {
         if (mapDockMode !== 'floating') return;
@@ -695,7 +718,7 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
             x: floatingMapX.get(),
             y: floatingMapY.get(),
         };
-        const clampedPosition = clampFloatingMapPosition(currentPosition, panelWidth, panelHeight);
+        const clampedPosition = clampFloatingMapPosition(currentPosition, panelWidth, panelHeight, reservedRightInset);
         if (clampedPosition.x !== currentPosition.x) floatingMapX.set(clampedPosition.x);
         if (clampedPosition.y !== currentPosition.y) floatingMapY.set(clampedPosition.y);
         floatingMapPositionRef.current = clampedPosition;
@@ -718,7 +741,7 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
         );
         const nextRotation = (floatingMapRotation.get() * 0.2) + (targetRotation * 0.8);
         floatingMapRotation.set(nextRotation);
-    }, [floatingMapRotation, floatingMapX, floatingMapY, surfaceHeight, surfaceWidth, tripId]);
+    }, [floatingMapRotation, floatingMapX, floatingMapY, reservedRightInset, surfaceHeight, surfaceWidth, tripId]);
 
     const handleFloatingMapDragEnd = useCallback(() => {
         setIsHandlePressed(false);
@@ -740,8 +763,9 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
             { x: floatingMapX.get(), y: floatingMapY.get() },
             panelWidth,
             panelHeight,
+            reservedRightInset,
         );
-        const snapTarget = resolveNearestFloatingMapSnapTarget(currentPosition, panelWidth, panelHeight);
+        const snapTarget = resolveNearestFloatingMapSnapTarget(currentPosition, panelWidth, panelHeight, reservedRightInset);
         const releaseRotation = clampValue(floatingMapRotation.get() * 0.5, -7, 7);
 
         setIsFloatingMapSettling(true);
@@ -778,7 +802,7 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
             { x: snapTarget.x, y: snapTarget.y },
             normalizeFloatingMapSizePreset(floatingMapSizePresetRef.current),
         );
-    }, [clearFloatingMapSettleTimer, floatingMapRotation, floatingMapX, floatingMapY, persistFloatingMapState, surfaceHeight, surfaceWidth]);
+    }, [clearFloatingMapSettleTimer, floatingMapRotation, floatingMapX, floatingMapY, persistFloatingMapState, reservedRightInset, surfaceHeight, surfaceWidth]);
 
     const shouldPromoteMapLayer = mapDockMode === 'floating' && (isFloatingMapDragging || isFloatingMapSettling || isHandlePressed);
 
@@ -806,7 +830,7 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
                 }}
                 className={`fixed overflow-hidden bg-gray-100 transition-[border-radius,box-shadow,border-width] duration-300 ease-out ${
                     mapDockMode === 'floating'
-                        ? `z-[1400] border-[4px] border-white ${
+                        ? `z-[30] border-[4px] border-white ${
                             isFloatingMapDragging
                                 ? 'shadow-[0_34px_70px_-28px_rgba(15,23,42,0.72),0_14px_30px_-16px_rgba(15,23,42,0.45)]'
                                 : 'shadow-[0_20px_50px_-22px_rgba(15,23,42,0.58),0_10px_24px_-12px_rgba(15,23,42,0.38)]'

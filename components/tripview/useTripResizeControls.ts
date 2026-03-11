@@ -56,18 +56,11 @@ const resolveAutoFitZoom = (
 
     if (normalizedPresets.length === 0) return clampedTarget;
 
-    let bestZoom = normalizedPresets[0];
-    let bestScore = Number.POSITIVE_INFINITY;
-    normalizedPresets.forEach((presetZoom) => {
-        const absoluteDistance = Math.abs(presetZoom - clampedTarget);
-        const underfillPenalty = presetZoom < clampedTarget ? 0.015 : 0;
-        const score = absoluteDistance + underfillPenalty;
-        if (score < bestScore) {
-            bestScore = score;
-            bestZoom = presetZoom;
-        }
-    });
-    return bestZoom;
+    const fittingPreset = [...normalizedPresets]
+        .reverse()
+        .find((presetZoom) => presetZoom <= (clampedTarget + 0.001));
+
+    return fittingPreset ?? normalizedPresets[0];
 };
 
 export const useTripResizeControls = ({
@@ -141,13 +134,15 @@ export const useTripResizeControls = ({
         if (isMobile) return Math.max(minDetailsWidth, rawWidth);
 
         if (layoutMode === 'horizontal') {
-            const maxWidth = window.innerWidth - sidebarWidth - minMapWidth - (resizerWidth * 2);
+            const maxWidth = mapDockMode === 'docked'
+                ? window.innerWidth - sidebarWidth - minMapWidth - (resizerWidth * 2)
+                : window.innerWidth - minTimelineColumnWidth - resizerWidth;
             const boundedMax = Math.max(hardMinDetailsWidth, maxWidth);
             const boundedMin = Math.min(minDetailsWidth, boundedMax);
             return Math.max(boundedMin, Math.min(boundedMax, rawWidth));
         }
 
-        const maxWidth = window.innerWidth - minTimelineColumnWidth;
+        const maxWidth = window.innerWidth - minTimelineColumnWidth - resizerWidth;
         const boundedMax = Math.max(hardMinDetailsWidth, maxWidth);
         const boundedMin = Math.min(minDetailsWidth, boundedMax);
         return Math.max(boundedMin, Math.min(boundedMax, rawWidth));
@@ -155,6 +150,7 @@ export const useTripResizeControls = ({
         hardMinDetailsWidth,
         isMobile,
         layoutMode,
+        mapDockMode,
         minDetailsWidth,
         minMapWidth,
         minTimelineColumnWidth,
@@ -193,8 +189,6 @@ export const useTripResizeControls = ({
             const measuredWidth = timelineViewport.clientWidth;
             if (measuredWidth <= 0) return false;
             const usableTimelineWidth = Math.max(MIN_AUTO_FIT_TIMELINE_WIDTH, measuredWidth - horizontalTimelineAutoFitPadding);
-            const currentTimelineWidth = dayCount * basePixelsPerDay * zoomLevel;
-            if (currentTimelineWidth >= usableTimelineWidth) return false;
             targetPixelsPerDay = usableTimelineWidth / dayCount;
         } else {
             const measuredHeight = timelineViewport.clientHeight;
@@ -308,7 +302,9 @@ export const useTripResizeControls = ({
             onManualViewSettingsChange?.();
             onPaneResize?.();
             const deltaX = event.clientX - detailsResizeStartXRef.current;
-            const nextWidth = detailsResizeStartWidthRef.current + deltaX;
+            const nextWidth = layoutMode === 'horizontal' && mapDockMode === 'floating'
+                ? detailsResizeStartWidthRef.current - deltaX
+                : detailsResizeStartWidthRef.current + deltaX;
             setDetailsWidth(clampDetailsWidth(nextWidth));
             return;
         }
@@ -353,9 +349,11 @@ export const useTripResizeControls = ({
         event.preventDefault();
         onManualViewSettingsChange?.();
         onPaneResize?.();
-        const direction = event.key === 'ArrowRight' ? 1 : -1;
+        const direction = layoutMode === 'horizontal' && mapDockMode === 'floating'
+            ? (event.key === 'ArrowRight' ? -1 : 1)
+            : (event.key === 'ArrowRight' ? 1 : -1);
         setDetailsWidth((previous) => clampDetailsWidth(previous + (direction * resizeKeyboardStep)));
-    }, [clampDetailsWidth, onManualViewSettingsChange, onPaneResize, resizeKeyboardStep, setDetailsWidth]);
+    }, [clampDetailsWidth, layoutMode, mapDockMode, onManualViewSettingsChange, onPaneResize, resizeKeyboardStep, setDetailsWidth]);
 
     const handleTimelineResizeKeyDown = useCallback((event: React.KeyboardEvent<HTMLButtonElement>) => {
         if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
@@ -386,5 +384,7 @@ export const useTripResizeControls = ({
         handleDetailsResizeKeyDown,
         handleTimelineResizeKeyDown,
         fitTimelineZoom,
+        clampSidebarWidth,
+        clampDetailsWidth,
     };
 };
