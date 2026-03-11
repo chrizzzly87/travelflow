@@ -2,7 +2,6 @@
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 
 const mocks = vi.hoisted(() => ({
   location: {
@@ -16,6 +15,7 @@ const mocks = vi.hoisted(() => ({
       tierKey: 'tier_free',
       isAnonymous: false,
     },
+    refreshAccess: vi.fn().mockResolvedValue(undefined),
   },
   fetchPaddlePublicConfig: vi.fn().mockResolvedValue({
     provider: 'paddle',
@@ -25,6 +25,10 @@ const mocks = vi.hoisted(() => ({
     tierAvailability: {
       tier_mid: true,
       tier_premium: false,
+    },
+    priceIds: {
+      tier_mid: 'pri_mid',
+      tier_premium: null,
     },
     issues: [],
   }),
@@ -130,6 +134,7 @@ describe('pages/PricingPage', () => {
       tierKey: 'tier_free',
       isAnonymous: false,
     };
+    mocks.auth.refreshAccess.mockResolvedValue(undefined);
     mocks.getCurrentSubscriptionSummary.mockResolvedValue(null);
     mocks.getPaddleSubscriptionManagementUrls.mockResolvedValue({
       provider: 'paddle',
@@ -150,6 +155,10 @@ describe('pages/PricingPage', () => {
       tierAvailability: {
         tier_mid: true,
         tier_premium: false,
+      },
+      priceIds: {
+        tier_mid: 'pri_mid',
+        tier_premium: null,
       },
       issues: [],
     });
@@ -178,13 +187,16 @@ describe('pages/PricingPage', () => {
         tier_mid: true,
         tier_premium: true,
       },
+      priceIds: {
+        tier_mid: 'pri_mid',
+        tier_premium: 'pri_premium',
+      },
       issues: [],
     });
 
     render(React.createElement(PricingPage));
 
     await waitFor(() => {
-      expect(mocks.lookupPaddleDiscount).toHaveBeenCalledWith('SPRING20', 'tier_mid');
       expect(screen.getByRole('link', { name: 'tiers.explorer.cta' })).toHaveAttribute(
         'href',
         '/checkout?tier=tier_mid&source=pricing_page&return_to=%2Fpricing&discount=SPRING20',
@@ -192,17 +204,12 @@ describe('pages/PricingPage', () => {
     });
   });
 
-  it('lets users apply a voucher code from pricing', async () => {
-    const user = userEvent.setup();
+  it('does not render the voucher entry form on pricing', async () => {
     render(React.createElement(PricingPage));
 
-    await user.type(screen.getByPlaceholderText('voucher.placeholder'), 'spring20');
-    await user.click(screen.getByRole('button', { name: 'voucher.applyCta' }));
-
-    expect(mocks.navigate).toHaveBeenCalledWith({
-      pathname: '/pricing',
-      search: '?discount=SPRING20',
-    }, { replace: false });
+    await waitFor(() => {
+      expect(screen.queryByPlaceholderText('voucher.placeholder')).not.toBeInTheDocument();
+    });
   });
 
   it('keeps unconfigured paid tiers disabled on pricing', async () => {
@@ -227,6 +234,63 @@ describe('pages/PricingPage', () => {
       tierAvailability: {
         tier_mid: true,
         tier_premium: true,
+      },
+      priceIds: {
+        tier_mid: 'pri_mid',
+        tier_premium: 'pri_premium',
+      },
+      issues: [],
+    });
+    mocks.getCurrentSubscriptionSummary.mockResolvedValue({
+      userId: 'user_1',
+      provider: 'paddle',
+      providerCustomerId: 'ctm_123',
+      providerSubscriptionId: 'sub_123',
+      providerPriceId: 'pri_mid',
+      providerProductId: 'pro_mid',
+      providerStatus: 'active',
+      status: 'active',
+      currentPeriodStart: '2026-03-01T00:00:00.000Z',
+      currentPeriodEnd: '2026-04-01T00:00:00.000Z',
+      cancelAt: null,
+      canceledAt: null,
+      graceEndsAt: null,
+      currency: 'USD',
+      amount: 900,
+      lastEventId: 'evt_1',
+      lastEventType: 'subscription.updated',
+      lastEventAt: '2026-03-08T10:00:00.000Z',
+    });
+
+    render(React.createElement(PricingPage));
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'shared.currentPlanCta' })).toBeDisabled();
+      expect(screen.getByRole('link', { name: 'shared.upgradeCta' })).toHaveAttribute(
+        'href',
+        '/checkout?tier=tier_premium&source=pricing_page&return_to=%2Fpricing',
+      );
+    });
+  });
+
+  it('treats a synced paid subscription as the effective current tier even when access still says free', async () => {
+    mocks.auth.isAuthenticated = true;
+    mocks.auth.access = {
+      tierKey: 'tier_free',
+      isAnonymous: false,
+    };
+    mocks.fetchPaddlePublicConfig.mockResolvedValue({
+      provider: 'paddle',
+      environment: 'sandbox',
+      checkoutEnabled: true,
+      clientTokenConfigured: true,
+      tierAvailability: {
+        tier_mid: true,
+        tier_premium: true,
+      },
+      priceIds: {
+        tier_mid: 'pri_mid',
+        tier_premium: 'pri_premium',
       },
       issues: [],
     });
@@ -270,6 +334,8 @@ describe('pages/PricingPage', () => {
     };
     mocks.getCurrentSubscriptionSummary
       .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null)
       .mockResolvedValueOnce({
         userId: 'user_1',
         provider: 'paddle',
@@ -298,6 +364,10 @@ describe('pages/PricingPage', () => {
       tierAvailability: {
         tier_mid: true,
         tier_premium: true,
+      },
+      priceIds: {
+        tier_mid: 'pri_mid',
+        tier_premium: 'pri_premium',
       },
       issues: [],
     });

@@ -242,7 +242,8 @@ describe('pages/AdminBillingPage', () => {
     renderPage();
 
     const note = await screen.findByText('Applied subscription lifecycle update (active)');
-    expect(note.className).toContain('border-accent-200');
-    expect(note.className).not.toContain('border-rose-200');
+    const messageBox = note.parentElement;
+    expect(messageBox?.className).toContain('border-accent-200');
+    expect(messageBox?.className).not.toContain('border-rose-200');
   });
 });

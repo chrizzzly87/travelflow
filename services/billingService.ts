@@ -38,6 +38,7 @@ interface PaddleCheckoutResponse {
   };
   error?: string;
   message?: string;
+  code?: string;
 }
 
 interface BillingSubscriptionSummaryResponse {
@@ -373,6 +374,22 @@ const normalizeErrorMessage = (
   return `${fallback} (status ${responseStatus}).`;
 };
 
+export interface BillingApiError extends Error {
+  code?: string;
+  status?: number;
+}
+
+const buildBillingApiError = (
+  payload: PaddleCheckoutResponse,
+  responseStatus: number,
+  fallback: string,
+): BillingApiError => {
+  const error = new Error(normalizeErrorMessage(payload, responseStatus, fallback)) as BillingApiError;
+  error.code = typeof payload.code === 'string' ? payload.code : undefined;
+  error.status = responseStatus;
+  return error;
+};
+
 const parseJsonPayload = async (response: Response): Promise<PaddleCheckoutResponse> => {
   const responseText = await response.text().catch(() => '');
   if (!responseText) return {};
@@ -460,7 +477,9 @@ export const startPaddleCheckoutSession = async (
     const devRoutingHint = response.status === 404 && import.meta.env.DEV
       ? ' Paddle checkout route is unavailable in Vite-only dev. Run `pnpm dev:netlify` to proxy `/api/billing/paddle/*`.'
       : '';
-    throw new Error(`${normalizeErrorMessage(parsed, response.status, 'Paddle checkout request failed')}${devRoutingHint}`.trim());
+    const error = buildBillingApiError(parsed, response.status, 'Paddle checkout request failed');
+    error.message = `${error.message}${devRoutingHint}`.trim();
+    throw error;
   }
 
   const provider = parsed.data?.provider === 'paddle' ? 'paddle' : null;

@@ -51,6 +51,10 @@ const mocks = vi.hoisted(() => ({
       tier_mid: true,
       tier_premium: false,
     },
+    priceIds: {
+      tier_mid: 'pri_mid',
+      tier_premium: null,
+    },
     issues: [],
   }),
   initializePaddleJs: vi.fn().mockResolvedValue(true),
@@ -580,6 +584,10 @@ describe('pages/CheckoutPage', () => {
         tier_mid: true,
         tier_premium: true,
       },
+      priceIds: {
+        tier_mid: 'pri_mid',
+        tier_premium: 'pri_premium',
+      },
       issues: [],
     });
 
@@ -600,6 +608,68 @@ describe('pages/CheckoutPage', () => {
         returnTo: '/pricing',
         tripId: null,
       });
+    });
+  });
+
+  it('repairs stale billing state and exits acquisition checkout when Paddle reports an existing subscription', async () => {
+    mocks.location.search = '?tier=tier_mid&source=pricing_page';
+    mocks.auth.access = {
+      isAnonymous: false,
+      tierKey: 'tier_free',
+    };
+    mocks.fetchPaddlePublicConfig.mockResolvedValue({
+      provider: 'paddle',
+      environment: 'sandbox',
+      checkoutEnabled: true,
+      clientTokenConfigured: true,
+      tierAvailability: {
+        tier_mid: true,
+        tier_premium: true,
+      },
+      priceIds: {
+        tier_mid: 'pri_mid',
+        tier_premium: 'pri_premium',
+      },
+      issues: [],
+    });
+    const repairedSummary = {
+      userId: 'user_123',
+      provider: 'paddle',
+      providerCustomerId: 'ctm_123',
+      providerSubscriptionId: 'sub_123',
+      providerPriceId: 'pri_mid',
+      providerProductId: 'pro_mid',
+      providerStatus: 'active',
+      status: 'active',
+      currentPeriodStart: '2026-03-01T00:00:00.000Z',
+      currentPeriodEnd: '2026-04-01T00:00:00.000Z',
+      cancelAt: null,
+      canceledAt: null,
+      graceEndsAt: null,
+      currency: 'USD',
+      amount: 900,
+      lastEventId: 'evt_123',
+      lastEventType: 'subscription.updated',
+      lastEventAt: '2026-03-08T10:00:00.000Z',
+    };
+    mocks.getCurrentSubscriptionSummary
+      .mockResolvedValueOnce(null)
+      .mockResolvedValue(repairedSummary);
+    mocks.startPaddleCheckoutSession.mockRejectedValueOnce(Object.assign(
+      new Error('A Paddle subscription already exists for this account and needs to be managed from billing settings.'),
+      { code: 'existing_paid_subscription_requires_refresh' },
+    ));
+
+    render(React.createElement(CheckoutPage));
+
+    await waitFor(() => {
+      expect(mocks.startPaddleCheckoutSession).toHaveBeenCalled();
+      expect(mocks.getPaddleSubscriptionManagementUrls).toHaveBeenCalled();
+      expect(mocks.auth.refreshAccess).toHaveBeenCalled();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('checkout.currentPlanTitle')).toBeInTheDocument();
     });
   });
 

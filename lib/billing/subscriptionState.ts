@@ -20,6 +20,8 @@ export type BillingTierAction =
 export interface BillingSubscriptionLike {
   provider_subscription_id?: string | null;
   providerSubscriptionId?: string | null;
+  provider_price_id?: string | null;
+  providerPriceId?: string | null;
   provider_status?: string | null;
   providerStatus?: string | null;
   status?: string | null;
@@ -67,6 +69,39 @@ export const normalizeManagedBillingStatus = (
 const readProviderSubscriptionId = (subscription: BillingSubscriptionLike | null | undefined): string | null => {
   const value = subscription?.providerSubscriptionId ?? subscription?.provider_subscription_id ?? null;
   return typeof value === 'string' && value.trim() ? value : null;
+};
+
+const readProviderPriceId = (subscription: BillingSubscriptionLike | null | undefined): string | null => {
+  const value = subscription?.providerPriceId ?? subscription?.provider_price_id ?? null;
+  return typeof value === 'string' && value.trim() ? value : null;
+};
+
+export const resolveEffectiveBillingTierKey = ({
+  currentTierKey,
+  subscription,
+  priceIds,
+}: {
+  currentTierKey: PlanTierKey;
+  subscription?: BillingSubscriptionLike | null;
+  priceIds?: {
+    tier_mid?: string | null;
+    tier_premium?: string | null;
+  } | null;
+}): PlanTierKey => {
+  const providerPriceId = readProviderPriceId(subscription);
+  if (!providerPriceId || !priceIds) {
+    return currentTierKey;
+  }
+
+  if (priceIds.tier_premium && providerPriceId === priceIds.tier_premium) {
+    return 'tier_premium';
+  }
+
+  if (priceIds.tier_mid && providerPriceId === priceIds.tier_mid) {
+    return 'tier_mid';
+  }
+
+  return currentTierKey;
 };
 
 export const comparePaidTierOrder = (

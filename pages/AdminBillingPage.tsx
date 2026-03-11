@@ -94,6 +94,14 @@ const webhookMessageClassName = (status: string | null | undefined) => {
     return 'mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700';
 };
 
+const webhookMessageLabel = (status: string | null | undefined): string => {
+    const normalizedStatus = normalizeAdminBillingStatus(status);
+    if (normalizedStatus === 'failed') return 'Delivery error';
+    if (normalizedStatus === 'past_due' || normalizedStatus === 'paused' || normalizedStatus === 'ignored') return 'Needs attention';
+    if (normalizedStatus === 'processed' || normalizedStatus === 'received') return 'Sync note';
+    return 'Event note';
+};
+
 const SUBSCRIPTIONS_CACHE_LIMIT = 250;
 const EVENTS_CACHE_LIMIT = 250;
 
@@ -662,36 +670,38 @@ export const AdminBillingPage: React.FC = () => {
                         <div className="divide-y divide-slate-200">
                             {filteredEvents.map((record) => (
                                 <article key={record.event_id} className="py-4 first:pt-5 last:pb-0">
-                                    <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(220px,auto)] md:items-start">
-                                        <div className="min-w-0 flex-1">
-                                            <div className="flex flex-wrap items-center gap-2">
-                                                <span className="font-semibold text-slate-900">{humanizeEventType(record.event_type)}</span>
-                                                <span className={statusPill(record.status)}>{humanizeAdminBillingStatus(record.status)}</span>
-                                            </div>
-                                            <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500">
-                                                <span>{formatDateTime(record.occurred_at)}</span>
-                                                <span>{record.provider}</span>
-                                                {record.user_email && record.user_id ? (
-                                                    <Link
-                                                        to={`/admin/users?user=${encodeURIComponent(record.user_id)}&drawer=user`}
-                                                        className="font-medium text-slate-700 hover:text-accent-700 hover:underline"
-                                                    >
-                                                        {record.user_email}
-                                                    </Link>
-                                                ) : (
-                                                    <span>No linked user</span>
-                                                )}
+                                    <div className="space-y-2">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <span className="font-semibold text-slate-900">{humanizeEventType(record.event_type)}</span>
+                                            <span className={statusPill(record.status)}>{humanizeAdminBillingStatus(record.status)}</span>
+                                        </div>
+                                        <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500">
+                                            <span>{formatDateTime(record.occurred_at)}</span>
+                                            <span>{record.provider}</span>
+                                            {record.user_email && record.user_id ? (
+                                                <Link
+                                                    to={`/admin/users?user=${encodeURIComponent(record.user_id)}&drawer=user`}
+                                                    className="font-medium text-slate-700 hover:text-accent-700 hover:underline"
+                                                >
+                                                    {record.user_email}
+                                                </Link>
+                                            ) : (
+                                                <span>No linked user</span>
+                                            )}
+                                        </div>
+                                        <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                                            <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Event ID</div>
+                                            <div className="mt-1 break-all font-mono text-xs leading-5 text-slate-700">
+                                                {record.event_id}
                                             </div>
                                         </div>
-                                        <span className="max-w-full break-all rounded-md bg-slate-100 px-2 py-1 font-mono text-[11px] leading-5 text-slate-600 md:justify-self-end">
-                                            {record.event_id}
-                                        </span>
                                     </div>
 
                                     {record.error_message ? (
-                                        <p className={webhookMessageClassName(record.status)}>
-                                            {record.error_message}
-                                        </p>
+                                        <div className={webhookMessageClassName(record.status)}>
+                                            <p className="text-[11px] font-semibold uppercase tracking-wide opacity-80">{webhookMessageLabel(record.status)}</p>
+                                            <p className="mt-1">{record.error_message}</p>
+                                        </div>
                                     ) : null}
 
                                     <div className="mt-3 grid gap-2 text-xs text-slate-500 sm:grid-cols-2">

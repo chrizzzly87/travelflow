@@ -31,6 +31,7 @@ const mocks = vi.hoisted(() => ({
   checkUsernameAvailability: vi.fn(),
   getCurrentSubscriptionSummary: vi.fn(),
   getPaddleSubscriptionManagementUrls: vi.fn(),
+  fetchPaddlePublicConfig: vi.fn(),
   trackEvent: vi.fn(),
   showAppToast: vi.fn(),
 }));
@@ -48,6 +49,10 @@ vi.mock('../../hooks/useAuth', () => ({
 vi.mock('../../services/profileService', () => ({
   updateCurrentUserProfile: mocks.updateCurrentUserProfile,
   checkUsernameAvailability: mocks.checkUsernameAvailability,
+}));
+
+vi.mock('../../services/paddleClient', () => ({
+  fetchPaddlePublicConfig: mocks.fetchPaddlePublicConfig,
 }));
 
 vi.mock('../../services/billingService', async () => {
@@ -162,6 +167,21 @@ describe('pages/ProfileSettingsPage username governance', () => {
       canceledAt: null,
       graceEndsAt: null,
     });
+    mocks.fetchPaddlePublicConfig.mockResolvedValue({
+      provider: 'paddle',
+      environment: 'sandbox',
+      checkoutEnabled: true,
+      clientTokenConfigured: true,
+      tierAvailability: {
+        tier_mid: true,
+        tier_premium: true,
+      },
+      priceIds: {
+        tier_mid: 'pri_123',
+        tier_premium: 'pri_999',
+      },
+      issues: [],
+    });
   });
 
   it('keeps username locked by default and unlocks editing via the tiny edit action', async () => {
@@ -204,6 +224,16 @@ describe('pages/ProfileSettingsPage username governance', () => {
         username: 'new_handle',
         usernameDisplay: 'new_handle',
       }));
+    });
+  });
+
+  it('shows the synced paid plan label even when access is still stale-free', async () => {
+    mocks.auth.access = { tierKey: 'tier_free' };
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getAllByText('tiers.explorer.name').length).toBeGreaterThan(0);
     });
   });
 
@@ -543,6 +573,10 @@ describe('pages/ProfileSettingsPage username governance', () => {
       expect(screen.getByText('settings.billing.title')).toBeInTheDocument();
     });
 
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'settings.billing.cancelCta' })).not.toBeDisabled();
+    });
+
     await user.click(screen.getByRole('button', { name: 'settings.billing.cancelCta' }));
 
     await waitFor(() => {
@@ -553,6 +587,8 @@ describe('pages/ProfileSettingsPage username governance', () => {
 
   it('tries one billing-summary repair on mount for paid users without a local subscription row', async () => {
     mocks.getCurrentSubscriptionSummary
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null)
       .mockResolvedValueOnce(null)
       .mockResolvedValueOnce({
         userId: 'user-1',

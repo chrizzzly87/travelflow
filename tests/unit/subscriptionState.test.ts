@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { comparePaidTierOrder, normalizeManagedBillingStatus, resolveBillingTierDecision } from '../../lib/billing/subscriptionState';
+import { comparePaidTierOrder, normalizeManagedBillingStatus, resolveBillingTierDecision, resolveEffectiveBillingTierKey } from '../../lib/billing/subscriptionState';
 
 describe('lib/billing/subscriptionState', () => {
   it('normalizes supported managed billing statuses', () => {
@@ -100,5 +100,29 @@ describe('lib/billing/subscriptionState', () => {
       action: 'manage',
       reason: 'scheduled_cancel',
     });
+  });
+
+  it('derives the effective paid tier from the synced provider price id', () => {
+    expect(resolveEffectiveBillingTierKey({
+      currentTierKey: 'tier_free',
+      subscription: {
+        provider_price_id: 'pri_premium',
+      },
+      priceIds: {
+        tier_mid: 'pri_mid',
+        tier_premium: 'pri_premium',
+      },
+    })).toBe('tier_premium');
+
+    expect(resolveEffectiveBillingTierKey({
+      currentTierKey: 'tier_free',
+      subscription: {
+        providerPriceId: 'pri_mid',
+      },
+      priceIds: {
+        tier_mid: 'pri_mid',
+        tier_premium: 'pri_premium',
+      },
+    })).toBe('tier_mid');
   });
 });

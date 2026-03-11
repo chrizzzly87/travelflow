@@ -21,13 +21,14 @@ import {
     applyPaddleSubscriptionUpgrade,
     startPaddleCheckoutSession,
     syncPaddleTransaction,
+    type BillingApiError,
     type BillingDiscountLookup,
     type BillingSubscriptionSummary,
     type BillingUpgradePreview,
     type BillingCheckoutSource,
     type BillingCheckoutTierKey,
 } from '../services/billingService';
-import { resolveBillingTierDecision } from '../lib/billing/subscriptionState';
+import { resolveBillingTierDecision, resolveEffectiveBillingTierKey } from '../lib/billing/subscriptionState';
 import {
     appendPaddleCheckoutContext,
     fetchPaddlePublicConfig,
@@ -81,6 +82,10 @@ const asDisplayCount = (value: number | null, unlimitedLabel: string): string =>
 const isSafeInternalPath = (value: string | null | undefined): value is string => Boolean(value && value.startsWith('/') && !value.startsWith('//'));
 const isPaidTierKey = (value: string | null | undefined): value is BillingCheckoutTierKey => value === 'tier_mid' || value === 'tier_premium';
 const asTrimmedString = (value: unknown): string => typeof value === 'string' ? value.trim() : '';
+const isMissingLinkedSubscriptionError = (error: unknown): boolean =>
+    error instanceof Error && error.message.includes('No paid Paddle subscription is linked');
+const isExistingSubscriptionCheckoutError = (error: unknown): boolean =>
+    Boolean(error && typeof error === 'object' && (((error as BillingApiError).code === 'existing_paid_subscription') || ((error as BillingApiError).code === 'existing_paid_subscription_requires_refresh')));
 
 const checkoutInputClassName = 'mt-1 h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 shadow-sm transition-colors placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 [&:user-invalid]:border-rose-400 [&:user-invalid]:bg-rose-50 [&:user-invalid]:text-rose-900 [&:user-invalid]:focus-visible:ring-rose-200';
 const checkoutFieldLabelClassName = 'text-sm font-medium text-slate-700';
@@ -178,11 +183,13 @@ export const CheckoutPage: React.FC = () => {
     const [isUpgradeSubmitting, setIsUpgradeSubmitting] = useState(false);
     const [isBillingManagementLoading, setIsBillingManagementLoading] = useState(false);
     const [discountLookup, setDiscountLookup] = useState<BillingDiscountLookup | null>(null);
+    const [discountInput, setDiscountInput] = useState('');
     const inlineCheckoutSectionRef = useRef<HTMLDivElement | null>(null);
     const claimProcessingRequestIdRef = useRef<string | null>(null);
     const autoStartedCheckoutKeyRef = useRef<string | null>(null);
     const travelerDetailsInitializedRef = useRef(false);
     const openedInlineTransactionRef = useRef<string | null>(null);
+    const billingRepairAttemptedRef = useRef(false);
 
     const activeLocale = useMemo(
         () => normalizeLocale(i18n.resolvedLanguage ?? i18n.language ?? DEFAULT_LOCALE),
@@ -198,9 +205,13 @@ export const CheckoutPage: React.FC = () => {
     const selectedTier = PLAN_CATALOG[selectedTierKey];
     const source = (checkoutLocationContext.source || 'checkout_page') as BillingCheckoutSource | string;
     const isEligibleAccount = isAuthenticated && access?.isAnonymous !== true;
-    const currentPaidTierKey = access?.tierKey === 'tier_mid' || access?.tierKey === 'tier_premium'
-        ? access.tierKey
-        : 'tier_free';
+    const currentPaidTierKey = resolveEffectiveBillingTierKey({
+        currentTierKey: access?.tierKey === 'tier_mid' || access?.tierKey === 'tier_premium'
+            ? access.tierKey
+            : 'tier_free',
+        subscription: subscriptionSummary,
+        priceIds: paddlePublicConfig?.priceIds,
+    });
     const billingDecision = useMemo(() => (
         isEligibleAccount
             ? resolveBillingTierDecision({
@@ -247,6 +258,19 @@ export const CheckoutPage: React.FC = () => {
     const disabledLabel = t('shared.disabled', { ns: 'pricing' });
     const profileActionPath = buildPath('profileSettings');
     const createTripPath = buildPath('createTrip');
+
+    const loadSubscriptionSummaryWithRetry = useCallback(async (): Promise<BillingSubscriptionSummary | null> => {
+        for (let attempt = 0; attempt < 3; attempt += 1) {
+            const summary = await getCurrentSubscriptionSummary();
+            if (summary) {
+                return summary;
+            }
+            if (attempt < 2) {
+                await new Promise((resolve) => window.setTimeout(resolve, 250 * (attempt + 1)));
+            }
+        }
+        return null;
+    }, []);
 
     const resolveTierFeatures = useCallback((tierKey: BillingCheckoutTierKey) => {
         const tier = PLAN_CATALOG[tierKey];
@@ -303,6 +327,10 @@ export const CheckoutPage: React.FC = () => {
     }, [hasHydratedForm, isEligibleAccount, travelerDetailsValid]);
 
     useEffect(() => {
+        setDiscountInput(checkoutLocationContext.discountCode || '');
+    }, [checkoutLocationContext.discountCode]);
+
+    useEffect(() => {
         let cancelled = false;
         void fetchPaddlePublicConfig()
             .then((config) => {
@@ -322,16 +350,29 @@ export const CheckoutPage: React.FC = () => {
         if (!isEligibleAccount) {
             setSubscriptionSummary(null);
             setIsSubscriptionSummaryLoading(false);
+            billingRepairAttemptedRef.current = false;
             return;
         }
 
         let cancelled = false;
         setIsSubscriptionSummaryLoading(true);
-        void getCurrentSubscriptionSummary()
-            .then((summary) => {
-                if (cancelled) return;
-                setSubscriptionSummary(summary);
-            })
+        void (async () => {
+            let summary = await loadSubscriptionSummaryWithRetry();
+            if (!summary && !billingRepairAttemptedRef.current) {
+                billingRepairAttemptedRef.current = true;
+                try {
+                    await getPaddleSubscriptionManagementUrls();
+                    await refreshAccess();
+                    summary = await loadSubscriptionSummaryWithRetry();
+                } catch (error) {
+                    if (!cancelled && !isMissingLinkedSubscriptionError(error)) {
+                        console.warn('Checkout billing summary repair failed.', error);
+                    }
+                }
+            }
+            if (cancelled) return;
+            setSubscriptionSummary(summary);
+        })()
             .catch((error) => {
                 if (cancelled) return;
                 console.warn('Failed to load current subscription summary on checkout.', error);
@@ -346,7 +387,7 @@ export const CheckoutPage: React.FC = () => {
         return () => {
             cancelled = true;
         };
-    }, [isEligibleAccount, checkoutCompleted]);
+    }, [checkoutCompleted, isEligibleAccount, loadSubscriptionSummaryWithRetry, refreshAccess]);
 
     useEffect(() => {
         trackEvent('checkout__page--view', {
@@ -910,6 +951,42 @@ export const CheckoutPage: React.FC = () => {
         travelerDetailsValid,
     ]);
 
+    const repairBillingState = useCallback(async (): Promise<BillingSubscriptionSummary | null> => {
+        try {
+            await getPaddleSubscriptionManagementUrls();
+        } catch (error) {
+            if (!isMissingLinkedSubscriptionError(error)) {
+                throw error;
+            }
+        }
+
+        for (let attempt = 0; attempt < 3; attempt += 1) {
+            try {
+                await refreshAccess();
+            } catch (error) {
+                console.warn('Checkout billing access refresh failed.', error);
+            }
+
+            try {
+                await refreshProfile();
+            } catch (error) {
+                console.warn('Checkout billing profile refresh failed.', error);
+            }
+
+            const refreshedSummary = await loadSubscriptionSummaryWithRetry();
+            if (refreshedSummary) {
+                setSubscriptionSummary(refreshedSummary);
+                return refreshedSummary;
+            }
+
+            if (attempt < 2) {
+                await new Promise((resolve) => window.setTimeout(resolve, 300 * (attempt + 1)));
+            }
+        }
+
+        return subscriptionSummary;
+    }, [loadSubscriptionSummaryWithRetry, refreshAccess, refreshProfile, subscriptionSummary]);
+
     const handleEditTravelerDetails = useCallback(() => {
         setCheckoutErrorMessage(null);
         setIsTravelerDetailsEditing(true);
@@ -950,6 +1027,38 @@ export const CheckoutPage: React.FC = () => {
             discountCode: checkoutLocationContext.discountCode,
         }));
     };
+
+    const handleApplyVoucher = useCallback(() => {
+        const normalized = discountInput.trim().toUpperCase();
+        trackEvent(normalized ? 'checkout__voucher--apply' : 'checkout__voucher--clear', {
+            code: normalized || null,
+            tier: selectedTierKey,
+            source,
+        });
+        navigate(buildBillingCheckoutPath({
+            tierKey: selectedTierKey,
+            source,
+            claimId: checkoutLocationContext.claimId,
+            returnTo: returnToPath,
+            tripId: checkoutLocationContext.tripId,
+            discountCode: normalized || null,
+        }));
+    }, [checkoutLocationContext.claimId, checkoutLocationContext.tripId, discountInput, navigate, returnToPath, selectedTierKey, source]);
+
+    const handleClearVoucher = useCallback(() => {
+        setDiscountInput('');
+        trackEvent('checkout__voucher--clear', {
+            tier: selectedTierKey,
+            source,
+        });
+        navigate(buildBillingCheckoutPath({
+            tierKey: selectedTierKey,
+            source,
+            claimId: checkoutLocationContext.claimId,
+            returnTo: returnToPath,
+            tripId: checkoutLocationContext.tripId,
+        }));
+    }, [checkoutLocationContext.claimId, checkoutLocationContext.tripId, navigate, returnToPath, selectedTierKey, source]);
 
     const handleAuthModeChange = (nextMode: CheckoutAuthMode) => {
         setAuthMode(nextMode);
@@ -1007,6 +1116,13 @@ export const CheckoutPage: React.FC = () => {
             });
             if (response.error) {
                 const errorCode = normalizeAuthErrorCode(response.error);
+                if (errorCode === 'user_already_exists') {
+                    setAuthMode('login');
+                    setAuthPassword('');
+                    setAuthErrorMessage(null);
+                    setAuthInfoMessage(t('errors.user_already_exists', { ns: 'auth', defaultValue: t('errors.default', { ns: 'auth' }) }));
+                    return;
+                }
                 setAuthErrorMessage(t(`errors.${errorCode}`, { ns: 'auth', defaultValue: t('errors.default', { ns: 'auth' }) }));
                 return;
             }
@@ -1091,6 +1207,15 @@ export const CheckoutPage: React.FC = () => {
             }
             navigateToPaddleCheckout(checkoutUrl);
         } catch (error) {
+            if (isExistingSubscriptionCheckoutError(error)) {
+                try {
+                    await repairBillingState();
+                    setCheckoutErrorMessage(null);
+                    return;
+                } catch (repairError) {
+                    console.warn('Checkout billing repair after existing-subscription guard failed.', repairError);
+                }
+            }
             const message = error instanceof Error ? error.message : t('checkout.errorConfig', { ns: 'pricing' });
             setCheckoutErrorMessage(message);
             showAppToast({
@@ -1122,6 +1247,7 @@ export const CheckoutPage: React.FC = () => {
         t,
         fromTripCheckout,
         persistTravelerDetails,
+        repairBillingState,
     ]);
 
     useEffect(() => {
@@ -1770,20 +1896,6 @@ export const CheckoutPage: React.FC = () => {
                                         <div className="text-sm text-slate-500">{t('shared.perMonth', { ns: 'pricing' })}</div>
                                     </div>
                                 </div>
-                                {discountLookup?.applicableToTier && discountLookup.estimate && discountSavingsLabel && discountCheckoutTotalLabel ? (
-                                    <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
-                                        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">
-                                            {t('voucher.appliedEyebrow', { ns: 'pricing', code: discountLookup.code })}
-                                        </p>
-                                        <p className="mt-2 text-sm font-medium text-emerald-900">
-                                            {t('voucher.checkoutSavingsMessage', {
-                                                ns: 'pricing',
-                                                savings: discountSavingsLabel,
-                                                discounted: discountCheckoutTotalLabel,
-                                            })}
-                                        </p>
-                                    </div>
-                                ) : null}
                                 </section>
 
                                 <section className="mt-8">
@@ -1797,6 +1909,57 @@ export const CheckoutPage: React.FC = () => {
                                         ))}
                                     </ul>
                                 </section>
+
+                                {shouldShowAcquisitionFlow ? (
+                                    <section className="mt-8 border-t border-slate-200 pt-4">
+                                        <p className={checkoutSectionLabelClassName}>{t('voucher.eyebrow', { ns: 'pricing' })}</p>
+                                        <p className="mt-2 text-sm text-slate-600">{t('voucher.description', { ns: 'pricing' })}</p>
+                                        <div className="mt-4 flex flex-col gap-3">
+                                            <div className="flex gap-3">
+                                                <input
+                                                    type="text"
+                                                    value={discountInput}
+                                                    onChange={(event) => setDiscountInput(event.target.value.toUpperCase())}
+                                                    placeholder={t('voucher.placeholder', { ns: 'pricing' })}
+                                                    autoCapitalize="characters"
+                                                    className="h-11 flex-1 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-900 shadow-sm transition-colors placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={handleApplyVoucher}
+                                                    className={cn(checkoutActionClassName, 'shrink-0 bg-accent-600 text-white hover:bg-accent-700')}
+                                                    {...getAnalyticsDebugAttributes('checkout__voucher--apply')}
+                                                >
+                                                    {t('voucher.applyCta', { ns: 'pricing' })}
+                                                </button>
+                                            </div>
+                                            {checkoutLocationContext.discountCode ? (
+                                                <button
+                                                    type="button"
+                                                    onClick={handleClearVoucher}
+                                                    className="self-start text-sm font-semibold text-slate-500 transition-colors hover:text-slate-900"
+                                                    {...getAnalyticsDebugAttributes('checkout__voucher--clear')}
+                                                >
+                                                    {t('voucher.clearCta', { ns: 'pricing' })}
+                                                </button>
+                                            ) : null}
+                                        </div>
+                                        {discountLookup?.applicableToTier && discountLookup.estimate && discountSavingsLabel && discountCheckoutTotalLabel ? (
+                                            <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+                                                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">
+                                                    {t('voucher.appliedEyebrow', { ns: 'pricing', code: discountLookup.code })}
+                                                </p>
+                                                <p className="mt-2 text-sm font-medium text-emerald-900">
+                                                    {t('voucher.checkoutSavingsMessage', {
+                                                        ns: 'pricing',
+                                                        savings: discountSavingsLabel,
+                                                        discounted: discountCheckoutTotalLabel,
+                                                    })}
+                                                </p>
+                                            </div>
+                                        ) : null}
+                                    </section>
+                                ) : null}
 
                                 <p className="mt-8 border-t border-slate-200 pt-4 text-xs leading-5 text-slate-500">
                                     {t('checkout.planSummaryBilling', { ns: 'pricing' })}

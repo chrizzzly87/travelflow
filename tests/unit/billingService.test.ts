@@ -91,6 +91,25 @@ describe('billingService startPaddleCheckoutSession', () => {
     );
   });
 
+  it('preserves checkout action codes for existing-subscription recovery flows', async () => {
+    dbServiceMocks.ensureExistingDbSession.mockResolvedValue('123e4567-e89b-12d3-a456-426614174000');
+    dbServiceMocks.dbGetAccessToken.mockResolvedValue('token-123');
+
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      ok: false,
+      error: 'A Paddle subscription already exists for this account and needs to be managed from billing settings.',
+      code: 'existing_paid_subscription_requires_refresh',
+    }), { status: 409 })));
+
+    try {
+      await startPaddleCheckoutSession({ tierKey: 'tier_mid' });
+      throw new Error('Expected checkout session to throw.');
+    } catch (error) {
+      expect(error).toBeInstanceOf(Error);
+      expect((error as Error & { code?: string }).code).toBe('existing_paid_subscription_requires_refresh');
+    }
+  });
+
   it('builds the dedicated checkout route with optional trip and claim metadata', () => {
     expect(buildBillingCheckoutPath({
       tierKey: 'tier_mid',

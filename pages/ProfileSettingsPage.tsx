@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, NavLink, useNavigate } from 'react-router-dom';
 import { CaretRight, SpinnerGap } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
@@ -11,6 +11,7 @@ import { LOCALE_DROPDOWN_ORDER, LOCALE_FLAGS, LOCALE_LABELS, normalizeLocale } f
 import type { AppLanguage } from '../types';
 import { useAuth } from '../hooks/useAuth';
 import { getCurrentSubscriptionSummary, getPaddleSubscriptionManagementUrls } from '../services/billingService';
+import { fetchPaddlePublicConfig, type PaddlePublicConfig } from '../services/paddleClient';
 import {
     checkUsernameAvailability,
     updateCurrentUserProfile,
@@ -23,6 +24,7 @@ import { FlagIcon } from '../components/flags/FlagIcon';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '../components/ui/select';
 import { buildPath } from '../config/routes';
 import { showAppToast } from '../components/ui/appToast';
+import { resolveEffectiveBillingTierKey } from '../lib/billing/subscriptionState';
 
 type Mode = 'settings' | 'onboarding';
 
@@ -159,14 +161,13 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
     const [isBillingLoading, setIsBillingLoading] = useState(false);
     const [isManageBillingSubmitting, setIsManageBillingSubmitting] = useState(false);
     const [isCancelBillingSubmitting, setIsCancelBillingSubmitting] = useState(false);
+    const [paddlePublicConfig, setPaddlePublicConfig] = useState<PaddlePublicConfig | null>(null);
     const billingRepairAttemptedRef = useRef(false);
 
     const appLocale = useMemo(
         () => normalizeLocale(i18n.resolvedLanguage ?? i18n.language ?? 'en'),
         [i18n.language, i18n.resolvedLanguage]
     );
-    const hasPaidTier = access?.tierKey === 'tier_mid' || access?.tierKey === 'tier_premium';
-
     const heading = mode === 'onboarding' ? t('settings.onboardingTitle') : t('settings.title');
     const description = mode === 'onboarding'
         ? t('settings.onboardingDescription')
@@ -199,6 +200,38 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
     }, [cachedProfile, isAuthenticated, isAuthProfileLoading, mode, refreshProfile]);
 
     useEffect(() => {
+        let cancelled = false;
+        void fetchPaddlePublicConfig()
+            .then((config) => {
+                if (!cancelled) {
+                    setPaddlePublicConfig(config);
+                }
+            })
+            .catch((error) => {
+                if (!cancelled) {
+                    console.warn('Failed to load Paddle public config for profile settings.', error);
+                }
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
+    const loadSubscriptionSummaryWithRetry = useCallback(async (): Promise<Awaited<ReturnType<typeof getCurrentSubscriptionSummary>>> => {
+        for (let attempt = 0; attempt < 3; attempt += 1) {
+            const summary = await getCurrentSubscriptionSummary();
+            if (summary) {
+                return summary;
+            }
+            if (attempt < 2) {
+                await new Promise((resolve) => window.setTimeout(resolve, 250 * (attempt + 1)));
+            }
+        }
+        return null;
+    }, []);
+
+    useEffect(() => {
         if (!isAuthenticated) {
             setSubscriptionSummary(null);
             setIsBillingLoading(false);
@@ -209,14 +242,15 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
         let cancelled = false;
         setIsBillingLoading(true);
         void (async () => {
-            let summary = await getCurrentSubscriptionSummary();
-            if (!summary && hasPaidTier && !billingRepairAttemptedRef.current) {
+            let summary = await loadSubscriptionSummaryWithRetry();
+            if (!summary && !billingRepairAttemptedRef.current) {
                 billingRepairAttemptedRef.current = true;
                 try {
                     await getPaddleSubscriptionManagementUrls();
-                    summary = await getCurrentSubscriptionSummary();
+                    await refreshAccess();
+                    summary = await loadSubscriptionSummaryWithRetry();
                 } catch (error) {
-                    if (!cancelled) {
+                    if (!cancelled && !(error instanceof Error && error.message.includes('No paid Paddle subscription is linked'))) {
                         console.warn('Failed to repair billing summary from Paddle management lookup.', error);
                     }
                 }
@@ -238,14 +272,20 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
         return () => {
             cancelled = true;
         };
-    }, [hasPaidTier, isAuthenticated]);
+    }, [isAuthenticated, loadSubscriptionSummaryWithRetry, refreshAccess]);
 
     const isProfileLoading = isAuthProfileLoading || !hasHydratedForm;
-    const currentTierLabel = access?.tierKey === 'tier_premium'
+    const effectiveTierKey = resolveEffectiveBillingTierKey({
+        currentTierKey: access?.tierKey ?? 'tier_free',
+        subscription: subscriptionSummary,
+        priceIds: paddlePublicConfig?.priceIds,
+    });
+    const currentTierLabel = effectiveTierKey === 'tier_premium'
         ? t('tiers.globetrotter.name', { ns: 'pricing' })
-        : access?.tierKey === 'tier_mid'
+        : effectiveTierKey === 'tier_mid'
             ? t('tiers.explorer.name', { ns: 'pricing' })
             : t('tiers.backpacker.name', { ns: 'pricing' });
+    const hasPaidTier = effectiveTierKey === 'tier_mid' || effectiveTierKey === 'tier_premium' || Boolean(subscriptionSummary?.providerSubscriptionId);
 
     const normalizedUsername = useMemo(() => normalizeUsernameInput(form.username), [form.username]);
     const normalizedUsernameDisplay = useMemo(() => normalizeUsernameDisplayInput(form.username), [form.username]);

@@ -132,6 +132,10 @@ export interface PaddlePublicConfig {
         tier_mid: boolean;
         tier_premium: boolean;
     };
+    priceIds?: {
+        tier_mid: string | null;
+        tier_premium: string | null;
+    };
     issues: PaddlePublicConfigIssue[];
 }
 
@@ -186,6 +190,7 @@ const parsePaddlePublicConfig = (payload: unknown): PaddlePublicConfig | null =>
         supabaseSyncConfigured?: unknown;
         webhookSyncMode?: unknown;
         tierAvailability?: unknown;
+        priceIds?: unknown;
         issues?: unknown;
     };
     const tierAvailability = data.tierAvailability && typeof data.tierAvailability === 'object'
@@ -220,6 +225,12 @@ const parsePaddlePublicConfig = (payload: unknown): PaddlePublicConfig | null =>
             tier_mid: asBoolean(tierAvailability?.tier_mid),
             tier_premium: asBoolean(tierAvailability?.tier_premium),
         },
+        priceIds: data.priceIds && typeof data.priceIds === 'object'
+            ? {
+                tier_mid: asTrimmedString((data.priceIds as Record<string, unknown>).tier_mid),
+                tier_premium: asTrimmedString((data.priceIds as Record<string, unknown>).tier_premium),
+            }
+            : undefined,
         issues,
     };
 };
