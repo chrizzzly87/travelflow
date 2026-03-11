@@ -123,12 +123,36 @@ describe('app/routes/DeferredAppRoutes root auth gate', () => {
     });
   });
 
+  it('keeps public profile routes eager even when their old lazy key is marked pending', async () => {
+    mocks.pendingModules.add('PublicProfilePage');
+
+    const { getByTestId, queryByTestId } = renderDeferredRoutes('/u/traveler');
+
+    await waitFor(() => {
+      expect(getByTestId('mock-public-profile-page')).toBeInTheDocument();
+    });
+    expect(getByTestId('location-probe').textContent).toBe('/u/traveler');
+    expect(queryByTestId('route-loading-shell')).toBeNull();
+  });
+
   it('supports public profile stamps routes', async () => {
     const { getByTestId } = renderDeferredRoutes('/u/traveler/stamps');
 
     await waitFor(() => {
       expect(getByTestId('location-probe').textContent).toBe('/u/traveler/stamps');
     });
+  });
+
+  it('keeps public profile stamps routes eager even when their old lazy key is marked pending', async () => {
+    mocks.pendingModules.add('PublicProfileStampsPage');
+
+    const { getByTestId, queryByTestId } = renderDeferredRoutes('/u/traveler/stamps');
+
+    await waitFor(() => {
+      expect(getByTestId('mock-public-profile-stamps-page')).toBeInTheDocument();
+    });
+    expect(getByTestId('location-probe').textContent).toBe('/u/traveler/stamps');
+    expect(queryByTestId('route-loading-shell')).toBeNull();
   });
 
   it('supports profile stamps route for authenticated users', async () => {
