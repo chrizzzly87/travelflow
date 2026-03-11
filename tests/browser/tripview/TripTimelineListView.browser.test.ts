@@ -2,6 +2,7 @@
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 
 import { TripTimelineListView } from '../../../components/tripview/TripTimelineListView';
 import { makeActivityItem, makeCityItem, makeTravelItem, makeTrip } from '../../helpers/tripFixtures';
@@ -26,6 +27,7 @@ vi.mock('../../../services/analyticsService', () => ({
 describe('components/tripview/TripTimelineListView', () => {
   it('renders timeline interactions with hover affordances and analytics events', () => {
     analyticsMocks.trackEvent.mockReset();
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
 
     const travel = makeTravelItem('travel-a-b', 2.05, 'Morning transfer');
     travel.description = 'Transfer from **Kabul** to _Herat_.';
@@ -52,11 +54,13 @@ describe('components/tripview/TripTimelineListView', () => {
     });
 
     const onSelect = vi.fn();
+    const onToggleTaskCheckbox = vi.fn();
 
     const { rerender } = render(
       React.createElement(TripTimelineListView, {
         trip,
         selectedItemId: null,
+        onToggleTaskCheckbox,
         onSelect,
       }),
     );
@@ -78,6 +82,7 @@ describe('components/tripview/TripTimelineListView', () => {
       React.createElement(TripTimelineListView, {
         trip,
         selectedItemId: 'travel-a-b',
+        onToggleTaskCheckbox,
         onSelect,
       }),
     );
@@ -97,7 +102,8 @@ describe('components/tripview/TripTimelineListView', () => {
 
     expect(screen.queryByText('From Kabul via Train')).not.toBeInTheDocument();
     expect(screen.getByText('old citadel walls', { exact: false })).toBeInTheDocument();
-    expect(screen.getAllByRole('checkbox')).toHaveLength(2);
+    const checkboxes = screen.getAllByRole('checkbox');
+    expect(checkboxes).toHaveLength(2);
     expect(screen.getByText('Altprogramm')).toBeInTheDocument();
     expect(screen.queryByText('**Citadel**')).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'book ahead' })).toHaveAttribute('href', 'https://example.com');
@@ -119,6 +125,16 @@ describe('components/tripview/TripTimelineListView', () => {
       trip_id: 'trip-1',
       item_id: 'activity-b-1',
       city_id: 'city-b',
+    });
+
+    return user.click(checkboxes[0]).then(() => {
+      expect(onToggleTaskCheckbox).toHaveBeenCalledWith('city-b', 0, false);
+      expect(analyticsMocks.trackEvent).toHaveBeenCalledWith('trip_view__timeline_task--toggle', {
+        trip_id: 'trip-1',
+        item_id: 'city-b',
+        task_index: 0,
+        checked: false,
+      });
     });
   });
 
@@ -203,6 +219,23 @@ describe('components/tripview/TripTimelineListView', () => {
       rafSpy.mockRestore();
       cancelRafSpy.mockRestore();
     }
+  });
+
+  it('renders checklist rows without a centered max-width wrapper', () => {
+    const trip = makeTrip({
+      startDate: '2026-03-01',
+      items: [makeCityItem({ id: 'city-a', title: 'Kabul', startDateOffset: 0, duration: 2, color: 'bg-rose-400' })],
+    });
+
+    const { container } = render(
+      React.createElement(TripTimelineListView, {
+        trip,
+        selectedItemId: null,
+        onSelect: vi.fn(),
+      }),
+    );
+
+    expect(container.querySelector('.max-w-4xl')).toBeNull();
   });
 
   it('does not auto-select a city while scrolling when no details panel is open', () => {

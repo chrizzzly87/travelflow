@@ -11,6 +11,7 @@ import { buildTimelineListModel } from './timelineListViewModel';
 interface TripTimelineListViewProps {
     trip: ITrip;
     selectedItemId: string | null;
+    onToggleTaskCheckbox?: (itemId: string, taskIndex: number, checked: boolean) => void;
     onSelect: (id: string | null, options?: { multi?: boolean; isCity?: boolean }) => void;
     selectionVisibilityKey?: string;
 }
@@ -52,7 +53,14 @@ const areTransferPositionsEqual = (
     return true;
 };
 
-const MARKDOWN_COMPONENTS = {
+const buildMarkdownComponents = (
+    tripId: string,
+    itemId: string,
+    onToggleTaskCheckbox?: (itemId: string, taskIndex: number, checked: boolean) => void,
+) => {
+    let taskIndex = 0;
+
+    return {
     a: ({ node, ...props }: any) => (
         <a
             {...props}
@@ -62,23 +70,55 @@ const MARKDOWN_COMPONENTS = {
         />
     ),
     p: ({ node, ...props }: any) => <p {...props} className="my-1 leading-6" />,
-    ul: ({ node, ...props }: any) => <ul {...props} className="my-2 list-disc ps-5 space-y-1.5" />,
+    ul: ({ node, ...props }: any) => {
+        const hasTaskItems = Array.isArray(node?.children)
+            && node.children.some((child: any) => typeof child?.checked === 'boolean');
+        return (
+            <ul
+                {...props}
+                className={hasTaskItems ? 'my-2 space-y-2 ps-0' : 'my-2 list-disc ps-5 space-y-1.5'}
+            />
+        );
+    },
     ol: ({ node, ...props }: any) => <ol {...props} className="my-2 list-decimal ps-5 space-y-1.5" />,
     li: ({ node, checked, ...props }: any) => (
         <li
             {...props}
+            data-task-list-item={typeof checked === 'boolean' ? 'true' : undefined}
             className={`leading-6 ${typeof checked === 'boolean' ? 'list-none ps-0' : ''}`}
         />
     ),
     input: ({ node, type, checked, ...props }: any) => {
         if (type === 'checkbox') {
+            const currentTaskIndex = taskIndex;
+            taskIndex += 1;
+            const handleTaskToggle = (event: React.MouseEvent<HTMLButtonElement>) => {
+                event.preventDefault();
+                event.stopPropagation();
+                const nextChecked = !Boolean(checked);
+                if (!onToggleTaskCheckbox) return;
+                trackEvent('trip_view__timeline_task--toggle', {
+                    trip_id: tripId,
+                    item_id: itemId,
+                    task_index: currentTaskIndex,
+                    checked: nextChecked,
+                });
+                onToggleTaskCheckbox(itemId, currentTaskIndex, nextChecked);
+            };
             return (
                 <span className="me-2 inline-flex align-middle">
                     <Checkbox
                         checked={Boolean(checked)}
-                        disabled
-                        className="pointer-events-none mt-0.5 h-4 w-4"
-                        aria-label={checked ? 'Completed item' : 'Open item'}
+                        disabled={!onToggleTaskCheckbox}
+                        className="mt-0.5 h-4 w-4"
+                        aria-label={checked ? 'Completed task' : 'Open task'}
+                        onClick={handleTaskToggle}
+                        {...getAnalyticsDebugAttributes('trip_view__timeline_task--toggle', {
+                            trip_id: tripId,
+                            item_id: itemId,
+                            task_index: currentTaskIndex,
+                            checked: Boolean(checked),
+                        })}
                     />
                 </span>
             );
@@ -92,6 +132,7 @@ const MARKDOWN_COMPONENTS = {
     code: ({ node, ...props }: any) => <code {...props} className="rounded bg-slate-100 px-1 py-0.5 text-[12px] text-slate-700" />,
     pre: ({ node, ...props }: any) => <pre {...props} className="my-2 overflow-x-auto rounded-md bg-slate-100 p-2 text-[12px] text-slate-700" />,
     hr: () => <hr className="my-3 border-slate-200" />,
+};
 };
 
 const TODAY_BADGE_CLASS = 'rounded-full border border-red-200 bg-red-50 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-[0.08em] text-red-700';
@@ -114,6 +155,7 @@ const isNodeVisibleInViewport = (node: Element, viewport: HTMLElement, padding =
 export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
     trip,
     selectedItemId,
+    onToggleTaskCheckbox,
     onSelect,
     selectionVisibilityKey,
 }) => {
@@ -333,7 +375,7 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
             ref={viewportRef}
             className="h-full overflow-y-auto bg-white"
         >
-            <div className="mx-auto w-full max-w-4xl px-4 py-7 pb-16 sm:px-7 lg:px-10">
+            <div className="w-full px-4 py-7 pb-16 sm:px-7 lg:px-8">
                 {model.sections.length === 0 && (
                     <div className="ps-2 text-sm leading-7 text-slate-500">
                         No city stops available yet.
@@ -479,7 +521,10 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
 
                                         {citySummaryMarkdown && (
                                             <div className="pb-2 text-sm text-slate-600">
-                                                <ReactMarkdown remarkPlugins={[remarkGfm]} components={MARKDOWN_COMPONENTS}>
+                                                <ReactMarkdown
+                                                    remarkPlugins={[remarkGfm]}
+                                                    components={buildMarkdownComponents(trip.id, section.city.id, onToggleTaskCheckbox)}
+                                                >
                                                     {citySummaryMarkdown}
                                                 </ReactMarkdown>
                                             </div>
@@ -533,7 +578,10 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
                                                                     </p>
                                                                     {activity.item.description && (
                                                                         <div className="mt-2 max-w-3xl text-sm text-slate-600">
-                                                                            <ReactMarkdown remarkPlugins={[remarkGfm]} components={MARKDOWN_COMPONENTS}>
+                                                                            <ReactMarkdown
+                                                                                remarkPlugins={[remarkGfm]}
+                                                                                components={buildMarkdownComponents(trip.id, activity.item.id, onToggleTaskCheckbox)}
+                                                                            >
                                                                                 {activity.item.description}
                                                                             </ReactMarkdown>
                                                                         </div>

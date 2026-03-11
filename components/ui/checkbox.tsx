@@ -11,10 +11,10 @@ export const Checkbox = React.forwardRef<React.ElementRef<typeof CheckboxPrimiti
         <CheckboxPrimitive.Root
             ref={ref}
             className={mergeClasses(
-                'peer relative h-4 w-4 shrink-0 cursor-pointer rounded-[4px] border border-gray-300 bg-white shadow-sm outline-none transition-colors',
+                'peer relative h-4 w-4 shrink-0 cursor-pointer rounded-[4px] border border-slate-400 bg-white shadow-sm outline-none transition-colors hover:border-slate-500',
                 'before:absolute before:-inset-2 before:content-[\'\']',
-                'data-[state=checked]:border-accent-500 data-[state=checked]:bg-accent-500',
-                'focus-visible:ring-2 focus-visible:ring-accent-300 focus-visible:ring-offset-2',
+                'data-[state=checked]:border-accent-600 data-[state=checked]:bg-accent-600',
+                'focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2',
                 'disabled:cursor-not-allowed disabled:opacity-50',
                 className
             )}
