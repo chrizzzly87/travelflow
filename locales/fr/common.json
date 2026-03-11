@@ -375,6 +375,19 @@
         "sync": "Modifiez, relancez et synchronisez-le sur tous vos appareils."
       }
     },
+    "claimConflict": {
+      "eyebrow": "Claim unavailable",
+      "title": "This trip draft was already claimed",
+      "descriptionLoggedOut": "Sign in with the original account or start a similar trip with the same setup.",
+      "descriptionLoggedIn": "This draft is already attached to another account. Start a similar trip with the same setup.",
+      "loginCta": "Sign in with the original account",
+      "createSimilarCta": "Create similar trip",
+      "benefitsTitle": "What we kept",
+      "benefits": {
+        "prefill": "Reuse your traveler setup, dates, and transport choices.",
+        "adjust": "Adjust the draft before starting a fresh generation."
+      }
+    },
     "warningSummary": {
       "title": "Notes d’adéquation du voyageur",
       "description": "Certaines étapes contiennent des précautions pratiques selon votre profil de voyageur."

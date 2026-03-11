@@ -375,6 +375,19 @@
         "sync": "Bearbeite, wiederhole und synchronisiere ihn auf allen Geräten."
       }
     },
+    "claimConflict": {
+      "eyebrow": "Übernahme nicht verfügbar",
+      "title": "Dieser Reiseentwurf wurde bereits übernommen",
+      "descriptionLoggedOut": "Melde dich mit dem ursprünglichen Konto an oder starte eine ähnliche Reise mit derselben Konfiguration.",
+      "descriptionLoggedIn": "Dieser Entwurf ist bereits mit einem anderen Konto verknüpft. Starte stattdessen eine ähnliche Reise mit derselben Konfiguration.",
+      "loginCta": "Mit ursprünglichem Konto anmelden",
+      "createSimilarCta": "Ähnliche Reise erstellen",
+      "benefitsTitle": "Was erhalten bleibt",
+      "benefits": {
+        "prefill": "Dein Traveler-Setup, deine Daten und deine Transportwünsche werden übernommen.",
+        "adjust": "Du kannst den Entwurf noch anpassen, bevor du eine neue Generierung startest."
+      }
+    },
     "warningSummary": {
       "title": "Hinweise zur Traveller-Passung",
       "description": "Einige Stopps enthalten praktische Hinweise passend zu deinem Traveller-Setup."

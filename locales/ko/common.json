@@ -375,6 +375,19 @@
         "sync": "모든 기기에서 수정하고 다시 시도하고 동기화하세요."
       }
     },
+    "claimConflict": {
+      "eyebrow": "Claim unavailable",
+      "title": "This trip draft was already claimed",
+      "descriptionLoggedOut": "Sign in with the original account or start a similar trip with the same setup.",
+      "descriptionLoggedIn": "This draft is already attached to another account. Start a similar trip with the same setup.",
+      "loginCta": "Sign in with the original account",
+      "createSimilarCta": "Create similar trip",
+      "benefitsTitle": "What we kept",
+      "benefits": {
+        "prefill": "Reuse your traveler setup, dates, and transport choices.",
+        "adjust": "Adjust the draft before starting a fresh generation."
+      }
+    },
     "warningSummary": {
       "title": "여행자 적합성 메모",
       "description": "일부 경유지에는 여행자 설정에 따른 실용적인 주의사항이 포함됩니다."

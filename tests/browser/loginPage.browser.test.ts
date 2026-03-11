@@ -96,6 +96,9 @@ vi.mock('../../services/tripGenerationQueueService', () => ({
       this.tripId = details?.tripId || null;
     }
   },
+  isQueuedTripGenerationClaimedByAnotherUserError: (error: unknown) => (
+    error instanceof Error && (error as Error & { claimedByAnotherUser?: boolean }).claimedByAnotherUser === true
+  ),
 }));
 
 vi.mock('../../services/anonymousAssetClaimService', () => ({
@@ -109,7 +112,10 @@ vi.mock('../../services/authNavigationService', () => ({
   clearRememberedAuthReturnPath: vi.fn(),
   getRememberedAuthReturnPath: () => null,
   rememberAuthReturnPath: vi.fn(),
-  resolvePreferredNextPath: () => '/create-trip',
+  resolvePreferredNextPath: (...args: unknown[]) => {
+    const candidate = args.find((value) => typeof value === 'string' && value.trim().length > 0) as string | undefined;
+    return candidate || '/create-trip';
+  },
 }));
 
 vi.mock('../../services/authUiPreferencesService', () => ({
@@ -245,6 +251,27 @@ describe('pages/LoginPage auth flows', () => {
       expect(mocks.processQueuedTripGenerationAfterAuth).toHaveBeenCalledWith('queue-claim-2');
     });
     expect(mocks.navigate).toHaveBeenCalledWith('/trip/trip-failed-77', { replace: true });
+  });
+
+  it('returns to the trip page with a claim-conflict modal when another account already claimed the request', async () => {
+    mocks.auth.isAuthenticated = true;
+    mocks.auth.isAnonymous = false;
+    mocks.searchParams = new URLSearchParams({
+      claim: 'queue-claim-9',
+      next: '/trip/trip-draft-9?claim=queue-claim-9',
+    });
+    mocks.processQueuedTripGenerationAfterAuth.mockRejectedValue(
+      Object.assign(new Error('Queued request was already claimed by another user.'), {
+        claimedByAnotherUser: true,
+      }),
+    );
+
+    render(React.createElement(LoginPage));
+
+    await waitFor(() => {
+      expect(mocks.processQueuedTripGenerationAfterAuth).toHaveBeenCalledWith('queue-claim-9');
+    });
+    expect(mocks.navigate).toHaveBeenCalledWith('/trip/trip-draft-9?claim_conflict=already_claimed', { replace: true });
   });
 
   it('submits browser-autofilled credentials even when React state was not updated by input events', async () => {

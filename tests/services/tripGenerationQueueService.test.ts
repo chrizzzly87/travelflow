@@ -58,6 +58,7 @@ vi.mock('../../utils', async (importOriginal) => {
 });
 
 import {
+  isQueuedTripGenerationClaimedByAnotherUserError,
   processQueuedTripGenerationAfterAuth,
   QueuedTripGenerationError,
 } from '../../services/tripGenerationQueueService';
@@ -277,5 +278,31 @@ describe('processQueuedTripGenerationAfterAuth', () => {
     expect(result.trip.title).toBe('Mallorca');
     expect(enqueueAsyncTripGenerationJobMock).not.toHaveBeenCalled();
     expect(startAttemptLogMock).not.toHaveBeenCalled();
+  });
+
+  it('surfaces an explicit claim-conflict error when another account already claimed the request', async () => {
+    claimRpcMock.mockImplementation((fn: string) => {
+      if (fn === 'claim_trip_generation_request') {
+        return Promise.resolve({
+          data: null,
+          error: {
+            code: 'P0001',
+            message: 'Queued request already claimed by another user.',
+          },
+        });
+      }
+      return Promise.resolve({ data: null, error: null });
+    });
+
+    let thrown: unknown = null;
+    try {
+      await processQueuedTripGenerationAfterAuth('request-1');
+    } catch (error) {
+      thrown = error;
+    }
+
+    expect(isQueuedTripGenerationClaimedByAnotherUserError(thrown)).toBe(true);
+    expect(fromSelectMaybeSingleMock).not.toHaveBeenCalled();
+    expect(enqueueAsyncTripGenerationJobMock).not.toHaveBeenCalled();
   });
 });

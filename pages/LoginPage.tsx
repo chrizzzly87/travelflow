@@ -13,6 +13,7 @@ import {
     runOpportunisticAnonymousAssetClaimCleanup,
 } from '../services/anonymousAssetClaimService';
 import {
+    isQueuedTripGenerationClaimedByAnotherUserError,
     processQueuedTripGenerationAfterAuth,
     QueuedTripGenerationError,
     runOpportunisticTripQueueCleanup,
@@ -26,6 +27,7 @@ import {
     rememberAuthReturnPath,
     resolvePreferredNextPath,
 } from '../services/authNavigationService';
+import { buildTripClaimConflictPath } from '../services/tripClaimConflictService';
 import {
     isRememberLoginEnabled,
     setRememberLoginEnabled,
@@ -228,6 +230,12 @@ export const LoginPage: React.FC = () => {
             clearRememberedAuthReturnPath();
             navigate(nextPath, { replace: true });
         } catch (error) {
+            if (isQueuedTripGenerationClaimedByAnotherUserError(error)) {
+                clearRememberedAuthReturnPath();
+                navigate(buildTripClaimConflictPath(nextPath), { replace: true });
+                return;
+            }
+
             const failedTripId = error instanceof QueuedTripGenerationError ? error.tripId : null;
             trackEvent('auth__queue--failed', {
                 request_id: claimRequestId,

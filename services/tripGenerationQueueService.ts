@@ -76,11 +76,13 @@ export class QueuedTripGenerationError extends Error {
 
 export class QueuedTripGenerationAlreadyClaimedError extends QueuedTripGenerationError {
     requestId: string | null;
+    claimedByAnotherUser: boolean;
 
-    constructor(message: string, details?: { tripId?: string | null; requestId?: string | null; cause?: unknown }) {
+    constructor(message: string, details?: { tripId?: string | null; requestId?: string | null; cause?: unknown; claimedByAnotherUser?: boolean }) {
         super(message, { tripId: details?.tripId, cause: details?.cause });
         this.name = 'QueuedTripGenerationAlreadyClaimedError';
         this.requestId = details?.requestId || null;
+        this.claimedByAnotherUser = details?.claimedByAnotherUser === true;
     }
 }
 
@@ -105,8 +107,18 @@ const isAlreadyClaimedQueueError = (error: { code?: string | null; message?: str
     return code === 'P0001' || message.includes('already claimed') || message.includes('already processed');
 };
 
+const isClaimedByAnotherUserQueueError = (error: { message?: string | null } | null | undefined): boolean => {
+    const message = typeof error?.message === 'string' ? error.message.trim().toLowerCase() : '';
+    return message.includes('already claimed by another user');
+};
+
 export const isQueuedTripGenerationAlreadyClaimedError = (error: unknown): error is QueuedTripGenerationAlreadyClaimedError => (
     error instanceof QueuedTripGenerationAlreadyClaimedError
+);
+
+export const isQueuedTripGenerationClaimedByAnotherUserError = (error: unknown): error is QueuedTripGenerationAlreadyClaimedError => (
+    error instanceof QueuedTripGenerationAlreadyClaimedError
+    && error.claimedByAnotherUser === true
 );
 
 const DEFAULT_CREATE_MODEL = getDefaultCreateTripModel();
@@ -556,6 +568,16 @@ export const processQueuedTripGenerationAfterAuth = async (
         p_request_id: requestId,
     });
     if (error) {
+        if (isClaimedByAnotherUserQueueError(error)) {
+            throw new QueuedTripGenerationAlreadyClaimedError(
+                'Queued request was already claimed by another user.',
+                {
+                    requestId,
+                    cause: error,
+                    claimedByAnotherUser: true,
+                },
+            );
+        }
         if (isAlreadyClaimedQueueError(error)) {
             const recovered = await recoverExistingQueuedClaimResult(requestId);
             if (recovered) {
