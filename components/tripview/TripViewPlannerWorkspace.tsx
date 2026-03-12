@@ -1,6 +1,5 @@
 import React, { Suspense, useCallback, useRef } from 'react';
 import { ArrowLeftRight, ArrowUpDown, CalendarDays, Focus, Layers, List, Maximize2, Minimize2, ZoomIn, ZoomOut } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import { getAnalyticsDebugAttributes } from '../../services/analyticsService';
 import { TripFloatingMapPreview } from './TripFloatingMapPreview';
 
@@ -18,7 +17,6 @@ interface TripViewPlannerWorkspaceProps {
     onTimelineTouchEnd: (event: React.TouchEvent<HTMLDivElement>) => void;
     onZoomOut: () => void;
     onZoomIn: () => void;
-    onZoomFit: () => void;
     onTimelineModeChange: (mode: 'calendar' | 'timeline') => void;
     onTimelineViewChange: (view: 'horizontal' | 'vertical') => void;
     zoomLevel: number;
@@ -82,7 +80,6 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
     onTimelineTouchEnd,
     onZoomOut,
     onZoomIn,
-    onZoomFit,
     onTimelineModeChange,
     onTimelineViewChange,
     zoomLevel,
@@ -126,7 +123,6 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
     onDetailsResizeKeyDown,
     onTimelineResizeKeyDown,
 }) => {
-    const { t } = useTranslation('common');
     const dockedMapAnchorRef = useRef<HTMLDivElement | null>(null);
     const isFloatingMapPreviewEnabled = !isMobile && TRIP_FLOATING_MAP_PREVIEW_BETA_ENABLED;
     const effectiveMapDockMode: 'docked' | 'floating' = isFloatingMapPreviewEnabled ? mapDockMode : 'docked';
@@ -187,13 +183,15 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                         >
                             <ZoomOut size={16} />
                         </button>
-                        <span
-                            role="status"
-                            aria-live="polite"
-                            className="rounded-md px-1 py-1.5 text-center text-xs font-semibold tabular-nums text-slate-700"
-                        >
-                            {formatZoomLevelLabel(zoomLevel)}
-                        </span>
+                        {!isMobile && (
+                            <span
+                                role="status"
+                                aria-live="polite"
+                                className="rounded-md px-1 py-1.5 text-center text-xs font-semibold tabular-nums text-slate-700"
+                            >
+                                {formatZoomLevelLabel(zoomLevel)}
+                            </span>
+                        )}
                         <button
                             type="button"
                             onClick={onZoomIn}
@@ -202,15 +200,6 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                             {...getAnalyticsDebugAttributes('trip_view__zoom', { direction: 'in' })}
                         >
                             <ZoomIn size={16} />
-                        </button>
-                        <button
-                            type="button"
-                            onClick={onZoomFit}
-                            className="rounded-md px-2 py-1.5 text-xs font-semibold text-gray-600 transition-colors hover:bg-gray-100"
-                            aria-label={t('tripView.zoom.fitAria')}
-                            {...getAnalyticsDebugAttributes('trip_view__zoom_fit', { surface: 'timeline_controls' })}
-                        >
-                            {t('tripView.zoom.fit')}
                         </button>
                     </div>
                 </>
@@ -367,6 +356,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                 {isMobile ? (
                     <div className="w-full h-full flex flex-col">
                         <div
+                            ref={verticalLayoutTimelineRef}
                             className="flex-1 min-h-0 w-full bg-white border-b border-gray-200 relative overflow-hidden"
                             onTouchStart={timelineMode === 'calendar' ? onTimelineTouchStart : undefined}
                             onTouchMove={timelineMode === 'calendar' ? onTimelineTouchMove : undefined}

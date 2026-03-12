@@ -526,6 +526,7 @@ interface TripViewModalLayerProps {
     editTitleValue: string;
     onEditTitleValueChange: (value: string) => void;
     onCommitTitleEdit: () => void;
+    onCancelTitleEdit: () => void;
     onStartTitleEdit: () => void;
     canManageTripMetadata: boolean;
     canEdit: boolean;
@@ -622,6 +623,7 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
     editTitleValue,
     onEditTitleValueChange,
     onCommitTitleEdit,
+    onCancelTitleEdit,
     onStartTitleEdit,
     canManageTripMetadata,
     canEdit,
@@ -725,6 +727,7 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
                     editTitleValue={editTitleValue}
                     onEditTitleValueChange={onEditTitleValueChange}
                     onCommitTitleEdit={onCommitTitleEdit}
+                    onCancelTitleEdit={onCancelTitleEdit}
                     onStartTitleEdit={onStartTitleEdit}
                     canManageTripMetadata={canManageTripMetadata}
                     canEdit={canEdit}
@@ -1391,11 +1394,13 @@ const useTripViewRender = ({
                     { label: 'Lifecycle: Reactivated expired trip' }
                 );
             }
-            showAppToast({
-                tone: 'add',
-                title: t('tripPaywall.reactivate.toast.title'),
-                description: t('tripPaywall.reactivate.toast.description'),
-            });
+            if (!isMobileViewport && !suppressToasts) {
+                showAppToast({
+                    tone: 'add',
+                    title: t('tripPaywall.reactivate.toast.title'),
+                    description: t('tripPaywall.reactivate.toast.description'),
+                });
+            }
             return;
         }
 
@@ -1411,6 +1416,7 @@ const useTripViewRender = ({
     }, [
         access?.entitlements.tripExpirationDays,
         initialViewSettings,
+        isMobileViewport,
         location.hash,
         location.pathname,
         location.search,
@@ -1418,6 +1424,7 @@ const useTripViewRender = ({
         onUpdateTrip,
         openLoginModal,
         paywallActivationMode,
+        suppressToasts,
         t,
         trip.defaultView,
         trip.id,
@@ -1431,18 +1438,22 @@ const useTripViewRender = ({
             try {
                 const result = await processQueuedTripGenerationAfterAuth(pendingAuthQueueRequestId);
                 registerTripGenerationCompletionWatch(result.tripId, 'auth_queue_claim_trip_view');
-                showAppToast({
-                    tone: 'add',
-                    title: 'Generation started',
-                    description: 'Trip generation started and is running in the background.',
-                });
+                if (!isMobileViewport && !suppressToasts) {
+                    showAppToast({
+                        tone: 'add',
+                        title: 'Generation started',
+                        description: 'Trip generation started and is running in the background.',
+                    });
+                }
                 navigate(`/trip/${result.tripId}`, { replace: true });
             } catch (error) {
-                showAppToast({
-                    tone: 'warning',
-                    title: 'Generation unavailable',
-                    description: error instanceof Error ? error.message : 'Could not start trip generation.',
-                });
+                if (!isMobileViewport && !suppressToasts) {
+                    showAppToast({
+                        tone: 'warning',
+                        title: 'Generation unavailable',
+                        description: error instanceof Error ? error.message : 'Could not start trip generation.',
+                    });
+                }
                 autoClaimedPendingAuthQueueRequestIdRef.current = null;
             } finally {
                 setIsResolvingPendingAuthGeneration(false);
@@ -1458,11 +1469,13 @@ const useTripViewRender = ({
     }, [
         isAnonymous,
         isAuthenticated,
+        isMobileViewport,
         isResolvingPendingAuthGeneration,
         navigate,
         openLoginModal,
         pendingAuthLoginReturnPath,
         pendingAuthQueueRequestId,
+        suppressToasts,
     ]);
     useEffect(() => {
         if (!pendingAuthQueueRequestId) return;
@@ -1645,7 +1658,7 @@ const useTripViewRender = ({
         action?: { label: string; onClick: () => void };
         disableDefaultUndo?: boolean;
     }) => {
-        if (suppressToasts) return;
+        if (suppressToasts || isMobileViewport) return;
         const action = resolveTripToastUndoAction({
             action: options?.action,
             disableDefaultUndo: options?.disableDefaultUndo,
@@ -1659,7 +1672,7 @@ const useTripViewRender = ({
             iconVariant: options?.iconVariant,
             action,
         });
-    }, [suppressToasts]);
+    }, [isMobileViewport, suppressToasts]);
 
     useTripCopyNoticeToast({
         tripId: trip.id,
@@ -2677,12 +2690,6 @@ const useTripViewRender = ({
         [detailsPanelVisible, detailsWidth, effectiveLayoutMode, effectiveMapDockMode, sidebarWidth, timelineHeight]
     );
 
-    const handleFitTimelineZoom = useCallback(() => {
-        const didApply = fitTimelineZoom(undefined, { force: true, source: 'manual' });
-        if (!didApply) return;
-        markZoomDirty('manual');
-    }, [fitTimelineZoom, markZoomDirty]);
-
     const resolveSteppedZoomLevel = useCallback((
         currentZoomLevel: number,
         direction: 'in' | 'out',
@@ -2816,7 +2823,7 @@ const useTripViewRender = ({
         />
     );
 
-    const { handleStartTitleEdit, handleCommitTitleEdit } = useTripTitleEditHandlers({
+    const { handleStartTitleEdit, handleCommitTitleEdit, handleCancelTitleEdit } = useTripTitleEditHandlers({
         canManageTripMetadata,
         isMobile,
         isEditingTitle,
@@ -3056,13 +3063,6 @@ const useTripViewRender = ({
                             markZoomDirty();
                             setZoomLevel((value) => resolveSteppedZoomLevel(value, 'in'));
                         }}
-                        onZoomFit={() => {
-                            trackEvent('trip_view__zoom_fit', {
-                                trip_id: trip.id,
-                                timeline_mode: timelineMode,
-                            });
-                            handleFitTimelineZoom();
-                        }}
                         onTimelineModeChange={(mode) => {
                             if (mode === timelineMode) return;
                             trackEvent(mode === 'calendar' ? 'trip_view__mode--calendar' : 'trip_view__mode--timeline', {
@@ -3179,6 +3179,7 @@ const useTripViewRender = ({
                         editTitleValue={editTitleValue}
                         onEditTitleValueChange={setEditTitleValue}
                         onCommitTitleEdit={handleCommitTitleEdit}
+                        onCancelTitleEdit={handleCancelTitleEdit}
                         onStartTitleEdit={handleStartTitleEdit}
                         canManageTripMetadata={canManageTripMetadata}
                         canEdit={canEdit}

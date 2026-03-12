@@ -12,8 +12,6 @@ vi.mock('react-i18next', () => ({
       if (key === 'tripView.header.titleTooltipEditable') return 'Open trip details and edit the title';
       if (key === 'tripView.header.editTitleCta') return 'Edit title';
       if (key === 'tripView.header.openDetailsCta') return 'Open trip details';
-      if (key === 'tripView.header.trips') return 'Trips';
-      if (key === 'tripView.header.tripsTooltip') return 'Open trips manager';
       if (key === 'tripView.header.share') return 'Share';
       if (key === 'nav.login') return 'Login';
       return key;
@@ -21,8 +19,22 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
+const accountMenuMocks = vi.hoisted(() => ({
+  props: [] as Array<Record<string, unknown>>,
+}));
+
 vi.mock('../../../components/navigation/AccountMenu', () => ({
-  AccountMenu: () => React.createElement('div', { 'data-testid': 'account-menu' }, 'profile menu'),
+  AccountMenu: (props: Record<string, unknown>) => {
+    accountMenuMocks.props.push(props);
+    return React.createElement(
+      'div',
+      { 'data-testid': 'account-menu' },
+      React.createElement('button', {
+        type: 'button',
+        onClick: () => (props.onOpenTripManager as (() => void) | undefined)?.(),
+      }, 'Open My Trips'),
+    );
+  },
 }));
 
 const analyticsMocks = vi.hoisted(() => ({
@@ -66,9 +78,10 @@ describe('components/tripview/TripViewHeader', () => {
   afterEach(() => {
     cleanup();
     analyticsMocks.trackEvent.mockReset();
+    accountMenuMocks.props = [];
   });
 
-  it('uses the title as the trip details trigger and shows the authenticated profile menu', () => {
+  it('uses the title as the trip details trigger and moves the trips entry into the account menu', () => {
     const props = buildProps();
 
     render(
@@ -81,15 +94,29 @@ describe('components/tripview/TripViewHeader', () => {
     expect(titleButton).toHaveAttribute('data-no-press-scale', 'true');
     fireEvent.mouseEnter(titleButton);
     fireEvent.click(titleButton);
-    fireEvent.click(screen.getByRole('button', { name: 'Trips' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Open My Trips' }));
 
     expect(props.onPrewarmTripInfo).toHaveBeenCalledTimes(1);
     expect(props.onOpenTripInfo).toHaveBeenCalledTimes(1);
     expect(props.onOpenManager).toHaveBeenCalledTimes(1);
     expect(screen.getByTestId('account-menu')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Trips' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Login' })).not.toBeInTheDocument();
     expect(analyticsMocks.trackEvent).toHaveBeenCalledWith('trip_view__trip_info--open', { source: 'header_title' });
-    expect(analyticsMocks.trackEvent).toHaveBeenCalledWith('navigation__my_trips', { source: 'trip_view_header' });
+  });
+
+  it('hides the account label on mobile while keeping the profile menu available', () => {
+    const props = buildProps();
+    props.isMobile = true;
+
+    render(
+      React.createElement(MemoryRouter, null,
+        React.createElement(TripViewHeader, props),
+      ),
+    );
+
+    expect(accountMenuMocks.props.at(-1)?.showLabel).toBe(false);
+    expect(accountMenuMocks.props.at(-1)?.showCaret).toBe(false);
   });
 
   it('falls back to the login button for guests', () => {

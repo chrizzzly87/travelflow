@@ -43,6 +43,16 @@ vi.mock('../../../services/analyticsService', () => ({
   getAnalyticsDebugAttributes: () => ({}),
 }));
 
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => {
+      if (key === 'nav.createTrip') return 'Create Trip';
+      if (key === 'nav.myTrips') return 'My Trips';
+      return key;
+    },
+  }),
+}));
+
 import { AccountMenu } from '../../../components/navigation/AccountMenu';
 
 describe('components/navigation/AccountMenu recent trips', () => {
@@ -103,39 +113,34 @@ describe('components/navigation/AccountMenu recent trips', () => {
     expect(mocks.trackEvent).toHaveBeenCalledWith('navigation__account_menu--recent_view_all');
   });
 
-  it('opens public profile shortcut when username is available', async () => {
+  it('replaces the old planner/settings shortcuts with My Trips and Create Trip actions', async () => {
     const user = userEvent.setup();
+    const onOpenTripManager = vi.fn();
     render(React.createElement(AccountMenu, {
       email: 'traveler@example.com',
       userId: 'user-1',
       isAdmin: false,
+      onOpenTripManager,
     }));
 
     await user.click(screen.getAllByRole('button', { name: /traveler/i })[0]);
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'View public profile' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'My Trips' })).toBeInTheDocument();
     });
 
-    await user.click(screen.getByRole('button', { name: 'View public profile' }));
+    await user.click(screen.getByRole('button', { name: 'My Trips' }));
 
-    expect(mocks.navigate).toHaveBeenCalledWith('/u/traveler');
-    expect(mocks.trackEvent).toHaveBeenCalledWith('navigation__account_menu--public_profile');
-  });
+    expect(onOpenTripManager).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('menu', { name: 'Account menu' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Settings' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Stamps' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'View public profile' })).not.toBeInTheDocument();
 
-  it('opens stamp collection shortcut', async () => {
-    const user = userEvent.setup();
-    render(React.createElement(AccountMenu, {
-      email: 'traveler@example.com',
-      userId: 'user-1',
-      isAdmin: false,
-    }));
+    await user.click(screen.getByRole('button', { name: 'Create Trip' }));
 
-    await user.click(screen.getAllByRole('button', { name: /traveler/i })[0]);
-    await user.click(screen.getByRole('button', { name: 'Stamps' }));
-
-    expect(mocks.navigate).toHaveBeenCalledWith('/profile/stamps');
-    expect(mocks.trackEvent).toHaveBeenCalledWith('navigation__account_menu--stamps');
+    expect(mocks.navigate).toHaveBeenCalledWith('/create-trip');
+    expect(mocks.trackEvent).toHaveBeenCalledWith('navigation__account_menu--create_trip');
   });
 
   it('supports admin identity label mode without recent trips section', async () => {

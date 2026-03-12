@@ -6,7 +6,7 @@ import { Plus } from 'lucide-react';
 import { TransportModeIcon } from './TransportModeIcon';
 import { normalizeTransportMode } from '../shared/transportModes';
 import { getExampleCityLaneViewTransitionName } from '../shared/viewTransitionNames';
-import { buildRenderedTimelineDaySlots } from './tripview/timelineRenderedSlots';
+import { buildRenderedTimelineDaySlots, buildRenderedTimelineMonths } from './tripview/timelineRenderedSlots';
 
 interface VerticalTimelineProps {
   trip: ITrip;
@@ -43,6 +43,10 @@ const TRANSFER_PILL_ATTACH_INSET_PX = 5;
 const TRANSFER_PILL_EDGE_ATTACH_INSET_PX = 3;
 const VERTICAL_DAY_RAIL_WIDTH_PX = 64;
 const VERTICAL_MONTH_RAIL_WIDTH_PX = 24;
+const VERTICAL_MONTH_RAIL_HEADER_HEIGHT_PX = 32;
+const VERTICAL_MONTH_LABEL_PADDING_PX = 10;
+
+const estimateMonthLabelWidth = (label: string): number => label.length * 7.2;
 
 const parseLocalTripDate = (value: string): Date | null => {
   if (!value) return null;
@@ -172,6 +176,10 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
       baseStartDate,
     });
   }, [extraTimelineHeight, parsedTripStartDate, pixelsPerDay, todayRowIndex, trip.startDate, tripLength, visualStartOffset]);
+  const renderedMonthGroups = React.useMemo(
+    () => buildRenderedTimelineMonths(renderedDaySlots),
+    [renderedDaySlots],
+  );
   const renderedTimelineHeight = React.useMemo(
     () => renderedDaySlots.reduce((maxHeight, slot) => Math.max(maxHeight, slot.start + slot.size), 0),
     [renderedDaySlots],
@@ -605,11 +613,10 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                         className="relative flex h-full flex-shrink-0 flex-col border-r border-gray-100 bg-slate-50/80"
                         style={{ width: `${VERTICAL_MONTH_RAIL_WIDTH_PX}px` }}
                     >
-                        <div className="sticky top-0 h-8 border-b border-gray-100 bg-slate-50/90 backdrop-blur" />
+                        <div className="sticky top-0 z-10 h-8 border-b border-gray-100 bg-slate-50/90 backdrop-blur" />
                         <div className="relative w-full flex-1">
-                            {renderedDaySlots.map((slot, index) => {
+                            {renderedDaySlots.map((slot) => {
                                 const isToday = slot.isToday;
-                                const showsMonthLabel = index === 0 || renderedDaySlots[index - 1]?.monthName !== slot.monthName;
 
                                 return (
                                     <div
@@ -621,16 +628,29 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                                             height: `${slot.size}px`,
                                             top: `${slot.start}px`,
                                         }}
+                                    />
+                                );
+                            })}
+                            {renderedMonthGroups.map((month) => {
+                                const fullLabelFits = month.widthPx >= (estimateMonthLabelWidth(month.name) + (VERTICAL_MONTH_LABEL_PADDING_PX * 2));
+                                const label = fullLabelFits ? month.name : month.shortName;
+                                const labelTop = Math.max(
+                                    VERTICAL_MONTH_RAIL_HEADER_HEIGHT_PX + 6,
+                                    month.startPx + (month.widthPx / 2) - (estimateMonthLabelWidth(label) / 2),
+                                );
+
+                                return (
+                                    <span
+                                        key={`month-rail-label-${month.startIndex}`}
+                                        className="pointer-events-none absolute left-1/2 z-[1] origin-center -translate-x-1/2 -rotate-90 whitespace-nowrap text-[9px] font-bold uppercase tracking-[0.16em] text-slate-400"
+                                        style={{
+                                            top: `${Math.max(0, labelTop)}px`,
+                                            maxWidth: `${Math.max(18, month.widthPx - VERTICAL_MONTH_LABEL_PADDING_PX)}px`,
+                                        }}
+                                        aria-label={month.name}
                                     >
-                                        {showsMonthLabel && (
-                                            <span
-                                                className="absolute left-1/2 top-3 origin-center -translate-x-1/2 -rotate-90 whitespace-nowrap text-[9px] font-bold uppercase tracking-[0.16em] text-slate-400"
-                                                aria-label={slot.monthName}
-                                            >
-                                                {slot.monthShort}
-                                            </span>
-                                        )}
-                                    </div>
+                                        {label}
+                                    </span>
                                 );
                             })}
                         </div>

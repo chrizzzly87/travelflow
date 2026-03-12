@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Folder, Info, Pencil, Share2 } from 'lucide-react';
+import { Info, Pencil, Share2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
@@ -83,18 +83,18 @@ export const TripViewHeader: React.FC<TripViewHeaderProps> = ({
         : t('tripView.header.titleTooltipReadonly');
 
     return (
-        <header className="border-b border-gray-200 bg-white px-4 py-2.5 sm:px-6 z-30 shrink-0">
+        <header className="relative z-[1600] isolate shrink-0 border-b border-gray-200 bg-white px-4 py-2.5 sm:px-6">
             <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
+            <div className="flex min-w-0 flex-1 items-center gap-1.5 sm:gap-2.5">
                 <Link
                     to="/"
-                    className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity shrink-0"
+                    className="flex shrink-0 cursor-pointer items-center gap-1 transition-opacity hover:opacity-80"
                     title="Go to Homepage"
                     aria-label="Go to Homepage"
                 >
                     <AppBrand wordmarkClassName="hidden text-lg font-extrabold tracking-tight text-slate-900 sm:block" />
                 </Link>
-                <div className="h-6 w-px bg-gray-200 mx-2 hidden sm:block" />
+                <div className="mx-0.5 hidden h-6 w-px bg-gray-200 sm:block" />
                 <button
                     ref={titleAreaRef}
                     type="button"
@@ -134,21 +134,6 @@ export const TripViewHeader: React.FC<TripViewHeaderProps> = ({
             </div>
 
             <div className="flex shrink-0 items-center gap-2">
-                <button
-                    type="button"
-                    onClick={() => {
-                        trackEvent('navigation__my_trips', { source: 'trip_view_header' });
-                        onOpenManager();
-                    }}
-                    className={`${headerSecondaryButtonClassName} ${isMobile ? 'h-10 w-10 justify-center px-0' : ''}`}
-                    aria-label={t('tripView.header.trips')}
-                    data-tooltip={t('tripView.header.tripsTooltip')}
-                    {...getAnalyticsDebugAttributes('navigation__my_trips', { source: 'trip_view_header' })}
-                >
-                    <Folder size={16} />
-                    {!isMobile && <span>{t('tripView.header.trips')}</span>}
-                    {isMobile && <span className="sr-only">{t('tripView.header.trips')}</span>}
-                </button>
                 {canShare && (
                     <button
                         type="button"
@@ -172,10 +157,16 @@ export const TripViewHeader: React.FC<TripViewHeaderProps> = ({
                         email={accountEmail}
                         userId={accountUserId}
                         isAdmin={isAdminSession}
+                        compact={isMobile}
+                        showLabel={!isMobile}
+                        showCaret={!isMobile}
                         labelMode="profile"
                         showRecentTripsSection={false}
                         showCurrentPageSummary={false}
-                        triggerClassName="gap-2 rounded-md px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
+                        onOpenTripManager={onOpenManager}
+                        triggerClassName={isMobile
+                            ? 'h-10 w-10 justify-center px-0'
+                            : 'gap-2 rounded-md px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900'}
                     />
                 ) : (
                     <button

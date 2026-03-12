@@ -14,6 +14,8 @@ vi.mock('react-i18next', () => ({
       if (key === 'tripView.infoDialog.tabs.destination') return 'Destination';
       if (key === 'tripView.infoDialog.tabs.debug') return 'Debug';
       if (key === 'tripView.infoDialog.general.titleLabel') return 'Trip title';
+      if (key === 'tripView.infoDialog.general.editAction') return '(edit)';
+      if (key === 'tripView.infoDialog.general.saveAction') return 'save';
       if (key === 'tripView.infoDialog.export.activities.action') return 'Export activities (.ics)';
       if (key === 'tripView.infoDialog.export.cities.action') return 'Export cities (.ics)';
       if (key === 'tripView.infoDialog.export.everything.action') return 'Download everything (.ics)';
@@ -53,6 +55,7 @@ const buildProps = (): React.ComponentProps<typeof TripInfoModal> => ({
   editTitleValue: 'Sample Trip',
   onEditTitleValueChange: vi.fn(),
   onCommitTitleEdit: vi.fn(),
+  onCancelTitleEdit: vi.fn(),
   onStartTitleEdit: vi.fn(),
   canManageTripMetadata: true,
   canEdit: true,
@@ -116,7 +119,7 @@ describe('components/TripInfoModal', () => {
     expect(props.onOpenPrintLayout).toHaveBeenCalledTimes(1);
   });
 
-  it('shows the editable title field immediately and exposes the admin debug tab only for admins', async () => {
+  it('keeps the title field disabled until edit mode and exposes the admin debug tab only for admins', async () => {
     const props = buildProps();
     props.adminMeta = {
       ownerUserId: 'user-1',
@@ -129,8 +132,10 @@ describe('components/TripInfoModal', () => {
 
     const titleField = screen.getByRole('textbox', { name: 'Trip title' });
     expect(titleField).toHaveValue('Sample Trip');
+    expect(titleField).toBeDisabled();
     expect(titleField).toHaveClass('rounded-md');
-    expect(titleField).toHaveClass('h-11');
+    expect(titleField).toHaveClass('h-10');
+    expect(screen.getByRole('button', { name: '(edit)' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Add to favorites' })).toHaveClass('rounded-md');
 
     const debugTab = screen.getByRole('tab', { name: 'Debug' });
@@ -138,6 +143,28 @@ describe('components/TripInfoModal', () => {
     await waitFor(() => expect(debugTab).toHaveAttribute('data-state', 'active'));
     expect(screen.getByText('Admin access')).toBeInTheDocument();
     expect(screen.getByText('AI generation diagnostics')).toBeInTheDocument();
+  });
+
+  it('switches the title controls into save mode and lets escape abort the draft edit', async () => {
+    const props = buildProps();
+    const { rerender } = render(React.createElement(TripInfoModal, props));
+
+    fireEvent.click(screen.getByRole('button', { name: '(edit)' }));
+    expect(props.onStartTitleEdit).toHaveBeenCalledTimes(1);
+
+    rerender(React.createElement(TripInfoModal, {
+      ...props,
+      isEditingTitle: true,
+      editTitleValue: 'Updated Trip',
+    }));
+
+    const titleField = screen.getByRole('textbox', { name: 'Trip title' });
+    expect(titleField).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'save' })).toBeInTheDocument();
+
+    fireEvent.keyDown(titleField, { key: 'Escape' });
+
+    expect(props.onCancelTitleEdit).toHaveBeenCalledTimes(1);
   });
 
   it('keeps history actions inside the history tab and routes go-to-entry through the provided handler', async () => {

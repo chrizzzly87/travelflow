@@ -35,8 +35,8 @@ describe('components/tripview/timelineRenderedSlots', () => {
         const months = buildRenderedTimelineMonths(slots);
 
         expect(months).toEqual([
-            { name: 'January', startIndex: 0, widthPx: 160 },
-            { name: 'February', startIndex: 2, widthPx: 80 },
+            { name: 'January', shortName: 'Jan', startIndex: 0, startPx: 0, widthPx: 160 },
+            { name: 'February', shortName: 'Feb', startIndex: 2, startPx: 160, widthPx: 80 },
         ]);
     });
 });
