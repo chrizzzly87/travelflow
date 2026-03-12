@@ -123,6 +123,8 @@ describe('components/tripview/TripViewPlannerWorkspace', () => {
 
     const mapPane = screen.getByTestId('planner-mobile-map-pane');
     const timelinePane = screen.getByTestId('planner-mobile-timeline-pane');
+    expect(mapPane.className).toContain('h-[26vh]');
+    expect(mapPane.className).toContain('min-h-[180px]');
     expect(mapPane.compareDocumentPosition(timelinePane) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 

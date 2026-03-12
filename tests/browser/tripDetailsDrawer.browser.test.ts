@@ -28,7 +28,7 @@ describe('components/TripDetailsDrawer', () => {
     drawerMocks.contentProps = [];
   });
 
-  it('opens as a full-height non-modal drawer without the mobile peek state', () => {
+  it('uses the default mobile drawer behavior with overlay and full-height content', () => {
     render(
       React.createElement(TripDetailsDrawer, {
         open: true,
@@ -38,15 +38,14 @@ describe('components/TripDetailsDrawer', () => {
       }, React.createElement('div', null, 'details')),
     );
 
-    expect(drawerMocks.rootProps.at(-1)?.modal).toBe(false);
     expect(drawerMocks.rootProps.at(-1)?.autoFocus).toBe(false);
-    expect(drawerMocks.rootProps.at(-1)?.handleOnly).toBe(true);
-    expect(drawerMocks.rootProps.at(-1)?.disablePreventScroll).toBe(true);
-    expect(drawerMocks.rootProps.at(-1)?.dismissible).toBe(true);
-    expect(drawerMocks.rootProps.at(-1)?.snapPoints).toEqual([0.9]);
-    expect(drawerMocks.rootProps.at(-1)?.activeSnapPoint).toBe(0.9);
-    expect(drawerMocks.contentProps.at(-1)?.hideOverlay).toBe(true);
+    expect(drawerMocks.rootProps.at(-1)?.modal).toBeUndefined();
+    expect(drawerMocks.rootProps.at(-1)?.handleOnly).toBeUndefined();
+    expect(drawerMocks.rootProps.at(-1)?.disablePreventScroll).toBeUndefined();
+    expect(drawerMocks.rootProps.at(-1)?.dismissible).toBeUndefined();
+    expect(drawerMocks.rootProps.at(-1)?.snapPoints).toBeUndefined();
+    expect(drawerMocks.rootProps.at(-1)?.activeSnapPoint).toBeUndefined();
+    expect(drawerMocks.contentProps.at(-1)?.hideOverlay).toBeUndefined();
     expect(String(drawerMocks.contentProps.at(-1)?.className)).toContain('h-[min(92vh,780px)]');
-    expect(screen.queryByRole('button', { name: 'Expand trip details drawer' })).not.toBeInTheDocument();
   });
 });

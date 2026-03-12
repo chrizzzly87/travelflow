@@ -4,7 +4,7 @@ import remarkGfm from 'remark-gfm';
 import { Hotel, MapPin } from 'lucide-react';
 
 import { TransportModeIcon } from '../TransportModeIcon';
-import { ActivityTypeIcon, formatActivityTypeLabel, getActivityTypePaletteParts } from '../ActivityTypeVisuals';
+import { ActivityTypeIcon, formatActivityTypeLabel, getActivityTypePaletteClass } from '../ActivityTypeVisuals';
 import { Checkbox } from '../ui/checkbox';
 import type { ITrip } from '../../types';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
@@ -705,21 +705,20 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
                                                                         </div>
                                                                     )}
                                                                     {activityTypes.length > 0 && (
-                                                                        <div className="mt-3 flex items-center -space-x-2 ps-1">
-                                                                            {activityTypes.map((type) => {
+                                                                        <div className="group/pills mt-3 flex items-center ps-1">
+                                                                            {activityTypes.map((type, index) => {
                                                                                 const label = formatActivityTypeLabel(type);
-                                                                                const palette = getActivityTypePaletteParts(type);
                                                                                 return (
                                                                                     <span
                                                                                         key={`${activity.item.id}-${type}`}
                                                                                         title={label}
                                                                                         aria-label={label}
-                                                                                        className="group/type relative inline-flex h-8 items-center overflow-hidden rounded-full border border-slate-200 bg-white/95 pe-0 shadow-sm transition-[padding,transform,box-shadow] duration-200 hover:z-10 hover:-translate-y-0.5 hover:pe-3 hover:shadow-md"
+                                                                                        className={`relative inline-flex h-8 items-center overflow-hidden rounded-full border pe-0 opacity-85 transition-[margin,opacity] duration-200 ease-out [z-index:calc(sibling-count()-sibling-index())] ${getActivityTypePaletteClass(type)} ${index > 0 ? '-ms-2 group-hover/pills:ms-2 group-focus-visible:ms-2' : ''} group-hover/pills:opacity-100 group-focus-visible:opacity-100`}
                                                                                     >
-                                                                                        <span className={`inline-flex size-8 shrink-0 items-center justify-center rounded-full border ${palette.bg} ${palette.border} ${palette.text}`}>
+                                                                                        <span className="inline-flex size-8 shrink-0 items-center justify-center">
                                                                                             <ActivityTypeIcon type={type} size={12} />
                                                                                         </span>
-                                                                                        <span className="max-w-0 overflow-hidden whitespace-nowrap ps-0 text-[11px] font-medium text-slate-600 opacity-0 transition-all duration-200 group-hover/type:max-w-24 group-hover/type:ps-1.5 group-hover/type:opacity-100">
+                                                                                        <span className="max-w-0 overflow-hidden whitespace-nowrap pe-0 ps-0 text-[11px] font-semibold opacity-0 transition-[max-width,padding,opacity] duration-200 ease-out [transition-delay:0ms] group-hover/pills:max-w-24 group-hover/pills:pe-2 group-hover/pills:ps-0.5 group-hover/pills:opacity-100 group-hover/pills:[transition-delay:calc((sibling-index()-1)*36ms)] group-focus-visible:max-w-24 group-focus-visible:pe-2 group-focus-visible:ps-0.5 group-focus-visible:opacity-100 group-focus-visible:[transition-delay:calc((sibling-index()-1)*36ms)]">
                                                                                             {label}
                                                                                         </span>
                                                                                     </span>

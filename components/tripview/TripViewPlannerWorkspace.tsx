@@ -359,7 +359,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                         <div
                             ref={mapViewportRef}
                             data-testid="planner-mobile-map-pane"
-                            className={`${isMobileMapExpanded ? 'fixed inset-x-0 bottom-0 h-[70vh] z-[1450] border-t border-gray-200 shadow-2xl bg-white' : 'relative h-[34vh] min-h-[220px] bg-gray-100'}`}
+                            className={`${isMobileMapExpanded ? 'fixed inset-x-0 bottom-0 h-[70vh] z-[1450] border-t border-gray-200 shadow-2xl bg-white' : 'relative h-[26vh] min-h-[180px] bg-gray-100'}`}
                         >
                             {renderMap('vertical', false)}
                         </div>
