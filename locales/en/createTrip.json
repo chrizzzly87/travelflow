@@ -132,8 +132,8 @@
   },
   "notes": {
     "title": "Special notes",
-    "hint": "Keep it short: mention must-haves like mobility, food focus, or comfort level.",
-    "placeholder": "Optional notes for the planner"
+    "hint": "Mention cities you want to include, activities you want to prioritize or avoid, plus any food, pace, mobility, or comfort needs.",
+    "placeholder": "Examples: Kyoto and Osaka, more markets than museums, no nightlife, vegetarian food, stroller-friendly days"
   },
   "snapshot": {
     "title": "Trip snapshot",
@@ -277,7 +277,7 @@
       "specificCitiesLabel": "Specific cities or stops",
       "specificCitiesPlaceholder": "e.g. Rome, Florence, Bologna",
       "notesLabel": "Extra notes",
-      "notesPlaceholder": "Food preferences, celebration plans, mobility needs, child routines, remote-work constraints…",
+      "notesPlaceholder": "Examples: Kyoto and Osaka, more markets than museums, no nightlife, vegetarian food, stroller-friendly days",
       "roundTripTitle": "Return to start",
       "roundTripDescription": "End in the same place you begin when that fits the trip.",
       "routeLockTitle": "Fixed route order",

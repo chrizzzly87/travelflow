@@ -338,6 +338,26 @@ html[lang^="ur-"] {
   .z-cookie-consent {
     z-index: var(--tf-layer-cookie-consent);
   }
+
+  .tf-ios-zoom-safe-shell {
+    overflow: hidden;
+  }
+}
+
+@media (hover: none) and (pointer: coarse) {
+  @supports (-webkit-touch-callout: none) {
+    .tf-ios-zoom-safe-field {
+      font-size: 16px !important;
+      line-height: 1.25rem;
+      transform: scale(0.875);
+      transform-origin: left center;
+      width: calc(100% / 0.875);
+    }
+
+    html[dir="rtl"] .tf-ios-zoom-safe-field {
+      transform-origin: right center;
+    }
+  }
 }
 
 input[type="checkbox"] {
