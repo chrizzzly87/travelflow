@@ -209,7 +209,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
 
   if (!vertical && item.type === 'activity') {
       style.top = '8px';
-      style.height = isCompactHorizontalActivity ? '112px' : '88px';
+      style.height = isCompactHorizontalActivity ? '112px' : '96px';
   }
   const selectedOutline = isSelected
       ? '0 0 0 3px rgb(37 99 235 / 0.98)'
@@ -388,7 +388,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
              : (
                 isCity
                  ? 'justify-center flex-col text-center py-0.5'
-                  : (isCompactHorizontalActivity ? 'justify-start gap-1.5 flex-col text-center pt-2 pb-1.5' : 'justify-start gap-2 flex-col text-center pt-2.5 pb-2')
+                  : (isCompactHorizontalActivity ? 'justify-start gap-1.5 flex-col text-center pt-2 pb-1.5' : 'justify-start gap-2 flex-col text-center pt-3 pb-2')
                )}
       `}>
         

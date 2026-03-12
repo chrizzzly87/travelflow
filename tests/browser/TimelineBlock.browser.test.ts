@@ -108,7 +108,7 @@ describe('components/TimelineBlock keyboard city navigation', () => {
 
     expect(regularBlock?.style.left).toBe('360px');
     expect(regularBlock?.style.width).toBe('120px');
-    expect(regularBlock?.style.height).toBe('88px');
+    expect(regularBlock?.style.height).toBe('96px');
     expect(regularContent?.className).toContain('justify-start');
     expect(regularTitle?.className).toContain('text-[15px]');
   });

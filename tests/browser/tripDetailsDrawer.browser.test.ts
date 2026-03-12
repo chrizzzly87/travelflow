@@ -40,8 +40,8 @@ describe('components/TripDetailsDrawer', () => {
     expect(drawerMocks.rootProps.at(-1)?.autoFocus).toBe(false);
     expect(drawerMocks.rootProps.at(-1)?.handleOnly).toBe(true);
     expect(drawerMocks.rootProps.at(-1)?.disablePreventScroll).toBe(true);
-    expect(drawerMocks.rootProps.at(-1)?.snapPoints).toEqual(['132px', 0.9]);
-    expect(drawerMocks.rootProps.at(-1)?.activeSnapPoint).toBe('132px');
+    expect(drawerMocks.rootProps.at(-1)?.snapPoints).toEqual(['156px', 0.9]);
+    expect(drawerMocks.rootProps.at(-1)?.activeSnapPoint).toBe('156px');
     expect(drawerMocks.contentProps.at(-1)?.hideOverlay).toBe(true);
     expect(String(drawerMocks.contentProps.at(-1)?.className)).toContain('pointer-events-none');
     expect(screen.getByRole('button', { name: 'Expand trip details drawer' })).toBeInTheDocument();
@@ -59,6 +59,6 @@ describe('components/TripDetailsDrawer', () => {
       }, React.createElement('div', null, 'details')),
     );
 
-    expect(drawerMocks.rootProps.at(-1)?.activeSnapPoint).toBe('132px');
+    expect(drawerMocks.rootProps.at(-1)?.activeSnapPoint).toBe('156px');
   });
 });
