@@ -28,11 +28,11 @@ describe('components/TripDetailsDrawer', () => {
     drawerMocks.contentProps = [];
   });
 
-  it('opens as a non-modal peek drawer with a taller passive preview and no overlay', () => {
-    const { rerender } = render(
+  it('opens as a full-height non-modal drawer without the mobile peek state', () => {
+    render(
       React.createElement(TripDetailsDrawer, {
         open: true,
-        expanded: false,
+        expanded: true,
         onOpenChange: vi.fn(),
         onExpandedChange: vi.fn(),
       }, React.createElement('div', null, 'details')),
@@ -42,22 +42,11 @@ describe('components/TripDetailsDrawer', () => {
     expect(drawerMocks.rootProps.at(-1)?.autoFocus).toBe(false);
     expect(drawerMocks.rootProps.at(-1)?.handleOnly).toBe(true);
     expect(drawerMocks.rootProps.at(-1)?.disablePreventScroll).toBe(true);
-    expect(drawerMocks.rootProps.at(-1)?.dismissible).toBe(false);
-    expect(drawerMocks.rootProps.at(-1)?.snapPoints).toEqual(['192px', 0.9]);
-    expect(drawerMocks.rootProps.at(-1)?.activeSnapPoint).toBe('192px');
-    expect(drawerMocks.contentProps.at(-1)?.hideOverlay).toBe(true);
-    expect(String(drawerMocks.contentProps.at(-1)?.className)).toContain('pointer-events-none');
-    expect(screen.getByRole('button', { name: 'Expand trip details drawer' })).toBeInTheDocument();
-
-    rerender(
-      React.createElement(TripDetailsDrawer, {
-        open: true,
-        expanded: true,
-        onOpenChange: vi.fn(),
-        onExpandedChange: vi.fn(),
-      }, React.createElement('div', null, 'details')),
-    );
-
+    expect(drawerMocks.rootProps.at(-1)?.dismissible).toBe(true);
+    expect(drawerMocks.rootProps.at(-1)?.snapPoints).toEqual([0.9]);
     expect(drawerMocks.rootProps.at(-1)?.activeSnapPoint).toBe(0.9);
+    expect(drawerMocks.contentProps.at(-1)?.hideOverlay).toBe(true);
+    expect(String(drawerMocks.contentProps.at(-1)?.className)).toContain('h-[min(92vh,780px)]');
+    expect(screen.queryByRole('button', { name: 'Expand trip details drawer' })).not.toBeInTheDocument();
   });
 });

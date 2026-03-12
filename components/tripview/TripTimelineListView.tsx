@@ -1,12 +1,15 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { Hotel, MapPin } from 'lucide-react';
 
 import { TransportModeIcon } from '../TransportModeIcon';
+import { ActivityTypeIcon, formatActivityTypeLabel, getActivityTypePaletteParts } from '../ActivityTypeVisuals';
 import { Checkbox } from '../ui/checkbox';
 import type { ITrip } from '../../types';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import { buildTimelineListModel } from './timelineListViewModel';
+import { normalizeActivityTypes } from '../../utils';
 import {
     findMarkdownTaskLineNumbers,
     MARKDOWN_H1_CLASS,
@@ -27,6 +30,7 @@ interface TripTimelineListViewProps {
     onToggleTaskCheckbox?: (itemId: string, taskLineNumber: number, checked: boolean) => void;
     onSelect: (id: string | null, options?: { multi?: boolean; isCity?: boolean }) => void;
     selectionVisibilityKey?: string;
+    enableScrollActiveCitySelection?: boolean;
 }
 
 const formatTripDayLabel = (tripStartDate: string, dayOffset: number): string => {
@@ -241,6 +245,7 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
     onToggleTaskCheckbox,
     onSelect,
     selectionVisibilityKey,
+    enableScrollActiveCitySelection = true,
 }) => {
     const model = useMemo(() => buildTimelineListModel(trip), [trip]);
     const sectionContainerRef = useRef<HTMLDivElement | null>(null);
@@ -346,6 +351,7 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
     }, [updateTransferMidpoints]);
 
     const updateActiveCitySelection = useCallback(() => {
+        if (!enableScrollActiveCitySelection) return;
         if (!userScrollSelectionEnabledRef.current) return;
         if (!selectedItemId) return;
 
@@ -376,7 +382,7 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
         lastAutoSelectedCityIdRef.current = activeCityId;
         if (selectedItemId === activeCityId) return;
         onSelect(activeCityId, { isCity: true });
-    }, [model.sections, onSelect, selectedItemId]);
+    }, [enableScrollActiveCitySelection, model.sections, onSelect, selectedItemId]);
 
     useEffect(() => {
         hasAutoScrolledToTodayRef.current = false;
@@ -391,6 +397,7 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
     }, [selectionVisibilityKey]);
 
     useEffect(() => {
+        if (!enableScrollActiveCitySelection) return;
         const viewport = viewportRef.current;
         if (!viewport) return;
 
@@ -423,7 +430,7 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
                 scrollSelectionFrameRef.current = null;
             }
         };
-    }, [updateActiveCitySelection]);
+    }, [enableScrollActiveCitySelection, updateActiveCitySelection]);
 
     useEffect(() => {
         if (!selectedItemId) {
@@ -535,6 +542,7 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
                             const countryLabel = section.city.countryName?.trim() || section.city.countryCode?.trim() || null;
                             const citySelected = selectedItemId === section.city.id;
                             const citySummaryMarkdown = section.city.description?.trim() || section.arrivalDescription || '';
+                            const hotels = (section.city.hotels || []).filter((hotel) => hotel.name?.trim() || hotel.address?.trim());
 
                             const handleCitySelect = () => {
                                 trackEvent('trip_view__timeline_city--open', {
@@ -613,6 +621,32 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
                                             </div>
                                         )}
 
+                                        {hotels.length > 0 && (
+                                            <div className="flex flex-wrap gap-2 pb-3">
+                                                {hotels.map((hotel) => (
+                                                    <div
+                                                        key={hotel.id}
+                                                        className="inline-flex max-w-full items-start gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-left text-sm text-slate-700"
+                                                    >
+                                                        <Hotel size={14} className="mt-0.5 shrink-0 text-accent-600" />
+                                                        <div className="min-w-0">
+                                                            {hotel.name?.trim() && (
+                                                                <p className="truncate font-semibold text-slate-900">
+                                                                    {hotel.name.trim()}
+                                                                </p>
+                                                            )}
+                                                            {hotel.address?.trim() && (
+                                                                <p className="mt-1 flex items-start gap-1 text-xs text-slate-500">
+                                                                    <MapPin size={12} className="mt-0.5 shrink-0" />
+                                                                    <span className="break-words">{hotel.address.trim()}</span>
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+
                                         <div className="pt-1">
                                             {section.activities.length === 0 ? (
                                                 <p className="py-3 text-sm leading-7 text-slate-500">
@@ -623,6 +657,7 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
                                                     {section.activities.map((activity) => {
                                                         const markerId = `activity-${activity.item.id}`;
                                                         const isSelected = selectedItemId === activity.item.id;
+                                                        const activityTypes = normalizeActivityTypes(activity.item.activityType, []);
                                                         return (
                                                             <li
                                                                 key={activity.item.id}
@@ -667,6 +702,29 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
                                                                             >
                                                                                 {activity.item.description}
                                                                             </ReactMarkdown>
+                                                                        </div>
+                                                                    )}
+                                                                    {activityTypes.length > 0 && (
+                                                                        <div className="mt-3 flex items-center -space-x-2 ps-1">
+                                                                            {activityTypes.map((type) => {
+                                                                                const label = formatActivityTypeLabel(type);
+                                                                                const palette = getActivityTypePaletteParts(type);
+                                                                                return (
+                                                                                    <span
+                                                                                        key={`${activity.item.id}-${type}`}
+                                                                                        title={label}
+                                                                                        aria-label={label}
+                                                                                        className="group/type relative inline-flex h-8 items-center overflow-hidden rounded-full border border-slate-200 bg-white/95 pe-0 shadow-sm transition-[padding,transform,box-shadow] duration-200 hover:z-10 hover:-translate-y-0.5 hover:pe-3 hover:shadow-md"
+                                                                                    >
+                                                                                        <span className={`inline-flex size-8 shrink-0 items-center justify-center rounded-full border ${palette.bg} ${palette.border} ${palette.text}`}>
+                                                                                            <ActivityTypeIcon type={type} size={12} />
+                                                                                        </span>
+                                                                                        <span className="max-w-0 overflow-hidden whitespace-nowrap ps-0 text-[11px] font-medium text-slate-600 opacity-0 transition-all duration-200 group-hover/type:max-w-24 group-hover/type:ps-1.5 group-hover/type:opacity-100">
+                                                                                            {label}
+                                                                                        </span>
+                                                                                    </span>
+                                                                                );
+                                                                            })}
                                                                         </div>
                                                                     )}
                                                                 </button>

@@ -509,7 +509,6 @@ const TripInfoModalLoadingFallback: React.FC<{ onClose: () => void }> = ({ onClo
 
 interface TripViewModalLayerProps {
     isMobile: boolean;
-    hasDetailsSelection: boolean;
     detailsPanelVisible: boolean;
     detailsPanelContent: React.ReactNode;
     onCloseDetailsDrawer: () => void;
@@ -608,7 +607,6 @@ interface TripViewModalLayerProps {
 
 const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
     isMobile,
-    hasDetailsSelection,
     detailsPanelVisible,
     detailsPanelContent,
     onCloseDetailsDrawer,
@@ -696,10 +694,10 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
     isPendingAuthContinueDisabled,
 }) => (
     <>
-        {isMobile && hasDetailsSelection && (
+        {isMobile && detailsPanelVisible && (
             <Suspense fallback={null}>
                 <TripDetailsDrawer
-                    open={hasDetailsSelection}
+                    open={detailsPanelVisible}
                     expanded={detailsPanelVisible}
                     onOpenChange={(open) => {
                         if (!open) onCloseDetailsDrawer();
@@ -2450,6 +2448,7 @@ const useTripViewRender = ({
         isHistoryOpen,
         isTripInfoOpen,
         autoOpenOnSelect: !isMobileViewport,
+        clearSelectionOnClose: isMobileViewport,
         setPendingLabel,
         handleUpdateItems,
     });
@@ -2820,6 +2819,7 @@ const useTripViewRender = ({
             timelineMode={timelineMode}
             timelineView={timelineView}
             trip={displayTrip}
+            isMobile={isMobile}
             onUpdateItems={handleUpdateItems}
             onToggleTaskCheckbox={canEdit ? handleTimelineTaskToggle : undefined}
             onSelect={handleTimelineSelect}
@@ -3180,7 +3180,6 @@ const useTripViewRender = ({
                     />
                     <TripViewModalLayer
                         isMobile={isMobile}
-                        hasDetailsSelection={hasSelection}
                         detailsPanelVisible={detailsPanelVisible}
                         detailsPanelContent={detailsPanelContent}
                         onCloseDetailsDrawer={closeDetailsPanel}

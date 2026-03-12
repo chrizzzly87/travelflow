@@ -357,8 +357,16 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                 {isMobile ? (
                     <div className="w-full h-full flex flex-col">
                         <div
+                            ref={mapViewportRef}
+                            data-testid="planner-mobile-map-pane"
+                            className={`${isMobileMapExpanded ? 'fixed inset-x-0 bottom-0 h-[70vh] z-[1450] border-t border-gray-200 shadow-2xl bg-white' : 'relative h-[34vh] min-h-[220px] bg-gray-100'}`}
+                        >
+                            {renderMap('vertical', false)}
+                        </div>
+                        <div
                             ref={verticalLayoutTimelineRef}
-                            className="flex-1 min-h-0 w-full bg-white border-b border-gray-200 relative overflow-hidden"
+                            data-testid="planner-mobile-timeline-pane"
+                            className="flex-1 min-h-0 w-full bg-white border-t border-gray-200 relative overflow-hidden"
                             onTouchStart={timelineMode === 'calendar' ? onTimelineTouchStart : undefined}
                             onTouchMove={timelineMode === 'calendar' ? onTimelineTouchMove : undefined}
                             onTouchEnd={timelineMode === 'calendar' ? onTimelineTouchEnd : undefined}
@@ -368,12 +376,6 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                             <div data-testid="planner-timeline-controls" className={`absolute top-3 end-3 ${plannerControlsLayerClassName} pointer-events-auto`}>
                                 {timelineControls}
                             </div>
-                        </div>
-                        <div
-                            ref={mapViewportRef}
-                            className={`${isMobileMapExpanded ? 'fixed inset-x-0 bottom-0 h-[70vh] z-[1450] border-t border-gray-200 shadow-2xl bg-white' : 'relative h-[34vh] min-h-[220px] bg-gray-100'}`}
-                        >
-                            {renderMap('vertical', false)}
                         </div>
                     </div>
                 ) : (
