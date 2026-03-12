@@ -405,8 +405,8 @@
       },
       "general": {
         "titleLabel": "Trip title",
-        "editAction": "(edytuj)",
-        "saveAction": "zapisz",
+        "editAction": "Edytuj tytuł",
+        "saveAction": "Zapisz tytuł",
         "editHint": "Click into the title to rename the trip or adjust the essentials here.",
         "readOnlyHintExample": "Example trips stay read-only here. Copy the trip first if you want to rename it or save it as a favorite.",
         "readOnlyHintShared": "This shared trip is read-only. You can review the details here, but editing is disabled.",

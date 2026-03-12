@@ -66,7 +66,7 @@ describe('components/tripview/TripFloatingMapPreview', () => {
       ),
     );
 
-    expect(mapViewportRef.current?.className).toContain('z-[45]');
+    expect(mapViewportRef.current?.className).toContain('z-[80]');
   });
 
   it('re-syncs docked geometry when layout key changes without toggling dock mode', async () => {

@@ -80,14 +80,19 @@ describe('components/TimelineBlock keyboard city navigation', () => {
 
     const compactBlock = compact.container.querySelector<HTMLElement>('.timeline-block-item');
     const compactContent = compact.container.querySelector<HTMLElement>('.timeline-block-item > div');
+    const compactRotatedFrame = Array.from(compact.container.querySelectorAll<HTMLElement>('.timeline-block-item div'))
+      .find((element) => element.style.transform.includes('rotate(-90deg)'));
     const compactTitle = compact.container.querySelector<HTMLElement>('.timeline-block-item span');
 
     expect(compactBlock?.style.left).toBe('40px');
     expect(compactBlock?.style.width).toBe('40px');
-    expect(compactBlock?.style.height).toBe('112px');
-    expect(compactContent?.className).toContain('justify-start');
-    expect(compactTitle?.style.transform).toBe('rotate(-90deg)');
-    expect(Number.parseFloat(compactTitle?.style.fontSize || '0')).toBeGreaterThanOrEqual(12);
+    expect(compactBlock?.style.height).toBe('160px');
+    expect(compactContent?.className).toContain('relative');
+    expect(compactRotatedFrame?.style.transform).toContain('rotate(-90deg)');
+    expect(compactRotatedFrame?.style.width).toBe('128px');
+    expect(compactRotatedFrame?.style.height).toBe('32px');
+    expect(compactTitle?.className).toContain('w-full');
+    expect(Number.parseFloat(compactTitle?.style.fontSize || '0')).toBeGreaterThanOrEqual(11);
 
     compact.unmount();
 
@@ -108,7 +113,7 @@ describe('components/TimelineBlock keyboard city navigation', () => {
 
     expect(regularBlock?.style.left).toBe('360px');
     expect(regularBlock?.style.width).toBe('120px');
-    expect(regularBlock?.style.height).toBe('88px');
+    expect(regularBlock?.style.height).toBe('112px');
     expect(regularContent?.className).toContain('justify-start');
     expect(regularTitle?.className).toContain('text-[15px]');
   });

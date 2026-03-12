@@ -267,7 +267,7 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
                 aria-expanded={isOpen}
                 aria-label={!shouldShowLabel ? triggerLabel : undefined}
             >
-                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-accent-100 text-xs font-black text-accent-900">
+                <span className="flex h-7 w-7 shrink-0 aspect-square items-center justify-center rounded-full bg-accent-100 text-xs font-black text-accent-900">
                     {computeInitial(profile, email, userId)}
                 </span>
                 {shouldShowLabel && <span className="truncate">{triggerLabel}</span>}

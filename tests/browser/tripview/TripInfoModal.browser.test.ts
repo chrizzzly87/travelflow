@@ -14,8 +14,8 @@ vi.mock('react-i18next', () => ({
       if (key === 'tripView.infoDialog.tabs.destination') return 'Destination';
       if (key === 'tripView.infoDialog.tabs.debug') return 'Debug';
       if (key === 'tripView.infoDialog.general.titleLabel') return 'Trip title';
-      if (key === 'tripView.infoDialog.general.editAction') return '(edit)';
-      if (key === 'tripView.infoDialog.general.saveAction') return 'save';
+      if (key === 'tripView.infoDialog.general.editAction') return 'Edit Title';
+      if (key === 'tripView.infoDialog.general.saveAction') return 'Save Title';
       if (key === 'tripView.infoDialog.export.activities.action') return 'Export activities (.ics)';
       if (key === 'tripView.infoDialog.export.cities.action') return 'Export cities (.ics)';
       if (key === 'tripView.infoDialog.export.everything.action') return 'Download everything (.ics)';
@@ -139,7 +139,7 @@ describe('components/TripInfoModal', () => {
     expect(titleField).toBeDisabled();
     expect(titleField).toHaveClass('rounded-md');
     expect(titleField).toHaveClass('h-10');
-    expect(screen.getByRole('button', { name: '(edit)' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Edit Title' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Add to favorites' })).toHaveClass('rounded-md');
 
     const debugTab = screen.getByRole('tab', { name: 'Debug' });
@@ -153,7 +153,7 @@ describe('components/TripInfoModal', () => {
     const props = buildProps();
     const { rerender } = render(React.createElement(TripInfoModal, props));
 
-    fireEvent.click(screen.getByRole('button', { name: '(edit)' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Edit Title' }));
     expect(props.onStartTitleEdit).toHaveBeenCalledTimes(1);
 
     rerender(React.createElement(TripInfoModal, {
@@ -164,7 +164,7 @@ describe('components/TripInfoModal', () => {
 
     const titleField = screen.getByRole('textbox', { name: 'Trip title' });
     expect(titleField).toBeEnabled();
-    expect(screen.getByRole('button', { name: 'save' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Save Title' })).toBeInTheDocument();
 
     fireEvent.keyDown(titleField, { key: 'Escape' });
 

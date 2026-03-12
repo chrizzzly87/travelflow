@@ -407,8 +407,8 @@
       },
       "general": {
         "titleLabel": "Trip-Titel",
-        "editAction": "(bearbeiten)",
-        "saveAction": "speichern",
+        "editAction": "Titel bearbeiten",
+        "saveAction": "Titel speichern",
         "editHint": "Klicke in den Titel, um den Trip umzubenennen oder die wichtigsten Angaben direkt hier anzupassen.",
         "readOnlyHintExample": "Beispiel-Trips sind hier schreibgeschützt. Kopiere den Trip zuerst, wenn du ihn umbenennen oder als Favorit speichern möchtest.",
         "readOnlyHintShared": "Dieser geteilte Trip ist schreibgeschützt. Du kannst die Details prüfen, aber nicht bearbeiten.",

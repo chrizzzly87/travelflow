@@ -106,8 +106,17 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
       : null;
   const isCompactVerticalActivity = vertical && item.type === 'activity' && size >= 20 && size < 40;
   const isCompactHorizontalActivity = !vertical && item.type === 'activity' && size < 92;
+  const compactHorizontalActivityHeightPx = 160;
+  const compactHorizontalRegularHeightPx = 112;
+  const compactHorizontalTitleTopInsetPx = 24;
+  const compactHorizontalTitleBottomInsetPx = 8;
+  const compactHorizontalTitleWidthPx = Math.max(18, size - 8);
+  const compactHorizontalTitleHeightPx = Math.max(
+    48,
+    compactHorizontalActivityHeightPx - compactHorizontalTitleTopInsetPx - compactHorizontalTitleBottomInsetPx,
+  );
   const compactVerticalTitleSize = Math.max(9, Math.min(11, size * 0.28));
-  const compactHorizontalTitleSize = Math.max(12, Math.min(14, size * 0.16));
+  const compactHorizontalTitleSize = Math.max(11, Math.min(12.5, compactHorizontalTitleHeightPx * 0.095));
   const cityDayCount = isCity ? Math.max(1, Math.ceil(item.duration - 0.01)) : 0;
   const cityNightCount = isCity ? Math.max(0, cityDayCount - 1) : 0;
   const cityDurationFullLabel = `${cityDayCount} ${cityDayCount === 1 ? 'Day' : 'Days'} / ${cityNightCount} ${cityNightCount === 1 ? 'Night' : 'Nights'}`;
@@ -209,7 +218,9 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
 
   if (!vertical && item.type === 'activity') {
       style.top = '8px';
-      style.height = isCompactHorizontalActivity ? '112px' : '88px';
+      style.height = isCompactHorizontalActivity
+          ? `${compactHorizontalActivityHeightPx}px`
+          : `${compactHorizontalRegularHeightPx}px`;
   }
   const selectedOutline = isSelected
       ? '0 0 0 3px rgb(37 99 235 / 0.98)'
@@ -378,6 +389,52 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
       )}
 
       {/* Main Content Container */}
+      {isCompactHorizontalActivity ? (
+        <div className="relative h-full w-full pointer-events-none overflow-hidden">
+          {!isTravel && !isEmptyTravel && item.type === 'activity' && !isCompactVerticalActivity && (
+            <div className="absolute inset-x-0 top-1.5 flex justify-center">
+              <ActivityTypeIcon
+                type={primaryActivityType || 'general'}
+                size={14}
+                className={isInactiveActivity ? 'opacity-60' : 'opacity-70'}
+              />
+            </div>
+          )}
+          {!isEmptyTravel && !shouldRotateVerticalCityLabel && (
+            <div
+              className="absolute left-1/2 overflow-hidden"
+              style={{
+                top: `${compactHorizontalTitleTopInsetPx}px`,
+                bottom: `${compactHorizontalTitleBottomInsetPx}px`,
+                width: `${compactHorizontalTitleWidthPx}px`,
+                height: `${compactHorizontalTitleHeightPx}px`,
+                transform: 'translateX(-50%)',
+              }}
+            >
+              <div
+                className="absolute left-1/2 top-1/2 flex items-center justify-center overflow-hidden"
+                style={{
+                  width: `${compactHorizontalTitleHeightPx}px`,
+                  height: `${compactHorizontalTitleWidthPx}px`,
+                  transform: 'translate(-50%, -50%) rotate(-90deg)',
+                  transformOrigin: 'center center',
+                }}
+              >
+                <span
+                  className="block w-full select-none whitespace-nowrap text-center font-semibold"
+                  style={{
+                    lineHeight: 1,
+                    letterSpacing: '0',
+                    fontSize: `${compactHorizontalTitleSize}px`,
+                  }}
+                >
+                  {isLoadingItem ? 'Loading city...' : item.title}
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
       <div className={`flex items-center px-1.5 relative h-full w-full pointer-events-none overflow-hidden
           ${vertical 
              ? (
@@ -388,7 +445,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
              : (
                 isCity
                  ? 'justify-center flex-col text-center py-0.5'
-                  : (isCompactHorizontalActivity ? 'justify-start gap-1.5 flex-col text-center pt-2 pb-1.5' : 'justify-start gap-2 flex-col text-center pt-2.5 pb-2')
+                  : 'justify-start gap-2 flex-col text-center pt-3 pb-2'
                )}
       `}>
         
@@ -480,6 +537,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
             </span>
         )}
       </div>
+      )}
 
       {/* Duration Display (Activities - Horizontal Backup) */}
       {!vertical && !isTravel && !isEmptyTravel && !isCity && item.duration * pixelsPerDay > 50 && (
