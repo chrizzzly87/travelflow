@@ -16,6 +16,7 @@ import { TransportModeIcon } from './TransportModeIcon';
 import { normalizeTransportMode } from '../shared/transportModes';
 import { getExampleCityLaneViewTransitionName } from '../shared/viewTransitionNames';
 import { buildRenderedTimelineDaySlots, buildRenderedTimelineMonths } from './tripview/timelineRenderedSlots';
+import { getTimelineVisualSpan } from '../utils/timelineVisualLayout';
 
 interface TimelineProps {
   trip: ITrip;
@@ -297,16 +298,18 @@ export const Timeline: React.FC<TimelineProps> = ({
 
   // Robust "Packing" algorithm for activities to handle same-day overlapping
   const activityLanes: ITimelineItem[][] = [];
-  activities.sort((a, b) => {
-      // Sort by start time, then by duration (longest first)
-      if (a.startDateOffset === b.startDateOffset) return b.duration - a.duration;
-      return a.startDateOffset - b.startDateOffset;
+  activities.slice().sort((a, b) => {
+      const aSpan = getTimelineVisualSpan(a);
+      const bSpan = getTimelineVisualSpan(b);
+      if (aSpan.startOffset === bSpan.startOffset) return bSpan.duration - aSpan.duration;
+      return aSpan.startOffset - bSpan.startOffset;
   }).forEach(item => {
+    const itemSpan = getTimelineVisualSpan(item);
     let placed = false;
     for (const lane of activityLanes) {
         const lastInLane = lane[lane.length - 1];
-        // Ensure visual gap of at least 0.05 days
-        if (lastInLane.startDateOffset + lastInLane.duration + 0.05 <= item.startDateOffset) {
+        const lastSpan = getTimelineVisualSpan(lastInLane);
+        if (lastSpan.endOffset + 0.05 <= itemSpan.startOffset) {
             lane.push(item);
             placed = true;
             break;
@@ -1072,7 +1075,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                              <div
                                 key={laneIdx}
                                 className={`relative w-full group/lane rounded-lg border border-transparent ${
-                                    useCompactHorizontalActivityCards ? 'h-28' : 'h-20'
+                                    useCompactHorizontalActivityCards ? 'h-36' : 'h-28'
                                 }`}
                              >
                                 {lane.map(item => (
