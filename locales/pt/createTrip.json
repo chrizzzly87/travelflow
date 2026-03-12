@@ -132,8 +132,8 @@
   },
   "notes": {
     "title": "Notas especiais",
-    "hint": "Mantém curto: menciona essenciais como mobilidade, foco em comida ou nível de conforto.",
-    "placeholder": "Notas opcionais para o planeador"
+    "hint": "Indique as cidades que quer incluir, as atividades que quer priorizar ou evitar e quaisquer necessidades de alimentação, ritmo, mobilidade ou conforto.",
+    "placeholder": "Exemplos: Quioto e Osaca, mais mercados do que museus, sem vida noturna, comida vegetariana, dias compatíveis com carrinho de bebé"
   },
   "snapshot": {
     "title": "Resumo da viagem",
@@ -276,8 +276,8 @@
       "paceLabel": "Pace",
       "specificCitiesLabel": "Specific cities or stops",
       "specificCitiesPlaceholder": "e.g. Rome, Florence, Bologna",
-      "notesLabel": "Extra notes",
-      "notesPlaceholder": "Food preferences, celebration plans, mobility needs, child routines, remote-work constraints…",
+      "notesLabel": "Notas extra",
+      "notesPlaceholder": "Exemplos: Quioto e Osaca, mais mercados do que museus, sem vida noturna, comida vegetariana, dias compatíveis com carrinho de bebé",
       "roundTripTitle": "Return to start",
       "roundTripDescription": "End in the same place you begin when that fits the trip.",
       "routeLockTitle": "Fixed route order",
