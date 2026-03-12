@@ -105,6 +105,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
   const isCompactVerticalActivity = vertical && item.type === 'activity' && size >= 20 && size < 40;
   const isCompactHorizontalActivity = !vertical && item.type === 'activity' && size < 92;
   const compactVerticalTitleSize = Math.max(9, Math.min(11, size * 0.28));
+  const compactHorizontalTitleSize = Math.max(8, Math.min(10, size * 0.16));
   const cityDayCount = isCity ? Math.max(1, Math.ceil(item.duration - 0.01)) : 0;
   const cityNightCount = isCity ? Math.max(0, cityDayCount - 1) : 0;
   const cityDurationFullLabel = `${cityDayCount} ${cityDayCount === 1 ? 'Day' : 'Days'} / ${cityNightCount} ${cityNightCount === 1 ? 'Night' : 'Nights'}`;
@@ -202,6 +203,11 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
       style.width = `${Math.max(6, size - cityInlineGapPx)}px`;
       style.top = `calc(${cityInsetPx}px + ${normalizedCityStackIndex} * (${citySlotHeightExpr} + ${cityStackGapPx}px))`;
       style.height = citySlotHeightExpr;
+  }
+
+  if (!vertical && item.type === 'activity') {
+      style.top = isCompactHorizontalActivity ? '10px' : '12px';
+      style.height = isCompactHorizontalActivity ? '78px' : '56px';
   }
   const selectedOutline = isSelected
       ? '0 0 0 3px rgb(37 99 235 / 0.98)'
@@ -380,7 +386,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
              : (
                 isCity
                   ? 'justify-center flex-col text-center py-0.5'
-                  : (isCompactHorizontalActivity ? 'justify-center gap-1.5 flex-col text-center py-1' : 'justify-center flex-col text-center')
+                  : (isCompactHorizontalActivity ? 'justify-center gap-1 flex-col text-center py-1.5' : 'justify-center flex-col text-center')
                )}
       `}>
         
@@ -406,7 +412,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
                     ${isCompactVerticalActivity
                         ? 'w-full truncate whitespace-nowrap text-center'
                         : `${isCompactHorizontalActivity
-                            ? 'inline-flex max-w-none whitespace-nowrap text-xs font-semibold'
+                            ? 'inline-flex max-w-full items-center justify-center overflow-hidden text-ellipsis whitespace-nowrap text-center font-semibold'
                             : (isTravel ? 'text-xs w-full whitespace-normal line-clamp-2' : (isCity ? 'text-[12px] md:text-[14px] w-full whitespace-normal line-clamp-2' : 'text-sm whitespace-normal'))}
                            ${!isTravel && !isCompactHorizontalActivity ? 'line-clamp-2' : ''}
                            ${vertical 
@@ -420,7 +426,10 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
                         ? {
                             transform: 'rotate(-90deg)',
                             transformOrigin: 'center center',
-                            lineHeight: 1,
+                            lineHeight: 0.95,
+                            width: 'calc(100% - 10px)',
+                            maxWidth: 'calc(100% - 10px)',
+                            fontSize: `${compactHorizontalTitleSize}px`,
                         }
                         : undefined)}
             >

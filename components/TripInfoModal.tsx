@@ -132,7 +132,7 @@ const modalPrimaryButtonClassName = 'inline-flex h-10 items-center justify-cente
 const modalSectionClassName = 'space-y-4 border-t border-slate-200 pt-6';
 const modalSubtlePanelClassName = 'rounded-md bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-600';
 const modalTextButtonClassName = 'inline-flex items-center text-sm font-semibold text-accent-700 transition-colors hover:text-accent-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2';
-const tabClassName = 'relative flex-none gap-2 px-0 text-sm font-semibold text-slate-500 transition-colors hover:text-slate-900 data-[state=active]:bg-transparent data-[state=active]:text-accent-700 data-[state=active]:[&_svg]:text-accent-600 [&_svg]:text-slate-400';
+const tabClassName = 'relative flex-none gap-2 px-0 data-[state=active]:[&_svg]:text-accent-600 [&_svg]:text-slate-400';
 
 const SummaryCard: React.FC<SummaryCardProps> = ({ label, value, wide = false }) => (
     <div className={`space-y-1 ${wide ? 'sm:col-span-2' : ''}`}>
@@ -369,7 +369,7 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
         >
             <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as TripInfoTabValue)} className="flex min-h-0 flex-1 flex-col">
                 <div className="px-5">
-                    <TabsList variant="line" className="flex w-full flex-wrap items-center justify-start gap-4 border-b border-slate-200 rounded-none p-0 sm:gap-5">
+                    <TabsList variant="line" className="flex w-full flex-wrap items-center justify-start gap-4 sm:gap-5">
                         <TabsTrigger value="general" className={tabClassName}>
                             <Info size={15} />
                             <span>{t('tripView.infoDialog.tabs.general')}</span>

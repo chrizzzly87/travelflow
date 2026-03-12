@@ -99,6 +99,10 @@ describe('components/TripInfoModal', () => {
 
     render(React.createElement(TripInfoModal, props));
 
+    const tablist = screen.getByRole('tablist');
+    expect(tablist.className).not.toContain('h-9');
+    expect(tablist.className).toContain('border-b');
+
     expect(screen.getByRole('tab', { name: 'General' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'History' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Export' })).toBeInTheDocument();
