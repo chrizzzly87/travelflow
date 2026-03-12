@@ -134,6 +134,7 @@ describe('components/tripview/TripViewPlannerWorkspace', () => {
     expect(screen.getByTestId('floating-map-container')).toBeInTheDocument();
     expect(screen.getByTestId('floating-map-drag-handle')).toBeInTheDocument();
     expect(screen.getByTestId('planner-timeline-pane')).toBeInTheDocument();
+    expect(screen.getByTestId('planner-timeline-controls').className).toContain('z-[30]');
     expect(screen.getByLabelText('Maximize map preview')).toBeInTheDocument();
     expect(screen.getByLabelText('Resize details panel')).toBeInTheDocument();
   });

@@ -126,6 +126,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
     const dockedMapAnchorRef = useRef<HTMLDivElement | null>(null);
     const isFloatingMapPreviewEnabled = !isMobile && TRIP_FLOATING_MAP_PREVIEW_BETA_ENABLED;
     const effectiveMapDockMode: 'docked' | 'floating' = isFloatingMapPreviewEnabled ? mapDockMode : 'docked';
+    const plannerControlsLayerClassName = effectiveMapDockMode === 'floating' ? 'z-[30]' : 'z-[60]';
     const dockedGeometryKey = `${effectiveLayoutMode}:${layoutMode}:${sidebarWidth}:${detailsWidth}:${timelineHeight}:${detailsPanelVisible ? '1' : '0'}`;
     const floatingMapReservedRightInset = effectiveMapDockMode === 'floating' && detailsPanelVisible
         ? detailsWidth + 4
@@ -364,7 +365,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                             onTouchCancel={timelineMode === 'calendar' ? onTimelineTouchEnd : undefined}
                         >
                             {timelineCanvas}
-                            <div className="absolute top-3 end-3 z-[60] pointer-events-auto">
+                            <div data-testid="planner-timeline-controls" className={`absolute top-3 end-3 ${plannerControlsLayerClassName} pointer-events-auto`}>
                                 {timelineControls}
                             </div>
                         </div>
@@ -394,7 +395,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                                             onTouchCancel={timelineMode === 'calendar' ? onTimelineTouchEnd : undefined}
                                         >
                                             {timelineCanvas}
-                                            <div className="absolute top-4 end-4 z-[60] pointer-events-auto">
+                                            <div data-testid="planner-timeline-controls" className={`absolute top-4 end-4 ${plannerControlsLayerClassName} pointer-events-auto`}>
                                                 {timelineControls}
                                             </div>
                                         </div>
@@ -422,7 +423,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                                         <div className="w-full flex-1 overflow-hidden relative flex flex-col min-w-0">
                                             <div ref={verticalLayoutTimelineRef} className="flex-1 w-full overflow-hidden relative min-w-0">
                                                 {timelineCanvas}
-                                                <div className="absolute top-4 end-4 z-[60] pointer-events-auto">
+                                                <div data-testid="planner-timeline-controls" className={`absolute top-4 end-4 ${plannerControlsLayerClassName} pointer-events-auto`}>
                                                     {timelineControls}
                                                 </div>
                                             </div>
@@ -472,7 +473,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                                         <div ref={verticalLayoutTimelineRef} className="flex-1 h-full relative border-r border-gray-100 min-w-0">
                                             <div className="w-full h-full relative min-w-0">
                                                 {timelineCanvas}
-                                                <div className="absolute top-4 end-4 z-[60] pointer-events-auto">
+                                                <div data-testid="planner-timeline-controls" className={`absolute top-4 end-4 ${plannerControlsLayerClassName} pointer-events-auto`}>
                                                     {timelineControls}
                                                 </div>
                                             </div>
