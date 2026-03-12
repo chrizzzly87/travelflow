@@ -3,7 +3,7 @@ id: rel-2026-03-11-trip-page-layout-optimization
 version: v0.92.2
 title: "Trip pages feel smoother, clearer, and easier to steer"
 date: 2026-03-11
-published_at: 2026-03-12T06:53:16Z
+published_at: 2026-03-12T06:56:18Z
 status: published
 notify_in_app: true
 in_app_hours: 24
