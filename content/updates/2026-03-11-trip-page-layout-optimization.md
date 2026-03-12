@@ -1,10 +1,10 @@
 ---
 id: rel-2026-03-11-trip-page-layout-optimization
-version: v0.92.4
+version: v0.92.0
 title: "Trip pages feel smoother, clearer, and easier to steer"
 date: 2026-03-11
-published_at: 2026-03-12T07:34:52Z
-status: draft
+published_at: 2026-03-12T09:13:05Z
+status: published
 notify_in_app: true
 in_app_hours: 24
 summary: "Trip pages now feel calmer and more predictable across desktop and mobile, with full-day activity cards that fit their labels more cleanly, floating maps that stay usable above planner controls, simpler title editing in trip details, and mobile account layers that stay in the right order."
