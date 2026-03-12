@@ -188,6 +188,10 @@ describe('components/navigation/AccountMenu recent trips', () => {
       isAdmin: false,
     }));
 
-    expect(screen.getByText('CZ')).toBeInTheDocument();
+    const avatar = screen.getByText('CZ');
+    expect(avatar).toBeInTheDocument();
+    expect(avatar.className).toContain('rounded-full');
+    expect(avatar.className).toContain('aspect-square');
+    expect(avatar.className).toContain('shrink-0');
   });
 });

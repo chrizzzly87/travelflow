@@ -1252,7 +1252,7 @@ export const TripManager: React.FC<TripManagerProps> = ({
   return (
     <>
       <div
-        className={`fixed inset-0 z-[1100] transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        className={`fixed inset-0 z-[2300] transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
         style={{
           opacity: isOpen ? 1 : 0,
           pointerEvents: isOpen ? 'auto' : 'none',
@@ -1268,7 +1268,7 @@ export const TripManager: React.FC<TripManagerProps> = ({
 
       <div
         ref={panelRef}
-        className={`fixed inset-y-0 right-0 w-[380px] max-w-[94vw] bg-white shadow-2xl z-[1200] transform transition-transform duration-300 ease-in-out flex flex-col ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
+        className={`fixed inset-y-0 right-0 w-[380px] max-w-[94vw] bg-white shadow-2xl z-[2310] transform transition-transform duration-300 ease-in-out flex flex-col ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
         style={{ transform: isOpen ? 'translateX(0)' : 'translateX(100%)' }}
         role="dialog"
         aria-modal="true"
