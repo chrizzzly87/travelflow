@@ -3,8 +3,8 @@ id: rel-2026-03-11-trip-page-layout-optimization
 version: v0.92.3
 title: "Trip pages feel smoother, clearer, and easier to steer"
 date: 2026-03-11
-published_at: 2026-03-12T06:56:18Z
-status: draft
+published_at: 2026-03-12T07:34:52Z
+status: published
 notify_in_app: true
 in_app_hours: 24
 summary: "Trip pages now feel calmer and more predictable across desktop and mobile, with a lighter profile menu, cleaner trip details editing, better low-zoom calendar readability, and a runtime fix that keeps the page loading reliably again."
