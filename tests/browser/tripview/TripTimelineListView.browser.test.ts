@@ -35,10 +35,18 @@ describe('components/tripview/TripTimelineListView', () => {
     const activity = makeActivityItem('activity-b-1', 'Herat', 2.5);
     activity.title = 'Citadel of Herat';
     activity.description = 'Visit the **Citadel** and [book ahead](https://example.com).';
+    activity.activityType = ['culture', 'food'];
 
     const heratCity = makeCityItem({ id: 'city-b', title: 'Herat', startDateOffset: 2.3, duration: 2, color: 'bg-amber-400' });
     heratCity.countryName = 'Iran';
     heratCity.description = '### Must See\n- [x] Markt öffnen\n- [ ] Schlosspark besuchen\n\n### Heads Up\n- [ ] Stay near the main square after sunset.\n\nHistoric center with **old citadel walls**.\n~~Altprogramm~~';
+    heratCity.hotels = [
+      {
+        id: 'hotel-b-1',
+        name: 'Caravanserai Hotel',
+        address: 'Old Town, Herat',
+      },
+    ];
     const kabulCity = makeCityItem({ id: 'city-a', title: 'Kabul', startDateOffset: 0, duration: 2, color: 'bg-rose-400' });
     kabulCity.countryName = 'Afghanistan';
 
@@ -103,12 +111,17 @@ describe('components/tripview/TripTimelineListView', () => {
     expect(screen.queryByText('From Kabul via Train')).not.toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Must See' })).toHaveClass('font-black');
     expect(screen.getByText('old citadel walls', { exact: false })).toBeInTheDocument();
+    expect(screen.getByText('Caravanserai Hotel')).toBeInTheDocument();
+    expect(screen.getByText('Old Town, Herat')).toBeInTheDocument();
     const checkboxes = screen.getAllByRole('checkbox');
     expect(checkboxes).toHaveLength(2);
     expect(screen.getByText('Stay near the main square after sunset.').closest('li')).toHaveAttribute('data-heads-up-banner', 'true');
     expect(screen.getByText('Altprogramm')).toBeInTheDocument();
     expect(screen.queryByText('**Citadel**')).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'book ahead' })).toHaveAttribute('href', 'https://example.com');
+    expect(screen.getByTitle('Culture')).toBeInTheDocument();
+    expect(screen.getByTitle('Food')).toBeInTheDocument();
+    expect(screen.getByTitle('Culture').parentElement).toHaveClass('-space-x-2');
 
     const heratHeading = screen.getByRole('heading', { name: 'Herat' });
     expect(heratHeading.closest('header')).toHaveClass('sticky');
@@ -217,6 +230,85 @@ describe('components/tripview/TripTimelineListView', () => {
       fireEvent.scroll(viewport);
 
       expect(onSelect).toHaveBeenCalledWith('city-b', { isCity: true });
+    } finally {
+      rafSpy.mockRestore();
+      cancelRafSpy.mockRestore();
+    }
+  });
+
+  it('does not auto-select a city while scrolling when mobile scroll sync is disabled', () => {
+    const kabulCity = makeCityItem({ id: 'city-a', title: 'Kabul', startDateOffset: 0, duration: 2, color: 'bg-rose-400' });
+    const heratCity = makeCityItem({ id: 'city-b', title: 'Herat', startDateOffset: 2.2, duration: 2, color: 'bg-amber-400' });
+    const trip = makeTrip({
+      startDate: '2026-03-01',
+      items: [kabulCity, makeTravelItem('travel-a-b', 2.05, 'Morning transfer'), heratCity],
+    });
+    const onSelect = vi.fn();
+    const rafSpy = vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback: FrameRequestCallback) => {
+      callback(0);
+      return 1;
+    });
+    const cancelRafSpy = vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => undefined);
+
+    try {
+      const { container } = render(
+        React.createElement(TripTimelineListView, {
+          trip,
+          selectedItemId: 'city-a',
+          onSelect,
+          enableScrollActiveCitySelection: false,
+        }),
+      );
+
+      const viewport = container.querySelector('.h-full.overflow-y-auto') as HTMLDivElement | null;
+      const cityASection = container.querySelector('[data-city-section-id="city-a"]') as HTMLElement | null;
+      const cityBSection = container.querySelector('[data-city-section-id="city-b"]') as HTMLElement | null;
+      if (!viewport || !cityASection || !cityBSection) {
+        throw new Error('Expected viewport and city sections to render');
+      }
+
+      Object.defineProperty(viewport, 'clientHeight', {
+        configurable: true,
+        value: 600,
+      });
+      viewport.getBoundingClientRect = vi.fn(() => ({
+        x: 0,
+        y: 0,
+        top: 0,
+        left: 0,
+        right: 900,
+        bottom: 600,
+        width: 900,
+        height: 600,
+        toJSON: () => ({}),
+      })) as any;
+      cityASection.getBoundingClientRect = vi.fn(() => ({
+        x: 0,
+        y: -260,
+        top: -260,
+        left: 0,
+        right: 900,
+        bottom: 120,
+        width: 900,
+        height: 380,
+        toJSON: () => ({}),
+      })) as any;
+      cityBSection.getBoundingClientRect = vi.fn(() => ({
+        x: 0,
+        y: 40,
+        top: 40,
+        left: 0,
+        right: 900,
+        bottom: 420,
+        width: 900,
+        height: 380,
+        toJSON: () => ({}),
+      })) as any;
+
+      fireEvent.wheel(viewport);
+      fireEvent.scroll(viewport);
+
+      expect(onSelect).not.toHaveBeenCalled();
     } finally {
       rafSpy.mockRestore();
       cancelRafSpy.mockRestore();

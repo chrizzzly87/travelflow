@@ -115,6 +115,17 @@ describe('components/tripview/TripViewPlannerWorkspace', () => {
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
   });
 
+  it('renders the map above the timeline on mobile', () => {
+    const props = baseProps();
+    props.isMobile = true;
+
+    render(React.createElement(TripViewPlannerWorkspace, props));
+
+    const mapPane = screen.getByTestId('planner-mobile-map-pane');
+    const timelinePane = screen.getByTestId('planner-mobile-timeline-pane');
+    expect(mapPane.compareDocumentPosition(timelinePane) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it('minimizes map into floating mode when toggle is clicked', () => {
     const props = baseProps();
     render(React.createElement(TripViewPlannerWorkspace, props));

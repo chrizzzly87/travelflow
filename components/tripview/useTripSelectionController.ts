@@ -13,6 +13,7 @@ interface UseTripSelectionControllerOptions {
     isHistoryOpen: boolean;
     isTripInfoOpen: boolean;
     autoOpenOnSelect?: boolean;
+    clearSelectionOnClose?: boolean;
     setPendingLabel: (label: string) => void;
     handleUpdateItems: (items: ITimelineItem[]) => void;
 }
@@ -27,6 +28,7 @@ export const useTripSelectionController = ({
     isHistoryOpen,
     isTripInfoOpen,
     autoOpenOnSelect = true,
+    clearSelectionOnClose = false,
     setPendingLabel,
     handleUpdateItems,
 }: UseTripSelectionControllerOptions) => {
@@ -57,8 +59,12 @@ export const useTripSelectionController = ({
 
     const closeDetailsPanel = useCallback(() => {
         if (!hasSelection) return;
+        if (clearSelectionOnClose) {
+            clearSelection();
+            return;
+        }
         setIsDetailsPanelOpen(false);
-    }, [hasSelection]);
+    }, [clearSelection, clearSelectionOnClose, hasSelection]);
 
     const toggleDetailsPanel = useCallback(() => {
         if (!hasSelection) return;
@@ -94,8 +100,17 @@ export const useTripSelectionController = ({
             return;
         }
 
+        const shouldOpenHiddenDetails = !autoOpenOnSelect
+            && !options?.multi
+            && selectedItemId === id
+            && !isDetailsPanelOpen;
+
         const selectedItem = tripItems.find((item) => item.id === id);
         if (!selectedItem) {
+            if (shouldOpenHiddenDetails) {
+                setIsDetailsPanelOpen(true);
+                return;
+            }
             setIsDetailsPanelOpen((previous) => (autoOpenOnSelect ? true : previous));
             setSelectedItemId(id);
             setSelectedCityIds([]);
@@ -103,6 +118,12 @@ export const useTripSelectionController = ({
         }
 
         if (selectedItem.type !== 'city') {
+            if (shouldOpenHiddenDetails) {
+                setSelectedItemId(id);
+                setSelectedCityIds([]);
+                setIsDetailsPanelOpen(true);
+                return;
+            }
             setIsDetailsPanelOpen((previous) => (autoOpenOnSelect ? true : previous));
             setSelectedItemId(id);
             setSelectedCityIds([]);
@@ -110,6 +131,12 @@ export const useTripSelectionController = ({
         }
 
         if (!options?.multi) {
+            if (shouldOpenHiddenDetails) {
+                setSelectedItemId(id);
+                setSelectedCityIds([id]);
+                setIsDetailsPanelOpen(true);
+                return;
+            }
             setIsDetailsPanelOpen((previous) => (autoOpenOnSelect ? true : previous));
             setSelectedItemId(id);
             setSelectedCityIds([id]);
@@ -137,6 +164,7 @@ export const useTripSelectionController = ({
     }, [
         clearSelection,
         autoOpenOnSelect,
+        isDetailsPanelOpen,
         selectedItemId,
         setSelectedCityIds,
         setSelectedItemId,

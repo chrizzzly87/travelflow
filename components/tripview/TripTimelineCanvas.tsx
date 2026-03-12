@@ -14,6 +14,7 @@ interface TripTimelineCanvasProps {
     timelineMode: 'calendar' | 'timeline';
     timelineView: 'vertical' | 'horizontal';
     trip: ITrip;
+    isMobile: boolean;
     onUpdateItems: (items: ITimelineItem[], options?: { deferCommit?: boolean }) => void;
     onToggleTaskCheckbox?: (itemId: string, taskLineNumber: number, checked: boolean) => void;
     onSelect: (id: string | null, options?: { multi?: boolean; isCity?: boolean }) => void;
@@ -38,6 +39,7 @@ export const TripTimelineCanvas: React.FC<TripTimelineCanvasProps> = ({
     timelineMode,
     timelineView,
     trip,
+    isMobile,
     onUpdateItems,
     onToggleTaskCheckbox,
     onSelect,
@@ -65,6 +67,7 @@ export const TripTimelineCanvas: React.FC<TripTimelineCanvasProps> = ({
                 onToggleTaskCheckbox={onToggleTaskCheckbox}
                 onSelect={onSelect}
                 selectionVisibilityKey={selectionVisibilityKey}
+                enableScrollActiveCitySelection={!isMobile}
             />
         );
     }
