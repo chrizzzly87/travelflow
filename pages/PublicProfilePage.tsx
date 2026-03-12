@@ -505,7 +505,7 @@ export const PublicProfilePage: React.FC = () => {
                                         {t('sections.highlightsCount', { count: pinnedTrips.length })}
                                     </span>
                                 </div>
-                                <div className="grid grid-cols-2 gap-4 xl:grid-cols-3">
+                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                                     {pinnedTrips.map((trip) => (
                                         <ProfileTripCard
                                                 key={`public-pinned-${trip.id}`}
@@ -541,7 +541,7 @@ export const PublicProfilePage: React.FC = () => {
                         <section className="space-y-3">
                             <h2 className="text-lg font-black tracking-tight text-slate-900">{t('publicProfile.tripsTitle')}</h2>
                             {isTripsLoading && trips.length === 0 ? (
-                                <div className="grid grid-cols-2 gap-4 xl:grid-cols-3" aria-hidden="true">
+                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3" aria-hidden="true">
                                     {Array.from({ length: 3 }).map((_, index) => (
                                         <ProfileTripCardSkeleton key={`public-trip-loading-${index}`} />
                                     ))}
@@ -552,7 +552,7 @@ export const PublicProfilePage: React.FC = () => {
                                 </div>
                             ) : (
                                 <>
-                                    <div className="grid grid-cols-2 gap-4 xl:grid-cols-3">
+                                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                                         {trips.map((trip) => (
                                             <ProfileTripCard
                                                 key={`public-trip-${trip.id}`}
@@ -585,7 +585,7 @@ export const PublicProfilePage: React.FC = () => {
 
                                     {(hasMoreTrips || isTripsLoadingMore) && (
                                         <>
-                                            <div className="grid grid-cols-2 gap-4 xl:grid-cols-3" aria-hidden="true">
+                                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3" aria-hidden="true">
                                                 {Array.from({ length: 3 }).map((_, index) => (
                                                     <ProfileTripCardSkeleton
                                                         key={`public-trip-more-skeleton-${index}`}

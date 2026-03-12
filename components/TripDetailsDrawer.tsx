@@ -1,42 +1,53 @@
 import React from 'react';
 import { Drawer, DrawerContent } from './ui/drawer';
 
-const PEEK_SNAP_POINT = '156px';
+const PEEK_SNAP_POINT = '192px';
 const FULL_SNAP_POINT = 0.9;
 
 export interface TripDetailsDrawerProps {
     open: boolean;
+    expanded: boolean;
     onOpenChange: (open: boolean) => void;
+    onExpandedChange: (expanded: boolean) => void;
     children: React.ReactNode;
 }
 
 export const TripDetailsDrawer: React.FC<TripDetailsDrawerProps> = ({
     open,
+    expanded,
     onOpenChange,
+    onExpandedChange,
     children,
 }) => {
-    const [activeSnapPoint, setActiveSnapPoint] = React.useState<number | string | null>(PEEK_SNAP_POINT);
+    const [activeSnapPoint, setActiveSnapPoint] = React.useState<number | string | null>(
+        expanded ? FULL_SNAP_POINT : PEEK_SNAP_POINT
+    );
     const isPeekVisible = activeSnapPoint === PEEK_SNAP_POINT;
 
     React.useEffect(() => {
         if (!open) {
             setActiveSnapPoint(PEEK_SNAP_POINT);
+            return;
         }
-    }, [open]);
+        setActiveSnapPoint(expanded ? FULL_SNAP_POINT : PEEK_SNAP_POINT);
+    }, [expanded, open]);
 
     return (
         <Drawer
             open={open}
             onOpenChange={onOpenChange}
             activeSnapPoint={activeSnapPoint}
-            setActiveSnapPoint={setActiveSnapPoint}
+            setActiveSnapPoint={(nextSnapPoint) => {
+                setActiveSnapPoint(nextSnapPoint);
+                onExpandedChange(nextSnapPoint === FULL_SNAP_POINT);
+            }}
             snapPoints={[PEEK_SNAP_POINT, FULL_SNAP_POINT]}
             shouldScaleBackground={false}
             modal={false}
             autoFocus={false}
             handleOnly
             disablePreventScroll
-            dismissible
+            dismissible={false}
             snapToSequentialPoint
         >
             <DrawerContent
@@ -49,8 +60,11 @@ export const TripDetailsDrawer: React.FC<TripDetailsDrawerProps> = ({
                     {isPeekVisible && (
                         <button
                             type="button"
-                            onClick={() => setActiveSnapPoint(FULL_SNAP_POINT)}
-                            className="pointer-events-auto absolute inset-x-0 top-0 z-20 h-[156px] cursor-ns-resize bg-transparent"
+                            onClick={() => {
+                                setActiveSnapPoint(FULL_SNAP_POINT);
+                                onExpandedChange(true);
+                            }}
+                            className="pointer-events-auto absolute inset-x-0 top-0 z-20 h-20 cursor-ns-resize bg-transparent"
                             aria-label="Expand trip details drawer"
                         >
                             <span className="sr-only">Expand trip details drawer</span>

@@ -85,7 +85,7 @@ export const TripViewHeader: React.FC<TripViewHeaderProps> = ({
     return (
         <header className="relative z-[1600] isolate shrink-0 border-b border-gray-200 bg-white px-4 py-2.5 sm:px-6">
             <div className="flex items-center justify-between gap-4">
-            <div className="flex min-w-0 flex-1 items-center gap-1.5 sm:gap-2.5">
+            <div className="flex min-w-0 flex-1 items-center gap-1 sm:gap-2.5">
                 <Link
                     to="/"
                     className="flex shrink-0 cursor-pointer items-center gap-1 transition-opacity hover:opacity-80"
@@ -105,7 +105,7 @@ export const TripViewHeader: React.FC<TripViewHeaderProps> = ({
                     onMouseEnter={onPrewarmTripInfo}
                     onFocus={onPrewarmTripInfo}
                     onTouchStart={onPrewarmTripInfo}
-                    className="group flex min-w-0 flex-1 items-start gap-2 rounded-xl px-2 py-1 text-left transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
+                    className="group flex min-w-0 flex-1 items-start gap-1 rounded-xl px-1 py-1 text-left transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 sm:gap-2 sm:px-2"
                     aria-label={titleTooltip}
                     data-tooltip={titleTooltip}
                     data-no-press-scale="true"
@@ -124,7 +124,7 @@ export const TripViewHeader: React.FC<TripViewHeaderProps> = ({
                             </div>
                         )}
                     </div>
-                    <span className="mt-1 inline-flex shrink-0 items-center gap-1 rounded-full border border-slate-200 bg-white/90 px-2 py-1 text-[11px] font-semibold text-slate-500 opacity-0 shadow-sm transition-all group-hover:opacity-100 group-focus-visible:opacity-100">
+                    <span className="mt-1 hidden shrink-0 items-center gap-1 rounded-full border border-slate-200 bg-white/90 px-2 py-1 text-[11px] font-semibold text-slate-500 opacity-0 shadow-sm transition-all group-hover:opacity-100 group-focus-visible:opacity-100 md:inline-flex">
                         {canManageTripMetadata ? <Pencil size={12} /> : <Info size={12} />}
                         <span className="hidden lg:inline">
                             {canManageTripMetadata ? t('tripView.header.editTitleCta') : t('tripView.header.openDetailsCta')}

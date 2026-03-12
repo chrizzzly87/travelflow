@@ -509,9 +509,11 @@ const TripInfoModalLoadingFallback: React.FC<{ onClose: () => void }> = ({ onClo
 
 interface TripViewModalLayerProps {
     isMobile: boolean;
+    hasDetailsSelection: boolean;
     detailsPanelVisible: boolean;
     detailsPanelContent: React.ReactNode;
     onCloseDetailsDrawer: () => void;
+    onOpenDetailsDrawer: () => void;
     addActivityState: { isOpen: boolean; dayOffset: number; location: string };
     onCloseAddActivity: () => void;
     onAddActivity: (...args: any[]) => void;
@@ -606,9 +608,11 @@ interface TripViewModalLayerProps {
 
 const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
     isMobile,
+    hasDetailsSelection,
     detailsPanelVisible,
     detailsPanelContent,
     onCloseDetailsDrawer,
+    onOpenDetailsDrawer,
     addActivityState,
     onCloseAddActivity,
     onAddActivity,
@@ -692,9 +696,22 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
     isPendingAuthContinueDisabled,
 }) => (
     <>
-        {isMobile && detailsPanelVisible && (
+        {isMobile && hasDetailsSelection && (
             <Suspense fallback={null}>
-                <TripDetailsDrawer open={detailsPanelVisible} onOpenChange={(open) => { if (!open) onCloseDetailsDrawer(); }}>
+                <TripDetailsDrawer
+                    open={hasDetailsSelection}
+                    expanded={detailsPanelVisible}
+                    onOpenChange={(open) => {
+                        if (!open) onCloseDetailsDrawer();
+                    }}
+                    onExpandedChange={(expanded) => {
+                        if (expanded) {
+                            onOpenDetailsDrawer();
+                            return;
+                        }
+                        onCloseDetailsDrawer();
+                    }}
+                >
                     {detailsPanelContent}
                 </TripDetailsDrawer>
             </Suspense>
@@ -2414,6 +2431,7 @@ const useTripViewRender = ({
     const {
         selectedCitiesInTimeline,
         showSelectedCitiesPanel,
+        hasSelection,
         detailsPanelVisible,
         openDetailsPanel,
         closeDetailsPanel,
@@ -2431,6 +2449,7 @@ const useTripViewRender = ({
         setSelectedCityIds,
         isHistoryOpen,
         isTripInfoOpen,
+        autoOpenOnSelect: !isMobileViewport,
         setPendingLabel,
         handleUpdateItems,
     });
@@ -3161,9 +3180,11 @@ const useTripViewRender = ({
                     />
                     <TripViewModalLayer
                         isMobile={isMobile}
+                        hasDetailsSelection={hasSelection}
                         detailsPanelVisible={detailsPanelVisible}
                         detailsPanelContent={detailsPanelContent}
                         onCloseDetailsDrawer={closeDetailsPanel}
+                        onOpenDetailsDrawer={openDetailsPanel}
                         addActivityState={addActivityState}
                         onCloseAddActivity={() => setAddActivityState({ ...addActivityState, isOpen: false })}
                         onAddActivity={handleAddActivityItem}

@@ -150,8 +150,9 @@ export const ProfilePage: React.FC = () => {
     const fallbackDisplayName = metadataDisplayName
         || access?.email?.trim().split('@')[0]
         || t('fallback.displayName');
-    const displayName = profile?.displayName
-        || [profile?.firstName || '', profile?.lastName || ''].filter(Boolean).join(' ')
+    const resolvedProfileName = [profile?.firstName || '', profile?.lastName || ''].filter(Boolean).join(' ');
+    const displayName = resolvedProfileName
+        || profile?.displayName
         || fallbackDisplayName;
     const greetingDisplayName = formatDisplayNameForGreeting(
         profile?.firstName || '',
@@ -865,6 +866,19 @@ export const ProfilePage: React.FC = () => {
                     })}
                 />
 
+                <div className="md:hidden">
+                    <NavLink
+                        to={buildPath('profileSettings')}
+                        onClick={() => {
+                            trackEvent('profile__summary--edit_profile');
+                        }}
+                        className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
+                        {...getAnalyticsDebugAttributes('profile__summary--edit_profile')}
+                    >
+                        {t('summary.editProfile')}
+                    </NavLink>
+                </div>
+
                 {pinNotice && (
                     <section className="rounded-xl border border-accent-200 bg-accent-50 px-4 py-3 text-sm text-accent-900">
                         {pinNotice}
@@ -949,9 +963,10 @@ export const ProfilePage: React.FC = () => {
                     isPassportOpen={searchParams.get(PROFILE_PASSPORT_QUERY_KEY) === PROFILE_PASSPORT_QUERY_VALUE}
                     canShareProfile={Boolean(publicProfileUrl)}
                     locale={appLocale}
+                    className="hidden md:grid"
                 />
 
-                <section className="space-y-2">
+                <section className="hidden space-y-2 md:block">
                     <h2 className="text-sm font-black tracking-tight text-slate-900">{t('actions.title')}</h2>
                     <div className="flex flex-wrap items-center gap-2">
                         <NavLink
@@ -997,7 +1012,7 @@ export const ProfilePage: React.FC = () => {
                                 {t('sections.highlightsCount', { count: pinnedTrips.length })}
                             </span>
                         </div>
-                        <div className="grid grid-cols-2 gap-4 xl:grid-cols-3">
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                             {pinnedTrips.map((trip) => (
                                 <ProfileTripCard
                                     key={`pinned-${trip.id}`}
@@ -1194,7 +1209,7 @@ export const ProfilePage: React.FC = () => {
                         </div>
                     ) : (
                         <>
-                            <div className="grid grid-cols-2 gap-4 xl:grid-cols-3">
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                                 {visibleTripsForTab.map((trip) => (
                                     <ProfileTripCard
                                         key={trip.id}
@@ -1239,7 +1254,7 @@ export const ProfilePage: React.FC = () => {
 
                             {hasMoreTripsForTab && (
                                 <>
-                                    <div className="grid grid-cols-2 gap-4 xl:grid-cols-3" aria-hidden="true">
+                                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3" aria-hidden="true">
                                         {Array.from({ length: skeletonTripCount || PROFILE_TRIPS_PAGE_SIZE }).map((_, index) => (
                                             <ProfileTripCardSkeleton key={`profile-trip-skeleton-${index}`} pulse={isTripPaginationPending} />
                                         ))}

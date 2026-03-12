@@ -12,6 +12,7 @@ interface UseTripSelectionControllerOptions {
     setSelectedCityIds: Dispatch<SetStateAction<string[]>>;
     isHistoryOpen: boolean;
     isTripInfoOpen: boolean;
+    autoOpenOnSelect?: boolean;
     setPendingLabel: (label: string) => void;
     handleUpdateItems: (items: ITimelineItem[]) => void;
 }
@@ -25,10 +26,11 @@ export const useTripSelectionController = ({
     setSelectedCityIds,
     isHistoryOpen,
     isTripInfoOpen,
+    autoOpenOnSelect = true,
     setPendingLabel,
     handleUpdateItems,
 }: UseTripSelectionControllerOptions) => {
-    const [isDetailsPanelOpen, setIsDetailsPanelOpen] = useState(true);
+    const [isDetailsPanelOpen, setIsDetailsPanelOpen] = useState(autoOpenOnSelect);
     const selectedCitiesInTimeline = useMemo(() => {
         if (selectedCityIds.length === 0) return [];
 
@@ -43,10 +45,10 @@ export const useTripSelectionController = ({
     const detailsPanelVisible = hasSelection && isDetailsPanelOpen;
 
     const clearSelection = useCallback(() => {
-        setIsDetailsPanelOpen(true);
+        setIsDetailsPanelOpen(autoOpenOnSelect);
         setSelectedItemId(null);
         setSelectedCityIds([]);
-    }, [setSelectedCityIds, setSelectedItemId]);
+    }, [autoOpenOnSelect, setSelectedCityIds, setSelectedItemId]);
 
     const openDetailsPanel = useCallback(() => {
         if (!hasSelection) return;
@@ -65,8 +67,8 @@ export const useTripSelectionController = ({
 
     useEffect(() => {
         if (hasSelection) return;
-        setIsDetailsPanelOpen(true);
-    }, [hasSelection]);
+        setIsDetailsPanelOpen(autoOpenOnSelect);
+    }, [autoOpenOnSelect, hasSelection]);
 
     useEffect(() => {
         const handleEscape = (event: KeyboardEvent) => {
@@ -94,27 +96,27 @@ export const useTripSelectionController = ({
 
         const selectedItem = tripItems.find((item) => item.id === id);
         if (!selectedItem) {
-            setIsDetailsPanelOpen(true);
+            setIsDetailsPanelOpen((previous) => (autoOpenOnSelect ? true : previous));
             setSelectedItemId(id);
             setSelectedCityIds([]);
             return;
         }
 
         if (selectedItem.type !== 'city') {
-            setIsDetailsPanelOpen(true);
+            setIsDetailsPanelOpen((previous) => (autoOpenOnSelect ? true : previous));
             setSelectedItemId(id);
             setSelectedCityIds([]);
             return;
         }
 
         if (!options?.multi) {
-            setIsDetailsPanelOpen(true);
+            setIsDetailsPanelOpen((previous) => (autoOpenOnSelect ? true : previous));
             setSelectedItemId(id);
             setSelectedCityIds([id]);
             return;
         }
 
-        setIsDetailsPanelOpen(true);
+        setIsDetailsPanelOpen((previous) => (autoOpenOnSelect ? true : previous));
         setSelectedCityIds((previous) => {
             const baseSelection = previous.length > 0
                 ? previous
@@ -134,6 +136,7 @@ export const useTripSelectionController = ({
         });
     }, [
         clearSelection,
+        autoOpenOnSelect,
         selectedItemId,
         setSelectedCityIds,
         setSelectedItemId,
@@ -172,6 +175,7 @@ export const useTripSelectionController = ({
     return {
         selectedCitiesInTimeline,
         showSelectedCitiesPanel,
+        hasSelection,
         detailsPanelVisible,
         openDetailsPanel,
         closeDetailsPanel,
