@@ -1,22 +1,21 @@
 ---
 id: rel-2026-03-11-trip-page-layout-optimization
-version: v0.92.1
+version: v0.92.2
 title: "Trip pages feel smoother, clearer, and easier to steer"
 date: 2026-03-11
-published_at: 2026-03-11T21:27:28Z
+published_at: 2026-03-12T06:53:16Z
 status: published
 notify_in_app: true
 in_app_hours: 24
-summary: "Trip pages now give titles and controls more room, make details easier to open and edit, stabilize map and pane layouts across resize changes, and clean up the planner and details dialog so controls feel more consistent again."
+summary: "Trip pages now feel calmer and more predictable across desktop and mobile, with a lighter profile menu, cleaner trip details editing, better low-zoom calendar readability, and mobile interactions that stay out of the way until you need them."
 ---
 
 ## Changes
-- [x] [Improved] 🧭 A header that finally breathes. Trip titles get more room, open details on click, and keep Trips, Share, and Profile aligned in a cleaner action row.
-- [x] [Improved] 🗂️ Trip details are easier to scan. The larger dialog now separates essentials, history, exports, destination context, and admin diagnostics into clearer sections.
-- [x] [Fixed] 🗺️ The planner holds its shape when you resize. Docked and floating maps recover more reliably, pane handles behave again, and side panels stop fighting for space.
-- [x] [Improved] 🔎 Zooming feels more useful at every scale. Calendar controls use compact 0.2 steps, Fit behaves more reliably, and vertical low-zoom views now show clearer day and month labels.
-- [x] [Polished] 🎛️ Planner controls feel tidier again. Map orientation toggles are grouped in the expected stacked layout, and the title keeps its helpful click behavior without acting like a giant button press.
-- [x] [Polished] 🪟 The trip dialog now feels more like the rest of TravelFlow. Tabs use a cleaner accent underline, inputs and buttons match shared surface styles, and the bulky boxed card treatment is replaced with lighter section spacing.
-- [x] [Improved] ✅ Notes are easier to act on. Checklist items align better, stay interactive in both timeline and details views, and Heads Up tips now stand out as simple alert banners.
-- [x] [Improved] ⌨️ Moving through a trip takes fewer clicks. Active city cards support keyboard navigation, and Enter or Space can open or close the matching details panel.
-- [ ] [Internal] 🧪 Added regression coverage for shared history listeners, speculation-rules cleanup during hot reload, vertical low-zoom date rails, map control grouping, and planner pane behavior.
+- [x] [Improved] 🧭 Trip navigation feels lighter and more focused. The title sits closer to the TravelFlow mark, opens trip details on click, and profile actions now center around Create Trip and My Trips instead of a crowded shortcut list.
+- [x] [Improved] 📱 Mobile trip pages stay calmer while you explore. Account menus layer above planner controls, the profile trigger collapses to the avatar, toast popups stay out of the way, and the details drawer now peeks from the bottom instead of taking over immediately.
+- [x] [Fixed] 🗓️ Low-zoom calendars use space much better. Vertical views now center month labels across the visible span, compact day rails stay readable, and small activity cards in the planner are easier to scan at a glance.
+- [x] [Polished] ✍️ Trip details editing feels like the rest of TravelFlow again. Tabs sit cleanly on the divider, the trip title uses the shared input style, favorites stay right beside the name field, and Escape cleanly cancels draft title edits.
+- [x] [Fixed] 🎛️ Planner controls feel tidier and less distracting. Zoom controls stay compact, desktop keeps the zoom readout where it helps, and map layout toggles are grouped like proper orientation switches again.
+- [x] [Improved] ✅ Notes and checklists are easier to work with. Checklist rows stay aligned, task toggles now hit the correct line in timeline and details views, and Heads Up guidance shows up as simple banner-style callouts.
+- [x] [Improved] ⌨️ Moving through a trip takes fewer clicks. Active city cards support keyboard travel with arrow keys or Tab, and Enter or Space can open or close the matching details panel.
+- [ ] [Internal] 🧪 Added regression coverage for low-zoom month rails, mobile peek drawers, account-menu trip actions, modal title editing, and planner control behavior.
