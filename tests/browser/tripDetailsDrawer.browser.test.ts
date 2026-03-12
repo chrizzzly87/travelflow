@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import React from 'react';
-import { cleanup, render } from '@testing-library/react';
+import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const drawerMocks = vi.hoisted(() => ({
@@ -28,7 +28,7 @@ describe('components/TripDetailsDrawer', () => {
     drawerMocks.contentProps = [];
   });
 
-  it('opens as a non-modal peek drawer with snap points and no overlay', () => {
+  it('opens as a non-modal peek drawer with a taller passive preview and no overlay', () => {
     const { rerender } = render(
       React.createElement(TripDetailsDrawer, {
         open: true,
@@ -38,9 +38,13 @@ describe('components/TripDetailsDrawer', () => {
 
     expect(drawerMocks.rootProps.at(-1)?.modal).toBe(false);
     expect(drawerMocks.rootProps.at(-1)?.autoFocus).toBe(false);
-    expect(drawerMocks.rootProps.at(-1)?.snapPoints).toEqual(['92px', 0.9]);
-    expect(drawerMocks.rootProps.at(-1)?.activeSnapPoint).toBe('92px');
+    expect(drawerMocks.rootProps.at(-1)?.handleOnly).toBe(true);
+    expect(drawerMocks.rootProps.at(-1)?.disablePreventScroll).toBe(true);
+    expect(drawerMocks.rootProps.at(-1)?.snapPoints).toEqual(['132px', 0.9]);
+    expect(drawerMocks.rootProps.at(-1)?.activeSnapPoint).toBe('132px');
     expect(drawerMocks.contentProps.at(-1)?.hideOverlay).toBe(true);
+    expect(String(drawerMocks.contentProps.at(-1)?.className)).toContain('pointer-events-none');
+    expect(screen.getByRole('button', { name: 'Expand trip details drawer' })).toBeInTheDocument();
 
     rerender(
       React.createElement(TripDetailsDrawer, {
@@ -55,6 +59,6 @@ describe('components/TripDetailsDrawer', () => {
       }, React.createElement('div', null, 'details')),
     );
 
-    expect(drawerMocks.rootProps.at(-1)?.activeSnapPoint).toBe('92px');
+    expect(drawerMocks.rootProps.at(-1)?.activeSnapPoint).toBe('132px');
   });
 });

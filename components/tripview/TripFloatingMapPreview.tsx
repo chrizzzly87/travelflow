@@ -914,7 +914,7 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
                 }}
                 className={`fixed overflow-hidden bg-gray-100 transition-[border-radius,box-shadow,border-width] duration-300 ease-out ${
                     mapDockMode === 'floating'
-                        ? `z-[30] border-[4px] border-white ${
+                        ? `${shouldPromoteMapLayer ? 'z-[48]' : 'z-[45]'} border-[4px] border-white ${
                             isFloatingMapDragging
                                 ? 'shadow-[0_34px_70px_-28px_rgba(15,23,42,0.72),0_14px_30px_-16px_rgba(15,23,42,0.45)]'
                                 : 'shadow-[0_20px_50px_-22px_rgba(15,23,42,0.58),0_10px_24px_-12px_rgba(15,23,42,0.38)]'

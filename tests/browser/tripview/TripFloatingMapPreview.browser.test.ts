@@ -48,6 +48,27 @@ describe('components/tripview/TripFloatingMapPreview', () => {
     expect(maxEdge.lg - maxEdge.sm).toBeGreaterThanOrEqual(90);
   });
 
+  it('keeps the floating map above planner controls while staying below side panels', () => {
+    const mapViewportRef = { current: null as HTMLDivElement | null };
+    const dockedMapAnchorRef = { current: null as HTMLDivElement | null };
+
+    render(
+      React.createElement(
+        TripFloatingMapPreview,
+        {
+          mapDockMode: 'floating',
+          mapViewportRef,
+          dockedMapAnchorRef,
+          dockedGeometryKey: 'floating',
+          tripId: 'trip-layering',
+        },
+        React.createElement('div', { 'data-testid': 'map-content' }, 'map'),
+      ),
+    );
+
+    expect(mapViewportRef.current?.className).toContain('z-[45]');
+  });
+
   it('re-syncs docked geometry when layout key changes without toggling dock mode', async () => {
     const mapViewportRef = { current: null as HTMLDivElement | null };
     const anchor = document.createElement('div');
