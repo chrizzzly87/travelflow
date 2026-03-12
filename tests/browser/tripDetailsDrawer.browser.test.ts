@@ -32,7 +32,9 @@ describe('components/TripDetailsDrawer', () => {
     const { rerender } = render(
       React.createElement(TripDetailsDrawer, {
         open: true,
+        expanded: false,
         onOpenChange: vi.fn(),
+        onExpandedChange: vi.fn(),
       }, React.createElement('div', null, 'details')),
     );
 
@@ -40,25 +42,22 @@ describe('components/TripDetailsDrawer', () => {
     expect(drawerMocks.rootProps.at(-1)?.autoFocus).toBe(false);
     expect(drawerMocks.rootProps.at(-1)?.handleOnly).toBe(true);
     expect(drawerMocks.rootProps.at(-1)?.disablePreventScroll).toBe(true);
-    expect(drawerMocks.rootProps.at(-1)?.snapPoints).toEqual(['156px', 0.9]);
-    expect(drawerMocks.rootProps.at(-1)?.activeSnapPoint).toBe('156px');
+    expect(drawerMocks.rootProps.at(-1)?.dismissible).toBe(false);
+    expect(drawerMocks.rootProps.at(-1)?.snapPoints).toEqual(['192px', 0.9]);
+    expect(drawerMocks.rootProps.at(-1)?.activeSnapPoint).toBe('192px');
     expect(drawerMocks.contentProps.at(-1)?.hideOverlay).toBe(true);
     expect(String(drawerMocks.contentProps.at(-1)?.className)).toContain('pointer-events-none');
     expect(screen.getByRole('button', { name: 'Expand trip details drawer' })).toBeInTheDocument();
 
     rerender(
       React.createElement(TripDetailsDrawer, {
-        open: false,
-        onOpenChange: vi.fn(),
-      }, React.createElement('div', null, 'details')),
-    );
-    rerender(
-      React.createElement(TripDetailsDrawer, {
         open: true,
+        expanded: true,
         onOpenChange: vi.fn(),
+        onExpandedChange: vi.fn(),
       }, React.createElement('div', null, 'details')),
     );
 
-    expect(drawerMocks.rootProps.at(-1)?.activeSnapPoint).toBe('156px');
+    expect(drawerMocks.rootProps.at(-1)?.activeSnapPoint).toBe(0.9);
   });
 });

@@ -371,7 +371,7 @@ const computeHoverBridgeStyle = (anchorRect: DOMRect, tooltip: TooltipPosition):
     width,
     height,
     background: 'transparent',
-    zIndex: 1395,
+    zIndex: 2315,
   };
 };
 
@@ -586,7 +586,7 @@ const TripTooltip: React.FC<TripTooltipProps> = ({ trip, position, onHoverStart,
 
   return (
     <div
-      className="fixed z-[1400]"
+      className="fixed z-[2320] hidden lg:block"
       style={{ left: position.left, top: position.top, width: position.width, height: position.height }}
       onMouseEnter={onHoverStart}
       onMouseLeave={onHoverEnd}
@@ -1476,6 +1476,7 @@ export const TripManager: React.FC<TripManagerProps> = ({
         <>
           {hoverBridgeStyle && (
             <div
+              className="hidden lg:block"
               style={hoverBridgeStyle}
               onMouseEnter={cancelHoverClose}
               onMouseLeave={scheduleHoverClose}

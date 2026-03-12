@@ -4,13 +4,20 @@ version: v0.92.0
 title: "Trip pages feel smoother, clearer, and easier to steer"
 date: 2026-03-11
 published_at: 2026-03-12T09:13:05Z
-status: published
+status: draft
 notify_in_app: true
 in_app_hours: 24
-summary: "Trip pages now feel calmer and more predictable across desktop and mobile, with full-day activity cards that fit their labels more cleanly, floating maps that stay usable above planner controls, simpler title editing in trip details, and mobile account layers that stay in the right order."
+summary: "Trip pages now feel calmer and more predictable across desktop and mobile, with more readable mobile profile layouts, a less intrusive details drawer, a centered share dialog on phones, and safer recovery from stale share chunks."
 ---
 
 ## Changes
+- [x] [Fixed] 🤝 Sharing now fails more gracefully after stale app updates. The trip share flow recognizes MIME-type chunk mismatches as recoverable, so a stale cached page is much less likely to strand the share dialog behind a broken lazy import.
+- [x] [Improved] 📱 Mobile trip sharing feels steadier. The share dialog now opens centered instead of dropping into a bottom sheet on small screens.
+- [x] [Improved] 🪟 Mobile trip details stay out of the way until you ask for them. Selecting a city no longer auto-opens the drawer, the bottom peek is easier to grab, and scrolling the timeline stays more natural while details remain collapsed.
+- [x] [Improved] 🙋 Profile pages feel lighter on phones. Mobile now focuses on the greeting and trip list first, keeps a simple Edit profile action close at hand, and lets trip cards span the full column before stepping up to two and three columns on larger screens.
+- [x] [Fixed] 💬 Greetings and profile names read more naturally on smaller screens. Greeting text now wraps by whole words instead of single letters, the pronunciation line uses accent styling with prettier wrapping, and the owner profile now prefers the saved first and last name over stale display-name leftovers.
+- [x] [Improved] 📍 City detail basics are easier to scan. The approval toggle now sits below the location instead of competing with the title area.
+- [x] [Improved] 🧭 Small-screen trip headers make better use of the space they already have. The hidden hover-only info pill no longer reserves room on mobile, so the trip title can breathe more naturally beside the TravelFlow mark.
 - [x] [Fixed] 🛟 Trip pages load reliably again after the latest polish pass. A mobile viewport state regression that could stop the planner from rendering has been resolved.
 - [x] [Fixed] 🗂️ Trip details tabs now sit cleanly on the divider again. The underline anchors directly to the grey rule without the extra offset or boxed active state.
 - [x] [Improved] 📍 Floating maps feel safer to move. The preview now stays above planner controls in floating mode, so the move handle cannot get trapped underneath other UI.
@@ -26,3 +33,4 @@ summary: "Trip pages now feel calmer and more predictable across desktop and mob
 - [ ] [Internal] 🧪 Added regression coverage for low-zoom month rails, mobile peek drawers, account-menu trip actions, modal title editing, and planner control behavior.
 - [ ] [Internal] 🧷 Added regression coverage to keep mobile viewport state declared before the trip-view callbacks that depend on it.
 - [ ] [Internal] 🧪 Added regression coverage for the compact horizontal activity layout, the passive mobile drawer preview, the cleaned-up line tabs, the floating map layer order, and the account-menu/My Trips stacking behavior.
+- [ ] [Internal] 📝 The richer profile overview cards are temporarily hidden more broadly than originally planned while we keep the mobile-first profile simplification in place for this pass.
