@@ -121,7 +121,14 @@ describe('components/tripview/TripTimelineListView', () => {
     expect(screen.getByRole('link', { name: 'book ahead' })).toHaveAttribute('href', 'https://example.com');
     expect(screen.getByTitle('Culture')).toBeInTheDocument();
     expect(screen.getByTitle('Food')).toBeInTheDocument();
-    expect(screen.getByTitle('Culture').parentElement).toHaveClass('-space-x-2');
+    expect(screen.getByTitle('Culture')).not.toHaveClass('shadow-sm');
+    expect(screen.getByTitle('Culture')).toHaveClass('-ms-2');
+    expect(screen.getByTitle('Culture')).toHaveClass('group-hover/pills:ms-2');
+    expect(screen.getByTitle('Culture').getAttribute('class')).toContain('[z-index:calc(sibling-count()-sibling-index())]');
+    expect(screen.getByTitle('Food').lastElementChild).toHaveClass('group-hover/pills:max-w-24');
+    expect(screen.getByTitle('Food').lastElementChild).toHaveClass('group-focus-visible:max-w-24');
+    expect(screen.getByTitle('Food').lastElementChild).toHaveClass('ease-out');
+    expect(screen.getByTitle('Food').lastElementChild?.getAttribute('class')).toContain('group-hover/pills:[transition-delay:calc((sibling-index()-1)*36ms)]');
 
     const heratHeading = screen.getByRole('heading', { name: 'Herat' });
     expect(heratHeading.closest('header')).toHaveClass('sticky');
