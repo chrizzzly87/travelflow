@@ -1,10 +1,10 @@
 ---
 id: rel-2026-03-12-create-trip-mobile-recommendations-and-admin-controls
-version: v0.0.0
+version: v0.93.0
 title: "Create Trip mobile destination suggestions now stay aligned and adapt to season"
 date: 2026-03-12
-published_at: 2026-03-12T14:00:00Z
-status: draft
+published_at: 2026-03-12T12:45:09Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Improves mobile destination search behavior in trip creation, adds season-aware recommendations, and tightens classic-page planner controls."
