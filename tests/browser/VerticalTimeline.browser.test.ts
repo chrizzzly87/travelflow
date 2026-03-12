@@ -19,7 +19,7 @@ describe('components/VerticalTimeline', () => {
     vi.unstubAllGlobals();
   });
 
-  it('shows a compact horizontal weekday-date row and a month rail at very small zoom levels', () => {
+  it('shows centered full month labels when the visible month span is large enough', () => {
     const trip = makeTrip({
       startDate: '2026-03-28',
       items: [
@@ -44,8 +44,37 @@ describe('components/VerticalTimeline', () => {
       }),
     );
 
-    expect(screen.getByLabelText('March')).toBeInTheDocument();
-    expect(screen.getByLabelText('April')).toBeInTheDocument();
+    expect(screen.getByLabelText('March')).toHaveTextContent('March');
+    expect(screen.getByLabelText('April')).toHaveTextContent('April');
     expect(container.querySelector('[class*=\"gap-1.5\"]')).not.toBeNull();
+  });
+
+  it('falls back to the short month label when the visible month span is too small for the full name', () => {
+    const trip = makeTrip({
+      startDate: '2026-03-31',
+      items: [
+        makeCityItem({
+          id: 'city-1',
+          title: 'Manila',
+          startDateOffset: 0,
+          duration: 2,
+        }),
+      ],
+    });
+
+    render(
+      React.createElement(VerticalTimeline, {
+        trip,
+        selectedItemId: null,
+        onSelect: vi.fn(),
+        onUpdateItems: vi.fn(),
+        onAddActivity: vi.fn(),
+        onAddCity: vi.fn(),
+        pixelsPerDay: 18,
+      }),
+    );
+
+    expect(screen.getByLabelText('March')).toHaveTextContent('Mar');
+    expect(screen.getByLabelText('April')).toHaveTextContent('Apr');
   });
 });

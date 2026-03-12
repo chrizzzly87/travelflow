@@ -5,17 +5,6 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 
 import { TripViewPlannerWorkspace } from '../../../components/tripview/TripViewPlannerWorkspace';
 
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string, options?: Record<string, unknown>) => {
-      if (key === 'tripView.zoom.fit') return 'Fit';
-      if (key === 'tripView.zoom.fitAria') return 'Fit timeline to available space';
-      if (key === 'tripView.zoom.presetAria') return `Set timeline zoom to ${options?.value ?? ''}`;
-      return key;
-    },
-  }),
-}));
-
 type PlannerProps = React.ComponentProps<typeof TripViewPlannerWorkspace>;
 
 const baseProps = (): PlannerProps => ({
@@ -30,7 +19,6 @@ const baseProps = (): PlannerProps => ({
   onTimelineTouchEnd: vi.fn(),
   onZoomOut: vi.fn(),
   onZoomIn: vi.fn(),
-  onZoomFit: vi.fn(),
   onTimelineModeChange: vi.fn(),
   onTimelineViewChange: vi.fn(),
   zoomLevel: 1,
@@ -94,7 +82,6 @@ describe('components/tripview/TripViewPlannerWorkspace', () => {
     expect(screen.getByLabelText('Vertical timeline direction')).toBeInTheDocument();
     expect(screen.getByLabelText('Zoom out timeline')).toBeInTheDocument();
     expect(screen.getByRole('status')).toHaveTextContent('×1.0');
-    expect(screen.getByLabelText('Fit timeline to available space')).toBeInTheDocument();
     expect(screen.getByLabelText('Zoom in timeline')).toBeInTheDocument();
 
     const modeGroup = calendarModeButton.parentElement;
@@ -114,17 +101,18 @@ describe('components/tripview/TripViewPlannerWorkspace', () => {
     expect(screen.queryByLabelText('Horizontal timeline direction')).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Vertical timeline direction')).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Zoom out timeline')).not.toBeInTheDocument();
-    expect(screen.queryByLabelText('Fit timeline to available space')).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Zoom in timeline')).not.toBeInTheDocument();
   });
 
-  it('calls the fit handler from the zoom controls', () => {
+  it('hides the zoom indicator on mobile while keeping the zoom actions available', () => {
     const props = baseProps();
+    props.isMobile = true;
 
     render(React.createElement(TripViewPlannerWorkspace, props));
-    fireEvent.click(screen.getByLabelText('Fit timeline to available space'));
 
-    expect(props.onZoomFit).toHaveBeenCalledTimes(1);
+    expect(screen.getByLabelText('Zoom out timeline')).toBeInTheDocument();
+    expect(screen.getByLabelText('Zoom in timeline')).toBeInTheDocument();
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
   });
 
   it('minimizes map into floating mode when toggle is clicked', () => {

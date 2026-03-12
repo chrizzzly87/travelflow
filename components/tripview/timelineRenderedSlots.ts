@@ -70,7 +70,9 @@ export const buildRenderedTimelineDaySlots = ({
 
 export interface TimelineRenderedMonthGroup {
     name: string;
+    shortName: string;
     startIndex: number;
+    startPx: number;
     widthPx: number;
 }
 
@@ -84,7 +86,9 @@ export const buildRenderedTimelineMonths = (
         if (!currentMonth || currentMonth.name !== slot.monthName) {
             months.push({
                 name: slot.monthName,
+                shortName: slot.monthShort,
                 startIndex: index,
+                startPx: slot.start,
                 widthPx: slot.size,
             });
             return;

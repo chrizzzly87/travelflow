@@ -103,6 +103,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
       ? (cityVisualColorHex || getHexFromColorClass(item.color || ''))
       : null;
   const isCompactVerticalActivity = vertical && item.type === 'activity' && size >= 20 && size < 40;
+  const isCompactHorizontalActivity = !vertical && item.type === 'activity' && size < 92;
   const compactVerticalTitleSize = Math.max(9, Math.min(11, size * 0.28));
   const cityDayCount = isCity ? Math.max(1, Math.ceil(item.duration - 0.01)) : 0;
   const cityNightCount = isCity ? Math.max(0, cityDayCount - 1) : 0;
@@ -376,7 +377,11 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
                   ? 'justify-center text-center'
                   : (size < 40 ? 'hidden' : size < 60 ? 'flex-row justify-center gap-1.5' : 'flex-col justify-center text-center py-1')
                )
-             : (isCity ? 'justify-center flex-col text-center py-0.5' : 'justify-center flex-col text-center')}
+             : (
+                isCity
+                  ? 'justify-center flex-col text-center py-0.5'
+                  : (isCompactHorizontalActivity ? 'justify-center gap-1.5 flex-col text-center py-1' : 'justify-center flex-col text-center')
+               )}
       `}>
         
         {isTravel && (
@@ -400,14 +405,24 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
                 className={`font-semibold select-none leading-tight 
                     ${isCompactVerticalActivity
                         ? 'w-full truncate whitespace-nowrap text-center'
-                        : `${isTravel ? 'text-xs w-full whitespace-normal line-clamp-2' : (isCity ? 'text-[12px] md:text-[14px] w-full whitespace-normal line-clamp-2' : 'text-sm whitespace-normal')}
-                           ${!isTravel && 'line-clamp-2'}
+                        : `${isCompactHorizontalActivity
+                            ? 'inline-flex max-w-none whitespace-nowrap text-xs font-semibold'
+                            : (isTravel ? 'text-xs w-full whitespace-normal line-clamp-2' : (isCity ? 'text-[12px] md:text-[14px] w-full whitespace-normal line-clamp-2' : 'text-sm whitespace-normal'))}
+                           ${!isTravel && !isCompactHorizontalActivity ? 'line-clamp-2' : ''}
                            ${vertical 
                                ? (item.duration * pixelsPerDay < 60 ? 'w-full truncate whitespace-nowrap text-center' : 'w-full break-words text-center') 
-                               : 'truncate'}`
+                               : (isCompactHorizontalActivity ? '' : 'truncate')}`
                     }
                 `}
-                style={isCompactVerticalActivity ? { fontSize: `${compactVerticalTitleSize}px` } : undefined}
+                style={isCompactVerticalActivity
+                    ? { fontSize: `${compactVerticalTitleSize}px` }
+                    : (isCompactHorizontalActivity
+                        ? {
+                            transform: 'rotate(-90deg)',
+                            transformOrigin: 'center center',
+                            lineHeight: 1,
+                        }
+                        : undefined)}
             >
                 {isLoadingItem ? 'Loading city...' : item.title}
                 {isUnsetTravelMode && (
@@ -439,7 +454,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
         )}
 
         {/* Duration Display */}
-        {!isCity && !isTravel && !isEmptyTravel && (
+        {!isCity && !isTravel && !isEmptyTravel && !isCompactHorizontalActivity && (
             <span className={`text-[10px] opacity-80 select-none 
                 ${vertical 
                     ? (item.duration * pixelsPerDay < 60 ? 'hidden' : 'mt-0.5 block')

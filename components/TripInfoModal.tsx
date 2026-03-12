@@ -23,6 +23,7 @@ import { AiProviderLogo } from './admin/AiProviderLogo';
 import { CountryInfo } from './CountryInfo';
 import { type TripHistoryModalItem } from './TripHistoryModal';
 import { AppModal } from './ui/app-modal';
+import { Input } from './ui/input';
 import {
     Select,
     SelectContent,
@@ -78,6 +79,7 @@ export interface TripInfoModalProps {
     editTitleValue: string;
     onEditTitleValueChange: (value: string) => void;
     onCommitTitleEdit: () => void;
+    onCancelTitleEdit: () => void;
     onStartTitleEdit: () => void;
     canManageTripMetadata: boolean;
     canEdit: boolean;
@@ -125,11 +127,11 @@ interface SummaryCardProps {
     wide?: boolean;
 }
 
-const modalInputClassName = 'h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 shadow-sm transition-colors placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60';
-const modalSecondaryButtonClassName = 'inline-flex h-11 items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60';
-const modalPrimaryButtonClassName = 'inline-flex h-11 items-center justify-center gap-2 rounded-md bg-accent-600 px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-accent-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60';
+const modalSecondaryButtonClassName = 'inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60';
+const modalPrimaryButtonClassName = 'inline-flex h-10 items-center justify-center gap-2 rounded-md bg-accent-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-accent-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60';
 const modalSectionClassName = 'space-y-4 border-t border-slate-200 pt-6';
 const modalSubtlePanelClassName = 'rounded-md bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-600';
+const modalTextButtonClassName = 'inline-flex items-center text-sm font-semibold text-accent-700 transition-colors hover:text-accent-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2';
 const tabClassName = 'relative flex-none gap-2 px-0 text-sm font-semibold text-slate-500 transition-colors hover:text-slate-900 data-[state=active]:bg-transparent data-[state=active]:text-accent-700 data-[state=active]:[&_svg]:text-accent-600 [&_svg]:text-slate-400';
 
 const SummaryCard: React.FC<SummaryCardProps> = ({ label, value, wide = false }) => (
@@ -179,6 +181,7 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
     editTitleValue,
     onEditTitleValueChange,
     onCommitTitleEdit,
+    onCancelTitleEdit,
     onStartTitleEdit,
     canManageTripMetadata,
     canEdit,
@@ -339,23 +342,18 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
         [t]
     );
 
-    const handleTitleFieldFocus = () => {
-        if (!canManageTripMetadata || isEditingTitle) return;
-        onStartTitleEdit();
-    };
-
-    const handleTitleFieldChange = (value: string) => {
-        if (!canManageTripMetadata) return;
-        if (!isEditingTitle) onStartTitleEdit();
-        onEditTitleValueChange(value);
-    };
-
     const canShowDebugTab = Boolean(adminMeta);
+    const handleModalClose = () => {
+        if (isEditingTitle) {
+            onCancelTitleEdit();
+        }
+        onClose();
+    };
 
     return (
         <AppModal
             isOpen={isOpen}
-            onClose={onClose}
+            onClose={handleModalClose}
             title={t('tripView.infoDialog.title')}
             description={t('tripView.infoDialog.description')}
             closeLabel={t('tripView.infoDialog.close')}
@@ -363,10 +361,15 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
             mobileSheet={false}
             contentClassName="max-h-[88vh] sm:max-w-5xl"
             bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
+            onEscapeKeyDown={(event) => {
+                if (!isEditingTitle) return;
+                event.preventDefault();
+                onCancelTitleEdit();
+            }}
         >
             <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as TripInfoTabValue)} className="flex min-h-0 flex-1 flex-col">
-                <div className="border-b border-slate-200 px-5 pt-2">
-                    <TabsList variant="line" className="flex w-full flex-wrap items-center justify-start gap-5 rounded-none p-0">
+                <div className="px-5">
+                    <TabsList variant="line" className="flex w-full flex-wrap items-center justify-start gap-4 border-b border-slate-200 rounded-none p-0 sm:gap-5">
                         <TabsTrigger value="general" className={tabClassName}>
                             <Info size={15} />
                             <span>{t('tripView.infoDialog.tabs.general')}</span>
@@ -395,56 +398,82 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                 <div className="min-h-0 flex-1 overflow-y-auto p-5">
                     <TabsContent value="general" className="space-y-8">
                         <section className="space-y-4">
-                            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                                <div className="min-w-0 flex-1">
-                                    <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
+                            <div className="min-w-0">
+                                <div className="mb-2 flex items-center justify-between gap-3">
+                                    <label className="block text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
                                         {t('tripView.infoDialog.general.titleLabel')}
                                     </label>
+                                    {canManageTripMetadata && (
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                if (isEditingTitle) {
+                                                    onCommitTitleEdit();
+                                                    return;
+                                                }
+                                                onStartTitleEdit();
+                                            }}
+                                            className={modalTextButtonClassName}
+                                        >
+                                            {isEditingTitle
+                                                ? t('tripView.infoDialog.general.saveAction')
+                                                : t('tripView.infoDialog.general.editAction')}
+                                        </button>
+                                    )}
+                                </div>
+                                <div className="flex items-stretch gap-2">
                                     {canManageTripMetadata ? (
-                                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                                            <input
+                                        <>
+                                            <Input
                                                 ref={editTitleInputRef}
                                                 value={titleFieldValue}
-                                                onFocus={handleTitleFieldFocus}
-                                                onChange={(event) => handleTitleFieldChange(event.target.value)}
-                                                onBlur={onCommitTitleEdit}
+                                                disabled={!isEditingTitle}
+                                                onChange={(event) => onEditTitleValueChange(event.target.value)}
                                                 onKeyDown={(event) => {
                                                     if (event.key === 'Enter') {
                                                         onCommitTitleEdit();
+                                                        return;
+                                                    }
+                                                    if (event.key === 'Escape') {
+                                                        event.preventDefault();
+                                                        event.stopPropagation();
                                                     }
                                                 }}
-                                                className={`${modalInputClassName} text-lg font-bold sm:text-xl`}
+                                                className="h-10 flex-1 text-sm font-medium shadow-none disabled:bg-white disabled:text-slate-900 disabled:opacity-100"
                                                 aria-label={t('tripView.infoDialog.general.titleLabel')}
                                             />
                                             <button
                                                 type="button"
                                                 onClick={onToggleFavorite}
                                                 disabled={!canEdit}
-                                                className={`${modalSecondaryButtonClassName} shrink-0 ${
-                                                    isFavorite ? 'border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100' : ''
+                                                className={`${modalSecondaryButtonClassName} shrink-0 px-2.5 sm:px-3 ${
+                                                    isFavorite ? 'border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100' : ''
                                                 }`}
                                                 aria-label={isFavorite
                                                     ? t('tripView.infoDialog.general.favoriteRemove')
                                                     : t('tripView.infoDialog.general.favoriteAdd')}
                                             >
-                                                <Star size={16} className={isFavorite ? 'fill-current' : ''} />
-                                                <span>{t(isFavorite ? 'tripView.infoDialog.general.favoriteOn' : 'tripView.infoDialog.general.favoriteOff')}</span>
+                                                <Star size={16} className={isFavorite ? 'fill-current text-amber-500' : 'text-slate-500'} />
+                                                <span className="hidden sm:inline">
+                                                    {t(isFavorite ? 'tripView.infoDialog.general.favoriteOn' : 'tripView.infoDialog.general.favoriteOff')}
+                                                </span>
+                                                <span className="sr-only sm:hidden">
+                                                    {t(isFavorite ? 'tripView.infoDialog.general.favoriteOn' : 'tripView.infoDialog.general.favoriteOff')}
+                                                </span>
                                             </button>
-                                        </div>
+                                        </>
                                     ) : (
-                                        <div className="flex min-h-11 items-center rounded-md border border-slate-300 bg-white px-3 text-lg font-bold text-slate-900 shadow-sm">
-                                            {tripTitle}
-                                        </div>
-                                    )}
-                                    {!canManageTripMetadata && (
-                                        <p className="mt-3 text-sm leading-6 text-slate-600">
-                                            {isExamplePreview
-                                                ? t('tripView.infoDialog.general.readOnlyHintExample')
-                                                : t('tripView.infoDialog.general.readOnlyHintShared')}
-                                        </p>
+                                        <Input value={tripTitle} disabled className="h-10 text-sm font-medium shadow-none disabled:bg-white disabled:text-slate-900 disabled:opacity-100" />
                                     )}
                                 </div>
                             </div>
+                            {!canManageTripMetadata && (
+                                <p className="text-sm leading-6 text-slate-600">
+                                    {isExamplePreview
+                                        ? t('tripView.infoDialog.general.readOnlyHintExample')
+                                        : t('tripView.infoDialog.general.readOnlyHintShared')}
+                                </p>
+                            )}
                         </section>
 
                         <section className={modalSectionClassName}>
