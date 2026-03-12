@@ -1,10 +1,10 @@
 ---
 id: rel-2026-03-12-trip-page-mobile-detail-focus-and-context
-version: v0.0.0
+version: v0.94.0
 title: "Mobile trip details feel intentional again"
 date: 2026-03-12
-published_at: 2026-03-12T15:00:00Z
-status: draft
+published_at: 2026-03-12T14:29:38Z
+status: published
 notify_in_app: true
 in_app_hours: 24
 summary: "Improves mobile trip-page detail interactions so selection stays calm, the full drawer opens only when you mean it, and timeline list stops show more useful context."
