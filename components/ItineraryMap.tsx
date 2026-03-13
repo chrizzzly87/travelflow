@@ -9,6 +9,8 @@ import { buildRouteCacheKey, DEFAULT_MAP_COLOR_MODE, findTravelBetweenCities, ge
 import { getAnalyticsDebugAttributes } from '../services/analyticsService';
 import { useGoogleMaps } from './GoogleMapsLoader';
 import { normalizeTransportMode } from '../shared/transportModes';
+import { resolveCitySuggestion } from '../shared/cityLookup';
+import { mergeResolvedCityCoordinatesIntoItems, resolveMissingCityCoordinatesForItems } from '../shared/tripMapCityResolution';
 import { ActivityTypeIcon, getActivityTypePaletteParts } from './ActivityTypeVisuals';
 
 interface ItineraryMapProps {
@@ -206,6 +208,7 @@ type OverlayMarkerHandle = {
 };
 
 const ROUTE_CACHE = new Map<string, RouteCacheEntry>();
+const CITY_COORDINATE_LOOKUP_CACHE = new Map<string, google.maps.LatLngLiteral | null>();
 export const ROUTE_FAILURE_TTL_MS = 5 * 60 * 1000;
 const ROUTE_STORAGE_KEY = 'tf_route_cache_v1';
 export const ROUTE_PERSIST_TTL_MS = 24 * 60 * 60 * 1000;
@@ -1414,7 +1417,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     const lastFitToRouteKeyRef = useRef<string | null>(null);
     const fitRafRef = useRef<number | null>(null);
     const resizeAutoFitTimerRef = useRef<number | null>(null);
-    const hasAutoFitCompletedRef = useRef(false);
+    const lastAutoFitCitySignatureRef = useRef<string | null>(null);
     const scheduleFitWhenViewportReadyRef = useRef<(maxAttempts?: number, options?: { respectSelection?: boolean }) => void>(() => {});
     const onRouteMetricsRef = useRef<typeof onRouteMetrics>(onRouteMetrics);
     const onRouteStatusRef = useRef<typeof onRouteStatus>(onRouteStatus);
@@ -1424,6 +1427,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     const { isLoaded, loadError } = useGoogleMaps();
     const [mapInitialized, setMapInitialized] = useState(false);
     const [activityMarkersEnabled, setActivityMarkersEnabled] = useState(false);
+    const [resolvedCityCoordinatesById, setResolvedCityCoordinatesById] = useState<Record<string, google.maps.LatLngLiteral>>({});
     const [mapZoomLevel, setMapZoomLevel] = useState<number | null>(null);
     const [mapViewportSize, setMapViewportSize] = useState<{ width: number; height: number } | null>(null);
     const mapActionsDisabled = !mapInitialized || Boolean(loadError);
@@ -1433,11 +1437,15 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     // Internal state for menu, but style comes from props (or defaults to standard if not provided)
     const [isStyleMenuOpen, setIsStyleMenuOpen] = useState(false);
     const shouldRenderMapCanvas = isLoaded && !loadError;
+    const mapItems = useMemo(
+        () => mergeResolvedCityCoordinatesIntoItems(items, resolvedCityCoordinatesById),
+        [items, resolvedCityCoordinatesById],
+    );
     const cities = useMemo(() => 
-        items
+        mapItems
             .filter(i => i.type === 'city' && i.coordinates)
             .sort((a, b) => a.startDateOffset - b.startDateOffset),
-    [items]);
+    [mapItems]);
     const cityMapSignature = useMemo(
         () => cities.map((city) => `${city.id}|${city.coordinates?.lat},${city.coordinates?.lng}`).join('||'),
         [cities],
@@ -1463,11 +1471,11 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     selectedCityIdRef.current = selectedCityId;
     const resolvedActivityMarkerPositionById = useMemo(() => {
         const markerPositions = new Map<string, google.maps.LatLngLiteral>();
-        resolveActivityMarkerPositions(items).forEach((marker) => {
+        resolveActivityMarkerPositions(mapItems).forEach((marker) => {
             markerPositions.set(marker.id, marker.position);
         });
         return markerPositions;
-    }, [items]);
+    }, [mapItems]);
     const routePixelSpan = useMemo(
         () => estimateRoutePixelSpan(
             cities
@@ -1529,7 +1537,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     }, [crowdedCityProfile, markerRenderProfile]);
     const activityMarkerStylesById = useMemo(() => {
         const styles = new Map<string, { type: ActivityType; title: string }>();
-        items.forEach((item) => {
+        mapItems.forEach((item) => {
             if (item.type !== 'activity') return;
             styles.set(item.id, {
                 type: pickPrimaryActivityType(item.activityType),
@@ -1537,7 +1545,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             });
         });
         return styles;
-    }, [items]);
+    }, [mapItems]);
 
     const cancelScheduledFit = useCallback(() => {
         if (fitRafRef.current === null || typeof window === 'undefined') return;
@@ -1629,6 +1637,71 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     }, [mapZoomLevel]);
 
     useEffect(() => {
+        const activeCityIds = new Set(items.filter((item) => item.type === 'city').map((item) => item.id));
+        setResolvedCityCoordinatesById((previous) => {
+            let changed = false;
+            const next: Record<string, google.maps.LatLngLiteral> = {};
+
+            Object.entries(previous).forEach(([cityId, coordinates]) => {
+                if (!activeCityIds.has(cityId)) {
+                    changed = true;
+                    return;
+                }
+                next[cityId] = coordinates;
+            });
+
+            return changed ? next : previous;
+        });
+    }, [items]);
+
+    useEffect(() => {
+        if (!isLoaded || typeof window === 'undefined' || !window.google?.maps) return;
+
+        const pendingCities = items.some((item) => (
+            item.type === 'city'
+            && !item.coordinates
+            && !resolvedCityCoordinatesById[item.id]
+            && Boolean(item.location || item.title)
+        ));
+        if (!pendingCities) return;
+
+        let cancelled = false;
+        const resolveCoordinates = async () => {
+            const resolvedCoordinates = await resolveMissingCityCoordinatesForItems({
+                items,
+                focusLocationQuery,
+                existingResolvedCoordinatesByCityId: resolvedCityCoordinatesById,
+                cache: CITY_COORDINATE_LOOKUP_CACHE,
+                resolver: async (query) => {
+                    const suggestion = await resolveCitySuggestion(query);
+                    return suggestion?.coordinates ?? null;
+                },
+            });
+
+            if (cancelled || Object.keys(resolvedCoordinates).length === 0) return;
+
+            setResolvedCityCoordinatesById((previous) => {
+                let changed = false;
+                const next = { ...previous };
+
+                Object.entries(resolvedCoordinates).forEach(([cityId, coordinates]) => {
+                    if (next[cityId]) return;
+                    next[cityId] = coordinates;
+                    changed = true;
+                });
+
+                return changed ? next : previous;
+            });
+        };
+
+        void resolveCoordinates();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [focusLocationQuery, isLoaded, items, resolvedCityCoordinatesById]);
+
+    useEffect(() => {
         if (!fitToRouteKey) {
             lastFitToRouteKeyRef.current = null;
             return;
@@ -1701,7 +1774,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         const citySignature = cities
             .map(city => `${city.id}|${city.title}|${city.color}|${city.coordinates?.lat},${city.coordinates?.lng}`)
             .join('||');
-        const activitySignature = items
+        const activitySignature = mapItems
             .filter((item) => item.type === 'activity')
             .map((item) => `${item.id}|${item.startDateOffset}|${item.duration}|${item.coordinates?.lat},${item.coordinates?.lng}`)
             .join('||');
@@ -1709,13 +1782,13 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             .slice(0, -1)
             .map((city, idx) => {
                 const nextCity = cities[idx + 1];
-                const travelItem = findTravelBetweenCities(items, city, nextCity);
+                const travelItem = findTravelBetweenCities(mapItems, city, nextCity);
                 const mode = normalizeTransportMode(travelItem?.transportMode);
                 return `${city.id}->${nextCity.id}:${mode}`;
             })
             .join('||');
         return `${citySignature}__${activitySignature}__${routeSignature}__${mapColorMode}`;
-    }, [cities, items, mapColorMode]);
+    }, [cities, mapItems, mapColorMode]);
 
     // Update Markers & Routes
     useEffect(() => {
@@ -2107,7 +2180,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 isEnabled: activityMarkersEnabledRef.current,
                 zoom: resolvedZoomLevel,
             });
-            const activityMarkers = resolveActivityMarkerPositions(items);
+            const activityMarkers = resolveActivityMarkerPositions(mapItems);
             activityMarkers.forEach((activityMarker) => {
                 if (!isEffectActive()) return;
                 const isSelected = activityMarker.id === selectedActivityId;
@@ -2321,7 +2394,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                  const end = cities[i+1];
                  if (!start.coordinates || !end.coordinates) continue;
 
-                 const travelItem = findTravelBetweenCities(items, start, end);
+                 const travelItem = findTravelBetweenCities(mapItems, start, end);
                  const mode = normalizeTransportMode(travelItem?.transportMode);
                  const startColor = resolveMapColor(start.color); // Color based on start city
                  const cacheKey = start.coordinates && end.coordinates
@@ -2801,14 +2874,14 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     useEffect(() => {
         if (!mapInitialized || cities.length === 0) return;
         if (selectedActivityId || selectedCityId) return;
-        if (hasAutoFitCompletedRef.current) return;
-        hasAutoFitCompletedRef.current = true;
+        if (lastAutoFitCitySignatureRef.current === cityMapSignature) return;
+        lastAutoFitCitySignatureRef.current = cityMapSignature;
         scheduleFitWhenViewportReadyRef.current(14, { respectSelection: true });
-    }, [mapInitialized, cities.length, selectedActivityId, selectedCityId]);
+    }, [cityMapSignature, mapInitialized, cities.length, selectedActivityId, selectedCityId]);
 
     useEffect(() => {
         if (cities.length > 0) return;
-        hasAutoFitCompletedRef.current = false;
+        lastAutoFitCitySignatureRef.current = null;
     }, [cities.length]);
 
     // Re-center when an external "active route" key changes (e.g., opening a different saved plan).

@@ -416,6 +416,22 @@ export const COOKIE_REGISTRY: CookieRegistry = {
       notes: 'Debug-only key; not used for production user profiling.',
     },
     {
+      name: 'tf_e2e_auth_sandbox_v1',
+      purpose: 'Stores opt-in Playwright auth sandbox users and the active fake session for local end-to-end testing.',
+      duration: 'Persistent during local test runs',
+      provider: 'TravelFlow',
+      storage: 'localStorage',
+      notes: 'E2E-only key; used only when the Playwright auth sandbox flag is enabled.',
+    },
+    {
+      name: 'tf_e2e_trip_claim_sandbox_v1',
+      purpose: 'Stores opt-in Playwright queued-trip claim outcomes for deterministic end-to-end auth/claim testing.',
+      duration: 'Persistent during local test runs',
+      provider: 'TravelFlow',
+      storage: 'localStorage',
+      notes: 'E2E-only key; used only when the Playwright auth sandbox flag is enabled.',
+    },
+    {
       name: 'tf_debug_supabase_connectivity_override',
       purpose: 'Stores forced Supabase connectivity mode (offline/degraded/online) for outage simulation.',
       duration: 'Persistent',

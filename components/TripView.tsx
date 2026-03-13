@@ -3,9 +3,11 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { AppLanguage, ITrip, ITimelineItem, IViewSettings, ShareMode, TripGenerationAttemptSummary, TripGenerationState } from '../types';
 import { getDefaultCreateTripModel } from '../config/aiModelCatalog';
+import { buildLocalizedCreateTripPath, extractLocaleFromPath } from '../config/routes';
 import { DB_ENABLED } from '../config/db';
 import { GoogleMapsLoader } from './GoogleMapsLoader';
-import { BASE_PIXELS_PER_DAY, DEFAULT_CITY_COLOR_PALETTE_ID, DEFAULT_DISTANCE_UNIT, buildShareUrl, formatDistance, getTripDistanceKm, isInternalMapColorModeControlEnabled, normalizeMapColorMode } from '../utils';
+import { BASE_PIXELS_PER_DAY, DEFAULT_CITY_COLOR_PALETTE_ID, DEFAULT_DISTANCE_UNIT, buildShareUrl, formatDistance, getTimelineBounds, getTripDistanceKm, isInternalMapColorModeControlEnabled, normalizeMapColorMode } from '../utils';
+import { buildTripMapLocationContextQueries } from '../shared/tripMapCityResolution';
 import { getExampleMapViewTransitionName, getExampleTitleViewTransitionName } from '../shared/viewTransitionNames';
 import { dbGetTrip, type DbTripAccessMetadata } from '../services/dbApi';
 import {
@@ -26,6 +28,13 @@ import { useLoginModal } from '../hooks/useLoginModal';
 import {
     buildPathFromLocationParts,
 } from '../services/authNavigationService';
+import {
+    buildCreateSimilarTripPath,
+    buildTripClaimConflictPath,
+    buildTripClaimLoginReturnPath,
+    readTripClaimConflictQuery,
+    TRIP_CLAIM_CONFLICT_ALREADY_CLAIMED,
+} from '../services/tripClaimConflictService';
 import { useAuth } from '../hooks/useAuth';
 import { useConnectivityStatus } from '../hooks/useConnectivityStatus';
 import { useSyncStatus } from '../hooks/useSyncStatus';
@@ -98,7 +107,11 @@ import {
     shouldApplyPolledTripUpdate,
     shouldPollTripGenerationState,
 } from '../services/tripGenerationPollingService';
-import { processQueuedTripGenerationAfterAuth } from '../services/tripGenerationQueueService';
+import {
+    isQueuedTripGenerationAlreadyClaimedError,
+    isQueuedTripGenerationClaimedByAnotherUserError,
+    processQueuedTripGenerationAfterAuth,
+} from '../services/tripGenerationQueueService';
 import { registerTripGenerationCompletionWatch } from '../services/tripGenerationCompletionWatchService';
 import { listTripGenerationJobsByTrip, triggerTripGenerationWorker } from '../services/tripGenerationJobService';
 import { finishTripGenerationAttemptLog } from '../services/tripGenerationAttemptLogService';
@@ -603,6 +616,10 @@ interface TripViewModalLayerProps {
     pendingAuthModalStage: 'hidden' | 'loading' | 'locked';
     onContinuePendingAuth: () => void;
     isPendingAuthContinueDisabled: boolean;
+    claimConflictModalVisible: boolean;
+    claimConflictShowLoginCta: boolean;
+    claimConflictCreateSimilarPath: string;
+    onClaimConflictLogin: () => void;
 }
 
 const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
@@ -692,6 +709,10 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
     pendingAuthModalStage,
     onContinuePendingAuth,
     isPendingAuthContinueDisabled,
+    claimConflictModalVisible,
+    claimConflictShowLoginCta,
+    claimConflictCreateSimilarPath,
+    onClaimConflictLogin,
 }) => (
     <>
         {isMobile && detailsPanelVisible && (
@@ -839,6 +860,10 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
             pendingAuthModalStage={pendingAuthModalStage}
             onContinuePendingAuth={onContinuePendingAuth}
             isPendingAuthContinueDisabled={isPendingAuthContinueDisabled}
+            claimConflictModalVisible={claimConflictModalVisible}
+            claimConflictShowLoginCta={claimConflictShowLoginCta}
+            claimConflictCreateSimilarPath={claimConflictCreateSimilarPath}
+            onClaimConflictLogin={onClaimConflictLogin}
         />
     </>
 );
@@ -1033,6 +1058,10 @@ const useTripViewRender = ({
             ? claimValue.trim()
             : null;
     }, [location.search]);
+    const pendingAuthClaimConflict = useMemo(
+        () => readTripClaimConflictQuery(location.search),
+        [location.search],
+    );
     const pendingAuthLoginReturnPath = useMemo(() => {
         const query = new URLSearchParams(location.search);
         if (pendingAuthQueueRequestId) {
@@ -1040,6 +1069,7 @@ const useTripViewRender = ({
         } else {
             query.delete('claim');
         }
+        query.delete('claim_conflict');
 
         const nextSearch = query.toString();
         return buildPathFromLocationParts({
@@ -1048,6 +1078,14 @@ const useTripViewRender = ({
             hash: location.hash,
         });
     }, [location.hash, location.pathname, location.search, pendingAuthQueueRequestId]);
+    const pendingAuthClaimConflictLoginReturnPath = useMemo(
+        () => buildTripClaimLoginReturnPath(buildPathFromLocationParts({
+            pathname: location.pathname,
+            search: location.search,
+            hash: location.hash,
+        }), pendingAuthQueueRequestId),
+        [location.hash, location.pathname, location.search, pendingAuthQueueRequestId],
+    );
     const shouldPollGenerationState = shouldPollTripGenerationState(trip, generationNowMs);
     useEffect(() => {
         if (!shouldPollGenerationState) return undefined;
@@ -1327,7 +1365,19 @@ const useTripViewRender = ({
         && typeof generationElapsedMs === 'number'
         && generationElapsedMs >= TRIP_GENERATION_TIMEOUT_MS
     );
-    const pendingAuthModalStage: 'hidden' | 'loading' | 'locked' = !isPendingAuthGeneration
+    const isPendingAuthClaimedByAnotherUser = pendingAuthClaimConflict === TRIP_CLAIM_CONFLICT_ALREADY_CLAIMED;
+    const localeAwareCreateTripFallbackPath = useMemo(() => {
+        const locale = extractLocaleFromPath(location.pathname) || 'en';
+        return buildLocalizedCreateTripPath(locale);
+    }, [location.pathname]);
+    const createSimilarTripPath = useMemo(() => (
+        buildCreateSimilarTripPath({
+            trip,
+            pathname: location.pathname,
+            source: 'trip_claim_conflict',
+        }) || localeAwareCreateTripFallbackPath
+    ), [localeAwareCreateTripFallbackPath, location.pathname, trip]);
+    const pendingAuthModalStage: 'hidden' | 'loading' | 'locked' = !isPendingAuthGeneration || isPendingAuthClaimedByAnotherUser
         ? 'hidden'
         : (isResolvingPendingAuthGeneration || !hasSeenPendingAuthLoadingState)
             ? 'loading'
@@ -1466,6 +1516,35 @@ const useTripViewRender = ({
                 }
                 navigate(`/trip/${result.tripId}`, { replace: true });
             } catch (error) {
+                if (isQueuedTripGenerationClaimedByAnotherUserError(error)) {
+                    navigate(buildTripClaimConflictPath(buildPathFromLocationParts({
+                        pathname: location.pathname,
+                        search: location.search,
+                        hash: location.hash,
+                    })), { replace: true });
+                    return;
+                }
+
+                if (isQueuedTripGenerationAlreadyClaimedError(error)) {
+                    if (error.tripId) {
+                        registerTripGenerationCompletionWatch(error.tripId, 'auth_queue_claim_trip_view');
+                        navigate(`/trip/${error.tripId}`, { replace: true });
+                        return;
+                    }
+
+                    if (pendingAuthClaimQueryId === pendingAuthQueueRequestId) {
+                        const query = new URLSearchParams(location.search);
+                        query.delete('claim');
+                        const nextSearch = query.toString();
+                        navigate(buildPathFromLocationParts({
+                            pathname: location.pathname,
+                            search: nextSearch ? `?${nextSearch}` : '',
+                            hash: location.hash,
+                        }), { replace: true });
+                    }
+                    return;
+                }
+
                 if (!isMobileViewport && !suppressToasts) {
                     showAppToast({
                         tone: 'warning',
@@ -1492,13 +1571,18 @@ const useTripViewRender = ({
         isResolvingPendingAuthGeneration,
         navigate,
         openLoginModal,
+        pendingAuthClaimQueryId,
         pendingAuthLoginReturnPath,
         pendingAuthQueueRequestId,
         suppressToasts,
+        location.hash,
+        location.pathname,
+        location.search,
     ]);
     useEffect(() => {
         if (!pendingAuthQueueRequestId) return;
         if (!isPendingAuthGeneration) return;
+        if (isPendingAuthClaimedByAnotherUser) return;
         if (!isAuthenticated || isAnonymous) return;
         if (pendingAuthClaimQueryId !== pendingAuthQueueRequestId) return;
         if (isResolvingPendingAuthGeneration) return;
@@ -1510,11 +1594,19 @@ const useTripViewRender = ({
         handleResolvePendingAuthGeneration,
         isAnonymous,
         isAuthenticated,
+        isPendingAuthClaimedByAnotherUser,
         isPendingAuthGeneration,
         isResolvingPendingAuthGeneration,
         pendingAuthClaimQueryId,
         pendingAuthQueueRequestId,
     ]);
+    const handlePendingAuthClaimConflictLogin = useCallback(() => {
+        openLoginModal({
+            source: 'trip_generation_claim_conflict_modal',
+            nextPath: pendingAuthClaimConflictLoginReturnPath,
+            reloadOnSuccess: true,
+        });
+    }, [openLoginModal, pendingAuthClaimConflictLoginReturnPath]);
 
     const {
         canUseAuthenticatedSession,
@@ -2220,6 +2312,10 @@ const useTripViewRender = ({
         }
         return displayTrip.title.replace(/^Planning\s+/i, '').replace(/\.\.\.$/, '').trim() || 'Destination';
     }, [displayTrip.items, displayTrip.title]);
+    const effectiveMapFocusQuery = useMemo(() => {
+        const queries = buildTripMapLocationContextQueries(trip, initialMapFocusQuery);
+        return queries.join(' || ');
+    }, [initialMapFocusQuery, trip]);
     const showGenerationOverlay = isTripDetailRoute
         && isGenerationInFlight
         && !isAdminFallbackView
@@ -3162,7 +3258,7 @@ const useTripViewRender = ({
                         }}
                         mapColorMode={mapColorMode}
                         onMapColorModeChange={allowMapColorModeControls ? handleMapColorModeChange : undefined}
-                        initialMapFocusQuery={initialMapFocusQuery}
+                        initialMapFocusQuery={effectiveMapFocusQuery}
                         onRouteMetrics={handleRouteMetrics}
                         onRouteStatus={handleRouteStatus}
                         tripId={trip.id}
@@ -3280,6 +3376,10 @@ const useTripViewRender = ({
                             void handleResolvePendingAuthGeneration();
                         }}
                         isPendingAuthContinueDisabled={isResolvingPendingAuthGeneration}
+                        claimConflictModalVisible={isPendingAuthClaimedByAnotherUser}
+                        claimConflictShowLoginCta={!isAuthenticated || isAnonymous}
+                        claimConflictCreateSimilarPath={createSimilarTripPath}
+                        onClaimConflictLogin={handlePendingAuthClaimConflictLogin}
                     />
 
                 </main>

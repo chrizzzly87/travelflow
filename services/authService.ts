@@ -6,6 +6,10 @@ import { appendAuthTraceEntry } from './authTraceService';
 import { clearLocalhostSupabaseBridgeCookies } from './authSessionPersistenceService';
 import { appendClientErrorLog } from './clientErrorLogger';
 import {
+    acceptCurrentTermsInE2EAuthSandbox,
+    shouldEnableE2EAuthSandbox,
+} from './e2eAuthSandboxService';
+import {
     removeLocalStorageItem,
     removeSessionStorageItem,
 } from './browserStorageService';
@@ -256,6 +260,15 @@ const getAnonymousFlag = (session: Session | null): boolean => {
     return false;
 };
 
+const isSamePasswordError = (error: unknown): boolean => {
+    if (!error || typeof error !== 'object') return false;
+    const typed = error as { code?: unknown; message?: unknown };
+    const code = typeof typed.code === 'string' ? typed.code.trim().toLowerCase() : '';
+    if (code === 'same_password') return true;
+    const message = typeof typed.message === 'string' ? typed.message.toLowerCase() : '';
+    return message.includes('new password should be different from the old password');
+};
+
 const defaultAccessContext = (session: Session | null): UserAccessContext => ({
     userId: session?.user?.id ?? null,
     email: session?.user?.email ?? null,
@@ -446,6 +459,13 @@ export interface AcceptedTermsRecord {
 export const acceptCurrentTerms = async (
     options?: { locale?: string | null; source?: string | null }
 ): Promise<{ data: AcceptedTermsRecord | null; error: Error | null }> => {
+    if (shouldEnableE2EAuthSandbox()) {
+        return {
+            data: acceptCurrentTermsInE2EAuthSandbox(),
+            error: null,
+        };
+    }
+
     if (!supabase) {
         return {
             data: null,
@@ -567,10 +587,19 @@ export const upgradeAnonymousUserWithEmailPassword = async (
     }
     const flow = buildAuthFlow();
     await logAuthFlow({ ...flow, step: 'anonymous_upgrade_password', result: 'start', provider: 'password', email });
-    const { data, error } = await supabase.auth.updateUser({
+    let { data, error } = await supabase.auth.updateUser({
         email,
         password,
     });
+    let usedEmailOnlyFallback = false;
+
+    if (error && isSamePasswordError(error)) {
+        const emailOnlyResponse = await supabase.auth.updateUser({ email });
+        data = emailOnlyResponse.data;
+        error = emailOnlyResponse.error;
+        usedEmailOnlyFallback = !emailOnlyResponse.error;
+    }
+
     if (error) {
         reportAuthSupabaseFailure(error, 'upgrade_anonymous_password');
         await logAuthFlow({
@@ -580,6 +609,7 @@ export const upgradeAnonymousUserWithEmailPassword = async (
             provider: 'password',
             errorCode: normalizeErrorCode(error),
             email,
+            metadata: usedEmailOnlyFallback ? { fallback: 'email_only' } : undefined,
         });
         return { data, error, ...flow };
     }
@@ -590,6 +620,7 @@ export const upgradeAnonymousUserWithEmailPassword = async (
         result: 'success',
         provider: 'password',
         email,
+        metadata: usedEmailOnlyFallback ? { fallback: 'email_only' } : undefined,
     });
     return { data, error: null, ...flow };
 };

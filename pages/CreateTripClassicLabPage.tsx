@@ -1635,6 +1635,16 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                 model: selectedAiModel.model,
             },
         };
+        const generationSnapshot = createTripGenerationInputSnapshot({
+            flow: 'classic',
+            destinationLabel,
+            startDate,
+            endDate,
+            payload: {
+                destinationPrompt,
+                options: classicGenerateOptions,
+            },
+        });
 
         if (!isAuthenticated) {
             try {
@@ -1659,9 +1669,25 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                     requestedStops: Math.max(orderedDestinations.length, 2),
                     roundTrip,
                 });
+                const pendingAuthQueuedTrip = markTripGenerationRunning(optimisticBaseTrip, {
+                    flow: 'classic',
+                    source: 'create_trip_classic_lab_pending_auth',
+                    inputSnapshot: generationSnapshot,
+                    provider: selectedAiModel.provider,
+                    model: selectedAiModel.model,
+                    requestId,
+                    state: 'queued',
+                    metadata: {
+                        pendingAuth: true,
+                        queueRequestId,
+                        queueExpiresAt: queuedRequest.expiresAt,
+                        orchestration: 'auth_queue_claim',
+                    },
+                });
+                const pendingAuthAttemptId = pendingAuthQueuedTrip.aiMeta?.generation?.latestAttempt?.id || null;
                 const pendingAuthTrip = markTripGenerationFailed({
-                    ...optimisticBaseTrip,
-                    items: optimisticBaseTrip.items.map((item) => ({
+                    ...pendingAuthQueuedTrip,
+                    items: pendingAuthQueuedTrip.items.map((item) => ({
                         ...item,
                         loading: false,
                     })),
@@ -1673,6 +1699,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                     provider: selectedAiModel.provider,
                     model: selectedAiModel.model,
                     requestId,
+                    attemptId: pendingAuthAttemptId,
                     metadata: {
                         pendingAuth: true,
                         queueRequestId,
@@ -1708,16 +1735,6 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
             }
         }
 
-        const generationSnapshot = createTripGenerationInputSnapshot({
-            flow: 'classic',
-            destinationLabel,
-            startDate,
-            endDate,
-            payload: {
-                destinationPrompt,
-                options: classicGenerateOptions,
-            },
-        });
         const requestId = createTripGenerationRequestId();
         const optimisticTripId = generateTripId();
         const optimisticBaseTrip = buildLoadingTripPreview({

@@ -11,9 +11,9 @@ export default defineConfig({
         trace: 'on-first-retry',
     },
     webServer: {
-        command: 'pnpm dev --host 127.0.0.1 --port 4173',
+        command: 'VITE_E2E_AUTH_SANDBOX=true pnpm dev --host 127.0.0.1 --port 4173',
         url: 'http://127.0.0.1:4173',
-        reuseExistingServer: !process.env.CI,
+        reuseExistingServer: false,
         timeout: 120_000,
     },
 });
