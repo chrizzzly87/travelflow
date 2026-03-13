@@ -18,6 +18,7 @@ summary: "Trip creation now starts from what the traveler already knows, carries
 - [x] [Fixed] 🔁 Returning to a claimed trip setup after switching login methods no longer loops claim errors or spams loading/auth modals and warning toasts.
 - [x] [Improved] 🧭 If a trip draft was already claimed by another account, the planner now shows a dedicated modal with clear next steps and a create-similar shortcut that carries the full trip setup back into Create Trip.
 - [x] [Fixed] 🔐 Anonymous trip starts now move from a short loading state into a dedicated account-required modal, so signing in to claim and start the trip feels clearer and more intentional.
+- [x] [Fixed] ✉️ Correcting your email during anonymous sign-up no longer fails just because you reused the same password while upgrading the guest session.
 - [x] [Improved] 🔔 Trip creation now asks whether you want a browser notification before generation starts and can notify you when the itinerary finishes in a background tab.
 - [x] [Improved] ⚠️ Traveler-fit cautions from itinerary generation are now easier to review in trip information, instead of being buried only inside city descriptions.
 - [ ] [Internal] 🧪 Added an opt-in Playwright auth sandbox and claim-conflict end-to-end coverage so queued-trip login/register handoffs can be tested without real accounts.
