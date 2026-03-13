@@ -1,5 +1,6 @@
 import { buildClassicItineraryPrompt, type GenerateOptions } from '../services/aiService.ts';
 import { generateProviderItinerary, resolveTimeoutMs } from '../netlify/edge-lib/ai-provider-runtime.ts';
+import { TRIP_ITINERARY_STRUCTURED_OUTPUT_SCHEMA } from '../shared/aiTripItinerarySchema.ts';
 import type { TripEvalVars } from './tripEvalScenarios.ts';
 
 const PROMPTFOO_TIMEOUT_MS = resolveTimeoutMs('AI_PROMPTFOO_TIMEOUT_MS', 60_000, 20_000, 180_000);
@@ -99,6 +100,7 @@ export default class TravelFlowTripEvalProvider {
                 model: this.model,
                 timeoutMs: PROMPTFOO_TIMEOUT_MS,
                 maxOutputTokens: PROMPTFOO_TIMEOUT_MS <= 60_000 ? SHORT_TIMEOUT_MAX_OUTPUT_TOKENS : undefined,
+                jsonSchema: TRIP_ITINERARY_STRUCTURED_OUTPUT_SCHEMA,
             });
 
             if (!result.ok) {

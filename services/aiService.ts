@@ -4,6 +4,7 @@ import type { AiProviderId } from "../config/aiProviderCatalog";
 import { getDefaultCreateTripModel } from "../config/aiModelCatalog";
 import { buildDurationPromptGuidance, parseFlexibleDurationDays, parseFlexibleDurationHours } from "../shared/durationParsing";
 import { buildTransportModePromptGuidance, MODEL_TRANSPORT_MODE_VALUES, normalizeTransportMode } from "../shared/transportModes";
+import { createGeminiTripItineraryResponseSchema } from "../shared/aiTripItinerarySchema";
 import type {
     CreateTripPreferenceSignals,
     CreateTripTransportPreference,
@@ -45,78 +46,7 @@ const DEFAULT_CREATE_TRIP_MODEL = getDefaultCreateTripModel();
 const DEFAULT_PROVIDER = DEFAULT_CREATE_TRIP_MODEL.provider;
 const DEFAULT_MODEL = DEFAULT_CREATE_TRIP_MODEL.model;
 
-const itinerarySchema = {
-  type: Type.OBJECT,
-  properties: {
-    tripTitle: { type: Type.STRING },
-    countryInfo: {
-        type: Type.OBJECT,
-        properties: {
-            currencyCode: { type: Type.STRING, description: "ISO code, e.g. JPY" },
-            currencyName: { type: Type.STRING, description: "e.g. Japanese Yen" },
-            exchangeRate: { type: Type.NUMBER, description: "Number only: local currency units for exactly 1 EUR (example: 163)" },
-            languages: { type: Type.ARRAY, items: { type: Type.STRING } },
-            electricSockets: { type: Type.STRING, description: "Short description of socket types, e.g. 'Type A, Type B'" },
-            visaInfoUrl: { type: Type.STRING, description: "Generic URL to visa policy on Wikipedia or official gov site" },
-            auswaertigesAmtUrl: { type: Type.STRING, description: "URL to the country page on auswaertiges-amt.de" }
-        },
-        required: ["currencyCode", "currencyName", "exchangeRate", "languages", "electricSockets"]
-    },
-    cities: {
-      type: Type.ARRAY,
-      items: {
-        type: Type.OBJECT,
-        properties: {
-          name: { type: Type.STRING },
-          days: { type: Type.NUMBER, description: "Number of days to stay" },
-          description: { type: Type.STRING, description: "Markdown text that MUST contain 3 sections: '### Must See', '### Must Try', and '### Must Do' with checkbox lists." },
-          lat: { type: Type.NUMBER, description: "Latitude of the city center" },
-          lng: { type: Type.NUMBER, description: "Longitude of the city center" },
-        },
-        required: ["name", "days", "description", "lat", "lng"],
-      },
-    },
-    travelSegments: {
-      type: Type.ARRAY,
-      description: "Transport between cities",
-      items: {
-        type: Type.OBJECT,
-        properties: {
-            fromCityIndex: { type: Type.NUMBER },
-            toCityIndex: { type: Type.NUMBER },
-            transportMode: { type: Type.STRING, enum: TRANSPORT_MODE_ENUM },
-            description: { type: Type.STRING, description: "e.g. 2h Flight" },
-            duration: { type: Type.NUMBER, description: "Duration in hours (e.g. 1.5 for 1h 30m)" }
-        },
-        required: ["fromCityIndex", "toCityIndex", "transportMode", "description", "duration"]
-      }
-    },
-    activities: {
-      type: Type.ARRAY,
-      items: {
-        type: Type.OBJECT,
-        properties: {
-          title: { type: Type.STRING },
-          cityIndex: { type: Type.NUMBER, description: "Index of the city this activity belongs to (0-based)" },
-          dayOffsetInCity: { type: Type.NUMBER, description: "Day number within the city stay (starts at 0)" },
-          duration: { type: Type.NUMBER, description: "Duration in days (usually 1)" },
-          description: { type: Type.STRING },
-          activityTypes: {
-              type: Type.ARRAY,
-              description: "Array with 1-3 activity types chosen only from the allowed list.",
-              items: { type: Type.STRING, enum: ACTIVITY_TYPE_ENUM }
-          },
-          type: { 
-              type: Type.STRING, 
-              enum: ACTIVITY_TYPE_ENUM
-          },
-        },
-        required: ["title", "cityIndex", "dayOffsetInCity", "duration", "description", "activityTypes"],
-      },
-    },
-  },
-  required: ["tripTitle", "cities", "activities", "travelSegments", "countryInfo"],
-};
+const itinerarySchema = createGeminiTripItineraryResponseSchema(Type);
 
 const activityDetailsSchema = {
     type: Type.OBJECT,

@@ -1,4 +1,5 @@
 import { normalizeCityName, validateModelData } from '../shared/aiBenchmarkValidation.ts';
+import { TRIP_ITINERARY_JSON_SCHEMA } from '../shared/aiTripItinerarySchema.ts';
 
 interface TripEvalAssertionContext {
     vars?: {
@@ -175,8 +176,7 @@ export const buildTripEvalAssertions = (options: {
     };
 }) => {
     const assertions = [
-        { type: 'javascript' as const, value: assertValidTripJsonObject },
-        { type: 'javascript' as const, value: assertRequiredTopLevelContract },
+        { type: 'is-json' as const, value: TRIP_ITINERARY_JSON_SCHEMA },
         { type: 'javascript' as const, value: assertSharedValidatorPasses },
     ];
 

@@ -14,6 +14,7 @@ import {
   validateModelData,
   type BenchmarkRunCommentTelemetryGroup,
 } from "../../shared/aiBenchmarkValidation.ts";
+import { TRIP_ITINERARY_STRUCTURED_OUTPUT_SCHEMA } from "../../shared/aiTripItinerarySchema.ts";
 import {
   buildAiTelemetrySeries,
   summarizeAiTelemetry,
@@ -999,6 +1000,7 @@ const runGeneration = async (
       model: run.model,
       timeoutMs: providerTimeoutMs,
       maxOutputTokens: providerTimeoutMs <= 60_000 ? BENCHMARK_TIMEOUT_60S_MAX_OUTPUT_TOKENS : undefined,
+      jsonSchema: TRIP_ITINERARY_STRUCTURED_OUTPUT_SCHEMA,
     });
     const latencyMs = Date.now() - startedMs;
 
