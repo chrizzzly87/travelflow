@@ -3001,18 +3001,22 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                         </button>
                     )}
                     {showLayoutControls && onLayoutChange && (
-                        <>
+                        <div className="inline-flex flex-col items-center gap-1 rounded-lg border border-gray-200 bg-white/90 p-1 shadow-sm backdrop-blur">
                             <button
+                                type="button"
                                 onClick={() => onLayoutChange('vertical')}
-                                className={`p-2 rounded-lg shadow-md border transition-colors ${layoutMode === 'vertical' ? 'bg-accent-600 text-white border-accent-700' : 'bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50'}`} aria-label="Vertical layout"
+                                className={`rounded-md p-2 transition-colors ${layoutMode === 'vertical' ? 'bg-accent-600 text-white' : 'text-gray-600 hover:bg-gray-100 hover:text-accent-600'}`} aria-label="Vertical layout"
+                                aria-pressed={layoutMode === 'vertical'}
                                 {...getAnalyticsDebugAttributes('trip_view__layout_direction--vertical', { surface: 'map_controls' })}
                             ><ArrowUpDown size={18} /></button>
                             <button
+                                type="button"
                                 onClick={() => onLayoutChange('horizontal')}
-                                className={`p-2 rounded-lg shadow-md border transition-colors ${layoutMode === 'horizontal' ? 'bg-accent-600 text-white border-accent-700' : 'bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50'}`} aria-label="Horizontal layout"
+                                className={`rounded-md p-2 transition-colors ${layoutMode === 'horizontal' ? 'bg-accent-600 text-white' : 'text-gray-600 hover:bg-gray-100 hover:text-accent-600'}`} aria-label="Horizontal layout"
+                                aria-pressed={layoutMode === 'horizontal'}
                                 {...getAnalyticsDebugAttributes('trip_view__layout_direction--horizontal', { surface: 'map_controls' })}
                             ><ArrowLeftRight size={18} /></button>
-                        </>
+                        </div>
                     )}
 
                     {onToggleExpanded && (

@@ -1,17 +1,36 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { Hotel, MapPin } from 'lucide-react';
 
 import { TransportModeIcon } from '../TransportModeIcon';
+import { ActivityTypeIcon, formatActivityTypeLabel, getActivityTypePaletteClass } from '../ActivityTypeVisuals';
 import { Checkbox } from '../ui/checkbox';
 import type { ITrip } from '../../types';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import { buildTimelineListModel } from './timelineListViewModel';
+import { normalizeActivityTypes } from '../../utils';
+import {
+    findMarkdownTaskLineNumbers,
+    MARKDOWN_H1_CLASS,
+    MARKDOWN_H2_CLASS,
+    MARKDOWN_H3_CLASS,
+    MARKDOWN_HEADS_UP_BANNER_CLASS,
+    MARKDOWN_HEADS_UP_LIST_CLASS,
+    MARKDOWN_TASK_ITEM_CLASS,
+    MARKDOWN_TASK_LIST_CLASS,
+    MARKDOWN_TASK_ROW_CLASS,
+    MARKDOWN_TASK_TEXT_CLASS,
+    remarkHeadsUpBanners,
+} from '../markdownPresentation';
 
 interface TripTimelineListViewProps {
     trip: ITrip;
     selectedItemId: string | null;
+    onToggleTaskCheckbox?: (itemId: string, taskLineNumber: number, checked: boolean) => void;
     onSelect: (id: string | null, options?: { multi?: boolean; isCity?: boolean }) => void;
+    selectionVisibilityKey?: string;
+    enableScrollActiveCitySelection?: boolean;
 }
 
 const formatTripDayLabel = (tripStartDate: string, dayOffset: number): string => {
@@ -51,7 +70,31 @@ const areTransferPositionsEqual = (
     return true;
 };
 
-const MARKDOWN_COMPONENTS = {
+const buildMarkdownComponents = (
+    tripId: string,
+    itemId: string,
+    markdown: string,
+    onToggleTaskCheckbox?: (itemId: string, taskLineNumber: number, checked: boolean) => void,
+) => {
+    const taskLineNumbers = findMarkdownTaskLineNumbers(markdown);
+    let renderedTaskCount = 0;
+    const hasClassName = (node: any, className: string): boolean => {
+        const classNames = node?.properties?.className;
+        if (Array.isArray(classNames)) return classNames.includes(className);
+        if (typeof classNames === 'string') return classNames.split(/\s+/).includes(className);
+        return false;
+    };
+    const stripCheckboxChild = (children: React.ReactNode): React.ReactNode[] => (
+        React.Children.toArray(children).filter((child) => {
+            if (typeof child === 'string') return child.trim().length > 0;
+            return !(React.isValidElement(child) && child.props.type === 'checkbox');
+        })
+    );
+
+    return {
+    h1: ({ node, ...props }: any) => <h1 {...props} className={MARKDOWN_H1_CLASS} />,
+    h2: ({ node, ...props }: any) => <h2 {...props} className={MARKDOWN_H2_CLASS} />,
+    h3: ({ node, ...props }: any) => <h3 {...props} className={MARKDOWN_H3_CLASS} />,
     a: ({ node, ...props }: any) => (
         <a
             {...props}
@@ -61,26 +104,111 @@ const MARKDOWN_COMPONENTS = {
         />
     ),
     p: ({ node, ...props }: any) => <p {...props} className="my-1 leading-6" />,
-    ul: ({ node, ...props }: any) => <ul {...props} className="my-2 list-disc ps-5 space-y-1.5" />,
+    ul: ({ node, ...props }: any) => {
+        const isHeadsUpList = Boolean(node?.properties?.['data-heads-up-list']);
+        const hasTaskItems = hasClassName(node, 'contains-task-list')
+            || (Array.isArray(node?.children) && node.children.some((child: any) => typeof child?.checked === 'boolean' || hasClassName(child, 'task-list-item')));
+        return (
+            <ul
+                {...props}
+                data-heads-up-list={isHeadsUpList ? 'true' : undefined}
+                className={isHeadsUpList ? MARKDOWN_HEADS_UP_LIST_CLASS : hasTaskItems ? MARKDOWN_TASK_LIST_CLASS : 'my-2 list-disc ps-5 space-y-1.5'}
+            />
+        );
+    },
     ol: ({ node, ...props }: any) => <ol {...props} className="my-2 list-decimal ps-5 space-y-1.5" />,
-    li: ({ node, checked, ...props }: any) => (
-        <li
-            {...props}
-            className={`leading-6 ${typeof checked === 'boolean' ? 'list-none ps-0' : ''}`}
-        />
-    ),
+    li: ({ node, checked, children, ...props }: any) => {
+        const isHeadsUpBanner = Boolean(node?.properties?.['data-heads-up-banner']);
+        const isTaskItem = typeof checked === 'boolean' || hasClassName(node, 'task-list-item');
+        const childArray = React.Children.toArray(children);
+        const taskCheckboxChild = childArray.find((child) => React.isValidElement(child) && child.props.type === 'checkbox');
+        const resolvedChecked = typeof checked === 'boolean'
+            ? checked
+            : (React.isValidElement(taskCheckboxChild) ? Boolean(taskCheckboxChild.props.checked) : false);
+        const contentChildren = stripCheckboxChild(childArray);
+
+        if (isHeadsUpBanner) {
+            return (
+                <li
+                    {...props}
+                    data-heads-up-banner="true"
+                    className={MARKDOWN_HEADS_UP_BANNER_CLASS}
+                >
+                    {contentChildren}
+                </li>
+            );
+        }
+
+        if (isTaskItem) {
+            const fallbackLineNumber = taskLineNumbers[renderedTaskCount];
+            const taskLineNumber = typeof node?.position?.start?.line === 'number'
+                ? node.position.start.line
+                : fallbackLineNumber;
+            renderedTaskCount += 1;
+
+            return (
+                <li
+                    {...props}
+                    data-task-list-item="true"
+                    className={MARKDOWN_TASK_ITEM_CLASS}
+                >
+                    <label
+                        className={MARKDOWN_TASK_ROW_CLASS}
+                        onClick={(event) => {
+                            event.stopPropagation();
+                        }}
+                        onPointerDown={(event) => {
+                            event.stopPropagation();
+                        }}
+                    >
+                        <Checkbox
+                            checked={resolvedChecked}
+                            disabled={!onToggleTaskCheckbox}
+                            className="mt-0.5 h-4 w-4 shrink-0"
+                            aria-label={resolvedChecked ? 'Completed task' : 'Open task'}
+                            onClick={(event) => {
+                                event.stopPropagation();
+                            }}
+                            onPointerDown={(event) => {
+                                event.stopPropagation();
+                            }}
+                            onCheckedChange={(nextChecked) => {
+                                if (!onToggleTaskCheckbox) return;
+                                if (typeof taskLineNumber !== 'number') return;
+                                const normalizedChecked = nextChecked === true;
+                                trackEvent('trip_view__timeline_task--toggle', {
+                                    trip_id: tripId,
+                                    item_id: itemId,
+                                    task_line_number: taskLineNumber,
+                                    checked: normalizedChecked,
+                                });
+                                onToggleTaskCheckbox(itemId, taskLineNumber, normalizedChecked);
+                            }}
+                            {...getAnalyticsDebugAttributes('trip_view__timeline_task--toggle', {
+                                trip_id: tripId,
+                                item_id: itemId,
+                                task_line_number: typeof taskLineNumber === 'number' ? taskLineNumber : undefined,
+                                checked: resolvedChecked,
+                            })}
+                        />
+                        <span className={MARKDOWN_TASK_TEXT_CLASS}>{contentChildren}</span>
+                    </label>
+                </li>
+            );
+        }
+
+        return (
+            <li
+                {...props}
+                className="my-1 leading-6"
+            >
+                {children}
+            </li>
+        );
+    },
     input: ({ node, type, checked, ...props }: any) => {
         if (type === 'checkbox') {
-            return (
-                <span className="me-2 inline-flex align-middle">
-                    <Checkbox
-                        checked={Boolean(checked)}
-                        disabled
-                        className="pointer-events-none mt-0.5 h-4 w-4"
-                        aria-label={checked ? 'Completed item' : 'Open item'}
-                    />
-                </span>
-            );
+            return null;
         }
         return <input type={type} {...props} />;
     },
@@ -91,6 +219,7 @@ const MARKDOWN_COMPONENTS = {
     code: ({ node, ...props }: any) => <code {...props} className="rounded bg-slate-100 px-1 py-0.5 text-[12px] text-slate-700" />,
     pre: ({ node, ...props }: any) => <pre {...props} className="my-2 overflow-x-auto rounded-md bg-slate-100 p-2 text-[12px] text-slate-700" />,
     hr: () => <hr className="my-3 border-slate-200" />,
+};
 };
 
 const TODAY_BADGE_CLASS = 'rounded-full border border-red-200 bg-red-50 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-[0.08em] text-red-700';
@@ -113,7 +242,10 @@ const isNodeVisibleInViewport = (node: Element, viewport: HTMLElement, padding =
 export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
     trip,
     selectedItemId,
+    onToggleTaskCheckbox,
     onSelect,
+    selectionVisibilityKey,
+    enableScrollActiveCitySelection = true,
 }) => {
     const model = useMemo(() => buildTimelineListModel(trip), [trip]);
     const sectionContainerRef = useRef<HTMLDivElement | null>(null);
@@ -219,6 +351,7 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
     }, [updateTransferMidpoints]);
 
     const updateActiveCitySelection = useCallback(() => {
+        if (!enableScrollActiveCitySelection) return;
         if (!userScrollSelectionEnabledRef.current) return;
         if (!selectedItemId) return;
 
@@ -249,7 +382,7 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
         lastAutoSelectedCityIdRef.current = activeCityId;
         if (selectedItemId === activeCityId) return;
         onSelect(activeCityId, { isCity: true });
-    }, [model.sections, onSelect, selectedItemId]);
+    }, [enableScrollActiveCitySelection, model.sections, onSelect, selectedItemId]);
 
     useEffect(() => {
         hasAutoScrolledToTodayRef.current = false;
@@ -259,6 +392,12 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
     }, [trip.id, model.sections.length]);
 
     useEffect(() => {
+        lastAutoScrolledSelectedItemRef.current = null;
+        userScrollSelectionEnabledRef.current = false;
+    }, [selectionVisibilityKey]);
+
+    useEffect(() => {
+        if (!enableScrollActiveCitySelection) return;
         const viewport = viewportRef.current;
         if (!viewport) return;
 
@@ -291,7 +430,7 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
                 scrollSelectionFrameRef.current = null;
             }
         };
-    }, [updateActiveCitySelection]);
+    }, [enableScrollActiveCitySelection, updateActiveCitySelection]);
 
     useEffect(() => {
         if (!selectedItemId) {
@@ -319,14 +458,14 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
             block: 'center',
             behavior: 'smooth',
         });
-    }, [model.sections.length, selectedItemId]);
+    }, [model.sections.length, selectedItemId, selectionVisibilityKey]);
 
     return (
         <div
             ref={viewportRef}
             className="h-full overflow-y-auto bg-white"
         >
-            <div className="mx-auto w-full max-w-4xl px-4 py-7 pb-16 sm:px-7 lg:px-10">
+            <div className="w-full px-4 py-7 pb-16 sm:px-7 lg:px-8">
                 {model.sections.length === 0 && (
                     <div className="ps-2 text-sm leading-7 text-slate-500">
                         No city stops available yet.
@@ -403,6 +542,7 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
                             const countryLabel = section.city.countryName?.trim() || section.city.countryCode?.trim() || null;
                             const citySelected = selectedItemId === section.city.id;
                             const citySummaryMarkdown = section.city.description?.trim() || section.arrivalDescription || '';
+                            const hotels = (section.city.hotels || []).filter((hotel) => hotel.name?.trim() || hotel.address?.trim());
 
                             const handleCitySelect = () => {
                                 trackEvent('trip_view__timeline_city--open', {
@@ -472,9 +612,38 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
 
                                         {citySummaryMarkdown && (
                                             <div className="pb-2 text-sm text-slate-600">
-                                                <ReactMarkdown remarkPlugins={[remarkGfm]} components={MARKDOWN_COMPONENTS}>
+                                                <ReactMarkdown
+                                                    remarkPlugins={[remarkGfm, remarkHeadsUpBanners]}
+                                                    components={buildMarkdownComponents(trip.id, section.city.id, citySummaryMarkdown, onToggleTaskCheckbox)}
+                                                >
                                                     {citySummaryMarkdown}
                                                 </ReactMarkdown>
+                                            </div>
+                                        )}
+
+                                        {hotels.length > 0 && (
+                                            <div className="flex flex-wrap gap-2 pb-3">
+                                                {hotels.map((hotel) => (
+                                                    <div
+                                                        key={hotel.id}
+                                                        className="inline-flex max-w-full items-start gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-left text-sm text-slate-700"
+                                                    >
+                                                        <Hotel size={14} className="mt-0.5 shrink-0 text-accent-600" />
+                                                        <div className="min-w-0">
+                                                            {hotel.name?.trim() && (
+                                                                <p className="truncate font-semibold text-slate-900">
+                                                                    {hotel.name.trim()}
+                                                                </p>
+                                                            )}
+                                                            {hotel.address?.trim() && (
+                                                                <p className="mt-1 flex items-start gap-1 text-xs text-slate-500">
+                                                                    <MapPin size={12} className="mt-0.5 shrink-0" />
+                                                                    <span className="break-words">{hotel.address.trim()}</span>
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                ))}
                                             </div>
                                         )}
 
@@ -488,6 +657,7 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
                                                     {section.activities.map((activity) => {
                                                         const markerId = `activity-${activity.item.id}`;
                                                         const isSelected = selectedItemId === activity.item.id;
+                                                        const activityTypes = normalizeActivityTypes(activity.item.activityType, []);
                                                         return (
                                                             <li
                                                                 key={activity.item.id}
@@ -526,9 +696,34 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
                                                                     </p>
                                                                     {activity.item.description && (
                                                                         <div className="mt-2 max-w-3xl text-sm text-slate-600">
-                                                                            <ReactMarkdown remarkPlugins={[remarkGfm]} components={MARKDOWN_COMPONENTS}>
+                                                                            <ReactMarkdown
+                                                                                remarkPlugins={[remarkGfm, remarkHeadsUpBanners]}
+                                                                                components={buildMarkdownComponents(trip.id, activity.item.id, activity.item.description, onToggleTaskCheckbox)}
+                                                                            >
                                                                                 {activity.item.description}
                                                                             </ReactMarkdown>
+                                                                        </div>
+                                                                    )}
+                                                                    {activityTypes.length > 0 && (
+                                                                        <div className="group/pills mt-3 flex items-center ps-1">
+                                                                            {activityTypes.map((type, index) => {
+                                                                                const label = formatActivityTypeLabel(type);
+                                                                                return (
+                                                                                    <span
+                                                                                        key={`${activity.item.id}-${type}`}
+                                                                                        title={label}
+                                                                                        aria-label={label}
+                                                                                        className={`relative inline-flex h-8 items-center overflow-hidden rounded-full border pe-0 opacity-85 transition-[margin,opacity] duration-200 ease-out [z-index:calc(sibling-count()-sibling-index())] ${getActivityTypePaletteClass(type)} ${index > 0 ? '-ms-2 group-hover/pills:ms-2 group-focus-visible:ms-2' : ''} group-hover/pills:opacity-100 group-focus-visible:opacity-100`}
+                                                                                    >
+                                                                                        <span className="inline-flex size-8 shrink-0 items-center justify-center">
+                                                                                            <ActivityTypeIcon type={type} size={12} />
+                                                                                        </span>
+                                                                                        <span className="max-w-0 overflow-hidden whitespace-nowrap pe-0 ps-0 text-[11px] font-semibold opacity-0 transition-[max-width,padding,opacity] duration-200 ease-out [transition-delay:0ms] group-hover/pills:max-w-24 group-hover/pills:pe-2 group-hover/pills:ps-0.5 group-hover/pills:opacity-100 group-hover/pills:[transition-delay:calc((sibling-index()-1)*36ms)] group-focus-visible:max-w-24 group-focus-visible:pe-2 group-focus-visible:ps-0.5 group-focus-visible:opacity-100 group-focus-visible:[transition-delay:calc((sibling-index()-1)*36ms)]">
+                                                                                            {label}
+                                                                                        </span>
+                                                                                    </span>
+                                                                                );
+                                                                            })}
                                                                         </div>
                                                                     )}
                                                                 </button>

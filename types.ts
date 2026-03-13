@@ -245,6 +245,7 @@ export interface IViewSettings {
     routeMode?: RouteMode;
     showCityNames?: boolean;
     sidebarWidth?: number;
+    detailsWidth?: number;
     timelineHeight?: number;
 }
 
@@ -277,6 +278,7 @@ export interface IUserSettings {
     showCityNames?: boolean;
     zoomLevel?: number;
     sidebarWidth?: number;
+    detailsWidth?: number;
     timelineHeight?: number;
 }
 

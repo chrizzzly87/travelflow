@@ -59,13 +59,16 @@ const createFakeHistory = (
     pathname: string
 ): FakeHistory & {
     emit: (update: FakeHistoryUpdate) => void;
+    getListenCallCount: () => number;
 } => {
     let listener: ((update: FakeHistoryUpdate) => void) | null = null;
+    let listenCallCount = 0;
 
     return {
         action: 'POP',
         location: { pathname },
         listen: (nextListener) => {
+            listenCallCount += 1;
             listener = nextListener;
             return () => {
                 listener = null;
@@ -78,6 +81,7 @@ const createFakeHistory = (
         emit: (update) => {
             listener?.(update);
         },
+        getListenCallCount: () => listenCallCount,
     };
 };
 
@@ -167,5 +171,37 @@ describe('shared/appHistory', () => {
 
         expect(blogTransitionMocks.setPendingBlogTransitionMode).toHaveBeenCalledWith('title-only');
         expect(blogTransitionMocks.startBlogViewTransition).toHaveBeenCalledTimes(1);
+    });
+
+    it('fans out multiple wrapped listeners through a single underlying history subscription', () => {
+        const fakeHistory = createFakeHistory('/blog');
+        const wrappedHistory = createBlogTransitionAwareBrowserHistory(fakeHistory as never);
+        const firstListener = vi.fn();
+        const secondListener = vi.fn();
+
+        const unsubscribeFirst = wrappedHistory.listen(firstListener);
+        const unsubscribeSecond = wrappedHistory.listen(secondListener);
+
+        expect(fakeHistory.getListenCallCount()).toBe(1);
+
+        fakeHistory.emit({
+            action: 'PUSH',
+            location: { pathname: '/blog/how-to-plan-multi-city-trip' },
+        });
+
+        expect(firstListener).toHaveBeenCalledWith({
+            action: 'PUSH',
+            location: { pathname: '/blog/how-to-plan-multi-city-trip' },
+        });
+        expect(secondListener).toHaveBeenCalledWith({
+            action: 'PUSH',
+            location: { pathname: '/blog/how-to-plan-multi-city-trip' },
+        });
+
+        unsubscribeFirst();
+        unsubscribeSecond();
+
+        wrappedHistory.listen(firstListener);
+        expect(fakeHistory.getListenCallCount()).toBe(2);
     });
 });
