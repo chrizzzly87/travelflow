@@ -14,3 +14,4 @@ summary: "Added a report-only Promptfoo regression layer for classic AI trip cre
 - [ ] [Internal] 🤖 Added a lightweight Promptfoo regression pack for classic AI trip creation that reuses the shared benchmark validator, scenario-to-prompt builder, and existing provider runtime.
 - [ ] [Internal] 📊 Added a manual GitHub Actions workflow plus JSON and HTML report artifacts so AI trip eval runs can be shared without going through the admin benchmark UI.
 - [ ] [Internal] 🧱 Added a shared itinerary JSON schema, enabled provider-time structured output where supported, and wired schema assertions into Promptfoo so evals catch JSON-shape drift earlier.
+- [ ] [Internal] 🛡️ Added regression coverage and workflow documentation for the strict structured-output schema subset so future schema edits do not silently break OpenAI-backed eval runs.
