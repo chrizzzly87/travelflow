@@ -1,5 +1,5 @@
-import type { ActivityType } from "../types";
-import { MODEL_TRANSPORT_MODE_VALUES } from "./transportModes";
+import type { ActivityType } from "../types.ts";
+import { MODEL_TRANSPORT_MODE_VALUES } from "./transportModes.ts";
 
 export interface StructuredOutputJsonSchema {
   name: string;
