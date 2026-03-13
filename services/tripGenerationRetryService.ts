@@ -23,12 +23,7 @@ import {
 } from './tripGenerationDiagnosticsService';
 import type { ITrip, TripGenerationFlow, TripGenerationInputSnapshot, TripGenerationState } from '../types';
 import { enqueueAsyncTripGenerationJob } from './tripGenerationAsyncEnqueueService';
-import {
-    dbAdminOverrideTripCommit,
-    dbGetTrip,
-    dbUpsertTrip,
-    ensureDbSession,
-} from './dbApi';
+import { dbGetTrip, dbUpsertTrip, ensureDbSession } from './dbApi';
 import {
     isTripGenerationJobActive,
     listTripGenerationJobsByTrip,
@@ -41,7 +36,6 @@ export interface RetryTripGenerationOptions {
     onTripUpdate?: (trip: ITrip) => Promise<void> | void;
     contextSource?: string;
     modelId?: string | null;
-    adminOverride?: boolean;
 }
 
 export interface RetryTripGenerationResult {
@@ -137,25 +131,6 @@ const resolveRetryRoundTrip = (
         return Boolean(options.roundTrip || trip.roundTrip);
     }
     return true;
-};
-
-const persistRetryTripState = async (
-    trip: ITrip,
-    options: RetryTripGenerationOptions,
-): Promise<boolean> => {
-    await ensureDbSession();
-
-    if (options.adminOverride) {
-        const persisted = await dbAdminOverrideTripCommit(
-            trip,
-            undefined,
-            'Data: Admin retry state sync',
-        );
-        return Boolean(persisted?.tripId);
-    }
-
-    const persistedTripId = await dbUpsertTrip(trip, undefined);
-    return Boolean(persistedTripId);
 };
 
 const isTerminalAttemptState = (state: string | null | undefined): boolean => (
@@ -307,7 +282,8 @@ export const retryTripGenerationWithDefaultModel = async (
             throw new Error('Retry attempt could not be initialized.');
         }
 
-        const persistedTripId = await persistRetryTripState(runningTripWithCanonicalAttempt, options);
+        await ensureDbSession();
+        const persistedTripId = await dbUpsertTrip(runningTripWithCanonicalAttempt, undefined);
         if (!persistedTripId) {
             throw new Error('Retry attempt could not be persisted before queueing.');
         }

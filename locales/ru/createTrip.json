@@ -132,8 +132,8 @@
   },
   "notes": {
     "title": "Особые заметки",
-    "hint": "Укажите города, которые хотите включить, занятия, которые хотите добавить в приоритет или исключить, а также пожелания по еде, темпу, мобильности или комфорту.",
-    "placeholder": "Например: Киото и Осака, больше рынков, чем музеев, без ночной жизни, вегетарианская еда, дни с коляской без сложных маршрутов"
+    "hint": "Кратко: укажите важные требования, например мобильность, фокус на еде или уровень комфорта.",
+    "placeholder": "Необязательные заметки для планировщика"
   },
   "snapshot": {
     "title": "Снимок поездки",
@@ -276,8 +276,8 @@
       "paceLabel": "Pace",
       "specificCitiesLabel": "Specific cities or stops",
       "specificCitiesPlaceholder": "e.g. Rome, Florence, Bologna",
-      "notesLabel": "Дополнительные заметки",
-      "notesPlaceholder": "Например: Киото и Осака, больше рынков, чем музеев, без ночной жизни, вегетарианская еда, дни с коляской без сложных маршрутов",
+      "notesLabel": "Extra notes",
+      "notesPlaceholder": "Food preferences, celebration plans, mobility needs, child routines, remote-work constraints…",
       "roundTripTitle": "Return to start",
       "roundTripDescription": "End in the same place you begin when that fits the trip.",
       "routeLockTitle": "Fixed route order",

@@ -15,7 +15,6 @@ const BASE_VIEW_SETTINGS: IViewSettings = {
   showCityNames: true,
   zoomLevel: 1.25,
   sidebarWidth: 480,
-  detailsWidth: 420,
   timelineHeight: 320,
 };
 
@@ -29,7 +28,6 @@ const makeHookProps = (): Parameters<typeof useTripViewSettingsSync>[0] => ({
   showCityNames: true,
   zoomLevel: 1.25,
   sidebarWidth: 480,
-  detailsWidth: 420,
   timelineHeight: 320,
   viewMode: 'planner',
   onViewSettingsChange: undefined,
@@ -43,7 +41,6 @@ const makeHookProps = (): Parameters<typeof useTripViewSettingsSync>[0] => ({
   setMapDockMode: vi.fn(),
   setZoomLevel: vi.fn(),
   setSidebarWidth: vi.fn(),
-  setDetailsWidth: vi.fn(),
   setTimelineHeight: vi.fn(),
   setShowCityNames: vi.fn(),
   suppressCommitRef: { current: false },
@@ -84,7 +81,6 @@ describe('components/tripview/useTripViewSettingsSync', () => {
     expect(params.get('cityNames')).toBe('1');
     expect(params.get('zoom')).toBe('1.25');
     expect(params.get('sidebarWidth')).toBe('480');
-    expect(params.get('detailsWidth')).toBe('420');
     expect(params.get('timelineHeight')).toBe('320');
     expect(params.get('mode')).toBe('print');
 
@@ -118,7 +114,6 @@ describe('components/tripview/useTripViewSettingsSync', () => {
       showCityNames: true,
       zoomLevel: 1.25,
       sidebarWidth: 480,
-      detailsWidth: 420,
       timelineHeight: 320,
     });
     expect(replaceStateSpy).not.toHaveBeenCalled();
@@ -180,7 +175,6 @@ describe('components/tripview/useTripViewSettingsSync', () => {
       routeMode: 'realistic',
       zoomLevel: 2.5,
       sidebarWidth: 640,
-      detailsWidth: 520,
       timelineHeight: 420,
     };
     props.currentViewSettings = BASE_VIEW_SETTINGS;
@@ -202,7 +196,6 @@ describe('components/tripview/useTripViewSettingsSync', () => {
     expect(props.setMapDockMode).toHaveBeenCalledWith('floating');
     expect(props.setZoomLevel).toHaveBeenCalledWith(2.5);
     expect(props.setSidebarWidth).toHaveBeenCalledWith(640);
-    expect(props.setDetailsWidth).toHaveBeenCalledWith(520);
     expect(props.setTimelineHeight).toHaveBeenCalledWith(420);
     expect(props.setShowCityNames).toHaveBeenCalledWith(true);
 

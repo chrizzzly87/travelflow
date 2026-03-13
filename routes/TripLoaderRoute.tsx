@@ -40,7 +40,6 @@ const areViewSettingsEqual = (a?: IViewSettings, b?: IViewSettings): boolean => 
         && a.showCityNames === b.showCityNames
         && a.zoomLevel === b.zoomLevel
         && a.sidebarWidth === b.sidebarWidth
-        && a.detailsWidth === b.detailsWidth
         && a.timelineHeight === b.timelineHeight
     );
 };

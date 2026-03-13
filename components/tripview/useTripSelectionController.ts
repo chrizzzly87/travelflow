@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type Dispatch, type SetStateAction } from 'react';
+import { useCallback, useEffect, useMemo, type Dispatch, type SetStateAction } from 'react';
 
 import type { ITimelineItem } from '../../types';
 import { reorderSelectedCities } from '../../utils';
@@ -12,8 +12,6 @@ interface UseTripSelectionControllerOptions {
     setSelectedCityIds: Dispatch<SetStateAction<string[]>>;
     isHistoryOpen: boolean;
     isTripInfoOpen: boolean;
-    autoOpenOnSelect?: boolean;
-    clearSelectionOnClose?: boolean;
     setPendingLabel: (label: string) => void;
     handleUpdateItems: (items: ITimelineItem[]) => void;
 }
@@ -27,12 +25,9 @@ export const useTripSelectionController = ({
     setSelectedCityIds,
     isHistoryOpen,
     isTripInfoOpen,
-    autoOpenOnSelect = true,
-    clearSelectionOnClose = false,
     setPendingLabel,
     handleUpdateItems,
 }: UseTripSelectionControllerOptions) => {
-    const [isDetailsPanelOpen, setIsDetailsPanelOpen] = useState(autoOpenOnSelect);
     const selectedCitiesInTimeline = useMemo(() => {
         if (selectedCityIds.length === 0) return [];
 
@@ -43,38 +38,12 @@ export const useTripSelectionController = ({
     }, [displayTripItems, selectedCityIds]);
 
     const showSelectedCitiesPanel = selectedCitiesInTimeline.length > 1;
-    const hasSelection = showSelectedCitiesPanel || !!selectedItemId;
-    const detailsPanelVisible = hasSelection && isDetailsPanelOpen;
+    const detailsPanelVisible = showSelectedCitiesPanel || !!selectedItemId;
 
     const clearSelection = useCallback(() => {
-        setIsDetailsPanelOpen(autoOpenOnSelect);
         setSelectedItemId(null);
         setSelectedCityIds([]);
-    }, [autoOpenOnSelect, setSelectedCityIds, setSelectedItemId]);
-
-    const openDetailsPanel = useCallback(() => {
-        if (!hasSelection) return;
-        setIsDetailsPanelOpen(true);
-    }, [hasSelection]);
-
-    const closeDetailsPanel = useCallback(() => {
-        if (!hasSelection) return;
-        if (clearSelectionOnClose) {
-            clearSelection();
-            return;
-        }
-        setIsDetailsPanelOpen(false);
-    }, [clearSelection, clearSelectionOnClose, hasSelection]);
-
-    const toggleDetailsPanel = useCallback(() => {
-        if (!hasSelection) return;
-        setIsDetailsPanelOpen((previous) => !previous);
-    }, [hasSelection]);
-
-    useEffect(() => {
-        if (hasSelection) return;
-        setIsDetailsPanelOpen(autoOpenOnSelect);
-    }, [autoOpenOnSelect, hasSelection]);
+    }, [setSelectedCityIds, setSelectedItemId]);
 
     useEffect(() => {
         const handleEscape = (event: KeyboardEvent) => {
@@ -100,50 +69,25 @@ export const useTripSelectionController = ({
             return;
         }
 
-        const shouldOpenHiddenDetails = !autoOpenOnSelect
-            && !options?.multi
-            && selectedItemId === id
-            && !isDetailsPanelOpen;
-
         const selectedItem = tripItems.find((item) => item.id === id);
         if (!selectedItem) {
-            if (shouldOpenHiddenDetails) {
-                setIsDetailsPanelOpen(true);
-                return;
-            }
-            setIsDetailsPanelOpen((previous) => (autoOpenOnSelect ? true : previous));
             setSelectedItemId(id);
             setSelectedCityIds([]);
             return;
         }
 
         if (selectedItem.type !== 'city') {
-            if (shouldOpenHiddenDetails) {
-                setSelectedItemId(id);
-                setSelectedCityIds([]);
-                setIsDetailsPanelOpen(true);
-                return;
-            }
-            setIsDetailsPanelOpen((previous) => (autoOpenOnSelect ? true : previous));
             setSelectedItemId(id);
             setSelectedCityIds([]);
             return;
         }
 
         if (!options?.multi) {
-            if (shouldOpenHiddenDetails) {
-                setSelectedItemId(id);
-                setSelectedCityIds([id]);
-                setIsDetailsPanelOpen(true);
-                return;
-            }
-            setIsDetailsPanelOpen((previous) => (autoOpenOnSelect ? true : previous));
             setSelectedItemId(id);
             setSelectedCityIds([id]);
             return;
         }
 
-        setIsDetailsPanelOpen((previous) => (autoOpenOnSelect ? true : previous));
         setSelectedCityIds((previous) => {
             const baseSelection = previous.length > 0
                 ? previous
@@ -163,8 +107,6 @@ export const useTripSelectionController = ({
         });
     }, [
         clearSelection,
-        autoOpenOnSelect,
-        isDetailsPanelOpen,
         selectedItemId,
         setSelectedCityIds,
         setSelectedItemId,
@@ -203,11 +145,7 @@ export const useTripSelectionController = ({
     return {
         selectedCitiesInTimeline,
         showSelectedCitiesPanel,
-        hasSelection,
         detailsPanelVisible,
-        openDetailsPanel,
-        closeDetailsPanel,
-        toggleDetailsPanel,
         clearSelection,
         handleTimelineSelect,
         applySelectedCityOrder,

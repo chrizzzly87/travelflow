@@ -86,14 +86,8 @@ export const useTripTitleEditHandlers = ({
         trip,
     ]);
 
-    const handleCancelTitleEdit = useCallback(() => {
-        setEditTitleValue(trip.title);
-        setIsEditingTitle(false);
-    }, [setEditTitleValue, setIsEditingTitle, trip.title]);
-
     return {
         handleStartTitleEdit,
         handleCommitTitleEdit,
-        handleCancelTitleEdit,
     };
 };

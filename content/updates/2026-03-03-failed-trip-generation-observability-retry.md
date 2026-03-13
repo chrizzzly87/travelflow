@@ -113,7 +113,6 @@ summary: "Trip generation now keeps running in the background, recovers more saf
 - [x] [Improved] 🎨 Trip city lanes now keep the intended default palette depth after loading, avoiding both washed-out and over-dark itinerary colors.
 - [x] [Fixed] 🔄 Reopening a newly created trip after background loading resumes no longer crashes the trip page before the itinerary appears.
 - [ ] [Internal] 🛠️ Admin override-enabled trip views can now restart failed generation even when the trip would otherwise be read-only for normal traveler edits.
-- [ ] [Internal] 🛡️ Admin-triggered retry state sync now persists through the admin override commit path, fixing failed restarts that could log an attempt but never queue it.
 - [ ] [Internal] 🛠️ Trip view settings sync now emits only normalized payload deltas and ignores callback-identity churn, further reducing duplicate `user_settings` writes.
 - [ ] [Internal] 🛠️ Visual-diff commit detection now normalizes zoom precision and ignores sub-threshold jitter, reducing repeated idle `upsert_trip` loops.
 - [ ] [Internal] 🛠️ Local Vite dev now proxies async generation-worker requests to Netlify dev and logs explicit guidance when `pnpm dev:netlify` is not running, replacing misleading raw 404 worker errors.

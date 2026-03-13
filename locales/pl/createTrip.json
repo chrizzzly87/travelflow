@@ -132,8 +132,8 @@
   },
   "notes": {
     "title": "Specjalne uwagi",
-    "hint": "Wpisz miasta, które chcesz uwzględnić, atrakcje, które chcesz priorytetyzować lub omijać, oraz potrzeby dotyczące jedzenia, tempa, mobilności lub komfortu.",
-    "placeholder": "Przykłady: Kioto i Osaka, więcej targów niż muzeów, bez nocnego życia, jedzenie wegetariańskie, dni wygodne z wózkiem"
+    "hint": "Krótko: wskaż priorytety, np. mobilność, nacisk na jedzenie lub poziom komfortu.",
+    "placeholder": "Opcjonalne uwagi dla planera"
   },
   "snapshot": {
     "title": "Migawka podróży",
@@ -276,8 +276,8 @@
       "paceLabel": "Pace",
       "specificCitiesLabel": "Specific cities or stops",
       "specificCitiesPlaceholder": "e.g. Rome, Florence, Bologna",
-      "notesLabel": "Dodatkowe uwagi",
-      "notesPlaceholder": "Przykłady: Kioto i Osaka, więcej targów niż muzeów, bez nocnego życia, jedzenie wegetariańskie, dni wygodne z wózkiem",
+      "notesLabel": "Extra notes",
+      "notesPlaceholder": "Food preferences, celebration plans, mobility needs, child routines, remote-work constraints…",
       "roundTripTitle": "Return to start",
       "roundTripDescription": "End in the same place you begin when that fits the trip.",
       "routeLockTitle": "Fixed route order",

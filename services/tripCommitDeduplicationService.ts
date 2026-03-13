@@ -52,7 +52,6 @@ const normalizeViewForFingerprint = (
         ...view,
         zoomLevel: Number(view.zoomLevel.toFixed(2)),
         sidebarWidth: Math.round(view.sidebarWidth),
-        detailsWidth: typeof view.detailsWidth === 'number' ? Math.round(view.detailsWidth) : null,
         timelineHeight: Math.round(view.timelineHeight),
     }) as Record<string, SerializableValue>;
 };

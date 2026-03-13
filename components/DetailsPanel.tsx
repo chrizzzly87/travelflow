@@ -1363,6 +1363,19 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                       </div>
                   )}
              </div>
+             {supportsApproval && (
+                <div className="mb-3 flex items-center gap-2 text-xs text-gray-600">
+                    <Switch
+                        checked={isItemApproved}
+                        onCheckedChange={handleSetItemApproved}
+                        disabled={!canEdit}
+                        className="h-5 w-9 data-[state=checked]:bg-emerald-600 data-[state=unchecked]:bg-amber-400"
+                        aria-label="Toggle item approval"
+                    />
+                    <span className="font-medium">{isItemApproved ? 'Approved' : 'Needs approval'}</span>
+                </div>
+             )}
+             
              <textarea 
                 value={displayItem.title} 
                 onChange={canEdit ? ((e) => handleUpdate(displayItem.id, { title: e.target.value })) : undefined} 
@@ -1444,18 +1457,6 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                             </div>
                             {isCity && countryNameForDisplay && (
                                 <div className="text-xs text-gray-500 mt-0.5">{countryNameForDisplay}</div>
-                            )}
-                            {supportsApproval && (
-                                <div className="mt-3 flex items-center gap-2 text-xs text-gray-600">
-                                    <Switch
-                                        checked={isItemApproved}
-                                        onCheckedChange={handleSetItemApproved}
-                                        disabled={!canEdit}
-                                        className="h-5 w-9 data-[state=checked]:bg-emerald-600 data-[state=unchecked]:bg-amber-400"
-                                        aria-label="Toggle item approval"
-                                    />
-                                    <span className="font-medium">{isItemApproved ? 'Approved' : 'Needs approval'}</span>
-                                </div>
                             )}
                         </div>
                     </div>

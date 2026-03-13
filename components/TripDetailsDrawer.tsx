@@ -3,32 +3,28 @@ import { Drawer, DrawerContent } from './ui/drawer';
 
 export interface TripDetailsDrawerProps {
     open: boolean;
-    expanded: boolean;
     onOpenChange: (open: boolean) => void;
-    onExpandedChange: (expanded: boolean) => void;
     children: React.ReactNode;
 }
 
 export const TripDetailsDrawer: React.FC<TripDetailsDrawerProps> = ({
     open,
-    expanded: _expanded,
     onOpenChange,
-    onExpandedChange: _onExpandedChange,
     children,
-}) => {
-    return (
-        <Drawer
-            open={open}
-            onOpenChange={onOpenChange}
-            autoFocus={false}
+}) => (
+    <Drawer
+        open={open}
+        onOpenChange={onOpenChange}
+        shouldScaleBackground={false}
+        modal
+        dismissible
+    >
+        <DrawerContent
+            className="h-[82vh] p-0"
+            accessibleTitle="Trip details"
+            accessibleDescription="View and edit selected city, travel segment, or activity details."
         >
-            <DrawerContent
-                className="h-[min(92vh,780px)] p-0"
-                accessibleTitle="Trip details"
-                accessibleDescription="View and edit selected city, travel segment, or activity details."
-            >
-                <div className="h-full overflow-hidden">{children}</div>
-            </DrawerContent>
-        </Drawer>
-    );
-};
+            {children}
+        </DrawerContent>
+    </Drawer>
+);

@@ -16,6 +16,14 @@ interface ProfileHeroProps {
   analyticsAttributes?: Record<string, string>;
 }
 
+const splitToGraphemes = (value: string): string[] => {
+  if (typeof Intl !== 'undefined' && typeof (Intl as { Segmenter?: unknown }).Segmenter === 'function') {
+    const segmenter = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
+    return Array.from(segmenter.segment(value), (segment) => segment.segment);
+  }
+  return Array.from(value);
+};
+
 export const ProfileHero: React.FC<ProfileHeroProps> = ({
   greeting,
   name,
@@ -29,18 +37,30 @@ export const ProfileHero: React.FC<ProfileHeroProps> = ({
   onCtaClick,
   analyticsAttributes,
 }) => {
+  const greetingGlyphs = React.useMemo(() => splitToGraphemes(greeting), [greeting]);
+
   return (
     <section className="py-8 md:py-12">
       <div className="mx-auto max-w-5xl text-center">
         <h1 className="text-balance text-5xl font-black tracking-tight text-slate-900 sm:text-6xl md:text-7xl">
-          <span className="text-accent-700">{greeting}</span>
+          <span className="text-accent-700">
+            {greetingGlyphs.map((character, index) => (
+              <span
+                key={`hero-glyph-${index}-${character}`}
+                className="profile-greeting-letter inline-block whitespace-pre"
+                style={{ animationDelay: `${index * 24}ms` }}
+              >
+                {character === ' ' ? '\u00A0' : character}
+              </span>
+            ))}
+          </span>
           <span>{`, ${name}`}</span>
         </h1>
 
-        <p className="mt-5 text-base leading-7 text-slate-600 [text-wrap:pretty] md:text-lg">
-          <span className="font-semibold text-accent-700">{transliteration}</span>
+        <p className="mt-5 text-base leading-7 text-slate-600 md:text-lg">
+          <span className="font-semibold text-slate-900">{transliteration}</span>
           {' '}
-          <span className="font-medium text-accent-600">/{ipa}/</span>
+          <span className="font-medium text-slate-700">/{ipa}/</span>
           {' '}
           <span>{context}</span>
         </p>

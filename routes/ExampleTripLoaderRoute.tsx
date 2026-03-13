@@ -39,7 +39,6 @@ const areViewSettingsEqual = (a?: IViewSettings, b?: IViewSettings): boolean => 
         && a.showCityNames === b.showCityNames
         && a.zoomLevel === b.zoomLevel
         && a.sidebarWidth === b.sidebarWidth
-        && a.detailsWidth === b.detailsWidth
         && a.timelineHeight === b.timelineHeight
     );
 };
@@ -199,7 +198,6 @@ export const ExampleTripLoaderRoute: React.FC<ExampleTripLoaderRouteProps> = ({
                 routeMode: generated.defaultView?.routeMode,
                 showCityNames: generated.defaultView?.showCityNames,
                 sidebarWidth: generated.defaultView?.sidebarWidth,
-                detailsWidth: generated.defaultView?.detailsWidth,
                 timelineHeight: generated.defaultView?.timelineHeight,
             };
             const prepared: ITrip = {

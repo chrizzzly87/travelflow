@@ -1,12 +1,11 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { ITrip, ITimelineItem, IDragState } from '../types';
-import { buildApprovedCityRoute, buildCityOverlapLayout, computeVerticalTransferConnectorAnchors, findTravelBetweenCities, getHexFromColorClass, getTimelineBounds, TRAVEL_COLOR, TRAVEL_EMPTY_COLOR } from '../utils';
+import { addDays, buildApprovedCityRoute, buildCityOverlapLayout, computeVerticalTransferConnectorAnchors, findTravelBetweenCities, getHexFromColorClass, getTimelineBounds, TRAVEL_COLOR, TRAVEL_EMPTY_COLOR } from '../utils';
 import { TimelineBlock } from './TimelineBlock';
 import { Plus } from 'lucide-react';
 import { TransportModeIcon } from './TransportModeIcon';
 import { normalizeTransportMode } from '../shared/transportModes';
 import { getExampleCityLaneViewTransitionName } from '../shared/viewTransitionNames';
-import { buildRenderedTimelineDaySlots, buildRenderedTimelineMonths } from './tripview/timelineRenderedSlots';
 
 interface VerticalTimelineProps {
   trip: ITrip;
@@ -21,11 +20,6 @@ interface VerticalTimelineProps {
   pixelsPerDay: number;
   readOnly?: boolean;
   enableExampleSharedTransition?: boolean;
-  selectionVisibilityKey?: string;
-  isDetailsPanelVisible?: boolean;
-  onNavigatePreviousCity?: () => void;
-  onNavigateNextCity?: () => void;
-  onToggleDetailsPanel?: () => void;
 }
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
@@ -41,12 +35,6 @@ const CITY_VERTICAL_CONNECTOR_TRACK_OFFSET_PX = 10;
 const TRANSFER_LANE_WIDTH_PX = 160; // Tailwind `w-40`
 const TRANSFER_PILL_ATTACH_INSET_PX = 5;
 const TRANSFER_PILL_EDGE_ATTACH_INSET_PX = 3;
-const VERTICAL_DAY_RAIL_WIDTH_PX = 64;
-const VERTICAL_MONTH_RAIL_WIDTH_PX = 24;
-const VERTICAL_MONTH_RAIL_HEADER_HEIGHT_PX = 32;
-const VERTICAL_MONTH_LABEL_PADDING_PX = 10;
-
-const estimateMonthLabelWidth = (label: string): number => label.length * 7.2;
 
 const parseLocalTripDate = (value: string): Date | null => {
   if (!value) return null;
@@ -90,12 +78,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
   onAddCity,
   pixelsPerDay,
   readOnly = false,
-  enableExampleSharedTransition = false,
-  selectionVisibilityKey,
-  isDetailsPanelVisible = false,
-  onNavigatePreviousCity,
-  onNavigateNextCity,
-  onToggleDetailsPanel,
+  enableExampleSharedTransition = false
 }) => {
   const canEdit = !readOnly;
   const containerRef = useRef<HTMLDivElement>(null);
@@ -119,15 +102,12 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
   });
 
   const [hoverTravelStart, setHoverTravelStart] = useState<number | null>(null);
-  const [containerHeight, setContainerHeight] = useState(0);
 
   const timelineBounds = React.useMemo(() => getTimelineBounds(trip.items), [trip.items]);
   const visualStartOffset = timelineBounds.startOffset;
   const tripLength = timelineBounds.dayCount;
   const totalHeight = tripLength * pixelsPerDay;
   const parsedTripStartDate = React.useMemo(() => parseLocalTripDate(trip.startDate), [trip.startDate]);
-  const renderedTimelineHeightTarget = Math.max(0, containerHeight - 32);
-  const extraTimelineHeight = Math.max(0, renderedTimelineHeightTarget - totalHeight);
 
   const tripDayRange = React.useMemo(() => {
     let minStart = Number.POSITIVE_INFINITY;
@@ -165,26 +145,6 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
 
     return offset - visualStartOffset;
   }, [parsedTripStartDate, tripLength, tripDayRange.end, tripDayRange.start, visualStartOffset]);
-  const renderedDaySlots = React.useMemo(() => {
-    const baseStartDate = parsedTripStartDate || new Date(trip.startDate);
-    return buildRenderedTimelineDaySlots({
-      tripLength,
-      visualStartOffset,
-      pixelsPerDay,
-      fillerSize: extraTimelineHeight,
-      todayIndex: todayRowIndex,
-      baseStartDate,
-    });
-  }, [extraTimelineHeight, parsedTripStartDate, pixelsPerDay, todayRowIndex, trip.startDate, tripLength, visualStartOffset]);
-  const renderedMonthGroups = React.useMemo(
-    () => buildRenderedTimelineMonths(renderedDaySlots),
-    [renderedDaySlots],
-  );
-  const renderedTimelineHeight = React.useMemo(
-    () => renderedDaySlots.reduce((maxHeight, slot) => Math.max(maxHeight, slot.start + slot.size), 0),
-    [renderedDaySlots],
-  );
-  const todaySlot = todayRowIndex !== null ? renderedDaySlots[todayRowIndex] : null;
   
   const cities = trip.items.filter(i => i.type === 'city').sort((a, b) => a.startDateOffset - b.startDateOffset);
   const travelItems = trip.items.filter(i => i.type === 'travel' || i.type === 'travel-empty').sort((a, b) => a.startDateOffset - b.startDateOffset);
@@ -520,29 +480,6 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
 
   // Determine Zoom Level aesthetics
   const isZoomedOut = pixelsPerDay < 50;
-  const isUltraZoomedOut = pixelsPerDay < 34;
-  const showMonthRail = isUltraZoomedOut;
-  const leftRailWidthPx = VERTICAL_DAY_RAIL_WIDTH_PX + (showMonthRail ? VERTICAL_MONTH_RAIL_WIDTH_PX : 0);
-
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    const updateContainerHeight = () => {
-      setContainerHeight(container.clientHeight);
-    };
-
-    updateContainerHeight();
-
-    if (typeof ResizeObserver === 'undefined') return;
-    const observer = new ResizeObserver(updateContainerHeight);
-    observer.observe(container);
-    return () => observer.disconnect();
-  }, []);
-
-  useEffect(() => {
-    lastAutoScrollSelectionRef.current = null;
-  }, [selectionVisibilityKey]);
 
   useEffect(() => {
     if (!selectedItemId) return;
@@ -566,7 +503,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
         behavior: 'smooth',
     });
     lastAutoScrollSelectionRef.current = selectedItemId;
-  }, [selectedItemId, selectionVisibilityKey, trip.items, pixelsPerDay, visualStartOffset]);
+  }, [selectedItemId, trip.items, pixelsPerDay, visualStartOffset]);
 
   return (
     <div 
@@ -574,14 +511,14 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
       ref={containerRef}
       onClick={() => handleBlockSelect(null)}
     >
-        <div className="relative flex min-h-full" style={{ height: `${renderedTimelineHeight + 32}px` }}>
-            {todaySlot && (
+        <div className="relative flex" style={{ height: `${Math.max(totalHeight, 800)}px` }}>
+            {todayRowIndex !== null && (
                 <>
                     <div
                         className="absolute left-0 right-0 pointer-events-none z-[2]"
                         style={{
-                            top: `${32 + todaySlot.start}px`,
-                            height: `${todaySlot.size}px`,
+                            top: `${32 + (todayRowIndex * pixelsPerDay)}px`,
+                            height: `${pixelsPerDay}px`,
                         }}
                         aria-hidden="true"
                     >
@@ -590,8 +527,8 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                     <div
                         className="absolute left-0 right-0 pointer-events-none z-[25]"
                         style={{
-                            top: `${32 + todaySlot.start}px`,
-                            height: `${todaySlot.size}px`,
+                            top: `${32 + (todayRowIndex * pixelsPerDay)}px`,
+                            height: `${pixelsPerDay}px`,
                         }}
                         aria-hidden="true"
                     >
@@ -604,137 +541,76 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
             )}
             
             {/* Header (Dates) - Vertical Column */}
-            <div
-                className="sticky left-0 z-20 flex h-full flex-shrink-0 border-r border-gray-200 bg-white shadow-sm"
-                style={{ width: `${leftRailWidthPx}px` }}
-            >
-                {showMonthRail && (
-                    <div
-                        className="relative flex h-full flex-shrink-0 flex-col border-r border-gray-100 bg-slate-50/80"
-                        style={{ width: `${VERTICAL_MONTH_RAIL_WIDTH_PX}px` }}
-                    >
-                        <div className="sticky top-0 z-10 h-8 border-b border-gray-100 bg-slate-50/90 backdrop-blur" />
-                        <div className="relative w-full flex-1">
-                            {renderedDaySlots.map((slot) => {
-                                const isToday = slot.isToday;
+            <div className="w-16 flex-shrink-0 border-r border-gray-200 bg-white z-20 shadow-sm sticky left-0 flex flex-col h-full">
+                {/* Header matches Stays/Travel/Activities headers */}
+                <div className="sticky top-0 h-8 flex items-center justify-center z-40 bg-white/95 backdrop-blur border-b border-gray-100 flex-shrink-0">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Day</span>
+                </div>
 
-                                return (
-                                    <div
-                                        key={`month-rail-${slot.index}`}
-                                        className={`absolute inset-x-0 border-b border-gray-100 ${
-                                            isToday ? 'bg-red-50/70' : slot.isWeekend ? 'bg-gray-50' : 'bg-slate-50/80'
-                                        }`}
-                                        style={{
-                                            height: `${slot.size}px`,
-                                            top: `${slot.start}px`,
-                                        }}
-                                    />
-                                );
-                            })}
-                            {renderedMonthGroups.map((month) => {
-                                const fullLabelFits = month.widthPx >= (estimateMonthLabelWidth(month.name) + (VERTICAL_MONTH_LABEL_PADDING_PX * 2));
-                                const label = fullLabelFits ? month.name : month.shortName;
-                                const labelTop = Math.max(
-                                    VERTICAL_MONTH_RAIL_HEADER_HEIGHT_PX + 6,
-                                    month.startPx + (month.widthPx / 2) - (estimateMonthLabelWidth(label) / 2),
-                                );
-
-                                return (
-                                    <span
-                                        key={`month-rail-label-${month.startIndex}`}
-                                        className="pointer-events-none absolute left-1/2 z-[1] origin-center -translate-x-1/2 -rotate-90 whitespace-nowrap text-[9px] font-bold uppercase tracking-[0.16em] text-slate-400"
-                                        style={{
-                                            top: `${Math.max(0, labelTop)}px`,
-                                            maxWidth: `${Math.max(18, month.widthPx - VERTICAL_MONTH_LABEL_PADDING_PX)}px`,
-                                        }}
-                                        aria-label={month.name}
-                                    >
-                                        {label}
-                                    </span>
-                                );
-                            })}
-                        </div>
-                    </div>
-                )}
-
-                <div
-                    className="flex h-full flex-shrink-0 flex-col"
-                    style={{ width: `${VERTICAL_DAY_RAIL_WIDTH_PX}px` }}
-                >
-                    <div className="sticky top-0 z-40 flex h-8 flex-shrink-0 items-center justify-center border-b border-gray-100 bg-white/95 backdrop-blur">
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Day</span>
-                    </div>
-
-                    <div className="relative w-full flex-1">
-                        {renderedDaySlots.map((slot) => {
-                            const isToday = slot.isToday;
-
-                            return (
-                                <div
-                                    key={slot.index}
-                                    className={`absolute flex w-full select-none items-center justify-center border-b border-gray-100 px-1 ${
-                                        isToday ? 'bg-red-50/70' : slot.isWeekend ? 'bg-gray-50' : 'bg-white'
-                                    }`}
-                                    style={{
-                                        height: `${slot.size}px`,
-                                        top: `${slot.start}px`,
-                                        left: 0,
-                                    }}
-                                >
-                                    {isUltraZoomedOut ? (
-                                        <div className="flex h-full w-full items-center justify-center gap-1.5 text-center">
-                                            <span className={`text-xs font-bold uppercase leading-none ${isToday ? 'text-red-500' : slot.isWeekend ? 'text-red-400' : 'text-gray-400'}`}>
-                                                {slot.date.toLocaleDateString('en-US', { weekday: 'narrow' })}
-                                            </span>
-                                            <span className={`text-sm font-semibold leading-none ${isToday ? 'text-red-700' : 'text-gray-700'}`}>
-                                                {slot.dayNum}
-                                            </span>
-                                        </div>
-                                    ) : isZoomedOut ? (
-                                        <div className="flex h-full w-full flex-col items-center justify-center text-center">
-                                            <span className={`text-xs font-bold uppercase leading-none ${isToday ? 'text-red-500' : slot.isWeekend ? 'text-red-400' : 'text-gray-400'}`}>
-                                                {slot.date.toLocaleDateString('en-US', { weekday: 'narrow' })}
-                                            </span>
-                                            <span className={`text-sm font-semibold leading-tight ${isToday ? 'text-red-700' : 'text-gray-700'}`}>
-                                                {slot.dayNum}
-                                            </span>
-                                        </div>
-                                    ) : (
-                                        <div className="text-center">
-                                            <span className={`block text-[10px] font-bold uppercase leading-none ${isToday ? 'text-red-500' : slot.isWeekend ? 'text-red-400' : 'text-gray-400'}`}>
-                                                {slot.dayName}
-                                            </span>
-                                            <span className={`block text-lg font-bold leading-tight ${isToday ? 'text-red-700' : 'text-gray-700'}`}>
-                                                {slot.dayNum}
-                                            </span>
-                                            <span className={`text-[10px] uppercase leading-none ${isToday ? 'text-red-500' : 'text-gray-400'}`}>
-                                                {slot.monthShort}
-                                            </span>
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        })}
-                    </div>
+                <div className="relative w-full flex-1">
+                    {Array.from({ length: tripLength }).map((_, i) => {
+                        const date = addDays(parsedTripStartDate || new Date(trip.startDate), visualStartOffset + i);
+                        const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+                        const isToday = i === todayRowIndex;
+                        
+                        return (
+                            <div 
+                                key={i} 
+                                className={`flex-shrink-0 border-b border-gray-100 flex flex-col justify-center px-1 select-none group absolute w-full
+                                    ${isToday ? 'bg-red-50/70' : isWeekend ? 'bg-gray-50' : 'bg-white'}
+                                `}
+                                style={{ 
+                                    height: `${pixelsPerDay}px`,
+                                    top: `${i * pixelsPerDay}px`,
+                                    left: 0
+                                }}
+                            >
+                                {isZoomedOut ? (
+                                    // Compact View: "M  12"
+                                    <div className="flex items-center justify-between w-full px-1">
+                                        <span className={`text-xs font-bold uppercase ${isToday ? 'text-red-500' : isWeekend ? 'text-red-400' : 'text-gray-400'}`}>
+                                            {date.toLocaleDateString('en-US', { weekday: 'narrow' })}
+                                        </span>
+                                        <span className={`text-sm font-semibold ${isToday ? 'text-red-700' : 'text-gray-700'}`}>
+                                            {date.getDate()}
+                                        </span>
+                                    </div>
+                                ) : (
+                                    // Detailed View (Standard)
+                                    <div className="text-center">
+                                        <span className={`text-[10px] font-bold uppercase block leading-none ${isToday ? 'text-red-500' : isWeekend ? 'text-red-400' : 'text-gray-400'}`}>
+                                            {date.toLocaleDateString('en-US', { weekday: 'short' })}
+                                        </span>
+                                        <span className={`text-lg font-bold block leading-tight ${isToday ? 'text-red-700' : 'text-gray-700'}`}>
+                                            {date.getDate()}
+                                        </span>
+                                        <span className={`text-[10px] uppercase leading-none ${isToday ? 'text-red-500' : 'text-gray-400'}`}>
+                                            {date.toLocaleDateString('en-US', { month: 'short' })}
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
                 </div>
             </div>
 
             {/* Grid Background Lines (Horizontal) */}
-            <div className="absolute top-8 bottom-0 right-0 pointer-events-none z-0 flex flex-col" style={{ left: `${leftRailWidthPx}px` }}>
-                {renderedDaySlots.map((slot) => (
+            <div className="absolute top-8 bottom-0 left-16 right-0 pointer-events-none flex flex-col z-0">
+                {Array.from({ length: tripLength }).map((_, i) => (
                     <div 
-                        key={slot.index}
+                        key={i} 
                         className="flex-shrink-0 border-b border-dashed border-gray-100 w-full"
-                        style={{ height: `${slot.size}px` }}
+                        style={{ height: `${pixelsPerDay}px` }}
                     />
                 ))}
             </div>
 
             {/* Content Area - Columns */}
-            <div className="relative z-10 flex h-full min-w-0 flex-1 flex-row">
+            <div className="flex-1 flex flex-row h-full relative z-10">
                 
                 {/* Cities Column */}
-                <div className="relative flex min-h-0 w-32 flex-shrink-0 flex-col border-r border-gray-100 group/cities">
+                <div className="relative w-32 border-r border-gray-100 group/cities">
                      {/* Sticky Header */}
                      <div className="sticky top-0 h-8 flex items-center justify-center z-30 bg-white/90 backdrop-blur w-full border-b border-gray-100">
                          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Stays</span>
@@ -747,7 +623,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                          </button>
                      </div>
 
-                     <div className="relative min-h-0 flex-1">
+                     <div className="relative w-full h-full">
                          {cities.map((city, index) => {
                              const cityStack = cityStackLayout.get(city.id);
                              const optionKey = (typeof city.cityPlanOptionIndex === 'number' && Number.isFinite(city.cityPlanOptionIndex))
@@ -803,10 +679,6 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                                      cityStackIndex={cityStack?.stackIndex || 0}
                                      cityStackCount={cityStack?.stackCount || 1}
                                      cityVisualColorHex={cityVisualColorHex}
-                                     isDetailsPanelVisible={isDetailsPanelVisible}
-                                     onNavigatePreviousCity={onNavigatePreviousCity}
-                                     onNavigateNextCity={onNavigateNextCity}
-                                     onToggleDetailsPanel={onToggleDetailsPanel}
                                  />
                              );
                          })}
@@ -814,7 +686,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                 </div>
 
                 {/* Travel Column */}
-                <div className="relative flex min-h-0 w-40 flex-shrink-0 flex-col overflow-visible border-r border-gray-100 group/travel">
+                <div className="relative w-40 border-r border-gray-100 group/travel overflow-visible">
                      <div className="sticky top-0 h-8 flex items-center justify-center z-30 bg-white/90 backdrop-blur w-full border-b border-gray-100">
                          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Transfer</span>
                          <button 
@@ -828,7 +700,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                           </button>
                      </div>
 
-                    <div className="relative min-h-0 flex-1 overflow-visible" ref={travelLaneRef}>
+                    <div className="relative w-full h-full overflow-visible" ref={travelLaneRef}>
                          {travelLinks.map(link => {
                              const fromEnd = link.fromCity.startDateOffset + link.fromCity.duration;
                              const toStart = link.toCity.startDateOffset;
@@ -950,7 +822,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
 
                 {/* Activities Column (Expands) */}
                 {/* Activities Column (Expands) */}
-                <div className="relative flex min-h-0 min-w-[200px] flex-1 flex-col group/activities">
+                <div className="flex-1 relative min-w-[200px] group/activities">
                      <div className="sticky top-0 h-8 flex items-center justify-center z-30 bg-white/90 backdrop-blur w-full border-b border-gray-100">
                          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Activities</span>
                          <button 
@@ -968,10 +840,10 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                          For now, let's just render the blocks.
                      */}
                      
-                     <div className="relative min-h-0 flex-1 overflow-x-auto overflow-y-hidden p-2">
-                         <div className="flex min-h-full min-w-fit flex-row items-start gap-3">
+                     <div className="h-full overflow-x-auto p-2">
+                         <div className="flex flex-row gap-3 h-full items-start min-w-fit">
                              {activityLanes.map((lane, laneIdx) => (
-                                 <div key={laneIdx} className="relative w-[220px] shrink-0 rounded-lg border border-transparent" style={{ height: `${renderedTimelineHeight}px` }}>
+                                 <div key={laneIdx} className="relative h-full w-[220px] shrink-0 rounded-lg border border-transparent">
                                      {lane.map(item => (
                                          <TimelineBlock
                                              key={item.id}

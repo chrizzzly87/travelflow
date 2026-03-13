@@ -1,10 +1,5 @@
 import popularIslandDestinationsJson from '../data/popularIslandDestinations.json';
-import {
-    getCountrySeasonByCode,
-    getLocalizedCountryNameFromData,
-    getLocalizedIslandNameFromData,
-} from '../data/countryTravelData';
-import { DESTINATION_RECOMMENDATION_PROFILES } from '../data/destinationRecommendationProfiles';
+import { getLocalizedCountryNameFromData, getLocalizedIslandNameFromData } from '../data/countryTravelData';
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from '../config/locales';
 import { COUNTRIES } from '../utils';
 
@@ -19,12 +14,6 @@ export interface DestinationOption {
     parentCountryCode?: string;
     aliases?: string[];
     localizedNames?: Record<string, string>;
-}
-
-interface DestinationSearchOptions {
-    excludeNames?: string[];
-    limit?: number;
-    months?: number[];
 }
 
 interface IslandDestinationSeed {
@@ -133,14 +122,8 @@ export const DESTINATION_OPTIONS: DestinationOption[] = [
 const DESTINATION_BY_CODE = new Map(
     DESTINATION_OPTIONS.map((d) => [d.code.toLowerCase(), d])
 );
-const DESTINATION_RECOMMENDATION_PROFILE_BY_CODE = new Map(
-    Object.entries(DESTINATION_RECOMMENDATION_PROFILES).map(([code, profile]) => [code.toLowerCase(), profile])
-);
 
 const normalizeDestinationKey = (value: string): string => value.trim().toLocaleLowerCase();
-const normalizeMonths = (months: number[] = []): number[] => Array.from(
-    new Set(months.filter((month) => Number.isInteger(month) && month >= 1 && month <= 12))
-).sort((left, right) => left - right);
 
 const DESTINATION_BY_LOOKUP = new Map<string, DestinationOption>();
 
@@ -245,94 +228,16 @@ export const isIslandDestination = (value: string): boolean => {
     return destination?.kind === 'island';
 };
 
-export const getRollingRecommendationMonths = (referenceDate = new Date(), count = 3): number[] => {
-    const safeCount = Math.max(1, Math.min(count, 12));
-    const startMonthIndex = Number.isNaN(referenceDate.getTime())
-        ? new Date().getMonth()
-        : referenceDate.getMonth();
-    return Array.from({ length: safeCount }, (_entry, index) => ((startMonthIndex + index) % 12) + 1);
-};
-
-const getDestinationRecommendationProfile = (destination: DestinationOption) =>
-    DESTINATION_RECOMMENDATION_PROFILE_BY_CODE.get(destination.code.toLowerCase());
-
-const getSeasonCountryCode = (destination: DestinationOption): string => (
-    destination.kind === 'country' ? destination.code : destination.parentCountryCode || destination.code
-);
-
-export const getDestinationRecommendationScore = (
-    destination: DestinationOption,
-    months: number[] = []
-): number => {
-    const profile = getDestinationRecommendationProfile(destination);
-    const baseScore = profile?.baseScore || 0;
-    const normalizedMonths = normalizeMonths(months);
-
-    if (normalizedMonths.length === 0) return baseScore;
-
-    const seasonEntry = getCountrySeasonByCode(getSeasonCountryCode(destination));
-    const bestMonthSet = new Set(seasonEntry?.bestMonths || []);
-    const shoulderMonthSet = new Set(seasonEntry?.shoulderMonths || []);
-    const avoidMonthSet = new Set(seasonEntry?.avoidMonths || []);
-    const eventCountsByMonth = (seasonEntry?.events || []).reduce<Record<number, number>>((acc, event) => {
-        const month = typeof event.month === 'number' ? event.month : 0;
-        if (month < 1 || month > 12) return acc;
-        acc[month] = (acc[month] || 0) + 1;
-        return acc;
-    }, {});
-
-    const totalModifier = normalizedMonths.reduce((sum, month) => {
-        let next = 0;
-        if (bestMonthSet.has(month)) next += 120;
-        else if (shoulderMonthSet.has(month)) next += 40;
-        if (avoidMonthSet.has(month)) next -= 120;
-
-        const profileAdjustment = profile?.monthAdjustments?.[month] || 0;
-        const eventBonus = Math.min((eventCountsByMonth[month] || 0) * 30, 90);
-        return sum + next + profileAdjustment + eventBonus;
-    }, 0);
-
-    return baseScore + Math.round(totalModifier / normalizedMonths.length);
-};
-
-const sortDestinationOptionsByRecommendationScore = (
-    options: DestinationOption[],
-    months: number[]
-): DestinationOption[] => {
-    const normalizedMonths = normalizeMonths(months);
-    return [...options].sort((left, right) => {
-        const scoreDelta = getDestinationRecommendationScore(right, normalizedMonths) - getDestinationRecommendationScore(left, normalizedMonths);
-        if (scoreDelta !== 0) return scoreDelta;
-        return left.name.localeCompare(right.name);
-    });
-};
-
-export const getRecommendedDestinationOptions = (
-    options: DestinationSearchOptions = {}
-): DestinationOption[] => {
-    const excluded = new Set((options.excludeNames || []).map((name) => resolveDestinationName(name).toLocaleLowerCase()));
-    const source = DESTINATION_OPTIONS.filter((destination) => !excluded.has(destination.name.toLocaleLowerCase()));
-    const ranked = sortDestinationOptionsByRecommendationScore(source, options.months || []);
-    const limit = options.limit || ranked.length;
-    return ranked.slice(0, limit);
-};
-
 export const searchDestinationOptions = (
     query: string,
-    options: DestinationSearchOptions = {}
+    options: { excludeNames?: string[]; limit?: number } = {}
 ): DestinationOption[] => {
     const normalizedQuery = normalizeDestinationKey(query);
     const excluded = new Set((options.excludeNames || []).map((name) => resolveDestinationName(name).toLocaleLowerCase()));
     const source = DESTINATION_OPTIONS.filter((destination) => !excluded.has(destination.name.toLocaleLowerCase()));
-    const limit = options.limit || source.length;
-    const normalizedMonths = normalizeMonths(options.months || []);
 
     if (!normalizedQuery) {
-        return getRecommendedDestinationOptions({
-            excludeNames: options.excludeNames,
-            limit,
-            months: normalizedMonths,
-        });
+        return source.slice(0, options.limit || source.length);
     }
 
     const startsWithMatches = source.filter((destination) => {
@@ -349,8 +254,7 @@ export const searchDestinationOptions = (
         return haystack.includes(normalizedQuery);
     });
 
-    const rankedStartsWithMatches = sortDestinationOptionsByRecommendationScore(startsWithMatches, normalizedMonths);
-    const rankedIncludesMatches = sortDestinationOptionsByRecommendationScore(includesMatches, normalizedMonths);
-    const merged = [...rankedStartsWithMatches, ...rankedIncludesMatches];
-    return merged.slice(0, limit);
+    const merged = [...startsWithMatches, ...includesMatches];
+    return merged.slice(0, options.limit || merged.length);
 };
+

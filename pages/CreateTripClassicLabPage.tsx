@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import {
     AirplaneTilt,
@@ -88,7 +89,7 @@ import {
 } from '../services/tripGenerationTabFeedbackService';
 import { enqueueClassicAsyncTripGenerationJob } from '../services/tripGenerationAsyncEnqueueService';
 import { waitForTripAttemptPersistence, waitForTripPersistence } from '../services/tripGenerationPersistenceService';
-import { getCountrySeasonByName, monthRangeBetweenDates } from '../data/countryTravelData';
+import { getCountrySeasonByName } from '../data/countryTravelData';
 import { AppLanguage, ITrip, TripPrefillData } from '../types';
 import {
     addDays,
@@ -101,7 +102,6 @@ import {
     getDestinationMetaLabel,
     getDestinationOptionByName,
     getDestinationPromptLabel,
-    getRollingRecommendationMonths,
     getDestinationSeasonCountryName,
     resolveDestinationName,
     searchDestinationOptions,
@@ -196,13 +196,6 @@ const FLEX_WINDOW_OPTIONS: Array<{ id: FlexWindow; labelKey: string }> = [
     { id: 'winter', labelKey: 'dates.flexWindow.options.winter' },
     { id: 'shoulder', labelKey: 'dates.flexWindow.options.shoulder' },
 ];
-const FLEX_WINDOW_MONTHS: Record<FlexWindow, number[]> = {
-    spring: [3, 4, 5],
-    summer: [6, 7, 8],
-    autumn: [9, 10, 11],
-    winter: [12, 1, 2],
-    shoulder: [4, 5, 9, 10],
-};
 
 const DEFAULT_EFFECTIVE_STYLE_IDS = ['culture', 'food', 'nature', 'beaches', 'nightlife'];
 const DEFAULT_EFFECTIVE_TRAVELER: TravelerType = 'solo';
@@ -344,7 +337,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
     const location = useLocation();
     const { confirm } = useAppDialog();
     const [searchParams] = useSearchParams();
-    const { isAdmin, isAuthenticated, isAnonymous } = useAuth();
+    const { isAuthenticated, isAnonymous } = useAuth();
     const { snapshot: connectivitySnapshot } = useConnectivityStatus();
     const { snapshot: syncSnapshot, retrySyncNow } = useSyncStatus();
     const { isOnline: isBrowserOnline } = useNetworkStatus({ probeWhileOffline: false });
@@ -409,7 +402,9 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
     const [mobileSnapshotFooterOffset, setMobileSnapshotFooterOffset] = useState(0);
 
     const searchWrapperRef = useRef<HTMLDivElement | null>(null);
+    const searchDropdownRef = useRef<HTMLDivElement | null>(null);
     const [searchOpen, setSearchOpen] = useState(false);
+    const [searchPosition, setSearchPosition] = useState<{ top: number; left: number; width: number } | null>(null);
     const snapshotRouteRef = useRef<HTMLDivElement | null>(null);
     const snapshotNodeRefs = useRef<Array<HTMLDivElement | null>>([]);
     const submitErrorRef = useRef<HTMLDivElement | null>(null);
@@ -456,21 +451,13 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
         return t('destination.islandOf', { country: parentName });
     }, [getLocalizedCountryName, t]);
 
-    const recommendationMonths = useMemo(() => {
-        if (dateInputMode === 'flex') return FLEX_WINDOW_MONTHS[flexWindow];
-        const exactMonths = monthRangeBetweenDates(startDate, endDate);
-        if (exactMonths.length > 0) return exactMonths;
-        return getRollingRecommendationMonths();
-    }, [dateInputMode, endDate, flexWindow, startDate]);
-
     const suggestions = useMemo(() => {
-        const normalizedQuery = query.trim().toLocaleLowerCase();
-        const source = searchDestinationOptions(normalizedQuery, {
+        const source = searchDestinationOptions('', {
             excludeNames: destinations,
-            limit: normalizedQuery ? DESTINATION_OPTIONS.length : 20,
-            months: recommendationMonths,
+            limit: DESTINATION_OPTIONS.length,
         });
-        if (!normalizedQuery) return source.slice(0, 20);
+        const normalizedQuery = query.trim().toLocaleLowerCase();
+        if (!normalizedQuery) return source.slice(0, 30);
 
         const startsWithMatches: typeof source = [];
         const includesMatches: typeof source = [];
@@ -508,7 +495,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
         });
 
         return [...startsWithMatches, ...includesMatches].slice(0, 30);
-    }, [destinations, getLocalizedCountryName, query, recommendationMonths]);
+    }, [destinations, getLocalizedCountryName, query]);
 
     const orderedDestinations = useMemo(() => {
         if (destinations.length === 0) return [];
@@ -633,9 +620,22 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
     const routeLoopSegmentHeight = snapshotRouteGeometry ? Math.max(snapshotRouteGeometry.lastY - snapshotRouteGeometry.firstY, 10) : 0;
     const showLockedRouteLines = Boolean(snapshotRouteGeometry && routeLock && routeHasMultipleStops);
 
-    const openSearch = useCallback(() => {
-        setSearchOpen(true);
+    const updateSearchPosition = useCallback(() => {
+        if (!searchWrapperRef.current) return;
+        const rect = searchWrapperRef.current.getBoundingClientRect();
+        const width = Math.max(280, Math.min(rect.width, window.innerWidth - 16));
+        const left = Math.max(8, Math.min(rect.left, window.innerWidth - width - 8));
+        setSearchPosition({
+            top: rect.bottom + 8,
+            left,
+            width,
+        });
     }, []);
+
+    const openSearch = useCallback(() => {
+        updateSearchPosition();
+        setSearchOpen(true);
+    }, [updateSearchPosition]);
 
     const showSubmitError = useCallback((message: string) => {
         setSubmitError(message);
@@ -1066,10 +1066,28 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
         startDate,
     ]);
 
+    useLayoutEffect(() => {
+        if (!searchOpen) return;
+        updateSearchPosition();
+    }, [destinations.length, query, searchOpen, updateSearchPosition]);
+
+    useEffect(() => {
+        if (!searchOpen) return;
+        const onPositionChange = () => updateSearchPosition();
+        window.addEventListener('resize', onPositionChange);
+        window.addEventListener('scroll', onPositionChange, true);
+        return () => {
+            window.removeEventListener('resize', onPositionChange);
+            window.removeEventListener('scroll', onPositionChange, true);
+        };
+    }, [searchOpen, updateSearchPosition]);
+
     useEffect(() => {
         const handleOutsideClick = (event: MouseEvent) => {
             const target = event.target as Node;
-            if (!searchWrapperRef.current?.contains(target)) {
+            const inWrapper = searchWrapperRef.current?.contains(target);
+            const inDropdown = searchDropdownRef.current?.contains(target);
+            if (!inWrapper && !inDropdown) {
                 setSearchOpen(false);
             }
         };
@@ -1911,87 +1929,74 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                         weight="duotone"
                                         className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
                                     />
-                                    <div className="tf-ios-zoom-safe-shell rounded-xl">
-                                        <input
-                                            value={query}
-                                            onChange={(event) => {
-                                                setQuery(event.target.value);
-                                                openSearch();
-                                            }}
-                                            onFocus={openSearch}
-                                            onKeyDown={(event) => {
-                                                if (event.key === 'Enter') {
-                                                    event.preventDefault();
-                                                    if (suggestions[0]) addDestination(suggestions[0].name);
-                                                }
-                                            }}
-                                            placeholder={t('destination.searchPlaceholder')}
-                                            className="tf-ios-zoom-safe-field w-full rounded-xl border border-slate-200 bg-white py-3 pl-10 pr-4 text-sm text-slate-800 shadow-sm transition-shadow placeholder:text-slate-400 focus:border-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-200"
-                                        />
-                                    </div>
-
-                                    {searchOpen && (query.trim() || suggestions.length > 0) && (
-                                        <div className="absolute inset-x-0 top-[calc(100%+8px)] z-50 max-h-72 overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-xl">
-                                            {suggestions.length > 0 ? (
-                                                suggestions.map((option) => {
-                                                    const optionLabel = option.kind === 'country'
-                                                        ? getLocalizedCountryName(option.code, option.name)
-                                                        : option.name;
-                                                    const islandMeta = option.kind === 'island' && option.parentCountryName
-                                                        ? t('destination.islandOf', { country: getLocalizedCountryName(option.parentCountryCode, option.parentCountryName) })
-                                                        : undefined;
-                                                    return (
-                                                        <button
-                                                            key={option.code}
-                                                            type="button"
-                                                            onClick={() => {
-                                                                if (!query.trim()) {
-                                                                    trackEvent('create_trip__destination_recommendation--select', {
-                                                                        destination_code: option.code,
-                                                                        destination_name: option.name,
-                                                                        destination_kind: option.kind,
-                                                                        source: 'empty_state',
-                                                                        months: recommendationMonths.join(','),
-                                                                    });
-                                                                }
-                                                                addDestination(option.name);
-                                                            }}
-                                                            className="w-full px-4 py-3 text-left transition-colors hover:bg-slate-50"
-                                                            {...(!query.trim()
-                                                                ? getAnalyticsDebugAttributes('create_trip__destination_recommendation--select', {
-                                                                    destination_code: option.code,
-                                                                    destination_name: option.name,
-                                                                    destination_kind: option.kind,
-                                                                    source: 'empty_state',
-                                                                    months: recommendationMonths.join(','),
-                                                                })
-                                                                : {})}
-                                                        >
-                                                            <div className="flex items-start justify-between gap-3">
-                                                                <div className="min-w-0">
-                                                                    <div className="truncate text-sm font-medium text-slate-800">
-                                                                        <span className="inline-flex items-center gap-1.5">
-                                                                            <FlagIcon value={option.flag} />
-                                                                            {optionLabel}
-                                                                        </span>
-                                                                    </div>
-                                                                    {islandMeta && (
-                                                                        <div className="mt-0.5 text-xs text-slate-500">
-                                                                            {islandMeta}
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                                <Plus size={14} className="mt-0.5 text-accent-500" />
-                                                            </div>
-                                                        </button>
-                                                    );
-                                                })
-                                            ) : (
-                                                <div className="px-4 py-6 text-center text-sm text-slate-400">{t('destination.noMatches')}</div>
-                                            )}
-                                        </div>
-                                    )}
+                                    <input
+                                        value={query}
+                                        onChange={(event) => {
+                                            setQuery(event.target.value);
+                                            openSearch();
+                                        }}
+                                        onFocus={openSearch}
+                                        onKeyDown={(event) => {
+                                            if (event.key === 'Enter') {
+                                                event.preventDefault();
+                                                if (suggestions[0]) addDestination(suggestions[0].name);
+                                            }
+                                        }}
+                                        placeholder={t('destination.searchPlaceholder')}
+                                        className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-10 pr-4 text-sm text-slate-800 shadow-sm transition-shadow placeholder:text-slate-400 focus:border-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-200"
+                                    />
                                 </div>
+
+                                {searchOpen && searchPosition && (query.trim() || suggestions.length > 0) && typeof document !== 'undefined' && createPortal(
+                                    <div
+                                        ref={searchDropdownRef}
+                                        className="fixed z-[9999] max-h-72 overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-xl"
+                                        style={{
+                                            top: searchPosition.top,
+                                            left: searchPosition.left,
+                                            width: searchPosition.width,
+                                        }}
+                                    >
+                                        {suggestions.length > 0 ? (
+                                            suggestions.map((option) => {
+                                                const optionLabel = option.kind === 'country'
+                                                    ? getLocalizedCountryName(option.code, option.name)
+                                                    : option.name;
+                                                const islandMeta = option.kind === 'island' && option.parentCountryName
+                                                    ? t('destination.islandOf', { country: getLocalizedCountryName(option.parentCountryCode, option.parentCountryName) })
+                                                    : undefined;
+                                                return (
+                                                    <button
+                                                        key={option.code}
+                                                        type="button"
+                                                        onClick={() => addDestination(option.name)}
+                                                        className="w-full px-4 py-3 text-left transition-colors hover:bg-slate-50"
+                                                    >
+                                                        <div className="flex items-start justify-between gap-3">
+                                                            <div className="min-w-0">
+                                                                <div className="truncate text-sm font-medium text-slate-800">
+                                                                    <span className="inline-flex items-center gap-1.5">
+                                                                        <FlagIcon value={option.flag} />
+                                                                        {optionLabel}
+                                                                    </span>
+                                                                </div>
+                                                                {islandMeta && (
+                                                                    <div className="mt-0.5 text-xs text-slate-500">
+                                                                        {islandMeta}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                            <Plus size={14} className="mt-0.5 text-accent-500" />
+                                                        </div>
+                                                    </button>
+                                                );
+                                            })
+                                        ) : (
+                                            <div className="px-4 py-6 text-center text-sm text-slate-400">{t('destination.noMatches')}</div>
+                                        )}
+                                    </div>,
+                                    document.body
+                                )}
 
                                 {destinations.length > 0 && (
                                     <div className="mt-3 flex flex-wrap gap-2">
@@ -2222,21 +2227,6 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                             </section>
 
                             <section className="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm sm:p-5">
-                                <div className="mb-2 inline-flex items-center gap-2 text-sm font-semibold text-slate-800">
-                                    <Info size={16} weight="duotone" className="text-accent-600" />
-                                    {t('notes.title')}
-                                </div>
-                                <p className="mb-2 text-xs text-slate-500">{t('notes.hint')}</p>
-                                <textarea
-                                    value={notes}
-                                    onChange={(event) => setNotes(event.target.value)}
-                                    rows={4}
-                                    placeholder={t('notes.placeholder')}
-                                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none placeholder:text-slate-400 focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
-                                />
-                            </section>
-
-                            <section className="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm sm:p-5">
                                 <button
                                     type="button"
                                     onClick={() => toggleSection('traveler')}
@@ -2405,6 +2395,20 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                 )}
                             </section>
 
+                            <section className="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm sm:p-5">
+                                <div className="mb-2 inline-flex items-center gap-2 text-sm font-semibold text-slate-800">
+                                    <Info size={16} weight="duotone" className="text-accent-600" />
+                                    {t('notes.title')}
+                                </div>
+                                <p className="mb-2 text-xs text-slate-500">{t('notes.hint')}</p>
+                                <textarea
+                                    value={notes}
+                                    onChange={(event) => setNotes(event.target.value)}
+                                    rows={4}
+                                    placeholder={t('notes.placeholder')}
+                                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none placeholder:text-slate-400 focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
+                                />
+                            </section>
                         </div>
 
                         <aside className="hidden lg:sticky lg:top-24 lg:block lg:self-start">
@@ -2551,88 +2555,86 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                     </div>
                                 </div>
 
-                                {isAdmin && (
-                                    <div className="space-y-1">
-                                        <label htmlFor="create-trip-model-desktop" className="text-[11px] font-semibold uppercase tracking-[0.11em] text-indigo-200/95">
-                                            {t('modelPicker.label')}
-                                        </label>
-                                        <Select value={selectedAiModel.id} onValueChange={handleModelChange}>
-                                            <SelectTrigger
-                                                id="create-trip-model-desktop"
-                                                className="h-auto min-h-11 w-full rounded-xl border-indigo-200/45 bg-white/95 text-left text-indigo-950 hover:bg-white"
-                                                {...getAnalyticsDebugAttributes('create_trip__model--select', {
-                                                    provider: selectedAiModel.provider,
-                                                    model: selectedAiModel.model,
-                                                    model_id: selectedAiModel.id,
-                                                    source: 'desktop_snapshot',
-                                                })}
-                                            >
-                                                <span className="flex min-w-0 flex-wrap items-center gap-1.5 pr-2">
-                                                    <span className="truncate text-sm font-semibold">{selectedAiModel.label}</span>
-                                                    <span className="rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-indigo-700">
-                                                        {selectedAiModel.providerShortName}
-                                                    </span>
-                                                    {MODEL_PREFERENCE_NOTE_KEY_BY_ID[selectedAiModel.id] && (
-                                                        <span className="rounded-full border border-emerald-300/70 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
-                                                            {t(MODEL_PREFERENCE_NOTE_KEY_BY_ID[selectedAiModel.id])}
-                                                        </span>
-                                                    )}
+                                <div className="space-y-1">
+                                    <label htmlFor="create-trip-model-desktop" className="text-[11px] font-semibold uppercase tracking-[0.11em] text-indigo-200/95">
+                                        {t('modelPicker.label')}
+                                    </label>
+                                    <Select value={selectedAiModel.id} onValueChange={handleModelChange}>
+                                        <SelectTrigger
+                                            id="create-trip-model-desktop"
+                                            className="h-auto min-h-11 w-full rounded-xl border-indigo-200/45 bg-white/95 text-left text-indigo-950 hover:bg-white"
+                                            {...getAnalyticsDebugAttributes('create_trip__model--select', {
+                                                provider: selectedAiModel.provider,
+                                                model: selectedAiModel.model,
+                                                model_id: selectedAiModel.id,
+                                                source: 'desktop_snapshot',
+                                            })}
+                                        >
+                                            <span className="flex min-w-0 flex-wrap items-center gap-1.5 pr-2">
+                                                <span className="truncate text-sm font-semibold">{selectedAiModel.label}</span>
+                                                <span className="rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-indigo-700">
+                                                    {selectedAiModel.providerShortName}
                                                 </span>
-                                            </SelectTrigger>
-                                            <SelectContent className="max-h-[26rem]">
-                                                {preferredCreateTripModels.length > 0 && (
-                                                    <SelectGroup>
-                                                        <SelectLabel>{t('modelPicker.topPicks')}</SelectLabel>
-                                                        {preferredCreateTripModels.map((model) => {
-                                                            const noteKey = MODEL_PREFERENCE_NOTE_KEY_BY_ID[model.id];
-                                                            return (
-                                                                <SelectItem key={`create-trip-model-pref-${model.id}`} value={model.id} textValue={`${model.label} ${model.model}`}>
-                                                                    <span className="flex w-full min-w-0 items-start justify-between gap-2">
-                                                                        <span className="min-w-0">
-                                                                            <span className="block truncate font-semibold">{model.label}</span>
-                                                                            <span className="block truncate text-[11px] text-slate-500">{model.model}</span>
-                                                                        </span>
-                                                                        <span className="inline-flex shrink-0 flex-wrap justify-end gap-1">
-                                                                            <span className="rounded-full border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-600">
-                                                                                {model.providerShortName}
-                                                                            </span>
-                                                                            {noteKey && (
-                                                                                <span className="rounded-full border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">
-                                                                                    {t(noteKey)}
-                                                                                </span>
-                                                                            )}
-                                                                        </span>
-                                                                    </span>
-                                                                </SelectItem>
-                                                            );
-                                                        })}
-                                                    </SelectGroup>
+                                                {MODEL_PREFERENCE_NOTE_KEY_BY_ID[selectedAiModel.id] && (
+                                                    <span className="rounded-full border border-emerald-300/70 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+                                                        {t(MODEL_PREFERENCE_NOTE_KEY_BY_ID[selectedAiModel.id])}
+                                                    </span>
                                                 )}
-                                                {preferredCreateTripModels.length > 0 && remainingCreateTripModels.length > 0 && (
-                                                    <SelectSeparator />
-                                                )}
-                                                {remainingCreateTripModels.length > 0 && (
-                                                    <SelectGroup>
-                                                        <SelectLabel>{t('modelPicker.allModels')}</SelectLabel>
-                                                        {remainingCreateTripModels.map((model) => (
-                                                            <SelectItem key={`create-trip-model-all-${model.id}`} value={model.id} textValue={`${model.label} ${model.model}`}>
+                                            </span>
+                                        </SelectTrigger>
+                                        <SelectContent className="max-h-[26rem]">
+                                            {preferredCreateTripModels.length > 0 && (
+                                                <SelectGroup>
+                                                    <SelectLabel>{t('modelPicker.topPicks')}</SelectLabel>
+                                                    {preferredCreateTripModels.map((model) => {
+                                                        const noteKey = MODEL_PREFERENCE_NOTE_KEY_BY_ID[model.id];
+                                                        return (
+                                                            <SelectItem key={`create-trip-model-pref-${model.id}`} value={model.id} textValue={`${model.label} ${model.model}`}>
                                                                 <span className="flex w-full min-w-0 items-start justify-between gap-2">
                                                                     <span className="min-w-0">
                                                                         <span className="block truncate font-semibold">{model.label}</span>
                                                                         <span className="block truncate text-[11px] text-slate-500">{model.model}</span>
                                                                     </span>
-                                                                    <span className="rounded-full border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-600">
-                                                                        {model.providerShortName}
+                                                                    <span className="inline-flex shrink-0 flex-wrap justify-end gap-1">
+                                                                        <span className="rounded-full border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-600">
+                                                                            {model.providerShortName}
+                                                                        </span>
+                                                                        {noteKey && (
+                                                                            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">
+                                                                                {t(noteKey)}
+                                                                            </span>
+                                                                        )}
                                                                     </span>
                                                                 </span>
                                                             </SelectItem>
-                                                        ))}
-                                                    </SelectGroup>
-                                                )}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                )}
+                                                        );
+                                                    })}
+                                                </SelectGroup>
+                                            )}
+                                            {preferredCreateTripModels.length > 0 && remainingCreateTripModels.length > 0 && (
+                                                <SelectSeparator />
+                                            )}
+                                            {remainingCreateTripModels.length > 0 && (
+                                                <SelectGroup>
+                                                    <SelectLabel>{t('modelPicker.allModels')}</SelectLabel>
+                                                    {remainingCreateTripModels.map((model) => (
+                                                        <SelectItem key={`create-trip-model-all-${model.id}`} value={model.id} textValue={`${model.label} ${model.model}`}>
+                                                            <span className="flex w-full min-w-0 items-start justify-between gap-2">
+                                                                <span className="min-w-0">
+                                                                    <span className="block truncate font-semibold">{model.label}</span>
+                                                                    <span className="block truncate text-[11px] text-slate-500">{model.model}</span>
+                                                                </span>
+                                                                <span className="rounded-full border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-600">
+                                                                    {model.providerShortName}
+                                                                </span>
+                                                            </span>
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectGroup>
+                                            )}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
 
                                 <button
                                     type="button"
@@ -2665,88 +2667,86 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                     style={{ bottom: `${mobileSnapshotFooterOffset}px` }}
                 >
                     <div className="mx-auto max-w-[1260px]">
-                        {isAdmin && (
-                            <div className="mb-2.5 space-y-1">
-                                <label htmlFor="create-trip-model-mobile" className="text-[10px] font-semibold uppercase tracking-[0.12em] text-indigo-200/95">
-                                    {t('modelPicker.label')}
-                                </label>
-                                <Select value={selectedAiModel.id} onValueChange={handleModelChange}>
-                                    <SelectTrigger
-                                        id="create-trip-model-mobile"
-                                        className="h-auto min-h-10 w-full rounded-xl border-white/20 bg-white/10 text-left text-white hover:bg-white/15"
-                                        {...getAnalyticsDebugAttributes('create_trip__model--select', {
-                                            provider: selectedAiModel.provider,
-                                            model: selectedAiModel.model,
-                                            model_id: selectedAiModel.id,
-                                            source: 'mobile_footer',
-                                        })}
-                                    >
-                                        <span className="flex min-w-0 flex-wrap items-center gap-1.5 pr-2">
-                                            <span className="truncate text-sm font-semibold">{selectedAiModel.label}</span>
-                                            <span className="rounded-full border border-indigo-200/40 bg-indigo-300/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-indigo-100">
-                                                {selectedAiModel.providerShortName}
-                                            </span>
-                                            {MODEL_PREFERENCE_NOTE_KEY_BY_ID[selectedAiModel.id] && (
-                                                <span className="rounded-full border border-emerald-300/35 bg-emerald-400/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-100">
-                                                    {t(MODEL_PREFERENCE_NOTE_KEY_BY_ID[selectedAiModel.id])}
-                                                </span>
-                                            )}
+                        <div className="mb-2.5 space-y-1">
+                            <label htmlFor="create-trip-model-mobile" className="text-[10px] font-semibold uppercase tracking-[0.12em] text-indigo-200/95">
+                                {t('modelPicker.label')}
+                            </label>
+                            <Select value={selectedAiModel.id} onValueChange={handleModelChange}>
+                                <SelectTrigger
+                                    id="create-trip-model-mobile"
+                                    className="h-auto min-h-10 w-full rounded-xl border-white/20 bg-white/10 text-left text-white hover:bg-white/15"
+                                    {...getAnalyticsDebugAttributes('create_trip__model--select', {
+                                        provider: selectedAiModel.provider,
+                                        model: selectedAiModel.model,
+                                        model_id: selectedAiModel.id,
+                                        source: 'mobile_footer',
+                                    })}
+                                >
+                                    <span className="flex min-w-0 flex-wrap items-center gap-1.5 pr-2">
+                                        <span className="truncate text-sm font-semibold">{selectedAiModel.label}</span>
+                                        <span className="rounded-full border border-indigo-200/40 bg-indigo-300/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-indigo-100">
+                                            {selectedAiModel.providerShortName}
                                         </span>
-                                    </SelectTrigger>
-                                    <SelectContent className="max-h-[24rem]">
-                                        {preferredCreateTripModels.length > 0 && (
-                                            <SelectGroup>
-                                                <SelectLabel>{t('modelPicker.topPicks')}</SelectLabel>
-                                                {preferredCreateTripModels.map((model) => {
-                                                    const noteKey = MODEL_PREFERENCE_NOTE_KEY_BY_ID[model.id];
-                                                    return (
-                                                        <SelectItem key={`create-trip-model-mobile-pref-${model.id}`} value={model.id} textValue={`${model.label} ${model.model}`}>
-                                                            <span className="flex w-full min-w-0 items-start justify-between gap-2">
-                                                                <span className="min-w-0">
-                                                                    <span className="block truncate font-semibold">{model.label}</span>
-                                                                    <span className="block truncate text-[11px] text-slate-500">{model.model}</span>
-                                                                </span>
-                                                                <span className="inline-flex shrink-0 flex-wrap justify-end gap-1">
-                                                                    <span className="rounded-full border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-600">
-                                                                        {model.providerShortName}
-                                                                    </span>
-                                                                    {noteKey && (
-                                                                        <span className="rounded-full border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">
-                                                                            {t(noteKey)}
-                                                                        </span>
-                                                                    )}
-                                                                </span>
-                                                            </span>
-                                                        </SelectItem>
-                                                    );
-                                                })}
-                                            </SelectGroup>
+                                        {MODEL_PREFERENCE_NOTE_KEY_BY_ID[selectedAiModel.id] && (
+                                            <span className="rounded-full border border-emerald-300/35 bg-emerald-400/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-100">
+                                                {t(MODEL_PREFERENCE_NOTE_KEY_BY_ID[selectedAiModel.id])}
+                                            </span>
                                         )}
-                                        {preferredCreateTripModels.length > 0 && remainingCreateTripModels.length > 0 && (
-                                            <SelectSeparator />
-                                        )}
-                                        {remainingCreateTripModels.length > 0 && (
-                                            <SelectGroup>
-                                                <SelectLabel>{t('modelPicker.allModels')}</SelectLabel>
-                                                {remainingCreateTripModels.map((model) => (
-                                                    <SelectItem key={`create-trip-model-mobile-all-${model.id}`} value={model.id} textValue={`${model.label} ${model.model}`}>
+                                    </span>
+                                </SelectTrigger>
+                                <SelectContent className="max-h-[24rem]">
+                                    {preferredCreateTripModels.length > 0 && (
+                                        <SelectGroup>
+                                            <SelectLabel>{t('modelPicker.topPicks')}</SelectLabel>
+                                            {preferredCreateTripModels.map((model) => {
+                                                const noteKey = MODEL_PREFERENCE_NOTE_KEY_BY_ID[model.id];
+                                                return (
+                                                    <SelectItem key={`create-trip-model-mobile-pref-${model.id}`} value={model.id} textValue={`${model.label} ${model.model}`}>
                                                         <span className="flex w-full min-w-0 items-start justify-between gap-2">
                                                             <span className="min-w-0">
                                                                 <span className="block truncate font-semibold">{model.label}</span>
                                                                 <span className="block truncate text-[11px] text-slate-500">{model.model}</span>
                                                             </span>
-                                                            <span className="rounded-full border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-600">
-                                                                {model.providerShortName}
+                                                            <span className="inline-flex shrink-0 flex-wrap justify-end gap-1">
+                                                                <span className="rounded-full border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-600">
+                                                                    {model.providerShortName}
+                                                                </span>
+                                                                {noteKey && (
+                                                                    <span className="rounded-full border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">
+                                                                        {t(noteKey)}
+                                                                    </span>
+                                                                )}
                                                             </span>
                                                         </span>
                                                     </SelectItem>
-                                                ))}
-                                            </SelectGroup>
-                                        )}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        )}
+                                                );
+                                            })}
+                                        </SelectGroup>
+                                    )}
+                                    {preferredCreateTripModels.length > 0 && remainingCreateTripModels.length > 0 && (
+                                        <SelectSeparator />
+                                    )}
+                                    {remainingCreateTripModels.length > 0 && (
+                                        <SelectGroup>
+                                            <SelectLabel>{t('modelPicker.allModels')}</SelectLabel>
+                                            {remainingCreateTripModels.map((model) => (
+                                                <SelectItem key={`create-trip-model-mobile-all-${model.id}`} value={model.id} textValue={`${model.label} ${model.model}`}>
+                                                    <span className="flex w-full min-w-0 items-start justify-between gap-2">
+                                                        <span className="min-w-0">
+                                                            <span className="block truncate font-semibold">{model.label}</span>
+                                                            <span className="block truncate text-[11px] text-slate-500">{model.model}</span>
+                                                        </span>
+                                                        <span className="rounded-full border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-600">
+                                                            {model.providerShortName}
+                                                        </span>
+                                                    </span>
+                                                </SelectItem>
+                                            ))}
+                                        </SelectGroup>
+                                    )}
+                                </SelectContent>
+                            </Select>
+                        </div>
                         <div className="flex items-start gap-3.5">
                             <div className="min-w-0 flex-1 space-y-1.5">
                                 <div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-indigo-200/95">{t('snapshot.title')}</div>

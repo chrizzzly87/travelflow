@@ -12,8 +12,6 @@ const RECOVERABLE_IMPORT_ERROR_PATTERNS: RegExp[] = [
     /loading chunk [\w-]+ failed/i,
     /chunkloaderror/i,
     /unexpected token '<'/i,
-    /not a valid javascript mime type/i,
-    /mime type .*javascript/i,
 ];
 
 const extractErrorMessage = (error: unknown): string => {
@@ -22,14 +20,14 @@ const extractErrorMessage = (error: unknown): string => {
     return '';
 };
 
-export const isRecoverableLazyImportError = (error: unknown): boolean => {
+const isRecoverableImportError = (error: unknown): boolean => {
     const message = extractErrorMessage(error);
     if (message && RECOVERABLE_IMPORT_ERROR_PATTERNS.some((pattern) => pattern.test(message))) {
         return true;
     }
 
     if (typeof error === 'object' && error !== null && 'cause' in error) {
-        return isRecoverableLazyImportError((error as { cause?: unknown }).cause);
+        return isRecoverableImportError((error as { cause?: unknown }).cause);
     }
 
     return false;
@@ -66,7 +64,7 @@ export const loadLazyComponentWithRecovery = async <TModule>(
         clearRecoveryAttempt(moduleKey);
         return loadedModule;
     } catch (error) {
-        const canRecover = isRecoverableLazyImportError(error) && markRecoveryAttempt(moduleKey);
+        const canRecover = isRecoverableImportError(error) && markRecoveryAttempt(moduleKey);
         if (!canRecover) {
             throw error;
         }

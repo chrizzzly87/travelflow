@@ -60,8 +60,8 @@ export const SpeculationRulesManager: React.FC<SpeculationRulesManagerProps> = (
 
         return () => {
             const node = document.getElementById(SCRIPT_ID);
-            if (node instanceof HTMLElement || node instanceof HTMLScriptElement) {
-                node.remove();
+            if (node && node.parentNode) {
+                node.parentNode.removeChild(node);
             }
         };
     }, [enabled]);

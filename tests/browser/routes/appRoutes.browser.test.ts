@@ -47,11 +47,7 @@ describe('app/routes/AppRoutes suspense fallbacks', () => {
       )
     );
 
-    const shell = view.getByTestId('trip-route-loading-shell');
-    expect(shell).toHaveAttribute('data-shell-state', 'loadingTrip');
-    expect(shell.querySelector('.tf-boot-trip-header')).toBeTruthy();
-    expect(shell.querySelector('.tf-boot-trip-action-primary')).toBeTruthy();
-    expect(shell.querySelector('.tf-boot-nav')).toBeNull();
+    expect(view.getByTestId('trip-route-loading-shell')).toHaveAttribute('data-shell-state', 'loadingTrip');
     expect(view.container.querySelector('.min-h-screen.w-full.bg-white')).toBeNull();
     view.unmount();
   });
