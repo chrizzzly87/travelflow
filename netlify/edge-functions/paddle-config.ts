@@ -52,6 +52,10 @@ export const buildPaddlePublicConfig = (envReader: (name: string) => string | un
       tier_mid: Boolean(priceMap.tier_mid),
       tier_premium: Boolean(priceMap.tier_premium),
     },
+    priceIds: {
+      tier_mid: priceMap.tier_mid || null,
+      tier_premium: priceMap.tier_premium || null,
+    },
     issues,
   };
 };

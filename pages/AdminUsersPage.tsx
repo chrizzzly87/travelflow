@@ -84,6 +84,7 @@ import {
     normalizeAdminBillingStatus,
     resolveAdminBillingStatusTone,
 } from '../services/adminBillingPresentation';
+import { resolveBillingAccessUntil, resolveBillingLifecycleState } from '../lib/billing/subscriptionState';
 import {
     buildDiffEntryRenderKey,
     buildSecondaryFacetRenderKey,
@@ -112,7 +113,7 @@ type UserAccountStatus = 'active' | 'disabled' | 'deleted';
 type UserLoginType = 'social' | 'password' | 'unknown';
 type UserTripFilter = 'no_trips_no_profile' | 'no_trips' | 'one_to_two' | 'three_to_five' | 'six_plus';
 type UserTermsState = 'latest' | 'pending' | 'never';
-type UserSubscriptionStatus = 'active' | 'trialing' | 'past_due' | 'paused' | 'canceled' | 'inactive' | 'none' | 'unknown';
+type UserSubscriptionStatus = 'active' | 'trialing' | 'past_due' | 'paused' | 'canceled_grace' | 'canceled' | 'inactive' | 'none' | 'unknown';
 type SocialProviderFilter = 'google' | 'facebook' | 'kakao' | 'apple' | 'github' | 'discord' | 'other_social';
 type LoginPillKey = 'password' | SocialProviderFilter | 'anonymous' | 'unknown';
 type UserVisibleColumnId =
@@ -143,7 +144,7 @@ const USER_ACTIVATION_VALUES: ReadonlyArray<UserActivationStatus> = ['activated'
 const USER_LOGIN_TYPE_VALUES: ReadonlyArray<UserLoginType> = ['social', 'password', 'unknown'];
 const USER_TRIP_FILTER_VALUES: ReadonlyArray<UserTripFilter> = ['no_trips_no_profile', 'no_trips', 'one_to_two', 'three_to_five', 'six_plus'];
 const USER_TERMS_STATE_VALUES: ReadonlyArray<UserTermsState> = ['latest', 'pending', 'never'];
-const USER_SUBSCRIPTION_VALUES: ReadonlyArray<UserSubscriptionStatus> = ['active', 'trialing', 'past_due', 'paused', 'canceled', 'inactive', 'none', 'unknown'];
+const USER_SUBSCRIPTION_VALUES: ReadonlyArray<UserSubscriptionStatus> = ['active', 'trialing', 'past_due', 'paused', 'canceled_grace', 'canceled', 'inactive', 'none', 'unknown'];
 const USER_VISIBLE_COLUMN_IDS: readonly UserVisibleColumnId[] = [
     'user',
     'login',
@@ -212,6 +213,29 @@ const USER_TRIP_FILTER_LABELS: Record<UserTripFilter, string> = {
 const USER_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
 const VALID_PROFILE_GENDERS = new Set(['female', 'male', 'non-binary', 'prefer-not']);
+
+const downloadBlob = (blob: Blob, fileName: string) => {
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = fileName;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+};
+
+const sanitizeFilenameSegment = (value: string): string => {
+    const normalized = value.replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/-{2,}/g, '-').replace(/^-+|-+$/g, '');
+    return normalized || 'users';
+};
+
+const escapeCsvField = (value: string | null | undefined): string => {
+    const normalized = value ?? '';
+    return `"${normalized.replace(/"/g, '""')}"`;
+};
+
+const buildCsvLine = (fields: Array<string | null | undefined>): string => fields.map((field) => escapeCsvField(field)).join(',');
 
 type IconComponent = React.ComponentType<{ size?: number; className?: string }>;
 
@@ -860,23 +884,51 @@ const formatAccountStatusLabel = (status: UserAccountStatus): string => {
 };
 
 const resolveUserSubscriptionStatus = (user: AdminUserRecord): UserSubscriptionStatus => {
+    const lifecycle = resolveBillingLifecycleState({
+        providerStatus: user.provider_status,
+        status: user.subscription_status,
+        currentPeriodEnd: user.current_period_end,
+        cancelAt: user.cancel_at,
+        canceledAt: user.canceled_at,
+        graceEndsAt: user.grace_ends_at,
+        billingAccessUntil: resolveBillingAccessUntil({
+            providerStatus: user.provider_status,
+            status: user.subscription_status,
+            currentPeriodEnd: user.current_period_end,
+            cancelAt: user.cancel_at,
+            canceledAt: user.canceled_at,
+            graceEndsAt: user.grace_ends_at,
+        }),
+    });
+    if (
+        lifecycle === 'active'
+        || lifecycle === 'trialing'
+        || lifecycle === 'past_due'
+        || lifecycle === 'paused'
+        || lifecycle === 'canceled_grace'
+        || lifecycle === 'inactive'
+        || lifecycle === 'none'
+    ) {
+        return lifecycle;
+    }
     const normalized = normalizeAdminBillingStatus(user.provider_status, user.subscription_status);
-    if (normalized === 'active'
-        || normalized === 'trialing'
-        || normalized === 'past_due'
-        || normalized === 'paused'
-        || normalized === 'canceled'
-        || normalized === 'inactive'
-        || normalized === 'none') {
-        return normalized;
+    if (normalized === 'canceled') {
+        return 'canceled';
     }
     return 'unknown';
 };
 
-const getUserSubscriptionStatusLabel = (status: UserSubscriptionStatus): string => humanizeAdminBillingStatus(status);
+const getUserSubscriptionStatusLabel = (status: UserSubscriptionStatus): string => {
+    if (status === 'canceled_grace') return 'Canceled (grace period)';
+    return humanizeAdminBillingStatus(status);
+};
 
 const subscriptionStatusPillClass = (status: UserSubscriptionStatus): string => (
-    adminBillingStatusClassName(resolveAdminBillingStatusTone(status))
+    adminBillingStatusClassName(resolveAdminBillingStatusTone(status === 'canceled_grace' ? 'grace' : status))
+);
+
+const resolveUserSubscriptionDowngradeAt = (user: AdminUserRecord): string | null => (
+    user.grace_ends_at || user.current_period_end || user.cancel_at || null
 );
 
 const tierPillClass = (tier: PlanTierKey) => {
@@ -1820,6 +1872,42 @@ export const AdminUsersPage: React.FC = () => {
         tripFilters,
         users,
     ]);
+
+    const handleExportUsersCsv = () => {
+        if (filteredUsers.length === 0) {
+            setErrorMessage('There are no visible users to export.');
+            return;
+        }
+
+        const header = buildCsvLine([
+            'email',
+            'user_id',
+            'tier',
+            'subscription_status',
+            'provider_status',
+            'provider_subscription_id',
+            'canceled_at',
+            'grace_ends_at',
+            'downgrade_at',
+            'current_period_end',
+        ]);
+        const rows = filteredUsers.map((user) => buildCsvLine([
+            user.email || '',
+            user.user_id,
+            PLAN_CATALOG[user.tier_key].publicName,
+            getUserSubscriptionStatusLabel(resolveUserSubscriptionStatus(user)),
+            user.provider_status || user.subscription_status || '',
+            user.provider_subscription_id || '',
+            user.canceled_at || '',
+            user.grace_ends_at || '',
+            resolveUserSubscriptionDowngradeAt(user) || '',
+            user.current_period_end || '',
+        ]));
+        const payload = [header, ...rows].join('\n');
+        const fileName = `admin-users-billing-${sanitizeFilenameSegment(new Date().toISOString().slice(0, 10))}.csv`;
+        downloadBlob(new Blob([payload], { type: 'text/csv;charset=utf-8' }), fileName);
+        setMessage(`Exported ${filteredUsers.length} user row${filteredUsers.length === 1 ? '' : 's'} to CSV.`);
+    };
 
     const usersInDateRange = useMemo(
         () => users.filter((user) => isIsoDateInRange(user.created_at, dateRange)),
@@ -2869,6 +2957,15 @@ export const AdminUsersPage: React.FC = () => {
                         />
                         <button
                             type="button"
+                            onClick={handleExportUsersCsv}
+                            disabled={filteredUsers.length === 0}
+                            className="inline-flex h-10 items-center gap-1.5 whitespace-nowrap rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            <ArrowSquareOut size={14} />
+                            Export CSV
+                        </button>
+                        <button
+                            type="button"
                             onClick={resetTableFilters}
                             className="inline-flex h-10 items-center gap-1.5 whitespace-nowrap rounded-xl px-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100"
                         >
@@ -3717,6 +3814,78 @@ export const AdminUsersPage: React.FC = () => {
                                             </SelectContent>
                                         </Select>
                                     </label>
+                                </div>
+                                </section>
+
+                                <section className="mt-4 space-y-3 rounded-xl border border-slate-200 p-3">
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                    <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Billing subscription</h3>
+                                    <a
+                                        href={`/admin/billing?q=${encodeURIComponent(selectedUser.provider_subscription_id || selectedUser.user_id)}`}
+                                        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                    >
+                                        Open billing workspace
+                                        <ArrowSquareOut size={12} />
+                                    </a>
+                                </div>
+                                <div className="grid gap-3 sm:grid-cols-2">
+                                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Subscription status</span>
+                                        <div className="mt-2 flex flex-wrap items-center gap-2">
+                                            <span className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold ${subscriptionStatusPillClass(resolveUserSubscriptionStatus(selectedUser))}`}>
+                                                {getUserSubscriptionStatusLabel(resolveUserSubscriptionStatus(selectedUser))}
+                                            </span>
+                                            <span className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold ${tierPillClass(selectedUser.tier_key)}`}>
+                                                {PLAN_CATALOG[selectedUser.tier_key].publicName}
+                                            </span>
+                                        </div>
+                                        <div className="mt-2 text-xs text-slate-500">
+                                            Provider: {humanizeAdminBillingStatus(selectedUser.provider_status || selectedUser.subscription_status)}
+                                        </div>
+                                    </div>
+                                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Recurring amount</span>
+                                        <div className="mt-2 text-sm font-semibold text-slate-900">
+                                            {selectedUser.subscription_amount !== null && selectedUser.subscription_amount !== undefined
+                                                ? `${selectedUser.subscription_currency || '—'} ${(selectedUser.subscription_amount / 100).toFixed(2)}`
+                                                : '—'}
+                                        </div>
+                                    </div>
+                                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Provider subscription ID</span>
+                                        <div className="mt-2 break-all font-mono text-[11px] text-slate-700">
+                                            {selectedUser.provider_subscription_id || '—'}
+                                        </div>
+                                    </div>
+                                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Paddle price ID</span>
+                                        <div className="mt-2 break-all font-mono text-[11px] text-slate-700">
+                                            {selectedUser.provider_price_id || '—'}
+                                        </div>
+                                    </div>
+                                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Current period end</span>
+                                        <div className="mt-2 text-sm font-semibold text-slate-900">{formatOptionalTimestamp(selectedUser.current_period_end)}</div>
+                                    </div>
+                                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Cancellation / grace</span>
+                                        <div className="mt-2 space-y-1 text-xs text-slate-600">
+                                            <div>Cancel at: {formatOptionalTimestamp(selectedUser.cancel_at)}</div>
+                                            <div>Canceled at: {formatOptionalTimestamp(selectedUser.canceled_at)}</div>
+                                            <div>Grace ends: {formatOptionalTimestamp(selectedUser.grace_ends_at)}</div>
+                                            <div>Downgrades at: {formatOptionalTimestamp(resolveUserSubscriptionDowngradeAt(selectedUser))}</div>
+                                        </div>
+                                    </div>
+                                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 sm:col-span-2">
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Latest billing event</span>
+                                        <div className="mt-2 grid gap-2 text-xs text-slate-600 sm:grid-cols-[minmax(0,1fr)_auto]">
+                                            <div className="space-y-1">
+                                                <div className="font-semibold text-slate-900">{selectedUser.subscription_last_event_type || 'No event recorded'}</div>
+                                                <div>{formatOptionalTimestamp(selectedUser.subscription_last_event_at)}</div>
+                                                <div className="break-all font-mono text-[11px] text-slate-500">{selectedUser.subscription_last_event_id || '—'}</div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                                 </section>
 

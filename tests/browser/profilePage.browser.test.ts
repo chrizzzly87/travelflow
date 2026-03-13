@@ -138,6 +138,7 @@ describe('pages/ProfilePage query-driven tabs and sort', () => {
       country: 'Germany',
       city: 'Berlin',
       preferredLanguage: 'en',
+      createdAt: '2024-05-20T00:00:00.000Z',
       onboardingCompletedAt: '2026-01-01T00:00:00Z',
       accountStatus: 'active',
       publicProfileEnabled: true,
@@ -184,6 +185,16 @@ describe('pages/ProfilePage query-driven tabs and sort', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('location-probe').textContent).toContain('recentSort=updated');
+    });
+  });
+
+  it('prefers the real profile creation timestamp for member since', async () => {
+    mocks.getAllTrips.mockReturnValue([]);
+
+    renderProfilePage('/profile');
+
+    await waitFor(() => {
+      expect(screen.getByText('May 2024')).toBeInTheDocument();
     });
   });
 

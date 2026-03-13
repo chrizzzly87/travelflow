@@ -68,6 +68,7 @@ const initialsFrom = (
 
 const formatMemberSince = (
     profile: {
+        createdAt?: string | null;
         onboardingCompletedAt?: string | null;
         usernameChangedAt?: string | null;
     } | null,
@@ -76,6 +77,11 @@ const formatMemberSince = (
     fallbackLabel: string
 ): string => {
     const candidateTimestamps: number[] = [];
+
+    if (profile?.createdAt) {
+        const parsed = Date.parse(profile.createdAt);
+        if (Number.isFinite(parsed)) candidateTimestamps.push(parsed);
+    }
 
     if (profile?.onboardingCompletedAt) {
         const parsed = Date.parse(profile.onboardingCompletedAt);

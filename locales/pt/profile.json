@@ -213,7 +213,42 @@
     "countryRegionEmpty": "Nenhum país ou região correspondente encontrado.",
     "countryRegionToggle": "Alternar opções de país/região",
     "usernameChange": "Alterar nome de usuário",
-    "usernameSuggestionsTitle": "Experimente uma destas opções disponíveis:"
+    "usernameSuggestionsTitle": "Experimente uma destas opções disponíveis:",
+    "billing": {
+      "eyebrow": "Billing",
+      "title": "Subscription management",
+      "description": "Review your current plan, renewal timing, and Paddle-managed billing actions in one place.",
+      "currentPlanLabel": "Current plan",
+      "statusLabel": "Subscription status",
+      "renewalLabel": "Current period end",
+      "subscriptionIdLabel": "Subscription ID",
+      "noSubscription": "No paid subscription",
+      "manageCta": "Manage billing in Paddle",
+      "cancelCta": "Cancel in Paddle",
+      "errorTitle": "Billing action unavailable",
+      "manageUnavailable": "Could not open Paddle billing management for this account.",
+      "statuses": {
+        "active": "Active",
+        "trialing": "Trialing",
+        "pastDue": "Past due",
+        "paused": "Paused",
+        "canceledGrace": "Canceled (grace period)",
+        "inactive": "Inactive",
+        "unknown": "Unknown"
+      },
+      "resubscribeCta": "Resubscribe",
+      "canceledGrace": {
+        "title": "Your subscription was canceled.",
+        "description": "Paid access remains active until {date}. After that, paid trips become expired and read-only until you resubscribe.",
+        "impact": "Editing and sharing stay limited once the grace period ends. Trip data remains stored on your account."
+      },
+      "inactive": {
+        "title": "Paid access is inactive.",
+        "description": "Resubscribe to restore paid trip access, editing, and sharing on this account.",
+        "impact": "Paid trips remain stored, but expired and read-only until billing is active again.",
+        "promoHint": "Resubscribe with code {code} to restore paid access."
+      }
+    }
   },
   "stamps": {
     "eyebrow": "Coleta de passaporte",
@@ -322,5 +357,11 @@
     "undoErrorSingle": "Could not restore this trip.",
     "undoErrorBatch": "Could not restore selected trips.",
     "successSingleMessage": "Sua viagem \"{title}\" foi arquivada com sucesso."
+  },
+  "billingShortcut": {
+    "eyebrow": "Billing",
+    "title": "Manage your subscription",
+    "description": "Open billing settings to view your current plan, payment state, and cancellation options.",
+    "cta": "Open billing settings"
   }
 }

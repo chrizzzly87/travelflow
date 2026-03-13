@@ -121,6 +121,17 @@ export const createOptimisticAccessFromSessionHint = (
     termsAcceptedAt: null,
     termsAcceptanceRequired: false,
     termsNoticeRequired: false,
+    billing: {
+        providerSubscriptionId: null,
+        providerStatus: null,
+        subscriptionStatus: null,
+        currentPeriodEnd: null,
+        cancelAt: null,
+        canceledAt: null,
+        graceEndsAt: null,
+        accessUntil: null,
+        lifecycleState: 'none',
+    },
 });
 
 export const createOptimisticSessionFromSessionHint = (

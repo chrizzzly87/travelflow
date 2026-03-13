@@ -107,6 +107,11 @@ const ACTION_FILTER_LABELS: Record<string, string> = {
     'admin.trip.update': 'Updated trip',
     'admin.trip.override_commit': 'Overrode trip content',
     'admin.tier.update_entitlements': 'Updated tier entitlements',
+    'billing.subscription.created': 'Billing subscription created',
+    'billing.subscription.updated': 'Billing subscription updated',
+    'billing.subscription.canceled': 'Billing subscription canceled',
+    'billing.subscription.activated': 'Billing subscription activated',
+    'billing.transaction.completed': 'Billing transaction completed',
     'admin.tier.reapply': 'Reapplied tier to users',
 };
 
@@ -114,6 +119,7 @@ const TARGET_LABELS: Record<string, string> = {
     user: 'User',
     trip: 'Trip',
     tier: 'Tier',
+    subscription: 'Subscription',
     legal_terms_version: 'Terms version',
     audit: 'Audit',
     unknown: 'Unknown',
@@ -121,6 +127,7 @@ const TARGET_LABELS: Record<string, string> = {
 
 const ACTION_GROUP_ORDER = [
     'Audit & tooling',
+    'Billing & subscriptions',
     'Admin users',
     'Admin trips',
     'Terms & legal',
@@ -139,6 +146,7 @@ const getActionGroupOrder = (groupLabel: string): number => {
 const getActionGroupLabel = (action: string): string => {
     const normalized = action.trim().toLowerCase();
     if (normalized.startsWith('admin.audit.')) return 'Audit & tooling';
+    if (normalized.startsWith('billing.')) return 'Billing & subscriptions';
     if (normalized.startsWith('admin.user.')) return 'Admin users';
     if (normalized.startsWith('admin.trip.')) return 'Admin trips';
     if (normalized.startsWith('admin.terms.')) return 'Terms & legal';
@@ -447,6 +455,18 @@ const resolveAuditActionPresentation = (
     if (raw === 'admin.terms.set_current') {
         return { label: 'Set current Terms version', className: 'border-sky-300 bg-sky-50 text-sky-800' };
     }
+    if (raw.startsWith('billing.subscription.')) {
+        if (raw.endsWith('.canceled')) {
+            return { label: 'Billing subscription canceled', className: 'border-rose-300 bg-rose-50 text-rose-800' };
+        }
+        if (raw.endsWith('.activated')) {
+            return { label: 'Billing subscription activated', className: 'border-emerald-300 bg-emerald-50 text-emerald-800' };
+        }
+        return { label: 'Billing subscription updated', className: 'border-accent-300 bg-accent-50 text-accent-800' };
+    }
+    if (raw === 'billing.transaction.completed') {
+        return { label: 'Billing transaction completed', className: 'border-emerald-300 bg-emerald-50 text-emerald-800' };
+    }
     return { label: getActionFilterLabel(raw), className: 'border-slate-300 bg-slate-100 text-slate-800' };
 };
 
@@ -454,6 +474,7 @@ const getTargetPillClass = (targetType: string): string => {
     if (targetType === 'user') return 'border-indigo-300 bg-indigo-50 text-indigo-800';
     if (targetType === 'trip') return 'border-sky-300 bg-sky-50 text-sky-800';
     if (targetType === 'tier') return 'border-violet-300 bg-violet-50 text-violet-800';
+    if (targetType === 'subscription') return 'border-accent-300 bg-accent-50 text-accent-800';
     return 'border-slate-300 bg-slate-100 text-slate-700';
 };
 
@@ -1891,7 +1912,9 @@ export const AdminAuditPage: React.FC = () => {
                                                         </span>
                                                     </div>
                                                 ) : (
-                                                    <span className="text-xs text-slate-500">{actorEmail || 'unknown'}</span>
+                                                    <span className="text-xs text-slate-500">
+                                                        {actorEmail === 'Paddle' ? 'Paddle system' : (actorEmail || 'unknown')}
+                                                    </span>
                                                 )}
                                             </td>
                                         )}
