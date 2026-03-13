@@ -5,6 +5,15 @@ import { useTranslation } from 'react-i18next';
 import { Bot, Sparkles, Bold, Italic, List, CheckSquare, Heading1, Heading2, Heading3, Link2 } from 'lucide-react';
 import { useAppDialog } from './AppDialogProvider';
 import { buildUrlPromptDialog } from '../services/appDialogPresets';
+import {
+    isHeadsUpHeading,
+    MARKDOWN_H1_CLASS,
+    MARKDOWN_H2_CLASS,
+    MARKDOWN_H3_CLASS,
+    MARKDOWN_HEADS_UP_BANNER_CLASS,
+    MARKDOWN_TASK_TEXT_CLASS,
+    normalizeHeadsUpMarkdownForDisplay,
+} from './markdownPresentation';
 
 export interface MarkdownAiAction {
     id: string;
@@ -24,15 +33,10 @@ interface MarkdownEditorProps {
     className?: string;
 }
 
-const TASK_CHECKBOX_LINE_REGEX = /^(\s*(?:>\s*)*(?:[-*+]|\d+[.)])\s+\[)( |x|X)(\].*)$/;
 const HEADING_REGEX = /^(#{1,3})\s+(.*)$/;
 const BULLET_REGEX = /^\s*[-*+]\s+(.*)$/;
 const ORDERED_REGEX = /^\s*\d+[.)]\s+(.*)$/;
 const TASK_REGEX = /^\s*(?:[-*+]|\d+[.)])\s+\[( |x|X)\]\s+(.*)$/;
-
-const H1_CLASS = "mt-4 mb-2 pt-2 text-base font-black tracking-tight text-gray-800 border-t border-gray-100 first:mt-0 first:pt-0 first:border-t-0";
-const H2_CLASS = "mt-4 mb-2 pt-2 text-sm font-extrabold tracking-wide text-gray-800 border-t border-gray-100 first:mt-0 first:pt-0 first:border-t-0";
-const H3_CLASS = "mt-4 mb-2 pt-2 text-xs font-extrabold uppercase tracking-wide text-gray-700 border-t border-gray-100 first:mt-0 first:pt-0 first:border-t-0";
 
 const escapeHtml = (input: string): string => {
     return input
@@ -56,35 +60,10 @@ const inlineMarkdownToHtml = (input: string): string => {
     return text;
 };
 
-const findTaskLineNumbers = (markdown: string): number[] => {
-    return markdown
-        .split('\n')
-        .map((line, index) => (TASK_CHECKBOX_LINE_REGEX.test(line) ? index + 1 : -1))
-        .filter((lineNumber) => lineNumber > 0);
-};
-
-const toggleTaskCheckboxByLine = (markdown: string, lineNumber: number, checked: boolean): string => {
-    const lines = markdown.split('\n');
-    const lineIndex = lineNumber - 1;
-    if (lineIndex < 0 || lineIndex >= lines.length) return markdown;
-
-    const line = lines[lineIndex];
-    if (!TASK_CHECKBOX_LINE_REGEX.test(line)) return markdown;
-
-    lines[lineIndex] = line.replace(TASK_CHECKBOX_LINE_REGEX, `$1${checked ? 'x' : ' '}$3`);
-    return lines.join('\n');
-};
-
-const toggleTaskCheckboxByTaskIndex = (markdown: string, taskIndex: number, checked: boolean): string => {
-    const taskLineNumbers = findTaskLineNumbers(markdown);
-    const lineNumber = taskLineNumbers[taskIndex];
-    if (typeof lineNumber !== 'number') return markdown;
-    return toggleTaskCheckboxByLine(markdown, lineNumber, checked);
-};
-
 const markdownToHtml = (markdown: string): string => {
     const lines = markdown.replace(/\r\n/g, '\n').split('\n');
     const blocks: string[] = [];
+    let currentSectionHeading = '';
 
     let i = 0;
     while (i < lines.length) {
@@ -99,7 +78,9 @@ const markdownToHtml = (markdown: string): string => {
         const headingMatch = line.match(HEADING_REGEX);
         if (headingMatch) {
             const level = Math.min(3, headingMatch[1].length);
-            blocks.push(`<h${level}>${inlineMarkdownToHtml(headingMatch[2].trim())}</h${level}>`);
+            currentSectionHeading = headingMatch[2].trim();
+            const headingClass = level === 1 ? MARKDOWN_H1_CLASS : level === 2 ? MARKDOWN_H2_CLASS : MARKDOWN_H3_CLASS;
+            blocks.push(`<h${level} class="${headingClass}">${inlineMarkdownToHtml(currentSectionHeading)}</h${level}>`);
             i += 1;
             continue;
         }
@@ -109,6 +90,34 @@ const markdownToHtml = (markdown: string): string => {
         const orderedMatch = line.match(ORDERED_REGEX);
 
         if (taskMatch || bulletMatch || orderedMatch) {
+            if (isHeadsUpHeading(currentSectionHeading)) {
+                const banners: string[] = [];
+
+                while (i < lines.length) {
+                    const currentLine = lines[i] || '';
+                    if (!currentLine.trim()) {
+                        i += 1;
+                        continue;
+                    }
+                    if (HEADING_REGEX.test(currentLine)) break;
+
+                    const currentTask = currentLine.match(TASK_REGEX);
+                    const currentBullet = currentLine.match(BULLET_REGEX);
+                    const currentOrdered = currentLine.match(ORDERED_REGEX);
+                    const content = currentTask?.[2] || currentBullet?.[1] || currentOrdered?.[1];
+
+                    if (!content) break;
+
+                    banners.push(
+                        `<div data-heads-up-banner="true" class="${MARKDOWN_HEADS_UP_BANNER_CLASS}">${inlineMarkdownToHtml(content.trim())}</div>`,
+                    );
+                    i += 1;
+                }
+
+                blocks.push(`<div data-heads-up-group="true" class="my-2 space-y-2">${banners.join('')}</div>`);
+                continue;
+            }
+
             const isOrderedList = !!orderedMatch && !taskMatch;
             const listTag = isOrderedList ? 'ol' : 'ul';
             const items: string[] = [];
@@ -124,7 +133,7 @@ const markdownToHtml = (markdown: string): string => {
                 if (currentTask) {
                     const checked = currentTask[1].toLowerCase() === 'x';
                     const content = inlineMarkdownToHtml(currentTask[2]);
-                    items.push(`<li><input type="checkbox" ${checked ? 'checked' : ''} contenteditable="false" /> ${content}</li>`);
+                    items.push(`<li data-task-list-item="true" class="my-2 list-none ps-0"><label class="flex items-start gap-3"><input type="checkbox" ${checked ? 'checked' : ''} contenteditable="false" class="mt-0.5 h-4 w-4 shrink-0 rounded-[4px] border border-slate-500 accent-accent-600" /><span class="${MARKDOWN_TASK_TEXT_CLASS}">${content}</span></label></li>`);
                     i += 1;
                     continue;
                 }
@@ -144,7 +153,8 @@ const markdownToHtml = (markdown: string): string => {
                 break;
             }
 
-            blocks.push(`<${listTag}>${items.join('')}</${listTag}>`);
+            const taskListAttribute = taskMatch ? ` data-task-list="true" class="my-2 space-y-2 ps-0"` : '';
+            blocks.push(`<${listTag}${taskListAttribute}>${items.join('')}</${listTag}>`);
             continue;
         }
 
@@ -226,14 +236,11 @@ const serializeList = (listElement: HTMLOListElement | HTMLUListElement, ordered
     const lines = Array.from(listElement.children)
         .filter((child): child is HTMLLIElement => child instanceof HTMLLIElement)
         .map((li, index) => {
-            const directCheckbox = Array.from(li.childNodes).find(
-                (child): child is HTMLInputElement => child instanceof HTMLInputElement && child.type === 'checkbox'
-            );
+            const taskCheckbox = li.querySelector<HTMLInputElement>('input[type="checkbox"]');
+            const content = serializeInlineChildren(li).trim();
 
-            const content = serializeInlineChildren(li, directCheckbox).trim();
-
-            if (directCheckbox) {
-                return `- [${directCheckbox.checked ? 'x' : ' '}] ${content}`.trimEnd();
+            if (taskCheckbox) {
+                return `- [${taskCheckbox.checked ? 'x' : ' '}] ${content}`.trimEnd();
             }
 
             if (ordered) {
@@ -267,6 +274,18 @@ const serializeBlockNode = (node: Node): string => {
     if (tag === 'ol') return serializeList(node as HTMLOListElement, true);
 
     if (tag === 'div') {
+        if (node.hasAttribute('data-heads-up-group')) {
+            return Array.from(node.children)
+                .map((child) => serializeBlockNode(child))
+                .filter((line) => line.trim().length > 0)
+                .join('\n');
+        }
+
+        if (node.hasAttribute('data-heads-up-banner')) {
+            const content = serializeInlineChildren(node).trim();
+            return content ? `- ${content}` : '';
+        }
+
         const children = Array.from(node.childNodes)
             .map((child) => serializeBlockNode(child))
             .filter((line) => line.trim().length > 0);
@@ -378,7 +397,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
 
     const handleChecklist = () => {
         focusEditor();
-        document.execCommand('insertHTML', false, '<ul><li><input type="checkbox" contenteditable="false" /> New item</li></ul>');
+        document.execCommand('insertHTML', false, `<ul data-task-list="true"><li data-task-list-item="true"><label class="flex items-start gap-3"><input type="checkbox" contenteditable="false" class="mt-0.5 h-4 w-4 shrink-0 rounded-[4px] border border-slate-500 accent-accent-600" /><span class="${MARKDOWN_TASK_TEXT_CLASS}">New item</span></label></li></ul>`);
         syncMarkdownFromEditor();
     };
 
@@ -447,21 +466,24 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                         a: ({node, ...props}) => (
                             <a {...props} className="text-accent-600 hover:underline" target="_blank" rel="noopener noreferrer" />
                         ),
+                        blockquote: ({node, ...props}) => (
+                            <blockquote {...props} className={MARKDOWN_HEADS_UP_BANNER_CLASS} />
+                        ),
                         input: ({node, ...props}) => (
                             <input
                                 {...props}
                                 disabled
                                 readOnly
-                                className="mr-2"
+                                className="me-3 mt-0.5 inline-block h-4 w-4 align-top"
                                 style={{ pointerEvents: 'none' }}
                             />
                         ),
-                        h1: ({node, ...props}) => <h1 {...props} className={H1_CLASS} />,
-                        h2: ({node, ...props}) => <h2 {...props} className={H2_CLASS} />,
-                        h3: ({node, ...props}) => <h3 {...props} className={H3_CLASS} />,
+                        h1: ({node, ...props}) => <h1 {...props} className={MARKDOWN_H1_CLASS} />,
+                        h2: ({node, ...props}) => <h2 {...props} className={MARKDOWN_H2_CLASS} />,
+                        h3: ({node, ...props}) => <h3 {...props} className={MARKDOWN_H3_CLASS} />,
                     }}
                 >
-                    {value || 'No description.'}
+                    {normalizeHeadsUpMarkdownForDisplay(value || 'No description.')}
                 </ReactMarkdown>
             </div>
         );
@@ -560,9 +582,16 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
 
                     if (target instanceof HTMLInputElement && target.type === 'checkbox') {
                         syncMarkdownFromEditor();
+                        return;
+                    }
+
+                    if (target.closest('[data-task-list-item="true"]')) {
+                        window.requestAnimationFrame(() => {
+                            syncMarkdownFromEditor();
+                        });
                     }
                 }}
-                className="h-48 p-3 overflow-y-auto text-sm text-gray-800 leading-relaxed outline-none [&_h1]:mt-4 [&_h1]:mb-2 [&_h1]:pt-2 [&_h1]:text-base [&_h1]:font-black [&_h1]:tracking-tight [&_h1]:text-gray-800 [&_h1]:border-t [&_h1]:border-gray-100 [&_h2]:mt-4 [&_h2]:mb-2 [&_h2]:pt-2 [&_h2]:text-sm [&_h2]:font-extrabold [&_h2]:tracking-wide [&_h2]:text-gray-800 [&_h2]:border-t [&_h2]:border-gray-100 [&_h3]:mt-4 [&_h3]:mb-2 [&_h3]:pt-2 [&_h3]:text-xs [&_h3]:font-extrabold [&_h3]:uppercase [&_h3]:tracking-wide [&_h3]:text-gray-700 [&_h3]:border-t [&_h3]:border-gray-100 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:my-1 [&_a]:text-accent-600 [&_a]:underline [&_input[type='checkbox']]:mr-2"
+                className="h-48 overflow-y-auto p-3 text-sm leading-relaxed text-gray-800 outline-none [&_h1]:mt-4 [&_h1]:mb-2 [&_h1]:border-t [&_h1]:border-gray-100 [&_h1]:pt-2 [&_h1]:text-base [&_h1]:font-black [&_h1]:tracking-tight [&_h1]:text-gray-800 [&_h2]:mt-4 [&_h2]:mb-2 [&_h2]:border-t [&_h2]:border-gray-100 [&_h2]:pt-2 [&_h2]:text-sm [&_h2]:font-extrabold [&_h2]:tracking-wide [&_h2]:text-gray-800 [&_h3]:mt-4 [&_h3]:mb-2 [&_h3]:border-t [&_h3]:border-gray-100 [&_h3]:pt-2 [&_h3]:text-sm [&_h3]:font-black [&_h3]:tracking-wide [&_h3]:text-gray-800 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:my-1 [&_a]:text-accent-600 [&_a]:underline [&_strong]:font-semibold [&_strong]:text-slate-900 [&_input[type='checkbox']]:h-4 [&_input[type='checkbox']]:w-4 [&_input[type='checkbox']]:rounded-[4px] [&_input[type='checkbox']]:border-slate-500 [&_input[type='checkbox']]:accent-accent-600 [&_ul[data-task-list='true']]:list-none [&_ul[data-task-list='true']]:space-y-2 [&_ul[data-task-list='true']]:pl-0 [&_li[data-task-list-item='true']]:list-none [&_li[data-task-list-item='true']]:pl-0 [&_li[data-task-list-item='true']>label]:flex [&_li[data-task-list-item='true']>label]:items-start [&_li[data-task-list-item='true']>label]:gap-3 [&_li[data-task-list-item='true']>label>input[type='checkbox']]:mt-0.5 [&_div[data-heads-up-group='true']]:my-2 [&_div[data-heads-up-group='true']]:space-y-2 [&_div[data-heads-up-banner='true']]:rounded-lg [&_div[data-heads-up-banner='true']]:border [&_div[data-heads-up-banner='true']]:border-slate-200 [&_div[data-heads-up-banner='true']]:bg-slate-100/85 [&_div[data-heads-up-banner='true']]:px-3 [&_div[data-heads-up-banner='true']]:py-2 [&_div[data-heads-up-banner='true']]:text-slate-700"
             />
 
             <div className="px-3 py-1.5 bg-gray-50 border-t border-gray-200 text-[10px] text-gray-400 flex justify-between">

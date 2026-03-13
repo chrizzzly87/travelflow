@@ -1,10 +1,26 @@
 // @vitest-environment jsdom
 import React from 'react';
-import { describe, expect, it } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { cleanup, render, screen } from '@testing-library/react';
 import { TripInfoModal } from '../../components/TripInfoModal';
 
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string, options?: Record<string, unknown>) => {
+      if (key === 'tripView.infoDialog.tabs.debug') return 'Debug';
+      if (key === 'tripView.infoDialog.general.meta.owner') return 'Owner';
+      if (key === 'tripView.infoDialog.general.meta.access') return 'Access';
+      if (key === 'tripView.infoDialog.general.meta.totalDaysValue') return `${options?.count ?? ''} days`;
+      return key;
+    },
+  }),
+}));
+
 describe('components/TripInfoModal ownership context', () => {
+  afterEach(() => {
+    cleanup();
+  });
+
   it('renders owner details and ownership hint when provided', () => {
     render(React.createElement(TripInfoModal, {
       isOpen: true,
@@ -28,16 +44,15 @@ describe('components/TripInfoModal ownership context', () => {
       },
       aiMeta: null,
       forkMeta: null,
-      isTripInfoHistoryExpanded: false,
-      onToggleTripInfoHistoryExpanded: () => {},
       showAllHistory: false,
       onToggleShowAllHistory: () => {},
       onHistoryUndo: () => {},
       onHistoryRedo: () => {},
-      infoHistoryItems: [],
+      historyItems: [],
       onGoToHistoryEntry: () => {},
-      onOpenFullHistory: () => {},
       formatHistoryTime: () => 'now',
+      pendingSyncCount: 0,
+      failedSyncCount: 0,
       countryInfo: undefined,
       isPaywallLocked: false,
       ownerSummary: '@owner_user',
@@ -48,16 +63,16 @@ describe('components/TripInfoModal ownership context', () => {
         ownerEmail: 'owner@example.com',
         accessSource: 'public_read',
       },
+      onOpenPrintLayout: () => {},
     }));
 
     expect(screen.getByText('Owner')).toBeInTheDocument();
-    expect(screen.getAllByText('@owner_user').length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText('@owner_user').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('You are viewing a public trip owned by another account.')).toBeInTheDocument();
-    expect(screen.getByText('Admin debug')).toBeInTheDocument();
-    expect(screen.getByText('3fa19134-cf6d-48a9-8099-fdb68d817cdc')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Debug' })).toBeInTheDocument();
   });
 
-  it('renders generation diagnostics when latest attempt metadata exists', () => {
+  it('renders generation summary when latest attempt metadata exists', () => {
     render(React.createElement(TripInfoModal, {
       isOpen: true,
       onClose: () => {},
@@ -130,29 +145,35 @@ describe('components/TripInfoModal ownership context', () => {
       onRetryGeneration: () => {},
       retryAnalyticsAttributes: {},
       forkMeta: null,
-      isTripInfoHistoryExpanded: false,
-      onToggleTripInfoHistoryExpanded: () => {},
       showAllHistory: false,
       onToggleShowAllHistory: () => {},
       onHistoryUndo: () => {},
       onHistoryRedo: () => {},
-      infoHistoryItems: [],
+      historyItems: [],
       onGoToHistoryEntry: () => {},
-      onOpenFullHistory: () => {},
       formatHistoryTime: () => 'now',
+      pendingSyncCount: 0,
+      failedSyncCount: 0,
       countryInfo: undefined,
       isPaywallLocked: false,
       ownerSummary: null,
       ownerHint: null,
-      adminMeta: null,
+      adminMeta: {
+        ownerUserId: 'owner-1',
+        ownerUsername: 'owner_user',
+        ownerEmail: 'owner@example.com',
+        accessSource: 'owner',
+      },
       onExportActivitiesCalendar: () => {},
       onExportCitiesCalendar: () => {},
       onExportAllCalendar: () => {},
+      onOpenPrintLayout: () => {},
     }));
 
-    expect(screen.getAllByText(/AI generation|tripView\.generation\.tripInfo\.title/).length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText('req-1')).toBeInTheDocument();
+    expect(screen.getByText('openai')).toBeInTheDocument();
+    expect(screen.getByText('gpt-4.1')).toBeInTheDocument();
     expect(screen.getByText('async_worker')).toBeInTheDocument();
-    expect(screen.getByText('Model unavailable')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'tripView.generation.tripInfo.retry' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Debug' })).toBeInTheDocument();
   });
 });

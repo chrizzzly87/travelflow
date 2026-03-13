@@ -5,6 +5,7 @@ import { Maximize, Minimize, ArrowLeftRight, ArrowUpDown } from 'lucide-react';
 import { ActivityTypeIcon } from './ActivityTypeVisuals';
 import { TransportModeIcon } from './TransportModeIcon';
 import { normalizeTransportMode } from '../shared/transportModes';
+import { getTimelineVisualSpan } from '../utils/timelineVisualLayout';
 
 interface TimelineBlockProps {
   item: ITimelineItem;
@@ -28,6 +29,10 @@ interface TimelineBlockProps {
   cityStackIndex?: number;
   cityStackCount?: number;
   cityVisualColorHex?: string;
+  isDetailsPanelVisible?: boolean;
+  onNavigatePreviousCity?: () => void;
+  onNavigateNextCity?: () => void;
+  onToggleDetailsPanel?: () => void;
 }
 
 export const TimelineBlock: React.FC<TimelineBlockProps> = ({
@@ -52,6 +57,10 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
   cityStackIndex = 0,
   cityStackCount = 1,
   cityVisualColorHex,
+  isDetailsPanelVisible = false,
+  onNavigatePreviousCity,
+  onNavigateNextCity,
+  onToggleDetailsPanel,
 }) => {
   const isTravel = item.type === 'travel';
   const isEmptyTravel = item.type === 'travel-empty';
@@ -63,9 +72,10 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
   const dragStartPos = useRef<{x: number, y: number} | null>(null);
   
   // Visual Dimensions
-  const dimensionCheck = item.duration * pixelsPerDay;
+  const visualSpan = getTimelineVisualSpan(item, { vertical });
+  const dimensionCheck = visualSpan.duration * pixelsPerDay;
   const size = Math.max(dimensionCheck, (isTravel || isEmptyTravel) ? 40 : 20); 
-  const position = (item.startDateOffset - timelineStartOffset) * pixelsPerDay;
+  const position = (visualSpan.startOffset - timelineStartOffset) * pixelsPerDay;
 
   // Buffer calculations (Minutes -> Days -> Pixels)
   const bufferBeforePx = item.bufferBefore ? (item.bufferBefore / 1440) * pixelsPerDay : 0;
@@ -95,7 +105,18 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
       ? (cityVisualColorHex || getHexFromColorClass(item.color || ''))
       : null;
   const isCompactVerticalActivity = vertical && item.type === 'activity' && size >= 20 && size < 40;
+  const isCompactHorizontalActivity = !vertical && item.type === 'activity' && size < 92;
+  const compactHorizontalActivityHeightPx = 160;
+  const compactHorizontalRegularHeightPx = 112;
+  const compactHorizontalTitleTopInsetPx = 24;
+  const compactHorizontalTitleBottomInsetPx = 8;
+  const compactHorizontalTitleWidthPx = Math.max(18, size - 8);
+  const compactHorizontalTitleHeightPx = Math.max(
+    48,
+    compactHorizontalActivityHeightPx - compactHorizontalTitleTopInsetPx - compactHorizontalTitleBottomInsetPx,
+  );
   const compactVerticalTitleSize = Math.max(9, Math.min(11, size * 0.28));
+  const compactHorizontalTitleSize = Math.max(11, Math.min(12.5, compactHorizontalTitleHeightPx * 0.095));
   const cityDayCount = isCity ? Math.max(1, Math.ceil(item.duration - 0.01)) : 0;
   const cityNightCount = isCity ? Math.max(0, cityDayCount - 1) : 0;
   const cityDurationFullLabel = `${cityDayCount} ${cityDayCount === 1 ? 'Day' : 'Days'} / ${cityNightCount} ${cityNightCount === 1 ? 'Night' : 'Nights'}`;
@@ -126,6 +147,28 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
   const handleClick = (e: React.MouseEvent) => {
       e.stopPropagation();
       onSelect(item.id, { multi: isCity && (e.shiftKey || e.metaKey || e.ctrlKey), isCity });
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+      if (!isCity || isLoadingItem || !isSelected) return;
+
+      const shouldMovePrevious = event.key === 'ArrowLeft' || event.key === 'ArrowUp' || (event.key === 'Tab' && event.shiftKey);
+      const shouldMoveNext = event.key === 'ArrowRight' || event.key === 'ArrowDown' || (event.key === 'Tab' && !event.shiftKey);
+      if (shouldMovePrevious) {
+          event.preventDefault();
+          onNavigatePreviousCity?.();
+          return;
+      }
+      if (shouldMoveNext) {
+          event.preventDefault();
+          onNavigateNextCity?.();
+          return;
+      }
+
+      if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onToggleDetailsPanel?.();
+      }
   };
 
   const baseCursor = canEdit
@@ -171,6 +214,13 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
       style.width = `${Math.max(6, size - cityInlineGapPx)}px`;
       style.top = `calc(${cityInsetPx}px + ${normalizedCityStackIndex} * (${citySlotHeightExpr} + ${cityStackGapPx}px))`;
       style.height = citySlotHeightExpr;
+  }
+
+  if (!vertical && item.type === 'activity') {
+      style.top = '8px';
+      style.height = isCompactHorizontalActivity
+          ? `${compactHorizontalActivityHeightPx}px`
+          : `${compactHorizontalRegularHeightPx}px`;
   }
   const selectedOutline = isSelected
       ? '0 0 0 3px rgb(37 99 235 / 0.98)'
@@ -296,10 +346,15 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
         ${isInactiveActivity ? 'border-dashed shadow-none' : ''}
         ${isUnsetTravelMode ? 'border-dashed border-slate-200 bg-slate-50/70 text-slate-500' : ''}
         ${isEmptyTravel ? (canEdit ? 'border-dashed cursor-pointer hover:bg-gray-50' : 'border-dashed cursor-not-allowed opacity-70') : ''}
+        ${isCity && isSelected ? 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2' : ''}
       `}
       style={finalStyle}
       onPointerDown={handlePointerDown}
       onClick={handleClick}
+      onKeyDown={handleKeyDown}
+      role={isCity ? 'button' : undefined}
+      tabIndex={isCity && isSelected ? 0 : -1}
+      aria-expanded={isCity && isSelected ? isDetailsPanelVisible : undefined}
       data-tooltip={cityTooltipText}
       data-city-block={isCity ? 'true' : undefined}
       data-city-stack-index={isCity ? String(normalizedCityStackIndex) : undefined}
@@ -334,6 +389,52 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
       )}
 
       {/* Main Content Container */}
+      {isCompactHorizontalActivity ? (
+        <div className="relative h-full w-full pointer-events-none overflow-hidden">
+          {!isTravel && !isEmptyTravel && item.type === 'activity' && !isCompactVerticalActivity && (
+            <div className="absolute inset-x-0 top-1.5 flex justify-center">
+              <ActivityTypeIcon
+                type={primaryActivityType || 'general'}
+                size={14}
+                className={isInactiveActivity ? 'opacity-60' : 'opacity-70'}
+              />
+            </div>
+          )}
+          {!isEmptyTravel && !shouldRotateVerticalCityLabel && (
+            <div
+              className="absolute left-1/2 overflow-hidden"
+              style={{
+                top: `${compactHorizontalTitleTopInsetPx}px`,
+                bottom: `${compactHorizontalTitleBottomInsetPx}px`,
+                width: `${compactHorizontalTitleWidthPx}px`,
+                height: `${compactHorizontalTitleHeightPx}px`,
+                transform: 'translateX(-50%)',
+              }}
+            >
+              <div
+                className="absolute left-1/2 top-1/2 flex items-center justify-center overflow-hidden"
+                style={{
+                  width: `${compactHorizontalTitleHeightPx}px`,
+                  height: `${compactHorizontalTitleWidthPx}px`,
+                  transform: 'translate(-50%, -50%) rotate(-90deg)',
+                  transformOrigin: 'center center',
+                }}
+              >
+                <span
+                  className="block w-full select-none whitespace-nowrap text-center font-semibold"
+                  style={{
+                    lineHeight: 1,
+                    letterSpacing: '0',
+                    fontSize: `${compactHorizontalTitleSize}px`,
+                  }}
+                >
+                  {isLoadingItem ? 'Loading city...' : item.title}
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
       <div className={`flex items-center px-1.5 relative h-full w-full pointer-events-none overflow-hidden
           ${vertical 
              ? (
@@ -341,7 +442,11 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
                   ? 'justify-center text-center'
                   : (size < 40 ? 'hidden' : size < 60 ? 'flex-row justify-center gap-1.5' : 'flex-col justify-center text-center py-1')
                )
-             : (isCity ? 'justify-center flex-col text-center py-0.5' : 'justify-center flex-col text-center')}
+             : (
+                isCity
+                 ? 'justify-center flex-col text-center py-0.5'
+                  : 'justify-start gap-2 flex-col text-center pt-3 pb-2'
+               )}
       `}>
         
         {isTravel && (
@@ -357,7 +462,11 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
         )}
 
         {!isTravel && !isEmptyTravel && item.type === 'activity' && !isCompactVerticalActivity && (
-             <ActivityTypeIcon type={primaryActivityType || 'general'} size={14} className={`${isInactiveActivity ? 'opacity-60' : 'opacity-70'} ${vertical && item.duration * pixelsPerDay >= 60 ? 'mb-1' : ''}`} />
+             <ActivityTypeIcon
+                 type={primaryActivityType || 'general'}
+                 size={14}
+                 className={`${isInactiveActivity ? 'opacity-60' : 'opacity-70'} ${vertical && item.duration * pixelsPerDay >= 60 ? 'mb-1' : ''}`}
+             />
         )}
 
         {!isEmptyTravel && !shouldRotateVerticalCityLabel && (
@@ -365,14 +474,28 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
                 className={`font-semibold select-none leading-tight 
                     ${isCompactVerticalActivity
                         ? 'w-full truncate whitespace-nowrap text-center'
-                        : `${isTravel ? 'text-xs w-full whitespace-normal line-clamp-2' : (isCity ? 'text-[12px] md:text-[14px] w-full whitespace-normal line-clamp-2' : 'text-sm whitespace-normal')}
-                           ${!isTravel && 'line-clamp-2'}
+                        : `${isCompactHorizontalActivity
+                            ? 'inline-flex max-w-full items-center justify-center overflow-hidden text-ellipsis whitespace-nowrap text-center font-semibold'
+                            : (isTravel ? 'text-xs w-full whitespace-normal line-clamp-2' : (isCity ? 'text-[12px] md:text-[14px] w-full whitespace-normal line-clamp-2' : 'text-[15px] whitespace-normal'))}
+                           ${!isTravel && !isCompactHorizontalActivity ? 'line-clamp-2' : ''}
                            ${vertical 
-                               ? (item.duration * pixelsPerDay < 60 ? 'truncate whitespace-nowrap' : 'w-full break-words') 
-                               : 'truncate'}`
+                               ? (item.duration * pixelsPerDay < 60 ? 'w-full truncate whitespace-nowrap text-center' : 'w-full break-words text-center') 
+                               : (isCompactHorizontalActivity ? '' : 'truncate')}`
                     }
                 `}
-                style={isCompactVerticalActivity ? { fontSize: `${compactVerticalTitleSize}px` } : undefined}
+                style={isCompactVerticalActivity
+                    ? { fontSize: `${compactVerticalTitleSize}px` }
+                    : (isCompactHorizontalActivity
+                        ? {
+                            transform: 'rotate(-90deg)',
+                            transformOrigin: 'center center',
+                            lineHeight: 1,
+                            width: 'calc(100% - 8px)',
+                            maxWidth: 'calc(100% - 8px)',
+                            fontSize: `${compactHorizontalTitleSize}px`,
+                            letterSpacing: '0.01em',
+                        }
+                        : undefined)}
             >
                 {isLoadingItem ? 'Loading city...' : item.title}
                 {isUnsetTravelMode && (
@@ -404,7 +527,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
         )}
 
         {/* Duration Display */}
-        {!isCity && !isTravel && !isEmptyTravel && (
+        {!isCity && !isTravel && !isEmptyTravel && !isCompactHorizontalActivity && (
             <span className={`text-[10px] opacity-80 select-none 
                 ${vertical 
                     ? (item.duration * pixelsPerDay < 60 ? 'hidden' : 'mt-0.5 block')
@@ -414,6 +537,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
             </span>
         )}
       </div>
+      )}
 
       {/* Duration Display (Activities - Horizontal Backup) */}
       {!vertical && !isTravel && !isEmptyTravel && !isCity && item.duration * pixelsPerDay > 50 && (

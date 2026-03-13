@@ -370,20 +370,11 @@ export const PublicProfilePage: React.FC = () => {
             <SiteHeader />
             <main className="mx-auto w-full max-w-7xl flex-1 space-y-8 px-5 pb-14 pt-12 md:px-8 md:pt-14">
                 {state.status === 'loading' && (
-                    <>
-                        <section className="rounded-2xl border border-slate-200 bg-white px-5 py-8">
-                            <div className="animate-pulse space-y-4">
-                                <div className="h-8 w-1/3 rounded bg-slate-200" />
-                                <div className="h-4 w-2/3 rounded bg-slate-100" />
-                                <div className="h-4 w-1/2 rounded bg-slate-100" />
-                            </div>
-                        </section>
-                        <section className="grid grid-cols-2 gap-4 xl:grid-cols-3" aria-hidden="true">
-                            {Array.from({ length: 3 }).map((_, index) => (
-                                <ProfileTripCardSkeleton key={`public-profile-loading-skeleton-${index}`} />
-                            ))}
-                        </section>
-                    </>
+                    <section
+                        data-testid="public-profile-loading-placeholder"
+                        className="min-h-[62vh]"
+                        aria-hidden="true"
+                    />
                 )}
 
                 {state.status === 'private' && (
@@ -514,7 +505,7 @@ export const PublicProfilePage: React.FC = () => {
                                         {t('sections.highlightsCount', { count: pinnedTrips.length })}
                                     </span>
                                 </div>
-                                <div className="grid grid-cols-2 gap-4 xl:grid-cols-3">
+                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                                     {pinnedTrips.map((trip) => (
                                         <ProfileTripCard
                                                 key={`public-pinned-${trip.id}`}
@@ -550,7 +541,7 @@ export const PublicProfilePage: React.FC = () => {
                         <section className="space-y-3">
                             <h2 className="text-lg font-black tracking-tight text-slate-900">{t('publicProfile.tripsTitle')}</h2>
                             {isTripsLoading && trips.length === 0 ? (
-                                <div className="grid grid-cols-2 gap-4 xl:grid-cols-3" aria-hidden="true">
+                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3" aria-hidden="true">
                                     {Array.from({ length: 3 }).map((_, index) => (
                                         <ProfileTripCardSkeleton key={`public-trip-loading-${index}`} />
                                     ))}
@@ -561,7 +552,7 @@ export const PublicProfilePage: React.FC = () => {
                                 </div>
                             ) : (
                                 <>
-                                    <div className="grid grid-cols-2 gap-4 xl:grid-cols-3">
+                                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                                         {trips.map((trip) => (
                                             <ProfileTripCard
                                                 key={`public-trip-${trip.id}`}
@@ -594,7 +585,7 @@ export const PublicProfilePage: React.FC = () => {
 
                                     {(hasMoreTrips || isTripsLoadingMore) && (
                                         <>
-                                            <div className="grid grid-cols-2 gap-4 xl:grid-cols-3" aria-hidden="true">
+                                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3" aria-hidden="true">
                                                 {Array.from({ length: 3 }).map((_, index) => (
                                                     <ProfileTripCardSkeleton
                                                         key={`public-trip-more-skeleton-${index}`}

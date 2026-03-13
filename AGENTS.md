@@ -30,8 +30,8 @@ This repository uses markdown release files as the source of truth for product u
 - Do not introduce native HTML `<select>` controls in product UI. Always use the shared styled Select (`components/ui/select`, shadcn/Radix) for dropdowns to keep visual and interaction behavior consistent across the app.
 - After completing any feature/fix/change, update `content/updates/*.md`.
 - Maintain exactly one release note file per worktree/feature. Do not create multiple incremental release-note files for the same work.
-- Keep that single release note in `status: draft` throughout feature PR development.
-- After merge to `main`, publish metadata in a follow-up update: set `status: published`, assign the next version, and set `published_at` to the actual post-merge deploy/merge timestamp (before 23:00 UTC).
+- Keep that single release note in `status: draft` while the feature is still in progress.
+- Prefer publishing release metadata in the same PR when the release is being finalized. Use a follow-up update only if the feature has already merged without final metadata or the publish timestamp/version must be corrected afterward.
 - Use `[x]` for website-visible user-facing items.
 - Use `[ ]` for hidden internal items.
 - Keep technical identifiers out of visible items (no route paths, code symbols, endpoints, or environment keys in `[x]` lines).
