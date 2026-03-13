@@ -1,5 +1,14 @@
 import { describe, expect, it, vi } from 'vitest';
-import { __benchmarkValidationInternals } from '../../netlify/edge-functions/ai-benchmark.ts';
+import {
+  collectCountryInfoEntries,
+  collectCountryInfoLanguages,
+  groupBenchmarkRunComments,
+  normalizeRunComment,
+  pickCountryInfoExchangeRate,
+  resolveRunLatencyMs,
+  toBenchmarkRunCommentTelemetryEntries,
+  validateModelData,
+} from '../../shared/aiBenchmarkValidation.ts';
 
 const VALID_CITY_DESCRIPTION = [
   'Compact benchmark itinerary notes.',
@@ -66,19 +75,19 @@ const buildValidModelData = () => ({
 
 describe('ai-benchmark countryInfo normalization internals', () => {
   it('collects direct, array, and map-based countryInfo entries', () => {
-    const direct = __benchmarkValidationInternals.collectCountryInfoEntries({
+    const direct = collectCountryInfoEntries({
       currency: 'THB',
       languages: ['Thai'],
     });
     expect(direct).toHaveLength(1);
 
-    const fromArray = __benchmarkValidationInternals.collectCountryInfoEntries([
+    const fromArray = collectCountryInfoEntries([
       { currency: 'THB', languages: ['Thai'] },
       { currency: 'VND', languages: ['Vietnamese'] },
     ]);
     expect(fromArray).toHaveLength(2);
 
-    const fromMap = __benchmarkValidationInternals.collectCountryInfoEntries({
+    const fromMap = collectCountryInfoEntries({
       TH: { currency: 'THB', languages: ['Thai'] },
       VN: { currency: 'VND', languages: ['Vietnamese'] },
     });
@@ -86,7 +95,7 @@ describe('ai-benchmark countryInfo normalization internals', () => {
   });
 
   it('normalizes languages from arrays and comma-delimited strings', () => {
-    const languages = __benchmarkValidationInternals.collectCountryInfoLanguages([
+    const languages = collectCountryInfoLanguages([
       { languages: ['Thai', 'English'] },
       { languages: 'Vietnamese, English | Khmer' },
     ]);
@@ -94,7 +103,7 @@ describe('ai-benchmark countryInfo normalization internals', () => {
   });
 
   it('picks first numeric exchange rate across heterogeneous entries', () => {
-    const exchangeRate = __benchmarkValidationInternals.pickCountryInfoExchangeRate([
+    const exchangeRate = pickCountryInfoExchangeRate([
       { exchangeRate: 'invalid' },
       { exchangeRateToEUR: 4200 },
       { exchangeRate: 37 },
@@ -103,14 +112,14 @@ describe('ai-benchmark countryInfo normalization internals', () => {
   });
 
   it('resolves run latency from explicit value or started_at fallback', () => {
-    expect(__benchmarkValidationInternals.resolveRunLatencyMs({
+    expect(resolveRunLatencyMs({
       latency_ms: 1234,
     } as never)).toBe(1234);
 
     vi.useFakeTimers();
     try {
       vi.setSystemTime(new Date('2026-02-22T14:00:00.000Z'));
-      const computed = __benchmarkValidationInternals.resolveRunLatencyMs({
+      const computed = resolveRunLatencyMs({
         latency_ms: null,
         started_at: '2026-02-22T13:59:58.500Z',
       } as never);
@@ -124,7 +133,7 @@ describe('ai-benchmark countryInfo normalization internals', () => {
     const data = buildValidModelData();
     data.cities[1].days = 0;
 
-    const result = __benchmarkValidationInternals.validateModelData(data, { roundTrip: true });
+    const result = validateModelData(data, { roundTrip: true });
     expect(result.schemaValid).toBe(true);
     expect(result.warnings.some((warning) => warning.includes('Terminal round-trip city returned with 0 days'))).toBe(true);
   });
@@ -133,36 +142,36 @@ describe('ai-benchmark countryInfo normalization internals', () => {
     const data = buildValidModelData();
     data.cities[1].days = 0;
 
-    const result = __benchmarkValidationInternals.validateModelData(data, { roundTrip: false });
+    const result = validateModelData(data, { roundTrip: false });
     expect(result.schemaValid).toBe(false);
     expect(result.errors).toContain('One or more entries are missing mandatory fields or have wrong field types');
   });
 
   it('normalizes run comments to trimmed string/null with max-length validation', () => {
-    expect(__benchmarkValidationInternals.normalizeRunComment(null)).toEqual({
+    expect(normalizeRunComment(null)).toEqual({
       ok: true,
       comment: null,
     });
-    expect(__benchmarkValidationInternals.normalizeRunComment('  quick note  ')).toEqual({
+    expect(normalizeRunComment('  quick note  ')).toEqual({
       ok: true,
       comment: 'quick note',
     });
-    expect(__benchmarkValidationInternals.normalizeRunComment('   ')).toEqual({
+    expect(normalizeRunComment('   ')).toEqual({
       ok: true,
       comment: null,
     });
-    expect(__benchmarkValidationInternals.normalizeRunComment(42)).toEqual({
+    expect(normalizeRunComment(42)).toEqual({
       ok: false,
       error: 'Invalid comment. Expected string or null.',
     });
-    expect(__benchmarkValidationInternals.normalizeRunComment('x'.repeat(2001))).toEqual({
+    expect(normalizeRunComment('x'.repeat(2001))).toEqual({
       ok: false,
       error: 'Comment too long. Max 2000 characters.',
     });
   });
 
   it('builds and groups telemetry comment entries by provider/model', () => {
-    const entries = __benchmarkValidationInternals.toBenchmarkRunCommentTelemetryEntries([
+    const entries = toBenchmarkRunCommentTelemetryEntries([
       {
         id: 'run-openai-1',
         provider: 'openai',
@@ -213,7 +222,7 @@ describe('ai-benchmark countryInfo normalization internals', () => {
       comment: 'Confused activities with cities',
     });
 
-    const groups = __benchmarkValidationInternals.groupBenchmarkRunComments(entries);
+    const groups = groupBenchmarkRunComments(entries);
     expect(groups).toHaveLength(2);
     expect(groups[0]).toMatchObject({
       provider: 'openai',
