@@ -21,11 +21,14 @@ describe('config/aiModelCatalog', () => {
     expect(modelIds.has('anthropic:claude-sonnet-4.6')).toBe(true);
     expect(modelIds.has('openrouter:openrouter/free')).toBe(true);
     expect(modelIds.has('openrouter:openai/gpt-oss-20b:free')).toBe(true);
+    expect(modelIds.has('openrouter:nvidia/nemotron-3-super-120b-a12b:free')).toBe(true);
     expect(modelIds.has('openrouter:z-ai/glm-5')).toBe(true);
     expect(modelIds.has('openrouter:deepseek/deepseek-v3.2')).toBe(true);
     expect(modelIds.has('openrouter:x-ai/grok-4.1-fast')).toBe(true);
+    expect(modelIds.has('openrouter:x-ai/grok-4.20-beta')).toBe(true);
     expect(modelIds.has('openrouter:minimax/minimax-m2.5')).toBe(true);
     expect(modelIds.has('openrouter:moonshotai/kimi-k2.5')).toBe(true);
+    expect(modelIds.has('openrouter:qwen/qwen3.5-9b')).toBe(true);
     expect(modelIds.has('perplexity:perplexity/sonar')).toBe(true);
     expect(modelIds.has('perplexity:perplexity/sonar-pro')).toBe(true);
     expect(modelIds.has('qwen:qwen/qwen3.5-plus-02-15')).toBe(true);
