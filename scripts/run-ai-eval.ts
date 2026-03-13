@@ -1,44 +1,22 @@
 import { mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { spawn } from 'node:child_process';
+import { appendTsxImport, buildPromptfooArgs } from '../shared/aiEvalCli.ts';
 
 const rootDir = resolve(import.meta.dirname, '..');
 const promptfooConfigPath = resolve(rootDir, 'promptfoo/promptfooconfig.ts');
 const artifactsDir = resolve(rootDir, 'artifacts/promptfoo');
 
-const appendTsxImport = (existingValue: string | undefined): string => {
-    const trimmed = (existingValue || '').trim();
-    if (trimmed.includes('--import tsx')) {
-        return trimmed;
-    }
-    return trimmed ? `${trimmed} --import tsx` : '--import tsx';
-};
-
 const run = async () => {
-    const args = process.argv.slice(2);
-    const isCi = args.includes('--ci');
-    const forwardedArgs = args.filter((arg) => arg !== '--ci');
-
-    const promptfooArgs = [
-        'exec',
-        'promptfoo',
-        'eval',
-        '-c',
+    const { isCi, promptfooArgs } = buildPromptfooArgs({
+        rootDir,
         promptfooConfigPath,
-        '--max-concurrency',
-        '2',
-        '--no-write',
-        ...forwardedArgs,
-    ];
+        artifactsDir,
+        rawArgs: process.argv.slice(2),
+    });
 
     if (isCi) {
         await mkdir(artifactsDir, { recursive: true });
-        promptfooArgs.push(
-            '--output',
-            resolve(artifactsDir, 'ai-trip-eval.json'),
-            resolve(artifactsDir, 'ai-trip-eval.html'),
-            '--no-progress-bar',
-        );
     }
 
     const child = spawn(process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm', promptfooArgs, {

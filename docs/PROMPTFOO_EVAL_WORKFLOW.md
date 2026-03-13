@@ -98,12 +98,24 @@ Optional:
 
 - `AI_PROMPTFOO_TIMEOUT_MS`
 
+Default local behavior:
+
+- `pnpm ai:eval` and `pnpm ai:eval:ci` now auto-load `.env.local` when it exists
+- otherwise they fall back to `.env`
+- you can still override this with Promptfoo's own `--env-file` or `--env-path` flags
+
 ## Commands
 
 Run locally:
 
 ```bash
 pnpm ai:eval
+```
+
+Run a filtered local check:
+
+```bash
+pnpm ai:eval -- --filter-first-n 1
 ```
 
 Run the CI-style artifact export locally:
