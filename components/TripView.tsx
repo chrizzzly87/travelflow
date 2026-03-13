@@ -1890,6 +1890,7 @@ const useTripViewRender = ({
                 source: source === 'trip_info' ? 'trip_info_modal' : 'trip_status_strip',
                 contextSource: 'trip_retry',
                 modelId: selectedRetryModelId,
+                adminOverride: isAdminFallbackView && adminOverrideEnabled,
                 onTripUpdate: (updatedTrip) => {
                     if (shouldPollTripGenerationState(updatedTrip, Date.now())) {
                         pendingRetryGenerationStateRef.current = false;

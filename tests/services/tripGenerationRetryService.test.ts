@@ -10,6 +10,7 @@ const finishAttemptLogMock = vi.fn();
 const listOwnerAttemptLogsMock = vi.fn();
 const enqueueAsyncTripGenerationJobMock = vi.fn();
 const dbGetTripMock = vi.fn();
+const dbAdminOverrideTripCommitMock = vi.fn();
 const dbUpsertTripMock = vi.fn();
 const ensureDbSessionMock = vi.fn();
 const waitForTripAttemptPersistenceMock = vi.fn();
@@ -38,6 +39,7 @@ vi.mock('../../services/tripGenerationAsyncEnqueueService', () => ({
 }));
 
 vi.mock('../../services/dbApi', () => ({
+  dbAdminOverrideTripCommit: (...args: unknown[]) => dbAdminOverrideTripCommitMock(...args),
   dbGetTrip: (...args: unknown[]) => dbGetTripMock(...args),
   dbUpsertTrip: (...args: unknown[]) => dbUpsertTripMock(...args),
   ensureDbSession: (...args: unknown[]) => ensureDbSessionMock(...args),
@@ -143,6 +145,7 @@ describe('retryTripGenerationWithDefaultModel', () => {
     enqueueAsyncTripGenerationJobMock.mockReset();
     buildClassicItineraryPromptMock.mockClear();
     dbGetTripMock.mockReset();
+    dbAdminOverrideTripCommitMock.mockReset();
     dbUpsertTripMock.mockReset();
     ensureDbSessionMock.mockReset();
     waitForTripAttemptPersistenceMock.mockReset();
@@ -154,6 +157,7 @@ describe('retryTripGenerationWithDefaultModel', () => {
     finishAttemptLogMock.mockResolvedValue(undefined);
     enqueueAsyncTripGenerationJobMock.mockResolvedValue(true);
     dbGetTripMock.mockResolvedValue(null);
+    dbAdminOverrideTripCommitMock.mockResolvedValue({ tripId: 'trip-existing', versionId: 'version-1' });
     dbUpsertTripMock.mockResolvedValue('trip-existing');
     ensureDbSessionMock.mockResolvedValue('user-1');
     waitForTripAttemptPersistenceMock.mockResolvedValue(true);
@@ -226,6 +230,24 @@ describe('retryTripGenerationWithDefaultModel', () => {
     expect(waitForTripAttemptPersistenceMock).toHaveBeenCalledTimes(1);
     expect(dbUpsertTripMock.mock.invocationCallOrder[0]).toBeLessThan(waitForTripAttemptPersistenceMock.mock.invocationCallOrder[0]);
     expect(finishAttemptLogMock).not.toHaveBeenCalled();
+  });
+
+  it('persists admin fallback retries through the admin override commit path', async () => {
+    const result = await retryTripGenerationWithDefaultModel(buildTrip(), {
+      source: 'trip_status_strip',
+      adminOverride: true,
+    });
+
+    expect(result.state).toBe('queued');
+    expect(dbAdminOverrideTripCommitMock).toHaveBeenCalledTimes(1);
+    expect(dbAdminOverrideTripCommitMock).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'trip-existing' }),
+      undefined,
+      'Data: Admin retry state sync',
+    );
+    expect(dbUpsertTripMock).not.toHaveBeenCalled();
+    expect(waitForTripAttemptPersistenceMock).toHaveBeenCalledTimes(1);
+    expect(enqueueAsyncTripGenerationJobMock).toHaveBeenCalledTimes(1);
   });
 
   it('keeps same trip id and records failed retry when enqueue fails', async () => {
