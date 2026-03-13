@@ -44,7 +44,7 @@ const buildFixture = (
     scenario: BenchmarkMaskScenario,
     expectations: TripEvalExpectations = {},
 ) => {
-    const runtimeScenario = buildClassicBenchmarkScenario(scenario);
+    const runtimeScenario = buildClassicBenchmarkScenario(scenario, { compactOutput: true });
 
     return {
         description,
