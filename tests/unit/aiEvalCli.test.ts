@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   appendTsxImport,
   buildPromptfooArgs,
@@ -8,6 +8,10 @@ import {
 } from '../../shared/aiEvalCli.ts';
 
 describe('shared/aiEvalCli', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   it('adds the tsx import flag once', () => {
     expect(appendTsxImport(undefined)).toBe('--import tsx');
     expect(appendTsxImport('--trace-warnings')).toBe('--trace-warnings --import tsx');
@@ -47,7 +51,7 @@ describe('shared/aiEvalCli', () => {
       '-c',
       '/repo/promptfoo/promptfooconfig.ts',
       '--max-concurrency',
-      '2',
+      '1',
       '--no-write',
       '--env-file',
       '/repo/.env.local',
@@ -72,5 +76,20 @@ describe('shared/aiEvalCli', () => {
     expect(result.promptfooArgs).not.toContain('/repo/.env.local');
     expect(result.promptfooArgs).toContain('--env-file');
     expect(result.promptfooArgs).toContain('.env.preview');
+  });
+
+  it('allows overriding promptfoo max concurrency via env within safe bounds', () => {
+    vi.stubEnv('AI_EVAL_MAX_CONCURRENCY', '3');
+
+    const result = buildPromptfooArgs({
+      rootDir: '/repo',
+      promptfooConfigPath: '/repo/promptfoo/promptfooconfig.ts',
+      artifactsDir: '/repo/artifacts/promptfoo',
+      fileExists: () => false,
+      rawArgs: [],
+    });
+
+    expect(result.promptfooArgs).toContain('--max-concurrency');
+    expect(result.promptfooArgs).toContain('3');
   });
 });

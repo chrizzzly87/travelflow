@@ -3,6 +3,13 @@ import { resolve } from 'node:path';
 
 const PROMPTFOO_ENV_FILE_FLAGS = ['--env-file', '--env-path'] as const;
 
+const resolvePromptfooMaxConcurrency = (): string => {
+  const rawValue = process.env.AI_EVAL_MAX_CONCURRENCY?.trim() || '';
+  const parsed = Number(rawValue);
+  if (!Number.isFinite(parsed)) return '1';
+  return String(Math.max(1, Math.min(4, Math.round(parsed))));
+};
+
 export const appendTsxImport = (existingValue: string | undefined): string => {
   const trimmed = (existingValue || '').trim();
   if (trimmed.includes('--import tsx')) {
@@ -59,7 +66,7 @@ export const buildPromptfooArgs = ({
     '-c',
     promptfooConfigPath,
     '--max-concurrency',
-    '2',
+    resolvePromptfooMaxConcurrency(),
     '--no-write',
   ];
 

@@ -97,11 +97,14 @@ Required for local runs:
 Optional:
 
 - `AI_PROMPTFOO_TIMEOUT_MS`
+- `AI_EVAL_MAX_CONCURRENCY`
 
 Default local behavior:
 
 - `pnpm ai:eval` and `pnpm ai:eval:ci` now auto-load `.env.local` when it exists
 - otherwise they fall back to `.env`
+- the wrapper defaults Promptfoo concurrency to `1` for steadier provider behavior
+- you can raise concurrency with `AI_EVAL_MAX_CONCURRENCY=2` or higher when you want faster local experimentation
 - you can still override this with Promptfoo's own `--env-file` or `--env-path` flags
 
 ## Commands

@@ -521,7 +521,7 @@ const generateWithGemini = async (
             generationConfig: {
               responseMimeType: "application/json",
               maxOutputTokens: maxOutputTokens,
-              temperature: strictParseRetry ? 0 : 0.2,
+              temperature: strictParseRetry || jsonSchema ? 0 : 0.2,
             },
           }),
         },
@@ -727,7 +727,7 @@ const generateWithOpenAi = async (
         headers: openAiHeaders,
         body: JSON.stringify({
           model,
-          temperature: 0.2,
+          temperature: jsonSchema ? 0 : 0.2,
           response_format: buildOpenAiStructuredResponseFormat(jsonSchema),
           messages: [
             {

@@ -16,3 +16,4 @@ summary: "Added a report-only Promptfoo regression layer for classic AI trip cre
 - [ ] [Internal] 🧱 Added a shared itinerary JSON schema, enabled provider-time structured output where supported, and wired schema assertions into Promptfoo so evals catch JSON-shape drift earlier.
 - [ ] [Internal] 🛡️ Added regression coverage and workflow documentation for the strict structured-output schema subset so future schema edits do not silently break OpenAI-backed eval runs.
 - [ ] [Internal] 🔧 Updated the local Promptfoo wrapper to auto-load repo env files and handle forwarded CLI flags cleanly, so `pnpm ai:eval` matches normal local developer expectations.
+- [ ] [Internal] 🧭 Tightened the trip-generation prompt contract to match the shared schema keys and raised the eval token/concurrency defaults for steadier first-run Promptfoo smoke tests.

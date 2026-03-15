@@ -3,8 +3,8 @@ import { generateProviderItinerary, resolveTimeoutMs } from '../netlify/edge-lib
 import { TRIP_ITINERARY_STRUCTURED_OUTPUT_SCHEMA } from '../shared/aiTripItinerarySchema.ts';
 import type { TripEvalVars } from './tripEvalScenarios.ts';
 
-const PROMPTFOO_TIMEOUT_MS = resolveTimeoutMs('AI_PROMPTFOO_TIMEOUT_MS', 60_000, 20_000, 180_000);
-const SHORT_TIMEOUT_MAX_OUTPUT_TOKENS = 3_072;
+const PROMPTFOO_TIMEOUT_MS = resolveTimeoutMs('AI_PROMPTFOO_TIMEOUT_MS', 90_000, 20_000, 180_000);
+const SHORT_TIMEOUT_MAX_OUTPUT_TOKENS = 6_144;
 
 const parseTargetId = (targetId: string): { provider: string; model: string } => {
     const [provider, ...modelParts] = targetId.split(':');

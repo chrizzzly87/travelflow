@@ -138,6 +138,7 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
     const firstInit = (fetchMock.mock.calls[0] as [string, RequestInit])[1];
     const firstBody = JSON.parse(String(firstInit.body));
     expect(firstBody.generationConfig.responseMimeType).toBe('application/json');
+    expect(firstBody.generationConfig.temperature).toBe(0);
     expect(firstBody.generationConfig).not.toHaveProperty('responseSchema');
     const retryInit = (fetchMock.mock.calls[1] as [string, RequestInit])[1];
     const retryBody = JSON.parse(String(retryInit.body));
@@ -268,6 +269,7 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
     expect((fetchMock.mock.calls[1] as [string])[0]).toBe('https://api.openai.com/v1/responses');
     const chatInit = (fetchMock.mock.calls[0] as [string, RequestInit])[1];
     const chatBody = JSON.parse(String(chatInit.body));
+    expect(chatBody.temperature).toBe(0);
     expect(chatBody.response_format).toEqual({
       type: 'json_schema',
       json_schema: {

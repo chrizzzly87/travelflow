@@ -279,13 +279,14 @@ const BASE_ITINERARY_RULES_PROMPT = `
          ### Must Do (3-4 activities)
          If needed, you MAY add an additional final section named "### Heads Up" with 1-2 concise practical cautions.
          Use - [ ] for all items to make them checkboxes.
-      4. Provide Country Info (Currency, Exchange Rate to EUR, Languages, Sockets, Visa Link, Auswärtiges Amt Link).
+      4. Provide Country Info (Currency code, Currency name, Exchange Rate to EUR, Languages, Electric sockets, Visa info URL, Auswärtiges Amt URL).
          - countryInfo MUST be a single OBJECT (not an array, not a map keyed by country code).
-         - Required keys inside countryInfo: currency, exchangeRate, languages, sockets, visaLink, auswaertigesAmtLink.
+         - Required keys inside countryInfo: currencyCode, currencyName, exchangeRate, languages, electricSockets, visaInfoUrl, auswaertigesAmtUrl.
          - languages MUST be an ARRAY of strings.
          - countryInfo.exchangeRate MUST be a NUMBER only (local currency units for 1 EUR).
          - Valid example: "exchangeRate": 163
-         - Invalid example: "exchangeRateToEUR": "1 EUR ≈ 160 JPY"
+         - Valid example object: {"currencyCode":"JPY","currencyName":"Japanese Yen","exchangeRate":163,"languages":["Japanese"],"electricSockets":"Type A, Type B","visaInfoUrl":"https://...","auswaertigesAmtUrl":"https://..."}
+         - Invalid example: {"currency":"JPY","exchangeRateToEUR":"1 EUR ≈ 160 JPY"}
          - Do NOT include text, units, symbols, or approximation words in exchangeRate.
       5. For EVERY activity, you MUST return "activityTypes" as an array with 1-3 values ONLY from this list:
          [${ACTIVITY_TYPES_PROMPT_LIST}]
@@ -308,9 +309,9 @@ const BASE_ITINERARY_RULES_PROMPT_COMPACT = `
          ### Must Do
          If needed, you MAY add an additional final section named "### Heads Up" with 1 concise practical caution.
          Use - [ ] checkboxes with exactly 1 bullet per heading. Keep each bullet 3-6 words.
-      4. Provide Country Info (Currency, Exchange Rate to EUR, Languages, Sockets, Visa Link, Auswärtiges Amt Link).
+      4. Provide Country Info (Currency code, Currency name, Exchange Rate to EUR, Languages, Electric sockets, Visa info URL, Auswärtiges Amt URL).
          - countryInfo MUST be a single OBJECT (not an array, not a map keyed by country code).
-         - Required keys inside countryInfo: currency, exchangeRate, languages, sockets, visaLink, auswaertigesAmtLink.
+         - Required keys inside countryInfo: currencyCode, currencyName, exchangeRate, languages, electricSockets, visaInfoUrl, auswaertigesAmtUrl.
          - languages MUST be an ARRAY of strings.
          - countryInfo.exchangeRate MUST be a NUMBER only (local currency units for 1 EUR).
       5. For EVERY activity, you MUST return "activityTypes" as an array with 1-3 values ONLY from this list:
@@ -356,11 +357,12 @@ const STRICT_JSON_OBJECT_CONTRACT_PROMPT = `
          [${TRANSPORT_MODES_PROMPT_LIST}]
       8. travelSegments.duration must be NUMBER (hours), never a string with units.
       9. activities.duration must be NUMBER (days), never a string with units.
-      10. countryInfo.exchangeRate must be NUMBER only (example valid: 163; invalid: "1 EUR ≈ 160 JPY").
-      11. Before finalizing your answer, run a self-check:
+      10. countryInfo must use the canonical keys currencyCode, currencyName, exchangeRate, languages, electricSockets, visaInfoUrl, auswaertigesAmtUrl.
+      11. countryInfo.exchangeRate must be NUMBER only (example valid: 163; invalid: "1 EUR ≈ 160 JPY").
+      12. Before finalizing your answer, run a self-check:
          - Every city.description contains all three headings: "### Must See", "### Must Try", "### Must Do".
          - Only add "### Heads Up" when a practical warning is genuinely needed.
-         - countryInfo is a single object and languages is an array.
+         - countryInfo is a single object, languages is an array, and the canonical countryInfo keys are used exactly.
          - Return exactly one JSON object and nothing else.
     `;
 
