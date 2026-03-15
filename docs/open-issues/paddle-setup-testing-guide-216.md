@@ -27,6 +27,46 @@ Reference issue: [#216](https://github.com/chrizzzly87/travelflow/issues/216)
    - `public.profiles.tier_key` (`tier_mid`/`tier_premium` or fallback `tier_free`)
    - `public.billing_webhook_events` log for replay/debug safety
 
+## Cancellation Lifecycle (Implemented)
+- Paddle remains the billing system of record for cancel, payment-method changes, and invoice management.
+- TravelFlow now exposes lifecycle state separately from `tier_key`:
+  - `active`
+  - `canceled_grace`
+  - `inactive`
+- A canceled subscription with future `grace_ends_at` keeps paid access until the cutoff date.
+- After grace expires, TravelFlow falls back to the free tier and paid-only trips become expired/read-only according to the existing product limits.
+- The app does not claim that trips are deleted. Stored data remains available, but paid editing/sharing behavior is restricted after downgrade.
+
+## Post-Cancel UX Rules
+- Profile billing stays on `/profile-settings`, not on the public profile page.
+- `canceled_grace` users see:
+  - an amber warning banner
+  - the downgrade date
+  - a concise impact summary
+  - `Resubscribe` and `Manage billing` actions
+- `inactive` former subscribers see:
+  - a resubscribe banner
+  - optional coupon carry-through via checkout query params
+- Pricing changes its CTA state too:
+  - current active plan -> `Current plan`
+  - canceled paid tier -> `Resubscribe`
+  - blocked paid lifecycle -> `Manage billing`
+
+## Billing Refresh / Self-Heal Path
+- New authenticated endpoint:
+  - `POST /api/billing/paddle/subscription-refresh`
+- Purpose:
+  - recover stale local billing state after returning from Paddle management
+  - recover users whose Paddle subscription exists but local `subscriptions` or access state still shows free
+- The endpoint:
+  - resolves the canonical Paddle subscription for the current signed-in user
+  - replays local sync through the existing billing sync pipeline
+  - returns a normalized summary plus local sync status
+- Current UI surfaces that call this when needed:
+  - pricing
+  - checkout
+  - profile settings
+
 ## Current Identity Model
 - Supported now: visitor opens pricing or a locked trip -> lands on `/checkout` -> signs in or registers inline -> saves traveler details -> starts paid checkout.
 - Not supported yet: truly anonymous checkout that grants a paid tier before a durable non-anonymous user session exists.
@@ -197,6 +237,7 @@ If checkout fails with `You aren't permitted to perform this request.` during sa
    - Replay the notification from Paddle.
    - Run **Reconcile Paddle** from `/admin/billing` to fetch Paddle subscriptions and replay them through TravelFlow's billing sync.
      - If Paddle rate-limits the broad scan, enter a specific `sub_...` subscription ID in the admin dialog to repair one subscription directly.
+   - Use `POST /api/billing/paddle/subscription-refresh` from the signed-in app surfaces to recover one user after returning from Paddle billing management.
 
 Official docs:
 - [Create transaction API](https://developer.paddle.com/api-reference/transactions/create-transaction)
@@ -225,6 +266,11 @@ The standalone subset is intentionally limited to:
 - `public.billing_webhook_events` table
 - `public.profiles.tier_key` safety/backfill for webhook tier sync
 - related indexes + RLS policies
+
+The full canonical schema additionally carries the latest access-context shape used by the website:
+- lifecycle billing fields in `get_current_user_access()`
+- cancellation-aware effective entitlements
+- admin audit and admin users billing extensions
 
 Quick verification queries:
 
@@ -258,6 +304,31 @@ pnpm dev:netlify
 
 ## Recommended First End-to-End Scenario
 1. Start from a logged-out browser session.
+
+## Cancellation Verification Scenario
+1. Start from a paid sandbox account with a synced subscription row.
+2. Open billing management from `/profile-settings`.
+3. Cancel the subscription in Paddle sandbox.
+4. Return to TravelFlow and trigger a billing refresh or wait for the webhook.
+5. Verify:
+   - `/profile-settings` shows the cancellation/grace banner
+   - `/pricing` shows `Resubscribe`
+   - `public.subscriptions` contains `provider_status = canceled` and a future `grace_ends_at` when applicable
+   - `public.billing_webhook_events` contains the cancellation event
+   - `/admin/users` shows the user as canceled/grace
+   - `/admin/billing` shows the lifecycle state clearly
+   - `/admin/audit` includes the billing lifecycle entry
+
+## Admin Export / Targeting
+- `/admin/users` now supports CSV export for the currently filtered cohort.
+- For cancellation outreach, filter users by subscription lifecycle first, then export.
+- Export columns include:
+  - email
+  - tier
+  - subscription status
+  - provider subscription id
+  - canceled at
+  - grace ends / downgrade date
 2. Open `/pricing`.
 3. Click `Explorer` or `Globetrotter` to enter `/checkout`.
 4. Complete the inline login/register step on `/checkout`.

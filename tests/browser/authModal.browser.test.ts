@@ -91,6 +91,7 @@ vi.mock('../../services/authSessionPersistenceService', () => ({
 
 vi.mock('../../services/authService', () => ({
   acceptCurrentTerms: mocks.acceptCurrentTerms,
+  isSupabaseAuthNotConfiguredError: (error: unknown) => error instanceof Error && error.message === 'Supabase auth is not configured.',
 }));
 
 vi.mock('../../services/analyticsService', () => ({
@@ -221,5 +222,22 @@ describe('components/auth/AuthModal', () => {
         source: 'signup_auth_modal',
       });
     });
+  });
+
+  it('shows a support banner when auth config is missing', async () => {
+    const user = userEvent.setup();
+    mocks.auth.loginWithPassword.mockRejectedValueOnce(new Error('Supabase auth is not configured.'));
+
+    renderModal();
+
+    await user.type(screen.getByLabelText('labels.email'), 'traveler@example.com');
+    await user.type(screen.getByLabelText('labels.password'), 'password123');
+    await user.click(screen.getByRole('button', { name: 'actions.submitLogin' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('errors.auth_unavailable_title')).toBeInTheDocument();
+    });
+    expect(screen.getByText('errors.auth_unavailable_body')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'actions.contactSupport' })).toBeInTheDocument();
   });
 });

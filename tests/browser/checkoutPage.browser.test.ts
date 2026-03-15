@@ -19,6 +19,7 @@ const mocks = vi.hoisted(() => ({
     },
     access: {
       isAnonymous: false,
+      tierKey: 'tier_free',
     },
     isAuthenticated: true,
     isLoading: false,
@@ -50,10 +51,51 @@ const mocks = vi.hoisted(() => ({
       tier_mid: true,
       tier_premium: false,
     },
+    priceIds: {
+      tier_mid: 'pri_mid',
+      tier_premium: null,
+    },
     issues: [],
   }),
   initializePaddleJs: vi.fn().mockResolvedValue(true),
+  openPaddleInlineCheckout: vi.fn().mockReturnValue(true),
+  updatePaddleInlineCheckout: vi.fn().mockReturnValue(true),
   navigateToPaddleCheckout: vi.fn(),
+  getCurrentSubscriptionSummary: vi.fn().mockResolvedValue(null),
+  refreshCurrentPaddleSubscription: vi.fn().mockResolvedValue({
+    summary: null,
+    localSync: null,
+  }),
+  previewPaddleSubscriptionUpgrade: vi.fn(),
+  applyPaddleSubscriptionUpgrade: vi.fn(),
+  getPaddleSubscriptionManagementUrls: vi.fn(),
+  lookupPaddleDiscount: vi.fn().mockResolvedValue({
+    code: 'SPRING20',
+    type: 'percentage',
+    amount: 20,
+    currencyCode: 'USD',
+    description: 'Spring 20% off',
+    appliesToAllRecurring: true,
+    maximumRecurringIntervals: null,
+    applicableToTier: true,
+    estimate: {
+      originalAmount: 900,
+      discountedAmount: 720,
+      savingsAmount: 180,
+      currencyCode: 'USD',
+    },
+  }),
+  syncPaddleTransaction: vi.fn().mockResolvedValue({
+    provider: 'paddle',
+    transactionId: 'txn_123',
+    providerSubscriptionId: 'sub_123',
+    providerStatus: 'active',
+    localSync: {
+      status: 'processed',
+      duplicate: false,
+      reason: null,
+    },
+  }),
   startPaddleCheckoutSession: vi.fn().mockResolvedValue({
     provider: 'paddle',
     environment: 'sandbox',
@@ -63,6 +105,22 @@ const mocks = vi.hoisted(() => ({
   }),
   updateCurrentUserProfile: vi.fn().mockResolvedValue(undefined),
   acceptCurrentTerms: vi.fn().mockResolvedValue({ data: { termsVersion: '2026-03', acceptedAt: '2026-03-08T10:00:00Z' }, error: null }),
+  getCurrentAccessContext: vi.fn().mockResolvedValue({
+    userId: 'user_123',
+    email: 'ada@example.com',
+    isAnonymous: false,
+    role: 'user',
+    tierKey: 'tier_mid',
+    entitlements: {},
+    onboardingCompleted: true,
+    accountStatus: 'active',
+    termsCurrentVersion: '2026-03',
+    termsRequiresReaccept: false,
+    termsAcceptedVersion: '2026-03',
+    termsAcceptedAt: '2026-03-08T10:00:00Z',
+    termsAcceptanceRequired: false,
+    termsNoticeRequired: false,
+  }),
   processQueuedTripGenerationAfterAuth: vi.fn().mockResolvedValue({ tripId: 'trip_claimed_123' }),
   registerTripGenerationCompletionWatch: vi.fn(),
   trackEvent: vi.fn(),
@@ -131,13 +189,22 @@ vi.mock('../../services/analyticsService', () => ({
 
 vi.mock('../../services/authService', () => ({
   acceptCurrentTerms: mocks.acceptCurrentTerms,
+  getCurrentAccessContext: mocks.getCurrentAccessContext,
+  isSupabaseAuthNotConfiguredError: (error: unknown) => error instanceof Error && error.message === 'Supabase auth is not configured.',
 }));
 
 vi.mock('../../services/billingService', async () => {
   const actual = await vi.importActual('../../services/billingService');
   return {
     ...actual,
+    getCurrentSubscriptionSummary: mocks.getCurrentSubscriptionSummary,
+    refreshCurrentPaddleSubscription: mocks.refreshCurrentPaddleSubscription,
+    previewPaddleSubscriptionUpgrade: mocks.previewPaddleSubscriptionUpgrade,
+    applyPaddleSubscriptionUpgrade: mocks.applyPaddleSubscriptionUpgrade,
+    getPaddleSubscriptionManagementUrls: mocks.getPaddleSubscriptionManagementUrls,
+    lookupPaddleDiscount: mocks.lookupPaddleDiscount,
     startPaddleCheckoutSession: mocks.startPaddleCheckoutSession,
+    syncPaddleTransaction: mocks.syncPaddleTransaction,
   };
 });
 
@@ -147,6 +214,8 @@ vi.mock('../../services/paddleClient', async () => {
     ...actual,
     fetchPaddlePublicConfig: mocks.fetchPaddlePublicConfig,
     initializePaddleJs: mocks.initializePaddleJs,
+    openPaddleInlineCheckout: mocks.openPaddleInlineCheckout,
+    updatePaddleInlineCheckout: mocks.updatePaddleInlineCheckout,
     navigateToPaddleCheckout: mocks.navigateToPaddleCheckout,
   };
 });
@@ -198,7 +267,21 @@ describe('pages/CheckoutPage', () => {
     mocks.auth.isAuthenticated = true;
     mocks.auth.isLoading = false;
     mocks.auth.isProfileLoading = false;
-    mocks.auth.access = { isAnonymous: false };
+    mocks.auth.access = {
+      isAnonymous: false,
+      tierKey: 'tier_free',
+      billing: {
+        providerSubscriptionId: null,
+        providerStatus: null,
+        subscriptionStatus: null,
+        currentPeriodEnd: null,
+        cancelAt: null,
+        canceledAt: null,
+        graceEndsAt: null,
+        accessUntil: null,
+        lifecycleState: 'none',
+      },
+    };
     mocks.auth.profile = {
       firstName: 'Ada',
       lastName: 'Lovelace',
@@ -213,14 +296,72 @@ describe('pages/CheckoutPage', () => {
       gender: '',
     };
     mocks.auth.refreshAccess.mockResolvedValue(undefined);
+    mocks.getCurrentAccessContext.mockResolvedValue({
+      userId: 'user_123',
+      email: 'ada@example.com',
+      isAnonymous: false,
+      role: 'user',
+      tierKey: 'tier_mid',
+      entitlements: {},
+      onboardingCompleted: true,
+      accountStatus: 'active',
+      termsCurrentVersion: '2026-03',
+      termsRequiresReaccept: false,
+      termsAcceptedVersion: '2026-03',
+      termsAcceptedAt: '2026-03-08T10:00:00Z',
+      termsAcceptanceRequired: false,
+      termsNoticeRequired: false,
+    });
+    mocks.getCurrentSubscriptionSummary.mockResolvedValue(null);
+    mocks.refreshCurrentPaddleSubscription.mockResolvedValue({
+      summary: null,
+      localSync: null,
+    });
+    mocks.previewPaddleSubscriptionUpgrade.mockResolvedValue({
+      mode: 'upgrade',
+      currentTierKey: 'tier_mid',
+      targetTierKey: 'tier_premium',
+      providerSubscriptionId: 'sub_123',
+      providerStatus: 'active',
+      currentAmount: 900,
+      currentCurrency: 'USD',
+      recurringAmount: 1900,
+      recurringCurrency: 'USD',
+      immediateAmount: 1000,
+      immediateCurrency: 'USD',
+      prorationMessage: 'upgrade now',
+    });
+    mocks.applyPaddleSubscriptionUpgrade.mockResolvedValue({
+      mode: 'upgrade_applied',
+      currentTierKey: 'tier_mid',
+      targetTierKey: 'tier_premium',
+      providerSubscriptionId: 'sub_123',
+      providerStatus: 'active',
+      recurringAmount: 1900,
+      recurringCurrency: 'USD',
+      localSync: {
+        status: 'processed',
+        duplicate: false,
+        reason: null,
+      },
+    });
+    mocks.getPaddleSubscriptionManagementUrls.mockResolvedValue({
+      provider: 'paddle',
+      providerSubscriptionId: 'sub_123',
+      cancelUrl: 'https://vendors.paddle.test/cancel',
+      updatePaymentMethodUrl: 'https://vendors.paddle.test/manage',
+      providerStatus: 'active',
+      currentPeriodEnd: '2026-04-01T00:00:00.000Z',
+      cancelAt: null,
+      canceledAt: null,
+      graceEndsAt: null,
+    });
+    mocks.lookupPaddleDiscount.mockClear();
+    mocks.syncPaddleTransaction.mockClear();
   });
 
   it('preserves trip and claim metadata when starting checkout from the dedicated route', async () => {
-    const user = userEvent.setup();
-
     render(React.createElement(CheckoutPage));
-
-    await user.click(screen.getByRole('button', { name: 'checkout.continueToPayment' }));
 
     await waitFor(() => {
       expect(mocks.startPaddleCheckoutSession).toHaveBeenCalledWith({
@@ -229,6 +370,7 @@ describe('pages/CheckoutPage', () => {
         claimId: 'claim_123',
         returnTo: '/trip/trip_123',
         tripId: 'trip_123',
+        discountCode: null,
       });
     });
 
@@ -244,7 +386,21 @@ describe('pages/CheckoutPage', () => {
     const user = userEvent.setup();
     mocks.auth.session = null;
     mocks.auth.isAuthenticated = false;
-    mocks.auth.access = { isAnonymous: true };
+    mocks.auth.access = {
+      isAnonymous: true,
+      tierKey: 'tier_free',
+      billing: {
+        providerSubscriptionId: null,
+        providerStatus: null,
+        subscriptionStatus: null,
+        currentPeriodEnd: null,
+        cancelAt: null,
+        canceledAt: null,
+        graceEndsAt: null,
+        accessUntil: null,
+        lifecycleState: 'none',
+      },
+    };
 
     render(React.createElement(CheckoutPage));
 
@@ -261,11 +417,60 @@ describe('pages/CheckoutPage', () => {
     expect(mocks.startPaddleCheckoutSession).not.toHaveBeenCalled();
   });
 
+  it('shows a support banner when checkout auth config is missing', async () => {
+    const user = userEvent.setup();
+    mocks.auth.session = null;
+    mocks.auth.isAuthenticated = false;
+    mocks.auth.access = {
+      isAnonymous: true,
+      tierKey: 'tier_free',
+      billing: {
+        providerSubscriptionId: null,
+        providerStatus: null,
+        subscriptionStatus: null,
+        currentPeriodEnd: null,
+        cancelAt: null,
+        canceledAt: null,
+        graceEndsAt: null,
+        accessUntil: null,
+        lifecycleState: 'none',
+      },
+    };
+    mocks.auth.profile = null;
+    mocks.auth.loginWithPassword.mockRejectedValueOnce(new Error('Supabase auth is not configured.'));
+
+    render(React.createElement(CheckoutPage));
+
+    await user.type(screen.getByRole('textbox', { name: 'labels.email' }), 'traveler@example.com');
+    await user.type(screen.getByLabelText('labels.password'), 'password123');
+    await user.click(screen.getByRole('button', { name: 'actions.submitLogin' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('errors.auth_unavailable_title')).toBeInTheDocument();
+    });
+    expect(screen.getByText('errors.auth_unavailable_body')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'actions.contactSupport' })).toBeInTheDocument();
+  });
+
   it('adds the signup terms-finalization marker to register email redirects', async () => {
     const user = userEvent.setup();
     mocks.auth.session = null;
     mocks.auth.isAuthenticated = false;
-    mocks.auth.access = { isAnonymous: true };
+    mocks.auth.access = {
+      isAnonymous: true,
+      tierKey: 'tier_free',
+      billing: {
+        providerSubscriptionId: null,
+        providerStatus: null,
+        subscriptionStatus: null,
+        currentPeriodEnd: null,
+        cancelAt: null,
+        canceledAt: null,
+        graceEndsAt: null,
+        accessUntil: null,
+        lifecycleState: 'none',
+      },
+    };
     mocks.auth.registerWithPassword.mockResolvedValueOnce({
       error: null,
       data: { session: null },
@@ -294,7 +499,19 @@ describe('pages/CheckoutPage', () => {
     mocks.location.search = '?tier=tier_mid&source=pricing_page&signup_accept_terms=1';
     mocks.auth.access = {
       isAnonymous: false,
+      tierKey: 'tier_free',
       termsAcceptanceRequired: true,
+      billing: {
+        providerSubscriptionId: null,
+        providerStatus: null,
+        subscriptionStatus: null,
+        currentPeriodEnd: null,
+        cancelAt: null,
+        canceledAt: null,
+        graceEndsAt: null,
+        accessUntil: null,
+        lifecycleState: 'none',
+      },
     };
 
     render(React.createElement(CheckoutPage));
@@ -309,16 +526,56 @@ describe('pages/CheckoutPage', () => {
     await waitFor(() => {
       expect(mocks.navigate).toHaveBeenCalledWith('/checkout?tier=tier_mid&source=pricing_page', { replace: true });
     });
+
+    expect(mocks.auth.refreshAccess).toHaveBeenCalled();
+    expect(Math.min(...mocks.auth.refreshAccess.mock.invocationCallOrder)).toBeLessThan(mocks.navigate.mock.invocationCallOrder[0]);
   });
 
-  it('keeps traveler details editable when an inline checkout transaction already exists', () => {
+  it('keeps traveler details editable when an inline checkout transaction already exists', async () => {
     mocks.location.search = '?tier=tier_mid&source=pricing_page&_ptxn=txn_123';
 
     render(React.createElement(CheckoutPage));
 
     expect(screen.getByDisplayValue('Ada')).toBeInTheDocument();
     expect(screen.getByDisplayValue('Lovelace')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'checkout.refreshPayment' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'checkout.travelerDetailsEditCta' })).toBeInTheDocument();
+    await waitFor(() => {
+      expect(mocks.openPaddleInlineCheckout).toHaveBeenCalledWith({
+        transactionId: 'txn_123',
+        customerEmail: 'ada@example.com',
+        discountCode: null,
+      });
+    });
+    expect(screen.queryByText('checkout.errorConfig')).toBeNull();
+  });
+
+  it('opens Paddle inline checkout again when the transaction id changes after editing', async () => {
+    mocks.location.search = '?tier=tier_mid&source=pricing_page&_ptxn=txn_old';
+    const { rerender } = render(React.createElement(CheckoutPage));
+
+    await waitFor(() => {
+      expect(mocks.openPaddleInlineCheckout).toHaveBeenCalledWith({
+        transactionId: 'txn_old',
+        customerEmail: 'ada@example.com',
+        discountCode: null,
+      });
+    });
+
+    mocks.location.search = '?tier=tier_mid&source=pricing_page';
+    rerender(React.createElement(CheckoutPage));
+
+    mocks.location.search = '?tier=tier_mid&source=pricing_page&_ptxn=txn_new';
+    rerender(React.createElement(CheckoutPage));
+
+    await waitFor(() => {
+      expect(mocks.openPaddleInlineCheckout).toHaveBeenLastCalledWith({
+        transactionId: 'txn_new',
+        customerEmail: 'ada@example.com',
+        discountCode: null,
+      });
+    });
+
+    expect(mocks.openPaddleInlineCheckout).toHaveBeenCalledTimes(2);
   });
 
   it('starts the claimed trip after payment and prioritizes trip actions on success', async () => {
@@ -338,6 +595,11 @@ describe('pages/CheckoutPage', () => {
     checkoutEventCallback?.({ name: 'checkout.completed' });
 
     await waitFor(() => {
+      expect(mocks.syncPaddleTransaction).toHaveBeenCalledWith('txn_123');
+      expect(mocks.getPaddleSubscriptionManagementUrls).toHaveBeenCalled();
+      expect(mocks.auth.refreshAccess).toHaveBeenCalled();
+    });
+    await waitFor(() => {
       expect(mocks.processQueuedTripGenerationAfterAuth).toHaveBeenCalledWith('claim_123');
     });
     await waitFor(() => {
@@ -347,5 +609,329 @@ describe('pages/CheckoutPage', () => {
     expect(await screen.findByRole('link', { name: 'checkout.successOpenTrip' })).toHaveAttribute('href', '/trip/trip_claimed_123');
     expect(screen.getByRole('link', { name: 'checkout.successCreateTrip' })).toHaveAttribute('href', '/create-trip');
     expect(screen.queryByRole('link', { name: 'checkout.successOpenProfile' })).toBeNull();
+  });
+
+  it('passes voucher codes into inline Paddle checkout and discount lookup', async () => {
+    mocks.location.search = '?tier=tier_mid&source=pricing_page&_ptxn=txn_123&discount=SPRING20';
+
+    render(React.createElement(CheckoutPage));
+
+    await waitFor(() => {
+      expect(mocks.lookupPaddleDiscount).toHaveBeenCalledWith('SPRING20', 'tier_mid');
+      expect(mocks.openPaddleInlineCheckout).toHaveBeenCalledWith({
+        transactionId: 'txn_123',
+        customerEmail: 'ada@example.com',
+        discountCode: 'SPRING20',
+      });
+    });
+  });
+
+  it('applies a voucher only after clicking apply and collapses it into a removable badge', async () => {
+    const user = userEvent.setup();
+    mocks.auth.profile = {
+      firstName: '',
+      lastName: '',
+      bio: '',
+      country: '',
+      city: '',
+      preferredLanguage: 'en',
+      publicProfileEnabled: true,
+      defaultPublicTripVisibility: true,
+      username: 'ada',
+      usernameDisplay: 'ada',
+      gender: '',
+    };
+
+    render(React.createElement(CheckoutPage));
+
+    await user.type(screen.getByPlaceholderText('voucher.placeholder'), 'spring20');
+
+    expect(mocks.lookupPaddleDiscount).not.toHaveBeenCalledWith('SPRING20', 'tier_mid');
+
+    await user.click(screen.getByRole('button', { name: 'voucher.applyCta' }));
+
+    await waitFor(() => {
+      expect(mocks.lookupPaddleDiscount).toHaveBeenCalledWith('SPRING20', 'tier_mid');
+    });
+
+    expect(mocks.navigate).toHaveBeenCalledWith(expect.stringContaining('discount=SPRING20'));
+
+    mocks.location.search = '?tier=tier_mid&source=trip_paywall_strip&claim=claim_123&return_to=%2Ftrip%2Ftrip_123&trip_id=trip_123&discount=SPRING20';
+    cleanup();
+    render(React.createElement(CheckoutPage));
+
+    expect(await screen.findByText('-$1.80')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'voucher.clearCta' })).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText('voucher.placeholder')).toBeNull();
+  });
+
+  it('blocks voucher navigation when the code is invalid', async () => {
+    const user = userEvent.setup();
+    mocks.auth.profile = {
+      firstName: '',
+      lastName: '',
+      bio: '',
+      country: '',
+      city: '',
+      preferredLanguage: 'en',
+      publicProfileEnabled: true,
+      defaultPublicTripVisibility: true,
+      username: 'ada',
+      usernameDisplay: 'ada',
+      gender: '',
+    };
+    mocks.lookupPaddleDiscount.mockRejectedValue(new Error('This Paddle discount exists, but it is not enabled for checkout.'));
+
+    render(React.createElement(CheckoutPage));
+
+    await user.type(screen.getByPlaceholderText('voucher.placeholder'), 'chrisistcool');
+
+    expect(mocks.lookupPaddleDiscount).not.toHaveBeenCalledWith('CHRISISTCOOL', 'tier_mid');
+
+    await user.click(screen.getByRole('button', { name: 'voucher.applyCta' }));
+
+    await waitFor(() => {
+      expect(mocks.lookupPaddleDiscount).toHaveBeenLastCalledWith('CHRISISTCOOL', 'tier_mid');
+    });
+    expect(mocks.navigate).not.toHaveBeenCalledWith(expect.stringContaining('discount=CHRISISTCOOL'));
+  });
+
+  it('syncs voucher apply and removal events from Paddle checkout into the sidebar state', async () => {
+    const user = userEvent.setup();
+    let checkoutEventCallback: ((event: { name: string; data?: unknown }) => void) | null = null;
+    mocks.location.search = '?tier=tier_mid&source=pricing_page&_ptxn=txn_123';
+    mocks.lookupPaddleDiscount.mockResolvedValue({
+      code: 'VIP50',
+      type: 'percentage',
+      amount: 50,
+      currencyCode: 'USD',
+      description: 'VIP 50% off',
+      appliesToAllRecurring: true,
+      maximumRecurringIntervals: null,
+      applicableToTier: true,
+      estimate: {
+        originalAmount: 900,
+        discountedAmount: 450,
+        savingsAmount: 450,
+        currencyCode: 'USD',
+      },
+    });
+    mocks.initializePaddleJs.mockImplementation(async ({ eventCallback }: { eventCallback: (event: { name: string; data?: unknown }) => void }) => {
+      checkoutEventCallback = eventCallback;
+      return true;
+    });
+
+    render(React.createElement(CheckoutPage));
+
+    await waitFor(() => {
+      expect(mocks.openPaddleInlineCheckout).toHaveBeenCalled();
+    });
+
+    checkoutEventCallback?.({
+      name: 'checkout.discount.applied',
+      data: {
+        discount: {
+          code: 'VIP50',
+        },
+      },
+    });
+
+    await waitFor(() => {
+      expect(mocks.navigate).toHaveBeenCalledWith(expect.stringContaining('discount=VIP50'));
+    });
+
+    mocks.location.search = '?tier=tier_mid&source=pricing_page&_ptxn=txn_123&discount=VIP50';
+    cleanup();
+    render(React.createElement(CheckoutPage));
+    expect(await screen.findByRole('button', { name: 'voucher.clearCta' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'voucher.clearCta' }));
+
+    expect(mocks.updatePaddleInlineCheckout).toHaveBeenCalledWith({ discountCode: null });
+  });
+
+  it('renders an upgrade review flow for existing paid users and confirms the upgrade inline', async () => {
+    const user = userEvent.setup();
+    mocks.location.search = '?tier=tier_premium&source=pricing_page';
+    mocks.auth.access = {
+      isAnonymous: false,
+      tierKey: 'tier_mid',
+      billing: {
+        providerSubscriptionId: 'sub_123',
+        providerStatus: 'active',
+        subscriptionStatus: 'active',
+        currentPeriodEnd: '2026-04-01T00:00:00.000Z',
+        cancelAt: null,
+        canceledAt: null,
+        graceEndsAt: null,
+        accessUntil: '2026-04-01T00:00:00.000Z',
+        lifecycleState: 'active',
+      },
+    };
+    mocks.getCurrentSubscriptionSummary.mockResolvedValue({
+      userId: 'user_123',
+      provider: 'paddle',
+      providerCustomerId: 'ctm_123',
+      providerSubscriptionId: 'sub_123',
+      providerPriceId: 'pri_mid',
+      providerProductId: 'pro_mid',
+      providerStatus: 'active',
+      status: 'active',
+      currentPeriodStart: '2026-03-01T00:00:00.000Z',
+      currentPeriodEnd: '2026-04-01T00:00:00.000Z',
+      cancelAt: null,
+      canceledAt: null,
+      graceEndsAt: null,
+      currency: 'USD',
+      amount: 900,
+      lastEventId: 'evt_123',
+      lastEventType: 'subscription.updated',
+      lastEventAt: '2026-03-08T10:00:00.000Z',
+    });
+    mocks.fetchPaddlePublicConfig.mockResolvedValue({
+      provider: 'paddle',
+      environment: 'sandbox',
+      checkoutEnabled: true,
+      clientTokenConfigured: true,
+      tierAvailability: {
+        tier_mid: true,
+        tier_premium: true,
+      },
+      priceIds: {
+        tier_mid: 'pri_mid',
+        tier_premium: 'pri_premium',
+      },
+      issues: [],
+    });
+
+    render(React.createElement(CheckoutPage));
+
+    await waitFor(() => {
+      expect(mocks.previewPaddleSubscriptionUpgrade).toHaveBeenCalledWith('tier_premium');
+      expect(screen.getByText('checkout.upgradeTitle')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('button', { name: 'checkout.upgradeConfirmCta' }));
+
+    await waitFor(() => {
+      expect(mocks.applyPaddleSubscriptionUpgrade).toHaveBeenCalledWith({
+        tierKey: 'tier_premium',
+        source: 'pricing_page',
+        claimId: null,
+        returnTo: '/pricing',
+        tripId: null,
+      });
+    });
+  });
+
+  it('repairs stale billing state and exits acquisition checkout when Paddle reports an existing subscription', async () => {
+    mocks.location.search = '?tier=tier_mid&source=pricing_page';
+    mocks.auth.access = {
+      isAnonymous: false,
+      tierKey: 'tier_free',
+      billing: {
+        providerSubscriptionId: 'sub_123',
+        providerStatus: 'active',
+        subscriptionStatus: 'active',
+        currentPeriodEnd: '2026-04-01T00:00:00.000Z',
+        cancelAt: null,
+        canceledAt: null,
+        graceEndsAt: null,
+        accessUntil: '2026-04-01T00:00:00.000Z',
+        lifecycleState: 'active',
+      },
+    };
+    mocks.fetchPaddlePublicConfig.mockResolvedValue({
+      provider: 'paddle',
+      environment: 'sandbox',
+      checkoutEnabled: true,
+      clientTokenConfigured: true,
+      tierAvailability: {
+        tier_mid: true,
+        tier_premium: true,
+      },
+      priceIds: {
+        tier_mid: 'pri_mid',
+        tier_premium: 'pri_premium',
+      },
+      issues: [],
+    });
+    const repairedSummary = {
+      userId: 'user_123',
+      provider: 'paddle',
+      providerCustomerId: 'ctm_123',
+      providerSubscriptionId: 'sub_123',
+      providerPriceId: 'pri_mid',
+      providerProductId: 'pro_mid',
+      providerStatus: 'active',
+      status: 'active',
+      currentPeriodStart: '2026-03-01T00:00:00.000Z',
+      currentPeriodEnd: '2026-04-01T00:00:00.000Z',
+      cancelAt: null,
+      canceledAt: null,
+      graceEndsAt: null,
+      currency: 'USD',
+      amount: 900,
+      lastEventId: 'evt_123',
+      lastEventType: 'subscription.updated',
+      lastEventAt: '2026-03-08T10:00:00.000Z',
+    };
+    mocks.getCurrentSubscriptionSummary
+      .mockResolvedValueOnce(null)
+      .mockResolvedValue(repairedSummary);
+    mocks.refreshCurrentPaddleSubscription.mockResolvedValueOnce({
+      summary: repairedSummary,
+      localSync: {
+        status: 'processed',
+        duplicate: false,
+        reason: null,
+      },
+    });
+    mocks.startPaddleCheckoutSession.mockRejectedValueOnce(Object.assign(
+      new Error('A Paddle subscription already exists for this account and needs to be managed from billing settings.'),
+      { code: 'existing_paid_subscription_requires_refresh' },
+    ));
+
+    render(React.createElement(CheckoutPage));
+
+    await waitFor(() => {
+      expect(mocks.startPaddleCheckoutSession).toHaveBeenCalled();
+      expect(mocks.refreshCurrentPaddleSubscription).toHaveBeenCalled();
+      expect(mocks.auth.refreshAccess).toHaveBeenCalled();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('checkout.currentPlanTitle')).toBeInTheDocument();
+    });
+  });
+
+  it('keeps a manual continue action after saving edited traveler details', async () => {
+    const user = userEvent.setup();
+
+    render(React.createElement(CheckoutPage));
+
+    await waitFor(() => {
+      expect(mocks.startPaddleCheckoutSession).toHaveBeenCalledTimes(1);
+    });
+
+    await user.click(screen.getByRole('button', { name: 'checkout.travelerDetailsEditCta' }));
+    const cityInput = screen.getByRole('textbox', { name: 'settings.fields.city' });
+    await user.clear(cityInput);
+    await user.type(cityInput, 'Hamburg');
+    await user.click(screen.getByRole('button', { name: 'checkout.travelerDetailsSaveCta' }));
+
+    await waitFor(() => {
+      expect(mocks.updateCurrentUserProfile).toHaveBeenCalledWith(expect.objectContaining({
+        city: 'Hamburg',
+      }));
+    });
+
+    expect(screen.getByRole('button', { name: 'checkout.continueToPayment' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'checkout.continueToPayment' }));
+
+    await waitFor(() => {
+      expect(mocks.startPaddleCheckoutSession).toHaveBeenCalledTimes(2);
+    });
   });
 });

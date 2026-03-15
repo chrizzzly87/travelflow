@@ -7,6 +7,14 @@ import { appendAuthTraceEntry } from '../services/authTraceService';
 import { markAuthBootstrapSettled } from '../services/authBootstrapSuspense';
 import type { UserAccessContext } from '../types';
 import { stripLocalePrefix } from '../config/routes';
+import {
+    getE2EAuthSandboxSnapshot,
+    loginWithE2EAuthSandbox,
+    logoutFromE2EAuthSandbox,
+    registerWithE2EAuthSandbox,
+    shouldEnableE2EAuthSandbox,
+    subscribeToE2EAuthSandbox,
+} from '../services/e2eAuthSandboxService';
 import { isSimulatedLoggedIn, setSimulatedLoggedIn } from '../services/simulatedLoginService';
 import type { UserProfileRecord } from '../services/profileService';
 import {
@@ -113,6 +121,17 @@ export const createOptimisticAccessFromSessionHint = (
     termsAcceptedAt: null,
     termsAcceptanceRequired: false,
     termsNoticeRequired: false,
+    billing: {
+        providerSubscriptionId: null,
+        providerStatus: null,
+        subscriptionStatus: null,
+        currentPeriodEnd: null,
+        cancelAt: null,
+        canceledAt: null,
+        graceEndsAt: null,
+        accessUntil: null,
+        lifecycleState: 'none',
+    },
 });
 
 export const createOptimisticSessionFromSessionHint = (
@@ -283,9 +302,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             provider: 'supabase',
             metadata: { hasSession },
         });
-    }, []);
+    }, [resetProfileState]);
 
     const refreshProfile = useCallback(async () => {
+        if (shouldEnableE2EAuthSandbox()) {
+            resetProfileState();
+            return;
+        }
+
         const requestId = profileLoadRequestIdRef.current + 1;
         profileLoadRequestIdRef.current = requestId;
         setIsProfileLoading(true);
@@ -306,6 +330,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, []);
 
     const refreshAccess = useCallback(async () => {
+        if (shouldEnableE2EAuthSandbox()) {
+            const snapshot = getE2EAuthSandboxSnapshot();
+            setSession(snapshot.session);
+            setAccess(snapshot.access);
+            resetProfileState();
+            setIsLoading(false);
+            return;
+        }
+
         const authService = await loadAuthService();
         const nextAccess = await authService.getCurrentAccessContext();
         setAccess(nextAccess);
@@ -319,6 +352,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     useEffect(() => {
         let cancelled = false;
         let unsubscribe: (() => void) = () => {};
+
+        if (shouldEnableE2EAuthSandbox()) {
+            const syncSandboxState = () => {
+                if (cancelled) return;
+                const snapshot = getE2EAuthSandboxSnapshot();
+                setSession(snapshot.session);
+                setAccess(snapshot.access);
+                resetProfileState();
+                setIsLoading(false);
+            };
+
+            syncSandboxState();
+            hasBootstrappedRef.current = true;
+            isBootstrappingRef.current = false;
+            unsubscribe = subscribeToE2EAuthSandbox(syncSandboxState);
+
+            return () => {
+                cancelled = true;
+                unsubscribe();
+            };
+        }
 
         const isAnonymousSession = (value: Session | null): boolean => {
             const user = value?.user as (Session['user'] & { is_anonymous?: boolean }) | undefined;
@@ -532,6 +586,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, [logAuthStateEvent, refreshAccess, resetProfileState]);
 
     const loginWithPassword = useCallback(async (email: string, password: string) => {
+        if (shouldEnableE2EAuthSandbox()) {
+            const response = await loginWithE2EAuthSandbox(email, password);
+            if (!response.error) {
+                await refreshAccess();
+            }
+            return response;
+        }
+
         const authService = await loadAuthService();
         const response = await authService.signInWithEmailPassword(email, password);
         if (!response.error) {
@@ -545,6 +607,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         password: string,
         options?: { emailRedirectTo?: string }
     ) => {
+        if (shouldEnableE2EAuthSandbox()) {
+            const response = await registerWithE2EAuthSandbox(email, password);
+            if (!response.error) {
+                await refreshAccess();
+            }
+            return response;
+        }
+
         const authService = await loadAuthService();
         const response = await authService.signUpWithEmailPassword(email, password, options);
         if (!response.error) {
@@ -554,6 +624,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, [refreshAccess]);
 
     const loginWithOAuth = useCallback(async (provider: OAuthProviderId, redirectTo?: string) => {
+        if (shouldEnableE2EAuthSandbox()) {
+            return {
+                data: null,
+                error: new Error('OAuth login is unavailable in the e2e auth sandbox.'),
+            } as Awaited<ReturnType<AuthServiceModule['signInWithOAuth']>>;
+        }
+
         const authService = await loadAuthService();
         return authService.signInWithOAuth(provider, { redirectTo });
     }, []);
@@ -562,16 +639,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email: string,
         options?: { redirectTo?: string; intent?: 'forgot_password' | 'set_password' }
     ) => {
+        if (shouldEnableE2EAuthSandbox()) {
+            return {
+                data: {},
+                error: null,
+            } as Awaited<ReturnType<AuthServiceModule['requestPasswordResetEmail']>>;
+        }
+
         const authService = await loadAuthService();
         return authService.requestPasswordResetEmail(email, options);
     }, []);
 
     const updatePassword = useCallback(async (password: string) => {
+        if (shouldEnableE2EAuthSandbox()) {
+            return {
+                data: { user: getE2EAuthSandboxSnapshot().session?.user ?? null },
+                error: null,
+            } as Awaited<ReturnType<AuthServiceModule['updateCurrentUserPassword']>>;
+        }
+
         const authService = await loadAuthService();
         return authService.updateCurrentUserPassword(password);
     }, []);
 
     const logout = useCallback(async () => {
+        if (shouldEnableE2EAuthSandbox()) {
+            await logoutFromE2EAuthSandbox();
+            setAccess(null);
+            setSession(null);
+            resetProfileState();
+            return;
+        }
+
         const authService = await loadAuthService();
         try {
             await authService.signOut();

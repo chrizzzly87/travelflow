@@ -1,10 +1,15 @@
 import type { AuthChangeEvent, Session, User } from '@supabase/supabase-js';
 import { getFreePlanEntitlements } from '../config/planCatalog';
 import type { PlanTierKey, SystemRole, UserAccessContext } from '../types';
+import { resolveBillingAccessUntil, resolveBillingLifecycleState } from '../lib/billing/subscriptionState';
 import { trackEvent } from './analyticsService';
 import { appendAuthTraceEntry } from './authTraceService';
 import { clearLocalhostSupabaseBridgeCookies } from './authSessionPersistenceService';
 import { appendClientErrorLog } from './clientErrorLogger';
+import {
+    acceptCurrentTermsInE2EAuthSandbox,
+    shouldEnableE2EAuthSandbox,
+} from './e2eAuthSandboxService';
 import {
     removeLocalStorageItem,
     removeSessionStorageItem,
@@ -14,6 +19,8 @@ import { supabase } from './supabaseClient';
 import { markConnectivityFailure, markConnectivitySuccess } from './supabaseHealthMonitor';
 
 export type OAuthProviderId = 'google' | 'apple' | 'facebook' | 'kakao';
+
+export const SUPABASE_AUTH_NOT_CONFIGURED_ERROR_MESSAGE = 'Supabase auth is not configured.';
 
 export interface AuthFlowContext {
     flowId: string;
@@ -78,6 +85,14 @@ const reportAuthSupabaseFailure = (error: unknown, operation: string): void => {
 
 const reportAuthSupabaseSuccess = (operation: string): void => {
     markConnectivitySuccess(`auth:${operation}`);
+};
+
+export const isSupabaseAuthNotConfiguredError = (error: unknown): boolean => {
+    if (!error || typeof error !== 'object') return false;
+    const message = 'message' in error && typeof error.message === 'string'
+        ? error.message.trim()
+        : '';
+    return message === SUPABASE_AUTH_NOT_CONFIGURED_ERROR_MESSAGE;
 };
 
 export const clearSupabaseAuthStorage = (): void => {
@@ -256,6 +271,15 @@ const getAnonymousFlag = (session: Session | null): boolean => {
     return false;
 };
 
+const isSamePasswordError = (error: unknown): boolean => {
+    if (!error || typeof error !== 'object') return false;
+    const typed = error as { code?: unknown; message?: unknown };
+    const code = typeof typed.code === 'string' ? typed.code.trim().toLowerCase() : '';
+    if (code === 'same_password') return true;
+    const message = typeof typed.message === 'string' ? typed.message.toLowerCase() : '';
+    return message.includes('new password should be different from the old password');
+};
+
 const defaultAccessContext = (session: Session | null): UserAccessContext => ({
     userId: session?.user?.id ?? null,
     email: session?.user?.email ?? null,
@@ -271,6 +295,17 @@ const defaultAccessContext = (session: Session | null): UserAccessContext => ({
     termsAcceptedAt: null,
     termsAcceptanceRequired: false,
     termsNoticeRequired: false,
+    billing: {
+        providerSubscriptionId: null,
+        providerStatus: null,
+        subscriptionStatus: null,
+        currentPeriodEnd: null,
+        cancelAt: null,
+        canceledAt: null,
+        graceEndsAt: null,
+        accessUntil: null,
+        lifecycleState: 'none',
+    },
 });
 
 const logAuthFlow = async (options: LogAuthFlowOptions): Promise<void> => {
@@ -363,6 +398,17 @@ export const getCurrentAccessContext = async (): Promise<UserAccessContext> => {
             termsAcceptedAt: null,
             termsAcceptanceRequired: false,
             termsNoticeRequired: false,
+            billing: {
+                providerSubscriptionId: null,
+                providerStatus: null,
+                subscriptionStatus: null,
+                currentPeriodEnd: null,
+                cancelAt: null,
+                canceledAt: null,
+                graceEndsAt: null,
+                accessUntil: null,
+                lifecycleState: 'none',
+            },
         };
     }
 
@@ -399,6 +445,39 @@ export const getCurrentAccessContext = async (): Promise<UserAccessContext> => {
             : row.tier_key === 'tier_premium'
                 ? 'tier_premium'
                 : 'tier_free';
+        const billingSnapshot = {
+            providerSubscriptionId: typeof row.provider_subscription_id === 'string' && row.provider_subscription_id.trim().length > 0
+                ? row.provider_subscription_id
+                : null,
+            providerStatus: typeof row.provider_status === 'string' && row.provider_status.trim().length > 0
+                ? row.provider_status
+                : null,
+            subscriptionStatus: typeof row.subscription_status === 'string' && row.subscription_status.trim().length > 0
+                ? row.subscription_status
+                : null,
+            currentPeriodEnd: typeof row.current_period_end === 'string' && row.current_period_end.trim().length > 0
+                ? row.current_period_end
+                : null,
+            cancelAt: typeof row.cancel_at === 'string' && row.cancel_at.trim().length > 0
+                ? row.cancel_at
+                : null,
+            canceledAt: typeof row.canceled_at === 'string' && row.canceled_at.trim().length > 0
+                ? row.canceled_at
+                : null,
+            graceEndsAt: typeof row.grace_ends_at === 'string' && row.grace_ends_at.trim().length > 0
+                ? row.grace_ends_at
+                : null,
+            accessUntil: typeof row.billing_access_until === 'string' && row.billing_access_until.trim().length > 0
+                ? row.billing_access_until
+                : resolveBillingAccessUntil(row as Record<string, unknown> & {
+                    current_period_end?: string | null;
+                    cancel_at?: string | null;
+                    canceled_at?: string | null;
+                    grace_ends_at?: string | null;
+                    provider_status?: string | null;
+                    subscription_status?: string | null;
+                }),
+        };
 
         reportAuthSupabaseSuccess('get_current_user_access');
 
@@ -431,6 +510,18 @@ export const getCurrentAccessContext = async (): Promise<UserAccessContext> => {
                 : null,
             termsAcceptanceRequired: Boolean(row.terms_acceptance_required),
             termsNoticeRequired: Boolean(row.terms_notice_required),
+            billing: {
+                ...billingSnapshot,
+                lifecycleState: resolveBillingLifecycleState({
+                    provider_status: billingSnapshot.providerStatus,
+                    status: billingSnapshot.subscriptionStatus,
+                    current_period_end: billingSnapshot.currentPeriodEnd,
+                    cancel_at: billingSnapshot.cancelAt,
+                    canceled_at: billingSnapshot.canceledAt,
+                    grace_ends_at: billingSnapshot.graceEndsAt,
+                    billing_access_until: billingSnapshot.accessUntil,
+                }),
+            },
         };
     } catch (error) {
         reportAuthSupabaseFailure(error, 'get_current_user_access_exception');
@@ -446,6 +537,13 @@ export interface AcceptedTermsRecord {
 export const acceptCurrentTerms = async (
     options?: { locale?: string | null; source?: string | null }
 ): Promise<{ data: AcceptedTermsRecord | null; error: Error | null }> => {
+    if (shouldEnableE2EAuthSandbox()) {
+        return {
+            data: acceptCurrentTermsInE2EAuthSandbox(),
+            error: null,
+        };
+    }
+
     if (!supabase) {
         return {
             data: null,
@@ -515,7 +613,7 @@ export const signInWithEmailPassword = async (
     password: string
 ) => {
     if (!supabase) {
-        throw new Error('Supabase auth is not configured.');
+        throw new Error(SUPABASE_AUTH_NOT_CONFIGURED_ERROR_MESSAGE);
     }
     const flow = buildAuthFlow();
     await logAuthFlow({ ...flow, step: 'login_password', result: 'start', provider: 'password', email });
@@ -563,14 +661,23 @@ export const upgradeAnonymousUserWithEmailPassword = async (
     password: string
 ) => {
     if (!supabase) {
-        throw new Error('Supabase auth is not configured.');
+        throw new Error(SUPABASE_AUTH_NOT_CONFIGURED_ERROR_MESSAGE);
     }
     const flow = buildAuthFlow();
     await logAuthFlow({ ...flow, step: 'anonymous_upgrade_password', result: 'start', provider: 'password', email });
-    const { data, error } = await supabase.auth.updateUser({
+    let { data, error } = await supabase.auth.updateUser({
         email,
         password,
     });
+    let usedEmailOnlyFallback = false;
+
+    if (error && isSamePasswordError(error)) {
+        const emailOnlyResponse = await supabase.auth.updateUser({ email });
+        data = emailOnlyResponse.data;
+        error = emailOnlyResponse.error;
+        usedEmailOnlyFallback = !emailOnlyResponse.error;
+    }
+
     if (error) {
         reportAuthSupabaseFailure(error, 'upgrade_anonymous_password');
         await logAuthFlow({
@@ -580,6 +687,7 @@ export const upgradeAnonymousUserWithEmailPassword = async (
             provider: 'password',
             errorCode: normalizeErrorCode(error),
             email,
+            metadata: usedEmailOnlyFallback ? { fallback: 'email_only' } : undefined,
         });
         return { data, error, ...flow };
     }
@@ -590,6 +698,7 @@ export const upgradeAnonymousUserWithEmailPassword = async (
         result: 'success',
         provider: 'password',
         email,
+        metadata: usedEmailOnlyFallback ? { fallback: 'email_only' } : undefined,
     });
     return { data, error: null, ...flow };
 };
@@ -600,7 +709,7 @@ export const signUpWithEmailPassword = async (
     options?: { emailRedirectTo?: string }
 ) => {
     if (!supabase) {
-        throw new Error('Supabase auth is not configured.');
+        throw new Error(SUPABASE_AUTH_NOT_CONFIGURED_ERROR_MESSAGE);
     }
     const flow = buildAuthFlow();
     await logAuthFlow({ ...flow, step: 'signup_password', result: 'start', provider: 'password', email });
@@ -644,7 +753,7 @@ export const signInWithOAuth = async (
     options?: { redirectTo?: string }
 ) => {
     if (!supabase) {
-        throw new Error('Supabase auth is not configured.');
+        throw new Error(SUPABASE_AUTH_NOT_CONFIGURED_ERROR_MESSAGE);
     }
 
     const flow = buildAuthFlow();
@@ -738,7 +847,7 @@ export const requestPasswordResetEmail = async (
     options?: { redirectTo?: string; intent?: 'forgot_password' | 'set_password' }
 ) => {
     if (!supabase) {
-        throw new Error('Supabase auth is not configured.');
+        throw new Error(SUPABASE_AUTH_NOT_CONFIGURED_ERROR_MESSAGE);
     }
     const flow = buildAuthFlow();
     const intent = options?.intent || 'forgot_password';
@@ -785,7 +894,7 @@ export const updateCurrentUserPassword = async (
     password: string
 ) => {
     if (!supabase) {
-        throw new Error('Supabase auth is not configured.');
+        throw new Error(SUPABASE_AUTH_NOT_CONFIGURED_ERROR_MESSAGE);
     }
     const flow = buildAuthFlow();
     await logAuthFlow({

@@ -37,6 +37,28 @@ export interface Entitlements {
     canCreateProTrips: boolean;
 }
 
+export type UserBillingLifecycleState =
+  | 'active'
+  | 'trialing'
+  | 'past_due'
+  | 'paused'
+  | 'canceled_grace'
+  | 'inactive'
+  | 'none'
+  | 'unknown';
+
+export interface UserBillingSummary {
+    providerSubscriptionId: string | null;
+    providerStatus: string | null;
+    subscriptionStatus: string | null;
+    currentPeriodEnd: string | null;
+    cancelAt: string | null;
+    canceledAt: string | null;
+    graceEndsAt: string | null;
+    accessUntil: string | null;
+    lifecycleState: UserBillingLifecycleState;
+}
+
 export interface UserAccessContext {
     userId: string | null;
     email: string | null;
@@ -52,6 +74,7 @@ export interface UserAccessContext {
     termsAcceptedAt: string | null;
     termsAcceptanceRequired: boolean;
     termsNoticeRequired: boolean;
+    billing: UserBillingSummary;
 }
 
 export interface ICoordinates {

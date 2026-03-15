@@ -64,6 +64,7 @@ import {
     createTripGenerationInputSnapshot,
     createTripGenerationRequestId,
     markTripGenerationFailed,
+    markTripGenerationRunning,
 } from '../services/tripGenerationDiagnosticsService';
 import {
     buildLoginPathWithNext,
@@ -1192,6 +1193,16 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
             traveler_type: travelerType,
             transport_override: hasTransportOverride,
         });
+        const inputSnapshot = createTripGenerationInputSnapshot({
+            flow: 'wizard',
+            destinationLabel,
+            startDate,
+            endDate,
+            payload: {
+                options: wizardOptions,
+                wizardBranch,
+            },
+        });
 
         if (!isAuthenticated) {
             try {
@@ -1215,9 +1226,26 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                     locationFallback: t('wizard.loading.locationFallback'),
                     titleFallback: t('wizard.loading.titleFallback'),
                 });
+                const pendingAuthQueuedTrip = markTripGenerationRunning(optimisticTrip, {
+                    flow: 'wizard',
+                    source: 'create_trip_v3_pending_auth',
+                    inputSnapshot,
+                    provider: defaultModel.provider,
+                    model: defaultModel.model,
+                    requestId,
+                    state: 'queued',
+                    metadata: {
+                        pendingAuth: true,
+                        queueRequestId: queuedRequest.requestId,
+                        queueExpiresAt: queuedRequest.expiresAt,
+                        orchestration: 'auth_queue_claim',
+                        variant: 'v3',
+                    },
+                });
+                const pendingAuthAttemptId = pendingAuthQueuedTrip.aiMeta?.generation?.latestAttempt?.id || null;
                 const pendingAuthTrip = markTripGenerationFailed({
-                    ...optimisticTrip,
-                    items: optimisticTrip.items.map((item) => ({
+                    ...pendingAuthQueuedTrip,
+                    items: pendingAuthQueuedTrip.items.map((item) => ({
                         ...item,
                         loading: false,
                     })),
@@ -1229,6 +1257,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                     provider: defaultModel.provider,
                     model: defaultModel.model,
                     requestId,
+                    attemptId: pendingAuthAttemptId,
                     metadata: {
                         pendingAuth: true,
                         queueRequestId: queuedRequest.requestId,
@@ -1267,15 +1296,6 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
         setIsGenerating(true);
 
         try {
-            const inputSnapshot = createTripGenerationInputSnapshot({
-                flow: 'wizard',
-                destinationLabel,
-                startDate,
-                endDate,
-                payload: {
-                    options: wizardOptions,
-                },
-            });
             const prompt = buildWizardItineraryPrompt(wizardOptions);
             await startClientAsyncTripGeneration({
                 flow: 'wizard',

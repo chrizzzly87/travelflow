@@ -111,5 +111,21 @@
     "successReturnToTrip": "Back to your trip",
     "successCreateTrip": "Create a trip",
     "successOpenProfile": "Open profile"
+  },
+  "voucher": {
+    "eyebrow": "ڈسکاؤنٹ کوڈ",
+    "title": "چیک آؤٹ سے پہلے رعایت لگائیں",
+    "description": "Paddle ووچر لنک استعمال کریں یا اپنا کوڈ یہاں درج کریں۔ یہ چیک آؤٹ تک برقرار رہے گا۔",
+    "placeholder": "ڈسکاؤنٹ کوڈ درج کریں",
+    "applyCta": "کوڈ لگائیں",
+    "applying": "کوڈ چیک کیا جا رہا ہے…",
+    "clearCta": "کوڈ ہٹائیں",
+    "appliedMessage": "ووچر {code} تیار ہے۔",
+    "appliedDescription": "بچت اہل پلانز پر دکھائی جائے گی اور چیک آؤٹ تک برقرار رہے گی۔",
+    "invalidMessage": "یہ ووچر موجودہ ادا شدہ پلانز کے لیے دستیاب نہیں ہے۔",
+    "cardEyebrow": "ووچر {code}",
+    "cardSavingsMessage": "پہلی ادائیگی پر {savings} بچائیں۔ متوقع چیک آؤٹ کل: {discounted}۔",
+    "appliedEyebrow": "ووچر {code}",
+    "checkoutSavingsMessage": "متوقع چیک آؤٹ کل: {discounted}۔ پہلی ادائیگی پر آپ {savings} بچاتے ہیں۔"
   }
 }

@@ -1641,25 +1641,44 @@ set row_security = off
 as $$
 declare
   v_tier_key text;
+  v_effective_tier_key text;
   v_override jsonb;
   v_plan_entitlements jsonb;
+  v_provider_status text;
+  v_subscription_status text;
+  v_grace_ends_at timestamptz;
+  v_normalized_status text;
 begin
-  select p.tier_key, p.entitlements_override
-    into v_tier_key, v_override
+  select
+    p.tier_key,
+    p.entitlements_override,
+    s.provider_status,
+    s.status,
+    s.grace_ends_at
+    into v_tier_key, v_override, v_provider_status, v_subscription_status, v_grace_ends_at
     from public.profiles p
+    left join public.subscriptions s on s.user_id = p.id
    where p.id = p_user_id;
 
   v_tier_key := coalesce(v_tier_key, 'tier_free');
+  v_effective_tier_key := v_tier_key;
   v_override := coalesce(v_override, '{}'::jsonb);
+  v_normalized_status := lower(coalesce(nullif(v_provider_status, ''), nullif(v_subscription_status, ''), 'none'));
+
+  if v_normalized_status in ('paused', 'inactive') then
+    v_effective_tier_key := 'tier_free';
+  elsif v_normalized_status = 'canceled' and (v_grace_ends_at is null or v_grace_ends_at <= now()) then
+    v_effective_tier_key := 'tier_free';
+  end if;
 
   select pl.entitlements
     into v_plan_entitlements
     from public.plans pl
-   where pl.key = v_tier_key
+   where pl.key = v_effective_tier_key
    limit 1;
 
   if v_plan_entitlements is null then
-    v_plan_entitlements := public.resolve_default_entitlements(v_tier_key);
+    v_plan_entitlements := public.resolve_default_entitlements(v_effective_tier_key);
   end if;
 
   return coalesce(v_plan_entitlements, '{}'::jsonb) || coalesce(v_override, '{}'::jsonb);
@@ -1819,6 +1838,68 @@ begin
     coalesce(v_role, 'user'),
     coalesce(v_tier, 'tier_free'),
     public.get_effective_entitlements(v_uid);
+end;
+$$;
+
+drop function if exists public.get_current_user_subscription_summary();
+create or replace function public.get_current_user_subscription_summary()
+returns table(
+  user_id uuid,
+  provider text,
+  provider_customer_id text,
+  provider_subscription_id text,
+  provider_price_id text,
+  provider_product_id text,
+  provider_status text,
+  status text,
+  current_period_start timestamptz,
+  current_period_end timestamptz,
+  cancel_at timestamptz,
+  canceled_at timestamptz,
+  grace_ends_at timestamptz,
+  currency text,
+  amount integer,
+  last_event_id text,
+  last_event_type text,
+  last_event_at timestamptz
+)
+language plpgsql
+security definer
+set search_path = public, auth
+set row_security = off
+as $$
+declare
+  v_uid uuid;
+begin
+  v_uid := auth.uid();
+  if v_uid is null then
+    raise exception 'Not authenticated';
+  end if;
+
+  return query
+  select
+    s.user_id,
+    s.provider,
+    s.provider_customer_id,
+    s.provider_subscription_id,
+    s.provider_price_id,
+    s.provider_product_id,
+    s.provider_status,
+    s.status,
+    s.current_period_start,
+    s.current_period_end,
+    s.cancel_at,
+    s.canceled_at,
+    s.grace_ends_at,
+    s.currency,
+    s.amount,
+    s.last_event_id,
+    s.last_event_type,
+    s.last_event_at
+  from public.subscriptions s
+  where s.user_id = v_uid
+  order by coalesce(s.updated_at, s.created_at) desc
+  limit 1;
 end;
 $$;
 
@@ -3788,6 +3869,7 @@ using (public.is_admin(auth.uid()))
 with check (public.is_admin(auth.uid()));
 
 grant execute on function public.get_current_user_access() to anon, authenticated;
+grant execute on function public.get_current_user_subscription_summary() to authenticated;
 grant execute on function public.admin_list_users(integer, integer, text) to authenticated;
 grant execute on function public.admin_update_user_tier(uuid, text) to authenticated;
 grant execute on function public.admin_update_user_overrides(uuid, jsonb) to authenticated;
@@ -4149,6 +4231,14 @@ returns table(
   entitlements jsonb,
   account_status text,
   onboarding_completed boolean,
+  provider_subscription_id text,
+  provider_status text,
+  subscription_status text,
+  current_period_end timestamptz,
+  cancel_at timestamptz,
+  canceled_at timestamptz,
+  grace_ends_at timestamptz,
+  billing_access_until timestamptz,
   terms_current_version text,
   terms_requires_reaccept boolean,
   terms_accepted_version text,
@@ -4166,15 +4256,25 @@ declare
   v_email text;
   v_role text;
   v_tier text;
+  v_effective_tier text;
   v_is_anonymous boolean;
   v_account_status text;
   v_onboarding_completed boolean;
+  v_provider_subscription_id text;
+  v_provider_status text;
+  v_subscription_status text;
+  v_current_period_end timestamptz;
+  v_cancel_at timestamptz;
+  v_canceled_at timestamptz;
+  v_grace_ends_at timestamptz;
+  v_billing_access_until timestamptz;
   v_terms_current_version text;
   v_terms_requires_reaccept boolean;
   v_terms_accepted_version text;
   v_terms_accepted_at timestamptz;
   v_terms_acceptance_required boolean;
   v_terms_notice_required boolean;
+  v_normalized_subscription_status text;
 begin
   v_uid := auth.uid();
   if v_uid is null then
@@ -4189,6 +4289,13 @@ begin
     p.system_role,
     p.tier_key,
     p.account_status,
+    s.provider_subscription_id,
+    s.provider_status,
+    s.status,
+    s.current_period_end,
+    s.cancel_at,
+    s.canceled_at,
+    s.grace_ends_at,
     p.terms_accepted_version,
     p.terms_accepted_at,
     (
@@ -4199,11 +4306,38 @@ begin
       and coalesce(btrim(p.city), '') <> ''
       and coalesce(btrim(p.preferred_language), '') <> ''
     )
-    into v_role, v_tier, v_account_status, v_terms_accepted_version, v_terms_accepted_at, v_onboarding_completed
+    into
+      v_role,
+      v_tier,
+      v_account_status,
+      v_provider_subscription_id,
+      v_provider_status,
+      v_subscription_status,
+      v_current_period_end,
+      v_cancel_at,
+      v_canceled_at,
+      v_grace_ends_at,
+      v_terms_accepted_version,
+      v_terms_accepted_at,
+      v_onboarding_completed
     from public.profiles p
+    left join public.subscriptions s on s.user_id = p.id
    where p.id = v_uid;
 
   v_is_anonymous := coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false);
+  v_normalized_subscription_status := lower(coalesce(nullif(v_provider_status, ''), nullif(v_subscription_status, ''), 'none'));
+  v_effective_tier := coalesce(v_tier, 'tier_free');
+
+  if v_normalized_subscription_status in ('paused', 'inactive') then
+    v_effective_tier := 'tier_free';
+  elsif v_normalized_subscription_status = 'canceled' and (v_grace_ends_at is null or v_grace_ends_at <= now()) then
+    v_effective_tier := 'tier_free';
+  end if;
+
+  v_billing_access_until := case
+    when v_normalized_subscription_status = 'canceled' then coalesce(v_grace_ends_at, v_current_period_end, v_cancel_at)
+    else v_current_period_end
+  end;
 
   select
     ltv.version,
@@ -4237,10 +4371,18 @@ begin
     v_email,
     v_is_anonymous,
     coalesce(v_role, 'user'),
-    coalesce(v_tier, 'tier_free'),
+    coalesce(v_effective_tier, 'tier_free'),
     public.get_effective_entitlements(v_uid),
     coalesce(v_account_status, 'active'),
     coalesce(v_onboarding_completed, false),
+    v_provider_subscription_id,
+    nullif(v_provider_status, ''),
+    nullif(v_subscription_status, ''),
+    v_current_period_end,
+    v_cancel_at,
+    v_canceled_at,
+    v_grace_ends_at,
+    v_billing_access_until,
     v_terms_current_version,
     coalesce(v_terms_requires_reaccept, true),
     v_terms_accepted_version,
@@ -4674,8 +4816,19 @@ returns table(
   active_trips integer,
   total_trips integer,
   provider_subscription_id text,
+  provider_price_id text,
   provider_status text,
   subscription_status text,
+  current_period_start timestamptz,
+  current_period_end timestamptz,
+  cancel_at timestamptz,
+  canceled_at timestamptz,
+  grace_ends_at timestamptz,
+  subscription_currency text,
+  subscription_amount integer,
+  subscription_last_event_id text,
+  subscription_last_event_type text,
+  subscription_last_event_at timestamptz,
   system_role text,
   tier_key text,
   entitlements_override jsonb,
@@ -4751,8 +4904,19 @@ begin
     coalesce(trip_counts.active_trips, 0)::integer,
     coalesce(trip_counts.total_trips, 0)::integer,
     s.provider_subscription_id,
+    s.provider_price_id,
     s.provider_status,
     s.status as subscription_status,
+    s.current_period_start,
+    s.current_period_end,
+    s.cancel_at,
+    s.canceled_at,
+    s.grace_ends_at,
+    s.currency as subscription_currency,
+    s.amount as subscription_amount,
+    s.last_event_id as subscription_last_event_id,
+    s.last_event_type as subscription_last_event_type,
+    s.last_event_at as subscription_last_event_at,
     p.system_role,
     p.tier_key,
     p.entitlements_override,
@@ -4828,8 +4992,19 @@ returns table(
   active_trips integer,
   total_trips integer,
   provider_subscription_id text,
+  provider_price_id text,
   provider_status text,
   subscription_status text,
+  current_period_start timestamptz,
+  current_period_end timestamptz,
+  cancel_at timestamptz,
+  canceled_at timestamptz,
+  grace_ends_at timestamptz,
+  subscription_currency text,
+  subscription_amount integer,
+  subscription_last_event_id text,
+  subscription_last_event_type text,
+  subscription_last_event_at timestamptz,
   system_role text,
   tier_key text,
   entitlements_override jsonb,
@@ -4905,8 +5080,19 @@ begin
     coalesce(trip_counts.active_trips, 0)::integer,
     coalesce(trip_counts.total_trips, 0)::integer,
     s.provider_subscription_id,
+    s.provider_price_id,
     s.provider_status,
     s.status as subscription_status,
+    s.current_period_start,
+    s.current_period_end,
+    s.cancel_at,
+    s.canceled_at,
+    s.grace_ends_at,
+    s.currency as subscription_currency,
+    s.amount as subscription_amount,
+    s.last_event_id as subscription_last_event_id,
+    s.last_event_type as subscription_last_event_type,
+    s.last_event_at as subscription_last_event_at,
     p.system_role,
     p.tier_key,
     p.entitlements_override,
@@ -5500,6 +5686,7 @@ begin
 end;
 $$;
 
+drop function if exists public.admin_list_billing_subscriptions(integer, integer, text);
 create or replace function public.admin_list_billing_subscriptions(
   p_limit integer default 250,
   p_offset integer default 0,
@@ -5581,6 +5768,178 @@ begin
 end;
 $$;
 
+drop function if exists public.admin_get_billing_dashboard();
+create or replace function public.admin_get_billing_dashboard()
+returns table(
+  active_subscriptions integer,
+  scheduled_cancellations integer,
+  grace_subscriptions integer,
+  failed_webhook_events integer,
+  current_mrr_by_currency jsonb,
+  current_mrr_by_tier jsonb,
+  subscription_mix jsonb,
+  status_mix jsonb,
+  at_risk_revenue jsonb
+)
+language plpgsql
+security definer
+set search_path = public, auth
+set row_security = off
+as $$
+begin
+  if not public.has_admin_permission('billing.read') then
+    raise exception 'Not allowed';
+  end if;
+
+  return query
+  with normalized_subscriptions as (
+    select
+      s.user_id,
+      coalesce(p.tier_key, 'tier_free') as tier_key,
+      lower(coalesce(nullif(s.provider_status, ''), nullif(s.status, ''), 'unknown')) as raw_status,
+      s.cancel_at,
+      s.canceled_at,
+      s.grace_ends_at,
+      upper(coalesce(nullif(s.currency, ''), 'USD')) as currency,
+      coalesce(s.amount, 0) as amount
+    from public.subscriptions s
+    left join public.profiles p on p.id = s.user_id
+  ),
+  classified_subscriptions as (
+    select
+      ns.*,
+      (
+        ns.raw_status = 'canceled'
+        and ns.grace_ends_at is not null
+        and ns.grace_ends_at > now()
+      ) as grace_active,
+      (
+        ns.cancel_at is not null
+        and ns.cancel_at > now()
+        and ns.raw_status in ('active', 'trialing', 'past_due')
+      ) as scheduled_cancel,
+      case
+        when ns.raw_status = 'canceled'
+          and ns.grace_ends_at is not null
+          and ns.grace_ends_at > now()
+          then 'grace'
+        else ns.raw_status
+      end as dashboard_status
+    from normalized_subscriptions ns
+  ),
+  current_mrr as (
+    select
+      cs.currency,
+      sum(cs.amount)::bigint as amount,
+      count(*)::integer as subscriptions
+    from classified_subscriptions cs
+    where cs.raw_status in ('active', 'trialing', 'past_due')
+    group by cs.currency
+  ),
+  mrr_by_tier as (
+    select
+      cs.tier_key,
+      cs.currency,
+      sum(cs.amount)::bigint as amount,
+      count(*)::integer as subscriptions
+    from classified_subscriptions cs
+    where cs.raw_status in ('active', 'trialing', 'past_due')
+    group by cs.tier_key, cs.currency
+  ),
+  tier_mix as (
+    select
+      cs.tier_key,
+      count(*)::integer as count
+    from classified_subscriptions cs
+    group by cs.tier_key
+  ),
+  status_mix as (
+    select
+      cs.dashboard_status as status,
+      count(*)::integer as count
+    from classified_subscriptions cs
+    group by cs.dashboard_status
+  ),
+  at_risk_revenue as (
+    select
+      cs.dashboard_status as status,
+      cs.currency,
+      sum(cs.amount)::bigint as amount,
+      count(*)::integer as subscriptions
+    from classified_subscriptions cs
+    where cs.dashboard_status in ('past_due', 'paused', 'grace', 'canceled')
+    group by cs.dashboard_status, cs.currency
+  ),
+  failed_webhook_count as (
+    select count(*)::integer as count
+    from public.billing_webhook_events e
+    where lower(coalesce(e.status, '')) = 'failed'
+  )
+  select
+    count(*) filter (where cs.raw_status in ('active', 'trialing', 'past_due'))::integer as active_subscriptions,
+    count(*) filter (where cs.scheduled_cancel)::integer as scheduled_cancellations,
+    count(*) filter (where cs.grace_active)::integer as grace_subscriptions,
+    coalesce((select count from failed_webhook_count), 0)::integer as failed_webhook_events,
+    coalesce((
+      select jsonb_agg(
+        jsonb_build_object(
+          'currency', row.currency,
+          'amount', row.amount,
+          'subscriptions', row.subscriptions
+        )
+        order by row.currency
+      )
+      from current_mrr row
+    ), '[]'::jsonb) as current_mrr_by_currency,
+    coalesce((
+      select jsonb_agg(
+        jsonb_build_object(
+          'tier_key', row.tier_key,
+          'currency', row.currency,
+          'amount', row.amount,
+          'subscriptions', row.subscriptions
+        )
+        order by row.tier_key, row.currency
+      )
+      from mrr_by_tier row
+    ), '[]'::jsonb) as current_mrr_by_tier,
+    coalesce((
+      select jsonb_agg(
+        jsonb_build_object(
+          'tier_key', row.tier_key,
+          'count', row.count
+        )
+        order by row.tier_key
+      )
+      from tier_mix row
+    ), '[]'::jsonb) as subscription_mix,
+    coalesce((
+      select jsonb_agg(
+        jsonb_build_object(
+          'status', row.status,
+          'count', row.count
+        )
+        order by row.status
+      )
+      from status_mix row
+    ), '[]'::jsonb) as status_mix,
+    coalesce((
+      select jsonb_agg(
+        jsonb_build_object(
+          'status', row.status,
+          'currency', row.currency,
+          'amount', row.amount,
+          'subscriptions', row.subscriptions
+        )
+        order by row.status, row.currency
+      )
+      from at_risk_revenue row
+    ), '[]'::jsonb) as at_risk_revenue
+  from classified_subscriptions cs;
+end;
+$$;
+
+drop function if exists public.admin_list_billing_webhook_events(integer, integer, text);
 create or replace function public.admin_list_billing_webhook_events(
   p_limit integer default 250,
   p_offset integer default 0,
@@ -5946,6 +6305,7 @@ begin
 end;
 $$;
 
+drop function if exists public.admin_list_audit_logs(integer, integer, text, text, uuid);
 create or replace function public.admin_list_audit_logs(
   p_limit integer default 200,
   p_offset integer default 0,
@@ -5954,7 +6314,7 @@ create or replace function public.admin_list_audit_logs(
   p_actor_user_id uuid default null
 )
 returns table(
-  id uuid,
+  id text,
   actor_user_id uuid,
   actor_email text,
   action text,
@@ -5976,23 +6336,70 @@ begin
   end if;
 
   return query
+  with admin_logs as (
+    select
+      l.id::text as id,
+      l.actor_user_id,
+      u.email::text as actor_email,
+      l.action,
+      l.target_type,
+      l.target_id,
+      l.before_data,
+      l.after_data,
+      l.metadata,
+      l.created_at
+    from public.admin_audit_logs l
+    left join auth.users u on u.id = l.actor_user_id
+  ),
+  billing_logs as (
+    select
+      ('billing__' || e.event_id)::text as id,
+      null::uuid as actor_user_id,
+      'Paddle'::text as actor_email,
+      ('billing.' || e.event_type)::text as action,
+      'subscription'::text as target_type,
+      coalesce(
+        nullif(e.payload -> 'data' ->> 'subscription_id', ''),
+        nullif(e.payload -> 'data' ->> 'id', ''),
+        e.event_id
+      ) as target_id,
+      null::jsonb as before_data,
+      case
+        when jsonb_typeof(e.payload -> 'data') = 'object' then e.payload -> 'data'
+        else e.payload
+      end as after_data,
+      jsonb_strip_nulls(jsonb_build_object(
+        'provider', e.provider,
+        'event_id', e.event_id,
+        'webhook_status', e.status,
+        'error_message', e.error_message,
+        'user_id', e.user_id,
+        'processed_at', e.processed_at
+      )) as metadata,
+      e.occurred_at as created_at
+    from public.billing_webhook_events e
+  ),
+  combined_logs as (
+    select * from admin_logs
+    union all
+    select * from billing_logs
+  )
   select
-    l.id,
-    l.actor_user_id,
-    u.email::text,
-    l.action,
-    l.target_type,
-    l.target_id,
-    l.before_data,
-    l.after_data,
-    l.metadata,
-    l.created_at
-  from public.admin_audit_logs l
-  left join auth.users u on u.id = l.actor_user_id
-  where (p_action is null or p_action = '' or l.action = p_action)
-    and (p_target_type is null or p_target_type = '' or l.target_type = p_target_type)
-    and (p_actor_user_id is null or l.actor_user_id = p_actor_user_id)
-  order by l.created_at desc
+    cl.id,
+    cl.actor_user_id,
+    cl.actor_email,
+    cl.action,
+    cl.target_type,
+    cl.target_id,
+    cl.before_data,
+    cl.after_data,
+    cl.metadata,
+    cl.created_at
+  from combined_logs cl
+  where (p_action is null or p_action = '' or cl.action = p_action)
+    and (p_target_type is null or p_target_type = '' or cl.target_type = p_target_type)
+    and (p_actor_user_id is null or cl.actor_user_id = p_actor_user_id)
+  order by cl.created_at desc
   limit greatest(coalesce(p_limit, 200), 1)
   offset greatest(coalesce(p_offset, 0), 0);
 end;
@@ -6596,6 +7003,7 @@ grant execute on function public.admin_list_trips(integer, integer, text, uuid, 
 grant execute on function public.admin_list_user_trips(uuid, integer, integer, text, text) to authenticated;
 grant execute on function public.admin_list_billing_subscriptions(integer, integer, text) to authenticated;
 grant execute on function public.admin_list_billing_webhook_events(integer, integer, text) to authenticated;
+grant execute on function public.admin_get_billing_dashboard() to authenticated;
 grant execute on function public.admin_get_trip_for_view(text) to authenticated;
 grant execute on function public.admin_override_trip_commit(text, jsonb, jsonb, text, date, boolean, text, jsonb) to authenticated;
 grant execute on function public.admin_update_trip(text, text, timestamptz, uuid, boolean, boolean, boolean) to authenticated;
@@ -7878,3 +8286,150 @@ grant execute on function public.profile_resolve_public_handle(text) to anon, au
 grant execute on function public.upsert_trip(text, jsonb, jsonb, text, date, boolean, boolean, text, text, text, timestamptz, text, text) to anon, authenticated;
 grant execute on function public.archive_trip_for_user(text, text, jsonb) to authenticated;
 grant execute on function public.log_user_action_failure(text, text, text, text, text, text, jsonb) to authenticated;
+
+-- Existing-project compatibility adjustments for function search_path and stricter authenticated policies.
+alter function public.resolve_default_entitlements(text) set search_path = public;
+alter function public.set_updated_at() set search_path = public;
+alter function public.set_trip_version_number() set search_path = public;
+
+alter table public.username_blocked_terms enable row level security;
+drop policy if exists "Username blocked terms admin manage" on public.username_blocked_terms;
+create policy "Username blocked terms admin manage"
+on public.username_blocked_terms
+for all
+to authenticated
+using (
+  not coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false)
+  and public.is_admin(auth.uid())
+)
+with check (
+  not coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false)
+  and public.is_admin(auth.uid())
+);
+
+alter table public.username_reserved_handles enable row level security;
+drop policy if exists "Username reserved handles admin manage" on public.username_reserved_handles;
+create policy "Username reserved handles admin manage"
+on public.username_reserved_handles
+for all
+to authenticated
+using (
+  not coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false)
+  and public.is_admin(auth.uid())
+)
+with check (
+  not coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false)
+  and public.is_admin(auth.uid())
+);
+
+alter policy "Admin allowlist admin manage"
+on public.admin_allowlist
+to authenticated
+using (
+  not coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false)
+  and public.is_admin(auth.uid())
+)
+with check (
+  not coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false)
+  and public.is_admin(auth.uid())
+);
+
+alter policy "Auth flow logs admin read"
+on public.auth_flow_logs
+to authenticated
+using (
+  not coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false)
+  and public.is_admin(auth.uid())
+);
+
+alter policy "Admin roles admin read"
+on public.admin_roles
+to authenticated
+using (
+  not coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false)
+  and public.is_admin(auth.uid())
+);
+
+alter policy "Admin permissions admin read"
+on public.admin_permissions
+to authenticated
+using (
+  not coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false)
+  and public.is_admin(auth.uid())
+);
+
+alter policy "Admin role permissions admin read"
+on public.admin_role_permissions
+to authenticated
+using (
+  not coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false)
+  and public.is_admin(auth.uid())
+);
+
+alter policy "Admin user roles admin read"
+on public.admin_user_roles
+to authenticated
+using (
+  not coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false)
+  and public.is_admin(auth.uid())
+);
+
+alter policy "Admin user roles admin manage"
+on public.admin_user_roles
+to authenticated
+using (
+  not coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false)
+  and public.is_admin(auth.uid())
+)
+with check (
+  not coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false)
+  and public.is_admin(auth.uid())
+);
+
+alter policy "Admin audit logs admin read"
+on public.admin_audit_logs
+to authenticated
+using (
+  not coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false)
+  and public.is_admin(auth.uid())
+);
+
+alter policy "User settings are user-owned"
+on public.user_settings
+to authenticated
+using (
+  not coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false)
+  and user_id = auth.uid()
+)
+with check (
+  not coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false)
+  and user_id = auth.uid()
+);
+
+alter policy "Subscriptions are user-owned"
+on public.subscriptions
+to authenticated
+using (
+  not coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false)
+  and user_id = auth.uid()
+)
+with check (
+  not coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false)
+  and user_id = auth.uid()
+);
+
+alter policy "Legal terms acceptance owner read"
+on public.legal_terms_acceptance_events
+to authenticated
+using (
+  not coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false)
+  and (user_id = auth.uid() or public.is_admin(auth.uid()))
+);
+
+alter policy "Profile user events owner read"
+on public.profile_user_events
+to authenticated
+using (
+  not coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false)
+  and (owner_id = auth.uid() or public.is_admin(auth.uid()))
+);

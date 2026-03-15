@@ -30,6 +30,10 @@ interface TripViewHudOverlaysProps {
     pendingAuthModalStage?: 'hidden' | 'loading' | 'locked';
     onContinuePendingAuth?: () => void;
     isPendingAuthContinueDisabled?: boolean;
+    claimConflictModalVisible?: boolean;
+    claimConflictShowLoginCta?: boolean;
+    claimConflictCreateSimilarPath?: string;
+    onClaimConflictLogin?: () => void;
 }
 
 export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
@@ -49,10 +53,15 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
     pendingAuthModalStage = 'hidden',
     onContinuePendingAuth,
     isPendingAuthContinueDisabled = false,
+    claimConflictModalVisible = false,
+    claimConflictShowLoginCta = false,
+    claimConflictCreateSimilarPath = '/create-trip',
+    onClaimConflictLogin,
 }) => {
     const { t } = useTranslation(['common', 'pricing']);
     const paywallRequiresLogin = paywallActivationMode === 'login_modal';
     const showPendingAuthModal = pendingAuthModalStage !== 'hidden';
+    const showClaimConflictModal = claimConflictModalVisible;
     const explorerTier = PLAN_CATALOG.tier_mid;
     const explorerHighlights = React.useMemo(() => {
         const unlimitedLabel = t('shared.unlimited', { ns: 'pricing' });
@@ -305,6 +314,104 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                         </div>
                         <div className="mt-3 h-1.5 rounded-full bg-gray-100 overflow-hidden">
                             <div className="h-full w-1/2 bg-gradient-to-r from-accent-500 to-accent-600 animate-pulse rounded-full" />
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showClaimConflictModal && (
+                <div className="fixed inset-0 z-[1496] flex items-end justify-center bg-slate-950/50 p-3 backdrop-blur-sm sm:items-center sm:p-4">
+                    <div
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="trip-claim-conflict-title"
+                        className="w-full max-w-xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
+                    >
+                        <div className="grid gap-0 md:grid-cols-[minmax(0,1fr)_220px]">
+                            <div className="px-5 py-5 sm:px-6 sm:py-6">
+                                <div className="flex items-start justify-between gap-4">
+                                    <div className="min-w-0">
+                                        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-accent-700">
+                                            {t('tripView.claimConflict.eyebrow')}
+                                        </p>
+                                        <h2 id="trip-claim-conflict-title" className="mt-2 text-2xl font-semibold leading-tight tracking-tight text-slate-900">
+                                            {t('tripView.claimConflict.title')}
+                                        </h2>
+                                    </div>
+                                    <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-accent-200 bg-accent-50 text-accent-700">
+                                        <WarningCircle size={20} weight="duotone" />
+                                    </span>
+                                </div>
+
+                                <p className="mt-3 text-sm leading-6 text-slate-600">
+                                    {claimConflictShowLoginCta
+                                        ? t('tripView.claimConflict.descriptionLoggedOut')
+                                        : t('tripView.claimConflict.descriptionLoggedIn')}
+                                </p>
+
+                                <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-500">
+                                    {loadingDestinationSummary} • {tripDateRange} • {tripTotalDaysLabel} days
+                                </div>
+
+                                <div className="mt-5 flex flex-wrap gap-2">
+                                    {claimConflictShowLoginCta && (
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                trackEvent('trip_generation__claim_conflict_modal--login', {
+                                                    trip_id: tripId,
+                                                    source: 'trip_claim_conflict_modal',
+                                                });
+                                                onClaimConflictLogin?.();
+                                            }}
+                                            className="inline-flex h-11 items-center justify-center rounded-xl bg-accent-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-accent-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
+                                            {...getAnalyticsDebugAttributes('trip_generation__claim_conflict_modal--login', {
+                                                trip_id: tripId,
+                                                source: 'trip_claim_conflict_modal',
+                                            })}
+                                        >
+                                            {t('tripView.claimConflict.loginCta')}
+                                        </button>
+                                    )}
+                                    <Link
+                                        to={claimConflictCreateSimilarPath}
+                                        onClick={() => {
+                                            trackEvent('trip_generation__claim_conflict_modal--create_similar', {
+                                                trip_id: tripId,
+                                                source: 'trip_claim_conflict_modal',
+                                            });
+                                        }}
+                                        className={`inline-flex h-11 items-center justify-center rounded-xl px-4 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 ${
+                                            claimConflictShowLoginCta
+                                                ? 'border border-slate-200 bg-white text-slate-800 hover:bg-slate-50'
+                                                : 'bg-accent-600 text-white hover:bg-accent-700'
+                                        }`}
+                                        {...getAnalyticsDebugAttributes('trip_generation__claim_conflict_modal--create_similar', {
+                                            trip_id: tripId,
+                                            source: 'trip_claim_conflict_modal',
+                                        })}
+                                    >
+                                        {t('tripView.claimConflict.createSimilarCta')}
+                                    </Link>
+                                </div>
+                            </div>
+
+                            <aside className="border-t border-slate-200 bg-slate-50/80 px-5 py-5 md:border-l md:border-t-0 sm:px-6 sm:py-6">
+                                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                                    {t('tripView.claimConflict.benefitsTitle')}
+                                </p>
+                                <ul className="mt-4 space-y-3">
+                                    {[
+                                        t('tripView.claimConflict.benefits.prefill'),
+                                        t('tripView.claimConflict.benefits.adjust'),
+                                    ].map((benefit) => (
+                                        <li key={benefit} className="flex items-start gap-3 text-sm leading-6 text-slate-700">
+                                            <Check size={16} weight="bold" className="mt-1 shrink-0 text-accent-600" />
+                                            <span>{benefit}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </aside>
                         </div>
                     </div>
                 </div>

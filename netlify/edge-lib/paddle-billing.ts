@@ -52,6 +52,8 @@ export interface PaddleSubscriptionSnapshot {
   cancelAt: string | null;
   canceledAt: string | null;
   graceEndsAt: string | null;
+  currency: string | null;
+  amount: number | null;
   customData: Record<string, unknown> | null;
 }
 
@@ -327,6 +329,11 @@ export const extractSubscriptionSnapshot = (
   const source = asObject(data);
   const currentBillingPeriod = asObject(source?.current_billing_period);
   const scheduledChange = asObject(source?.scheduled_change);
+  const recurringTransactionDetails = asObject(source?.recurring_transaction_details);
+  const recurringTotals = asObject(recurringTransactionDetails?.totals);
+  const nextTransaction = asObject(source?.next_transaction);
+  const nextTransactionDetails = asObject(nextTransaction?.details);
+  const nextTransactionTotals = asObject(nextTransactionDetails?.totals);
 
   const items = Array.isArray(source?.items) ? source.items : [];
   const firstItem = asObject(items[0]);
@@ -338,6 +345,13 @@ export const extractSubscriptionSnapshot = (
   const canceledAt = normalizeDate(source?.canceled_at)
     || (eventType === 'subscription.canceled' ? occurredAtIso : null);
   const graceEndsAt = canceledAt ? addDaysToIso(canceledAt, 7) : null;
+  const currency = asTrimmedString(recurringTotals?.currency_code)
+    || asTrimmedString(nextTransaction?.currency_code)
+    || asTrimmedString(nextTransactionTotals?.currency_code);
+  const amount = parseAmountToInteger(recurringTotals?.total)
+    ?? parseAmountToInteger(recurringTotals?.grand_total)
+    ?? parseAmountToInteger(nextTransactionTotals?.total)
+    ?? parseAmountToInteger(nextTransactionTotals?.grand_total);
 
   return {
     providerSubscriptionId: asTrimmedString(source?.id),
@@ -350,6 +364,8 @@ export const extractSubscriptionSnapshot = (
     cancelAt: normalizeDate(scheduledChange?.effective_at),
     canceledAt,
     graceEndsAt,
+    currency,
+    amount,
     customData: asObject(source?.custom_data),
   };
 };
