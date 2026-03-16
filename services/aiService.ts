@@ -4,6 +4,7 @@ import type { AiProviderId } from "../config/aiProviderCatalog";
 import { getDefaultCreateTripModel } from "../config/aiModelCatalog";
 import { buildDurationPromptGuidance, parseFlexibleDurationDays, parseFlexibleDurationHours } from "../shared/durationParsing";
 import { buildTransportModePromptGuidance, MODEL_TRANSPORT_MODE_VALUES, normalizeTransportMode } from "../shared/transportModes";
+import { createGeminiTripItineraryResponseSchema } from "../shared/aiTripItinerarySchema";
 import type {
     CreateTripPreferenceSignals,
     CreateTripTransportPreference,
@@ -45,78 +46,7 @@ const DEFAULT_CREATE_TRIP_MODEL = getDefaultCreateTripModel();
 const DEFAULT_PROVIDER = DEFAULT_CREATE_TRIP_MODEL.provider;
 const DEFAULT_MODEL = DEFAULT_CREATE_TRIP_MODEL.model;
 
-const itinerarySchema = {
-  type: Type.OBJECT,
-  properties: {
-    tripTitle: { type: Type.STRING },
-    countryInfo: {
-        type: Type.OBJECT,
-        properties: {
-            currencyCode: { type: Type.STRING, description: "ISO code, e.g. JPY" },
-            currencyName: { type: Type.STRING, description: "e.g. Japanese Yen" },
-            exchangeRate: { type: Type.NUMBER, description: "Number only: local currency units for exactly 1 EUR (example: 163)" },
-            languages: { type: Type.ARRAY, items: { type: Type.STRING } },
-            electricSockets: { type: Type.STRING, description: "Short description of socket types, e.g. 'Type A, Type B'" },
-            visaInfoUrl: { type: Type.STRING, description: "Generic URL to visa policy on Wikipedia or official gov site" },
-            auswaertigesAmtUrl: { type: Type.STRING, description: "URL to the country page on auswaertiges-amt.de" }
-        },
-        required: ["currencyCode", "currencyName", "exchangeRate", "languages", "electricSockets"]
-    },
-    cities: {
-      type: Type.ARRAY,
-      items: {
-        type: Type.OBJECT,
-        properties: {
-          name: { type: Type.STRING },
-          days: { type: Type.NUMBER, description: "Number of days to stay" },
-          description: { type: Type.STRING, description: "Markdown text that MUST contain 3 sections: '### Must See', '### Must Try', and '### Must Do' with checkbox lists." },
-          lat: { type: Type.NUMBER, description: "Latitude of the city center" },
-          lng: { type: Type.NUMBER, description: "Longitude of the city center" },
-        },
-        required: ["name", "days", "description", "lat", "lng"],
-      },
-    },
-    travelSegments: {
-      type: Type.ARRAY,
-      description: "Transport between cities",
-      items: {
-        type: Type.OBJECT,
-        properties: {
-            fromCityIndex: { type: Type.NUMBER },
-            toCityIndex: { type: Type.NUMBER },
-            transportMode: { type: Type.STRING, enum: TRANSPORT_MODE_ENUM },
-            description: { type: Type.STRING, description: "e.g. 2h Flight" },
-            duration: { type: Type.NUMBER, description: "Duration in hours (e.g. 1.5 for 1h 30m)" }
-        },
-        required: ["fromCityIndex", "toCityIndex", "transportMode", "description", "duration"]
-      }
-    },
-    activities: {
-      type: Type.ARRAY,
-      items: {
-        type: Type.OBJECT,
-        properties: {
-          title: { type: Type.STRING },
-          cityIndex: { type: Type.NUMBER, description: "Index of the city this activity belongs to (0-based)" },
-          dayOffsetInCity: { type: Type.NUMBER, description: "Day number within the city stay (starts at 0)" },
-          duration: { type: Type.NUMBER, description: "Duration in days (usually 1)" },
-          description: { type: Type.STRING },
-          activityTypes: {
-              type: Type.ARRAY,
-              description: "Array with 1-3 activity types chosen only from the allowed list.",
-              items: { type: Type.STRING, enum: ACTIVITY_TYPE_ENUM }
-          },
-          type: { 
-              type: Type.STRING, 
-              enum: ACTIVITY_TYPE_ENUM
-          },
-        },
-        required: ["title", "cityIndex", "dayOffsetInCity", "duration", "description", "activityTypes"],
-      },
-    },
-  },
-  required: ["tripTitle", "cities", "activities", "travelSegments", "countryInfo"],
-};
+const itinerarySchema = createGeminiTripItineraryResponseSchema(Type);
 
 const activityDetailsSchema = {
     type: Type.OBJECT,
@@ -349,13 +279,14 @@ const BASE_ITINERARY_RULES_PROMPT = `
          ### Must Do (3-4 activities)
          If needed, you MAY add an additional final section named "### Heads Up" with 1-2 concise practical cautions.
          Use - [ ] for all items to make them checkboxes.
-      4. Provide Country Info (Currency, Exchange Rate to EUR, Languages, Sockets, Visa Link, Auswärtiges Amt Link).
+      4. Provide Country Info (Currency code, Currency name, Exchange Rate to EUR, Languages, Electric sockets, Visa info URL, Auswärtiges Amt URL).
          - countryInfo MUST be a single OBJECT (not an array, not a map keyed by country code).
-         - Required keys inside countryInfo: currency, exchangeRate, languages, sockets, visaLink, auswaertigesAmtLink.
+         - Required keys inside countryInfo: currencyCode, currencyName, exchangeRate, languages, electricSockets, visaInfoUrl, auswaertigesAmtUrl.
          - languages MUST be an ARRAY of strings.
          - countryInfo.exchangeRate MUST be a NUMBER only (local currency units for 1 EUR).
          - Valid example: "exchangeRate": 163
-         - Invalid example: "exchangeRateToEUR": "1 EUR ≈ 160 JPY"
+         - Valid example object: {"currencyCode":"JPY","currencyName":"Japanese Yen","exchangeRate":163,"languages":["Japanese"],"electricSockets":"Type A, Type B","visaInfoUrl":"https://...","auswaertigesAmtUrl":"https://..."}
+         - Invalid example: {"currency":"JPY","exchangeRateToEUR":"1 EUR ≈ 160 JPY"}
          - Do NOT include text, units, symbols, or approximation words in exchangeRate.
       5. For EVERY activity, you MUST return "activityTypes" as an array with 1-3 values ONLY from this list:
          [${ACTIVITY_TYPES_PROMPT_LIST}]
@@ -378,9 +309,9 @@ const BASE_ITINERARY_RULES_PROMPT_COMPACT = `
          ### Must Do
          If needed, you MAY add an additional final section named "### Heads Up" with 1 concise practical caution.
          Use - [ ] checkboxes with exactly 1 bullet per heading. Keep each bullet 3-6 words.
-      4. Provide Country Info (Currency, Exchange Rate to EUR, Languages, Sockets, Visa Link, Auswärtiges Amt Link).
+      4. Provide Country Info (Currency code, Currency name, Exchange Rate to EUR, Languages, Electric sockets, Visa info URL, Auswärtiges Amt URL).
          - countryInfo MUST be a single OBJECT (not an array, not a map keyed by country code).
-         - Required keys inside countryInfo: currency, exchangeRate, languages, sockets, visaLink, auswaertigesAmtLink.
+         - Required keys inside countryInfo: currencyCode, currencyName, exchangeRate, languages, electricSockets, visaInfoUrl, auswaertigesAmtUrl.
          - languages MUST be an ARRAY of strings.
          - countryInfo.exchangeRate MUST be a NUMBER only (local currency units for 1 EUR).
       5. For EVERY activity, you MUST return "activityTypes" as an array with 1-3 values ONLY from this list:
@@ -426,11 +357,12 @@ const STRICT_JSON_OBJECT_CONTRACT_PROMPT = `
          [${TRANSPORT_MODES_PROMPT_LIST}]
       8. travelSegments.duration must be NUMBER (hours), never a string with units.
       9. activities.duration must be NUMBER (days), never a string with units.
-      10. countryInfo.exchangeRate must be NUMBER only (example valid: 163; invalid: "1 EUR ≈ 160 JPY").
-      11. Before finalizing your answer, run a self-check:
+      10. countryInfo must use the canonical keys currencyCode, currencyName, exchangeRate, languages, electricSockets, visaInfoUrl, auswaertigesAmtUrl.
+      11. countryInfo.exchangeRate must be NUMBER only (example valid: 163; invalid: "1 EUR ≈ 160 JPY").
+      12. Before finalizing your answer, run a self-check:
          - Every city.description contains all three headings: "### Must See", "### Must Try", "### Must Do".
          - Only add "### Heads Up" when a practical warning is genuinely needed.
-         - countryInfo is a single object and languages is an array.
+         - countryInfo is a single object, languages is an array, and the canonical countryInfo keys are used exactly.
          - Return exactly one JSON object and nothing else.
     `;
 

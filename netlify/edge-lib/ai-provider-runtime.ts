@@ -1,3 +1,5 @@
+import type { StructuredOutputJsonSchema } from "../../shared/aiTripItinerarySchema.ts";
+
 export interface ProviderUsage {
   promptTokens?: number;
   completionTokens?: number;
@@ -36,6 +38,7 @@ export interface ProviderGenerationOptions {
   model: string;
   timeoutMs: number;
   maxOutputTokens?: number;
+  jsonSchema?: StructuredOutputJsonSchema;
 }
 
 export const PROVIDER_ALLOWLIST: Record<string, Set<string>> = {
@@ -217,6 +220,36 @@ const resolveAttemptTimeoutMs = (requestStartedAt: number, totalTimeoutMs: numbe
   if (remaining <= 0) return null;
   return Math.max(250, remaining);
 };
+
+const buildOpenAiStructuredResponseFormat = (
+  jsonSchema: StructuredOutputJsonSchema | undefined,
+): Record<string, unknown> => (
+  jsonSchema
+    ? {
+      type: "json_schema",
+      json_schema: {
+        name: jsonSchema.name,
+        strict: jsonSchema.strict ?? true,
+        schema: jsonSchema.schema,
+      },
+    }
+    : { type: "json_object" }
+);
+
+const buildOpenAiResponsesTextFormat = (
+  jsonSchema: StructuredOutputJsonSchema | undefined,
+): Record<string, unknown> | undefined => (
+  jsonSchema
+    ? {
+      format: {
+        type: "json_schema",
+        name: jsonSchema.name,
+        strict: jsonSchema.strict ?? true,
+        schema: jsonSchema.schema,
+      },
+    }
+    : undefined
+);
 
 const isAbortError = (error: unknown): boolean => {
   if (error instanceof DOMException && error.name === "AbortError") return true;
@@ -433,6 +466,7 @@ const generateWithGemini = async (
   model: string,
   timeoutMs: number,
   maxOutputTokens: number,
+  jsonSchema?: StructuredOutputJsonSchema,
 ): Promise<ProviderGenerationResult> => {
   const apiKey = readEnv("GEMINI_API_KEY") || readEnv("VITE_GEMINI_API_KEY");
   if (!apiKey) {
@@ -487,7 +521,7 @@ const generateWithGemini = async (
             generationConfig: {
               responseMimeType: "application/json",
               maxOutputTokens: maxOutputTokens,
-              temperature: strictParseRetry ? 0 : 0.2,
+              temperature: strictParseRetry || jsonSchema ? 0 : 0.2,
             },
           }),
         },
@@ -609,6 +643,7 @@ const generateWithOpenAi = async (
   model: string,
   timeoutMs: number,
   maxOutputTokens: number,
+  jsonSchema?: StructuredOutputJsonSchema,
 ): Promise<ProviderGenerationResult> => {
   const apiKey = readEnv("OPENAI_API_KEY");
   if (!apiKey) {
@@ -692,8 +727,8 @@ const generateWithOpenAi = async (
         headers: openAiHeaders,
         body: JSON.stringify({
           model,
-          temperature: 0.2,
-          response_format: { type: "json_object" },
+          temperature: jsonSchema ? 0 : 0.2,
+          response_format: buildOpenAiStructuredResponseFormat(jsonSchema),
           messages: [
             {
               role: "system",
@@ -789,6 +824,9 @@ const generateWithOpenAi = async (
             },
           ],
           max_output_tokens: maxOutputTokens,
+          ...(buildOpenAiResponsesTextFormat(jsonSchema)
+            ? { text: buildOpenAiResponsesTextFormat(jsonSchema) }
+            : {}),
         }),
       },
       responsesTimeoutMs,
@@ -1226,10 +1264,10 @@ export const generateProviderItinerary = async (
   }
 
   if (provider === "gemini") {
-    return await generateWithGemini(options.prompt, model, options.timeoutMs, maxOutputTokens);
+    return await generateWithGemini(options.prompt, model, options.timeoutMs, maxOutputTokens, options.jsonSchema);
   }
   if (provider === "openai") {
-    return await generateWithOpenAi(options.prompt, model, options.timeoutMs, maxOutputTokens);
+    return await generateWithOpenAi(options.prompt, model, options.timeoutMs, maxOutputTokens, options.jsonSchema);
   }
   if (provider === "anthropic") {
     return await generateWithAnthropic(options.prompt, model, options.timeoutMs, maxOutputTokens);
