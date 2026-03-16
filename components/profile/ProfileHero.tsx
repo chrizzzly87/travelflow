@@ -16,6 +16,19 @@ interface ProfileHeroProps {
   analyticsAttributes?: Record<string, string>;
 }
 
+const splitToGraphemes = (value: string): string[] => {
+  if (typeof Intl !== 'undefined' && typeof (Intl as { Segmenter?: unknown }).Segmenter === 'function') {
+    const segmenter = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
+    return Array.from(segmenter.segment(value), (segment) => segment.segment);
+  }
+  return Array.from(value);
+};
+
+type GreetingGlyph = {
+  character: string;
+  animationDelayMs: number | null;
+};
+
 export const ProfileHero: React.FC<ProfileHeroProps> = ({
   greeting,
   name,
@@ -29,11 +42,45 @@ export const ProfileHero: React.FC<ProfileHeroProps> = ({
   onCtaClick,
   analyticsAttributes,
 }) => {
+  const greetingGlyphs = React.useMemo<GreetingGlyph[]>(() => {
+    let animationIndex = 0;
+
+    return splitToGraphemes(greeting).map((character) => {
+      if (character.trim().length === 0) {
+        return {
+          character,
+          animationDelayMs: null,
+        };
+      }
+
+      const glyph = {
+        character,
+        animationDelayMs: animationIndex * 42,
+      };
+
+      animationIndex += 1;
+      return glyph;
+    });
+  }, [greeting]);
+
   return (
     <section className="py-8 md:py-12">
       <div className="mx-auto max-w-5xl text-center">
         <h1 className="text-balance text-5xl font-black tracking-tight text-slate-900 sm:text-6xl md:text-7xl">
-          <span className="text-accent-700">{greeting}</span>
+          <span className="text-accent-700">
+            {greetingGlyphs.map(({ character, animationDelayMs }, index) => (
+              <span
+                key={`hero-glyph-${index}-${character}`}
+                className={[
+                  'inline-block whitespace-pre',
+                  animationDelayMs === null ? '' : 'profile-greeting-letter',
+                ].filter(Boolean).join(' ')}
+                style={animationDelayMs === null ? undefined : { animationDelay: `${animationDelayMs}ms` }}
+              >
+                {character === ' ' ? '\u00A0' : character}
+              </span>
+            ))}
+          </span>
           <span>{`, ${name}`}</span>
         </h1>
 
