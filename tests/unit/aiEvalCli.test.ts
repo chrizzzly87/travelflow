@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   appendTsxImport,
   buildPromptfooArgs,
+  extractAiEvalPack,
   hasExplicitPromptfooEnvFileArg,
   normalizeRunAiEvalArgs,
   resolveDefaultPromptfooEnvFile,
@@ -28,6 +29,17 @@ describe('shared/aiEvalCli', () => {
     expect(hasExplicitPromptfooEnvFileArg(['--filter-first-n', '1'])).toBe(false);
   });
 
+  it('extracts the requested eval pack from forwarded args', () => {
+    expect(extractAiEvalPack(['--pack', 'security', '--ci'])).toEqual({
+      pack: 'security',
+      remainingArgs: ['--ci'],
+    });
+    expect(extractAiEvalPack(['--pack=regression', '--filter-first-n', '1'])).toEqual({
+      pack: 'regression',
+      remainingArgs: ['--filter-first-n', '1'],
+    });
+  });
+
   it('prefers .env.local as the default Promptfoo env file', () => {
     const existing = new Set(['/repo/.env.local', '/repo/.env']);
     const resolved = resolveDefaultPromptfooEnvFile('/repo', (path) => existing.has(path));
@@ -36,6 +48,7 @@ describe('shared/aiEvalCli', () => {
 
   it('builds promptfoo args with default env loading, ci outputs, and normalized forwarded args', () => {
     const result = buildPromptfooArgs({
+      artifactBasename: 'ai-trip-eval',
       rootDir: '/repo',
       promptfooConfigPath: '/repo/promptfoo/promptfooconfig.ts',
       artifactsDir: '/repo/artifacts/promptfoo',
@@ -66,6 +79,7 @@ describe('shared/aiEvalCli', () => {
 
   it('does not inject a default env file when one was explicitly provided', () => {
     const result = buildPromptfooArgs({
+      artifactBasename: 'ai-trip-eval',
       rootDir: '/repo',
       promptfooConfigPath: '/repo/promptfoo/promptfooconfig.ts',
       artifactsDir: '/repo/artifacts/promptfoo',
@@ -82,6 +96,7 @@ describe('shared/aiEvalCli', () => {
     vi.stubEnv('AI_EVAL_MAX_CONCURRENCY', '3');
 
     const result = buildPromptfooArgs({
+      artifactBasename: 'ai-trip-security-eval',
       rootDir: '/repo',
       promptfooConfigPath: '/repo/promptfoo/promptfooconfig.ts',
       artifactsDir: '/repo/artifacts/promptfoo',
@@ -91,5 +106,19 @@ describe('shared/aiEvalCli', () => {
 
     expect(result.promptfooArgs).toContain('--max-concurrency');
     expect(result.promptfooArgs).toContain('3');
+  });
+
+  it('uses the requested artifact basename for ci outputs', () => {
+    const result = buildPromptfooArgs({
+      artifactBasename: 'ai-trip-security-eval',
+      rootDir: '/repo',
+      promptfooConfigPath: '/repo/promptfoo/securityPromptfooconfig.ts',
+      artifactsDir: '/repo/artifacts/promptfoo',
+      fileExists: () => false,
+      rawArgs: ['--ci'],
+    });
+
+    expect(result.promptfooArgs).toContain('/repo/artifacts/promptfoo/ai-trip-security-eval.json');
+    expect(result.promptfooArgs).toContain('/repo/artifacts/promptfoo/ai-trip-security-eval.html');
   });
 });
