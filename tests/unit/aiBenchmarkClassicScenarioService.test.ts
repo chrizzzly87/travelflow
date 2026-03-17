@@ -30,7 +30,8 @@ describe('buildClassicBenchmarkScenario', () => {
     expect(result.generationOptions.routeLock).toBe(true);
     expect(result.generationOptions.numCities).toBe(3);
     expect(result.totalDays).toBe(7);
-    expect(result.prompt).toContain('Destination order is fixed. Follow this order exactly: Munich -> Salzburg -> Vienna');
+    expect(result.prompt).toContain('Destination order is fixed. Follow the exact order listed in the user data block');
+    expect(result.prompt).toContain('<fixed_destination_order>');
   });
 
   it('derives exact total days and specific cities from benchmark mask scenarios', () => {

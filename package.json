@@ -43,7 +43,9 @@
     "preview": "vite preview",
     "maps:generate": "tsx scripts/generate-trip-maps.ts",
     "ai:eval": "tsx scripts/run-ai-eval.ts",
-    "ai:eval:ci": "tsx scripts/run-ai-eval.ts --ci"
+    "ai:eval:ci": "tsx scripts/run-ai-eval.ts --ci",
+    "ai:eval:security": "tsx scripts/run-ai-eval.ts --pack security",
+    "ai:eval:security:ci": "tsx scripts/run-ai-eval.ts --pack security --ci"
   },
   "dependencies": {
     "@google/genai": "latest",

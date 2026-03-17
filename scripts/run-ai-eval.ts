@@ -1,18 +1,24 @@
 import { mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { spawn } from 'node:child_process';
-import { appendTsxImport, buildPromptfooArgs } from '../shared/aiEvalCli.ts';
+import { appendTsxImport, buildPromptfooArgs, extractAiEvalPack } from '../shared/aiEvalCli.ts';
 
 const rootDir = resolve(import.meta.dirname, '..');
-const promptfooConfigPath = resolve(rootDir, 'promptfoo/promptfooconfig.ts');
 const artifactsDir = resolve(rootDir, 'artifacts/promptfoo');
 
 const run = async () => {
+    const { pack, remainingArgs } = extractAiEvalPack(process.argv.slice(2));
+    const promptfooConfigPath = resolve(
+        rootDir,
+        pack === 'security' ? 'promptfoo/securityPromptfooconfig.ts' : 'promptfoo/promptfooconfig.ts',
+    );
+    const artifactBasename = pack === 'security' ? 'ai-trip-security-eval' : 'ai-trip-eval';
     const { isCi, promptfooArgs } = buildPromptfooArgs({
+        artifactBasename,
         rootDir,
         promptfooConfigPath,
         artifactsDir,
-        rawArgs: process.argv.slice(2),
+        rawArgs: remainingArgs,
     });
 
     if (isCi) {
