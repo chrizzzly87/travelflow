@@ -1,10 +1,10 @@
 ---
 id: rel-2026-03-17-imprint-vat-id-hardening
-version: v0.0.0
+version: v0.99.0
 title: "Imprint for sole proprietor disclosure hardening"
 date: 2026-03-17
-published_at: 2026-03-17T12:00:00Z
-status: draft
+published_at: 2026-03-17T19:11:42Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Refines the legal notice for a German sole proprietor with explicit VAT-ID wording and clearer contact details."
