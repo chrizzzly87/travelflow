@@ -1,10 +1,10 @@
 ---
 id: rel-2026-03-17-animated-number-flow-inputs
-version: v0.0.0
+version: v0.98.0
 title: "Animated number flow for planner counters and numeric inputs"
 date: 2026-03-17
-published_at: 2026-03-17T16:30:00Z
-status: draft
+published_at: 2026-03-17T17:50:30Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Adds reusable animated number primitives so planner day ranges, counters, and numeric entry points can feel smoother instead of snapping between values."
