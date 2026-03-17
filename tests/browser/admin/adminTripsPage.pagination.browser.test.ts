@@ -11,6 +11,9 @@ const mocks = vi.hoisted(() => ({
   adminGetUserProfile: vi.fn(),
   adminUpdateTrip: vi.fn(),
   adminHardDeleteTrip: vi.fn(),
+  listAdminTripGenerationAttempts: vi.fn(),
+  listTripGenerationJobsByTrip: vi.fn(),
+  requeueTripGenerationJob: vi.fn(),
   confirmDialog: vi.fn(async () => true),
   promptDialog: vi.fn(async () => null),
 }));
@@ -82,7 +85,7 @@ vi.mock('../../../services/dbService', () => ({
 vi.mock('../../../services/tripGenerationDiagnosticsService', () => ({
   getLatestTripGenerationAttempt: vi.fn(() => null),
   getTripGenerationState: vi.fn(() => 'succeeded'),
-  normalizeTripGenerationAttemptsForDisplay: vi.fn(() => []),
+  normalizeTripGenerationAttemptsForDisplay: vi.fn((attempts: unknown[]) => attempts),
 }));
 
 vi.mock('../../../services/tripGenerationRetryService', () => ({
@@ -90,11 +93,16 @@ vi.mock('../../../services/tripGenerationRetryService', () => ({
 }));
 
 vi.mock('../../../services/tripGenerationAttemptLogService', () => ({
-  listAdminTripGenerationAttempts: vi.fn(async () => []),
+  listAdminTripGenerationAttempts: mocks.listAdminTripGenerationAttempts,
 }));
 
 vi.mock('../../../services/tripGenerationBenchmarkBridge', () => ({
   buildBenchmarkScenarioImportUrl: vi.fn(() => '/admin/ai-benchmark'),
+}));
+
+vi.mock('../../../services/tripGenerationJobService', () => ({
+  listTripGenerationJobsByTrip: mocks.listTripGenerationJobsByTrip,
+  requeueTripGenerationJob: mocks.requeueTripGenerationJob,
 }));
 
 import { AdminTripsPage } from '../../../pages/AdminTripsPage';
@@ -132,6 +140,9 @@ describe('pages/AdminTripsPage pagination', () => {
     mocks.adminGetUserProfile.mockResolvedValue(null);
     mocks.adminUpdateTrip.mockResolvedValue(undefined);
     mocks.adminHardDeleteTrip.mockResolvedValue(undefined);
+    mocks.listAdminTripGenerationAttempts.mockResolvedValue([]);
+    mocks.listTripGenerationJobsByTrip.mockResolvedValue([]);
+    mocks.requeueTripGenerationJob.mockResolvedValue({ ok: true });
     mocks.confirmDialog.mockResolvedValue(true);
     mocks.promptDialog.mockResolvedValue(null);
   });
@@ -152,5 +163,78 @@ describe('pages/AdminTripsPage pagination', () => {
 
     expect(await screen.findByText('Showing 26-30 of 30')).toBeInTheDocument();
     expect(screen.getByText('Page 2 / 2')).toBeInTheDocument();
+  });
+
+  it('shows attempt metadata details and latest queue job diagnostics in the trip drawer', async () => {
+    const user = userEvent.setup();
+
+    mocks.listAdminTripGenerationAttempts.mockResolvedValue([
+      {
+        id: 'attempt-1',
+        flow: 'classic',
+        source: 'trip_status_strip',
+        state: 'failed',
+        startedAt: '2026-03-16T14:12:58.760Z',
+        finishedAt: '2026-03-16T14:14:32.024Z',
+        durationMs: 90001,
+        requestId: 'req-timeout-1',
+        provider: 'openai',
+        model: 'gpt-5.4',
+        failureKind: 'timeout',
+        errorCode: 'OPENAI_REQUEST_TIMEOUT',
+        errorMessage: 'OpenAI generation request timed out.',
+        metadata: {
+          orchestration: 'async_worker',
+          details: 'Provider request timed out after 120000ms.',
+          requestPayload: {
+            source: 'trip_status_strip',
+          },
+        },
+      },
+    ]);
+    mocks.listTripGenerationJobsByTrip.mockResolvedValue([
+      {
+        id: 'job-1',
+        tripId: 'trip-1',
+        ownerId: 'owner-1',
+        attemptId: 'attempt-1',
+        state: 'failed',
+        priority: 100,
+        retryCount: 1,
+        maxRetries: 0,
+        runAfter: '2026-03-16T14:12:58.760Z',
+        payload: {
+          source: 'trip_status_strip',
+          requestedModel: 'gpt-5.4',
+        },
+        lastErrorCode: 'OPENAI_REQUEST_TIMEOUT',
+        lastErrorMessage: 'OpenAI generation request timed out.',
+        startedAt: '2026-03-16T14:13:01.380Z',
+        finishedAt: '2026-03-16T14:14:32.223Z',
+        createdAt: '2026-03-16T14:13:00.950Z',
+        updatedAt: '2026-03-16T14:14:32.223Z',
+      },
+    ]);
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(mocks.adminListTrips).toHaveBeenCalled();
+    });
+
+    const tripDrawerTrigger = screen.getByText('Trip 1').closest('[role="button"]');
+    expect(tripDrawerTrigger).not.toBeNull();
+
+    await user.click(tripDrawerTrigger!);
+
+    expect(await screen.findByText('Trip details')).toBeInTheDocument();
+    expect(await screen.findByText('Attempt metadata details')).toBeInTheDocument();
+    expect(screen.getByText('Provider request timed out after 120000ms.')).toBeInTheDocument();
+    expect(screen.getByText('Job last error code')).toBeInTheDocument();
+    expect(screen.getAllByText('OPENAI_REQUEST_TIMEOUT').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText('Latest queue job payload JSON')).toBeInTheDocument();
+    expect(screen.getByText(/"requestedModel": "gpt-5.4"/)).toBeInTheDocument();
+    expect(screen.getByText('Attempt metadata JSON')).toBeInTheDocument();
+    expect(screen.getByText(/"details": "Provider request timed out after 120000ms."/)).toBeInTheDocument();
   });
 });

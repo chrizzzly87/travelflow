@@ -311,6 +311,44 @@ describe('routes/SharedTripLoaderRoute', () => {
     expect(latestTripViewProps()?.shareSnapshotMeta?.hasNewer).toBe(true);
   });
 
+  it('prefers share metadata view settings when loading the live shared trip', async () => {
+    const baseView: IViewSettings = {
+      layoutMode: 'horizontal',
+      timelineMode: 'calendar',
+      timelineView: 'horizontal',
+      mapStyle: 'standard',
+      routeMode: 'simple',
+      showCityNames: true,
+      zoomLevel: 1,
+      sidebarWidth: 480,
+      timelineHeight: 320,
+    };
+    const shareView: IViewSettings = {
+      ...baseView,
+      timelineMode: 'timeline',
+      timelineView: 'vertical',
+      zoomLevel: 1.75,
+    };
+    const sharedTrip = makeTrip({ id: 'shared-trip', defaultView: baseView, status: 'active' });
+
+    mocks.dbGetSharedTrip.mockResolvedValue({
+      trip: sharedTrip,
+      view: baseView,
+      shareView,
+      mode: 'view',
+      allowCopy: true,
+      latestVersionId: 'latest-version-id',
+    });
+
+    const props = makeRouteProps({ trip: sharedTrip });
+    render(React.createElement(SharedTripLoaderRoute, props));
+
+    await waitFor(() => {
+      expect(props.onTripLoaded).toHaveBeenCalledWith(sharedTrip, shareView);
+    });
+    expect(latestTripViewProps()?.initialViewSettings).toEqual(shareView);
+  });
+
   it('opens the upgrade dialog and routes into checkout when copy hits the trip limit', async () => {
     const baseView: IViewSettings = {
       layoutMode: 'horizontal',

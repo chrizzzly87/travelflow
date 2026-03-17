@@ -462,19 +462,21 @@ h6,
 @keyframes profile-greeting-letter-in {
   from {
     opacity: 0;
-    transform: translateY(18px) scale(0.985);
-    filter: blur(3px);
+    transform: translate3d(-0.14em, 0.48em, 0) scale(0.965);
+    filter: blur(12px);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translate3d(0, 0, 0) scale(1);
     filter: blur(0);
   }
 }
 
 .profile-greeting-letter {
   opacity: 0;
-  animation: profile-greeting-letter-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transform-origin: left bottom;
+  will-change: transform, opacity, filter;
+  animation: profile-greeting-letter-in 0.72s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 @keyframes profile-avatar-orbit-spin {

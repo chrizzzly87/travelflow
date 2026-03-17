@@ -5,7 +5,8 @@ import { APP_DEFAULT_DESCRIPTION, APP_NAME, applyAppNameTemplate } from "../../c
 
 export const SITE_NAME = APP_NAME;
 export const DEFAULT_DESCRIPTION = APP_DEFAULT_DESCRIPTION;
-export const SITE_CACHE_CONTROL = "public, max-age=0, s-maxage=900, stale-while-revalidate=86400";
+export const SITE_CACHE_CONTROL = "public, max-age=0, must-revalidate";
+export const SITE_CDN_CACHE_CONTROL = "public, max-age=3600, stale-while-revalidate=86400";
 export const TOOL_APP_CACHE_CONTROL = "public, max-age=0, s-maxage=60, stale-while-revalidate=60, must-revalidate";
 const DEFAULT_BLOG_OG_TINT = "#6366f1";
 export const SUPPORTED_LOCALES = ["en", "es", "de", "fr", "pt", "ru", "it", "pl", "ko", "fa", "ur"] as const;

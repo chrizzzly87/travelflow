@@ -751,6 +751,7 @@ export const markTripGenerationFailed = (trip: ITrip, params: TripGenerationFail
                 metadata: mergeAttemptMetadata(
                     null,
                     params.metadata,
+                    typedError.details ? { details: typedError.details } : null,
                     typedError.security ? { security: typedError.security } : null,
                     typedError.requestPayload ? { requestPayload: typedError.requestPayload } : null,
                 ),
@@ -780,6 +781,7 @@ export const markTripGenerationFailed = (trip: ITrip, params: TripGenerationFail
                 metadata: mergeAttemptMetadata(
                     attempt.metadata,
                     params.metadata,
+                    typedError.details ? { details: typedError.details } : null,
                     typedError.security ? { security: typedError.security } : null,
                     typedError.requestPayload ? { requestPayload: typedError.requestPayload } : null,
                 ),

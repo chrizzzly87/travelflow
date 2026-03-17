@@ -29,7 +29,9 @@ Production protection now lives in the app/runtime layer:
 - `shared/aiRuntimeSecurity.ts` runs `input_preflight` checks on user-controlled fields before provider calls
 - the same module runs `output_postflight` checks after model output and shared validation
 - direct edge generation and async worker generation both use the same guard decisions: `allow`, `warn`, `block`
-- high-confidence cases are soft-blocked before persistence with a generic traveler-facing message
+- low-risk instruction-like fragments can be silently sanitized before prompt assembly if the sanitized request becomes safe
+- only the high-confidence cases that still look unsafe after sanitization are soft-blocked before persistence
+- blocked travelers now get an edit-and-retry recovery card instead of a permanent failed state
 
 Production logging lives in:
 
@@ -136,6 +138,19 @@ The prompt policy now explicitly tells the model:
 - JSON/schema rules still take precedence
 
 This is intentionally lightweight. We are not stripping or filtering user text aggressively in this phase.
+
+The current runtime behavior is:
+
+- keep the user meaning whenever possible
+- silently remove obviously malicious instruction fragments from free-text prompt fields when that still leaves a coherent trip request
+- log which fields were sanitized in bounded security metadata
+- only block when the remaining input still looks unsafe or the model output breaks hard constraints
+
+If a request is blocked:
+
+- input-preflight blocks show a guided recovery UI with the flagged fields prefilled
+- the traveler can edit those fields, clear them, and retry manually
+- output-postflight blocks show a generic retry message because the failure came from the model response, not the traveler text
 
 ## Structured-Output Guardrails
 

@@ -4,6 +4,7 @@ import {
     dbCreateShareLink,
     dbGetTrip,
     dbListTripShares,
+    dbUpdateTripShareViewSettings,
     dbUpsertTrip,
     ensureDbSession,
 } from '../../services/dbApi';
@@ -54,6 +55,15 @@ export const useTripShareActions = ({
 }: UseTripShareActionsParams) => {
     const activeShareUrl = shareUrlsByMode[shareMode] ?? null;
 
+    const syncTripShareViewSettings = useCallback(async () => {
+        if (!DB_ENABLED) return;
+        try {
+            await dbUpdateTripShareViewSettings(tripId, currentViewSettings);
+        } catch (error) {
+            console.warn('Could not sync share view settings', error);
+        }
+    }, [currentViewSettings, tripId]);
+
     const handleShare = useCallback(async () => {
         if (!canShare) return;
         if (isTripLockedByExpiry) {
@@ -73,6 +83,7 @@ export const useTripShareActions = ({
         }
 
         setIsShareOpen(true);
+        void syncTripShareViewSettings();
         void (async () => {
             const shares = await dbListTripShares(tripId);
             if (shares.length === 0) return;
@@ -86,18 +97,19 @@ export const useTripShareActions = ({
                 setShareUrlsByMode((prev) => ({ ...prev, ...mapped }));
             }
         })();
-    }, [canShare, isTripLockedByExpiry, setIsShareOpen, setShareUrlsByMode, showToast, tripId]);
+    }, [canShare, isTripLockedByExpiry, setIsShareOpen, setShareUrlsByMode, showToast, syncTripShareViewSettings, tripId]);
 
     const handleCopyShareLink = useCallback(async () => {
         if (!activeShareUrl) return;
         try {
+            await syncTripShareViewSettings();
             await copyToClipboard(activeShareUrl);
             showToast('Link copied to clipboard', { tone: 'info', title: 'Share link' });
         } catch (error) {
             showToast('Could not copy link', { tone: 'remove', title: 'Share link' });
             console.error('Copy failed', error);
         }
-    }, [activeShareUrl, showToast]);
+    }, [activeShareUrl, showToast, syncTripShareViewSettings]);
 
     const handleGenerateShare = useCallback(async () => {
         if (!DB_ENABLED) return;
@@ -127,6 +139,7 @@ export const useTripShareActions = ({
                 return;
             }
 
+            await syncTripShareViewSettings();
             const url = new URL(buildShareUrl(result.token), window.location.origin).toString();
             setShareUrlsByMode((prev) => ({ ...prev, [shareMode]: url }));
             await copyToClipboard(url);
@@ -144,6 +157,7 @@ export const useTripShareActions = ({
         setShareUrlsByMode,
         shareMode,
         showToast,
+        syncTripShareViewSettings,
         trip,
         tripId,
     ]);

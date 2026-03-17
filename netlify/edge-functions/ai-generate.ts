@@ -6,7 +6,7 @@ import {
 import { persistAiGenerationTelemetry } from "../edge-lib/ai-generation-telemetry.ts";
 import { validateModelData } from "../../shared/aiBenchmarkValidation.ts";
 import {
-  detectAiRuntimeInputSecurity,
+  evaluateAiRuntimeInputSecurity,
   detectAiRuntimeOutputSecurity,
   normalizeAiRuntimeSecurityInput,
   summarizeAiRuntimeSecuritySignals,
@@ -80,14 +80,18 @@ export default async (request: Request) => {
     ? body.context
     : undefined;
   const securityInput = normalizeAiRuntimeSecurityInput(body?.securityInput);
-  const inputSecurity = await detectAiRuntimeInputSecurity(securityInput);
+  const inputSecurityEvaluation = await evaluateAiRuntimeInputSecurity(securityInput);
+  const inputSecurity = inputSecurityEvaluation.effectiveSignal;
 
   if (inputSecurity.blocked) {
     const durationMs = Date.now() - startedAtMs;
-    const security = summarizeAiRuntimeSecuritySignals([inputSecurity], {
+    const security = {
+      ...summarizeAiRuntimeSecuritySignals([inputSecurity], {
       tripId: requestContext?.tripId || null,
       attemptId: requestContext?.attemptId || null,
-    });
+    }),
+      sanitization: inputSecurityEvaluation.sanitization,
+    };
     await persistAiGenerationTelemetry({
       source: "create_trip",
       requestId,
@@ -108,6 +112,8 @@ export default async (request: Request) => {
         flow: requestContext?.flow || null,
         source: requestContext?.source || null,
         retry_of_attempt_id: requestContext?.retryOfAttemptId || null,
+        provider_reached: false,
+        details: "User-provided trip fields were blocked during input preflight before a provider call was made.",
         security,
       },
     });
@@ -126,7 +132,17 @@ export default async (request: Request) => {
     });
   }
 
+  const baseSecuritySummary = {
+    ...summarizeAiRuntimeSecuritySignals([inputSecurity], {
+      tripId: requestContext?.tripId || null,
+      attemptId: requestContext?.attemptId || null,
+    }),
+    sanitization: inputSecurityEvaluation.sanitization,
+  };
+
+  let providerReached = false;
   try {
+    providerReached = true;
     const result = await generateProviderItinerary({
       prompt,
       provider,
@@ -153,10 +169,13 @@ export default async (request: Request) => {
         input: securityInput,
         forceSchemaBypass: /parse|json|schema/i.test(failure.code),
       });
-      const security = summarizeAiRuntimeSecuritySignals([inputSecurity, outputSecurity], {
+      const security = {
+        ...summarizeAiRuntimeSecuritySignals([inputSecurity, outputSecurity], {
         tripId: requestContext?.tripId || null,
         attemptId: requestContext?.attemptId || null,
-      });
+      }),
+        sanitization: inputSecurityEvaluation.sanitization,
+      };
       await persistAiGenerationTelemetry({
         source: "create_trip",
         requestId,
@@ -178,6 +197,8 @@ export default async (request: Request) => {
           flow: requestContext?.flow || null,
           source: requestContext?.source || null,
           retry_of_attempt_id: requestContext?.retryOfAttemptId || null,
+          provider_reached: true,
+          details: failure.details || failure.error || "Provider generation failed before a valid itinerary was returned.",
           security,
         },
       });
@@ -202,10 +223,13 @@ export default async (request: Request) => {
       validation,
       input: securityInput,
     });
-    const security = summarizeAiRuntimeSecuritySignals([inputSecurity, outputSecurity], {
+    const security = {
+      ...summarizeAiRuntimeSecuritySignals([inputSecurity, outputSecurity], {
       tripId: requestContext?.tripId || null,
       attemptId: requestContext?.attemptId || null,
-    });
+    }),
+      sanitization: inputSecurityEvaluation.sanitization,
+    };
 
     if (security.blocked) {
       await persistAiGenerationTelemetry({
@@ -233,6 +257,8 @@ export default async (request: Request) => {
           flow: requestContext?.flow || null,
           source: requestContext?.source || null,
           retry_of_attempt_id: requestContext?.retryOfAttemptId || null,
+          provider_reached: true,
+          details: "Provider output was rejected after generation because it failed response validation or hard trip constraints.",
           validation: {
             schemaValid: validation.schemaValid,
             errors: validation.errors,
@@ -276,6 +302,10 @@ export default async (request: Request) => {
         flow: requestContext?.flow || null,
         source: requestContext?.source || null,
         retry_of_attempt_id: requestContext?.retryOfAttemptId || null,
+        provider_reached: true,
+        details: inputSecurityEvaluation.sanitization?.applied
+          ? "Generation succeeded after sanitizing suspicious instruction-like fragments from user-provided fields."
+          : "Generation completed successfully.",
         validation: {
           schemaValid: validation.schemaValid,
           errors: validation.errors,
@@ -295,10 +325,7 @@ export default async (request: Request) => {
     });
   } catch (error) {
     const durationMs = Date.now() - startedAtMs;
-    const security = summarizeAiRuntimeSecuritySignals([inputSecurity], {
-      tripId: requestContext?.tripId || null,
-      attemptId: requestContext?.attemptId || null,
-    });
+    const security = baseSecuritySummary;
     await persistAiGenerationTelemetry({
       source: "create_trip",
       requestId,
@@ -319,6 +346,8 @@ export default async (request: Request) => {
         flow: requestContext?.flow || null,
         source: requestContext?.source || null,
         retry_of_attempt_id: requestContext?.retryOfAttemptId || null,
+        provider_reached: providerReached,
+        details: error instanceof Error ? error.message : "Unknown error",
         security,
       },
     });

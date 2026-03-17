@@ -358,6 +358,28 @@
         "failed": "Trip generation failed again. Review the diagnostics and retry later.",
         "failedTitle": "Retry failed",
         "unexpected": "Retry failed unexpectedly."
+      },
+      "securityRecovery": {
+        "blockedMessage": "Some trip details looked like system instructions instead of travel preferences.",
+        "outputBlockedMessage": "Trip generation returned an invalid result. Please try again.",
+        "reviewAction": "Review flagged inputs",
+        "cardTitle": "Review the flagged trip details",
+        "cardDescription": "Some entered text looked like instructions to the AI. Update the highlighted fields and retry generation.",
+        "flaggedBadge": "Flagged",
+        "retryAction": "Edit and retry",
+        "clearAction": "Clear flagged text",
+        "cancelAction": "Cancel",
+        "readyHint": "The updated request is ready to retry.",
+        "requiredFieldHint": "At least one required trip field still needs a travel preference.",
+        "changeHint": "Change or clear the highlighted fields before retrying.",
+        "fields": {
+          "trip_request": "Trip request",
+          "destination": "Destination",
+          "destinations": "Destinations",
+          "specific_cities": "Requested cities",
+          "notes": "Notes",
+          "seasonal_events": "Seasonal highlights"
+        }
       }
     },
     "pendingAuth": {

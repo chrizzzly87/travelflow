@@ -3,7 +3,7 @@ import { normalizeTransportMode } from "../../shared/transportModes.ts";
 import { validateModelData } from "../../shared/aiBenchmarkValidation.ts";
 import {
   buildAiRuntimeSecurityInputFromTripInputSnapshot,
-  detectAiRuntimeInputSecurity,
+  evaluateAiRuntimeInputSecurity,
   detectAiRuntimeOutputSecurity,
   summarizeAiRuntimeSecuritySignals,
 } from "../../shared/aiRuntimeSecurity.ts";
@@ -81,7 +81,7 @@ const MAX_JOB_BATCH = 10;
 // Actual provider execution now runs in the background function runtime, so the
 // worker timeout can be long enough for slower models without colliding with the
 // edge response deadline.
-const WORKER_PROVIDER_TIMEOUT_MS = resolveTimeoutMs("AI_GENERATION_ASYNC_PROVIDER_TIMEOUT_MS", 90_000, 20_000, 120_000);
+const WORKER_PROVIDER_TIMEOUT_MS = resolveTimeoutMs("AI_GENERATION_ASYNC_PROVIDER_TIMEOUT_MS", 120_000, 20_000, 180_000);
 const WORKER_LEASE_SECONDS = Math.max(45, Math.min(180, Math.ceil((WORKER_PROVIDER_TIMEOUT_MS + 15_000) / 1_000)));
 const BACKGROUND_DISPATCH_TIMEOUT_MS = 10_000;
 const GENERIC_SECURITY_BLOCK_MESSAGE = "Trip request could not be processed safely. Please revise the request and try again.";
@@ -1314,7 +1314,8 @@ const processJob = async (
   const model = payload.target.model || DEFAULT_MODEL;
   const startedAt = Date.now();
   const securityInput = buildAiRuntimeSecurityInputFromTripInputSnapshot(payload.inputSnapshot || null);
-  const inputSecurity = await detectAiRuntimeInputSecurity(securityInput);
+  const inputSecurityEvaluation = await evaluateAiRuntimeInputSecurity(securityInput);
+  const inputSecurity = inputSecurityEvaluation.effectiveSignal;
   const securityContext = {
     tripId: job.trip_id,
     attemptId: payload.attemptId,
@@ -1322,7 +1323,10 @@ const processJob = async (
 
   if (inputSecurity.blocked) {
     const durationMs = Math.max(0, Date.now() - startedAt);
-    const security = summarizeAiRuntimeSecuritySignals([inputSecurity], securityContext);
+    const security = {
+      ...summarizeAiRuntimeSecuritySignals([inputSecurity], securityContext),
+      sanitization: inputSecurityEvaluation.sanitization,
+    };
     const failedTrip = applyFailedGenerationState(tripData, {
       flow: payload.flow,
       attemptId: payload.attemptId,
@@ -1337,6 +1341,8 @@ const processJob = async (
       durationMs,
       metadata: {
         source: WORKER_SOURCE,
+        details: "User-provided trip fields were blocked during input preflight before a provider call was made.",
+        providerReached: false,
         security,
       },
     });
@@ -1358,6 +1364,8 @@ const processJob = async (
       p_error_message: GENERIC_SECURITY_BLOCK_MESSAGE,
       p_metadata: {
         source: WORKER_SOURCE,
+        details: "User-provided trip fields were blocked during input preflight before a provider call was made.",
+        providerReached: false,
         security,
         trip_upsert_ok: failedTripPersisted,
         trip_version_ok: failedTripVersionLogged,
@@ -1400,6 +1408,8 @@ const processJob = async (
         queue_request_id: payload.queueRequestId,
         flow: payload.flow,
         source: payload.source,
+        provider_reached: false,
+        details: "User-provided trip fields were blocked during input preflight before a provider call was made.",
         security,
       },
     });
@@ -1417,7 +1427,9 @@ const processJob = async (
     };
   }
 
+  let providerReached = false;
   try {
+    providerReached = true;
     const generation = await generateProviderItinerary({
       prompt: payload.prompt,
       provider,
@@ -1437,7 +1449,10 @@ const processJob = async (
         input: securityInput,
         forceSchemaBypass: /parse|json|schema/i.test(providerErrorCode),
       });
-      const security = summarizeAiRuntimeSecuritySignals([inputSecurity, outputSecurity], securityContext);
+      const security = {
+        ...summarizeAiRuntimeSecuritySignals([inputSecurity, outputSecurity], securityContext),
+        sanitization: inputSecurityEvaluation.sanitization,
+      };
       const message = security.blocked ? GENERIC_OUTPUT_BLOCK_MESSAGE : providerMessage;
       const errorCode = security.blocked ? "AI_RUNTIME_SECURITY_BLOCKED" : providerErrorCode;
       const failureKind = security.blocked
@@ -1462,6 +1477,7 @@ const processJob = async (
         metadata: {
           source: WORKER_SOURCE,
           details: providerDetails,
+          providerReached: true,
           original_error_code: providerErrorCode,
           original_error_message: providerMessage,
           security,
@@ -1487,6 +1503,7 @@ const processJob = async (
         p_metadata: {
           source: WORKER_SOURCE,
           details: providerDetails,
+          providerReached: true,
           original_error_code: providerErrorCode,
           original_error_message: providerMessage,
           security,
@@ -1533,6 +1550,7 @@ const processJob = async (
           flow: payload.flow,
           source: payload.source,
           details: providerDetails,
+          provider_reached: true,
           original_error_code: providerErrorCode,
           original_error_message: providerMessage,
           security,
@@ -1561,7 +1579,10 @@ const processJob = async (
       validation,
       input: securityInput,
     });
-    const security = summarizeAiRuntimeSecuritySignals([inputSecurity, outputSecurity], securityContext);
+    const security = {
+      ...summarizeAiRuntimeSecuritySignals([inputSecurity, outputSecurity], securityContext),
+      sanitization: inputSecurityEvaluation.sanitization,
+    };
 
     if (security.blocked) {
       const failedTrip = applyFailedGenerationState(tripData, {
@@ -1578,6 +1599,8 @@ const processJob = async (
         durationMs,
         metadata: {
           source: WORKER_SOURCE,
+          providerReached: true,
+          details: "Provider output was rejected after generation because it failed response validation or hard trip constraints.",
           validation: {
             schemaValid: validation.schemaValid,
             errors: validation.errors,
@@ -1605,6 +1628,8 @@ const processJob = async (
         p_error_message: GENERIC_OUTPUT_BLOCK_MESSAGE,
         p_metadata: {
           source: WORKER_SOURCE,
+          providerReached: true,
+          details: "Provider output was rejected after generation because it failed response validation or hard trip constraints.",
           validation: {
             schemaValid: validation.schemaValid,
             errors: validation.errors,
@@ -1657,6 +1682,8 @@ const processJob = async (
           queue_request_id: payload.queueRequestId,
           flow: payload.flow,
           source: payload.source,
+          provider_reached: true,
+          details: "Provider output was rejected after generation because it failed response validation or hard trip constraints.",
           validation: {
             schemaValid: validation.schemaValid,
             errors: validation.errors,
@@ -1701,6 +1728,10 @@ const processJob = async (
         statusCode: 200,
         metadata: {
           source: WORKER_SOURCE,
+          providerReached: true,
+          details: inputSecurityEvaluation.sanitization?.applied
+            ? "Generation succeeded after sanitizing suspicious instruction-like fragments from user-provided fields."
+            : "Generation completed successfully.",
           validation: {
             schemaValid: validation.schemaValid,
             errors: validation.errors,
@@ -1732,11 +1763,15 @@ const processJob = async (
       p_request_id: payload.requestId,
       p_duration_ms: durationMs,
       p_status_code: 200,
-      p_metadata: {
-        source: WORKER_SOURCE,
-        validation: {
-          schemaValid: validation.schemaValid,
-          errors: validation.errors,
+        p_metadata: {
+          source: WORKER_SOURCE,
+          providerReached: true,
+          details: inputSecurityEvaluation.sanitization?.applied
+            ? "Generation succeeded after sanitizing suspicious instruction-like fragments from user-provided fields."
+            : "Generation completed successfully.",
+          validation: {
+            schemaValid: validation.schemaValid,
+            errors: validation.errors,
           warnings: validation.warnings,
         },
         security,
@@ -1776,12 +1811,16 @@ const processJob = async (
         endpoint: "/api/internal/ai/generation-worker",
         trip_id: job.trip_id,
         attempt_id: payload.attemptId,
-        queue_request_id: payload.queueRequestId,
-        flow: payload.flow,
-        source: payload.source,
-        validation: {
-          schemaValid: validation.schemaValid,
-          errors: validation.errors,
+          queue_request_id: payload.queueRequestId,
+          flow: payload.flow,
+          source: payload.source,
+          provider_reached: true,
+          details: inputSecurityEvaluation.sanitization?.applied
+            ? "Generation succeeded after sanitizing suspicious instruction-like fragments from user-provided fields."
+            : "Generation completed successfully.",
+          validation: {
+            schemaValid: validation.schemaValid,
+            errors: validation.errors,
           warnings: validation.warnings,
         },
         security,
@@ -1807,7 +1846,10 @@ const processJob = async (
       status: 500,
       message,
     });
-    const security = summarizeAiRuntimeSecuritySignals([inputSecurity], securityContext);
+    const security = {
+      ...summarizeAiRuntimeSecuritySignals([inputSecurity], securityContext),
+      sanitization: inputSecurityEvaluation.sanitization,
+    };
     const failedTrip = applyFailedGenerationState(tripData, {
       flow: payload.flow,
       attemptId: payload.attemptId,
@@ -1822,6 +1864,8 @@ const processJob = async (
       durationMs,
       metadata: {
         source: WORKER_SOURCE,
+        details: message,
+        providerReached,
         security,
       },
     });
@@ -1843,6 +1887,8 @@ const processJob = async (
       p_error_message: message.slice(0, 1200),
       p_metadata: {
         source: WORKER_SOURCE,
+        details: message,
+        providerReached,
         security,
         trip_upsert_ok: failedTripPersisted,
         trip_version_ok: failedTripVersionLogged,
@@ -1885,6 +1931,8 @@ const processJob = async (
         queue_request_id: payload.queueRequestId,
         flow: payload.flow,
         source: payload.source,
+        provider_reached: providerReached,
+        details: message,
         security,
       },
     });

@@ -358,6 +358,28 @@
         "failed": "Trip generation failed again. Review the diagnostics and retry later.",
         "failedTitle": "Retry failed",
         "unexpected": "Retry failed unexpectedly."
+      },
+      "securityRecovery": {
+        "blockedMessage": "Einige Trip-Details wirkten eher wie Systemanweisungen als wie Reisevorlieben.",
+        "outputBlockedMessage": "Die Trip-Generierung hat ein ungültiges Ergebnis zurückgegeben. Bitte versuche es erneut.",
+        "reviewAction": "Markierte Eingaben prüfen",
+        "cardTitle": "Prüfe die markierten Trip-Details",
+        "cardDescription": "Ein Teil des eingegebenen Textes sah wie Anweisungen an die KI aus. Passe die markierten Felder an und starte die Generierung erneut.",
+        "flaggedBadge": "Markiert",
+        "retryAction": "Bearbeiten und erneut versuchen",
+        "clearAction": "Markierten Text leeren",
+        "cancelAction": "Abbrechen",
+        "readyHint": "Die aktualisierte Anfrage kann jetzt erneut gestartet werden.",
+        "requiredFieldHint": "Mindestens ein Pflichtfeld braucht noch eine Reiseangabe.",
+        "changeHint": "Ändere oder leere die markierten Felder, bevor du es erneut versuchst.",
+        "fields": {
+          "trip_request": "Trip-Anfrage",
+          "destination": "Ziel",
+          "destinations": "Ziele",
+          "specific_cities": "Gewünschte Städte",
+          "notes": "Hinweise",
+          "seasonal_events": "Saisonale Highlights"
+        }
       }
     },
     "pendingAuth": {

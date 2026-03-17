@@ -63,6 +63,7 @@ create table if not exists public.trip_shares (
   token text not null unique,
   mode text not null check (mode in ('view', 'edit')),
   allow_copy boolean not null default true,
+  metadata jsonb not null default '{}'::jsonb,
   created_by uuid references auth.users,
   created_at timestamptz not null default now(),
   expires_at timestamptz,
@@ -248,6 +249,11 @@ create table if not exists public.ai_generation_events (
   created_at timestamptz not null default now()
 );
 
+-- ai_generation_events.metadata.security keeps bounded runtime safety evidence only.
+-- Expected keys include attackCategories, matchedRules, flaggedFields, stage,
+-- promptFingerprintSha256, redactedExcerpt, sanitization, trip_id, and attempt_id.
+-- Full raw prompts and full raw model outputs are intentionally not stored here by default.
+
 create table if not exists public.async_worker_health_checks (
   id uuid primary key default gen_random_uuid(),
   check_type text not null check (check_type in ('heartbeat', 'watchdog', 'canary')),
@@ -272,6 +278,7 @@ alter table public.trips add column if not exists trip_expires_at timestamptz;
 alter table public.trips add column if not exists archived_at timestamptz;
 alter table public.trips add column if not exists source_kind text;
 alter table public.trips add column if not exists source_template_id text;
+alter table public.trip_shares add column if not exists metadata jsonb not null default '{}'::jsonb;
 alter table public.profiles add column if not exists passport_sticker_positions jsonb not null default '{}'::jsonb;
 alter table public.profiles add column if not exists passport_sticker_selection jsonb not null default '[]'::jsonb;
 alter table public.profiles add column if not exists terms_accepted_version text;
@@ -1168,6 +1175,8 @@ declare
   v_token text;
   v_existing_token text;
   v_existing_share_id uuid;
+  v_view_settings jsonb;
+  v_share_metadata jsonb;
 begin
   if p_mode not in ('view', 'edit') then
     raise exception 'Invalid share mode';
@@ -1189,6 +1198,22 @@ begin
     raise exception 'Not allowed';
   end if;
 
+  select t.view_settings
+    into v_view_settings
+    from public.trips t
+   where t.id = p_trip_id
+     and t.owner_id = auth.uid()
+   limit 1;
+
+  v_share_metadata := jsonb_build_object(
+    'shared_view_v1',
+    jsonb_build_object(
+      'schema', 'shared_view_v1',
+      'updated_at', now(),
+      'view', coalesce(v_view_settings, '{}'::jsonb)
+    )
+  );
+
   select s.token, s.id
     into v_existing_token, v_existing_share_id
     from public.trip_shares s
@@ -1200,14 +1225,17 @@ begin
    limit 1;
 
   if v_existing_token is not null then
+    update public.trip_shares
+       set metadata = coalesce(metadata, '{}'::jsonb) || v_share_metadata
+     where id = v_existing_share_id;
     return query select v_existing_token, p_mode, v_existing_share_id;
     return;
   end if;
 
   v_token := encode(gen_random_bytes(9), 'hex');
 
-  insert into public.trip_shares (trip_id, token, mode, allow_copy, created_by)
-  values (p_trip_id, v_token, p_mode, p_allow_copy, auth.uid())
+  insert into public.trip_shares (trip_id, token, mode, allow_copy, metadata, created_by)
+  values (p_trip_id, v_token, p_mode, p_allow_copy, v_share_metadata, auth.uid())
   returning id into share_id;
 
   insert into public.trip_user_events (trip_id, owner_id, action, source, metadata)
@@ -1234,6 +1262,7 @@ returns table(
   trip_id text,
   data jsonb,
   view_settings jsonb,
+  share_view_settings jsonb,
   status text,
   trip_expires_at timestamptz,
   mode text,
@@ -1250,6 +1279,7 @@ begin
     t.id,
     t.data,
     t.view_settings,
+    s.metadata -> 'shared_view_v1' -> 'view' as share_view_settings,
     t.status,
     t.trip_expires_at,
     s.mode,
@@ -1278,6 +1308,7 @@ returns table(
   trip_id text,
   data jsonb,
   view_settings jsonb,
+  share_view_settings jsonb,
   status text,
   trip_expires_at timestamptz,
   mode text,
@@ -1293,12 +1324,14 @@ declare
   v_trip_id text;
   v_mode text;
   v_allow_copy boolean;
+  v_share_view_settings jsonb;
   v_latest_version_id uuid;
 begin
   select
     s.trip_id,
     s.mode,
     s.allow_copy,
+    s.metadata -> 'shared_view_v1' -> 'view',
     (
       select tv.id
       from public.trip_versions tv
@@ -1306,7 +1339,7 @@ begin
       order by tv.created_at desc
       limit 1
     )
-    into v_trip_id, v_mode, v_allow_copy, v_latest_version_id
+    into v_trip_id, v_mode, v_allow_copy, v_share_view_settings, v_latest_version_id
     from public.trip_shares s
    where s.token = p_token
      and s.revoked_at is null
@@ -1321,6 +1354,7 @@ begin
     v.trip_id,
     v.data,
     v.view_settings,
+    v_share_view_settings,
     t.status,
     t.trip_expires_at,
     v_mode,
@@ -1335,6 +1369,52 @@ begin
   if not found then
     raise exception 'Version not found for share token';
   end if;
+end;
+$$;
+
+create or replace function public.update_trip_share_view_settings(
+  p_trip_id text,
+  p_view jsonb
+)
+returns table(updated_share_count integer)
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_owner uuid;
+  v_updated_count integer := 0;
+begin
+  v_owner := auth.uid();
+  if v_owner is null then
+    raise exception 'Not authenticated';
+  end if;
+
+  if not exists (
+    select 1
+      from public.trips t
+     where t.id = p_trip_id
+       and t.owner_id = v_owner
+  ) then
+    raise exception 'Not allowed';
+  end if;
+
+  update public.trip_shares s
+     set metadata = coalesce(s.metadata, '{}'::jsonb)
+       || jsonb_build_object(
+            'shared_view_v1',
+            jsonb_build_object(
+              'schema', 'shared_view_v1',
+              'updated_at', now(),
+              'view', coalesce(p_view, '{}'::jsonb)
+            )
+          )
+   where s.trip_id = p_trip_id
+     and s.revoked_at is null;
+
+  get diagnostics v_updated_count = row_count;
+
+  return query select v_updated_count;
 end;
 $$;
 
@@ -1382,6 +1462,19 @@ begin
          updated_at = now()
    where id = v_trip_id;
 
+  update public.trip_shares s
+     set metadata = coalesce(s.metadata, '{}'::jsonb)
+       || jsonb_build_object(
+            'shared_view_v1',
+            jsonb_build_object(
+              'schema', 'shared_view_v1',
+              'updated_at', now(),
+              'view', coalesce(p_view, '{}'::jsonb)
+            )
+          )
+   where s.trip_id = v_trip_id
+     and s.revoked_at is null;
+
   insert into public.trip_versions (trip_id, data, view_settings, label, created_by)
   values (v_trip_id, p_data, p_view, coalesce(p_label, 'Shared edit'), auth.uid())
   returning id into v_version_id;
@@ -1395,6 +1488,7 @@ grant usage on schema public to anon, authenticated;
 grant execute on function public.create_share_token(text, text, boolean) to anon, authenticated;
 grant execute on function public.get_shared_trip(text) to anon, authenticated;
 grant execute on function public.get_shared_trip_version(text, uuid) to anon, authenticated;
+grant execute on function public.update_trip_share_view_settings(text, jsonb) to anon, authenticated;
 grant execute on function public.update_shared_trip(text, jsonb, jsonb, text) to anon, authenticated;
 grant execute on function public.can_create_trip() to anon, authenticated;
 grant execute on function public.upsert_trip(text, jsonb, jsonb, text, date, boolean, text, text, text, timestamptz, text, text) to anon, authenticated;
@@ -1496,6 +1590,13 @@ create table if not exists public.trip_generation_attempts (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+-- trip_generation_attempts.metadata mirrors bounded runtime safety details per attempt.
+-- Expected keys may include details, provider_reached, requestPayload, and
+-- security.{attackCategories, matchedRules, flaggedFields, stage,
+-- promptFingerprintSha256, redactedExcerpt, sanitization}.
+-- The traveler-facing recovery flow reads flagged fields from the input_preflight
+-- security payload and creates a fresh retry attempt after the user edits them.
 
 create table if not exists public.trip_generation_jobs (
   id uuid primary key default gen_random_uuid(),

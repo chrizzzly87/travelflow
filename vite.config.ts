@@ -46,6 +46,8 @@ export default defineConfig(({ mode }) => {
         plugins: [react(), tailwindcss()],
         build: {
             sourcemap: mode !== 'production',
+            // Keep global dependency preloading off: targeted warmups are the intended
+            // fast path here, and broad modulepreload fanout regressed first-load cost.
             modulePreload: false,
             assetsInlineLimit: 0,
             minify: mode === 'production' ? 'terser' : 'esbuild',
