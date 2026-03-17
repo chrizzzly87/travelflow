@@ -1,13 +1,13 @@
 ---
 id: rel-2026-03-10-homepage-pagespeed-pass
-version: v0.0.0
-title: "Homepage media now ships through the production image pipeline"
-date: 2026-03-10
-published_at: 2026-03-10T14:30:00Z
-status: draft
+version: v0.96.0
+title: "Homepage loads lighter and repeat visits feel faster"
+date: 2026-03-17
+published_at: 2026-03-17T14:52:55Z
+status: published
 notify_in_app: false
 in_app_hours: 24
-summary: "Reduced homepage transfer weight by sending the hero artwork and example trip maps through the production image pipeline instead of the full original PNGs."
+summary: "Cuts homepage transfer weight and keeps public marketing pages warmer at the edge so the first visit stays lighter and repeat visits come back faster."
 ---
 
 ## Changes
