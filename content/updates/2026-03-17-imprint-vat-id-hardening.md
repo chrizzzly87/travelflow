@@ -13,3 +13,4 @@ summary: "Refines the legal notice for a German sole proprietor with explicit VA
 ## Changes
 - [x] [Improved] 🧾 The imprint now presents the legal notice in a clearer German sole-proprietor format with explicit VAT-ID wording.
 - [x] [Improved] 📬 The legal contact block now combines email and the direct contact page in a more credible, easier-to-scan layout.
+- [ ] [Internal] 🛠️ Restored a missing shared markdown helper so preview builds stay green after rebasing onto the latest main branch.
