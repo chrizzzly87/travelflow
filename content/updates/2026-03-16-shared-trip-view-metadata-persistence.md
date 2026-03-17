@@ -1,10 +1,10 @@
 ---
 id: rel-2026-03-16-shared-trip-view-metadata-persistence
-version: v0.0.0
+version: v0.97.0
 title: "Shared trips now reopen in the last planner view you chose"
 date: 2026-03-16
-published_at: 2026-03-16T16:25:00Z
-status: draft
+published_at: 2026-03-17T15:19:26Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Shared trips now reopen in the latest calendar or timeline view, orientation, and zoom level you last shared."
