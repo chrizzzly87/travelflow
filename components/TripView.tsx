@@ -2354,37 +2354,6 @@ const useTripViewRender = ({
     latestGenerationAttempt?.errorMessage,
     t,
   ]);
-  const securityRecoveryBanner = useMemo(() => {
-    if (!isInputSecurityBlocked || securityRecoveryFieldViews.length === 0)
-      return null;
-    return {
-      reviewOpen: isSecurityRecoveryReviewOpen,
-      fields: securityRecoveryFieldViews,
-      draft: securityRecoveryDraft,
-      hasChanges: hasSecurityRecoveryChanges,
-      canRetry: canRetryWithSecurityRecovery,
-      onOpenReview: handleOpenSecurityRecoveryReview,
-      onCancelReview: handleCancelSecurityRecoveryReview,
-      onDraftChange: handleSecurityRecoveryFieldChange,
-      onClearFlaggedText: handleClearSecurityRecoveryFields,
-      onRetryWithChanges: () => {
-        void handleRetryWithSecurityRecovery();
-      },
-    };
-  }, [
-    canRetryWithSecurityRecovery,
-    handleCancelSecurityRecoveryReview,
-    handleClearSecurityRecoveryFields,
-    handleOpenSecurityRecoveryReview,
-    handleRetryWithSecurityRecovery,
-    handleSecurityRecoveryFieldChange,
-    hasSecurityRecoveryChanges,
-    isInputSecurityBlocked,
-    isSecurityRecoveryReviewOpen,
-    securityRecoveryDraft,
-    securityRecoveryFieldViews,
-  ]);
-
   const currentViewSettings: IViewSettings = useMemo(
     () => ({
       layoutMode,
@@ -2674,6 +2643,37 @@ const useTripViewRender = ({
     showToast,
     t,
     trip,
+  ]);
+
+  const securityRecoveryBanner = useMemo(() => {
+    if (!isInputSecurityBlocked || securityRecoveryFieldViews.length === 0)
+      return null;
+    return {
+      reviewOpen: isSecurityRecoveryReviewOpen,
+      fields: securityRecoveryFieldViews,
+      draft: securityRecoveryDraft,
+      hasChanges: hasSecurityRecoveryChanges,
+      canRetry: canRetryWithSecurityRecovery,
+      onOpenReview: handleOpenSecurityRecoveryReview,
+      onCancelReview: handleCancelSecurityRecoveryReview,
+      onDraftChange: handleSecurityRecoveryFieldChange,
+      onClearFlaggedText: handleClearSecurityRecoveryFields,
+      onRetryWithChanges: () => {
+        void handleRetryWithSecurityRecovery();
+      },
+    };
+  }, [
+    canRetryWithSecurityRecovery,
+    handleCancelSecurityRecoveryReview,
+    handleClearSecurityRecoveryFields,
+    handleOpenSecurityRecoveryReview,
+    handleRetryWithSecurityRecovery,
+    handleSecurityRecoveryFieldChange,
+    hasSecurityRecoveryChanges,
+    isInputSecurityBlocked,
+    isSecurityRecoveryReviewOpen,
+    securityRecoveryDraft,
+    securityRecoveryFieldViews,
   ]);
 
   const handleAbortAndRetryGeneration = useCallback(async () => {
