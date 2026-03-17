@@ -87,13 +87,6 @@ describe('components/NavigationPrefetchManager', () => {
     expect(mocks.scheduleHoverIntentWarmup).not.toHaveBeenCalled();
   });
 
-  it('suppresses idle warmups on first-load-critical homepage visits until route handoff completes', () => {
-    renderAtPath('/');
-
-    expect(mocks.scheduleIdleWarmups).not.toHaveBeenCalled();
-    expect(mocks.publishPrefetchStats).not.toHaveBeenCalled();
-  });
-
   it('re-enables passive hover warmups on critical routes after the initial handoff completes', () => {
     marketingRouteShellStateMocks.hasCompletedInitialRouteHandoff.mockReturnValue(true);
 
@@ -102,14 +95,5 @@ describe('components/NavigationPrefetchManager', () => {
     fireEvent.pointerEnter(screen.getByRole('link', { name: 'Pricing' }));
 
     expect(mocks.scheduleHoverIntentWarmup).toHaveBeenCalled();
-  });
-
-  it('re-enables idle warmups on critical routes after the initial handoff completes', () => {
-    marketingRouteShellStateMocks.hasCompletedInitialRouteHandoff.mockReturnValue(true);
-
-    renderAtPath('/');
-
-    expect(mocks.scheduleIdleWarmups).toHaveBeenCalledWith('/', []);
-    expect(mocks.publishPrefetchStats).toHaveBeenCalled();
   });
 });

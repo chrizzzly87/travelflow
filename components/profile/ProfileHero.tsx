@@ -84,10 +84,10 @@ export const ProfileHero: React.FC<ProfileHeroProps> = ({
           <span>{`, ${name}`}</span>
         </h1>
 
-        <p className="mt-5 text-base leading-7 text-slate-600 [text-wrap:pretty] md:text-lg">
-          <span className="font-semibold text-accent-700">{transliteration}</span>
+        <p className="mt-5 text-base leading-7 text-slate-600 md:text-lg">
+          <span className="font-semibold text-slate-900">{transliteration}</span>
           {' '}
-          <span className="font-medium text-accent-600">/{ipa}/</span>
+          <span className="font-medium text-slate-700">/{ipa}/</span>
           {' '}
           <span>{context}</span>
         </p>

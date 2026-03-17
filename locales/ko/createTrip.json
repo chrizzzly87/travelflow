@@ -132,8 +132,8 @@
   },
   "notes": {
     "title": "특별 요청",
-    "hint": "포함하고 싶은 도시, 우선하거나 피하고 싶은 활동, 그리고 음식, 여행 속도, 이동 편의, 편안함에 관한 요청을 적어 주세요.",
-    "placeholder": "예시: 교토와 오사카, 박물관보다 시장 위주, 밤문화 제외, 채식 식사, 유모차로 다니기 쉬운 일정"
+    "hint": "간결하게 작성하세요: 이동 제약, 음식 선호, 편안함 수준 등을 알려 주세요.",
+    "placeholder": "플래너를 위한 추가 메모 (선택)"
   },
   "snapshot": {
     "title": "여행 요약",
@@ -276,8 +276,8 @@
       "paceLabel": "Pace",
       "specificCitiesLabel": "Specific cities or stops",
       "specificCitiesPlaceholder": "e.g. Rome, Florence, Bologna",
-      "notesLabel": "추가 요청",
-      "notesPlaceholder": "예시: 교토와 오사카, 박물관보다 시장 위주, 밤문화 제외, 채식 식사, 유모차로 다니기 쉬운 일정",
+      "notesLabel": "Extra notes",
+      "notesPlaceholder": "Food preferences, celebration plans, mobility needs, child routines, remote-work constraints…",
       "roundTripTitle": "Return to start",
       "roundTripDescription": "End in the same place you begin when that fits the trip.",
       "routeLockTitle": "Fixed route order",

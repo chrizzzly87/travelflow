@@ -131,9 +131,9 @@
     "transport": "Preview only for now: transport choices are shown, but generation uses the fixed Automatic default."
   },
   "notes": {
-    "title": "خصوصی نوٹس",
-    "hint": "وہ شہر لکھیں جنہیں آپ شامل کرنا چاہتے ہیں، وہ سرگرمیاں جنہیں آپ ترجیح دینا یا چھوڑنا چاہتے ہیں، اور کھانے، رفتار، نقل و حرکت یا آرام سے متعلق کوئی بھی ضرورت۔",
-    "placeholder": "مثالیں: کیوٹو اور اوساکا، میوزیم سے زیادہ بازار، نائٹ لائف نہیں، سبزی خور کھانا، بچوں کی گاڑی کے لیے آسان دن"
+    "title": "Special notes",
+    "hint": "Keep it short: mention must-haves like mobility, food focus, or comfort level.",
+    "placeholder": "Optional notes for the planner"
   },
   "snapshot": {
     "title": "Trip snapshot",
@@ -262,8 +262,8 @@
       "paceLabel": "Pace",
       "specificCitiesLabel": "Specific cities or stops",
       "specificCitiesPlaceholder": "e.g. Rome, Florence, Bologna",
-      "notesLabel": "اضافی نوٹس",
-      "notesPlaceholder": "مثالیں: کیوٹو اور اوساکا، میوزیم سے زیادہ بازار، نائٹ لائف نہیں، سبزی خور کھانا، بچوں کی گاڑی کے لیے آسان دن",
+      "notesLabel": "Extra notes",
+      "notesPlaceholder": "Food preferences, celebration plans, mobility needs, child routines, remote-work constraints…",
       "roundTripTitle": "Return to start",
       "roundTripDescription": "End in the same place you begin when that fits the trip.",
       "routeLockTitle": "Fixed route order",

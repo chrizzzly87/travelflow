@@ -95,9 +95,6 @@ export const applyViewSettingsToSearchParams = (
     if (typeof view.sidebarWidth === 'number' && Number.isFinite(view.sidebarWidth)) params.set('sidebarWidth', String(Math.round(view.sidebarWidth)));
     else params.delete('sidebarWidth');
 
-    if (typeof view.detailsWidth === 'number' && Number.isFinite(view.detailsWidth)) params.set('detailsWidth', String(Math.round(view.detailsWidth)));
-    else params.delete('detailsWidth');
-
     if (typeof view.timelineHeight === 'number' && Number.isFinite(view.timelineHeight)) params.set('timelineHeight', String(Math.round(view.timelineHeight)));
     else params.delete('timelineHeight');
 };
@@ -1613,12 +1610,8 @@ export const decompressTrip = (encoded: string): ISharedState | null => {
     try {
         const json = LZString.decompressFromEncodedURIComponent(encoded);
         if (!json) return null;
-        const trimmedJson = json.trim();
-        if (!trimmedJson.startsWith('{') && !trimmedJson.startsWith('[')) {
-            return null;
-        }
 
-        const parsed = JSON.parse(trimmedJson);
+        const parsed = JSON.parse(json);
 
         // Backward compatibility: If parsed object has 'id' and 'items', it's just a trip
         if (parsed.id && Array.isArray(parsed.items)) {
@@ -1632,6 +1625,7 @@ export const decompressTrip = (encoded: string): ISharedState | null => {
 
         return null;
     } catch (e) {
+        console.error("Decompression failed", e);
         return null; // Invalid data
     }
 };

@@ -52,7 +52,6 @@ import {
 import {
     getDestinationOptionByName,
     getDestinationPromptLabel,
-    getRollingRecommendationMonths,
     getDestinationSeasonCountryName,
     isIslandDestination,
     resolveDestinationName,
@@ -510,15 +509,6 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
         () => (dateInputMode === 'flex' ? Math.max(7, flexWeeks * 7) : getDaysDifference(startDate, endDate)),
         [dateInputMode, endDate, flexWeeks, startDate]
     );
-    const destinationRecommendationMonths = useMemo(() => {
-        if (dateInputMode === 'flex') {
-            return FLEX_WINDOW_MONTHS[flexWindow];
-        }
-
-        const exactMonths = monthRangeBetweenDates(startDate, endDate);
-        if (exactMonths.length > 0) return exactMonths;
-        return getRollingRecommendationMonths();
-    }, [dateInputMode, endDate, flexWindow, startDate]);
 
     const commonMonths = useMemo(
         () => getCommonBestMonths(seasonCountryNames),
@@ -1609,8 +1599,6 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                     <CountrySelect
                         value={selectedCountries.join(', ')}
                         onChange={setCountriesFromString}
-                        recommendationMonths={destinationRecommendationMonths}
-                        analyticsEventName="create_trip_wizard__destination_recommendation--select"
                         labels={{
                             fieldLabel: t('destination.title'),
                             placeholder: t('destination.searchPlaceholder'),

@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { ITrip, ITimelineItem, IDragState, RouteStatus } from '../types';
 import {
+  addDays,
   buildApprovedCityRoute,
   buildCityOverlapLayout,
   buildHorizontalTransferLaneLayout,
@@ -15,8 +16,6 @@ import { Plus } from 'lucide-react';
 import { TransportModeIcon } from './TransportModeIcon';
 import { normalizeTransportMode } from '../shared/transportModes';
 import { getExampleCityLaneViewTransitionName } from '../shared/viewTransitionNames';
-import { buildRenderedTimelineDaySlots, buildRenderedTimelineMonths } from './tripview/timelineRenderedSlots';
-import { getTimelineVisualSpan } from '../utils/timelineVisualLayout';
 
 interface TimelineProps {
   trip: ITrip;
@@ -32,11 +31,6 @@ interface TimelineProps {
   pixelsPerDay: number;
   readOnly?: boolean;
   enableExampleSharedTransition?: boolean;
-  selectionVisibilityKey?: string;
-  isDetailsPanelVisible?: boolean;
-  onNavigatePreviousCity?: () => void;
-  onNavigateNextCity?: () => void;
-  onToggleDetailsPanel?: () => void;
 }
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
@@ -109,12 +103,7 @@ export const Timeline: React.FC<TimelineProps> = ({
   routeStatusById,
   pixelsPerDay,
   readOnly = false,
-  enableExampleSharedTransition = false,
-  selectionVisibilityKey,
-  isDetailsPanelVisible = false,
-  onNavigatePreviousCity,
-  onNavigateNextCity,
-  onToggleDetailsPanel,
+  enableExampleSharedTransition = false
 }) => {
   const canEdit = !readOnly;
   const containerRef = useRef<HTMLDivElement>(null);
@@ -140,15 +129,12 @@ export const Timeline: React.FC<TimelineProps> = ({
 
   const [hoverTravelStart, setHoverTravelStart] = useState<number | null>(null);
   const [cityBottomAnchorY, setCityBottomAnchorY] = useState<number | null>(null);
-  const [containerWidth, setContainerWidth] = useState(0);
 
   const timelineBounds = React.useMemo(() => getTimelineBounds(trip.items), [trip.items]);
   const visualStartOffset = timelineBounds.startOffset;
   const tripLength = timelineBounds.dayCount;
   const totalWidth = tripLength * pixelsPerDay;
   const parsedTripStartDate = React.useMemo(() => parseLocalTripDate(trip.startDate), [trip.startDate]);
-  const renderedTimelineWidth = Math.max(0, containerWidth - 32);
-  const extraTimelineWidth = Math.max(0, renderedTimelineWidth - totalWidth);
 
   const tripDayRange = React.useMemo(() => {
     let minStart = Number.POSITIVE_INFINITY;
@@ -298,18 +284,16 @@ export const Timeline: React.FC<TimelineProps> = ({
 
   // Robust "Packing" algorithm for activities to handle same-day overlapping
   const activityLanes: ITimelineItem[][] = [];
-  activities.slice().sort((a, b) => {
-      const aSpan = getTimelineVisualSpan(a);
-      const bSpan = getTimelineVisualSpan(b);
-      if (aSpan.startOffset === bSpan.startOffset) return bSpan.duration - aSpan.duration;
-      return aSpan.startOffset - bSpan.startOffset;
+  activities.sort((a, b) => {
+      // Sort by start time, then by duration (longest first)
+      if (a.startDateOffset === b.startDateOffset) return b.duration - a.duration;
+      return a.startDateOffset - b.startDateOffset;
   }).forEach(item => {
-    const itemSpan = getTimelineVisualSpan(item);
     let placed = false;
     for (const lane of activityLanes) {
         const lastInLane = lane[lane.length - 1];
-        const lastSpan = getTimelineVisualSpan(lastInLane);
-        if (lastSpan.endOffset + 0.05 <= itemSpan.startOffset) {
+        // Ensure visual gap of at least 0.05 days
+        if (lastInLane.startDateOffset + lastInLane.duration + 0.05 <= item.startDateOffset) {
             lane.push(item);
             placed = true;
             break;
@@ -616,47 +600,57 @@ export const Timeline: React.FC<TimelineProps> = ({
 
   // Determine Zoom Level aesthetics
   const isZoomedOut = pixelsPerDay < 60;
-  const useCompactHorizontalActivityCards = pixelsPerDay < 48;
-
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    const updateContainerWidth = () => {
-      setContainerWidth(container.clientWidth);
-    };
-
-    updateContainerWidth();
-
-    if (typeof ResizeObserver === 'undefined') return;
-    const observer = new ResizeObserver(updateContainerWidth);
-    observer.observe(container);
-    return () => observer.disconnect();
-  }, []);
 
   // Process Dates for Headers
-  const renderedDaySlots = React.useMemo(() => {
-    const baseStartDate = parsedTripStartDate || new Date(trip.startDate);
-    return buildRenderedTimelineDaySlots({
-      tripLength,
-      visualStartOffset,
-      pixelsPerDay,
-      fillerSize: extraTimelineWidth,
-      todayIndex: todayColumnIndex,
-      baseStartDate,
-    });
-  }, [extraTimelineWidth, parsedTripStartDate, pixelsPerDay, todayColumnIndex, trip.startDate, tripLength, visualStartOffset]);
-
   const dateHeaders = React.useMemo(() => {
-    const days = renderedDaySlots;
+    const baseStartDate = parsedTripStartDate || new Date(trip.startDate);
+    const days = Array.from({ length: tripLength }).map((_, i) => {
+        const dayOffset = visualStartOffset + i;
+        const date = addDays(baseStartDate, dayOffset);
+        return { 
+            index: i,
+            dayOffset,
+            date,
+            isToday: i === todayColumnIndex,
+            isWeekend: date.getDay() === 0 || date.getDay() === 6,
+            dayName: date.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase(),
+            dayNum: date.getDate(),
+            monthName: date.toLocaleDateString('en-US', { month: 'long' }),
+            monthShort: date.toLocaleDateString('en-US', { month: 'short' })
+        };
+    });
 
     if (!isZoomedOut) return { view: 'detailed', days };
 
-    const months = buildRenderedTimelineMonths(days);
+    // Group by month for Zoomed Out view
+    const months = [];
+    let currentMonth = null;
+    let monthStartIndex = 0;
+
+    days.forEach((day, i) => {
+        if (day.monthName !== currentMonth) {
+            if (currentMonth) {
+                months.push({ 
+                    name: currentMonth, 
+                    startIndex: monthStartIndex, 
+                    width: i - monthStartIndex 
+                });
+            }
+            currentMonth = day.monthName;
+            monthStartIndex = i;
+        }
+    });
+    // Add last month
+    if (currentMonth) {
+        months.push({ 
+            name: currentMonth, 
+            startIndex: monthStartIndex, 
+            width: days.length - monthStartIndex 
+        });
+    }
 
     return { view: 'grouped', days, months };
-  }, [isZoomedOut, renderedDaySlots]);
-  const todaySlot = todayColumnIndex !== null ? renderedDaySlots[todayColumnIndex] : null;
+  }, [parsedTripStartDate, trip.startDate, tripLength, isZoomedOut, todayColumnIndex]);
 
   useEffect(() => {
     const travelLane = travelLaneRef.current;
@@ -686,10 +680,6 @@ export const Timeline: React.FC<TimelineProps> = ({
   }, []);
 
   useEffect(() => {
-    lastAutoScrollSelectionRef.current = null;
-  }, [selectionVisibilityKey]);
-
-  useEffect(() => {
     if (!selectedItemId) return;
     if (lastAutoScrollSelectionRef.current === selectedItemId) return;
 
@@ -711,7 +701,7 @@ export const Timeline: React.FC<TimelineProps> = ({
         behavior: 'smooth',
     });
     lastAutoScrollSelectionRef.current = selectedItemId;
-  }, [selectedItemId, selectionVisibilityKey, trip.items, pixelsPerDay, visualStartOffset]);
+  }, [selectedItemId, trip.items, pixelsPerDay, visualStartOffset]);
 
   return (
     <div 
@@ -720,13 +710,13 @@ export const Timeline: React.FC<TimelineProps> = ({
       onClick={() => handleBlockSelect(null)}
     >
         <div className="relative min-h-full" style={{ minWidth: '100%', width: `${totalWidth}px` }}>
-            {todaySlot && (
+            {todayColumnIndex !== null && (
                 <>
                     <div
                         className="absolute top-0 bottom-0 pointer-events-none z-[2]"
                         style={{
-                            left: `${32 + todaySlot.start}px`,
-                            width: `${todaySlot.size}px`,
+                            left: `${32 + (todayColumnIndex * pixelsPerDay)}px`,
+                            width: `${pixelsPerDay}px`,
                         }}
                         aria-hidden="true"
                     >
@@ -735,8 +725,8 @@ export const Timeline: React.FC<TimelineProps> = ({
                     <div
                         className="absolute top-0 bottom-0 pointer-events-none z-[25]"
                         style={{
-                            left: `${32 + todaySlot.start}px`,
-                            width: `${todaySlot.size}px`,
+                            left: `${32 + (todayColumnIndex * pixelsPerDay)}px`,
+                            width: `${pixelsPerDay}px`,
                         }}
                         aria-hidden="true"
                     >
@@ -760,7 +750,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                                 className={`flex-shrink-0 border-r border-gray-100 flex flex-col justify-center px-2 select-none relative
                                     ${day.isToday ? 'bg-red-50/70' : day.isWeekend ? 'bg-gray-50' : 'bg-white'}
                                 `}
-                                style={{ width: `${day.size}px` }}
+                                style={{ width: `${pixelsPerDay}px` }}
                             >
                                 <span className={`text-xs font-bold ${day.isToday ? 'text-red-500' : day.isWeekend ? 'text-red-400' : 'text-gray-400'}`}>
                                     {day.dayName}
@@ -780,7 +770,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                                  <div 
                                     key={idx}
                                     className="flex-shrink-0 flex items-center justify-center font-bold text-xs uppercase tracking-widest text-accent-900 border-r border-accent-100 bg-accent-50 last:border-0"
-                                    style={{ width: `${month.widthPx}px` }}
+                                    style={{ width: `${month.width * pixelsPerDay}px` }}
                                  >
                                      {month.name}
                                  </div>
@@ -794,7 +784,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                                     className={`flex-shrink-0 border-r border-gray-100 flex items-center justify-center select-none relative
                                         ${day.isToday ? 'bg-red-50/70' : day.isWeekend ? 'bg-gray-50' : 'bg-white'}
                                     `}
-                                    style={{ width: `${day.size}px` }}
+                                    style={{ width: `${pixelsPerDay}px` }}
                                 >
                                     <span className={`text-xs font-semibold ${day.isToday ? 'text-red-600' : day.isWeekend ? 'text-red-500' : 'text-gray-600'}`}>
                                         {day.dayNum}
@@ -808,11 +798,11 @@ export const Timeline: React.FC<TimelineProps> = ({
 
             {/* Grid Background Lines */}
             <div className={`absolute bottom-0 left-8 right-0 pointer-events-none flex z-0 ${isZoomedOut ? 'top-20' : 'top-16'}`}>
-                {renderedDaySlots.map((slot) => (
+                {Array.from({ length: tripLength }).map((_, i) => (
                     <div 
-                        key={slot.index}
+                        key={i} 
                         className="flex-shrink-0 border-r border-dashed border-gray-100 h-full"
-                        style={{ width: `${slot.size}px` }}
+                        style={{ width: `${pixelsPerDay}px` }}
                     />
                 ))}
             </div>
@@ -899,10 +889,6 @@ export const Timeline: React.FC<TimelineProps> = ({
                                     cityStackIndex={cityStack?.stackIndex || 0}
                                     cityStackCount={cityStack?.stackCount || 1}
                                     cityVisualColorHex={cityVisualColorHex}
-                                    isDetailsPanelVisible={isDetailsPanelVisible}
-                                    onNavigatePreviousCity={onNavigatePreviousCity}
-                                    onNavigateNextCity={onNavigateNextCity}
-                                    onToggleDetailsPanel={onToggleDetailsPanel}
                                 />
                             );
                         })}
@@ -1049,20 +1035,20 @@ export const Timeline: React.FC<TimelineProps> = ({
 
                     {/* Day Column Add Buttons */}
                     <div className="relative h-8 w-full flex mb-2 pointer-events-none">
-                         {dateHeaders.days.map((day) => (
+                         {Array.from({ length: tripLength }).map((_, i) => (
                              <div 
-                                key={day.index}
+                                key={i}
                                 className="absolute top-0 bottom-0 flex justify-center items-center pointer-events-auto group"
                                 style={{ 
-                                    left: `${day.start}px`, 
-                                    width: `${day.size}px` 
+                                    left: `${i * pixelsPerDay}px`, 
+                                    width: `${pixelsPerDay}px` 
                                 }}
                              >
                                  <button
-                                     onClick={(e) => { e.stopPropagation(); if (!canEdit) return; onAddActivity(day.dayOffset); }}
+                                     onClick={(e) => { e.stopPropagation(); if (!canEdit) return; onAddActivity(dateHeaders.days[i]?.dayOffset ?? i); }}
                                      disabled={!canEdit}
                                      className={`w-full h-full mx-1 rounded-md border border-dashed border-transparent flex items-center justify-center text-gray-300 transition-all ${canEdit ? 'hover:border-gray-300 hover:bg-gray-50 hover:text-accent-500' : 'cursor-not-allowed opacity-40'}`}
-                                     aria-label={`Add activity for ${day.date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`}
+                                     aria-label={`Add activity for ${dateHeaders.days[i]?.date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) || `day ${i + 1}`}`}
                                  >
                                      <Plus size={16} />
                                  </button>
@@ -1072,12 +1058,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                     
                     <div className="flex flex-col gap-3">
                         {activityLanes.map((lane, laneIdx) => (
-                             <div
-                                key={laneIdx}
-                                className={`relative w-full group/lane rounded-lg border border-transparent ${
-                                    useCompactHorizontalActivityCards ? 'h-36' : 'h-28'
-                                }`}
-                             >
+                             <div key={laneIdx} className="relative h-20 w-full group/lane rounded-lg border border-transparent">
                                 {lane.map(item => (
                                     <TimelineBlock
                                         key={item.id}

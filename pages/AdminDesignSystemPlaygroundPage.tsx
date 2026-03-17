@@ -7,6 +7,7 @@ import { useAppDialog } from '../components/AppDialogProvider';
 import { CountrySelect } from '../components/CountrySelect';
 import { DateRangePicker } from '../components/DateRangePicker';
 import { ProfileCountryRegionSelect } from '../components/profile/ProfileCountryRegionSelect';
+import { AnimatedNumber } from '../components/ui/animated-number';
 import { AppModal } from '../components/ui/app-modal';
 import { showAppToast } from '../components/ui/appToast';
 import { Checkbox } from '../components/ui/checkbox';
@@ -34,6 +35,8 @@ import {
     DrawerHeader,
     DrawerTitle,
 } from '../components/ui/drawer';
+import { Input } from '../components/ui/input';
+import { NumberInput } from '../components/ui/number-input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Switch } from '../components/ui/switch';
 import {
@@ -113,9 +116,9 @@ const COMPONENT_GROUPS: ComponentGroupDefinition[] = [
     {
         id: 'inputs',
         title: 'Inputs + Textareas',
-        description: 'Shared form field styles for text, multiline, and read-only states.',
-        sourcePath: 'pages/ProfileSettingsPage.tsx',
-        usagePaths: ['pages/ProfileSettingsPage.tsx', 'pages/AdminTripsPage.tsx', 'pages/AdminOgToolsPage.tsx'],
+        description: 'Shared text, numeric, animated-number, multiline, and read-only field treatments.',
+        sourcePath: 'components/ui/number-input.tsx',
+        usagePaths: ['components/ui/input.tsx', 'components/CountryInfo.tsx', 'components/DetailsPanel.tsx'],
     },
     {
         id: 'selects',
@@ -303,6 +306,10 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
     const [sampleCountryCode, setSampleCountryCode] = useState('DE');
     const [sampleStartDate, setSampleStartDate] = useState('2026-04-07');
     const [sampleEndDate, setSampleEndDate] = useState('2026-04-21');
+    const [sampleNumberValue, setSampleNumberValue] = useState(12.5);
+    const sampleTextInputId = React.useId();
+    const sampleReadonlyInputId = React.useId();
+    const sampleNumberInputId = React.useId();
     const [sampleTableSortKey, setSampleTableSortKey] = useState<PlaygroundTableSortKey>('updated');
     const [sampleTableSortDirection, setSampleTableSortDirection] = useState<'asc' | 'desc'>('desc');
     const [sampleSelectedTableRows, setSampleSelectedTableRows] = useState<Set<string>>(() => new Set(['row-1']));
@@ -668,21 +675,46 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
         if (activeGroup === 'inputs') {
             return (
                 <div className={`${previewPanelClassName} grid gap-3 lg:grid-cols-2`}>
-                    <label className="space-y-1">
-                        <span className={subtleHeadingClassName}>Text input</span>
-                        <input
+                    <div className="space-y-1">
+                        <label htmlFor={sampleTextInputId} className={subtleHeadingClassName}>Text input</label>
+                        <Input
+                            id={sampleTextInputId}
                             defaultValue="Tokyo City Highlights"
-                            className="h-10 w-full rounded-md border border-slate-300 px-3 text-sm outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
+                            className="bg-white"
                         />
-                    </label>
-                    <label className="space-y-1">
-                        <span className={subtleHeadingClassName}>Readonly input</span>
-                        <input
+                    </div>
+                    <div className="space-y-1">
+                        <label htmlFor={sampleReadonlyInputId} className={subtleHeadingClassName}>Readonly input</label>
+                        <Input
+                            id={sampleReadonlyInputId}
                             value="readonly_handle"
                             readOnly
-                            className="h-10 w-full rounded-md border border-slate-200 bg-slate-100 px-3 text-sm text-slate-600"
+                            className="border-slate-200 bg-slate-100 text-slate-600"
                         />
-                    </label>
+                    </div>
+                    <div className="space-y-1">
+                        <label htmlFor={sampleNumberInputId} className={subtleHeadingClassName}>Animated number input</label>
+                        <NumberInput
+                            id={sampleNumberInputId}
+                            value={sampleNumberValue}
+                            min="0"
+                            step="0.5"
+                            onChange={(event) => setSampleNumberValue(Number(event.target.value))}
+                            format={{ minimumFractionDigits: 1, maximumFractionDigits: 1 }}
+                            className="bg-white"
+                        />
+                    </div>
+                    <div className="space-y-1">
+                        <span className={subtleHeadingClassName}>Animated display number</span>
+                        <div className="flex h-10 items-center rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-700">
+                            <AnimatedNumber
+                                value={sampleNumberValue}
+                                format={{ minimumFractionDigits: 1, maximumFractionDigits: 1 }}
+                                suffix=" days"
+                                className="font-semibold text-slate-900"
+                            />
+                        </div>
+                    </div>
                     <label className="space-y-1 lg:col-span-2">
                         <span className={subtleHeadingClassName}>Textarea</span>
                         <textarea

@@ -132,8 +132,8 @@
   },
   "notes": {
     "title": "Besondere Hinweise",
-    "hint": "Nenne Städte, die dabei sein sollen, Aktivitäten, die du bevorzugst oder vermeiden möchtest, sowie Wünsche zu Essen, Tempo, Mobilität oder Komfort.",
-    "placeholder": "Beispiele: Kyoto und Osaka, eher Märkte als Museen, kein Nachtleben, vegetarisches Essen, kinderwagenfreundliche Tage"
+    "hint": "Kurz halten: z. B. Mobilität, Food-Fokus oder gewünschtes Komfortniveau.",
+    "placeholder": "Optionale Hinweise für den Planer"
   },
   "snapshot": {
     "title": "Reise-Snapshot",
@@ -277,7 +277,7 @@
       "specificCitiesLabel": "Bestimmte Städte oder Stopps",
       "specificCitiesPlaceholder": "z. B. Rom, Florenz, Bologna",
       "notesLabel": "Zusätzliche Hinweise",
-      "notesPlaceholder": "Beispiele: Kyoto und Osaka, eher Märkte als Museen, kein Nachtleben, vegetarisches Essen, kinderwagenfreundliche Tage",
+      "notesPlaceholder": "Essenswünsche, Anlass, Mobilitätsbedarf, Routinen mit Kindern, Remote-Work-Vorgaben…",
       "roundTripTitle": "Zum Start zurückkehren",
       "roundTripDescription": "Die Reise endet am Startort, wenn das sinnvoll zur Route passt.",
       "routeLockTitle": "Feste Reihenfolge",

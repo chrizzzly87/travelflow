@@ -19,7 +19,6 @@ interface TripViewPlannerWorkspaceProps {
     onZoomIn: () => void;
     onTimelineModeChange: (mode: 'calendar' | 'timeline') => void;
     onTimelineViewChange: (view: 'horizontal' | 'vertical') => void;
-    zoomLevel: number;
     mapDockMode: 'docked' | 'floating';
     onMapDockModeChange: (mode: 'docked' | 'floating') => void;
     timelineMode: 'calendar' | 'timeline';
@@ -62,11 +61,6 @@ interface TripViewPlannerWorkspaceProps {
 }
 
 const TRIP_FLOATING_MAP_PREVIEW_BETA_ENABLED = true;
-const formatZoomLevelLabel = (value: number): string => `×${value.toFixed(1)}`;
-const CONTROL_GROUP_CLASS_NAME = 'inline-flex flex-col items-center gap-1 rounded-lg border border-gray-200 bg-white/90 p-1 shadow-sm backdrop-blur';
-const CONTROL_TOGGLE_BUTTON_CLASS_NAME = 'rounded-md p-2 transition-colors';
-const CONTROL_TOGGLE_ACTIVE_CLASS_NAME = 'border-accent-700 bg-accent-600 text-white';
-const CONTROL_TOGGLE_INACTIVE_CLASS_NAME = 'text-gray-600 hover:bg-gray-100 hover:text-accent-600';
 
 export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> = ({
     isPaywallLocked,
@@ -82,7 +76,6 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
     onZoomIn,
     onTimelineModeChange,
     onTimelineViewChange,
-    zoomLevel,
     mapDockMode,
     onMapDockModeChange,
     timelineMode,
@@ -126,11 +119,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
     const dockedMapAnchorRef = useRef<HTMLDivElement | null>(null);
     const isFloatingMapPreviewEnabled = !isMobile && TRIP_FLOATING_MAP_PREVIEW_BETA_ENABLED;
     const effectiveMapDockMode: 'docked' | 'floating' = isFloatingMapPreviewEnabled ? mapDockMode : 'docked';
-    const plannerControlsLayerClassName = effectiveMapDockMode === 'floating' ? 'z-[30]' : 'z-[60]';
     const dockedGeometryKey = `${effectiveLayoutMode}:${layoutMode}:${sidebarWidth}:${detailsWidth}:${timelineHeight}:${detailsPanelVisible ? '1' : '0'}`;
-    const floatingMapReservedRightInset = effectiveMapDockMode === 'floating' && detailsPanelVisible
-        ? detailsWidth + 4
-        : 0;
 
     const toggleMapDockMode = useCallback(() => {
         if (!isFloatingMapPreviewEnabled) return;
@@ -141,7 +130,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
         : undefined;
 
     const timelineControls = (
-        <div className="pointer-events-auto flex flex-wrap items-center justify-end gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2 pointer-events-auto">
             {timelineMode === 'calendar' && (
                 <>
                     <div className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white/90 p-1 shadow-sm backdrop-blur">
@@ -174,7 +163,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                             <ArrowUpDown size={16} />
                         </button>
                     </div>
-                    <div className="inline-flex items-center gap-0.5 rounded-lg border border-gray-200 bg-white/90 p-1 shadow-sm backdrop-blur">
+                    <div className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white/90 p-1 shadow-sm backdrop-blur">
                         <button
                             type="button"
                             onClick={onZoomOut}
@@ -184,15 +173,6 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                         >
                             <ZoomOut size={16} />
                         </button>
-                        {!isMobile && (
-                            <span
-                                role="status"
-                                aria-live="polite"
-                                className="rounded-md px-1 py-1.5 text-center text-xs font-semibold tabular-nums text-slate-700"
-                            >
-                                {formatZoomLevelLabel(zoomLevel)}
-                            </span>
-                        )}
                         <button
                             type="button"
                             onClick={onZoomIn}
@@ -265,13 +245,12 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                                 </button>
                             )}
                             {showLayoutControls && (
-                                <div className={CONTROL_GROUP_CLASS_NAME}>
+                                <>
                                     <button
                                         type="button"
                                         onClick={() => onLayoutModeChange('vertical')}
-                                        className={`${CONTROL_TOGGLE_BUTTON_CLASS_NAME} ${layoutMode === 'vertical' ? CONTROL_TOGGLE_ACTIVE_CLASS_NAME : CONTROL_TOGGLE_INACTIVE_CLASS_NAME}`}
+                                        className={`p-2 rounded-lg shadow-md border transition-colors ${layoutMode === 'vertical' ? 'bg-accent-600 text-white border-accent-700' : 'bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50'}`}
                                         aria-label="Vertical layout"
-                                        aria-pressed={layoutMode === 'vertical'}
                                         {...getAnalyticsDebugAttributes('trip_view__layout_direction--vertical', { surface: 'map_controls' })}
                                     >
                                         <ArrowUpDown size={18} />
@@ -279,14 +258,13 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                                     <button
                                         type="button"
                                         onClick={() => onLayoutModeChange('horizontal')}
-                                        className={`${CONTROL_TOGGLE_BUTTON_CLASS_NAME} ${layoutMode === 'horizontal' ? CONTROL_TOGGLE_ACTIVE_CLASS_NAME : CONTROL_TOGGLE_INACTIVE_CLASS_NAME}`}
+                                        className={`p-2 rounded-lg shadow-md border transition-colors ${layoutMode === 'horizontal' ? 'bg-accent-600 text-white border-accent-700' : 'bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50'}`}
                                         aria-label="Horizontal layout"
-                                        aria-pressed={layoutMode === 'horizontal'}
                                         {...getAnalyticsDebugAttributes('trip_view__layout_direction--horizontal', { surface: 'map_controls' })}
                                     >
                                         <ArrowLeftRight size={18} />
                                     </button>
-                                </div>
+                                </>
                             )}
                             <button
                                 type="button"
@@ -357,25 +335,22 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                 {isMobile ? (
                     <div className="w-full h-full flex flex-col">
                         <div
-                            ref={mapViewportRef}
-                            data-testid="planner-mobile-map-pane"
-                            className={`${isMobileMapExpanded ? 'fixed inset-x-0 bottom-0 h-[70vh] z-[1450] border-t border-gray-200 shadow-2xl bg-white' : 'relative h-[26vh] min-h-[180px] bg-gray-100'}`}
-                        >
-                            {renderMap('vertical', false)}
-                        </div>
-                        <div
-                            ref={verticalLayoutTimelineRef}
-                            data-testid="planner-mobile-timeline-pane"
-                            className="flex-1 min-h-0 w-full bg-white border-t border-gray-200 relative overflow-hidden"
+                            className="flex-1 min-h-0 w-full bg-white border-b border-gray-200 relative overflow-hidden"
                             onTouchStart={timelineMode === 'calendar' ? onTimelineTouchStart : undefined}
                             onTouchMove={timelineMode === 'calendar' ? onTimelineTouchMove : undefined}
                             onTouchEnd={timelineMode === 'calendar' ? onTimelineTouchEnd : undefined}
                             onTouchCancel={timelineMode === 'calendar' ? onTimelineTouchEnd : undefined}
                         >
                             {timelineCanvas}
-                            <div data-testid="planner-timeline-controls" className={`absolute top-3 end-3 ${plannerControlsLayerClassName} pointer-events-auto`}>
+                            <div className="absolute top-3 end-3 z-[60] pointer-events-auto">
                                 {timelineControls}
                             </div>
+                        </div>
+                        <div
+                            ref={mapViewportRef}
+                            className={`${isMobileMapExpanded ? 'fixed inset-x-0 bottom-0 h-[70vh] z-[1450] border-t border-gray-200 shadow-2xl bg-white' : 'relative h-[34vh] min-h-[220px] bg-gray-100'}`}
+                        >
+                            {renderMap('vertical', false)}
                         </div>
                     </div>
                 ) : (
@@ -397,26 +372,15 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                                             onTouchCancel={timelineMode === 'calendar' ? onTimelineTouchEnd : undefined}
                                         >
                                             {timelineCanvas}
-                                            <div data-testid="planner-timeline-controls" className={`absolute top-4 end-4 ${plannerControlsLayerClassName} pointer-events-auto`}>
+                                            <div className="absolute top-4 end-4 z-[60] pointer-events-auto">
                                                 {timelineControls}
                                             </div>
                                         </div>
                                     </div>
                                     {detailsPanelVisible && (
-                                        <>
-                                            <button
-                                                type="button"
-                                                className="w-1 appearance-none border-0 bg-gray-100 p-0 transition-colors z-[45] flex cursor-col-resize items-center justify-center group hover:bg-accent-500"
-                                                onMouseDown={(event) => onStartResizing('details', event.clientX)}
-                                                onKeyDown={onDetailsResizeKeyDown}
-                                                aria-label="Resize details panel"
-                                            >
-                                                <div className="h-8 w-1 group-hover:bg-accent-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
-                                            </button>
-                                            <div style={{ width: detailsWidth }} className="relative h-full shrink-0 overflow-hidden border-s border-gray-200 bg-white z-[50]">
-                                                {detailsPanelContent}
-                                            </div>
-                                        </>
+                                        <div style={{ width: detailsWidth }} className="h-full bg-white border-s border-gray-200 z-20 shrink-0 relative overflow-hidden">
+                                            {detailsPanelContent}
+                                        </div>
                                     )}
                                 </>
                             ) : effectiveLayoutMode === 'horizontal' ? (
@@ -425,7 +389,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                                         <div className="w-full flex-1 overflow-hidden relative flex flex-col min-w-0">
                                             <div ref={verticalLayoutTimelineRef} className="flex-1 w-full overflow-hidden relative min-w-0">
                                                 {timelineCanvas}
-                                                <div data-testid="planner-timeline-controls" className={`absolute top-4 end-4 ${plannerControlsLayerClassName} pointer-events-auto`}>
+                                                <div className="absolute top-4 end-4 z-[60] pointer-events-auto">
                                                     {timelineControls}
                                                 </div>
                                             </div>
@@ -443,7 +407,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                                     </button>
 
                                     {detailsPanelVisible && (
-                                        <div style={{ width: detailsWidth }} className="relative h-full shrink-0 overflow-hidden border-r border-gray-200 bg-white z-[40]">
+                                        <div style={{ width: detailsWidth }} className="h-full bg-white border-r border-gray-200 z-20 shrink-0 relative overflow-hidden">
                                             {detailsPanelContent}
                                             <button
                                                 type="button"
@@ -475,13 +439,13 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                                         <div ref={verticalLayoutTimelineRef} className="flex-1 h-full relative border-r border-gray-100 min-w-0">
                                             <div className="w-full h-full relative min-w-0">
                                                 {timelineCanvas}
-                                                <div data-testid="planner-timeline-controls" className={`absolute top-4 end-4 ${plannerControlsLayerClassName} pointer-events-auto`}>
+                                                <div className="absolute top-4 end-4 z-[60] pointer-events-auto">
                                                     {timelineControls}
                                                 </div>
                                             </div>
                                         </div>
                                         {detailsPanelVisible && (
-                                            <div style={{ width: detailsWidth }} className="relative h-full overflow-hidden border-l border-gray-200 bg-white z-[40]">
+                                            <div style={{ width: detailsWidth }} className="h-full bg-white border-l border-gray-200 overflow-hidden relative">
                                                 {detailsPanelContent}
                                                 <button
                                                     type="button"
@@ -504,7 +468,6 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                             mapViewportRef={mapViewportRef}
                             dockedMapAnchorRef={dockedMapAnchorRef}
                             dockedGeometryKey={dockedGeometryKey}
-                            reservedRightInset={floatingMapReservedRightInset}
                             tripId={tripId}
                         >
                             {renderMap(layoutMode, effectiveMapDockMode !== 'floating')}

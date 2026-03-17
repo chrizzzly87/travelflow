@@ -132,8 +132,8 @@
   },
   "notes": {
     "title": "Notes spéciales",
-    "hint": "Indiquez les villes à inclure, les activités à privilégier ou à éviter, ainsi que vos besoins côté repas, rythme, mobilité ou confort.",
-    "placeholder": "Exemples : Kyoto et Osaka, plus de marchés que de musées, pas de vie nocturne, repas végétariens, journées adaptées à une poussette"
+    "hint": "Restez bref : indiquez les incontournables comme mobilité, priorité cuisine, ou niveau de confort.",
+    "placeholder": "Notes optionnelles pour le planificateur"
   },
   "snapshot": {
     "title": "Aperçu du voyage",
@@ -276,8 +276,8 @@
       "paceLabel": "Pace",
       "specificCitiesLabel": "Specific cities or stops",
       "specificCitiesPlaceholder": "e.g. Rome, Florence, Bologna",
-      "notesLabel": "Notes supplémentaires",
-      "notesPlaceholder": "Exemples : Kyoto et Osaka, plus de marchés que de musées, pas de vie nocturne, repas végétariens, journées adaptées à une poussette",
+      "notesLabel": "Extra notes",
+      "notesPlaceholder": "Food preferences, celebration plans, mobility needs, child routines, remote-work constraints…",
       "roundTripTitle": "Return to start",
       "roundTripDescription": "End in the same place you begin when that fits the trip.",
       "routeLockTitle": "Fixed route order",
