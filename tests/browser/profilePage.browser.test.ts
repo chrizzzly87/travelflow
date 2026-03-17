@@ -547,4 +547,21 @@ describe('pages/ProfilePage query-driven tabs and sort', () => {
     expect(tripAAfter).not.toBeChecked();
     expect(tripBAfter).toBeChecked();
   });
+
+  it('prefers the saved first and last name over a stale display name on the owner profile surface', async () => {
+    mocks.auth.profile = {
+      ...mocks.auth.profile,
+      displayName: 'Old Alias',
+      firstName: 'Chris',
+      lastName: 'Wisniewski',
+    };
+
+    renderProfilePage('/profile');
+
+    await waitFor(() => {
+      expect(screen.getByText(/Chris Wisniewski/i)).toBeInTheDocument();
+    });
+
+    expect(screen.queryByText('Old Alias')).toBeNull();
+  });
 });

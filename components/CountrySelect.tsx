@@ -1,16 +1,24 @@
-import React, { useState, useRef, useEffect, useCallback, useLayoutEffect, useId } from 'react';
-import { createPortal } from 'react-dom';
-import { getDestinationMetaLabel, getDestinationOptionByName, getDestinationSeasonCountryName, resolveDestinationName, searchDestinationOptions } from '../services/destinationService';
+import React, { useState, useRef, useEffect, useCallback, useId } from 'react';
+import {
+    getDestinationMetaLabel,
+    getDestinationOptionByName,
+    getDestinationSeasonCountryName,
+    resolveDestinationName,
+    searchDestinationOptions,
+} from '../services/destinationService';
 import { MapPin, Search, Plus } from 'lucide-react';
 import { CountryTag } from './CountryTag';
 import { IdealTravelTimeline } from './IdealTravelTimeline';
 import { getCountrySeasonByName } from '../data/countryTravelData';
 import { FlagIcon } from './flags/FlagIcon';
+import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
 
 interface CountrySelectProps {
     value: string;
     onChange: (value: string) => void;
     disabled?: boolean;
+    recommendationMonths?: number[];
+    analyticsEventName?: string;
     labels?: {
         fieldLabel?: string;
         placeholder?: string;
@@ -22,13 +30,18 @@ interface CountrySelectProps {
     };
 }
 
-export const CountrySelect: React.FC<CountrySelectProps> = ({ value, onChange, disabled, labels }) => {
+export const CountrySelect: React.FC<CountrySelectProps> = ({
+    value,
+    onChange,
+    disabled,
+    recommendationMonths,
+    analyticsEventName,
+    labels,
+}) => {
     const [isOpen, setIsOpen] = useState(false);
     const [search, setSearch] = useState('');
     const wrapperRef = useRef<HTMLDivElement>(null);
-    const dropdownRef = useRef<HTMLDivElement>(null);
     const searchInputRef = useRef<HTMLInputElement>(null);
-    const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number; width: number } | null>(null);
     const searchInputId = useId();
 
     // Parse existing value into array (comma separated)
@@ -36,48 +49,22 @@ export const CountrySelect: React.FC<CountrySelectProps> = ({ value, onChange, d
         ? value.split(',').map((item) => resolveDestinationName(item)).filter(Boolean)
         : [];
 
-    const filtered = searchDestinationOptions(search, { excludeNames: selectedCountries, limit: 30 });
-
-    const updateDropdownPosition = useCallback(() => {
-        if (!wrapperRef.current) return;
-        const rect = wrapperRef.current.getBoundingClientRect();
-        const width = Math.max(220, Math.min(rect.width, window.innerWidth - 16));
-        const left = Math.max(8, Math.min(rect.left, window.innerWidth - width - 8));
-        setDropdownPosition({
-            top: rect.bottom + 8,
-            left,
-            width,
-        });
-    }, []);
+    const normalizedSearch = search.trim();
+    const filtered = searchDestinationOptions(search, {
+        excludeNames: selectedCountries,
+        limit: normalizedSearch ? 30 : 20,
+        months: recommendationMonths,
+    });
 
     const openDropdown = useCallback(() => {
         if (disabled) return;
-        updateDropdownPosition();
         setIsOpen(true);
-    }, [disabled, updateDropdownPosition]);
-
-    useLayoutEffect(() => {
-        if (!isOpen) return;
-        updateDropdownPosition();
-    }, [isOpen, search, selectedCountries.length, updateDropdownPosition]);
-
-    useEffect(() => {
-        if (!isOpen) return;
-        const handlePositionChange = () => updateDropdownPosition();
-        window.addEventListener('resize', handlePositionChange);
-        window.addEventListener('scroll', handlePositionChange, true);
-        return () => {
-            window.removeEventListener('resize', handlePositionChange);
-            window.removeEventListener('scroll', handlePositionChange, true);
-        };
-    }, [isOpen, updateDropdownPosition]);
+    }, [disabled]);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             const target = event.target as Node;
-            const inWrapper = wrapperRef.current?.contains(target);
-            const inDropdown = dropdownRef.current?.contains(target);
-            if (!inWrapper && !inDropdown) {
+            if (!wrapperRef.current?.contains(target)) {
                 setIsOpen(false);
             }
         };
@@ -89,8 +76,7 @@ export const CountrySelect: React.FC<CountrySelectProps> = ({ value, onChange, d
         const newCountries = [...selectedCountries, name];
         onChange(newCountries.join(', '));
         setSearch('');
-        // Keep open for adding more if needed, or close? Let's keep input focused but clear search
-        // setIsOpen(false); 
+        searchInputRef.current?.focus();
     };
 
     const removeCountry = (name: string) => {
@@ -132,7 +118,7 @@ export const CountrySelect: React.FC<CountrySelectProps> = ({ value, onChange, d
                 })}
 
                 {/* Input */}
-                <div className="flex-1 min-w-[120px] flex items-center gap-2">
+                <div className="tf-ios-zoom-safe-shell flex-1 min-w-[120px] flex items-center gap-2">
                     {selectedCountries.length === 0 && <Search size={16} className="text-gray-400" />}
                     <input 
                         id={searchInputId}
@@ -146,29 +132,43 @@ export const CountrySelect: React.FC<CountrySelectProps> = ({ value, onChange, d
                         placeholder={selectedCountries.length === 0
                             ? (labels?.placeholder || 'Search countries or islands...')
                             : (labels?.addAnotherPlaceholder || 'Add another destination...')}
-                        className="bg-transparent border-none outline-none w-full text-gray-800 font-medium placeholder-gray-400 text-sm h-8"
+                        className="tf-ios-zoom-safe-field bg-transparent border-none outline-none w-full text-gray-800 font-medium placeholder-gray-400 text-sm h-8"
                         onFocus={openDropdown}
                     />
                 </div>
             </div>
 
             {/* Dropdown */}
-            {isOpen && dropdownPosition && (search || filtered.length > 0) && typeof document !== 'undefined' && createPortal(
+            {isOpen && (normalizedSearch || filtered.length > 0) && (
                 <div
-                    ref={dropdownRef}
-                    className="fixed z-[9999] bg-white rounded-xl shadow-xl border border-gray-100 max-h-60 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200"
-                    style={{
-                        top: dropdownPosition.top,
-                        left: dropdownPosition.left,
-                        width: dropdownPosition.width,
-                    }}
+                    className="absolute inset-x-0 top-[calc(100%+8px)] z-50 max-h-60 overflow-y-auto rounded-xl border border-gray-100 bg-white shadow-xl animate-in fade-in slide-in-from-top-2 duration-200"
                 >
                     {filtered.length > 0 ? filtered.map((country) => (
                         <button
                             key={country.code}
                             type="button"
                             className="w-full px-4 py-3 hover:bg-gray-50 cursor-pointer flex items-center justify-between transition-colors group text-left"
-                            onClick={() => addCountry(country.name)}
+                            onClick={() => {
+                                if (!normalizedSearch && analyticsEventName) {
+                                    trackEvent(analyticsEventName, {
+                                        destination_code: country.code,
+                                        destination_name: country.name,
+                                        destination_kind: country.kind,
+                                        source: 'empty_state',
+                                        months: (recommendationMonths || []).join(','),
+                                    });
+                                }
+                                addCountry(country.name);
+                            }}
+                            {...(!normalizedSearch && analyticsEventName
+                                ? getAnalyticsDebugAttributes(analyticsEventName, {
+                                    destination_code: country.code,
+                                    destination_name: country.name,
+                                    destination_kind: country.kind,
+                                    source: 'empty_state',
+                                    months: (recommendationMonths || []).join(','),
+                                })
+                                : {})}
                         >
                             <div className="flex items-start gap-3 min-w-0">
                                 <FlagIcon value={country.flag} size="xl" />
@@ -188,8 +188,7 @@ export const CountrySelect: React.FC<CountrySelectProps> = ({ value, onChange, d
                             {search ? (labels?.noMatches || 'No matching destinations') : (labels?.typeToSearch || 'Type to search')}
                         </div>
                     )}
-                </div>,
-                document.body
+                </div>
             )}
         </div>
     );

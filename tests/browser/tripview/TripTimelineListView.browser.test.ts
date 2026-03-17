@@ -2,6 +2,7 @@
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 
 import { TripTimelineListView } from '../../../components/tripview/TripTimelineListView';
 import { makeActivityItem, makeCityItem, makeTravelItem, makeTrip } from '../../helpers/tripFixtures';
@@ -26,6 +27,7 @@ vi.mock('../../../services/analyticsService', () => ({
 describe('components/tripview/TripTimelineListView', () => {
   it('renders timeline interactions with hover affordances and analytics events', () => {
     analyticsMocks.trackEvent.mockReset();
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
 
     const travel = makeTravelItem('travel-a-b', 2.05, 'Morning transfer');
     travel.description = 'Transfer from **Kabul** to _Herat_.';
@@ -33,10 +35,18 @@ describe('components/tripview/TripTimelineListView', () => {
     const activity = makeActivityItem('activity-b-1', 'Herat', 2.5);
     activity.title = 'Citadel of Herat';
     activity.description = 'Visit the **Citadel** and [book ahead](https://example.com).';
+    activity.activityType = ['culture', 'food'];
 
     const heratCity = makeCityItem({ id: 'city-b', title: 'Herat', startDateOffset: 2.3, duration: 2, color: 'bg-amber-400' });
     heratCity.countryName = 'Iran';
-    heratCity.description = 'Historic center with **old citadel walls**.\n- [x] Markt öffnen\n- [ ] Schlosspark besuchen\n~~Altprogramm~~';
+    heratCity.description = '### Must See\n- [x] Markt öffnen\n- [ ] Schlosspark besuchen\n\n### Heads Up\n- [ ] Stay near the main square after sunset.\n\nHistoric center with **old citadel walls**.\n~~Altprogramm~~';
+    heratCity.hotels = [
+      {
+        id: 'hotel-b-1',
+        name: 'Caravanserai Hotel',
+        address: 'Old Town, Herat',
+      },
+    ];
     const kabulCity = makeCityItem({ id: 'city-a', title: 'Kabul', startDateOffset: 0, duration: 2, color: 'bg-rose-400' });
     kabulCity.countryName = 'Afghanistan';
 
@@ -52,11 +62,13 @@ describe('components/tripview/TripTimelineListView', () => {
     });
 
     const onSelect = vi.fn();
+    const onToggleTaskCheckbox = vi.fn();
 
     const { rerender } = render(
       React.createElement(TripTimelineListView, {
         trip,
         selectedItemId: null,
+        onToggleTaskCheckbox,
         onSelect,
       }),
     );
@@ -78,6 +90,7 @@ describe('components/tripview/TripTimelineListView', () => {
       React.createElement(TripTimelineListView, {
         trip,
         selectedItemId: 'travel-a-b',
+        onToggleTaskCheckbox,
         onSelect,
       }),
     );
@@ -96,11 +109,26 @@ describe('components/tripview/TripTimelineListView', () => {
     });
 
     expect(screen.queryByText('From Kabul via Train')).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Must See' })).toHaveClass('font-black');
     expect(screen.getByText('old citadel walls', { exact: false })).toBeInTheDocument();
-    expect(screen.getAllByRole('checkbox')).toHaveLength(2);
+    expect(screen.getByText('Caravanserai Hotel')).toBeInTheDocument();
+    expect(screen.getByText('Old Town, Herat')).toBeInTheDocument();
+    const checkboxes = screen.getAllByRole('checkbox');
+    expect(checkboxes).toHaveLength(2);
+    expect(screen.getByText('Stay near the main square after sunset.').closest('li')).toHaveAttribute('data-heads-up-banner', 'true');
     expect(screen.getByText('Altprogramm')).toBeInTheDocument();
     expect(screen.queryByText('**Citadel**')).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'book ahead' })).toHaveAttribute('href', 'https://example.com');
+    expect(screen.getByTitle('Culture')).toBeInTheDocument();
+    expect(screen.getByTitle('Food')).toBeInTheDocument();
+    expect(screen.getByTitle('Culture')).not.toHaveClass('shadow-sm');
+    expect(screen.getByTitle('Culture')).toHaveClass('-ms-2');
+    expect(screen.getByTitle('Culture')).toHaveClass('group-hover/pills:ms-2');
+    expect(screen.getByTitle('Culture').getAttribute('class')).toContain('[z-index:calc(sibling-count()-sibling-index())]');
+    expect(screen.getByTitle('Food').lastElementChild).toHaveClass('group-hover/pills:max-w-24');
+    expect(screen.getByTitle('Food').lastElementChild).toHaveClass('group-focus-visible:max-w-24');
+    expect(screen.getByTitle('Food').lastElementChild).toHaveClass('ease-out');
+    expect(screen.getByTitle('Food').lastElementChild?.getAttribute('class')).toContain('group-hover/pills:[transition-delay:calc((sibling-index()-1)*36ms)]');
 
     const heratHeading = screen.getByRole('heading', { name: 'Herat' });
     expect(heratHeading.closest('header')).toHaveClass('sticky');
@@ -120,6 +148,16 @@ describe('components/tripview/TripTimelineListView', () => {
       trip_id: 'trip-1',
       item_id: 'activity-b-1',
       city_id: 'city-b',
+    });
+
+    return user.click(checkboxes[0]).then(() => {
+      expect(onToggleTaskCheckbox).toHaveBeenCalledWith('city-b', 2, false);
+      expect(analyticsMocks.trackEvent).toHaveBeenCalledWith('trip_view__timeline_task--toggle', {
+        trip_id: 'trip-1',
+        item_id: 'city-b',
+        task_line_number: 2,
+        checked: false,
+      });
     });
   });
 
@@ -204,6 +242,102 @@ describe('components/tripview/TripTimelineListView', () => {
       rafSpy.mockRestore();
       cancelRafSpy.mockRestore();
     }
+  });
+
+  it('does not auto-select a city while scrolling when mobile scroll sync is disabled', () => {
+    const kabulCity = makeCityItem({ id: 'city-a', title: 'Kabul', startDateOffset: 0, duration: 2, color: 'bg-rose-400' });
+    const heratCity = makeCityItem({ id: 'city-b', title: 'Herat', startDateOffset: 2.2, duration: 2, color: 'bg-amber-400' });
+    const trip = makeTrip({
+      startDate: '2026-03-01',
+      items: [kabulCity, makeTravelItem('travel-a-b', 2.05, 'Morning transfer'), heratCity],
+    });
+    const onSelect = vi.fn();
+    const rafSpy = vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback: FrameRequestCallback) => {
+      callback(0);
+      return 1;
+    });
+    const cancelRafSpy = vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => undefined);
+
+    try {
+      const { container } = render(
+        React.createElement(TripTimelineListView, {
+          trip,
+          selectedItemId: 'city-a',
+          onSelect,
+          enableScrollActiveCitySelection: false,
+        }),
+      );
+
+      const viewport = container.querySelector('.h-full.overflow-y-auto') as HTMLDivElement | null;
+      const cityASection = container.querySelector('[data-city-section-id="city-a"]') as HTMLElement | null;
+      const cityBSection = container.querySelector('[data-city-section-id="city-b"]') as HTMLElement | null;
+      if (!viewport || !cityASection || !cityBSection) {
+        throw new Error('Expected viewport and city sections to render');
+      }
+
+      Object.defineProperty(viewport, 'clientHeight', {
+        configurable: true,
+        value: 600,
+      });
+      viewport.getBoundingClientRect = vi.fn(() => ({
+        x: 0,
+        y: 0,
+        top: 0,
+        left: 0,
+        right: 900,
+        bottom: 600,
+        width: 900,
+        height: 600,
+        toJSON: () => ({}),
+      })) as any;
+      cityASection.getBoundingClientRect = vi.fn(() => ({
+        x: 0,
+        y: -260,
+        top: -260,
+        left: 0,
+        right: 900,
+        bottom: 120,
+        width: 900,
+        height: 380,
+        toJSON: () => ({}),
+      })) as any;
+      cityBSection.getBoundingClientRect = vi.fn(() => ({
+        x: 0,
+        y: 40,
+        top: 40,
+        left: 0,
+        right: 900,
+        bottom: 420,
+        width: 900,
+        height: 380,
+        toJSON: () => ({}),
+      })) as any;
+
+      fireEvent.wheel(viewport);
+      fireEvent.scroll(viewport);
+
+      expect(onSelect).not.toHaveBeenCalled();
+    } finally {
+      rafSpy.mockRestore();
+      cancelRafSpy.mockRestore();
+    }
+  });
+
+  it('renders checklist rows without a centered max-width wrapper', () => {
+    const trip = makeTrip({
+      startDate: '2026-03-01',
+      items: [makeCityItem({ id: 'city-a', title: 'Kabul', startDateOffset: 0, duration: 2, color: 'bg-rose-400' })],
+    });
+
+    const { container } = render(
+      React.createElement(TripTimelineListView, {
+        trip,
+        selectedItemId: null,
+        onSelect: vi.fn(),
+      }),
+    );
+
+    expect(container.querySelector('.max-w-4xl')).toBeNull();
   });
 
   it('does not auto-select a city while scrolling when no details panel is open', () => {
@@ -438,6 +572,46 @@ describe('components/tripview/TripTimelineListView', () => {
         delete (HTMLElement.prototype as HTMLElement & { scrollIntoView?: unknown }).scrollIntoView;
       }
       vi.useRealTimers();
+    }
+  });
+
+  it('re-runs selected item reveal when pane geometry changes', () => {
+    const trip = makeTrip({
+      startDate: '2026-03-01',
+      items: [
+        makeCityItem({ id: 'city-a', title: 'Kabul', startDateOffset: 0, duration: 2, color: 'bg-rose-400' }),
+        makeActivityItem('activity-a-1', 'Kabul', 0.5),
+      ],
+    });
+    const onSelect = vi.fn();
+    const scrollIntoView = vi.fn();
+    const originalScrollIntoView = HTMLElement.prototype.scrollIntoView;
+    HTMLElement.prototype.scrollIntoView = scrollIntoView;
+
+    try {
+      const { rerender } = render(
+        React.createElement(TripTimelineListView, {
+          trip,
+          selectedItemId: 'activity-a-1',
+          onSelect,
+          selectionVisibilityKey: 'layout-a',
+        }),
+      );
+
+      expect(scrollIntoView).toHaveBeenCalledTimes(1);
+
+      rerender(
+        React.createElement(TripTimelineListView, {
+          trip,
+          selectedItemId: 'activity-a-1',
+          onSelect,
+          selectionVisibilityKey: 'layout-b',
+        }),
+      );
+
+      expect(scrollIntoView).toHaveBeenCalledTimes(2);
+    } finally {
+      HTMLElement.prototype.scrollIntoView = originalScrollIntoView;
     }
   });
 });

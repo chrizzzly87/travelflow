@@ -14,7 +14,9 @@ interface TripTimelineCanvasProps {
     timelineMode: 'calendar' | 'timeline';
     timelineView: 'vertical' | 'horizontal';
     trip: ITrip;
+    isMobile: boolean;
     onUpdateItems: (items: ITimelineItem[], options?: { deferCommit?: boolean }) => void;
+    onToggleTaskCheckbox?: (itemId: string, taskLineNumber: number, checked: boolean) => void;
     onSelect: (id: string | null, options?: { multi?: boolean; isCity?: boolean }) => void;
     selectedItemId: string | null;
     selectedCityIds: string[];
@@ -26,13 +28,20 @@ interface TripTimelineCanvasProps {
     routeStatusById: Record<string, RouteStatus>;
     pixelsPerDay: number;
     enableExampleSharedTransition: boolean;
+    selectionVisibilityKey: string;
+    isDetailsPanelVisible: boolean;
+    onNavigatePreviousCity: () => void;
+    onNavigateNextCity: () => void;
+    onToggleDetailsPanel: () => void;
 }
 
 export const TripTimelineCanvas: React.FC<TripTimelineCanvasProps> = ({
     timelineMode,
     timelineView,
     trip,
+    isMobile,
     onUpdateItems,
+    onToggleTaskCheckbox,
     onSelect,
     selectedItemId,
     selectedCityIds,
@@ -44,13 +53,21 @@ export const TripTimelineCanvas: React.FC<TripTimelineCanvasProps> = ({
     routeStatusById,
     pixelsPerDay,
     enableExampleSharedTransition,
+    selectionVisibilityKey,
+    isDetailsPanelVisible,
+    onNavigatePreviousCity,
+    onNavigateNextCity,
+    onToggleDetailsPanel,
 }) => {
     if (timelineMode === 'timeline') {
         return (
             <TripTimelineListView
                 trip={trip}
                 selectedItemId={selectedItemId}
+                onToggleTaskCheckbox={onToggleTaskCheckbox}
                 onSelect={onSelect}
+                selectionVisibilityKey={selectionVisibilityKey}
+                enableScrollActiveCitySelection={!isMobile}
             />
         );
     }
@@ -71,6 +88,11 @@ export const TripTimelineCanvas: React.FC<TripTimelineCanvasProps> = ({
                     onSwapSelectedCities={onSwapSelectedCities}
                     pixelsPerDay={pixelsPerDay}
                     enableExampleSharedTransition={enableExampleSharedTransition}
+                    selectionVisibilityKey={selectionVisibilityKey}
+                    isDetailsPanelVisible={isDetailsPanelVisible}
+                    onNavigatePreviousCity={onNavigatePreviousCity}
+                    onNavigateNextCity={onNavigateNextCity}
+                    onToggleDetailsPanel={onToggleDetailsPanel}
                 />
             </Suspense>
         );
@@ -91,6 +113,11 @@ export const TripTimelineCanvas: React.FC<TripTimelineCanvasProps> = ({
             routeStatusById={routeStatusById}
             pixelsPerDay={pixelsPerDay}
             enableExampleSharedTransition={enableExampleSharedTransition}
+            selectionVisibilityKey={selectionVisibilityKey}
+            isDetailsPanelVisible={isDetailsPanelVisible}
+            onNavigatePreviousCity={onNavigatePreviousCity}
+            onNavigateNextCity={onNavigateNextCity}
+            onToggleDetailsPanel={onToggleDetailsPanel}
         />
     );
 };

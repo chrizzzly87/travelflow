@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { AirplaneTakeoff, CaretDown, GearSix, SealCheck, ShieldCheck, SignOut, User } from '@phosphor-icons/react';
+import { AirplaneTakeoff, CaretDown, CaretRight, FolderSimple, ShieldCheck, SignOut, User } from '@phosphor-icons/react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../hooks/useAuth';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
-import { buildLocalizedMarketingPath, buildPath, extractLocaleFromPath } from '../../config/routes';
+import { buildLocalizedCreateTripPath, buildLocalizedMarketingPath, extractLocaleFromPath } from '../../config/routes';
 import { DEFAULT_LOCALE } from '../../config/locales';
 import { getAllTrips } from '../../services/storageService';
 import type { ITrip } from '../../types';
@@ -20,6 +21,10 @@ interface AccountMenuProps {
     showRecentTripsSection?: boolean;
     showCurrentPageSummary?: boolean;
     className?: string;
+    triggerClassName?: string;
+    showCaret?: boolean;
+    onOpenTripManager?: () => void;
+    onPrewarmTripManager?: () => void;
 }
 
 type AnalyticsEventName = `${string}__${string}` | `${string}__${string}--${string}`;
@@ -132,10 +137,15 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
     showRecentTripsSection = true,
     showCurrentPageSummary = true,
     className,
+    triggerClassName,
+    showCaret = true,
+    onOpenTripManager,
+    onPrewarmTripManager,
 }) => {
     const navigate = useNavigate();
     const location = useLocation();
     const { logout, profile } = useAuth();
+    const { t } = useTranslation('common');
     const [isOpen, setIsOpen] = useState(false);
     const [recentTrips, setRecentTrips] = useState<ITrip[]>(() => (
         showRecentTripsSection
@@ -159,6 +169,10 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
             ? 'Profile'
             : accountLabel;
     const shouldShowLabel = showLabel ?? !compact;
+    const activeLocale = useMemo(
+        () => extractLocaleFromPath(location.pathname) || DEFAULT_LOCALE,
+        [location.pathname],
+    );
 
     useEffect(() => {
         if (!isOpen) return;
@@ -198,16 +212,16 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
         };
     }, [showRecentTripsSection]);
 
-    const publicProfilePath = useMemo(() => {
-        const normalizedUsername = profile?.username?.trim().toLowerCase();
-        if (!normalizedUsername) return null;
-        return buildPath('publicProfile', { username: normalizedUsername });
-    }, [profile?.username]);
-
     const navigateTo = (path: string, eventName: AnalyticsEventName) => {
         trackEvent(eventName);
         setIsOpen(false);
         navigate(path);
+    };
+
+    const openTripManager = () => {
+        if (!onOpenTripManager) return;
+        trackEvent('navigation__account_menu--my_trips');
+        onOpenTripManager();
     };
 
     const navigateToRecentTrip = (trip: ITrip) => {
@@ -222,14 +236,6 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
         await logout();
         const locale = extractLocaleFromPath(location.pathname) || DEFAULT_LOCALE;
         navigate(buildLocalizedMarketingPath('home', locale));
-    };
-
-    const handleViewPublicProfile = () => {
-        if (publicProfilePath) {
-            navigateTo(publicProfilePath, 'navigation__account_menu--public_profile');
-            return;
-        }
-        navigateTo('/profile/settings', 'navigation__account_menu--public_profile_setup');
     };
 
     const accountIdentityLabel = useMemo(() => {
@@ -250,20 +256,22 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
                     trackEvent('navigation__account_menu--toggle', { open: next });
                 }}
                 className={[
-                    'inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-colors',
-                    'hover:border-slate-300 hover:text-slate-900',
+                    'inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm transition-colors',
+                    'hover:border-slate-300 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2',
                     compact ? 'h-9 py-1.5' : 'h-10 py-2',
                     fullWidth ? 'w-full justify-between' : '',
+                    triggerClassName || '',
                 ].join(' ')}
                 {...getAnalyticsDebugAttributes('navigation__account_menu--toggle')}
                 aria-haspopup="menu"
                 aria-expanded={isOpen}
+                aria-label={!shouldShowLabel ? triggerLabel : undefined}
             >
-                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-accent-100 text-xs font-black text-accent-900">
+                <span className="flex h-7 w-7 shrink-0 aspect-square items-center justify-center rounded-full bg-accent-100 text-xs font-black text-accent-900">
                     {computeInitial(profile, email, userId)}
                 </span>
                 {shouldShowLabel && <span className="truncate">{triggerLabel}</span>}
-                <CaretDown size={14} />
+                {showCaret && <CaretDown size={14} />}
             </button>
 
             {isOpen && (
@@ -271,7 +279,7 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
                     role="menu"
                     aria-label="Account menu"
                     className={[
-                        'absolute z-[1800] w-[min(92vw,320px)] rounded-xl border border-slate-200 bg-white p-1.5 shadow-2xl',
+                        'absolute z-[2100] w-[min(92vw,320px)] rounded-xl border border-slate-200 bg-white p-1.5 shadow-2xl',
                         menuPlacement === 'right-end'
                             ? 'left-[calc(100%+10px)] bottom-0'
                             : 'right-0 top-[calc(100%+8px)]',
@@ -331,41 +339,34 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
                             <User size={16} />
                             Profile
                         </button>
+                        {onOpenTripManager && (
+                            <button
+                                type="button"
+                                onMouseEnter={onPrewarmTripManager}
+                                onFocus={onPrewarmTripManager}
+                                onTouchStart={onPrewarmTripManager}
+                                onClick={openTripManager}
+                                className="flex w-full items-center justify-between gap-2 rounded-md px-3 py-2 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+                                {...getAnalyticsDebugAttributes('navigation__account_menu--my_trips')}
+                            >
+                                <span className="flex items-center gap-2">
+                                    <FolderSimple size={16} />
+                                    <span>{t('nav.myTrips')}</span>
+                                </span>
+                                <CaretRight size={14} className="text-slate-400" />
+                            </button>
+                        )}
+                    </div>
+
+                    <div className="mt-1.5 border-t border-slate-200 pt-1.5">
                         <button
                             type="button"
-                            onClick={() => navigateTo('/profile/settings', 'navigation__account_menu--settings')}
-                            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
-                            {...getAnalyticsDebugAttributes('navigation__account_menu--settings')}
+                            onClick={() => navigateTo(buildLocalizedCreateTripPath(activeLocale), 'navigation__account_menu--create_trip')}
+                            className="flex w-full items-center justify-center gap-2 rounded-md bg-accent-600 px-3 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-accent-700"
+                            {...getAnalyticsDebugAttributes('navigation__account_menu--create_trip')}
                         >
-                            <GearSix size={16} />
-                            Settings
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => navigateTo('/profile/stamps', 'navigation__account_menu--stamps')}
-                            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
-                            {...getAnalyticsDebugAttributes('navigation__account_menu--stamps')}
-                        >
-                            <SealCheck size={16} weight="duotone" />
-                            Stamps
-                        </button>
-                        <button
-                            type="button"
-                            onClick={handleViewPublicProfile}
-                            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
-                            {...getAnalyticsDebugAttributes(publicProfilePath ? 'navigation__account_menu--public_profile' : 'navigation__account_menu--public_profile_setup')}
-                        >
-                            <User size={16} />
-                            View public profile
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => navigateTo('/create-trip', 'navigation__account_menu--planner')}
-                            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
-                            {...getAnalyticsDebugAttributes('navigation__account_menu--planner')}
-                        >
-                            <AirplaneTakeoff size={16} />
-                            Planner
+                            <AirplaneTakeoff size={16} weight="fill" />
+                            {t('nav.createTrip')}
                         </button>
                     </div>
 

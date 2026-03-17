@@ -25,6 +25,7 @@ interface AppModalProps {
     footer?: React.ReactNode;
     children: React.ReactNode;
     onOpenAutoFocus?: React.ComponentPropsWithoutRef<typeof DialogContent>['onOpenAutoFocus'];
+    onEscapeKeyDown?: React.ComponentPropsWithoutRef<typeof DialogContent>['onEscapeKeyDown'];
 }
 
 export const AppModal: React.FC<AppModalProps> = ({
@@ -41,6 +42,7 @@ export const AppModal: React.FC<AppModalProps> = ({
     footer,
     children,
     onOpenAutoFocus,
+    onEscapeKeyDown,
 }) => {
     const closeButtonRef = React.useRef<HTMLButtonElement | null>(null);
 
@@ -71,6 +73,7 @@ export const AppModal: React.FC<AppModalProps> = ({
                     contentClassName ?? '',
                 ].join(' ')}
                 onOpenAutoFocus={handleOpenAutoFocus}
+                onEscapeKeyDown={onEscapeKeyDown}
             >
                 <DialogHeader className={`border-b border-gray-100 p-4 ${headerClassName ?? ''}`.trim()}>
                     <div className="flex items-start justify-between gap-3">

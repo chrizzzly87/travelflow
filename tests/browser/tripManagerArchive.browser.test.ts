@@ -174,4 +174,20 @@ describe('components/TripManager archive flow', () => {
       }));
     });
   });
+
+  it('keeps the my trips overlay above account navigation layers', () => {
+    const { container } = render(
+      React.createElement(TripManager, {
+        isOpen: true,
+        onClose: vi.fn(),
+        onSelectTrip: vi.fn(),
+      })
+    );
+
+    const backdrop = container.querySelector<HTMLElement>('.fixed.inset-0');
+    const panel = container.querySelector<HTMLElement>('.fixed.inset-y-0.right-0');
+
+    expect(backdrop?.className).toContain('z-[2300]');
+    expect(panel?.className).toContain('z-[2310]');
+  });
 });

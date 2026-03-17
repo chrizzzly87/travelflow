@@ -1544,7 +1544,6 @@ const useTripViewRender = ({
                     }
                     return;
                 }
-
                 if (!isMobileViewport && !suppressToasts) {
                     showAppToast({
                         tone: 'warning',

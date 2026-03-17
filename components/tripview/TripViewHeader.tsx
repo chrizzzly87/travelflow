@@ -1,32 +1,26 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, History, Info, List, Pencil, Printer, Route, Share2, Star } from 'lucide-react';
+import { Info, Pencil, Share2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
-import { getAnalyticsDebugAttributes } from '../../services/analyticsService';
+import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import { AppBrand } from '../navigation/AppBrand';
+import { AccountMenu } from '../navigation/AccountMenu';
 
 interface TripViewHeaderProps {
     isMobile: boolean;
     tripTitle: string;
     tripSummary: string;
     titleViewTransitionName: string | null;
-    isEditingTitle: boolean;
-    editTitleValue: string;
-    onEditTitleValueChange: (value: string) => void;
-    onCommitTitleEdit: () => void;
-    onStartTitleEdit: () => void;
-    editTitleInputRef: React.RefObject<HTMLInputElement | null>;
     canManageTripMetadata: boolean;
-    canEdit: boolean;
-    isFavorite: boolean;
-    onToggleFavorite: () => void;
     onHeaderAuthAction: () => void;
     isHeaderAuthSubmitting: boolean;
     canUseAuthenticatedSession: boolean;
+    accountEmail: string | null;
+    accountUserId: string | null;
+    isAdminSession: boolean;
     onOpenTripInfo: () => void;
     onPrewarmTripInfo: () => void;
-    onSetPrintMode: () => void;
-    onOpenHistoryPanel: (source: 'desktop_header' | 'mobile_header') => void;
     onOpenManager: () => void;
     canShare: boolean;
     onShare: () => void;
@@ -38,190 +32,154 @@ export const TripViewHeader: React.FC<TripViewHeaderProps> = ({
     tripTitle,
     tripSummary,
     titleViewTransitionName,
-    isEditingTitle,
-    editTitleValue,
-    onEditTitleValueChange,
-    onCommitTitleEdit,
-    onStartTitleEdit,
-    editTitleInputRef,
     canManageTripMetadata,
-    canEdit,
-    isFavorite,
-    onToggleFavorite,
     onHeaderAuthAction,
     isHeaderAuthSubmitting,
     canUseAuthenticatedSession,
+    accountEmail,
+    accountUserId,
+    isAdminSession,
     onOpenTripInfo,
     onPrewarmTripInfo,
-    onSetPrintMode,
-    onOpenHistoryPanel,
     onOpenManager,
     canShare,
     onShare,
     isTripLockedByExpiry,
 }) => {
+    const { t } = useTranslation('common');
+    const headerSecondaryButtonClassName = 'inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60';
+    const headerPrimaryButtonClassName = 'inline-flex items-center gap-2 rounded-md bg-accent-600 px-3 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-accent-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60';
     const titleStyle = titleViewTransitionName
         ? ({ viewTransitionName: titleViewTransitionName } as React.CSSProperties)
         : undefined;
+    const titleAreaRef = useRef<HTMLButtonElement | null>(null);
+    const [showTripSummary, setShowTripSummary] = useState(false);
+
+    useEffect(() => {
+        if (isMobile || typeof window === 'undefined') {
+            setShowTripSummary(false);
+            return;
+        }
+
+        const target = titleAreaRef.current;
+        if (!target || typeof ResizeObserver === 'undefined') {
+            setShowTripSummary(true);
+            return;
+        }
+
+        const updateSummaryVisibility = () => {
+            const nextWidth = target.getBoundingClientRect().width;
+            setShowTripSummary(nextWidth >= 520);
+        };
+
+        updateSummaryVisibility();
+        const observer = new ResizeObserver(updateSummaryVisibility);
+        observer.observe(target);
+        return () => observer.disconnect();
+    }, [isMobile, tripTitle, tripSummary]);
+
+    const titleTooltip = canManageTripMetadata
+        ? t('tripView.header.titleTooltipEditable')
+        : t('tripView.header.titleTooltipReadonly');
 
     return (
-        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-6 z-30 shrink-0">
-            <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+        <header className="relative z-[1600] isolate shrink-0 border-b border-gray-200 bg-white px-4 py-2.5 sm:px-6">
+            <div className="flex items-center justify-between gap-4">
+            <div className="flex min-w-0 flex-1 items-center gap-1 sm:gap-2.5">
                 <Link
                     to="/"
-                    className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity shrink-0"
+                    className="flex shrink-0 cursor-pointer items-center gap-1 transition-opacity hover:opacity-80"
                     title="Go to Homepage"
                     aria-label="Go to Homepage"
                 >
                     <AppBrand wordmarkClassName="hidden text-lg font-extrabold tracking-tight text-slate-900 sm:block" />
                 </Link>
-                <div className="h-6 w-px bg-gray-200 mx-2 hidden sm:block" />
-                <div className="flex items-start gap-2 min-w-0">
-                    <div className="flex flex-col leading-tight min-w-0">
-                        {!isMobile && isEditingTitle ? (
-                            <input
-                                ref={editTitleInputRef}
-                                value={editTitleValue}
-                                onChange={(event) => onEditTitleValueChange(event.target.value)}
-                                onBlur={onCommitTitleEdit}
-                                onKeyDown={(event) => {
-                                    if (event.key === 'Enter') {
-                                        onCommitTitleEdit();
-                                    }
-                                }}
-                                className="font-bold text-lg text-gray-900 bg-transparent border-b-2 border-accent-500 outline-none pb-0.5"
-                            />
-                        ) : !isMobile && canManageTripMetadata ? (
-                            <button
-                                type="button"
-                                className="group flex items-center gap-2 cursor-pointer text-left"
-                                onClick={onStartTitleEdit}
-                                aria-label="Edit trip title"
-                            >
-                                <h1 className="font-bold text-lg text-gray-900 truncate max-w-[56vw] sm:max-w-md" style={titleStyle}>
-                                    {tripTitle}
-                                </h1>
-                                <Pencil size={14} className="text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-                            </button>
-                        ) : (
-                            <div className="flex items-center gap-2">
-                                <h1 className="font-bold text-lg text-gray-900 truncate max-w-[56vw] sm:max-w-md" style={titleStyle}>
-                                    {tripTitle}
-                                </h1>
-                            </div>
-                        )}
-                        {!isMobile && <div className="text-xs font-semibold text-accent-600 mt-0.5">{tripSummary}</div>}
-                    </div>
-                    {!isMobile && canManageTripMetadata && (
-                        <button
-                            type="button"
-                            onClick={onToggleFavorite}
-                            disabled={!canEdit}
-                            className={`mt-0.5 p-1.5 rounded-lg transition-colors ${canEdit ? 'hover:bg-amber-50' : 'opacity-50 cursor-not-allowed'}`}
-                            title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-                            aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-                        >
-                            <Star
-                                size={17}
-                                className={isFavorite ? 'text-amber-500 fill-amber-400' : 'text-gray-300 hover:text-amber-500'}
-                            />
-                        </button>
-                    )}
-                </div>
-            </div>
-
-            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                <div className="mx-0.5 hidden h-6 w-px bg-gray-200 sm:block" />
                 <button
+                    ref={titleAreaRef}
                     type="button"
-                    onClick={onHeaderAuthAction}
-                    disabled={isHeaderAuthSubmitting}
-                    className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                    aria-label={canUseAuthenticatedSession ? 'Logout' : 'Login'}
-                >
-                    {canUseAuthenticatedSession ? 'Logout' : 'Login'}
-                </button>
-                <button
-                    type="button"
-                    onClick={onOpenTripInfo}
+                    onClick={() => {
+                        trackEvent('trip_view__trip_info--open', { source: 'header_title' });
+                        onOpenTripInfo();
+                    }}
                     onMouseEnter={onPrewarmTripInfo}
                     onFocus={onPrewarmTripInfo}
                     onTouchStart={onPrewarmTripInfo}
-                    className="p-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg"
-                    aria-label="Trip information"
+                    className="group flex min-w-0 flex-1 items-start gap-1 rounded-xl px-1 py-1 text-left transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 sm:gap-2 sm:px-2"
+                    aria-label={titleTooltip}
+                    data-tooltip={titleTooltip}
+                    data-no-press-scale="true"
+                    {...getAnalyticsDebugAttributes('trip_view__trip_info--open', { source: 'header_title' })}
                 >
-                    <Info size={18} />
-                </button>
-                {!isMobile && (
-                    <>
-                        <div className="bg-gray-100 p-1 rounded-lg flex items-center mr-1">
-                            <button type="button" onClick={onSetPrintMode} className="p-1.5 text-gray-500 hover:text-gray-700 rounded-md" aria-label="Print view">
-                                <Printer size={18} />
-                            </button>
-                        </div>
-                        <button
-                            type="button"
-                            onClick={() => {
-                                onOpenHistoryPanel('desktop_header');
-                            }}
-                            className="p-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg"
-                            aria-label="History"
-                            {...getAnalyticsDebugAttributes('app__trip_history--open', { source: 'desktop_header' })}
+                    <div className="min-w-0 flex-1">
+                        <h1
+                            className={`${isMobile ? 'line-clamp-1 text-lg' : 'line-clamp-2 text-[1.35rem]'} break-words font-bold leading-tight text-gray-900 transition-colors group-hover:text-accent-700`}
+                            style={titleStyle}
                         >
-                            <History size={18} />
-                        </button>
-                    </>
-                )}
-                {!isMobile && (
-                    <button
-                        type="button"
-                        onClick={onOpenManager}
-                        className="flex items-center gap-2 rounded-lg font-medium p-2 text-gray-500 hover:bg-gray-100 text-sm"
-                        aria-label="My plans"
-                    >
-                        <Route size={18} />
-                        <span className="hidden lg:inline">My Plans</span>
-                    </button>
-                )}
+                            {tripTitle}
+                        </h1>
+                        {!isMobile && showTripSummary && (
+                            <div className="mt-1 text-xs font-semibold text-accent-600">
+                                {tripSummary}
+                            </div>
+                        )}
+                    </div>
+                    <span className="mt-1 hidden shrink-0 items-center gap-1 rounded-full border border-slate-200 bg-white/90 px-2 py-1 text-[11px] font-semibold text-slate-500 opacity-0 shadow-sm transition-all group-hover:opacity-100 group-focus-visible:opacity-100 md:inline-flex">
+                        {canManageTripMetadata ? <Pencil size={12} /> : <Info size={12} />}
+                        <span className="hidden lg:inline">
+                            {canManageTripMetadata ? t('tripView.header.editTitleCta') : t('tripView.header.openDetailsCta')}
+                        </span>
+                    </span>
+                </button>
+            </div>
+
+            <div className="flex shrink-0 items-center gap-2">
                 {canShare && (
                     <button
                         type="button"
                         onClick={onShare}
                         disabled={isTripLockedByExpiry}
-                        title={isTripLockedByExpiry ? 'Sharing is disabled for expired trips' : undefined}
-                        className={`rounded-lg shadow-sm flex items-center gap-2 text-sm font-medium ${isMobile ? 'p-2' : 'px-4 py-2'} ${
+                        title={isTripLockedByExpiry ? t('tripView.header.shareDisabled') : undefined}
+                        className={`${headerPrimaryButtonClassName} ${isMobile ? 'h-10 w-10 justify-center px-0' : ''} ${
                             isTripLockedByExpiry
                                 ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                                : 'bg-accent-600 text-white hover:bg-accent-700'
+                                : ''
                         }`}
+                        aria-label={t('tripView.header.share')}
+                        data-tooltip={!isMobile ? t('tripView.header.share') : undefined}
                     >
                         <Share2 size={16} />
-                        <span className={isMobile ? 'sr-only' : 'hidden sm:inline'}>Share</span>
+                        <span className={isMobile ? 'sr-only' : 'hidden sm:inline'}>{t('tripView.header.share')}</span>
                     </button>
                 )}
-                {isMobile && (
+                {canUseAuthenticatedSession ? (
+                    <AccountMenu
+                        email={accountEmail}
+                        userId={accountUserId}
+                        isAdmin={isAdminSession}
+                        compact={isMobile}
+                        showLabel={!isMobile}
+                        showCaret={!isMobile}
+                        labelMode="profile"
+                        showRecentTripsSection={false}
+                        showCurrentPageSummary={false}
+                        onOpenTripManager={onOpenManager}
+                        triggerClassName={isMobile
+                            ? 'h-10 w-10 justify-center px-0'
+                            : 'gap-2 rounded-md px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900'}
+                    />
+                ) : (
                     <button
                         type="button"
-                        onClick={() => {
-                            onOpenHistoryPanel('mobile_header');
-                        }}
-                        className="p-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg"
-                        aria-label="History"
-                        {...getAnalyticsDebugAttributes('app__trip_history--open', { source: 'mobile_header' })}
+                        onClick={onHeaderAuthAction}
+                        disabled={isHeaderAuthSubmitting}
+                        className={headerSecondaryButtonClassName}
+                        aria-label={t('nav.login')}
                     >
-                        <History size={18} />
+                        {t('nav.login')}
                     </button>
                 )}
-                {isMobile && (
-                    <button
-                        type="button"
-                        onClick={onOpenManager}
-                        className="flex items-center gap-2 rounded-lg font-medium p-2 bg-gray-100 text-gray-700 hover:bg-gray-200"
-                        aria-label="My plans"
-                    >
-                        <Route size={18} />
-                        <span className="sr-only">My Plans</span>
-                    </button>
-                )}
+            </div>
             </div>
         </header>
     );
