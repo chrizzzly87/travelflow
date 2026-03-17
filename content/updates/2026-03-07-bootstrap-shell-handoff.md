@@ -22,9 +22,13 @@ summary: "Kept the branded header visible through the React handoff and removed 
 - [x] [Fixed] 🪄 Switching between the homepage, create-trip, and other marketing pages now keeps the current page visible until the next route is ready, removing the short loading-shell blink on cold clicks.
 - [x] [Fixed] 👤 Signed-in navigation now keeps the account trigger short as “Profile” instead of swapping to usernames or email addresses.
 - [x] [Fixed] 🌐 Switching a translated page back to English now sticks on the first try instead of snapping back to the previous locale during the route handoff.
+- [x] [Fixed] 🛂 Public traveler pages now open straight into the real page chrome instead of a mismatched loading skeleton, so missing handles feel faster and cleaner to resolve.
+- [x] [Improved] 🧳 Trip loading now mirrors the live planner header more closely, reducing the visual jump before the itinerary workspace is ready.
 - [ ] [Internal] 🧱 Replaced the marketing route fallback with the real React site header and matching brand icon so the bootstrap handoff no longer jumps between different header layouts.
 - [ ] [Internal] 🛠️ Fixed the bootstrap container markup so removing the pre-hydration shell no longer tears down the React root during the handoff.
 - [ ] [Internal] ⏱️ Moved the bootstrap handoff trigger to the actual resolved route content for marketing and create-trip flows, so the static shell stays in place until the real page is ready to replace it.
+- [ ] [Internal] 🚪 Moved the public traveler routes onto the eager deferred path so direct visits no longer suspend into the generic marketing shell before the actual profile state resolves.
+- [ ] [Internal] 🎛️ Replaced the public-profile shimmer placeholders with a neutral hold state and synced the React trip fallback header to the planner shell markup already shipped in `index.html`.
 - [ ] [Internal] 🚀 Started route-aware chunk preloading before React mounts and moved the homepage route module into the eager path to reduce direct-entry latency without adding more fake skeleton UI.
 - [ ] [Internal] 🎛️ Matched the React route fallback to the static bootstrap shell with disabled-looking controls, skeleton nav bars, and a single-logo treatment so the header no longer flips between different visual states during first load.
 - [ ] [Internal] 🧵 Swapped protected-route auth loading from direct shell rendering to suspense-driven handoff so router transitions can keep the current screen visible until auth settles.

@@ -21,6 +21,7 @@ const baseProps = (): PlannerProps => ({
   onZoomIn: vi.fn(),
   onTimelineModeChange: vi.fn(),
   onTimelineViewChange: vi.fn(),
+  zoomLevel: 1,
   mapDockMode: 'docked',
   onMapDockModeChange: vi.fn(),
   timelineMode: 'calendar',
@@ -80,6 +81,7 @@ describe('components/tripview/TripViewPlannerWorkspace', () => {
     expect(screen.getByLabelText('Horizontal timeline direction')).toBeInTheDocument();
     expect(screen.getByLabelText('Vertical timeline direction')).toBeInTheDocument();
     expect(screen.getByLabelText('Zoom out timeline')).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('×1.0');
     expect(screen.getByLabelText('Zoom in timeline')).toBeInTheDocument();
 
     const modeGroup = calendarModeButton.parentElement;
@@ -102,6 +104,30 @@ describe('components/tripview/TripViewPlannerWorkspace', () => {
     expect(screen.queryByLabelText('Zoom in timeline')).not.toBeInTheDocument();
   });
 
+  it('hides the zoom indicator on mobile while keeping the zoom actions available', () => {
+    const props = baseProps();
+    props.isMobile = true;
+
+    render(React.createElement(TripViewPlannerWorkspace, props));
+
+    expect(screen.getByLabelText('Zoom out timeline')).toBeInTheDocument();
+    expect(screen.getByLabelText('Zoom in timeline')).toBeInTheDocument();
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  });
+
+  it('renders the map above the timeline on mobile', () => {
+    const props = baseProps();
+    props.isMobile = true;
+
+    render(React.createElement(TripViewPlannerWorkspace, props));
+
+    const mapPane = screen.getByTestId('planner-mobile-map-pane');
+    const timelinePane = screen.getByTestId('planner-mobile-timeline-pane');
+    expect(mapPane.className).toContain('h-[26vh]');
+    expect(mapPane.className).toContain('min-h-[180px]');
+    expect(mapPane.compareDocumentPosition(timelinePane) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it('minimizes map into floating mode when toggle is clicked', () => {
     const props = baseProps();
     render(React.createElement(TripViewPlannerWorkspace, props));
@@ -114,18 +140,22 @@ describe('components/tripview/TripViewPlannerWorkspace', () => {
   it('renders floating map container in floating dock mode', () => {
     const props = baseProps();
     props.mapDockMode = 'floating';
+    props.detailsPanelVisible = true;
 
     render(React.createElement(TripViewPlannerWorkspace, props));
 
     expect(screen.getByTestId('floating-map-container')).toBeInTheDocument();
     expect(screen.getByTestId('floating-map-drag-handle')).toBeInTheDocument();
     expect(screen.getByTestId('planner-timeline-pane')).toBeInTheDocument();
+    expect(screen.getByTestId('planner-timeline-controls').className).toContain('z-[30]');
     expect(screen.getByLabelText('Maximize map preview')).toBeInTheDocument();
+    expect(screen.getByLabelText('Resize details panel')).toBeInTheDocument();
   });
 
   it('renders a dedicated floating map drag handle control', () => {
     const props = baseProps();
     props.mapDockMode = 'floating';
+    props.detailsPanelVisible = true;
 
     render(React.createElement(TripViewPlannerWorkspace, props));
 

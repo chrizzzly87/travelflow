@@ -233,10 +233,11 @@ export const NavigationPrefetchManager: React.FC<NavigationPrefetchManagerProps>
 
     useEffect(() => {
         if (!isPrefetchActive) return;
+        if (shouldSuppressPassiveWarmups) return;
         const extraCandidates = collectIdleCandidatesForPath(location.pathname);
         scheduleIdleWarmups(location.pathname, extraCandidates);
         publishPrefetchStats();
-    }, [isPrefetchActive, location.pathname]);
+    }, [isPrefetchActive, location.pathname, shouldSuppressPassiveWarmups]);
 
     return null;
 };

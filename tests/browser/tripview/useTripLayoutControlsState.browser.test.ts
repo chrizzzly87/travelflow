@@ -47,6 +47,7 @@ describe('components/tripview/useTripLayoutControlsState', () => {
     window.localStorage.setItem('tf_timeline_mode', 'timeline');
     window.localStorage.setItem('tf_timeline_view', 'vertical');
     window.localStorage.setItem('tf_sidebar_width', '620');
+    window.localStorage.setItem('tf_details_width', '540');
     window.localStorage.setItem('tf_timeline_height', '460');
     window.localStorage.setItem('tf_zoom_level', '2.25');
 
@@ -63,6 +64,7 @@ describe('components/tripview/useTripLayoutControlsState', () => {
           zoomLevel: 1.5,
           zoomBehavior: 'manual',
           sidebarWidth: 580,
+          detailsWidth: 470,
           timelineHeight: 410,
         },
       }),
@@ -75,6 +77,7 @@ describe('components/tripview/useTripLayoutControlsState', () => {
     expect(result.current.timelineMode).toBe('calendar');
     expect(result.current.timelineView).toBe('horizontal');
     expect(result.current.sidebarWidth).toBe(580);
+    expect(result.current.detailsWidth).toBe(470);
     expect(result.current.timelineHeight).toBe(410);
     expect(result.current.zoomLevel).toBe(1.5);
     expect(result.current.zoomBehavior).toBe('manual');

@@ -108,7 +108,6 @@ describe('services/destinationService', () => {
     const parentCountryIncludes = searchDestinationOptions('donesia');
     expect(parentCountryIncludes.some((item) => item.name === 'Bali')).toBe(true);
   });
-
   it('returns rolling recommendation months and wraps into the next year', () => {
     expect(getRollingRecommendationMonths(new Date('2026-12-15T12:00:00Z'))).toEqual([12, 1, 2]);
     expect(getRollingRecommendationMonths(new Date('2026-02-20T12:00:00Z'), 5)).toEqual([2, 3, 4, 5, 6]);
@@ -118,7 +117,6 @@ describe('services/destinationService', () => {
     expect(getRollingRecommendationMonths(new Date('invalid'), 0)).toHaveLength(1);
     expect(getRollingRecommendationMonths(new Date('2026-02-20T12:00:00Z'), 20)).toHaveLength(12);
   });
-
   it('builds a unique top 20 recommendation list and excludes already selected destinations', () => {
     const recommendations = getRecommendedDestinationOptions({
       months: [4, 5],
@@ -165,7 +163,6 @@ describe('services/destinationService', () => {
     expect(getDestinationRecommendationScore(customDestination)).toBe(0);
     expect(getDestinationRecommendationScore(customDestination, [0, 13, 2.5])).toBe(0);
   });
-
   it('can surface curated island destinations in seasonal recommendations', () => {
     const recommendations = getRecommendedDestinationOptions({ months: [7, 8], limit: 50 });
 

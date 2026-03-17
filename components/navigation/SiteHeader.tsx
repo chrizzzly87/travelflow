@@ -1,9 +1,8 @@
 import React, { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { List, Folder, SpinnerGap as Loader2 } from '@phosphor-icons/react';
+import { List, SpinnerGap as Loader2 } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { LanguageSelect } from './LanguageSelect';
-import { useHasSavedTrips } from '../../hooks/useHasSavedTrips';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import { buildLocalizedCreateTripPath, buildLocalizedMarketingPath, extractLocaleFromPath, getNamespacesForMarketingPath, getNamespacesForToolPath, isToolRoute } from '../../config/routes';
 import { applyDocumentLocale, DEFAULT_LOCALE, normalizeLocale } from '../../config/locales';
@@ -65,7 +64,6 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
 }) => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [pendingLocale, setPendingLocale] = useState<AppLanguage | null>(null);
-    const hasTrips = useHasSavedTrips();
     const location = useLocation();
     const navigate = useNavigate();
     const { t, i18n } = useTranslation('common');
@@ -150,8 +148,8 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
     const isGlass = variant === 'glass';
 
     const headerClass = isGlass
-        ? 'sticky top-0 z-40 border-b border-white/20 bg-white/80 backdrop-blur'
-        : 'sticky top-0 z-40 border-b border-slate-200/70 bg-white/90 backdrop-blur';
+        ? 'sticky top-0 z-[1600] isolate border-b border-white/20 bg-white/80 backdrop-blur'
+        : 'sticky top-0 z-[1600] isolate border-b border-slate-200/70 bg-white/90 backdrop-blur';
 
     const loginClass = isGlass
         ? 'hidden sm:inline-flex rounded-lg border border-slate-200/70 bg-white/60 px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900'
@@ -208,6 +206,8 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
                                     userId={access?.userId || null}
                                     isAdmin={isAdmin}
                                     labelMode="profile"
+                                    onOpenTripManager={onMyTripsClick}
+                                    onPrewarmTripManager={onMyTripsIntent}
                                     className="hidden lg:block"
                                 />
                             </Suspense>
@@ -230,24 +230,7 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
                                 {t('nav.login')}
                             </NavLink>
                         )}
-                        {hideCreateTrip ? (
-                            hasTrips && onMyTripsClick && (
-                                <button
-                                    onClick={() => {
-                                        handleNavClick('my_trips');
-                                        onMyTripsClick();
-                                    }}
-                                    onMouseEnter={onMyTripsIntent}
-                                    onFocus={onMyTripsIntent}
-                                    onTouchStart={onMyTripsIntent}
-                                    className="hidden sm:flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900"
-                                    {...navDebugAttributes('my_trips')}
-                                >
-                                    <Folder size={15} />
-                                    {t('nav.myTrips')}
-                                </button>
-                            )
-                        ) : (
+                        {!hideCreateTrip && (
                             <NavLink
                                 to={buildLocalizedCreateTripPath(activeLocale)}
                                 onClick={() => handleNavClick('create_trip')}

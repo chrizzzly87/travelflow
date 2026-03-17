@@ -50,6 +50,7 @@ const areViewSettingsEqual = (a?: IViewSettings, b?: IViewSettings): boolean => 
         && a.zoomLevel === b.zoomLevel
         && a.zoomBehavior === b.zoomBehavior
         && a.sidebarWidth === b.sidebarWidth
+        && a.detailsWidth === b.detailsWidth
         && a.timelineHeight === b.timelineHeight
     );
 };
