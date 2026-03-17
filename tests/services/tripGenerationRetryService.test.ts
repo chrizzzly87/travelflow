@@ -286,6 +286,23 @@ describe('retryTripGenerationWithDefaultModel', () => {
     expect(finishAttemptLogMock).toHaveBeenCalledTimes(1);
   });
 
+  it('adds local dev guidance when enqueue fails on localhost', async () => {
+    enqueueAsyncTripGenerationJobMock.mockResolvedValue(false);
+    vi.stubGlobal('window', {
+      location: {
+        hostname: 'localhost',
+      },
+    });
+
+    const result = await retryTripGenerationWithDefaultModel(buildTrip(), {
+      source: 'trip_status_strip',
+    });
+
+    expect(result.state).toBe('failed');
+    expect(result.trip.aiMeta?.generation?.latestAttempt?.errorMessage).toContain('pnpm dev:netlify');
+    vi.unstubAllGlobals();
+  });
+
   it('does not enqueue when retry attempt log could not be initialized', async () => {
     startAttemptLogMock.mockResolvedValue(null);
 

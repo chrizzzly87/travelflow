@@ -133,6 +133,17 @@ The repo intentionally proxies these routes from Vite to Netlify dev:
 
 So if `8888` is unavailable, Vite logs a proxy error instead of handling the route itself.
 
+The async enqueue endpoint is proxied too:
+- `/api/internal/ai/generation-enqueue`
+
+If you see a retry error like:
+
+```text
+Could not enqueue async generation retry.
+```
+
+while running on `5173`, the usual cause is still the same: Netlify dev is not reachable on `8888`, so the async enqueue or worker kick could not complete locally.
+
 ### Cron is not required for basic local testing
 For create/retry testing, the browser and trip page can kick the worker route directly.
 

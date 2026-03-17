@@ -1,4 +1,4 @@
-import { sanitizeAiRuntimeSecurityInput } from "./aiPromptSanitization";
+import { sanitizeAiRuntimeSecurityInput } from "./aiPromptSanitization.ts";
 
 export const AI_RUNTIME_SECURITY_ATTACK_CATEGORIES = [
   "instruction_override",

@@ -19,6 +19,17 @@ interface EnqueueAsyncTripGenerationInput {
     priority?: number;
 }
 
+const isLocalDevRuntime = (): boolean => {
+    if (typeof window === 'undefined') return false;
+    const hostname = window.location?.hostname?.trim().toLowerCase() || '';
+    return hostname === 'localhost' || hostname === '127.0.0.1';
+};
+
+const warnLocalDevEnqueueFailure = (message: string): void => {
+    if (!isLocalDevRuntime()) return;
+    console.warn(message);
+};
+
 export const enqueueAsyncTripGenerationJob = async (
     input: EnqueueAsyncTripGenerationInput,
 ): Promise<boolean> => {
@@ -68,7 +79,23 @@ export const enqueueAsyncTripGenerationJob = async (
             }),
             keepalive: true,
         });
-        if (!response.ok) return false;
+        if (!response.ok) {
+            const responseText = await response.text().catch(() => '');
+            const looksLikeViteNotFoundPage = response.status === 404
+                && /<\s*html|<\s*!doctype\s+html/i.test(responseText);
+            const looksLikeViteProxyFailure = response.status === 500
+                && (!responseText.trim() || responseText.trim() === 'Internal Server Error');
+            if (looksLikeViteNotFoundPage) {
+                warnLocalDevEnqueueFailure(
+                    'Trip generation enqueue route is unavailable in Vite-only dev. Start `pnpm dev:netlify` and either open http://localhost:8888 or keep it running while using http://localhost:5173.',
+                );
+            } else if (looksLikeViteProxyFailure) {
+                warnLocalDevEnqueueFailure(
+                    'Vite could not reach Netlify dev for trip generation enqueue requests (connection refused on localhost:8888). Start `pnpm dev:netlify` before testing async trip generation.',
+                );
+            }
+            return false;
+        }
 
         const payload = await response.json().catch(() => null) as {
             ok?: boolean;
@@ -78,6 +105,9 @@ export const enqueueAsyncTripGenerationJob = async (
         if (payload?.ok !== true) return false;
         return state === 'queued' || state === 'leased' || state === 'completed';
     } catch {
+        warnLocalDevEnqueueFailure(
+            'Trip generation enqueue request failed in local dev. Ensure `pnpm dev:netlify` is running for `/api/internal/ai/generation-enqueue`.',
+        );
         return false;
     }
 };
