@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { ICountryInfo } from '../types';
 import { Banknote, Globe, Zap, FileText, ExternalLink, ArrowRightLeft } from 'lucide-react';
 import { readLocalStorageItem, writeLocalStorageItem } from '../services/browserStorageService';
+import { AnimatedNumber } from './ui/animated-number';
+import { NumberInput } from './ui/number-input';
 
 interface CountryInfoProps {
     info: Partial<ICountryInfo> | ICountryInfo;
@@ -19,13 +21,20 @@ const parseStrictPositiveNumber = (value: unknown): number | null => {
 };
 
 export const CountryInfo: React.FC<CountryInfoProps> = ({ info }) => {
+    const amountInputId = React.useId();
     const legacyInfo = info as Partial<ICountryInfo> & Record<string, unknown>;
     const currencyCode = typeof info.currencyCode === 'string' && info.currencyCode.trim()
         ? info.currencyCode.trim()
         : (typeof legacyInfo.currency === 'string' && legacyInfo.currency.trim() ? legacyInfo.currency.trim() : 'LOCAL');
     const exchangeRate = parseStrictPositiveNumber(info.exchangeRate ?? legacyInfo.exchangeRateToEUR);
     const converterEnabled = exchangeRate !== null;
-    const languages = Array.isArray(info.languages) ? info.languages.filter((entry): entry is string => typeof entry === 'string' && entry.trim().length > 0) : [];
+    const languages = Array.from(
+        new Set(
+            Array.isArray(info.languages)
+                ? info.languages.filter((entry): entry is string => typeof entry === 'string' && entry.trim().length > 0)
+                : [],
+        ),
+    );
     const electricSockets = typeof info.electricSockets === 'string' && info.electricSockets.trim().length > 0
         ? info.electricSockets
         : (typeof legacyInfo.sockets === 'string' && legacyInfo.sockets.trim().length > 0 ? legacyInfo.sockets : 'Not available');
@@ -75,7 +84,7 @@ export const CountryInfo: React.FC<CountryInfoProps> = ({ info }) => {
             <div className="p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
                 {/* Currency Converter */}
                 <div className="space-y-2 min-w-0">
-                    <label className="text-xs font-bold text-gray-400 uppercase flex items-center gap-1">
+                    <label htmlFor={amountInputId} className="text-xs font-bold text-gray-400 uppercase flex items-center gap-1">
                         <Banknote size={12} /> Currency Converter
                     </label>
                     <div className={`flex items-center gap-2 p-2 rounded-lg border ${converterEnabled ? 'bg-gray-50 border-gray-200' : 'bg-gray-50/60 border-gray-200 opacity-70'}`}>
@@ -83,12 +92,14 @@ export const CountryInfo: React.FC<CountryInfoProps> = ({ info }) => {
                             <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
                                 <span>{direction === 'eurToLocal' ? 'EUR' : currencyCode}</span>
                             </div>
-                            <input 
-                                type="number" 
+                            <NumberInput
+                                id={amountInputId}
                                 value={amount}
                                 onChange={(e) => setAmount(Number(e.target.value))}
                                 disabled={!converterEnabled}
-                                className={`w-full bg-transparent font-bold outline-none min-w-0 ${converterEnabled ? 'text-gray-800' : 'text-gray-400 cursor-not-allowed'}`}
+                                className={`w-full min-w-0 border-none bg-transparent px-0 py-0 font-bold shadow-none ring-0 ${converterEnabled ? 'text-gray-800' : 'text-gray-400 cursor-not-allowed'}`}
+                                overlayClassName="px-0 font-bold"
+                                format={{ maximumFractionDigits: 2 }}
                             />
                         </div>
                         <button 
@@ -103,9 +114,11 @@ export const CountryInfo: React.FC<CountryInfoProps> = ({ info }) => {
                                 <span>{direction === 'eurToLocal' ? currencyCode : 'EUR'}</span>
                             </div>
                             <div className="font-bold text-gray-800 truncate">
-                                {convertedValue === null
-                                    ? '—'
-                                    : convertedValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                <AnimatedNumber
+                                    value={convertedValue}
+                                    format={{ maximumFractionDigits: 2 }}
+                                    fallback="—"
+                                />
                             </div>
                         </div>
                     </div>
@@ -118,12 +131,12 @@ export const CountryInfo: React.FC<CountryInfoProps> = ({ info }) => {
 
                 {/* Languages */}
                 <div className="space-y-2 min-w-0">
-                    <label className="text-xs font-bold text-gray-400 uppercase flex items-center gap-1">
+                    <p className="text-xs font-bold text-gray-400 uppercase flex items-center gap-1">
                         <Globe size={12} /> Languages
-                    </label>
+                    </p>
                     <div className="flex flex-wrap gap-1">
-                        {languages.map((lang, i) => (
-                            <span key={i} className="px-2 py-1 bg-accent-50 text-accent-700 text-xs font-medium rounded-md border border-accent-100 whitespace-nowrap">
+                        {languages.map((lang) => (
+                            <span key={lang} className="px-2 py-1 bg-accent-50 text-accent-700 text-xs font-medium rounded-md border border-accent-100 whitespace-nowrap">
                                 {lang}
                             </span>
                         ))}
@@ -135,9 +148,9 @@ export const CountryInfo: React.FC<CountryInfoProps> = ({ info }) => {
 
                 {/* Sockets */}
                 <div className="space-y-2 min-w-0">
-                    <label className="text-xs font-bold text-gray-400 uppercase flex items-center gap-1">
+                    <p className="text-xs font-bold text-gray-400 uppercase flex items-center gap-1">
                         <Zap size={12} /> Electric Sockets
-                    </label>
+                    </p>
                     <div className="p-2 bg-gray-50 rounded-lg border border-gray-200 text-sm text-gray-800 break-words">
                         {electricSockets}
                     </div>
@@ -145,9 +158,9 @@ export const CountryInfo: React.FC<CountryInfoProps> = ({ info }) => {
 
                 {/* Links */}
                 <div className="space-y-2 min-w-0">
-                    <label className="text-xs font-bold text-gray-400 uppercase flex items-center gap-1">
+                    <p className="text-xs font-bold text-gray-400 uppercase flex items-center gap-1">
                         <FileText size={12} /> Important Links
-                    </label>
+                    </p>
                     <div className="flex flex-col gap-2">
                         {visaInfoUrl && (
                             <a href={visaInfoUrl} target="_blank" rel="noreferrer" className="text-xs text-accent-600 hover:underline flex items-center gap-1 truncate">

@@ -45,6 +45,7 @@
   },
   "dependencies": {
     "@google/genai": "latest",
+    "@number-flow/react": "^0.6.0",
     "@phosphor-icons/react": "^2.1.10",
     "@radix-ui/react-checkbox": "^1.2.3",
     "@radix-ui/react-dialog": "^1.1.15",
