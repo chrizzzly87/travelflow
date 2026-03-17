@@ -1696,6 +1696,8 @@ const useTripViewRender = ({
         setShowCityNames,
         zoomLevel,
         setZoomLevel,
+        zoomBehavior,
+        setZoomBehavior,
         sidebarWidth,
         setSidebarWidth,
         timelineHeight,
@@ -1724,13 +1726,15 @@ const useTripViewRender = ({
             zoomChangeSourceRef.current = source;
         }
         if (source === 'manual') {
+            setZoomBehavior('manual');
             markManualViewChange();
             setIsZoomDirty(true);
         }
-    }, [markManualViewChange]);
+    }, [markManualViewChange, setZoomBehavior]);
     const markAutoFitZoomChange = useCallback(() => {
         zoomChangeSourceRef.current = 'auto';
-    }, []);
+        setZoomBehavior('fit');
+    }, [setZoomBehavior]);
     useEffect(() => {
         setIsZoomDirty(false);
         zoomChangeSourceRef.current = null;
@@ -1901,10 +1905,11 @@ const useTripViewRender = ({
         routeMode,
         showCityNames,
         zoomLevel: Number(zoomLevel.toFixed(2)),
+        zoomBehavior,
         sidebarWidth: Math.round(sidebarWidth),
         detailsWidth: Math.round(detailsWidth),
         timelineHeight: Math.round(timelineHeight)
-    }), [detailsWidth, layoutMode, timelineMode, timelineView, mapDockMode, mapStyle, routeMode, showCityNames, zoomLevel, sidebarWidth, timelineHeight]);
+    }), [detailsWidth, layoutMode, timelineMode, timelineView, mapDockMode, mapStyle, routeMode, showCityNames, zoomLevel, zoomBehavior, sidebarWidth, timelineHeight]);
 
     const tripInfoRetryAnalyticsAttributes = useMemo(
         () => getAnalyticsDebugAttributes('trip_generation__trip_info--retry', {
@@ -2242,6 +2247,7 @@ const useTripViewRender = ({
         routeMode,
         showCityNames,
         zoomLevel,
+        zoomBehavior,
         sidebarWidth,
         detailsWidth,
         timelineHeight,
@@ -2256,6 +2262,7 @@ const useTripViewRender = ({
         setTimelineView,
         setMapDockMode,
         setZoomLevel,
+        setZoomBehavior,
         setSidebarWidth,
         setDetailsWidth,
         setTimelineHeight,
@@ -2684,6 +2691,7 @@ const useTripViewRender = ({
         timelineMode,
         timelineView,
         zoomLevel,
+        zoomBehavior,
         isZoomDirty,
         clampZoomLevel,
         setZoomLevel,

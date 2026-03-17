@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, type Dispatch, type SetStateAction } from 'react';
 
 import { writeLocalStorageItem } from '../../services/browserStorageService';
+import type { IViewSettings } from '../../types';
 
 interface UseTripResizeControlsOptions {
     isMobile: boolean;
@@ -9,6 +10,7 @@ interface UseTripResizeControlsOptions {
     timelineMode: 'calendar' | 'timeline';
     timelineView: 'horizontal' | 'vertical';
     zoomLevel: number;
+    zoomBehavior: NonNullable<IViewSettings['zoomBehavior']>;
     isZoomDirty: boolean;
     clampZoomLevel: (value: number) => number;
     setZoomLevel: Dispatch<SetStateAction<number>>;
@@ -108,6 +110,7 @@ export const useTripResizeControls = ({
     timelineMode,
     timelineView,
     zoomLevel,
+    zoomBehavior,
     isZoomDirty,
     clampZoomLevel,
     setZoomLevel,
@@ -216,7 +219,7 @@ export const useTripResizeControls = ({
         options?: { force?: boolean; source?: 'auto' | 'manual' },
     ) => {
         const fitMode: 'horizontal' | 'vertical' = mode || (timelineView === 'vertical' ? 'vertical' : 'horizontal');
-        if (!options?.force && isZoomDirty) return false;
+        if (!options?.force && (isZoomDirty || zoomBehavior === 'manual')) return false;
 
         const timelineViewport = verticalLayoutTimelineRef.current;
         if (!timelineViewport) return false;
@@ -264,6 +267,7 @@ export const useTripResizeControls = ({
         timelineView,
         verticalTimelineAutoFitPadding,
         zoomLevel,
+        zoomBehavior,
         zoomLevelPresets,
     ]);
 
@@ -276,6 +280,8 @@ export const useTripResizeControls = ({
         const didTimelineModeChange = previousTimelineMode !== timelineMode;
         const didTimelineViewChange = previousTimelineView !== timelineView;
         const shouldAttemptAutoFit = timelineMode === 'calendar'
+            && zoomBehavior !== 'manual'
+            && !isZoomDirty
             && (
                 (didTimelineViewChange)
                 || (!isZoomDirty && (
@@ -313,7 +319,7 @@ export const useTripResizeControls = ({
         previousTimelineModeRef.current = timelineMode;
         previousTimelineViewRef.current = timelineView;
         hasAutoFitRunRef.current = true;
-    }, [fitTimelineZoom, isZoomDirty, mapDockMode, timelineMode, timelineView]);
+    }, [fitTimelineZoom, isZoomDirty, mapDockMode, timelineMode, timelineView, zoomBehavior]);
 
     const startResizing = useCallback((type: 'sidebar' | 'details' | 'timeline-h', startClientX?: number) => {
         isResizingRef.current = type;

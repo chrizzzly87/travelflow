@@ -98,9 +98,25 @@ describe('services/destinationService', () => {
     expect(getDestinationPromptLabel('Unknown Place', 'en')).toBe('Unknown Place');
   });
 
+  it('searches include-only matches across aliases, localized names, and parent country tokens', () => {
+    const aliasIncludes = searchDestinationOptions('raser');
+    expect(aliasIncludes.some((item) => item.name === "K'gari")).toBe(true);
+
+    const localizedCountryIncludes = searchDestinationOptions('deutsch');
+    expect(localizedCountryIncludes.some((item) => item.code === 'DE')).toBe(true);
+
+    const parentCountryIncludes = searchDestinationOptions('donesia');
+    expect(parentCountryIncludes.some((item) => item.name === 'Bali')).toBe(true);
+  });
+
   it('returns rolling recommendation months and wraps into the next year', () => {
     expect(getRollingRecommendationMonths(new Date('2026-12-15T12:00:00Z'))).toEqual([12, 1, 2]);
     expect(getRollingRecommendationMonths(new Date('2026-02-20T12:00:00Z'), 5)).toEqual([2, 3, 4, 5, 6]);
+  });
+
+  it('clamps rolling recommendation month counts and tolerates invalid dates', () => {
+    expect(getRollingRecommendationMonths(new Date('invalid'), 0)).toHaveLength(1);
+    expect(getRollingRecommendationMonths(new Date('2026-02-20T12:00:00Z'), 20)).toHaveLength(12);
   });
 
   it('builds a unique top 20 recommendation list and excludes already selected destinations', () => {
@@ -136,6 +152,18 @@ describe('services/destinationService', () => {
     expect(getDestinationRecommendationScore(japan!, springExactMonths)).toBeGreaterThan(
       getDestinationRecommendationScore(japan!, winterFlexMonths)
     );
+  });
+
+  it('returns neutral recommendation scores when months normalize away or no profile exists', () => {
+    const customDestination = {
+      name: 'Nowhere',
+      code: 'ZZ',
+      flag: '🏳️',
+      kind: 'country' as const,
+    };
+
+    expect(getDestinationRecommendationScore(customDestination)).toBe(0);
+    expect(getDestinationRecommendationScore(customDestination, [0, 13, 2.5])).toBe(0);
   });
 
   it('can surface curated island destinations in seasonal recommendations', () => {

@@ -8,6 +8,7 @@ import { DB_ENABLED } from '../config/db';
 import {
     dbGetTrip,
     dbGetTripVersion,
+    dbUpdateTripShareViewSettings,
     type DbTripAccess,
 } from '../services/dbApi';
 import { findHistoryEntryByUrl } from '../services/historyService';
@@ -39,6 +40,7 @@ const areViewSettingsEqual = (a?: IViewSettings, b?: IViewSettings): boolean => 
         && a.routeMode === b.routeMode
         && a.showCityNames === b.showCityNames
         && a.zoomLevel === b.zoomLevel
+        && a.zoomBehavior === b.zoomBehavior
         && a.sidebarWidth === b.sidebarWidth
         && a.detailsWidth === b.detailsWidth
         && a.timelineHeight === b.timelineHeight
@@ -309,7 +311,10 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
         latestViewSettingsRef.current = settings;
         setViewSettings(settings);
         onViewSettingsChange(settings);
-    }, [onViewSettingsChange]);
+        if (!DB_ENABLED || !tripId) return;
+        if (tripAccess?.source === 'public_read' || tripAccess?.source === 'admin_fallback') return;
+        void dbUpdateTripShareViewSettings(tripId, settings).catch(() => undefined);
+    }, [onViewSettingsChange, tripAccess?.source, tripId]);
 
     if (!trip) {
         return <TripRouteLoadingShell variant="loadingTrip" />;
