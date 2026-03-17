@@ -1,7 +1,12 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
+import { Link, useLocation } from 'react-router-dom';
 import { MarketingLayout } from '../../components/marketing/MarketingLayout';
 import { APP_NAME } from '../../config/appGlobals';
+import { DEFAULT_LOCALE } from '../../config/locales';
 import { LEGAL_PROFILE } from '../../config/legalProfile';
+import { buildLocalizedMarketingPath, extractLocaleFromPath } from '../../config/routes';
+import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 
 const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
     <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
@@ -13,7 +18,11 @@ const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title
 );
 
 export const ImprintPage: React.FC = () => {
+    const location = useLocation();
+    const activeLocale = extractLocaleFromPath(location.pathname) ?? DEFAULT_LOCALE;
+    const { t } = useTranslation('legal');
     const { entity, supervision, hosting, dispute } = LEGAL_PROFILE;
+    const contactPath = buildLocalizedMarketingPath('contact', activeLocale);
     const shouldShowPhone = Boolean(entity.phone && entity.phone.trim().length > 0);
     const shouldShowVat = Boolean(entity.vatId && entity.vatId.trim().length > 0);
     const shouldShowRegisterCourt = Boolean(entity.registerCourt && entity.registerCourt.trim().length > 0);
@@ -22,43 +31,42 @@ export const ImprintPage: React.FC = () => {
     const additionalContactEmails = (entity.additionalContactEmails || [])
         .map((email) => email.trim())
         .filter(Boolean);
+    const handleContactFormClick = () => {
+        trackEvent('imprint__contact--form');
+    };
+    const odrDateClause = dispute.odrPlatformDiscontinuedAt
+        ? t('imprint.odrDateClauseWithDate', { date: dispute.odrPlatformDiscontinuedAt })
+        : '';
 
     return (
         <MarketingLayout>
             <div className="space-y-6">
                 <section className="rounded-3xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-6 shadow-sm md:p-10">
-                    <p className="text-xs font-semibold uppercase tracking-widest text-accent-600">§5 DDG · §18 Abs. 2 MStV</p>
+                    <p className="text-xs font-semibold uppercase tracking-widest text-accent-600">{t('imprint.heroEyebrow')}</p>
                     <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-900 md:text-4xl">
-                        Impressum (Legal Notice)
+                        {t('imprint.title')}
                     </h1>
                     <p className="mt-4 text-base text-slate-700 md:text-lg">
-                        This page provides all mandatory provider and contact information for {APP_NAME} in accordance with
-                        the German Digital Services Act (Digitale-Dienste-Gesetz, DDG) and the Interstate Media Treaty
-                        (Medienstaatsvertrag).
-                        Personal details below are loaded from a dedicated typed legal profile module.
+                        {t('imprint.heroIntro', {
+                            appName: APP_NAME,
+                            representativeName: entity.representativeName,
+                            businessName: entity.businessName,
+                        })}
                     </p>
                 </section>
 
-                <Section title="Responsible entity / Diensteanbieter">
+                <Section title={t('imprint.providerSectionTitle')}>
                     <dl className="grid gap-4 md:grid-cols-2">
                         <div>
-                            <dt className="font-semibold text-slate-900">Business name</dt>
-                            <dd>{entity.businessName}</dd>
-                        </div>
-                        <div>
-                            <dt className="font-semibold text-slate-900">Legal form</dt>
-                            <dd>{entity.legalForm}</dd>
-                        </div>
-                        <div>
-                            <dt className="font-semibold text-slate-900">Legal representative</dt>
+                            <dt className="font-semibold text-slate-900">{t('imprint.providerNameLabel')}</dt>
                             <dd>{entity.representativeName}</dd>
                         </div>
                         <div>
-                            <dt className="font-semibold text-slate-900">Responsible (§ 18 Abs. 2 MStV)</dt>
-                            <dd>{entity.responsibleForContent}</dd>
+                            <dt className="font-semibold text-slate-900">{t('imprint.businessDesignationLabel')}</dt>
+                            <dd translate="no">{entity.businessName}</dd>
                         </div>
                         <div className="md:col-span-2">
-                            <dt className="font-semibold text-slate-900">Address</dt>
+                            <dt className="font-semibold text-slate-900">{t('imprint.addressLabel')}</dt>
                             <dd>
                                 <address className="not-italic">
                                     {entity.addressLines.map((line) => (
@@ -68,9 +76,10 @@ export const ImprintPage: React.FC = () => {
                             </dd>
                         </div>
                         <div>
-                            <dt className="font-semibold text-slate-900">Email</dt>
+                            <dt className="font-semibold text-slate-900">{t('imprint.contactLabel')}</dt>
                             <dd className="space-y-1">
                                 <div>
+                                    <span className="font-semibold text-slate-900">{t('imprint.emailLabel')}</span>{' '}
                                     <a className="text-accent-700 hover:underline" href={`mailto:${entity.contactEmail}`}>
                                         {entity.contactEmail}
                                     </a>
@@ -82,75 +91,95 @@ export const ImprintPage: React.FC = () => {
                                         </a>
                                     </div>
                                 ))}
+                                <div>
+                                    <span className="font-semibold text-slate-900">{t('imprint.contactFormLabel')}</span>{' '}
+                                    <Link
+                                        className="text-accent-700 hover:underline"
+                                        to={contactPath}
+                                        onClick={handleContactFormClick}
+                                        {...getAnalyticsDebugAttributes('imprint__contact--form')}
+                                    >
+                                        {t('imprint.contactFormCta')}
+                                    </Link>
+                                </div>
+                                {shouldShowPhone && (
+                                    <div>
+                                        <span className="font-semibold text-slate-900">{t('imprint.phoneLabel')}</span>{' '}
+                                        <span>{entity.phone}</span>
+                                    </div>
+                                )}
                             </dd>
                         </div>
-                        {shouldShowPhone && (
-                            <div>
-                                <dt className="font-semibold text-slate-900">Phone</dt>
-                                <dd>{entity.phone}</dd>
-                            </div>
-                        )}
                         {shouldShowVat && (
                             <div>
-                                <dt className="font-semibold text-slate-900">VAT ID</dt>
-                                <dd>{entity.vatId}</dd>
+                                <dt className="font-semibold text-slate-900">{t('imprint.vatLabel')}</dt>
+                                <dd translate="no">{entity.vatId}</dd>
                             </div>
                         )}
                         {shouldShowRegisterCourt && (
                             <div>
-                                <dt className="font-semibold text-slate-900">Register court</dt>
+                                <dt className="font-semibold text-slate-900">{t('imprint.registerCourtLabel')}</dt>
                                 <dd>{entity.registerCourt}</dd>
                             </div>
                         )}
                         {shouldShowRegisterNumber && (
                             <div>
-                                <dt className="font-semibold text-slate-900">Register number</dt>
+                                <dt className="font-semibold text-slate-900">{t('imprint.registerNumberLabel')}</dt>
                                 <dd>{entity.registerNumber}</dd>
                             </div>
                         )}
                         {shouldShowSupervisoryAuthority && (
-                            <div>
-                                <dt className="font-semibold text-slate-900">Supervisory authority</dt>
+                            <div className="md:col-span-2">
+                                <dt className="font-semibold text-slate-900">{t('imprint.additionalSupervisoryAuthorityLabel')}</dt>
                                 <dd>{entity.supervisoryAuthority}</dd>
                             </div>
                         )}
                     </dl>
                 </Section>
 
-                <Section title="Hosting & technical contact">
+                <Section title={t('imprint.contentResponsibleSectionTitle')}>
+                    <p className="font-semibold text-slate-900">{entity.responsibleForContent}</p>
+                    <div className="mt-2 text-slate-700">
+                        <address className="not-italic">
+                            {entity.addressLines.map((line) => (
+                                <span key={line} className="block">{line}</span>
+                            ))}
+                        </address>
+                    </div>
+                </Section>
+
+                <Section title={t('imprint.hostingSectionTitle')}>
                     <p>
-                        {APP_NAME} is hosted with {hosting.provider}. Primary data processing takes place in {hosting.dataRegion}.
-                        All infrastructure partners are selected with GDPR compliance and data minimization in mind.
+                        {t('imprint.hostingBody', {
+                            appName: APP_NAME,
+                            provider: hosting.provider,
+                            dataRegion: hosting.dataRegion,
+                        })}
                     </p>
                 </Section>
 
-                <Section title="Supervisory authority & dispute resolution">
-                    <p>
-                        Supervisory authority responsible for media and telecommunication matters:
-                    </p>
+                <Section title={t('imprint.supervisionSectionTitle')}>
+                    <p>{t('imprint.supervisionLead')}</p>
                     <p className="mt-2 font-semibold">{supervision.authorityName}</p>
                     <p>
-                        Website:{' '}
+                        {t('imprint.supervisionWebsiteLabel')}{' '}
                         <a className="text-accent-700 hover:underline" href={supervision.authorityWebsite} target="_blank" rel="noreferrer">
                             {supervision.authorityWebsite}
                         </a>
                     </p>
                     <p className="mt-4">
-                        The EU ODR platform under Regulation (EU) No 524/2013 has been discontinued
-                        {dispute.odrPlatformDiscontinuedAt ? ` (application end date: ${dispute.odrPlatformDiscontinuedAt})` : ''}.
+                        {t('imprint.odrDiscontinued', { dateClause: odrDateClause })}
+                    </p>
+                    <p className="mt-2">
                         {dispute.participatesInConsumerArbitration
-                            ? ` ${APP_NAME} participates in dispute resolution procedures before a consumer arbitration board.`
-                            : ` ${APP_NAME} is not obligated and currently not willing to participate in dispute resolution procedures before a consumer arbitration board.`}
+                            ? t('imprint.arbitrationParticipates', { appName: APP_NAME })
+                            : t('imprint.arbitrationDeclines', { appName: APP_NAME })}
                     </p>
                 </Section>
 
-                <Section title="Content accountability">
+                <Section title={t('imprint.liabilitySectionTitle')}>
                     <p>
-                        All content on this website was created with great care. Nevertheless, no liability is assumed for the
-                        accuracy, completeness, or timeliness of the information. As a service provider, {APP_NAME} is
-                        responsible for its own content on these pages according to applicable statutory law. Under the
-                        liability privilege framework for intermediary services,
-                        {APP_NAME} is not obligated to monitor transmitted or stored external information.
+                        {t('imprint.liabilityBody')}
                     </p>
                 </Section>
             </div>
