@@ -57,9 +57,14 @@ export interface TripGenerationRetryCapabilityOptions {
     canAdminWrite?: boolean;
     hasInputSnapshot?: boolean;
     generationState?: TripGenerationState | null;
+    latestAttemptOrchestration?: string | null;
     isRetryingGeneration?: boolean;
     pendingAuthQueueRequestId?: string | null;
 }
+
+// Keep this aligned with the async worker's default provider timeout so the UI
+// does not treat still-valid GPT-5.4 jobs as hard-stalled too early.
+const ASYNC_WORKER_HARD_STALL_MS = 120_000;
 
 const canUseAdminGenerationOverride = (options: TripGenerationRetryCapabilityOptions): boolean => (
     Boolean(options.isAdminFallbackView && options.adminOverrideEnabled && options.canAdminWrite)
@@ -78,6 +83,12 @@ export const canTriggerTripGenerationAbortAndRetry = (options: TripGenerationRet
     const hasWriteAccess = options.canEdit || canUseAdminGenerationOverride(options);
     if (!hasWriteAccess) return false;
     if (options.isRetryingGeneration) return false;
+    if (
+        (options.generationState === 'queued' || options.generationState === 'running')
+        && options.latestAttemptOrchestration === 'async_worker'
+    ) {
+        return false;
+    }
     return Boolean(options.hasInputSnapshot);
 };
 
@@ -208,7 +219,7 @@ export const retryTripGenerationWithDefaultModel = async (
                     ));
                     const latestAttemptStartedAtMs = toMs(latestAttemptLog?.startedAt || remoteLatestAttempt.startedAt);
                     const hasHardStalledAttempt = typeof latestAttemptStartedAtMs === 'number'
-                        && nowMs - latestAttemptStartedAtMs >= 90_000;
+                        && nowMs - latestAttemptStartedAtMs >= ASYNC_WORKER_HARD_STALL_MS;
                     const isLikelyStaleInFlight = (
                         isInFlightAttemptState(latestAttemptLogState || remoteLatestAttempt.state || null)
                         && typeof latestAttemptStartedAtMs === 'number'

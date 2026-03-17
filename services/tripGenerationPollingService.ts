@@ -13,7 +13,9 @@ const toMs = (value?: string | null): number => {
 };
 
 const isInFlightState = (state: ReturnType<typeof getTripGenerationState>): boolean => state === 'queued' || state === 'running';
-const LOCAL_IN_FLIGHT_STALE_FALLBACK_MS = 90_000;
+// Mirrors the async worker's default provider timeout so polling does not
+// override an in-flight trip with stale remote state while the worker is still valid.
+const LOCAL_IN_FLIGHT_STALE_FALLBACK_MS = 120_000;
 export const ASYNC_TRIP_STALL_RECOVERY_NUDGE_AFTER_MS = TRIP_GENERATION_TIMEOUT_MS + 20_000;
 export const ASYNC_TRIP_STALL_RECOVERY_FAIL_AFTER_MS = TRIP_GENERATION_TIMEOUT_MS + 75_000;
 

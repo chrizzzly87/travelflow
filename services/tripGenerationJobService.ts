@@ -17,6 +17,8 @@ interface TripGenerationJobRow {
     payload?: unknown;
     last_error_code?: unknown;
     last_error_message?: unknown;
+    started_at?: unknown;
+    finished_at?: unknown;
     created_at?: unknown;
     updated_at?: unknown;
 }
@@ -85,6 +87,8 @@ const parseJobSummary = (value: unknown): TripGenerationJobSummary | null => {
         payload: asObject(row.payload),
         lastErrorCode: asString(row.last_error_code),
         lastErrorMessage: asString(row.last_error_message),
+        startedAt: asString(row.started_at),
+        finishedAt: asString(row.finished_at),
         createdAt,
         updatedAt,
     };
@@ -282,7 +286,7 @@ export const listTripGenerationJobsByTrip = async (
 
         let query = supabase
             .from('trip_generation_jobs')
-            .select('id,trip_id,owner_id,attempt_id,state,priority,retry_count,max_retries,run_after,lease_expires_at,leased_by,payload,last_error_code,last_error_message,created_at,updated_at')
+            .select('id,trip_id,owner_id,attempt_id,state,priority,retry_count,max_retries,run_after,lease_expires_at,leased_by,payload,last_error_code,last_error_message,started_at,finished_at,created_at,updated_at')
             .eq('trip_id', normalizedTripId);
 
         if (requestedStates.length > 0) {

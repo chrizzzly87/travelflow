@@ -73,7 +73,7 @@ const MAX_JOB_BATCH = 10;
 // Actual provider execution now runs in the background function runtime, so the
 // worker timeout can be long enough for slower models without colliding with the
 // edge response deadline.
-const WORKER_PROVIDER_TIMEOUT_MS = resolveTimeoutMs("AI_GENERATION_ASYNC_PROVIDER_TIMEOUT_MS", 90_000, 20_000, 120_000);
+const WORKER_PROVIDER_TIMEOUT_MS = resolveTimeoutMs("AI_GENERATION_ASYNC_PROVIDER_TIMEOUT_MS", 120_000, 20_000, 180_000);
 const WORKER_LEASE_SECONDS = Math.max(45, Math.min(180, Math.ceil((WORKER_PROVIDER_TIMEOUT_MS + 15_000) / 1_000)));
 const BACKGROUND_DISPATCH_TIMEOUT_MS = 10_000;
 
