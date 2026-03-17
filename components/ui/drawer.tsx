@@ -44,7 +44,7 @@ export const DrawerContent = React.forwardRef<
       <DrawerPrimitive.Title className="sr-only">{accessibleTitle}</DrawerPrimitive.Title>
       <DrawerPrimitive.Description className="sr-only">{accessibleDescription}</DrawerPrimitive.Description>
       {side === 'bottom' && (
-        <DrawerPrimitive.Handle className="pointer-events-auto mx-auto mt-3 h-1.5 w-12 rounded-full bg-gray-300" />
+        <DrawerPrimitive.Handle className="mx-auto mt-3 h-1.5 w-12 rounded-full bg-gray-300" />
       )}
       {children}
     </DrawerPrimitive.Content>

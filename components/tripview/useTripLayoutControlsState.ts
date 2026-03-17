@@ -71,9 +71,6 @@ export const useTripLayoutControlsState = ({
     });
 
     const [detailsWidth, setDetailsWidth] = useState(() => {
-        if (typeof initialViewSettings?.detailsWidth === 'number' && Number.isFinite(initialViewSettings.detailsWidth)) {
-            return initialViewSettings.detailsWidth;
-        }
         if (typeof window !== 'undefined') {
             const stored = parseInt(readLocalStorageItem('tf_details_width') || `${defaultDetailsWidth}`, 10);
             if (Number.isFinite(stored)) return stored;

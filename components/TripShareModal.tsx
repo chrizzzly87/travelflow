@@ -31,7 +31,7 @@ export const TripShareModal: React.FC<TripShareModalProps> = ({
             description="Choose view-only or collaboration editing."
             closeLabel="Close share trip dialog"
             size="sm"
-            mobileSheet={false}
+            mobileSheet
             bodyClassName="p-4 space-y-3"
             footer={
                 <div className="flex items-center justify-end gap-2">

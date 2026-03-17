@@ -15,7 +15,6 @@ interface UseTripViewSettingsSyncOptions {
     zoomLevel: number;
     zoomBehavior: NonNullable<IViewSettings['zoomBehavior']>;
     sidebarWidth: number;
-    detailsWidth: number;
     timelineHeight: number;
     viewMode: 'planner' | 'print';
     onViewSettingsChange?: (settings: IViewSettings) => void;
@@ -30,7 +29,6 @@ interface UseTripViewSettingsSyncOptions {
     setZoomLevel: Dispatch<SetStateAction<number>>;
     setZoomBehavior: Dispatch<SetStateAction<NonNullable<IViewSettings['zoomBehavior']>>>;
     setSidebarWidth: Dispatch<SetStateAction<number>>;
-    setDetailsWidth: Dispatch<SetStateAction<number>>;
     setTimelineHeight: Dispatch<SetStateAction<number>>;
     setShowCityNames: Dispatch<SetStateAction<boolean>>;
     suppressCommitRef: MutableRefObject<boolean>;
@@ -51,7 +49,6 @@ const normalizeSettingsForCallback = (settings: IViewSettings): IViewSettings =>
     zoomLevel: Number(toFiniteNumber(settings.zoomLevel, 1).toFixed(2)),
     zoomBehavior: settings.zoomBehavior === 'manual' ? 'manual' : 'fit',
     sidebarWidth: Math.round(toFiniteNumber(settings.sidebarWidth, 560)),
-    detailsWidth: Math.round(toFiniteNumber(settings.detailsWidth, 440)),
     timelineHeight: Math.round(toFiniteNumber(settings.timelineHeight, 340)),
 });
 
@@ -66,7 +63,6 @@ export const useTripViewSettingsSync = ({
     zoomLevel,
     zoomBehavior,
     sidebarWidth,
-    detailsWidth,
     timelineHeight,
     viewMode,
     onViewSettingsChange,
@@ -81,7 +77,6 @@ export const useTripViewSettingsSync = ({
     setZoomLevel,
     setZoomBehavior,
     setSidebarWidth,
-    setDetailsWidth,
     setTimelineHeight,
     setShowCityNames,
     suppressCommitRef,
@@ -133,7 +128,6 @@ export const useTripViewSettingsSync = ({
                 zoomLevel,
                 zoomBehavior,
                 sidebarWidth,
-                detailsWidth,
                 timelineHeight,
             };
             const settings = normalizeSettingsForCallback(rawSettings);
@@ -167,7 +161,6 @@ export const useTripViewSettingsSync = ({
         routeMode,
         timelineView,
         sidebarWidth,
-        detailsWidth,
         timelineHeight,
         showCityNames,
         onViewSettingsChange,
@@ -197,7 +190,6 @@ export const useTripViewSettingsSync = ({
         if (typeof initialViewSettings.zoomLevel === 'number') setZoomLevel(initialViewSettings.zoomLevel);
         setZoomBehavior(initialViewSettings.zoomBehavior === 'manual' ? 'manual' : 'fit');
         if (typeof initialViewSettings.sidebarWidth === 'number') setSidebarWidth(initialViewSettings.sidebarWidth);
-        if (typeof initialViewSettings.detailsWidth === 'number') setDetailsWidth(initialViewSettings.detailsWidth);
         if (typeof initialViewSettings.timelineHeight === 'number') setTimelineHeight(initialViewSettings.timelineHeight);
         setShowCityNames(initialViewSettings.showCityNames ?? true);
 
@@ -214,7 +206,6 @@ export const useTripViewSettingsSync = ({
         setZoomLevel,
         setZoomBehavior,
         setSidebarWidth,
-        setDetailsWidth,
         setTimelineHeight,
         setShowCityNames,
         suppressCommitRef,
