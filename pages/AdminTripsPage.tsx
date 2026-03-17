@@ -5,6 +5,7 @@ import { AdminShell, type AdminDateRange } from '../components/admin/AdminShell'
 import { isIsoDateInRange } from '../components/admin/adminDateRange';
 import { AI_MODEL_CATALOG, getDefaultCreateTripModel } from '../config/aiModelCatalog';
 import { getAiProviderMetadata } from '../config/aiProviderCatalog';
+import { extractAiRuntimeSecurityMetadata } from '../shared/aiRuntimeSecurity';
 import {
     adminGetUserProfile,
     adminHardDeleteTrip,
@@ -914,6 +915,10 @@ export const AdminTripsPage: React.FC = () => {
         if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return null;
         return payload as Record<string, unknown>;
     }, [selectedTripLatestAttemptMetadata]);
+    const selectedTripLatestAttemptSecurity = useMemo(
+        () => extractAiRuntimeSecurityMetadata(selectedTripLatestAttemptMetadata?.security),
+        [selectedTripLatestAttemptMetadata]
+    );
     const selectedTripOrchestrationMode = useMemo(() => {
         const value = selectedTripLatestAttemptMetadata?.orchestration;
         return typeof value === 'string' && value.trim().length > 0 ? value.trim() : null;
@@ -2620,6 +2625,40 @@ export const AdminTripsPage: React.FC = () => {
                                                     <dt className="text-xs font-semibold text-slate-500">Error message</dt>
                                                     <dd className="mt-1 break-words text-sm font-medium text-slate-800">{selectedTripLatestAttempt.errorMessage || 'n/a'}</dd>
                                                 </div>
+                                                {selectedTripLatestAttemptSecurity && (
+                                                    <>
+                                                        <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+                                                            <dt className="text-xs font-semibold text-slate-500">Guard decision</dt>
+                                                            <dd className="mt-1 text-sm font-medium text-slate-800">{selectedTripLatestAttemptSecurity.guardDecision}</dd>
+                                                        </div>
+                                                        <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+                                                            <dt className="text-xs font-semibold text-slate-500">Risk score</dt>
+                                                            <dd className="mt-1 text-sm font-medium text-slate-800">{selectedTripLatestAttemptSecurity.riskScore}</dd>
+                                                        </div>
+                                                        <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+                                                            <dt className="text-xs font-semibold text-slate-500">Security stage</dt>
+                                                            <dd className="mt-1 text-sm font-medium text-slate-800">{selectedTripLatestAttemptSecurity.stage}</dd>
+                                                        </div>
+                                                        <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+                                                            <dt className="text-xs font-semibold text-slate-500">Security blocked</dt>
+                                                            <dd className="mt-1 text-sm font-medium text-slate-800">{selectedTripLatestAttemptSecurity.blocked ? 'yes' : 'no'}</dd>
+                                                        </div>
+                                                        <div className="sm:col-span-2 rounded-lg border border-slate-100 bg-slate-50 p-3">
+                                                            <dt className="text-xs font-semibold text-slate-500">Attack categories</dt>
+                                                            <dd className="mt-1 break-words text-sm font-medium text-slate-800">
+                                                                {selectedTripLatestAttemptSecurity.attackCategories.length > 0
+                                                                    ? selectedTripLatestAttemptSecurity.attackCategories.join(', ')
+                                                                    : 'n/a'}
+                                                            </dd>
+                                                        </div>
+                                                        <div className="sm:col-span-2 rounded-lg border border-slate-100 bg-slate-50 p-3">
+                                                            <dt className="text-xs font-semibold text-slate-500">Redacted excerpt</dt>
+                                                            <dd className="mt-1 break-words text-sm font-medium text-slate-800">
+                                                                {selectedTripLatestAttemptSecurity.redactedExcerpt || 'n/a'}
+                                                            </dd>
+                                                        </div>
+                                                    </>
+                                                )}
                                             </dl>
                                         ) : (
                                             <div className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-sm text-slate-600">

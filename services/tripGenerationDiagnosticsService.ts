@@ -25,6 +25,7 @@ export interface TripGenerationErrorLike {
     failureKind?: TripGenerationFailureKind | null;
     aborted?: boolean;
     requestPayload?: Record<string, unknown> | null;
+    security?: Record<string, unknown> | null;
 }
 
 export interface TripGenerationStartParams {
@@ -125,6 +126,7 @@ const toErrorLike = (error: unknown): TripGenerationErrorLike => {
             failureKind: typed.failureKind || null,
             aborted: typed.aborted === true,
             requestPayload: asRecord((typed as unknown as Record<string, unknown>).requestPayload),
+            security: asRecord((typed as unknown as Record<string, unknown>).security),
         };
     }
     if (isRecord(error)) {
@@ -141,6 +143,7 @@ const toErrorLike = (error: unknown): TripGenerationErrorLike => {
             failureKind: asText(error.failureKind) as TripGenerationFailureKind | null,
             aborted: error.aborted === true,
             requestPayload: asRecord(error.requestPayload),
+            security: asRecord(error.security),
         };
     }
     return {};
@@ -157,7 +160,15 @@ const classifyByCodeOrMessage = (codeRaw: string | null, messageRaw: string | nu
     if (code.includes('abort') || message.includes('abort') || message.includes('beforeunload') || message.includes('tab close')) {
         return 'abort';
     }
-    if (code.includes('parse') || code.includes('quality') || message.includes('quality') || message.includes('invalid json')) {
+    if (
+        code.includes('parse')
+        || code.includes('quality')
+        || code.includes('security')
+        || code.includes('prompt')
+        || message.includes('quality')
+        || message.includes('invalid json')
+        || message.includes('processed safely')
+    ) {
         return 'quality';
     }
     if (
@@ -740,6 +751,7 @@ export const markTripGenerationFailed = (trip: ITrip, params: TripGenerationFail
                 metadata: mergeAttemptMetadata(
                     null,
                     params.metadata,
+                    typedError.security ? { security: typedError.security } : null,
                     typedError.requestPayload ? { requestPayload: typedError.requestPayload } : null,
                 ),
             },
@@ -768,6 +780,7 @@ export const markTripGenerationFailed = (trip: ITrip, params: TripGenerationFail
                 metadata: mergeAttemptMetadata(
                     attempt.metadata,
                     params.metadata,
+                    typedError.security ? { security: typedError.security } : null,
                     typedError.requestPayload ? { requestPayload: typedError.requestPayload } : null,
                 ),
             };

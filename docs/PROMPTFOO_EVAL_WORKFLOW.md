@@ -20,6 +20,41 @@ Use Promptfoo for:
 
 Promptfoo is helpful here, but it is not a full security boundary. It improves detection and regression safety; it does not guarantee that prompt injection is impossible.
 
+## Production Runtime Monitoring
+
+Promptfoo stays out of the production hot path.
+
+Production protection now lives in the app/runtime layer:
+
+- `shared/aiRuntimeSecurity.ts` runs `input_preflight` checks on user-controlled fields before provider calls
+- the same module runs `output_postflight` checks after model output and shared validation
+- direct edge generation and async worker generation both use the same guard decisions: `allow`, `warn`, `block`
+- high-confidence cases are soft-blocked before persistence with a generic traveler-facing message
+
+Production logging lives in:
+
+- `ai_generation_events`
+- `trip_generation_attempts.metadata`
+- trip `aiMeta.generation.latestAttempt.metadata`
+
+Admin visibility lives in:
+
+- `/admin/ai-benchmark/telemetry`
+- `/admin/trips` diagnostics drawer
+- trip debug modal admin tab
+
+Logged security evidence is intentionally bounded:
+
+- attack categories
+- matched rules
+- guard decision
+- risk score
+- prompt fingerprint hash
+- redacted excerpt
+- trip id / attempt id
+
+We do not log full raw prompts or full raw model output by default.
+
 ## Current Packs
 
 ### Regression pack
@@ -199,3 +234,17 @@ The goal of this setup is practical safety improvement:
 - better detection through adversarial evals
 - lower override risk through prompt-input hardening
 - one shared contract across evals and admin benchmark
+- production telemetry and admin incident visibility for suspicious or blocked live traffic
+
+## Incident Replay Workflow
+
+When a production incident is worth replaying:
+
+1. Copy only sanitized request context from the admin telemetry or trip diagnostics view.
+2. Convert that sanitized incident into a Promptfoo security scenario.
+3. Add the new scenario to the security pack so the failure becomes a repeatable regression test.
+
+This is the intended loop:
+
+- production runtime monitoring catches suspicious live traffic
+- Promptfoo turns those sanitized incidents into durable pre-release checks

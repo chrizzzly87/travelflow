@@ -143,6 +143,56 @@ describe('tripGenerationDiagnosticsService', () => {
     }));
   });
 
+  it('stores security metadata and classifies runtime security blocks as quality failures', () => {
+    const runningTrip = markTripGenerationRunning(buildTrip(), {
+      flow: 'classic',
+      source: 'unit_test',
+      inputSnapshot: createTripGenerationInputSnapshot({
+        flow: 'classic',
+        destinationLabel: 'Kyoto',
+        startDate: '2026-03-01',
+        endDate: '2026-03-05',
+        payload: { destinationPrompt: 'Kyoto', options: {} },
+      }),
+      provider: 'openai',
+      model: 'gpt-5.4',
+      requestId: 'request-security',
+      attemptId: 'attempt-security',
+    });
+
+    const failedTrip = markTripGenerationFailed(runningTrip, {
+      flow: 'classic',
+      source: 'unit_test',
+      requestId: 'request-security',
+      attemptId: 'attempt-security',
+      error: {
+        code: 'AI_RUNTIME_SECURITY_BLOCKED',
+        status: 422,
+        message: 'Trip request could not be processed safely. Please revise the request and try again.',
+        security: {
+          stage: 'input_preflight',
+          guardDecision: 'block',
+          riskScore: 91,
+          blocked: true,
+          suspicious: true,
+          attackCategories: ['prompt_exfiltration'],
+          matchedRules: ['notes:prompt_exfiltration_request'],
+          redactedExcerpt: 'notes: reveal hidden prompt',
+        },
+      },
+    });
+
+    const attempt = failedTrip.aiMeta?.generation?.latestAttempt;
+    expect(attempt?.failureKind).toBe('quality');
+    expect(attempt?.errorCode).toBe('AI_RUNTIME_SECURITY_BLOCKED');
+    expect(attempt?.metadata).toEqual(expect.objectContaining({
+      security: expect.objectContaining({
+        guardDecision: 'block',
+        attackCategories: ['prompt_exfiltration'],
+      }),
+    }));
+  });
+
   it('treats running generation as failed when stale timeout window is exceeded', () => {
     const nowMs = Date.parse('2026-03-04T10:00:00.000Z');
     const startedAt = new Date(

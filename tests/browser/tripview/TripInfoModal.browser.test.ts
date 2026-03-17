@@ -131,6 +131,50 @@ describe('components/TripInfoModal', () => {
       ownerEmail: 'traveler@example.com',
       accessSource: 'owner',
     };
+    props.aiMeta = {
+      provider: 'openai',
+      model: 'gpt-5.4',
+      generatedAt: '2026-03-17T10:00:00.000Z',
+      generation: {
+        state: 'failed',
+        latestAttempt: {
+          id: 'attempt-1',
+          flow: 'classic',
+          source: 'create_trip',
+          state: 'failed',
+          startedAt: '2026-03-17T10:00:00.000Z',
+          finishedAt: '2026-03-17T10:00:05.000Z',
+          durationMs: 5000,
+          requestId: 'req-1',
+          provider: 'openai',
+          model: 'gpt-5.4',
+          providerModel: 'gpt-5.4',
+          statusCode: 422,
+          failureKind: 'quality',
+          errorCode: 'AI_RUNTIME_SECURITY_BLOCKED',
+          errorMessage: 'Trip generation returned an invalid response. Please try again.',
+          metadata: {
+            security: {
+              stage: 'output_postflight',
+              guardDecision: 'block',
+              riskScore: 92,
+              blocked: true,
+              suspicious: true,
+              attackCategories: ['schema_bypass'],
+              matchedRules: ['schema_validation_failed'],
+              promptFingerprintSha256: 'abc123',
+              redactedExcerpt: 'schema validation failed',
+            },
+          },
+        },
+        attempts: [],
+        inputSnapshot: null,
+        retryCount: 0,
+        retryRequestedAt: null,
+        lastSucceededAt: null,
+        lastFailedAt: '2026-03-17T10:00:05.000Z',
+      },
+    };
 
     render(React.createElement(TripInfoModal, props));
 
@@ -147,6 +191,8 @@ describe('components/TripInfoModal', () => {
     await waitFor(() => expect(debugTab).toHaveAttribute('data-state', 'active'));
     expect(screen.getByText('Admin access')).toBeInTheDocument();
     expect(screen.getByText('AI generation diagnostics')).toBeInTheDocument();
+    expect(screen.getByText('Runtime safety signals')).toBeInTheDocument();
+    expect(screen.getByText('schema_bypass')).toBeInTheDocument();
   });
 
   it('switches the title controls into save mode and lets escape abort the draft edit', async () => {

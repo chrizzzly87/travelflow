@@ -16,7 +16,16 @@ import {
 } from "../../shared/aiBenchmarkValidation.ts";
 import { TRIP_ITINERARY_STRUCTURED_OUTPUT_SCHEMA } from "../../shared/aiTripItinerarySchema.ts";
 import {
+  AI_RUNTIME_SECURITY_ATTACK_CATEGORIES,
+  extractAiRuntimeSecurityMetadata,
+  type AiRuntimeSecurityAttackCategory,
+} from "../../shared/aiRuntimeSecurity.ts";
+import {
   buildAiTelemetrySeries,
+  filterAiTelemetryRowsBySecurity,
+  listAiTelemetryAttackCategories,
+  listRecentAiTelemetryIncidents,
+  summarizeAiTelemetrySecurity,
   summarizeAiTelemetry,
   summarizeAiTelemetryByModel,
   summarizeAiTelemetryByProvider,
@@ -1009,7 +1018,17 @@ const runGeneration = async (
     }
 
     if (!result.ok) {
-      const failure = result;
+      const failure = result as {
+        ok: false;
+        status: number;
+        value: {
+          error: string;
+          code: string;
+          details?: string;
+          sample?: string;
+          providerModel?: string;
+        };
+      };
       const details = JSON.stringify(failure.value);
       const formattedDetails = formatErrorDetailsForMessage(details, { maxLength: 5000 });
       await persistRunTelemetry({
@@ -1410,6 +1429,19 @@ const normalizeTelemetryProvider = (value: string | null): string | null => {
   return normalized ? normalized : null;
 };
 
+const normalizeTelemetrySecurityFilter = (value: string | null): "all" | "suspicious" | "blocked" => {
+  const normalized = (value || "").trim().toLowerCase();
+  if (normalized === "suspicious" || normalized === "blocked") return normalized;
+  return "all";
+};
+
+const normalizeTelemetryAttackCategory = (value: string | null): AiRuntimeSecurityAttackCategory | null => {
+  const normalized = (value || "").trim().toLowerCase();
+  return AI_RUNTIME_SECURITY_ATTACK_CATEGORIES.includes(normalized as AiRuntimeSecurityAttackCategory)
+    ? normalized as AiRuntimeSecurityAttackCategory
+    : null;
+};
+
 const toTelemetryRows = (value: unknown): AiTelemetryRow[] => {
   if (!Array.isArray(value)) return [];
   return value
@@ -1423,8 +1455,13 @@ const toTelemetryRows = (value: unknown): AiTelemetryRow[] => {
       const model = typeof typed.model === "string" ? typed.model : "";
       const status = typed.status === "failed" ? "failed" : typed.status === "success" ? "success" : null;
       if (!id || !createdAt || !source || !provider || !model || !status) return null;
+      const securityMetadata = typed.metadata
+        && typeof typed.metadata === "object"
+        && !Array.isArray(typed.metadata)
+        ? extractAiRuntimeSecurityMetadata((typed.metadata as Record<string, unknown>).security)
+        : null;
 
-      return {
+      const telemetryRow: AiTelemetryRow = {
         id,
         created_at: createdAt,
         source,
@@ -1434,9 +1471,28 @@ const toTelemetryRows = (value: unknown): AiTelemetryRow[] => {
         latency_ms: Number.isFinite(Number(typed.latency_ms)) ? Number(typed.latency_ms) : null,
         estimated_cost_usd: Number.isFinite(Number(typed.estimated_cost_usd)) ? Number(typed.estimated_cost_usd) : null,
         error_code: typeof typed.error_code === "string" ? typed.error_code : null,
-      } satisfies AiTelemetryRow;
+        guard_decision: typed.guard_decision === "allow" || typed.guard_decision === "warn" || typed.guard_decision === "block"
+          ? typed.guard_decision
+          : securityMetadata?.guardDecision || null,
+        risk_score: Number.isFinite(Number(typed.risk_score))
+          ? Number(typed.risk_score)
+          : typeof securityMetadata?.riskScore === "number"
+            ? securityMetadata.riskScore
+            : null,
+        blocked: typed.blocked === true || securityMetadata?.blocked === true,
+        suspicious: securityMetadata?.suspicious === true
+          || typed.guard_decision === "warn"
+          || typed.guard_decision === "block"
+          || typed.blocked === true,
+        attack_categories: securityMetadata?.attackCategories || [],
+        redacted_excerpt: securityMetadata?.redactedExcerpt || null,
+        trip_id: securityMetadata?.tripId || null,
+        attempt_id: securityMetadata?.attemptId || null,
+        security_stage: securityMetadata?.stage || null,
+      };
+      return telemetryRow;
     })
-    .filter((row): row is AiTelemetryRow => Boolean(row));
+    .filter((row): row is AiTelemetryRow => row !== null);
 };
 
 const toBenchmarkRunCommentRows = (value: unknown): BenchmarkRunCommentRow[] => {
@@ -1479,11 +1535,13 @@ const handleTelemetry = async (
   const url = new URL(request.url);
   const source = normalizeTelemetrySource(url.searchParams.get("source"));
   const providerFilter = normalizeTelemetryProvider(url.searchParams.get("provider"));
+  const securityFilter = normalizeTelemetrySecurityFilter(url.searchParams.get("security"));
+  const attackCategory = normalizeTelemetryAttackCategory(url.searchParams.get("attackCategory"));
   const windowHours = normalizeTelemetryWindowHours(url.searchParams.get("windowHours"));
   const sinceIso = new Date(Date.now() - windowHours * 60 * 60 * 1000).toISOString();
 
   const params = new URLSearchParams();
-  params.set("select", "id,created_at,source,provider,model,status,latency_ms,estimated_cost_usd,error_code");
+  params.set("select", "id,created_at,source,provider,model,status,latency_ms,estimated_cost_usd,error_code,guard_decision,risk_score,blocked,metadata");
   params.set("created_at", `gte.${sinceIso}`);
   params.set("order", "created_at.desc");
   params.set("limit", "2000");
@@ -1517,14 +1575,18 @@ const handleTelemetry = async (
     });
   }
 
-  const rows = toTelemetryRows(await safeJsonParse(response));
-  const providerOptions = Array.from(new Set(rows.map((row) => row.provider).filter(Boolean)))
+  const allRows = toTelemetryRows(await safeJsonParse(response));
+  const rows = filterAiTelemetryRowsBySecurity(allRows, securityFilter, attackCategory);
+  const providerOptions = Array.from(new Set(allRows.map((row) => row.provider).filter(Boolean)))
     .sort((left, right) => left.localeCompare(right));
   const summary = summarizeAiTelemetry(rows);
+  const securitySummary = summarizeAiTelemetrySecurity(rows);
   const series = buildAiTelemetrySeries(rows, 60);
   const providerSummary = summarizeAiTelemetryByProvider(rows);
   const modelSummary = summarizeAiTelemetryByModel(rows);
   const rankingLimit = 5;
+  const recentIncidents = listRecentAiTelemetryIncidents(rows, 40);
+  const availableAttackCategories = listAiTelemetryAttackCategories(allRows);
 
   const now = new Date();
   const startOfMonthIso = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
@@ -1532,9 +1594,15 @@ const handleTelemetry = async (
   let monthlyCostSeries: Array<{ date: string; cost: number }> = [];
   try {
     const monthlyParams = new URLSearchParams();
-    monthlyParams.set("select", "created_at,estimated_cost_usd");
+    monthlyParams.set("select", "id,created_at,source,provider,model,status,latency_ms,estimated_cost_usd,error_code,guard_decision,risk_score,blocked,metadata");
     monthlyParams.set("created_at", `gte.${startOfMonthIso}`);
     monthlyParams.set("limit", "10000");
+    if (source !== "all") {
+      monthlyParams.set("source", `eq.${source}`);
+    }
+    if (providerFilter) {
+      monthlyParams.set("provider", `eq.${providerFilter}`);
+    }
 
     const monthlyResponse = await supabaseServiceFetch(
       serviceConfig,
@@ -1543,17 +1611,19 @@ const handleTelemetry = async (
     );
 
     if (monthlyResponse.ok) {
-      const monthlyRows = await safeJsonParse(monthlyResponse);
+      const monthlyRows = filterAiTelemetryRowsBySecurity(
+        toTelemetryRows(await safeJsonParse(monthlyResponse)),
+        securityFilter,
+        attackCategory,
+      );
       const aggMap = new Map<string, number>();
 
-      if (Array.isArray(monthlyRows)) {
-        monthlyRows.forEach((row) => {
-          if (!row.created_at || typeof row.estimated_cost_usd !== "number") return;
-          const dateStr = row.created_at.split("T")[0]; // YYYY-MM-DD
-          const current = aggMap.get(dateStr) || 0;
-          aggMap.set(dateStr, current + row.estimated_cost_usd);
-        });
-      }
+      monthlyRows.forEach((row) => {
+        if (!row.created_at || typeof row.estimated_cost_usd !== "number") return;
+        const dateStr = row.created_at.split("T")[0];
+        const current = aggMap.get(dateStr) || 0;
+        aggMap.set(dateStr, current + row.estimated_cost_usd);
+      });
 
       monthlyCostSeries = Array.from(aggMap.entries())
         .map(([date, cost]) => ({ date, cost }))
@@ -1602,9 +1672,12 @@ const handleTelemetry = async (
     filters: {
       source,
       provider: providerFilter || "all",
+      security: securityFilter,
+      attackCategory: attackCategory || "all",
       windowHours,
     },
     summary,
+    securitySummary,
     series,
     providers: providerSummary,
     models: modelSummary,
@@ -1619,7 +1692,9 @@ const handleTelemetry = async (
       groups: commentGroups,
     },
     recent: rows.slice(0, 120),
+    recentIncidents,
     availableProviders: providerOptions,
+    availableAttackCategories,
   });
 };
 
@@ -2361,6 +2436,15 @@ export const __benchmarkValidationInternals = {
   resolveRunLatencyMs,
   toBenchmarkRunCommentTelemetryEntries,
   groupBenchmarkRunComments,
+};
+
+export const __benchmarkTelemetryInternals = {
+  normalizeTelemetrySource,
+  normalizeTelemetryWindowHours,
+  normalizeTelemetryProvider,
+  normalizeTelemetrySecurityFilter,
+  normalizeTelemetryAttackCategory,
+  toTelemetryRows,
 };
 
 const handleCancel = async (

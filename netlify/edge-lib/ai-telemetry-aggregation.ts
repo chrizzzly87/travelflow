@@ -1,5 +1,11 @@
+import type {
+  AiRuntimeSecurityAttackCategory,
+  AiRuntimeSecurityGuardDecision,
+} from "../../shared/aiRuntimeSecurity.ts";
+
 export type AiTelemetrySource = "create_trip" | "benchmark";
 export type AiTelemetryStatus = "success" | "failed";
+export type AiTelemetrySecurityFilter = "all" | "suspicious" | "blocked";
 
 export interface AiTelemetryRow {
   id: string;
@@ -11,6 +17,27 @@ export interface AiTelemetryRow {
   latency_ms: number | null;
   estimated_cost_usd: number | null;
   error_code?: string | null;
+  guard_decision?: AiRuntimeSecurityGuardDecision | null;
+  risk_score?: number | null;
+  blocked?: boolean;
+  suspicious?: boolean;
+  attack_categories?: AiRuntimeSecurityAttackCategory[];
+  redacted_excerpt?: string | null;
+  trip_id?: string | null;
+  attempt_id?: string | null;
+  security_stage?: string | null;
+}
+
+export interface AiTelemetrySecurityCategoryPoint {
+  category: AiRuntimeSecurityAttackCategory;
+  count: number;
+}
+
+export interface AiTelemetrySecuritySummary {
+  suspicious: number;
+  blocked: number;
+  blockRate: number;
+  topAttackTypes: AiTelemetrySecurityCategoryPoint[];
 }
 
 export interface AiTelemetrySummary {
@@ -61,6 +88,7 @@ const toFiniteNumber = (value: unknown): number | null => {
 };
 
 const roundMoney = (value: number): number => Number(value.toFixed(6));
+const roundPercent = (value: number): number => Number(value.toFixed(2));
 
 const toBucketIso = (isoTs: string, bucketMs: number): string => {
   const ts = Date.parse(isoTs);
@@ -291,6 +319,67 @@ export const summarizeAiTelemetryByModel = (rows: AiTelemetryRow[]): AiTelemetry
       } satisfies AiTelemetryModelPoint;
     })
     .sort((left, right) => right.total - left.total || left.key.localeCompare(right.key));
+};
+
+export const filterAiTelemetryRowsBySecurity = (
+  rows: AiTelemetryRow[],
+  securityFilter: AiTelemetrySecurityFilter,
+  attackCategory?: AiRuntimeSecurityAttackCategory | null,
+): AiTelemetryRow[] => {
+  return rows.filter((row) => {
+    const matchesSecurity = securityFilter === "all"
+      ? true
+      : securityFilter === "blocked"
+        ? row.blocked === true
+        : row.suspicious === true || row.blocked === true;
+
+    if (!matchesSecurity) return false;
+    if (!attackCategory) return true;
+    return Array.isArray(row.attack_categories) && row.attack_categories.includes(attackCategory);
+  });
+};
+
+export const summarizeAiTelemetrySecurity = (
+  rows: AiTelemetryRow[],
+  topLimit = 5,
+): AiTelemetrySecuritySummary => {
+  const suspiciousRows = rows.filter((row) => row.suspicious === true || row.blocked === true);
+  const blockedRows = rows.filter((row) => row.blocked === true);
+  const attackCounts = new Map<AiRuntimeSecurityAttackCategory, number>();
+
+  suspiciousRows.forEach((row) => {
+    (row.attack_categories || []).forEach((category) => {
+      attackCounts.set(category, (attackCounts.get(category) || 0) + 1);
+    });
+  });
+
+  return {
+    suspicious: suspiciousRows.length,
+    blocked: blockedRows.length,
+    blockRate: rows.length > 0 ? roundPercent((blockedRows.length / rows.length) * 100) : 0,
+    topAttackTypes: Array.from(attackCounts.entries())
+      .map(([category, count]) => ({ category, count }))
+      .sort((left, right) => right.count - left.count || left.category.localeCompare(right.category))
+      .slice(0, Math.max(1, Math.round(topLimit))),
+  };
+};
+
+export const listAiTelemetryAttackCategories = (rows: AiTelemetryRow[]): AiRuntimeSecurityAttackCategory[] => {
+  const categories = new Set<AiRuntimeSecurityAttackCategory>();
+  rows.forEach((row) => {
+    (row.attack_categories || []).forEach((category) => categories.add(category));
+  });
+  return [...categories].sort((left, right) => left.localeCompare(right));
+};
+
+export const listRecentAiTelemetryIncidents = (
+  rows: AiTelemetryRow[],
+  limit = 50,
+): AiTelemetryRow[] => {
+  return rows
+    .filter((row) => row.suspicious === true || row.blocked === true)
+    .sort((left, right) => Date.parse(right.created_at) - Date.parse(left.created_at))
+    .slice(0, Math.max(1, Math.round(limit)));
 };
 
 export const topTelemetryModelsBySpeed = (

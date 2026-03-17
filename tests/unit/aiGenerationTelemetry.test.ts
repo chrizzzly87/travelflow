@@ -67,6 +67,9 @@ describe('netlify/edge-lib/ai-generation-telemetry', () => {
       totalTokens: 350,
       benchmarkSessionId: '11111111-1111-4111-8111-111111111111',
       benchmarkRunId: '22222222-2222-4222-8222-222222222222',
+      guardDecision: 'warn',
+      riskScore: 67.6,
+      blocked: false,
       metadata: { endpoint: '/api/internal/ai/benchmark' },
     });
 
@@ -100,6 +103,9 @@ describe('netlify/edge-lib/ai-generation-telemetry', () => {
     expect(payload.total_tokens).toBe(350);
     expect(payload.benchmark_session_id).toBe('11111111-1111-4111-8111-111111111111');
     expect(payload.benchmark_run_id).toBe('22222222-2222-4222-8222-222222222222');
+    expect(payload.guard_decision).toBe('warn');
+    expect(payload.risk_score).toBe(68);
+    expect(payload.blocked).toBe(false);
     expect(payload.metadata).toEqual({ endpoint: '/api/internal/ai/benchmark' });
   });
 

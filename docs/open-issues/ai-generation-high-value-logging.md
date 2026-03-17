@@ -1,7 +1,7 @@
 # AI Generation High-Value Logging Expansion (Follow-up)
 
 ## Status
-Open issue (follow-up). Designed to improve incident triage, reproducibility, and provider support escalation.
+Open issue (follow-up). Runtime AI safety monitoring, bounded prompt-security logging, and admin incident visibility have now shipped; this follow-up remains focused on deeper provider correlation, phase timings, and persistence-path attribution.
 
 ## Objective
 Expand generation logging to prioritize high-signal, low-noise diagnostics that materially improve failure analysis and recovery.

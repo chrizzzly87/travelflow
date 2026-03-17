@@ -11,6 +11,10 @@ import {
     USER_PROMPT_DATA_GUARD_PROMPT,
 } from "../shared/aiPromptInputFormatting";
 import type {
+    AiRuntimeSecurityInput,
+    AiRuntimeSecurityMetadata,
+} from "../shared/aiRuntimeSecurity";
+import type {
     CreateTripPreferenceSignals,
     CreateTripTransportPreference,
     CreateTripTravelerDetails,
@@ -230,6 +234,7 @@ export class TripGenerationError extends Error {
     failureKind: TripGenerationFailureKind | null;
     aborted: boolean;
     requestPayload: Record<string, unknown> | null;
+    security: AiRuntimeSecurityMetadata | null;
 
     constructor(message: string, details?: {
         code?: string | null;
@@ -243,6 +248,7 @@ export class TripGenerationError extends Error {
         failureKind?: TripGenerationFailureKind | null;
         aborted?: boolean;
         requestPayload?: Record<string, unknown> | null;
+        security?: AiRuntimeSecurityMetadata | null;
     }) {
         super(message);
         this.name = 'TripGenerationError';
@@ -257,8 +263,76 @@ export class TripGenerationError extends Error {
         this.failureKind = details?.failureKind ?? null;
         this.aborted = details?.aborted === true;
         this.requestPayload = details?.requestPayload ?? null;
+        this.security = details?.security ?? null;
     }
 }
+
+const parseFreeformStops = (value: string | undefined): string[] => (
+    typeof value === 'string'
+        ? value
+            .split(/[\n,;|]+/)
+            .map((token) => token.trim())
+            .filter(Boolean)
+            .slice(0, 20)
+        : []
+);
+
+const buildClassicRuntimeSecurityInput = (
+    prompt: string,
+    options?: GenerateOptions,
+): AiRuntimeSecurityInput => ({
+    flow: 'classic',
+    routeLock: options?.routeLock === true,
+    destinationOrder: Array.isArray(options?.destinationOrder) ? options.destinationOrder.filter(Boolean) : [],
+    requiredCities: parseFreeformStops(options?.specificCities),
+    userFields: [
+        { name: 'trip_request', value: prompt },
+        ...(typeof options?.specificCities === 'string' && options.specificCities.trim()
+            ? [{ name: 'specific_cities', value: options.specificCities.trim() }]
+            : []),
+        ...(typeof options?.notes === 'string' && options.notes.trim()
+            ? [{ name: 'notes', value: options.notes.trim() }]
+            : []),
+    ],
+});
+
+const buildWizardRuntimeSecurityInput = (options: WizardGenerateOptions): AiRuntimeSecurityInput => ({
+    flow: 'wizard',
+    routeLock: options.routeLock === true,
+    destinationOrder: Array.isArray(options.destinationOrder) ? options.destinationOrder.filter(Boolean) : options.countries.filter(Boolean),
+    requiredCities: parseFreeformStops(options.specificCities),
+    userFields: [
+        ...options.countries
+            .map((country) => country.trim())
+            .filter(Boolean)
+            .map((country) => ({ name: 'destinations', value: country })),
+        ...(typeof options.specificCities === 'string' && options.specificCities.trim()
+            ? [{ name: 'specific_cities', value: options.specificCities.trim() }]
+            : []),
+        ...(typeof options.notes === 'string' && options.notes.trim()
+            ? [{ name: 'notes', value: options.notes.trim() }]
+            : []),
+    ],
+});
+
+const buildSurpriseRuntimeSecurityInput = (options: SurpriseGenerateOptions): AiRuntimeSecurityInput => ({
+    flow: 'surprise',
+    routeLock: false,
+    destinationOrder: [],
+    requiredCities: [],
+    userFields: [
+        ...(options.country.trim()
+            ? [{ name: 'destination', value: options.country.trim() }]
+            : []),
+        ...((options.seasonalEvents || [])
+            .map((event) => event.trim())
+            .filter(Boolean)
+            .map((event) => ({ name: 'seasonal_events', value: event }))),
+        ...(typeof options.notes === 'string' && options.notes.trim()
+            ? [{ name: 'notes', value: options.notes.trim() }]
+            : []),
+    ],
+});
 
 interface ParsedCityStop {
     name: string;
@@ -917,7 +991,9 @@ const CLIENT_AI_GENERATION_TIMEOUT_MS = 60_000;
 const generateItineraryFromPrompt = async (
     detailedPrompt: string,
     startDate?: string,
-    options?: Pick<GenerateOptions, 'roundTrip' | 'aiTarget' | 'generationContext'>
+    options?: Pick<GenerateOptions, 'roundTrip' | 'aiTarget' | 'generationContext'> & {
+        securityInput?: AiRuntimeSecurityInput | null;
+    }
 ): Promise<ITrip> => {
   const requestStartedAtMs = Date.now();
   const selectedProvider = options?.aiTarget?.provider || DEFAULT_PROVIDER;
@@ -939,9 +1015,10 @@ const generateItineraryFromPrompt = async (
         source: options.generationContext.source,
         retryOfAttemptId: options.generationContext.retryOfAttemptId,
     } : undefined,
+    securityInput: options?.securityInput || undefined,
   };
 
-  const createFailureKind = (
+    const createFailureKind = (
     code: string | null,
     status: number | null,
     message: string,
@@ -954,7 +1031,14 @@ const generateItineraryFromPrompt = async (
     if (normalizedCode.includes('abort') || normalizedMessage.includes('abort')) {
         return 'abort';
     }
-    if (normalizedCode.includes('parse') || normalizedCode.includes('quality') || normalizedMessage.includes('quality')) {
+    if (
+        normalizedCode.includes('parse')
+        || normalizedCode.includes('quality')
+        || normalizedCode.includes('security')
+        || normalizedCode.includes('prompt')
+        || normalizedMessage.includes('quality')
+        || normalizedMessage.includes('safely')
+    ) {
         return 'quality';
     }
     if (
@@ -1014,6 +1098,7 @@ const generateItineraryFromPrompt = async (
         let failureProvider: string | null = selectedProvider;
         let failureModel: string | null = selectedModel;
         let failureProviderModel: string | null = null;
+        let failureSecurity: AiRuntimeSecurityMetadata | null = null;
         try {
             const payload = await edgeResponse.json();
             if (payload?.error && typeof payload.error === 'string') {
@@ -1040,6 +1125,9 @@ const generateItineraryFromPrompt = async (
                 if (typeof payload.meta.providerModel === 'string') {
                     failureProviderModel = payload.meta.providerModel;
                 }
+                if (payload.meta.security && typeof payload.meta.security === 'object') {
+                    failureSecurity = payload.meta.security as AiRuntimeSecurityMetadata;
+                }
             }
         } catch {
             // noop
@@ -1063,6 +1151,7 @@ const generateItineraryFromPrompt = async (
             providerModel: failureProviderModel,
             failureKind: createFailureKind(errorCode, edgeResponse.status, message),
             requestPayload: requestBody,
+            security: failureSecurity,
         });
     }
 
@@ -1071,6 +1160,9 @@ const generateItineraryFromPrompt = async (
     const provider = payload?.meta?.provider || options?.aiTarget?.provider || DEFAULT_PROVIDER;
     const model = payload?.meta?.model || options?.aiTarget?.model || DEFAULT_MODEL;
     const responseDurationMs = Number(payload?.meta?.durationMs);
+    const responseSecurity = payload?.meta?.security && typeof payload.meta.security === 'object'
+        ? payload.meta.security as AiRuntimeSecurityMetadata
+        : null;
     trackEvent('create_trip__ai_request--success', {
         provider,
         model,
@@ -1112,6 +1204,7 @@ const generateItineraryFromPrompt = async (
         metadata: {
             source: options?.generationContext?.source || 'create_trip',
             requestPayload: requestBody,
+            security: responseSecurity,
         },
     };
 
@@ -1314,7 +1407,10 @@ const generateItineraryFromPrompt = async (
 
 export const generateItinerary = async (prompt: string, startDate?: string, options?: GenerateOptions): Promise<ITrip> => {
     const detailedPrompt = buildClassicItineraryPrompt(prompt, options);
-    return generateItineraryFromPrompt(detailedPrompt, startDate, options);
+    return generateItineraryFromPrompt(detailedPrompt, startDate, {
+        ...options,
+        securityInput: buildClassicRuntimeSecurityInput(prompt, options),
+    });
 };
 
 export const buildClassicItineraryPrompt = (prompt: string, options?: GenerateOptions): string => {
@@ -1473,7 +1569,10 @@ export const buildSurpriseItineraryPrompt = (options: SurpriseGenerateOptions): 
 
 export const generateWizardItinerary = async (options: WizardGenerateOptions): Promise<ITrip> => {
     const detailedPrompt = buildWizardItineraryPrompt(options);
-    return generateItineraryFromPrompt(detailedPrompt, options.startDate, options);
+    return generateItineraryFromPrompt(detailedPrompt, options.startDate, {
+        ...options,
+        securityInput: buildWizardRuntimeSecurityInput(options),
+    });
 };
 
 export const generateSurpriseItinerary = async (options: SurpriseGenerateOptions): Promise<ITrip> => {
@@ -1482,6 +1581,7 @@ export const generateSurpriseItinerary = async (options: SurpriseGenerateOptions
         roundTrip: true,
         aiTarget: options.aiTarget,
         generationContext: options.generationContext,
+        securityInput: buildSurpriseRuntimeSecurityInput(options),
     });
 };
 

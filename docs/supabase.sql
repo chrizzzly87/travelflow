@@ -241,6 +241,9 @@ create table if not exists public.ai_generation_events (
   total_tokens integer,
   benchmark_session_id uuid references public.ai_benchmark_sessions(id) on delete set null,
   benchmark_run_id uuid references public.ai_benchmark_runs(id) on delete set null,
+  guard_decision text check (guard_decision in ('allow', 'warn', 'block')),
+  risk_score integer,
+  blocked boolean not null default false,
   metadata jsonb,
   created_at timestamptz not null default now()
 );
@@ -281,6 +284,24 @@ alter table public.ai_benchmark_runs add column if not exists satisfaction_ratin
 alter table public.ai_benchmark_runs add column if not exists satisfaction_updated_at timestamptz;
 alter table public.ai_benchmark_runs add column if not exists run_comment text;
 alter table public.ai_benchmark_runs add column if not exists run_comment_updated_at timestamptz;
+alter table public.ai_generation_events add column if not exists guard_decision text;
+alter table public.ai_generation_events add column if not exists risk_score integer;
+alter table public.ai_generation_events add column if not exists blocked boolean not null default false;
+alter table public.ai_generation_events
+  drop constraint if exists ai_generation_events_guard_decision_check;
+alter table public.ai_generation_events
+  add constraint ai_generation_events_guard_decision_check
+  check (guard_decision in ('allow', 'warn', 'block'));
+update public.ai_generation_events
+   set blocked = false
+ where blocked is null;
+update public.ai_generation_events
+   set risk_score = greatest(0, least(100, risk_score))
+ where risk_score is not null;
+alter table public.ai_generation_events
+  alter column blocked set default false;
+alter table public.ai_generation_events
+  alter column blocked set not null;
 alter table public.subscriptions add column if not exists provider text;
 alter table public.subscriptions add column if not exists provider_customer_id text;
 alter table public.subscriptions add column if not exists provider_subscription_id text;
@@ -532,6 +553,8 @@ create index if not exists ai_generation_events_created_idx on public.ai_generat
 create index if not exists ai_generation_events_source_created_idx on public.ai_generation_events(source, created_at desc);
 create index if not exists ai_generation_events_provider_created_idx on public.ai_generation_events(provider, created_at desc);
 create index if not exists ai_generation_events_status_created_idx on public.ai_generation_events(status, created_at desc);
+create index if not exists ai_generation_events_guard_created_idx on public.ai_generation_events(guard_decision, created_at desc);
+create index if not exists ai_generation_events_blocked_created_idx on public.ai_generation_events(blocked, created_at desc);
 create index if not exists async_worker_health_checks_started_idx on public.async_worker_health_checks(started_at desc);
 create index if not exists async_worker_health_checks_type_started_idx on public.async_worker_health_checks(check_type, started_at desc);
 create index if not exists async_worker_health_checks_status_started_idx on public.async_worker_health_checks(status, started_at desc);

@@ -29,6 +29,7 @@ import {
 } from '../services/adminAiTelemetryChartData';
 
 type TelemetrySourceFilter = 'all' | 'create_trip' | 'benchmark';
+type TelemetrySecurityFilter = 'all' | 'suspicious' | 'blocked';
 
 interface BenchmarkApiResponse {
     ok: boolean;
@@ -87,6 +88,22 @@ interface AiTelemetryRecentRow {
     latency_ms: number | null;
     estimated_cost_usd: number | null;
     error_code: string | null;
+    guard_decision?: 'allow' | 'warn' | 'block' | null;
+    risk_score?: number | null;
+    blocked?: boolean;
+    suspicious?: boolean;
+    attack_categories?: string[];
+    redacted_excerpt?: string | null;
+    trip_id?: string | null;
+    attempt_id?: string | null;
+    security_stage?: string | null;
+}
+
+interface AiTelemetrySecuritySummary {
+    suspicious: number;
+    blocked: number;
+    blockRate: number;
+    topAttackTypes: Array<{ category: string; count: number }>;
 }
 
 interface AiTelemetryRunComment {
@@ -125,7 +142,10 @@ interface AiTelemetryApiResponse extends BenchmarkApiResponse {
         groups?: AiTelemetryRunCommentGroup[];
     };
     recent?: AiTelemetryRecentRow[];
+    recentIncidents?: AiTelemetryRecentRow[];
     availableProviders?: string[];
+    availableAttackCategories?: string[];
+    securitySummary?: AiTelemetrySecuritySummary;
 }
 
 const TELEMETRY_WINDOW_OPTIONS: Array<{ value: number; label: string }> = [
@@ -137,6 +157,12 @@ const TELEMETRY_WINDOW_OPTIONS: Array<{ value: number; label: string }> = [
 const RANK_LIMIT_OPTIONS: Array<{ value: number; label: string }> = [
     { value: 3, label: 'Top 3' },
     { value: 5, label: 'Top 5' },
+];
+
+const TELEMETRY_SECURITY_FILTER_OPTIONS: Array<{ value: TelemetrySecurityFilter; label: string }> = [
+    { value: 'all', label: 'All rows' },
+    { value: 'suspicious', label: 'Suspicious only' },
+    { value: 'blocked', label: 'Blocked only' },
 ];
 
 const DONUT_COLOR_DOT_CLASS: Record<TelemetryDonutColor, string> = {
@@ -178,6 +204,21 @@ const formatTimestamp = (value?: string | null): string => {
     const parsed = Date.parse(value);
     if (!Number.isFinite(parsed)) return '—';
     return new Date(parsed).toLocaleString();
+};
+
+const formatAttackCategoryLabel = (value?: string | null): string => {
+    if (!value) return '—';
+    return value
+        .split('_')
+        .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+        .join(' ');
+};
+
+const formatGuardDecision = (value?: string | null): string => {
+    if (value === 'block') return 'Block';
+    if (value === 'warn') return 'Warn';
+    if (value === 'allow') return 'Allow';
+    return '—';
 };
 
 const toNumericTooltipValue = (value: unknown): number => {
@@ -270,6 +311,8 @@ export const AdminAiTelemetryPage: React.FC = () => {
     const [telemetryWindowHours, setTelemetryWindowHours] = useState<number>(24 * 7);
     const [telemetrySource, setTelemetrySource] = useState<TelemetrySourceFilter>('all');
     const [telemetryProviderFilter, setTelemetryProviderFilter] = useState<string>('all');
+    const [telemetrySecurityFilter, setTelemetrySecurityFilter] = useState<TelemetrySecurityFilter>('all');
+    const [telemetryAttackCategoryFilter, setTelemetryAttackCategoryFilter] = useState<string>('all');
     const [rankLimit, setRankLimit] = useState<number>(5);
 
     const [telemetryLoading, setTelemetryLoading] = useState(false);
@@ -280,9 +323,12 @@ export const AdminAiTelemetryPage: React.FC = () => {
     const [telemetryProviders, setTelemetryProviders] = useState<AiTelemetryProviderPoint[]>([]);
     const [telemetryModels, setTelemetryModels] = useState<AiTelemetryModelPoint[]>([]);
     const [telemetryRecent, setTelemetryRecent] = useState<AiTelemetryRecentRow[]>([]);
+    const [telemetryRecentIncidents, setTelemetryRecentIncidents] = useState<AiTelemetryRecentRow[]>([]);
+    const [telemetrySecuritySummary, setTelemetrySecuritySummary] = useState<AiTelemetrySecuritySummary | null>(null);
     const [telemetryCommentTotal, setTelemetryCommentTotal] = useState(0);
     const [telemetryCommentGroups, setTelemetryCommentGroups] = useState<AiTelemetryRunCommentGroup[]>([]);
     const [telemetryProviderOptions, setTelemetryProviderOptions] = useState<string[]>([]);
+    const [telemetryAttackCategoryOptions, setTelemetryAttackCategoryOptions] = useState<string[]>([]);
     const [fastestModels, setFastestModels] = useState<AiTelemetryModelPoint[]>([]);
     const [cheapestModels, setCheapestModels] = useState<AiTelemetryModelPoint[]>([]);
     const [bestValueModels, setBestValueModels] = useState<AiTelemetryModelPoint[]>([]);
@@ -347,6 +393,10 @@ export const AdminAiTelemetryPage: React.FC = () => {
             if (telemetryProviderFilter !== 'all') {
                 params.set('provider', telemetryProviderFilter);
             }
+            params.set('security', telemetrySecurityFilter);
+            if (telemetryAttackCategoryFilter !== 'all') {
+                params.set('attackCategory', telemetryAttackCategoryFilter);
+            }
 
             const payload = await fetchTelemetryApi(`/api/internal/ai/benchmark/telemetry?${params.toString()}`, {
                 method: 'GET',
@@ -358,6 +408,8 @@ export const AdminAiTelemetryPage: React.FC = () => {
             setTelemetryProviders(Array.isArray(payload.providers) ? payload.providers : []);
             setTelemetryModels(Array.isArray(payload.models) ? payload.models : []);
             setTelemetryRecent(Array.isArray(payload.recent) ? payload.recent : []);
+            setTelemetryRecentIncidents(Array.isArray(payload.recentIncidents) ? payload.recentIncidents : []);
+            setTelemetrySecuritySummary(payload.securitySummary || null);
             setTelemetryCommentTotal(Number(payload.comments?.total) || 0);
             setTelemetryCommentGroups(Array.isArray(payload.comments?.groups) ? payload.comments?.groups : []);
             setFastestModels(Array.isArray(payload.rankings?.fastest) ? payload.rankings?.fastest : []);
@@ -371,8 +423,15 @@ export const AdminAiTelemetryPage: React.FC = () => {
                 return getAiProviderMetadata(left).shortName.localeCompare(getAiProviderMetadata(right).shortName);
             });
             setTelemetryProviderOptions(providerOptions);
+            const attackCategoryOptions = Array.isArray(payload.availableAttackCategories)
+                ? [...payload.availableAttackCategories].sort((left, right) => left.localeCompare(right))
+                : [];
+            setTelemetryAttackCategoryOptions(attackCategoryOptions);
             if (telemetryProviderFilter !== 'all' && !providerOptions.includes(telemetryProviderFilter)) {
                 setTelemetryProviderFilter('all');
+            }
+            if (telemetryAttackCategoryFilter !== 'all' && !attackCategoryOptions.includes(telemetryAttackCategoryFilter)) {
+                setTelemetryAttackCategoryFilter('all');
             }
         } catch (telemetryLoadError) {
             setTelemetryError(telemetryLoadError instanceof Error ? telemetryLoadError.message : 'Failed to load AI telemetry');
@@ -382,15 +441,25 @@ export const AdminAiTelemetryPage: React.FC = () => {
             setTelemetryProviders([]);
             setTelemetryModels([]);
             setTelemetryRecent([]);
+            setTelemetryRecentIncidents([]);
+            setTelemetrySecuritySummary(null);
             setTelemetryCommentTotal(0);
             setTelemetryCommentGroups([]);
+            setTelemetryAttackCategoryOptions([]);
             setFastestModels([]);
             setCheapestModels([]);
             setBestValueModels([]);
         } finally {
             setTelemetryLoading(false);
         }
-    }, [fetchTelemetryApi, telemetryProviderFilter, telemetrySource, telemetryWindowHours]);
+    }, [
+        fetchTelemetryApi,
+        telemetryAttackCategoryFilter,
+        telemetryProviderFilter,
+        telemetrySecurityFilter,
+        telemetrySource,
+        telemetryWindowHours,
+    ]);
 
     useEffect(() => {
         if (!accessToken) return;
@@ -656,6 +725,20 @@ export const AdminAiTelemetryPage: React.FC = () => {
         return Number(((successfulModels.length / telemetryModels.length) * 100).toFixed(1));
     }, [successfulModels.length, telemetryModels.length]);
 
+    const topAttackType = useMemo(() => {
+        return telemetrySecuritySummary?.topAttackTypes?.[0] || null;
+    }, [telemetrySecuritySummary]);
+
+    const suspiciousRate = useMemo(() => {
+        if (!telemetrySummary || telemetrySummary.total <= 0 || !telemetrySecuritySummary) return null;
+        return Number(((telemetrySecuritySummary.suspicious / telemetrySummary.total) * 100).toFixed(1));
+    }, [telemetrySecuritySummary, telemetrySummary]);
+
+    const securityIncidentRows = useMemo(
+        () => telemetryRecentIncidents.slice(0, 20),
+        [telemetryRecentIncidents],
+    );
+
     return (
         <AdminShell
             title="AI Telemetry"
@@ -685,7 +768,7 @@ export const AdminAiTelemetryPage: React.FC = () => {
                     <Title>Filters</Title>
                     <Subtitle>Keep this compact up top, then scroll down for deeper telemetry analysis.</Subtitle>
 
-                    <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                    <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-7">
                         <div className="space-y-1">
                             <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">Window</p>
                             <Select value={String(telemetryWindowHours)} onValueChange={(value) => setTelemetryWindowHours(Number(value))}>
@@ -731,6 +814,39 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                                 providerClassName="text-slate-700"
                                                 logoSize={12}
                                             />
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="space-y-1">
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">Security</p>
+                            <Select value={telemetrySecurityFilter} onValueChange={(value) => setTelemetrySecurityFilter(value as TelemetrySecurityFilter)}>
+                                <SelectTrigger className="h-9 text-sm">
+                                    <SelectValue placeholder="Security" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {TELEMETRY_SECURITY_FILTER_OPTIONS.map((option) => (
+                                        <SelectItem key={option.value} value={option.value}>
+                                            {option.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="space-y-1">
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">Attack type</p>
+                            <Select value={telemetryAttackCategoryFilter} onValueChange={setTelemetryAttackCategoryFilter}>
+                                <SelectTrigger className="h-9 text-sm">
+                                    <SelectValue placeholder="Attack type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All attack types</SelectItem>
+                                    {telemetryAttackCategoryOptions.map((category) => (
+                                        <SelectItem key={category} value={category}>
+                                            {formatAttackCategoryLabel(category)}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
@@ -798,6 +914,38 @@ export const AdminAiTelemetryPage: React.FC = () => {
                         <Metric>{telemetrySummary ? formatUsd(telemetrySummary.totalCostUsd) : '—'}</Metric>
                         <Text className="mt-1 text-xs text-slate-500">
                             Models with success: {formatPercent(successfulModelCoverage)}
+                        </Text>
+                    </AdminSurfaceCard>
+                </section>
+
+                <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    <AdminSurfaceCard>
+                        <Text>Suspicious calls</Text>
+                        <Metric>{telemetrySecuritySummary ? telemetrySecuritySummary.suspicious : '—'}</Metric>
+                        <Text className="mt-1 text-xs text-slate-500">
+                            Rate: {formatPercent(suspiciousRate)}
+                        </Text>
+                    </AdminSurfaceCard>
+
+                    <AdminSurfaceCard>
+                        <Text>Blocked calls</Text>
+                        <Metric>{telemetrySecuritySummary ? telemetrySecuritySummary.blocked : '—'}</Metric>
+                        <Text className="mt-1 text-xs text-slate-500">High-confidence runtime guard blocks</Text>
+                    </AdminSurfaceCard>
+
+                    <AdminSurfaceCard>
+                        <Text>Block rate</Text>
+                        <Metric>{telemetrySecuritySummary ? formatPercent(telemetrySecuritySummary.blockRate) : '—'}</Metric>
+                        <Text className="mt-1 text-xs text-slate-500">Based on the current telemetry filter scope</Text>
+                    </AdminSurfaceCard>
+
+                    <AdminSurfaceCard>
+                        <Text>Top attack type</Text>
+                        <Metric className="text-[1.5rem] leading-tight">
+                            {topAttackType ? formatAttackCategoryLabel(topAttackType.category) : '—'}
+                        </Metric>
+                        <Text className="mt-1 text-xs text-slate-500">
+                            {topAttackType ? `${topAttackType.count.toLocaleString()} matched incidents` : 'No suspicious incidents in scope'}
                         </Text>
                     </AdminSurfaceCard>
                 </section>
@@ -1196,6 +1344,71 @@ export const AdminAiTelemetryPage: React.FC = () => {
                         ) : (
                             <Text className="mt-3 text-xs text-slate-500">No recent failures in the selected filter scope.</Text>
                         )}
+                    </AdminSurfaceCard>
+                </section>
+
+                <section>
+                    <AdminSurfaceCard>
+                        <Title>Recent security incidents</Title>
+                        <Subtitle>Suspicious or blocked runtime rows with redacted evidence and deep links into trip diagnostics.</Subtitle>
+
+                        <div className="mt-3 max-h-80 overflow-y-auto rounded-xl border border-slate-200">
+                            <table className="min-w-full border-collapse text-left text-xs">
+                                <thead>
+                                    <tr className="border-b border-slate-200 bg-slate-50 uppercase tracking-wide text-slate-500">
+                                        <th className="px-2 py-1.5">Time</th>
+                                        <th className="px-2 py-1.5">Model</th>
+                                        <th className="px-2 py-1.5">Decision</th>
+                                        <th className="px-2 py-1.5">Risk</th>
+                                        <th className="px-2 py-1.5">Attack types</th>
+                                        <th className="px-2 py-1.5">Excerpt</th>
+                                        <th className="px-2 py-1.5">Trip</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {securityIncidentRows.length === 0 && (
+                                        <tr>
+                                            <td colSpan={7} className="px-3 py-4 text-center text-slate-500">
+                                                {telemetryLoading ? 'Loading incidents...' : 'No suspicious incidents in the selected filter scope.'}
+                                            </td>
+                                        </tr>
+                                    )}
+
+                                    {securityIncidentRows.map((row) => (
+                                        <tr key={`incident-${row.id}`} className="border-b border-slate-100 align-top">
+                                            <td className="px-2 py-1.5 text-slate-600">{formatTimestamp(row.created_at)}</td>
+                                            <td className="px-2 py-1.5 text-slate-800">
+                                                <ProviderLabel provider={row.provider} model={row.model} logoSize={13} />
+                                            </td>
+                                            <td className="px-2 py-1.5">
+                                                <span className={row.blocked ? 'font-semibold text-rose-700' : 'font-semibold text-amber-700'}>
+                                                    {formatGuardDecision(row.guard_decision)}
+                                                </span>
+                                            </td>
+                                            <td className="px-2 py-1.5 text-slate-700">{typeof row.risk_score === 'number' ? row.risk_score : '—'}</td>
+                                            <td className="px-2 py-1.5 text-slate-700">
+                                                {row.attack_categories && row.attack_categories.length > 0
+                                                    ? row.attack_categories.map((category) => formatAttackCategoryLabel(category)).join(', ')
+                                                    : '—'}
+                                            </td>
+                                            <td className="px-2 py-1.5 text-slate-600">
+                                                {row.redacted_excerpt || '—'}
+                                            </td>
+                                            <td className="px-2 py-1.5 text-slate-700">
+                                                {row.trip_id ? (
+                                                    <a
+                                                        href={`/admin/trips?drawer=trip&trip=${encodeURIComponent(row.trip_id)}`}
+                                                        className="font-semibold text-blue-700 hover:text-blue-800 hover:underline"
+                                                    >
+                                                        Open trip
+                                                    </a>
+                                                ) : '—'}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                     </AdminSurfaceCard>
                 </section>
 

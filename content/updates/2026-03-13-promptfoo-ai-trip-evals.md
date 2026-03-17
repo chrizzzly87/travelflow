@@ -20,3 +20,4 @@ summary: "Added a report-only Promptfoo regression layer for classic AI trip cre
 - [ ] [Internal] 🚨 Added a second Promptfoo security pack with adversarial classic-trip scenarios so prompt-injection attempts against notes, requested cities, and destinations can be checked locally and in manual CI.
 - [ ] [Internal] 🧱 Extended the manual AI eval workflow to run the regression pack, the security pack, or both, with separate report artifacts for each.
 - [ ] [Internal] 🔐 Hardened live trip prompt assembly so user-controlled request fields are rendered as explicit data blocks and no longer read like free-form model instructions.
+- [ ] [Internal] 🛰️ Added production runtime safety monitoring that preflights user-controlled trip inputs, postflights model output, logs bounded security evidence to AI telemetry and trip attempts, and surfaces suspicious or blocked incidents inside the existing admin telemetry and trip diagnostics views.

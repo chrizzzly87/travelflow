@@ -16,6 +16,7 @@ import { useTranslation } from 'react-i18next';
 
 import { AI_MODEL_CATALOG, getDefaultCreateTripModel } from '../config/aiModelCatalog';
 import { getAiProviderMetadata } from '../config/aiProviderCatalog';
+import { extractAiRuntimeSecurityMetadata } from '../shared/aiRuntimeSecurity';
 import { ICountryInfo, ITripAiMeta, TripGenerationAttemptSummary, TripGenerationState } from '../types';
 import { getAnalyticsDebugAttributes } from '../services/analyticsService';
 import { normalizeTripGenerationAttemptsForDisplay } from '../services/tripGenerationDiagnosticsService';
@@ -310,6 +311,10 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
         && latestAttemptMetadata.requestPayload
         && typeof latestAttemptMetadata.requestPayload === 'object'
     ) ? latestAttemptMetadata.requestPayload as Record<string, unknown> : null;
+    const latestAttemptSecurity = useMemo(
+        () => extractAiRuntimeSecurityMetadata(latestAttemptMetadata?.security),
+        [latestAttemptMetadata],
+    );
     const inputSnapshot = aiMeta?.generation?.inputSnapshot || null;
     const resolvedRetryDisabledReason = retryDisabledReason || (
         isRetryingGeneration
@@ -827,6 +832,33 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                                     <SummaryCard label={t('tripView.generation.tripInfo.errorMessage')} value={latestAttempt?.errorMessage || '—'} wide />
                                 </dl>
                             </section>
+
+                            {latestAttemptSecurity && (
+                                <section className={modalSectionClassName}>
+                                    <h3 className="text-base font-semibold text-slate-900">Runtime safety signals</h3>
+                                    <dl className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                        <SummaryCard label="Guard decision" value={latestAttemptSecurity.guardDecision} />
+                                        <SummaryCard label="Risk score" value={latestAttemptSecurity.riskScore} />
+                                        <SummaryCard label="Stage" value={latestAttemptSecurity.stage} />
+                                        <SummaryCard label="Blocked" value={latestAttemptSecurity.blocked ? 'yes' : 'no'} />
+                                        <SummaryCard
+                                            label="Attack categories"
+                                            value={latestAttemptSecurity.attackCategories.length > 0 ? latestAttemptSecurity.attackCategories.join(', ') : '—'}
+                                            wide
+                                        />
+                                        <SummaryCard
+                                            label="Matched rules"
+                                            value={latestAttemptSecurity.matchedRules.length > 0 ? latestAttemptSecurity.matchedRules.join(', ') : '—'}
+                                            wide
+                                        />
+                                        <SummaryCard
+                                            label="Redacted excerpt"
+                                            value={latestAttemptSecurity.redactedExcerpt || '—'}
+                                            wide
+                                        />
+                                    </dl>
+                                </section>
+                            )}
 
                             <section className={modalSectionClassName}>
                                 <h3 className="text-base font-semibold text-slate-900">Raw payloads</h3>
