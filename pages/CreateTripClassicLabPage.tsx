@@ -2244,6 +2244,21 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                             </section>
 
                             <section className="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm sm:p-5">
+                                <div className="mb-2 inline-flex items-center gap-2 text-sm font-semibold text-slate-800">
+                                    <Info size={16} weight="duotone" className="text-accent-600" />
+                                    {t('notes.title')}
+                                </div>
+                                <p className="mb-2 text-xs text-slate-500">{t('notes.hint')}</p>
+                                <textarea
+                                    value={notes}
+                                    onChange={(event) => setNotes(event.target.value)}
+                                    rows={4}
+                                    placeholder={t('notes.placeholder')}
+                                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none placeholder:text-slate-400 focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
+                                />
+                            </section>
+
+                            <section className="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm sm:p-5">
                                 <button
                                     type="button"
                                     onClick={() => toggleSection('traveler')}
@@ -2412,20 +2427,6 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                 )}
                             </section>
 
-                            <section className="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm sm:p-5">
-                                <div className="mb-2 inline-flex items-center gap-2 text-sm font-semibold text-slate-800">
-                                    <Info size={16} weight="duotone" className="text-accent-600" />
-                                    {t('notes.title')}
-                                </div>
-                                <p className="mb-2 text-xs text-slate-500">{t('notes.hint')}</p>
-                                <textarea
-                                    value={notes}
-                                    onChange={(event) => setNotes(event.target.value)}
-                                    rows={4}
-                                    placeholder={t('notes.placeholder')}
-                                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none placeholder:text-slate-400 focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
-                                />
-                            </section>
                         </div>
 
                         <aside className="hidden lg:sticky lg:top-24 lg:block lg:self-start">
