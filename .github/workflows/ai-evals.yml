@@ -1,0 +1,54 @@
+name: AI Evals
+
+on:
+  workflow_dispatch:
+    inputs:
+      pack:
+        description: Which Promptfoo pack to run
+        required: true
+        default: regression
+        type: choice
+        options:
+          - regression
+          - security
+          - both
+
+jobs:
+  promptfoo:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Promptfoo regression eval pack
+        if: ${{ inputs.pack == 'regression' || inputs.pack == 'both' }}
+        run: pnpm ai:eval:ci
+
+      - name: Run Promptfoo security eval pack
+        if: ${{ inputs.pack == 'security' || inputs.pack == 'both' }}
+        run: pnpm ai:eval:security:ci
+
+      - name: Upload Promptfoo artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: promptfoo-ai-trip-evals-${{ inputs.pack }}
+          path: artifacts/promptfoo/
+          if-no-files-found: warn

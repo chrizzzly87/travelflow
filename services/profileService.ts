@@ -15,6 +15,7 @@ export interface PassportStickerPosition {
 export interface UserProfileRecord {
     id: string;
     email: string | null;
+    createdAt: string | null;
     displayName: string | null;
     firstName: string;
     lastName: string;
@@ -163,9 +164,9 @@ const USERNAME_RESERVED = new Set([
 ]);
 const USERNAME_COOLDOWN_DAYS = 90;
 const DEFAULT_PUBLIC_TRIPS_PAGE_LIMIT = 12;
-const PROFILE_SELECT_FULL = 'id, display_name, first_name, last_name, username, username_display, bio, gender, country, city, preferred_language, onboarding_completed_at, account_status, public_profile_enabled, default_public_trip_visibility, username_changed_at, passport_sticker_positions, passport_sticker_selection';
-const PROFILE_SELECT_LEGACY = 'id, display_name, first_name, last_name, username, username_display, bio, gender, country, city, preferred_language, onboarding_completed_at, account_status, public_profile_enabled, default_public_trip_visibility, username_changed_at';
-const PROFILE_SELECT_MINIMAL = 'id, display_name, first_name, last_name, username, bio, gender, country, city, preferred_language, onboarding_completed_at, account_status';
+const PROFILE_SELECT_FULL = 'id, created_at, display_name, first_name, last_name, username, username_display, bio, gender, country, city, preferred_language, onboarding_completed_at, account_status, public_profile_enabled, default_public_trip_visibility, username_changed_at, passport_sticker_positions, passport_sticker_selection';
+const PROFILE_SELECT_LEGACY = 'id, created_at, display_name, first_name, last_name, username, username_display, bio, gender, country, city, preferred_language, onboarding_completed_at, account_status, public_profile_enabled, default_public_trip_visibility, username_changed_at';
+const PROFILE_SELECT_MINIMAL = 'id, created_at, display_name, first_name, last_name, username, bio, gender, country, city, preferred_language, onboarding_completed_at, account_status';
 type ProfileSelectTier = 'full' | 'legacy' | 'minimal';
 let profileSelectTierHint: ProfileSelectTier = 'full';
 const PROFILE_SELECT_BY_TIER: Record<ProfileSelectTier, string> = {
@@ -232,7 +233,7 @@ const toProfileUsernameDisplay = (value: unknown): string => {
 };
 
 const isProfileColumnMissing = (message: string): boolean =>
-    /column/i.test(message) && /(first_name|last_name|username|username_display|bio|gender|country|city|preferred_language|onboarding_completed_at|account_status|public_profile_enabled|default_public_trip_visibility|username_changed_at|passport_sticker_positions|passport_sticker_selection)/i.test(message);
+    /column/i.test(message) && /(created_at|first_name|last_name|username|username_display|bio|gender|country|city|preferred_language|onboarding_completed_at|account_status|public_profile_enabled|default_public_trip_visibility|username_changed_at|passport_sticker_positions|passport_sticker_selection)/i.test(message);
 
 interface ProfileSelectResult {
     data: unknown;
@@ -303,6 +304,7 @@ const mapProfileRow = (
     return {
         id: toSafeText(row?.id) || '',
         email: toSafeText(row?.email) || emailFallback,
+        createdAt: typeof row?.created_at === 'string' ? row.created_at : null,
         displayName: toSafeText(row?.display_name) || null,
         firstName: toSafeText(row?.first_name),
         lastName: toSafeText(row?.last_name),

@@ -173,4 +173,27 @@ describe('pages/TermsPage acceptance flow', () => {
 
     expect(screen.queryByRole('button', { name: 'Accept current Terms and continue' })).not.toBeInTheDocument();
   });
+
+  it('keeps the acceptance CTA available for forced checkout recovery links even when access state is stale', async () => {
+    const user = userEvent.setup();
+    mocks.location.search = '?accept=required&next=%2Fcheckout%3Ftier%3Dtier_mid%26source%3Dpricing_page%26return_to%3D%252Fpricing';
+    mocks.searchParams = new URLSearchParams(mocks.location.search);
+    mocks.auth.access = {
+      termsCurrentVersion: '2026-03-03',
+      termsAcceptedVersion: '2026-03-03',
+      termsAcceptanceRequired: true,
+    };
+
+    render(React.createElement(TermsPage));
+
+    await user.click(screen.getByRole('button', { name: 'Accept current Terms and continue' }));
+
+    await waitFor(() => {
+      expect(mocks.acceptCurrentTerms).toHaveBeenCalledWith({
+        locale: 'de',
+        source: 'terms_page',
+      });
+    });
+    expect(mocks.navigate).toHaveBeenCalledWith('/checkout?tier=tier_mid&source=pricing_page&return_to=%2Fpricing', { replace: true });
+  });
 });

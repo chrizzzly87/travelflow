@@ -9,9 +9,13 @@ declare global {
             Checkout?: {
                 open: (config: {
                     transactionId: string;
+                    discountCode?: string;
                     customer?: {
                         email?: string;
                     };
+                }) => void;
+                updateCheckout?: (config: {
+                    discountCode?: string | null;
                 }) => void;
             };
             Initialize: (config: {
@@ -36,6 +40,8 @@ const PADDLE_CHECKOUT_SOURCE_QUERY_KEY = 'source';
 const PADDLE_CHECKOUT_CLAIM_QUERY_KEY = 'claim';
 const PADDLE_CHECKOUT_RETURN_QUERY_KEY = 'return_to';
 const PADDLE_CHECKOUT_TRIP_QUERY_KEY = 'trip_id';
+const PADDLE_CHECKOUT_DISCOUNT_QUERY_KEY = 'discount';
+const PADDLE_CHECKOUT_VOUCHER_QUERY_KEY = 'voucher';
 const DEFAULT_PADDLE_CHECKOUT_LOCALE = 'en';
 const PADDLE_INLINE_FRAME_STYLE = [
     'width: 100%',
@@ -87,6 +93,16 @@ export interface InitializePaddleJsOptions {
     locale?: AppLanguage | string | null;
 }
 
+export interface OpenPaddleInlineCheckoutOptions {
+    transactionId: string;
+    customerEmail?: string | null;
+    discountCode?: string | null;
+}
+
+export interface UpdatePaddleInlineCheckoutOptions {
+    discountCode?: string | null;
+}
+
 export interface PaddleCheckoutLocationContext {
     tierKey: PaddleCheckoutTierKey | null;
     transactionId: string | null;
@@ -94,6 +110,7 @@ export interface PaddleCheckoutLocationContext {
     claimId: string | null;
     returnTo: string | null;
     tripId: string | null;
+    discountCode: string | null;
 }
 
 export interface PaddleCheckoutUrlContext {
@@ -102,6 +119,7 @@ export interface PaddleCheckoutUrlContext {
     claimId?: string | null;
     returnTo?: string | null;
     tripId?: string | null;
+    discountCode?: string | null;
 }
 
 export interface PaddlePublicConfigIssue {
@@ -120,6 +138,10 @@ export interface PaddlePublicConfig {
     tierAvailability: {
         tier_mid: boolean;
         tier_premium: boolean;
+    };
+    priceIds?: {
+        tier_mid: string | null;
+        tier_premium: string | null;
     };
     issues: PaddlePublicConfigIssue[];
 }
@@ -155,7 +177,7 @@ const buildInlineCheckoutSettings = (locale: AppLanguage | string | null | undef
     frameStyle: PADDLE_INLINE_FRAME_STYLE,
     frameTarget: PADDLE_INLINE_FRAME_TARGET_CLASS,
     locale: resolvePaddleCheckoutLocale(locale),
-    showAddDiscounts: false,
+    showAddDiscounts: true,
     theme: 'light',
     variant: 'one-page',
 });
@@ -175,6 +197,7 @@ const parsePaddlePublicConfig = (payload: unknown): PaddlePublicConfig | null =>
         supabaseSyncConfigured?: unknown;
         webhookSyncMode?: unknown;
         tierAvailability?: unknown;
+        priceIds?: unknown;
         issues?: unknown;
     };
     const tierAvailability = data.tierAvailability && typeof data.tierAvailability === 'object'
@@ -209,6 +232,12 @@ const parsePaddlePublicConfig = (payload: unknown): PaddlePublicConfig | null =>
             tier_mid: asBoolean(tierAvailability?.tier_mid),
             tier_premium: asBoolean(tierAvailability?.tier_premium),
         },
+        priceIds: data.priceIds && typeof data.priceIds === 'object'
+            ? {
+                tier_mid: asTrimmedString((data.priceIds as Record<string, unknown>).tier_mid),
+                tier_premium: asTrimmedString((data.priceIds as Record<string, unknown>).tier_premium),
+            }
+            : undefined,
         issues,
     };
 };
@@ -260,6 +289,8 @@ export const readPaddleCheckoutLocationContext = (search: string): PaddleCheckou
         claimId: asTrimmedString(params.get(PADDLE_CHECKOUT_CLAIM_QUERY_KEY)),
         returnTo: asTrimmedString(params.get(PADDLE_CHECKOUT_RETURN_QUERY_KEY)),
         tripId: asTrimmedString(params.get(PADDLE_CHECKOUT_TRIP_QUERY_KEY)),
+        discountCode: asTrimmedString(params.get(PADDLE_CHECKOUT_DISCOUNT_QUERY_KEY))
+            || asTrimmedString(params.get(PADDLE_CHECKOUT_VOUCHER_QUERY_KEY)),
     };
 };
 
@@ -285,6 +316,9 @@ export const appendPaddleCheckoutContext = (
         }
         if (asTrimmedString(context.tripId)) {
             parsed.searchParams.set(PADDLE_CHECKOUT_TRIP_QUERY_KEY, context.tripId!.trim());
+        }
+        if (asTrimmedString(context.discountCode)) {
+            parsed.searchParams.set(PADDLE_CHECKOUT_DISCOUNT_QUERY_KEY, context.discountCode!.trim());
         }
         return parsed.toString();
     } catch {
@@ -361,6 +395,52 @@ export const initializePaddleJs = async ({
     }
 };
 
+export const openPaddleInlineCheckout = ({
+    transactionId,
+    customerEmail,
+    discountCode,
+}: OpenPaddleInlineCheckoutOptions): boolean => {
+    if (!isBrowser() || !window.Paddle?.Checkout || typeof window.Paddle.Checkout.open !== 'function') {
+        return false;
+    }
+
+    const trimmedTransactionId = transactionId.trim();
+    if (!trimmedTransactionId) return false;
+
+    const trimmedCustomerEmail = asTrimmedString(customerEmail);
+    const trimmedDiscountCode = asTrimmedString(discountCode);
+
+    try {
+        window.Paddle.Checkout.open({
+            transactionId: trimmedTransactionId,
+            discountCode: trimmedDiscountCode || undefined,
+            customer: trimmedCustomerEmail ? { email: trimmedCustomerEmail } : undefined,
+        });
+        return true;
+    } catch {
+        return false;
+    }
+};
+
+export const updatePaddleInlineCheckout = ({
+    discountCode,
+}: UpdatePaddleInlineCheckoutOptions): boolean => {
+    if (!isBrowser() || !window.Paddle?.Checkout || typeof window.Paddle.Checkout.updateCheckout !== 'function') {
+        return false;
+    }
+
+    const trimmedDiscountCode = asTrimmedString(discountCode);
+
+    try {
+        window.Paddle.Checkout.updateCheckout({
+            discountCode: trimmedDiscountCode || null,
+        });
+        return true;
+    } catch {
+        return false;
+    }
+};
+
 export const fetchPaddlePublicConfig = async (): Promise<PaddlePublicConfig> => {
     if (!isBrowser()) {
         throw new Error('Paddle public config is only available in the browser.');
@@ -411,11 +491,13 @@ export const __paddleClientInternals = {
     buildInlineCheckoutSettings,
     extractPaddleCheckoutItemName,
     ensurePaddleScript,
+    openPaddleInlineCheckout,
     parsePaddlePublicConfig,
     readPaddleClientToken,
     readPaddleCheckoutLocationContext,
     resolveSameOriginPaddleCheckoutPath,
     resolvePaddleCheckoutLocale,
+    updatePaddleInlineCheckout,
     resetForTest: () => {
         paddleScriptPromise = null;
         initializedToken = null;

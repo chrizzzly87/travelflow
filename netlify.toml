@@ -48,6 +48,30 @@ exit 1
   function = "paddle-checkout"
 
 [[edge_functions]]
+  path = "/api/billing/paddle/discount-lookup"
+  function = "paddle-discount-lookup"
+
+[[edge_functions]]
+  path = "/api/billing/paddle/subscription-preview"
+  function = "paddle-subscription-preview"
+
+[[edge_functions]]
+  path = "/api/billing/paddle/subscription-change"
+  function = "paddle-subscription-change"
+
+[[edge_functions]]
+  path = "/api/billing/paddle/subscription-manage"
+  function = "paddle-subscription-manage"
+
+[[edge_functions]]
+  path = "/api/billing/paddle/subscription-refresh"
+  function = "paddle-subscription-refresh"
+
+[[edge_functions]]
+  path = "/api/billing/paddle/transaction-sync"
+  function = "paddle-transaction-sync"
+
+[[edge_functions]]
   path = "/api/billing/paddle/webhook"
   function = "paddle-webhook"
 

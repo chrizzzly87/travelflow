@@ -48,6 +48,7 @@ const areViewSettingsEqual = (a?: IViewSettings, b?: IViewSettings): boolean => 
         && a.routeMode === b.routeMode
         && a.showCityNames === b.showCityNames
         && a.zoomLevel === b.zoomLevel
+        && a.zoomBehavior === b.zoomBehavior
         && a.sidebarWidth === b.sidebarWidth
         && a.timelineHeight === b.timelineHeight
     );
@@ -198,7 +199,10 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
             if (versionId && isUuid(versionId)) {
                 const sharedVersion = await dbGetSharedTripVersion(token, versionId);
                 if (sharedVersion?.trip) {
-                    const resolvedView = resolveEffectiveView(sharedVersion.view, sharedVersion.trip.defaultView);
+                    const resolvedView = resolveEffectiveView(
+                        sharedVersion.view ?? sharedVersion.shareView ?? shared.shareView,
+                        sharedVersion.trip.defaultView,
+                    );
                     const latestVersionId = sharedVersion.latestVersionId ?? shared.latestVersionId ?? null;
                     const nextState: SharedTripRouteState = {
                         ...baseRouteState,
@@ -220,7 +224,7 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
                     const sharedUpdatedAt = typeof shared.trip.updatedAt === 'number' ? shared.trip.updatedAt : null;
                     const snapshotUpdatedAt = typeof version.trip.updatedAt === 'number' ? version.trip.updatedAt : null;
                     const newerByTimestamp = sharedUpdatedAt !== null && snapshotUpdatedAt !== null && sharedUpdatedAt > snapshotUpdatedAt;
-                    const resolvedView = resolveEffectiveView(version.view, version.trip.defaultView);
+                    const resolvedView = resolveEffectiveView(version.view ?? shared.shareView, version.trip.defaultView);
                     const nextState: SharedTripRouteState = {
                         ...baseRouteState,
                         viewSettings: resolvedView,
@@ -255,7 +259,7 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
                 }
             }
 
-            const resolvedView = resolveEffectiveView(shared.view, shared.trip.defaultView);
+            const resolvedView = resolveEffectiveView(shared.shareView ?? shared.view, shared.trip.defaultView);
             applyRouteState({
                 ...baseRouteState,
                 viewSettings: resolvedView,

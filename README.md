@@ -224,7 +224,8 @@ For branch/PR preview workflow and caveats, see `docs/NETLIFY_FEATURE_BRANCH_DEP
 3. Confirm build settings:
    - Build command: `pnpm build`
    - Publish directory: `dist`
-4. In Netlify environment variables, add:
+4. Optional: if your Netlify plan exposes custom Functions regions, set the default Netlify Functions region to `eu-west-2` (or the closest EU region available in your account) so scheduled/background functions stay closer to your EU-hosted Supabase project. Edge Functions remain globally distributed.
+5. In Netlify environment variables, add:
    - `SITE_URL` (canonical public base URL for sitemap and absolute SEO URLs, e.g. `https://travelflowapp.netlify.app`)
    - `GEMINI_API_KEY` (preferred server-side key for `/api/ai/generate`)
    - `VITE_GEMINI_API_KEY` (optional browser fallback for local/dev compatibility)
@@ -236,7 +237,7 @@ For branch/PR preview workflow and caveats, see `docs/NETLIFY_FEATURE_BRANCH_DEP
    - `ANTHROPIC_API_KEY` (active for Anthropic models in `/api/ai/generate`)
    - `OPENROUTER_API_KEY` (active for curated OpenRouter models in `/api/ai/generate`)
    - `TF_ADMIN_API_KEY` (required for internal benchmark API endpoints in deployed environments)
-5. Deploy.
+6. Deploy.
 
 Sitemap behavior:
 - `pnpm build` regenerates `public/sitemap.xml` on every deploy.

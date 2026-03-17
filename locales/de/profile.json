@@ -213,7 +213,42 @@
     "countryRegionEmpty": "Kein passendes Land oder keine passende Region gefunden.",
     "countryRegionToggle": "Optionen für Land/Region umschalten",
     "usernameChange": "Benutzernamen ändern",
-    "usernameSuggestionsTitle": "Probieren Sie eine dieser verfügbaren Optionen aus:"
+    "usernameSuggestionsTitle": "Probieren Sie eine dieser verfügbaren Optionen aus:",
+    "billing": {
+      "eyebrow": "Billing",
+      "title": "Abo-Verwaltung",
+      "description": "Prüfe deinen aktuellen Tarif, den Verlängerungszeitpunkt und alle von Paddle verwalteten Billing-Aktionen an einem Ort.",
+      "currentPlanLabel": "Aktueller Tarif",
+      "statusLabel": "Abo-Status",
+      "renewalLabel": "Aktuelles Periodenende",
+      "subscriptionIdLabel": "Abo-ID",
+      "noSubscription": "Kein bezahltes Abo",
+      "manageCta": "Billing in Paddle verwalten",
+      "cancelCta": "In Paddle kündigen",
+      "errorTitle": "Billing-Aktion nicht verfügbar",
+      "manageUnavailable": "Die Paddle-Billing-Verwaltung konnte für dieses Konto nicht geöffnet werden.",
+      "statuses": {
+        "active": "Aktiv",
+        "trialing": "Testphase",
+        "pastDue": "Zahlung ueberfaellig",
+        "paused": "Pausiert",
+        "canceledGrace": "Gekuendigt (Kulanzzeit)",
+        "inactive": "Inaktiv",
+        "unknown": "Unbekannt"
+      },
+      "resubscribeCta": "Abo erneuern",
+      "canceledGrace": {
+        "title": "Dein Abo wurde gekuendigt.",
+        "description": "Dein bezahlter Zugriff bleibt noch bis {date} aktiv. Danach werden bezahlte Trips abgelaufen und nur noch lesbar, bis du das Abo erneuerst.",
+        "impact": "Bearbeiten und Teilen sind nach Ende der Kulanzzeit eingeschraenkt. Deine Trip-Daten bleiben im Konto gespeichert."
+      },
+      "inactive": {
+        "title": "Der bezahlte Zugriff ist inaktiv.",
+        "description": "Erneuere dein Abo, um bezahlte Trips, Bearbeitung und Teilen fuer dieses Konto wieder freizuschalten.",
+        "impact": "Bezahlte Trips bleiben gespeichert, sind aber abgelaufen und nur lesbar, bis Billing wieder aktiv ist.",
+        "promoHint": "Erneuere dein Abo mit dem Code {code}, um den bezahlten Zugriff wiederherzustellen."
+      }
+    }
   },
   "stamps": {
     "eyebrow": "Passabholung",
@@ -322,5 +357,11 @@
     "undoErrorSingle": "Could not restore this trip.",
     "undoErrorBatch": "Could not restore selected trips.",
     "successSingleMessage": "Deine Reise \"{title}\" wurde erfolgreich archiviert."
+  },
+  "billingShortcut": {
+    "eyebrow": "Billing",
+    "title": "Abo verwalten",
+    "description": "Öffne die Billing-Einstellungen, um Tarif, Zahlungsstatus und Kündigungsoptionen an einem Ort zu sehen.",
+    "cta": "Billing-Einstellungen öffnen"
   }
 }

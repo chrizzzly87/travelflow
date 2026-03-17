@@ -18,6 +18,18 @@ const stubDenoEnv = (values: Record<string, string | undefined>) => {
   });
 };
 
+const testStructuredOutputSchema = {
+  name: 'travelflow_test_trip',
+  strict: true,
+  schema: {
+    type: 'object',
+    properties: {
+      tripTitle: { type: 'string' },
+    },
+    required: ['tripTitle'],
+  },
+} as const;
+
 describe('netlify/edge-lib/ai-provider-runtime', () => {
   let fetchMock: ReturnType<typeof vi.fn>;
 
@@ -43,7 +55,10 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
     expect(ensureModelAllowed('openai', 'gpt-5.4')).toBeNull();
     expect(ensureModelAllowed('openai', 'gpt-5.4-pro')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'openrouter/free')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'nvidia/nemotron-3-super-120b-a12b:free')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'z-ai/glm-5')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'x-ai/grok-4.20-beta')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'qwen/qwen3.5-9b')).toBeNull();
     expect(ensureModelAllowed('openai', 'gpt-5.4')).toBeNull();
     expect(ensureModelAllowed('anthropic', 'claude-sonnet-4.6')).toBeNull();
     expect(ensureModelAllowed('perplexity', 'perplexity/sonar')).toBeNull();
@@ -116,12 +131,19 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
       provider: 'gemini',
       model: 'gemini-3-pro-preview',
       timeoutMs: 30_000,
+      jsonSchema: testStructuredOutputSchema,
     });
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
+    const firstInit = (fetchMock.mock.calls[0] as [string, RequestInit])[1];
+    const firstBody = JSON.parse(String(firstInit.body));
+    expect(firstBody.generationConfig.responseMimeType).toBe('application/json');
+    expect(firstBody.generationConfig.temperature).toBe(0);
+    expect(firstBody.generationConfig).not.toHaveProperty('responseSchema');
     const retryInit = (fetchMock.mock.calls[1] as [string, RequestInit])[1];
     const retryBody = JSON.parse(String(retryInit.body));
     expect(retryBody.generationConfig.temperature).toBe(0);
+    expect(retryBody.generationConfig).not.toHaveProperty('responseSchema');
     expect(retryBody.contents?.[0]?.parts?.[0]?.text).toContain('IMPORTANT RETRY INSTRUCTIONS');
 
     expect(result.ok).toBe(true);
@@ -239,15 +261,35 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
       provider: 'openai',
       model: 'gpt-5.2',
       timeoutMs: 30_000,
+      jsonSchema: testStructuredOutputSchema,
     });
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect((fetchMock.mock.calls[0] as [string])[0]).toBe('https://api.openai.com/v1/chat/completions');
     expect((fetchMock.mock.calls[1] as [string])[0]).toBe('https://api.openai.com/v1/responses');
+    const chatInit = (fetchMock.mock.calls[0] as [string, RequestInit])[1];
+    const chatBody = JSON.parse(String(chatInit.body));
+    expect(chatBody.temperature).toBe(0);
+    expect(chatBody.response_format).toEqual({
+      type: 'json_schema',
+      json_schema: {
+        name: 'travelflow_test_trip',
+        strict: true,
+        schema: testStructuredOutputSchema.schema,
+      },
+    });
     const responsesInit = (fetchMock.mock.calls[1] as [string, RequestInit])[1];
     const responsesBody = JSON.parse(String(responsesInit.body));
     expect(responsesBody).not.toHaveProperty('temperature');
     expect(responsesBody.max_output_tokens).toBe(8192);
+    expect(responsesBody.text).toEqual({
+      format: {
+        type: 'json_schema',
+        name: 'travelflow_test_trip',
+        strict: true,
+        schema: testStructuredOutputSchema.schema,
+      },
+    });
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;

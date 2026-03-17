@@ -176,7 +176,7 @@ describe('tripGenerationPollingService.shouldApplyPolledTripUpdate', () => {
     it('applies older remote terminal state when local in-flight attempt is stale', () => {
         const nowMs = Date.now();
         const remoteAttemptIso = new Date(nowMs - 120_000).toISOString();
-        const staleLocalAttemptIso = new Date(nowMs - 100_000).toISOString();
+        const staleLocalAttemptIso = new Date(nowMs - 130_000).toISOString();
 
         const localTrip = buildTrip({
             updatedAt: 500,

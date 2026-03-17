@@ -72,6 +72,7 @@ where proname in (
   'create_share_token',
   'get_shared_trip',
   'get_shared_trip_version',
+  'update_trip_share_view_settings',
   'update_shared_trip',
   'get_current_user_access',
   'admin_list_users',
@@ -203,8 +204,9 @@ Share path:
 3. If a direct planner URL (`/trip/:tripId`) is opened by a non-owner (and non-admin) for a trip that has an active share, the trip loader resolves the active share token and routes to `/s/:token`.
 4. Load shared data via `rpc('get_shared_trip', ...)`.
 5. Optional snapshot load via `rpc('get_shared_trip_version', ...)` when URL has `?v=<uuid>`.
-6. If share mode is `edit`, save changes via `rpc('update_shared_trip', ...)`.
-7. In `view` mode, editing controls are disabled; copy creates a new owned trip.
+6. Refresh the live share-view defaults via `rpc('update_trip_share_view_settings', ...)` when owners reshare after a planner view change.
+7. If share mode is `edit`, save changes via `rpc('update_shared_trip', ...)`.
+8. In `view` mode, editing controls are disabled; copy creates a new owned trip.
 
 ## Migration Behavior (LocalStorage -> DB)
 

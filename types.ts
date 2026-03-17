@@ -26,6 +26,7 @@ export type MapColorMode = 'brand' | 'trip';
 export type SystemRole = 'admin' | 'user';
 export type PlanTierKey = 'tier_free' | 'tier_mid' | 'tier_premium';
 export type TripAccessClassKey = 'free' | 'pro';
+export type ZoomBehavior = 'fit' | 'manual';
 
 export interface Entitlements {
     maxActiveTrips: number | null;
@@ -35,6 +36,28 @@ export interface Entitlements {
     canCreateEditableShares: boolean;
     canViewProTrips: boolean;
     canCreateProTrips: boolean;
+}
+
+export type UserBillingLifecycleState =
+  | 'active'
+  | 'trialing'
+  | 'past_due'
+  | 'paused'
+  | 'canceled_grace'
+  | 'inactive'
+  | 'none'
+  | 'unknown';
+
+export interface UserBillingSummary {
+    providerSubscriptionId: string | null;
+    providerStatus: string | null;
+    subscriptionStatus: string | null;
+    currentPeriodEnd: string | null;
+    cancelAt: string | null;
+    canceledAt: string | null;
+    graceEndsAt: string | null;
+    accessUntil: string | null;
+    lifecycleState: UserBillingLifecycleState;
 }
 
 export interface UserAccessContext {
@@ -52,6 +75,7 @@ export interface UserAccessContext {
     termsAcceptedAt: string | null;
     termsAcceptanceRequired: boolean;
     termsNoticeRequired: boolean;
+    billing: UserBillingSummary;
 }
 
 export interface ICoordinates {
@@ -124,6 +148,8 @@ export interface TripGenerationJobSummary {
     payload?: Record<string, unknown> | null;
     lastErrorCode?: string | null;
     lastErrorMessage?: string | null;
+    startedAt?: string | null;
+    finishedAt?: string | null;
     createdAt: string;
     updatedAt: string;
 }
@@ -241,6 +267,7 @@ export interface IViewSettings {
     timelineView: 'horizontal' | 'vertical'; // Calendar orientation
     mapStyle: MapStyle;
     zoomLevel: number;
+    zoomBehavior?: ZoomBehavior;
     mapDockMode?: 'docked' | 'floating';
     routeMode?: RouteMode;
     showCityNames?: boolean;
@@ -258,6 +285,7 @@ export type ShareMode = 'view' | 'edit';
 export interface ISharedTripResult {
     trip: ITrip;
     view?: IViewSettings | null;
+    shareView?: IViewSettings | null;
     mode: ShareMode;
     allowCopy?: boolean;
     latestVersionId?: string | null;

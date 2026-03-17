@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Navigate, NavLink, useNavigate } from 'react-router-dom';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Navigate, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { CaretRight, SpinnerGap } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { SiteHeader } from '../components/navigation/SiteHeader';
@@ -10,6 +10,14 @@ import { PROFILE_GENDER_OPTIONS } from '../config/profileFields';
 import { LOCALE_DROPDOWN_ORDER, LOCALE_FLAGS, LOCALE_LABELS, normalizeLocale } from '../config/locales';
 import type { AppLanguage } from '../types';
 import { useAuth } from '../hooks/useAuth';
+import {
+    buildBillingCheckoutPath,
+    getCurrentSubscriptionSummary,
+    getPaddleSubscriptionManagementUrls,
+    readBillingDiscountCodeFromSearch,
+    refreshCurrentPaddleSubscription,
+} from '../services/billingService';
+import { fetchPaddlePublicConfig, type PaddlePublicConfig } from '../services/paddleClient';
 import {
     checkUsernameAvailability,
     updateCurrentUserProfile,
@@ -22,6 +30,7 @@ import { FlagIcon } from '../components/flags/FlagIcon';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '../components/ui/select';
 import { buildPath } from '../config/routes';
 import { showAppToast } from '../components/ui/appToast';
+import { resolveBillingAccessUntil, resolveBillingLifecycleState, resolveEffectiveBillingTierKey } from '../lib/billing/subscriptionState';
 
 type Mode = 'settings' | 'onboarding';
 
@@ -124,10 +133,12 @@ const formatDateLabel = (value: string, locale: string): string => {
 
 export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode = 'settings' }) => {
     const navigate = useNavigate();
-    const { t, i18n } = useTranslation('profile');
+    const location = useLocation();
+    const { t, i18n } = useTranslation(['profile', 'pricing']);
     const {
         isLoading,
         isAuthenticated,
+        access,
         refreshAccess,
         refreshProfile,
         profile: cachedProfile,
@@ -153,12 +164,19 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
         error: null,
     });
     const [requiredFieldErrors, setRequiredFieldErrors] = useState<RequiredFieldErrors>(EMPTY_REQUIRED_FIELD_ERRORS);
+    const [subscriptionSummary, setSubscriptionSummary] = useState<Awaited<ReturnType<typeof getCurrentSubscriptionSummary>>>(null);
+    const [isBillingLoading, setIsBillingLoading] = useState(false);
+    const [isManageBillingSubmitting, setIsManageBillingSubmitting] = useState(false);
+    const [isCancelBillingSubmitting, setIsCancelBillingSubmitting] = useState(false);
+    const [paddlePublicConfig, setPaddlePublicConfig] = useState<PaddlePublicConfig | null>(null);
+    const billingRepairAttemptedRef = useRef(false);
+    const activeDiscountCode = useMemo(() => readBillingDiscountCodeFromSearch(location.search), [location.search]);
+    const accessBilling = access?.billing ?? null;
 
     const appLocale = useMemo(
         () => normalizeLocale(i18n.resolvedLanguage ?? i18n.language ?? 'en'),
         [i18n.language, i18n.resolvedLanguage]
     );
-
     const heading = mode === 'onboarding' ? t('settings.onboardingTitle') : t('settings.title');
     const description = mode === 'onboarding'
         ? t('settings.onboardingDescription')
@@ -190,7 +208,162 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
         setHasHydratedForm(true);
     }, [cachedProfile, isAuthenticated, isAuthProfileLoading, mode, refreshProfile]);
 
+    useEffect(() => {
+        let cancelled = false;
+        void fetchPaddlePublicConfig()
+            .then((config) => {
+                if (!cancelled) {
+                    setPaddlePublicConfig(config);
+                }
+            })
+            .catch((error) => {
+                if (!cancelled) {
+                    console.warn('Failed to load Paddle public config for profile settings.', error);
+                }
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
+    const loadSubscriptionSummaryWithRetry = useCallback(async (): Promise<Awaited<ReturnType<typeof getCurrentSubscriptionSummary>>> => {
+        for (let attempt = 0; attempt < 3; attempt += 1) {
+            const summary = await getCurrentSubscriptionSummary();
+            if (summary) {
+                return summary;
+            }
+            if (attempt < 2) {
+                await new Promise((resolve) => window.setTimeout(resolve, 250 * (attempt + 1)));
+            }
+        }
+        return null;
+    }, []);
+
+    useEffect(() => {
+        if (!isAuthenticated) {
+            setSubscriptionSummary(null);
+            setIsBillingLoading(false);
+            billingRepairAttemptedRef.current = false;
+            return;
+        }
+
+        let cancelled = false;
+        setIsBillingLoading(true);
+        void (async () => {
+            let summary = await loadSubscriptionSummaryWithRetry();
+            const shouldAttemptRepair = !billingRepairAttemptedRef.current && (
+                !summary
+                || Boolean(accessBilling?.providerSubscriptionId)
+                || (access?.tierKey !== 'tier_free')
+            );
+            if (shouldAttemptRepair) {
+                billingRepairAttemptedRef.current = true;
+                try {
+                    const repaired = await refreshCurrentPaddleSubscription();
+                    await refreshAccess();
+                    summary = repaired.summary ?? await loadSubscriptionSummaryWithRetry();
+                } catch (error) {
+                    if (!cancelled && !(error instanceof Error && error.message.includes('No paid Paddle subscription is linked'))) {
+                        console.warn('Failed to repair billing summary from Paddle refresh.', error);
+                    }
+                }
+            }
+            if (cancelled) return;
+            setSubscriptionSummary(summary);
+        })()
+            .catch((error) => {
+                if (cancelled) return;
+                console.warn('Failed to load profile billing summary.', error);
+                setSubscriptionSummary(null);
+            })
+            .finally(() => {
+                if (!cancelled) {
+                    setIsBillingLoading(false);
+                }
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [access?.tierKey, accessBilling?.providerSubscriptionId, isAuthenticated, loadSubscriptionSummaryWithRetry, refreshAccess]);
+
     const isProfileLoading = isAuthProfileLoading || !hasHydratedForm;
+    const billingState = useMemo(() => ({
+        providerSubscriptionId: subscriptionSummary?.providerSubscriptionId ?? accessBilling?.providerSubscriptionId ?? null,
+        providerStatus: subscriptionSummary?.providerStatus ?? accessBilling?.providerStatus ?? null,
+        status: subscriptionSummary?.status ?? accessBilling?.subscriptionStatus ?? null,
+        currentPeriodEnd: subscriptionSummary?.currentPeriodEnd ?? accessBilling?.currentPeriodEnd ?? null,
+        cancelAt: subscriptionSummary?.cancelAt ?? accessBilling?.cancelAt ?? null,
+        canceledAt: subscriptionSummary?.canceledAt ?? accessBilling?.canceledAt ?? null,
+        graceEndsAt: subscriptionSummary?.graceEndsAt ?? accessBilling?.graceEndsAt ?? null,
+        accessUntil: subscriptionSummary
+            ? resolveBillingAccessUntil({
+                providerStatus: subscriptionSummary.providerStatus,
+                status: subscriptionSummary.status,
+                currentPeriodEnd: subscriptionSummary.currentPeriodEnd,
+                cancelAt: subscriptionSummary.cancelAt,
+                canceledAt: subscriptionSummary.canceledAt,
+                graceEndsAt: subscriptionSummary.graceEndsAt,
+            })
+            : accessBilling?.accessUntil ?? null,
+        providerPriceId: subscriptionSummary?.providerPriceId ?? null,
+    }), [accessBilling, subscriptionSummary]);
+    const billingLifecycleState = useMemo(
+        () => resolveBillingLifecycleState({
+            providerStatus: billingState.providerStatus,
+            status: billingState.status,
+            currentPeriodEnd: billingState.currentPeriodEnd,
+            cancelAt: billingState.cancelAt,
+            canceledAt: billingState.canceledAt,
+            graceEndsAt: billingState.graceEndsAt,
+            billingAccessUntil: billingState.accessUntil,
+        }),
+        [billingState],
+    );
+    const effectiveTierKey = resolveEffectiveBillingTierKey({
+        currentTierKey: access?.tierKey ?? 'tier_free',
+        subscription: {
+            providerSubscriptionId: billingState.providerSubscriptionId,
+            providerPriceId: billingState.providerPriceId,
+            providerStatus: billingState.providerStatus,
+            status: billingState.status,
+            currentPeriodEnd: billingState.currentPeriodEnd,
+            cancelAt: billingState.cancelAt,
+            canceledAt: billingState.canceledAt,
+            graceEndsAt: billingState.graceEndsAt,
+            billingAccessUntil: billingState.accessUntil,
+        },
+        priceIds: paddlePublicConfig?.priceIds,
+    });
+    const currentTierLabel = effectiveTierKey === 'tier_premium'
+        ? t('tiers.globetrotter.name', { ns: 'pricing' })
+        : effectiveTierKey === 'tier_mid'
+            ? t('tiers.explorer.name', { ns: 'pricing' })
+            : t('tiers.backpacker.name', { ns: 'pricing' });
+    const hasPaidTier = effectiveTierKey === 'tier_mid' || effectiveTierKey === 'tier_premium' || Boolean(billingState.providerSubscriptionId);
+    const billingStatusLabel = useMemo(() => {
+        if (billingLifecycleState === 'canceled_grace') return t('settings.billing.statuses.canceledGrace');
+        if (billingLifecycleState === 'inactive') return t('settings.billing.statuses.inactive');
+        if (billingLifecycleState === 'none') return t('settings.billing.noSubscription');
+        if (billingLifecycleState === 'past_due') return t('settings.billing.statuses.pastDue');
+        if (billingLifecycleState === 'paused') return t('settings.billing.statuses.paused');
+        if (billingLifecycleState === 'trialing') return t('settings.billing.statuses.trialing');
+        if (billingLifecycleState === 'active') return t('settings.billing.statuses.active');
+        return t('settings.billing.statuses.unknown');
+    }, [billingLifecycleState, t]);
+    const billingAccessDateLabel = useMemo(
+        () => billingState.accessUntil ? formatDateLabel(billingState.accessUntil, appLocale) : '—',
+        [appLocale, billingState.accessUntil],
+    );
+    const resubscribeCheckoutTarget = hasPaidTier && effectiveTierKey !== 'tier_free'
+        ? buildBillingCheckoutPath({
+            tierKey: effectiveTierKey,
+            source: 'profile_settings',
+            returnTo: `${buildPath('profileSettings')}#billing-management`,
+            discountCode: activeDiscountCode,
+        })
+        : null;
 
     const normalizedUsername = useMemo(() => normalizeUsernameInput(form.username), [form.username]);
     const normalizedUsernameDisplay = useMemo(() => normalizeUsernameDisplayInput(form.username), [form.username]);
@@ -259,6 +432,48 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                         : current
                 ));
             }
+        }
+    };
+
+    const openBillingManagement = async (target: 'manage' | 'cancel') => {
+        const setLoading = target === 'cancel' ? setIsCancelBillingSubmitting : setIsManageBillingSubmitting;
+        const loading = target === 'cancel' ? isCancelBillingSubmitting : isManageBillingSubmitting;
+        if (loading) return;
+
+        setLoading(true);
+        try {
+            const managementUrls = await getPaddleSubscriptionManagementUrls();
+            const destination = target === 'cancel'
+                ? managementUrls.cancelUrl || managementUrls.updatePaymentMethodUrl
+                : managementUrls.updatePaymentMethodUrl || managementUrls.cancelUrl;
+            if (!destination) {
+                throw new Error(t('settings.billing.manageUnavailable'));
+            }
+            trackEvent(target === 'cancel' ? 'profile_settings__billing--cancel' : 'profile_settings__billing--manage');
+            window.location.assign(destination);
+        } catch (error) {
+            showAppToast({
+                tone: 'warning',
+                title: t('settings.billing.errorTitle'),
+                description: error instanceof Error ? error.message : t('settings.billing.manageUnavailable'),
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleResubscribe = () => {
+        trackEvent('profile_settings__billing--resubscribe', {
+            lifecycle_state: billingLifecycleState,
+            tier: effectiveTierKey,
+            discount: activeDiscountCode || null,
+        });
+        if (billingState.providerSubscriptionId) {
+            void openBillingManagement('manage');
+            return;
+        }
+        if (resubscribeCheckoutTarget) {
+            navigate(resubscribeCheckoutTarget);
         }
     };
 
@@ -935,6 +1150,139 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                     </NavLink>
                                 )}
                             </div>
+
+                            <section id="billing-management" className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-4">
+                                <div className="flex flex-wrap items-start justify-between gap-4">
+                                    <div className="space-y-1">
+                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.billing.eyebrow')}</p>
+                                        <h2 className="text-base font-semibold text-slate-900">{t('settings.billing.title')}</h2>
+                                        <p className="max-w-2xl text-sm leading-6 text-slate-600">{t('settings.billing.description')}</p>
+                                    </div>
+                                    <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700">
+                                        {currentTierLabel}
+                                    </span>
+                                </div>
+
+                                {billingLifecycleState === 'canceled_grace' && (
+                                    <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-4">
+                                        <div className="flex flex-wrap items-start justify-between gap-4">
+                                            <div className="space-y-2">
+                                                <p className="text-sm font-semibold text-amber-900">{t('settings.billing.canceledGrace.title')}</p>
+                                                <p className="max-w-2xl text-sm leading-6 text-amber-900/90">
+                                                    {t('settings.billing.canceledGrace.description', { date: billingAccessDateLabel })}
+                                                </p>
+                                                <p className="text-xs font-medium text-amber-800">
+                                                    {t('settings.billing.canceledGrace.impact')}
+                                                </p>
+                                            </div>
+                                            <div className="flex flex-wrap gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={handleResubscribe}
+                                                    disabled={isBillingLoading || isManageBillingSubmitting}
+                                                    className="inline-flex h-10 items-center gap-2 rounded-lg bg-amber-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                                >
+                                                    {t('settings.billing.resubscribeCta')}
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => void openBillingManagement('manage')}
+                                                    disabled={isBillingLoading || isManageBillingSubmitting}
+                                                    className="inline-flex h-10 items-center gap-2 rounded-lg border border-amber-300 bg-white px-4 text-sm font-semibold text-amber-900 transition-colors hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                                >
+                                                    {t('settings.billing.manageCta')}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {billingLifecycleState === 'inactive' && hasPaidTier && (
+                                    <div className="mt-4 rounded-xl border border-accent-200 bg-accent-50/70 px-4 py-4">
+                                        <div className="flex flex-wrap items-start justify-between gap-4">
+                                            <div className="space-y-2">
+                                                <p className="text-sm font-semibold text-slate-900">{t('settings.billing.inactive.title')}</p>
+                                                <p className="max-w-2xl text-sm leading-6 text-slate-700">
+                                                    {t('settings.billing.inactive.description')}
+                                                </p>
+                                                <p className="text-xs font-medium text-slate-600">
+                                                    {activeDiscountCode
+                                                        ? t('settings.billing.inactive.promoHint', { code: activeDiscountCode })
+                                                        : t('settings.billing.inactive.impact')}
+                                                </p>
+                                            </div>
+                                            <div className="flex flex-wrap gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={handleResubscribe}
+                                                    disabled={isBillingLoading || isManageBillingSubmitting}
+                                                    className="inline-flex h-10 items-center gap-2 rounded-lg bg-accent-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-accent-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                                >
+                                                    {t('settings.billing.resubscribeCta')}
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => void openBillingManagement('manage')}
+                                                    disabled={isBillingLoading || isManageBillingSubmitting}
+                                                    className="inline-flex h-10 items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-900 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                                >
+                                                    {t('settings.billing.manageCta')}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                                    <div className="rounded-lg border border-slate-200 bg-white px-3 py-3">
+                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.billing.currentPlanLabel')}</p>
+                                        <p className="mt-1 text-sm font-semibold text-slate-900">{currentTierLabel}</p>
+                                    </div>
+                                    <div className="rounded-lg border border-slate-200 bg-white px-3 py-3">
+                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.billing.statusLabel')}</p>
+                                        <p className="mt-1 text-sm font-semibold text-slate-900">
+                                            {billingStatusLabel}
+                                        </p>
+                                    </div>
+                                    <div className="rounded-lg border border-slate-200 bg-white px-3 py-3">
+                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.billing.renewalLabel')}</p>
+                                        <p className="mt-1 text-sm font-semibold text-slate-900">
+                                            {billingState.currentPeriodEnd
+                                                ? new Date(billingState.currentPeriodEnd).toLocaleDateString(appLocale)
+                                                : '—'}
+                                        </p>
+                                    </div>
+                                    <div className="rounded-lg border border-slate-200 bg-white px-3 py-3">
+                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.billing.subscriptionIdLabel')}</p>
+                                        <p className="mt-1 truncate font-mono text-xs text-slate-700" title={billingState.providerSubscriptionId || ''}>
+                                            {billingState.providerSubscriptionId || '—'}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="mt-4 flex flex-wrap gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => void openBillingManagement('manage')}
+                                        disabled={isBillingLoading || isManageBillingSubmitting || !hasPaidTier}
+                                        className="inline-flex h-10 items-center gap-2 rounded-lg bg-accent-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-accent-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                        {...getAnalyticsDebugAttributes('profile_settings__billing--manage')}
+                                    >
+                                        {isManageBillingSubmitting ? <SpinnerGap size={15} className="animate-spin" /> : null}
+                                        {t('settings.billing.manageCta')}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => void openBillingManagement('cancel')}
+                                        disabled={isBillingLoading || isCancelBillingSubmitting || !hasPaidTier}
+                                        className="inline-flex h-10 items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-900 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                        {...getAnalyticsDebugAttributes('profile_settings__billing--cancel')}
+                                    >
+                                        {isCancelBillingSubmitting ? <SpinnerGap size={15} className="animate-spin" /> : null}
+                                        {t('settings.billing.cancelCta')}
+                                    </button>
+                                </div>
+                            </section>
 
                             <div className="mt-6 flex flex-wrap items-center gap-3">
                                 <button

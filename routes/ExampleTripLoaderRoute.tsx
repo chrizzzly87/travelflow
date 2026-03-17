@@ -38,6 +38,7 @@ const areViewSettingsEqual = (a?: IViewSettings, b?: IViewSettings): boolean => 
         && a.routeMode === b.routeMode
         && a.showCityNames === b.showCityNames
         && a.zoomLevel === b.zoomLevel
+        && a.zoomBehavior === b.zoomBehavior
         && a.sidebarWidth === b.sidebarWidth
         && a.timelineHeight === b.timelineHeight
     );

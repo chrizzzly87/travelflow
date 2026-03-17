@@ -128,6 +128,7 @@ interface SupabaseSharedTripRow {
   trip_id?: string;
   data?: TripPayload;
   view_settings?: unknown;
+  share_view_settings?: unknown;
   latest_version_id?: string | null;
   version_id?: string | null;
 }
@@ -1041,7 +1042,8 @@ export const fetchSharedTrip = async (
     if (versionRow?.data) {
       return {
         trip: versionRow.data,
-        viewSettings: parseSharedViewSettings(versionRow.view_settings),
+        viewSettings: parseSharedViewSettings(versionRow.view_settings)
+          ?? parseSharedViewSettings(versionRow.share_view_settings),
         latestVersionId:
           typeof versionRow.latest_version_id === "string" ? versionRow.latest_version_id : null,
         resolvedVersionId:
@@ -1053,9 +1055,14 @@ export const fetchSharedTrip = async (
   const row = await fetchSupabaseRpc("get_shared_trip", { p_token: token });
   if (!row?.data) return null;
   const latestVersionId = typeof row.latest_version_id === "string" ? row.latest_version_id : null;
-  let viewSettings = parseSharedViewSettings(row.view_settings);
+  let viewSettings = parseSharedViewSettings(row.share_view_settings)
+    ?? parseSharedViewSettings(row.view_settings);
 
-  if (!hasOgPreferenceValues(row.view_settings) && isValidVersionId(latestVersionId)) {
+  if (
+    !hasOgPreferenceValues(row.share_view_settings)
+    && !hasOgPreferenceValues(row.view_settings)
+    && isValidVersionId(latestVersionId)
+  ) {
     const latestVersionRow = await fetchSupabaseRpc("get_shared_trip_version", {
       p_token: token,
       p_version_id: latestVersionId,
