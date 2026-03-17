@@ -3,9 +3,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ITrip } from '../../types';
 
 const claimRpcMock = vi.fn();
+const fromSelectMaybeSingleMock = vi.fn().mockResolvedValue({ data: null, error: null });
+const fromSelectEqMock = vi.fn(() => ({ maybeSingle: fromSelectMaybeSingleMock }));
+const fromSelectMock = vi.fn(() => ({ eq: fromSelectEqMock }));
 const fromUpdateEqMock = vi.fn().mockResolvedValue({ data: null, error: null });
 const fromUpdateMock = vi.fn(() => ({ eq: fromUpdateEqMock }));
-const fromMock = vi.fn(() => ({ update: fromUpdateMock }));
+const fromMock = vi.fn(() => ({ update: fromUpdateMock, select: fromSelectMock }));
 
 const ensureDbSessionMock = vi.fn().mockResolvedValue(undefined);
 const dbUpsertTripMock = vi.fn().mockResolvedValue('trip-queued-1');
@@ -55,6 +58,7 @@ vi.mock('../../utils', async (importOriginal) => {
 });
 
 import {
+  isQueuedTripGenerationClaimedByAnotherUserError,
   processQueuedTripGenerationAfterAuth,
   QueuedTripGenerationError,
 } from '../../services/tripGenerationQueueService';
@@ -90,6 +94,9 @@ describe('processQueuedTripGenerationAfterAuth', () => {
   beforeEach(() => {
     claimRpcMock.mockReset();
     fromMock.mockClear();
+    fromSelectMock.mockClear();
+    fromSelectEqMock.mockClear();
+    fromSelectMaybeSingleMock.mockReset();
     fromUpdateMock.mockClear();
     fromUpdateEqMock.mockClear();
     ensureDbSessionMock.mockClear();
@@ -103,6 +110,7 @@ describe('processQueuedTripGenerationAfterAuth', () => {
     finishAttemptLogMock.mockClear();
 
     enqueueAsyncTripGenerationJobMock.mockResolvedValue(true);
+    fromSelectMaybeSingleMock.mockResolvedValue({ data: null, error: null });
     setupClassicClaim();
   });
 
@@ -226,6 +234,75 @@ describe('processQueuedTripGenerationAfterAuth', () => {
       'Queued request is already claimed or processed.',
     );
 
+    expect(enqueueAsyncTripGenerationJobMock).not.toHaveBeenCalled();
+  });
+
+  it('reuses the already-claimed trip instead of throwing when a prior auth flow already consumed the request', async () => {
+    claimRpcMock.mockImplementation((fn: string) => {
+      if (fn === 'claim_trip_generation_request') {
+        return Promise.resolve({
+          data: null,
+          error: {
+            code: 'P0001',
+            message: 'Queued request already claimed.',
+          },
+        });
+      }
+      return Promise.resolve({ data: null, error: null });
+    });
+    fromSelectMaybeSingleMock.mockResolvedValue({
+      data: {
+        id: 'request-1',
+        flow: 'classic',
+        payload: {
+          version: 1,
+          flow: 'classic',
+          destinationLabel: 'Mallorca',
+          destinationPrompt: 'Mallorca',
+          startDate: '2026-04-01',
+          endDate: '2026-04-10',
+          options: {},
+        },
+        status: 'queued',
+        owner_user_id: 'owner-1',
+        expires_at: new Date(Date.now() + 60_000).toISOString(),
+        result_trip_id: 'trip-existing-42',
+      },
+      error: null,
+    });
+
+    const result = await processQueuedTripGenerationAfterAuth('request-1');
+
+    expect(result.tripId).toBe('trip-existing-42');
+    expect(result.trip.id).toBe('trip-existing-42');
+    expect(result.trip.title).toBe('Mallorca');
+    expect(enqueueAsyncTripGenerationJobMock).not.toHaveBeenCalled();
+    expect(startAttemptLogMock).not.toHaveBeenCalled();
+  });
+
+  it('surfaces an explicit claim-conflict error when another account already claimed the request', async () => {
+    claimRpcMock.mockImplementation((fn: string) => {
+      if (fn === 'claim_trip_generation_request') {
+        return Promise.resolve({
+          data: null,
+          error: {
+            code: 'P0001',
+            message: 'Queued request already claimed by another user.',
+          },
+        });
+      }
+      return Promise.resolve({ data: null, error: null });
+    });
+
+    let thrown: unknown = null;
+    try {
+      await processQueuedTripGenerationAfterAuth('request-1');
+    } catch (error) {
+      thrown = error;
+    }
+
+    expect(isQueuedTripGenerationClaimedByAnotherUserError(thrown)).toBe(true);
+    expect(fromSelectMaybeSingleMock).not.toHaveBeenCalled();
     expect(enqueueAsyncTripGenerationJobMock).not.toHaveBeenCalled();
   });
 });

@@ -51,4 +51,38 @@ describe('admin billing Paddle reconcile edge internals', () => {
     );
     expect(__adminBillingPaddleReconcileInternals.normalizeSubscriptionId('')).toBeNull();
   });
+
+  it('collapses duplicate reconcile candidates down to one best subscription per customer or user', () => {
+    const collapsed = __adminBillingPaddleReconcileInternals.collapseSubscriptionsForReconcile([
+      {
+        id: 'sub_mid_old',
+        customer_id: 'ctm_123',
+        status: 'active',
+        updated_at: '2026-03-08T10:00:00.000Z',
+        items: [{ price: { id: 'pri_mid' } }],
+      },
+      {
+        id: 'sub_premium_new',
+        customer_id: 'ctm_123',
+        status: 'active',
+        updated_at: '2026-03-10T10:00:00.000Z',
+        items: [{ price: { id: 'pri_premium' } }],
+      },
+      {
+        id: 'sub_other_user',
+        custom_data: { tf_user_id: 'user_456' },
+        status: 'active',
+        updated_at: '2026-03-09T10:00:00.000Z',
+        items: [{ price: { id: 'pri_mid' } }],
+      },
+    ], {
+      tier_mid: 'pri_mid',
+      tier_premium: 'pri_premium',
+    });
+
+    expect(collapsed.map((subscription) => subscription.id)).toEqual([
+      'sub_premium_new',
+      'sub_other_user',
+    ]);
+  });
 });

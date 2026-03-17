@@ -30,6 +30,15 @@ const messages: Record<string, string> = {
   'tripView.pendingAuth.benefits.keep': 'Keep this trip and come back to it later.',
   'tripView.pendingAuth.benefits.background': 'Let generation finish in the background.',
   'tripView.pendingAuth.benefits.sync': 'Edit, retry, and sync it across devices.',
+  'tripView.claimConflict.eyebrow': 'Claim unavailable',
+  'tripView.claimConflict.title': 'This trip draft was already claimed',
+  'tripView.claimConflict.descriptionLoggedOut': 'Sign in with the original account or start a similar trip with the same setup.',
+  'tripView.claimConflict.descriptionLoggedIn': 'This draft is already attached to another account. Start a similar trip with the same setup.',
+  'tripView.claimConflict.loginCta': 'Sign in with the original account',
+  'tripView.claimConflict.createSimilarCta': 'Create similar trip',
+  'tripView.claimConflict.benefitsTitle': 'What we kept',
+  'tripView.claimConflict.benefits.prefill': 'Reuse your traveler setup, dates, and transport choices.',
+  'tripView.claimConflict.benefits.adjust': 'Adjust the draft before starting a fresh generation.',
   'shared.perMonth': '/mo',
   'shared.days': '{count} days',
   'shared.unlimited': 'Unlimited',
@@ -69,6 +78,10 @@ const makeProps = (overrides?: Partial<TripViewHudOverlaysProps>): TripViewHudOv
   pendingAuthModalStage: 'hidden',
   onContinuePendingAuth: () => undefined,
   isPendingAuthContinueDisabled: false,
+  claimConflictModalVisible: false,
+  claimConflictShowLoginCta: false,
+  claimConflictCreateSimilarPath: '/create-trip',
+  onClaimConflictLogin: () => undefined,
   ...overrides,
 });
 
@@ -108,5 +121,25 @@ describe('TripViewHudOverlays pending auth modal', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Sign in or create account' }));
     expect(onContinuePendingAuth).toHaveBeenCalledTimes(1);
     expect(trackEventMock).toHaveBeenCalled();
+  });
+
+  it('shows the claimed-by-another-user modal with a create-similar action', () => {
+    const onClaimConflictLogin = vi.fn();
+    render(
+      <TripViewHudOverlays
+        {...makeProps({
+          claimConflictModalVisible: true,
+          claimConflictShowLoginCta: true,
+          claimConflictCreateSimilarPath: '/create-trip/wizard?prefill=abc',
+          onClaimConflictLogin,
+        })}
+      />,
+    );
+
+    expect(screen.getByText('This trip draft was already claimed')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Sign in with the original account' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Create similar trip' })).toHaveAttribute('href', '/create-trip/wizard?prefill=abc');
+    fireEvent.click(screen.getByRole('button', { name: 'Sign in with the original account' }));
+    expect(onClaimConflictLogin).toHaveBeenCalledTimes(1);
   });
 });

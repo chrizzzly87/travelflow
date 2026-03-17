@@ -13,6 +13,7 @@ interface UseTripViewSettingsSyncOptions {
     routeMode: RouteMode;
     showCityNames: boolean;
     zoomLevel: number;
+    zoomBehavior: NonNullable<IViewSettings['zoomBehavior']>;
     sidebarWidth: number;
     timelineHeight: number;
     viewMode: 'planner' | 'print';
@@ -26,6 +27,7 @@ interface UseTripViewSettingsSyncOptions {
     setTimelineView: Dispatch<SetStateAction<'horizontal' | 'vertical'>>;
     setMapDockMode: Dispatch<SetStateAction<'docked' | 'floating'>>;
     setZoomLevel: Dispatch<SetStateAction<number>>;
+    setZoomBehavior: Dispatch<SetStateAction<NonNullable<IViewSettings['zoomBehavior']>>>;
     setSidebarWidth: Dispatch<SetStateAction<number>>;
     setTimelineHeight: Dispatch<SetStateAction<number>>;
     setShowCityNames: Dispatch<SetStateAction<boolean>>;
@@ -45,6 +47,7 @@ const normalizeSettingsForCallback = (settings: IViewSettings): IViewSettings =>
     ...settings,
     showCityNames: Boolean(settings.showCityNames),
     zoomLevel: Number(toFiniteNumber(settings.zoomLevel, 1).toFixed(2)),
+    zoomBehavior: settings.zoomBehavior === 'manual' ? 'manual' : 'fit',
     sidebarWidth: Math.round(toFiniteNumber(settings.sidebarWidth, 560)),
     timelineHeight: Math.round(toFiniteNumber(settings.timelineHeight, 340)),
 });
@@ -58,6 +61,7 @@ export const useTripViewSettingsSync = ({
     routeMode,
     showCityNames,
     zoomLevel,
+    zoomBehavior,
     sidebarWidth,
     timelineHeight,
     viewMode,
@@ -71,6 +75,7 @@ export const useTripViewSettingsSync = ({
     setTimelineView,
     setMapDockMode,
     setZoomLevel,
+    setZoomBehavior,
     setSidebarWidth,
     setTimelineHeight,
     setShowCityNames,
@@ -121,6 +126,7 @@ export const useTripViewSettingsSync = ({
                 routeMode,
                 showCityNames,
                 zoomLevel,
+                zoomBehavior,
                 sidebarWidth,
                 timelineHeight,
             };
@@ -149,6 +155,7 @@ export const useTripViewSettingsSync = ({
         timelineMode,
         mapDockMode,
         zoomLevel,
+        zoomBehavior,
         viewMode,
         mapStyle,
         routeMode,
@@ -181,6 +188,7 @@ export const useTripViewSettingsSync = ({
         if (initialViewSettings.timelineView) setTimelineView(initialViewSettings.timelineView);
         if (initialViewSettings.mapDockMode) setMapDockMode(initialViewSettings.mapDockMode);
         if (typeof initialViewSettings.zoomLevel === 'number') setZoomLevel(initialViewSettings.zoomLevel);
+        setZoomBehavior(initialViewSettings.zoomBehavior === 'manual' ? 'manual' : 'fit');
         if (typeof initialViewSettings.sidebarWidth === 'number') setSidebarWidth(initialViewSettings.sidebarWidth);
         if (typeof initialViewSettings.timelineHeight === 'number') setTimelineHeight(initialViewSettings.timelineHeight);
         setShowCityNames(initialViewSettings.showCityNames ?? true);
@@ -196,6 +204,7 @@ export const useTripViewSettingsSync = ({
         setTimelineView,
         setMapDockMode,
         setZoomLevel,
+        setZoomBehavior,
         setSidebarWidth,
         setTimelineHeight,
         setShowCityNames,

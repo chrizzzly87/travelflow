@@ -27,7 +27,8 @@ import {
     sortAiModels,
 } from '../config/aiModelCatalog';
 import { getAiProviderMetadata, getAiProviderSortOrder } from '../config/aiProviderCatalog';
-import { buildClassicItineraryPrompt, GenerateOptions } from '../services/aiService';
+import { type GenerateOptions } from '../services/aiService';
+import { buildClassicBenchmarkScenario } from '../services/aiBenchmarkClassicScenarioService';
 import { buildDangerConfirmDialog } from '../services/appDialogPresets';
 import {
     BENCHMARK_DEFAULT_MODEL_IDS,
@@ -43,7 +44,7 @@ import {
     decodeBenchmarkScenarioImportPayload,
 } from '../services/tripGenerationBenchmarkBridge';
 import { dbGetAccessToken, ensureDbSession } from '../services/dbService';
-import { getDaysDifference, getDefaultTripDates } from '../utils';
+import { getDefaultTripDates } from '../utils';
 import {
     buildRunnableBenchmarkTargets,
     getAllSelectedBenchmarkTargetIds,
@@ -51,7 +52,6 @@ import {
     toggleInactiveBenchmarkTargetId,
     type AiBenchmarkRunTarget,
 } from '../utils/aiBenchmarkTargets';
-import { getDestinationPromptLabel, resolveDestinationName } from '../services/destinationService';
 import { useAuth } from '../hooks/useAuth';
 import { AdminShell } from '../components/admin/AdminShell';
 import { AiProviderLogo } from '../components/admin/AiProviderLogo';
@@ -230,20 +230,6 @@ const SATISFACTION_META: Record<SatisfactionRating, { label: string; icon: React
         activeClass: 'border-rose-300 bg-rose-50 text-rose-700',
         idleClass: 'border-slate-300 bg-white text-slate-500 hover:bg-slate-50',
     },
-};
-
-const parseDestinations = (value: string): string[] => {
-    const seen = new Set<string>();
-    return value
-        .split(',')
-        .map((token) => resolveDestinationName(token))
-        .filter(Boolean)
-        .filter((entry) => {
-            const key = entry.toLocaleLowerCase();
-            if (seen.has(key)) return false;
-            seen.add(key);
-            return true;
-        });
 };
 
 const formatDuration = (ms: number | null | undefined): string => {
@@ -1324,50 +1310,17 @@ export const AdminAiBenchmarkPage: React.FC = () => {
     }, [accessToken, hasPendingRuns, refreshTelemetryData]);
 
     const buildScenario = useCallback(() => {
-        const selectedDestinations = parseDestinations(destinations);
-        if (selectedDestinations.length === 0) {
-            throw new Error('Please provide at least one destination.');
-        }
+        const runtimeScenario = buildClassicBenchmarkScenario(readMaskScenario(), {
+            compactOutput: compactBenchmarkOutput,
+        });
+        const options: GenerateOptions = runtimeScenario.generationOptions;
 
-        const destinationPrompt = selectedDestinations.map((entry) => getDestinationPromptLabel(entry)).join(', ');
-        const totalDays = dateInputMode === 'flex'
-            ? Math.max(7, Math.round(flexWeeks) * 7)
-            : getDaysDifference(startDate, endDate);
-
-        const options: GenerateOptions = {
-            budget,
-            pace,
-            interests: notes.split(',').map((token) => token.trim()).filter(Boolean),
-            specificCities: specificCities.trim() || undefined,
-            roundTrip,
-            totalDays,
-            numCities: typeof numCities === 'number' ? numCities : undefined,
-            promptMode: compactBenchmarkOutput ? 'benchmark_compact' : 'default',
-        };
-
-        const prompt = buildClassicItineraryPrompt(destinationPrompt, options);
         return {
-            prompt,
-            startDate,
-            roundTrip,
+            prompt: runtimeScenario.prompt,
+            startDate: runtimeScenario.startDate,
+            roundTrip: runtimeScenario.roundTrip,
             input: {
-                destinations: selectedDestinations,
-                dateInputMode,
-                flexWeeks: dateInputMode === 'flex' ? flexWeeks : null,
-                flexWindow: dateInputMode === 'flex' ? flexWindow : null,
-                budget,
-                pace,
-                notes,
-                specificCities,
-                numCities: typeof numCities === 'number' ? numCities : null,
-                totalDays,
-                roundTrip,
-                routeLock,
-                preferenceSignals: {
-                    travelerSetup,
-                    tripStyle: tripStyleMask,
-                    transportPreference: transportMask,
-                },
+                ...runtimeScenario.input,
                 execution: {
                     timeoutSeconds: benchmarkTimeoutSeconds,
                     compactOutput: compactBenchmarkOutput,
@@ -1389,20 +1342,9 @@ export const AdminAiBenchmarkPage: React.FC = () => {
         };
     }, [
         benchmarkTimeoutSeconds,
-        budget,
         compactBenchmarkOutput,
-        dateInputMode,
-        destinations,
-        endDate,
-        flexWeeks,
-        flexWindow,
-        notes,
-        numCities,
-        pace,
         routeLock,
-        roundTrip,
-        specificCities,
-        startDate,
+        readMaskScenario,
         travelerSetup,
         tripStyleMask,
         transportMask,

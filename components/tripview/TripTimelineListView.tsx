@@ -3,6 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 import { TransportModeIcon } from '../TransportModeIcon';
+import { AnimatedNumber, AnimatedNumberGroup } from '../ui/animated-number';
 import { Checkbox } from '../ui/checkbox';
 import type { ITrip } from '../../types';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
@@ -459,8 +460,24 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
                                                         {cityTitle}
                                                     </h3>
                                                     <div className="flex flex-wrap items-center gap-2">
-                                                        <span className="rounded-full border border-slate-200 px-2.5 py-0.5 text-[11px] font-medium tracking-[0.08em] text-slate-600 uppercase">
-                                                            Days {cityStartDay} - {cityEndDay}
+                                                        <span
+                                                            className="rounded-full border border-slate-200 px-2.5 py-0.5 text-[11px] font-medium tracking-[0.08em] text-slate-600 uppercase"
+                                                            aria-label={`Days ${cityStartDay} - ${cityEndDay}`}
+                                                        >
+                                                            <AnimatedNumberGroup>
+                                                                <span aria-hidden="true" className="inline-flex items-center gap-1.5">
+                                                                    <span>Days</span>
+                                                                    <AnimatedNumber
+                                                                        value={cityStartDay}
+                                                                        format={{ maximumFractionDigits: 0 }}
+                                                                    />
+                                                                    <span>-</span>
+                                                                    <AnimatedNumber
+                                                                        value={cityEndDay}
+                                                                        format={{ maximumFractionDigits: 0 }}
+                                                                    />
+                                                                </span>
+                                                            </AnimatedNumberGroup>
                                                         </span>
                                                         {section.hasToday && (
                                                             <TodayBadge />

@@ -1,5 +1,6 @@
 import {
   SITE_CACHE_CONTROL,
+  SITE_CDN_CACHE_CONTROL,
   TOOL_APP_CACHE_CONTROL,
   buildSiteOgMetadata,
   injectMetaTags,
@@ -164,11 +165,14 @@ export default async (request: Request, context: { next: () => Promise<Response>
     });
 
     const headers = new Headers(baseResponse.headers);
+    const usesStrictToolCache = shouldUseStrictToolHtmlCache(url.pathname);
     headers.set("content-type", "text/html; charset=utf-8");
-    headers.set(
-      "cache-control",
-      shouldUseStrictToolHtmlCache(url.pathname) ? TOOL_APP_CACHE_CONTROL : SITE_CACHE_CONTROL,
-    );
+    headers.set("cache-control", usesStrictToolCache ? TOOL_APP_CACHE_CONTROL : SITE_CACHE_CONTROL);
+    if (usesStrictToolCache) {
+      headers.delete("netlify-cdn-cache-control");
+    } else {
+      headers.set("Netlify-CDN-Cache-Control", SITE_CDN_CACHE_CONTROL);
+    }
     headers.set("x-travelflow-og-source", source);
     if (usedSpaFallback) {
       headers.set("x-travelflow-edge-fallback", "spa-index");

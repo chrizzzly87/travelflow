@@ -2,6 +2,11 @@ import { describe, expect, it } from 'vitest';
 
 import {
   adminBillingStatusClassName,
+  buildAdminBillingAtRiskChartData,
+  buildAdminBillingCurrentMrrCards,
+  buildAdminBillingMrrByTierChartData,
+  buildAdminBillingStatusMixChartData,
+  buildAdminBillingTierMixChartData,
   filterAdminBillingSubscriptionsByRange,
   filterAdminBillingWebhookEventsByRange,
   formatAdminBillingAmount,
@@ -127,5 +132,56 @@ describe('services/adminBillingPresentation', () => {
     expect(normalizeAdminBillingStatus(null, null)).toBe('none');
     expect(humanizeAdminBillingStatus('past_due')).toBe('Past due');
     expect(humanizeAdminBillingStatus('none')).toBe('No subscription');
+  });
+
+  it('builds dashboard chart data and MRR cards from aggregate RPC rows', () => {
+    const dashboard = {
+      active_subscriptions: 4,
+      scheduled_cancellations: 1,
+      grace_subscriptions: 1,
+      failed_webhook_events: 1,
+      current_mrr_by_currency: [
+        { currency: 'USD', amount: 2800, subscriptions: 3 },
+      ],
+      current_mrr_by_tier: [
+        { tier_key: 'tier_mid', currency: 'USD', amount: 900, subscriptions: 1 },
+        { tier_key: 'tier_premium', currency: 'USD', amount: 1900, subscriptions: 2 },
+      ],
+      subscription_mix: [
+        { tier_key: 'tier_mid', count: 1 },
+        { tier_key: 'tier_premium', count: 2 },
+      ],
+      status_mix: [
+        { status: 'active', count: 3 },
+        { status: 'past_due', count: 1 },
+      ],
+      at_risk_revenue: [
+        { status: 'past_due', currency: 'USD', amount: 900, subscriptions: 1 },
+      ],
+    };
+
+    expect(buildAdminBillingCurrentMrrCards(dashboard as any, 'en-US')).toEqual([
+      {
+        currency: 'USD',
+        amountMinor: 2800,
+        amountLabel: '$28.00',
+        subscriptions: 3,
+      },
+    ]);
+    expect(buildAdminBillingTierMixChartData(dashboard as any)).toEqual([
+      { tier: 'Explorer', count: 1 },
+      { tier: 'Globetrotter', count: 2 },
+    ]);
+    expect(buildAdminBillingStatusMixChartData(dashboard as any)).toEqual([
+      { status: 'Active', count: 3 },
+      { status: 'Past due', count: 1 },
+    ]);
+    expect(buildAdminBillingMrrByTierChartData(dashboard as any)).toEqual([
+      { label: 'Explorer · USD', amount: 9 },
+      { label: 'Globetrotter · USD', amount: 19 },
+    ]);
+    expect(buildAdminBillingAtRiskChartData(dashboard as any)).toEqual([
+      { label: 'Past due · USD', amount: 9 },
+    ]);
   });
 });

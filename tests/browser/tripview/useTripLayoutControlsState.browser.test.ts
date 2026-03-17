@@ -36,6 +36,7 @@ describe('components/tripview/useTripLayoutControlsState', () => {
     expect(result.current.timelineHeight).toBe(460);
     expect(result.current.detailsWidth).toBe(540);
     expect(result.current.zoomLevel).toBe(2.25);
+    expect(result.current.zoomBehavior).toBe('fit');
   });
 
   it('prefers initial view settings over persisted storage where available', () => {
@@ -60,6 +61,7 @@ describe('components/tripview/useTripLayoutControlsState', () => {
           timelineMode: 'calendar',
           timelineView: 'horizontal',
           zoomLevel: 1.5,
+          zoomBehavior: 'manual',
           sidebarWidth: 580,
           timelineHeight: 410,
         },
@@ -75,5 +77,6 @@ describe('components/tripview/useTripLayoutControlsState', () => {
     expect(result.current.sidebarWidth).toBe(580);
     expect(result.current.timelineHeight).toBe(410);
     expect(result.current.zoomLevel).toBe(1.5);
+    expect(result.current.zoomBehavior).toBe('manual');
   });
 });

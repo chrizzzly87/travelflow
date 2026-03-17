@@ -95,8 +95,14 @@ export const TermsPage: React.FC = () => {
         && access?.termsCurrentVersion
         && access?.termsAcceptedVersion !== access?.termsCurrentVersion
     );
-    const acceptRequired = hasOutdatedAcceptedVersion && Boolean(access?.termsAcceptanceRequired);
-    const canAcceptCurrentTerms = hasOutdatedAcceptedVersion;
+    const forcedAcceptanceFlow = Boolean(
+        searchParams.get('accept') === 'required'
+        && isAuthenticated
+        && !isAnonymous
+        && access?.termsAcceptanceRequired
+    );
+    const acceptRequired = forcedAcceptanceFlow || (hasOutdatedAcceptedVersion && Boolean(access?.termsAcceptanceRequired));
+    const canAcceptCurrentTerms = forcedAcceptanceFlow || hasOutdatedAcceptedVersion;
 
     const nextPath = useMemo(
         () => resolvePreferredNextPath(searchParams.get('next')),

@@ -38,6 +38,10 @@ describe('paddle config edge', () => {
         tier_mid: true,
         tier_premium: false,
       },
+      priceIds: {
+        tier_mid: 'pri_mid',
+        tier_premium: null,
+      },
       issues: [
         {
           code: 'api_key_environment_mismatch',

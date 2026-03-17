@@ -14,6 +14,7 @@ const BASE_VIEW_SETTINGS: IViewSettings = {
   routeMode: 'simple',
   showCityNames: true,
   zoomLevel: 1.25,
+  zoomBehavior: 'fit',
   sidebarWidth: 480,
   timelineHeight: 320,
 };
@@ -27,6 +28,7 @@ const makeHookProps = (): Parameters<typeof useTripViewSettingsSync>[0] => ({
   routeMode: 'simple',
   showCityNames: true,
   zoomLevel: 1.25,
+  zoomBehavior: 'fit',
   sidebarWidth: 480,
   timelineHeight: 320,
   viewMode: 'planner',
@@ -40,6 +42,7 @@ const makeHookProps = (): Parameters<typeof useTripViewSettingsSync>[0] => ({
   setTimelineView: vi.fn(),
   setMapDockMode: vi.fn(),
   setZoomLevel: vi.fn(),
+  setZoomBehavior: vi.fn(),
   setSidebarWidth: vi.fn(),
   setTimelineHeight: vi.fn(),
   setShowCityNames: vi.fn(),
@@ -113,6 +116,7 @@ describe('components/tripview/useTripViewSettingsSync', () => {
       routeMode: 'simple',
       showCityNames: true,
       zoomLevel: 1.25,
+      zoomBehavior: 'fit',
       sidebarWidth: 480,
       timelineHeight: 320,
     });
@@ -174,6 +178,7 @@ describe('components/tripview/useTripViewSettingsSync', () => {
       mapStyle: 'dark',
       routeMode: 'realistic',
       zoomLevel: 2.5,
+      zoomBehavior: 'manual',
       sidebarWidth: 640,
       timelineHeight: 420,
     };
@@ -195,6 +200,7 @@ describe('components/tripview/useTripViewSettingsSync', () => {
     expect(props.setTimelineView).toHaveBeenCalledWith('vertical');
     expect(props.setMapDockMode).toHaveBeenCalledWith('floating');
     expect(props.setZoomLevel).toHaveBeenCalledWith(2.5);
+    expect(props.setZoomBehavior).toHaveBeenCalledWith('manual');
     expect(props.setSidebarWidth).toHaveBeenCalledWith(640);
     expect(props.setTimelineHeight).toHaveBeenCalledWith(420);
     expect(props.setShowCityNames).toHaveBeenCalledWith(true);

@@ -4,6 +4,10 @@ import path from 'node:path';
 import {
   buildSiteOgMetadata,
   enumerateSiteOgPathnames,
+  SITE_CACHE_CONTROL,
+  SITE_CDN_CACHE_CONTROL,
+  TOOL_APP_CACHE_CONTROL,
+  shouldUseStrictToolHtmlCache,
 } from '../../netlify/edge-lib/site-og-metadata.ts';
 import {
   buildSiteOgStaticRenderPayload,
@@ -159,6 +163,23 @@ describe('site OG metadata resolver', () => {
     expect(exampleMeta.ogImageUrl).toContain('/api/og/trip?');
     expect(exampleMeta.ogImageUrl).toContain('title=26D+Temples+%26+Beaches');
     expect(exampleMeta.ogImageUrl).toContain('map=https%3A%2F%2Ftravelflowapp.netlify.app%2Fimages%2Ftrip-maps%2Fthailand-islands.png');
+  });
+});
+
+describe('site OG html cache policy', () => {
+  it('keeps marketing html browser-revalidated while extending the Netlify CDN ttl', () => {
+    expect(shouldUseStrictToolHtmlCache('/')).toBe(false);
+    expect(shouldUseStrictToolHtmlCache('/pricing')).toBe(false);
+    expect(shouldUseStrictToolHtmlCache('/blog')).toBe(false);
+    expect(SITE_CACHE_CONTROL).toBe('public, max-age=0, must-revalidate');
+    expect(SITE_CDN_CACHE_CONTROL).toBe('public, max-age=3600, stale-while-revalidate=86400');
+  });
+
+  it('keeps planner and admin html on the stricter short cache policy', () => {
+    expect(shouldUseStrictToolHtmlCache('/create-trip')).toBe(true);
+    expect(shouldUseStrictToolHtmlCache('/example/thailand-islands')).toBe(true);
+    expect(shouldUseStrictToolHtmlCache('/admin/dashboard')).toBe(true);
+    expect(TOOL_APP_CACHE_CONTROL).toBe('public, max-age=0, s-maxage=60, stale-while-revalidate=60, must-revalidate');
   });
 });
 

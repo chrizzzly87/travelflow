@@ -57,6 +57,17 @@ describe('services/releaseNotesService', () => {
     expect(isReleaseInsideAnnouncementWindow(future, Date.parse('2026-01-01T00:00:00Z'))).toBe(false);
   });
 
+  it('falls back to a 24 hour announcement window when in-app hours are invalid', () => {
+    const note = {
+      ...getPublishedReleaseNotes()[0],
+      inAppHours: Number.NaN,
+    };
+    const publishedAt = Date.parse(note.publishedAt);
+
+    expect(isReleaseInsideAnnouncementWindow(note, publishedAt + (23 * 60 * 60 * 1000))).toBe(true);
+    expect(isReleaseInsideAnnouncementWindow(note, publishedAt + (25 * 60 * 60 * 1000))).toBe(false);
+  });
+
   it('returns latest notifiable release only within window', () => {
     const latest = getPublishedReleaseNotes().find((note) => note.notifyInApp);
     if (!latest) {

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, ArrowSquareOut, Check, CheckCircle, CreditCard, SpinnerGap, SuitcaseRolling, UserCircle } from '@phosphor-icons/react';
+import { ArrowLeft, ArrowSquareOut, Check, CheckCircle, CreditCard, NotePencil, SpinnerGap, SuitcaseRolling, UserCircle, X } from '@phosphor-icons/react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
@@ -14,23 +14,37 @@ import { buildLocalizedMarketingPath, buildPath } from '../config/routes';
 import { useAuth } from '../hooks/useAuth';
 import {
     buildBillingCheckoutPath,
+    getCurrentSubscriptionSummary,
+    getPaddleSubscriptionManagementUrls,
+    lookupPaddleDiscount,
+    previewPaddleSubscriptionUpgrade,
+    applyPaddleSubscriptionUpgrade,
+    refreshCurrentPaddleSubscription,
     startPaddleCheckoutSession,
+    syncPaddleTransaction,
+    type BillingApiError,
+    type BillingDiscountLookup,
+    type BillingSubscriptionSummary,
+    type BillingUpgradePreview,
     type BillingCheckoutSource,
     type BillingCheckoutTierKey,
 } from '../services/billingService';
+import { resolveBillingTierDecision, resolveEffectiveBillingTierKey } from '../lib/billing/subscriptionState';
 import {
     appendPaddleCheckoutContext,
     fetchPaddlePublicConfig,
     initializePaddleJs,
     isPaddleTierCheckoutConfigured,
     navigateToPaddleCheckout,
+    openPaddleInlineCheckout,
     PADDLE_INLINE_FRAME_TARGET_CLASS,
     readPaddleCheckoutLocationContext,
     resolveSameOriginPaddleCheckoutPath,
+    updatePaddleInlineCheckout,
     type PaddleCheckoutEvent,
     type PaddlePublicConfig,
 } from '../services/paddleClient';
-import { acceptCurrentTerms } from '../services/authService';
+import { acceptCurrentTerms, getCurrentAccessContext, isSupabaseAuthNotConfiguredError } from '../services/authService';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
 import { updateCurrentUserProfile } from '../services/profileService';
 import { registerTripGenerationCompletionWatch } from '../services/tripGenerationCompletionWatchService';
@@ -70,8 +84,46 @@ const asDisplayCount = (value: number | null, unlimitedLabel: string): string =>
 const isSafeInternalPath = (value: string | null | undefined): value is string => Boolean(value && value.startsWith('/') && !value.startsWith('//'));
 const isPaidTierKey = (value: string | null | undefined): value is BillingCheckoutTierKey => value === 'tier_mid' || value === 'tier_premium';
 const asTrimmedString = (value: unknown): string => typeof value === 'string' ? value.trim() : '';
+const asOptionalObject = (value: unknown): Record<string, unknown> | null =>
+    value && typeof value === 'object' ? value as Record<string, unknown> : null;
+const isMissingLinkedSubscriptionError = (error: unknown): boolean =>
+    error instanceof Error && error.message.includes('No paid Paddle subscription is linked');
+const isExistingSubscriptionCheckoutError = (error: unknown): boolean =>
+    Boolean(error && typeof error === 'object' && (((error as BillingApiError).code === 'existing_paid_subscription') || ((error as BillingApiError).code === 'existing_paid_subscription_requires_refresh')));
 
-const checkoutInputClassName = 'mt-1 h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 shadow-sm transition-colors placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60';
+const extractPaddleEventDiscountCode = (event: PaddleCheckoutEvent): string | null => {
+    const data = asOptionalObject(event.data);
+    const discount = asOptionalObject(data?.discount);
+    return asTrimmedString(discount?.code)
+        || asTrimmedString(discount?.voucher_code)
+        || asTrimmedString(data?.discount_code)
+        || asTrimmedString(data?.voucher_code)
+        || null;
+};
+
+const resolveDiscountBadgeLabel = (
+    locale: string,
+    lookup: BillingDiscountLookup | null,
+    fallbackCode: string | null,
+): string | null => {
+    const formatCurrency = (amount: number, currencyCode: string) => `-${new Intl.NumberFormat(locale, {
+        style: 'currency',
+        currency: currencyCode,
+    }).format(amount / 100)}`;
+
+    if (lookup?.estimate?.savingsAmount && lookup.estimate.currencyCode) {
+        return formatCurrency(lookup.estimate.savingsAmount, lookup.estimate.currencyCode);
+    }
+    if (lookup?.type === 'percentage' && lookup.amount) {
+        return `-${lookup.amount}%`;
+    }
+    if (lookup?.type === 'flat' && lookup.amount && lookup.currencyCode) {
+        return formatCurrency(lookup.amount, lookup.currencyCode);
+    }
+    return fallbackCode ? fallbackCode.toUpperCase() : null;
+};
+
+const checkoutInputClassName = 'mt-1 h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 shadow-sm transition-colors placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 [&:user-invalid]:border-rose-400 [&:user-invalid]:bg-rose-50 [&:user-invalid]:text-rose-900 [&:user-invalid]:focus-visible:ring-rose-200';
 const checkoutFieldLabelClassName = 'text-sm font-medium text-slate-700';
 const checkoutActionClassName = 'inline-flex h-11 items-center justify-center gap-2 rounded-md px-4 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60';
 const checkoutSectionLabelClassName = 'text-xs font-semibold uppercase tracking-[0.14em] text-slate-500';
@@ -136,6 +188,7 @@ export const CheckoutPage: React.FC = () => {
         loginWithPassword,
         registerWithPassword,
     } = useAuth();
+    const accessBilling = access?.billing ?? null;
 
     const [form, setForm] = useState<CheckoutProfileFormState>(EMPTY_FORM);
     const [checkoutErrorMessage, setCheckoutErrorMessage] = useState<string | null>(null);
@@ -144,6 +197,7 @@ export const CheckoutPage: React.FC = () => {
     const [authPassword, setAuthPassword] = useState('');
     const [authErrorMessage, setAuthErrorMessage] = useState<string | null>(null);
     const [authInfoMessage, setAuthInfoMessage] = useState<string | null>(null);
+    const [showAuthSupportMessage, setShowAuthSupportMessage] = useState(false);
     const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
     const [isAuthSubmitting, setIsAuthSubmitting] = useState(false);
     const [paddlePublicConfig, setPaddlePublicConfig] = useState<PaddlePublicConfig | null>(null);
@@ -151,12 +205,33 @@ export const CheckoutPage: React.FC = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isAutoAcceptingSignupTerms, setIsAutoAcceptingSignupTerms] = useState(false);
     const [hasHydratedForm, setHasHydratedForm] = useState(false);
+    const [isTravelerDetailsEditing, setIsTravelerDetailsEditing] = useState(false);
+    const [isTravelerDetailsSaving, setIsTravelerDetailsSaving] = useState(false);
     const [checkoutCompleted, setCheckoutCompleted] = useState(false);
+    const [completedFlowMode, setCompletedFlowMode] = useState<'acquisition' | 'upgrade' | null>(null);
+    const [postPaymentSyncState, setPostPaymentSyncState] = useState<'idle' | 'syncing' | 'synced' | 'delayed'>('idle');
     const [postPaymentTripId, setPostPaymentTripId] = useState<string | null>(null);
     const [postPaymentClaimState, setPostPaymentClaimState] = useState<'idle' | 'processing' | 'ready' | 'error'>('idle');
     const [postPaymentClaimErrorMessage, setPostPaymentClaimErrorMessage] = useState<string | null>(null);
+    const [subscriptionSummary, setSubscriptionSummary] = useState<BillingSubscriptionSummary | null>(null);
+    const [isSubscriptionSummaryLoading, setIsSubscriptionSummaryLoading] = useState(false);
+    const [upgradePreview, setUpgradePreview] = useState<BillingUpgradePreview | null>(null);
+    const [isUpgradePreviewLoading, setIsUpgradePreviewLoading] = useState(false);
+    const [isUpgradeSubmitting, setIsUpgradeSubmitting] = useState(false);
+    const [isBillingManagementLoading, setIsBillingManagementLoading] = useState(false);
+    const [discountLookup, setDiscountLookup] = useState<BillingDiscountLookup | null>(null);
+    const [discountInput, setDiscountInput] = useState('');
+    const [isDiscountPreviewLoading, setIsDiscountPreviewLoading] = useState(false);
+    const [discountPreviewLookup, setDiscountPreviewLookup] = useState<BillingDiscountLookup | null>(null);
+    const [discountPreviewErrorMessage, setDiscountPreviewErrorMessage] = useState<string | null>(null);
+    const [appliedDiscountErrorMessage, setAppliedDiscountErrorMessage] = useState<string | null>(null);
+    const [shouldAutoContinueLockedDetails, setShouldAutoContinueLockedDetails] = useState(true);
     const inlineCheckoutSectionRef = useRef<HTMLDivElement | null>(null);
     const claimProcessingRequestIdRef = useRef<string | null>(null);
+    const autoStartedCheckoutKeyRef = useRef<string | null>(null);
+    const travelerDetailsInitializedRef = useRef(false);
+    const openedInlineTransactionRef = useRef<string | null>(null);
+    const billingRepairAttemptedRef = useRef(false);
 
     const activeLocale = useMemo(
         () => normalizeLocale(i18n.resolvedLanguage ?? i18n.language ?? DEFAULT_LOCALE),
@@ -172,6 +247,25 @@ export const CheckoutPage: React.FC = () => {
     const selectedTier = PLAN_CATALOG[selectedTierKey];
     const source = (checkoutLocationContext.source || 'checkout_page') as BillingCheckoutSource | string;
     const isEligibleAccount = isAuthenticated && access?.isAnonymous !== true;
+    const currentPaidTierKey = resolveEffectiveBillingTierKey({
+        currentTierKey: access?.tierKey === 'tier_mid' || access?.tierKey === 'tier_premium'
+            ? access.tierKey
+            : 'tier_free',
+        subscription: subscriptionSummary,
+        priceIds: paddlePublicConfig?.priceIds,
+    });
+    const billingDecision = useMemo(() => (
+        isEligibleAccount
+            ? resolveBillingTierDecision({
+                currentTierKey: currentPaidTierKey,
+                targetTierKey: selectedTierKey,
+                subscription: subscriptionSummary,
+            })
+            : null
+    ), [currentPaidTierKey, isEligibleAccount, selectedTierKey, subscriptionSummary]);
+    const isUpgradeFlow = Boolean(isEligibleAccount && currentPaidTierKey !== 'tier_free' && billingDecision?.action === 'upgrade');
+    const isCurrentPlanFlow = Boolean(isEligibleAccount && currentPaidTierKey !== 'tier_free' && billingDecision?.action === 'current');
+    const isManageOnlyFlow = Boolean(isEligibleAccount && currentPaidTierKey !== 'tier_free' && billingDecision?.action === 'manage');
     const hasInlineCheckout = Boolean(checkoutLocationContext.transactionId);
     const supportsSelectedTier = isPaddleTierCheckoutConfigured(paddlePublicConfig, selectedTierKey);
     const fromTripCheckout = source === 'trip_paywall_strip' || source === 'trip_paywall_overlay';
@@ -186,18 +280,39 @@ export const CheckoutPage: React.FC = () => {
         : t('checkout.backToPricing', { ns: 'pricing' });
     const currentStep = hasInlineCheckout ? 3 : isEligibleAccount ? 2 : 1;
     const accountEmail = asTrimmedString(session?.user?.email);
+    const travelerDetailsValid = Boolean(
+        form.firstName.trim()
+        && form.lastName.trim()
+        && form.country.trim()
+        && form.city.trim()
+    );
+    const travelerDetailsLocked = isEligibleAccount && travelerDetailsValid && !isTravelerDetailsEditing;
     const hasPendingSignupTermsAcceptance = new URLSearchParams(location.search).get('signup_accept_terms') === '1';
     const checkoutRedirectTo = typeof window !== 'undefined'
         ? window.location.href
         : `${location.pathname}${location.search}${location.hash}`;
     const termsPath = useMemo(() => buildLocalizedMarketingPath('terms', activeLocale), [activeLocale]);
     const privacyPath = useMemo(() => buildLocalizedMarketingPath('privacy', activeLocale), [activeLocale]);
+    const contactPath = useMemo(() => buildLocalizedMarketingPath('contact', activeLocale), [activeLocale]);
     const unlimitedLabel = t('shared.unlimited', { ns: 'pricing' });
     const noExpiryLabel = t('shared.noExpiry', { ns: 'pricing' });
     const enabledLabel = t('shared.enabled', { ns: 'pricing' });
     const disabledLabel = t('shared.disabled', { ns: 'pricing' });
     const profileActionPath = buildPath('profileSettings');
     const createTripPath = buildPath('createTrip');
+
+    const loadSubscriptionSummaryWithRetry = useCallback(async (): Promise<BillingSubscriptionSummary | null> => {
+        for (let attempt = 0; attempt < 3; attempt += 1) {
+            const summary = await getCurrentSubscriptionSummary();
+            if (summary) {
+                return summary;
+            }
+            if (attempt < 2) {
+                await new Promise((resolve) => window.setTimeout(resolve, 250 * (attempt + 1)));
+            }
+        }
+        return null;
+    }, []);
 
     const resolveTierFeatures = useCallback((tierKey: BillingCheckoutTierKey) => {
         const tier = PLAN_CATALOG[tierKey];
@@ -235,6 +350,34 @@ export const CheckoutPage: React.FC = () => {
     }, [activeLocale, profile]);
 
     useEffect(() => {
+        if (isEligibleAccount) return;
+        if (authEmail.trim()) return;
+        const fallbackEmail = accountEmail || asTrimmedString(access?.email) || '';
+        if (!fallbackEmail) return;
+        setAuthEmail(fallbackEmail);
+    }, [access?.email, accountEmail, authEmail, isEligibleAccount]);
+
+    useEffect(() => {
+        travelerDetailsInitializedRef.current = false;
+        autoStartedCheckoutKeyRef.current = null;
+        setShouldAutoContinueLockedDetails(true);
+    }, [checkoutLocationContext.claimId, checkoutLocationContext.tripId, selectedTierKey, session?.user?.id, source]);
+
+    useEffect(() => {
+        if (!hasHydratedForm || !isEligibleAccount || travelerDetailsInitializedRef.current) return;
+        setIsTravelerDetailsEditing(!travelerDetailsValid);
+        travelerDetailsInitializedRef.current = true;
+    }, [hasHydratedForm, isEligibleAccount, travelerDetailsValid]);
+
+    useEffect(() => {
+        setDiscountInput(checkoutLocationContext.discountCode || '');
+        setDiscountPreviewLookup(null);
+        setDiscountPreviewErrorMessage(null);
+        setAppliedDiscountErrorMessage(null);
+        setIsDiscountPreviewLoading(false);
+    }, [checkoutLocationContext.discountCode, selectedTierKey]);
+
+    useEffect(() => {
         let cancelled = false;
         void fetchPaddlePublicConfig()
             .then((config) => {
@@ -249,6 +392,54 @@ export const CheckoutPage: React.FC = () => {
             cancelled = true;
         };
     }, []);
+
+    useEffect(() => {
+        if (!isEligibleAccount) {
+            setSubscriptionSummary(null);
+            setIsSubscriptionSummaryLoading(false);
+            billingRepairAttemptedRef.current = false;
+            return;
+        }
+
+        let cancelled = false;
+        setIsSubscriptionSummaryLoading(true);
+        void (async () => {
+            let summary = await loadSubscriptionSummaryWithRetry();
+            const shouldAttemptRepair = !billingRepairAttemptedRef.current && (
+                !summary
+                || Boolean(accessBilling?.providerSubscriptionId)
+                || (access?.tierKey !== 'tier_free')
+            );
+            if (shouldAttemptRepair) {
+                billingRepairAttemptedRef.current = true;
+                try {
+                    const repaired = await refreshCurrentPaddleSubscription();
+                    await refreshAccess();
+                    summary = repaired.summary ?? await loadSubscriptionSummaryWithRetry();
+                } catch (error) {
+                    if (!cancelled && !isMissingLinkedSubscriptionError(error)) {
+                        console.warn('Checkout billing summary refresh failed.', error);
+                    }
+                }
+            }
+            if (cancelled) return;
+            setSubscriptionSummary(summary);
+        })()
+            .catch((error) => {
+                if (cancelled) return;
+                console.warn('Failed to load current subscription summary on checkout.', error);
+                setSubscriptionSummary(null);
+            })
+            .finally(() => {
+                if (!cancelled) {
+                    setIsSubscriptionSummaryLoading(false);
+                }
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [access?.tierKey, accessBilling?.providerSubscriptionId, checkoutCompleted, isEligibleAccount, loadSubscriptionSummaryWithRetry, refreshAccess]);
 
     useEffect(() => {
         trackEvent('checkout__page--view', {
@@ -268,10 +459,15 @@ export const CheckoutPage: React.FC = () => {
 
     useEffect(() => {
         setCheckoutCompleted(false);
+        setCompletedFlowMode(null);
+        setPostPaymentSyncState('idle');
         setPostPaymentTripId(null);
         setPostPaymentClaimState('idle');
         setPostPaymentClaimErrorMessage(null);
         claimProcessingRequestIdRef.current = null;
+        if (!checkoutLocationContext.transactionId) {
+            openedInlineTransactionRef.current = null;
+        }
     }, [checkoutLocationContext.transactionId]);
 
     useEffect(() => {
@@ -294,16 +490,21 @@ export const CheckoutPage: React.FC = () => {
         void acceptCurrentTerms({
             locale: activeLocale,
             source: 'signup_checkout_email_confirmation',
-        }).then(({ error }) => {
+        }).then(async ({ error }) => {
             if (cancelled) return;
             if (error) {
                 setCheckoutErrorMessage(error.message || t('checkout.errorConfig', { ns: 'pricing' }));
                 return;
             }
+            try {
+                await refreshAccess();
+            } catch (refreshError) {
+                if (!cancelled) {
+                    console.warn('Checkout terms refresh failed after confirmation redirect.', refreshError);
+                }
+            }
+            if (cancelled) return;
             navigate(cleanedTarget, { replace: true });
-            void refreshAccess().catch((refreshError) => {
-                console.warn('Checkout terms refresh failed after confirmation redirect.', refreshError);
-            });
         }).finally(() => {
             if (!cancelled) {
                 setIsAutoAcceptingSignupTerms(false);
@@ -327,12 +528,48 @@ export const CheckoutPage: React.FC = () => {
         t,
     ]);
 
+    const syncCheckoutDiscountCode = useCallback((discountCode: string | null) => {
+        const normalizedNextCode = asTrimmedString(discountCode).toUpperCase();
+        const normalizedCurrentCode = (checkoutLocationContext.discountCode || '').trim().toUpperCase();
+        if (normalizedNextCode === normalizedCurrentCode) {
+            return;
+        }
+
+        navigate(buildBillingCheckoutPath({
+            tierKey: selectedTierKey,
+            source,
+            claimId: checkoutLocationContext.claimId,
+            returnTo: returnToPath,
+            tripId: checkoutLocationContext.tripId,
+            discountCode: normalizedNextCode || null,
+        }));
+    }, [checkoutLocationContext.claimId, checkoutLocationContext.discountCode, checkoutLocationContext.tripId, navigate, returnToPath, selectedTierKey, source]);
+
     const handlePaddleCheckoutEvent = useCallback((event: PaddleCheckoutEvent) => {
         if (typeof event.name === 'string' && event.name.startsWith('checkout.')) {
             setIsInlineCheckoutLoading(false);
         }
+        if (event.name === 'checkout.discount.applied') {
+            const eventDiscountCode = extractPaddleEventDiscountCode(event);
+            if (eventDiscountCode) {
+                setDiscountInput(eventDiscountCode.toUpperCase());
+                setDiscountPreviewErrorMessage(null);
+                setAppliedDiscountErrorMessage(null);
+                syncCheckoutDiscountCode(eventDiscountCode);
+            }
+        }
+        if (event.name === 'checkout.discount.removed') {
+            setDiscountInput('');
+            setDiscountLookup(null);
+            setDiscountPreviewLookup(null);
+            setDiscountPreviewErrorMessage(null);
+            setAppliedDiscountErrorMessage(null);
+            syncCheckoutDiscountCode(null);
+        }
         if (event.name === 'checkout.completed') {
             setCheckoutCompleted(true);
+            setCompletedFlowMode('acquisition');
+            setPostPaymentSyncState('idle');
             setPostPaymentClaimErrorMessage(null);
             showAppToast({
                 tone: 'success',
@@ -340,11 +577,89 @@ export const CheckoutPage: React.FC = () => {
                 description: t('checkout.paymentCompletedDescription', { ns: 'pricing' }),
             });
         }
-    }, [t]);
+    }, [syncCheckoutDiscountCode, t]);
+
+    useEffect(() => {
+        if (!checkoutCompleted || completedFlowMode !== 'acquisition' || !isEligibleAccount || postPaymentSyncState !== 'idle') {
+            return;
+        }
+
+        let cancelled = false;
+        setPostPaymentSyncState('syncing');
+
+        const run = async () => {
+            for (let attempt = 0; attempt < 6; attempt += 1) {
+                if (cancelled) return;
+
+                if (checkoutLocationContext.transactionId && attempt < 4) {
+                    try {
+                        await syncPaddleTransaction(checkoutLocationContext.transactionId);
+                    } catch (error) {
+                        if (!cancelled) {
+                            console.warn('Checkout post-payment transaction sync failed.', error);
+                        }
+                    }
+                }
+
+                if (attempt === 0 || attempt === 2) {
+                    try {
+                        await getPaddleSubscriptionManagementUrls();
+                    } catch (error) {
+                        if (!cancelled) {
+                            console.warn('Checkout post-payment Paddle sync fallback failed.', error);
+                        }
+                    }
+                }
+
+                try {
+                    await refreshAccess();
+                } catch (error) {
+                    if (!cancelled) {
+                        console.warn('Checkout post-payment access refresh failed.', error);
+                    }
+                }
+
+                try {
+                    const refreshedSummary = await getCurrentSubscriptionSummary();
+                    if (!cancelled) {
+                        setSubscriptionSummary(refreshedSummary);
+                    }
+                } catch (error) {
+                    if (!cancelled) {
+                        console.warn('Checkout post-payment subscription refresh failed.', error);
+                    }
+                }
+
+                try {
+                    const refreshedAccess = await getCurrentAccessContext();
+                    if (!cancelled && refreshedAccess.tierKey === selectedTierKey) {
+                        setPostPaymentSyncState('synced');
+                        return;
+                    }
+                } catch (error) {
+                    if (!cancelled) {
+                        console.warn('Checkout post-payment access snapshot failed.', error);
+                    }
+                }
+
+                await new Promise((resolve) => window.setTimeout(resolve, attempt < 2 ? 900 : 1600));
+            }
+
+            if (!cancelled) {
+                setPostPaymentSyncState('delayed');
+            }
+        };
+
+        void run();
+        return () => {
+            cancelled = true;
+        };
+    }, [checkoutCompleted, checkoutLocationContext.transactionId, completedFlowMode, isEligibleAccount, postPaymentSyncState, refreshAccess, selectedTierKey]);
 
     useEffect(() => {
         const claimId = checkoutLocationContext.claimId;
-        if (!checkoutCompleted || !claimId || !isEligibleAccount) {
+        const canProcessClaim = completedFlowMode === 'upgrade' || postPaymentSyncState === 'synced';
+        if (!checkoutCompleted || !claimId || !isEligibleAccount || !canProcessClaim) {
             return;
         }
         if (claimProcessingRequestIdRef.current === claimId) {
@@ -388,26 +703,124 @@ export const CheckoutPage: React.FC = () => {
         return () => {
             cancelled = true;
         };
-    }, [checkoutCompleted, checkoutLocationContext.claimId, isEligibleAccount, selectedTierKey, source, t]);
+    }, [checkoutCompleted, checkoutLocationContext.claimId, completedFlowMode, isEligibleAccount, postPaymentSyncState, selectedTierKey, source, t]);
 
     useEffect(() => {
-        if (!hasInlineCheckout || !paddlePublicConfig || paddlePublicConfig.issues.length > 0) return;
+        const transactionId = checkoutLocationContext.transactionId;
+        if (!transactionId || !hasInlineCheckout || !paddlePublicConfig || paddlePublicConfig.issues.length > 0) return;
+        if (openedInlineTransactionRef.current === transactionId) return;
+
         let cancelled = false;
         setIsInlineCheckoutLoading(true);
+
         void initializePaddleJs({
             environment: paddlePublicConfig.environment,
             eventCallback: handlePaddleCheckoutEvent,
             locale: activeLocale,
         }).then((ready) => {
-            if (!ready && !cancelled) {
+            if (cancelled) return;
+            if (!ready) {
                 setIsInlineCheckoutLoading(false);
                 setCheckoutErrorMessage(t('checkout.errorConfig', { ns: 'pricing' }));
+                return;
             }
+
+            const opened = openPaddleInlineCheckout({
+                transactionId,
+                customerEmail: accountEmail || authEmail,
+                discountCode: checkoutLocationContext.discountCode,
+            });
+
+            if (!opened) {
+                setIsInlineCheckoutLoading(false);
+                setCheckoutErrorMessage(t('checkout.errorConfig', { ns: 'pricing' }));
+                return;
+            }
+
+            openedInlineTransactionRef.current = transactionId;
+            setCheckoutErrorMessage((current) => (
+                current === t('checkout.errorConfig', { ns: 'pricing' }) ? null : current
+            ));
         });
+
         return () => {
             cancelled = true;
         };
-    }, [activeLocale, handlePaddleCheckoutEvent, hasInlineCheckout, paddlePublicConfig, t]);
+    }, [
+        accountEmail,
+        activeLocale,
+        authEmail,
+        checkoutLocationContext.discountCode,
+        checkoutLocationContext.transactionId,
+        handlePaddleCheckoutEvent,
+        hasInlineCheckout,
+        paddlePublicConfig,
+        t,
+    ]);
+
+    useEffect(() => {
+        if (!isUpgradeFlow) {
+            setUpgradePreview(null);
+            setIsUpgradePreviewLoading(false);
+            return;
+        }
+
+        let cancelled = false;
+        setIsUpgradePreviewLoading(true);
+        setCheckoutErrorMessage(null);
+        void previewPaddleSubscriptionUpgrade(selectedTierKey)
+            .then((preview) => {
+                if (cancelled) return;
+                setUpgradePreview(preview);
+            })
+            .catch((error) => {
+                if (cancelled) return;
+                setUpgradePreview(null);
+                setCheckoutErrorMessage(error instanceof Error ? error.message : t('checkout.errorConfig', { ns: 'pricing' }));
+            })
+            .finally(() => {
+                if (!cancelled) {
+                    setIsUpgradePreviewLoading(false);
+                }
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [isUpgradeFlow, selectedTierKey, t]);
+
+    useEffect(() => {
+        const discountCode = checkoutLocationContext.discountCode;
+        if (!discountCode || !supportsSelectedTier) {
+            setDiscountLookup(null);
+            setAppliedDiscountErrorMessage(null);
+            return;
+        }
+        if (discountLookup?.code === discountCode.toUpperCase() && discountLookup.applicableToTier) {
+            setAppliedDiscountErrorMessage(null);
+            return;
+        }
+
+        let cancelled = false;
+        void lookupPaddleDiscount(discountCode, selectedTierKey)
+            .then((lookup) => {
+                if (!cancelled) {
+                    setDiscountLookup(lookup);
+                    setAppliedDiscountErrorMessage(null);
+                }
+            })
+            .catch((error) => {
+                if (!cancelled) {
+                    console.warn('Checkout discount lookup failed.', error);
+                    setDiscountLookup(null);
+                    setAppliedDiscountErrorMessage(error instanceof Error ? error.message : t('voucher.invalidMessage', { ns: 'pricing' }));
+                }
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [checkoutLocationContext.discountCode, discountLookup, selectedTierKey, supportsSelectedTier, t]);
 
     useEffect(() => {
         if (!hasInlineCheckout || !inlineCheckoutSectionRef.current) return;
@@ -439,6 +852,124 @@ export const CheckoutPage: React.FC = () => {
         && Boolean(checkoutLocationContext.claimId)
         && isSafeInternalPath(returnToPath)
         && returnToPath !== buildPath('pricing');
+    const shouldShowAcquisitionFlow = !isUpgradeFlow && !isCurrentPlanFlow && !isManageOnlyFlow;
+    const currentPaidTierName = currentPaidTierKey !== 'tier_free'
+        ? t(`tiers.${PLAN_CATALOG[currentPaidTierKey].publicSlug}.name`, { ns: 'pricing' })
+        : null;
+    const autoCheckoutKey = `${selectedTierKey}:${source}:${checkoutLocationContext.claimId || ''}:${checkoutLocationContext.tripId || ''}:${checkoutLocationContext.discountCode || ''}:${session?.user?.id || 'guest'}`;
+    const normalizedAppliedDiscountCode = (checkoutLocationContext.discountCode || '').trim().toUpperCase();
+    const normalizedDiscountInput = discountInput.trim().toUpperCase();
+    const hasAppliedDiscountCode = Boolean(normalizedAppliedDiscountCode);
+    const activeDiscountLookup = normalizedDiscountInput && normalizedDiscountInput === normalizedAppliedDiscountCode
+        ? discountLookup
+        : discountPreviewLookup;
+    const activeDiscountErrorMessage = normalizedDiscountInput && normalizedDiscountInput === normalizedAppliedDiscountCode
+        ? appliedDiscountErrorMessage
+        : discountPreviewErrorMessage;
+    const appliedDiscountBadgeLabel = resolveDiscountBadgeLabel(activeLocale, activeDiscountLookup, normalizedAppliedDiscountCode);
+
+    const completedPanel = checkoutCompleted ? (
+        <div ref={inlineCheckoutSectionRef} className="space-y-5">
+            <div className="rounded-2xl bg-emerald-50 px-6 py-6 shadow-sm ring-1 ring-emerald-100">
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">
+                    {t('checkout.successEyebrow', { ns: 'pricing' })}
+                </p>
+                <h3 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900">
+                    {completedFlowMode === 'upgrade'
+                        ? t('checkout.upgradeCompletedTitle', { ns: 'pricing' })
+                        : t('checkout.paymentCompletedTitle', { ns: 'pricing' })}
+                </h3>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-700">
+                    {completedFlowMode === 'upgrade'
+                        ? t('checkout.upgradeCompletedDescription', { ns: 'pricing' })
+                        : t('checkout.successDescription', { ns: 'pricing' })}
+                </p>
+
+                {completedFlowMode === 'acquisition' && postPaymentSyncState === 'syncing' ? (
+                    <div className="mt-5 flex items-center gap-3 rounded-xl bg-white/80 px-4 py-3 text-sm text-slate-700 ring-1 ring-emerald-100">
+                        <SpinnerGap size={16} className="animate-spin text-accent-600" />
+                        <span>{t('checkout.paymentSyncingMessage', { ns: 'pricing' })}</span>
+                    </div>
+                ) : null}
+
+                {completedFlowMode === 'acquisition' && postPaymentSyncState === 'delayed' ? (
+                    <div className="mt-5 border-s-4 border-amber-500 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                        <p className="font-semibold">{t('checkout.paymentSyncDelayedTitle', { ns: 'pricing' })}</p>
+                        <p className="mt-1">{t('checkout.paymentSyncDelayedDescription', { ns: 'pricing' })}</p>
+                    </div>
+                ) : null}
+
+                {completedFlowMode === 'acquisition' && postPaymentSyncState === 'synced' ? (
+                    <div className="mt-5 rounded-xl bg-white/80 px-4 py-3 text-sm text-slate-700 ring-1 ring-emerald-100">
+                        <span className="font-semibold text-emerald-800">{t('checkout.paymentSyncReadyTitle', { ns: 'pricing' })}</span>{' '}
+                        {t('checkout.paymentSyncReadyDescription', { ns: 'pricing' })}
+                    </div>
+                ) : null}
+
+                {postPaymentClaimState === 'processing' ? (
+                    <div className="mt-5 flex items-center gap-3 rounded-xl bg-white/80 px-4 py-3 text-sm text-slate-700 ring-1 ring-emerald-100">
+                        <SpinnerGap size={16} className="animate-spin text-accent-600" />
+                        <span>{t('checkout.successClaimProcessing', { ns: 'pricing' })}</span>
+                    </div>
+                ) : null}
+
+                {postPaymentClaimState === 'error' && postPaymentClaimErrorMessage ? (
+                    <div className="mt-5 border-s-4 border-amber-500 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                        <p className="font-semibold">{t('checkout.successClaimNeedsAttention', { ns: 'pricing' })}</p>
+                        <p className="mt-1">{postPaymentClaimErrorMessage}</p>
+                    </div>
+                ) : null}
+
+                <div className="mt-6 flex flex-wrap gap-3">
+                    {shouldShowPostPaymentTripAction ? (
+                        <Link
+                            to={buildPath('tripDetail', { tripId: postPaymentTripId! })}
+                            className={cn(checkoutActionClassName, 'bg-accent-600 text-white hover:bg-accent-700')}
+                            onClick={() => trackEvent('checkout__success_cta--trip', { tier: selectedTierKey, source })}
+                            {...getAnalyticsDebugAttributes('checkout__success_cta--trip')}
+                        >
+                            <ArrowSquareOut size={18} weight="duotone" />
+                            {t('checkout.successOpenTrip', { ns: 'pricing' })}
+                        </Link>
+                    ) : null}
+
+                    {shouldShowTripReturnAction ? (
+                        <Link
+                            to={returnToPath}
+                            className={cn(checkoutActionClassName, 'border border-slate-300 bg-white text-slate-900 hover:bg-slate-50')}
+                            onClick={() => trackEvent('checkout__success_cta--return_trip', { tier: selectedTierKey, source })}
+                            {...getAnalyticsDebugAttributes('checkout__success_cta--return_trip')}
+                        >
+                            <ArrowSquareOut size={18} weight="duotone" />
+                            {t('checkout.successReturnToTrip', { ns: 'pricing' })}
+                        </Link>
+                    ) : null}
+
+                    <Link
+                        to={createTripPath}
+                        className={cn(checkoutActionClassName, shouldShowPostPaymentTripAction ? 'border border-slate-300 bg-white text-slate-900 hover:bg-slate-50' : 'bg-accent-600 text-white hover:bg-accent-700')}
+                        onClick={() => trackEvent('checkout__success_cta--create_trip', { tier: selectedTierKey, source })}
+                        {...getAnalyticsDebugAttributes('checkout__success_cta--create_trip')}
+                    >
+                        <SuitcaseRolling size={18} weight="duotone" />
+                        {t('checkout.successCreateTrip', { ns: 'pricing' })}
+                    </Link>
+
+                    {shouldShowProfileAction ? (
+                        <Link
+                            to={profileActionPath}
+                            className={cn(checkoutActionClassName, 'border border-slate-300 bg-white text-slate-900 hover:bg-slate-50')}
+                            onClick={() => trackEvent('checkout__success_cta--profile', { tier: selectedTierKey, source })}
+                            {...getAnalyticsDebugAttributes('checkout__success_cta--profile')}
+                        >
+                            <UserCircle size={18} weight="duotone" />
+                            {t('checkout.successOpenProfile', { ns: 'pricing' })}
+                        </Link>
+                    ) : null}
+                </div>
+            </div>
+        </div>
+    ) : null;
 
     const setField = <K extends keyof CheckoutProfileFormState>(key: K, value: CheckoutProfileFormState[K]) => {
         setForm((current) => ({ ...current, [key]: value }));
@@ -446,6 +977,139 @@ export const CheckoutPage: React.FC = () => {
             setCheckoutErrorMessage(null);
         }
     };
+
+    const persistTravelerDetails = useCallback(async ({ showToast = false }: { showToast?: boolean } = {}): Promise<boolean> => {
+        if (!travelerDetailsValid) {
+            setCheckoutErrorMessage(t('settings.errors.required', { ns: 'profile' }));
+            return false;
+        }
+
+        setCheckoutErrorMessage(null);
+        setIsTravelerDetailsSaving(true);
+
+        try {
+            if (profileDraftDirty) {
+                await updateCurrentUserProfile({
+                    firstName: form.firstName,
+                    lastName: form.lastName,
+                    username: profile?.usernameDisplay || profile?.username || '',
+                    usernameDisplay: profile?.usernameDisplay || profile?.username || '',
+                    bio: profile?.bio || '',
+                    gender: profile?.gender || '',
+                    country: form.country,
+                    city: form.city,
+                    preferredLanguage: form.preferredLanguage,
+                    publicProfileEnabled: profile?.publicProfileEnabled !== false,
+                    defaultPublicTripVisibility: profile?.defaultPublicTripVisibility !== false,
+                    markOnboardingComplete: false,
+                });
+                await refreshProfile();
+            }
+
+            setIsTravelerDetailsEditing(false);
+
+            if (showToast) {
+                showAppToast({
+                    tone: 'success',
+                    title: t('checkout.travelerDetailsSavedTitle', { ns: 'pricing' }),
+                    description: t('checkout.travelerDetailsSavedDescription', { ns: 'pricing' }),
+                });
+            }
+
+            return true;
+        } catch (error) {
+            const message = error instanceof Error ? error.message : t('checkout.errorConfig', { ns: 'pricing' });
+            setCheckoutErrorMessage(message);
+            return false;
+        } finally {
+            setIsTravelerDetailsSaving(false);
+        }
+    }, [
+        form.city,
+        form.country,
+        form.firstName,
+        form.lastName,
+        form.preferredLanguage,
+        profile?.bio,
+        profile?.defaultPublicTripVisibility,
+        profile?.gender,
+        profile?.publicProfileEnabled,
+        profile?.username,
+        profile?.usernameDisplay,
+        profileDraftDirty,
+        refreshProfile,
+        t,
+        travelerDetailsValid,
+    ]);
+
+    const repairBillingState = useCallback(async (): Promise<BillingSubscriptionSummary | null> => {
+        try {
+            const repaired = await refreshCurrentPaddleSubscription();
+            if (repaired.summary) {
+                setSubscriptionSummary(repaired.summary);
+            }
+        } catch (error) {
+            if (!isMissingLinkedSubscriptionError(error)) {
+                throw error;
+            }
+        }
+
+        for (let attempt = 0; attempt < 3; attempt += 1) {
+            try {
+                await refreshAccess();
+            } catch (error) {
+                console.warn('Checkout billing access refresh failed.', error);
+            }
+
+            try {
+                await refreshProfile();
+            } catch (error) {
+                console.warn('Checkout billing profile refresh failed.', error);
+            }
+
+            const refreshedSummary = await loadSubscriptionSummaryWithRetry();
+            if (refreshedSummary) {
+                setSubscriptionSummary(refreshedSummary);
+                return refreshedSummary;
+            }
+
+            if (attempt < 2) {
+                await new Promise((resolve) => window.setTimeout(resolve, 300 * (attempt + 1)));
+            }
+        }
+
+        return subscriptionSummary;
+    }, [loadSubscriptionSummaryWithRetry, refreshAccess, refreshProfile, subscriptionSummary]);
+
+    const handleEditTravelerDetails = useCallback(() => {
+        setCheckoutErrorMessage(null);
+        setIsTravelerDetailsEditing(true);
+        setShouldAutoContinueLockedDetails(false);
+        autoStartedCheckoutKeyRef.current = null;
+        trackEvent('checkout__traveler_details--edit', {
+            tier: selectedTierKey,
+            source,
+        });
+        if (hasInlineCheckout) {
+            navigate(buildBillingCheckoutPath({
+                tierKey: selectedTierKey,
+                source,
+                claimId: checkoutLocationContext.claimId,
+                returnTo: returnToPath,
+                tripId: checkoutLocationContext.tripId,
+                discountCode: checkoutLocationContext.discountCode,
+            }), { replace: true });
+        }
+    }, [checkoutLocationContext.claimId, checkoutLocationContext.discountCode, checkoutLocationContext.tripId, hasInlineCheckout, navigate, returnToPath, selectedTierKey, source]);
+
+    const handleSaveTravelerDetails = useCallback(async () => {
+        trackEvent('checkout__traveler_details--save', {
+            tier: selectedTierKey,
+            source,
+        });
+        setShouldAutoContinueLockedDetails(false);
+        await persistTravelerDetails({ showToast: true });
+    }, [persistTravelerDetails, selectedTierKey, source]);
 
     const handlePlanChange = (nextTierKey: string) => {
         if (!isPaidTierKey(nextTierKey) || nextTierKey === selectedTierKey) return;
@@ -456,13 +1120,83 @@ export const CheckoutPage: React.FC = () => {
             claimId: checkoutLocationContext.claimId,
             returnTo: returnToPath,
             tripId: checkoutLocationContext.tripId,
+            discountCode: checkoutLocationContext.discountCode,
         }));
     };
+
+    const handleApplyVoucher = useCallback(async () => {
+        const normalized = discountInput.trim().toUpperCase();
+        if (!normalized) {
+            setDiscountPreviewLookup(null);
+            setDiscountPreviewErrorMessage(t('voucher.invalidMessage', { ns: 'pricing' }));
+            return;
+        }
+
+        if (normalized === normalizedAppliedDiscountCode) {
+            return;
+        }
+
+        setIsDiscountPreviewLoading(true);
+        setDiscountPreviewErrorMessage(null);
+
+        let lookup: BillingDiscountLookup;
+        try {
+            lookup = await lookupPaddleDiscount(normalized, selectedTierKey);
+        } catch (error) {
+            setDiscountPreviewLookup(null);
+            setDiscountPreviewErrorMessage(error instanceof Error ? error.message : t('voucher.invalidMessage', { ns: 'pricing' }));
+            setIsDiscountPreviewLoading(false);
+            return;
+        }
+
+        setDiscountPreviewLookup(lookup);
+        setDiscountLookup(lookup);
+        setIsDiscountPreviewLoading(false);
+        if (!lookup.applicableToTier) {
+            setDiscountPreviewErrorMessage(t('voucher.invalidMessage', { ns: 'pricing' }));
+            return;
+        }
+
+        trackEvent(normalized ? 'checkout__voucher--apply' : 'checkout__voucher--clear', {
+            code: normalized || null,
+            tier: selectedTierKey,
+            source,
+        });
+        if (hasInlineCheckout) {
+            updatePaddleInlineCheckout({ discountCode: normalized });
+        }
+        syncCheckoutDiscountCode(normalized || null);
+    }, [discountInput, hasInlineCheckout, normalizedAppliedDiscountCode, selectedTierKey, source, syncCheckoutDiscountCode, t]);
+
+    const handleClearVoucher = useCallback(() => {
+        setDiscountInput('');
+        setDiscountLookup(null);
+        setDiscountPreviewLookup(null);
+        setDiscountPreviewErrorMessage(null);
+        setAppliedDiscountErrorMessage(null);
+        setIsDiscountPreviewLoading(false);
+        trackEvent('checkout__voucher--clear', {
+            tier: selectedTierKey,
+            source,
+        });
+        if (hasInlineCheckout) {
+            updatePaddleInlineCheckout({ discountCode: null });
+        }
+        syncCheckoutDiscountCode(null);
+    }, [hasInlineCheckout, selectedTierKey, source, syncCheckoutDiscountCode]);
+
+    const handleDiscountInputChange = useCallback((value: string) => {
+        setDiscountInput(value.toUpperCase());
+        setDiscountPreviewLookup(null);
+        setDiscountPreviewErrorMessage(null);
+        setIsDiscountPreviewLoading(false);
+    }, []);
 
     const handleAuthModeChange = (nextMode: CheckoutAuthMode) => {
         setAuthMode(nextMode);
         setAuthErrorMessage(null);
         setAuthInfoMessage(null);
+        setShowAuthSupportMessage(false);
         if (nextMode === 'login') {
             setHasAcceptedTerms(false);
         }
@@ -490,6 +1224,7 @@ export const CheckoutPage: React.FC = () => {
 
         setAuthErrorMessage(null);
         setAuthInfoMessage(null);
+        setShowAuthSupportMessage(false);
         setIsAuthSubmitting(true);
 
         try {
@@ -513,6 +1248,13 @@ export const CheckoutPage: React.FC = () => {
             });
             if (response.error) {
                 const errorCode = normalizeAuthErrorCode(response.error);
+                if (errorCode === 'user_already_exists') {
+                    setAuthMode('login');
+                    setAuthPassword('');
+                    setAuthErrorMessage(null);
+                    setAuthInfoMessage(t('errors.user_already_exists', { ns: 'auth', defaultValue: t('errors.default', { ns: 'auth' }) }));
+                    return;
+                }
                 setAuthErrorMessage(t(`errors.${errorCode}`, { ns: 'auth', defaultValue: t('errors.default', { ns: 'auth' }) }));
                 return;
             }
@@ -528,6 +1270,14 @@ export const CheckoutPage: React.FC = () => {
             if (acceptance.error) {
                 setAuthInfoMessage(t('states.termsAcceptancePending', { ns: 'auth' }));
             }
+        } catch (error) {
+            if (isSupabaseAuthNotConfiguredError(error)) {
+                setShowAuthSupportMessage(true);
+                setAuthErrorMessage(null);
+                setAuthInfoMessage(null);
+            } else {
+                setAuthErrorMessage(t('errors.default', { ns: 'auth' }));
+            }
         } finally {
             setIsAuthSubmitting(false);
         }
@@ -535,10 +1285,6 @@ export const CheckoutPage: React.FC = () => {
 
     const handleContinueToPayment = useCallback(async () => {
         if (isSubmitting) return;
-        if (!form.firstName.trim() || !form.lastName.trim() || !form.country.trim()) {
-            setCheckoutErrorMessage(t('settings.errors.required', { ns: 'profile' }));
-            return;
-        }
         if (!paddlePublicConfig || paddlePublicConfig.issues.length > 0) {
             setCheckoutErrorMessage(t('checkout.errorConfig', { ns: 'pricing' }));
             return;
@@ -559,27 +1305,14 @@ export const CheckoutPage: React.FC = () => {
 
         try {
             setCheckoutCompleted(false);
+            setCompletedFlowMode(null);
             setPostPaymentTripId(null);
             setPostPaymentClaimState('idle');
             setPostPaymentClaimErrorMessage(null);
             claimProcessingRequestIdRef.current = null;
-
-            if (profileDraftDirty) {
-                await updateCurrentUserProfile({
-                    firstName: form.firstName,
-                    lastName: form.lastName,
-                    username: profile?.usernameDisplay || profile?.username || '',
-                    usernameDisplay: profile?.usernameDisplay || profile?.username || '',
-                    bio: profile?.bio || '',
-                    gender: profile?.gender || '',
-                    country: form.country,
-                    city: form.city,
-                    preferredLanguage: form.preferredLanguage,
-                    publicProfileEnabled: profile?.publicProfileEnabled !== false,
-                    defaultPublicTripVisibility: profile?.defaultPublicTripVisibility !== false,
-                    markOnboardingComplete: false,
-                });
-                await refreshProfile();
+            const detailsSaved = await persistTravelerDetails({ showToast: false });
+            if (!detailsSaved) {
+                return;
             }
 
             const sessionPayload = await startPaddleCheckoutSession({
@@ -588,6 +1321,7 @@ export const CheckoutPage: React.FC = () => {
                 claimId: checkoutLocationContext.claimId,
                 returnTo: returnToPath,
                 tripId: checkoutLocationContext.tripId,
+                discountCode: checkoutLocationContext.discountCode,
             });
 
             const checkoutUrl = appendPaddleCheckoutContext(sessionPayload.checkoutUrl, {
@@ -596,6 +1330,7 @@ export const CheckoutPage: React.FC = () => {
                 claimId: checkoutLocationContext.claimId,
                 returnTo: returnToPath,
                 tripId: checkoutLocationContext.tripId,
+                discountCode: checkoutLocationContext.discountCode,
             });
             const sameOriginCheckoutPath = resolveSameOriginPaddleCheckoutPath(checkoutUrl);
             if (sameOriginCheckoutPath) {
@@ -604,6 +1339,15 @@ export const CheckoutPage: React.FC = () => {
             }
             navigateToPaddleCheckout(checkoutUrl);
         } catch (error) {
+            if (isExistingSubscriptionCheckoutError(error)) {
+                try {
+                    await repairBillingState();
+                    setCheckoutErrorMessage(null);
+                    return;
+                } catch (repairError) {
+                    console.warn('Checkout billing repair after existing-subscription guard failed.', repairError);
+                }
+            }
             const message = error instanceof Error ? error.message : t('checkout.errorConfig', { ns: 'pricing' });
             setCheckoutErrorMessage(message);
             showAppToast({
@@ -616,6 +1360,7 @@ export const CheckoutPage: React.FC = () => {
         }
     }, [
         checkoutLocationContext.claimId,
+        checkoutLocationContext.discountCode,
         checkoutLocationContext.tripId,
         navigate,
         paddlePublicConfig,
@@ -632,12 +1377,158 @@ export const CheckoutPage: React.FC = () => {
         source,
         supportsSelectedTier,
         t,
-        form.city,
-        form.country,
-        form.firstName,
-        form.lastName,
         fromTripCheckout,
-        form.preferredLanguage,
+        persistTravelerDetails,
+        repairBillingState,
+    ]);
+
+    useEffect(() => {
+        if (
+            !shouldShowAcquisitionFlow
+            || !isEligibleAccount
+            || !hasHydratedForm
+            || !travelerDetailsLocked
+            || !shouldAutoContinueLockedDetails
+            || hasInlineCheckout
+            || checkoutCompleted
+            || isSubmitting
+            || isTravelerDetailsSaving
+            || isAutoAcceptingSignupTerms
+            || isAuthLoading
+            || isProfileLoading
+            || !supportsSelectedTier
+            || !paddlePublicConfig
+            || paddlePublicConfig.issues.length > 0
+        ) {
+            return;
+        }
+
+        if (autoStartedCheckoutKeyRef.current === autoCheckoutKey) {
+            return;
+        }
+
+        autoStartedCheckoutKeyRef.current = autoCheckoutKey;
+        void handleContinueToPayment();
+    }, [
+        autoCheckoutKey,
+        checkoutCompleted,
+        handleContinueToPayment,
+        hasHydratedForm,
+        hasInlineCheckout,
+        isAuthLoading,
+        isAutoAcceptingSignupTerms,
+        isEligibleAccount,
+        isProfileLoading,
+        isSubmitting,
+        isTravelerDetailsSaving,
+        paddlePublicConfig,
+        shouldShowAcquisitionFlow,
+        supportsSelectedTier,
+        shouldAutoContinueLockedDetails,
+        travelerDetailsLocked,
+    ]);
+
+    const handleOpenBillingManagement = useCallback(async (target: 'manage' | 'cancel' = 'manage') => {
+        if (isBillingManagementLoading) return;
+        setIsBillingManagementLoading(true);
+        try {
+            const managementUrls = await getPaddleSubscriptionManagementUrls();
+            const destination = target === 'cancel'
+                ? managementUrls.cancelUrl || managementUrls.updatePaymentMethodUrl
+                : managementUrls.updatePaymentMethodUrl || managementUrls.cancelUrl;
+
+            if (!destination) {
+                throw new Error(t('checkout.manageBillingUnavailable', { ns: 'pricing' }));
+            }
+
+            trackEvent(target === 'cancel' ? 'checkout__manage_billing--cancel' : 'checkout__manage_billing--open', {
+                tier: selectedTierKey,
+                source,
+            });
+            window.location.assign(destination);
+        } catch (error) {
+            const message = error instanceof Error ? error.message : t('checkout.manageBillingUnavailable', { ns: 'pricing' });
+            setCheckoutErrorMessage(message);
+            showAppToast({
+                tone: 'warning',
+                title: t('checkout.errorTitle', { ns: 'pricing' }),
+                description: message,
+            });
+        } finally {
+            setIsBillingManagementLoading(false);
+        }
+    }, [isBillingManagementLoading, selectedTierKey, source, t]);
+
+    const handleApplyUpgrade = useCallback(async () => {
+        if (isUpgradeSubmitting) return;
+        setCheckoutErrorMessage(null);
+        setIsUpgradeSubmitting(true);
+
+        try {
+            setCheckoutCompleted(false);
+            setPostPaymentSyncState('syncing');
+            const result = await applyPaddleSubscriptionUpgrade({
+                tierKey: selectedTierKey,
+                source,
+                claimId: checkoutLocationContext.claimId,
+                returnTo: returnToPath,
+                tripId: checkoutLocationContext.tripId,
+            });
+            setUpgradePreview((current) => current ? {
+                ...current,
+                targetTierKey: result.targetTierKey,
+                recurringAmount: result.recurringAmount,
+                recurringCurrency: result.recurringCurrency,
+            } : current);
+            setCheckoutCompleted(true);
+            setCompletedFlowMode('upgrade');
+            await refreshAccess();
+            await refreshProfile();
+            try {
+                const refreshedSummary = await getCurrentSubscriptionSummary();
+                setSubscriptionSummary(refreshedSummary);
+            } catch (summaryError) {
+                console.warn('Checkout upgrade subscription refresh failed.', summaryError);
+            }
+            setPostPaymentSyncState('synced');
+            showAppToast({
+                tone: 'success',
+                title: t('checkout.upgradeCompletedTitle', { ns: 'pricing' }),
+                description: t('checkout.upgradeCompletedDescription', { ns: 'pricing' }),
+            });
+            trackEvent('checkout__upgrade--success', {
+                from_tier: currentPaidTierKey,
+                to_tier: selectedTierKey,
+                source,
+            });
+        } catch (error) {
+            const message = error instanceof Error ? error.message : t('checkout.errorConfig', { ns: 'pricing' });
+            setCheckoutErrorMessage(message);
+            showAppToast({
+                tone: 'warning',
+                title: t('checkout.errorTitle', { ns: 'pricing' }),
+                description: message,
+            });
+            trackEvent('checkout__upgrade--failed', {
+                from_tier: currentPaidTierKey,
+                to_tier: selectedTierKey,
+                source,
+            });
+            setPostPaymentSyncState('idle');
+        } finally {
+            setIsUpgradeSubmitting(false);
+        }
+    }, [
+        checkoutLocationContext.claimId,
+        checkoutLocationContext.tripId,
+        currentPaidTierKey,
+        isUpgradeSubmitting,
+        refreshAccess,
+        refreshProfile,
+        returnToPath,
+        selectedTierKey,
+        source,
+        t,
     ]);
 
     return (
@@ -679,6 +1570,8 @@ export const CheckoutPage: React.FC = () => {
                             </div>
                         ) : null}
 
+                        {shouldShowAcquisitionFlow ? (
+                        <>
                         <CheckoutStepSection
                             step={1}
                             state={currentStep > 1 ? 'complete' : 'active'}
@@ -768,7 +1661,22 @@ export const CheckoutPage: React.FC = () => {
                                             </label>
                                         ) : null}
 
-                                        {authErrorMessage ? (
+                                        {showAuthSupportMessage ? (
+                                            <div className="border-s-4 border-rose-500 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+                                                <p className="font-semibold">{t('errors.auth_unavailable_title', { ns: 'auth' })}</p>
+                                                <p className="mt-1">{t('errors.auth_unavailable_body', { ns: 'auth' })}</p>
+                                                <Link
+                                                    className="mt-3 inline-flex font-semibold text-rose-900 underline underline-offset-4"
+                                                    to={contactPath}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    onClick={() => trackEvent('checkout__auth_config_error--contact', { source, tier: selectedTierKey })}
+                                                    {...getAnalyticsDebugAttributes('checkout__auth_config_error--contact', { source, tier: selectedTierKey })}
+                                                >
+                                                    {t('actions.contactSupport', { ns: 'auth' })}
+                                                </Link>
+                                            </div>
+                                        ) : authErrorMessage ? (
                                             <div className="border-s-4 border-rose-500 bg-rose-50 px-4 py-3 text-sm text-rose-900">
                                                 {authErrorMessage}
                                             </div>
@@ -804,13 +1712,32 @@ export const CheckoutPage: React.FC = () => {
 
                         <CheckoutStepSection
                             step={2}
-                            state={hasInlineCheckout ? 'complete' : isEligibleAccount ? 'active' : 'upcoming'}
+                            state={hasInlineCheckout || travelerDetailsLocked ? 'complete' : isEligibleAccount ? 'active' : 'upcoming'}
                             title={t('checkout.travelerDetailsTitle', { ns: 'pricing' })}
                         >
                             {!isEligibleAccount ? (
                                 <p className="text-sm text-slate-500">{t('checkout.detailsLocked', { ns: 'pricing' })}</p>
                             ) : (
                                 <div className="w-full max-w-4xl space-y-6">
+                                    <div className="flex items-start justify-between gap-4">
+                                        <p className="text-sm text-slate-600">
+                                            {travelerDetailsLocked
+                                                ? t('checkout.travelerDetailsLockedDescription', { ns: 'pricing' })
+                                                : t('checkout.travelerDetailsDescription', { ns: 'pricing' })}
+                                        </p>
+                                        {travelerDetailsLocked ? (
+                                            <button
+                                                type="button"
+                                                onClick={handleEditTravelerDetails}
+                                                className="inline-flex items-center gap-1 text-sm font-semibold text-accent-700 transition-colors hover:text-accent-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
+                                                {...getAnalyticsDebugAttributes('checkout__traveler_details--edit')}
+                                            >
+                                                <NotePencil size={16} weight="duotone" />
+                                                {t('checkout.travelerDetailsEditCta', { ns: 'pricing' })}
+                                            </button>
+                                        ) : null}
+                                    </div>
+
                                     {checkoutErrorMessage ? (
                                         <div className="border-s-4 border-rose-500 bg-rose-50 px-4 py-3 text-sm text-rose-900">
                                             {checkoutErrorMessage}
@@ -824,6 +1751,7 @@ export const CheckoutPage: React.FC = () => {
                                                 value={form.firstName}
                                                 onChange={(event) => setField('firstName', event.target.value)}
                                                 autoComplete="given-name"
+                                                disabled={travelerDetailsLocked || isTravelerDetailsSaving}
                                                 className={checkoutInputClassName}
                                             />
                                         </label>
@@ -833,6 +1761,7 @@ export const CheckoutPage: React.FC = () => {
                                                 value={form.lastName}
                                                 onChange={(event) => setField('lastName', event.target.value)}
                                                 autoComplete="family-name"
+                                                disabled={travelerDetailsLocked || isTravelerDetailsSaving}
                                                 className={checkoutInputClassName}
                                             />
                                         </label>
@@ -844,7 +1773,7 @@ export const CheckoutPage: React.FC = () => {
                                             <ProfileCountryRegionSelect
                                                 value={form.country}
                                                 locale={activeLocale}
-                                                disabled={isSubmitting || isProfileLoading}
+                                                disabled={travelerDetailsLocked || isSubmitting || isProfileLoading || isTravelerDetailsSaving}
                                                 inputClassName="mt-1 rounded-md"
                                                 placeholder={t('settings.countryRegionSearchPlaceholder', { ns: 'profile' })}
                                                 emptyLabel={t('settings.countryRegionEmpty', { ns: 'profile' })}
@@ -858,21 +1787,60 @@ export const CheckoutPage: React.FC = () => {
                                                 value={form.city}
                                                 onChange={(event) => setField('city', event.target.value)}
                                                 autoComplete="address-level2"
+                                                disabled={travelerDetailsLocked || isTravelerDetailsSaving}
                                                 className={checkoutInputClassName}
                                             />
                                         </label>
                                     </div>
 
-                                    <button
-                                        type="button"
-                                        disabled={isSubmitting || isAutoAcceptingSignupTerms || !hasHydratedForm || isAuthLoading || isProfileLoading || !supportsSelectedTier}
-                                        onClick={() => void handleContinueToPayment()}
-                                        className={cn(checkoutActionClassName, 'w-full bg-accent-600 text-white hover:bg-accent-700 sm:w-auto')}
-                                        {...getAnalyticsDebugAttributes(hasInlineCheckout ? 'checkout__payment--refresh' : 'checkout__payment--start')}
-                                    >
-                                        {isSubmitting ? <SpinnerGap size={18} className="animate-spin" /> : <CreditCard size={18} weight="duotone" />}
-                                        {checkoutButtonLabel}
-                                    </button>
+                                    {travelerDetailsLocked ? (
+                                        <div className="space-y-3">
+                                            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                                                {hasInlineCheckout
+                                                    ? t('checkout.travelerDetailsPaymentReady', { ns: 'pricing' })
+                                                    : shouldAutoContinueLockedDetails
+                                                        ? t('checkout.travelerDetailsAutoContinue', { ns: 'pricing' })
+                                                        : t('checkout.travelerDetailsPaymentReady', { ns: 'pricing' })}
+                                            </div>
+                                            {!hasInlineCheckout ? (
+                                                <div className="flex flex-wrap gap-3">
+                                                    <button
+                                                        type="button"
+                                                        disabled={isSubmitting || isAutoAcceptingSignupTerms || !hasHydratedForm || isAuthLoading || isProfileLoading || !supportsSelectedTier || isTravelerDetailsSaving}
+                                                        onClick={() => void handleContinueToPayment()}
+                                                        className={cn(checkoutActionClassName, 'w-full bg-accent-600 text-white hover:bg-accent-700 sm:w-auto')}
+                                                        {...getAnalyticsDebugAttributes('checkout__payment--resume')}
+                                                    >
+                                                        {isSubmitting ? <SpinnerGap size={18} className="animate-spin" /> : <CreditCard size={18} weight="duotone" />}
+                                                        {checkoutButtonLabel}
+                                                    </button>
+                                                </div>
+                                            ) : null}
+                                        </div>
+                                    ) : (
+                                        <div className="flex flex-wrap gap-3">
+                                            <button
+                                                type="button"
+                                                disabled={isTravelerDetailsSaving || isSubmitting}
+                                                onClick={() => void handleSaveTravelerDetails()}
+                                                className={cn(checkoutActionClassName, 'border border-slate-300 bg-white text-slate-900 hover:bg-slate-50')}
+                                                {...getAnalyticsDebugAttributes('checkout__traveler_details--save')}
+                                            >
+                                                {isTravelerDetailsSaving ? <SpinnerGap size={18} className="animate-spin" /> : null}
+                                                {t('checkout.travelerDetailsSaveCta', { ns: 'pricing' })}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                disabled={isSubmitting || isAutoAcceptingSignupTerms || !hasHydratedForm || isAuthLoading || isProfileLoading || !supportsSelectedTier || isTravelerDetailsSaving}
+                                                onClick={() => void handleContinueToPayment()}
+                                                className={cn(checkoutActionClassName, 'w-full bg-accent-600 text-white hover:bg-accent-700 sm:w-auto')}
+                                                {...getAnalyticsDebugAttributes(hasInlineCheckout ? 'checkout__payment--refresh' : 'checkout__payment--start')}
+                                            >
+                                                {isSubmitting ? <SpinnerGap size={18} className="animate-spin" /> : <CreditCard size={18} weight="duotone" />}
+                                                {checkoutButtonLabel}
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </CheckoutStepSection>
@@ -885,81 +1853,7 @@ export const CheckoutPage: React.FC = () => {
                             {!hasInlineCheckout ? (
                                 <p className="text-sm text-slate-500">{t('checkout.paymentLocked', { ns: 'pricing' })}</p>
                             ) : checkoutCompleted ? (
-                                <div ref={inlineCheckoutSectionRef} className="space-y-5">
-                                    <div className="rounded-2xl bg-emerald-50 px-6 py-6 shadow-sm ring-1 ring-emerald-100">
-                                        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">
-                                            {t('checkout.successEyebrow', { ns: 'pricing' })}
-                                        </p>
-                                        <h3 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900">
-                                            {t('checkout.paymentCompletedTitle', { ns: 'pricing' })}
-                                        </h3>
-                                        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-700">
-                                            {t('checkout.successDescription', { ns: 'pricing' })}
-                                        </p>
-
-                                        {postPaymentClaimState === 'processing' ? (
-                                            <div className="mt-5 flex items-center gap-3 rounded-xl bg-white/80 px-4 py-3 text-sm text-slate-700 ring-1 ring-emerald-100">
-                                                <SpinnerGap size={16} className="animate-spin text-accent-600" />
-                                                <span>{t('checkout.successClaimProcessing', { ns: 'pricing' })}</span>
-                                            </div>
-                                        ) : null}
-
-                                        {postPaymentClaimState === 'error' && postPaymentClaimErrorMessage ? (
-                                            <div className="mt-5 border-s-4 border-amber-500 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-                                                <p className="font-semibold">{t('checkout.successClaimNeedsAttention', { ns: 'pricing' })}</p>
-                                                <p className="mt-1">{postPaymentClaimErrorMessage}</p>
-                                            </div>
-                                        ) : null}
-
-                                        <div className="mt-6 flex flex-wrap gap-3">
-                                            {shouldShowPostPaymentTripAction ? (
-                                                <Link
-                                                    to={buildPath('tripDetail', { tripId: postPaymentTripId! })}
-                                                    className={cn(checkoutActionClassName, 'bg-accent-600 text-white hover:bg-accent-700')}
-                                                    onClick={() => trackEvent('checkout__success_cta--trip', { tier: selectedTierKey, source })}
-                                                    {...getAnalyticsDebugAttributes('checkout__success_cta--trip')}
-                                                >
-                                                    <ArrowSquareOut size={18} weight="duotone" />
-                                                    {t('checkout.successOpenTrip', { ns: 'pricing' })}
-                                                </Link>
-                                            ) : null}
-
-                                            {shouldShowTripReturnAction ? (
-                                                <Link
-                                                    to={returnToPath}
-                                                    className={cn(checkoutActionClassName, 'border border-slate-300 bg-white text-slate-900 hover:bg-slate-50')}
-                                                    onClick={() => trackEvent('checkout__success_cta--return_trip', { tier: selectedTierKey, source })}
-                                                    {...getAnalyticsDebugAttributes('checkout__success_cta--return_trip')}
-                                                >
-                                                    <ArrowSquareOut size={18} weight="duotone" />
-                                                    {t('checkout.successReturnToTrip', { ns: 'pricing' })}
-                                                </Link>
-                                            ) : null}
-
-                                            <Link
-                                                to={createTripPath}
-                                                className={cn(checkoutActionClassName, shouldShowPostPaymentTripAction ? 'border border-slate-300 bg-white text-slate-900 hover:bg-slate-50' : 'bg-accent-600 text-white hover:bg-accent-700')}
-                                                onClick={() => trackEvent('checkout__success_cta--create_trip', { tier: selectedTierKey, source })}
-                                                {...getAnalyticsDebugAttributes('checkout__success_cta--create_trip')}
-                                            >
-                                                <SuitcaseRolling size={18} weight="duotone" />
-                                                {t('checkout.successCreateTrip', { ns: 'pricing' })}
-                                            </Link>
-
-                                            {shouldShowProfileAction ? (
-                                                <Link
-                                                    to={profileActionPath}
-                                                    className={cn(checkoutActionClassName, 'border border-slate-300 bg-white text-slate-900 hover:bg-slate-50')}
-                                                    onClick={() => trackEvent('checkout__success_cta--profile', { tier: selectedTierKey, source })}
-                                                    {...getAnalyticsDebugAttributes('checkout__success_cta--profile')}
-                                                >
-                                                    <UserCircle size={18} weight="duotone" />
-                                                    {t('checkout.successOpenProfile', { ns: 'pricing' })}
-                                                </Link>
-                                            ) : null}
-                                        </div>
-                                    </div>
-                                </div>
+                                completedPanel
                             ) : (
                                 <div ref={inlineCheckoutSectionRef} className="space-y-5">
                                     <div className="relative overflow-hidden rounded-md border border-slate-200 bg-white">
@@ -982,6 +1876,141 @@ export const CheckoutPage: React.FC = () => {
                                 </div>
                             )}
                         </CheckoutStepSection>
+                        </>
+                        ) : (
+                        <div className="space-y-6">
+                            {isSubscriptionSummaryLoading ? (
+                                <div className="rounded-2xl border border-slate-200 bg-white px-6 py-8 shadow-sm">
+                                    <div className="inline-flex items-center gap-3 text-sm font-medium text-slate-600">
+                                        <SpinnerGap size={18} className="animate-spin" />
+                                        {t('checkout.loadingSubscriptionState', { ns: 'pricing' })}
+                                    </div>
+                                </div>
+                            ) : checkoutCompleted ? (
+                                completedPanel
+                            ) : isUpgradeFlow ? (
+                                <CheckoutStepSection
+                                    step={1}
+                                    state="active"
+                                    title={t('checkout.upgradeTitle', { ns: 'pricing' })}
+                                >
+                                    <div className="max-w-3xl space-y-6">
+                                        <div className="rounded-2xl border border-slate-200 bg-white px-5 py-5 shadow-sm">
+                                            <p className={checkoutSectionLabelClassName}>{t('checkout.upgradeSummaryLabel', { ns: 'pricing' })}</p>
+                                            <div className="mt-3 flex flex-wrap items-end justify-between gap-4">
+                                                <div>
+                                                    <p className="text-sm text-slate-500">
+                                                        {t('checkout.upgradeFromTo', {
+                                                            ns: 'pricing',
+                                                            currentPlan: currentPaidTierName || '—',
+                                                            targetPlan: t(`tiers.${selectedTier.publicSlug}.name`, { ns: 'pricing' }),
+                                                        })}
+                                                    </p>
+                                                    <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">
+                                                        {t('checkout.upgradeReviewTitle', { ns: 'pricing' })}
+                                                    </h2>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-sm text-slate-500">{t('checkout.newRecurringTotal', { ns: 'pricing' })}</p>
+                                                    <p className="text-2xl font-semibold text-slate-900">
+                                                        {upgradePreview?.recurringAmount !== null && upgradePreview?.recurringAmount !== undefined
+                                                            ? `${upgradePreview.recurringCurrency || ''} ${(upgradePreview.recurringAmount / 100).toFixed(2)}`
+                                                            : `$${selectedTier.monthlyPriceUsd.toFixed(2)}`}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <p className="mt-4 text-sm leading-6 text-slate-600">
+                                                {upgradePreview?.prorationMessage || t('checkout.upgradePreviewDescription', { ns: 'pricing' })}
+                                            </p>
+                                            {upgradePreview?.immediateAmount !== null && upgradePreview?.immediateAmount !== undefined ? (
+                                                <div className="mt-4 rounded-xl border border-accent-200 bg-accent-50 px-4 py-3 text-sm text-slate-700">
+                                                    <span className="font-semibold text-slate-900">{t('checkout.dueNowLabel', { ns: 'pricing' })}</span>{' '}
+                                                    {`${upgradePreview.immediateCurrency || ''} ${(upgradePreview.immediateAmount / 100).toFixed(2)}`}
+                                                </div>
+                                            ) : null}
+                                        </div>
+
+                                        {checkoutErrorMessage ? (
+                                            <div className="border-s-4 border-rose-500 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+                                                {checkoutErrorMessage}
+                                            </div>
+                                        ) : null}
+
+                                        <div className="flex flex-wrap gap-3">
+                                            <button
+                                                type="button"
+                                                onClick={() => void handleApplyUpgrade()}
+                                                disabled={isUpgradeSubmitting || isUpgradePreviewLoading}
+                                                className={cn(checkoutActionClassName, 'bg-accent-600 text-white hover:bg-accent-700')}
+                                                {...getAnalyticsDebugAttributes('checkout__upgrade--confirm')}
+                                            >
+                                                {isUpgradeSubmitting ? <SpinnerGap size={18} className="animate-spin" /> : <CreditCard size={18} weight="duotone" />}
+                                                {t('checkout.upgradeConfirmCta', { ns: 'pricing' })}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => void handleOpenBillingManagement('manage')}
+                                                disabled={isBillingManagementLoading}
+                                                className={cn(checkoutActionClassName, 'border border-slate-300 bg-white text-slate-900 hover:bg-slate-50')}
+                                                {...getAnalyticsDebugAttributes('checkout__upgrade--manage_billing')}
+                                            >
+                                                {isBillingManagementLoading ? <SpinnerGap size={18} className="animate-spin" /> : <ArrowSquareOut size={18} weight="duotone" />}
+                                                {t('checkout.manageBillingCta', { ns: 'pricing' })}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </CheckoutStepSection>
+                            ) : (
+                                <CheckoutStepSection
+                                    step={1}
+                                    state="active"
+                                    title={isCurrentPlanFlow
+                                        ? t('checkout.currentPlanTitle', { ns: 'pricing' })
+                                        : t('checkout.manageBillingTitle', { ns: 'pricing' })}
+                                >
+                                    <div className="max-w-3xl space-y-5">
+                                        <div className="rounded-2xl border border-slate-200 bg-white px-5 py-5 shadow-sm">
+                                            <p className="text-sm leading-6 text-slate-600">
+                                                {isCurrentPlanFlow
+                                                    ? t('checkout.currentPlanDescription', {
+                                                        ns: 'pricing',
+                                                        planName: currentPaidTierName || t(`tiers.${selectedTier.publicSlug}.name`, { ns: 'pricing' }),
+                                                    })
+                                                    : t('checkout.manageBillingDescription', { ns: 'pricing' })}
+                                            </p>
+                                            {subscriptionSummary?.currentPeriodEnd ? (
+                                                <p className="mt-3 text-sm text-slate-500">
+                                                    {t('checkout.renewalDateLabel', { ns: 'pricing' })}: {new Date(subscriptionSummary.currentPeriodEnd).toLocaleDateString()}
+                                                </p>
+                                            ) : null}
+                                        </div>
+
+                                        <div className="flex flex-wrap gap-3">
+                                            {isCurrentPlanFlow ? (
+                                                <button
+                                                    type="button"
+                                                    disabled
+                                                    className={cn(checkoutActionClassName, 'cursor-not-allowed border border-accent-200 bg-accent-50 text-accent-700')}
+                                                >
+                                                    {t('checkout.currentPlanCta', { ns: 'pricing' })}
+                                                </button>
+                                            ) : null}
+                                            <button
+                                                type="button"
+                                                onClick={() => void handleOpenBillingManagement('manage')}
+                                                disabled={isBillingManagementLoading}
+                                                className={cn(checkoutActionClassName, 'bg-accent-600 text-white hover:bg-accent-700')}
+                                                {...getAnalyticsDebugAttributes('checkout__manage_billing--cta')}
+                                            >
+                                                {isBillingManagementLoading ? <SpinnerGap size={18} className="animate-spin" /> : <ArrowSquareOut size={18} weight="duotone" />}
+                                                {t('checkout.manageBillingCta', { ns: 'pricing' })}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </CheckoutStepSection>
+                            )}
+                        </div>
+                        )}
                     </div>
 
                     <aside className="order-2 lg:order-2">
@@ -1041,6 +2070,68 @@ export const CheckoutPage: React.FC = () => {
                                         ))}
                                     </ul>
                                 </section>
+
+                                {shouldShowAcquisitionFlow ? (
+                                    <section className="mt-8 border-t border-slate-200 pt-4">
+                                        <p className={checkoutSectionLabelClassName}>{t('voucher.eyebrow', { ns: 'pricing' })}</p>
+                                        <div className="mt-4 flex flex-col gap-3">
+                                            {hasAppliedDiscountCode ? (
+                                                <div className="flex flex-wrap items-center gap-2">
+                                                    <span className="inline-flex max-w-full items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                                                        {isDiscountPreviewLoading ? (
+                                                            <SpinnerGap size={12} className="animate-spin" />
+                                                        ) : null}
+                                                        <span className="truncate">{appliedDiscountBadgeLabel || normalizedAppliedDiscountCode}</span>
+                                                        <button
+                                                            type="button"
+                                                            onClick={handleClearVoucher}
+                                                            className="inline-flex h-5 w-5 items-center justify-center rounded-full text-emerald-700 transition-colors hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
+                                                            aria-label={t('voucher.clearCta', { ns: 'pricing' })}
+                                                            {...getAnalyticsDebugAttributes('checkout__voucher--clear')}
+                                                        >
+                                                            <X size={12} weight="bold" />
+                                                        </button>
+                                                    </span>
+                                                </div>
+                                            ) : (
+                                                <div className="flex gap-3">
+                                                    <input
+                                                        type="text"
+                                                        value={discountInput}
+                                                        onChange={(event) => handleDiscountInputChange(event.target.value)}
+                                                        placeholder={t('voucher.placeholder', { ns: 'pricing' })}
+                                                        autoCapitalize="characters"
+                                                        className="h-11 flex-1 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-900 shadow-sm transition-colors placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleApplyVoucher}
+                                                        disabled={isDiscountPreviewLoading}
+                                                        className={cn(checkoutActionClassName, 'shrink-0 bg-accent-600 text-white hover:bg-accent-700')}
+                                                        {...getAnalyticsDebugAttributes('checkout__voucher--apply')}
+                                                    >
+                                                        {isDiscountPreviewLoading ? (
+                                                            <>
+                                                                <SpinnerGap size={16} className="animate-spin" />
+                                                                {t('voucher.applying', { ns: 'pricing' })}
+                                                            </>
+                                                        ) : t('voucher.applyCta', { ns: 'pricing' })}
+                                                    </button>
+                                                </div>
+                                            )}
+                                            {!hasAppliedDiscountCode && normalizedDiscountInput && !isDiscountPreviewLoading && activeDiscountErrorMessage ? (
+                                                <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                                                    {activeDiscountErrorMessage}
+                                                </div>
+                                            ) : null}
+                                            {hasAppliedDiscountCode && activeDiscountErrorMessage ? (
+                                                <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                                                    {activeDiscountErrorMessage}
+                                                </div>
+                                            ) : null}
+                                        </div>
+                                    </section>
+                                ) : null}
 
                                 <p className="mt-8 border-t border-slate-200 pt-4 text-xs leading-5 text-slate-500">
                                     {t('checkout.planSummaryBilling', { ns: 'pricing' })}

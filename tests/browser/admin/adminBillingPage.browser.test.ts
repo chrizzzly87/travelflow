@@ -5,6 +5,7 @@ import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 
 const mocks = vi.hoisted(() => ({
+  adminGetBillingDashboard: vi.fn(),
   adminListBillingSubscriptions: vi.fn(),
   adminListBillingWebhookEvents: vi.fn(),
   adminReconcilePaddleSubscriptions: vi.fn(),
@@ -53,11 +54,21 @@ vi.mock('../../../components/admin/AdminSurfaceCard', () => ({
   AdminSurfaceCard: ({ children }: { children: React.ReactNode }) => React.createElement('section', null, children),
 }));
 
+vi.mock('@tremor/react', () => ({
+  BarChart: ({ children }: { children?: React.ReactNode }) => React.createElement('div', { 'data-testid': 'tremor-bar-chart' }, children),
+  BarList: ({ children }: { children?: React.ReactNode }) => React.createElement('div', { 'data-testid': 'tremor-bar-list' }, children),
+  DonutChart: ({ children }: { children?: React.ReactNode }) => React.createElement('div', { 'data-testid': 'tremor-donut-chart' }, children),
+  Metric: ({ children }: { children?: React.ReactNode }) => React.createElement('div', null, children),
+  Text: ({ children }: { children?: React.ReactNode }) => React.createElement('p', null, children),
+  Title: ({ children }: { children?: React.ReactNode }) => React.createElement('h3', null, children),
+}));
+
 vi.mock('../../../components/admin/CopyableUuid', () => ({
   CopyableUuid: ({ value }: { value: string }) => React.createElement('span', null, value),
 }));
 
 vi.mock('../../../services/adminService', () => ({
+  adminGetBillingDashboard: mocks.adminGetBillingDashboard,
   adminListBillingSubscriptions: mocks.adminListBillingSubscriptions,
   adminListBillingWebhookEvents: mocks.adminListBillingWebhookEvents,
   adminReconcilePaddleSubscriptions: mocks.adminReconcilePaddleSubscriptions,
@@ -77,6 +88,17 @@ describe('pages/AdminBillingPage', () => {
   beforeEach(() => {
     cleanup();
     vi.clearAllMocks();
+    mocks.adminGetBillingDashboard.mockResolvedValue({
+      active_subscriptions: 4,
+      scheduled_cancellations: 1,
+      grace_subscriptions: 1,
+      failed_webhook_events: 1,
+      current_mrr_by_currency: [{ currency: 'USD', amount: 2800, subscriptions: 3 }],
+      current_mrr_by_tier: [{ tier_key: 'tier_mid', currency: 'USD', amount: 900, subscriptions: 1 }],
+      subscription_mix: [{ tier_key: 'tier_mid', count: 1 }],
+      status_mix: [{ status: 'active', count: 1 }],
+      at_risk_revenue: [{ status: 'past_due', currency: 'USD', amount: 900, subscriptions: 1 }],
+    });
     mocks.adminListBillingSubscriptions.mockResolvedValue([
       {
         user_id: '00000000-0000-0000-0000-000000000001',
@@ -141,9 +163,12 @@ describe('pages/AdminBillingPage', () => {
     await waitFor(() => {
       expect(mocks.adminListBillingSubscriptions).toHaveBeenCalled();
       expect(mocks.adminListBillingWebhookEvents).toHaveBeenCalled();
+      expect(mocks.adminGetBillingDashboard).toHaveBeenCalled();
     });
 
     expect(screen.getByRole('heading', { name: 'Billing' })).toBeInTheDocument();
+    expect(screen.getByText('Current MRR by tier')).toBeInTheDocument();
+    expect(screen.getByText('At-risk revenue')).toBeInTheDocument();
     expect(screen.getByText('Subscriptions')).toBeInTheDocument();
     expect(screen.getByText('Webhook events')).toBeInTheDocument();
     expect(screen.getAllByText('explorer@example.com')).toHaveLength(2);
@@ -195,5 +220,30 @@ describe('pages/AdminBillingPage', () => {
     });
 
     expect(screen.getByText(/Fetched sub_01kk6fcs5t4f75tddavgjx1rtz and replayed it through the billing sync/i)).toBeInTheDocument();
+  });
+
+  it('renders processed webhook sync notes without error styling', async () => {
+    mocks.adminListBillingWebhookEvents.mockResolvedValue([
+      {
+        event_id: 'manual_reconcile_evt_123',
+        provider: 'paddle',
+        event_type: 'subscription.activated',
+        occurred_at: new Date().toISOString(),
+        user_id: '00000000-0000-0000-0000-000000000001',
+        user_email: 'explorer@example.com',
+        status: 'processed',
+        error_message: 'Applied subscription lifecycle update (active)',
+        payload: {},
+        processed_at: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+      },
+    ]);
+
+    renderPage();
+
+    const note = await screen.findByText('Applied subscription lifecycle update (active)');
+    const messageBox = note.parentElement;
+    expect(messageBox?.className).toContain('border-accent-200');
+    expect(messageBox?.className).not.toContain('border-rose-200');
   });
 });

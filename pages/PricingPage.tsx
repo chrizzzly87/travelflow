@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { Check } from '@phosphor-icons/react';
 import { Trans, useTranslation } from 'react-i18next';
 
@@ -9,7 +9,20 @@ import { buildPath } from '../config/routes';
 import { MarketingLayout } from '../components/marketing/MarketingLayout';
 import { useAuth } from '../hooks/useAuth';
 import { cn } from '../lib/utils';
-import { buildBillingCheckoutPath, type BillingCheckoutTierKey } from '../services/billingService';
+import {
+    resolveBillingAccessUntil,
+    resolveBillingLifecycleState,
+    resolveBillingTierDecision,
+    resolveEffectiveBillingTierKey,
+} from '../lib/billing/subscriptionState';
+import {
+    buildBillingCheckoutPath,
+    getCurrentSubscriptionSummary,
+    readBillingDiscountCodeFromSearch,
+    refreshCurrentPaddleSubscription,
+    type BillingCheckoutTierKey,
+    type BillingSubscriptionSummary,
+} from '../services/billingService';
 import {
     fetchPaddlePublicConfig,
     isPaddleTierCheckoutConfigured,
@@ -52,13 +65,34 @@ const asDisplayCount = (value: number | null, unlimitedLabel: string): string =>
 
 export const PricingPage: React.FC = () => {
     const { t } = useTranslation('pricing');
-    const { access, isAuthenticated } = useAuth();
+    const location = useLocation();
+    const activeDiscountCode = readBillingDiscountCodeFromSearch(location.search);
+    const { access, isAuthenticated, refreshAccess } = useAuth();
     const [paddlePublicConfig, setPaddlePublicConfig] = useState<PaddlePublicConfig | null>(null);
+    const [subscriptionSummary, setSubscriptionSummary] = useState<BillingSubscriptionSummary | null>(null);
+    const [isSubscriptionSummaryLoading, setIsSubscriptionSummaryLoading] = useState(false);
     const unlimitedLabel = t('shared.unlimited');
     const noExpiryLabel = t('shared.noExpiry');
     const enabledLabel = t('shared.enabled');
     const disabledLabel = t('shared.disabled');
     const activeTierKey = access?.tierKey ?? 'tier_free';
+    const accessBilling = access?.billing ?? null;
+    const isEligibleAccount = isAuthenticated && access?.isAnonymous !== true;
+    const billingRepairAttemptedRef = useRef(false);
+
+    const loadSubscriptionSummaryWithRetry = useCallback(async (): Promise<BillingSubscriptionSummary | null> => {
+        for (let attempt = 0; attempt < 3; attempt += 1) {
+            const summary = await getCurrentSubscriptionSummary();
+            if (summary) {
+                return summary;
+            }
+            if (attempt < 2) {
+                await new Promise((resolve) => window.setTimeout(resolve, 250 * (attempt + 1)));
+            }
+        }
+        return null;
+    }, []);
+
     useEffect(() => {
         let cancelled = false;
         void fetchPaddlePublicConfig()
@@ -74,6 +108,100 @@ export const PricingPage: React.FC = () => {
             cancelled = true;
         };
     }, []);
+
+    useEffect(() => {
+        if (!isEligibleAccount) {
+            setSubscriptionSummary(null);
+            setIsSubscriptionSummaryLoading(false);
+            billingRepairAttemptedRef.current = false;
+            return;
+        }
+
+        let cancelled = false;
+        setIsSubscriptionSummaryLoading(true);
+        void (async () => {
+            let summary = await loadSubscriptionSummaryWithRetry();
+            const shouldAttemptRepair = !billingRepairAttemptedRef.current && (
+                !summary
+                || Boolean(accessBilling?.providerSubscriptionId)
+                || (access?.tierKey !== 'tier_free')
+            );
+            if (shouldAttemptRepair) {
+                billingRepairAttemptedRef.current = true;
+                try {
+                    const repaired = await refreshCurrentPaddleSubscription();
+                    await refreshAccess();
+                    summary = repaired.summary ?? await loadSubscriptionSummaryWithRetry();
+                } catch (error) {
+                    if (!cancelled && !(error instanceof Error && error.message.includes('No paid Paddle subscription is linked'))) {
+                        console.warn('Pricing billing summary refresh failed.', error);
+                    }
+                }
+            }
+            if (cancelled) return;
+            setSubscriptionSummary(summary);
+        })()
+            .catch((error) => {
+                if (cancelled) return;
+                console.warn('Failed to load current billing summary on pricing.', error);
+                setSubscriptionSummary(null);
+            })
+            .finally(() => {
+                if (!cancelled) {
+                    setIsSubscriptionSummaryLoading(false);
+                }
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [access?.tierKey, accessBilling?.providerSubscriptionId, isEligibleAccount, loadSubscriptionSummaryWithRetry, refreshAccess]);
+
+    const billingState = {
+        providerSubscriptionId: subscriptionSummary?.providerSubscriptionId ?? accessBilling?.providerSubscriptionId ?? null,
+        providerStatus: subscriptionSummary?.providerStatus ?? accessBilling?.providerStatus ?? null,
+        status: subscriptionSummary?.status ?? accessBilling?.subscriptionStatus ?? null,
+        currentPeriodEnd: subscriptionSummary?.currentPeriodEnd ?? accessBilling?.currentPeriodEnd ?? null,
+        cancelAt: subscriptionSummary?.cancelAt ?? accessBilling?.cancelAt ?? null,
+        canceledAt: subscriptionSummary?.canceledAt ?? accessBilling?.canceledAt ?? null,
+        graceEndsAt: subscriptionSummary?.graceEndsAt ?? accessBilling?.graceEndsAt ?? null,
+        accessUntil: subscriptionSummary
+            ? resolveBillingAccessUntil({
+                providerStatus: subscriptionSummary.providerStatus,
+                status: subscriptionSummary.status,
+                currentPeriodEnd: subscriptionSummary.currentPeriodEnd,
+                cancelAt: subscriptionSummary.cancelAt,
+                canceledAt: subscriptionSummary.canceledAt,
+                graceEndsAt: subscriptionSummary.graceEndsAt,
+            })
+            : accessBilling?.accessUntil ?? null,
+        providerPriceId: subscriptionSummary?.providerPriceId ?? null,
+    };
+    const billingLifecycleState = resolveBillingLifecycleState({
+        providerStatus: billingState.providerStatus,
+        status: billingState.status,
+        currentPeriodEnd: billingState.currentPeriodEnd,
+        cancelAt: billingState.cancelAt,
+        canceledAt: billingState.canceledAt,
+        graceEndsAt: billingState.graceEndsAt,
+        billingAccessUntil: billingState.accessUntil,
+    });
+
+    const effectiveActiveTierKey = resolveEffectiveBillingTierKey({
+        currentTierKey: activeTierKey,
+        subscription: {
+            providerSubscriptionId: billingState.providerSubscriptionId,
+            providerPriceId: billingState.providerPriceId,
+            providerStatus: billingState.providerStatus,
+            status: billingState.status,
+            currentPeriodEnd: billingState.currentPeriodEnd,
+            cancelAt: billingState.cancelAt,
+            canceledAt: billingState.canceledAt,
+            graceEndsAt: billingState.graceEndsAt,
+            billingAccessUntil: billingState.accessUntil,
+        },
+        priceIds: paddlePublicConfig?.priceIds,
+    });
 
     const resolveTierFeatures = (tierKey: typeof PLAN_ORDER[number]) => {
         const tier = PLAN_CATALOG[tierKey];
@@ -110,6 +238,44 @@ export const PricingPage: React.FC = () => {
                     </p>
                 </div>
 
+                {(billingLifecycleState === 'canceled_grace' || billingLifecycleState === 'inactive') && isEligibleAccount && (
+                    <div className={cn(
+                        'mx-auto mb-8 max-w-5xl rounded-2xl border px-6 py-5',
+                        billingLifecycleState === 'canceled_grace'
+                            ? 'border-amber-200 bg-amber-50'
+                            : 'border-accent-200 bg-accent-50/70',
+                    )}>
+                        <div className="flex flex-wrap items-start justify-between gap-4">
+                            <div className="space-y-2">
+                                <p className="text-sm font-semibold text-slate-900">
+                                    {billingLifecycleState === 'canceled_grace'
+                                        ? t('shared.canceledGraceTitle')
+                                        : t('shared.inactiveTitle')}
+                                </p>
+                                <p className="max-w-3xl text-sm leading-6 text-slate-700">
+                                    {billingLifecycleState === 'canceled_grace'
+                                        ? t('shared.canceledGraceHelper', {
+                                            date: billingState.accessUntil
+                                                ? new Date(billingState.accessUntil).toLocaleDateString()
+                                                : '—',
+                                        })
+                                        : t('shared.inactiveHelper')}
+                                </p>
+                            </div>
+                            <Link
+                                to={`${buildPath('profileSettings')}#billing-management`}
+                                className="inline-flex h-10 items-center rounded-lg bg-accent-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-accent-700"
+                                onClick={() => trackEvent('pricing__plan_cta--resubscribe', {
+                                    tier: effectiveActiveTierKey,
+                                    current_tier: effectiveActiveTierKey,
+                                })}
+                            >
+                                {t('shared.resubscribeCta')}
+                            </Link>
+                        </div>
+                    </div>
+                )}
+
                 <div className="mx-auto grid max-w-6xl grid-cols-1 gap-6 md:grid-cols-3">
                     {PLAN_ORDER.map((tierKey) => {
                         const tier = PLAN_CATALOG[tierKey];
@@ -118,13 +284,148 @@ export const PricingPage: React.FC = () => {
                         const supportsCheckout = (tier.key === 'tier_mid' || tier.key === 'tier_premium')
                             && isPaddleTierCheckoutConfigured(paddlePublicConfig, tier.key as BillingCheckoutTierKey);
                         const featureList = resolveTierFeatures(tier.key);
-                        const isCurrentTier = isAuthenticated && activeTierKey === tier.key;
+                        const isCurrentTier = isAuthenticated && effectiveActiveTierKey === tier.key;
                         const freeTierTarget = isAuthenticated ? buildPath('profile') : buildPath('login');
                         const checkoutTarget = buildBillingCheckoutPath({
                             tierKey: tier.key as BillingCheckoutTierKey,
                             source: 'pricing_page',
                             returnTo: buildPath('pricing'),
+                            discountCode: activeDiscountCode,
                         });
+                        const resubscribeTarget = billingState.providerSubscriptionId
+                            ? `${buildPath('profileSettings')}#billing-management`
+                            : checkoutTarget;
+                        const billingDecision = isPaidTier && isEligibleAccount
+                            ? resolveBillingTierDecision({
+                                currentTierKey: effectiveActiveTierKey,
+                                targetTierKey: tier.key as BillingCheckoutTierKey,
+                                subscription: {
+                                    providerSubscriptionId: billingState.providerSubscriptionId,
+                                    providerStatus: billingState.providerStatus,
+                                    status: billingState.status,
+                                    currentPeriodEnd: billingState.currentPeriodEnd,
+                                    cancelAt: billingState.cancelAt,
+                                    canceledAt: billingState.canceledAt,
+                                    graceEndsAt: billingState.graceEndsAt,
+                                    billingAccessUntil: billingState.accessUntil,
+                                },
+                            })
+                            : null;
+                        const ctaState = (() => {
+                            if (!isPaidTier) {
+                                return {
+                                    label: t(`tiers.${tier.publicSlug}.cta`),
+                                    href: freeTierTarget,
+                                    disabled: false,
+                                    className: 'block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-center text-sm font-semibold text-slate-900 shadow-sm transition-colors hover:bg-slate-50',
+                                    analyticsId: `pricing__tier--${tier.publicSlug}`,
+                                    helperText: null as string | null,
+                                };
+                            }
+
+                            if (!supportsCheckout) {
+                                return {
+                                    label: t(`tiers.${tier.publicSlug}.cta`),
+                                    href: checkoutTarget,
+                                    disabled: true,
+                                    className: 'w-full cursor-not-allowed rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-400',
+                                    analyticsId: `pricing__tier--${tier.publicSlug}`,
+                                    helperText: t('shared.checkoutUnavailable'),
+                                };
+                            }
+
+                            if (!isEligibleAccount || effectiveActiveTierKey === 'tier_free') {
+                                return {
+                                    label: t(`tiers.${tier.publicSlug}.cta`),
+                                    href: checkoutTarget,
+                                    disabled: false,
+                                    className: 'block w-full rounded-xl bg-accent-600 px-4 py-3 text-center text-sm font-semibold text-white shadow-sm transition-colors hover:bg-accent-700',
+                                    analyticsId: `pricing__tier--${tier.publicSlug}`,
+                                    helperText: null as string | null,
+                                };
+                            }
+
+                            if (isSubscriptionSummaryLoading) {
+                                return {
+                                    label: t('shared.loadingPlanState'),
+                                    href: checkoutTarget,
+                                    disabled: true,
+                                    className: 'w-full cursor-wait rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-500',
+                                    analyticsId: 'pricing__plan_cta--loading',
+                                    helperText: null as string | null,
+                                };
+                            }
+
+                            if (billingDecision?.action === 'current') {
+                                if (billingLifecycleState === 'canceled_grace' || billingLifecycleState === 'inactive') {
+                                    return {
+                                        label: t('shared.resubscribeCta'),
+                                        href: resubscribeTarget,
+                                        disabled: false,
+                                        className: 'block w-full rounded-xl bg-accent-600 px-4 py-3 text-center text-sm font-semibold text-white shadow-sm transition-colors hover:bg-accent-700',
+                                        analyticsId: 'pricing__plan_cta--resubscribe',
+                                        helperText: billingLifecycleState === 'canceled_grace'
+                                            ? t('shared.canceledGraceShort')
+                                            : t('shared.inactiveShort'),
+                                    };
+                                }
+                                return {
+                                    label: t('shared.currentPlanCta'),
+                                    href: checkoutTarget,
+                                    disabled: true,
+                                    className: 'w-full cursor-not-allowed rounded-xl border border-accent-200 bg-accent-50 px-4 py-3 text-sm font-semibold text-accent-700',
+                                    analyticsId: 'pricing__plan_cta--current',
+                                    helperText: t('shared.currentPlanHelper'),
+                                };
+                            }
+
+                            if (billingDecision?.action === 'upgrade') {
+                                return {
+                                    label: t('shared.upgradeCta'),
+                                    href: checkoutTarget,
+                                    disabled: false,
+                                    className: 'block w-full rounded-xl bg-accent-600 px-4 py-3 text-center text-sm font-semibold text-white shadow-sm transition-colors hover:bg-accent-700',
+                                    analyticsId: 'pricing__plan_cta--upgrade',
+                                    helperText: t('shared.upgradeHelper'),
+                                };
+                            }
+
+                            if (billingDecision?.action === 'manage') {
+                                if (billingLifecycleState === 'canceled_grace' || billingLifecycleState === 'inactive') {
+                                    return {
+                                        label: t('shared.resubscribeCta'),
+                                        href: resubscribeTarget,
+                                        disabled: false,
+                                        className: 'block w-full rounded-xl bg-accent-600 px-4 py-3 text-center text-sm font-semibold text-white shadow-sm transition-colors hover:bg-accent-700',
+                                        analyticsId: 'pricing__plan_cta--resubscribe',
+                                        helperText: billingLifecycleState === 'canceled_grace'
+                                            ? t('shared.canceledGraceShort')
+                                            : t('shared.inactiveShort'),
+                                    };
+                                }
+                                return {
+                                    label: t('shared.manageBillingCta'),
+                                    href: `${buildPath('profileSettings')}#billing-management`,
+                                    disabled: false,
+                                    className: 'block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-center text-sm font-semibold text-slate-900 shadow-sm transition-colors hover:bg-slate-50',
+                                    analyticsId: billingDecision.reason === 'downgrade_requires_management'
+                                        ? 'pricing__plan_cta--downgrade_manage'
+                                        : 'pricing__plan_cta--manage_billing',
+                                    helperText: billingDecision.reason === 'downgrade_requires_management'
+                                        ? t('shared.downgradeHelper')
+                                        : t('shared.manageBillingHelper'),
+                                };
+                            }
+
+                            return {
+                                label: t(`tiers.${tier.publicSlug}.cta`),
+                                href: checkoutTarget,
+                                disabled: false,
+                                className: 'block w-full rounded-xl bg-accent-600 px-4 py-3 text-center text-sm font-semibold text-white shadow-sm transition-colors hover:bg-accent-700',
+                                analyticsId: `pricing__tier--${tier.publicSlug}`,
+                                helperText: null as string | null,
+                            };
+                        })();
 
                         return (
                             <article
@@ -151,7 +452,6 @@ export const PricingPage: React.FC = () => {
                                             <div className="text-sm font-medium text-slate-500">{t('shared.perMonth')}</div>
                                         </div>
                                     </div>
-
                                     <h2 className="mt-5 text-2xl font-bold tracking-tight text-slate-900">
                                         {t(`tiers.${tier.publicSlug}.name`)}
                                     </h2>
@@ -172,34 +472,40 @@ export const PricingPage: React.FC = () => {
 
                                 <div className="mt-8 border-t border-slate-200 pt-5">
                                     {isPaidTier ? (
-                                        supportsCheckout ? (
-                                            <Link
-                                                to={checkoutTarget}
-                                                onClick={() => trackEvent(`pricing__tier--${tier.publicSlug}`)}
-                                                className="block w-full rounded-xl bg-accent-600 px-4 py-3 text-center text-sm font-semibold text-white shadow-sm transition-colors hover:bg-accent-700"
-                                                {...getAnalyticsDebugAttributes(`pricing__tier--${tier.publicSlug}`)}
-                                            >
-                                                {t(`tiers.${tier.publicSlug}.cta`)}
-                                            </Link>
-                                        ) : (
+                                        ctaState.disabled ? (
                                             <button
                                                 type="button"
                                                 disabled
-                                                className="w-full cursor-not-allowed rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-400"
+                                                className={ctaState.className}
                                             >
-                                                {t(`tiers.${tier.publicSlug}.cta`)}
+                                                {ctaState.label}
                                             </button>
+                                        ) : (
+                                            <Link
+                                                to={ctaState.href}
+                                                onClick={() => trackEvent(ctaState.analyticsId, {
+                                                    tier: tier.key,
+                                                    current_tier: effectiveActiveTierKey,
+                                                })}
+                                                className={ctaState.className}
+                                                {...getAnalyticsDebugAttributes(ctaState.analyticsId)}
+                                            >
+                                                {ctaState.label}
+                                            </Link>
                                         )
                                     ) : (
                                         <Link
-                                            to={freeTierTarget}
-                                            onClick={() => trackEvent(`pricing__tier--${tier.publicSlug}`)}
-                                            className="block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-center text-sm font-semibold text-slate-900 shadow-sm transition-colors hover:bg-slate-50"
-                                            {...getAnalyticsDebugAttributes(`pricing__tier--${tier.publicSlug}`)}
+                                            to={ctaState.href}
+                                            onClick={() => trackEvent(ctaState.analyticsId)}
+                                            className={ctaState.className}
+                                            {...getAnalyticsDebugAttributes(ctaState.analyticsId)}
                                         >
-                                            {t(`tiers.${tier.publicSlug}.cta`)}
+                                            {ctaState.label}
                                         </Link>
                                     )}
+                                    {ctaState.helperText ? (
+                                        <p className="mt-3 text-xs leading-5 text-slate-500">{ctaState.helperText}</p>
+                                    ) : null}
                                 </div>
                                 </div>
                             </article>
