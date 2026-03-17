@@ -358,6 +358,28 @@
         "failed": "Trip generation failed again. Review the diagnostics and retry later.",
         "failedTitle": "Retry failed",
         "unexpected": "Retry failed unexpectedly."
+      },
+      "securityRecovery": {
+        "blockedMessage": "Certains détails du voyage ressemblaient à des instructions système plutôt qu'à des préférences de voyage.",
+        "outputBlockedMessage": "La génération du voyage a renvoyé un résultat invalide. Réessayez.",
+        "reviewAction": "Vérifier les champs signalés",
+        "cardTitle": "Vérifiez les détails du voyage signalés",
+        "cardDescription": "Une partie du texte saisi ressemblait à des instructions pour l'IA. Mettez à jour les champs signalés puis relancez la génération.",
+        "flaggedBadge": "Signalé",
+        "retryAction": "Modifier et réessayer",
+        "clearAction": "Effacer le texte signalé",
+        "cancelAction": "Annuler",
+        "readyHint": "La demande mise à jour est prête à être relancée.",
+        "requiredFieldHint": "Au moins un champ obligatoire a encore besoin d'une préférence de voyage.",
+        "changeHint": "Modifiez ou effacez les champs signalés avant de réessayer.",
+        "fields": {
+          "trip_request": "Demande de voyage",
+          "destination": "Destination",
+          "destinations": "Destinations",
+          "specific_cities": "Villes demandées",
+          "notes": "Notes",
+          "seasonal_events": "Temps forts saisonniers"
+        }
       }
     },
     "pendingAuth": {

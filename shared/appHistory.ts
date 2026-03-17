@@ -56,16 +56,37 @@ export const createBlogTransitionAwareBrowserHistory = (
     history: AppBrowserHistory = UNSAFE_createBrowserHistory({ v5Compat: true })
 ): AppBrowserHistory => {
     let previousPathname = history.location.pathname;
+    const listeners = new Set<HistoryListener>();
+    let removeTargetListener: (() => void) | null = null;
+
+    const ensureTargetListener = (target: AppBrowserHistory): void => {
+        if (removeTargetListener) return;
+        removeTargetListener = target.listen((update: HistoryUpdate) => {
+            const fromPathname = previousPathname;
+            previousPathname = update.location.pathname;
+            for (const listener of listeners) {
+                wrapHistoryListenerWithBlogTransitions(listener, fromPathname, update);
+            }
+        });
+    };
+
+    const detachTargetListenerIfIdle = (): void => {
+        if (listeners.size > 0 || !removeTargetListener) return;
+        removeTargetListener();
+        removeTargetListener = null;
+    };
 
     return new Proxy(history, {
         get(target, prop, receiver) {
             if (prop === 'listen') {
-                return (listener: HistoryListener) =>
-                    target.listen((update: HistoryUpdate) => {
-                        const fromPathname = previousPathname;
-                        previousPathname = update.location.pathname;
-                        wrapHistoryListenerWithBlogTransitions(listener, fromPathname, update);
-                    });
+                return (listener: HistoryListener) => {
+                    listeners.add(listener);
+                    ensureTargetListener(target);
+                    return () => {
+                        listeners.delete(listener);
+                        detachTargetListenerIfIdle();
+                    };
+                };
             }
 
             const value = Reflect.get(target, prop, receiver);

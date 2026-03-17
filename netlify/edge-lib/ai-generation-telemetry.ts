@@ -1,4 +1,5 @@
 import { readEnv } from "./ai-provider-runtime.ts";
+import type { AiRuntimeSecurityGuardDecision } from "../../shared/aiRuntimeSecurity.ts";
 
 export type AiTelemetrySource = "create_trip" | "benchmark";
 export type AiTelemetryStatus = "success" | "failed";
@@ -20,6 +21,9 @@ export interface PersistAiGenerationTelemetryInput {
   totalTokens?: number;
   benchmarkSessionId?: string;
   benchmarkRunId?: string;
+  guardDecision?: AiRuntimeSecurityGuardDecision;
+  riskScore?: number;
+  blocked?: boolean;
   metadata?: Record<string, unknown>;
 }
 
@@ -64,6 +68,9 @@ export const persistAiGenerationTelemetry = async (
     total_tokens: toNullableNumber(input.totalTokens),
     benchmark_session_id: input.benchmarkSessionId || null,
     benchmark_run_id: input.benchmarkRunId || null,
+    guard_decision: input.guardDecision || null,
+    risk_score: input.riskScore == null ? null : Math.max(0, Math.min(100, Math.round(Number(input.riskScore) || 0))),
+    blocked: input.blocked === true,
     metadata: input.metadata || null,
   };
 

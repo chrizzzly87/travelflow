@@ -66,6 +66,12 @@ export interface TripGenerationRetryCapabilityOptions {
 // does not treat still-valid GPT-5.4 jobs as hard-stalled too early.
 const ASYNC_WORKER_HARD_STALL_MS = 120_000;
 
+const isLocalDevRuntime = (): boolean => {
+    if (typeof window === 'undefined') return false;
+    const hostname = window.location?.hostname?.trim().toLowerCase() || '';
+    return hostname === 'localhost' || hostname === '127.0.0.1';
+};
+
 const canUseAdminGenerationOverride = (options: TripGenerationRetryCapabilityOptions): boolean => (
     Boolean(options.isAdminFallbackView && options.adminOverrideEnabled && options.canAdminWrite)
 );
@@ -350,7 +356,11 @@ export const retryTripGenerationWithDefaultModel = async (
             maxRetries: 0,
         });
         if (!enqueueSucceeded) {
-            throw new Error('Could not enqueue async generation retry.');
+            throw new Error(
+                isLocalDevRuntime()
+                    ? 'Could not enqueue async generation retry. In local dev, ensure `pnpm dev:netlify` is running and prefer http://localhost:8888 for async trip generation flows.'
+                    : 'Could not enqueue async generation retry.',
+            );
         }
 
         return {

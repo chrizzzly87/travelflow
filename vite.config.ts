@@ -16,6 +16,11 @@ export default defineConfig(({ mode }) => {
                     changeOrigin: true,
                     secure: false,
                 },
+                '/api/internal/ai/generation-enqueue': {
+                    target: 'http://localhost:8888',
+                    changeOrigin: true,
+                    secure: false,
+                },
                 '/api/internal/admin/iam': {
                     target: 'http://localhost:8888',
                     changeOrigin: true,

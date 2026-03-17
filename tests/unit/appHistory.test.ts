@@ -58,14 +58,17 @@ interface FakeHistory {
 const createFakeHistory = (
     pathname: string
 ): FakeHistory & {
+    listenCallCount: () => number;
     emit: (update: FakeHistoryUpdate) => void;
 } => {
     let listener: ((update: FakeHistoryUpdate) => void) | null = null;
+    let listenCallCount = 0;
 
     return {
         action: 'POP',
         location: { pathname },
         listen: (nextListener) => {
+            listenCallCount += 1;
             listener = nextListener;
             return () => {
                 listener = null;
@@ -75,6 +78,7 @@ const createFakeHistory = (
         go: vi.fn(),
         push: vi.fn(),
         replace: vi.fn(),
+        listenCallCount: () => listenCallCount,
         emit: (update) => {
             listener?.(update);
         },
@@ -167,5 +171,28 @@ describe('shared/appHistory', () => {
 
         expect(blogTransitionMocks.setPendingBlogTransitionMode).toHaveBeenCalledWith('title-only');
         expect(blogTransitionMocks.startBlogViewTransition).toHaveBeenCalledTimes(1);
+    });
+
+    it('fans out multiple listeners through a single underlying history subscription', () => {
+        const fakeHistory = createFakeHistory('/blog');
+        const wrappedHistory = createBlogTransitionAwareBrowserHistory(fakeHistory as never);
+        const firstListener = vi.fn();
+        const secondListener = vi.fn();
+
+        const unsubscribeFirst = wrappedHistory.listen(firstListener);
+        const unsubscribeSecond = wrappedHistory.listen(secondListener);
+
+        expect(fakeHistory.listenCallCount()).toBe(1);
+
+        fakeHistory.emit({
+            action: 'PUSH',
+            location: { pathname: '/blog/how-to-plan-multi-city-trip' },
+        });
+
+        expect(firstListener).toHaveBeenCalledTimes(1);
+        expect(secondListener).toHaveBeenCalledTimes(1);
+
+        unsubscribeFirst();
+        unsubscribeSecond();
     });
 });

@@ -20,6 +20,43 @@ Use Promptfoo for:
 
 Promptfoo is helpful here, but it is not a full security boundary. It improves detection and regression safety; it does not guarantee that prompt injection is impossible.
 
+## Production Runtime Monitoring
+
+Promptfoo stays out of the production hot path.
+
+Production protection now lives in the app/runtime layer:
+
+- `shared/aiRuntimeSecurity.ts` runs `input_preflight` checks on user-controlled fields before provider calls
+- the same module runs `output_postflight` checks after model output and shared validation
+- direct edge generation and async worker generation both use the same guard decisions: `allow`, `warn`, `block`
+- low-risk instruction-like fragments can be silently sanitized before prompt assembly if the sanitized request becomes safe
+- only the high-confidence cases that still look unsafe after sanitization are soft-blocked before persistence
+- blocked travelers now get an edit-and-retry recovery card instead of a permanent failed state
+
+Production logging lives in:
+
+- `ai_generation_events`
+- `trip_generation_attempts.metadata`
+- trip `aiMeta.generation.latestAttempt.metadata`
+
+Admin visibility lives in:
+
+- `/admin/ai-benchmark/telemetry`
+- `/admin/trips` diagnostics drawer
+- trip debug modal admin tab
+
+Logged security evidence is intentionally bounded:
+
+- attack categories
+- matched rules
+- guard decision
+- risk score
+- prompt fingerprint hash
+- redacted excerpt
+- trip id / attempt id
+
+We do not log full raw prompts or full raw model output by default.
+
 ## Current Packs
 
 ### Regression pack
@@ -101,6 +138,19 @@ The prompt policy now explicitly tells the model:
 - JSON/schema rules still take precedence
 
 This is intentionally lightweight. We are not stripping or filtering user text aggressively in this phase.
+
+The current runtime behavior is:
+
+- keep the user meaning whenever possible
+- silently remove obviously malicious instruction fragments from free-text prompt fields when that still leaves a coherent trip request
+- log which fields were sanitized in bounded security metadata
+- only block when the remaining input still looks unsafe or the model output breaks hard constraints
+
+If a request is blocked:
+
+- input-preflight blocks show a guided recovery UI with the flagged fields prefilled
+- the traveler can edit those fields, clear them, and retry manually
+- output-postflight blocks show a generic retry message because the failure came from the model response, not the traveler text
 
 ## Structured-Output Guardrails
 
@@ -199,3 +249,17 @@ The goal of this setup is practical safety improvement:
 - better detection through adversarial evals
 - lower override risk through prompt-input hardening
 - one shared contract across evals and admin benchmark
+- production telemetry and admin incident visibility for suspicious or blocked live traffic
+
+## Incident Replay Workflow
+
+When a production incident is worth replaying:
+
+1. Copy only sanitized request context from the admin telemetry or trip diagnostics view.
+2. Convert that sanitized incident into a Promptfoo security scenario.
+3. Add the new scenario to the security pack so the failure becomes a repeatable regression test.
+
+This is the intended loop:
+
+- production runtime monitoring catches suspicious live traffic
+- Promptfoo turns those sanitized incidents into durable pre-release checks

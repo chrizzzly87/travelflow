@@ -1,4 +1,7 @@
-import { parseFlexibleDurationDays, parseFlexibleDurationHours } from "../../shared/durationParsing.ts";
+import {
+  parseFlexibleDurationDays,
+  parseFlexibleDurationHours,
+} from "../../shared/durationParsing.ts";
 import { normalizeTransportMode } from "../../shared/transportModes.ts";
 import {
   BENCHMARK_ACTIVITY_TYPES as ACTIVITY_TYPES,
@@ -16,8 +19,18 @@ import {
 } from "../../shared/aiBenchmarkValidation.ts";
 import { TRIP_ITINERARY_STRUCTURED_OUTPUT_SCHEMA } from "../../shared/aiTripItinerarySchema.ts";
 import {
+  AI_RUNTIME_SECURITY_ATTACK_CATEGORIES,
+  extractAiRuntimeSecurityMetadata,
+  type AiRuntimeSecurityAttackCategory,
+} from "../../shared/aiRuntimeSecurity.ts";
+import {
   buildAiTelemetrySeries,
+  filterAiTelemetryRowsBySecurity,
+  listAiTelemetryAttackCategories,
+  listRecentAiTelemetryIncidents,
+  summarizeAiTelemetryFailures,
   summarizeAiTelemetry,
+  summarizeAiTelemetrySecurity,
   summarizeAiTelemetryByModel,
   summarizeAiTelemetryByProvider,
   topTelemetryModelsByCost,
@@ -26,7 +39,10 @@ import {
   type AiTelemetryRow,
 } from "../edge-lib/ai-telemetry-aggregation.ts";
 import { persistAiGenerationTelemetry } from "../edge-lib/ai-generation-telemetry.ts";
-import { generateProviderItinerary, resolveTimeoutMs } from "../edge-lib/ai-provider-runtime.ts";
+import {
+  generateProviderItinerary,
+  resolveTimeoutMs,
+} from "../edge-lib/ai-provider-runtime.ts";
 import {
   BENCHMARK_DEFAULT_MODEL_IDS,
   createSystemBenchmarkPresets,
@@ -154,7 +170,8 @@ const BENCHMARK_PROVIDER_TIMEOUT_MS = resolveTimeoutMs(
   BENCHMARK_PROVIDER_TIMEOUT_MAX_MS,
 );
 const BENCHMARK_TIMEOUT_60S_MAX_OUTPUT_TOKENS = 3_072;
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const SATISFACTION_RATINGS = new Set(["good", "medium", "bad"]);
 const TELEMETRY_COMMENT_QUERY_LIMIT = 2000;
 const TELEMETRY_SOURCE_VALUES = new Set(["all", "create_trip", "benchmark"]);
@@ -196,14 +213,20 @@ const ACTIVITY_TYPE_COLOR: Record<(typeof ACTIVITY_TYPES)[number], string> = {
 
 const TRAVEL_COLOR = "bg-stone-800 border-stone-600 text-stone-100";
 const ACTIVE_BENCHMARK_MODEL_ID_SET = new Set(
-  AI_MODEL_CATALOG
-    .filter((model) => model.availability === "active")
-    .map((model) => model.id),
+  AI_MODEL_CATALOG.filter((model) => model.availability === "active").map(
+    (model) => model.id,
+  ),
 );
 
 const readEnv = (name: string): string => {
   try {
-    return (globalThis as { Deno?: { env?: { get: (key: string) => string | undefined } } }).Deno?.env?.get(name) || "";
+    return (
+      (
+        globalThis as {
+          Deno?: { env?: { get: (key: string) => string | undefined } };
+        }
+      ).Deno?.env?.get(name) || ""
+    );
   } catch {
     return "";
   }
@@ -215,7 +238,11 @@ const json = (status: number, payload: unknown): Response =>
     headers: JSON_HEADERS,
   });
 
-const textResponse = (status: number, body: Uint8Array | string, headers: Record<string, string>): Response =>
+const textResponse = (
+  status: number,
+  body: Uint8Array | string,
+  headers: Record<string, string>,
+): Response =>
   new Response(body, {
     status,
     headers,
@@ -223,7 +250,12 @@ const textResponse = (status: number, body: Uint8Array | string, headers: Record
 
 const isEnabledFlag = (value: string): boolean => {
   const normalized = value.trim().toLowerCase();
-  return normalized === "1" || normalized === "true" || normalized === "yes" || normalized === "on";
+  return (
+    normalized === "1" ||
+    normalized === "true" ||
+    normalized === "yes" ||
+    normalized === "on"
+  );
 };
 
 const getAuthToken = (request: Request): string | null => {
@@ -252,14 +284,20 @@ const getSupabaseServiceConfig = () => {
   return { url, serviceRoleKey };
 };
 
-const buildSupabaseHeaders = (authToken: string, anonKey: string, extra?: Record<string, string>) => ({
+const buildSupabaseHeaders = (
+  authToken: string,
+  anonKey: string,
+  extra?: Record<string, string>,
+) => ({
   "Content-Type": "application/json",
   apikey: anonKey,
   Authorization: `Bearer ${authToken}`,
   ...extra,
 });
 
-const safeJsonParse = async (source: { text: () => Promise<string> }): Promise<any> => {
+const safeJsonParse = async (source: {
+  text: () => Promise<string>;
+}): Promise<any> => {
   const text = await source.text();
   if (!text) return null;
   try {
@@ -305,7 +343,9 @@ const authorizeInternalRequest = async (
   config: { url: string; anonKey: string },
   authToken: string,
 ): Promise<Response | null> => {
-  const emergencyFallbackEnabled = isEnabledFlag(readEnv("TF_ENABLE_ADMIN_KEY_FALLBACK"));
+  const emergencyFallbackEnabled = isEnabledFlag(
+    readEnv("TF_ENABLE_ADMIN_KEY_FALLBACK"),
+  );
   if (emergencyFallbackEnabled) {
     const expected = readEnv("TF_ADMIN_API_KEY").trim();
     const provided = request.headers.get(ADMIN_HEADER)?.trim() || "";
@@ -330,7 +370,8 @@ const authorizeInternalRequest = async (
   if (!response.ok) {
     const payload = await safeJsonParse(response);
     return json(403, {
-      error: payload?.message || payload?.error || "Admin role verification failed.",
+      error:
+        payload?.message || payload?.error || "Admin role verification failed.",
       code: "ADMIN_ROLE_CHECK_FAILED",
     });
   }
@@ -347,7 +388,8 @@ const authorizeInternalRequest = async (
   return null;
 };
 
-const isUuid = (value?: string | null): boolean => Boolean(value && UUID_REGEX.test(value));
+const isUuid = (value?: string | null): boolean =>
+  Boolean(value && UUID_REGEX.test(value));
 
 const toIsoDate = (value?: string): string => {
   if (value && /^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
@@ -357,16 +399,25 @@ const toIsoDate = (value?: string): string => {
 const addIsoDateDays = (isoDate: string, days: number): string => {
   const parsed = Date.parse(`${isoDate}T00:00:00Z`);
   if (!Number.isFinite(parsed)) return isoDate;
-  return new Date(parsed + (days * 24 * 60 * 60 * 1000)).toISOString().slice(0, 10);
+  return new Date(parsed + days * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 10);
 };
 
-const getBenchmarkPreferenceDefaultDates = (): { startDate: string; endDate: string } => {
+const getBenchmarkPreferenceDefaultDates = (): {
+  startDate: string;
+  endDate: string;
+} => {
   const startDate = toIsoDate();
-  const endDate = addIsoDateDays(startDate, BENCHMARK_PREFERENCES_DEFAULT_DURATION_DAYS);
+  const endDate = addIsoDateDays(
+    startDate,
+    BENCHMARK_PREFERENCES_DEFAULT_DURATION_DAYS,
+  );
   return { startDate, endDate };
 };
 
-const clampNumber = (value: number, min: number, max: number): number => Math.max(min, Math.min(value, max));
+const clampNumber = (value: number, min: number, max: number): number =>
+  Math.max(min, Math.min(value, max));
 
 const normalizeBenchmarkTimeoutMs = (value: unknown): number | null => {
   const parsed = Number(value);
@@ -380,8 +431,15 @@ const normalizeBenchmarkTimeoutMs = (value: unknown): number | null => {
 
 const normalizeTarget = (value: unknown): BenchmarkTarget | null => {
   if (!value || typeof value !== "object") return null;
-  const typed = value as { provider?: unknown; model?: unknown; label?: unknown };
-  const provider = typeof typed.provider === "string" ? typed.provider.trim().toLowerCase() : "";
+  const typed = value as {
+    provider?: unknown;
+    model?: unknown;
+    label?: unknown;
+  };
+  const provider =
+    typeof typed.provider === "string"
+      ? typed.provider.trim().toLowerCase()
+      : "";
   const model = typeof typed.model === "string" ? typed.model.trim() : "";
   const label = typeof typed.label === "string" ? typed.label.trim() : "";
   if (!provider || !model) return null;
@@ -406,13 +464,22 @@ const normalizeScenario = (value: unknown): BenchmarkScenario | null => {
 
   return {
     prompt,
-    startDate: typeof typed.startDate === "string" ? toIsoDate(typed.startDate) : undefined,
-    roundTrip: typeof typed.roundTrip === "boolean" ? typed.roundTrip : undefined,
-    input: typed.input && typeof typed.input === "object" ? (typed.input as Record<string, unknown>) : undefined,
+    startDate:
+      typeof typed.startDate === "string"
+        ? toIsoDate(typed.startDate)
+        : undefined,
+    roundTrip:
+      typeof typed.roundTrip === "boolean" ? typed.roundTrip : undefined,
+    input:
+      typed.input && typeof typed.input === "object"
+        ? (typed.input as Record<string, unknown>)
+        : undefined,
   };
 };
 
-const normalizeSatisfactionRating = (value: unknown): "good" | "medium" | "bad" | null => {
+const normalizeSatisfactionRating = (
+  value: unknown,
+): "good" | "medium" | "bad" | null => {
   if (value === null) return null;
   if (typeof value !== "string") return null;
   const normalized = value.trim().toLowerCase();
@@ -444,21 +511,33 @@ const createShareToken = (): string => {
   return `abm_${seed}`;
 };
 
-const getCityColor = (index: number): string => CITY_COLORS[index % CITY_COLORS.length];
+const getCityColor = (index: number): string =>
+  CITY_COLORS[index % CITY_COLORS.length];
 
 const getActivityColor = (activityTypes: string[]): string => {
-  const first = activityTypes.find((value) => ACTIVITY_TYPES.includes(value as (typeof ACTIVITY_TYPES)[number]));
-  return first ? ACTIVITY_TYPE_COLOR[first as (typeof ACTIVITY_TYPES)[number]] : ACTIVITY_TYPE_COLOR.general;
+  const first = activityTypes.find((value) =>
+    ACTIVITY_TYPES.includes(value as (typeof ACTIVITY_TYPES)[number]),
+  );
+  return first
+    ? ACTIVITY_TYPE_COLOR[first as (typeof ACTIVITY_TYPES)[number]]
+    : ACTIVITY_TYPE_COLOR.general;
 };
 
-const normalizeCityColors = (items: Array<Record<string, unknown>>): Array<Record<string, unknown>> => {
+const normalizeCityColors = (
+  items: Array<Record<string, unknown>>,
+): Array<Record<string, unknown>> => {
   const colorByCity = new Map<string, string>();
   let nextColorIndex = 0;
 
   return items.map((item) => {
     if (item.type !== "city") return item;
-    const cityKey = normalizeCityName(String(item.title || item.location || ""));
-    const fallbackColor = typeof item.color === "string" && item.color ? item.color : getCityColor(nextColorIndex++);
+    const cityKey = normalizeCityName(
+      String(item.title || item.location || ""),
+    );
+    const fallbackColor =
+      typeof item.color === "string" && item.color
+        ? item.color
+        : getCityColor(nextColorIndex++);
 
     if (!cityKey) {
       return {
@@ -507,7 +586,8 @@ const buildTripFromModelData = (
     const typed = city as Record<string, unknown>;
     const name = String(typed.name || `Stop ${index + 1}`);
     const daysRaw = Number(typed.days);
-    const days = Number.isFinite(daysRaw) && daysRaw > 0 ? Math.round(daysRaw) : 1;
+    const days =
+      Number.isFinite(daysRaw) && daysRaw > 0 ? Math.round(daysRaw) : 1;
     const lat = Number(typed.lat);
     const lng = Number(typed.lng);
 
@@ -515,7 +595,8 @@ const buildTripFromModelData = (
       name,
       days,
       description: String(typed.description || ""),
-      coordinates: Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : undefined,
+      coordinates:
+        Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : undefined,
       sourceIndex: index,
     });
   });
@@ -555,16 +636,27 @@ const buildTripFromModelData = (
         if (!activity || typeof activity !== "object") return;
         const typed = activity as Record<string, unknown>;
         const cityIndex = Number(typed.cityIndex);
-        if (!Number.isFinite(cityIndex) || cityIndex !== city.sourceIndex) return;
+        if (!Number.isFinite(cityIndex) || cityIndex !== city.sourceIndex)
+          return;
 
         const dayOffsetInCityRaw = Number(typed.dayOffsetInCity);
-        const dayOffsetInCity = Number.isFinite(dayOffsetInCityRaw) ? dayOffsetInCityRaw : 0;
+        const dayOffsetInCity = Number.isFinite(dayOffsetInCityRaw)
+          ? dayOffsetInCityRaw
+          : 0;
         const activityDurationRaw = Number(typed.duration);
-        const parsedActivityDurationDays = parseFlexibleDurationDays(typed.duration);
-        const activityDuration = Number.isFinite(parsedActivityDurationDays) && (parsedActivityDurationDays as number) > 0
-          ? (parsedActivityDurationDays as number)
-          : (Number.isFinite(activityDurationRaw) && activityDurationRaw > 0 ? activityDurationRaw : 1);
-        const activityTypes = normalizeActivityTypes(typed.activityTypes ?? typed.type);
+        const parsedActivityDurationDays = parseFlexibleDurationDays(
+          typed.duration,
+        );
+        const activityDuration =
+          Number.isFinite(parsedActivityDurationDays) &&
+          (parsedActivityDurationDays as number) > 0
+            ? (parsedActivityDurationDays as number)
+            : Number.isFinite(activityDurationRaw) && activityDurationRaw > 0
+              ? activityDurationRaw
+              : 1;
+        const activityTypes = normalizeActivityTypes(
+          typed.activityTypes ?? typed.type,
+        );
 
         items.push({
           id: `act-${index}-${activityIndex}-${Date.now()}`,
@@ -583,23 +675,37 @@ const buildTripFromModelData = (
     currentDayOffset += city.days;
   });
 
-  const rawTravelSegments = Array.isArray(data.travelSegments) ? data.travelSegments : [];
+  const rawTravelSegments = Array.isArray(data.travelSegments)
+    ? data.travelSegments
+    : [];
   rawTravelSegments.forEach((travel, index) => {
     if (!travel || typeof travel !== "object") return;
     const typed = travel as Record<string, unknown>;
     const fromCityIndex = Number(typed.fromCityIndex);
     const toCityIndex = Number(typed.toCityIndex);
 
-    if (!Number.isFinite(fromCityIndex) || fromCityIndex < 0 || fromCityIndex >= cityOffsets.length) return;
+    if (
+      !Number.isFinite(fromCityIndex) ||
+      fromCityIndex < 0 ||
+      fromCityIndex >= cityOffsets.length
+    )
+      return;
 
-    const startOffset = cityOffsets[fromCityIndex] + (cityDurations[fromCityIndex] || 1) - 0.5;
+    const startOffset =
+      cityOffsets[fromCityIndex] + (cityDurations[fromCityIndex] || 1) - 0.5;
     const durationHours = parseFlexibleDurationHours(typed.duration);
-    const durationDays = Number.isFinite(durationHours) && (durationHours as number) > 0 ? (durationHours as number) / 24 : 0.1;
+    const durationDays =
+      Number.isFinite(durationHours) && (durationHours as number) > 0
+        ? (durationHours as number) / 24
+        : 0.1;
 
     const fromCityName = parsedCities[fromCityIndex]?.name || "previous stop";
-    const toCityName = Number.isFinite(toCityIndex) && toCityIndex >= 0 && toCityIndex < parsedCities.length
-      ? parsedCities[toCityIndex]?.name
-      : "next stop";
+    const toCityName =
+      Number.isFinite(toCityIndex) &&
+      toCityIndex >= 0 &&
+      toCityIndex < parsedCities.length
+        ? parsedCities[toCityIndex]?.name
+        : "next stop";
 
     items.push({
       id: `travel-${index}-${Date.now()}`,
@@ -665,13 +771,18 @@ const persistTrip = async (
     source_template_id: sessionId,
   };
 
-  const response = await supabaseFetch(config, authToken, "/rest/v1/trips?select=id", {
-    method: "POST",
-    headers: {
-      Prefer: "return=representation",
+  const response = await supabaseFetch(
+    config,
+    authToken,
+    "/rest/v1/trips?select=id",
+    {
+      method: "POST",
+      headers: {
+        Prefer: "return=representation",
+      },
+      body: JSON.stringify(payload),
     },
-    body: JSON.stringify(payload),
-  });
+  );
 
   if (!response.ok) {
     const details = await response.text();
@@ -736,7 +847,11 @@ const fetchSessionByShareToken = async (
 const createSession = async (
   config: { url: string; anonKey: string },
   authToken: string,
-  payload: { name?: string; flow: "classic" | "wizard" | "surprise"; scenario: BenchmarkScenario },
+  payload: {
+    name?: string;
+    flow: "classic" | "wizard" | "surprise";
+    scenario: BenchmarkScenario;
+  },
 ): Promise<{ session: BenchmarkSessionRow | null; error?: string }> => {
   const response = await supabaseFetch(
     config,
@@ -824,7 +939,8 @@ const fetchRunById = async (
 const isRunCancelled = (run: BenchmarkRunRow | null): boolean => {
   if (!run) return false;
   if (run.status !== "failed") return false;
-  const message = typeof run.error_message === "string" ? run.error_message : "";
+  const message =
+    typeof run.error_message === "string" ? run.error_message : "";
   return message.startsWith(CANCELLED_BY_USER_MESSAGE);
 };
 
@@ -906,12 +1022,18 @@ const summarizeRuns = (runs: BenchmarkRunRow[]) => {
   const queued = runs.filter((run) => run.status === "queued").length;
 
   const completedWithLatency = runs
-    .filter((run) => run.status === "completed" && typeof run.latency_ms === "number")
+    .filter(
+      (run) => run.status === "completed" && typeof run.latency_ms === "number",
+    )
     .map((run) => Number(run.latency_ms));
 
-  const averageLatencyMs = completedWithLatency.length > 0
-    ? Math.round(completedWithLatency.reduce((sum, value) => sum + value, 0) / completedWithLatency.length)
-    : null;
+  const averageLatencyMs =
+    completedWithLatency.length > 0
+      ? Math.round(
+          completedWithLatency.reduce((sum, value) => sum + value, 0) /
+            completedWithLatency.length,
+        )
+      : null;
 
   const totalCostUsd = runs.reduce((sum, run) => {
     return sum + (typeof run.cost_usd === "number" ? run.cost_usd : 0);
@@ -953,21 +1075,19 @@ const runGeneration = async (
   }
 
   const startedMs = Date.now();
-  const persistRunTelemetry = async (
-    input: {
-      status: "success" | "failed";
-      latencyMs: number;
-      httpStatus: number;
-      provider?: string;
-      model?: string;
-      providerModel?: string;
-      errorCode?: string;
-      errorMessage?: string;
-      usage?: ProviderUsage;
-      estimatedCostUsd?: number | null;
-      metadata?: Record<string, unknown>;
-    },
-  ) => {
+  const persistRunTelemetry = async (input: {
+    status: "success" | "failed";
+    latencyMs: number;
+    httpStatus: number;
+    provider?: string;
+    model?: string;
+    providerModel?: string;
+    errorCode?: string;
+    errorMessage?: string;
+    usage?: ProviderUsage;
+    estimatedCostUsd?: number | null;
+    metadata?: Record<string, unknown>;
+  }) => {
     try {
       await persistAiGenerationTelemetry({
         source: "benchmark",
@@ -980,7 +1100,8 @@ const runGeneration = async (
         httpStatus: input.httpStatus,
         errorCode: input.errorCode,
         errorMessage: input.errorMessage,
-        estimatedCostUsd: input.estimatedCostUsd ?? input.usage?.estimatedCostUsd,
+        estimatedCostUsd:
+          input.estimatedCostUsd ?? input.usage?.estimatedCostUsd,
         promptTokens: input.usage?.promptTokens,
         completionTokens: input.usage?.completionTokens,
         totalTokens: input.usage?.totalTokens,
@@ -999,7 +1120,10 @@ const runGeneration = async (
       provider: run.provider,
       model: run.model,
       timeoutMs: providerTimeoutMs,
-      maxOutputTokens: providerTimeoutMs <= 60_000 ? BENCHMARK_TIMEOUT_60S_MAX_OUTPUT_TOKENS : undefined,
+      maxOutputTokens:
+        providerTimeoutMs <= 60_000
+          ? BENCHMARK_TIMEOUT_60S_MAX_OUTPUT_TOKENS
+          : undefined,
       jsonSchema: TRIP_ITINERARY_STRUCTURED_OUTPUT_SCHEMA,
     });
     const latencyMs = Date.now() - startedMs;
@@ -1009,9 +1133,21 @@ const runGeneration = async (
     }
 
     if (!result.ok) {
-      const failure = result;
+      const failure = result as {
+        ok: false;
+        status: number;
+        value: {
+          error: string;
+          code: string;
+          details?: string;
+          sample?: string;
+          providerModel?: string;
+        };
+      };
       const details = JSON.stringify(failure.value);
-      const formattedDetails = formatErrorDetailsForMessage(details, { maxLength: 5000 });
+      const formattedDetails = formatErrorDetailsForMessage(details, {
+        maxLength: 5000,
+      });
       await persistRunTelemetry({
         status: "failed",
         latencyMs,
@@ -1080,7 +1216,8 @@ const runGeneration = async (
         providerModel: result.value.meta.providerModel,
         usage,
         errorCode: "BENCHMARK_OUTPUT_VALIDATION_FAILED",
-        errorMessage: validation.errors.join("; ") || "Model output failed validation",
+        errorMessage:
+          validation.errors.join("; ") || "Model output failed validation",
         metadata: {
           reason: "validation_failed",
           validationErrorCount: validation.errors.length,
@@ -1143,13 +1280,17 @@ const runGeneration = async (
         status: "failed",
         finished_at: new Date().toISOString(),
         latency_ms: latencyMs,
-        error_message: persistedTrip.error || "Failed to persist generated trip",
+        error_message:
+          persistedTrip.error || "Failed to persist generated trip",
       });
       return;
     }
 
     const finishedAt = new Date().toISOString();
-    const estimatedCostUsd = typeof usage.estimatedCostUsd === "number" ? usage.estimatedCostUsd : null;
+    const estimatedCostUsd =
+      typeof usage.estimatedCostUsd === "number"
+        ? usage.estimatedCostUsd
+        : null;
 
     if (await hasRunBeenCancelled(config, authToken, run.id)) {
       return;
@@ -1195,7 +1336,10 @@ const runGeneration = async (
       latencyMs,
       httpStatus: 500,
       errorCode: "BENCHMARK_RUN_UNEXPECTED_ERROR",
-      errorMessage: error instanceof Error ? error.message : "Unexpected benchmark run error",
+      errorMessage:
+        error instanceof Error
+          ? error.message
+          : "Unexpected benchmark run error",
       metadata: {
         reason: "unexpected_exception",
         timeoutMs: providerTimeoutMs,
@@ -1208,7 +1352,10 @@ const runGeneration = async (
       status: "failed",
       finished_at: new Date().toISOString(),
       latency_ms: latencyMs,
-      error_message: error instanceof Error ? error.message : "Unexpected benchmark run error",
+      error_message:
+        error instanceof Error
+          ? error.message
+          : "Unexpected benchmark run error",
     });
   }
 };
@@ -1231,7 +1378,15 @@ const runWithConcurrency = async (
       const currentIndex = cursor;
       cursor += 1;
       const run = runs[currentIndex];
-      await runGeneration(request, run, scenario, config, authToken, sessionId, providerTimeoutMs);
+      await runGeneration(
+        request,
+        run,
+        scenario,
+        config,
+        authToken,
+        sessionId,
+        providerTimeoutMs,
+      );
     }
   };
 
@@ -1243,17 +1398,26 @@ const runWithConcurrency = async (
   await Promise.all(workers);
 };
 
-const findExistingRunIndex = (existingRuns: BenchmarkRunRow[], target: BenchmarkTarget): number => {
+const findExistingRunIndex = (
+  existingRuns: BenchmarkRunRow[],
+  target: BenchmarkTarget,
+): number => {
   return existingRuns
-    .filter((run) => run.provider === target.provider && run.model === target.model)
+    .filter(
+      (run) => run.provider === target.provider && run.model === target.model,
+    )
     .reduce((max, run) => Math.max(max, Number(run.run_index) || 0), 0);
 };
 
 const toDosDateTime = (date: Date): { date: number; time: number } => {
   const year = date.getFullYear();
   const dosYear = Math.max(1980, Math.min(2107, year));
-  const dosDate = ((dosYear - 1980) << 9) | ((date.getMonth() + 1) << 5) | date.getDate();
-  const dosTime = (date.getHours() << 11) | (date.getMinutes() << 5) | Math.floor(date.getSeconds() / 2);
+  const dosDate =
+    ((dosYear - 1980) << 9) | ((date.getMonth() + 1) << 5) | date.getDate();
+  const dosTime =
+    (date.getHours() << 11) |
+    (date.getMinutes() << 5) |
+    Math.floor(date.getSeconds() / 2);
   return { date: dosDate, time: dosTime };
 };
 
@@ -1262,7 +1426,7 @@ const CRC_TABLE = (() => {
   for (let i = 0; i < 256; i += 1) {
     let c = i;
     for (let j = 0; j < 8; j += 1) {
-      c = (c & 1) ? (0xedb88320 ^ (c >>> 1)) : (c >>> 1);
+      c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
     }
     table[i] = c >>> 0;
   }
@@ -1296,7 +1460,9 @@ const concatBytes = (parts: Uint8Array[]): Uint8Array => {
   return out;
 };
 
-const buildZipArchive = (files: Array<{ name: string; content: string }>): Uint8Array => {
+const buildZipArchive = (
+  files: Array<{ name: string; content: string }>,
+): Uint8Array => {
   const encoder = new TextEncoder();
   const localParts: Uint8Array[] = [];
   const centralParts: Uint8Array[] = [];
@@ -1370,11 +1536,13 @@ const buildZipArchive = (files: Array<{ name: string; content: string }>): Uint8
 };
 
 const sanitizeFilenameSegment = (value: string): string => {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9._-]+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "") || "run";
+  return (
+    value
+      .toLowerCase()
+      .replace(/[^a-z0-9._-]+/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "") || "run"
+  );
 };
 
 const formatRunFileName = (run: BenchmarkRunRow): string => {
@@ -1388,10 +1556,13 @@ const formatRunLogFileName = (run: BenchmarkRunRow): string => {
   return formatRunFileName(run).replace(/\.json$/i, ".log.json");
 };
 
-const normalizeTelemetrySource = (value: string | null): "all" | "create_trip" | "benchmark" => {
+const normalizeTelemetrySource = (
+  value: string | null,
+): "all" | "create_trip" | "benchmark" => {
   const normalized = (value || "").trim().toLowerCase();
   if (!TELEMETRY_SOURCE_VALUES.has(normalized)) return "all";
-  if (normalized === "create_trip" || normalized === "benchmark") return normalized;
+  if (normalized === "create_trip" || normalized === "benchmark")
+    return normalized;
   return "all";
 };
 
@@ -1410,6 +1581,57 @@ const normalizeTelemetryProvider = (value: string | null): string | null => {
   return normalized ? normalized : null;
 };
 
+const normalizeTelemetrySecurityFilter = (
+  value: string | null,
+): "all" | "suspicious" | "blocked" => {
+  const normalized = (value || "").trim().toLowerCase();
+  if (normalized === "suspicious" || normalized === "blocked")
+    return normalized;
+  return "all";
+};
+
+const normalizeTelemetryAttackCategory = (
+  value: string | null,
+): AiRuntimeSecurityAttackCategory | null => {
+  const normalized = (value || "").trim().toLowerCase();
+  return AI_RUNTIME_SECURITY_ATTACK_CATEGORIES.includes(
+    normalized as AiRuntimeSecurityAttackCategory,
+  )
+    ? (normalized as AiRuntimeSecurityAttackCategory)
+    : null;
+};
+
+const asTelemetryMetadataRecord = (
+  value: unknown,
+): Record<string, unknown> | null =>
+  value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+
+const asTelemetryText = (value: unknown): string | null =>
+  typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
+
+const asTelemetryBoolean = (value: unknown): boolean | null =>
+  value === true ? true : value === false ? false : null;
+
+const classifyTelemetryFailureBucket = (row: {
+  status: "success" | "failed";
+  errorCode?: string | null;
+  blocked?: boolean;
+  securityStage?: string | null;
+  providerReached?: boolean | null;
+}): AiTelemetryRow["failure_bucket"] => {
+  if (row.status !== "failed") return null;
+  if (row.errorCode === "AI_GENERATION_ABORTED_BY_USER") return "user_aborted";
+  if (row.blocked && row.securityStage === "input_preflight")
+    return "blocked_input";
+  if (row.blocked && row.securityStage === "output_postflight")
+    return "blocked_output";
+  if (row.errorCode === "AI_RUNTIME_SECURITY_BLOCKED") return "invalid_output";
+  if (row.providerReached === true) return "provider_failed";
+  return "other_failed";
+};
+
 const toTelemetryRows = (value: unknown): AiTelemetryRow[] => {
   if (!Array.isArray(value)) return [];
   return value
@@ -1417,43 +1639,126 @@ const toTelemetryRows = (value: unknown): AiTelemetryRow[] => {
       if (!row || typeof row !== "object") return null;
       const typed = row as Record<string, unknown>;
       const id = typeof typed.id === "string" ? typed.id : "";
-      const createdAt = typeof typed.created_at === "string" ? typed.created_at : "";
-      const source = typed.source === "benchmark" ? "benchmark" : typed.source === "create_trip" ? "create_trip" : null;
+      const createdAt =
+        typeof typed.created_at === "string" ? typed.created_at : "";
+      const source =
+        typed.source === "benchmark"
+          ? "benchmark"
+          : typed.source === "create_trip"
+            ? "create_trip"
+            : null;
       const provider = typeof typed.provider === "string" ? typed.provider : "";
       const model = typeof typed.model === "string" ? typed.model : "";
-      const status = typed.status === "failed" ? "failed" : typed.status === "success" ? "success" : null;
-      if (!id || !createdAt || !source || !provider || !model || !status) return null;
+      const status =
+        typed.status === "failed"
+          ? "failed"
+          : typed.status === "success"
+            ? "success"
+            : null;
+      if (!id || !createdAt || !source || !provider || !model || !status)
+        return null;
+      const metadata = asTelemetryMetadataRecord(typed.metadata);
+      const securityMetadata = metadata
+        ? extractAiRuntimeSecurityMetadata(metadata.security)
+        : null;
+      const providerReached = asTelemetryBoolean(
+        metadata?.provider_reached ?? metadata?.providerReached,
+      );
+      const failureDetails = asTelemetryText(metadata?.details);
+      const matchedRules = securityMetadata?.matchedRules || [];
+      const flaggedFields = securityMetadata?.flaggedFields || [];
+      const sanitizedFields =
+        securityMetadata?.sanitization?.changedFields || [];
+      const failureBucket = classifyTelemetryFailureBucket({
+        status,
+        errorCode:
+          typeof typed.error_code === "string" ? typed.error_code : null,
+        blocked: typed.blocked === true || securityMetadata?.blocked === true,
+        securityStage: securityMetadata?.stage || null,
+        providerReached,
+      });
 
-      return {
+      const telemetryRow: AiTelemetryRow = {
         id,
         created_at: createdAt,
         source,
         provider,
         model,
         status,
-        latency_ms: Number.isFinite(Number(typed.latency_ms)) ? Number(typed.latency_ms) : null,
-        estimated_cost_usd: Number.isFinite(Number(typed.estimated_cost_usd)) ? Number(typed.estimated_cost_usd) : null,
-        error_code: typeof typed.error_code === "string" ? typed.error_code : null,
-      } satisfies AiTelemetryRow;
+        latency_ms: Number.isFinite(Number(typed.latency_ms))
+          ? Number(typed.latency_ms)
+          : null,
+        estimated_cost_usd: Number.isFinite(Number(typed.estimated_cost_usd))
+          ? Number(typed.estimated_cost_usd)
+          : null,
+        error_code:
+          typeof typed.error_code === "string" ? typed.error_code : null,
+        error_message:
+          typeof typed.error_message === "string" ? typed.error_message : null,
+        guard_decision:
+          typed.guard_decision === "allow" ||
+          typed.guard_decision === "warn" ||
+          typed.guard_decision === "block"
+            ? typed.guard_decision
+            : securityMetadata?.guardDecision || null,
+        risk_score: Number.isFinite(Number(typed.risk_score))
+          ? Number(typed.risk_score)
+          : typeof securityMetadata?.riskScore === "number"
+            ? securityMetadata.riskScore
+            : null,
+        blocked: typed.blocked === true || securityMetadata?.blocked === true,
+        suspicious:
+          securityMetadata?.suspicious === true ||
+          typed.guard_decision === "warn" ||
+          typed.guard_decision === "block" ||
+          typed.blocked === true,
+        attack_categories: securityMetadata?.attackCategories || [],
+        matched_rules: matchedRules,
+        flagged_fields: flaggedFields,
+        redacted_excerpt: securityMetadata?.redactedExcerpt || null,
+        failure_details: failureDetails,
+        provider_reached: providerReached,
+        sanitization_applied: securityMetadata?.sanitization?.applied === true,
+        sanitized_fields: sanitizedFields,
+        failure_bucket: failureBucket,
+        trip_id: securityMetadata?.tripId || null,
+        attempt_id: securityMetadata?.attemptId || null,
+        security_stage: securityMetadata?.stage || null,
+      };
+      return telemetryRow;
     })
-    .filter((row): row is AiTelemetryRow => Boolean(row));
+    .filter((row): row is AiTelemetryRow => row !== null);
 };
 
-const toBenchmarkRunCommentRows = (value: unknown): BenchmarkRunCommentRow[] => {
+const toBenchmarkRunCommentRows = (
+  value: unknown,
+): BenchmarkRunCommentRow[] => {
   if (!Array.isArray(value)) return [];
   return value
     .map((row) => {
       if (!row || typeof row !== "object") return null;
       const typed = row as Record<string, unknown>;
       const id = typeof typed.id === "string" ? typed.id : "";
-      const provider = typeof typed.provider === "string" ? typed.provider.trim().toLowerCase() : "";
+      const provider =
+        typeof typed.provider === "string"
+          ? typed.provider.trim().toLowerCase()
+          : "";
       const model = typeof typed.model === "string" ? typed.model.trim() : "";
-      const comment = typeof typed.run_comment === "string" ? typed.run_comment.trim() : "";
-      const createdAt = typeof typed.created_at === "string" ? typed.created_at : "";
-      const commentUpdatedAt = typeof typed.run_comment_updated_at === "string" ? typed.run_comment_updated_at : null;
-      const status = typed.status === "queued" || typed.status === "running" || typed.status === "completed" || typed.status === "failed"
-        ? typed.status
-        : null;
+      const comment =
+        typeof typed.run_comment === "string" ? typed.run_comment.trim() : "";
+      const createdAt =
+        typeof typed.created_at === "string" ? typed.created_at : "";
+      const commentUpdatedAt =
+        typeof typed.run_comment_updated_at === "string"
+          ? typed.run_comment_updated_at
+          : null;
+      const status =
+        typed.status === "queued" ||
+        typed.status === "running" ||
+        typed.status === "completed" ||
+        typed.status === "failed"
+          ? typed.status
+          : null;
       const rating = normalizeSatisfactionRating(typed.satisfaction_rating);
 
       if (!id || !provider || !model || !createdAt || !comment) return null;
@@ -1478,12 +1783,27 @@ const handleTelemetry = async (
 ): Promise<Response> => {
   const url = new URL(request.url);
   const source = normalizeTelemetrySource(url.searchParams.get("source"));
-  const providerFilter = normalizeTelemetryProvider(url.searchParams.get("provider"));
-  const windowHours = normalizeTelemetryWindowHours(url.searchParams.get("windowHours"));
-  const sinceIso = new Date(Date.now() - windowHours * 60 * 60 * 1000).toISOString();
+  const providerFilter = normalizeTelemetryProvider(
+    url.searchParams.get("provider"),
+  );
+  const securityFilter = normalizeTelemetrySecurityFilter(
+    url.searchParams.get("security"),
+  );
+  const attackCategory = normalizeTelemetryAttackCategory(
+    url.searchParams.get("attackCategory"),
+  );
+  const windowHours = normalizeTelemetryWindowHours(
+    url.searchParams.get("windowHours"),
+  );
+  const sinceIso = new Date(
+    Date.now() - windowHours * 60 * 60 * 1000,
+  ).toISOString();
 
   const params = new URLSearchParams();
-  params.set("select", "id,created_at,source,provider,model,status,latency_ms,estimated_cost_usd,error_code");
+  params.set(
+    "select",
+    "id,created_at,source,provider,model,status,latency_ms,estimated_cost_usd,error_code,error_message,guard_decision,risk_score,blocked,metadata",
+  );
   params.set("created_at", `gte.${sinceIso}`);
   params.set("order", "created_at.desc");
   params.set("limit", "2000");
@@ -1497,7 +1817,8 @@ const handleTelemetry = async (
   const serviceConfig = getSupabaseServiceConfig();
   if (!serviceConfig) {
     return json(503, {
-      error: "Supabase service config missing. Set VITE_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.",
+      error:
+        "Supabase service config missing. Set VITE_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.",
       code: "SUPABASE_SERVICE_CONFIG_MISSING",
     });
   }
@@ -1517,24 +1838,45 @@ const handleTelemetry = async (
     });
   }
 
-  const rows = toTelemetryRows(await safeJsonParse(response));
-  const providerOptions = Array.from(new Set(rows.map((row) => row.provider).filter(Boolean)))
-    .sort((left, right) => left.localeCompare(right));
+  const allRows = toTelemetryRows(await safeJsonParse(response));
+  const rows = filterAiTelemetryRowsBySecurity(
+    allRows,
+    securityFilter,
+    attackCategory,
+  );
+  const providerOptions = Array.from(
+    new Set(allRows.map((row) => row.provider).filter(Boolean)),
+  ).sort((left, right) => left.localeCompare(right));
   const summary = summarizeAiTelemetry(rows);
+  const securitySummary = summarizeAiTelemetrySecurity(rows);
+  const failureSummary = summarizeAiTelemetryFailures(rows);
   const series = buildAiTelemetrySeries(rows, 60);
   const providerSummary = summarizeAiTelemetryByProvider(rows);
   const modelSummary = summarizeAiTelemetryByModel(rows);
   const rankingLimit = 5;
+  const recentIncidents = listRecentAiTelemetryIncidents(rows, 40);
+  const availableAttackCategories = listAiTelemetryAttackCategories(allRows);
 
   const now = new Date();
-  const startOfMonthIso = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
+  const startOfMonthIso = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1),
+  ).toISOString();
 
   let monthlyCostSeries: Array<{ date: string; cost: number }> = [];
   try {
     const monthlyParams = new URLSearchParams();
-    monthlyParams.set("select", "created_at,estimated_cost_usd");
+    monthlyParams.set(
+      "select",
+      "id,created_at,source,provider,model,status,latency_ms,estimated_cost_usd,error_code,error_message,guard_decision,risk_score,blocked,metadata",
+    );
     monthlyParams.set("created_at", `gte.${startOfMonthIso}`);
     monthlyParams.set("limit", "10000");
+    if (source !== "all") {
+      monthlyParams.set("source", `eq.${source}`);
+    }
+    if (providerFilter) {
+      monthlyParams.set("provider", `eq.${providerFilter}`);
+    }
 
     const monthlyResponse = await supabaseServiceFetch(
       serviceConfig,
@@ -1543,17 +1885,20 @@ const handleTelemetry = async (
     );
 
     if (monthlyResponse.ok) {
-      const monthlyRows = await safeJsonParse(monthlyResponse);
+      const monthlyRows = filterAiTelemetryRowsBySecurity(
+        toTelemetryRows(await safeJsonParse(monthlyResponse)),
+        securityFilter,
+        attackCategory,
+      );
       const aggMap = new Map<string, number>();
 
-      if (Array.isArray(monthlyRows)) {
-        monthlyRows.forEach((row) => {
-          if (!row.created_at || typeof row.estimated_cost_usd !== "number") return;
-          const dateStr = row.created_at.split("T")[0]; // YYYY-MM-DD
-          const current = aggMap.get(dateStr) || 0;
-          aggMap.set(dateStr, current + row.estimated_cost_usd);
-        });
-      }
+      monthlyRows.forEach((row) => {
+        if (!row.created_at || typeof row.estimated_cost_usd !== "number")
+          return;
+        const dateStr = row.created_at.split("T")[0];
+        const current = aggMap.get(dateStr) || 0;
+        aggMap.set(dateStr, current + row.estimated_cost_usd);
+      });
 
       monthlyCostSeries = Array.from(aggMap.entries())
         .map(([date, cost]) => ({ date, cost }))
@@ -1574,7 +1919,10 @@ const handleTelemetry = async (
       );
       commentParams.set("run_comment", "not.is.null");
       commentParams.set("created_at", `gte.${sinceIso}`);
-      commentParams.set("order", "run_comment_updated_at.desc.nullslast,created_at.desc");
+      commentParams.set(
+        "order",
+        "run_comment_updated_at.desc.nullslast,created_at.desc",
+      );
       commentParams.set("limit", String(TELEMETRY_COMMENT_QUERY_LIMIT));
       if (providerFilter) {
         commentParams.set("provider", `eq.${providerFilter}`);
@@ -1587,7 +1935,9 @@ const handleTelemetry = async (
       );
 
       if (commentResponse.ok) {
-        const commentRows = toBenchmarkRunCommentRows(await safeJsonParse(commentResponse));
+        const commentRows = toBenchmarkRunCommentRows(
+          await safeJsonParse(commentResponse),
+        );
         const entries = toBenchmarkRunCommentTelemetryEntries(commentRows);
         commentTotal = entries.length;
         commentGroups = groupBenchmarkRunComments(entries);
@@ -1602,9 +1952,13 @@ const handleTelemetry = async (
     filters: {
       source,
       provider: providerFilter || "all",
+      security: securityFilter,
+      attackCategory: attackCategory || "all",
       windowHours,
     },
     summary,
+    securitySummary,
+    failureSummary,
     series,
     providers: providerSummary,
     models: modelSummary,
@@ -1619,7 +1973,9 @@ const handleTelemetry = async (
       groups: commentGroups,
     },
     recent: rows.slice(0, 120),
+    recentIncidents,
     availableProviders: providerOptions,
+    availableAttackCategories,
   });
 };
 
@@ -1627,7 +1983,10 @@ const normalizeBenchmarkPreferencesForStorage = (
   value: unknown,
   options: { defaultStartDate: string; defaultEndDate: string },
 ): BenchmarkPreferencesPayload => {
-  const fallbackPresets = createSystemBenchmarkPresets(options.defaultStartDate, options.defaultEndDate);
+  const fallbackPresets = createSystemBenchmarkPresets(
+    options.defaultStartDate,
+    options.defaultEndDate,
+  );
   return normalizeBenchmarkPreferencesPayload(value, {
     fallbackModelIds: BENCHMARK_DEFAULT_MODEL_IDS,
     fallbackPresets,
@@ -1637,7 +1996,9 @@ const normalizeBenchmarkPreferencesForStorage = (
   });
 };
 
-const toBenchmarkPreferencesRow = (value: unknown): BenchmarkPreferencesRow | null => {
+const toBenchmarkPreferencesRow = (
+  value: unknown,
+): BenchmarkPreferencesRow | null => {
   if (!value || typeof value !== "object") return null;
   const row = value as Record<string, unknown>;
   if (typeof row.owner_id !== "string") return null;
@@ -1645,7 +2006,10 @@ const toBenchmarkPreferencesRow = (value: unknown): BenchmarkPreferencesRow | nu
     owner_id: row.owner_id,
     model_targets: row.model_targets,
     presets: row.presets,
-    selected_preset_id: typeof row.selected_preset_id === "string" ? row.selected_preset_id : null,
+    selected_preset_id:
+      typeof row.selected_preset_id === "string"
+        ? row.selected_preset_id
+        : null,
     created_at: typeof row.created_at === "string" ? row.created_at : "",
     updated_at: typeof row.updated_at === "string" ? row.updated_at : "",
   };
@@ -1654,9 +2018,17 @@ const toBenchmarkPreferencesRow = (value: unknown): BenchmarkPreferencesRow | nu
 const fetchBenchmarkPreferencesRow = async (
   config: { url: string; anonKey: string },
   authToken: string,
-): Promise<{ row: BenchmarkPreferencesRow | null; error?: string; details?: string; status?: number }> => {
+): Promise<{
+  row: BenchmarkPreferencesRow | null;
+  error?: string;
+  details?: string;
+  status?: number;
+}> => {
   const params = new URLSearchParams();
-  params.set("select", "owner_id,model_targets,presets,selected_preset_id,created_at,updated_at");
+  params.set(
+    "select",
+    "owner_id,model_targets,presets,selected_preset_id,created_at,updated_at",
+  );
   params.set("order", "updated_at.desc");
   params.set("limit", "1");
 
@@ -1689,7 +2061,12 @@ const saveBenchmarkPreferencesRow = async (
   authToken: string,
   payload: BenchmarkPreferencesPayload,
   existingRow: BenchmarkPreferencesRow | null,
-): Promise<{ row: BenchmarkPreferencesRow | null; error?: string; details?: string; status?: number }> => {
+): Promise<{
+  row: BenchmarkPreferencesRow | null;
+  error?: string;
+  details?: string;
+  status?: number;
+}> => {
   const body = JSON.stringify([
     {
       model_targets: payload.modelTargets,
@@ -1701,7 +2078,10 @@ const saveBenchmarkPreferencesRow = async (
   if (existingRow?.owner_id) {
     const params = new URLSearchParams();
     params.set("owner_id", `eq.${existingRow.owner_id}`);
-    params.set("select", "owner_id,model_targets,presets,selected_preset_id,created_at,updated_at");
+    params.set(
+      "select",
+      "owner_id,model_targets,presets,selected_preset_id,created_at,updated_at",
+    );
 
     const response = await supabaseFetch(
       config,
@@ -1733,7 +2113,10 @@ const saveBenchmarkPreferencesRow = async (
   }
 
   const params = new URLSearchParams();
-  params.set("select", "owner_id,model_targets,presets,selected_preset_id,created_at,updated_at");
+  params.set(
+    "select",
+    "owner_id,model_targets,presets,selected_preset_id,created_at,updated_at",
+  );
 
   const response = await supabaseFetch(
     config,
@@ -1785,18 +2168,26 @@ const handlePreferences = async (
   }
 
   if (request.method === "GET") {
-    const normalized = normalizeBenchmarkPreferencesForStorage({
-      modelTargets: existing.row?.model_targets,
-      presets: existing.row?.presets,
-      selectedPresetId: existing.row?.selected_preset_id,
-    }, {
-      defaultStartDate: startDate,
-      defaultEndDate: endDate,
-    });
+    const normalized = normalizeBenchmarkPreferencesForStorage(
+      {
+        modelTargets: existing.row?.model_targets,
+        presets: existing.row?.presets,
+        selectedPresetId: existing.row?.selected_preset_id,
+      },
+      {
+        defaultStartDate: startDate,
+        defaultEndDate: endDate,
+      },
+    );
 
     // Ensure first access has a persisted row in DB instead of local storage only.
     if (!existing.row) {
-      const saved = await saveBenchmarkPreferencesRow(config, authToken, normalized, null);
+      const saved = await saveBenchmarkPreferencesRow(
+        config,
+        authToken,
+        normalized,
+        null,
+      );
       if (saved.error) {
         return json(502, {
           error: saved.error,
@@ -1824,7 +2215,12 @@ const handlePreferences = async (
     defaultEndDate: endDate,
   });
 
-  const saved = await saveBenchmarkPreferencesRow(config, authToken, normalized, existing.row);
+  const saved = await saveBenchmarkPreferencesRow(
+    config,
+    authToken,
+    normalized,
+    existing.row,
+  );
   if (saved.error) {
     return json(502, {
       error: saved.error,
@@ -1833,14 +2229,18 @@ const handlePreferences = async (
     });
   }
 
-  const persisted = normalizeBenchmarkPreferencesForStorage({
-    modelTargets: saved.row?.model_targets ?? normalized.modelTargets,
-    presets: saved.row?.presets ?? normalized.presets,
-    selectedPresetId: saved.row?.selected_preset_id ?? normalized.selectedPresetId,
-  }, {
-    defaultStartDate: startDate,
-    defaultEndDate: endDate,
-  });
+  const persisted = normalizeBenchmarkPreferencesForStorage(
+    {
+      modelTargets: saved.row?.model_targets ?? normalized.modelTargets,
+      presets: saved.row?.presets ?? normalized.presets,
+      selectedPresetId:
+        saved.row?.selected_preset_id ?? normalized.selectedPresetId,
+    },
+    {
+      defaultStartDate: startDate,
+      defaultEndDate: endDate,
+    },
+  );
 
   return json(200, {
     ok: true,
@@ -1859,7 +2259,10 @@ const handleGetSession = async (
 
   if (!sessionIdentifier) {
     const params = new URLSearchParams();
-    params.set("select", "id,share_token,name,flow,created_at,updated_at,deleted_at");
+    params.set(
+      "select",
+      "id,share_token,name,flow,created_at,updated_at,deleted_at",
+    );
     params.set("order", "created_at.desc");
     params.set("limit", "25");
 
@@ -1915,8 +2318,13 @@ const handleExport = async (
   const url = new URL(request.url);
   const runId = (url.searchParams.get("run") || "").trim();
   const sessionIdentifier = (url.searchParams.get("session") || "").trim();
-  const includeLogsRaw = (url.searchParams.get("includeLogs") || "").trim().toLowerCase();
-  const includeLogs = includeLogsRaw === "1" || includeLogsRaw === "true" || includeLogsRaw === "yes";
+  const includeLogsRaw = (url.searchParams.get("includeLogs") || "")
+    .trim()
+    .toLowerCase();
+  const includeLogs =
+    includeLogsRaw === "1" ||
+    includeLogsRaw === "true" ||
+    includeLogsRaw === "yes";
 
   if (runId) {
     const run = await fetchRunById(config, authToken, runId);
@@ -1932,15 +2340,11 @@ const handleExport = async (
       exportedAt: new Date().toISOString(),
     };
 
-    return textResponse(
-      200,
-      JSON.stringify(payload, null, 2),
-      {
-        ...ZIP_HEADERS,
-        "Content-Type": "application/json; charset=utf-8",
-        "Content-Disposition": `attachment; filename="benchmark-run-${run.id}.json"`,
-      },
-    );
+    return textResponse(200, JSON.stringify(payload, null, 2), {
+      ...ZIP_HEADERS,
+      "Content-Type": "application/json; charset=utf-8",
+      "Content-Disposition": `attachment; filename="benchmark-run-${run.id}.json"`,
+    });
   }
 
   if (!sessionIdentifier) {
@@ -1980,9 +2384,10 @@ const handleExport = async (
   });
 
   if (includeLogs) {
-    const scenarioPrompt = typeof (session.scenario as { prompt?: unknown })?.prompt === "string"
-      ? String((session.scenario as { prompt?: unknown }).prompt || "")
-      : "";
+    const scenarioPrompt =
+      typeof (session.scenario as { prompt?: unknown })?.prompt === "string"
+        ? String((session.scenario as { prompt?: unknown }).prompt || "")
+        : "";
 
     files.push({
       name: "scenario.json",
@@ -2028,32 +2433,36 @@ const handleExport = async (
     runs.forEach((run) => {
       files.push({
         name: `logs/${formatRunLogFileName(run)}`,
-        content: JSON.stringify({
-          runId: run.id,
-          provider: run.provider,
-          model: run.model,
-          runIndex: run.run_index,
-          status: run.status,
-          startedAt: run.started_at,
-          finishedAt: run.finished_at,
-          latencyMs: run.latency_ms,
-          schemaValid: run.schema_valid,
-          satisfactionRating: run.satisfaction_rating,
-          satisfactionUpdatedAt: run.satisfaction_updated_at,
-          runComment: run.run_comment,
-          runCommentUpdatedAt: run.run_comment_updated_at,
-          validationChecks: run.validation_checks,
-          validationErrors: run.validation_errors,
-          usage: run.usage,
-          costUsd: run.cost_usd,
-          errorMessage: run.error_message,
-          requestPayload: run.request_payload,
-          rawOutput: run.raw_output,
-          normalizedTrip: run.normalized_trip,
-          tripId: run.trip_id,
-          tripAiMeta: run.trip_ai_meta,
-          exportedAt: new Date().toISOString(),
-        }, null, 2),
+        content: JSON.stringify(
+          {
+            runId: run.id,
+            provider: run.provider,
+            model: run.model,
+            runIndex: run.run_index,
+            status: run.status,
+            startedAt: run.started_at,
+            finishedAt: run.finished_at,
+            latencyMs: run.latency_ms,
+            schemaValid: run.schema_valid,
+            satisfactionRating: run.satisfaction_rating,
+            satisfactionUpdatedAt: run.satisfaction_updated_at,
+            runComment: run.run_comment,
+            runCommentUpdatedAt: run.run_comment_updated_at,
+            validationChecks: run.validation_checks,
+            validationErrors: run.validation_errors,
+            usage: run.usage,
+            costUsd: run.cost_usd,
+            errorMessage: run.error_message,
+            requestPayload: run.request_payload,
+            rawOutput: run.raw_output,
+            normalizedTrip: run.normalized_trip,
+            tripId: run.trip_id,
+            tripAiMeta: run.trip_ai_meta,
+            exportedAt: new Date().toISOString(),
+          },
+          null,
+          2,
+        ),
       });
     });
   }
@@ -2079,17 +2488,15 @@ const handleExport = async (
   });
 
   const zipBytes = buildZipArchive(files);
-  const fileBase = sanitizeFilenameSegment(session.name || session.id || "benchmark-session");
-
-  return textResponse(
-    200,
-    zipBytes,
-    {
-      ...ZIP_HEADERS,
-      "Content-Type": "application/zip",
-      "Content-Disposition": `attachment; filename="${fileBase}-exports.zip"`,
-    },
+  const fileBase = sanitizeFilenameSegment(
+    session.name || session.id || "benchmark-session",
   );
+
+  return textResponse(200, zipBytes, {
+    ...ZIP_HEADERS,
+    "Content-Type": "application/zip",
+    "Content-Disposition": `attachment; filename="${fileBase}-exports.zip"`,
+  });
 };
 
 const handleCleanup = async (
@@ -2102,7 +2509,8 @@ const handleCleanup = async (
   }
 
   const body = (await safeJsonParse(request)) || {};
-  const sessionId = typeof body.sessionId === "string" ? body.sessionId.trim() : "";
+  const sessionId =
+    typeof body.sessionId === "string" ? body.sessionId.trim() : "";
   const mode = typeof body.mode === "string" ? body.mode.trim() : "both";
 
   if (!isUuid(sessionId)) {
@@ -2112,7 +2520,11 @@ const handleCleanup = async (
     });
   }
 
-  const allowedModes = new Set(["delete-linked-trips", "delete-session-data", "both"]);
+  const allowedModes = new Set([
+    "delete-linked-trips",
+    "delete-session-data",
+    "both",
+  ]);
   if (!allowedModes.has(mode)) {
     return json(400, {
       error: "Invalid cleanup mode",
@@ -2212,7 +2624,9 @@ const handleCleanup = async (
     }
 
     const deletedSessions = await safeJsonParse(deleteSessionResponse);
-    deleted.sessions = Array.isArray(deletedSessions) ? deletedSessions.length : 0;
+    deleted.sessions = Array.isArray(deletedSessions)
+      ? deletedSessions.length
+      : 0;
   }
 
   return json(200, {
@@ -2315,11 +2729,16 @@ const handleRate = async (
   });
 };
 
-const buildCancelledRunPatch = (run: BenchmarkRunRow): Record<string, unknown> => {
+const buildCancelledRunPatch = (
+  run: BenchmarkRunRow,
+): Record<string, unknown> => {
   const nowIso = new Date().toISOString();
   const startedMs = run.started_at ? Date.parse(run.started_at) : NaN;
-  const computedLatency = Number.isFinite(startedMs) ? Math.max(0, Date.now() - startedMs) : null;
-  const existingLatency = typeof run.latency_ms === "number" ? run.latency_ms : null;
+  const computedLatency = Number.isFinite(startedMs)
+    ? Math.max(0, Date.now() - startedMs)
+    : null;
+  const existingLatency =
+    typeof run.latency_ms === "number" ? run.latency_ms : null;
 
   return {
     status: "failed",
@@ -2363,6 +2782,15 @@ export const __benchmarkValidationInternals = {
   groupBenchmarkRunComments,
 };
 
+export const __benchmarkTelemetryInternals = {
+  normalizeTelemetrySource,
+  normalizeTelemetryWindowHours,
+  normalizeTelemetryProvider,
+  normalizeTelemetrySecurityFilter,
+  normalizeTelemetryAttackCategory,
+  toTelemetryRows,
+};
+
 const handleCancel = async (
   request: Request,
   config: { url: string; anonKey: string },
@@ -2374,7 +2802,8 @@ const handleCancel = async (
 
   const body = (await safeJsonParse(request)) || {};
   const runId = typeof body.runId === "string" ? body.runId.trim() : "";
-  const sessionId = typeof body.sessionId === "string" ? body.sessionId.trim() : "";
+  const sessionId =
+    typeof body.sessionId === "string" ? body.sessionId.trim() : "";
 
   if (!runId && !sessionId) {
     return json(400, {
@@ -2421,7 +2850,12 @@ const handleCancel = async (
 
   const cancelResults = await Promise.all(
     runsToCancel.map(async (run) => {
-      const updated = await updateRunRow(config, authToken, run.id, buildCancelledRunPatch(run));
+      const updated = await updateRunRow(
+        config,
+        authToken,
+        run.id,
+        buildCancelledRunPatch(run),
+      );
       if (updated) {
         await persistCancelledRunTelemetry(run);
       }
@@ -2465,17 +2899,21 @@ const handleRun = async (
     });
   }
 
-  const flow = body.flow === "wizard" || body.flow === "surprise" ? body.flow : "classic";
+  const flow =
+    body.flow === "wizard" || body.flow === "surprise" ? body.flow : "classic";
   const scenario = normalizeScenario(body.scenario);
   if (!scenario) {
     return json(400, {
-      error: "Missing or invalid scenario. Expected { prompt: string, startDate?: YYYY-MM-DD, roundTrip?: boolean }",
+      error:
+        "Missing or invalid scenario. Expected { prompt: string, startDate?: YYYY-MM-DD, roundTrip?: boolean }",
       code: "BENCHMARK_INVALID_SCENARIO",
     });
   }
 
   const requestedTargets = Array.isArray(body.targets) ? body.targets : [];
-  const targets = requestedTargets.map(normalizeTarget).filter((target): target is BenchmarkTarget => Boolean(target));
+  const targets = requestedTargets
+    .map(normalizeTarget)
+    .filter((target): target is BenchmarkTarget => Boolean(target));
 
   if (targets.length === 0) {
     return json(400, {
@@ -2485,16 +2923,21 @@ const handleRun = async (
   }
 
   const runCountRaw = Number(body.runCount);
-  const runCount = Number.isFinite(runCountRaw) ? clampNumber(Math.round(runCountRaw), 1, MAX_RUN_COUNT) : 1;
+  const runCount = Number.isFinite(runCountRaw)
+    ? clampNumber(Math.round(runCountRaw), 1, MAX_RUN_COUNT)
+    : 1;
 
   const concurrencyRaw = Number(body.concurrency);
   const concurrency = Number.isFinite(concurrencyRaw)
     ? clampNumber(Math.round(concurrencyRaw), 1, MAX_CONCURRENCY)
     : Math.min(5, MAX_CONCURRENCY);
-  const providerTimeoutMs = normalizeBenchmarkTimeoutMs(body.timeoutMs) ?? BENCHMARK_PROVIDER_TIMEOUT_MS;
+  const providerTimeoutMs =
+    normalizeBenchmarkTimeoutMs(body.timeoutMs) ??
+    BENCHMARK_PROVIDER_TIMEOUT_MS;
 
   let session: BenchmarkSessionRow | null = null;
-  const sessionId = typeof body.sessionId === "string" ? body.sessionId.trim() : "";
+  const sessionId =
+    typeof body.sessionId === "string" ? body.sessionId.trim() : "";
 
   if (sessionId) {
     if (!isUuid(sessionId)) {
@@ -2512,7 +2955,10 @@ const handleRun = async (
     }
   } else {
     const created = await createSession(config, authToken, {
-      name: typeof body.sessionName === "string" ? body.sessionName.trim() : undefined,
+      name:
+        typeof body.sessionName === "string"
+          ? body.sessionName.trim()
+          : undefined,
       flow,
       scenario,
     });
@@ -2533,7 +2979,8 @@ const handleRun = async (
   const runInserts: Array<Record<string, unknown>> = [];
   targets.forEach((target) => {
     const key = `${target.provider}::${target.model}`;
-    const existingIndex = seedByTarget.get(key) ?? findExistingRunIndex(existingRuns, target);
+    const existingIndex =
+      seedByTarget.get(key) ?? findExistingRunIndex(existingRuns, target);
 
     for (let i = 1; i <= runCount; i += 1) {
       runInserts.push({
@@ -2574,13 +3021,18 @@ const handleRun = async (
     concurrency,
     providerTimeoutMs,
   ).catch(async (error) => {
-    const fallbackMessage = error instanceof Error ? error.message : "Background benchmark execution failed";
+    const fallbackMessage =
+      error instanceof Error
+        ? error.message
+        : "Background benchmark execution failed";
     await Promise.all(
-      createdRuns.rows.map((row) => updateRunRow(config, authToken, row.id, {
-        status: "failed",
-        finished_at: new Date().toISOString(),
-        error_message: fallbackMessage,
-      })),
+      createdRuns.rows.map((row) =>
+        updateRunRow(config, authToken, row.id, {
+          status: "failed",
+          finished_at: new Date().toISOString(),
+          error_message: fallbackMessage,
+        }),
+      ),
     );
   });
 
@@ -2629,7 +3081,8 @@ export default async (request: Request, context?: EdgeContextLike) => {
   const config = getSupabaseConfig();
   if (!config) {
     return json(503, {
-      error: "Supabase edge config missing. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.",
+      error:
+        "Supabase edge config missing. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.",
       code: "SUPABASE_CONFIG_MISSING",
     });
   }

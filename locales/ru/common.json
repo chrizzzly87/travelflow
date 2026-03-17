@@ -358,6 +358,28 @@
         "failed": "Trip generation failed again. Review the diagnostics and retry later.",
         "failedTitle": "Retry failed",
         "unexpected": "Retry failed unexpectedly."
+      },
+      "securityRecovery": {
+        "blockedMessage": "Некоторые детали поездки выглядели как системные инструкции, а не как пожелания к поездке.",
+        "outputBlockedMessage": "Генерация поездки вернула некорректный результат. Попробуйте еще раз.",
+        "reviewAction": "Проверить отмеченные поля",
+        "cardTitle": "Проверьте отмеченные детали поездки",
+        "cardDescription": "Часть введенного текста выглядела как инструкции для ИИ. Исправьте отмеченные поля и попробуйте снова.",
+        "flaggedBadge": "Помечено",
+        "retryAction": "Изменить и повторить",
+        "clearAction": "Очистить отмеченный текст",
+        "cancelAction": "Отмена",
+        "readyHint": "Обновленный запрос готов к повторной отправке.",
+        "requiredFieldHint": "Как минимум одно обязательное поле все еще требует пожелания по поездке.",
+        "changeHint": "Измените или очистите отмеченные поля перед повтором.",
+        "fields": {
+          "trip_request": "Запрос поездки",
+          "destination": "Направление",
+          "destinations": "Направления",
+          "specific_cities": "Нужные города",
+          "notes": "Заметки",
+          "seasonal_events": "Сезонные акценты"
+        }
       }
     },
     "pendingAuth": {

@@ -19,6 +19,9 @@ describe('tripGenerationAsyncEnqueueService', () => {
         fetchMock.mockReset();
         vi.stubGlobal('fetch', fetchMock);
         vi.stubGlobal('window', {
+            location: {
+                hostname: 'localhost',
+            },
             localStorage: {
                 clear: vi.fn(),
             },
@@ -121,5 +124,39 @@ describe('tripGenerationAsyncEnqueueService', () => {
 
         expect(result).toBe(false);
         expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it('warns with local dev guidance when Netlify dev is unreachable', async () => {
+        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        fetchMock.mockRejectedValueOnce(new TypeError('fetch failed'));
+
+        const result = await enqueueAsyncTripGenerationJob({
+            flow: 'classic',
+            tripId: 'trip-1',
+            attemptId: 'attempt-1',
+            requestId: 'request-1',
+            source: 'create_trip',
+            startDate: '2026-07-01',
+            roundTrip: true,
+            prompt: 'prompt body',
+            provider: 'openai',
+            model: 'gpt-5.4',
+            inputSnapshot: {
+                flow: 'classic',
+                destinationLabel: 'Berlin',
+                startDate: '2026-07-01',
+                endDate: '2026-07-04',
+                payload: {
+                    destinationPrompt: 'Berlin',
+                    options: {},
+                },
+            },
+        });
+
+        expect(result).toBe(false);
+        expect(warnSpy).toHaveBeenCalledWith(
+            expect.stringContaining('pnpm dev:netlify'),
+        );
+        warnSpy.mockRestore();
     });
 });

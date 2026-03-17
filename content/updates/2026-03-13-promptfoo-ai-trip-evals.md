@@ -20,3 +20,9 @@ summary: "Added a report-only Promptfoo regression layer for classic AI trip cre
 - [ ] [Internal] 🚨 Added a second Promptfoo security pack with adversarial classic-trip scenarios so prompt-injection attempts against notes, requested cities, and destinations can be checked locally and in manual CI.
 - [ ] [Internal] 🧱 Extended the manual AI eval workflow to run the regression pack, the security pack, or both, with separate report artifacts for each.
 - [ ] [Internal] 🔐 Hardened live trip prompt assembly so user-controlled request fields are rendered as explicit data blocks and no longer read like free-form model instructions.
+- [ ] [Internal] 🛰️ Added production runtime safety monitoring that preflights user-controlled trip inputs, postflights model output, logs bounded security evidence to AI telemetry and trip attempts, and surfaces suspicious or blocked incidents inside the existing admin telemetry and trip diagnostics views.
+- [ ] [Internal] 🧼 Added lightweight runtime prompt sanitization for obvious instruction-like fragments so safe trip intent can keep flowing without over-blocking traveler notes and destination fields.
+- [ ] [Internal] 🧯 Fixed a trip-page safety recovery regression where the flagged-input review banner could initialize before its retry handlers, causing the recovery UI to crash instead of rendering.
+- [ ] [Internal] 🧪 Improved local async retry ergonomics by proxying the enqueue endpoint through Vite and surfacing clearer dev-only guidance when Netlify worker routes are not running on `localhost:8888`.
+- [ ] [Internal] 🔁 Hardened local editing and hot-reload behavior by keeping the wrapped app history on a single underlying listener and fixing the edge-runtime import path for the new prompt sanitization helper.
+- [x] [Improved] 🛟 When AI trip generation pauses for suspicious text, you now get a guided review flow that highlights the affected fields and lets you edit or clear them before retrying.

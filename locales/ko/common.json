@@ -358,6 +358,28 @@
         "failed": "Trip generation failed again. Review the diagnostics and retry later.",
         "failedTitle": "Retry failed",
         "unexpected": "Retry failed unexpectedly."
+      },
+      "securityRecovery": {
+        "blockedMessage": "일부 여행 세부 정보가 여행 취향이 아니라 시스템 지시처럼 보였습니다.",
+        "outputBlockedMessage": "여행 생성 결과가 올바르지 않았습니다. 다시 시도해 주세요.",
+        "reviewAction": "표시된 입력 검토",
+        "cardTitle": "표시된 여행 세부 정보를 검토하세요",
+        "cardDescription": "입력한 텍스트 일부가 AI에 대한 지시처럼 보였습니다. 표시된 필드를 수정한 뒤 다시 생성해 보세요.",
+        "flaggedBadge": "표시됨",
+        "retryAction": "수정 후 다시 시도",
+        "clearAction": "표시된 텍스트 지우기",
+        "cancelAction": "취소",
+        "readyHint": "업데이트한 요청을 다시 시도할 준비가 되었습니다.",
+        "requiredFieldHint": "필수 입력란 중 하나에는 여전히 여행 선호가 필요합니다.",
+        "changeHint": "다시 시도하기 전에 표시된 필드를 수정하거나 비워 주세요.",
+        "fields": {
+          "trip_request": "여행 요청",
+          "destination": "여행지",
+          "destinations": "여행지 목록",
+          "specific_cities": "요청한 도시",
+          "notes": "메모",
+          "seasonal_events": "계절 하이라이트"
+        }
       }
     },
     "pendingAuth": {
