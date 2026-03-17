@@ -26,6 +26,7 @@ export type MapColorMode = 'brand' | 'trip';
 export type SystemRole = 'admin' | 'user';
 export type PlanTierKey = 'tier_free' | 'tier_mid' | 'tier_premium';
 export type TripAccessClassKey = 'free' | 'pro';
+export type ZoomBehavior = 'fit' | 'manual';
 
 export interface Entitlements {
     maxActiveTrips: number | null;
@@ -264,6 +265,7 @@ export interface IViewSettings {
     timelineView: 'horizontal' | 'vertical'; // Calendar orientation
     mapStyle: MapStyle;
     zoomLevel: number;
+    zoomBehavior?: ZoomBehavior;
     mapDockMode?: 'docked' | 'floating';
     routeMode?: RouteMode;
     showCityNames?: boolean;
@@ -282,6 +284,7 @@ export type ShareMode = 'view' | 'edit';
 export interface ISharedTripResult {
     trip: ITrip;
     view?: IViewSettings | null;
+    shareView?: IViewSettings | null;
     mode: ShareMode;
     allowCopy?: boolean;
     latestVersionId?: string | null;

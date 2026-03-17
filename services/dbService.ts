@@ -359,8 +359,13 @@ const isRouteModeValue = (value: unknown): value is NonNullable<IViewSettings['r
 const isMapDockModeValue = (value: unknown): value is NonNullable<IViewSettings['mapDockMode']> =>
     value === 'docked' || value === 'floating';
 
+const isZoomBehaviorValue = (value: unknown): value is NonNullable<IViewSettings['zoomBehavior']> =>
+    value === 'fit' || value === 'manual';
+
 const normalizeFiniteNumber = (value: unknown): number | undefined =>
     typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+
+const TRIP_SHARE_VIEW_METADATA_KEY = 'shared_view_v1';
 
 const normalizeViewSettingsPayload = (value: unknown): IViewSettings | null => {
     if (!value || typeof value !== 'object') return null;
@@ -371,6 +376,7 @@ const normalizeViewSettingsPayload = (value: unknown): IViewSettings | null => {
         timelineView: isTimelineViewValue(view.timelineView) ? view.timelineView : 'horizontal',
         mapStyle: isMapStyleValue(view.mapStyle) ? view.mapStyle : 'standard',
         zoomLevel: normalizeFiniteNumber(view.zoomLevel) ?? 1,
+        zoomBehavior: isZoomBehaviorValue(view.zoomBehavior) ? view.zoomBehavior : 'fit',
         mapDockMode: isMapDockModeValue(view.mapDockMode) ? view.mapDockMode : undefined,
         routeMode: isRouteModeValue(view.routeMode) ? view.routeMode : undefined,
         showCityNames: typeof view.showCityNames === 'boolean' ? view.showCityNames : undefined,
@@ -378,6 +384,19 @@ const normalizeViewSettingsPayload = (value: unknown): IViewSettings | null => {
         detailsWidth: normalizeFiniteNumber(view.detailsWidth),
         timelineHeight: normalizeFiniteNumber(view.timelineHeight),
     };
+};
+
+const extractShareViewSettingsPayload = (row: Record<string, unknown>): IViewSettings | null => {
+    const directPayload = normalizeViewSettingsPayload(row.share_view_settings);
+    if (directPayload) return directPayload;
+
+    const metadata = row.share_metadata;
+    if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) return null;
+
+    const sharedViewEntry = (metadata as Record<string, unknown>)[TRIP_SHARE_VIEW_METADATA_KEY];
+    if (!sharedViewEntry || typeof sharedViewEntry !== 'object' || Array.isArray(sharedViewEntry)) return null;
+
+    return normalizeViewSettingsPayload((sharedViewEntry as Record<string, unknown>).view);
 };
 
 const normalizeTripForStorage = (trip: ITrip): ITrip => ({
@@ -2066,6 +2085,36 @@ export const dbCreateShareLink = async (tripId: string, mode: ShareMode): Promis
     return token ? { token } : { error: 'Invalid share token' };
 };
 
+export const dbUpdateTripShareViewSettings = async (
+    tripId: string,
+    view: IViewSettings,
+): Promise<boolean> => {
+    if (!DB_ENABLED) return false;
+
+    const normalizedView = normalizeViewSettingsPayload(view);
+    if (!normalizedView) return false;
+
+    const client = requireSupabase();
+    const sessionId = await ensureExistingDbSession();
+    if (!sessionId) return false;
+
+    const { error } = await client.rpc('update_trip_share_view_settings', {
+        p_trip_id: tripId,
+        p_view: normalizedView,
+    });
+
+    if (error) {
+        if (/update_trip_share_view_settings/i.test(error.message || '') && /function/i.test(error.message || '')) {
+            debugLog('dbUpdateTripShareViewSettings:missingFunction', { message: error.message });
+            return false;
+        }
+        console.error('Failed to sync trip share view settings', error);
+        return false;
+    }
+
+    return true;
+};
+
 export const dbGetSharedTrip = async (token: string): Promise<ISharedTripResult | null> => {
     if (!DB_ENABLED) return null;
     const client = requireSupabase();
@@ -2087,6 +2136,7 @@ export const dbGetSharedTrip = async (token: string): Promise<ISharedTripResult 
     return {
         trip: normalized,
         view: normalizeViewSettingsPayload(row.view_settings),
+        shareView: extractShareViewSettingsPayload(row as Record<string, unknown>),
         mode: row.mode as ShareMode,
         allowCopy: Boolean(row.allow_copy),
         latestVersionId: (row.latest_version_id as string | null | undefined) ?? null,
@@ -2123,6 +2173,7 @@ export const dbGetSharedTripVersion = async (
     return {
         trip: normalized,
         view: normalizeViewSettingsPayload(row.view_settings),
+        shareView: extractShareViewSettingsPayload(row as Record<string, unknown>),
         mode: row.mode as ShareMode,
         allowCopy: Boolean(row.allow_copy),
         latestVersionId: (row.latest_version_id as string | null | undefined) ?? null,

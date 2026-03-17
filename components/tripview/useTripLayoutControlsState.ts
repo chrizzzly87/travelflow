@@ -90,6 +90,10 @@ export const useTripLayoutControlsState = ({
         return 1.0;
     });
 
+    const [zoomBehavior, setZoomBehavior] = useState<NonNullable<IViewSettings['zoomBehavior']>>(() => (
+        initialViewSettings?.zoomBehavior === 'manual' ? 'manual' : 'fit'
+    ));
+
     return {
         layoutMode,
         setLayoutMode,
@@ -105,6 +109,8 @@ export const useTripLayoutControlsState = ({
         setShowCityNames,
         zoomLevel,
         setZoomLevel,
+        zoomBehavior,
+        setZoomBehavior,
         sidebarWidth,
         setSidebarWidth,
         timelineHeight,
