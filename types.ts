@@ -148,6 +148,8 @@ export interface TripGenerationJobSummary {
     payload?: Record<string, unknown> | null;
     lastErrorCode?: string | null;
     lastErrorMessage?: string | null;
+    startedAt?: string | null;
+    finishedAt?: string | null;
     createdAt: string;
     updatedAt: string;
 }

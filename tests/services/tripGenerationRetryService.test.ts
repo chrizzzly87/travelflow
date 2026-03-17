@@ -202,6 +202,28 @@ describe('retryTripGenerationWithDefaultModel', () => {
     })).toBe(false);
   });
 
+  it('blocks abort-and-retry for active async worker attempts', () => {
+    expect(canTriggerTripGenerationAbortAndRetry({
+      canEdit: true,
+      hasInputSnapshot: true,
+      generationState: 'running',
+      latestAttemptOrchestration: 'async_worker',
+      isRetryingGeneration: false,
+      pendingAuthQueueRequestId: null,
+    })).toBe(false);
+  });
+
+  it('still allows abort-and-retry for slow non-async attempts', () => {
+    expect(canTriggerTripGenerationAbortAndRetry({
+      canEdit: true,
+      hasInputSnapshot: true,
+      generationState: 'running',
+      latestAttemptOrchestration: 'sync',
+      isRetryingGeneration: false,
+      pendingAuthQueueRequestId: null,
+    })).toBe(true);
+  });
+
   it('retries on same trip id and forces default model target via async enqueue', async () => {
     const updates: ITrip[] = [];
     const result = await retryTripGenerationWithDefaultModel(buildTrip(), {
@@ -448,7 +470,7 @@ describe('retryTripGenerationWithDefaultModel', () => {
 
   it('does not short-circuit retry when remote leased in-flight attempt is hard-stalled', async () => {
     const staleAttemptId = 'attempt-leased-hard-stale';
-    const staleStartedAtIso = new Date(Date.now() - 95_000).toISOString();
+    const staleStartedAtIso = new Date(Date.now() - 125_000).toISOString();
     const remoteQueuedTrip: ITrip = {
       ...buildTrip(),
       updatedAt: 123_456_789,

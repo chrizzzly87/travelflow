@@ -59,13 +59,13 @@ OPENROUTER_API_KEY=...
 Optional async timeout override:
 
 ```env
-AI_GENERATION_ASYNC_PROVIDER_TIMEOUT_MS=90000
+AI_GENERATION_ASYNC_PROVIDER_TIMEOUT_MS=120000
 ```
 
 Current runtime clamp:
 - minimum: `20000`
-- maximum: `120000`
-- default: `90000`
+- maximum: `180000`
+- default: `120000`
 
 ## Expected local request flow
 

@@ -180,18 +180,6 @@ const RAW_AI_MODEL_CATALOG: RawAiModelCatalogItem[] = [
         costNote: 'Requires OPENAI_API_KEY on server. Exact pricing depends on active provider account pricing.',
     },
     {
-        id: 'openai:gpt-5.4',
-        provider: 'openai',
-        providerLabel: 'OpenAI',
-        model: 'gpt-5.4',
-        label: 'GPT-5.4',
-        availability: 'active',
-        releasedAt: '2026-03-04',
-        isPreferred: true,
-        estimatedCostPerQueryLabel: '~$0.08 - $0.24',
-        costNote: 'Requires OPENAI_API_KEY on server. Exact pricing depends on active provider account pricing.',
-    },
-    {
         id: 'openai:gpt-5.4-pro',
         provider: 'openai',
         providerLabel: 'OpenAI',

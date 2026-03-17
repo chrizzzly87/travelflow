@@ -1865,6 +1865,7 @@ const useTripViewRender = ({
         canAdminWrite: adminAccess?.canAdminWrite,
         hasInputSnapshot: Boolean(trip.aiMeta?.generation?.inputSnapshot),
         generationState,
+        latestAttemptOrchestration,
         isRetryingGeneration,
         pendingAuthQueueRequestId,
     });
