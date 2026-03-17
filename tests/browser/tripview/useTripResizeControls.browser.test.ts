@@ -211,7 +211,7 @@ describe('components/tripview/useTripResizeControls', () => {
     expect(zoomUpdater(1)).toBe(3);
   });
 
-  it('still auto-fits timeline zoom when the calendar direction changes even after manual zoom', () => {
+  it('does not auto-fit timeline zoom when the calendar direction changes after manual zoom', () => {
     const setZoomLevel = vi.fn();
     const initialProps = makeHookOptions({
       setZoomLevel,
@@ -233,7 +233,7 @@ describe('components/tripview/useTripResizeControls', () => {
       });
     });
 
-    expect(setZoomLevel).toHaveBeenCalledTimes(1);
+    expect(setZoomLevel).not.toHaveBeenCalled();
   });
 
   it('does not auto-fit timeline zoom when a persisted manual zoom should be respected', () => {
