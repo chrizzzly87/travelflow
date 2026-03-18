@@ -37,4 +37,21 @@ describe('components/TripView runtime ordering', () => {
         expect(zoomPropIndex).toBeGreaterThan(workspaceIndex);
         expect(zoomPropIndex).toBeLessThan(dockModePropIndex);
     });
+
+    it('keeps mobile trip selection in the mainline two-step details mode', () => {
+        const source = readFileSync(
+            resolve(process.cwd(), 'components/TripView.tsx'),
+            'utf8',
+        );
+
+        const selectionControllerIndex = source.indexOf('} = useTripSelectionController({');
+        const autoOpenIndex = source.indexOf('autoOpenOnSelect: !isMobileViewport');
+        const clearSelectionIndex = source.indexOf('clearSelectionOnClose: isMobileViewport');
+
+        expect(selectionControllerIndex).toBeGreaterThan(-1);
+        expect(autoOpenIndex).toBeGreaterThan(-1);
+        expect(clearSelectionIndex).toBeGreaterThan(-1);
+        expect(autoOpenIndex).toBeGreaterThan(selectionControllerIndex);
+        expect(clearSelectionIndex).toBeGreaterThan(autoOpenIndex);
+    });
 });

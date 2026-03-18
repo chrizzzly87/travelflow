@@ -2444,6 +2444,8 @@ const useTripViewRender = ({
         setSelectedCityIds,
         isHistoryOpen,
         isTripInfoOpen,
+        autoOpenOnSelect: !isMobileViewport,
+        clearSelectionOnClose: isMobileViewport,
         setPendingLabel,
         handleUpdateItems,
     });
