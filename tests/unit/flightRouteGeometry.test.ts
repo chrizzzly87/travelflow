@@ -21,4 +21,22 @@ describe('components/maps/flightRouteGeometry', () => {
     expect(visualPaths.groundPath).toEqual([start, end]);
     expect(visualPaths.airPath.length).toBeGreaterThan(visualPaths.groundPath.length);
   });
+
+  it('accepts provider-specific curve options so providers can tune flight arcs independently', () => {
+    const start = { lat: 13.7563, lng: 100.5018 };
+    const end = { lat: 10.8231, lng: 106.6297 };
+
+    const defaultPath = buildCurvedFlightPath(start, end);
+    const tunedPath = buildCurvedFlightPath(start, end, {
+      samples: 32,
+      liftRatio: 0.24,
+      minLift: 0.3,
+      maxLift: 5,
+    });
+
+    expect(tunedPath.length).toBeGreaterThan(defaultPath.length);
+    expect(tunedPath[Math.floor(tunedPath.length / 2)].lat).toBeGreaterThan(
+      defaultPath[Math.floor(defaultPath.length / 2)].lat,
+    );
+  });
 });

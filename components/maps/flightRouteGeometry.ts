@@ -8,6 +8,13 @@ export interface FlightRouteVisualPaths {
   groundPath: FlightRoutePoint[];
 }
 
+export interface FlightRouteCurveOptions {
+  samples?: number;
+  liftRatio?: number;
+  minLift?: number;
+  maxLift?: number;
+}
+
 const MIN_CURVE_SAMPLES = 16;
 const MAX_CURVE_SAMPLES = 36;
 
@@ -18,8 +25,11 @@ const clamp = (value: number, min: number, max: number): number => (
 export const buildCurvedFlightPath = (
   start: FlightRoutePoint,
   end: FlightRoutePoint,
-  samples = 24,
+  options: number | FlightRouteCurveOptions = 24,
 ): FlightRoutePoint[] => {
+  const normalizedOptions = typeof options === 'number'
+    ? { samples: options }
+    : options;
   const midLatitude = (start.lat + end.lat) / 2;
   const longitudeScale = Math.max(0.28, Math.cos((midLatitude * Math.PI) / 180));
   const startPoint = { x: start.lng * longitudeScale, y: start.lat };
@@ -40,7 +50,11 @@ export const buildCurvedFlightPath = (
     x: -deltaY / distance,
     y: deltaX / distance,
   };
-  const curveLift = clamp(distance * 0.18, 0.22, 4.4);
+  const curveLift = clamp(
+    distance * (normalizedOptions.liftRatio ?? 0.18),
+    normalizedOptions.minLift ?? 0.22,
+    normalizedOptions.maxLift ?? 4.4,
+  );
 
   const upwardControl = {
     x: baseMidPoint.x + (normalizedPerpendicular.x * curveLift),
@@ -51,7 +65,11 @@ export const buildCurvedFlightPath = (
     y: baseMidPoint.y - (normalizedPerpendicular.y * curveLift),
   };
   const controlPoint = upwardControl.y >= downwardControl.y ? upwardControl : downwardControl;
-  const stepCount = clamp(Math.round(samples), MIN_CURVE_SAMPLES, MAX_CURVE_SAMPLES);
+  const stepCount = clamp(
+    Math.round(normalizedOptions.samples ?? 24),
+    MIN_CURVE_SAMPLES,
+    MAX_CURVE_SAMPLES,
+  );
 
   return Array.from({ length: stepCount + 1 }, (_, index) => {
     const t = index / stepCount;
@@ -73,7 +91,8 @@ export const buildCurvedFlightPath = (
 export const buildFlightRouteVisualPaths = (
   start: FlightRoutePoint,
   end: FlightRoutePoint,
+  options?: FlightRouteCurveOptions,
 ): FlightRouteVisualPaths => ({
-  airPath: buildCurvedFlightPath(start, end),
+  airPath: buildCurvedFlightPath(start, end, options),
   groundPath: [start, end],
 });

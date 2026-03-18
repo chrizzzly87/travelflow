@@ -16,6 +16,13 @@ import { MapboxBasemapSync } from './maps/MapboxBasemapSync';
 import { buildFlightRouteVisualPaths } from './maps/flightRouteGeometry';
 import { createGoogleMixedSurfaceController, type GoogleMixedSurfaceController } from './maps/googleMixedSurfaceController';
 import { buildMapboxDashedRouteDasharray, createMapboxLineHandle, createMapboxOverlayMarker, type MapboxLineLayerConfig } from './maps/mapboxOverlayRuntime';
+import {
+    resolveTripMapCityLabelAnchor,
+    resolveTripMapCityLabelOffsetPx,
+    resolveTripMapFlightCurveOptions,
+    resolveTripMapFlightGroundShadowStyle,
+    type TripMapCityLabelAnchor,
+} from './maps/tripMapProviderPresentation';
 import { resolveActiveOverlayMapTarget, shouldHideGoogleMapCanvas } from './maps/mapRenderTarget';
 import { getTripMapProviderTuning, resolveTripMapViewportPadding } from './maps/tripMapProviderTuning';
 import { GOOGLE_ROUTES_COMPUTE_FIELDS, computeGoogleRouteLeg, loadGoogleRouteRuntime } from '../services/routeService';
@@ -1231,7 +1238,7 @@ export const getMapLabelCityName = (value?: string): string => {
     return firstSegment || raw;
 };
 
-export type CityLabelAnchor = 'right' | 'left' | 'below' | 'above';
+export type CityLabelAnchor = TripMapCityLabelAnchor;
 
 const CITY_LABEL_ANCHOR_OFFSETS: Record<CityLabelAnchor, { x: number; y: number }> = {
     right: { x: 30, y: 0 },
@@ -2289,12 +2296,17 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         const drawGroundShadowPath = (path: google.maps.LatLngLiteral[], weight = 3) => {
             if (!isEffectActive()) return null;
             const routeScale = Math.max(0.58, effectiveMarkerRenderProfile.routeStrokeScale);
+            const shadowStyle = resolveTripMapFlightGroundShadowStyle({
+                provider: tripMapProvider,
+                style: activeStyle,
+                baseWeight: weight * routeScale,
+            });
             return createRoutePolylinePair({
                 path,
                 geodesic: true,
-                strokeColor: 'rgba(15, 23, 42, 0.34)',
-                strokeOpacity: isDarkMapStyle(activeStyle) ? 0.22 : 0.14,
-                strokeWeight: Math.max(1, weight * routeScale * 0.92),
+                strokeColor: shadowStyle.color,
+                strokeOpacity: shadowStyle.opacity,
+                strokeWeight: shadowStyle.weight,
                 clickable: false,
                 zIndex: 34,
             });
@@ -2408,6 +2420,10 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 subLabel?: string,
                 anchor: CityLabelAnchor = 'right',
             ) => {
+                const labelOffsetPx = resolveTripMapCityLabelOffsetPx({
+                    provider: tripMapProvider,
+                    markerSize: effectiveMarkerRenderProfile.city.size,
+                });
                 if (mapboxMap) {
                     return createMapboxOverlayMarker({
                         map: mapboxMap,
@@ -2418,7 +2434,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                             subLabel,
                             anchor,
                             style: activeStyle,
-                            offsetPx: Math.max(18, Math.round(effectiveMarkerRenderProfile.city.size * 0.72)),
+                            offsetPx: labelOffsetPx,
                         }),
                         zIndex: 120,
                         centerAnchor: true,
@@ -2432,7 +2448,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                     const div = document.createElement('div');
                     const placement = resolveCityLabelPlacement(
                         anchor,
-                        Math.max(18, Math.round(effectiveMarkerRenderProfile.city.size * 0.72)),
+                        labelOffsetPx,
                     );
                     const theme = resolveCityLabelTheme(activeStyle);
                     div.style.position = 'absolute';
@@ -2516,7 +2532,12 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 const labelName = getMapLabelCityName(city.title || city.location) || city.title || city.location || '';
                 const previousCoordinates = findNeighborCoordinates(cityIndex, -1);
                 const nextCoordinates = findNeighborCoordinates(cityIndex, 1);
-                const labelAnchor = resolveCityLabelAnchor(city.coordinates, previousCoordinates, nextCoordinates);
+                const labelAnchor = resolveTripMapCityLabelAnchor(
+                    tripMapProvider,
+                    city.coordinates,
+                    previousCoordinates,
+                    nextCoordinates,
+                );
                 if (isRoundTrip && cityKey && cityKey === startCityKey) {
                     if (shownRoundTripLabel.has(cityKey)) return;
                     shownRoundTripLabel.add(cityKey);
@@ -2784,7 +2805,11 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                  // Fallback / Flight: Draw Geodesic Polyline
                  const isFlightFallback = mode === 'plane';
                  const flightRouteVisualPaths = isFlightFallback
-                     ? buildFlightRouteVisualPaths(start.coordinates, end.coordinates)
+                     ? buildFlightRouteVisualPaths(
+                         start.coordinates,
+                         end.coordinates,
+                         resolveTripMapFlightCurveOptions(tripMapProvider),
+                     )
                      : null;
                  const fallbackAirPath = flightRouteVisualPaths
                      ? flightRouteVisualPaths.airPath
