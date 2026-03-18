@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   getTripMapProviderPresentation,
   resolveTripMapCityLabelOffsetPx,
+  resolveTripMapDarkRoutePresentation,
   resolveTripMapFlightCurveOptions,
   resolveTripMapFlightGroundShadowStyle,
 } from '../../components/maps/tripMapProviderPresentation';
@@ -46,5 +47,14 @@ describe('components/maps/tripMapProviderPresentation', () => {
       opacity: 0.18,
       weight: 2.82,
     });
+  });
+
+  it('keeps dark-route presentation independently tunable per provider', () => {
+    const googleDarkRoutes = resolveTripMapDarkRoutePresentation('google');
+    const mapboxDarkRoutes = resolveTripMapDarkRoutePresentation('mapbox');
+
+    expect(mapboxDarkRoutes.mainOpacity).toBeGreaterThan(googleDarkRoutes.mainOpacity);
+    expect(mapboxDarkRoutes.shadowOpacity).toBeLessThan(googleDarkRoutes.shadowOpacity);
+    expect(mapboxDarkRoutes.shadowWidthBoost).toBeLessThan(googleDarkRoutes.shadowWidthBoost);
   });
 });

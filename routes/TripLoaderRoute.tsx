@@ -13,6 +13,7 @@ import {
 } from '../services/dbApi';
 import { findHistoryEntryByUrl } from '../services/historyService';
 import { getTripById, saveTrip } from '../services/storageService';
+import { resolveTripInitialViewSettings } from '../services/tripViewSettingsService';
 import {
     buildTripUrl,
     decompressTrip,
@@ -292,6 +293,11 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
     const adminFallbackAccess = tripAccess?.source === 'admin_fallback' ? tripAccess : undefined;
     const isPublicReadView = tripAccess?.source === 'public_read';
     const tripViewKey = `${normalizedRenderedTrip.id}:${adminFallbackAccess ? 'admin-fallback' : isPublicReadView ? 'public-read' : 'default'}`;
+    const initialRouteViewSettings = resolveTripInitialViewSettings({
+        preferredView: normalizeViewSettingsForRuntime(viewSettings),
+        fallbackView: normalizedRenderedTrip.defaultView,
+        allowPersistedOverrides: !versionId && !adminFallbackAccess && !isPublicReadView,
+    });
 
     return (
         <React.Suspense fallback={<TripRouteLoadingShell variant="preparingPlanner" />}>
@@ -299,7 +305,7 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
                 key={tripViewKey}
                 trip={normalizedRenderedTrip}
                 initialMapFocusQuery={resolveTripInitialMapFocusQuery(normalizedRenderedTrip)}
-                initialViewSettings={normalizeViewSettingsForRuntime(viewSettings) ?? normalizedRenderedTrip.defaultView}
+                initialViewSettings={initialRouteViewSettings}
                 onUpdateTrip={onUpdateTrip}
                 onCommitState={onCommitState}
                 onViewSettingsChange={handleRouteViewSettingsChange}

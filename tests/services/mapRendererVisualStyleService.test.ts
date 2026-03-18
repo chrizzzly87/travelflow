@@ -16,7 +16,7 @@ describe('services/mapRendererVisualStyleService', () => {
     );
 
     expect(descriptor.styleUrl).toBe('mapbox://styles/mapbox/standard');
-    expect(config.showAdminBoundaries).toBe(true);
+    expect(config.showAdminBoundaries).toBe(false);
     expect(config.showPointOfInterestLabels).toBe(false);
     expect(config.showRoadLabels).toBe(false);
     expect(config.showTransitLabels).toBe(false);
@@ -48,7 +48,7 @@ describe('services/mapRendererVisualStyleService', () => {
         showPointOfInterestLabels: false,
         showTransitLabels: false,
         showRoadLabels: false,
-        showAdminBoundaries: true,
+        showAdminBoundaries: false,
         colorAdminBoundaries: '#ffffff',
       },
     });
@@ -62,7 +62,7 @@ describe('services/mapRendererVisualStyleService', () => {
         showPointOfInterestLabels: false,
         showTransitLabels: false,
         showRoadLabels: false,
-        showAdminBoundaries: true,
+        showAdminBoundaries: false,
         colorAdminBoundaries: '#ffffff',
         showRoadsAndTransit: false,
         showPedestrianRoads: false,
@@ -86,6 +86,7 @@ describe('services/mapRendererVisualStyleService', () => {
         layers: [
           { id: 'admin-1-boundary' },
           { id: 'admin-2-boundary' },
+          { id: 'region-boundary' },
           { id: 'admin-0-boundary' },
           { id: 'admin-0-boundary-bg' },
           { id: 'settlement-major-label' },
@@ -99,10 +100,13 @@ describe('services/mapRendererVisualStyleService', () => {
       setFilter,
     }, 'satellite');
 
-    expect(setLayoutProperty).toHaveBeenCalledTimes(3);
+    expect(setLayoutProperty).toHaveBeenCalledTimes(6);
     expect(setLayoutProperty).toHaveBeenNthCalledWith(1, 'admin-1-boundary', 'visibility', 'none');
     expect(setLayoutProperty).toHaveBeenNthCalledWith(2, 'admin-2-boundary', 'visibility', 'none');
-    expect(setLayoutProperty).toHaveBeenNthCalledWith(3, 'airport-label', 'visibility', 'none');
+    expect(setLayoutProperty).toHaveBeenNthCalledWith(3, 'region-boundary', 'visibility', 'none');
+    expect(setLayoutProperty).toHaveBeenNthCalledWith(4, 'admin-0-boundary', 'visibility', 'visible');
+    expect(setLayoutProperty).toHaveBeenNthCalledWith(5, 'admin-0-boundary-bg', 'visibility', 'visible');
+    expect(setLayoutProperty).toHaveBeenNthCalledWith(6, 'airport-label', 'visibility', 'none');
     expect(setFilter).toHaveBeenCalledWith('settlement-major-label', expect.any(Array));
     expect(setPaintProperty).toHaveBeenCalledWith('admin-0-boundary', 'line-color', 'rgba(255, 255, 255, 0.99)');
     expect(setPaintProperty).toHaveBeenCalledWith('admin-0-boundary-bg', 'line-opacity', 0.28);

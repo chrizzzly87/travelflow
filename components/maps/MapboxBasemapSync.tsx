@@ -119,6 +119,14 @@ export const shouldRunMapboxGlobeIntro = (zoom: number | null | undefined): bool
   return Number.isFinite(zoom);
 };
 
+export const shouldDeferMapboxCameraSyncUntilSurfaceLoad = ({
+  hasCompletedInitialLoad,
+  initialCameraResolved,
+}: {
+  hasCompletedInitialLoad: boolean;
+  initialCameraResolved: boolean;
+}): boolean => !hasCompletedInitialLoad && !initialCameraResolved;
+
 export const isMeaningfulMapboxIntroTarget = (
   target: { center: [number, number]; zoom: number } | null | undefined,
 ): boolean => {
@@ -465,6 +473,12 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
       syncFrameRef.current = null;
       const mapboxMap = mapboxMapRef.current;
       if (!mapboxMap || !googleMap) return;
+      if (shouldDeferMapboxCameraSyncUntilSurfaceLoad({
+        hasCompletedInitialLoad,
+        initialCameraResolved: initialCameraResolvedRef.current,
+      })) {
+        return;
+      }
       if (syncSourceRef.current === 'mapbox' || introActiveRef.current || gestureActiveRef.current) return;
       if (typeof mapboxMap.isMoving === 'function' && mapboxMap.isMoving()) return;
       if (Date.now() < ignoreGoogleSyncUntilRef.current) return;

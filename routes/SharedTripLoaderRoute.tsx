@@ -24,6 +24,7 @@ import {
 } from '../services/dbApi';
 import { createTripHistorySnapshotEntry, findHistoryEntryByUrl } from '../services/historyService';
 import { saveTrip } from '../services/storageService';
+import { resolveTripInitialViewSettings } from '../services/tripViewSettingsService';
 import {
     buildShareUrl,
     buildTripUrl,
@@ -481,7 +482,11 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
         <React.Suspense fallback={<TripRouteLoadingShell variant="preparingSharedPlanner" />}>
             <LazyTripView
                 trip={normalizedRenderedTrip}
-                initialViewSettings={normalizeViewSettingsForRuntime(viewSettings) ?? normalizedRenderedTrip.defaultView}
+                initialViewSettings={resolveTripInitialViewSettings({
+                    preferredView: normalizeViewSettingsForRuntime(viewSettings),
+                    fallbackView: normalizedRenderedTrip.defaultView,
+                    allowPersistedOverrides: false,
+                })}
                 onUpdateTrip={(updatedTrip) => onTripLoaded(updatedTrip, viewSettings ?? updatedTrip.defaultView)}
                 onCommitState={handleCommitShared}
                 onViewSettingsChange={handleRouteViewSettingsChange}

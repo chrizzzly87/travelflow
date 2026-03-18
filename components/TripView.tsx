@@ -530,6 +530,7 @@ interface TripViewModalLayerProps {
     editTitleValue: string;
     onEditTitleValueChange: (value: string) => void;
     onCommitTitleEdit: () => void;
+    onCancelTitleEdit: () => void;
     onStartTitleEdit: () => void;
     canManageTripMetadata: boolean;
     canEdit: boolean;
@@ -557,15 +558,12 @@ interface TripViewModalLayerProps {
     canOpenBenchmarkWithSnapshot: boolean;
     tripInfoRetryAnalyticsAttributes: Record<string, string>;
     forkMeta: { label: string; url: string | null } | null;
-    isTripInfoHistoryExpanded: boolean;
-    onToggleTripInfoHistoryExpanded: () => void;
     showAllHistory: boolean;
     onToggleShowAllHistory: () => void;
     onHistoryUndo: () => void;
     onHistoryRedo: () => void;
     infoHistoryItems: any[];
-    onGoToHistoryEntry: (url: string) => void;
-    onOpenFullHistory: () => void;
+    onGoToHistoryEntry: (item: any) => void;
     formatHistoryTime: (value: number) => string;
     countryInfo: ITrip['countryInfo'];
     isPaywallLocked: boolean;
@@ -628,6 +626,7 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
     editTitleValue,
     onEditTitleValueChange,
     onCommitTitleEdit,
+    onCancelTitleEdit,
     onStartTitleEdit,
     canManageTripMetadata,
     canEdit,
@@ -650,15 +649,12 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
     canOpenBenchmarkWithSnapshot,
     tripInfoRetryAnalyticsAttributes,
     forkMeta,
-    isTripInfoHistoryExpanded,
-    onToggleTripInfoHistoryExpanded,
     showAllHistory,
     onToggleShowAllHistory,
     onHistoryUndo,
     onHistoryRedo,
     infoHistoryItems,
     onGoToHistoryEntry,
-    onOpenFullHistory,
     formatHistoryTime,
     countryInfo,
     isPaywallLocked,
@@ -733,6 +729,7 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
                     editTitleValue={editTitleValue}
                     onEditTitleValueChange={onEditTitleValueChange}
                     onCommitTitleEdit={onCommitTitleEdit}
+                    onCancelTitleEdit={onCancelTitleEdit}
                     onStartTitleEdit={onStartTitleEdit}
                     canManageTripMetadata={canManageTripMetadata}
                     canEdit={canEdit}
@@ -755,15 +752,12 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
                     canOpenBenchmarkWithSnapshot={canOpenBenchmarkWithSnapshot}
                     retryAnalyticsAttributes={tripInfoRetryAnalyticsAttributes}
                     forkMeta={forkMeta}
-                    isTripInfoHistoryExpanded={isTripInfoHistoryExpanded}
-                    onToggleTripInfoHistoryExpanded={onToggleTripInfoHistoryExpanded}
                     showAllHistory={showAllHistory}
                     onToggleShowAllHistory={onToggleShowAllHistory}
                     onHistoryUndo={onHistoryUndo}
                     onHistoryRedo={onHistoryRedo}
-                    infoHistoryItems={infoHistoryItems}
+                    historyItems={infoHistoryItems}
                     onGoToHistoryEntry={onGoToHistoryEntry}
-                    onOpenFullHistory={onOpenFullHistory}
                     formatHistoryTime={formatHistoryTime}
                     countryInfo={countryInfo}
                     isPaywallLocked={isPaywallLocked}
@@ -1548,8 +1542,6 @@ const useTripViewRender = ({
         isHistoryOpen,
         setIsHistoryOpen,
         isTripInfoOpen,
-        isTripInfoHistoryExpanded,
-        setIsTripInfoHistoryExpanded,
         isMobileMapExpanded,
         setIsMobileMapExpanded,
         openTripInfoModal,
@@ -2273,7 +2265,6 @@ const useTripViewRender = ({
     const {
         historyModalItems,
         openHistoryPanel,
-        tripInfoHistoryItems,
     } = useTripHistoryPresentation({
         currentUrl,
         displayHistoryEntries,
@@ -2707,7 +2698,7 @@ const useTripViewRender = ({
         />
     );
 
-    const { handleStartTitleEdit, handleCommitTitleEdit } = useTripTitleEditHandlers({
+    const { handleStartTitleEdit, handleCommitTitleEdit, handleCancelTitleEdit } = useTripTitleEditHandlers({
         canManageTripMetadata,
         isMobile,
         isEditingTitle,
@@ -3071,6 +3062,7 @@ const useTripViewRender = ({
                         editTitleValue={editTitleValue}
                         onEditTitleValueChange={setEditTitleValue}
                         onCommitTitleEdit={handleCommitTitleEdit}
+                        onCancelTitleEdit={handleCancelTitleEdit}
                         onStartTitleEdit={handleStartTitleEdit}
                         canManageTripMetadata={canManageTripMetadata}
                         canEdit={canEdit}
@@ -3094,21 +3086,15 @@ const useTripViewRender = ({
                         canOpenBenchmarkWithSnapshot={Boolean(displayTrip.aiMeta?.generation?.inputSnapshot)}
                         tripInfoRetryAnalyticsAttributes={tripInfoRetryAnalyticsAttributes}
                         forkMeta={forkMeta}
-                        isTripInfoHistoryExpanded={isTripInfoHistoryExpanded}
-                        onToggleTripInfoHistoryExpanded={() => setIsTripInfoHistoryExpanded((value) => !value)}
                         showAllHistory={showAllHistory}
                         onToggleShowAllHistory={() => setShowAllHistory((value) => !value)}
                         onHistoryUndo={() => navigateHistory('undo')}
                         onHistoryRedo={() => navigateHistory('redo')}
-                        infoHistoryItems={tripInfoHistoryItems}
-                        onGoToHistoryEntry={(url) => {
+                        infoHistoryItems={historyModalItems}
+                        onGoToHistoryEntry={(item) => {
                             closeTripInfoModal();
                             suppressCommitRef.current = true;
-                            navigate(url);
-                        }}
-                        onOpenFullHistory={() => {
-                            closeTripInfoModal();
-                            openHistoryPanel('trip_info');
+                            navigate(item.url);
                         }}
                         formatHistoryTime={formatHistoryTime}
                         countryInfo={displayTrip.countryInfo}

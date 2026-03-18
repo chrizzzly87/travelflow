@@ -9,6 +9,7 @@ import {
   isMapboxStyleReadyForRuntimeMutations,
   resolveMapboxEffectiveProjection,
   resolveMapboxViewportSize,
+  shouldDeferMapboxCameraSyncUntilSurfaceLoad,
   shouldRunMapboxGlobeIntro,
   stretchMapboxViewport,
 } from '../../components/maps/MapboxBasemapSync';
@@ -74,6 +75,23 @@ describe('components/maps/MapboxBasemapSync', () => {
     expect(shouldRunMapboxGlobeIntro(null)).toBe(false);
     expect(shouldRunMapboxGlobeIntro(2.05)).toBe(true);
     expect(shouldRunMapboxGlobeIntro(2.3)).toBe(true);
+  });
+
+  it('defers the initial Google camera sync until the Mapbox surface has finished loading', () => {
+    expect(shouldDeferMapboxCameraSyncUntilSurfaceLoad({
+      hasCompletedInitialLoad: false,
+      initialCameraResolved: false,
+    })).toBe(true);
+
+    expect(shouldDeferMapboxCameraSyncUntilSurfaceLoad({
+      hasCompletedInitialLoad: true,
+      initialCameraResolved: false,
+    })).toBe(false);
+
+    expect(shouldDeferMapboxCameraSyncUntilSurfaceLoad({
+      hasCompletedInitialLoad: false,
+      initialCameraResolved: true,
+    })).toBe(false);
   });
 
   it('waits to animate until the synced target is meaningfully away from the initial globe view', () => {

@@ -20,6 +20,7 @@ import { buildMapboxDashedRouteDasharray, createMapboxLineHandle, createMapboxOv
 import {
     resolveTripMapCityLabelAnchor,
     resolveTripMapCityLabelOffsetPx,
+    resolveTripMapDarkRoutePresentation,
     resolveTripMapFlightCurveOptions,
     resolveTripMapFlightGroundShadowStyle,
     type TripMapCityLabelAnchor,
@@ -1359,14 +1360,16 @@ const buildCityLabelMarkerHtml = ({
     `;
 };
 
-const buildMapboxRouteLayerConfigs = ({
+export const buildMapboxRouteLayerConfigs = ({
     routeId,
     options,
     style,
+    provider = 'mapbox',
 }: {
     routeId: string;
     options: google.maps.PolylineOptions;
     style: MapStyle;
+    provider?: MapImplementation;
 }): MapboxLineLayerConfig[] => {
     const { outerOutlineOptions, outlineOptions, mainOptions } = buildRoutePolylinePairOptions(options, style);
     const isDarkStyle = isDarkMapStyle(style);
@@ -1393,18 +1396,25 @@ const buildMapboxRouteLayerConfigs = ({
     if (isDarkStyle) {
         const mainLayer = toLayerConfig('main', mainOptions);
         if (!mainLayer) return [];
+        const darkRoutePresentation = resolveTripMapDarkRoutePresentation(provider);
         const darkRouteLayers: MapboxLineLayerConfig[] = [];
+        darkRouteLayers.push({
+            id: `${routeId}-shadow`,
+            color: darkRoutePresentation.shadowColor,
+            opacity: darkRoutePresentation.shadowOpacity,
+            width: Math.max(1.5, mainLayer.width + darkRoutePresentation.shadowWidthBoost),
+        });
         if (!mainLayer.dasharray) {
             darkRouteLayers.push({
                 id: `${routeId}-glow`,
                 color: mainLayer.color,
-                opacity: style === 'cleanDark' ? 0.22 : 0.18,
-                width: Math.max(1.3, mainLayer.width + (style === 'cleanDark' ? 1.25 : 1)),
+                opacity: darkRoutePresentation.glowOpacity,
+                width: Math.max(1.3, mainLayer.width + darkRoutePresentation.glowWidthBoost),
             });
         }
         darkRouteLayers.push({
             ...mainLayer,
-            opacity: Math.min(0.94, Math.max(style === 'cleanDark' ? 0.84 : 0.8, mainLayer.opacity)),
+            opacity: Math.max(mainLayer.opacity, darkRoutePresentation.mainOpacity),
         });
         return darkRouteLayers;
     }
@@ -2194,6 +2204,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                     routeId,
                     options,
                     style: activeStyle,
+                    provider: tripMapProvider,
                 });
                 if (layers.length === 0) return null;
                 const routeHandle = createMapboxLineHandle({

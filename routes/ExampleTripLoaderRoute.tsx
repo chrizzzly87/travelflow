@@ -10,6 +10,7 @@ import { DB_ENABLED } from '../config/db';
 import { resolveTripExpiryFromEntitlements } from '../config/productLimits';
 import { trackEvent } from '../services/analyticsService';
 import { buildBillingCheckoutPath } from '../services/billingService';
+import { resolveTripInitialViewSettings } from '../services/tripViewSettingsService';
 import {
     dbCanCreateTrip,
     dbCreateTripVersion,
@@ -443,7 +444,11 @@ export const ExampleTripLoaderRoute: React.FC<ExampleTripLoaderRouteProps> = ({
         <React.Suspense fallback={<TripRouteLoadingShell variant="preparingExamplePlanner" />}>
             <LazyTripView
                 trip={activeTrip}
-                initialViewSettings={viewSettings ?? activeTrip.defaultView}
+                initialViewSettings={resolveTripInitialViewSettings({
+                    preferredView: viewSettings,
+                    fallbackView: activeTrip.defaultView,
+                    allowPersistedOverrides: true,
+                })}
                 onUpdateTrip={(updatedTrip) => onTripLoaded(updatedTrip, viewSettings ?? updatedTrip.defaultView)}
                 onViewSettingsChange={handleRouteViewSettingsChange}
                 onOpenManager={onOpenManager}
