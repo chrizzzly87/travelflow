@@ -1,4 +1,5 @@
 import type { ITrip, IViewSettings } from '../types';
+import { roundFiniteNumber, toFiniteNumber } from '../shared/numberUtils';
 
 export interface TripCommitDeduplicationState {
     inFlightFingerprints: Set<string>;
@@ -50,10 +51,10 @@ const normalizeViewForFingerprint = (
     if (!view) return null;
     return stableSerialize({
         ...view,
-        zoomLevel: Number(view.zoomLevel.toFixed(2)),
-        sidebarWidth: Math.round(view.sidebarWidth),
+        zoomLevel: roundFiniteNumber(view.zoomLevel, 2, 1),
+        sidebarWidth: Math.round(toFiniteNumber(view.sidebarWidth, 560)),
         detailsWidth: typeof view.detailsWidth === 'number' ? Math.round(view.detailsWidth) : null,
-        timelineHeight: Math.round(view.timelineHeight),
+        timelineHeight: Math.round(toFiniteNumber(view.timelineHeight, 340)),
     }) as Record<string, SerializableValue>;
 };
 

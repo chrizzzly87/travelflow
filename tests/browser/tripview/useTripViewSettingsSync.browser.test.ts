@@ -4,6 +4,7 @@ import { act, renderHook } from '@testing-library/react';
 
 import type { IViewSettings } from '../../../types';
 import { useTripViewSettingsSync } from '../../../components/tripview/useTripViewSettingsSync';
+import { normalizeViewSettingsForRuntime } from '../../../shared/tripRuntimeNormalization';
 
 const BASE_VIEW_SETTINGS: IViewSettings = {
   layoutMode: 'horizontal',
@@ -183,10 +184,12 @@ describe('components/tripview/useTripViewSettingsSync', () => {
       useTripViewSettingsSync(hookProps);
     }, { initialProps: props });
 
+    const normalizedInitialViewSettings = normalizeViewSettingsForRuntime(props.initialViewSettings)!;
+
     expect(props.suppressCommitRef.current).toBe(true);
     expect(props.skipViewDiffRef.current).toBe(true);
-    expect(props.appliedViewKeyRef.current).toBe(JSON.stringify(props.initialViewSettings));
-    expect(props.prevViewRef.current).toEqual(props.initialViewSettings);
+    expect(JSON.parse(props.appliedViewKeyRef.current as string)).toEqual(normalizedInitialViewSettings);
+    expect(props.prevViewRef.current).toEqual(normalizedInitialViewSettings);
 
     expect(props.setMapStyle).toHaveBeenCalledWith('dark');
     expect(props.setRouteMode).toHaveBeenCalledWith('realistic');

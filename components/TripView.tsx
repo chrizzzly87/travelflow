@@ -103,6 +103,7 @@ import { registerTripGenerationCompletionWatch } from '../services/tripGeneratio
 import { listTripGenerationJobsByTrip, triggerTripGenerationWorker } from '../services/tripGenerationJobService';
 import { finishTripGenerationAttemptLog } from '../services/tripGenerationAttemptLogService';
 import { resolveDeferredTripCommitSnapshot } from '../services/tripCommitSnapshotService';
+import { roundFiniteNumber, toFiniteNumber } from '../shared/numberUtils';
 
 const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
     moduleKey: string,
@@ -1803,9 +1804,9 @@ const useTripViewRender = ({
         mapStyle,
         routeMode,
         showCityNames,
-        zoomLevel: Number(zoomLevel.toFixed(2)),
-        sidebarWidth: Math.round(sidebarWidth),
-        timelineHeight: Math.round(timelineHeight)
+        zoomLevel: roundFiniteNumber(zoomLevel, 2, 1),
+        sidebarWidth: Math.round(toFiniteNumber(sidebarWidth, 560)),
+        timelineHeight: Math.round(toFiniteNumber(timelineHeight, 340))
     }), [layoutMode, timelineMode, timelineView, mapDockMode, mapStyle, routeMode, showCityNames, zoomLevel, sidebarWidth, timelineHeight]);
     const currentViewSettingsRef = useRef<IViewSettings>(currentViewSettings);
 

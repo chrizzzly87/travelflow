@@ -3,6 +3,8 @@ import { useEffect, useRef, type Dispatch, type MutableRefObject, type SetStateA
 import { writeLocalStorageItem } from '../../services/browserStorageService';
 import type { IViewSettings, MapStyle, RouteMode } from '../../types';
 import { applyViewSettingsToSearchParams } from '../../utils';
+import { roundFiniteNumber, toFiniteNumber } from '../../shared/numberUtils';
+import { normalizeViewSettingsForRuntime } from '../../shared/tripRuntimeNormalization';
 
 interface UseTripViewSettingsSyncOptions {
     layoutMode: 'vertical' | 'horizontal';
@@ -36,15 +38,10 @@ interface UseTripViewSettingsSyncOptions {
     prevViewRef: MutableRefObject<IViewSettings | null>;
 }
 
-const toFiniteNumber = (value: unknown, fallback: number): number => {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : fallback;
-};
-
 const normalizeSettingsForCallback = (settings: IViewSettings): IViewSettings => ({
     ...settings,
     showCityNames: Boolean(settings.showCityNames),
-    zoomLevel: Number(toFiniteNumber(settings.zoomLevel, 1).toFixed(2)),
+    zoomLevel: roundFiniteNumber(settings.zoomLevel, 2, 1),
     sidebarWidth: Math.round(toFiniteNumber(settings.sidebarWidth, 560)),
     timelineHeight: Math.round(toFiniteNumber(settings.timelineHeight, 340)),
 });
@@ -107,7 +104,7 @@ export const useTripViewSettingsSync = ({
     }, [showCityNames]);
 
     useEffect(() => {
-        writeLocalStorageItem('tf_zoom_level', zoomLevel.toFixed(2));
+        writeLocalStorageItem('tf_zoom_level', roundFiniteNumber(zoomLevel, 2, 1).toFixed(2));
     }, [zoomLevel]);
 
     useEffect(() => {
@@ -160,9 +157,10 @@ export const useTripViewSettingsSync = ({
     ]);
 
     useEffect(() => {
-        if (!initialViewSettings) return;
+        const normalizedInitialViewSettings = normalizeViewSettingsForRuntime(initialViewSettings);
+        if (!normalizedInitialViewSettings) return;
 
-        const key = JSON.stringify(initialViewSettings);
+        const key = JSON.stringify(normalizedInitialViewSettings);
         const currentKey = JSON.stringify(currentViewSettings);
         if (pendingManualViewSettingsPersistRef.current && key !== currentKey) {
             return;
@@ -177,18 +175,18 @@ export const useTripViewSettingsSync = ({
         suppressCommitRef.current = true;
         skipViewDiffRef.current = true;
 
-        if (initialViewSettings.mapStyle) setMapStyle(initialViewSettings.mapStyle);
-        if (initialViewSettings.routeMode) setRouteMode(initialViewSettings.routeMode);
-        if (initialViewSettings.layoutMode) setLayoutMode(initialViewSettings.layoutMode);
-        if (initialViewSettings.timelineMode) setTimelineMode(initialViewSettings.timelineMode);
-        if (initialViewSettings.timelineView) setTimelineView(initialViewSettings.timelineView);
-        if (initialViewSettings.mapDockMode) setMapDockMode(initialViewSettings.mapDockMode);
-        if (typeof initialViewSettings.zoomLevel === 'number') setZoomLevel(initialViewSettings.zoomLevel);
-        if (typeof initialViewSettings.sidebarWidth === 'number') setSidebarWidth(initialViewSettings.sidebarWidth);
-        if (typeof initialViewSettings.timelineHeight === 'number') setTimelineHeight(initialViewSettings.timelineHeight);
-        setShowCityNames(initialViewSettings.showCityNames ?? true);
+        if (normalizedInitialViewSettings.mapStyle) setMapStyle(normalizedInitialViewSettings.mapStyle);
+        if (normalizedInitialViewSettings.routeMode) setRouteMode(normalizedInitialViewSettings.routeMode);
+        if (normalizedInitialViewSettings.layoutMode) setLayoutMode(normalizedInitialViewSettings.layoutMode);
+        if (normalizedInitialViewSettings.timelineMode) setTimelineMode(normalizedInitialViewSettings.timelineMode);
+        if (normalizedInitialViewSettings.timelineView) setTimelineView(normalizedInitialViewSettings.timelineView);
+        if (normalizedInitialViewSettings.mapDockMode) setMapDockMode(normalizedInitialViewSettings.mapDockMode);
+        if (typeof normalizedInitialViewSettings.zoomLevel === 'number') setZoomLevel(normalizedInitialViewSettings.zoomLevel);
+        if (typeof normalizedInitialViewSettings.sidebarWidth === 'number') setSidebarWidth(normalizedInitialViewSettings.sidebarWidth);
+        if (typeof normalizedInitialViewSettings.timelineHeight === 'number') setTimelineHeight(normalizedInitialViewSettings.timelineHeight);
+        setShowCityNames(normalizedInitialViewSettings.showCityNames ?? true);
 
-        prevViewRef.current = initialViewSettings;
+        prevViewRef.current = normalizedInitialViewSettings;
     }, [
         initialViewSettings,
         currentViewSettings,

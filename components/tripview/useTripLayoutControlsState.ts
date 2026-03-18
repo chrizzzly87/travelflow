@@ -2,6 +2,7 @@ import { useState } from 'react';
 
 import { readLocalStorageItem } from '../../services/browserStorageService';
 import type { IViewSettings, MapStyle, RouteMode } from '../../types';
+import { normalizeViewSettingsForRuntime } from '../../shared/tripRuntimeNormalization';
 
 interface UseTripLayoutControlsStateOptions {
     initialViewSettings?: IViewSettings;
@@ -12,20 +13,21 @@ export const useTripLayoutControlsState = ({
     initialViewSettings,
     defaultDetailsWidth,
 }: UseTripLayoutControlsStateOptions) => {
+    const normalizedInitialViewSettings = normalizeViewSettingsForRuntime(initialViewSettings);
     const [mapStyle, setMapStyle] = useState<MapStyle>(() => {
-        if (initialViewSettings?.mapStyle) return initialViewSettings.mapStyle;
+        if (normalizedInitialViewSettings?.mapStyle) return normalizedInitialViewSettings.mapStyle;
         if (typeof window !== 'undefined') return (readLocalStorageItem('tf_map_style') as MapStyle) || 'standard';
         return 'standard';
     });
 
     const [routeMode, setRouteMode] = useState<RouteMode>(() => {
-        if (initialViewSettings?.routeMode) return initialViewSettings.routeMode;
+        if (normalizedInitialViewSettings?.routeMode) return normalizedInitialViewSettings.routeMode;
         if (typeof window !== 'undefined') return (readLocalStorageItem('tf_route_mode') as RouteMode) || 'simple';
         return 'simple';
     });
 
     const [showCityNames, setShowCityNames] = useState<boolean>(() => {
-        if (initialViewSettings?.showCityNames !== undefined) return initialViewSettings.showCityNames;
+        if (normalizedInitialViewSettings?.showCityNames !== undefined) return normalizedInitialViewSettings.showCityNames;
         if (typeof window !== 'undefined') {
             const stored = readLocalStorageItem('tf_city_names');
             if (stored !== null) return stored === 'true';
@@ -34,7 +36,7 @@ export const useTripLayoutControlsState = ({
     });
 
     const [layoutMode, setLayoutMode] = useState<'vertical' | 'horizontal'>(() => {
-        if (initialViewSettings) return initialViewSettings.layoutMode;
+        if (normalizedInitialViewSettings?.layoutMode) return normalizedInitialViewSettings.layoutMode;
         if (typeof window !== 'undefined') {
             return (readLocalStorageItem('tf_layout_mode') as 'vertical' | 'horizontal') || 'horizontal';
         }
@@ -42,7 +44,7 @@ export const useTripLayoutControlsState = ({
     });
 
     const [timelineMode, setTimelineMode] = useState<'calendar' | 'timeline'>(() => {
-        if (initialViewSettings?.timelineMode) return initialViewSettings.timelineMode;
+        if (normalizedInitialViewSettings?.timelineMode) return normalizedInitialViewSettings.timelineMode;
         if (typeof window !== 'undefined') {
             const stored = readLocalStorageItem('tf_timeline_mode');
             if (stored === 'calendar' || stored === 'timeline') return stored;
@@ -51,7 +53,7 @@ export const useTripLayoutControlsState = ({
     });
 
     const [timelineView, setTimelineView] = useState<'horizontal' | 'vertical'>(() => {
-        if (initialViewSettings) return initialViewSettings.timelineView;
+        if (normalizedInitialViewSettings?.timelineView) return normalizedInitialViewSettings.timelineView;
         if (typeof window !== 'undefined') {
             return (readLocalStorageItem('tf_timeline_view') as 'horizontal' | 'vertical') || 'horizontal';
         }
@@ -59,20 +61,20 @@ export const useTripLayoutControlsState = ({
     });
 
     const [sidebarWidth, setSidebarWidth] = useState(() => {
-        if (initialViewSettings && initialViewSettings.sidebarWidth) return initialViewSettings.sidebarWidth;
+        if (typeof normalizedInitialViewSettings?.sidebarWidth === 'number') return normalizedInitialViewSettings.sidebarWidth;
         if (typeof window !== 'undefined') return parseInt(readLocalStorageItem('tf_sidebar_width') || '550', 10);
         return 550;
     });
 
     const [timelineHeight, setTimelineHeight] = useState(() => {
-        if (initialViewSettings && initialViewSettings.timelineHeight) return initialViewSettings.timelineHeight;
+        if (typeof normalizedInitialViewSettings?.timelineHeight === 'number') return normalizedInitialViewSettings.timelineHeight;
         if (typeof window !== 'undefined') return parseInt(readLocalStorageItem('tf_timeline_height') || '400', 10);
         return 400;
     });
 
     const [detailsWidth, setDetailsWidth] = useState(() => {
-        if (typeof initialViewSettings?.detailsWidth === 'number' && Number.isFinite(initialViewSettings.detailsWidth)) {
-            return initialViewSettings.detailsWidth;
+        if (typeof normalizedInitialViewSettings?.detailsWidth === 'number' && Number.isFinite(normalizedInitialViewSettings.detailsWidth)) {
+            return normalizedInitialViewSettings.detailsWidth;
         }
         if (typeof window !== 'undefined') {
             const stored = parseInt(readLocalStorageItem('tf_details_width') || `${defaultDetailsWidth}`, 10);
@@ -82,7 +84,7 @@ export const useTripLayoutControlsState = ({
     });
 
     const [zoomLevel, setZoomLevel] = useState(() => {
-        if (typeof initialViewSettings?.zoomLevel === 'number') return initialViewSettings.zoomLevel;
+        if (typeof normalizedInitialViewSettings?.zoomLevel === 'number') return normalizedInitialViewSettings.zoomLevel;
         if (typeof window !== 'undefined') {
             const stored = parseFloat(readLocalStorageItem('tf_zoom_level') || '');
             if (Number.isFinite(stored)) return stored;
@@ -91,7 +93,7 @@ export const useTripLayoutControlsState = ({
     });
 
     const [zoomBehavior, setZoomBehavior] = useState<NonNullable<IViewSettings['zoomBehavior']>>(() => (
-        initialViewSettings?.zoomBehavior === 'manual' ? 'manual' : 'fit'
+        normalizedInitialViewSettings?.zoomBehavior === 'manual' ? 'manual' : 'fit'
     ));
 
     return {

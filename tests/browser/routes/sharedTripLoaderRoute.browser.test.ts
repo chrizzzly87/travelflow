@@ -259,7 +259,14 @@ describe('routes/SharedTripLoaderRoute', () => {
     render(React.createElement(SharedTripLoaderRoute, props));
 
     await waitFor(() => {
-      expect(props.onTripLoaded).toHaveBeenCalledWith(versionTrip, versionView);
+      expect(props.onTripLoaded).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'shared-trip', title: 'Version snapshot' }),
+        expect.objectContaining({
+          ...versionView,
+          timelineMode: 'calendar',
+          zoomBehavior: 'fit',
+        }),
+      );
     });
 
     await waitFor(() => {
@@ -308,7 +315,14 @@ describe('routes/SharedTripLoaderRoute', () => {
     render(React.createElement(SharedTripLoaderRoute, props));
 
     await waitFor(() => {
-      expect(props.onTripLoaded).toHaveBeenCalledWith(historyTrip, historyView);
+      expect(props.onTripLoaded).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'shared-trip', title: 'History snapshot' }),
+        expect.objectContaining({
+          ...historyView,
+          timelineMode: 'calendar',
+          zoomBehavior: 'fit',
+        }),
+      );
     });
     expect(mocks.dbGetSharedTripVersion).not.toHaveBeenCalled();
     expect(latestTripViewProps()?.shareSnapshotMeta?.hasNewer).toBe(true);
@@ -347,9 +361,18 @@ describe('routes/SharedTripLoaderRoute', () => {
     render(React.createElement(SharedTripLoaderRoute, props));
 
     await waitFor(() => {
-      expect(props.onTripLoaded).toHaveBeenCalledWith(sharedTrip, shareView);
+      expect(props.onTripLoaded).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'shared-trip' }),
+        expect.objectContaining({
+          ...shareView,
+          zoomBehavior: 'fit',
+        }),
+      );
     });
-    expect(latestTripViewProps()?.initialViewSettings).toEqual(shareView);
+    expect(latestTripViewProps()?.initialViewSettings).toMatchObject({
+      ...shareView,
+      zoomBehavior: 'fit',
+    });
   });
 
   it('opens the upgrade dialog and routes into checkout when copy hits the trip limit', async () => {
