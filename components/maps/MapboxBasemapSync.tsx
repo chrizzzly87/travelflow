@@ -209,10 +209,24 @@ export const resolveMapboxEffectiveProjection = ({
   }) ?? 'mercator';
 };
 
+export const isMapboxStyleReadyForRuntimeMutations = (
+  mapboxMap: Pick<mapboxgl.Map, 'isStyleLoaded'> | null | undefined,
+): boolean => {
+  if (!mapboxMap || typeof mapboxMap.isStyleLoaded !== 'function') {
+    return false;
+  }
+  try {
+    return mapboxMap.isStyleLoaded();
+  } catch {
+    return false;
+  }
+};
+
 const applyMapboxProjectionState = (
   mapboxMap: mapboxgl.Map,
   projection: 'globe' | 'mercator',
 ): void => {
+  if (!isMapboxStyleReadyForRuntimeMutations(mapboxMap)) return;
   if (typeof mapboxMap.setProjection === 'function') {
     mapboxMap.setProjection(projection);
   }
@@ -411,7 +425,7 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
       ) {
         return false;
       }
-      if (typeof mapboxMap.isStyleLoaded === 'function' && !mapboxMap.isStyleLoaded()) return false;
+      if (!isMapboxStyleReadyForRuntimeMutations(mapboxMap)) return false;
       if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return false;
 
       hasPlayedIntroRef.current = true;
@@ -633,9 +647,17 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
           scheduleViewportResize(true);
           reportSurfaceReady(true);
           if (hasCompletedInitialLoad) {
+            const notifyStyleReloadWhenReady = () => {
+              if (cancelled || mapboxMapRef.current !== mapboxMap) return;
+              if (!isMapboxStyleReadyForRuntimeMutations(mapboxMap)) {
+                mapboxMap.once('idle', notifyStyleReloadWhenReady);
+                return;
+              }
+              onStyleReload?.();
+            };
             window.requestAnimationFrame(() => {
               if (cancelled || mapboxMapRef.current !== mapboxMap) return;
-              onStyleReload?.();
+              notifyStyleReloadWhenReady();
             });
           }
         });

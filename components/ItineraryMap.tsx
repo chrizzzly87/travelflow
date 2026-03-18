@@ -12,7 +12,7 @@ import { useGoogleMaps, useMapRuntime } from './GoogleMapsLoader';
 import { normalizeTransportMode } from '../shared/transportModes';
 import { ActivityTypeIcon, getActivityTypePaletteParts } from './ActivityTypeVisuals';
 import { getMapSurfaceBackgroundColor, GOOGLE_BASEMAP_HIDDEN_STYLES } from '../services/mapRendererVisualStyleService';
-import { MapboxBasemapSync } from './maps/MapboxBasemapSync';
+import { isMapboxStyleReadyForRuntimeMutations, MapboxBasemapSync } from './maps/MapboxBasemapSync';
 import { buildFlightRouteVisualPaths } from './maps/flightRouteGeometry';
 import { createGoogleMixedSurfaceController, type GoogleMixedSurfaceController } from './maps/googleMixedSurfaceController';
 import { buildTripMapCityMarkerHtml } from './maps/tripMapCityMarkerHtml';
@@ -1951,6 +1951,10 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         const mapboxModule = isMapboxBasemapEnabled ? mapboxModuleRef.current : null;
         if (isMapboxBasemapEnabled && !mapboxMap) return;
         if (isMapboxBasemapEnabled && !mapboxModule) return;
+        if (isMapboxBasemapEnabled && (
+            !isMapboxSurfaceReady
+            || !isMapboxStyleReadyForRuntimeMutations(mapboxMap)
+        )) return;
         if (!isMapboxBasemapEnabled && !window.google.maps.OverlayView) return;
 
         // 1. Clear existing markers & routes

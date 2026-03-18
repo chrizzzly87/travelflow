@@ -6,6 +6,7 @@ import {
   getMapboxBasemapErrorStatus,
   isMeaningfulMapboxIntroTarget,
   isMapboxBasemapFatalError,
+  isMapboxStyleReadyForRuntimeMutations,
   resolveMapboxEffectiveProjection,
   resolveMapboxViewportSize,
   shouldRunMapboxGlobeIntro,
@@ -57,6 +58,16 @@ describe('components/maps/MapboxBasemapSync', () => {
       width: 822,
       height: 469,
     });
+  });
+
+  it('treats style mutations as unavailable until Mapbox reports the style as loaded', () => {
+    expect(isMapboxStyleReadyForRuntimeMutations(null)).toBe(false);
+    expect(isMapboxStyleReadyForRuntimeMutations({
+      isStyleLoaded: () => false,
+    } as any)).toBe(false);
+    expect(isMapboxStyleReadyForRuntimeMutations({
+      isStyleLoaded: () => true,
+    } as any)).toBe(true);
   });
 
   it('triggers the globe intro as soon as a finite synced trip camera target exists', () => {
