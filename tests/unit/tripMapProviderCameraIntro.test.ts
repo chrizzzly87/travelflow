@@ -17,7 +17,8 @@ describe('components/maps/tripMapProviderCameraIntro', () => {
     expect(introPlan).not.toBeNull();
     expect(introPlan?.startCamera.zoom).toBeLessThan(introPlan?.flyToCamera.zoom ?? 0);
     expect(introPlan?.flyToCamera.center).toEqual([100.5, 13.75]);
-    expect(introPlan?.flyToCamera.bearing).toBeGreaterThan(0);
+    expect(introPlan?.startCamera.bearing).toBe(0);
+    expect(introPlan?.flyToCamera.bearing).toBe(0);
   });
 
   it('skips the globe intro for floating or compact trip-map surfaces', () => {

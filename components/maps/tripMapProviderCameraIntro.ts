@@ -30,15 +30,6 @@ export interface TripMapCameraIntroPlan {
   speed: number;
 }
 
-const clamp = (value: number, min: number, max: number): number => (
-  Math.min(max, Math.max(min, value))
-);
-
-const resolveMapboxIntroBearing = (startCenter: [number, number], targetCenter: [number, number]): number => {
-  const longitudeDelta = targetCenter[0] - startCenter[0];
-  return clamp(longitudeDelta / 10, -14, 14);
-};
-
 export const buildTripMapCameraIntroPlan = ({
   provider,
   mapDockMode,
@@ -60,7 +51,7 @@ export const buildTripMapCameraIntroPlan = ({
     flyToCamera: {
       center: target.center,
       zoom: Math.max(target.zoom, tuning.intro.flyToMinZoom),
-      bearing: resolveMapboxIntroBearing(startCamera.center, target.center),
+      bearing: 0,
       pitch: 0,
     },
     delayMs: tuning.intro.delayMs,

@@ -90,17 +90,40 @@ export const isMapboxBasemapFatalError = (value: unknown): boolean => {
 const syncMapboxToGoogleCamera = (
   mapboxMap: mapboxgl.Map,
   googleMap: google.maps.Map,
+  options?: { animate?: boolean },
 ): void => {
   const center = googleMap.getCenter?.();
   const zoom = googleMap.getZoom?.();
   if (!center || !Number.isFinite(zoom)) return;
 
-  mapboxMap.jumpTo({
+  const nextCamera = {
     center: [center.lng(), center.lat()],
     zoom: Number(zoom),
     bearing: 0,
     pitch: 0,
-  });
+  } as const;
+  const currentCenter = mapboxMap.getCenter?.();
+  const currentZoom = mapboxMap.getZoom?.();
+  const canAnimate = options?.animate
+    && currentCenter
+    && Number.isFinite(currentZoom)
+    && !areMapboxCameraTargetsNearlyEqual(
+      { center: [currentCenter.lng, currentCenter.lat], zoom: Number(currentZoom) },
+      { center: [nextCamera.center[0], nextCamera.center[1]], zoom: nextCamera.zoom },
+    )
+    && typeof mapboxMap.easeTo === 'function';
+
+  if (canAnimate) {
+    mapboxMap.easeTo({
+      ...nextCamera,
+      duration: 280,
+      essential: true,
+      easing: (value) => 1 - Math.pow(1 - value, 3),
+    });
+    return;
+  }
+
+  mapboxMap.jumpTo(nextCamera);
 };
 
 const readGoogleCameraTarget = (
@@ -373,6 +396,17 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
     };
     reportSurfaceReadyRef.current = reportSurfaceReady;
 
+    const notifyStyleReloadWhenReady = () => {
+      if (!onStyleReload) return;
+      const mapboxMap = mapboxMapRef.current;
+      if (!mapboxMap) return;
+      if (!isMapboxStyleReadyForRuntimeMutations(mapboxMap)) {
+        mapboxMap.once('idle', notifyStyleReloadWhenReady);
+        return;
+      }
+      onStyleReload();
+    };
+
     const applyProjection = ({
       introActive,
       force = false,
@@ -500,7 +534,9 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
       }
 
       syncSourceRef.current = 'google';
-      syncMapboxToGoogleCamera(mapboxMap, googleMap);
+      syncMapboxToGoogleCamera(mapboxMap, googleMap, {
+        animate: initialCameraResolvedRef.current,
+      });
       window.requestAnimationFrame(() => {
         if (syncSourceRef.current === 'google') {
           syncSourceRef.current = null;
@@ -645,6 +681,10 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
           reportSurfaceReady(true);
           window.requestAnimationFrame(() => {
             if (cancelled || mapboxMapRef.current !== mapboxMap) return;
+            notifyStyleReloadWhenReady();
+          });
+          window.requestAnimationFrame(() => {
+            if (cancelled || mapboxMapRef.current !== mapboxMap) return;
             if (!runGlobeIntro()) {
               scheduleSync();
             }
@@ -661,14 +701,6 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
           scheduleViewportResize(true);
           reportSurfaceReady(true);
           if (hasCompletedInitialLoad) {
-            const notifyStyleReloadWhenReady = () => {
-              if (cancelled || mapboxMapRef.current !== mapboxMap) return;
-              if (!isMapboxStyleReadyForRuntimeMutations(mapboxMap)) {
-                mapboxMap.once('idle', notifyStyleReloadWhenReady);
-                return;
-              }
-              onStyleReload?.();
-            };
             window.requestAnimationFrame(() => {
               if (cancelled || mapboxMapRef.current !== mapboxMap) return;
               notifyStyleReloadWhenReady();
@@ -703,7 +735,6 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
 
         listeners = [
           googleMap.addListener?.('idle', scheduleSync),
-          googleMap.addListener?.('zoom_changed', scheduleSync),
         ];
       })
       .catch((error) => {

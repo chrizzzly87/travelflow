@@ -26,6 +26,7 @@ export type MapboxLineLayerConfig = {
   opacity: number;
   width: number;
   dasharray?: number[];
+  emissiveStrength?: number;
 };
 
 type MapboxOverlayMarkerOptions = {
@@ -179,6 +180,7 @@ export const createMapboxLineHandle = ({
         'line-color': layer.color,
         'line-opacity': layer.opacity,
         'line-width': layer.width,
+        ...(typeof layer.emissiveStrength === 'number' ? { 'line-emissive-strength': layer.emissiveStrength } : {}),
         ...(layer.dasharray ? { 'line-dasharray': layer.dasharray } : {}),
       },
     });

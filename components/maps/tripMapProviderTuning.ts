@@ -21,6 +21,10 @@ export interface TripMapProviderTuning {
       verticalMax: number;
       horizontalMin: number;
       horizontalMax: number;
+      extraTop: number;
+      extraRight: number;
+      extraBottom: number;
+      extraLeft: number;
     };
     floating: {
       verticalBoost: number;
@@ -29,6 +33,10 @@ export interface TripMapProviderTuning {
       verticalMax: number;
       horizontalMin: number;
       horizontalMax: number;
+      extraTop: number;
+      extraRight: number;
+      extraBottom: number;
+      extraLeft: number;
     };
   };
   selection: {
@@ -110,6 +118,10 @@ const GOOGLE_TRIP_MAP_TUNING: TripMapProviderTuning = {
       verticalMax: 268,
       horizontalMin: 112,
       horizontalMax: 244,
+      extraTop: 0,
+      extraRight: 0,
+      extraBottom: 0,
+      extraLeft: 0,
     },
     floating: {
       verticalBoost: 36,
@@ -118,6 +130,10 @@ const GOOGLE_TRIP_MAP_TUNING: TripMapProviderTuning = {
       verticalMax: 268,
       horizontalMin: 112,
       horizontalMax: 244,
+      extraTop: 0,
+      extraRight: 0,
+      extraBottom: 0,
+      extraLeft: 0,
     },
   },
   selection: {
@@ -163,7 +179,7 @@ const GOOGLE_TRIP_MAP_TUNING: TripMapProviderTuning = {
     camera: {
       center: [2, 20],
       zoom: 0.58,
-      bearing: -32,
+      bearing: 0,
       pitch: 0,
     },
     minMeaningfulTargetZoom: 3.15,
@@ -204,6 +220,10 @@ const MAPBOX_TRIP_MAP_TUNING: TripMapProviderTuning = {
       verticalMax: 220,
       horizontalMin: 78,
       horizontalMax: 196,
+      extraTop: 18,
+      extraRight: 72,
+      extraBottom: 30,
+      extraLeft: 24,
     },
     floating: {
       verticalBoost: -24,
@@ -212,6 +232,10 @@ const MAPBOX_TRIP_MAP_TUNING: TripMapProviderTuning = {
       verticalMax: 72,
       horizontalMin: 24,
       horizontalMax: 66,
+      extraTop: 8,
+      extraRight: 20,
+      extraBottom: 14,
+      extraLeft: 12,
     },
   },
   selection: {
@@ -257,7 +281,7 @@ const MAPBOX_TRIP_MAP_TUNING: TripMapProviderTuning = {
     camera: {
       center: [2, 20],
       zoom: 0.44,
-      bearing: -58,
+      bearing: 0,
       pitch: 0,
     },
     minMeaningfulTargetZoom: 2.3,
@@ -316,10 +340,10 @@ export const resolveTripMapViewportPadding = ({
   );
 
   return {
-    top: verticalPadding,
-    right: horizontalPadding,
-    bottom: verticalPadding,
-    left: horizontalPadding,
+    top: verticalPadding + modeTuning.extraTop,
+    right: horizontalPadding + modeTuning.extraRight,
+    bottom: verticalPadding + modeTuning.extraBottom,
+    left: horizontalPadding + modeTuning.extraLeft,
   };
 };
 

@@ -50,11 +50,14 @@ describe('components/maps/tripMapProviderPresentation', () => {
   });
 
   it('keeps dark-route presentation independently tunable per provider', () => {
-    const googleDarkRoutes = resolveTripMapDarkRoutePresentation('google');
-    const mapboxDarkRoutes = resolveTripMapDarkRoutePresentation('mapbox');
+    const googleDarkRoutes = resolveTripMapDarkRoutePresentation('google', 'dark');
+    const mapboxDarkRoutes = resolveTripMapDarkRoutePresentation('mapbox', 'dark');
+    const mapboxCleanDarkRoutes = resolveTripMapDarkRoutePresentation('mapbox', 'cleanDark');
 
     expect(mapboxDarkRoutes.mainOpacity).toBeGreaterThan(googleDarkRoutes.mainOpacity);
     expect(mapboxDarkRoutes.shadowOpacity).toBeLessThan(googleDarkRoutes.shadowOpacity);
     expect(mapboxDarkRoutes.shadowWidthBoost).toBeLessThan(googleDarkRoutes.shadowWidthBoost);
+    expect(mapboxCleanDarkRoutes.mainEmissiveStrength).toBeGreaterThan(mapboxDarkRoutes.mainEmissiveStrength);
+    expect(mapboxCleanDarkRoutes.shadowOpacity).toBeLessThan(mapboxDarkRoutes.shadowOpacity);
   });
 });

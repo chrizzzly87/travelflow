@@ -35,9 +35,23 @@ export interface TripMapProviderPresentation {
       shadowColor: string;
       shadowOpacity: number;
       shadowWidthBoost: number;
+      shadowEmissiveStrength: number;
       glowOpacity: number;
       glowWidthBoost: number;
+      glowEmissiveStrength: number;
       mainOpacity: number;
+      mainEmissiveStrength: number;
+    };
+    cleanDark: {
+      shadowColor: string;
+      shadowOpacity: number;
+      shadowWidthBoost: number;
+      shadowEmissiveStrength: number;
+      glowOpacity: number;
+      glowWidthBoost: number;
+      glowEmissiveStrength: number;
+      mainOpacity: number;
+      mainEmissiveStrength: number;
     };
   };
 }
@@ -78,9 +92,23 @@ const GOOGLE_TRIP_MAP_PRESENTATION: TripMapProviderPresentation = {
       shadowColor: 'rgba(2, 6, 23, 0.78)',
       shadowOpacity: 0.34,
       shadowWidthBoost: 2.8,
+      shadowEmissiveStrength: 0.02,
       glowOpacity: 0.12,
       glowWidthBoost: 1.4,
+      glowEmissiveStrength: 0.74,
       mainOpacity: 0.94,
+      mainEmissiveStrength: 0.86,
+    },
+    cleanDark: {
+      shadowColor: 'rgba(2, 6, 23, 0.54)',
+      shadowOpacity: 0.14,
+      shadowWidthBoost: 1.9,
+      shadowEmissiveStrength: 0.02,
+      glowOpacity: 0.1,
+      glowWidthBoost: 0.96,
+      glowEmissiveStrength: 0.82,
+      mainOpacity: 0.97,
+      mainEmissiveStrength: 0.92,
     },
   },
 };
@@ -121,9 +149,23 @@ const MAPBOX_TRIP_MAP_PRESENTATION: TripMapProviderPresentation = {
       shadowColor: 'rgba(2, 6, 23, 0.58)',
       shadowOpacity: 0.22,
       shadowWidthBoost: 2.2,
+      shadowEmissiveStrength: 0.02,
       glowOpacity: 0.1,
       glowWidthBoost: 1.15,
+      glowEmissiveStrength: 0.92,
       mainOpacity: 0.97,
+      mainEmissiveStrength: 1,
+    },
+    cleanDark: {
+      shadowColor: 'rgba(2, 6, 23, 0.46)',
+      shadowOpacity: 0.1,
+      shadowWidthBoost: 1.45,
+      shadowEmissiveStrength: 0.02,
+      glowOpacity: 0.12,
+      glowWidthBoost: 0.92,
+      glowEmissiveStrength: 1.08,
+      mainOpacity: 0.985,
+      mainEmissiveStrength: 1.22,
     },
   },
 };
@@ -186,4 +228,9 @@ export const resolveTripMapFlightGroundShadowStyle = ({
 
 export const resolveTripMapDarkRoutePresentation = (
   provider: MapImplementation,
-): TripMapProviderPresentation['routes']['dark'] => getTripMapProviderPresentation(provider).routes.dark;
+  style: MapStyle,
+): TripMapProviderPresentation['routes']['dark'] | TripMapProviderPresentation['routes']['cleanDark'] => (
+  style === 'cleanDark'
+    ? getTripMapProviderPresentation(provider).routes.cleanDark
+    : getTripMapProviderPresentation(provider).routes.dark
+);

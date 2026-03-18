@@ -46,8 +46,11 @@ describe('components/maps/tripMapProviderTuning', () => {
     });
     expect(mapboxDockedPadding.top).toBeLessThan(googleDockedPadding.top);
     expect(mapboxDockedPadding.left).toBeLessThan(googleDockedPadding.left);
+    expect(mapboxDockedPadding.right).toBeGreaterThan(mapboxDockedPadding.left);
+    expect(mapboxDockedPadding.bottom).toBeGreaterThan(mapboxDockedPadding.top);
     expect(mapboxFloatingPadding.top).toBeLessThan(mapboxDockedPadding.top);
     expect(mapboxFloatingPadding.left).toBeLessThan(mapboxDockedPadding.left);
+    expect(mapboxFloatingPadding.right).toBeLessThan(mapboxDockedPadding.right);
   });
 
   it('uses a tighter safe inset for floating Mapbox recentering than for docked maps', () => {

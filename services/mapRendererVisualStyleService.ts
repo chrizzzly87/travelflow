@@ -36,7 +36,7 @@ const MAPBOX_STANDARD_VISUAL_CONFIG: MapboxStyleConfigProperty[] = [
   { fragmentId: 'basemap', property: 'showPointOfInterestLabels', value: false },
   { fragmentId: 'basemap', property: 'showTransitLabels', value: false },
   { fragmentId: 'basemap', property: 'showRoadLabels', value: false },
-  { fragmentId: 'basemap', property: 'showAdminBoundaries', value: false },
+  { fragmentId: 'basemap', property: 'showAdminBoundaries', value: true },
   { fragmentId: 'basemap', property: 'colorAdminBoundaries', value: '#ffffff' },
 ];
 
@@ -112,9 +112,9 @@ const resolveMapboxCountryBoundaryPaint = (mapStyle: MapStyle): {
   if (mapStyle === 'satellite') {
     return {
       lineColor: 'rgba(255, 255, 255, 0.99)',
-      lineOpacity: 0.96,
+      lineOpacity: 0.98,
       glowColor: 'rgba(255, 255, 255, 0.72)',
-      glowOpacity: 0.28,
+      glowOpacity: 0.34,
     };
   }
   if (isDarkMapStyle(mapStyle)) {
@@ -134,7 +134,7 @@ const resolveMapboxCountryBoundaryPaint = (mapStyle: MapStyle): {
 };
 
 export const getMapSurfaceBackgroundColor = (mapStyle: MapStyle): string => {
-  if (mapStyle === 'satellite') return '#102233';
+  if (mapStyle === 'satellite') return '#4d6972';
   if (isDarkMapStyle(mapStyle)) return '#0f172a';
   if (mapStyle === 'minimal') return '#edf2f7';
   return '#dbe5ee';

@@ -14,6 +14,7 @@ import { ActivityTypeIcon, getActivityTypePaletteParts } from './ActivityTypeVis
 import { getMapSurfaceBackgroundColor, GOOGLE_BASEMAP_HIDDEN_STYLES } from '../services/mapRendererVisualStyleService';
 import { isMapboxStyleReadyForRuntimeMutations, MapboxBasemapSync } from './maps/MapboxBasemapSync';
 import { buildFlightRouteVisualPaths } from './maps/flightRouteGeometry';
+import { collectTripMapFitBoundsCoordinates } from './maps/tripMapFitBoundsGeometry';
 import { createGoogleMixedSurfaceController, type GoogleMixedSurfaceController } from './maps/googleMixedSurfaceController';
 import { buildTripMapCityMarkerHtml } from './maps/tripMapCityMarkerHtml';
 import {
@@ -1312,13 +1313,14 @@ export const buildMapboxRouteLayerConfigs = ({
     if (isDarkStyle) {
         const mainLayer = toLayerConfig('main', mainOptions);
         if (!mainLayer) return [];
-        const darkRoutePresentation = resolveTripMapDarkRoutePresentation(provider);
+        const darkRoutePresentation = resolveTripMapDarkRoutePresentation(provider, style);
         const darkRouteLayers: MapboxLineLayerConfig[] = [];
         darkRouteLayers.push({
             id: `${routeId}-shadow`,
             color: darkRoutePresentation.shadowColor,
             opacity: darkRoutePresentation.shadowOpacity,
             width: Math.max(1.5, mainLayer.width + darkRoutePresentation.shadowWidthBoost),
+            emissiveStrength: darkRoutePresentation.shadowEmissiveStrength,
         });
         if (!mainLayer.dasharray) {
             darkRouteLayers.push({
@@ -1326,11 +1328,13 @@ export const buildMapboxRouteLayerConfigs = ({
                 color: mainLayer.color,
                 opacity: darkRoutePresentation.glowOpacity,
                 width: Math.max(1.3, mainLayer.width + darkRoutePresentation.glowWidthBoost),
+                emissiveStrength: darkRoutePresentation.glowEmissiveStrength,
             });
         }
         darkRouteLayers.push({
             ...mainLayer,
             opacity: Math.max(mainLayer.opacity, darkRoutePresentation.mainOpacity),
+            emissiveStrength: darkRoutePresentation.mainEmissiveStrength,
         });
         return darkRouteLayers;
     }
@@ -1645,17 +1649,19 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         if (!googleMapRef.current || cities.length === 0) return;
 
         const bounds = new window.google.maps.LatLngBounds();
-        cities.forEach(city => {
-            if (city.coordinates) {
-                bounds.extend({ lat: city.coordinates.lat, lng: city.coordinates.lng });
-            }
+        collectTripMapFitBoundsCoordinates({
+            cities,
+            items,
+            provider: tripMapProvider,
+        }).forEach((point) => {
+            bounds.extend(point);
         });
         googleMapRef.current.fitBounds(bounds, resolveMapViewportPadding({
             provider: tripMapProvider,
             mapDockMode,
             mapViewportSize,
         }));
-    }, [cities, mapDockMode, mapViewportSize, tripMapProvider]);
+    }, [cities, items, mapDockMode, mapViewportSize, tripMapProvider]);
 
     const scheduleFitWhenViewportReady = useCallback((maxAttempts = 14, options?: { respectSelection?: boolean }) => {
         if (!googleMapRef.current || cities.length === 0 || typeof window === 'undefined') return;
@@ -2206,6 +2212,115 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             });
         };
 
+        const clearRouteVisualHandle = (
+            handle: ReturnType<typeof createRoutePolylinePair> | null | undefined,
+        ) => {
+            if (!handle) return;
+            handle.outerOutline?.setMap(null);
+            handle.outline?.setMap(null);
+            handle.main?.setMap(null);
+        };
+
+        const drawFallbackLegVisual = ({
+            startCoordinates,
+            endCoordinates,
+            mode,
+            color,
+            includeTransportMarker,
+        }: {
+            startCoordinates: google.maps.LatLngLiteral;
+            endCoordinates: google.maps.LatLngLiteral;
+            mode: ReturnType<typeof normalizeTransportMode>;
+            color: string;
+            includeTransportMarker: boolean;
+        }) => {
+            const isFlightFallback = mode === 'plane';
+            const flightRouteVisualPaths = isFlightFallback
+                ? buildFlightRouteVisualPaths(
+                    startCoordinates,
+                    endCoordinates,
+                    resolveTripMapFlightCurveOptions(tripMapProvider),
+                )
+                : null;
+            const fallbackAirPath = flightRouteVisualPaths
+                ? flightRouteVisualPaths.airPath
+                : [
+                    { lat: startCoordinates.lat, lng: startCoordinates.lng },
+                    { lat: endCoordinates.lat, lng: endCoordinates.lng },
+                ];
+            const fallbackGroundPath = flightRouteVisualPaths?.groundPath ?? fallbackAirPath;
+            const isDashedFallback = mode !== 'plane';
+            const routeScale = Math.max(0.58, effectiveMarkerRenderProfile.routeStrokeScale);
+            const arrowIcon = {
+                path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                fillColor: color,
+                fillOpacity: 1,
+                strokeColor: color,
+                strokeOpacity: 1,
+                strokeWeight: 0.1,
+                scale: 3.2 * Math.max(0.72, routeScale),
+            };
+            const icons = isDashedFallback
+                ? [
+                    {
+                        icon: {
+                            path: 'M 0,-1 0,1',
+                            strokeColor: color,
+                            strokeOpacity: 0.9,
+                            scale: 2.5 * Math.max(0.72, routeScale),
+                        },
+                        offset: '0',
+                        repeat: '12px'
+                    },
+                    { icon: arrowIcon, offset: '25%' },
+                    { icon: arrowIcon, offset: '75%' }
+                ]
+                : [
+                    { icon: arrowIcon, offset: '25%' },
+                    { icon: arrowIcon, offset: '75%' },
+                ];
+
+            const groundShadowHandle = isFlightFallback
+                ? drawGroundShadowPath(fallbackGroundPath, 2.35)
+                : null;
+            const routeHandle = createRoutePolylinePair({
+                path: fallbackAirPath,
+                geodesic: !isFlightFallback,
+                strokeColor: color,
+                strokeOpacity: isDashedFallback ? 0 : 0.6,
+                strokeWeight: Math.max(1.05, 2 * effectiveMarkerRenderProfile.routeStrokeScale),
+                clickable: false,
+                icons,
+                zIndex: 35,
+            });
+
+            if (includeTransportMarker && mode !== 'na' && effectiveMarkerRenderProfile.transport.show) {
+                const midPoint = getPointAlongPath(fallbackAirPath, 0.5);
+                if (midPoint) {
+                    const markerHeading = mode === 'plane'
+                        ? getHeadingAlongPath(fallbackAirPath, 0.5)
+                        : undefined;
+                    const transportMarker = createOverlayMarker({
+                        position: midPoint,
+                        html: buildTransportMarkerHtml(mode, color, markerHeading, effectiveMarkerRenderProfile),
+                        zIndex: 50,
+                        centerAnchor: true,
+                    });
+                    transportMarkerMetaRef.current.push({
+                        mode,
+                        color,
+                        rotationDegrees: markerHeading,
+                        marker: transportMarker,
+                    });
+                }
+            }
+
+            return {
+                groundShadowHandle,
+                routeHandle,
+            };
+        };
+
         const brandRouteColor = '#4f46e5';
         const resolveMapColor = (colorToken: string): string =>
             mapColorMode === 'brand' ? brandRouteColor : getHexFromColorClass(colorToken);
@@ -2509,6 +2624,15 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                      (travelModes[modeKey] ?? modeKey) as google.maps.TravelMode
                  );
                  const useRealRoute = wantsRealRoute && routeAttemptModes.length > 0;
+                 let provisionalRouteHandle: ReturnType<typeof createRoutePolylinePair> | null = null;
+                 let provisionalGroundShadowHandle: ReturnType<typeof createRoutePolylinePair> | null = null;
+
+                 const clearProvisionalFallbackVisual = () => {
+                     clearRouteVisualHandle(provisionalGroundShadowHandle);
+                     clearRouteVisualHandle(provisionalRouteHandle);
+                     provisionalGroundShadowHandle = null;
+                     provisionalRouteHandle = null;
+                 };
 
                  const requiresDirections = mode !== 'plane' && mode !== 'boat' && mode !== 'na';
                  if (wantsRealRoute && requiresDirections && !routeAttemptPolicy.shouldAttempt) {
@@ -2595,6 +2719,17 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                          if (travelItem && onRouteStatusRef.current) {
                              onRouteStatusRef.current(travelItem.id, 'calculating', { mode, routeKey: cacheKey });
                          }
+                         if (isEffectActive()) {
+                             const provisionalFallback = drawFallbackLegVisual({
+                                 startCoordinates: start.coordinates,
+                                 endCoordinates: end.coordinates,
+                                 mode,
+                                 color: startColor,
+                                 includeTransportMarker: false,
+                             });
+                             provisionalGroundShadowHandle = provisionalFallback.groundShadowHandle;
+                             provisionalRouteHandle = provisionalFallback.routeHandle;
+                         }
                          const tryRoute = async (travelMode: google.maps.TravelMode, attemptIndex: number) => {
                              if (!isEffectActive()) {
                                  throw new Error('Route draw cancelled');
@@ -2621,6 +2756,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                                  throw new Error('Route draw cancelled');
                              }
 
+                             clearProvisionalFallbackVisual();
                              drawRoutePath(path, startColor, 3);
 
                              if (mode !== 'na' && effectiveMarkerRenderProfile.transport.show) {
@@ -2684,6 +2820,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                          }
                          if (!isEffectActive()) return;
 
+                         clearProvisionalFallbackVisual();
                          routingFailed = true;
                          const failureReason = classifyRouteComputationError(lastRouteError);
                          ROUTE_CACHE.set(cacheKey, {
@@ -2705,86 +2842,15 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                      }
                  }
 
-                 // Fallback / Flight: Draw Geodesic Polyline
-                 const isFlightFallback = mode === 'plane';
-                 const flightRouteVisualPaths = isFlightFallback
-                     ? buildFlightRouteVisualPaths(
-                         start.coordinates,
-                         end.coordinates,
-                         resolveTripMapFlightCurveOptions(tripMapProvider),
-                     )
-                     : null;
-                 const fallbackAirPath = flightRouteVisualPaths
-                     ? flightRouteVisualPaths.airPath
-                     : [
-                         { lat: start.coordinates.lat, lng: start.coordinates.lng },
-                         { lat: end.coordinates.lat, lng: end.coordinates.lng },
-                     ];
-                 const fallbackGroundPath = flightRouteVisualPaths?.groundPath ?? fallbackAirPath;
-                 const isDashedFallback = mode !== 'plane';
-                 const arrowIcon = {
-                     path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW, 
-                     fillColor: startColor,
-                     fillOpacity: 1,
-                     strokeColor: startColor,
-                     strokeOpacity: 1,
-                     strokeWeight: 0.1,
-                     scale: 3.2 * Math.max(0.72, effectiveMarkerRenderProfile.routeStrokeScale)
-                 };
-                 const icons = isDashedFallback
-                     ? [
-                         {
-                             icon: {
-                                 path: 'M 0,-1 0,1',
-                                 strokeColor: startColor,
-                                 strokeOpacity: 0.9,
-                                 scale: 2.5 * Math.max(0.72, effectiveMarkerRenderProfile.routeStrokeScale),
-                             },
-                             offset: '0',
-                             repeat: '12px'
-                         },
-                         { icon: arrowIcon, offset: '25%' },
-                         { icon: arrowIcon, offset: '75%' }
-                       ]
-                     : [
-                         { icon: arrowIcon, offset: '25%' },
-                         { icon: arrowIcon, offset: '75%' },
-                     ];
+                 clearProvisionalFallbackVisual();
                  if (!isEffectActive()) return;
-                 if (isFlightFallback) {
-                     drawGroundShadowPath(fallbackGroundPath, 2.35);
-                 }
-                 createRoutePolylinePair({
-                     path: fallbackAirPath,
-                     geodesic: !isFlightFallback,
-                     strokeColor: startColor,
-                     strokeOpacity: isDashedFallback ? 0 : 0.6,
-                     strokeWeight: Math.max(1.05, 2 * effectiveMarkerRenderProfile.routeStrokeScale),
-                     clickable: false,
-                     icons,
-                     zIndex: 35,
+                 drawFallbackLegVisual({
+                     startCoordinates: start.coordinates,
+                     endCoordinates: end.coordinates,
+                     mode,
+                     color: startColor,
+                     includeTransportMarker: true,
                  });
-
-                 const mid = getPointAlongPath(fallbackAirPath, 0.5);
-                 if (mode !== 'na' && effectiveMarkerRenderProfile.transport.show) {
-                     if (!isEffectActive()) return;
-                     if (!mid) continue;
-                     const markerHeading = mode === 'plane'
-                         ? getHeadingAlongPath(fallbackAirPath, 0.5)
-                         : undefined;
-                     const transportMarker = createOverlayMarker({
-                         position: mid,
-                         html: buildTransportMarkerHtml(mode, startColor, markerHeading, effectiveMarkerRenderProfile),
-                         zIndex: 50,
-                         centerAnchor: true,
-                     });
-                     transportMarkerMetaRef.current.push({
-                         mode,
-                         color: startColor,
-                         rotationDegrees: markerHeading,
-                         marker: transportMarker,
-                     });
-                 }
              }
         };
 

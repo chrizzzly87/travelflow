@@ -16,7 +16,7 @@ describe('services/mapRendererVisualStyleService', () => {
     );
 
     expect(descriptor.styleUrl).toBe('mapbox://styles/mapbox/standard');
-    expect(config.showAdminBoundaries).toBe(false);
+    expect(config.showAdminBoundaries).toBe(true);
     expect(config.showPointOfInterestLabels).toBe(false);
     expect(config.showRoadLabels).toBe(false);
     expect(config.showTransitLabels).toBe(false);
@@ -48,7 +48,7 @@ describe('services/mapRendererVisualStyleService', () => {
         showPointOfInterestLabels: false,
         showTransitLabels: false,
         showRoadLabels: false,
-        showAdminBoundaries: false,
+        showAdminBoundaries: true,
         colorAdminBoundaries: '#ffffff',
       },
     });
@@ -62,7 +62,7 @@ describe('services/mapRendererVisualStyleService', () => {
         showPointOfInterestLabels: false,
         showTransitLabels: false,
         showRoadLabels: false,
-        showAdminBoundaries: false,
+        showAdminBoundaries: true,
         colorAdminBoundaries: '#ffffff',
         showRoadsAndTransit: false,
         showPedestrianRoads: false,
@@ -109,12 +109,12 @@ describe('services/mapRendererVisualStyleService', () => {
     expect(setLayoutProperty).toHaveBeenNthCalledWith(6, 'airport-label', 'visibility', 'none');
     expect(setFilter).toHaveBeenCalledWith('settlement-major-label', expect.any(Array));
     expect(setPaintProperty).toHaveBeenCalledWith('admin-0-boundary', 'line-color', 'rgba(255, 255, 255, 0.99)');
-    expect(setPaintProperty).toHaveBeenCalledWith('admin-0-boundary-bg', 'line-opacity', 0.28);
+    expect(setPaintProperty).toHaveBeenCalledWith('admin-0-boundary-bg', 'line-opacity', 0.34);
   });
 
   it('uses darker surface backgrounds for satellite and dark trip-map styles', () => {
     expect(getMapSurfaceBackgroundColor('standard')).toBe('#dbe5ee');
-    expect(getMapSurfaceBackgroundColor('satellite')).toBe('#102233');
+    expect(getMapSurfaceBackgroundColor('satellite')).toBe('#4d6972');
     expect(getMapSurfaceBackgroundColor('dark')).toBe('#0f172a');
   });
 });
