@@ -2974,6 +2974,7 @@ const useTripViewRender = ({
                             markManualViewChange();
                             setTimelineView(view);
                         }}
+                        zoomLevel={zoomLevel}
                         mapDockMode={mapDockMode}
                         onMapDockModeChange={(mode) => {
                             if (mode === mapDockMode) return;

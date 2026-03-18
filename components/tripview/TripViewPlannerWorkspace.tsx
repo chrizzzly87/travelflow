@@ -1,6 +1,7 @@
 import React, { Suspense, useCallback, useRef } from 'react';
 import { ArrowLeftRight, ArrowUpDown, CalendarDays, Focus, Layers, List, Maximize2, Minimize2, ZoomIn, ZoomOut } from 'lucide-react';
 import { getAnalyticsDebugAttributes } from '../../services/analyticsService';
+import { toFiniteNumber } from '../../shared/numberUtils';
 import { TripFloatingMapPreview } from './TripFloatingMapPreview';
 
 import type { ITimelineItem, MapColorMode, MapStyle, RouteFailureReason, RouteMode, RouteStatus } from '../../types';
@@ -62,7 +63,7 @@ interface TripViewPlannerWorkspaceProps {
 }
 
 const TRIP_FLOATING_MAP_PREVIEW_BETA_ENABLED = true;
-const formatZoomLevelLabel = (value: number): string => `×${value.toFixed(1)}`;
+const formatZoomLevelLabel = (value: number): string => `×${toFiniteNumber(value, 1).toFixed(1)}`;
 const CONTROL_GROUP_CLASS_NAME = 'inline-flex flex-col items-center gap-1 rounded-lg border border-gray-200 bg-white/90 p-1 shadow-sm backdrop-blur';
 const CONTROL_TOGGLE_BUTTON_CLASS_NAME = 'rounded-md p-2 transition-colors';
 const CONTROL_TOGGLE_ACTIVE_CLASS_NAME = 'border-accent-700 bg-accent-600 text-white';

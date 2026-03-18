@@ -20,4 +20,21 @@ describe('components/TripView runtime ordering', () => {
         expect(viewportStateIndex).toBeLessThan(paywallHandlerIndex);
         expect(viewportStateIndex).toBeLessThan(pendingAuthHandlerIndex);
     });
+
+    it('passes the live zoom level into the planner workspace', () => {
+        const source = readFileSync(
+            resolve(process.cwd(), 'components/TripView.tsx'),
+            'utf8',
+        );
+
+        const workspaceIndex = source.indexOf('<TripViewPlannerWorkspace');
+        const zoomPropIndex = source.indexOf('zoomLevel={zoomLevel}');
+        const dockModePropIndex = source.indexOf('mapDockMode={mapDockMode}');
+
+        expect(workspaceIndex).toBeGreaterThan(-1);
+        expect(zoomPropIndex).toBeGreaterThan(-1);
+        expect(dockModePropIndex).toBeGreaterThan(-1);
+        expect(zoomPropIndex).toBeGreaterThan(workspaceIndex);
+        expect(zoomPropIndex).toBeLessThan(dockModePropIndex);
+    });
 });
