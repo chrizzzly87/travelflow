@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest';
 import {
   getTripMapProviderTuning,
   resolveTripMapViewportPadding,
+  resolveTripMapRestingProjection,
+  shouldUseTripMapGlobeIntro,
 } from '../../components/maps/tripMapProviderTuning';
 
 describe('components/maps/tripMapProviderTuning', () => {
@@ -12,7 +14,7 @@ describe('components/maps/tripMapProviderTuning', () => {
 
     expect(googleTuning.selection.cityFocusZoom).toBe(10);
     expect(mapboxTuning.selection.cityFocusZoom).toBeLessThan(googleTuning.selection.cityFocusZoom);
-    expect(mapboxTuning.selection.safeInsetRatio).toBeGreaterThan(googleTuning.selection.safeInsetRatio);
+    expect(mapboxTuning.selection.safeInsetRatio).toBeLessThan(googleTuning.selection.safeInsetRatio);
     expect(mapboxTuning.markers.cityZoomProfile.mediumCircleMaxZoom)
       .toBeGreaterThan(googleTuning.markers.cityZoomProfile.mediumCircleMaxZoom);
   });
@@ -40,9 +42,40 @@ describe('components/maps/tripMapProviderTuning', () => {
       bottom: 130,
       left: 130,
     });
-    expect(mapboxDockedPadding.top).toBeGreaterThan(googleDockedPadding.top);
-    expect(mapboxDockedPadding.left).toBeGreaterThan(googleDockedPadding.left);
-    expect(mapboxFloatingPadding.top).toBeGreaterThan(mapboxDockedPadding.top);
-    expect(mapboxFloatingPadding.left).toBeGreaterThan(mapboxDockedPadding.left);
+    expect(mapboxDockedPadding.top).toBeLessThan(googleDockedPadding.top);
+    expect(mapboxDockedPadding.left).toBeLessThan(googleDockedPadding.left);
+    expect(mapboxFloatingPadding.top).toBeLessThan(mapboxDockedPadding.top);
+    expect(mapboxFloatingPadding.left).toBeLessThan(mapboxDockedPadding.left);
+  });
+
+  it('uses a flat resting projection for Mapbox trip views and only enables the globe intro on larger docked viewports', () => {
+    expect(resolveTripMapRestingProjection({
+      provider: 'mapbox',
+      mapDockMode: 'docked',
+    })).toBe('mercator');
+    expect(resolveTripMapRestingProjection({
+      provider: 'mapbox',
+      mapDockMode: 'floating',
+    })).toBe('mercator');
+    expect(resolveTripMapRestingProjection({
+      provider: 'google',
+      mapDockMode: 'docked',
+    })).toBe(null);
+
+    expect(shouldUseTripMapGlobeIntro({
+      provider: 'mapbox',
+      mapDockMode: 'floating',
+      mapViewportSize: { width: 800, height: 520 },
+    })).toBe(false);
+    expect(shouldUseTripMapGlobeIntro({
+      provider: 'mapbox',
+      mapDockMode: 'docked',
+      mapViewportSize: { width: 420, height: 280 },
+    })).toBe(false);
+    expect(shouldUseTripMapGlobeIntro({
+      provider: 'mapbox',
+      mapDockMode: 'docked',
+      mapViewportSize: { width: 860, height: 520 },
+    })).toBe(true);
   });
 });

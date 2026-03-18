@@ -81,6 +81,14 @@ export interface TripMapProviderTuning {
     speed: number;
     syncCooldownMs: number;
   };
+  projection: {
+    resting: {
+      docked: 'globe' | 'mercator' | null;
+      floating: 'globe' | 'mercator' | null;
+    };
+    globeIntroMinShortEdgePx: number;
+    globeIntroMinAreaPx: number;
+  };
   resize: {
     debounceMs: number;
     settleMs: number;
@@ -165,6 +173,14 @@ const GOOGLE_TRIP_MAP_TUNING: TripMapProviderTuning = {
     speed: 1.15,
     syncCooldownMs: 260,
   },
+  projection: {
+    resting: {
+      docked: null,
+      floating: null,
+    },
+    globeIntroMinShortEdgePx: Number.POSITIVE_INFINITY,
+    globeIntroMinAreaPx: Number.POSITIVE_INFINITY,
+  },
   resize: {
     debounceMs: 72,
     settleMs: 180,
@@ -174,31 +190,31 @@ const GOOGLE_TRIP_MAP_TUNING: TripMapProviderTuning = {
 
 const MAPBOX_TRIP_MAP_TUNING: TripMapProviderTuning = {
   fitPadding: {
-    baseRatio: 0.28,
-    baseMin: 128,
-    baseMax: 244,
+    baseRatio: 0.2,
+    baseMin: 76,
+    baseMax: 188,
     docked: {
-      verticalBoost: 28,
-      horizontalBoost: 26,
-      verticalMin: 136,
-      verticalMax: 284,
-      horizontalMin: 124,
-      horizontalMax: 264,
+      verticalBoost: 24,
+      horizontalBoost: 20,
+      verticalMin: 92,
+      verticalMax: 236,
+      horizontalMin: 84,
+      horizontalMax: 214,
     },
     floating: {
-      verticalBoost: 52,
-      horizontalBoost: 36,
-      verticalMin: 144,
-      verticalMax: 308,
-      horizontalMin: 132,
-      horizontalMax: 288,
+      verticalBoost: 0,
+      horizontalBoost: -6,
+      verticalMin: 44,
+      verticalMax: 102,
+      horizontalMin: 38,
+      horizontalMax: 96,
     },
   },
   selection: {
     activityFocusZoom: 12.6,
     cityFocusZoom: 9.6,
     queryFocusZoom: 4.7,
-    safeInsetRatio: 0.34,
+    safeInsetRatio: 0.24,
   },
   markers: {
     activityMinZoom: 8.5,
@@ -235,19 +251,27 @@ const MAPBOX_TRIP_MAP_TUNING: TripMapProviderTuning = {
   intro: {
     camera: {
       center: [2, 20],
-      zoom: 0.52,
-      bearing: -38,
+      zoom: 0.44,
+      bearing: -58,
       pitch: 0,
     },
-    minMeaningfulTargetZoom: 2.85,
-    minMeaningfulCenterOffsetDegrees: 10,
+    minMeaningfulTargetZoom: 2.3,
+    minMeaningfulCenterOffsetDegrees: 6,
     flyToMinZoom: 3.05,
-    delayMs: 120,
-    durationMs: 1680,
-    settleMs: 1780,
-    curve: 1.32,
-    speed: 1.08,
+    delayMs: 220,
+    durationMs: 1540,
+    settleMs: 1620,
+    curve: 1.28,
+    speed: 1.02,
     syncCooldownMs: 320,
+  },
+  projection: {
+    resting: {
+      docked: 'mercator',
+      floating: 'mercator',
+    },
+    globeIntroMinShortEdgePx: 420,
+    globeIntroMinAreaPx: 240000,
   },
   resize: {
     debounceMs: 88,
@@ -291,4 +315,35 @@ export const resolveTripMapViewportPadding = ({
     bottom: verticalPadding,
     left: horizontalPadding,
   };
+};
+
+export const resolveTripMapRestingProjection = ({
+  provider,
+  mapDockMode,
+}: {
+  provider: MapImplementation;
+  mapDockMode: TripMapDockMode;
+}): 'globe' | 'mercator' | null => {
+  const tuning = getTripMapProviderTuning(provider);
+  return mapDockMode === 'floating'
+    ? tuning.projection.resting.floating
+    : tuning.projection.resting.docked;
+};
+
+export const shouldUseTripMapGlobeIntro = ({
+  provider,
+  mapDockMode,
+  mapViewportSize,
+}: {
+  provider: MapImplementation;
+  mapDockMode: TripMapDockMode;
+  mapViewportSize: { width: number; height: number } | null;
+}): boolean => {
+  if (provider !== 'mapbox' || mapDockMode !== 'docked') return false;
+  const tuning = getTripMapProviderTuning(provider);
+  const width = mapViewportSize?.width ?? 0;
+  const height = mapViewportSize?.height ?? 0;
+  const shortEdge = Math.min(width, height);
+  return shortEdge >= tuning.projection.globeIntroMinShortEdgePx
+    && (width * height) >= tuning.projection.globeIntroMinAreaPx;
 };

@@ -11,7 +11,7 @@ import { getAnalyticsDebugAttributes } from '../services/analyticsService';
 import { useGoogleMaps, useMapRuntime } from './GoogleMapsLoader';
 import { normalizeTransportMode } from '../shared/transportModes';
 import { ActivityTypeIcon, getActivityTypePaletteParts } from './ActivityTypeVisuals';
-import { GOOGLE_BASEMAP_HIDDEN_STYLES } from '../services/mapRendererVisualStyleService';
+import { getMapSurfaceBackgroundColor, GOOGLE_BASEMAP_HIDDEN_STYLES } from '../services/mapRendererVisualStyleService';
 import { MapboxBasemapSync } from './maps/MapboxBasemapSync';
 import { buildFlightRouteVisualPaths } from './maps/flightRouteGeometry';
 import { createGoogleMixedSurfaceController, type GoogleMixedSurfaceController } from './maps/googleMixedSurfaceController';
@@ -1435,6 +1435,7 @@ const buildMapboxRouteLayerConfigs = ({
     style: MapStyle;
 }): MapboxLineLayerConfig[] => {
     const { outerOutlineOptions, outlineOptions, mainOptions } = buildRoutePolylinePairOptions(options, style);
+    const isDarkStyle = isDarkMapStyle(style);
     const toLayerConfig = (
         suffix: 'outer' | 'outline' | 'main',
         layerOptions: google.maps.PolylineOptions,
@@ -1454,6 +1455,25 @@ const buildMapboxRouteLayerConfigs = ({
             dasharray,
         };
     };
+
+    if (isDarkStyle) {
+        const mainLayer = toLayerConfig('main', mainOptions);
+        if (!mainLayer) return [];
+        const darkRouteLayers: MapboxLineLayerConfig[] = [];
+        if (!mainLayer.dasharray) {
+            darkRouteLayers.push({
+                id: `${routeId}-glow`,
+                color: style === 'cleanDark' ? 'rgba(248,250,252,0.38)' : 'rgba(148,163,184,0.34)',
+                opacity: style === 'cleanDark' ? 0.18 : 0.14,
+                width: Math.max(1.4, mainLayer.width + 1.2),
+            });
+        }
+        darkRouteLayers.push({
+            ...mainLayer,
+            opacity: Math.min(0.94, Math.max(0.78, mainLayer.opacity)),
+        });
+        return darkRouteLayers;
+    }
 
     return [
         toLayerConfig('outer', outerOutlineOptions),
@@ -1611,6 +1631,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     const [activityMarkersEnabled, setActivityMarkersEnabled] = useState(false);
     const [mapZoomLevel, setMapZoomLevel] = useState<number | null>(null);
     const [mapViewportSize, setMapViewportSize] = useState<{ width: number; height: number } | null>(null);
+    const previousMapDockModeRef = useRef<'docked' | 'floating'>(mapDockMode);
     const mapActionsDisabled = !mapInitialized || Boolean(loadError);
     const activityMarkersEnabledRef = useRef(activityMarkersEnabled);
     const mapZoomLevelRef = useRef<number | null>(mapZoomLevel);
@@ -1623,6 +1644,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     const isMapboxBasemapEnabled = shouldUseRequestedMapboxBasemap && mapboxBasemapAvailable;
     const tripMapProvider = runtime.effectiveSelection.renderer;
     const tripMapTuning = useMemo(() => getTripMapProviderTuning(tripMapProvider), [tripMapProvider]);
+    const mapSurfaceBackgroundColor = useMemo(() => getMapSurfaceBackgroundColor(activeStyle), [activeStyle]);
     const shouldHideGoogleCanvasInMixedMode = shouldHideGoogleMapCanvas({
         isMapboxEnabled: isMapboxBasemapEnabled,
     });
@@ -3048,6 +3070,17 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     }, [cities.length, mapDockMode, mapInitialized, selectedActivityId, selectedCityId]);
 
     useEffect(() => {
+        const previousDockMode = previousMapDockModeRef.current;
+        previousMapDockModeRef.current = mapDockMode;
+        if (!mapInitialized || cities.length === 0) return;
+        if (previousDockMode === mapDockMode) return;
+        if (mapDockMode !== 'docked') return;
+        cancelResizeAutoFitTimer();
+        cancelScheduledFit();
+        scheduleFitWhenViewportReadyRef.current(18, { respectSelection: false });
+    }, [cancelResizeAutoFitTimer, cancelScheduledFit, cities.length, mapDockMode, mapInitialized]);
+
+    useEffect(() => {
         if (!mapInitialized || !googleMapRef.current || typeof ResizeObserver === 'undefined') return;
         const container = mapContainerRef.current;
         if (!container) return;
@@ -3180,15 +3213,20 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     return (
         <div
             ref={mapContainerRef}
-            className="relative w-full h-full group bg-gray-100"
+            className="relative w-full h-full group"
             data-tf-map-basemap={isMapboxBasemapEnabled ? 'mapbox' : 'google'}
-            style={viewTransitionName ? ({ viewTransitionName } as React.CSSProperties) : undefined}
+            style={{
+                ...(viewTransitionName ? ({ viewTransitionName } as React.CSSProperties) : {}),
+                backgroundColor: mapSurfaceBackgroundColor,
+            }}
         >
             {isMapboxBasemapEnabled && (
                 <MapboxBasemapSync
                     accessToken={mapboxAccessToken}
                     googleMap={googleMapRef.current}
                     mapStyle={activeStyle}
+                    mapDockMode={mapDockMode}
+                    mapViewportSize={mapViewportSize}
                     interactive
                     onLoadError={handleMapboxBasemapError}
                     onMapReadyChange={handleMapboxMapReadyChange}
@@ -3215,12 +3253,18 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 </GoogleMap>
             )}
             {shouldShowMapLoadingOverlay && (
-                <div className="absolute inset-0 flex items-center justify-center text-sm text-gray-500 bg-gray-100">
+                <div
+                    className="absolute inset-0 flex items-center justify-center text-sm text-gray-500"
+                    style={{ backgroundColor: mapSurfaceBackgroundColor }}
+                >
                     Loading Map...
                 </div>
             )}
             {loadError && (
-                <div className="absolute inset-0 flex items-center justify-center p-4 text-center text-sm text-red-500 bg-gray-100">
+                <div
+                    className="absolute inset-0 flex items-center justify-center p-4 text-center text-sm text-red-500"
+                    style={{ backgroundColor: mapSurfaceBackgroundColor }}
+                >
                     Error loading map: {loadError.message}
                 </div>
             )}

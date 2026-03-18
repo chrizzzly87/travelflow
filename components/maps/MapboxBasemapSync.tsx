@@ -3,12 +3,17 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import type mapboxgl from 'mapbox-gl';
 
 import {
-  applyMapboxTripLabelVisibilityPolish,
+  applyMapboxTripVisualPolish,
   buildMapboxStyleConfig,
   getMapboxStyleDescriptor,
 } from '../../services/mapRendererVisualStyleService';
 import type { MapStyle } from '../../types';
-import { getTripMapProviderTuning } from './tripMapProviderTuning';
+import {
+  getTripMapProviderTuning,
+  resolveTripMapRestingProjection,
+  shouldUseTripMapGlobeIntro,
+  type TripMapDockMode,
+} from './tripMapProviderTuning';
 
 export interface MapboxBasemapLoadError {
   message: string;
@@ -19,6 +24,8 @@ interface MapboxBasemapSyncProps {
   accessToken: string;
   googleMap: google.maps.Map | null;
   mapStyle: MapStyle;
+  mapDockMode: TripMapDockMode;
+  mapViewportSize: { width: number; height: number } | null;
   interactive?: boolean;
   onLoadError?: (error: MapboxBasemapLoadError) => void;
   onMapReadyChange?: (map: mapboxgl.Map | null) => void;
@@ -32,6 +39,13 @@ const MAPBOX_MIN_TILE_CACHE_SIZE = 512;
 const MAPBOX_MAX_TILE_CACHE_SIZE = 1536;
 const MAPBOX_TRIP_TUNING = getTripMapProviderTuning('mapbox');
 const MAPBOX_GLOBE_INTRO_CAMERA = MAPBOX_TRIP_TUNING.intro.camera;
+const MAPBOX_CLEAR_FOG = {
+  color: 'rgba(255,255,255,0)',
+  'high-color': 'rgba(255,255,255,0)',
+  'space-color': 'rgba(255,255,255,0)',
+  'horizon-blend': 0.02,
+  'star-intensity': 0,
+} as const;
 
 const getMapboxErrorMessage = (value: unknown): string => {
   if (value instanceof Error) {
@@ -137,6 +151,40 @@ export const stretchMapboxViewport = (
   });
 };
 
+export const resolveMapboxEffectiveProjection = ({
+  mapDockMode,
+  mapViewportSize,
+  introActive,
+}: {
+  mapDockMode: TripMapDockMode;
+  mapViewportSize: { width: number; height: number } | null;
+  introActive: boolean;
+}): 'globe' | 'mercator' => {
+  if (introActive && shouldUseTripMapGlobeIntro({
+    provider: 'mapbox',
+    mapDockMode,
+    mapViewportSize,
+  })) {
+    return 'globe';
+  }
+  return resolveTripMapRestingProjection({
+    provider: 'mapbox',
+    mapDockMode,
+  }) ?? 'mercator';
+};
+
+const applyMapboxProjectionState = (
+  mapboxMap: mapboxgl.Map,
+  projection: 'globe' | 'mercator',
+): void => {
+  if (typeof mapboxMap.setProjection === 'function') {
+    mapboxMap.setProjection(projection);
+  }
+  if (typeof mapboxMap.setFog === 'function') {
+    mapboxMap.setFog(projection === 'globe' ? {} : (MAPBOX_CLEAR_FOG as unknown as any));
+  }
+};
+
 const buildMapboxStyleKey = (mapStyle: MapStyle): string => {
   const descriptor = getMapboxStyleDescriptor(mapStyle);
   return `${descriptor.styleUrl}::${JSON.stringify(buildMapboxStyleConfig(mapStyle) ?? {})}`;
@@ -146,6 +194,8 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
   accessToken,
   googleMap,
   mapStyle,
+  mapDockMode,
+  mapViewportSize,
   interactive = false,
   onLoadError,
   onMapReadyChange,
@@ -163,11 +213,17 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
   const hasPlayedIntroRef = useRef(false);
   const introActiveRef = useRef(false);
   const gestureActiveRef = useRef(false);
+  const initialCameraResolvedRef = useRef(false);
   const appliedStyleKeyRef = useRef<string | null>(null);
   const ignoreGoogleSyncUntilRef = useRef(0);
   const lastMapboxDrivenCameraRef = useRef<{ center: [number, number]; zoom: number } | null>(null);
+  const appliedProjectionRef = useRef<'globe' | 'mercator' | null>(null);
+  const mapDockModeRef = useRef<TripMapDockMode>(mapDockMode);
+  const mapViewportSizeRef = useRef<{ width: number; height: number } | null>(mapViewportSize);
 
   mapStyleRef.current = mapStyle;
+  mapDockModeRef.current = mapDockMode;
+  mapViewportSizeRef.current = mapViewportSize;
 
   useEffect(() => {
     if (!containerRef.current || !googleMap || !accessToken.trim()) return;
@@ -249,14 +305,37 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
       onSurfaceReadyChange?.(false);
     };
 
+    const applyProjection = ({
+      introActive,
+      force = false,
+    }: {
+      introActive: boolean;
+      force?: boolean;
+    }) => {
+      const mapboxMap = mapboxMapRef.current;
+      if (!mapboxMap) return;
+      const projection = resolveMapboxEffectiveProjection({
+        mapDockMode: mapDockModeRef.current,
+        mapViewportSize: mapViewportSizeRef.current,
+        introActive,
+      });
+      if (!force && appliedProjectionRef.current === projection) return;
+      appliedProjectionRef.current = projection;
+      applyMapboxProjectionState(mapboxMap, projection);
+    };
+
     const runGlobeIntro = () => {
       const mapboxMap = mapboxMapRef.current;
       const target = readGoogleCameraTarget(googleMap);
       if (
         !mapboxMap
         || !target
+        || !shouldUseTripMapGlobeIntro({
+          provider: 'mapbox',
+          mapDockMode: mapDockModeRef.current,
+          mapViewportSize: mapViewportSizeRef.current,
+        })
         || !shouldRunMapboxGlobeIntro(target.zoom)
-        || !isMeaningfulMapboxIntroTarget(target)
       ) {
         return false;
       }
@@ -266,20 +345,14 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
       hasPlayedIntroRef.current = true;
       introActiveRef.current = true;
       syncSourceRef.current = 'google';
-
-      if (typeof mapboxMap.setProjection === 'function') {
-        mapboxMap.setProjection('globe');
-      }
-      if (typeof mapboxMap.setFog === 'function') {
-        mapboxMap.setFog({});
-      }
+      applyProjection({ introActive: true, force: true });
 
       introTimeoutId = window.setTimeout(() => {
         introTimeoutId = null;
         mapboxMap.flyTo({
           center: target.center,
           zoom: Math.max(target.zoom, MAPBOX_TRIP_TUNING.intro.flyToMinZoom),
-          bearing: 0,
+          bearing: 10,
           pitch: 0,
           duration: MAPBOX_TRIP_TUNING.intro.durationMs,
           essential: true,
@@ -289,6 +362,8 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
 
         window.setTimeout(() => {
           introActiveRef.current = false;
+          initialCameraResolvedRef.current = true;
+          applyProjection({ introActive: false, force: true });
           if (syncSourceRef.current === 'google') {
             syncSourceRef.current = null;
           }
@@ -310,13 +385,17 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
       if (areMapboxCameraTargetsNearlyEqual(googleCameraTarget, lastMapboxDrivenCameraRef.current)) {
         return;
       }
-      if (!hasPlayedIntroRef.current) {
+      if (!initialCameraResolvedRef.current) {
         if (runGlobeIntro()) {
           return;
         }
-        if (!isMeaningfulMapboxIntroTarget(googleCameraTarget)) {
+        if (!googleCameraTarget) {
           return;
         }
+        initialCameraResolvedRef.current = true;
+        applyProjection({ introActive: false, force: true });
+      } else if (!hasPlayedIntroRef.current && !googleCameraTarget) {
+        return;
       }
 
       syncSourceRef.current = 'google';
@@ -412,7 +491,15 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
           zoom: MAPBOX_GLOBE_INTRO_CAMERA.zoom,
           bearing: MAPBOX_GLOBE_INTRO_CAMERA.bearing,
           pitch: MAPBOX_GLOBE_INTRO_CAMERA.pitch,
-          projection: 'globe',
+          projection: resolveMapboxEffectiveProjection({
+            mapDockMode: mapDockModeRef.current,
+            mapViewportSize: mapViewportSizeRef.current,
+            introActive: shouldUseTripMapGlobeIntro({
+              provider: 'mapbox',
+              mapDockMode: mapDockModeRef.current,
+              mapViewportSize: mapViewportSizeRef.current,
+            }),
+          }),
           interactive,
           attributionControl: true,
           logoPosition: 'bottom-left',
@@ -423,6 +510,15 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
         });
 
         mapboxMapRef.current = mapboxMap;
+        appliedProjectionRef.current = resolveMapboxEffectiveProjection({
+          mapDockMode: mapDockModeRef.current,
+          mapViewportSize: mapViewportSizeRef.current,
+          introActive: shouldUseTripMapGlobeIntro({
+            provider: 'mapbox',
+            mapDockMode: mapDockModeRef.current,
+            mapViewportSize: mapViewportSizeRef.current,
+          }),
+        });
         onMapReadyChange?.(mapboxMap);
         stretchMapboxViewport(mapboxMap);
         lastViewportSizeRef.current = null;
@@ -430,29 +526,35 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
         mapboxMap.on('load', () => {
           if (cancelled || mapboxMapRef.current !== mapboxMap) return;
           hasCompletedInitialLoad = true;
-          if (typeof mapboxMap.setProjection === 'function') {
-            mapboxMap.setProjection('globe');
-          }
-          if (typeof mapboxMap.setFog === 'function') {
-            mapboxMap.setFog({});
-          }
-          applyMapboxTripLabelVisibilityPolish(mapboxMap);
+          applyProjection({
+            introActive: shouldUseTripMapGlobeIntro({
+              provider: 'mapbox',
+              mapDockMode: mapDockModeRef.current,
+              mapViewportSize: mapViewportSizeRef.current,
+            }),
+            force: true,
+          });
+          applyMapboxTripVisualPolish(mapboxMap, mapStyleRef.current);
           scheduleViewportResize(true);
-          reportSurfaceReady(true);
-          scheduleSync();
+          window.requestAnimationFrame(() => {
+            if (cancelled || mapboxMapRef.current !== mapboxMap) return;
+            reportSurfaceReady(true);
+            scheduleSync();
+          });
         });
         mapboxMap.on('style.load', () => {
           if (cancelled || mapboxMapRef.current !== mapboxMap) return;
-          if (typeof mapboxMap.setProjection === 'function') {
-            mapboxMap.setProjection('globe');
-          }
-          if (typeof mapboxMap.setFog === 'function') {
-            mapboxMap.setFog({});
-          }
-          applyMapboxTripLabelVisibilityPolish(mapboxMap);
+          applyProjection({
+            introActive: introActiveRef.current,
+            force: true,
+          });
+          applyMapboxTripVisualPolish(mapboxMap, mapStyleRef.current);
           scheduleViewportResize(true);
           if (hasCompletedInitialLoad) {
-            onStyleReload?.();
+            mapboxMap.once('idle', () => {
+              if (cancelled || mapboxMapRef.current !== mapboxMap) return;
+              onStyleReload?.();
+            });
           }
         });
         mapboxMap.on('error', (error) => {
@@ -521,10 +623,27 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
       introActiveRef.current = false;
       gestureActiveRef.current = false;
       appliedStyleKeyRef.current = null;
+      appliedProjectionRef.current = null;
+      initialCameraResolvedRef.current = false;
       ignoreGoogleSyncUntilRef.current = 0;
       lastMapboxDrivenCameraRef.current = null;
     };
   }, [accessToken, googleMap, interactive, onLoadError, onMapReadyChange, onModuleReadyChange, onSurfaceReadyChange, onStyleReload]);
+
+  useEffect(() => {
+    const mapboxMap = mapboxMapRef.current;
+    if (!mapboxMap) return;
+
+    const nextProjection = resolveMapboxEffectiveProjection({
+      mapDockMode,
+      mapViewportSize,
+      introActive: introActiveRef.current,
+    });
+    if (!introActiveRef.current && appliedProjectionRef.current !== nextProjection) {
+      appliedProjectionRef.current = nextProjection;
+      applyMapboxProjectionState(mapboxMap, nextProjection);
+    }
+  }, [mapDockMode, mapViewportSize?.height, mapViewportSize?.width]);
 
   useEffect(() => {
     const mapboxMap = mapboxMapRef.current;

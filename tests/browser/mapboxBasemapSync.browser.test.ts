@@ -6,6 +6,7 @@ import {
   getMapboxBasemapErrorStatus,
   isMeaningfulMapboxIntroTarget,
   isMapboxBasemapFatalError,
+  resolveMapboxEffectiveProjection,
   shouldRunMapboxGlobeIntro,
   stretchMapboxViewport,
 } from '../../components/maps/MapboxBasemapSync';
@@ -63,5 +64,25 @@ describe('components/maps/MapboxBasemapSync', () => {
       { center: [13.405, 52.52], zoom: 9.4 },
       { center: [13.412, 52.53], zoom: 9.65 },
     )).toBe(false);
+  });
+
+  it('uses globe only for the intro pass and keeps the mixed trip view flat afterward', () => {
+    expect(resolveMapboxEffectiveProjection({
+      mapDockMode: 'docked',
+      mapViewportSize: { width: 960, height: 600 },
+      introActive: true,
+    })).toBe('globe');
+
+    expect(resolveMapboxEffectiveProjection({
+      mapDockMode: 'docked',
+      mapViewportSize: { width: 960, height: 600 },
+      introActive: false,
+    })).toBe('mercator');
+
+    expect(resolveMapboxEffectiveProjection({
+      mapDockMode: 'floating',
+      mapViewportSize: { width: 320, height: 220 },
+      introActive: true,
+    })).toBe('mercator');
   });
 });

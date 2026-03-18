@@ -92,7 +92,7 @@ const MAPBOX_TRIP_MAP_PRESENTATION: TripMapProviderPresentation = {
     groundShadow: {
       color: 'rgba(15, 23, 42, 0.34)',
       lightOpacity: 0.18,
-      darkOpacity: 0.26,
+      darkOpacity: 0.1,
       weightMultiplier: 1.02,
     },
   },

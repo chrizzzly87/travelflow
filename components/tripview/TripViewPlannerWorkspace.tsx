@@ -1,6 +1,7 @@
 import React, { Suspense, useCallback, useRef } from 'react';
 import { ArrowLeftRight, ArrowUpDown, CalendarDays, Focus, Layers, List, Maximize2, Minimize2, ZoomIn, ZoomOut } from 'lucide-react';
 import { getAnalyticsDebugAttributes } from '../../services/analyticsService';
+import { getMapSurfaceBackgroundColor } from '../../services/mapRendererVisualStyleService';
 import { toFiniteNumber } from '../../shared/numberUtils';
 import { TripFloatingMapPreview } from './TripFloatingMapPreview';
 
@@ -124,6 +125,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
     onDetailsResizeKeyDown,
     onTimelineResizeKeyDown,
 }) => {
+    const mapSurfaceBackgroundColor = getMapSurfaceBackgroundColor(mapStyle);
     const dockedMapAnchorRef = useRef<HTMLDivElement | null>(null);
     const isFloatingMapPreviewEnabled = !isMobile && TRIP_FLOATING_MAP_PREVIEW_BETA_ENABLED;
     const effectiveMapDockMode: 'docked' | 'floating' = isFloatingMapPreviewEnabled ? mapDockMode : 'docked';
@@ -360,7 +362,8 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                         <div
                             ref={mapViewportRef}
                             data-testid="planner-mobile-map-pane"
-                            className={`${isMobileMapExpanded ? 'fixed inset-x-0 bottom-0 h-[70vh] z-[1450] border-t border-gray-200 shadow-2xl bg-white' : 'relative h-[26vh] min-h-[180px] bg-gray-100'}`}
+                            className={`${isMobileMapExpanded ? 'fixed inset-x-0 bottom-0 h-[70vh] z-[1450] border-t border-gray-200 shadow-2xl' : 'relative h-[26vh] min-h-[180px]'}`}
+                            style={{ backgroundColor: mapSurfaceBackgroundColor }}
                         >
                             {renderMap('vertical', false)}
                         </div>
@@ -458,11 +461,11 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                                             </button>
                                         </div>
                                     )}
-                                    <div ref={dockedMapAnchorRef} className="flex-1 h-full relative bg-gray-100 min-w-0" />
+                                    <div ref={dockedMapAnchorRef} className="flex-1 h-full relative min-w-0" style={{ backgroundColor: mapSurfaceBackgroundColor }} />
                                 </>
                             ) : (
                                 <>
-                                    <div ref={dockedMapAnchorRef} className="flex-1 relative bg-gray-100 min-h-0 w-full" />
+                                    <div ref={dockedMapAnchorRef} className="flex-1 relative min-h-0 w-full" style={{ backgroundColor: mapSurfaceBackgroundColor }} />
                                     <button
                                         type="button"
                                         className="h-1 bg-gray-100 hover:bg-accent-500 cursor-row-resize transition-colors z-30 flex justify-center items-center group w-full appearance-none border-0 p-0"

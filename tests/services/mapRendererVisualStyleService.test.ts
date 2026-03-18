@@ -1,8 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import {
-  applyMapboxTripLabelVisibilityPolish,
+  applyMapboxTripVisualPolish,
   buildMapboxStyleConfig,
+  getMapSurfaceBackgroundColor,
   getMapboxStyleDescriptor,
   shouldHideMapboxTripLabelLayer,
 } from '../../services/mapRendererVisualStyleService';
@@ -20,6 +21,7 @@ describe('services/mapRendererVisualStyleService', () => {
     expect(config.showRoadLabels).toBe(false);
     expect(config.showTransitLabels).toBe(false);
     expect(config.showPlaceLabels).toBe(true);
+    expect(config.colorAdminBoundaries).toBe('#ffffff');
   });
 
   it('uses cleaner Mapbox Standard themes for the light and minimal trip styles', () => {
@@ -47,6 +49,7 @@ describe('services/mapRendererVisualStyleService', () => {
         showTransitLabels: false,
         showRoadLabels: false,
         showAdminBoundaries: true,
+        colorAdminBoundaries: '#ffffff',
       },
     });
   });
@@ -60,6 +63,7 @@ describe('services/mapRendererVisualStyleService', () => {
         showTransitLabels: false,
         showRoadLabels: false,
         showAdminBoundaries: true,
+        colorAdminBoundaries: '#ffffff',
         showRoadsAndTransit: false,
         showPedestrianRoads: false,
       },
@@ -67,16 +71,22 @@ describe('services/mapRendererVisualStyleService', () => {
   });
 
   it('hides smaller settlement labels while preserving country context layers', () => {
-    expect(shouldHideMapboxTripLabelLayer('settlement-major-label')).toBe(true);
+    expect(shouldHideMapboxTripLabelLayer('settlement-major-label')).toBe(false);
     expect(shouldHideMapboxTripLabelLayer('airport-label')).toBe(true);
     expect(shouldHideMapboxTripLabelLayer('country-label')).toBe(false);
+    expect(shouldHideMapboxTripLabelLayer('state-label')).toBe(true);
   });
 
-  it('applies visibility polish only to the noisy trip-label layers', () => {
+  it('applies visibility, filtering, and country-border polish to the trip-facing Mapbox layers', () => {
     const setLayoutProperty = vi.fn();
-    applyMapboxTripLabelVisibilityPolish({
+    const setPaintProperty = vi.fn();
+    const setFilter = vi.fn();
+    applyMapboxTripVisualPolish({
       getStyle: () => ({
         layers: [
+          { id: 'admin-1-boundary' },
+          { id: 'admin-0-boundary' },
+          { id: 'admin-0-boundary-bg' },
           { id: 'settlement-major-label' },
           { id: 'airport-label' },
           { id: 'country-label' },
@@ -84,10 +94,21 @@ describe('services/mapRendererVisualStyleService', () => {
       } as any),
       getLayer: () => ({ id: 'mock' } as any),
       setLayoutProperty,
-    });
+      setPaintProperty,
+      setFilter,
+    }, 'satellite');
 
     expect(setLayoutProperty).toHaveBeenCalledTimes(2);
-    expect(setLayoutProperty).toHaveBeenNthCalledWith(1, 'settlement-major-label', 'visibility', 'none');
+    expect(setLayoutProperty).toHaveBeenNthCalledWith(1, 'admin-1-boundary', 'visibility', 'none');
     expect(setLayoutProperty).toHaveBeenNthCalledWith(2, 'airport-label', 'visibility', 'none');
+    expect(setFilter).toHaveBeenCalledWith('settlement-major-label', expect.any(Array));
+    expect(setPaintProperty).toHaveBeenCalledWith('admin-0-boundary', 'line-color', 'rgba(255, 255, 255, 0.98)');
+    expect(setPaintProperty).toHaveBeenCalledWith('admin-0-boundary-bg', 'line-opacity', 0.2);
+  });
+
+  it('uses darker surface backgrounds for satellite and dark trip-map styles', () => {
+    expect(getMapSurfaceBackgroundColor('standard')).toBe('#dbe5ee');
+    expect(getMapSurfaceBackgroundColor('satellite')).toBe('#102233');
+    expect(getMapSurfaceBackgroundColor('dark')).toBe('#0f172a');
   });
 });

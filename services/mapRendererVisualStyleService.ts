@@ -17,7 +17,7 @@ export type MapboxStyleConfigMap = Record<string, Record<string, boolean | strin
 
 type MapboxStyleLayerVisibilityMap = Pick<
   import('mapbox-gl').Map,
-  'getStyle' | 'getLayer' | 'setLayoutProperty'
+  'getStyle' | 'getLayer' | 'setFilter' | 'setLayoutProperty' | 'setPaintProperty'
 >;
 
 const buildMapboxStyleDescriptor = (
@@ -37,6 +37,7 @@ const MAPBOX_STANDARD_VISUAL_CONFIG: MapboxStyleConfigProperty[] = [
   { fragmentId: 'basemap', property: 'showTransitLabels', value: false },
   { fragmentId: 'basemap', property: 'showRoadLabels', value: false },
   { fragmentId: 'basemap', property: 'showAdminBoundaries', value: true },
+  { fragmentId: 'basemap', property: 'colorAdminBoundaries', value: '#ffffff' },
 ];
 
 const MAPBOX_SATELLITE_VISUAL_CONFIG: MapboxStyleConfigProperty[] = [
@@ -46,21 +47,83 @@ const MAPBOX_SATELLITE_VISUAL_CONFIG: MapboxStyleConfigProperty[] = [
 ];
 
 const MAPBOX_TRIP_LABEL_HIDE_PATTERNS = [
-  /settlement/i,
-  /locality/i,
-  /neighbou?rhood/i,
-  /village/i,
-  /town/i,
-  /city-/i,
+  /settlement-subdivision-label/i,
+  /settlement-minor-label/i,
+  /state-label/i,
   /airport-label/i,
-  /natural-point-label/i,
-  /water-point-label/i,
-  /marine-label/i,
+  /poi-label/i,
+  /transit-label/i,
+  /road-label/i,
+  /path-pedestrian-label/i,
+  /ferry-aerialway-label/i,
+  /gate-label/i,
+  /building-number-label/i,
+  /block-number-label/i,
+  /continent-label/i,
 ];
 
 const MAPBOX_TRIP_LABEL_KEEP_PATTERNS = [
-  /country/i,
+  /country-label/i,
+  /settlement-major-label/i,
 ];
+
+const MAPBOX_TRIP_HIDDEN_BOUNDARY_LAYERS = [
+  'admin-1-boundary-bg',
+  'admin-1-boundary',
+] as const;
+
+const MAPBOX_TRIP_COUNTRY_BOUNDARY_LAYERS = [
+  'admin-0-boundary-bg',
+  'admin-0-boundary',
+  'admin-0-boundary-disputed',
+] as const;
+
+const MAPBOX_MAJOR_CITY_FILTER = [
+  'any',
+  ['<=', ['coalesce', ['get', 'symbolrank'], 999], 9],
+  ['>=', ['coalesce', ['get', 'capital'], 0], 1],
+] as const;
+
+const isDarkMapStyle = (mapStyle: MapStyle): boolean => (
+  mapStyle === 'dark' || mapStyle === 'cleanDark'
+);
+
+const resolveMapboxCountryBoundaryPaint = (mapStyle: MapStyle): {
+  lineColor: string;
+  lineOpacity: number;
+  glowColor: string;
+  glowOpacity: number;
+} => {
+  if (mapStyle === 'satellite') {
+    return {
+      lineColor: 'rgba(255, 255, 255, 0.98)',
+      lineOpacity: 0.92,
+      glowColor: 'rgba(255, 255, 255, 0.58)',
+      glowOpacity: 0.2,
+    };
+  }
+  if (isDarkMapStyle(mapStyle)) {
+    return {
+      lineColor: 'rgba(255, 255, 255, 0.94)',
+      lineOpacity: 0.84,
+      glowColor: 'rgba(255, 255, 255, 0.42)',
+      glowOpacity: 0.16,
+    };
+  }
+  return {
+    lineColor: 'rgba(255, 255, 255, 0.92)',
+    lineOpacity: 0.76,
+    glowColor: 'rgba(255, 255, 255, 0.38)',
+    glowOpacity: 0.14,
+  };
+};
+
+export const getMapSurfaceBackgroundColor = (mapStyle: MapStyle): string => {
+  if (mapStyle === 'satellite') return '#102233';
+  if (isDarkMapStyle(mapStyle)) return '#0f172a';
+  if (mapStyle === 'minimal') return '#edf2f7';
+  return '#dbe5ee';
+};
 
 export const MAPBOX_STYLE_DESCRIPTORS: Record<MapStyle, MapboxStyleDescriptor> = {
   minimal: buildMapboxStyleDescriptor('mapbox', 'standard', [
@@ -130,11 +193,37 @@ export const shouldHideMapboxTripLabelLayer = (layerId: string): boolean => {
   return MAPBOX_TRIP_LABEL_HIDE_PATTERNS.some((pattern) => pattern.test(layerId));
 };
 
-export const applyMapboxTripLabelVisibilityPolish = (map: MapboxStyleLayerVisibilityMap): void => {
+export const applyMapboxTripVisualPolish = (
+  map: MapboxStyleLayerVisibilityMap,
+  mapStyle: MapStyle,
+): void => {
   const layers = map.getStyle()?.layers ?? [];
+  const boundaryPaint = resolveMapboxCountryBoundaryPaint(mapStyle);
   layers.forEach((layer) => {
-    if (!layer.id || !shouldHideMapboxTripLabelLayer(layer.id)) return;
+    if (!layer.id) return;
+    if (MAPBOX_TRIP_HIDDEN_BOUNDARY_LAYERS.includes(layer.id as typeof MAPBOX_TRIP_HIDDEN_BOUNDARY_LAYERS[number])) {
+      if (!map.getLayer(layer.id)) return;
+      map.setLayoutProperty(layer.id, 'visibility', 'none');
+      return;
+    }
+    if (layer.id === 'settlement-major-label') {
+      if (!map.getLayer(layer.id)) return;
+      map.setFilter(layer.id, MAPBOX_MAJOR_CITY_FILTER as unknown as any[]);
+      return;
+    }
+    if (MAPBOX_TRIP_COUNTRY_BOUNDARY_LAYERS.includes(layer.id as typeof MAPBOX_TRIP_COUNTRY_BOUNDARY_LAYERS[number])) {
+      if (!map.getLayer(layer.id)) return;
+      const isGlowLayer = layer.id === 'admin-0-boundary-bg';
+      map.setPaintProperty(layer.id, 'line-color', isGlowLayer ? boundaryPaint.glowColor : boundaryPaint.lineColor);
+      map.setPaintProperty(layer.id, 'line-opacity', isGlowLayer ? boundaryPaint.glowOpacity : boundaryPaint.lineOpacity);
+      return;
+    }
+    if (!shouldHideMapboxTripLabelLayer(layer.id)) return;
     if (!map.getLayer(layer.id)) return;
     map.setLayoutProperty(layer.id, 'visibility', 'none');
   });
+};
+
+export const applyMapboxTripLabelVisibilityPolish = (map: MapboxStyleLayerVisibilityMap): void => {
+  applyMapboxTripVisualPolish(map, 'standard');
 };
