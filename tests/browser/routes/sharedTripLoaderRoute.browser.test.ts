@@ -33,6 +33,7 @@ const mocks = vi.hoisted(() => ({
   dbUpdateSharedTrip: vi.fn(),
   dbUpsertTrip: vi.fn(),
   appendHistoryEntry: vi.fn(),
+  createTripHistorySnapshotEntry: vi.fn(),
   findHistoryEntryByUrl: vi.fn(),
   saveTrip: vi.fn(),
   tripViewProps: [] as any[],
@@ -93,6 +94,7 @@ vi.mock('../../../services/dbApi', () => ({
 
 vi.mock('../../../services/historyService', () => ({
   appendHistoryEntry: mocks.appendHistoryEntry,
+  createTripHistorySnapshotEntry: mocks.createTripHistorySnapshotEntry,
   findHistoryEntryByUrl: mocks.findHistoryEntryByUrl,
 }));
 
@@ -159,6 +161,7 @@ describe('routes/SharedTripLoaderRoute', () => {
     mocks.dbGetSharedTrip.mockResolvedValue(null);
     mocks.dbGetSharedTripVersion.mockResolvedValue(null);
     mocks.dbGetTripVersion.mockResolvedValue(null);
+    mocks.createTripHistorySnapshotEntry.mockImplementation(({ tripId }: { tripId: string }) => `/s/share-token?v=generated-version-id`);
     mocks.findHistoryEntryByUrl.mockReturnValue(null);
     mocks.dbCanCreateTrip.mockResolvedValue({ allowCreate: true, activeTripCount: 1, maxTripCount: 5 });
   });
@@ -440,17 +443,13 @@ describe('routes/SharedTripLoaderRoute', () => {
     });
 
     expect(mocks.navigate).toHaveBeenCalledWith('/s/share-token?v=generated-version-id', { replace: true });
-    expect(mocks.appendHistoryEntry).toHaveBeenCalledWith(
-      'shared-trip',
-      '/s/share-token?v=generated-version-id',
-      'Edited shared trip',
-      expect.objectContaining({
-        snapshot: {
-          trip: updatedTrip,
-          view: baseView,
-        },
-      })
-    );
+    expect(mocks.createTripHistorySnapshotEntry).toHaveBeenCalledWith(expect.objectContaining({
+      tripId: 'shared-trip',
+      trip: updatedTrip,
+      view: baseView,
+      label: 'Edited shared trip',
+      baseUrlOverride: '/s/share-token',
+    }));
     await waitFor(() => {
       expect(mocks.dbUpdateSharedTrip).toHaveBeenCalledWith('share-token', updatedTrip, baseView, 'Edited shared trip');
     });

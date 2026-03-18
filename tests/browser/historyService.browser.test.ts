@@ -1,6 +1,11 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from 'vitest';
-import { appendHistoryEntry, findHistoryEntryByUrl, getHistoryEntries } from '../../services/historyService';
+import {
+  appendHistoryEntry,
+  createTripHistorySnapshotEntry,
+  findHistoryEntryByUrl,
+  getHistoryEntries,
+} from '../../services/historyService';
 import { makeTrip } from '../helpers/tripFixtures';
 
 describe('services/historyService', () => {
@@ -48,6 +53,21 @@ describe('services/historyService', () => {
     expect(event.detail.tripId).toBe('trip-3');
 
     window.removeEventListener('tf:history', listener as EventListener);
+  });
+
+  it('creates snapshot history urls before navigation code needs to resolve them', () => {
+    const trip = makeTrip({ id: 'trip-snapshot' });
+    const url = createTripHistorySnapshotEntry({
+      tripId: trip.id,
+      trip,
+      view: { mapStyle: 'satellite', layoutMode: 'horizontal', timelineMode: 'calendar', timelineView: 'horizontal', mapDockMode: 'docked', routeMode: 'simple', showCityNames: true, zoomLevel: 1, sidebarWidth: 550, timelineHeight: 400 },
+      label: 'Visual: Changed map style',
+      ts: 42,
+      baseUrlOverride: '/trip/trip-snapshot?mode=planner',
+    });
+
+    expect(url).toMatch(/^\/trip\/trip-snapshot\?mode=planner&v=v-/);
+    expect(findHistoryEntryByUrl(trip.id, url)?.label).toBe('Visual: Changed map style');
   });
 
   it('caps per-trip history to max size', () => {

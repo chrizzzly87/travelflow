@@ -1,8 +1,10 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import {
+  applyMapboxTripLabelVisibilityPolish,
   buildMapboxStyleConfig,
   getMapboxStyleDescriptor,
+  shouldHideMapboxTripLabelLayer,
 } from '../../services/mapRendererVisualStyleService';
 
 describe('services/mapRendererVisualStyleService', () => {
@@ -13,11 +15,11 @@ describe('services/mapRendererVisualStyleService', () => {
     );
 
     expect(descriptor.styleUrl).toBe('mapbox://styles/mapbox/standard');
-    expect(config.showAdminBoundaries).toBe(false);
+    expect(config.showAdminBoundaries).toBe(true);
     expect(config.showPointOfInterestLabels).toBe(false);
     expect(config.showRoadLabels).toBe(false);
     expect(config.showTransitLabels).toBe(false);
-    expect(config.showPlaceLabels).toBe(false);
+    expect(config.showPlaceLabels).toBe(true);
   });
 
   it('uses cleaner Mapbox Standard themes for the light and minimal trip styles', () => {
@@ -40,27 +42,52 @@ describe('services/mapRendererVisualStyleService', () => {
       basemap: {
         theme: 'default',
         lightPreset: 'day',
+        showPlaceLabels: true,
         showPointOfInterestLabels: false,
         showTransitLabels: false,
         showRoadLabels: false,
-        showAdminBoundaries: false,
-        showPlaceLabels: false,
+        showAdminBoundaries: true,
       },
     });
   });
 
-  it('keeps satellite basemaps clean by removing roads, transit, and ferry-like route overlays', () => {
+  it('keeps satellite basemaps clean by removing roads, transit, and ferry-like route overlays while keeping country context', () => {
     expect(buildMapboxStyleConfig('satellite')).toEqual({
       basemap: {
         lightPreset: 'day',
+        showPlaceLabels: true,
         showPointOfInterestLabels: false,
         showTransitLabels: false,
         showRoadLabels: false,
-        showAdminBoundaries: false,
-        showPlaceLabels: false,
+        showAdminBoundaries: true,
         showRoadsAndTransit: false,
         showPedestrianRoads: false,
       },
     });
+  });
+
+  it('hides smaller settlement labels while preserving country context layers', () => {
+    expect(shouldHideMapboxTripLabelLayer('settlement-major-label')).toBe(true);
+    expect(shouldHideMapboxTripLabelLayer('airport-label')).toBe(true);
+    expect(shouldHideMapboxTripLabelLayer('country-label')).toBe(false);
+  });
+
+  it('applies visibility polish only to the noisy trip-label layers', () => {
+    const setLayoutProperty = vi.fn();
+    applyMapboxTripLabelVisibilityPolish({
+      getStyle: () => ({
+        layers: [
+          { id: 'settlement-major-label' },
+          { id: 'airport-label' },
+          { id: 'country-label' },
+        ],
+      } as any),
+      getLayer: () => ({ id: 'mock' } as any),
+      setLayoutProperty,
+    });
+
+    expect(setLayoutProperty).toHaveBeenCalledTimes(2);
+    expect(setLayoutProperty).toHaveBeenNthCalledWith(1, 'settlement-major-label', 'visibility', 'none');
+    expect(setLayoutProperty).toHaveBeenNthCalledWith(2, 'airport-label', 'visibility', 'none');
   });
 });

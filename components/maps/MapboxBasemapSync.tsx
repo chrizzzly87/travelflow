@@ -3,6 +3,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import type mapboxgl from 'mapbox-gl';
 
 import {
+  applyMapboxTripLabelVisibilityPolish,
   buildMapboxStyleConfig,
   getMapboxStyleDescriptor,
 } from '../../services/mapRendererVisualStyleService';
@@ -105,6 +106,15 @@ const readGoogleCameraTarget = (
 
 export const shouldRunMapboxGlobeIntro = (zoom: number | null | undefined): boolean => {
   return Number.isFinite(zoom);
+};
+
+export const isMeaningfulMapboxIntroTarget = (
+  target: { center: [number, number]; zoom: number } | null | undefined,
+): boolean => {
+  if (!target || !Number.isFinite(target.zoom)) return false;
+  const [lng, lat] = target.center;
+  const centerOffset = Math.hypot(lng - MAPBOX_GLOBE_INTRO_CAMERA.center[0], lat - MAPBOX_GLOBE_INTRO_CAMERA.center[1]);
+  return target.zoom >= 3.15 || centerOffset >= 12;
 };
 
 export const areMapboxCameraTargetsNearlyEqual = (
@@ -245,7 +255,14 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
     const runGlobeIntro = () => {
       const mapboxMap = mapboxMapRef.current;
       const target = readGoogleCameraTarget(googleMap);
-      if (!mapboxMap || !target || !shouldRunMapboxGlobeIntro(target.zoom)) return false;
+      if (
+        !mapboxMap
+        || !target
+        || !shouldRunMapboxGlobeIntro(target.zoom)
+        || !isMeaningfulMapboxIntroTarget(target)
+      ) {
+        return false;
+      }
       if (typeof mapboxMap.isStyleLoaded === 'function' && !mapboxMap.isStyleLoaded()) return false;
       if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return false;
 
@@ -296,8 +313,13 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
       if (areMapboxCameraTargetsNearlyEqual(googleCameraTarget, lastMapboxDrivenCameraRef.current)) {
         return;
       }
-      if (!hasPlayedIntroRef.current && runGlobeIntro()) {
-        return;
+      if (!hasPlayedIntroRef.current) {
+        if (runGlobeIntro()) {
+          return;
+        }
+        if (!isMeaningfulMapboxIntroTarget(googleCameraTarget)) {
+          return;
+        }
       }
 
       syncSourceRef.current = 'google';
@@ -417,11 +439,9 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
           if (typeof mapboxMap.setFog === 'function') {
             mapboxMap.setFog({});
           }
+          applyMapboxTripLabelVisibilityPolish(mapboxMap);
           scheduleViewportResize(true);
           reportSurfaceReady(true);
-          if (!hasPlayedIntroRef.current && runGlobeIntro()) {
-            return;
-          }
           scheduleSync();
         });
         mapboxMap.on('style.load', () => {
@@ -432,6 +452,7 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
           if (typeof mapboxMap.setFog === 'function') {
             mapboxMap.setFog({});
           }
+          applyMapboxTripLabelVisibilityPolish(mapboxMap);
           scheduleViewportResize(true);
           if (hasCompletedInitialLoad) {
             onStyleReload?.();

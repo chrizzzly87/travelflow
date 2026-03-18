@@ -15,6 +15,11 @@ export interface MapboxStyleDescriptor {
 
 export type MapboxStyleConfigMap = Record<string, Record<string, boolean | string | number>>;
 
+type MapboxStyleLayerVisibilityMap = Pick<
+  import('mapbox-gl').Map,
+  'getStyle' | 'getLayer' | 'setLayoutProperty'
+>;
+
 const buildMapboxStyleDescriptor = (
   owner: string,
   styleId: string,
@@ -27,17 +32,34 @@ const buildMapboxStyleDescriptor = (
 });
 
 const MAPBOX_STANDARD_VISUAL_CONFIG: MapboxStyleConfigProperty[] = [
+  { fragmentId: 'basemap', property: 'showPlaceLabels', value: true },
   { fragmentId: 'basemap', property: 'showPointOfInterestLabels', value: false },
   { fragmentId: 'basemap', property: 'showTransitLabels', value: false },
   { fragmentId: 'basemap', property: 'showRoadLabels', value: false },
-  { fragmentId: 'basemap', property: 'showAdminBoundaries', value: false },
-  { fragmentId: 'basemap', property: 'showPlaceLabels', value: false },
+  { fragmentId: 'basemap', property: 'showAdminBoundaries', value: true },
 ];
 
 const MAPBOX_SATELLITE_VISUAL_CONFIG: MapboxStyleConfigProperty[] = [
   ...MAPBOX_STANDARD_VISUAL_CONFIG,
   { fragmentId: 'basemap', property: 'showRoadsAndTransit', value: false },
   { fragmentId: 'basemap', property: 'showPedestrianRoads', value: false },
+];
+
+const MAPBOX_TRIP_LABEL_HIDE_PATTERNS = [
+  /settlement/i,
+  /locality/i,
+  /neighbou?rhood/i,
+  /village/i,
+  /town/i,
+  /city-/i,
+  /airport-label/i,
+  /natural-point-label/i,
+  /water-point-label/i,
+  /marine-label/i,
+];
+
+const MAPBOX_TRIP_LABEL_KEEP_PATTERNS = [
+  /country/i,
 ];
 
 export const MAPBOX_STYLE_DESCRIPTORS: Record<MapStyle, MapboxStyleDescriptor> = {
@@ -98,4 +120,21 @@ export const buildMapboxStyleConfig = (mapStyle: MapStyle): MapboxStyleConfigMap
     config[entry.fragmentId] = fragmentConfig;
     return config;
   }, {});
+};
+
+export const shouldHideMapboxTripLabelLayer = (layerId: string): boolean => {
+  if (!layerId) return false;
+  if (MAPBOX_TRIP_LABEL_KEEP_PATTERNS.some((pattern) => pattern.test(layerId))) {
+    return false;
+  }
+  return MAPBOX_TRIP_LABEL_HIDE_PATTERNS.some((pattern) => pattern.test(layerId));
+};
+
+export const applyMapboxTripLabelVisibilityPolish = (map: MapboxStyleLayerVisibilityMap): void => {
+  const layers = map.getStyle()?.layers ?? [];
+  layers.forEach((layer) => {
+    if (!layer.id || !shouldHideMapboxTripLabelLayer(layer.id)) return;
+    if (!map.getLayer(layer.id)) return;
+    map.setLayoutProperty(layer.id, 'visibility', 'none');
+  });
 };

@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import {
   areMapboxCameraTargetsNearlyEqual,
   getMapboxBasemapErrorStatus,
+  isMeaningfulMapboxIntroTarget,
   isMapboxBasemapFatalError,
   shouldRunMapboxGlobeIntro,
   stretchMapboxViewport,
@@ -45,6 +46,11 @@ describe('components/maps/MapboxBasemapSync', () => {
     expect(shouldRunMapboxGlobeIntro(null)).toBe(false);
     expect(shouldRunMapboxGlobeIntro(2.05)).toBe(true);
     expect(shouldRunMapboxGlobeIntro(2.3)).toBe(true);
+  });
+
+  it('waits to animate until the synced target is meaningfully away from the initial globe view', () => {
+    expect(isMeaningfulMapboxIntroTarget({ center: [2.6, 20.1], zoom: 2.2 })).toBe(false);
+    expect(isMeaningfulMapboxIntroTarget({ center: [105.85, 21.03], zoom: 4.8 })).toBe(true);
   });
 
   it('treats nearly identical Google and Mapbox cameras as equivalent after a gesture-driven sync', () => {

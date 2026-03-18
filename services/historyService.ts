@@ -1,4 +1,5 @@
 import { ITrip, IViewSettings } from "../types";
+import { buildTripUrl, generateVersionId } from "./appRuntimeUtils";
 import { readLocalStorageItem, writeLocalStorageItem } from "./browserStorageService";
 
 export interface HistoryEntry {
@@ -78,6 +79,38 @@ export const appendHistoryEntry = (
         window.dispatchEvent(new CustomEvent('tf:history', { detail: { tripId, entry } }));
     }
 
+};
+
+export const createTripHistorySnapshotEntry = ({
+    tripId,
+    trip,
+    view,
+    label,
+    ts,
+    baseUrlOverride,
+}: {
+    tripId: string;
+    trip: ITrip;
+    view?: IViewSettings;
+    label: string;
+    ts?: number;
+    baseUrlOverride?: string;
+}): string => {
+    const versionId = generateVersionId();
+    const url = baseUrlOverride
+        ? (() => {
+            const origin = typeof window !== 'undefined' ? window.location.origin : 'https://travelflow.invalid';
+            const nextUrl = new URL(baseUrlOverride, origin);
+            nextUrl.searchParams.set('v', versionId);
+            return `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`;
+        })()
+        : buildTripUrl(tripId, versionId);
+
+    appendHistoryEntry(tripId, url, label, {
+        snapshot: { trip, view },
+        ts,
+    });
+    return url;
 };
 
 export const findHistoryEntryByUrl = (tripId: string, url: string): HistoryEntry | null => {

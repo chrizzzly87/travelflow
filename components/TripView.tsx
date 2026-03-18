@@ -1332,6 +1332,10 @@ const useTripViewRender = ({
         if (!isAdminFallbackView || !adminAccess?.ownerId) return null;
         return `/admin/trips?user=${encodeURIComponent(adminAccess.ownerId)}&drawer=user`;
     }, [adminAccess?.ownerId, isAdminFallbackView]);
+    const [isMobileViewport, setIsMobileViewport] = useState(() => {
+        if (typeof window === 'undefined') return false;
+        return window.innerWidth <= MOBILE_VIEWPORT_MAX_WIDTH;
+    });
 
     const paywallActivationMode = useMemo<TripPaywallActivationMode>(
         () => resolveTripPaywallActivationMode({
@@ -1538,11 +1542,6 @@ const useTripViewRender = ({
         [canEdit, location.search]
     );
     const { viewMode, setViewMode } = useTripViewModeState();
-
-    const [isMobileViewport, setIsMobileViewport] = useState(() => {
-        if (typeof window === 'undefined') return false;
-        return window.innerWidth <= MOBILE_VIEWPORT_MAX_WIDTH;
-    });
     const currentUrl = location.pathname + location.search;
     const {
         isHistoryOpen,

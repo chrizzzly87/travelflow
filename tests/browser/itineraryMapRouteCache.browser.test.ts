@@ -112,16 +112,16 @@ describe('components/ItineraryMap route cache helpers', () => {
     expect(getMapLabelCityName('')).toBe('');
   });
 
-  it('chooses label anchors that reduce overlap with adjacent route segments', () => {
+  it('keeps city labels centered above markers for a steadier trip-map layout', () => {
     const city = { lat: 13.75, lng: 100.5 };
     const west = { lat: 13.75, lng: 100.2 };
     const east = { lat: 13.75, lng: 100.8 };
     const north = { lat: 14.05, lng: 100.5 };
     const south = { lat: 13.45, lng: 100.5 };
 
-    expect(resolveCityLabelAnchor(city, west, east)).toBe('below');
-    expect(resolveCityLabelAnchor(city, south, north)).toBe('right');
-    expect(resolveCityLabelAnchor(city, null, null)).toBe('right');
+    expect(resolveCityLabelAnchor(city, west, east)).toBe('above');
+    expect(resolveCityLabelAnchor(city, south, north)).toBe('above');
+    expect(resolveCityLabelAnchor(city, null, null)).toBe('above');
   });
 
   it('places city labels farther away from markers with anchor-aware transforms', () => {
@@ -674,20 +674,20 @@ describe('components/ItineraryMap route cache helpers', () => {
       mapDockMode: 'docked',
       mapViewportSize: { width: 640, height: 420 },
     })).toEqual({
-      top: 98,
-      right: 100,
-      bottom: 98,
-      left: 100,
+      top: 130,
+      right: 130,
+      bottom: 130,
+      left: 130,
     });
 
     expect(resolveMapViewportPadding({
       mapDockMode: 'floating',
       mapViewportSize: { width: 640, height: 420 },
     })).toEqual({
-      top: 116,
-      right: 108,
-      bottom: 116,
-      left: 108,
+      top: 148,
+      right: 140,
+      bottom: 148,
+      left: 140,
     });
   });
 

@@ -13,6 +13,7 @@ import { normalizeTransportMode } from '../shared/transportModes';
 import { ActivityTypeIcon, getActivityTypePaletteParts } from './ActivityTypeVisuals';
 import { GOOGLE_BASEMAP_HIDDEN_STYLES } from '../services/mapRendererVisualStyleService';
 import { MapboxBasemapSync } from './maps/MapboxBasemapSync';
+import { buildFlightRouteVisualPaths } from './maps/flightRouteGeometry';
 import { createGoogleMixedSurfaceController, type GoogleMixedSurfaceController } from './maps/googleMixedSurfaceController';
 import { buildMapboxDashedRouteDasharray, createMapboxLineHandle, createMapboxOverlayMarker, type MapboxLineLayerConfig } from './maps/mapboxOverlayRuntime';
 import { resolveActiveOverlayMapTarget, shouldHideGoogleMapCanvas } from './maps/mapRenderTarget';
@@ -541,7 +542,7 @@ export const resolveZoomEnhancedCityMarkerProfile = ({
     if (markerTier !== 'default') return baseProfile;
     if (!Number.isFinite(zoom)) return baseProfile;
     const effectiveZoom = Number(zoom);
-    if (effectiveZoom < 5.6) {
+    if (effectiveZoom < 6.2) {
         return {
             ...baseProfile,
             shape: 'circle',
@@ -553,7 +554,7 @@ export const resolveZoomEnhancedCityMarkerProfile = ({
             numberColor: '#ffffff',
         };
     }
-    if (effectiveZoom < 7.6) {
+    if (effectiveZoom < 8.2) {
         return {
             ...baseProfile,
             shape: 'circle',
@@ -564,7 +565,7 @@ export const resolveZoomEnhancedCityMarkerProfile = ({
             showInnerDot: false,
         };
     }
-    if (effectiveZoom < 9.4) {
+    if (effectiveZoom < 10.1) {
         return {
             ...baseProfile,
             shape: 'circle',
@@ -572,7 +573,7 @@ export const resolveZoomEnhancedCityMarkerProfile = ({
             selectedSize: Math.max(26, Math.round(baseProfile.selectedSize * 0.92)),
         };
     }
-    if (effectiveZoom < 11.2) {
+    if (effectiveZoom < 10.9) {
         return {
             ...baseProfile,
             shape: 'pin',
@@ -1155,11 +1156,11 @@ export const resolveMapViewportPadding = ({
     mapViewportSize: { width: number; height: number } | null;
 }): google.maps.Padding => {
     const shortEdge = Math.min(mapViewportSize?.width ?? 0, mapViewportSize?.height ?? 0);
-    const basePadding = Math.max(88, Math.min(192, Math.round(shortEdge * 0.2) || 104));
-    const verticalBoost = mapDockMode === 'floating' ? 28 : 10;
-    const horizontalBoost = mapDockMode === 'floating' ? 20 : 12;
-    const verticalPadding = Math.max(96, Math.min(232, basePadding + verticalBoost));
-    const horizontalPadding = Math.max(88, Math.min(208, basePadding + horizontalBoost));
+    const basePadding = Math.max(112, Math.min(224, Math.round(shortEdge * 0.24) || 128));
+    const verticalBoost = mapDockMode === 'floating' ? 36 : 18;
+    const horizontalBoost = mapDockMode === 'floating' ? 28 : 18;
+    const verticalPadding = Math.max(124, Math.min(268, basePadding + verticalBoost));
+    const horizontalPadding = Math.max(112, Math.min(244, basePadding + horizontalBoost));
 
     return {
         top: verticalPadding,
@@ -1172,7 +1173,7 @@ export const resolveMapViewportPadding = ({
 export const isCoordinateWithinSafeBounds = ({
     bounds,
     point,
-    insetRatio = 0.18,
+    insetRatio = 0.22,
 }: {
     bounds: google.maps.LatLngBounds;
     point: google.maps.LatLngLiteral;
@@ -1286,50 +1287,11 @@ export const resolveCityLabelTheme = (style: MapStyle): {
 };
 
 export const resolveCityLabelAnchor = (
-    city: google.maps.LatLngLiteral,
-    previous?: google.maps.LatLngLiteral | null,
-    next?: google.maps.LatLngLiteral | null,
+    _city: google.maps.LatLngLiteral,
+    _previous?: google.maps.LatLngLiteral | null,
+    _next?: google.maps.LatLngLiteral | null,
 ): CityLabelAnchor => {
-    const metersPerDegreeLat = 111_320;
-    const metersPerDegreeLng = metersPerDegreeLat * Math.max(0.01, Math.cos((city.lat * Math.PI) / 180));
-    const segmentVectors: Array<{ x: number; y: number }> = [];
-
-    const pushVector = (point?: google.maps.LatLngLiteral | null) => {
-        if (!point) return;
-        const vector = {
-            x: (point.lng - city.lng) * metersPerDegreeLng,
-            y: (point.lat - city.lat) * metersPerDegreeLat,
-        };
-        if (Math.hypot(vector.x, vector.y) < 5) return;
-        segmentVectors.push(vector);
-    };
-
-    pushVector(previous);
-    pushVector(next);
-    if (segmentVectors.length === 0) return 'right';
-
-    const anchors: CityLabelAnchor[] = ['right', 'left', 'below', 'above'];
-    let bestAnchor: CityLabelAnchor = 'right';
-    let bestScore = Number.NEGATIVE_INFINITY;
-
-    anchors.forEach((anchor) => {
-        const candidate = CITY_LABEL_ANCHOR_OFFSETS[anchor];
-        let minDistance = Number.POSITIVE_INFINITY;
-
-        segmentVectors.forEach((vector) => {
-            const length = Math.hypot(vector.x, vector.y);
-            if (length <= 0) return;
-            const perpendicularDistance = Math.abs((vector.x * candidate.y) - (vector.y * candidate.x)) / length;
-            minDistance = Math.min(minDistance, perpendicularDistance);
-        });
-
-        if (minDistance > bestScore) {
-            bestScore = minDistance;
-            bestAnchor = anchor;
-        }
-    });
-
-    return bestAnchor;
+    return 'above';
 };
 
 export const buildRouteAttemptPolicy = (
@@ -1438,8 +1400,8 @@ const buildCityLabelMarkerHtml = ({
         : '';
 
     return `
-        <div style="pointer-events:none;display:flex;flex-direction:column;gap:2px;white-space:nowrap;transform:${placement.transform};text-align:${placement.textAlign};line-height:1.05;padding:6px 9px;border-radius:999px;background:${theme.background};border:1px solid ${theme.borderColor};box-shadow:${theme.boxShadow};backdrop-filter:blur(12px);">
-            <div style="font-size:13px;font-weight:700;color:${theme.textColor};text-shadow:${theme.textShadow};">${name}</div>
+        <div style="pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:3px;max-width:180px;white-space:nowrap;transform:${placement.transform};text-align:${placement.textAlign};line-height:1.05;padding:7px 11px;border-radius:999px;background:${theme.background};border:1px solid ${theme.borderColor};box-shadow:${theme.boxShadow};backdrop-filter:blur(14px);">
+            <div style="max-width:180px;overflow:hidden;text-overflow:ellipsis;font-size:14px;font-weight:800;color:${theme.textColor};text-shadow:${theme.textShadow};">${name}</div>
             ${subLabelMarkup}
         </div>
     `;
@@ -1645,7 +1607,10 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         isMapboxEnabled: isMapboxBasemapEnabled,
     });
     const shouldRenderMapCanvas = isLoaded && !loadError;
-    const shouldShowMapLoadingOverlay = (!mapInitialized || (isMapboxBasemapEnabled && !isMapboxSurfaceReady)) && !loadError;
+    const shouldShowMapLoadingOverlay = !loadError && (
+        (!isMapboxBasemapEnabled && !mapInitialized)
+        || (isMapboxBasemapEnabled && !isMapboxSurfaceReady)
+    );
     const cities = useMemo(() => 
         items
             .filter(i => i.type === 'city' && i.coordinates)
@@ -2304,6 +2269,20 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             });
         };
 
+        const drawGroundShadowPath = (path: google.maps.LatLngLiteral[], weight = 3) => {
+            if (!isEffectActive()) return null;
+            const routeScale = Math.max(0.58, effectiveMarkerRenderProfile.routeStrokeScale);
+            return createRoutePolylinePair({
+                path,
+                geodesic: true,
+                strokeColor: 'rgba(15, 23, 42, 0.34)',
+                strokeOpacity: isDarkMapStyle(activeStyle) ? 0.22 : 0.14,
+                strokeWeight: Math.max(1, weight * routeScale * 0.92),
+                clickable: false,
+                zIndex: 34,
+            });
+        };
+
         const brandRouteColor = '#4f46e5';
         const resolveMapColor = (colorToken: string): string =>
             mapColorMode === 'brand' ? brandRouteColor : getHexFromColorClass(colorToken);
@@ -2783,6 +2762,17 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                  }
 
                  // Fallback / Flight: Draw Geodesic Polyline
+                 const isFlightFallback = mode === 'plane';
+                 const flightRouteVisualPaths = isFlightFallback
+                     ? buildFlightRouteVisualPaths(start.coordinates, end.coordinates)
+                     : null;
+                 const fallbackAirPath = flightRouteVisualPaths
+                     ? flightRouteVisualPaths.airPath
+                     : [
+                         { lat: start.coordinates.lat, lng: start.coordinates.lng },
+                         { lat: end.coordinates.lat, lng: end.coordinates.lng },
+                     ];
+                 const fallbackGroundPath = flightRouteVisualPaths?.groundPath ?? fallbackAirPath;
                  const isDashedFallback = mode !== 'plane';
                  const arrowIcon = {
                      path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW, 
@@ -2813,12 +2803,12 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                          { icon: arrowIcon, offset: '75%' },
                      ];
                  if (!isEffectActive()) return;
+                 if (isFlightFallback) {
+                     drawGroundShadowPath(fallbackGroundPath, 2.35);
+                 }
                  createRoutePolylinePair({
-                     path: [
-                         { lat: start.coordinates.lat, lng: start.coordinates.lng },
-                         { lat: end.coordinates.lat, lng: end.coordinates.lng }
-                     ],
-                     geodesic: true,
+                     path: fallbackAirPath,
+                     geodesic: !isFlightFallback,
                      strokeColor: startColor,
                      strokeOpacity: isDashedFallback ? 0 : 0.6,
                      strokeWeight: Math.max(1.05, 2 * effectiveMarkerRenderProfile.routeStrokeScale),
@@ -2827,15 +2817,12 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                      zIndex: 35,
                  });
 
-                 const mid = getPointAlongPath([
-                     { lat: start.coordinates.lat, lng: start.coordinates.lng },
-                     { lat: end.coordinates.lat, lng: end.coordinates.lng },
-                 ], 0.5);
+                 const mid = getPointAlongPath(fallbackAirPath, 0.5);
                  if (mode !== 'na' && effectiveMarkerRenderProfile.transport.show) {
                      if (!isEffectActive()) return;
                      if (!mid) continue;
                      const markerHeading = mode === 'plane'
-                         ? getHeadingBetweenPoints(start.coordinates, end.coordinates)
+                         ? getHeadingAlongPath(fallbackAirPath, 0.5)
                          : undefined;
                      const transportMarker = createOverlayMarker({
                          position: mid,
@@ -2954,7 +2941,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 ? isCoordinateWithinSafeBounds({
                     bounds: currentBounds,
                     point: focusTarget.position,
-                    insetRatio: 0.22,
+                    insetRatio: 0.28,
                 })
                 : false;
             const { shouldPan, shouldZoom } = resolveSelectionViewportActions({
