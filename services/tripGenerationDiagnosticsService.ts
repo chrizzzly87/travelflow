@@ -157,7 +157,16 @@ const classifyByCodeOrMessage = (codeRaw: string | null, messageRaw: string | nu
     if (code.includes('abort') || message.includes('abort') || message.includes('beforeunload') || message.includes('tab close')) {
         return 'abort';
     }
-    if (code.includes('parse') || code.includes('quality') || message.includes('quality') || message.includes('invalid json')) {
+    if (
+        code.includes('parse')
+        || code.includes('quality')
+        || code.includes('refusal')
+        || code.includes('incomplete')
+        || message.includes('quality')
+        || message.includes('invalid json')
+        || message.includes('refused')
+        || message.includes('incomplete')
+    ) {
         return 'quality';
     }
     if (

@@ -977,7 +977,15 @@ const generateItineraryFromPrompt = async (
     if (normalizedCode.includes('abort') || normalizedMessage.includes('abort')) {
         return 'abort';
     }
-    if (normalizedCode.includes('parse') || normalizedCode.includes('quality') || normalizedMessage.includes('quality')) {
+    if (
+        normalizedCode.includes('parse')
+        || normalizedCode.includes('quality')
+        || normalizedCode.includes('refusal')
+        || normalizedCode.includes('incomplete')
+        || normalizedMessage.includes('quality')
+        || normalizedMessage.includes('refused')
+        || normalizedMessage.includes('incomplete')
+    ) {
         return 'quality';
     }
     if (
