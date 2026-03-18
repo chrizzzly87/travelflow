@@ -52,6 +52,7 @@ import { resolveTripToastUndoAction } from './tripview/tripToastUndoAction';
 import { buildQueuedTripGenerationRetryToastOptions } from './tripview/tripGenerationRetryToast';
 import { useTripItemMutationHandlers } from './tripview/useTripItemMutationHandlers';
 import { useTripItemUpdateHandlers } from './tripview/useTripItemUpdateHandlers';
+import { useTripLiveUpdate, type PendingTripCommitState } from './tripview/useTripLiveUpdate';
 import { useTripRouteStatusState } from './tripview/useTripRouteStatusState';
 import { useTripResizeControls } from './tripview/useTripResizeControls';
 import { useTripShareActions } from './tripview/useTripShareActions';
@@ -1554,7 +1555,7 @@ const useTripViewRender = ({
     const editTitleInputRef = useRef<HTMLInputElement | null>(null);
     const pendingHistoryLabelRef = useRef<string | null>(null);
     const commitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const pendingCommitRef = useRef<{ trip: ITrip; view: IViewSettings; skipToast?: boolean } | null>(null);
+    const pendingCommitRef = useRef<PendingTripCommitState | null>(null);
     const suppressCommitRef = useRef(false);
     const pendingManualViewSettingsPersistRef = useRef(false);
     const pendingManualVisualCommitRef = useRef(false);
@@ -2060,10 +2061,12 @@ const useTripViewRender = ({
         return false;
     }, [adminOverrideEnabled, canEdit, isAdminFallbackView, isTripLockedByArchive, isTripLockedByExpiry, showToast]);
 
-    const safeUpdateTrip = useCallback((updatedTrip: ITrip, options?: { persist?: boolean; preserveUpdatedAt?: boolean }) => {
-        if (!requireEdit()) return;
-        onUpdateTrip(updatedTrip, options);
-    }, [onUpdateTrip, requireEdit]);
+    const { safeUpdateTrip } = useTripLiveUpdate({
+        tripRef,
+        pendingCommitRef,
+        requireEdit,
+        onUpdateTrip,
+    });
 
     const showSavedToastForLabel = useCallback((label: string) => {
         const tone = resolveChangeTone(label);

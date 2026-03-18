@@ -85,9 +85,11 @@ describe('services/mapRendererVisualStyleService', () => {
       getStyle: () => ({
         layers: [
           { id: 'admin-1-boundary' },
+          { id: 'admin_1_boundary' },
           { id: 'admin-2-boundary' },
           { id: 'region-boundary' },
           { id: 'admin-0-boundary' },
+          { id: 'admin_0_boundary' },
           { id: 'admin-0-boundary-bg' },
           { id: 'settlement-major-label' },
           { id: 'airport-label' },
@@ -100,16 +102,46 @@ describe('services/mapRendererVisualStyleService', () => {
       setFilter,
     }, 'satellite');
 
-    expect(setLayoutProperty).toHaveBeenCalledTimes(6);
+    expect(setLayoutProperty).toHaveBeenCalledTimes(8);
     expect(setLayoutProperty).toHaveBeenNthCalledWith(1, 'admin-1-boundary', 'visibility', 'none');
-    expect(setLayoutProperty).toHaveBeenNthCalledWith(2, 'admin-2-boundary', 'visibility', 'none');
-    expect(setLayoutProperty).toHaveBeenNthCalledWith(3, 'region-boundary', 'visibility', 'none');
-    expect(setLayoutProperty).toHaveBeenNthCalledWith(4, 'admin-0-boundary', 'visibility', 'visible');
-    expect(setLayoutProperty).toHaveBeenNthCalledWith(5, 'admin-0-boundary-bg', 'visibility', 'visible');
-    expect(setLayoutProperty).toHaveBeenNthCalledWith(6, 'airport-label', 'visibility', 'none');
+    expect(setLayoutProperty).toHaveBeenNthCalledWith(2, 'admin_1_boundary', 'visibility', 'none');
+    expect(setLayoutProperty).toHaveBeenNthCalledWith(3, 'admin-2-boundary', 'visibility', 'none');
+    expect(setLayoutProperty).toHaveBeenNthCalledWith(4, 'region-boundary', 'visibility', 'none');
+    expect(setLayoutProperty).toHaveBeenNthCalledWith(5, 'admin-0-boundary', 'visibility', 'visible');
+    expect(setLayoutProperty).toHaveBeenNthCalledWith(6, 'admin_0_boundary', 'visibility', 'visible');
+    expect(setLayoutProperty).toHaveBeenNthCalledWith(7, 'admin-0-boundary-bg', 'visibility', 'visible');
+    expect(setLayoutProperty).toHaveBeenNthCalledWith(8, 'airport-label', 'visibility', 'none');
     expect(setFilter).toHaveBeenCalledWith('settlement-major-label', expect.any(Array));
     expect(setPaintProperty).toHaveBeenCalledWith('admin-0-boundary', 'line-color', 'rgba(255, 255, 255, 0.99)');
     expect(setPaintProperty).toHaveBeenCalledWith('admin-0-boundary-bg', 'line-opacity', 0.34);
+  });
+
+  it('removes roads and major settlement labels from clean map styles while keeping country context', () => {
+    const setLayoutProperty = vi.fn();
+    const setPaintProperty = vi.fn();
+    const setFilter = vi.fn();
+
+    applyMapboxTripVisualPolish({
+      getStyle: () => ({
+        layers: [
+          { id: 'road-primary' },
+          { id: 'bridge-motorway' },
+          { id: 'settlement-major-label' },
+          { id: 'country-label' },
+          { id: 'admin-0-boundary' },
+        ],
+      } as any),
+      getLayer: () => ({ id: 'mock' } as any),
+      setLayoutProperty,
+      setPaintProperty,
+      setFilter,
+    }, 'cleanDark');
+
+    expect(setLayoutProperty).toHaveBeenCalledWith('road-primary', 'visibility', 'none');
+    expect(setLayoutProperty).toHaveBeenCalledWith('bridge-motorway', 'visibility', 'none');
+    expect(setLayoutProperty).toHaveBeenCalledWith('settlement-major-label', 'visibility', 'none');
+    expect(setLayoutProperty).toHaveBeenCalledWith('admin-0-boundary', 'visibility', 'visible');
+    expect(setFilter).not.toHaveBeenCalled();
   });
 
   it('uses darker surface backgrounds for satellite and dark trip-map styles', () => {

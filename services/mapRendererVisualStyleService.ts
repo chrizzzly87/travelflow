@@ -74,17 +74,29 @@ const MAPBOX_TRIP_HIDDEN_BOUNDARY_LAYERS = [
 
 const MAPBOX_TRIP_HIDDEN_BOUNDARY_PATTERNS = [
   /admin-1-boundary/i,
+  /admin_1_boundary/i,
   /admin-2-boundary/i,
+  /admin_2_boundary/i,
   /admin-3-boundary/i,
+  /admin_3_boundary/i,
   /admin-4-boundary/i,
+  /admin_4_boundary/i,
   /state-boundary/i,
+  /state_boundary/i,
   /region-boundary/i,
+  /region_boundary/i,
   /province-boundary/i,
+  /province_boundary/i,
   /district-boundary/i,
+  /district_boundary/i,
   /county-boundary/i,
+  /county_boundary/i,
   /municipality-boundary/i,
+  /municipality_boundary/i,
   /subdivision-boundary/i,
+  /subdivision_boundary/i,
   /boundary-admin/i,
+  /boundary_admin/i,
 ];
 
 const MAPBOX_TRIP_COUNTRY_BOUNDARY_LAYERS = [
@@ -99,8 +111,16 @@ const MAPBOX_MAJOR_CITY_FILTER = [
   ['>=', ['coalesce', ['get', 'capital'], 0], 1],
 ] as const;
 
+const isMapboxMajorSettlementLayer = (layerId: string): boolean => (
+  /settlement[-_]major[-_]label/i.test(layerId)
+);
+
 const isDarkMapStyle = (mapStyle: MapStyle): boolean => (
   mapStyle === 'dark' || mapStyle === 'cleanDark'
+);
+
+const isCleanMapStyle = (mapStyle: MapStyle): boolean => (
+  mapStyle === 'clean' || mapStyle === 'cleanDark'
 );
 
 const resolveMapboxCountryBoundaryPaint = (mapStyle: MapStyle): {
@@ -200,9 +220,15 @@ export const buildMapboxStyleConfig = (mapStyle: MapStyle): MapboxStyleConfigMap
   }, {});
 };
 
-export const shouldHideMapboxTripLabelLayer = (layerId: string): boolean => {
+export const shouldHideMapboxTripLabelLayer = (
+  layerId: string,
+  mapStyle: MapStyle = 'standard',
+): boolean => {
   if (!layerId) return false;
-  if (MAPBOX_TRIP_LABEL_KEEP_PATTERNS.some((pattern) => pattern.test(layerId))) {
+  if (/country-label/i.test(layerId)) {
+    return false;
+  }
+  if (!isCleanMapStyle(mapStyle) && MAPBOX_TRIP_LABEL_KEEP_PATTERNS.some((pattern) => pattern.test(layerId))) {
     return false;
   }
   return MAPBOX_TRIP_LABEL_HIDE_PATTERNS.some((pattern) => pattern.test(layerId));
@@ -211,7 +237,9 @@ export const shouldHideMapboxTripLabelLayer = (layerId: string): boolean => {
 const isMapboxTripCountryBoundaryLayer = (layerId: string): boolean => (
   MAPBOX_TRIP_COUNTRY_BOUNDARY_LAYERS.includes(layerId as typeof MAPBOX_TRIP_COUNTRY_BOUNDARY_LAYERS[number])
   || /admin-0-boundary/i.test(layerId)
+  || /admin_0_boundary/i.test(layerId)
   || /country-boundary/i.test(layerId)
+  || /country_boundary/i.test(layerId)
 );
 
 const shouldHideMapboxTripBoundaryLayer = (layerId: string): boolean => {
@@ -220,7 +248,27 @@ const shouldHideMapboxTripBoundaryLayer = (layerId: string): boolean => {
   if (MAPBOX_TRIP_HIDDEN_BOUNDARY_LAYERS.includes(layerId as typeof MAPBOX_TRIP_HIDDEN_BOUNDARY_LAYERS[number])) {
     return true;
   }
+  if (/boundary/i.test(layerId) || /_boundary/i.test(layerId)) return true;
   return MAPBOX_TRIP_HIDDEN_BOUNDARY_PATTERNS.some((pattern) => pattern.test(layerId));
+};
+
+const MAPBOX_TRIP_CLEAN_ROAD_HIDE_PATTERNS = [
+  /^road[-_]/i,
+  /^bridge[-_]/i,
+  /^tunnel[-_]/i,
+  /^path[-_]/i,
+  /^ferry[-_]/i,
+  /^rail[-_]/i,
+  /motorway/i,
+  /highway/i,
+] as const;
+
+const shouldHideMapboxTripRoadGeometryLayer = (
+  layerId: string,
+  mapStyle: MapStyle,
+): boolean => {
+  if (!isCleanMapStyle(mapStyle) || !layerId) return false;
+  return MAPBOX_TRIP_CLEAN_ROAD_HIDE_PATTERNS.some((pattern) => pattern.test(layerId));
 };
 
 export const applyMapboxTripVisualPolish = (
@@ -236,9 +284,19 @@ export const applyMapboxTripVisualPolish = (
       map.setLayoutProperty(layer.id, 'visibility', 'none');
       return;
     }
-    if (layer.id === 'settlement-major-label') {
+    if (isMapboxMajorSettlementLayer(layer.id)) {
+      if (isCleanMapStyle(mapStyle)) {
+        if (!map.getLayer(layer.id)) return;
+        map.setLayoutProperty(layer.id, 'visibility', 'none');
+        return;
+      }
       if (!map.getLayer(layer.id)) return;
       map.setFilter(layer.id, MAPBOX_MAJOR_CITY_FILTER as unknown as any[]);
+      return;
+    }
+    if (shouldHideMapboxTripRoadGeometryLayer(layer.id, mapStyle)) {
+      if (!map.getLayer(layer.id)) return;
+      map.setLayoutProperty(layer.id, 'visibility', 'none');
       return;
     }
     if (isMapboxTripCountryBoundaryLayer(layer.id)) {
@@ -249,7 +307,7 @@ export const applyMapboxTripVisualPolish = (
       map.setPaintProperty(layer.id, 'line-opacity', isGlowLayer ? boundaryPaint.glowOpacity : boundaryPaint.lineOpacity);
       return;
     }
-    if (!shouldHideMapboxTripLabelLayer(layer.id)) return;
+    if (!shouldHideMapboxTripLabelLayer(layer.id, mapStyle)) return;
     if (!map.getLayer(layer.id)) return;
     map.setLayoutProperty(layer.id, 'visibility', 'none');
   });

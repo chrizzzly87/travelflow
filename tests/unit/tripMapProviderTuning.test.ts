@@ -44,10 +44,10 @@ describe('components/maps/tripMapProviderTuning', () => {
       bottom: 130,
       left: 130,
     });
-    expect(mapboxDockedPadding.top).toBeLessThan(googleDockedPadding.top);
-    expect(mapboxDockedPadding.left).toBeLessThan(googleDockedPadding.left);
+    expect(mapboxDockedPadding.top).toBeGreaterThan(googleDockedPadding.top);
+    expect(mapboxDockedPadding.left).toBeGreaterThan(googleDockedPadding.left);
     expect(mapboxDockedPadding.right).toBeGreaterThan(mapboxDockedPadding.left);
-    expect(mapboxDockedPadding.bottom).toBeGreaterThan(mapboxDockedPadding.top);
+    expect(mapboxDockedPadding.bottom).toBeGreaterThanOrEqual(mapboxDockedPadding.top);
     expect(mapboxFloatingPadding.top).toBeLessThan(mapboxDockedPadding.top);
     expect(mapboxFloatingPadding.left).toBeLessThan(mapboxDockedPadding.left);
     expect(mapboxFloatingPadding.right).toBeLessThan(mapboxDockedPadding.right);

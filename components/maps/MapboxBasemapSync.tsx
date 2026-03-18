@@ -116,9 +116,9 @@ const syncMapboxToGoogleCamera = (
   if (canAnimate) {
     mapboxMap.easeTo({
       ...nextCamera,
-      duration: 280,
+      duration: 340,
       essential: true,
-      easing: (value) => 1 - Math.pow(1 - value, 3),
+      easing: (value) => 1 - Math.pow(1 - value, 4),
     });
     return;
   }
