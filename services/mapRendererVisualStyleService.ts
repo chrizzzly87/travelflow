@@ -72,6 +72,12 @@ const MAPBOX_TRIP_HIDDEN_BOUNDARY_LAYERS = [
   'admin-1-boundary',
 ] as const;
 
+const MAPBOX_TRIP_HIDDEN_BOUNDARY_PATTERNS = [
+  /admin-1-boundary/i,
+  /admin-2-boundary/i,
+  /state-boundary/i,
+];
+
 const MAPBOX_TRIP_COUNTRY_BOUNDARY_LAYERS = [
   'admin-0-boundary-bg',
   'admin-0-boundary',
@@ -80,7 +86,7 @@ const MAPBOX_TRIP_COUNTRY_BOUNDARY_LAYERS = [
 
 const MAPBOX_MAJOR_CITY_FILTER = [
   'any',
-  ['<=', ['coalesce', ['get', 'symbolrank'], 999], 9],
+  ['<=', ['coalesce', ['get', 'symbolrank'], 999], 6],
   ['>=', ['coalesce', ['get', 'capital'], 0], 1],
 ] as const;
 
@@ -96,25 +102,25 @@ const resolveMapboxCountryBoundaryPaint = (mapStyle: MapStyle): {
 } => {
   if (mapStyle === 'satellite') {
     return {
-      lineColor: 'rgba(255, 255, 255, 0.98)',
-      lineOpacity: 0.92,
-      glowColor: 'rgba(255, 255, 255, 0.58)',
-      glowOpacity: 0.2,
+      lineColor: 'rgba(255, 255, 255, 0.99)',
+      lineOpacity: 0.96,
+      glowColor: 'rgba(255, 255, 255, 0.72)',
+      glowOpacity: 0.28,
     };
   }
   if (isDarkMapStyle(mapStyle)) {
     return {
-      lineColor: 'rgba(255, 255, 255, 0.94)',
-      lineOpacity: 0.84,
-      glowColor: 'rgba(255, 255, 255, 0.42)',
-      glowOpacity: 0.16,
+      lineColor: 'rgba(255, 255, 255, 0.96)',
+      lineOpacity: 0.88,
+      glowColor: 'rgba(255, 255, 255, 0.5)',
+      glowOpacity: 0.18,
     };
   }
   return {
-    lineColor: 'rgba(255, 255, 255, 0.92)',
-    lineOpacity: 0.76,
-    glowColor: 'rgba(255, 255, 255, 0.38)',
-    glowOpacity: 0.14,
+    lineColor: 'rgba(255, 255, 255, 0.95)',
+    lineOpacity: 0.82,
+    glowColor: 'rgba(255, 255, 255, 0.44)',
+    glowOpacity: 0.16,
   };
 };
 
@@ -202,6 +208,11 @@ export const applyMapboxTripVisualPolish = (
   layers.forEach((layer) => {
     if (!layer.id) return;
     if (MAPBOX_TRIP_HIDDEN_BOUNDARY_LAYERS.includes(layer.id as typeof MAPBOX_TRIP_HIDDEN_BOUNDARY_LAYERS[number])) {
+      if (!map.getLayer(layer.id)) return;
+      map.setLayoutProperty(layer.id, 'visibility', 'none');
+      return;
+    }
+    if (MAPBOX_TRIP_HIDDEN_BOUNDARY_PATTERNS.some((pattern) => pattern.test(layer.id))) {
       if (!map.getLayer(layer.id)) return;
       map.setLayoutProperty(layer.id, 'visibility', 'none');
       return;

@@ -36,6 +36,7 @@ export interface TripMapProviderTuning {
     cityFocusZoom: number;
     queryFocusZoom: number;
     safeInsetRatio: number;
+    floatingSafeInsetRatio: number;
   };
   markers: {
     activityMinZoom: number;
@@ -93,6 +94,7 @@ export interface TripMapProviderTuning {
     debounceMs: number;
     settleMs: number;
     autoFitViewportDeltaPx: number;
+    dockModeRefitDelayMs: number;
   };
 }
 
@@ -123,6 +125,7 @@ const GOOGLE_TRIP_MAP_TUNING: TripMapProviderTuning = {
     cityFocusZoom: 10,
     queryFocusZoom: 5,
     safeInsetRatio: 0.28,
+    floatingSafeInsetRatio: 0.24,
   },
   markers: {
     activityMinZoom: 9,
@@ -185,29 +188,30 @@ const GOOGLE_TRIP_MAP_TUNING: TripMapProviderTuning = {
     debounceMs: 72,
     settleMs: 180,
     autoFitViewportDeltaPx: 24,
+    dockModeRefitDelayMs: 220,
   },
 };
 
 const MAPBOX_TRIP_MAP_TUNING: TripMapProviderTuning = {
   fitPadding: {
-    baseRatio: 0.2,
-    baseMin: 76,
-    baseMax: 188,
+    baseRatio: 0.18,
+    baseMin: 68,
+    baseMax: 176,
     docked: {
-      verticalBoost: 24,
-      horizontalBoost: 20,
-      verticalMin: 92,
-      verticalMax: 236,
-      horizontalMin: 84,
-      horizontalMax: 214,
+      verticalBoost: 18,
+      horizontalBoost: 14,
+      verticalMin: 84,
+      verticalMax: 220,
+      horizontalMin: 78,
+      horizontalMax: 196,
     },
     floating: {
-      verticalBoost: 0,
-      horizontalBoost: -6,
-      verticalMin: 44,
-      verticalMax: 102,
-      horizontalMin: 38,
-      horizontalMax: 96,
+      verticalBoost: -24,
+      horizontalBoost: -22,
+      verticalMin: 28,
+      verticalMax: 72,
+      horizontalMin: 24,
+      horizontalMax: 66,
     },
   },
   selection: {
@@ -215,6 +219,7 @@ const MAPBOX_TRIP_MAP_TUNING: TripMapProviderTuning = {
     cityFocusZoom: 9.6,
     queryFocusZoom: 4.7,
     safeInsetRatio: 0.24,
+    floatingSafeInsetRatio: 0.16,
   },
   markers: {
     activityMinZoom: 8.5,
@@ -258,11 +263,11 @@ const MAPBOX_TRIP_MAP_TUNING: TripMapProviderTuning = {
     minMeaningfulTargetZoom: 2.3,
     minMeaningfulCenterOffsetDegrees: 6,
     flyToMinZoom: 3.05,
-    delayMs: 220,
-    durationMs: 1540,
-    settleMs: 1620,
+    delayMs: 90,
+    durationMs: 1480,
+    settleMs: 1560,
     curve: 1.28,
-    speed: 1.02,
+    speed: 1.08,
     syncCooldownMs: 320,
   },
   projection: {
@@ -277,6 +282,7 @@ const MAPBOX_TRIP_MAP_TUNING: TripMapProviderTuning = {
     debounceMs: 88,
     settleMs: 220,
     autoFitViewportDeltaPx: 28,
+    dockModeRefitDelayMs: 260,
   },
 };
 
@@ -315,6 +321,19 @@ export const resolveTripMapViewportPadding = ({
     bottom: verticalPadding,
     left: horizontalPadding,
   };
+};
+
+export const resolveTripMapSelectionSafeInsetRatio = ({
+  provider,
+  mapDockMode,
+}: {
+  provider: MapImplementation;
+  mapDockMode: TripMapDockMode;
+}): number => {
+  const tuning = getTripMapProviderTuning(provider);
+  return mapDockMode === 'floating'
+    ? tuning.selection.floatingSafeInsetRatio
+    : tuning.selection.safeInsetRatio;
 };
 
 export const resolveTripMapRestingProjection = ({

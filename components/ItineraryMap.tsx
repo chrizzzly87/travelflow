@@ -25,7 +25,11 @@ import {
     type TripMapCityLabelAnchor,
 } from './maps/tripMapProviderPresentation';
 import { resolveActiveOverlayMapTarget, shouldHideGoogleMapCanvas } from './maps/mapRenderTarget';
-import { getTripMapProviderTuning, resolveTripMapViewportPadding } from './maps/tripMapProviderTuning';
+import {
+    getTripMapProviderTuning,
+    resolveTripMapSelectionSafeInsetRatio,
+    resolveTripMapViewportPadding,
+} from './maps/tripMapProviderTuning';
 import { GOOGLE_ROUTES_COMPUTE_FIELDS, computeGoogleRouteLeg, loadGoogleRouteRuntime } from '../services/routeService';
 import { buildLatLngPrecisionKey, isFiniteLatLngLiteral } from '../shared/coordinateUtils';
 import type { MapImplementation } from '../shared/mapRuntime';
@@ -1393,14 +1397,14 @@ const buildMapboxRouteLayerConfigs = ({
         if (!mainLayer.dasharray) {
             darkRouteLayers.push({
                 id: `${routeId}-glow`,
-                color: style === 'cleanDark' ? 'rgba(248,250,252,0.38)' : 'rgba(148,163,184,0.34)',
-                opacity: style === 'cleanDark' ? 0.18 : 0.14,
-                width: Math.max(1.4, mainLayer.width + 1.2),
+                color: mainLayer.color,
+                opacity: style === 'cleanDark' ? 0.22 : 0.18,
+                width: Math.max(1.3, mainLayer.width + (style === 'cleanDark' ? 1.25 : 1)),
             });
         }
         darkRouteLayers.push({
             ...mainLayer,
-            opacity: Math.min(0.94, Math.max(0.78, mainLayer.opacity)),
+            opacity: Math.min(0.94, Math.max(style === 'cleanDark' ? 0.84 : 0.8, mainLayer.opacity)),
         });
         return darkRouteLayers;
     }
@@ -1543,6 +1547,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     const lastFitToRouteKeyRef = useRef<string | null>(null);
     const fitRafRef = useRef<number | null>(null);
     const resizeAutoFitTimerRef = useRef<number | null>(null);
+    const dockModeRefitTimerRef = useRef<number | null>(null);
     const hasAutoFitCompletedRef = useRef(false);
     const scheduleFitWhenViewportReadyRef = useRef<(maxAttempts?: number, options?: { respectSelection?: boolean }) => void>(() => {});
     const onRouteMetricsRef = useRef<typeof onRouteMetrics>(onRouteMetrics);
@@ -1702,6 +1707,12 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         if (resizeAutoFitTimerRef.current === null || typeof window === 'undefined') return;
         window.clearTimeout(resizeAutoFitTimerRef.current);
         resizeAutoFitTimerRef.current = null;
+    }, []);
+
+    const cancelDockModeRefitTimer = useCallback(() => {
+        if (dockModeRefitTimerRef.current === null || typeof window === 'undefined') return;
+        window.clearTimeout(dockModeRefitTimerRef.current);
+        dockModeRefitTimerRef.current = null;
     }, []);
 
     const runFitBounds = useCallback(() => {
@@ -2956,7 +2967,10 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 ? isCoordinateWithinSafeBounds({
                     bounds: currentBounds,
                     point: focusTarget.position,
-                    insetRatio: tripMapTuning.selection.safeInsetRatio,
+                    insetRatio: resolveTripMapSelectionSafeInsetRatio({
+                        provider: tripMapProvider,
+                        mapDockMode,
+                    }),
                 })
                 : false;
             const { shouldPan, shouldZoom } = resolveSelectionViewportActions({
@@ -2978,7 +2992,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             }
         }, 100);
         return () => clearTimeout(t);
-    }, [selectedActivityId, selectedCityId, mapInitialized, cityMapSignature, resolvedActivityMarkerPositionById, tripMapProvider, tripMapTuning.selection.safeInsetRatio]);
+    }, [cityMapSignature, mapDockMode, mapInitialized, resolvedActivityMarkerPositionById, selectedActivityId, selectedCityId, tripMapProvider]);
 
     // Fit Bounds
     const handleFit = () => {
@@ -3020,11 +3034,15 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         previousMapDockModeRef.current = mapDockMode;
         if (!mapInitialized || cities.length === 0) return;
         if (previousDockMode === mapDockMode) return;
+        cancelDockModeRefitTimer();
         if (mapDockMode !== 'docked') return;
         cancelResizeAutoFitTimer();
         cancelScheduledFit();
-        scheduleFitWhenViewportReadyRef.current(18, { respectSelection: false });
-    }, [cancelResizeAutoFitTimer, cancelScheduledFit, cities.length, mapDockMode, mapInitialized]);
+        dockModeRefitTimerRef.current = window.setTimeout(() => {
+            dockModeRefitTimerRef.current = null;
+            scheduleFitWhenViewportReadyRef.current(18, { respectSelection: false });
+        }, tripMapTuning.resize.dockModeRefitDelayMs);
+    }, [cancelDockModeRefitTimer, cancelResizeAutoFitTimer, cancelScheduledFit, cities.length, mapDockMode, mapInitialized, tripMapTuning.resize.dockModeRefitDelayMs]);
 
     useEffect(() => {
         if (!mapInitialized || !googleMapRef.current || typeof ResizeObserver === 'undefined') return;
@@ -3079,19 +3097,21 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
 
         return () => {
             observer.disconnect();
+            cancelDockModeRefitTimer();
             cancelResizeAutoFitTimer();
             if (resizeRafId !== null) {
                 window.cancelAnimationFrame(resizeRafId);
             }
         };
-    }, [cancelResizeAutoFitTimer, cities.length, mapDockMode, mapInitialized, tripMapTuning.resize.autoFitViewportDeltaPx]);
+    }, [cancelDockModeRefitTimer, cancelResizeAutoFitTimer, cities.length, mapDockMode, mapInitialized, tripMapTuning.resize.autoFitViewportDeltaPx]);
 
     useEffect(() => (
         () => {
+            cancelDockModeRefitTimer();
             cancelResizeAutoFitTimer();
             cancelScheduledFit();
         }
-    ), [cancelResizeAutoFitTimer, cancelScheduledFit]);
+    ), [cancelDockModeRefitTimer, cancelResizeAutoFitTimer, cancelScheduledFit]);
 
     // If we don't have city coordinates yet, center the map on the selected country/location.
     // Supports one or multiple focus queries separated by "||".

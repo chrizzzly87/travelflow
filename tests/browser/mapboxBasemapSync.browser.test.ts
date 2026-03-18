@@ -7,6 +7,7 @@ import {
   isMeaningfulMapboxIntroTarget,
   isMapboxBasemapFatalError,
   resolveMapboxEffectiveProjection,
+  resolveMapboxViewportSize,
   shouldRunMapboxGlobeIntro,
   stretchMapboxViewport,
 } from '../../components/maps/MapboxBasemapSync';
@@ -41,6 +42,21 @@ describe('components/maps/MapboxBasemapSync', () => {
     expect(canvasContainer.style.height).toBe('100%');
     expect(canvas.style.width).toBe('100%');
     expect(canvas.style.height).toBe('100%');
+  });
+
+  it('falls back to the live container geometry when the trip page has not published viewport dimensions yet', () => {
+    const container = {
+      getBoundingClientRect: () => ({ width: 822.4, height: 468.6 }),
+    } as unknown as HTMLElement;
+
+    expect(resolveMapboxViewportSize({
+      mapViewportSize: null,
+      fallbackViewportSize: null,
+      container,
+    })).toEqual({
+      width: 822,
+      height: 469,
+    });
   });
 
   it('triggers the globe intro as soon as a finite synced trip camera target exists', () => {

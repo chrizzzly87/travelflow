@@ -85,6 +85,7 @@ describe('services/mapRendererVisualStyleService', () => {
       getStyle: () => ({
         layers: [
           { id: 'admin-1-boundary' },
+          { id: 'admin-2-boundary' },
           { id: 'admin-0-boundary' },
           { id: 'admin-0-boundary-bg' },
           { id: 'settlement-major-label' },
@@ -98,12 +99,13 @@ describe('services/mapRendererVisualStyleService', () => {
       setFilter,
     }, 'satellite');
 
-    expect(setLayoutProperty).toHaveBeenCalledTimes(2);
+    expect(setLayoutProperty).toHaveBeenCalledTimes(3);
     expect(setLayoutProperty).toHaveBeenNthCalledWith(1, 'admin-1-boundary', 'visibility', 'none');
-    expect(setLayoutProperty).toHaveBeenNthCalledWith(2, 'airport-label', 'visibility', 'none');
+    expect(setLayoutProperty).toHaveBeenNthCalledWith(2, 'admin-2-boundary', 'visibility', 'none');
+    expect(setLayoutProperty).toHaveBeenNthCalledWith(3, 'airport-label', 'visibility', 'none');
     expect(setFilter).toHaveBeenCalledWith('settlement-major-label', expect.any(Array));
-    expect(setPaintProperty).toHaveBeenCalledWith('admin-0-boundary', 'line-color', 'rgba(255, 255, 255, 0.98)');
-    expect(setPaintProperty).toHaveBeenCalledWith('admin-0-boundary-bg', 'line-opacity', 0.2);
+    expect(setPaintProperty).toHaveBeenCalledWith('admin-0-boundary', 'line-color', 'rgba(255, 255, 255, 0.99)');
+    expect(setPaintProperty).toHaveBeenCalledWith('admin-0-boundary-bg', 'line-opacity', 0.28);
   });
 
   it('uses darker surface backgrounds for satellite and dark trip-map styles', () => {

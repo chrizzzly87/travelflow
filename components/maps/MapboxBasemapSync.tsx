@@ -151,6 +151,41 @@ export const stretchMapboxViewport = (
   });
 };
 
+export const resolveMapboxViewportSize = ({
+  mapViewportSize,
+  fallbackViewportSize,
+  container,
+}: {
+  mapViewportSize: { width: number; height: number } | null | undefined;
+  fallbackViewportSize?: { width: number; height: number } | null;
+  container?: Pick<HTMLElement, 'getBoundingClientRect'> | null;
+}): { width: number; height: number } | null => {
+  const pickFiniteSize = (value: { width: number; height: number } | null | undefined) => {
+    if (!value) return null;
+    if (!Number.isFinite(value.width) || !Number.isFinite(value.height)) return null;
+    if (value.width <= 0 || value.height <= 0) return null;
+    return {
+      width: Math.round(value.width),
+      height: Math.round(value.height),
+    };
+  };
+
+  const resolvedViewportSize = pickFiniteSize(mapViewportSize);
+  if (resolvedViewportSize) return resolvedViewportSize;
+
+  const resolvedFallbackSize = pickFiniteSize(fallbackViewportSize);
+  if (resolvedFallbackSize) return resolvedFallbackSize;
+
+  if (!container) return null;
+  const rect = container.getBoundingClientRect();
+  if (!Number.isFinite(rect.width) || !Number.isFinite(rect.height)) return null;
+  if (rect.width <= 0 || rect.height <= 0) return null;
+  return {
+    width: Math.round(rect.width),
+    height: Math.round(rect.height),
+  };
+};
+
 export const resolveMapboxEffectiveProjection = ({
   mapDockMode,
   mapViewportSize,
@@ -220,6 +255,8 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
   const appliedProjectionRef = useRef<'globe' | 'mercator' | null>(null);
   const mapDockModeRef = useRef<TripMapDockMode>(mapDockMode);
   const mapViewportSizeRef = useRef<{ width: number; height: number } | null>(mapViewportSize);
+  const cancelIntroRef = useRef<(() => void) | null>(null);
+  const reportSurfaceReadyRef = useRef<(isReady: boolean) => void>(() => {});
 
   mapStyleRef.current = mapStyle;
   mapDockModeRef.current = mapDockMode;
@@ -237,7 +274,14 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
     let resizeTimeoutId: number | null = null;
     let settleResizeTimeoutId: number | null = null;
     let introTimeoutId: number | null = null;
+    let introSettleTimeoutId: number | null = null;
     let hasCompletedInitialLoad = false;
+
+    const getEffectiveViewportSize = () => resolveMapboxViewportSize({
+      mapViewportSize: mapViewportSizeRef.current,
+      fallbackViewportSize: lastViewportSizeRef.current,
+      container: containerRef.current,
+    });
 
     const flushViewportSize = () => {
       const container = containerRef.current;
@@ -304,6 +348,7 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
       hasReportedSurfaceReady = false;
       onSurfaceReadyChange?.(false);
     };
+    reportSurfaceReadyRef.current = reportSurfaceReady;
 
     const applyProjection = ({
       introActive,
@@ -316,13 +361,37 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
       if (!mapboxMap) return;
       const projection = resolveMapboxEffectiveProjection({
         mapDockMode: mapDockModeRef.current,
-        mapViewportSize: mapViewportSizeRef.current,
+        mapViewportSize: getEffectiveViewportSize(),
         introActive,
       });
       if (!force && appliedProjectionRef.current === projection) return;
       appliedProjectionRef.current = projection;
       applyMapboxProjectionState(mapboxMap, projection);
     };
+
+    const cancelGlobeIntro = (options?: { syncToGoogle?: boolean }) => {
+      if (introTimeoutId !== null) {
+        window.clearTimeout(introTimeoutId);
+        introTimeoutId = null;
+      }
+      if (introSettleTimeoutId !== null) {
+        window.clearTimeout(introSettleTimeoutId);
+        introSettleTimeoutId = null;
+      }
+      const mapboxMap = mapboxMapRef.current;
+      const shouldSyncToGoogle = options?.syncToGoogle ?? true;
+      if (!introActiveRef.current) return;
+      introActiveRef.current = false;
+      initialCameraResolvedRef.current = true;
+      applyProjection({ introActive: false, force: true });
+      if (syncSourceRef.current === 'google') {
+        syncSourceRef.current = null;
+      }
+      if (shouldSyncToGoogle && mapboxMap && googleMap) {
+        syncMapboxToGoogleCamera(mapboxMap, googleMap);
+      }
+    };
+    cancelIntroRef.current = cancelGlobeIntro;
 
     const runGlobeIntro = () => {
       const mapboxMap = mapboxMapRef.current;
@@ -333,7 +402,7 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
         || !shouldUseTripMapGlobeIntro({
           provider: 'mapbox',
           mapDockMode: mapDockModeRef.current,
-          mapViewportSize: mapViewportSizeRef.current,
+          mapViewportSize: getEffectiveViewportSize(),
         })
         || !shouldRunMapboxGlobeIntro(target.zoom)
       ) {
@@ -360,7 +429,8 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
           speed: MAPBOX_TRIP_TUNING.intro.speed,
         });
 
-        window.setTimeout(() => {
+        introSettleTimeoutId = window.setTimeout(() => {
+          introSettleTimeoutId = null;
           introActiveRef.current = false;
           initialCameraResolvedRef.current = true;
           applyProjection({ introActive: false, force: true });
@@ -493,11 +563,11 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
           pitch: MAPBOX_GLOBE_INTRO_CAMERA.pitch,
           projection: resolveMapboxEffectiveProjection({
             mapDockMode: mapDockModeRef.current,
-            mapViewportSize: mapViewportSizeRef.current,
+            mapViewportSize: getEffectiveViewportSize(),
             introActive: shouldUseTripMapGlobeIntro({
               provider: 'mapbox',
               mapDockMode: mapDockModeRef.current,
-              mapViewportSize: mapViewportSizeRef.current,
+              mapViewportSize: getEffectiveViewportSize(),
             }),
           }),
           interactive,
@@ -510,13 +580,17 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
         });
 
         mapboxMapRef.current = mapboxMap;
+        const initialViewportSize = getEffectiveViewportSize();
+        if (initialViewportSize) {
+          lastViewportSizeRef.current = initialViewportSize;
+        }
         appliedProjectionRef.current = resolveMapboxEffectiveProjection({
           mapDockMode: mapDockModeRef.current,
-          mapViewportSize: mapViewportSizeRef.current,
+          mapViewportSize: initialViewportSize,
           introActive: shouldUseTripMapGlobeIntro({
             provider: 'mapbox',
             mapDockMode: mapDockModeRef.current,
-            mapViewportSize: mapViewportSizeRef.current,
+            mapViewportSize: initialViewportSize,
           }),
         });
         onMapReadyChange?.(mapboxMap);
@@ -526,32 +600,37 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
         mapboxMap.on('load', () => {
           if (cancelled || mapboxMapRef.current !== mapboxMap) return;
           hasCompletedInitialLoad = true;
+          flushViewportSize();
           applyProjection({
             introActive: shouldUseTripMapGlobeIntro({
               provider: 'mapbox',
               mapDockMode: mapDockModeRef.current,
-              mapViewportSize: mapViewportSizeRef.current,
+              mapViewportSize: getEffectiveViewportSize(),
             }),
             force: true,
           });
           applyMapboxTripVisualPolish(mapboxMap, mapStyleRef.current);
           scheduleViewportResize(true);
+          reportSurfaceReady(true);
           window.requestAnimationFrame(() => {
             if (cancelled || mapboxMapRef.current !== mapboxMap) return;
-            reportSurfaceReady(true);
-            scheduleSync();
+            if (!runGlobeIntro()) {
+              scheduleSync();
+            }
           });
         });
         mapboxMap.on('style.load', () => {
           if (cancelled || mapboxMapRef.current !== mapboxMap) return;
+          flushViewportSize();
           applyProjection({
             introActive: introActiveRef.current,
             force: true,
           });
           applyMapboxTripVisualPolish(mapboxMap, mapStyleRef.current);
           scheduleViewportResize(true);
+          reportSurfaceReady(true);
           if (hasCompletedInitialLoad) {
-            mapboxMap.once('idle', () => {
+            window.requestAnimationFrame(() => {
               if (cancelled || mapboxMapRef.current !== mapboxMap) return;
               onStyleReload?.();
             });
@@ -606,6 +685,9 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
       if (introTimeoutId !== null) {
         window.clearTimeout(introTimeoutId);
       }
+      if (introSettleTimeoutId !== null) {
+        window.clearTimeout(introSettleTimeoutId);
+      }
       if (syncFrameRef.current !== null) {
         window.cancelAnimationFrame(syncFrameRef.current);
         syncFrameRef.current = null;
@@ -621,6 +703,8 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
       lastViewportSizeRef.current = null;
       mapboxMapRef.current = null;
       introActiveRef.current = false;
+      cancelIntroRef.current = null;
+      reportSurfaceReadyRef.current = () => {};
       gestureActiveRef.current = false;
       appliedStyleKeyRef.current = null;
       appliedProjectionRef.current = null;
@@ -634,11 +718,23 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
     const mapboxMap = mapboxMapRef.current;
     if (!mapboxMap) return;
 
+    const effectiveViewportSize = resolveMapboxViewportSize({
+      mapViewportSize,
+      fallbackViewportSize: lastViewportSizeRef.current,
+      container: containerRef.current,
+    });
     const nextProjection = resolveMapboxEffectiveProjection({
       mapDockMode,
-      mapViewportSize,
+      mapViewportSize: effectiveViewportSize,
       introActive: introActiveRef.current,
     });
+    if (
+      introActiveRef.current
+      && nextProjection !== 'globe'
+    ) {
+      cancelIntroRef.current?.({ syncToGoogle: true });
+      return;
+    }
     if (!introActiveRef.current && appliedProjectionRef.current !== nextProjection) {
       appliedProjectionRef.current = nextProjection;
       applyMapboxProjectionState(mapboxMap, nextProjection);
@@ -655,9 +751,11 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
     if (appliedStyleKeyRef.current === styleKey) return;
 
     appliedStyleKeyRef.current = styleKey;
+    reportSurfaceReadyRef.current(false);
     try {
       mapboxMap.setStyle(descriptor.styleUrl, config ? { config } : undefined);
     } catch (error) {
+      reportSurfaceReadyRef.current(true);
       console.warn('Failed to switch Mapbox basemap style', error);
     }
   }, [mapStyle]);

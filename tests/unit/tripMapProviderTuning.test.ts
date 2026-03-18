@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   getTripMapProviderTuning,
+  resolveTripMapSelectionSafeInsetRatio,
   resolveTripMapViewportPadding,
   resolveTripMapRestingProjection,
   shouldUseTripMapGlobeIntro,
@@ -15,6 +16,7 @@ describe('components/maps/tripMapProviderTuning', () => {
     expect(googleTuning.selection.cityFocusZoom).toBe(10);
     expect(mapboxTuning.selection.cityFocusZoom).toBeLessThan(googleTuning.selection.cityFocusZoom);
     expect(mapboxTuning.selection.safeInsetRatio).toBeLessThan(googleTuning.selection.safeInsetRatio);
+    expect(mapboxTuning.selection.floatingSafeInsetRatio).toBeLessThan(mapboxTuning.selection.safeInsetRatio);
     expect(mapboxTuning.markers.cityZoomProfile.mediumCircleMaxZoom)
       .toBeGreaterThan(googleTuning.markers.cityZoomProfile.mediumCircleMaxZoom);
   });
@@ -46,6 +48,24 @@ describe('components/maps/tripMapProviderTuning', () => {
     expect(mapboxDockedPadding.left).toBeLessThan(googleDockedPadding.left);
     expect(mapboxFloatingPadding.top).toBeLessThan(mapboxDockedPadding.top);
     expect(mapboxFloatingPadding.left).toBeLessThan(mapboxDockedPadding.left);
+  });
+
+  it('uses a tighter safe inset for floating Mapbox recentering than for docked maps', () => {
+    expect(resolveTripMapSelectionSafeInsetRatio({
+      provider: 'mapbox',
+      mapDockMode: 'floating',
+    })).toBeLessThan(resolveTripMapSelectionSafeInsetRatio({
+      provider: 'mapbox',
+      mapDockMode: 'docked',
+    }));
+
+    expect(resolveTripMapSelectionSafeInsetRatio({
+      provider: 'google',
+      mapDockMode: 'floating',
+    })).toBeLessThan(resolveTripMapSelectionSafeInsetRatio({
+      provider: 'google',
+      mapDockMode: 'docked',
+    }));
   });
 
   it('uses a flat resting projection for Mapbox trip views and only enables the globe intro on larger docked viewports', () => {
