@@ -24,6 +24,19 @@ describe('components/admin/AiProviderLogo', () => {
     expect(image?.getAttribute('src')).toBe('/images/ai-providers/minimax.png');
   });
 
+  it('uses the OpenAI logo for OpenRouter OpenAI models', () => {
+    const { container } = render(
+      <AiProviderLogo
+        provider="openrouter"
+        model="openai/gpt-5.4-mini"
+        size={20}
+      />,
+    );
+    const image = container.querySelector('img');
+    expect(image).not.toBeNull();
+    expect(image?.getAttribute('src')).toBe('/images/ai-providers/openai.svg');
+  });
+
   it('falls back to text badge when no logo mapping exists', () => {
     render(<AiProviderLogo provider="unknown-provider" size={20} />);
     expect(screen.getByText('AI')).toBeTruthy();

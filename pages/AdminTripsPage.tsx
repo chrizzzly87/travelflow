@@ -3,8 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowSquareOut, DotsThreeVertical, MapPin, SpinnerGap, Trash, X } from '@phosphor-icons/react';
 import { AdminShell, type AdminDateRange } from '../components/admin/AdminShell';
 import { isIsoDateInRange } from '../components/admin/adminDateRange';
-import { AI_MODEL_CATALOG, getDefaultCreateTripModel } from '../config/aiModelCatalog';
-import { getAiProviderMetadata } from '../config/aiProviderCatalog';
+import { AI_MODEL_CATALOG, getDefaultCreateTripModel, sortAiModels } from '../config/aiModelCatalog';
 import {
     adminGetUserProfile,
     adminHardDeleteTrip,
@@ -138,14 +137,15 @@ const USER_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
 const relativeTimeFormatter = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
 const DEFAULT_RETRY_MODEL_ID = getDefaultCreateTripModel().id;
-const ACTIVE_RETRY_MODEL_OPTIONS = AI_MODEL_CATALOG
-    .filter((entry) => entry.availability === 'active')
+const ACTIVE_RETRY_MODEL_OPTIONS = sortAiModels(
+    AI_MODEL_CATALOG.filter((entry) => entry.availability === 'active')
+)
     .map((entry) => ({
         id: entry.id,
         provider: entry.provider,
-        providerLabel: getAiProviderMetadata(entry.provider).label,
+        providerLabel: entry.providerLabel,
         model: entry.model,
-        label: `${getAiProviderMetadata(entry.provider).label} · ${entry.model}`,
+        label: entry.label,
     }));
 
 const parseQueryMultiValue = <T extends string>(
@@ -2774,7 +2774,7 @@ export const AdminTripsPage: React.FC = () => {
                                                     {selectedDrawerRetryModelOption && (
                                                         <div className="mb-1.5 inline-flex items-center gap-1.5 rounded-full border border-accent-200 bg-accent-50 px-2 py-0.5 text-[11px] font-semibold text-accent-800">
                                                             <AiProviderLogo provider={selectedDrawerRetryModelOption.provider} model={selectedDrawerRetryModelOption.model} size={12} />
-                                                            <span>{selectedDrawerRetryModelOption.providerLabel} · {selectedDrawerRetryModelOption.model}</span>
+                                                            <span>{selectedDrawerRetryModelOption.providerLabel} · {selectedDrawerRetryModelOption.label}</span>
                                                             <span className="rounded-full border border-accent-300 bg-white px-1.5 text-[10px] uppercase tracking-wide text-accent-700">current</span>
                                                         </div>
                                                     )}
@@ -2793,7 +2793,7 @@ export const AdminTripsPage: React.FC = () => {
                                                                         <SelectItem key={option.id} value={option.id}>
                                                                             <span className="inline-flex items-center gap-2">
                                                                                 <AiProviderLogo provider={option.provider} model={option.model} size={14} />
-                                                                                <span className="font-medium text-slate-800">{option.model}</span>
+                                                                                <span className="font-medium text-slate-800">{option.label}</span>
                                                                                 {option.id === drawerRetryModelId && (
                                                                                     <span className="rounded-full border border-accent-300 bg-accent-50 px-1.5 text-[10px] uppercase tracking-wide text-accent-700">
                                                                                         current

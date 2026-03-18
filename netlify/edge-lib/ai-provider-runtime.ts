@@ -69,6 +69,8 @@ export const PROVIDER_ALLOWLIST: Record<string, Set<string>> = {
   openrouter: new Set([
     "openrouter/free",
     "openai/gpt-oss-20b:free",
+    "openai/gpt-5.4-nano",
+    "openai/gpt-5.4-mini",
     "qwen/qwen3-coder:free",
     "nvidia/nemotron-3-super-120b-a12b:free",
     "z-ai/glm-5",
