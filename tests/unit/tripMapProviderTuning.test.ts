@@ -21,7 +21,7 @@ describe('components/maps/tripMapProviderTuning', () => {
       .toBeGreaterThan(googleTuning.markers.cityZoomProfile.mediumCircleMaxZoom);
   });
 
-  it('creates roomier viewport padding for the mixed Mapbox renderer', () => {
+  it('keeps docked Mapbox fits roomier than floating without over-expanding beyond the Google baseline', () => {
     const googleDockedPadding = resolveTripMapViewportPadding({
       provider: 'google',
       mapDockMode: 'docked',
@@ -44,8 +44,8 @@ describe('components/maps/tripMapProviderTuning', () => {
       bottom: 130,
       left: 130,
     });
-    expect(mapboxDockedPadding.top).toBeGreaterThan(googleDockedPadding.top);
-    expect(mapboxDockedPadding.left).toBeGreaterThan(googleDockedPadding.left);
+    expect(mapboxDockedPadding.top).toBeLessThan(googleDockedPadding.top);
+    expect(mapboxDockedPadding.left).toBeLessThan(googleDockedPadding.left);
     expect(mapboxDockedPadding.right).toBeGreaterThan(mapboxDockedPadding.left);
     expect(mapboxDockedPadding.bottom).toBeGreaterThanOrEqual(mapboxDockedPadding.top);
     expect(mapboxFloatingPadding.top).toBeLessThan(mapboxDockedPadding.top);

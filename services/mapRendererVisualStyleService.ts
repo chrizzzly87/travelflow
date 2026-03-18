@@ -15,6 +15,15 @@ export interface MapboxStyleDescriptor {
 
 export type MapboxStyleConfigMap = Record<string, Record<string, boolean | string | number>>;
 
+interface MapboxStyleLayerLike {
+  id?: string;
+  type?: string;
+  source?: string;
+  'source-layer'?: string;
+  metadata?: Record<string, unknown>;
+  filter?: unknown;
+}
+
 type MapboxStyleLayerVisibilityMap = Pick<
   import('mapbox-gl').Map,
   'getStyle' | 'getLayer' | 'setFilter' | 'setLayoutProperty' | 'setPaintProperty'
@@ -31,25 +40,93 @@ const buildMapboxStyleDescriptor = (
   configProperties,
 });
 
-const MAPBOX_STANDARD_VISUAL_CONFIG: MapboxStyleConfigProperty[] = [
-  { fragmentId: 'basemap', property: 'showPlaceLabels', value: true },
-  { fragmentId: 'basemap', property: 'showPointOfInterestLabels', value: false },
-  { fragmentId: 'basemap', property: 'showTransitLabels', value: false },
-  { fragmentId: 'basemap', property: 'showRoadLabels', value: false },
-  { fragmentId: 'basemap', property: 'showAdminBoundaries', value: true },
-  { fragmentId: 'basemap', property: 'colorAdminBoundaries', value: '#ffffff' },
-];
+const MAPBOX_LIGHT_BOUNDARY_COLOR = '#1f2937';
+const MAPBOX_DARK_BOUNDARY_COLOR = '#ffffff';
 
-const MAPBOX_SATELLITE_VISUAL_CONFIG: MapboxStyleConfigProperty[] = [
-  ...MAPBOX_STANDARD_VISUAL_CONFIG,
-  { fragmentId: 'basemap', property: 'showRoadsAndTransit', value: false },
-  { fragmentId: 'basemap', property: 'showPedestrianRoads', value: false },
-];
+const buildMapboxStandardVisualConfig = ({
+  boundaryColor,
+  showPlaceLabels = true,
+  showRoadsAndTransit,
+  showPedestrianRoads,
+}: {
+  boundaryColor: string;
+  showPlaceLabels?: boolean;
+  showRoadsAndTransit?: boolean;
+  showPedestrianRoads?: boolean;
+}): MapboxStyleConfigProperty[] => {
+  const config: MapboxStyleConfigProperty[] = [
+    { fragmentId: 'basemap', property: 'showPlaceLabels', value: showPlaceLabels },
+    { fragmentId: 'basemap', property: 'showPointOfInterestLabels', value: false },
+    { fragmentId: 'basemap', property: 'showTransitLabels', value: false },
+    { fragmentId: 'basemap', property: 'showRoadLabels', value: false },
+    { fragmentId: 'basemap', property: 'showAdminBoundaries', value: true },
+    { fragmentId: 'basemap', property: 'colorAdminBoundaries', value: boundaryColor },
+  ];
+
+  if (typeof showRoadsAndTransit === 'boolean') {
+    config.push({ fragmentId: 'basemap', property: 'showRoadsAndTransit', value: showRoadsAndTransit });
+  }
+  if (typeof showPedestrianRoads === 'boolean') {
+    config.push({ fragmentId: 'basemap', property: 'showPedestrianRoads', value: showPedestrianRoads });
+  }
+
+  return config;
+};
+
+const MAPBOX_STANDARD_VISUAL_CONFIG = buildMapboxStandardVisualConfig({
+  boundaryColor: MAPBOX_LIGHT_BOUNDARY_COLOR,
+});
+
+const MAPBOX_DARK_VISUAL_CONFIG = buildMapboxStandardVisualConfig({
+  boundaryColor: MAPBOX_DARK_BOUNDARY_COLOR,
+});
+
+const MAPBOX_CLEAN_VISUAL_CONFIG = buildMapboxStandardVisualConfig({
+  boundaryColor: MAPBOX_LIGHT_BOUNDARY_COLOR,
+  showRoadsAndTransit: false,
+  showPedestrianRoads: false,
+});
+
+const MAPBOX_CLEAN_DARK_VISUAL_CONFIG = buildMapboxStandardVisualConfig({
+  boundaryColor: MAPBOX_DARK_BOUNDARY_COLOR,
+  showRoadsAndTransit: false,
+  showPedestrianRoads: false,
+});
+
+const MAPBOX_SATELLITE_VISUAL_CONFIG = buildMapboxStandardVisualConfig({
+  boundaryColor: MAPBOX_DARK_BOUNDARY_COLOR,
+  showRoadsAndTransit: false,
+  showPedestrianRoads: false,
+});
 
 const MAPBOX_TRIP_LABEL_HIDE_PATTERNS = [
   /settlement-subdivision-label/i,
   /settlement-minor-label/i,
+  /settlement-village-label/i,
+  /settlement-hamlet-label/i,
+  /settlement-other-label/i,
   /state-label/i,
+  /state-label-lg/i,
+  /province-label/i,
+  /province_label/i,
+  /region-label/i,
+  /region_label/i,
+  /district-label/i,
+  /district_label/i,
+  /county-label/i,
+  /county_label/i,
+  /locality-label/i,
+  /locality_label/i,
+  /place-label/i,
+  /place_label/i,
+  /city-label/i,
+  /city_label/i,
+  /town-label/i,
+  /town_label/i,
+  /village-label/i,
+  /village_label/i,
+  /hamlet-label/i,
+  /hamlet_label/i,
   /airport-label/i,
   /poi-label/i,
   /transit-label/i,
@@ -65,6 +142,18 @@ const MAPBOX_TRIP_LABEL_HIDE_PATTERNS = [
 const MAPBOX_TRIP_LABEL_KEEP_PATTERNS = [
   /country-label/i,
   /settlement-major-label/i,
+];
+
+const MAPBOX_TRIP_CLEAN_LABEL_HIDE_PATTERNS = [
+  /settlement-major-label/i,
+  /place-label/i,
+  /place_label/i,
+  /city-label/i,
+  /city_label/i,
+  /town-label/i,
+  /town_label/i,
+  /settlement/i,
+  /locality/i,
 ];
 
 const MAPBOX_TRIP_HIDDEN_BOUNDARY_LAYERS = [
@@ -111,8 +200,8 @@ const MAPBOX_MAJOR_CITY_FILTER = [
   ['>=', ['coalesce', ['get', 'capital'], 0], 1],
 ] as const;
 
-const isMapboxMajorSettlementLayer = (layerId: string): boolean => (
-  /settlement[-_]major[-_]label/i.test(layerId)
+const isMapboxMajorSettlementLayer = (layer: MapboxStyleLayerLike): boolean => (
+  /settlement[-_]major[-_]label/i.test(layer.id ?? '')
 );
 
 const isDarkMapStyle = (mapStyle: MapStyle): boolean => (
@@ -146,10 +235,10 @@ const resolveMapboxCountryBoundaryPaint = (mapStyle: MapStyle): {
     };
   }
   return {
-    lineColor: 'rgba(255, 255, 255, 0.95)',
-    lineOpacity: 0.82,
-    glowColor: 'rgba(255, 255, 255, 0.44)',
-    glowOpacity: 0.16,
+    lineColor: 'rgba(17, 24, 39, 0.88)',
+    lineOpacity: 0.72,
+    glowColor: 'rgba(15, 23, 42, 0.22)',
+    glowOpacity: 0.12,
   };
 };
 
@@ -174,7 +263,7 @@ export const MAPBOX_STYLE_DESCRIPTORS: Record<MapStyle, MapboxStyleDescriptor> =
   dark: buildMapboxStyleDescriptor('mapbox', 'standard', [
     { fragmentId: 'basemap', property: 'theme', value: 'default' },
     { fragmentId: 'basemap', property: 'lightPreset', value: 'dusk' },
-    ...MAPBOX_STANDARD_VISUAL_CONFIG,
+    ...MAPBOX_DARK_VISUAL_CONFIG,
   ]),
   satellite: buildMapboxStyleDescriptor('mapbox', 'standard-satellite', [
     { fragmentId: 'basemap', property: 'lightPreset', value: 'day' },
@@ -183,12 +272,12 @@ export const MAPBOX_STYLE_DESCRIPTORS: Record<MapStyle, MapboxStyleDescriptor> =
   clean: buildMapboxStyleDescriptor('mapbox', 'standard', [
     { fragmentId: 'basemap', property: 'theme', value: 'faded' },
     { fragmentId: 'basemap', property: 'lightPreset', value: 'day' },
-    ...MAPBOX_STANDARD_VISUAL_CONFIG,
+    ...MAPBOX_CLEAN_VISUAL_CONFIG,
   ]),
   cleanDark: buildMapboxStyleDescriptor('mapbox', 'standard', [
     { fragmentId: 'basemap', property: 'theme', value: 'monochrome' },
     { fragmentId: 'basemap', property: 'lightPreset', value: 'night' },
-    ...MAPBOX_STANDARD_VISUAL_CONFIG,
+    ...MAPBOX_CLEAN_DARK_VISUAL_CONFIG,
   ]),
 };
 
@@ -228,28 +317,84 @@ export const shouldHideMapboxTripLabelLayer = (
   if (/country-label/i.test(layerId)) {
     return false;
   }
+  if (isCleanMapStyle(mapStyle) && MAPBOX_TRIP_CLEAN_LABEL_HIDE_PATTERNS.some((pattern) => pattern.test(layerId))) {
+    return true;
+  }
   if (!isCleanMapStyle(mapStyle) && MAPBOX_TRIP_LABEL_KEEP_PATTERNS.some((pattern) => pattern.test(layerId))) {
     return false;
   }
   return MAPBOX_TRIP_LABEL_HIDE_PATTERNS.some((pattern) => pattern.test(layerId));
 };
 
-const isMapboxTripCountryBoundaryLayer = (layerId: string): boolean => (
-  MAPBOX_TRIP_COUNTRY_BOUNDARY_LAYERS.includes(layerId as typeof MAPBOX_TRIP_COUNTRY_BOUNDARY_LAYERS[number])
-  || /admin-0-boundary/i.test(layerId)
-  || /admin_0_boundary/i.test(layerId)
-  || /country-boundary/i.test(layerId)
-  || /country_boundary/i.test(layerId)
+const getMapboxLayerSearchText = (layer: MapboxStyleLayerLike): string => (
+  [
+    layer.id,
+    layer.type,
+    layer.source,
+    layer['source-layer'],
+    JSON.stringify(layer.metadata ?? {}),
+    JSON.stringify(layer.filter ?? []),
+  ]
+    .filter((value) => typeof value === 'string' && value.length > 0)
+    .join(' ')
+    .toLowerCase()
 );
 
-const shouldHideMapboxTripBoundaryLayer = (layerId: string): boolean => {
+const containsAdminLevel = (layer: MapboxStyleLayerLike, level: number): boolean => {
+  const filterText = JSON.stringify(layer.filter ?? []).toLowerCase();
+  if (!filterText) return false;
+  return filterText.includes(`"admin_level"],${level}`)
+    || filterText.includes(`"admin_level","${level}"`)
+    || filterText.includes(`"admin-level"],${level}`)
+    || filterText.includes(`"admin-level","${level}"`);
+};
+
+const isMapboxTripBoundaryLayer = (layer: MapboxStyleLayerLike): boolean => {
+  const searchText = getMapboxLayerSearchText(layer);
+  return searchText.includes('boundary')
+    || searchText.includes('admin-')
+    || searchText.includes('admin_')
+    || searchText.includes('country-boundary')
+    || searchText.includes('country_boundary')
+    || searchText.includes('"admin_level"')
+    || searchText.includes('"admin-level"');
+};
+
+const isMapboxTripCountryBoundaryLayer = (layer: MapboxStyleLayerLike): boolean => {
+  const layerId = layer.id ?? '';
+  const searchText = getMapboxLayerSearchText(layer);
+  return MAPBOX_TRIP_COUNTRY_BOUNDARY_LAYERS.includes(layerId as typeof MAPBOX_TRIP_COUNTRY_BOUNDARY_LAYERS[number])
+    || /admin-0-boundary/i.test(layerId)
+    || /admin_0_boundary/i.test(layerId)
+    || /country-boundary/i.test(layerId)
+    || /country_boundary/i.test(layerId)
+    || searchText.includes('admin_0')
+    || searchText.includes('admin-0')
+    || searchText.includes('country-boundary')
+    || searchText.includes('country_boundary')
+    || containsAdminLevel(layer, 0);
+};
+
+const shouldHideMapboxTripBoundaryLayer = (layer: MapboxStyleLayerLike): boolean => {
+  const layerId = layer.id ?? '';
   if (!layerId) return false;
-  if (isMapboxTripCountryBoundaryLayer(layerId)) return false;
+  if (isMapboxTripCountryBoundaryLayer(layer)) return false;
   if (MAPBOX_TRIP_HIDDEN_BOUNDARY_LAYERS.includes(layerId as typeof MAPBOX_TRIP_HIDDEN_BOUNDARY_LAYERS[number])) {
     return true;
   }
-  if (/boundary/i.test(layerId) || /_boundary/i.test(layerId)) return true;
-  return MAPBOX_TRIP_HIDDEN_BOUNDARY_PATTERNS.some((pattern) => pattern.test(layerId));
+  const searchText = getMapboxLayerSearchText(layer);
+  if (
+    containsAdminLevel(layer, 1)
+    || containsAdminLevel(layer, 2)
+    || containsAdminLevel(layer, 3)
+    || containsAdminLevel(layer, 4)
+  ) {
+    return true;
+  }
+  if (MAPBOX_TRIP_HIDDEN_BOUNDARY_PATTERNS.some((pattern) => pattern.test(layerId) || pattern.test(searchText))) {
+    return true;
+  }
+  return isMapboxTripBoundaryLayer(layer);
 };
 
 const MAPBOX_TRIP_CLEAN_ROAD_HIDE_PATTERNS = [
@@ -264,27 +409,45 @@ const MAPBOX_TRIP_CLEAN_ROAD_HIDE_PATTERNS = [
 ] as const;
 
 const shouldHideMapboxTripRoadGeometryLayer = (
-  layerId: string,
+  layer: MapboxStyleLayerLike,
   mapStyle: MapStyle,
 ): boolean => {
+  const layerId = layer.id ?? '';
   if (!isCleanMapStyle(mapStyle) || !layerId) return false;
-  return MAPBOX_TRIP_CLEAN_ROAD_HIDE_PATTERNS.some((pattern) => pattern.test(layerId));
+  const searchText = getMapboxLayerSearchText(layer);
+  return MAPBOX_TRIP_CLEAN_ROAD_HIDE_PATTERNS.some((pattern) => pattern.test(layerId) || pattern.test(searchText));
+};
+
+const shouldHideMapboxTripCleanSettlementMarkerLayer = (
+  layer: MapboxStyleLayerLike,
+  mapStyle: MapStyle,
+): boolean => {
+  if (!isCleanMapStyle(mapStyle)) return false;
+  const searchText = getMapboxLayerSearchText(layer);
+  return (layer.type === 'circle' || layer.type === 'fill')
+    && (
+      searchText.includes('settlement')
+      || searchText.includes('place-label')
+      || searchText.includes('city')
+      || searchText.includes('town')
+      || searchText.includes('locality')
+    );
 };
 
 export const applyMapboxTripVisualPolish = (
   map: MapboxStyleLayerVisibilityMap,
   mapStyle: MapStyle,
 ): void => {
-  const layers = map.getStyle()?.layers ?? [];
+  const layers = (map.getStyle()?.layers ?? []) as MapboxStyleLayerLike[];
   const boundaryPaint = resolveMapboxCountryBoundaryPaint(mapStyle);
   layers.forEach((layer) => {
     if (!layer.id) return;
-    if (shouldHideMapboxTripBoundaryLayer(layer.id)) {
+    if (shouldHideMapboxTripBoundaryLayer(layer)) {
       if (!map.getLayer(layer.id)) return;
       map.setLayoutProperty(layer.id, 'visibility', 'none');
       return;
     }
-    if (isMapboxMajorSettlementLayer(layer.id)) {
+    if (isMapboxMajorSettlementLayer(layer)) {
       if (isCleanMapStyle(mapStyle)) {
         if (!map.getLayer(layer.id)) return;
         map.setLayoutProperty(layer.id, 'visibility', 'none');
@@ -294,12 +457,17 @@ export const applyMapboxTripVisualPolish = (
       map.setFilter(layer.id, MAPBOX_MAJOR_CITY_FILTER as unknown as any[]);
       return;
     }
-    if (shouldHideMapboxTripRoadGeometryLayer(layer.id, mapStyle)) {
+    if (shouldHideMapboxTripRoadGeometryLayer(layer, mapStyle)) {
       if (!map.getLayer(layer.id)) return;
       map.setLayoutProperty(layer.id, 'visibility', 'none');
       return;
     }
-    if (isMapboxTripCountryBoundaryLayer(layer.id)) {
+    if (shouldHideMapboxTripCleanSettlementMarkerLayer(layer, mapStyle)) {
+      if (!map.getLayer(layer.id)) return;
+      map.setLayoutProperty(layer.id, 'visibility', 'none');
+      return;
+    }
+    if (isMapboxTripCountryBoundaryLayer(layer)) {
       if (!map.getLayer(layer.id)) return;
       map.setLayoutProperty(layer.id, 'visibility', 'visible');
       const isGlowLayer = layer.id === 'admin-0-boundary-bg';

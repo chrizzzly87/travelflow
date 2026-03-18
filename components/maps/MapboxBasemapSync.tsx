@@ -404,6 +404,7 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
         mapboxMap.once('idle', notifyStyleReloadWhenReady);
         return;
       }
+      applyMapboxTripVisualPolish(mapboxMap, mapStyleRef.current);
       onStyleReload();
     };
 

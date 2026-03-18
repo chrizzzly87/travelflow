@@ -210,20 +210,20 @@ const GOOGLE_TRIP_MAP_TUNING: TripMapProviderTuning = {
 
 const MAPBOX_TRIP_MAP_TUNING: TripMapProviderTuning = {
   fitPadding: {
-    baseRatio: 0.18,
-    baseMin: 68,
-    baseMax: 176,
+    baseRatio: 0.16,
+    baseMin: 58,
+    baseMax: 156,
     docked: {
-      verticalBoost: 26,
-      horizontalBoost: 30,
-      verticalMin: 108,
-      verticalMax: 252,
-      horizontalMin: 108,
-      horizontalMax: 248,
-      extraTop: 28,
-      extraRight: 128,
-      extraBottom: 44,
-      extraLeft: 56,
+      verticalBoost: 18,
+      horizontalBoost: 18,
+      verticalMin: 86,
+      verticalMax: 210,
+      horizontalMin: 84,
+      horizontalMax: 196,
+      extraTop: 18,
+      extraRight: 72,
+      extraBottom: 30,
+      extraLeft: 26,
     },
     floating: {
       verticalBoost: -24,
