@@ -20,3 +20,4 @@ summary: "Added a report-only Promptfoo regression layer for classic AI trip cre
 - [ ] [Internal] 🚨 Added a second Promptfoo security pack with adversarial classic-trip scenarios so prompt-injection attempts against notes, requested cities, and destinations can be checked locally and in manual CI.
 - [ ] [Internal] 🧱 Extended the manual AI eval workflow to run the regression pack, the security pack, or both, with separate report artifacts for each.
 - [ ] [Internal] 🔐 Hardened live trip prompt assembly so user-controlled request fields are rendered as explicit data blocks and no longer read like free-form model instructions.
+- [ ] [Internal] 🔁 Hardened GPT-5-family OpenAI runtime fallback so temperature-restricted requests automatically continue through the Responses API instead of breaking create-trip or Promptfoo eval runs.

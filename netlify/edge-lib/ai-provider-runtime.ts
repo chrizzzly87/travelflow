@@ -439,6 +439,14 @@ const isOpenAiChatEndpointModelMismatch = (details: string): boolean => {
     || normalized.includes("did you mean to use v1/completions");
 };
 
+const isOpenAiDefaultTemperatureOnlyError = (details: string): boolean => {
+  const normalized = details.toLowerCase();
+  return (
+    (normalized.includes("temperature") && normalized.includes("only the default (1) value is supported"))
+    || (normalized.includes("\"param\":\"temperature\"") && normalized.includes("\"code\":\"unsupported_value\""))
+  );
+};
+
 export const ensureModelAllowed = (
   provider: string,
   model: string,
@@ -778,7 +786,7 @@ const generateWithOpenAi = async (
 
   const chatFailure = chatResult;
   const chatDetails = chatFailure.details;
-  if (!isOpenAiChatEndpointModelMismatch(chatDetails)) {
+  if (!isOpenAiChatEndpointModelMismatch(chatDetails) && !isOpenAiDefaultTemperatureOnlyError(chatDetails)) {
     return {
       ok: false,
       status: 502,

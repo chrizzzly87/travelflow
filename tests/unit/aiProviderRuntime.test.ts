@@ -305,6 +305,66 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
     });
   });
 
+  it('falls back to OpenAI responses endpoint when chat completions rejects custom temperature', async () => {
+    stubDenoEnv({
+      OPENAI_API_KEY: 'openai-key',
+    });
+
+    fetchMock
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            error: {
+              message: "Unsupported value: 'temperature' does not support 0 with this model. Only the default (1) value is supported.",
+              type: 'invalid_request_error',
+              param: 'temperature',
+              code: 'unsupported_value',
+            },
+          }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } },
+        ),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({
+          output_text: '{"tripTitle":"OpenAI temp fallback","cities":[],"travelSegments":[],"activities":[]}',
+          usage: {
+            input_tokens: 111,
+            output_tokens: 222,
+            total_tokens: 333,
+          },
+        }),
+      );
+
+    const result = await generateProviderItinerary({
+      prompt: '{"request":"openai-temperature-fallback"}',
+      provider: 'openai',
+      model: 'gpt-5.4',
+      timeoutMs: 30_000,
+      jsonSchema: testStructuredOutputSchema,
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect((fetchMock.mock.calls[0] as [string])[0]).toBe('https://api.openai.com/v1/chat/completions');
+    expect((fetchMock.mock.calls[1] as [string])[0]).toBe('https://api.openai.com/v1/responses');
+    const chatInit = (fetchMock.mock.calls[0] as [string, RequestInit])[1];
+    const chatBody = JSON.parse(String(chatInit.body));
+    expect(chatBody.temperature).toBe(0);
+    const responsesInit = (fetchMock.mock.calls[1] as [string, RequestInit])[1];
+    const responsesBody = JSON.parse(String(responsesInit.body));
+    expect(responsesBody).not.toHaveProperty('temperature');
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.data.tripTitle).toBe('OpenAI temp fallback');
+    expect(result.value.meta.provider).toBe('openai');
+    expect(result.value.meta.model).toBe('gpt-5.4');
+    expect(result.value.meta.usage).toEqual({
+      promptTokens: 111,
+      completionTokens: 222,
+      totalTokens: 333,
+    });
+  });
+
   it('returns key-missing error for openrouter requests without api key', async () => {
     stubDenoEnv({});
     const result = await generateProviderItinerary({
