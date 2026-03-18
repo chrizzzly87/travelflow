@@ -55,6 +55,8 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
     expect(ensureModelAllowed('openai', 'gpt-5.4')).toBeNull();
     expect(ensureModelAllowed('openai', 'gpt-5.4-pro')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'openrouter/free')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'openai/gpt-5.4-nano')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'openai/gpt-5.4-mini')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'nvidia/nemotron-3-super-120b-a12b:free')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'z-ai/glm-5')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'x-ai/grok-4.20-beta')).toBeNull();

@@ -21,6 +21,8 @@ describe('config/aiModelCatalog', () => {
     expect(modelIds.has('anthropic:claude-sonnet-4.6')).toBe(true);
     expect(modelIds.has('openrouter:openrouter/free')).toBe(true);
     expect(modelIds.has('openrouter:openai/gpt-oss-20b:free')).toBe(true);
+    expect(modelIds.has('openrouter:openai/gpt-5.4-nano')).toBe(true);
+    expect(modelIds.has('openrouter:openai/gpt-5.4-mini')).toBe(true);
     expect(modelIds.has('openrouter:nvidia/nemotron-3-super-120b-a12b:free')).toBe(true);
     expect(modelIds.has('openrouter:z-ai/glm-5')).toBe(true);
     expect(modelIds.has('openrouter:deepseek/deepseek-v3.2')).toBe(true);
