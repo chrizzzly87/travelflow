@@ -1,4 +1,5 @@
 import { parseFlexibleDurationDays, parseFlexibleDurationHours } from "../../shared/durationParsing.ts";
+import { TRIP_ITINERARY_STRUCTURED_OUTPUT_SCHEMA } from "../../shared/aiTripItinerarySchema.ts";
 import { normalizeTransportMode } from "../../shared/transportModes.ts";
 import {
   generateProviderItinerary,
@@ -269,7 +270,15 @@ const classifyFailureKind = (params: {
   if (code.includes("abort") || message.includes("abort")) {
     return "abort";
   }
-  if (code.includes("parse") || code.includes("quality") || message.includes("quality")) {
+  if (
+    code.includes("parse")
+    || code.includes("quality")
+    || code.includes("refusal")
+    || code.includes("incomplete")
+    || message.includes("quality")
+    || message.includes("refused")
+    || message.includes("incomplete")
+  ) {
     return "quality";
   }
   if (
@@ -1307,6 +1316,7 @@ const processJob = async (
       provider,
       model,
       timeoutMs: WORKER_PROVIDER_TIMEOUT_MS,
+      jsonSchema: TRIP_ITINERARY_STRUCTURED_OUTPUT_SCHEMA,
     });
     const durationMs = Math.max(0, Date.now() - startedAt);
 

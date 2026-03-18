@@ -14,8 +14,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-import { AI_MODEL_CATALOG, getDefaultCreateTripModel } from '../config/aiModelCatalog';
-import { getAiProviderMetadata } from '../config/aiProviderCatalog';
+import { AI_MODEL_CATALOG, getDefaultCreateTripModel, sortAiModels } from '../config/aiModelCatalog';
 import { ICountryInfo, ITripAiMeta, TripGenerationAttemptSummary, TripGenerationState } from '../types';
 import { getAnalyticsDebugAttributes } from '../services/analyticsService';
 import { normalizeTripGenerationAttemptsForDisplay } from '../services/tripGenerationDiagnosticsService';
@@ -277,13 +276,15 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
         return null;
     })();
 
-    const activeRetryModelOptions = AI_MODEL_CATALOG
-        .filter((entry) => entry.availability === 'active')
+    const activeRetryModelOptions = sortAiModels(
+        AI_MODEL_CATALOG.filter((entry) => entry.availability === 'active')
+    )
         .map((entry) => ({
             id: entry.id,
             provider: entry.provider,
-            providerLabel: getAiProviderMetadata(entry.provider).label,
+            providerLabel: entry.providerLabel,
             model: entry.model,
+            label: entry.label,
         }));
     const groupedRetryModelOptions = Array.from(
         activeRetryModelOptions.reduce((map, option) => {
@@ -550,7 +551,7 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                                                                     <SelectItem key={option.id} value={option.id}>
                                                                         <span className="inline-flex items-center gap-2">
                                                                             <AiProviderLogo provider={option.provider} model={option.model} size={14} />
-                                                                            <span>{option.model}</span>
+                                                                            <span>{option.label}</span>
                                                                         </span>
                                                                     </SelectItem>
                                                                 ))}
@@ -561,7 +562,7 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                                                 {selectedRetryModelOption && (
                                                     <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-accent-200 bg-accent-50 px-3 py-1 text-[11px] font-semibold text-accent-800">
                                                         <AiProviderLogo provider={selectedRetryModelOption.provider} model={selectedRetryModelOption.model} size={12} />
-                                                        <span>{selectedRetryModelOption.providerLabel} · {selectedRetryModelOption.model}</span>
+                                                        <span>{selectedRetryModelOption.providerLabel} · {selectedRetryModelOption.label}</span>
                                                     </div>
                                                 )}
                                             </div>
