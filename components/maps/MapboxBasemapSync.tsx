@@ -14,6 +14,7 @@ import {
   shouldUseTripMapGlobeIntro,
   type TripMapDockMode,
 } from './tripMapProviderTuning';
+import { buildTripMapCameraIntroPlan } from './tripMapProviderCameraIntro';
 
 export interface MapboxBasemapLoadError {
   message: string;
@@ -396,14 +397,16 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
     const runGlobeIntro = () => {
       const mapboxMap = mapboxMapRef.current;
       const target = readGoogleCameraTarget(googleMap);
+      const introPlan = buildTripMapCameraIntroPlan({
+        provider: 'mapbox',
+        mapDockMode: mapDockModeRef.current,
+        mapViewportSize: getEffectiveViewportSize(),
+        target,
+      });
       if (
         !mapboxMap
         || !target
-        || !shouldUseTripMapGlobeIntro({
-          provider: 'mapbox',
-          mapDockMode: mapDockModeRef.current,
-          mapViewportSize: getEffectiveViewportSize(),
-        })
+        || !introPlan
         || !shouldRunMapboxGlobeIntro(target.zoom)
       ) {
         return false;
@@ -419,14 +422,14 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
       introTimeoutId = window.setTimeout(() => {
         introTimeoutId = null;
         mapboxMap.flyTo({
-          center: target.center,
-          zoom: Math.max(target.zoom, MAPBOX_TRIP_TUNING.intro.flyToMinZoom),
-          bearing: 10,
-          pitch: 0,
-          duration: MAPBOX_TRIP_TUNING.intro.durationMs,
+          center: introPlan.flyToCamera.center,
+          zoom: introPlan.flyToCamera.zoom,
+          bearing: introPlan.flyToCamera.bearing,
+          pitch: introPlan.flyToCamera.pitch,
+          duration: introPlan.durationMs,
           essential: true,
-          curve: MAPBOX_TRIP_TUNING.intro.curve,
-          speed: MAPBOX_TRIP_TUNING.intro.speed,
+          curve: introPlan.curve,
+          speed: introPlan.speed,
         });
 
         introSettleTimeoutId = window.setTimeout(() => {
@@ -438,8 +441,8 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
             syncSourceRef.current = null;
           }
           syncMapboxToGoogleCamera(mapboxMap, googleMap);
-        }, MAPBOX_TRIP_TUNING.intro.settleMs);
-      }, MAPBOX_TRIP_TUNING.intro.delayMs);
+        }, introPlan.settleMs);
+      }, introPlan.delayMs);
 
       return true;
     };

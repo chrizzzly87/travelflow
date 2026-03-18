@@ -44,7 +44,7 @@ describe('components/maps/tripMapProviderPresentation', () => {
     })).toMatchObject({
       color: 'rgba(15, 23, 42, 0.34)',
       opacity: 0.18,
-      weight: 3.06,
+      weight: 2.82,
     });
   });
 });
