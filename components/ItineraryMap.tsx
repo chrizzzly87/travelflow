@@ -19,6 +19,7 @@ import { buildMapboxDashedRouteDasharray, createMapboxLineHandle, createMapboxOv
 import { resolveActiveOverlayMapTarget, shouldHideGoogleMapCanvas } from './maps/mapRenderTarget';
 import { getTripMapProviderTuning, resolveTripMapViewportPadding } from './maps/tripMapProviderTuning';
 import { GOOGLE_ROUTES_COMPUTE_FIELDS, computeGoogleRouteLeg, loadGoogleRouteRuntime } from '../services/routeService';
+import { buildLatLngPrecisionKey, isFiniteLatLngLiteral } from '../shared/coordinateUtils';
 import type { MapImplementation } from '../shared/mapRuntime';
 
 interface ItineraryMapProps {
@@ -655,14 +656,6 @@ const resolveCssColorVar = (name: string, fallback: string): string => {
     return value || fallback;
 };
 
-export const isFiniteLatLngLiteral = (
-    coordinates: google.maps.LatLngLiteral | null | undefined,
-): coordinates is google.maps.LatLngLiteral => (
-    Boolean(coordinates)
-    && Number.isFinite(coordinates.lat)
-    && Number.isFinite(coordinates.lng)
-);
-
 const normalizeRotationDegrees = (value?: number): number => {
     if (!Number.isFinite(value)) return 0;
     const normalized = (value as number) % 360;
@@ -953,8 +946,8 @@ export const buildOverlappingMarkerPosition = (
     return offsetLatLngByMeters(origin, eastMeters, northMeters);
 };
 
-const buildCoordinateGroupKey = (coordinates: google.maps.LatLngLiteral): string => (
-    `${coordinates.lat.toFixed(MARKER_COORDINATE_GROUP_PRECISION)},${coordinates.lng.toFixed(MARKER_COORDINATE_GROUP_PRECISION)}`
+const buildCoordinateGroupKey = (coordinates: google.maps.LatLngLiteral | null | undefined): string | null => (
+    buildLatLngPrecisionKey(coordinates, MARKER_COORDINATE_GROUP_PRECISION)
 );
 
 const ACTIVITY_ICON_MARKUP_CACHE = new Map<string, string>();
@@ -1075,6 +1068,7 @@ export const resolveActivityMarkerPositions = (
     const groupedByCoordinates = new Map<string, number[]>();
     candidates.forEach((candidate, index) => {
         const key = buildCoordinateGroupKey(candidate.baseCoordinates);
+        if (!key) return;
         const grouped = groupedByCoordinates.get(key) ?? [];
         grouped.push(index);
         groupedByCoordinates.set(key, grouped);
@@ -1082,7 +1076,7 @@ export const resolveActivityMarkerPositions = (
 
     return candidates.map((candidate, index) => {
         const key = buildCoordinateGroupKey(candidate.baseCoordinates);
-        const grouped = groupedByCoordinates.get(key) ?? [];
+        const grouped = key ? (groupedByCoordinates.get(key) ?? []) : [];
         const overlapIndex = Math.max(0, grouped.indexOf(index));
         const overlapCount = candidate.coordinateSource === 'city'
             ? Math.max(ACTIVITY_CITY_FALLBACK_MIN_SLOTS, grouped.length)
@@ -2312,16 +2306,18 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         const coordinateMarkerGroups = new Map<string, number[]>();
 
         cities.forEach((city, index) => {
-            if (!city.coordinates) return;
+            if (!isFiniteLatLngLiteral(city.coordinates)) return;
             const key = buildCoordinateGroupKey(city.coordinates);
+            if (!key) return;
             const grouped = coordinateMarkerGroups.get(key) ?? [];
             grouped.push(index);
             coordinateMarkerGroups.set(key, grouped);
         });
 
         const resolveCityMarkerPosition = (city: ITimelineItem, index: number): google.maps.LatLngLiteral | null => {
-            if (!city.coordinates) return null;
+            if (!isFiniteLatLngLiteral(city.coordinates)) return null;
             const key = buildCoordinateGroupKey(city.coordinates);
+            if (!key) return city.coordinates;
             const grouped = coordinateMarkerGroups.get(key);
             if (!grouped || grouped.length <= 1) return city.coordinates;
             const overlapIndex = grouped.indexOf(index);

@@ -27,7 +27,6 @@ import {
   isCoordinateWithinSafeBounds,
   estimateRoutePixelSpan,
   estimateNearestMarkerGapPx,
-  isFiniteLatLngLiteral,
   resolveCityLabelPlacement,
   resolveMarkerRenderProfile,
   resolveMarkerRenderTier,
@@ -44,6 +43,7 @@ import {
   shouldSkipRouteFitForSelection,
   shouldDisplayActivityMarkers,
 } from '../../components/ItineraryMap';
+import { isFiniteLatLngLiteral } from '../../shared/coordinateUtils';
 
 describe('components/ItineraryMap route cache helpers', () => {
   it('filters persisted route entries by status and ttl', () => {

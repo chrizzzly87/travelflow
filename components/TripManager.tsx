@@ -25,6 +25,7 @@ import {
   getTripDateRange,
 } from './profile/tripPreviewUtils';
 import { reverseGeocodeCountry as reverseGeocodeCountryLookup } from '../services/locationSearchService';
+import { buildLatLngPrecisionKey, isFiniteLatLngLiteral } from '../shared/coordinateUtils';
 
 export { buildMiniMapUrl, getTripCityStops } from './profile/tripPreviewUtils';
 
@@ -70,8 +71,7 @@ export const shouldAttemptTripManagerReverseGeocode = (
 ): boolean => {
   if (hasStoredOrParsedCountry) return false;
   if (remainingLookups <= 0) return false;
-  if (!item.coordinates) return false;
-  return Number.isFinite(item.coordinates.lat) && Number.isFinite(item.coordinates.lng);
+  return isFiniteLatLngLiteral(item.coordinates);
 };
 
 export const readTripManagerCountryCache = (): CountryCacheStore => {
@@ -829,11 +829,12 @@ export const TripManager: React.FC<TripManagerProps> = ({
   }, []);
 
   const getCountryCacheKey = React.useCallback((lat: number, lng: number) => {
-    return `${lat.toFixed(4)},${lng.toFixed(4)}`;
+    return buildLatLngPrecisionKey({ lat, lng }, 4);
   }, []);
 
   const reverseGeocodeCountry = React.useCallback(async (lat: number, lng: number): Promise<CountryMatch | null> => {
     const key = getCountryCacheKey(lat, lng);
+    if (!key) return null;
     const cached = countryCacheRef.current[key];
     if (cached) {
       const byCode = COUNTRY_BY_CODE.get(cached.countryCode.toLowerCase());
@@ -900,7 +901,11 @@ export const TripManager: React.FC<TripManagerProps> = ({
           let geocoded: CountryMatch | null = null;
 
           if (shouldAttemptTripManagerReverseGeocode(item, Boolean(stored || parsed), geocodeLookupsRemaining)) {
-            const geocodeCacheKey = `${item.coordinates.lat.toFixed(4)},${item.coordinates.lng.toFixed(4)}`;
+            const geocodeCacheKey = buildLatLngPrecisionKey(item.coordinates, 4);
+            if (!geocodeCacheKey) {
+              nextItems.push(item);
+              continue;
+            }
             if (geocodePassCache.has(geocodeCacheKey)) {
               geocoded = geocodePassCache.get(geocodeCacheKey) ?? null;
             } else {
