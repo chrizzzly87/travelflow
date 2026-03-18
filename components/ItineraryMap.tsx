@@ -15,6 +15,7 @@ import { getMapSurfaceBackgroundColor, GOOGLE_BASEMAP_HIDDEN_STYLES } from '../s
 import { MapboxBasemapSync } from './maps/MapboxBasemapSync';
 import { buildFlightRouteVisualPaths } from './maps/flightRouteGeometry';
 import { createGoogleMixedSurfaceController, type GoogleMixedSurfaceController } from './maps/googleMixedSurfaceController';
+import { buildTripMapCityMarkerHtml } from './maps/tripMapCityMarkerHtml';
 import { buildMapboxDashedRouteDasharray, createMapboxLineHandle, createMapboxOverlayMarker, type MapboxLineLayerConfig } from './maps/mapboxOverlayRuntime';
 import {
     resolveTripMapCityLabelAnchor,
@@ -719,77 +720,6 @@ export const shouldLogRouteFailureWarning = ({
     }
     RECENT_ROUTE_FAILURE_WARNINGS.set(warningKey, nowMs);
     return true;
-};
-
-const buildCityMarkerSvgDataUrl = (
-    color: string,
-    isSelected: boolean,
-    profile: MarkerRenderProfile['city'],
-): { url: string; size: number } => {
-    const size = isSelected ? profile.selectedSize : profile.size;
-    const pinStroke = isSelected ? resolveCssColorVar('--tf-accent-500', CITY_PIN_SELECTED_OUTLINE_FALLBACK) : '#ffffff';
-    const ringStroke = isSelected ? resolveCssColorVar('--tf-accent-200', CITY_PIN_SELECTED_RING_FALLBACK) : '#dbe3ee';
-    const halo = isSelected ? 0.24 : 0.1;
-    const svg = `
-        <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 32 32">
-            <g transform="translate(4 2)">
-                <ellipse cx="12" cy="26.2" rx="6.4" ry="2.8" fill="#0f172a" opacity="0.16" />
-                <path d="M12 0.9c-5.9 0-10.7 4.8-10.7 10.7 0 7.9 10.7 17.8 10.7 17.8s10.7-9.9 10.7-17.8C22.7 5.7 17.9 0.9 12 0.9z" fill="${color}" stroke="${pinStroke}" stroke-width="${isSelected ? 1.9 : 1.5}" />
-                <circle cx="12" cy="11.6" r="${isSelected ? '8.5' : '7.8'}" fill="${color}" opacity="${halo}" />
-                <circle cx="12" cy="11.6" r="${isSelected ? '6.3' : '5.8'}" fill="#ffffff" stroke="${ringStroke}" stroke-width="${isSelected ? '1.55' : '1.25'}" />
-            </g>
-        </svg>
-    `;
-    const url = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
-    return { url, size };
-};
-
-const buildCityCircleMarkerHtml = (
-    index: number,
-    color: string,
-    isSelected: boolean,
-    profile: MarkerRenderProfile['city'],
-): string => {
-    const size = isSelected ? profile.selectedSize : profile.size;
-    const fontSize = isSelected ? profile.selectedFontSize : profile.fontSize;
-    const ringColor = '#ffffff';
-    const accentRing = resolveCssColorVar('--tf-accent-500', CITY_PIN_SELECTED_OUTLINE_FALLBACK);
-    const shadow = isSelected
-        ? `0 0 0 2px ${accentRing}, 0 6px 16px rgba(15,23,42,0.24)`
-        : '0 3px 10px rgba(15,23,42,0.15)';
-    const innerDotSize = Math.max(11, Math.round(size * 0.54));
-    const numberMarkup = `<span style="color:${profile.numberColor};font-weight:800;font-size:${fontSize}px;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;pointer-events:none;">${index + 1}</span>`;
-    const centerMarkup = profile.showInnerDot
-        ? `<div style="width:${innerDotSize}px;height:${innerDotSize}px;border-radius:9999px;background:#ffffff;display:flex;align-items:center;justify-content:center;">${numberMarkup}</div>`
-        : numberMarkup;
-    return `
-        <div style="position:relative;width:${size}px;height:${size}px;line-height:1;user-select:none;">
-            <div style="width:${size}px;height:${size}px;border-radius:9999px;background:${color};border:2px solid ${ringColor};box-shadow:${shadow};display:flex;align-items:center;justify-content:center;">
-                ${centerMarkup}
-            </div>
-        </div>
-    `;
-};
-
-const buildCityMarkerHtml = (
-    index: number,
-    color: string,
-    isSelected: boolean,
-    profile: MarkerRenderProfile,
-): string => {
-    if (profile.city.shape === 'circle') {
-        return buildCityCircleMarkerHtml(index, color, isSelected, profile.city);
-    }
-
-    const { url, size } = buildCityMarkerSvgDataUrl(color, isSelected, profile.city);
-    const fontSize = isSelected ? profile.city.selectedFontSize : profile.city.fontSize;
-    const numberTopPercent = isSelected ? 45 : 45.3;
-    return `
-        <div style="position:relative;width:${size}px;height:${size}px;line-height:1;user-select:none;">
-            <img src="${url}" alt="" draggable="false" style="display:block;width:${size}px;height:${size}px;pointer-events:none;" />
-            <span style="position:absolute;left:50%;top:${numberTopPercent}%;transform:translate(-50%,-50%);color:#0f172a;font-weight:800;font-size:${fontSize}px;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;pointer-events:none;">${index + 1}</span>
-        </div>
-    `;
 };
 
 const buildTransportMarkerHtml = (
@@ -2371,7 +2301,15 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 const cityMarkerColor = resolveMapColor(city.color);
                 const marker = createOverlayMarker({
                     position: markerPosition,
-                    html: buildCityMarkerHtml(index, cityMarkerColor, isSelected, effectiveMarkerRenderProfile),
+                    html: buildTripMapCityMarkerHtml({
+                        provider: tripMapProvider,
+                        index,
+                        color: cityMarkerColor,
+                        isSelected,
+                        profile: effectiveMarkerRenderProfile.city,
+                        selectedOutlineColor: resolveCssColorVar('--tf-accent-500', CITY_PIN_SELECTED_OUTLINE_FALLBACK),
+                        selectedRingColor: resolveCssColorVar('--tf-accent-200', CITY_PIN_SELECTED_RING_FALLBACK),
+                    }),
                     zIndex: resolveCityMarkerZIndex(isSelected, effectiveMarkerRenderProfile),
                     clickable: true,
                     onClick: () => onCityMarkerSelectRef.current?.(city.id),
@@ -2923,7 +2861,15 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         cityMarkerMetaRef.current.forEach(({ id, color, index, marker }) => {
             const isSelected = id === selectedCityId;
             marker.update({
-                html: buildCityMarkerHtml(index, color, isSelected, effectiveMarkerRenderProfile),
+                html: buildTripMapCityMarkerHtml({
+                    provider: tripMapProvider,
+                    index,
+                    color,
+                    isSelected,
+                    profile: effectiveMarkerRenderProfile.city,
+                    selectedOutlineColor: resolveCssColorVar('--tf-accent-500', CITY_PIN_SELECTED_OUTLINE_FALLBACK),
+                    selectedRingColor: resolveCssColorVar('--tf-accent-200', CITY_PIN_SELECTED_RING_FALLBACK),
+                }),
                 zIndex: resolveCityMarkerZIndex(isSelected, effectiveMarkerRenderProfile),
             });
         });
