@@ -1,20 +1,14 @@
 import { DEFAULT_LOCALE, normalizeLocale } from '../config/locales';
+import { getCountrySearchAliasesFromData, getLocalizedCountryNameFromData } from '../data/countryTravelData';
 import type { AppLanguage } from '../types';
 import { COUNTRIES } from '../utils';
+import { buildCountrySearchKeys } from './countryAliasService';
 
 export interface ProfileCountryOption {
     code: string;
     name: string;
     flag: string;
 }
-
-const normalizeCountrySearchToken = (value: string): string => value
-    .trim()
-    .toLocaleLowerCase()
-    .normalize('NFKD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, ' ')
-    .trim();
 
 const COUNTRY_OPTIONS: ProfileCountryOption[] = [...COUNTRIES]
     .map((country) => ({
@@ -35,15 +29,9 @@ const getLocalizedCountryName = (code: string, locale?: string | AppLanguage): s
     if (!normalizedCode) return '';
 
     const normalizedLocale = normalizeLocale(locale || DEFAULT_LOCALE);
-    try {
-        const displayNames = new Intl.DisplayNames([normalizedLocale], { type: 'region' });
-        const localizedName = displayNames.of(normalizedCode);
-        if (localizedName) return localizedName;
-    } catch {
-        // Ignore and fall back to source country label.
-    }
-
-    return COUNTRY_BY_CODE.get(normalizedCode)?.name || normalizedCode;
+    return getLocalizedCountryNameFromData(normalizedCode, normalizedLocale)
+        || COUNTRY_BY_CODE.get(normalizedCode)?.name
+        || normalizedCode;
 };
 
 export const isProfileCountryCode = (value: unknown): value is string => (
@@ -92,15 +80,35 @@ export const getProfileCountryDisplayName = (
     return getLocalizedCountryName(normalizedCode, locale);
 };
 
-const includesToken = (token: string, query: string): boolean => token.includes(query);
-const startsWithToken = (token: string, query: string): boolean => token.startsWith(query);
+const matchesSearchKeys = (
+    candidateKeys: string[],
+    queryKeys: string[],
+    match: (candidate: string, query: string) => boolean
+): boolean => queryKeys.some((queryKey) => candidateKeys.some((candidateKey) => match(candidateKey, queryKey)));
+
+const getProfileCountrySearchKeys = (country: ProfileCountryOption, localizedName: string): string[] => {
+    const keys = new Set<string>();
+
+    [
+        localizedName,
+        COUNTRY_BY_CODE.get(country.code)?.name || '',
+        country.code,
+        ...getCountrySearchAliasesFromData(country.code),
+    ].forEach((value) => {
+        buildCountrySearchKeys(value).forEach((key) => {
+            if (key) keys.add(key);
+        });
+    });
+
+    return Array.from(keys);
+};
 
 export const searchProfileCountryOptions = (
     query: string,
     limit = 24,
     locale?: string | AppLanguage
 ): ProfileCountryOption[] => {
-    const normalizedQuery = normalizeCountrySearchToken(query);
+    const queryKeys = buildCountrySearchKeys(query);
     const normalizedLimit = Number.isFinite(limit) ? Math.max(1, Math.floor(limit)) : 24;
     const normalizedLocale = normalizeLocale(locale || DEFAULT_LOCALE);
 
@@ -109,27 +117,19 @@ export const searchProfileCountryOptions = (
         name: getLocalizedCountryName(country.code, normalizedLocale),
     }));
 
-    if (!normalizedQuery) {
+    if (queryKeys.length === 0) {
         return localizedOptions.slice(0, normalizedLimit);
     }
 
     const startsWithMatches = localizedOptions.filter((country) => {
-        const nameToken = normalizeCountrySearchToken(country.name);
-        const fallbackNameToken = normalizeCountrySearchToken(COUNTRY_BY_CODE.get(country.code)?.name || '');
-        const codeToken = country.code.toLocaleLowerCase();
-        return startsWithToken(nameToken, normalizedQuery)
-            || startsWithToken(fallbackNameToken, normalizedQuery)
-            || startsWithToken(codeToken, normalizedQuery);
+        const searchKeys = getProfileCountrySearchKeys(country, country.name);
+        return matchesSearchKeys(searchKeys, queryKeys, (candidate, searchKey) => candidate.startsWith(searchKey));
     });
 
     const includesMatches = localizedOptions.filter((country) => {
         if (startsWithMatches.some((match) => match.code === country.code)) return false;
-        const nameToken = normalizeCountrySearchToken(country.name);
-        const fallbackNameToken = normalizeCountrySearchToken(COUNTRY_BY_CODE.get(country.code)?.name || '');
-        const codeToken = country.code.toLocaleLowerCase();
-        return includesToken(nameToken, normalizedQuery)
-            || includesToken(fallbackNameToken, normalizedQuery)
-            || includesToken(codeToken, normalizedQuery);
+        const searchKeys = getProfileCountrySearchKeys(country, country.name);
+        return matchesSearchKeys(searchKeys, queryKeys, (candidate, searchKey) => candidate.includes(searchKey));
     });
 
     return [...startsWithMatches, ...includesMatches].slice(0, normalizedLimit);

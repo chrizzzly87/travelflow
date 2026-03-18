@@ -45,6 +45,15 @@ export interface CountryTravelDataDocument {
     countries: Record<string, Record<string, string>>;
     islands: Record<string, Record<string, string>>;
   };
+  countrySearchMetadata?: {
+    cldrVersion?: string;
+    countries: Record<string, CountrySearchMetadataEntry>;
+  };
+}
+
+export interface CountrySearchMetadataEntry {
+  aliases?: string[];
+  localizedAliases?: Record<string, string[]>;
 }
 
 export const COUNTRY_TRAVEL_DATA = countryTravelDataJson as CountryTravelDataDocument;
@@ -54,8 +63,15 @@ const EMPTY_LOCALIZED_DESTINATION_NAMES = {
   islands: {} as Record<string, Record<string, string>>,
 };
 
+const EMPTY_COUNTRY_SEARCH_METADATA = {
+  countries: {} as Record<string, CountrySearchMetadataEntry>,
+};
+
 export const LOCALIZED_DESTINATION_NAMES =
   COUNTRY_TRAVEL_DATA.localizedDestinationNames || EMPTY_LOCALIZED_DESTINATION_NAMES;
+
+export const COUNTRY_SEARCH_METADATA =
+  COUNTRY_TRAVEL_DATA.countrySearchMetadata || EMPTY_COUNTRY_SEARCH_METADATA;
 
 const normalizeLocaleKey = (locale?: string): string => {
   if (!locale) return 'en';
@@ -88,6 +104,36 @@ export const getLocalizedCountryNameFromData = (countryCode: string, locale?: st
 
 export const getLocalizedIslandNameFromData = (islandCode: string, locale?: string): string | undefined =>
   getLocalizedDestinationName(LOCALIZED_DESTINATION_NAMES.islands, islandCode, locale);
+
+const getCountrySearchMetadataEntry = (countryCode: string): CountrySearchMetadataEntry | undefined => {
+  const normalizedCode = countryCode.trim();
+  if (!normalizedCode) return undefined;
+
+  return (
+    COUNTRY_SEARCH_METADATA.countries[normalizedCode]
+    || COUNTRY_SEARCH_METADATA.countries[normalizedCode.toUpperCase()]
+    || COUNTRY_SEARCH_METADATA.countries[normalizedCode.toLowerCase()]
+  );
+};
+
+export const getCountrySearchAliasesFromData = (countryCode: string): string[] => {
+  const entry = getCountrySearchMetadataEntry(countryCode);
+  if (!entry) return [];
+
+  const aliases = new Set<string>();
+  (entry.aliases || []).forEach((alias) => {
+    const normalized = alias.trim();
+    if (normalized) aliases.add(normalized);
+  });
+  Object.values(entry.localizedAliases || {}).forEach((localeAliases) => {
+    localeAliases.forEach((alias) => {
+      const normalized = alias.trim();
+      if (normalized) aliases.add(normalized);
+    });
+  });
+
+  return Array.from(aliases);
+};
 
 const COUNTRY_BY_NAME = new Map<string, CountrySeasonEntry>(
   COUNTRY_TRAVEL_DATA.countries.map((entry) => [entry.countryName.toLocaleLowerCase(), entry])

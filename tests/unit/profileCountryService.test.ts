@@ -27,6 +27,7 @@ describe('services/profileCountryService', () => {
     const countryLabel = getProfileCountryDisplayName('DE', 'de');
     expect(countryLabel).toBeTruthy();
     expect(countryLabel).not.toBe('DE');
+    expect(getProfileCountryDisplayName('KR', 'ko')).toBe('대한민국');
 
     expect(getProfileCountryDisplayName('Germany', 'en')).toBe('Germany');
     expect(getProfileCountryDisplayName('')).toBe('');
@@ -52,5 +53,26 @@ describe('services/profileCountryService', () => {
 
     const germanMatches = searchProfileCountryOptions('deut', 10, 'de');
     expect(germanMatches.some((entry) => entry.code === 'DE')).toBe(true);
+  });
+
+  it('matches generated aliases, long-form names, and localized alternatives', () => {
+    expect(searchProfileCountryOptions('england', 10).some((entry) => entry.code === 'GB')).toBe(true);
+    expect(searchProfileCountryOptions('uk', 10).some((entry) => entry.code === 'GB')).toBe(true);
+    expect(searchProfileCountryOptions('grossbritannien', 10).some((entry) => entry.code === 'GB')).toBe(true);
+    expect(searchProfileCountryOptions('usa', 10).some((entry) => entry.code === 'US')).toBe(true);
+    expect(searchProfileCountryOptions('cote divoire', 10).some((entry) => entry.code === 'CI')).toBe(true);
+    expect(searchProfileCountryOptions('prc', 10).some((entry) => entry.code === 'CN')).toBe(true);
+    expect(searchProfileCountryOptions("people's republic of china", 10).some((entry) => entry.code === 'CN')).toBe(true);
+    expect(searchProfileCountryOptions('volksrepublik china', 10).some((entry) => entry.code === 'CN')).toBe(true);
+    expect(searchProfileCountryOptions('대한민국', 10).some((entry) => entry.code === 'KR')).toBe(true);
+    expect(searchProfileCountryOptions('dr kongo', 10).some((entry) => entry.code === 'CD')).toBe(true);
+    expect(searchProfileCountryOptions('zaire', 10).some((entry) => entry.code === 'CD')).toBe(true);
+    expect(searchProfileCountryOptions('republik kongo', 10).some((entry) => entry.code === 'CG')).toBe(true);
+    expect(searchProfileCountryOptions('ceylon', 10).some((entry) => entry.code === 'LK')).toBe(true);
+    expect(searchProfileCountryOptions('siam', 10).some((entry) => entry.code === 'TH')).toBe(true);
+    expect(searchProfileCountryOptions('birma', 10).some((entry) => entry.code === 'MM')).toBe(true);
+    expect(searchProfileCountryOptions('persien', 10).some((entry) => entry.code === 'IR')).toBe(true);
+    expect(searchProfileCountryOptions('weissrussland', 10).some((entry) => entry.code === 'BY')).toBe(true);
+    expect(searchProfileCountryOptions('republik moldau', 10).some((entry) => entry.code === 'MD')).toBe(true);
   });
 });

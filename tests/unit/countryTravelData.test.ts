@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
+  COUNTRY_SEARCH_METADATA,
   COUNTRY_TRAVEL_DATA,
   MONTH_LABELS,
   buildMonthScoreMap,
   getCommonBestMonths,
+  getCountrySearchAliasesFromData,
   getCountrySeasonByCode,
   getCountrySeasonByName,
   getDurationRecommendation,
@@ -62,9 +64,26 @@ describe('data/countryTravelData', () => {
     const de = getLocalizedCountryNameFromData('DE', 'de-DE');
     expect(de).toBeTruthy();
 
+    const korean = getLocalizedCountryNameFromData('KR', 'ko');
+    expect(korean).toBe('대한민국');
+
     const island = getLocalizedIslandNameFromData('ID-BA', 'de');
     expect(island).toBeTruthy();
 
     expect(getLocalizedCountryNameFromData('UNKNOWN', 'en')).toBeUndefined();
+  });
+
+  it('exposes generated country search metadata and aliases', () => {
+    expect(COUNTRY_SEARCH_METADATA.cldrVersion).toBeTruthy();
+    expect(getCountrySearchAliasesFromData('CN')).toContain('PRC');
+    expect(getCountrySearchAliasesFromData('CN')).toContain("People's Republic of China");
+    expect(getCountrySearchAliasesFromData('CN')).toContain('Volksrepublik China');
+    expect(getCountrySearchAliasesFromData('GB')).toContain('England');
+    expect(getCountrySearchAliasesFromData('KR')).toContain('대한민국');
+    expect(getCountrySearchAliasesFromData('CD')).toContain('DR Kongo');
+    expect(getCountrySearchAliasesFromData('CD')).toContain('Zaire');
+    expect(getCountrySearchAliasesFromData('TH')).toContain('Siam');
+    expect(getCountrySearchAliasesFromData('LK')).toContain('Ceylon');
+    expect(getCountrySearchAliasesFromData('MD')).toContain('Republik Moldau');
   });
 });
