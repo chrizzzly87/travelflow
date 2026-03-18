@@ -6,8 +6,8 @@ import { AppLanguage, ITrip, ITimelineItem, IViewSettings } from './types';
 import { TripManagerProvider } from './contexts/TripManagerContext';
 import { CookieConsentBanner } from './components/marketing/CookieConsentBanner';
 import { saveTrip, getTripById } from './services/storageService';
-import { commitVersionedHistorySnapshot } from './services/historyService';
-import { buildTripUrl, getStoredAppLanguage, setStoredAppLanguage } from './services/appRuntimeUtils';
+import { appendHistoryEntry } from './services/historyService';
+import { buildTripUrl, generateVersionId, getStoredAppLanguage, setStoredAppLanguage } from './services/appRuntimeUtils';
 import { DB_ENABLED } from './config/db';
 import { GlobalTooltipLayer } from './components/GlobalTooltipLayer';
 import { trackEvent } from './services/analyticsService';
@@ -280,15 +280,11 @@ const createLocalHistoryEntry = (
     ts?: number,
     baseUrlOverride?: string
 ) => {
-    return commitVersionedHistorySnapshot({
-        trip: updatedTrip,
-        view,
-        label,
-        navigate,
-        replace: options?.replace ?? false,
-        ts,
-        baseUrlOverride,
-    });
+    const versionId = generateVersionId();
+    const url = baseUrlOverride ? `${baseUrlOverride}?v=${versionId}` : buildTripUrl(updatedTrip.id, versionId);
+    navigate(url, { replace: options?.replace ?? false });
+    appendHistoryEntry(updatedTrip.id, url, label, { snapshot: { trip: updatedTrip, view }, ts });
+    return url;
 };
 
 const TERMS_EXEMPT_PATHS = new Set([

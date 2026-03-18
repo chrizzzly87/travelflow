@@ -93,36 +93,6 @@ vi.mock('../../../services/dbApi', () => ({
 
 vi.mock('../../../services/historyService', () => ({
   appendHistoryEntry: mocks.appendHistoryEntry,
-  commitVersionedHistorySnapshot: ({
-    trip,
-    view,
-    label,
-    navigate,
-    replace,
-    ts,
-    baseUrlOverride,
-  }: {
-    trip: { id: string };
-    view?: unknown;
-    label: string;
-    navigate: (url: string, options: { replace: boolean }) => void;
-    replace?: boolean;
-    ts?: number;
-    baseUrlOverride?: string;
-  }) => {
-    const url = baseUrlOverride
-      ? `${baseUrlOverride}?v=generated-version-id`
-      : `/trip/${trip.id}?v=generated-version-id`;
-    mocks.appendHistoryEntry(trip.id, url, label, {
-      snapshot: {
-        trip,
-        view,
-      },
-      ts,
-    });
-    navigate(url, { replace: replace ?? false });
-    return url;
-  },
   findHistoryEntryByUrl: mocks.findHistoryEntryByUrl,
 }));
 

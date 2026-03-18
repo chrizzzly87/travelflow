@@ -22,12 +22,13 @@ import {
     dbUpdateSharedTrip,
     dbUpsertTrip,
 } from '../services/dbApi';
-import { commitVersionedHistorySnapshot, findHistoryEntryByUrl } from '../services/historyService';
+import { appendHistoryEntry, findHistoryEntryByUrl } from '../services/historyService';
 import { saveTrip } from '../services/storageService';
 import {
     buildShareUrl,
     buildTripUrl,
     generateTripId,
+    generateVersionId,
     isUuid,
 } from '../utils';
 import type { ITrip, IViewSettings } from '../types';
@@ -81,15 +82,11 @@ const createLocalHistoryEntry = (
     ts?: number,
     baseUrlOverride?: string
 ) => {
-    return commitVersionedHistorySnapshot({
-        trip: updatedTrip,
-        view,
-        label,
-        navigate,
-        replace: options?.replace ?? false,
-        ts,
-        baseUrlOverride,
-    });
+    const versionId = generateVersionId();
+    const url = baseUrlOverride ? `${baseUrlOverride}?v=${versionId}` : buildTripUrl(updatedTrip.id, versionId);
+    navigate(url, { replace: options?.replace ?? false });
+    appendHistoryEntry(updatedTrip.id, url, label, { snapshot: { trip: updatedTrip, view }, ts });
+    return url;
 };
 
 export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
