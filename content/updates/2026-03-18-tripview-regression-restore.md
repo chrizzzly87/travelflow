@@ -1,10 +1,10 @@
 ---
 id: rel-2026-03-18-tripview-regression-restore
-version: v0.0.0
+version: v0.102.0
 title: "Trip view restores safer panel and menu behavior"
 date: 2026-03-18
-published_at: 2026-03-18T20:55:00Z
-status: draft
+published_at: 2026-03-18T20:29:30Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Restores calmer trip-page behavior so panel resizing stays balanced, transport changes stick, and My Trips opens without the account menu lingering above it."
