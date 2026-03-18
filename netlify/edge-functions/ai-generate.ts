@@ -4,6 +4,7 @@ import {
   resolveTimeoutMs,
 } from "../edge-lib/ai-provider-runtime.ts";
 import { persistAiGenerationTelemetry } from "../edge-lib/ai-generation-telemetry.ts";
+import { TRIP_ITINERARY_STRUCTURED_OUTPUT_SCHEMA } from "../../shared/aiTripItinerarySchema.ts";
 
 interface GenerateTarget {
   provider?: string;
@@ -76,6 +77,7 @@ export default async (request: Request) => {
       provider,
       model,
       timeoutMs: EDGE_REQUEST_PROVIDER_TIMEOUT_MS,
+      jsonSchema: TRIP_ITINERARY_STRUCTURED_OUTPUT_SCHEMA,
     });
     const durationMs = Date.now() - startedAtMs;
 

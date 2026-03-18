@@ -365,6 +365,294 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
     });
   });
 
+  it('returns an explicit refusal when OpenAI chat completions refuses structured output', async () => {
+    stubDenoEnv({
+      OPENAI_API_KEY: 'openai-key',
+    });
+
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({
+        choices: [
+          {
+            message: {
+              role: 'assistant',
+              refusal: "I'm sorry, I cannot assist with that request.",
+            },
+          },
+        ],
+        usage: {
+          prompt_tokens: 40,
+          completion_tokens: 5,
+          total_tokens: 45,
+        },
+      }),
+    );
+
+    const result = await generateProviderItinerary({
+      prompt: '{"request":"openai-chat-refusal"}',
+      provider: 'openai',
+      model: 'gpt-5-nano',
+      timeoutMs: 30_000,
+      jsonSchema: testStructuredOutputSchema,
+    });
+
+    expect(result.ok).toBe(false);
+    if (!('status' in result)) return;
+    expect(result.status).toBe(422);
+    expect(result.value.code).toBe('OPENAI_REFUSAL');
+    expect(result.value.details).toContain('cannot assist');
+  });
+
+  it('returns an explicit refusal when OpenAI responses content is a refusal block', async () => {
+    stubDenoEnv({
+      OPENAI_API_KEY: 'openai-key',
+    });
+
+    fetchMock
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            error: {
+              message: "Unsupported value: 'temperature' does not support 0 with this model. Only the default (1) value is supported.",
+              type: 'invalid_request_error',
+              param: 'temperature',
+              code: 'unsupported_value',
+            },
+          }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } },
+        ),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({
+          status: 'completed',
+          output: [
+            {
+              type: 'message',
+              role: 'assistant',
+              content: [
+                {
+                  type: 'refusal',
+                  refusal: "I'm sorry, I cannot assist with that request.",
+                },
+              ],
+            },
+          ],
+          usage: {
+            input_tokens: 10,
+            output_tokens: 4,
+            total_tokens: 14,
+          },
+        }),
+      );
+
+    const result = await generateProviderItinerary({
+      prompt: '{"request":"openai-responses-refusal"}',
+      provider: 'openai',
+      model: 'gpt-5.4',
+      timeoutMs: 30_000,
+      jsonSchema: testStructuredOutputSchema,
+    });
+
+    expect(result.ok).toBe(false);
+    if (!('status' in result)) return;
+    expect(result.status).toBe(422);
+    expect(result.value.code).toBe('OPENAI_REFUSAL');
+    expect(result.value.details).toContain('cannot assist');
+  });
+
+  it('returns an explicit incomplete error when OpenAI responses ends before any text content arrives', async () => {
+    stubDenoEnv({
+      OPENAI_API_KEY: 'openai-key',
+    });
+
+    fetchMock
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            error: {
+              message: "Unsupported value: 'temperature' does not support 0 with this model. Only the default (1) value is supported.",
+              type: 'invalid_request_error',
+              param: 'temperature',
+              code: 'unsupported_value',
+            },
+          }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } },
+        ),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({
+          status: 'incomplete',
+          incomplete_details: {
+            reason: 'max_output_tokens',
+          },
+          output: [],
+          usage: {
+            input_tokens: 100,
+            output_tokens: 0,
+            total_tokens: 100,
+          },
+        }),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({
+          status: 'incomplete',
+          incomplete_details: {
+            reason: 'max_output_tokens',
+          },
+          output: [],
+          usage: {
+            input_tokens: 120,
+            output_tokens: 0,
+            total_tokens: 120,
+          },
+        }),
+      );
+
+    const result = await generateProviderItinerary({
+      prompt: '{"request":"openai-incomplete"}',
+      provider: 'openai',
+      model: 'gpt-5-mini',
+      timeoutMs: 30_000,
+      jsonSchema: testStructuredOutputSchema,
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    const retryResponsesInit = (fetchMock.mock.calls[2] as [string, RequestInit])[1];
+    const retryResponsesBody = JSON.parse(String(retryResponsesInit.body));
+    expect(retryResponsesBody.input[0].content).toContain('exactly one minified JSON object');
+    expect(retryResponsesBody.input[1].content).toContain('IMPORTANT RETRY INSTRUCTIONS');
+    expect(retryResponsesBody.input[1].content).toContain('TRUNCATION RECOVERY MODE');
+
+    expect(result.ok).toBe(false);
+    if (!('status' in result)) return;
+    expect(result.status).toBe(502);
+    expect(result.value.code).toBe('OPENAI_RESPONSE_INCOMPLETE');
+    expect(result.value.details).toContain('max_output_tokens');
+  });
+
+  it('retries OpenAI responses with compact strict instructions after incomplete output and then succeeds', async () => {
+    stubDenoEnv({
+      OPENAI_API_KEY: 'openai-key',
+    });
+
+    fetchMock
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            error: {
+              message: "Unsupported value: 'temperature' does not support 0 with this model. Only the default (1) value is supported.",
+              type: 'invalid_request_error',
+              param: 'temperature',
+              code: 'unsupported_value',
+            },
+          }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } },
+        ),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({
+          status: 'incomplete',
+          incomplete_details: {
+            reason: 'max_output_tokens',
+          },
+          output: [],
+          usage: {
+            input_tokens: 100,
+            output_tokens: 0,
+            total_tokens: 100,
+          },
+        }),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({
+          output_text: '{"tripTitle":"OpenAI recovered","cities":[],"travelSegments":[],"activities":[]}',
+          usage: {
+            input_tokens: 90,
+            output_tokens: 120,
+            total_tokens: 210,
+          },
+        }),
+      );
+
+    const result = await generateProviderItinerary({
+      prompt: '{"request":"openai-incomplete-then-success"}',
+      provider: 'openai',
+      model: 'gpt-5-nano',
+      timeoutMs: 30_000,
+      jsonSchema: testStructuredOutputSchema,
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    const retryResponsesInit = (fetchMock.mock.calls[2] as [string, RequestInit])[1];
+    const retryResponsesBody = JSON.parse(String(retryResponsesInit.body));
+    expect(retryResponsesBody.input[0].content).toContain('exactly one minified JSON object');
+    expect(retryResponsesBody.input[1].content).toContain('IMPORTANT RETRY INSTRUCTIONS');
+    expect(retryResponsesBody.input[1].content).toContain('TRUNCATION RECOVERY MODE');
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.data.tripTitle).toBe('OpenAI recovered');
+    expect(result.value.meta.usage).toEqual({
+      promptTokens: 90,
+      completionTokens: 120,
+      totalTokens: 210,
+    });
+  });
+
+  it('accepts structured objects already parsed on the OpenAI responses payload', async () => {
+    stubDenoEnv({
+      OPENAI_API_KEY: 'openai-key',
+    });
+
+    fetchMock
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            error: {
+              message: "Unsupported value: 'temperature' does not support 0 with this model. Only the default (1) value is supported.",
+              type: 'invalid_request_error',
+              param: 'temperature',
+              code: 'unsupported_value',
+            },
+          }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } },
+        ),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({
+          status: 'completed',
+          output_parsed: {
+            tripTitle: 'Parsed object itinerary',
+            cities: [],
+            travelSegments: [],
+            activities: [],
+          },
+          usage: {
+            input_tokens: 12,
+            output_tokens: 34,
+            total_tokens: 46,
+          },
+        }),
+      );
+
+    const result = await generateProviderItinerary({
+      prompt: '{"request":"openai-output-parsed"}',
+      provider: 'openai',
+      model: 'gpt-5-mini',
+      timeoutMs: 30_000,
+      jsonSchema: testStructuredOutputSchema,
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.data.tripTitle).toBe('Parsed object itinerary');
+    expect(result.value.meta.usage).toEqual({
+      promptTokens: 12,
+      completionTokens: 34,
+      totalTokens: 46,
+    });
+  });
+
   it('returns key-missing error for openrouter requests without api key', async () => {
     stubDenoEnv({});
     const result = await generateProviderItinerary({
