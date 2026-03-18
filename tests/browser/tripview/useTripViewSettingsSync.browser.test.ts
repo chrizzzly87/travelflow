@@ -14,9 +14,7 @@ const BASE_VIEW_SETTINGS: IViewSettings = {
   routeMode: 'simple',
   showCityNames: true,
   zoomLevel: 1.25,
-  zoomBehavior: 'fit',
   sidebarWidth: 480,
-  detailsWidth: 420,
   timelineHeight: 320,
 };
 
@@ -29,9 +27,7 @@ const makeHookProps = (): Parameters<typeof useTripViewSettingsSync>[0] => ({
   routeMode: 'simple',
   showCityNames: true,
   zoomLevel: 1.25,
-  zoomBehavior: 'fit',
   sidebarWidth: 480,
-  detailsWidth: 420,
   timelineHeight: 320,
   viewMode: 'planner',
   onViewSettingsChange: undefined,
@@ -44,9 +40,7 @@ const makeHookProps = (): Parameters<typeof useTripViewSettingsSync>[0] => ({
   setTimelineView: vi.fn(),
   setMapDockMode: vi.fn(),
   setZoomLevel: vi.fn(),
-  setZoomBehavior: vi.fn(),
   setSidebarWidth: vi.fn(),
-  setDetailsWidth: vi.fn(),
   setTimelineHeight: vi.fn(),
   setShowCityNames: vi.fn(),
   suppressCommitRef: { current: false },
@@ -87,7 +81,6 @@ describe('components/tripview/useTripViewSettingsSync', () => {
     expect(params.get('cityNames')).toBe('1');
     expect(params.get('zoom')).toBe('1.25');
     expect(params.get('sidebarWidth')).toBe('480');
-    expect(params.get('detailsWidth')).toBe('420');
     expect(params.get('timelineHeight')).toBe('320');
     expect(params.get('mode')).toBe('print');
 
@@ -120,9 +113,7 @@ describe('components/tripview/useTripViewSettingsSync', () => {
       routeMode: 'simple',
       showCityNames: true,
       zoomLevel: 1.25,
-      zoomBehavior: 'fit',
       sidebarWidth: 480,
-      detailsWidth: 420,
       timelineHeight: 320,
     });
     expect(replaceStateSpy).not.toHaveBeenCalled();
@@ -183,9 +174,7 @@ describe('components/tripview/useTripViewSettingsSync', () => {
       mapStyle: 'dark',
       routeMode: 'realistic',
       zoomLevel: 2.5,
-      zoomBehavior: 'manual',
       sidebarWidth: 640,
-      detailsWidth: 520,
       timelineHeight: 420,
     };
     props.currentViewSettings = BASE_VIEW_SETTINGS;
@@ -206,9 +195,7 @@ describe('components/tripview/useTripViewSettingsSync', () => {
     expect(props.setTimelineView).toHaveBeenCalledWith('vertical');
     expect(props.setMapDockMode).toHaveBeenCalledWith('floating');
     expect(props.setZoomLevel).toHaveBeenCalledWith(2.5);
-    expect(props.setZoomBehavior).toHaveBeenCalledWith('manual');
     expect(props.setSidebarWidth).toHaveBeenCalledWith(640);
-    expect(props.setDetailsWidth).toHaveBeenCalledWith(520);
     expect(props.setTimelineHeight).toHaveBeenCalledWith(420);
     expect(props.setShowCityNames).toHaveBeenCalledWith(true);
 
@@ -251,5 +238,26 @@ describe('components/tripview/useTripViewSettingsSync', () => {
 
     expect(secondCallback).not.toHaveBeenCalled();
     vi.useRealTimers();
+  });
+
+  it('does not reapply incoming initial view settings while a manual view change is still pending', () => {
+    const props = makeHookProps();
+    props.initialViewSettings = {
+      ...BASE_VIEW_SETTINGS,
+      mapStyle: 'dark',
+      routeMode: 'realistic',
+    };
+    props.currentViewSettings = {
+      ...BASE_VIEW_SETTINGS,
+      mapStyle: 'satellite',
+    };
+    props.pendingManualViewSettingsPersistRef.current = true;
+
+    renderHook(() => useTripViewSettingsSync(props));
+
+    expect(props.setMapStyle).not.toHaveBeenCalled();
+    expect(props.setRouteMode).not.toHaveBeenCalled();
+    expect(props.suppressCommitRef.current).toBe(false);
+    expect(props.skipViewDiffRef.current).toBe(false);
   });
 });

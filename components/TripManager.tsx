@@ -4,7 +4,7 @@ import { AppLanguage, ITrip, ITimelineItem } from '../types';
 import { X, Trash2, Star, Search, ChevronDown, ChevronRight, MapPin, CalendarDays, History } from 'lucide-react';
 import { readLocalStorageItem, writeLocalStorageItem } from '../services/browserStorageService';
 import { getAllTrips, deleteTrip, saveTrip } from '../services/storageService';
-import { COUNTRIES, DEFAULT_APP_LANGUAGE, DEFAULT_DISTANCE_UNIT, formatDistance, getGoogleMapsApiKey, getTripDistanceKm } from '../utils';
+import { COUNTRIES, DEFAULT_APP_LANGUAGE, DEFAULT_DISTANCE_UNIT, formatDistance, getTripDistanceKm } from '../utils';
 import { DB_ENABLED, dbArchiveTrip, dbUpsertTrip, syncTripsFromDb } from '../services/dbService';
 import { getConnectivitySnapshot } from '../services/supabaseHealthMonitor';
 import { enqueueTripCommitAndSync } from '../services/tripSyncManager';
@@ -24,6 +24,7 @@ import {
   getTripCityStops,
   getTripDateRange,
 } from './profile/tripPreviewUtils';
+import { reverseGeocodeCountry as reverseGeocodeCountryLookup } from '../services/locationSearchService';
 
 export { buildMiniMapUrl, getTripCityStops } from './profile/tripPreviewUtils';
 
@@ -371,7 +372,7 @@ const computeHoverBridgeStyle = (anchorRect: DOMRect, tooltip: TooltipPosition):
     width,
     height,
     background: 'transparent',
-    zIndex: 2315,
+    zIndex: 1395,
   };
 };
 
@@ -586,7 +587,7 @@ const TripTooltip: React.FC<TripTooltipProps> = ({ trip, position, onHoverStart,
 
   return (
     <div
-      className="fixed z-[2320] hidden lg:block"
+      className="fixed z-[1400]"
       style={{ left: position.left, top: position.top, width: position.width, height: position.height }}
       onMouseEnter={onHoverStart}
       onMouseLeave={onHoverEnd}
@@ -840,26 +841,12 @@ export const TripManager: React.FC<TripManagerProps> = ({
       return null;
     }
 
-    const apiKey = getGoogleMapsApiKey();
-    if (!apiKey) return null;
-
     try {
-      const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${encodeURIComponent(`${lat},${lng}`)}&result_type=country&key=${encodeURIComponent(apiKey)}`;
-      const response = await fetch(url);
-      if (!response.ok) return null;
-      const payload = await response.json();
-      if (!Array.isArray(payload?.results) || payload.results.length === 0) return null;
+      const countryLookup = await reverseGeocodeCountryLookup(lat, lng);
+      if (!countryLookup) return null;
 
-      const components = payload.results[0]?.address_components;
-      if (!Array.isArray(components)) return null;
-
-      const countryComponent = components.find((component: any) =>
-        Array.isArray(component?.types) && component.types.includes('country')
-      );
-      if (!countryComponent) return null;
-
-      const shortName = String(countryComponent.short_name || '').toLowerCase();
-      const longName = String(countryComponent.long_name || '');
+      const shortName = String(countryLookup.code || '').toLowerCase();
+      const longName = String(countryLookup.name || '');
       const byCode = COUNTRY_BY_CODE.get(shortName);
       if (!byCode) return null;
 
@@ -1252,7 +1239,7 @@ export const TripManager: React.FC<TripManagerProps> = ({
   return (
     <>
       <div
-        className={`fixed inset-0 z-[2300] transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        className={`fixed inset-0 z-[1100] transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
         style={{
           opacity: isOpen ? 1 : 0,
           pointerEvents: isOpen ? 'auto' : 'none',
@@ -1268,7 +1255,7 @@ export const TripManager: React.FC<TripManagerProps> = ({
 
       <div
         ref={panelRef}
-        className={`fixed inset-y-0 right-0 w-[380px] max-w-[94vw] bg-white shadow-2xl z-[2310] transform transition-transform duration-300 ease-in-out flex flex-col ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
+        className={`fixed inset-y-0 right-0 w-[380px] max-w-[94vw] bg-white shadow-2xl z-[1200] transform transition-transform duration-300 ease-in-out flex flex-col ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
         style={{ transform: isOpen ? 'translateX(0)' : 'translateX(100%)' }}
         role="dialog"
         aria-modal="true"
@@ -1476,7 +1463,6 @@ export const TripManager: React.FC<TripManagerProps> = ({
         <>
           {hoverBridgeStyle && (
             <div
-              className="hidden lg:block"
               style={hoverBridgeStyle}
               onMouseEnter={cancelHoverClose}
               onMouseLeave={scheduleHoverClose}

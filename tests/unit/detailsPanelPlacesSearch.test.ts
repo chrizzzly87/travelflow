@@ -35,6 +35,6 @@ describe('components/DetailsPanel places migration', () => {
 
     expect(source).not.toContain('google.maps.places.PlacesService');
     expect(source).not.toContain('google.maps.places.Autocomplete');
-    expect(source).toContain('Place?.searchByText');
+    expect(source).toContain('searchHotelSuggestions');
   });
 });

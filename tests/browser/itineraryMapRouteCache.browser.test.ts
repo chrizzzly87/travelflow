@@ -24,10 +24,13 @@ import {
   getRouteOuterOutlineColor,
   getRouteOutlineColor,
   getMapLabelCityName,
+  isCoordinateWithinSafeBounds,
   estimateRoutePixelSpan,
   estimateNearestMarkerGapPx,
+  resolveCityLabelPlacement,
   resolveMarkerRenderProfile,
   resolveMarkerRenderTier,
+  resolveMapViewportPadding,
   resolveZoomEnhancedCityMarkerProfile,
   resolveCrowdedCityMarkerProfile,
   resolveActivityMarkerPositions,
@@ -119,6 +122,17 @@ describe('components/ItineraryMap route cache helpers', () => {
     expect(resolveCityLabelAnchor(city, west, east)).toBe('below');
     expect(resolveCityLabelAnchor(city, south, north)).toBe('right');
     expect(resolveCityLabelAnchor(city, null, null)).toBe('right');
+  });
+
+  it('places city labels farther away from markers with anchor-aware transforms', () => {
+    expect(resolveCityLabelPlacement('right', 24)).toEqual({
+      transform: 'translate(24px, -50%)',
+      textAlign: 'left',
+    });
+    expect(resolveCityLabelPlacement('above', 20)).toEqual({
+      transform: 'translate(-50%, calc(-100% - 20px))',
+      textAlign: 'center',
+    });
   });
 
   it('uses dual-contrast outline colors', () => {
@@ -380,6 +394,31 @@ describe('components/ItineraryMap route cache helpers', () => {
     expect(compactUnchangedProfile).toEqual(compactCityProfile);
   });
 
+  it('shrinks default city markers at low zoom before growing them again on close-up views', () => {
+    const defaultCityProfile = resolveMarkerRenderProfile({ mapDockMode: 'docked', markerTier: 'default' }).city;
+    const farZoomProfile = resolveZoomEnhancedCityMarkerProfile({
+      baseProfile: defaultCityProfile,
+      markerTier: 'default',
+      zoom: 5.2,
+    });
+
+    expect(farZoomProfile.shape).toBe('circle');
+    expect(farZoomProfile.size).toBeLessThan(defaultCityProfile.size);
+    expect(farZoomProfile.showInnerDot).toBe(false);
+  });
+
+  it('switches default city markers into pin mode earlier on medium-close zoom levels', () => {
+    const defaultCityProfile = resolveMarkerRenderProfile({ mapDockMode: 'docked', markerTier: 'default' }).city;
+    const mediumZoomProfile = resolveZoomEnhancedCityMarkerProfile({
+      baseProfile: defaultCityProfile,
+      markerTier: 'default',
+      zoom: 10.4,
+    });
+
+    expect(mediumZoomProfile.shape).toBe('pin');
+    expect(mediumZoomProfile.size).toBeGreaterThanOrEqual(24);
+  });
+
   it('flags low-fidelity transit paths as straight-like', () => {
     const start = { lat: 13.7563, lng: 100.5018 };
     const end = { lat: 13.3633, lng: 103.8564 };
@@ -586,6 +625,7 @@ describe('components/ItineraryMap route cache helpers', () => {
   it('recenters when zooming to a selected target even if it is already visible', () => {
     expect(resolveSelectionViewportActions({
       isTargetVisible: true,
+      isTargetWithinSafeZone: true,
       currentZoom: 9,
       targetZoom: 13,
     })).toEqual({
@@ -597,10 +637,23 @@ describe('components/ItineraryMap route cache helpers', () => {
   it('keeps viewport stable when selected target is visible and zoom is already sufficient', () => {
     expect(resolveSelectionViewportActions({
       isTargetVisible: true,
+      isTargetWithinSafeZone: true,
       currentZoom: 13,
       targetZoom: 13,
     })).toEqual({
       shouldPan: false,
+      shouldZoom: false,
+    });
+  });
+
+  it('re-centers when a selected target is visible but too close to the viewport edge', () => {
+    expect(resolveSelectionViewportActions({
+      isTargetVisible: true,
+      isTargetWithinSafeZone: false,
+      currentZoom: 13,
+      targetZoom: 13,
+    })).toEqual({
+      shouldPan: true,
       shouldZoom: false,
     });
   });
@@ -614,6 +667,45 @@ describe('components/ItineraryMap route cache helpers', () => {
       shouldPan: true,
       shouldZoom: false,
     });
+  });
+
+  it('creates roomier fit padding for floating map layouts', () => {
+    expect(resolveMapViewportPadding({
+      mapDockMode: 'docked',
+      mapViewportSize: { width: 640, height: 420 },
+    })).toEqual({
+      top: 98,
+      right: 100,
+      bottom: 98,
+      left: 100,
+    });
+
+    expect(resolveMapViewportPadding({
+      mapDockMode: 'floating',
+      mapViewportSize: { width: 640, height: 420 },
+    })).toEqual({
+      top: 116,
+      right: 108,
+      bottom: 116,
+      left: 108,
+    });
+  });
+
+  it('detects whether a selected target sits inside the safe-zone inset of the current bounds', () => {
+    const bounds = {
+      getNorthEast: () => ({ lat: () => 20, lng: () => 20 }),
+      getSouthWest: () => ({ lat: () => 10, lng: () => 10 }),
+    } as unknown as google.maps.LatLngBounds;
+
+    expect(isCoordinateWithinSafeBounds({
+      bounds,
+      point: { lat: 15, lng: 15 },
+    })).toBe(true);
+
+    expect(isCoordinateWithinSafeBounds({
+      bounds,
+      point: { lat: 11.6, lng: 15 },
+    })).toBe(false);
   });
 
   it('shows activity markers only when toggle is enabled and zoom is high enough', () => {
