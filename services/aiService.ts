@@ -31,6 +31,7 @@ import {
     generateTripId,
 } from "../utils";
 import { trackEvent } from "./analyticsService";
+import { resolveDestinationName } from "./destinationService";
 
 /**
  * ==============================================================================
@@ -50,6 +51,28 @@ const DURATION_PROMPT_GUIDANCE = buildDurationPromptGuidance();
 const DEFAULT_CREATE_TRIP_MODEL = getDefaultCreateTripModel();
 const DEFAULT_PROVIDER = DEFAULT_CREATE_TRIP_MODEL.provider;
 const DEFAULT_MODEL = DEFAULT_CREATE_TRIP_MODEL.model;
+
+const normalizePromptDestinationValue = (value: string): string => {
+    const trimmed = value.trim();
+    if (!trimmed) return '';
+
+    const resolved = resolveDestinationName(trimmed);
+    return resolved || trimmed;
+};
+
+const normalizePromptDestinationList = (values: string[]): string[] => {
+    const seen = new Set<string>();
+
+    return values
+        .map((value) => normalizePromptDestinationValue(value))
+        .filter((value) => {
+            if (!value) return false;
+            const key = value.toLocaleLowerCase();
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        });
+};
 
 const itinerarySchema = createGeminiTripItineraryResponseSchema(Type);
 
@@ -1365,10 +1388,17 @@ export const buildClassicItineraryPrompt = (prompt: string, options?: GenerateOp
 };
 
 export const buildWizardItineraryPrompt = (options: WizardGenerateOptions): string => {
-    const countries = options.countries.map((country) => country.trim()).filter(Boolean);
+    const countries = normalizePromptDestinationList(options.countries);
     if (countries.length === 0) {
         throw new Error('Please select at least one destination for the wizard flow.');
     }
+
+    const normalizedDestinationOrder = options.destinationOrder
+        ? normalizePromptDestinationList(options.destinationOrder)
+        : countries;
+    const normalizedStartDestination = options.startDestination
+        ? normalizePromptDestinationValue(options.startDestination)
+        : undefined;
 
     let detailedPrompt = [
         'Plan a detailed, realistic multi-stop travel itinerary using the user destination data below.',
@@ -1393,7 +1423,7 @@ export const buildWizardItineraryPrompt = (options: WizardGenerateOptions): stri
     }
     detailedPrompt += buildPreferenceSignalsPrompt({
         dateInputMode: options.dateInputMode,
-        destinationOrder: options.destinationOrder || countries,
+        destinationOrder: normalizedDestinationOrder,
         enforceIslandOnly: options.enforceIslandOnly,
         flexWeeks: options.flexWeeks,
         flexWindow: options.flexWindow,
@@ -1405,7 +1435,7 @@ export const buildWizardItineraryPrompt = (options: WizardGenerateOptions): stri
         selectedIslandNames: options.selectedIslandNames,
         shoulderMonths: options.shoulderMonths,
         specificCities: options.specificCities,
-        startDestination: options.startDestination,
+        startDestination: normalizedStartDestination,
         transportPreferences: options.transportPreferences,
         travelerDetails: options.travelerDetails,
         travelerType: options.travelerType,
@@ -1431,7 +1461,7 @@ export const buildWizardItineraryPrompt = (options: WizardGenerateOptions): stri
 };
 
 export const buildSurpriseItineraryPrompt = (options: SurpriseGenerateOptions): string => {
-    const country = options.country.trim();
+    const country = normalizePromptDestinationValue(options.country);
     if (!country) {
         throw new Error('Please pick a destination before generating a surprise trip.');
     }

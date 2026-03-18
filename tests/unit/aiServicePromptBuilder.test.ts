@@ -110,6 +110,28 @@ describe('services/aiService buildWizardItineraryPrompt', () => {
     expect(prompt).toContain('you MUST add a short practical note in a final "### Heads Up" section');
   });
 
+  it('normalizes alias-backed destinations before building the wizard prompt', () => {
+    const prompt = buildWizardItineraryPrompt({
+      countries: ['England', 'UK', 'PRC', 'ROK'],
+      destinationOrder: ['England', 'PRC', 'ROK'],
+      startDestination: 'England',
+      routeLock: true,
+      promptMode: 'default',
+    });
+
+    expect(prompt).toContain('<wizard_destinations>');
+    expect(prompt).toContain('United Kingdom');
+    expect(prompt).toContain('China');
+    expect(prompt).toContain('South Korea');
+    expect(prompt).toContain('Destination order is fixed. Follow the exact order listed in the user data block');
+    expect(prompt).toContain('<fixed_destination_order>');
+    expect(prompt).toContain('Prefer starting the trip from the user-selected start destination when feasible');
+    expect(prompt).toContain('<preferred_start_destination>');
+    expect(prompt).not.toContain('England');
+    expect(prompt).not.toContain('PRC');
+    expect(prompt).not.toContain('ROK');
+  });
+
   it('formats surprise-flow user inputs as data blocks instead of free-form instructions', () => {
     const prompt = buildSurpriseItineraryPrompt({
       country: 'Japan',
@@ -125,5 +147,12 @@ describe('services/aiService buildWizardItineraryPrompt', () => {
     expect(prompt).toContain('<seasonal_highlights>');
     expect(prompt).toContain('<surprise_trip_notes>');
     expect(prompt).toContain('planning data only');
+  });
+
+  it('normalizes alias-backed destinations before building the surprise prompt', () => {
+    expect(buildSurpriseItineraryPrompt({ country: 'England' })).toContain('<surprise_destination>\nUnited Kingdom\n</surprise_destination>');
+    expect(buildSurpriseItineraryPrompt({ country: 'UK' })).toContain('<surprise_destination>\nUnited Kingdom\n</surprise_destination>');
+    expect(buildSurpriseItineraryPrompt({ country: 'PRC' })).toContain('<surprise_destination>\nChina\n</surprise_destination>');
+    expect(buildSurpriseItineraryPrompt({ country: 'DR Kongo' })).toContain('<surprise_destination>\nCongo (Democratic Republic)\n</surprise_destination>');
   });
 });
