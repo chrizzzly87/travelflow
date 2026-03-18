@@ -17,7 +17,9 @@ import { buildFlightRouteVisualPaths } from './maps/flightRouteGeometry';
 import { createGoogleMixedSurfaceController, type GoogleMixedSurfaceController } from './maps/googleMixedSurfaceController';
 import { buildMapboxDashedRouteDasharray, createMapboxLineHandle, createMapboxOverlayMarker, type MapboxLineLayerConfig } from './maps/mapboxOverlayRuntime';
 import { resolveActiveOverlayMapTarget, shouldHideGoogleMapCanvas } from './maps/mapRenderTarget';
+import { getTripMapProviderTuning, resolveTripMapViewportPadding } from './maps/tripMapProviderTuning';
 import { GOOGLE_ROUTES_COMPUTE_FIELDS, computeGoogleRouteLeg, loadGoogleRouteRuntime } from '../services/routeService';
+import type { MapImplementation } from '../shared/mapRuntime';
 
 interface ItineraryMapProps {
     items: ITimelineItem[];
@@ -278,7 +280,7 @@ const CITY_MARKER_Z_INDEX = 320;
 const CITY_MARKER_SELECTED_Z_INDEX = 340;
 const ACTIVITY_MARKER_Z_INDEX = 240;
 const ACTIVITY_MARKER_SELECTED_Z_INDEX = 260;
-export const ACTIVITY_MARKERS_MIN_ZOOM = 9;
+export const ACTIVITY_MARKERS_MIN_ZOOM = getTripMapProviderTuning('google').markers.activityMinZoom;
 
 const resolveCityMarkerZIndex = (
     isSelected: boolean,
@@ -495,18 +497,22 @@ export const estimateNearestMarkerGapPx = (
 };
 
 export const resolveMarkerRenderTier = ({
+    provider = 'google',
     viewportWidth,
     viewportHeight,
     zoom,
     routePixelSpan,
     nearestMarkerGapPx,
 }: {
+    provider?: MapImplementation;
     viewportWidth: number;
     viewportHeight: number;
     zoom: number | null;
     routePixelSpan: number;
     nearestMarkerGapPx: number;
 }): MarkerRenderTier => {
+    const tuning = getTripMapProviderTuning(provider);
+    const markerTierTuning = tuning.markers.tier;
     const shortEdge = Math.min(viewportWidth, viewportHeight);
     if (!Number.isFinite(shortEdge) || shortEdge <= 0) return 'default';
     const effectiveZoom = Number.isFinite(zoom) ? Number(zoom) : 11;
@@ -514,35 +520,39 @@ export const resolveMarkerRenderTier = ({
         ? routePixelSpan / (2 ** (effectiveZoom - MARKER_TIER_ROUTE_REFERENCE_ZOOM))
         : 0;
     const routeCoverage = shortEdge > 0 ? zoomNormalizedRouteSpan / shortEdge : 0;
-    const veryDenseRoute = Number.isFinite(routeCoverage) && routeCoverage > 2.8;
-    const extremeDenseRoute = Number.isFinite(routeCoverage) && routeCoverage > 3.8;
-    const lowZoom = effectiveZoom <= 6.75;
-    const veryLowZoom = effectiveZoom <= 5.25;
+    const veryDenseRoute = Number.isFinite(routeCoverage) && routeCoverage > markerTierTuning.denseRouteCoverage;
+    const extremeDenseRoute = Number.isFinite(routeCoverage) && routeCoverage > markerTierTuning.extremeDenseRouteCoverage;
+    const lowZoom = effectiveZoom <= markerTierTuning.lowZoom;
+    const veryLowZoom = effectiveZoom <= markerTierTuning.veryLowZoom;
 
-    if (shortEdge <= 185) return 'micro';
-    if (veryLowZoom && shortEdge <= 230) return 'micro';
-    if (shortEdge <= 230 && extremeDenseRoute) return 'micro';
-    if (shortEdge <= 260 && veryLowZoom && veryDenseRoute) return 'micro';
+    if (shortEdge <= markerTierTuning.microShortEdge) return 'micro';
+    if (veryLowZoom && shortEdge <= markerTierTuning.microVeryLowZoomMaxShortEdge) return 'micro';
+    if (shortEdge <= markerTierTuning.microVeryLowZoomMaxShortEdge && extremeDenseRoute) return 'micro';
+    if (shortEdge <= markerTierTuning.compactVeryLowZoomDenseMaxShortEdge && veryLowZoom && veryDenseRoute) return 'micro';
 
-    if (shortEdge <= 260) return 'compact';
+    if (shortEdge <= markerTierTuning.compactShortEdge) return 'compact';
     if (lowZoom) return 'compact';
-    if (shortEdge <= 340 && veryDenseRoute && effectiveZoom <= 8.5) return 'compact';
+    if (shortEdge <= markerTierTuning.compactDenseMaxShortEdge && veryDenseRoute && effectiveZoom <= markerTierTuning.compactDenseZoomCutoff) return 'compact';
     return 'default';
 };
 
 export const resolveZoomEnhancedCityMarkerProfile = ({
+    provider = 'google',
     baseProfile,
     markerTier,
     zoom,
 }: {
+    provider?: MapImplementation;
     baseProfile: CityMarkerRenderProfile;
     markerTier: MarkerRenderTier;
     zoom: number | null;
 }): CityMarkerRenderProfile => {
+    const tuning = getTripMapProviderTuning(provider);
+    const cityZoomTuning = tuning.markers.cityZoomProfile;
     if (markerTier !== 'default') return baseProfile;
     if (!Number.isFinite(zoom)) return baseProfile;
     const effectiveZoom = Number(zoom);
-    if (effectiveZoom < 6.2) {
+    if (effectiveZoom < cityZoomTuning.farCircleMaxZoom) {
         return {
             ...baseProfile,
             shape: 'circle',
@@ -554,7 +564,7 @@ export const resolveZoomEnhancedCityMarkerProfile = ({
             numberColor: '#ffffff',
         };
     }
-    if (effectiveZoom < 8.2) {
+    if (effectiveZoom < cityZoomTuning.mediumCircleMaxZoom) {
         return {
             ...baseProfile,
             shape: 'circle',
@@ -565,7 +575,7 @@ export const resolveZoomEnhancedCityMarkerProfile = ({
             showInnerDot: false,
         };
     }
-    if (effectiveZoom < 10.1) {
+    if (effectiveZoom < cityZoomTuning.nearCircleMaxZoom) {
         return {
             ...baseProfile,
             shape: 'circle',
@@ -573,7 +583,7 @@ export const resolveZoomEnhancedCityMarkerProfile = ({
             selectedSize: Math.max(26, Math.round(baseProfile.selectedSize * 0.92)),
         };
     }
-    if (effectiveZoom < 10.9) {
+    if (effectiveZoom < cityZoomTuning.compactPinMaxZoom) {
         return {
             ...baseProfile,
             shape: 'pin',
@@ -584,13 +594,8 @@ export const resolveZoomEnhancedCityMarkerProfile = ({
         };
     }
 
-    const scale = effectiveZoom >= 13
-        ? 1.2
-        : effectiveZoom >= 12
-            ? 1.14
-            : effectiveZoom >= 11
-                ? 1.1
-                : 1.06;
+    const scaleBand = cityZoomTuning.scaleBands.find((entry) => effectiveZoom >= entry.minZoom);
+    const scale = scaleBand?.scale ?? 1.03;
 
     return {
         ...baseProfile,
@@ -603,22 +608,26 @@ export const resolveZoomEnhancedCityMarkerProfile = ({
 };
 
 export const resolveCrowdedCityMarkerProfile = ({
+    provider = 'google',
     baseProfile,
     markerTier,
     zoom,
     nearestMarkerGapPx,
 }: {
+    provider?: MapImplementation;
     baseProfile: CityMarkerRenderProfile;
     markerTier: MarkerRenderTier;
     zoom: number | null;
     nearestMarkerGapPx: number;
 }): CityMarkerRenderProfile => {
+    const tuning = getTripMapProviderTuning(provider);
+    const crowdingTuning = tuning.markers.crowding;
     if (markerTier === 'micro') return baseProfile;
     if (!Number.isFinite(nearestMarkerGapPx)) return baseProfile;
-    if (Number.isFinite(zoom) && Number(zoom) >= 10) return baseProfile;
+    if (Number.isFinite(zoom) && Number(zoom) >= crowdingTuning.disableCrowdingAtZoom) return baseProfile;
 
-    const veryCrowded = nearestMarkerGapPx < 10;
-    const crowded = nearestMarkerGapPx < 13;
+    const veryCrowded = nearestMarkerGapPx < crowdingTuning.veryCrowdedGapPx;
+    const crowded = nearestMarkerGapPx < crowdingTuning.crowdedGapPx;
     if (!crowded) return baseProfile;
 
     const scale = veryCrowded ? 0.8 : 0.9;
@@ -1083,20 +1092,23 @@ export const resolveActivityMarkerPositions = (
 };
 
 export const resolveSelectedMapFocusPosition = ({
+    provider = 'google',
     selectedActivityId,
     selectedCityId,
     activityMarkerPositions,
     cities,
 }: {
+    provider?: MapImplementation;
     selectedActivityId?: string | null;
     selectedCityId?: string | null;
     activityMarkerPositions: Map<string, google.maps.LatLngLiteral>;
     cities: ITimelineItem[];
 }): { position: google.maps.LatLngLiteral; zoom: number } | null => {
+    const selectionTuning = getTripMapProviderTuning(provider).selection;
     if (selectedActivityId) {
         const activityPosition = activityMarkerPositions.get(selectedActivityId);
         if (activityPosition) {
-            return { position: activityPosition, zoom: 13 };
+            return { position: activityPosition, zoom: selectionTuning.activityFocusZoom };
         }
     }
     if (selectedCityId) {
@@ -1104,7 +1116,7 @@ export const resolveSelectedMapFocusPosition = ({
         if (selectedCity?.coordinates) {
             return {
                 position: { lat: selectedCity.coordinates.lat, lng: selectedCity.coordinates.lng },
-                zoom: 10,
+                zoom: selectionTuning.cityFocusZoom,
             };
         }
     }
@@ -1149,25 +1161,19 @@ export const resolveSelectionViewportActions = ({
 };
 
 export const resolveMapViewportPadding = ({
+    provider = 'google',
     mapDockMode,
     mapViewportSize,
 }: {
+    provider?: MapImplementation;
     mapDockMode: 'docked' | 'floating';
     mapViewportSize: { width: number; height: number } | null;
 }): google.maps.Padding => {
-    const shortEdge = Math.min(mapViewportSize?.width ?? 0, mapViewportSize?.height ?? 0);
-    const basePadding = Math.max(112, Math.min(224, Math.round(shortEdge * 0.24) || 128));
-    const verticalBoost = mapDockMode === 'floating' ? 36 : 18;
-    const horizontalBoost = mapDockMode === 'floating' ? 28 : 18;
-    const verticalPadding = Math.max(124, Math.min(268, basePadding + verticalBoost));
-    const horizontalPadding = Math.max(112, Math.min(244, basePadding + horizontalBoost));
-
-    return {
-        top: verticalPadding,
-        right: horizontalPadding,
-        bottom: verticalPadding,
-        left: horizontalPadding,
-    };
+    return resolveTripMapViewportPadding({
+        provider,
+        mapDockMode,
+        mapViewportSize,
+    });
 };
 
 export const isCoordinateWithinSafeBounds = ({
@@ -1197,15 +1203,17 @@ export const isCoordinateWithinSafeBounds = ({
 };
 
 export const shouldDisplayActivityMarkers = ({
+    provider = 'google',
     isEnabled,
     zoom,
 }: {
+    provider?: MapImplementation;
     isEnabled: boolean;
     zoom: number | null | undefined;
 }): boolean => {
     if (!isEnabled) return false;
     if (!Number.isFinite(zoom)) return false;
-    return Number(zoom) >= ACTIVITY_MARKERS_MIN_ZOOM;
+    return Number(zoom) >= getTripMapProviderTuning(provider).markers.activityMinZoom;
 };
 
 export const isMapViewportReady = (rect: { width: number; height: number } | null | undefined): boolean => {
@@ -1603,6 +1611,8 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     const mapboxBasemapAvailable = mapboxBasemapFailureKey !== mapboxBasemapAvailabilityKey;
     const shouldUseRequestedMapboxBasemap = runtime.effectiveSelection.renderer === 'mapbox' && mapboxAccessToken.length > 0;
     const isMapboxBasemapEnabled = shouldUseRequestedMapboxBasemap && mapboxBasemapAvailable;
+    const tripMapProvider = runtime.effectiveSelection.renderer;
+    const tripMapTuning = useMemo(() => getTripMapProviderTuning(tripMapProvider), [tripMapProvider]);
     const shouldHideGoogleCanvasInMixedMode = shouldHideGoogleMapCanvas({
         isMapboxEnabled: isMapboxBasemapEnabled,
     });
@@ -1666,13 +1676,14 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     );
     const markerRenderTier = useMemo(
         () => resolveMarkerRenderTier({
+            provider: tripMapProvider,
             viewportWidth: mapViewportSize?.width ?? 0,
             viewportHeight: mapViewportSize?.height ?? 0,
             zoom: mapZoomLevel,
             routePixelSpan,
             nearestMarkerGapPx,
         }),
-        [mapViewportSize, mapZoomLevel, nearestMarkerGapPx, routePixelSpan],
+        [mapViewportSize, mapZoomLevel, nearestMarkerGapPx, routePixelSpan, tripMapProvider],
     );
     const markerRenderProfile = useMemo(
         () => resolveMarkerRenderProfile({
@@ -1683,20 +1694,22 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     );
     const zoomEnhancedCityProfile = useMemo(
         () => resolveZoomEnhancedCityMarkerProfile({
+            provider: tripMapProvider,
             baseProfile: markerRenderProfile.city,
             markerTier: markerRenderTier,
             zoom: mapZoomLevel,
         }),
-        [mapZoomLevel, markerRenderProfile.city, markerRenderTier],
+        [mapZoomLevel, markerRenderProfile.city, markerRenderTier, tripMapProvider],
     );
     const crowdedCityProfile = useMemo(
         () => resolveCrowdedCityMarkerProfile({
+            provider: tripMapProvider,
             baseProfile: zoomEnhancedCityProfile,
             markerTier: markerRenderTier,
             zoom: mapZoomLevel,
             nearestMarkerGapPx,
         }),
-        [zoomEnhancedCityProfile, markerRenderTier, mapZoomLevel, nearestMarkerGapPx],
+        [zoomEnhancedCityProfile, markerRenderTier, mapZoomLevel, nearestMarkerGapPx, tripMapProvider],
     );
     const effectiveMarkerRenderProfile = useMemo(() => {
         if (crowdedCityProfile === markerRenderProfile.city) return markerRenderProfile;
@@ -1739,10 +1752,11 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             }
         });
         googleMapRef.current.fitBounds(bounds, resolveMapViewportPadding({
+            provider: tripMapProvider,
             mapDockMode,
             mapViewportSize,
         }));
-    }, [cities, mapDockMode, mapViewportSize]);
+    }, [cities, mapDockMode, mapViewportSize, tripMapProvider]);
 
     const scheduleFitWhenViewportReady = useCallback((maxAttempts = 14, options?: { respectSelection?: boolean }) => {
         if (!googleMapRef.current || cities.length === 0 || typeof window === 'undefined') return;
@@ -2339,6 +2353,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 ? Number(currentZoomValue)
                 : mapZoomLevelRef.current;
             const shouldAttachActivityMarkers = shouldDisplayActivityMarkers({
+                provider: tripMapProvider,
                 isEnabled: activityMarkersEnabledRef.current,
                 zoom: resolvedZoomLevel,
             });
@@ -2898,6 +2913,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             mapboxMap: mapboxMapRef.current,
         });
         const shouldShow = shouldDisplayActivityMarkers({
+            provider: tripMapProvider,
             isEnabled: activityMarkersEnabled,
             zoom: mapZoomLevel,
         });
@@ -2921,6 +2937,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         const t = setTimeout(() => {
             if (!googleMapRef.current) return;
             const focusTarget = resolveSelectedMapFocusPosition({
+                provider: tripMapProvider,
                 selectedActivityId,
                 selectedCityId,
                 activityMarkerPositions: resolvedActivityMarkerPositionById,
@@ -2941,7 +2958,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 ? isCoordinateWithinSafeBounds({
                     bounds: currentBounds,
                     point: focusTarget.position,
-                    insetRatio: 0.28,
+                    insetRatio: tripMapTuning.selection.safeInsetRatio,
                 })
                 : false;
             const { shouldPan, shouldZoom } = resolveSelectionViewportActions({
@@ -2963,7 +2980,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             }
         }, 100);
         return () => clearTimeout(t);
-    }, [selectedActivityId, selectedCityId, mapInitialized, cityMapSignature, resolvedActivityMarkerPositionById]);
+    }, [selectedActivityId, selectedCityId, mapInitialized, cityMapSignature, resolvedActivityMarkerPositionById, tripMapProvider, tripMapTuning.selection.safeInsetRatio]);
 
     // Fit Bounds
     const handleFit = () => {
@@ -3037,7 +3054,10 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                     width: Math.round(nextViewportSize.width),
                     height: Math.round(nextViewportSize.height),
                 });
-                if (widthDeltaSinceLastAutoFit < 24 && heightDeltaSinceLastAutoFit < 24) return;
+                if (
+                    widthDeltaSinceLastAutoFit < tripMapTuning.resize.autoFitViewportDeltaPx
+                    && heightDeltaSinceLastAutoFit < tripMapTuning.resize.autoFitViewportDeltaPx
+                ) return;
                 cancelResizeAutoFitTimer();
                 resizeAutoFitTimerRef.current = window.setTimeout(() => {
                     resizeAutoFitTimerRef.current = null;
@@ -3055,7 +3075,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 window.cancelAnimationFrame(resizeRafId);
             }
         };
-    }, [cancelResizeAutoFitTimer, cities.length, mapDockMode, mapInitialized]);
+    }, [cancelResizeAutoFitTimer, cities.length, mapDockMode, mapInitialized, tripMapTuning.resize.autoFitViewportDeltaPx]);
 
     useEffect(() => (
         () => {
@@ -3090,10 +3110,11 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             if (pending > 0 || cancelled || !googleMapRef.current || successCount === 0) return;
             if (successCount === 1 && singleLocation && !singleHasViewport) {
                 googleMapRef.current.setCenter(singleLocation);
-                googleMapRef.current.setZoom(5);
+                googleMapRef.current.setZoom(tripMapTuning.selection.queryFocusZoom);
                 return;
             }
             googleMapRef.current.fitBounds(bounds, resolveMapViewportPadding({
+                provider: tripMapProvider,
                 mapDockMode,
                 mapViewportSize,
             }));
@@ -3124,7 +3145,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         return () => {
             cancelled = true;
         };
-    }, [focusLocationQuery, mapDockMode, mapInitialized, mapViewportSize, cities.length]);
+    }, [cities.length, focusLocationQuery, mapDockMode, mapInitialized, mapViewportSize, tripMapProvider, tripMapTuning.selection.queryFocusZoom]);
 
     return (
         <div

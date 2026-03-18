@@ -8,6 +8,7 @@ import {
   getMapboxStyleDescriptor,
 } from '../../services/mapRendererVisualStyleService';
 import type { MapStyle } from '../../types';
+import { getTripMapProviderTuning } from './tripMapProviderTuning';
 
 export interface MapboxBasemapLoadError {
   message: string;
@@ -27,15 +28,10 @@ interface MapboxBasemapSyncProps {
 }
 
 const MAPBOX_FATAL_HTTP_STATUSES = new Set([401, 403, 404, 429]);
-const MAPBOX_GLOBE_INTRO_CAMERA = {
-  center: [2, 20] as [number, number],
-  zoom: 0.58,
-  bearing: -32,
-  pitch: 0,
-};
 const MAPBOX_MIN_TILE_CACHE_SIZE = 512;
 const MAPBOX_MAX_TILE_CACHE_SIZE = 1536;
-const MAPBOX_SYNC_COOLDOWN_MS = 260;
+const MAPBOX_TRIP_TUNING = getTripMapProviderTuning('mapbox');
+const MAPBOX_GLOBE_INTRO_CAMERA = MAPBOX_TRIP_TUNING.intro.camera;
 
 const getMapboxErrorMessage = (value: unknown): string => {
   if (value instanceof Error) {
@@ -114,7 +110,8 @@ export const isMeaningfulMapboxIntroTarget = (
   if (!target || !Number.isFinite(target.zoom)) return false;
   const [lng, lat] = target.center;
   const centerOffset = Math.hypot(lng - MAPBOX_GLOBE_INTRO_CAMERA.center[0], lat - MAPBOX_GLOBE_INTRO_CAMERA.center[1]);
-  return target.zoom >= 3.15 || centerOffset >= 12;
+  return target.zoom >= MAPBOX_TRIP_TUNING.intro.minMeaningfulTargetZoom
+    || centerOffset >= MAPBOX_TRIP_TUNING.intro.minMeaningfulCenterOffsetDegrees;
 };
 
 export const areMapboxCameraTargetsNearlyEqual = (
@@ -222,7 +219,7 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
           window.requestAnimationFrame(() => {
             flushViewportSize();
           });
-        }, 180);
+        }, MAPBOX_TRIP_TUNING.resize.settleMs);
         return;
       }
 
@@ -236,8 +233,8 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
           window.requestAnimationFrame(() => {
             flushViewportSize();
           });
-        }, 180);
-      }, 72);
+        }, MAPBOX_TRIP_TUNING.resize.settleMs);
+      }, MAPBOX_TRIP_TUNING.resize.debounceMs);
     };
 
     const reportSurfaceReady = (isReady: boolean) => {
@@ -281,13 +278,13 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
         introTimeoutId = null;
         mapboxMap.flyTo({
           center: target.center,
-          zoom: Math.max(target.zoom, 2.8),
+          zoom: Math.max(target.zoom, MAPBOX_TRIP_TUNING.intro.flyToMinZoom),
           bearing: 0,
           pitch: 0,
-          duration: 1350,
+          duration: MAPBOX_TRIP_TUNING.intro.durationMs,
           essential: true,
-          curve: 1.25,
-          speed: 1.15,
+          curve: MAPBOX_TRIP_TUNING.intro.curve,
+          speed: MAPBOX_TRIP_TUNING.intro.speed,
         });
 
         window.setTimeout(() => {
@@ -296,8 +293,8 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
             syncSourceRef.current = null;
           }
           syncMapboxToGoogleCamera(mapboxMap, googleMap);
-        }, 1410);
-      }, 40);
+        }, MAPBOX_TRIP_TUNING.intro.settleMs);
+      }, MAPBOX_TRIP_TUNING.intro.delayMs);
 
       return true;
     };
@@ -361,7 +358,7 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
         center: [center.lng, center.lat],
         zoom: Number(zoom),
       };
-      ignoreGoogleSyncUntilRef.current = Date.now() + MAPBOX_SYNC_COOLDOWN_MS;
+      ignoreGoogleSyncUntilRef.current = Date.now() + MAPBOX_TRIP_TUNING.intro.syncCooldownMs;
 
       syncSourceRef.current = 'mapbox';
       if (typeof googleMap.moveCamera === 'function') {
