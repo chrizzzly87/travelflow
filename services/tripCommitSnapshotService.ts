@@ -23,6 +23,10 @@ export const resolveDeferredTripCommitSnapshot = ({
 
     return {
         trip: resolvedTrip,
-        view: liveView ?? pendingView,
+        // The scheduled snapshot is the authoritative intent for this commit.
+        // Falling back to the later live view can reintroduce stale UI state
+        // during data commits when route/view hydration races with manual
+        // visual changes.
+        view: pendingView ?? liveView,
     };
 };

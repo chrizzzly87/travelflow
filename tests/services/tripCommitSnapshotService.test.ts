@@ -30,7 +30,7 @@ const makeView = (overrides?: Partial<IViewSettings>): IViewSettings => ({
 });
 
 describe('services/tripCommitSnapshotService', () => {
-    it('prefers the latest live trip snapshot for the same trip id while keeping the latest live view settings', () => {
+    it('prefers the latest live trip snapshot for the same trip id while keeping the scheduled view snapshot', () => {
         const pendingTrip = makeTrip({ updatedAt: 100, items: [{ id: 'city-1', type: 'city', title: 'Paris', startDateOffset: 0, duration: 2 } as any] });
         const liveTrip = makeTrip({
             updatedAt: 140,
@@ -49,7 +49,7 @@ describe('services/tripCommitSnapshotService', () => {
             liveView,
         })).toEqual({
             trip: liveTrip,
-            view: liveView,
+            view: pendingView,
         });
     });
 
@@ -77,6 +77,22 @@ describe('services/tripCommitSnapshotService', () => {
         })).toEqual({
             trip: pendingTrip,
             view: pendingView,
+        });
+    });
+
+    it('falls back to the live view when the scheduled commit did not provide one', () => {
+        const pendingTrip = makeTrip({ updatedAt: 100 });
+        const liveTrip = makeTrip({ updatedAt: 110 });
+        const liveView = makeView({ mapStyle: 'satellite', mapDockMode: 'floating' });
+
+        expect(resolveDeferredTripCommitSnapshot({
+            pendingTrip,
+            liveTrip,
+            pendingView: undefined,
+            liveView,
+        })).toEqual({
+            trip: liveTrip,
+            view: liveView,
         });
     });
 });

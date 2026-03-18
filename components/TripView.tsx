@@ -2291,6 +2291,10 @@ const useTripViewRender = ({
         }
         const tripToCommit = nextTrip || trip;
         const viewToCommit = nextView || currentViewSettings;
+        if (nextTrip && pendingManualVisualCommitRef.current) {
+            pendingManualVisualCommitRef.current = false;
+            debugHistory('Absorbed pending visual commit into data commit');
+        }
         pendingCommitRef.current = { trip: tripToCommit, view: viewToCommit, skipToast: options?.skipToast };
         debugHistory('Scheduled commit', { label: pendingHistoryLabelRef.current || 'Data: Updated trip' });
 

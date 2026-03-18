@@ -54,4 +54,19 @@ describe('components/TripView runtime ordering', () => {
         expect(autoOpenIndex).toBeGreaterThan(selectionControllerIndex);
         expect(clearSelectionIndex).toBeGreaterThan(autoOpenIndex);
     });
+
+    it('absorbs pending visual commits into later data commits', () => {
+        const source = readFileSync(
+            resolve(process.cwd(), 'components/TripView.tsx'),
+            'utf8',
+        );
+
+        const scheduleCommitIndex = source.indexOf('const scheduleCommit = useCallback((');
+        const nextTripGuardIndex = source.indexOf('if (nextTrip && pendingManualVisualCommitRef.current)');
+        const absorbResetIndex = source.indexOf("pendingManualVisualCommitRef.current = false;", nextTripGuardIndex);
+
+        expect(scheduleCommitIndex).toBeGreaterThan(-1);
+        expect(nextTripGuardIndex).toBeGreaterThan(scheduleCommitIndex);
+        expect(absorbResetIndex).toBeGreaterThan(nextTripGuardIndex);
+    });
 });
