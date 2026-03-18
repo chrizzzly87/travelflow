@@ -180,6 +180,7 @@ const clipText = (value: string, max = 1_200): string => {
 };
 
 const PROVIDER_MAX_OUTPUT_TOKENS = resolveIntegerEnv("AI_PROVIDER_MAX_OUTPUT_TOKENS", 8_192, 1_024, 16_384);
+const OPENAI_STRUCTURED_OUTPUT_MAX_TOKENS = resolveIntegerEnv("AI_OPENAI_STRUCTURED_OUTPUT_MAX_TOKENS", 12_288, 1_024, 16_384);
 
 const STRICT_JSON_RETRY_INSTRUCTION = `
 IMPORTANT RETRY INSTRUCTIONS:
@@ -210,8 +211,17 @@ const isTokenLimitSignal = (value: unknown): boolean => {
   return /max[_\s-]?token|length/i.test(value);
 };
 
-const resolveOutputTokenBudget = (override?: number): number => {
-  if (!Number.isFinite(override)) return PROVIDER_MAX_OUTPUT_TOKENS;
+const resolveOutputTokenBudget = (
+  provider: string,
+  jsonSchema: StructuredOutputJsonSchema | undefined,
+  override?: number,
+): number => {
+  if (!Number.isFinite(override)) {
+    if (provider === "openai" && jsonSchema) {
+      return Math.max(PROVIDER_MAX_OUTPUT_TOKENS, OPENAI_STRUCTURED_OUTPUT_MAX_TOKENS);
+    }
+    return PROVIDER_MAX_OUTPUT_TOKENS;
+  }
   const parsed = Math.round(Number(override));
   return Math.max(1_024, Math.min(16_384, parsed));
 };
@@ -1463,7 +1473,7 @@ export const generateProviderItinerary = async (
   const provider = options.provider.trim().toLowerCase();
   const requestedModel = options.model.trim();
   const model = PROVIDER_MODEL_ALIASES[provider]?.[requestedModel] ?? requestedModel;
-  const maxOutputTokens = resolveOutputTokenBudget(options.maxOutputTokens);
+  const maxOutputTokens = resolveOutputTokenBudget(provider, options.jsonSchema, options.maxOutputTokens);
 
   const allowlistError = ensureModelAllowed(provider, model);
   if (allowlistError) {

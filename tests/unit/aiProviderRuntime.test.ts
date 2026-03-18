@@ -283,7 +283,7 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
     const responsesInit = (fetchMock.mock.calls[1] as [string, RequestInit])[1];
     const responsesBody = JSON.parse(String(responsesInit.body));
     expect(responsesBody).not.toHaveProperty('temperature');
-    expect(responsesBody.max_output_tokens).toBe(8192);
+    expect(responsesBody.max_output_tokens).toBe(12288);
     expect(responsesBody.text).toEqual({
       format: {
         type: 'json_schema',
@@ -794,6 +794,49 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
     const init = (fetchMock.mock.calls[0] as [string, RequestInit])[1];
     const body = JSON.parse(String(init.body));
     expect(body.max_tokens).toBe(2048);
+    expect(result.ok).toBe(true);
+  });
+
+  it('preserves explicit maxOutputTokens for OpenAI structured output requests', async () => {
+    stubDenoEnv({
+      OPENAI_API_KEY: 'openai-key',
+    });
+
+    fetchMock
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            error: {
+              message: 'This is not a chat model and thus not supported in the v1/chat/completions endpoint. Did you mean to use v1/completions?',
+            },
+          }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } },
+        ),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({
+          output_text: '{"tripTitle":"Explicit override","cities":[],"travelSegments":[],"activities":[]}',
+          usage: {
+            input_tokens: 12,
+            output_tokens: 34,
+            total_tokens: 46,
+          },
+        }),
+      );
+
+    const result = await generateProviderItinerary({
+      prompt: '{"request":"openai-explicit-override"}',
+      provider: 'openai',
+      model: 'gpt-5.2',
+      timeoutMs: 30_000,
+      maxOutputTokens: 2_048,
+      jsonSchema: testStructuredOutputSchema,
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const responsesInit = (fetchMock.mock.calls[1] as [string, RequestInit])[1];
+    const responsesBody = JSON.parse(String(responsesInit.body));
+    expect(responsesBody.max_output_tokens).toBe(2048);
     expect(result.ok).toBe(true);
   });
 

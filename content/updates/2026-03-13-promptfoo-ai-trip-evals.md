@@ -23,3 +23,4 @@ summary: "Added a report-only Promptfoo regression layer for classic AI trip cre
 - [ ] [Internal] 🔐 Hardened live trip prompt assembly so user-controlled request fields are rendered as explicit data blocks and no longer read like free-form model instructions.
 - [ ] [Internal] 🔁 Hardened GPT-5-family OpenAI runtime fallback so temperature-restricted requests automatically continue through the Responses API instead of breaking create-trip or Promptfoo eval runs.
 - [ ] [Internal] 🧾 Improved OpenAI structured-output diagnostics and compact retry handling so GPT-5 Nano/Mini refusal, incomplete, or truncation-prone Responses payloads no longer collapse into a misleading blank-content parse failure.
+- [ ] [Internal] 📦 Raised the default OpenAI structured-output completion budget for itinerary generation so GPT-5 Nano/Mini have more room to finish valid JSON before truncation on create-trip, admin benchmark, and Promptfoo flows.
