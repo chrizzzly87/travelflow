@@ -187,6 +187,14 @@ const MAP_STYLES = {
     ]
 };
 
+const SATELLITE_MAP_STYLES: google.maps.MapTypeStyle[] = [
+    { featureType: 'road', stylers: [{ visibility: 'off' }] },
+    { featureType: 'transit', stylers: [{ visibility: 'off' }] },
+    { featureType: 'poi', stylers: [{ visibility: 'off' }] },
+    { featureType: 'administrative.land_parcel', stylers: [{ visibility: 'off' }] },
+    { featureType: 'water', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+];
+
 type RouteCacheEntry = {
     status: 'ok' | 'failed';
     updatedAt: number;
@@ -230,6 +238,7 @@ const MARKER_COORDINATE_GROUP_PRECISION = 5;
 const MARKER_TIER_ROUTE_REFERENCE_ZOOM = 10;
 const MARKER_GAP_DEDUPE_PRECISION = 6;
 export const MAP_VIEWPORT_READY_MIN_DIMENSION_PX = 80;
+const MAP_STYLE_REDRAW_DELAY_MS = 220;
 export const MAX_WALK_ROUTE_CHECK_KM = 60;
 export const MAX_BICYCLE_ROUTE_CHECK_KM = 160;
 export const MAX_TRANSIT_ROUTE_CHECK_KM = 1400;
@@ -278,7 +287,7 @@ const CITY_MARKER_Z_INDEX = 320;
 const CITY_MARKER_SELECTED_Z_INDEX = 340;
 const ACTIVITY_MARKER_Z_INDEX = 240;
 const ACTIVITY_MARKER_SELECTED_Z_INDEX = 260;
-export const ACTIVITY_MARKERS_MIN_ZOOM = 9;
+export const ACTIVITY_MARKERS_MIN_ZOOM = 8.25;
 
 const resolveCityMarkerZIndex = (
     isSelected: boolean,
@@ -514,10 +523,10 @@ export const resolveMarkerRenderTier = ({
         ? routePixelSpan / (2 ** (effectiveZoom - MARKER_TIER_ROUTE_REFERENCE_ZOOM))
         : 0;
     const routeCoverage = shortEdge > 0 ? zoomNormalizedRouteSpan / shortEdge : 0;
-    const veryDenseRoute = Number.isFinite(routeCoverage) && routeCoverage > 2.8;
-    const extremeDenseRoute = Number.isFinite(routeCoverage) && routeCoverage > 3.8;
-    const lowZoom = effectiveZoom <= 6.75;
-    const veryLowZoom = effectiveZoom <= 5.25;
+    const veryDenseRoute = Number.isFinite(routeCoverage) && routeCoverage > 2.45;
+    const extremeDenseRoute = Number.isFinite(routeCoverage) && routeCoverage > 3.35;
+    const lowZoom = effectiveZoom <= 7.35;
+    const veryLowZoom = effectiveZoom <= 5.85;
 
     if (shortEdge <= 185) return 'micro';
     if (veryLowZoom && shortEdge <= 230) return 'micro';
@@ -526,6 +535,7 @@ export const resolveMarkerRenderTier = ({
 
     if (shortEdge <= 260) return 'compact';
     if (lowZoom) return 'compact';
+    if (shortEdge <= 320 && veryDenseRoute && effectiveZoom <= 9.35) return 'compact';
     if (shortEdge <= 340 && veryDenseRoute && effectiveZoom <= 8.5) return 'compact';
     return 'default';
 };
@@ -576,8 +586,8 @@ export const resolveCrowdedCityMarkerProfile = ({
     if (!Number.isFinite(nearestMarkerGapPx)) return baseProfile;
     if (Number.isFinite(zoom) && Number(zoom) >= 10) return baseProfile;
 
-    const veryCrowded = nearestMarkerGapPx < 10;
-    const crowded = nearestMarkerGapPx < 13;
+    const veryCrowded = nearestMarkerGapPx < 12;
+    const crowded = nearestMarkerGapPx < 16;
     if (!crowded) return baseProfile;
 
     const scale = veryCrowded ? 0.8 : 0.9;
@@ -1125,6 +1135,29 @@ export const shouldDisplayActivityMarkers = ({
     return Number(zoom) >= ACTIVITY_MARKERS_MIN_ZOOM;
 };
 
+export const resolveRouteFitPadding = ({
+    viewportWidth,
+    viewportHeight,
+    mapDockMode = 'docked',
+}: {
+    viewportWidth?: number | null;
+    viewportHeight?: number | null;
+    mapDockMode?: 'docked' | 'floating';
+}): { top: number; right: number; bottom: number; left: number } => {
+    const width = Math.max(320, Math.round(viewportWidth ?? 0) || 960);
+    const height = Math.max(240, Math.round(viewportHeight ?? 0) || 640);
+    const shortEdge = Math.min(width, height);
+    const basePadding = Math.max(72, Math.round(shortEdge * 0.14));
+    const dockedBottomBoost = mapDockMode === 'docked' ? 32 : 16;
+
+    return {
+        top: basePadding + 18,
+        right: basePadding,
+        bottom: basePadding + dockedBottomBoost,
+        left: basePadding,
+    };
+};
+
 const getTransitFallbackDepartureTime = (): Date => {
     const nextWindow = new Date();
     nextWindow.setHours(12, 0, 0, 0);
@@ -1153,6 +1186,37 @@ const CITY_LABEL_ANCHOR_OFFSETS: Record<CityLabelAnchor, { x: number; y: number 
     left: { x: -22, y: 0 },
     below: { x: 0, y: 18 },
     above: { x: 0, y: -18 },
+};
+
+const resolveCrowdedCityLabelAnchor = ({
+    baseAnchor,
+    cityIndex,
+    overlapIndex,
+    overlapCount,
+    nearestMarkerGapPx,
+}: {
+    baseAnchor: CityLabelAnchor;
+    cityIndex: number;
+    overlapIndex: number;
+    overlapCount: number;
+    nearestMarkerGapPx: number;
+}): CityLabelAnchor => {
+    if (overlapCount > 1) {
+        const staggeredAnchors: CityLabelAnchor[] = ['above', 'below', 'right', 'left'];
+        return staggeredAnchors[overlapIndex % staggeredAnchors.length];
+    }
+    if (!Number.isFinite(nearestMarkerGapPx) || nearestMarkerGapPx >= 42) {
+        return baseAnchor;
+    }
+
+    const alternateForCrowding: Record<CityLabelAnchor, CityLabelAnchor[]> = {
+        right: ['above', 'below', 'left'],
+        left: ['below', 'above', 'right'],
+        below: ['right', 'left', 'above'],
+        above: ['left', 'right', 'below'],
+    };
+    const anchors = alternateForCrowding[baseAnchor];
+    return anchors[cityIndex % anchors.length];
 };
 
 export const resolveCityLabelAnchor = (
@@ -1416,9 +1480,11 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     const lastFocusQueryRef = useRef<string | null>(null);
     const lastFitToRouteKeyRef = useRef<string | null>(null);
     const fitRafRef = useRef<number | null>(null);
+    const fitDelayTimerRef = useRef<number | null>(null);
     const resizeAutoFitTimerRef = useRef<number | null>(null);
     const lastAutoFitCitySignatureRef = useRef<string | null>(null);
-    const scheduleFitWhenViewportReadyRef = useRef<(maxAttempts?: number, options?: { respectSelection?: boolean }) => void>(() => {});
+    const hasCompletedIntroFitRef = useRef(false);
+    const scheduleFitWhenViewportReadyRef = useRef<(maxAttempts?: number, options?: { respectSelection?: boolean; deferMs?: number }) => void>(() => {});
     const onRouteMetricsRef = useRef<typeof onRouteMetrics>(onRouteMetrics);
     const onRouteStatusRef = useRef<typeof onRouteStatus>(onRouteStatus);
     const onCityMarkerSelectRef = useRef<typeof onCityMarkerSelect>(onCityMarkerSelect);
@@ -1430,6 +1496,8 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     const [resolvedCityCoordinatesById, setResolvedCityCoordinatesById] = useState<Record<string, google.maps.LatLngLiteral>>({});
     const [mapZoomLevel, setMapZoomLevel] = useState<number | null>(null);
     const [mapViewportSize, setMapViewportSize] = useState<{ width: number; height: number } | null>(null);
+    const [styleRedrawEpoch, setStyleRedrawEpoch] = useState(0);
+    const [hasCoarsePointer, setHasCoarsePointer] = useState(false);
     const mapActionsDisabled = !mapInitialized || Boolean(loadError);
     const activityMarkersEnabledRef = useRef(activityMarkersEnabled);
     const mapZoomLevelRef = useRef<number | null>(mapZoomLevel);
@@ -1546,8 +1614,20 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         });
         return styles;
     }, [mapItems]);
+    const routeFitPadding = useMemo(
+        () => resolveRouteFitPadding({
+            viewportWidth: mapViewportSize?.width,
+            viewportHeight: mapViewportSize?.height,
+            mapDockMode,
+        }),
+        [mapDockMode, mapViewportSize?.height, mapViewportSize?.width],
+    );
 
     const cancelScheduledFit = useCallback(() => {
+        if (fitDelayTimerRef.current !== null && typeof window !== 'undefined') {
+            window.clearTimeout(fitDelayTimerRef.current);
+            fitDelayTimerRef.current = null;
+        }
         if (fitRafRef.current === null || typeof window === 'undefined') return;
         window.cancelAnimationFrame(fitRafRef.current);
         fitRafRef.current = null;
@@ -1568,13 +1648,14 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 bounds.extend({ lat: city.coordinates.lat, lng: city.coordinates.lng });
             }
         });
-        googleMapRef.current.fitBounds(bounds, { top: 50, right: 50, bottom: 50, left: 50 });
-    }, [cities]);
+        googleMapRef.current.fitBounds(bounds, routeFitPadding);
+    }, [cities, routeFitPadding]);
 
-    const scheduleFitWhenViewportReady = useCallback((maxAttempts = 14, options?: { respectSelection?: boolean }) => {
+    const scheduleFitWhenViewportReady = useCallback((maxAttempts = 14, options?: { respectSelection?: boolean; deferMs?: number }) => {
         if (!googleMapRef.current || cities.length === 0 || typeof window === 'undefined') return;
         const respectSelection = options?.respectSelection ?? false;
         const selectionVersionAtSchedule = selectionVersionRef.current;
+        const deferMs = Math.max(0, Math.round(options?.deferMs ?? 0));
         cancelScheduledFit();
 
         let attemptCount = 0;
@@ -1605,7 +1686,15 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             runFitBounds();
         };
 
-        fitRafRef.current = window.requestAnimationFrame(tryFit);
+        const startFit = () => {
+            fitDelayTimerRef.current = null;
+            fitRafRef.current = window.requestAnimationFrame(tryFit);
+        };
+        if (deferMs > 0) {
+            fitDelayTimerRef.current = window.setTimeout(startFit, deferMs);
+            return;
+        }
+        startFit();
     }, [cancelScheduledFit, cities.length, runFitBounds]);
 
     useEffect(() => {
@@ -1737,6 +1826,19 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     }, [mapActionsDisabled]);
 
     useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const mediaQuery = window.matchMedia?.('(pointer: coarse)');
+        const syncPointerMode = () => {
+            setHasCoarsePointer(Boolean(mediaQuery?.matches || navigator.maxTouchPoints > 0));
+        };
+        syncPointerMode();
+        mediaQuery?.addEventListener?.('change', syncPointerMode);
+        return () => {
+            mediaQuery?.removeEventListener?.('change', syncPointerMode);
+        };
+    }, []);
+
+    useEffect(() => {
         if (!mapInitialized || !googleMapRef.current) return;
         const mapInstance = googleMapRef.current as google.maps.Map;
         const syncZoom = () => {
@@ -1750,24 +1852,36 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         };
     }, [mapInitialized]);
 
-    // Handle Style Change
     useEffect(() => {
         if (!googleMapRef.current) return;
-        
-        // Ensure we force a style update
+
+        const mapInstance = googleMapRef.current as google.maps.Map;
+        let didRefresh = false;
+        const requestRefresh = () => {
+            if (didRefresh) return;
+            didRefresh = true;
+            setStyleRedrawEpoch((previous) => previous + 1);
+        };
+
         if (activeStyle === 'satellite') {
-            googleMapRef.current.setMapTypeId('satellite');
-            googleMapRef.current.setOptions({ styles: null });
+            mapInstance.setMapTypeId('satellite');
+            mapInstance.setOptions({ styles: SATELLITE_MAP_STYLES });
         } else {
-            googleMapRef.current.setMapTypeId('roadmap');
-            
-            // Explicitly set null first if switching from standard to ensure clear
-            if (activeStyle === 'standard') {
-                googleMapRef.current.setOptions({ styles: null }); 
-            } else {
-                googleMapRef.current.setOptions({ styles: MAP_STYLES[activeStyle] });
-            }
+            mapInstance.setMapTypeId('roadmap');
+            mapInstance.setOptions({
+                styles: activeStyle === 'standard' ? null : MAP_STYLES[activeStyle],
+            });
         }
+
+        const idleListener = mapInstance.addListener?.('idle', requestRefresh);
+        const tilesLoadedListener = mapInstance.addListener?.('tilesloaded', requestRefresh);
+        const fallbackTimerId = window.setTimeout(requestRefresh, MAP_STYLE_REDRAW_DELAY_MS);
+
+        return () => {
+            idleListener?.remove?.();
+            tilesLoadedListener?.remove?.();
+            window.clearTimeout(fallbackTimerId);
+        };
     }, [activeStyle, mapInitialized]);
 
     const mapRenderSignature = useMemo(() => {
@@ -2240,24 +2354,36 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                     const div = document.createElement('div');
                     div.style.position = 'absolute';
                     if (anchor === 'left') {
-                        div.style.transform = 'translate(calc(-100% - 12px), -50%)';
+                        div.style.transform = 'translate(calc(-100% - 16px), -50%)';
                         div.style.textAlign = 'right';
                     } else if (anchor === 'below') {
-                        div.style.transform = 'translate(-50%, 12px)';
+                        div.style.transform = 'translate(-50%, 16px)';
                         div.style.textAlign = 'center';
                     } else if (anchor === 'above') {
-                        div.style.transform = 'translate(-50%, calc(-100% - 12px))';
+                        div.style.transform = 'translate(-50%, calc(-100% - 16px))';
                         div.style.textAlign = 'center';
                     } else {
-                        div.style.transform = 'translate(12px, -50%)';
+                        div.style.transform = 'translate(16px, -50%)';
                         div.style.textAlign = 'left';
                     }
                     div.style.pointerEvents = 'none';
                     div.style.display = 'flex';
                     div.style.flexDirection = 'column';
-                    div.style.gap = '1px';
+                    div.style.gap = '2px';
                     div.style.whiteSpace = 'nowrap';
                     div.style.zIndex = '120';
+                    div.style.padding = isCleanDarkLabelStyle ? '7px 9px' : '6px 8px';
+                    div.style.borderRadius = '12px';
+                    div.style.border = isCleanDarkLabelStyle
+                        ? '1px solid rgba(148,163,184,0.3)'
+                        : '1px solid rgba(148,163,184,0.22)';
+                    div.style.background = isCleanDarkLabelStyle
+                        ? 'rgba(15,23,42,0.76)'
+                        : 'rgba(255,255,255,0.88)';
+                    div.style.backdropFilter = 'blur(8px)';
+                    div.style.boxShadow = isCleanDarkLabelStyle
+                        ? '0 10px 22px rgba(2,6,23,0.28)'
+                        : '0 8px 20px rgba(15,23,42,0.12)';
 
                     const nameEl = document.createElement('div');
                     nameEl.textContent = name;
@@ -2265,6 +2391,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                     nameEl.style.fontWeight = '700';
                     nameEl.style.color = isCleanDarkLabelStyle ? cleanDarkLabelTextColor : defaultLabelTextColor;
                     nameEl.style.textShadow = isCleanDarkLabelStyle ? cleanDarkLabelTextShadow : defaultLabelTextShadow;
+                    nameEl.style.lineHeight = '1.15';
 
                     div.appendChild(nameEl);
 
@@ -2277,6 +2404,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                         subEl.style.textTransform = 'uppercase';
                         subEl.style.letterSpacing = '0.08em';
                         subEl.style.textShadow = isCleanDarkLabelStyle ? cleanDarkLabelTextShadow : defaultLabelTextShadow;
+                        subEl.style.lineHeight = '1.1';
                         div.appendChild(subEl);
                     }
 
@@ -2324,7 +2452,17 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 const labelName = getMapLabelCityName(city.title || city.location) || city.title || city.location || '';
                 const previousCoordinates = findNeighborCoordinates(cityIndex, -1);
                 const nextCoordinates = findNeighborCoordinates(cityIndex, 1);
-                const labelAnchor = resolveCityLabelAnchor(city.coordinates, previousCoordinates, nextCoordinates);
+                const coordinateKey = buildCoordinateGroupKey(city.coordinates);
+                const overlapIndexes = coordinateMarkerGroups.get(coordinateKey) ?? [];
+                const overlapIndex = Math.max(0, overlapIndexes.indexOf(cityIndex));
+                const baseAnchor = resolveCityLabelAnchor(city.coordinates, previousCoordinates, nextCoordinates);
+                const labelAnchor = resolveCrowdedCityLabelAnchor({
+                    baseAnchor,
+                    cityIndex,
+                    overlapIndex,
+                    overlapCount: overlapIndexes.length,
+                    nearestMarkerGapPx,
+                });
                 if (isRoundTrip && cityKey && cityKey === startCityKey) {
                     if (shownRoundTripLabel.has(cityKey)) return;
                     shownRoundTripLabel.add(cityKey);
@@ -2766,7 +2904,18 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             isEffectDisposed = true;
         };
 
-    }, [mapInitialized, mapRenderSignature, routeMode, showCityNames, isPaywalled, activeStyle, effectiveMarkerRenderProfile]); 
+    }, [
+        mapInitialized,
+        mapRenderSignature,
+        routeMode,
+        showCityNames,
+        isPaywalled,
+        activeStyle,
+        effectiveMarkerRenderProfile,
+        styleRedrawEpoch,
+        mapZoomLevel,
+        nearestMarkerGapPx,
+    ]);
 
     useEffect(() => {
         if (!mapInitialized || !window.google?.maps?.OverlayView) return;
@@ -2876,12 +3025,20 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         if (selectedActivityId || selectedCityId) return;
         if (lastAutoFitCitySignatureRef.current === cityMapSignature) return;
         lastAutoFitCitySignatureRef.current = cityMapSignature;
-        scheduleFitWhenViewportReadyRef.current(14, { respectSelection: true });
+        const shouldUseIntroFitDelay = !hasCompletedIntroFitRef.current && (mapZoomLevelRef.current ?? 2) <= 2.5;
+        if (shouldUseIntroFitDelay) {
+            hasCompletedIntroFitRef.current = true;
+        }
+        scheduleFitWhenViewportReadyRef.current(14, {
+            respectSelection: true,
+            deferMs: shouldUseIntroFitDelay ? 180 : 0,
+        });
     }, [cityMapSignature, mapInitialized, cities.length, selectedActivityId, selectedCityId]);
 
     useEffect(() => {
         if (cities.length > 0) return;
         lastAutoFitCitySignatureRef.current = null;
+        hasCompletedIntroFitRef.current = false;
     }, [cities.length]);
 
     // Re-center when an external "active route" key changes (e.g., opening a different saved plan).
@@ -2993,7 +3150,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 googleMapRef.current.setZoom(5);
                 return;
             }
-            googleMapRef.current.fitBounds(bounds, { top: 50, right: 50, bottom: 50, left: 50 });
+            googleMapRef.current.fitBounds(bounds, routeFitPadding);
         };
 
         queries.forEach((query) => {
@@ -3021,7 +3178,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         return () => {
             cancelled = true;
         };
-    }, [focusLocationQuery, mapInitialized, cities.length]);
+    }, [focusLocationQuery, mapInitialized, cities.length, routeFitPadding]);
 
     return (
         <div
@@ -3035,7 +3192,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                     defaultCenter={{ lat: 20, lng: 0 }}
                     defaultZoom={2}
                     disableDefaultUI
-                    gestureHandling="cooperative"
+                    gestureHandling={hasCoarsePointer ? 'greedy' : 'cooperative'}
                     reuseMaps
                     className="h-full w-full"
                 >

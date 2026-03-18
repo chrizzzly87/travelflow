@@ -1,6 +1,11 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from 'vitest';
-import { appendHistoryEntry, findHistoryEntryByUrl, getHistoryEntries } from '../../services/historyService';
+import {
+  appendHistoryEntry,
+  commitVersionedHistorySnapshot,
+  findHistoryEntryByUrl,
+  getHistoryEntries,
+} from '../../services/historyService';
 import { makeTrip } from '../helpers/tripFixtures';
 
 describe('services/historyService', () => {
@@ -94,5 +99,26 @@ describe('services/historyService', () => {
     window.removeEventListener('tf:history', listener as EventListener);
     setItemSpy.mockRestore();
     consoleSpy.mockRestore();
+  });
+
+  it('persists the versioned snapshot before navigating so route loads can resolve it immediately', () => {
+    const trip = makeTrip({ id: 'trip-sync-order' });
+    const navigate = vi.fn((url: string) => {
+      const entry = findHistoryEntryByUrl(trip.id, url);
+      expect(entry?.snapshot?.trip.id).toBe(trip.id);
+    });
+
+    const url = commitVersionedHistorySnapshot({
+      trip,
+      view: trip.defaultView,
+      label: 'Versioned snapshot',
+      navigate,
+      replace: true,
+      ts: 123,
+    });
+
+    expect(url).toMatch(/^\/trip\/trip-sync-order\?v=/);
+    expect(navigate).toHaveBeenCalledWith(url, { replace: true });
+    expect(findHistoryEntryByUrl(trip.id, url)?.ts).toBe(123);
   });
 });

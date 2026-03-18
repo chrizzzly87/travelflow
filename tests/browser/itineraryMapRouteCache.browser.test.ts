@@ -33,6 +33,7 @@ import {
   resolveActivityMarkerPositions,
   resolveSelectedMapFocusPosition,
   resolveCityLabelAnchor,
+  resolveRouteFitPadding,
   isRoutePathLikelyStraight,
   isMapViewportReady,
   offsetLatLngByMeters,
@@ -331,6 +332,30 @@ describe('components/ItineraryMap route cache helpers', () => {
       routePixelSpan: 2400,
       nearestMarkerGapPx: 12,
     })).toBe('default');
+  });
+
+  it('uses larger route-fit padding to keep recentering away from viewport edges', () => {
+    expect(resolveRouteFitPadding({
+      viewportWidth: 1200,
+      viewportHeight: 720,
+      mapDockMode: 'docked',
+    })).toEqual({
+      top: 119,
+      right: 101,
+      bottom: 133,
+      left: 101,
+    });
+
+    expect(resolveRouteFitPadding({
+      viewportWidth: 420,
+      viewportHeight: 320,
+      mapDockMode: 'floating',
+    })).toEqual({
+      top: 90,
+      right: 72,
+      bottom: 88,
+      left: 72,
+    });
   });
 
   it('applies city-only marker compaction when city coordinates are crowded', () => {

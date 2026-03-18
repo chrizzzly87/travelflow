@@ -1,5 +1,6 @@
 import { ITrip, IViewSettings } from "../types";
 import { readLocalStorageItem, writeLocalStorageItem } from "./browserStorageService";
+import { buildTripUrl, generateVersionId } from "../utils";
 
 export interface HistoryEntry {
     id: string;
@@ -78,6 +79,33 @@ export const appendHistoryEntry = (
         window.dispatchEvent(new CustomEvent('tf:history', { detail: { tripId, entry } }));
     }
 
+};
+
+export const commitVersionedHistorySnapshot = (options: {
+    trip: ITrip;
+    view?: IViewSettings;
+    label: string;
+    navigate: (url: string, options: { replace: boolean }) => void;
+    replace?: boolean;
+    ts?: number;
+    baseUrlOverride?: string;
+}): string => {
+    const versionId = generateVersionId();
+    const url = options.baseUrlOverride
+        ? `${options.baseUrlOverride}?v=${versionId}`
+        : buildTripUrl(options.trip.id, versionId);
+
+    // Persist the versioned snapshot before route navigation so the loader
+    // can immediately resolve the just-created state on the next render pass.
+    appendHistoryEntry(options.trip.id, url, options.label, {
+        snapshot: {
+            trip: options.trip,
+            view: options.view,
+        },
+        ts: options.ts,
+    });
+    options.navigate(url, { replace: options.replace ?? false });
+    return url;
 };
 
 export const findHistoryEntryByUrl = (tripId: string, url: string): HistoryEntry | null => {
