@@ -27,6 +27,7 @@ import {
   isCoordinateWithinSafeBounds,
   estimateRoutePixelSpan,
   estimateNearestMarkerGapPx,
+  isFiniteLatLngLiteral,
   resolveCityLabelPlacement,
   resolveMarkerRenderProfile,
   resolveMarkerRenderTier,
@@ -311,6 +312,41 @@ describe('components/ItineraryMap route cache helpers', () => {
     expect(routeSpan).toBeGreaterThan(10);
     expect(markerGap).toBeGreaterThan(0);
     expect(dedupedGap).toBeGreaterThan(0);
+  });
+
+  it('ignores malformed coordinate objects instead of crashing trip map helpers', () => {
+    expect(isFiniteLatLngLiteral({ lat: 52.52, lng: 13.405 })).toBe(true);
+    expect(isFiniteLatLngLiteral({ lat: undefined as unknown as number, lng: 13.405 })).toBe(false);
+    expect(isFiniteLatLngLiteral({ lat: 52.52, lng: Number.NaN })).toBe(false);
+
+    expect(estimateNearestMarkerGapPx([
+      { lat: undefined as unknown as number, lng: 13.405 },
+      { lat: 52.52, lng: 13.405 },
+    ] as Array<{ lat: number; lng: number }>, 11)).toBe(Number.POSITIVE_INFINITY);
+
+    const markers = resolveActivityMarkerPositions([
+      {
+        id: 'city-invalid',
+        type: 'city',
+        title: 'Broken city',
+        startDateOffset: 0,
+        duration: 2,
+        color: 'bg-blue-100 border-blue-300 text-blue-800',
+        coordinates: { lat: undefined as unknown as number, lng: 13.405 },
+      },
+      {
+        id: 'activity-invalid',
+        type: 'activity',
+        title: 'Broken activity',
+        startDateOffset: 0.2,
+        duration: 0.1,
+        color: 'bg-amber-100 border-amber-300 text-amber-800',
+        coordinates: { lat: 52.52, lng: undefined as unknown as number },
+        activityType: ['food'],
+      },
+    ] as any);
+
+    expect(markers).toEqual([]);
   });
 
   it('resolves marker tier from viewport, zoom, and route density signals', () => {

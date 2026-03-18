@@ -470,11 +470,12 @@ export const estimateNearestMarkerGapPx = (
     zoom: number | null,
 ): number => {
     if (!Number.isFinite(zoom)) return Number.POSITIVE_INFINITY;
-    if (coordinates.length < 2) return Number.POSITIVE_INFINITY;
+    const finiteCoordinates = coordinates.filter(isFiniteLatLngLiteral);
+    if (finiteCoordinates.length < 2) return Number.POSITIVE_INFINITY;
 
     const uniqueCoordinates: google.maps.LatLngLiteral[] = [];
     const seenCoordinateKeys = new Set<string>();
-    coordinates.forEach((coordinate) => {
+    finiteCoordinates.forEach((coordinate) => {
         const key = `${coordinate.lat.toFixed(MARKER_GAP_DEDUPE_PRECISION)},${coordinate.lng.toFixed(MARKER_GAP_DEDUPE_PRECISION)}`;
         if (seenCoordinateKeys.has(key)) return;
         seenCoordinateKeys.add(key);
@@ -653,6 +654,14 @@ const resolveCssColorVar = (name: string, fallback: string): string => {
     const value = window.getComputedStyle(document.documentElement).getPropertyValue(name).trim();
     return value || fallback;
 };
+
+export const isFiniteLatLngLiteral = (
+    coordinates: google.maps.LatLngLiteral | null | undefined,
+): coordinates is google.maps.LatLngLiteral => (
+    Boolean(coordinates)
+    && Number.isFinite(coordinates.lat)
+    && Number.isFinite(coordinates.lng)
+);
 
 const normalizeRotationDegrees = (value?: number): number => {
     if (!Number.isFinite(value)) return 0;
@@ -1031,7 +1040,7 @@ export const resolveActivityMarkerPositions = (
     items: ITimelineItem[],
 ): ResolvedActivityMarker[] => {
     const cityItems = items
-        .filter((item): item is ITimelineItem => item.type === 'city' && Boolean(item.coordinates))
+        .filter((item): item is ITimelineItem => item.type === 'city' && isFiniteLatLngLiteral(item.coordinates))
         .sort((left, right) => left.startDateOffset - right.startDateOffset);
     const activities = items
         .filter((item): item is ITimelineItem => item.type === 'activity')
@@ -1042,10 +1051,10 @@ export const resolveActivityMarkerPositions = (
 
     const candidates = activities
         .map((activity) => {
-            const activityCoordinates = activity.coordinates || null;
+            const activityCoordinates = isFiniteLatLngLiteral(activity.coordinates) ? activity.coordinates : null;
             const ownerCity = activityCoordinates ? null : resolveActivityOwnerCity(activity, cityItems);
             const baseCoordinates = activityCoordinates || ownerCity?.coordinates || null;
-            if (!baseCoordinates) return null;
+            if (!isFiniteLatLngLiteral(baseCoordinates)) return null;
             const primaryType = pickPrimaryActivityType(activity.activityType);
             return {
                 id: activity.id,
@@ -1623,7 +1632,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     );
     const cities = useMemo(() => 
         items
-            .filter(i => i.type === 'city' && i.coordinates)
+            .filter((item): item is ITimelineItem => item.type === 'city' && isFiniteLatLngLiteral(item.coordinates))
             .sort((a, b) => a.startDateOffset - b.startDateOffset),
     [items]);
     const cityMapSignature = useMemo(
@@ -1660,7 +1669,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         () => estimateRoutePixelSpan(
             cities
                 .map((city) => city.coordinates)
-                .filter((coordinates): coordinates is google.maps.LatLngLiteral => Boolean(coordinates)),
+                .filter(isFiniteLatLngLiteral),
             mapZoomLevel,
         ),
         [cities, mapZoomLevel],
@@ -1669,7 +1678,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         () => estimateNearestMarkerGapPx(
             cities
                 .map((city) => city.coordinates)
-                .filter((coordinates): coordinates is google.maps.LatLngLiteral => Boolean(coordinates)),
+                .filter(isFiniteLatLngLiteral),
             mapZoomLevel,
         ),
         [cities, mapZoomLevel],
