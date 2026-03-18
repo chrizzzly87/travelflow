@@ -1,10 +1,10 @@
 ---
 id: rel-2026-03-17-country-alias-search-and-ai-normalization
-version: v0.0.0
+version: v0.101.0
 title: "Country search now understands familiar shortcuts and alternative names"
 date: 2026-03-17
-published_at: 2026-03-17T21:40:00Z
-status: draft
+published_at: 2026-03-18T06:19:03Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Country search now recognizes localized names, familiar shortcuts, and common official or historical country variants, then normalizes them before trip generation."
