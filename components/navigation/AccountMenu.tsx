@@ -221,6 +221,7 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
     const openTripManager = () => {
         if (!onOpenTripManager) return;
         trackEvent('navigation__account_menu--my_trips');
+        setIsOpen(false);
         onOpenTripManager();
     };
 

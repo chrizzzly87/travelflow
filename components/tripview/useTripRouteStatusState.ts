@@ -1,12 +1,13 @@
 import { useCallback, useState } from 'react';
 
-import type { ITrip, ITimelineItem, IViewSettings, RouteFailureReason, RouteStatus } from '../../types';
+import type { ITrip, ITimelineItem, RouteFailureReason, RouteStatus } from '../../types';
 import { buildRouteCacheKey, getTravelLegMetricsForItem } from '../../utils';
 import { normalizeTransportMode } from '../../shared/transportModes';
+import { syncLiveTripState, type PendingTripCommitState } from './useTripLiveUpdate';
 
 interface UseTripRouteStatusStateOptions {
     tripRef: React.MutableRefObject<ITrip>;
-    pendingCommitRef: React.MutableRefObject<{ trip: ITrip; view: IViewSettings } | null>;
+    pendingCommitRef: React.MutableRefObject<PendingTripCommitState | null>;
     onUpdateTrip: (updatedTrip: ITrip, options?: { persist?: boolean }) => void;
 }
 
@@ -85,14 +86,7 @@ export const useTripRouteStatusState = ({
             updatedAt: Date.now(),
         };
 
-        tripRef.current = updatedTrip;
-        if (pendingCommitRef.current?.trip?.id === updatedTrip.id) {
-            pendingCommitRef.current = {
-                ...pendingCommitRef.current,
-                trip: updatedTrip,
-            };
-        }
-
+        syncLiveTripState({ tripRef, pendingCommitRef, updatedTrip });
         onUpdateTrip(updatedTrip);
     }, [onUpdateTrip, pendingCommitRef, tripRef]);
 
