@@ -31,6 +31,22 @@ describe('components/maps/tripMapCityLabelHtml', () => {
     expect(mapboxHtml).toContain('START');
   });
 
+  it('supports a more compact crowded-label treatment for Mapbox overlays', () => {
+    const html = buildTripMapCityLabelHtml({
+      provider: 'mapbox',
+      name: 'Luang Prabang',
+      subLabel: 'START',
+      anchor: 'above',
+      style: 'cleanDark',
+      offsetPx: 28,
+      compact: true,
+    });
+
+    expect(html).toContain('max-width:165px');
+    expect(html).toContain('padding:5px 10px');
+    expect(html).toContain('font-size:13px');
+  });
+
   it('keeps dark-mode city labels readable with the accent text color', () => {
     document.documentElement.style.setProperty('--tf-accent-200', '#abcdef');
 

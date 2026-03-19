@@ -72,6 +72,7 @@ export const buildTripMapCityLabelHtml = ({
   anchor,
   style,
   offsetPx,
+  compact = false,
 }: {
   provider: MapImplementation;
   name: string;
@@ -79,17 +80,24 @@ export const buildTripMapCityLabelHtml = ({
   anchor: TripMapCityLabelAnchor;
   style: MapStyle;
   offsetPx: number;
+  compact?: boolean;
 }): string => {
   const theme = resolveTripMapCityLabelTheme(style);
   const placement = resolveTripMapCityLabelPlacement(anchor, offsetPx);
-  const maxWidthPx = getTripMapProviderPresentation(provider).cityLabels.maxWidthPx;
+  const maxWidthPx = compact
+    ? Math.max(124, Math.round(getTripMapProviderPresentation(provider).cityLabels.maxWidthPx * 0.84))
+    : getTripMapProviderPresentation(provider).cityLabels.maxWidthPx;
+  const labelGapPx = compact ? 2 : 3;
+  const padding = compact ? '5px 10px' : '7px 11px';
+  const nameFontSizePx = compact ? 13 : 14;
+  const subLabelFontSizePx = compact ? 9 : 10;
   const subLabelMarkup = subLabel
-    ? `<div style="font-size:10px;font-weight:700;color:${theme.subTextColor};text-transform:uppercase;letter-spacing:0.08em;text-shadow:${theme.textShadow};">${subLabel}</div>`
+    ? `<div style="font-size:${subLabelFontSizePx}px;font-weight:700;color:${theme.subTextColor};text-transform:uppercase;letter-spacing:0.08em;text-shadow:${theme.textShadow};">${subLabel}</div>`
     : '';
 
   return `
-    <div style="pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:3px;max-width:${maxWidthPx}px;white-space:nowrap;transform:${placement.transform};text-align:${placement.textAlign};line-height:1.05;padding:7px 11px;border-radius:999px;background:${theme.background};border:1px solid ${theme.borderColor};box-shadow:${theme.boxShadow};backdrop-filter:blur(14px);">
-      <div style="max-width:${maxWidthPx}px;overflow:hidden;text-overflow:ellipsis;font-size:14px;font-weight:800;color:${theme.textColor};text-shadow:${theme.textShadow};">${name}</div>
+    <div style="pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:${labelGapPx}px;max-width:${maxWidthPx}px;white-space:nowrap;transform:${placement.transform};text-align:${placement.textAlign};line-height:1.05;padding:${padding};border-radius:999px;background:${theme.background};border:1px solid ${theme.borderColor};box-shadow:${theme.boxShadow};backdrop-filter:blur(14px);">
+      <div style="max-width:${maxWidthPx}px;overflow:hidden;text-overflow:ellipsis;font-size:${nameFontSizePx}px;font-weight:800;color:${theme.textColor};text-shadow:${theme.textShadow};">${name}</div>
       ${subLabelMarkup}
     </div>
   `;

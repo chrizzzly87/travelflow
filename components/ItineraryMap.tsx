@@ -22,6 +22,10 @@ import {
     resolveTripMapCityLabelPlacement,
     resolveTripMapCityLabelTheme,
 } from './maps/tripMapCityLabelHtml';
+import {
+    resolveTripMapProjectedCityLabelLayouts,
+    type TripMapProjectedCityLabelLayout,
+} from './maps/tripMapCityLabelLayout';
 import { buildMapboxDashedRouteDasharray, createMapboxLineHandle, createMapboxOverlayMarker, type MapboxLineLayerConfig } from './maps/mapboxOverlayRuntime';
 import {
     resolveTripMapCityLabelAnchor,
@@ -2430,17 +2434,19 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             const startCityKey = getNormalizedCityName(startCity?.title);
             const endCityKey = getNormalizedCityName(endCity?.title);
             const isRoundTrip = !!(startCityKey && endCityKey && startCityKey === endCityKey);
+            const baseLabelOffsetPx = resolveTripMapCityLabelOffsetPx({
+                provider: tripMapProvider,
+                markerSize: effectiveMarkerRenderProfile.city.size,
+            });
 
             const createCityLabelOverlay = (
                 position: google.maps.LatLngLiteral,
                 name: string,
                 subLabel?: string,
                 anchor: CityLabelAnchor = 'right',
+                labelOffsetPx: number = baseLabelOffsetPx,
+                compact = false,
             ) => {
-                const labelOffsetPx = resolveTripMapCityLabelOffsetPx({
-                    provider: tripMapProvider,
-                    markerSize: effectiveMarkerRenderProfile.city.size,
-                });
                 if (mapboxMap) {
                     return createMapboxOverlayMarker({
                         map: mapboxMap,
@@ -2453,6 +2459,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                             anchor,
                             style: activeStyle,
                             offsetPx: labelOffsetPx,
+                            compact,
                         }),
                         zIndex: 120,
                         centerAnchor: true,
@@ -2544,18 +2551,83 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 return null;
             };
 
-            cities.forEach((city, cityIndex) => {
-                if (!city.coordinates) return;
+            const cityLabelDescriptors = cities.flatMap((city, cityIndex) => {
+                if (!city.coordinates) return [];
                 const cityKey = getNormalizedCityName(city.title);
                 const labelName = getMapLabelCityName(city.title || city.location) || city.title || city.location || '';
+                if (!labelName) return [];
                 const previousCoordinates = findNeighborCoordinates(cityIndex, -1);
                 const nextCoordinates = findNeighborCoordinates(cityIndex, 1);
-                const labelAnchor = resolveTripMapCityLabelAnchor(
+                const defaultAnchor = resolveTripMapCityLabelAnchor(
                     tripMapProvider,
                     city.coordinates,
                     previousCoordinates,
                     nextCoordinates,
                 );
+                let subLabel: string | undefined;
+                if (startCity && city.id === startCity.id) subLabel = 'START';
+                if (endCity && city.id === endCity.id) subLabel = subLabel ? 'START • END' : 'END';
+                if (isRoundTrip && cityKey && cityKey === startCityKey) {
+                    subLabel = 'START • END';
+                }
+
+                return [{
+                    key: `${city.id ?? cityIndex}:${cityIndex}`,
+                    city,
+                    cityIndex,
+                    cityKey,
+                    labelName,
+                    subLabel,
+                    defaultAnchor,
+                }];
+            });
+
+            const visibleCityLabelKeys = new Set<string>();
+            const visibleCityLabelDescriptors = cityLabelDescriptors.filter((descriptor) => {
+                if (!isRoundTrip || !descriptor.cityKey || descriptor.cityKey !== startCityKey) {
+                    return true;
+                }
+                if (visibleCityLabelKeys.has(descriptor.cityKey)) {
+                    return false;
+                }
+                visibleCityLabelKeys.add(descriptor.cityKey);
+                return true;
+            });
+
+            const mapboxCityLabelLayouts = mapboxMap
+                ? resolveTripMapProjectedCityLabelLayouts({
+                    provider: tripMapProvider,
+                    labels: visibleCityLabelDescriptors.flatMap((descriptor) => {
+                        try {
+                            const point = mapboxMap.project([
+                                descriptor.city.coordinates!.lng,
+                                descriptor.city.coordinates!.lat,
+                            ]);
+                            if (!Number.isFinite(point.x) || !Number.isFinite(point.y)) return [];
+                            return [{
+                                key: descriptor.key,
+                                point: { x: point.x, y: point.y },
+                                name: descriptor.labelName,
+                                subLabel: descriptor.subLabel,
+                            }];
+                        } catch {
+                            return [];
+                        }
+                    }),
+                    baseOffsetPx: baseLabelOffsetPx,
+                    viewport: {
+                        width: mapboxMap.getContainer().clientWidth,
+                        height: mapboxMap.getContainer().clientHeight,
+                    },
+                })
+                : new Map<string, TripMapProjectedCityLabelLayout>();
+
+            cityLabelDescriptors.forEach(({ city, cityKey, key, labelName, subLabel, defaultAnchor }) => {
+                if (!city.coordinates) return;
+                const labelLayout = mapboxCityLabelLayouts.get(key);
+                const labelAnchor = labelLayout?.anchor ?? defaultAnchor;
+                const labelOffsetPx = labelLayout?.offsetPx ?? baseLabelOffsetPx;
+                const compact = labelLayout?.compact ?? false;
                 if (isRoundTrip && cityKey && cityKey === startCityKey) {
                     if (shownRoundTripLabel.has(cityKey)) return;
                     shownRoundTripLabel.add(cityKey);
@@ -2564,14 +2636,12 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                         labelName,
                         'START • END',
                         labelAnchor,
+                        labelOffsetPx,
+                        compact,
                     );
                     cityLabelOverlaysRef.current.push(overlay);
                     return;
                 }
-
-                let subLabel: string | undefined;
-                if (startCity && city.id === startCity.id) subLabel = 'START';
-                if (endCity && city.id === endCity.id) subLabel = 'END';
 
                 if (subLabel) {
                     const overlay = createCityLabelOverlay(
@@ -2579,6 +2649,8 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                         labelName,
                         subLabel,
                         labelAnchor,
+                        labelOffsetPx,
+                        compact,
                     );
                     cityLabelOverlaysRef.current.push(overlay);
                 } else {
@@ -2587,6 +2659,8 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                         labelName,
                         undefined,
                         labelAnchor,
+                        labelOffsetPx,
+                        compact,
                     );
                     cityLabelOverlaysRef.current.push(overlay);
                 }
