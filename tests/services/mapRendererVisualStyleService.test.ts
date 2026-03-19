@@ -16,7 +16,7 @@ describe('services/mapRendererVisualStyleService', () => {
     );
 
     expect(descriptor.styleUrl).toBe('mapbox://styles/mapbox/standard');
-    expect(config.showAdminBoundaries).toBe(true);
+    expect(config.showAdminBoundaries).toBe(false);
     expect(config.showPointOfInterestLabels).toBe(false);
     expect(config.showRoadLabels).toBe(false);
     expect(config.showTransitLabels).toBe(false);
@@ -48,7 +48,7 @@ describe('services/mapRendererVisualStyleService', () => {
         showPointOfInterestLabels: false,
         showTransitLabels: false,
         showRoadLabels: false,
-        showAdminBoundaries: true,
+        showAdminBoundaries: false,
         colorAdminBoundaries: '#1f2937',
       },
     });
@@ -62,7 +62,7 @@ describe('services/mapRendererVisualStyleService', () => {
         showPointOfInterestLabels: false,
         showTransitLabels: false,
         showRoadLabels: false,
-        showAdminBoundaries: true,
+        showAdminBoundaries: false,
         colorAdminBoundaries: '#ffffff',
         showRoadsAndTransit: false,
         showPedestrianRoads: false,
@@ -116,6 +116,13 @@ describe('services/mapRendererVisualStyleService', () => {
     const setLayoutProperty = vi.fn();
     const setPaintProperty = vi.fn();
     const setFilter = vi.fn();
+    const addSource = vi.fn();
+    const addLayer = vi.fn();
+    const getLayer = vi.fn((id: string) => (
+      id === 'tf-country-boundaries-glow' || id === 'tf-country-boundaries-main'
+        ? undefined
+        : ({ id } as any)
+    ));
     applyMapboxTripVisualPolish({
       getStyle: () => ({
         layers: [
@@ -128,42 +135,62 @@ describe('services/mapRendererVisualStyleService', () => {
           { id: 'admin-0-boundary-bg' },
           { id: 'country-boundary-raw', type: 'line', filter: ['==', ['get', 'admin_level'], 0] },
           { id: 'generic-boundary-admin1', type: 'line', filter: ['==', ['get', 'admin_level'], 1] },
-          { id: 'settlement-major-label' },
-          { id: 'airport-label' },
-          { id: 'country-label' },
+          { id: 'settlement-major-label', type: 'symbol' },
+          { id: 'airport-label', type: 'symbol' },
+          { id: 'country-label', type: 'symbol' },
         ],
       } as any),
-      getLayer: () => ({ id: 'mock' } as any),
+      addLayer,
+      addSource,
+      getLayer,
+      getSource: () => undefined,
       setLayoutProperty,
       setPaintProperty,
       setFilter,
     }, 'satellite');
 
+    expect(addSource).toHaveBeenCalledWith('tf-country-boundaries-source', expect.objectContaining({
+      type: 'vector',
+      url: 'mapbox://mapbox.country-boundaries-v1',
+    }));
+    expect(addLayer).toHaveBeenCalledTimes(2);
+    expect(addLayer).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      id: 'tf-country-boundaries-glow',
+      type: 'line',
+      source: 'tf-country-boundaries-source',
+      'source-layer': 'country_boundaries',
+    }), 'settlement-major-label');
+    expect(addLayer).toHaveBeenNthCalledWith(2, expect.objectContaining({
+      id: 'tf-country-boundaries-main',
+      type: 'line',
+      source: 'tf-country-boundaries-source',
+      'source-layer': 'country_boundaries',
+    }), 'settlement-major-label');
     expect(setLayoutProperty).toHaveBeenCalledTimes(10);
     expect(setLayoutProperty).toHaveBeenNthCalledWith(1, 'admin-1-boundary', 'visibility', 'none');
     expect(setLayoutProperty).toHaveBeenNthCalledWith(2, 'admin_1_boundary', 'visibility', 'none');
     expect(setLayoutProperty).toHaveBeenNthCalledWith(3, 'admin-2-boundary', 'visibility', 'none');
     expect(setLayoutProperty).toHaveBeenNthCalledWith(4, 'region-boundary', 'visibility', 'none');
-    expect(setLayoutProperty).toHaveBeenNthCalledWith(5, 'admin-0-boundary', 'visibility', 'visible');
-    expect(setLayoutProperty).toHaveBeenNthCalledWith(6, 'admin_0_boundary', 'visibility', 'visible');
-    expect(setLayoutProperty).toHaveBeenNthCalledWith(7, 'admin-0-boundary-bg', 'visibility', 'visible');
-    expect(setLayoutProperty).toHaveBeenNthCalledWith(8, 'country-boundary-raw', 'visibility', 'visible');
+    expect(setLayoutProperty).toHaveBeenNthCalledWith(5, 'admin-0-boundary', 'visibility', 'none');
+    expect(setLayoutProperty).toHaveBeenNthCalledWith(6, 'admin_0_boundary', 'visibility', 'none');
+    expect(setLayoutProperty).toHaveBeenNthCalledWith(7, 'admin-0-boundary-bg', 'visibility', 'none');
+    expect(setLayoutProperty).toHaveBeenNthCalledWith(8, 'country-boundary-raw', 'visibility', 'none');
     expect(setLayoutProperty).toHaveBeenNthCalledWith(9, 'generic-boundary-admin1', 'visibility', 'none');
     expect(setLayoutProperty).toHaveBeenNthCalledWith(10, 'airport-label', 'visibility', 'none');
     expect(setFilter).toHaveBeenCalledWith('settlement-major-label', expect.any(Array));
-    expect(setFilter).toHaveBeenCalledWith('admin-0-boundary', expect.any(Array));
-    expect(setFilter).toHaveBeenCalledWith('admin_0_boundary', expect.any(Array));
-    expect(setFilter).toHaveBeenCalledWith('admin-0-boundary-bg', expect.any(Array));
-    expect(setFilter).toHaveBeenCalledWith('country-boundary-raw', expect.any(Array));
-    expect(setPaintProperty).toHaveBeenCalledWith('admin-0-boundary', 'line-color', 'rgba(255, 255, 255, 0.99)');
-    expect(setPaintProperty).toHaveBeenCalledWith('country-boundary-raw', 'line-color', 'rgba(255, 255, 255, 0.99)');
-    expect(setPaintProperty).toHaveBeenCalledWith('admin-0-boundary-bg', 'line-opacity', 0.34);
   });
 
   it('removes roads and major settlement labels from clean map styles while keeping country context', () => {
     const setLayoutProperty = vi.fn();
     const setPaintProperty = vi.fn();
     const setFilter = vi.fn();
+    const addSource = vi.fn();
+    const addLayer = vi.fn();
+    const getLayer = vi.fn((id: string) => (
+      id === 'tf-country-boundaries-glow' || id === 'tf-country-boundaries-main'
+        ? undefined
+        : ({ id } as any)
+    ));
 
     applyMapboxTripVisualPolish({
       getStyle: () => ({
@@ -181,12 +208,20 @@ describe('services/mapRendererVisualStyleService', () => {
           { id: 'admin-1-boundary-bg', type: 'line', filter: ['==', ['get', 'admin_level'], 1] },
         ],
       } as any),
-      getLayer: () => ({ id: 'mock' } as any),
+      addLayer,
+      addSource,
+      getLayer,
+      getSource: () => undefined,
       setLayoutProperty,
       setPaintProperty,
       setFilter,
     }, 'cleanDark');
 
+    expect(addSource).toHaveBeenCalledWith('tf-country-boundaries-source', expect.objectContaining({
+      type: 'vector',
+      url: 'mapbox://mapbox.country-boundaries-v1',
+    }));
+    expect(addLayer).toHaveBeenCalledTimes(2);
     expect(setLayoutProperty).toHaveBeenCalledWith('road-primary', 'visibility', 'none');
     expect(setLayoutProperty).toHaveBeenCalledWith('bridge-motorway', 'visibility', 'none');
     expect(setLayoutProperty).toHaveBeenCalledWith('transportation-network', 'visibility', 'none');
@@ -194,10 +229,9 @@ describe('services/mapRendererVisualStyleService', () => {
     expect(setLayoutProperty).toHaveBeenCalledWith('road-shield-symbol', 'visibility', 'none');
     expect(setLayoutProperty).toHaveBeenCalledWith('airport-symbol', 'visibility', 'none');
     expect(setLayoutProperty).toHaveBeenCalledWith('locality-label', 'visibility', 'none');
-    expect(setLayoutProperty).toHaveBeenCalledWith('admin-0-boundary', 'visibility', 'visible');
+    expect(setLayoutProperty).toHaveBeenCalledWith('admin-0-boundary', 'visibility', 'none');
     expect(setLayoutProperty).toHaveBeenCalledWith('admin-1-boundary-bg', 'visibility', 'none');
     expect(setFilter).toHaveBeenCalledWith('settlement-major-label', expect.any(Array));
-    expect(setFilter).toHaveBeenCalledWith('admin-0-boundary', expect.any(Array));
   });
 
   it('uses darker surface backgrounds for satellite and dark trip-map styles', () => {

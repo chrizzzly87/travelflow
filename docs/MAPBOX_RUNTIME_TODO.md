@@ -31,7 +31,8 @@ This checklist tracks the remaining Mapbox-only work on the
 - [x] Start clean and cleanDark from a cleaner Mapbox config baseline.
 - [x] Reduce the remaining high-level road and highway clutter on clean styles.
 - [x] Constrain visible Mapbox country-boundary layers to `admin_level = 0` when the style exposes that data.
-- [ ] Revisit admin boundary filtering so only country borders remain where intended in live visual checks.
+- [x] Replace fragile built-in country/admin boundary handling with a dedicated Countries v1 country-border overlay.
+- [ ] Revisit live border treatment so only the intended country outline remains on clean and satellite styles.
 - [ ] Tune satellite border treatment after the main clean-style pass is stable.
 - [ ] Verify that clean styles keep only country names plus the biggest city labels in live visual checks.
 

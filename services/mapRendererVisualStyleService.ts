@@ -26,7 +26,7 @@ interface MapboxStyleLayerLike {
 
 type MapboxStyleLayerVisibilityMap = Pick<
   import('mapbox-gl').Map,
-  'getStyle' | 'getLayer' | 'setFilter' | 'setLayoutProperty' | 'setPaintProperty'
+  'addLayer' | 'addSource' | 'getLayer' | 'getSource' | 'getStyle' | 'setFilter' | 'setLayoutProperty' | 'setPaintProperty'
 >;
 
 const buildMapboxStyleDescriptor = (
@@ -77,10 +77,12 @@ const buildMapboxStandardVisualConfig = ({
 
 const MAPBOX_STANDARD_VISUAL_CONFIG = buildMapboxStandardVisualConfig({
   boundaryColor: MAPBOX_LIGHT_BOUNDARY_COLOR,
+  showAdminBoundaries: false,
 });
 
 const MAPBOX_DARK_VISUAL_CONFIG = buildMapboxStandardVisualConfig({
   boundaryColor: MAPBOX_DARK_BOUNDARY_COLOR,
+  showAdminBoundaries: false,
 });
 
 const MAPBOX_CLEAN_VISUAL_CONFIG = buildMapboxStandardVisualConfig({
@@ -101,6 +103,7 @@ const MAPBOX_CLEAN_DARK_VISUAL_CONFIG = buildMapboxStandardVisualConfig({
 
 const MAPBOX_SATELLITE_VISUAL_CONFIG = buildMapboxStandardVisualConfig({
   boundaryColor: MAPBOX_DARK_BOUNDARY_COLOR,
+  showAdminBoundaries: false,
   showRoadsAndTransit: false,
   showPedestrianRoads: false,
 });
@@ -212,10 +215,18 @@ const MAPBOX_CLEAN_MAJOR_CITY_FILTER = [
   ['>=', ['coalesce', ['get', 'capital'], 0], 1],
 ] as const;
 
-const MAPBOX_COUNTRY_BOUNDARY_FILTER = [
-  'any',
-  ['==', ['coalesce', ['get', 'admin_level'], ['get', 'admin-level']], 0],
-  ['==', ['coalesce', ['get', 'admin_level'], ['get', 'admin-level']], '0'],
+const MAPBOX_COUNTRIES_TILESET_SOURCE_ID = 'tf-country-boundaries-source';
+const MAPBOX_COUNTRIES_TILESET_MAIN_LAYER_ID = 'tf-country-boundaries-main';
+const MAPBOX_COUNTRIES_TILESET_GLOW_LAYER_ID = 'tf-country-boundaries-glow';
+const MAPBOX_COUNTRIES_TILESET_SOURCE_LAYER = 'country_boundaries';
+const MAPBOX_COUNTRIES_TILESET_FILTER = [
+  'all',
+  ['==', ['get', 'disputed'], 'false'],
+  [
+    'any',
+    ['==', 'all', ['get', 'worldview']],
+    ['in', 'US', ['get', 'worldview']],
+  ],
 ] as const;
 
 const isMapboxMajorSettlementLayer = (layer: MapboxStyleLayerLike): boolean => (
@@ -258,6 +269,88 @@ const resolveMapboxCountryBoundaryPaint = (mapStyle: MapStyle): {
     glowColor: 'rgba(15, 23, 42, 0.22)',
     glowOpacity: 0.12,
   };
+};
+
+const ensureMapboxCountryBoundarySource = (map: MapboxStyleLayerVisibilityMap): void => {
+  if (map.getSource(MAPBOX_COUNTRIES_TILESET_SOURCE_ID)) return;
+  map.addSource(MAPBOX_COUNTRIES_TILESET_SOURCE_ID, {
+    type: 'vector',
+    url: 'mapbox://mapbox.country-boundaries-v1',
+  } as any);
+};
+
+const resolveMapboxCountryBoundaryLayerInsertBeforeId = (
+  layers: MapboxStyleLayerLike[],
+): string | undefined => layers.find((layer) => layer.type === 'symbol' && typeof layer.id === 'string')?.id;
+
+const upsertMapboxCountryBoundaryLayer = ({
+  map,
+  layerId,
+  beforeId,
+  color,
+  opacity,
+  lineWidth,
+}: {
+  map: MapboxStyleLayerVisibilityMap;
+  layerId: string;
+  beforeId?: string;
+  color: string;
+  opacity: number;
+  lineWidth: number;
+}): void => {
+  if (!map.getLayer(layerId)) {
+    map.addLayer({
+      id: layerId,
+      type: 'line',
+      source: MAPBOX_COUNTRIES_TILESET_SOURCE_ID,
+      'source-layer': MAPBOX_COUNTRIES_TILESET_SOURCE_LAYER,
+      filter: MAPBOX_COUNTRIES_TILESET_FILTER as unknown as any[],
+      layout: {
+        visibility: 'visible',
+        'line-cap': 'round',
+        'line-join': 'round',
+      },
+      paint: {
+        'line-color': color,
+        'line-opacity': opacity,
+        'line-width': lineWidth,
+      },
+    } as any, beforeId);
+    return;
+  }
+
+  map.setLayoutProperty(layerId, 'visibility', 'visible');
+  map.setFilter(layerId, MAPBOX_COUNTRIES_TILESET_FILTER as unknown as any[]);
+  map.setPaintProperty(layerId, 'line-color', color);
+  map.setPaintProperty(layerId, 'line-opacity', opacity);
+  map.setPaintProperty(layerId, 'line-width', lineWidth);
+};
+
+const applyMapboxCountryBoundaryOverlay = (
+  map: MapboxStyleLayerVisibilityMap,
+  mapStyle: MapStyle,
+  layers: MapboxStyleLayerLike[],
+): void => {
+  const boundaryPaint = resolveMapboxCountryBoundaryPaint(mapStyle);
+  const beforeId = resolveMapboxCountryBoundaryLayerInsertBeforeId(layers);
+
+  ensureMapboxCountryBoundarySource(map);
+  upsertMapboxCountryBoundaryLayer({
+    map,
+    layerId: MAPBOX_COUNTRIES_TILESET_GLOW_LAYER_ID,
+    beforeId,
+    color: boundaryPaint.glowColor,
+    opacity: boundaryPaint.glowOpacity,
+    lineWidth: mapStyle === 'satellite' ? 2.2 : 1.8,
+  });
+  upsertMapboxCountryBoundaryLayer({
+    map,
+    layerId: MAPBOX_COUNTRIES_TILESET_MAIN_LAYER_ID,
+    beforeId,
+    color: boundaryPaint.lineColor,
+    opacity: boundaryPaint.lineOpacity,
+    lineWidth: mapStyle === 'satellite' ? 1.35 : 1.1,
+  });
 };
 
 export const getMapSurfaceBackgroundColor = (mapStyle: MapStyle): string => {
@@ -396,7 +489,6 @@ const isMapboxTripCountryBoundaryLayer = (layer: MapboxStyleLayerLike): boolean 
 const shouldHideMapboxTripBoundaryLayer = (layer: MapboxStyleLayerLike): boolean => {
   const layerId = layer.id ?? '';
   if (!layerId) return false;
-  if (isMapboxTripCountryBoundaryLayer(layer)) return false;
   if (MAPBOX_TRIP_HIDDEN_BOUNDARY_LAYERS.includes(layerId as typeof MAPBOX_TRIP_HIDDEN_BOUNDARY_LAYERS[number])) {
     return true;
   }
@@ -497,7 +589,7 @@ export const applyMapboxTripVisualPolish = (
   mapStyle: MapStyle,
 ): void => {
   const layers = (map.getStyle()?.layers ?? []) as MapboxStyleLayerLike[];
-  const boundaryPaint = resolveMapboxCountryBoundaryPaint(mapStyle);
+  applyMapboxCountryBoundaryOverlay(map, mapStyle, layers);
   layers.forEach((layer) => {
     if (!layer.id) return;
     if (shouldHideMapboxTripBoundaryLayer(layer)) {
@@ -526,15 +618,6 @@ export const applyMapboxTripVisualPolish = (
     if (shouldHideMapboxTripCleanSymbolLayer(layer, mapStyle)) {
       if (!map.getLayer(layer.id)) return;
       map.setLayoutProperty(layer.id, 'visibility', 'none');
-      return;
-    }
-    if (isMapboxTripCountryBoundaryLayer(layer)) {
-      if (!map.getLayer(layer.id)) return;
-      map.setLayoutProperty(layer.id, 'visibility', 'visible');
-      map.setFilter(layer.id, MAPBOX_COUNTRY_BOUNDARY_FILTER as unknown as any[]);
-      const isGlowLayer = layer.id === 'admin-0-boundary-bg';
-      map.setPaintProperty(layer.id, 'line-color', isGlowLayer ? boundaryPaint.glowColor : boundaryPaint.lineColor);
-      map.setPaintProperty(layer.id, 'line-opacity', isGlowLayer ? boundaryPaint.glowOpacity : boundaryPaint.lineOpacity);
       return;
     }
     if (!shouldHideMapboxTripLabelLayer(layer.id, mapStyle)) return;
