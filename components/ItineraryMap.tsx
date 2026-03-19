@@ -19,6 +19,15 @@ import { createGoogleMixedSurfaceController, type GoogleMixedSurfaceController }
 import { buildTripMapCityMarkerHtml } from './maps/tripMapCityMarkerHtml';
 import { resolveTripMapCityMarkerImageUrl } from './maps/tripMapCityMarkerMedia';
 import {
+    buildTripMapCityLabelOverlayDescriptors,
+    buildTripMapCityOverlayDescriptors,
+    buildTripMapCoordinateGroupKey,
+    buildOverlappingMarkerPosition,
+    getMapLabelCityName,
+    offsetLatLngByMeters,
+    resolveTripMapCityLabelName,
+} from './maps/tripMapCityOverlayModel';
+import {
     buildTripMapCityLabelHtml,
     resolveTripMapCityLabelPlacement,
     resolveTripMapCityLabelTheme,
@@ -29,7 +38,6 @@ import {
 } from './maps/tripMapCityLabelLayout';
 import { buildMapboxDashedRouteDasharray, createMapboxLineHandle, createMapboxOverlayMarker, type MapboxLineLayerConfig } from './maps/mapboxOverlayRuntime';
 import {
-    resolveTripMapCityLabelAnchor,
     resolveTripMapCityLabelOffsetPx,
     resolveTripMapDarkRoutePresentation,
     resolveTripMapFlightCurveOptions,
@@ -43,7 +51,7 @@ import {
     resolveTripMapViewportPadding,
 } from './maps/tripMapProviderTuning';
 import { GOOGLE_ROUTES_COMPUTE_FIELDS, computeGoogleRouteLeg, loadGoogleRouteRuntime } from '../services/routeService';
-import { buildLatLngPrecisionKey, isFiniteLatLngLiteral } from '../shared/coordinateUtils';
+import { isFiniteLatLngLiteral } from '../shared/coordinateUtils';
 import type { MapImplementation } from '../shared/mapRuntime';
 
 interface ItineraryMapProps {
@@ -255,7 +263,6 @@ const ROUTE_STANDARD_GAP_COLOR = '#eef2f7';
 const ROUTE_DARK_GAP_COLOR = '#1b2230';
 const ROUTE_CLEAN_DARK_GAP_COLOR = '#1b2230';
 const EARTH_RADIUS_KM = 6371;
-const MARKER_OVERLAP_RADIUS_METERS = 420;
 const ACTIVITY_MARKER_OVERLAP_RADIUS_METERS = 260;
 const ACTIVITY_CITY_FALLBACK_MIN_SLOTS = 4;
 const MARKER_COORDINATE_GROUP_PRECISION = 5;
@@ -870,39 +877,6 @@ export const isRoutePathLikelyStraight = (
     return hasStraightLikeDetour || hasStraightLikeShape;
 };
 
-export const offsetLatLngByMeters = (
-    origin: google.maps.LatLngLiteral,
-    eastMeters: number,
-    northMeters: number,
-): google.maps.LatLngLiteral => {
-    const metersPerDegreeLat = 111_320;
-    const safeCosine = Math.max(0.01, Math.cos((origin.lat * Math.PI) / 180));
-    const metersPerDegreeLng = metersPerDegreeLat * safeCosine;
-    return {
-        lat: origin.lat + (northMeters / metersPerDegreeLat),
-        lng: origin.lng + (eastMeters / metersPerDegreeLng),
-    };
-};
-
-export const buildOverlappingMarkerPosition = (
-    origin: google.maps.LatLngLiteral,
-    overlapIndex: number,
-    overlapCount: number,
-    radiusMeters = MARKER_OVERLAP_RADIUS_METERS,
-): google.maps.LatLngLiteral => {
-    if (overlapCount <= 1 || overlapIndex < 0 || overlapIndex >= overlapCount) {
-        return origin;
-    }
-    const angle = (-Math.PI / 2) + ((2 * Math.PI * overlapIndex) / overlapCount);
-    const eastMeters = Math.cos(angle) * radiusMeters;
-    const northMeters = Math.sin(angle) * radiusMeters;
-    return offsetLatLngByMeters(origin, eastMeters, northMeters);
-};
-
-const buildCoordinateGroupKey = (coordinates: google.maps.LatLngLiteral | null | undefined): string | null => (
-    buildLatLngPrecisionKey(coordinates, MARKER_COORDINATE_GROUP_PRECISION)
-);
-
 const ACTIVITY_ICON_MARKUP_CACHE = new Map<string, string>();
 
 const escapeHtml = (value: string): string => (
@@ -1020,7 +994,7 @@ export const resolveActivityMarkerPositions = (
 
     const groupedByCoordinates = new Map<string, number[]>();
     candidates.forEach((candidate, index) => {
-        const key = buildCoordinateGroupKey(candidate.baseCoordinates);
+        const key = buildTripMapCoordinateGroupKey(candidate.baseCoordinates, MARKER_COORDINATE_GROUP_PRECISION);
         if (!key) return;
         const grouped = groupedByCoordinates.get(key) ?? [];
         grouped.push(index);
@@ -1028,7 +1002,7 @@ export const resolveActivityMarkerPositions = (
     });
 
     return candidates.map((candidate, index) => {
-        const key = buildCoordinateGroupKey(candidate.baseCoordinates);
+        const key = buildTripMapCoordinateGroupKey(candidate.baseCoordinates, MARKER_COORDINATE_GROUP_PRECISION);
         const grouped = key ? (groupedByCoordinates.get(key) ?? []) : [];
         const overlapIndex = Math.max(0, grouped.indexOf(index));
         const overlapCount = candidate.coordinateSource === 'city'
@@ -1177,20 +1151,11 @@ export const isMapViewportReady = (rect: { width: number; height: number } | nul
     return rect.width >= MAP_VIEWPORT_READY_MIN_DIMENSION_PX && rect.height >= MAP_VIEWPORT_READY_MIN_DIMENSION_PX;
 };
 
-export const getMapLabelCityName = (value?: string): string => {
-    const raw = typeof value === 'string' ? value.trim() : '';
-    if (!raw) return '';
-    const firstSegment = raw.split(',')[0]?.trim();
-    return firstSegment || raw;
-};
-
-export const resolveTripMapCityLabelName = (
-    city: Pick<ITimelineItem, 'title' | 'location'>,
-): string => {
-    const locationName = getMapLabelCityName(city.location);
-    if (locationName) return locationName;
-    const titleName = getMapLabelCityName(city.title);
-    return titleName || city.title || city.location || '';
+export {
+    buildOverlappingMarkerPosition,
+    getMapLabelCityName,
+    offsetLatLngByMeters,
+    resolveTripMapCityLabelName,
 };
 
 export type CityLabelAnchor = TripMapCityLabelAnchor;
@@ -2338,36 +2303,12 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         const brandRouteColor = '#4f46e5';
         const resolveMapColor = (colorToken: string): string =>
             mapColorMode === 'brand' ? brandRouteColor : getHexFromColorClass(colorToken);
-        const coordinateMarkerGroups = new Map<string, number[]>();
-
-        cities.forEach((city, index) => {
-            if (!isFiniteLatLngLiteral(city.coordinates)) return;
-            const key = buildCoordinateGroupKey(city.coordinates);
-            if (!key) return;
-            const grouped = coordinateMarkerGroups.get(key) ?? [];
-            grouped.push(index);
-            coordinateMarkerGroups.set(key, grouped);
-        });
-
-        const resolveCityMarkerPosition = (city: ITimelineItem, index: number): google.maps.LatLngLiteral | null => {
-            if (!isFiniteLatLngLiteral(city.coordinates)) return null;
-            const key = buildCoordinateGroupKey(city.coordinates);
-            if (!key) return city.coordinates;
-            const grouped = coordinateMarkerGroups.get(key);
-            if (!grouped || grouped.length <= 1) return city.coordinates;
-            const overlapIndex = grouped.indexOf(index);
-            if (overlapIndex < 0) return city.coordinates;
-            return buildOverlappingMarkerPosition(city.coordinates, overlapIndex, grouped.length);
-        };
+        const cityOverlayDescriptors = buildTripMapCityOverlayDescriptors(cities);
 
         if (!isPaywalled) {
             // 2. Add Markers
-            cities.forEach((city, index) => {
+            cityOverlayDescriptors.forEach(({ city, cityIndex, markerPosition }) => {
                 if (!isEffectActive()) return;
-                if (!city.coordinates) return;
-                const markerPosition = resolveCityMarkerPosition(city, index);
-                if (!markerPosition) return;
-                
                 const isSelected = city.id === selectedCityId;
                 const cityMarkerColor = resolveMapColor(city.color);
                 const cityMarkerImageUrl = resolveTripMapCityMarkerImageUrl(city);
@@ -2375,7 +2316,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                     position: markerPosition,
                     html: buildTripMapCityMarkerHtml({
                         provider: tripMapProvider,
-                        index,
+                        index: cityIndex,
                         color: cityMarkerColor,
                         imageUrl: cityMarkerImageUrl,
                         isSelected,
@@ -2393,7 +2334,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                     id: city.id,
                     color: cityMarkerColor,
                     imageUrl: cityMarkerImageUrl,
-                    index,
+                    index: cityIndex,
                     marker,
                 });
                 markersRef.current.push(marker);
@@ -2442,11 +2383,6 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         }
 
         if (!isPaywalled && showCityNames && googleMapRef.current) {
-            const startCity = cities[0];
-            const endCity = cities[cities.length - 1];
-            const startCityKey = getNormalizedCityName(resolveTripMapCityLabelName(startCity ?? {}));
-            const endCityKey = getNormalizedCityName(resolveTripMapCityLabelName(endCity ?? {}));
-            const isRoundTrip = !!(startCityKey && endCityKey && startCityKey === endCityKey);
             const baseLabelOffsetPx = resolveTripMapCityLabelOffsetPx({
                 provider: tripMapProvider,
                 markerSize: effectiveMarkerRenderProfile.city.size,
@@ -2553,68 +2489,19 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 return overlay;
             };
 
-            const shownRoundTripLabel = new Set<string>();
-            const findNeighborCoordinates = (fromIndex: number, direction: -1 | 1): google.maps.LatLngLiteral | null => {
-                let cursor = fromIndex + direction;
-                while (cursor >= 0 && cursor < cities.length) {
-                    const candidate = cities[cursor]?.coordinates;
-                    if (candidate) return candidate;
-                    cursor += direction;
-                }
-                return null;
-            };
-
-            const cityLabelDescriptors = cities.flatMap((city, cityIndex) => {
-                if (!city.coordinates) return [];
-                const labelName = resolveTripMapCityLabelName(city);
-                const cityKey = getNormalizedCityName(labelName);
-                if (!labelName) return [];
-                const previousCoordinates = findNeighborCoordinates(cityIndex, -1);
-                const nextCoordinates = findNeighborCoordinates(cityIndex, 1);
-                const defaultAnchor = resolveTripMapCityLabelAnchor(
-                    tripMapProvider,
-                    city.coordinates,
-                    previousCoordinates,
-                    nextCoordinates,
-                );
-                let subLabel: string | undefined;
-                if (startCity && city.id === startCity.id) subLabel = 'START';
-                if (endCity && city.id === endCity.id) subLabel = subLabel ? 'START • END' : 'END';
-                if (isRoundTrip && cityKey && cityKey === startCityKey) {
-                    subLabel = 'START • END';
-                }
-
-                return [{
-                    key: `${city.id ?? cityIndex}:${cityIndex}`,
-                    city,
-                    cityIndex,
-                    cityKey,
-                    labelName,
-                    subLabel,
-                    defaultAnchor,
-                }];
-            });
-
-            const visibleCityLabelKeys = new Set<string>();
-            const visibleCityLabelDescriptors = cityLabelDescriptors.filter((descriptor) => {
-                if (!isRoundTrip || !descriptor.cityKey || descriptor.cityKey !== startCityKey) {
-                    return true;
-                }
-                if (visibleCityLabelKeys.has(descriptor.cityKey)) {
-                    return false;
-                }
-                visibleCityLabelKeys.add(descriptor.cityKey);
-                return true;
+            const cityLabelDescriptors = buildTripMapCityLabelOverlayDescriptors({
+                provider: tripMapProvider,
+                cityOverlays: cityOverlayDescriptors,
             });
 
             const mapboxCityLabelLayouts = mapboxMap
                 ? resolveTripMapProjectedCityLabelLayouts({
                     provider: tripMapProvider,
-                    labels: visibleCityLabelDescriptors.flatMap((descriptor) => {
+                    labels: cityLabelDescriptors.flatMap((descriptor) => {
                         try {
                             const point = mapboxMap.project([
-                                descriptor.city.coordinates!.lng,
-                                descriptor.city.coordinates!.lat,
+                                descriptor.markerPosition.lng,
+                                descriptor.markerPosition.lat,
                             ]);
                             if (!Number.isFinite(point.x) || !Number.isFinite(point.y)) return [];
                             return [{
@@ -2635,31 +2522,15 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 })
                 : new Map<string, TripMapProjectedCityLabelLayout>();
 
-            cityLabelDescriptors.forEach(({ city, cityKey, key, labelName, subLabel, defaultAnchor }) => {
-                if (!city.coordinates) return;
+            cityLabelDescriptors.forEach(({ markerPosition, key, labelName, subLabel, defaultAnchor }) => {
                 const labelLayout = mapboxCityLabelLayouts.get(key);
                 if (labelLayout?.hidden) return;
                 const labelAnchor = labelLayout?.anchor ?? defaultAnchor;
                 const labelOffsetPx = labelLayout?.offsetPx ?? baseLabelOffsetPx;
                 const compact = labelLayout?.compact ?? false;
-                if (isRoundTrip && cityKey && cityKey === startCityKey) {
-                    if (shownRoundTripLabel.has(cityKey)) return;
-                    shownRoundTripLabel.add(cityKey);
-                    const overlay = createCityLabelOverlay(
-                        { lat: city.coordinates.lat, lng: city.coordinates.lng },
-                        labelName,
-                        'START • END',
-                        labelAnchor,
-                        labelOffsetPx,
-                        compact,
-                    );
-                    cityLabelOverlaysRef.current.push(overlay);
-                    return;
-                }
-
                 if (subLabel) {
                     const overlay = createCityLabelOverlay(
-                        { lat: city.coordinates.lat, lng: city.coordinates.lng },
+                        markerPosition,
                         labelName,
                         subLabel,
                         labelAnchor,
@@ -2669,7 +2540,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                     cityLabelOverlaysRef.current.push(overlay);
                 } else {
                     const overlay = createCityLabelOverlay(
-                        { lat: city.coordinates.lat, lng: city.coordinates.lng },
+                        markerPosition,
                         labelName,
                         undefined,
                         labelAnchor,

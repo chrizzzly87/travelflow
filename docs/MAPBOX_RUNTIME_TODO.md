@@ -22,6 +22,7 @@ This checklist tracks the remaining Mapbox-only work on the
 
 - [x] Extract provider-aware city marker HTML.
 - [x] Extract provider-aware city label HTML.
+- [x] Share one city overlay descriptor model between Mapbox pins and Mapbox labels so labels stay anchored to the visible pin position.
 - [x] Add Mapbox-only projected label layout for crowded cities.
 - [x] Improve label collision handling for very dense clusters.
 - [x] Add richer photo/image marker inputs on top of the extracted marker presenter.
