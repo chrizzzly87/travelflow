@@ -46,11 +46,13 @@ const MAPBOX_DARK_BOUNDARY_COLOR = '#ffffff';
 const buildMapboxStandardVisualConfig = ({
   boundaryColor,
   showPlaceLabels = true,
+  showAdminBoundaries = true,
   showRoadsAndTransit,
   showPedestrianRoads,
 }: {
   boundaryColor: string;
   showPlaceLabels?: boolean;
+  showAdminBoundaries?: boolean;
   showRoadsAndTransit?: boolean;
   showPedestrianRoads?: boolean;
 }): MapboxStyleConfigProperty[] => {
@@ -59,7 +61,7 @@ const buildMapboxStandardVisualConfig = ({
     { fragmentId: 'basemap', property: 'showPointOfInterestLabels', value: false },
     { fragmentId: 'basemap', property: 'showTransitLabels', value: false },
     { fragmentId: 'basemap', property: 'showRoadLabels', value: false },
-    { fragmentId: 'basemap', property: 'showAdminBoundaries', value: true },
+    { fragmentId: 'basemap', property: 'showAdminBoundaries', value: showAdminBoundaries },
     { fragmentId: 'basemap', property: 'colorAdminBoundaries', value: boundaryColor },
   ];
 
@@ -84,6 +86,7 @@ const MAPBOX_DARK_VISUAL_CONFIG = buildMapboxStandardVisualConfig({
 const MAPBOX_CLEAN_VISUAL_CONFIG = buildMapboxStandardVisualConfig({
   boundaryColor: MAPBOX_LIGHT_BOUNDARY_COLOR,
   showPlaceLabels: false,
+  showAdminBoundaries: false,
   showRoadsAndTransit: false,
   showPedestrianRoads: false,
 });
@@ -91,6 +94,7 @@ const MAPBOX_CLEAN_VISUAL_CONFIG = buildMapboxStandardVisualConfig({
 const MAPBOX_CLEAN_DARK_VISUAL_CONFIG = buildMapboxStandardVisualConfig({
   boundaryColor: MAPBOX_DARK_BOUNDARY_COLOR,
   showPlaceLabels: false,
+  showAdminBoundaries: false,
   showRoadsAndTransit: false,
   showPedestrianRoads: false,
 });
@@ -199,6 +203,12 @@ const MAPBOX_TRIP_COUNTRY_BOUNDARY_LAYERS = [
 const MAPBOX_MAJOR_CITY_FILTER = [
   'any',
   ['<=', ['coalesce', ['get', 'symbolrank'], 999], 5],
+  ['>=', ['coalesce', ['get', 'capital'], 0], 1],
+] as const;
+
+const MAPBOX_CLEAN_MAJOR_CITY_FILTER = [
+  'any',
+  ['<=', ['coalesce', ['get', 'symbolrank'], 999], 3],
   ['>=', ['coalesce', ['get', 'capital'], 0], 1],
 ] as const;
 
@@ -412,6 +422,17 @@ const MAPBOX_TRIP_CLEAN_ROAD_HIDE_PATTERNS = [
   /^path[-_]/i,
   /^ferry[-_]/i,
   /^rail[-_]/i,
+  /transportation/i,
+  /street/i,
+  /street-network/i,
+  /street_network/i,
+  /traffic/i,
+  /link/i,
+  /primary/i,
+  /secondary/i,
+  /tertiary/i,
+  /trunk/i,
+  /service/i,
   /motorway/i,
   /highway/i,
 ] as const;
@@ -420,10 +441,12 @@ const shouldHideMapboxTripRoadGeometryLayer = (
   layer: MapboxStyleLayerLike,
   mapStyle: MapStyle,
 ): boolean => {
+  if (!isCleanMapStyle(mapStyle)) return false;
   const layerId = layer.id ?? '';
-  if (!isCleanMapStyle(mapStyle) || !layerId) return false;
   const searchText = getMapboxLayerSearchText(layer);
-  return MAPBOX_TRIP_CLEAN_ROAD_HIDE_PATTERNS.some((pattern) => pattern.test(layerId) || pattern.test(searchText));
+  const isRoadLikeGeometry = layer.type === 'line' || layer.type === 'fill';
+  return isRoadLikeGeometry
+    && MAPBOX_TRIP_CLEAN_ROAD_HIDE_PATTERNS.some((pattern) => pattern.test(layerId) || pattern.test(searchText));
 };
 
 const shouldHideMapboxTripCleanSettlementMarkerLayer = (
@@ -483,13 +506,11 @@ export const applyMapboxTripVisualPolish = (
       return;
     }
     if (isMapboxMajorSettlementLayer(layer)) {
-      if (isCleanMapStyle(mapStyle)) {
-        if (!map.getLayer(layer.id)) return;
-        map.setLayoutProperty(layer.id, 'visibility', 'none');
-        return;
-      }
       if (!map.getLayer(layer.id)) return;
-      map.setFilter(layer.id, MAPBOX_MAJOR_CITY_FILTER as unknown as any[]);
+      map.setFilter(
+        layer.id,
+        (isCleanMapStyle(mapStyle) ? MAPBOX_CLEAN_MAJOR_CITY_FILTER : MAPBOX_MAJOR_CITY_FILTER) as unknown as any[],
+      );
       return;
     }
     if (shouldHideMapboxTripRoadGeometryLayer(layer, mapStyle)) {

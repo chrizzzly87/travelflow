@@ -79,7 +79,7 @@ describe('services/mapRendererVisualStyleService', () => {
         showPointOfInterestLabels: false,
         showTransitLabels: false,
         showRoadLabels: false,
-        showAdminBoundaries: true,
+        showAdminBoundaries: false,
         colorAdminBoundaries: '#1f2937',
         showRoadsAndTransit: false,
         showPedestrianRoads: false,
@@ -96,7 +96,7 @@ describe('services/mapRendererVisualStyleService', () => {
         showPointOfInterestLabels: false,
         showTransitLabels: false,
         showRoadLabels: false,
-        showAdminBoundaries: true,
+        showAdminBoundaries: false,
         colorAdminBoundaries: '#ffffff',
         showRoadsAndTransit: false,
         showPedestrianRoads: false,
@@ -168,8 +168,9 @@ describe('services/mapRendererVisualStyleService', () => {
     applyMapboxTripVisualPolish({
       getStyle: () => ({
         layers: [
-          { id: 'road-primary' },
-          { id: 'bridge-motorway' },
+          { id: 'road-primary', type: 'line' },
+          { id: 'bridge-motorway', type: 'line' },
+          { id: 'transportation-network', type: 'line', metadata: { featureSet: 'roads' } },
           { id: 'settlement-major-label' },
           { id: 'place-city-dot', type: 'circle', metadata: { featureSet: 'place' } },
           { id: 'road-shield-symbol', type: 'symbol', metadata: { featureSet: 'roads' } },
@@ -188,13 +189,14 @@ describe('services/mapRendererVisualStyleService', () => {
 
     expect(setLayoutProperty).toHaveBeenCalledWith('road-primary', 'visibility', 'none');
     expect(setLayoutProperty).toHaveBeenCalledWith('bridge-motorway', 'visibility', 'none');
-    expect(setLayoutProperty).toHaveBeenCalledWith('settlement-major-label', 'visibility', 'none');
+    expect(setLayoutProperty).toHaveBeenCalledWith('transportation-network', 'visibility', 'none');
     expect(setLayoutProperty).toHaveBeenCalledWith('place-city-dot', 'visibility', 'none');
     expect(setLayoutProperty).toHaveBeenCalledWith('road-shield-symbol', 'visibility', 'none');
     expect(setLayoutProperty).toHaveBeenCalledWith('airport-symbol', 'visibility', 'none');
     expect(setLayoutProperty).toHaveBeenCalledWith('locality-label', 'visibility', 'none');
     expect(setLayoutProperty).toHaveBeenCalledWith('admin-0-boundary', 'visibility', 'visible');
     expect(setLayoutProperty).toHaveBeenCalledWith('admin-1-boundary-bg', 'visibility', 'none');
+    expect(setFilter).toHaveBeenCalledWith('settlement-major-label', expect.any(Array));
     expect(setFilter).toHaveBeenCalledWith('admin-0-boundary', expect.any(Array));
   });
 
