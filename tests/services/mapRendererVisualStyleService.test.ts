@@ -151,6 +151,10 @@ describe('services/mapRendererVisualStyleService', () => {
     expect(setLayoutProperty).toHaveBeenNthCalledWith(9, 'generic-boundary-admin1', 'visibility', 'none');
     expect(setLayoutProperty).toHaveBeenNthCalledWith(10, 'airport-label', 'visibility', 'none');
     expect(setFilter).toHaveBeenCalledWith('settlement-major-label', expect.any(Array));
+    expect(setFilter).toHaveBeenCalledWith('admin-0-boundary', expect.any(Array));
+    expect(setFilter).toHaveBeenCalledWith('admin_0_boundary', expect.any(Array));
+    expect(setFilter).toHaveBeenCalledWith('admin-0-boundary-bg', expect.any(Array));
+    expect(setFilter).toHaveBeenCalledWith('country-boundary-raw', expect.any(Array));
     expect(setPaintProperty).toHaveBeenCalledWith('admin-0-boundary', 'line-color', 'rgba(255, 255, 255, 0.99)');
     expect(setPaintProperty).toHaveBeenCalledWith('country-boundary-raw', 'line-color', 'rgba(255, 255, 255, 0.99)');
     expect(setPaintProperty).toHaveBeenCalledWith('admin-0-boundary-bg', 'line-opacity', 0.34);
@@ -191,7 +195,7 @@ describe('services/mapRendererVisualStyleService', () => {
     expect(setLayoutProperty).toHaveBeenCalledWith('locality-label', 'visibility', 'none');
     expect(setLayoutProperty).toHaveBeenCalledWith('admin-0-boundary', 'visibility', 'visible');
     expect(setLayoutProperty).toHaveBeenCalledWith('admin-1-boundary-bg', 'visibility', 'none');
-    expect(setFilter).not.toHaveBeenCalled();
+    expect(setFilter).toHaveBeenCalledWith('admin-0-boundary', expect.any(Array));
   });
 
   it('uses darker surface backgrounds for satellite and dark trip-map styles', () => {

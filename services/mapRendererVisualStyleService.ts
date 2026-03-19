@@ -202,6 +202,12 @@ const MAPBOX_MAJOR_CITY_FILTER = [
   ['>=', ['coalesce', ['get', 'capital'], 0], 1],
 ] as const;
 
+const MAPBOX_COUNTRY_BOUNDARY_FILTER = [
+  'any',
+  ['==', ['coalesce', ['get', 'admin_level'], ['get', 'admin-level']], 0],
+  ['==', ['coalesce', ['get', 'admin_level'], ['get', 'admin-level']], '0'],
+] as const;
+
 const isMapboxMajorSettlementLayer = (layer: MapboxStyleLayerLike): boolean => (
   /settlement[-_]major[-_]label/i.test(layer.id ?? '')
 );
@@ -504,6 +510,7 @@ export const applyMapboxTripVisualPolish = (
     if (isMapboxTripCountryBoundaryLayer(layer)) {
       if (!map.getLayer(layer.id)) return;
       map.setLayoutProperty(layer.id, 'visibility', 'visible');
+      map.setFilter(layer.id, MAPBOX_COUNTRY_BOUNDARY_FILTER as unknown as any[]);
       const isGlowLayer = layer.id === 'admin-0-boundary-bg';
       map.setPaintProperty(layer.id, 'line-color', isGlowLayer ? boundaryPaint.glowColor : boundaryPaint.lineColor);
       map.setPaintProperty(layer.id, 'line-opacity', isGlowLayer ? boundaryPaint.glowOpacity : boundaryPaint.lineOpacity);
