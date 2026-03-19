@@ -434,6 +434,33 @@ const shouldHideMapboxTripCleanSettlementMarkerLayer = (
     );
 };
 
+const MAPBOX_TRIP_CLEAN_SYMBOL_HIDE_PATTERNS = [
+  /road/i,
+  /street/i,
+  /highway/i,
+  /motorway/i,
+  /place/i,
+  /settlement/i,
+  /city/i,
+  /town/i,
+  /locality/i,
+  /airport/i,
+  /poi/i,
+  /transit/i,
+  /ferry/i,
+  /rail/i,
+] as const;
+
+const shouldHideMapboxTripCleanSymbolLayer = (
+  layer: MapboxStyleLayerLike,
+  mapStyle: MapStyle,
+): boolean => {
+  if (!isCleanMapStyle(mapStyle) || layer.type !== 'symbol') return false;
+  const searchText = getMapboxLayerSearchText(layer);
+  if (searchText.includes('country-label')) return false;
+  return MAPBOX_TRIP_CLEAN_SYMBOL_HIDE_PATTERNS.some((pattern) => pattern.test(searchText));
+};
+
 export const applyMapboxTripVisualPolish = (
   map: MapboxStyleLayerVisibilityMap,
   mapStyle: MapStyle,
@@ -463,6 +490,11 @@ export const applyMapboxTripVisualPolish = (
       return;
     }
     if (shouldHideMapboxTripCleanSettlementMarkerLayer(layer, mapStyle)) {
+      if (!map.getLayer(layer.id)) return;
+      map.setLayoutProperty(layer.id, 'visibility', 'none');
+      return;
+    }
+    if (shouldHideMapboxTripCleanSymbolLayer(layer, mapStyle)) {
       if (!map.getLayer(layer.id)) return;
       map.setLayoutProperty(layer.id, 'visibility', 'none');
       return;

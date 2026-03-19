@@ -1183,6 +1183,15 @@ export const getMapLabelCityName = (value?: string): string => {
     return firstSegment || raw;
 };
 
+export const resolveTripMapCityLabelName = (
+    city: Pick<ITimelineItem, 'title' | 'location'>,
+): string => {
+    const locationName = getMapLabelCityName(city.location);
+    if (locationName) return locationName;
+    const titleName = getMapLabelCityName(city.title);
+    return titleName || city.title || city.location || '';
+};
+
 export type CityLabelAnchor = TripMapCityLabelAnchor;
 export const resolveCityLabelPlacement = resolveTripMapCityLabelPlacement;
 export const resolveCityLabelTheme = resolveTripMapCityLabelTheme;
@@ -2431,8 +2440,8 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         if (!isPaywalled && showCityNames && googleMapRef.current) {
             const startCity = cities[0];
             const endCity = cities[cities.length - 1];
-            const startCityKey = getNormalizedCityName(startCity?.title);
-            const endCityKey = getNormalizedCityName(endCity?.title);
+            const startCityKey = getNormalizedCityName(resolveTripMapCityLabelName(startCity ?? {}));
+            const endCityKey = getNormalizedCityName(resolveTripMapCityLabelName(endCity ?? {}));
             const isRoundTrip = !!(startCityKey && endCityKey && startCityKey === endCityKey);
             const baseLabelOffsetPx = resolveTripMapCityLabelOffsetPx({
                 provider: tripMapProvider,
@@ -2553,8 +2562,8 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
 
             const cityLabelDescriptors = cities.flatMap((city, cityIndex) => {
                 if (!city.coordinates) return [];
-                const cityKey = getNormalizedCityName(city.title);
-                const labelName = getMapLabelCityName(city.title || city.location) || city.title || city.location || '';
+                const labelName = resolveTripMapCityLabelName(city);
+                const cityKey = getNormalizedCityName(labelName);
                 if (!labelName) return [];
                 const previousCoordinates = findNeighborCoordinates(cityIndex, -1);
                 const nextCoordinates = findNeighborCoordinates(cityIndex, 1);

@@ -24,6 +24,7 @@ import {
   getRouteOuterOutlineColor,
   getRouteOutlineColor,
   getMapLabelCityName,
+  resolveTripMapCityLabelName,
   isCoordinateWithinSafeBounds,
   estimateRoutePixelSpan,
   estimateNearestMarkerGapPx,
@@ -111,6 +112,18 @@ describe('components/ItineraryMap route cache helpers', () => {
     expect(getMapLabelCityName('Bangkok, Thailand')).toBe('Bangkok');
     expect(getMapLabelCityName('Hoi An')).toBe('Hoi An');
     expect(getMapLabelCityName('')).toBe('');
+  });
+
+  it('prefers the location city over custom stay titles when building trip-map labels', () => {
+    expect(resolveTripMapCityLabelName({
+      title: 'Bangkok (Return)',
+      location: 'Bangkok, Thailand',
+    } as any)).toBe('Bangkok');
+
+    expect(resolveTripMapCityLabelName({
+      title: 'Luang Prabang',
+      location: '',
+    } as any)).toBe('Luang Prabang');
   });
 
   it('keeps city labels centered above markers for a steadier trip-map layout', () => {

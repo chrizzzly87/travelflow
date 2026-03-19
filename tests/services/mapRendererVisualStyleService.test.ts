@@ -151,6 +151,8 @@ describe('services/mapRendererVisualStyleService', () => {
           { id: 'bridge-motorway' },
           { id: 'settlement-major-label' },
           { id: 'place-city-dot', type: 'circle', metadata: { featureSet: 'place' } },
+          { id: 'road-shield-symbol', type: 'symbol', metadata: { featureSet: 'roads' } },
+          { id: 'airport-symbol', type: 'symbol', metadata: { featureSet: 'place' } },
           { id: 'locality-label' },
           { id: 'country-label' },
           { id: 'admin-0-boundary' },
@@ -167,6 +169,8 @@ describe('services/mapRendererVisualStyleService', () => {
     expect(setLayoutProperty).toHaveBeenCalledWith('bridge-motorway', 'visibility', 'none');
     expect(setLayoutProperty).toHaveBeenCalledWith('settlement-major-label', 'visibility', 'none');
     expect(setLayoutProperty).toHaveBeenCalledWith('place-city-dot', 'visibility', 'none');
+    expect(setLayoutProperty).toHaveBeenCalledWith('road-shield-symbol', 'visibility', 'none');
+    expect(setLayoutProperty).toHaveBeenCalledWith('airport-symbol', 'visibility', 'none');
     expect(setLayoutProperty).toHaveBeenCalledWith('locality-label', 'visibility', 'none');
     expect(setLayoutProperty).toHaveBeenCalledWith('admin-0-boundary', 'visibility', 'visible');
     expect(setLayoutProperty).toHaveBeenCalledWith('admin-1-boundary-bg', 'visibility', 'none');
