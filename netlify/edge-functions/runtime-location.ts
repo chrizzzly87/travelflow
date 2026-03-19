@@ -3,7 +3,7 @@ import {
   createEmptyRuntimeLocation,
   type RuntimeLocation,
   type RuntimeLocationPayload,
-} from '../../shared/runtimeLocation';
+} from '../../shared/runtimeLocation.ts';
 
 interface RuntimeLocationGeoContext {
   city?: unknown;
