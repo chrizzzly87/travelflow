@@ -1,6 +1,7 @@
 import LZString from 'lz-string';
-import { ActivityType, AppLanguage, ICoordinates, ITrip, ITimelineItem, IViewSettings, ISharedState, MapColorMode, TransportMode, TripPrefillData } from './types';
+import { ActivityType, AppLanguage, ICoordinates, ITrip, ITimelineItem, IViewSettings, ISharedState, MapColorMode, TransportMode, TripCompanionSection, TripPrefillData } from './types';
 import { normalizeTransportMode } from './shared/transportModes';
+import { normalizeTripWorkspacePage } from './shared/tripWorkspace';
 import { DEFAULT_LOCALE, localeToIntlLocale, normalizeLocale } from './config/locales';
 
 export const BASE_PIXELS_PER_DAY = 120; // Width of one day column (Base Zoom 1.0)
@@ -71,6 +72,9 @@ const isMapStyleValue = (value: string | null): value is IViewSettings['mapStyle
 const isRouteModeValue = (value: string | null): value is NonNullable<IViewSettings['routeMode']> =>
     value === 'simple' || value === 'realistic';
 
+const isTripCompanionSectionValue = (value: string | null): value is TripCompanionSection =>
+    normalizeTripWorkspacePage(value) !== null || value === 'plan' || value === 'more';
+
 export const applyViewSettingsToSearchParams = (
     params: URLSearchParams,
     view?: Partial<IViewSettings> | null
@@ -81,6 +85,8 @@ export const applyViewSettingsToSearchParams = (
     if (isTimelineMode(view.timelineMode ?? null)) params.set('timelineMode', view.timelineMode);
     else params.delete('timelineMode');
     if (isTimelineViewMode(view.timelineView ?? null)) params.set('timelineView', view.timelineView);
+    if (isTripCompanionSectionValue(view.activeCompanionSection ?? null)) params.set('companion', view.activeCompanionSection);
+    else params.delete('companion');
     if (isMapStyleValue(view.mapStyle ?? null)) params.set('mapStyle', view.mapStyle);
 
     if (isRouteModeValue(view.routeMode ?? null)) params.set('routeMode', view.routeMode);

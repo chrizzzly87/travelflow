@@ -389,6 +389,125 @@
       "share": "Share",
       "shareDisabled": "Aktiviere diesen Trip, um ihn zu teilen"
     },
+    "companion": {
+      "closePanel": "Leiste schließen",
+      "nav": {
+        "ariaLabel": "Reisebegleiter",
+        "plan": "Trip",
+        "places": "Orte",
+        "explore": "Entdecken",
+        "more": "Mehr"
+      },
+      "plan": {
+        "title": "Trip",
+        "description": "Behalte den übergeordneten Trip-Kontext neben dem Planner im Blick.",
+        "focusLabel": "Aktueller Fokus",
+        "focusHint": "Die Details des ausgewählten Stopps bleiben im rechten Detailbereich.",
+        "empty": "Wähle eine Stadt, einen Transfer oder eine Aktivität aus, um sie im rechten Detailbereich zu bearbeiten.",
+        "close": "Trip-Seitenleiste schließen"
+      },
+      "places": {
+        "title": "Orte",
+        "description": "Sieh den Reisekontext hinter jedem Stopp.",
+        "focusLabel": "Aktuelle Stadt",
+        "empty": "Wähle eine Stadt oder Aktivität aus, um Zielkontext zu öffnen.",
+        "cityMeta": {
+          "arrives": "Ankunft",
+          "stay": "Aufenthalt",
+          "savedStays": "Gespeicherte Unterkünfte"
+        }
+      },
+      "explore": {
+        "title": "Entdecken",
+        "description": "Öffne schnelle Recherche-Links für die aktive Stadt.",
+        "empty": "Wähle eine Stadt aus, um Unterkünfte, Aktivitäten und Events zu entdecken.",
+        "focusLabel": "Entdecken ab",
+        "focusDescription": "Nutze schnelle Links, um weiter zu recherchieren, ohne dein Trip-Layout zu verlieren.",
+        "links": {
+          "stays": "Unterkünfte suchen",
+          "activities": "Aktivitäten suchen",
+          "events": "Events suchen"
+        },
+        "savedStaysTitle": "Gespeicherte Unterkünfte",
+        "savedStaysEmpty": "Für diese Stadt sind noch keine Unterkünfte gespeichert."
+      },
+      "more": {
+        "title": "Mehr",
+        "description": "Öffne Exporte, Verlauf und tiefere Trip-Steuerung.",
+        "overviewLabel": "Trip-Überblick",
+        "actionsTitle": "Schnellaktionen",
+        "historyTitle": "Verlauf und erweiterte Werkzeuge",
+        "historyDescription": "Öffne die vollständigen Trip-Panels, wenn du ältere Versionen, Diagnosen oder tiefere Verwaltungswerkzeuge brauchst.",
+        "openHistory": "Trip-Verlauf öffnen",
+        "openAdvanced": "Vollständige Trip-Details öffnen"
+      }
+    },
+    "workspace": {
+      "mobileNavLabel": "Navigation im Trip-Workspace",
+      "demoBadge": "Thailand-Demo",
+      "demoHint": "Diese Inhalte sind aktuell Demo-Daten, bis die Live-Dienste für Ziele angebunden sind.",
+      "groups": {
+        "trip": "Trip",
+        "destination": "Ziel",
+        "memories": "Erinnerungen"
+      },
+      "footer": {
+        "share": "Teilen",
+        "export": "Export",
+        "settings": "Einstellungen"
+      },
+      "pages": {
+        "overview": {
+          "label": "Überblick",
+          "eyebrow": "Überblick",
+          "title": "Trip-Überblick",
+          "description": "Sieh Route, nächste Schritte und den aktuellen Reise-Stand auf einen Blick."
+        },
+        "planner": {
+          "label": "Planner",
+          "eyebrow": "Planner",
+          "title": "Planner-Workspace",
+          "description": "Bearbeite Kalender, Karte, Timeline und Stopp-Details an einem Ort.",
+          "hint": "Diese Seite ist live. Die Ziel- und Sprachseiten daneben nutzen aktuell noch Thailand-Demo-Daten, bis echte Daten angebunden sind."
+        },
+        "bookings": {
+          "label": "Buchungen",
+          "eyebrow": "Buchungen",
+          "title": "Buchungen",
+          "description": "Behalte Reservierungen, offene Entscheidungen und fehlende Logistik an einem Ort im Blick."
+        },
+        "places": {
+          "label": "Orte",
+          "eyebrow": "Orte",
+          "title": "Orte",
+          "description": "Öffne Länder- und Städte-Kontext mit Vierteln, Sicherheitshinweisen und Ankunftsinfos."
+        },
+        "explore": {
+          "label": "Entdecken",
+          "eyebrow": "Entdecken",
+          "title": "Entdecken",
+          "description": "Recherchiere Aktivitäten, Unterkünfte und Events, ohne deinen Trip-Kontext zu verlieren."
+        },
+        "phrases": {
+          "label": "Phrasen",
+          "eyebrow": "Phrasen",
+          "title": "Phrasen",
+          "description": "Halte nützliche Übersetzungen, Aussprache und Flashcards direkt beim Trip bereit."
+        },
+        "notes": {
+          "label": "Notizen",
+          "eyebrow": "Notizen",
+          "title": "Notizen",
+          "description": "Sammle Planungsnotizen, Tagebuch-Stubs und schnelle Erinnerungen entlang der Route."
+        },
+        "photos": {
+          "label": "Fotos",
+          "eyebrow": "Fotos",
+          "title": "Fotos",
+          "description": "Vorschau auf den späteren Album-Bereich für Erinnerungen, Highlights und Rückblicke."
+        }
+      }
+    },
     "zoom": {
       "fit": "Einpassen",
       "fitAria": "Timeline an den verfügbaren Platz anpassen",

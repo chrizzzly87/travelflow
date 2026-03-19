@@ -1,4 +1,5 @@
-import { ISharedTripResult, ISharedTripVersionResult, ITrip, ITripShareRecord, ITimelineItem, IViewSettings, IUserSettings, ShareMode } from '../types';
+import { ISharedTripResult, ISharedTripVersionResult, ITrip, ITripShareRecord, ITimelineItem, IViewSettings, IUserSettings, ShareMode, TripCompanionSection } from '../types';
+import { normalizeTripWorkspacePage } from '../shared/tripWorkspace';
 import { isUuid } from '../utils';
 import { supabase, isSupabaseEnabled } from './supabaseClient';
 import {
@@ -362,6 +363,9 @@ const isMapDockModeValue = (value: unknown): value is NonNullable<IViewSettings[
 const isZoomBehaviorValue = (value: unknown): value is NonNullable<IViewSettings['zoomBehavior']> =>
     value === 'fit' || value === 'manual';
 
+const isTripCompanionSectionValue = (value: unknown): value is TripCompanionSection =>
+    typeof value === 'string' && (normalizeTripWorkspacePage(value) !== null || value === 'plan' || value === 'more');
+
 const normalizeFiniteNumber = (value: unknown): number | undefined =>
     typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 
@@ -374,6 +378,7 @@ const normalizeViewSettingsPayload = (value: unknown): IViewSettings | null => {
         layoutMode: isLayoutModeValue(view.layoutMode) ? view.layoutMode : 'horizontal',
         timelineMode: isTimelineModeValue(view.timelineMode) ? view.timelineMode : 'calendar',
         timelineView: isTimelineViewValue(view.timelineView) ? view.timelineView : 'horizontal',
+        activeCompanionSection: isTripCompanionSectionValue(view.activeCompanionSection) ? view.activeCompanionSection : undefined,
         mapStyle: isMapStyleValue(view.mapStyle) ? view.mapStyle : 'standard',
         zoomLevel: normalizeFiniteNumber(view.zoomLevel) ?? 1,
         zoomBehavior: isZoomBehaviorValue(view.zoomBehavior) ? view.zoomBehavior : 'fit',
@@ -487,15 +492,17 @@ const readTimelineEntryItemType = (entry: Record<string, unknown>): string | nul
     if (direct) return direct;
     const before = entry.before;
     if (before && typeof before === 'object' && !Array.isArray(before)) {
-        const beforeType = typeof (before as Record<string, unknown>).type === 'string'
-            ? (before as Record<string, unknown>).type.trim().toLowerCase()
+        const beforeTypeValue = (before as Record<string, unknown>).type;
+        const beforeType = typeof beforeTypeValue === 'string'
+            ? beforeTypeValue.trim().toLowerCase()
             : '';
         if (beforeType) return beforeType;
     }
     const after = entry.after;
     if (after && typeof after === 'object' && !Array.isArray(after)) {
-        const afterType = typeof (after as Record<string, unknown>).type === 'string'
-            ? (after as Record<string, unknown>).type.trim().toLowerCase()
+        const afterTypeValue = (after as Record<string, unknown>).type;
+        const afterType = typeof afterTypeValue === 'string'
+            ? afterTypeValue.trim().toLowerCase()
             : '';
         if (afterType) return afterType;
     }
@@ -1083,7 +1090,12 @@ const applyTripAccessFields = (
 
 const resolveExplicitGenerationState = (trip: ITrip | null | undefined): 'queued' | 'running' | 'failed' | 'succeeded' | null => {
     if (!trip) return null;
-    const generation = (trip.aiMeta as Record<string, unknown> | undefined)?.generation as Record<string, unknown> | undefined;
+    const aiMeta = (
+        trip.aiMeta && typeof trip.aiMeta === 'object' && !Array.isArray(trip.aiMeta)
+    ) ? trip.aiMeta as unknown as Record<string, unknown> : undefined;
+    const generation = (
+        aiMeta?.generation && typeof aiMeta.generation === 'object' && !Array.isArray(aiMeta.generation)
+    ) ? aiMeta.generation as Record<string, unknown> : undefined;
     const explicitState = typeof generation?.state === 'string' ? generation.state.trim().toLowerCase() : '';
     if (explicitState === 'queued' || explicitState === 'running' || explicitState === 'failed' || explicitState === 'succeeded') {
         return explicitState;

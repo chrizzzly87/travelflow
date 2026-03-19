@@ -49,6 +49,7 @@ import { useConnectivityStatus } from './hooks/useConnectivityStatus';
 import { enqueueTripCommitAndSync } from './services/tripSyncManager';
 import { GlobalConnectivityBadge } from './components/GlobalConnectivityBadge';
 import { normalizeTransportMode } from './shared/transportModes';
+import { buildTripWorkspacePath, DEFAULT_TRIP_WORKSPACE_PAGE } from './shared/tripWorkspace';
 import { showAppToast } from './components/ui/appToast';
 import { getTripGenerationState } from './services/tripGenerationDiagnosticsService';
 import {
@@ -785,12 +786,12 @@ const AppContent: React.FC = () => {
         markTripCommitFingerprintStarted(tripCommitDeduplicationRef.current, commitFingerprint);
 
         if (!DB_ENABLED) {
-            createLocalHistoryEntry(navigate, updatedTrip, view, label, options, commitTs);
+            createLocalHistoryEntry(navigate, updatedTrip, view, label, options, commitTs, location.pathname);
             markTripCommitFingerprintCompleted(tripCommitDeduplicationRef.current, commitFingerprint);
             return;
         }
 
-        createLocalHistoryEntry(navigate, updatedTrip, view, label, options, commitTs);
+        createLocalHistoryEntry(navigate, updatedTrip, view, label, options, commitTs, location.pathname);
 
         const commit = async () => {
             if (options?.adminOverride) {
@@ -905,7 +906,7 @@ const AppContent: React.FC = () => {
     const handleLoadTrip = (loadedTrip: ITrip) => {
         setTrip(normalizeTripForRuntimeLoad(loadedTrip));
         setIsManagerOpen(false);
-        navigate(buildTripUrl(loadedTrip.id));
+        navigate(buildTripWorkspacePath(`/trip/${encodeURIComponent(loadedTrip.id)}`, DEFAULT_TRIP_WORKSPACE_PAGE));
     };
 
     const prewarmTripManager = useCallback(() => {

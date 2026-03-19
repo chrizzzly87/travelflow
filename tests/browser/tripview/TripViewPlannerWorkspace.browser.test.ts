@@ -54,6 +54,7 @@ const baseProps = (): PlannerProps => ({
   timelineHeight: 320,
   detailsPanelVisible: false,
   detailsPanelContent: React.createElement('div', null, 'details'),
+  mobileCompanionNav: null,
   verticalLayoutTimelineRef: { current: null },
   onStartResizing: vi.fn(),
   onSidebarResizeKeyDown: vi.fn(),
@@ -126,6 +127,17 @@ describe('components/tripview/TripViewPlannerWorkspace', () => {
     expect(mapPane.className).toContain('h-[26vh]');
     expect(mapPane.className).toContain('min-h-[180px]');
     expect(mapPane.compareDocumentPosition(timelinePane) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('renders the mobile companion toolbar inside the timeline pane when provided', () => {
+    const props = baseProps();
+    props.isMobile = true;
+    props.mobileCompanionNav = React.createElement('div', { 'data-testid': 'mobile-companion-nav' }, 'toolbar');
+
+    render(React.createElement(TripViewPlannerWorkspace, props));
+
+    expect(screen.getByTestId('planner-mobile-companion-nav')).toBeInTheDocument();
+    expect(screen.getByTestId('mobile-companion-nav')).toBeInTheDocument();
   });
 
   it('minimizes map into floating mode when toggle is clicked', () => {

@@ -1,7 +1,8 @@
 import { useState } from 'react';
 
 import { readLocalStorageItem } from '../../services/browserStorageService';
-import type { IViewSettings, MapStyle, RouteMode } from '../../types';
+import type { IViewSettings, MapStyle, RouteMode, TripCompanionSection } from '../../types';
+import { DEFAULT_TRIP_WORKSPACE_PAGE, normalizeTripWorkspacePage } from '../../shared/tripWorkspace';
 
 interface UseTripLayoutControlsStateOptions {
     initialViewSettings?: IViewSettings;
@@ -58,6 +59,10 @@ export const useTripLayoutControlsState = ({
         return 'horizontal';
     });
 
+    const [activeCompanionSection, setActiveCompanionSection] = useState<TripCompanionSection>(() => (
+        normalizeTripWorkspacePage(initialViewSettings?.activeCompanionSection) ?? DEFAULT_TRIP_WORKSPACE_PAGE
+    ));
+
     const [sidebarWidth, setSidebarWidth] = useState(() => {
         if (initialViewSettings && initialViewSettings.sidebarWidth) return initialViewSettings.sidebarWidth;
         if (typeof window !== 'undefined') return parseInt(readLocalStorageItem('tf_sidebar_width') || '550', 10);
@@ -101,6 +106,8 @@ export const useTripLayoutControlsState = ({
         setTimelineMode,
         timelineView,
         setTimelineView,
+        activeCompanionSection,
+        setActiveCompanionSection,
         mapStyle,
         setMapStyle,
         routeMode,

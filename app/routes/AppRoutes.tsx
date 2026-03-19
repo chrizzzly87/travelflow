@@ -175,7 +175,7 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
                         />
                     ))}
                     <Route
-                        path="/trip/:tripId"
+                        path="/trip/:tripId/*"
                         element={renderWithSuspense(
                             <TripLoaderRoute
                                 trip={trip}
@@ -193,7 +193,7 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
                         )}
                     />
                     <Route
-                        path="/example/:templateId"
+                        path="/example/:templateId/*"
                         element={renderWithSuspense(
                             <ExampleTripLoaderRoute
                                 trip={trip}
@@ -208,7 +208,7 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
                         )}
                     />
                     <Route
-                        path="/s/:token"
+                        path="/s/:token/*"
                         element={renderWithSuspense(
                             <SharedTripLoaderRoute
                                 trip={trip}

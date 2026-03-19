@@ -54,6 +54,7 @@ interface TripViewPlannerWorkspaceProps {
     timelineHeight: number;
     detailsPanelVisible: boolean;
     detailsPanelContent: React.ReactNode;
+    mobileCompanionNav?: React.ReactNode;
     verticalLayoutTimelineRef: React.RefObject<HTMLDivElement | null>;
     onStartResizing: (type: 'sidebar' | 'details' | 'timeline-h', startClientX?: number) => void;
     onSidebarResizeKeyDown: (event: React.KeyboardEvent<HTMLButtonElement>) => void;
@@ -117,6 +118,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
     timelineHeight,
     detailsPanelVisible,
     detailsPanelContent,
+    mobileCompanionNav,
     verticalLayoutTimelineRef,
     onStartResizing,
     onSidebarResizeKeyDown,
@@ -376,6 +378,13 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                             <div data-testid="planner-timeline-controls" className={`absolute top-3 end-3 ${plannerControlsLayerClassName} pointer-events-auto`}>
                                 {timelineControls}
                             </div>
+                            {mobileCompanionNav && (
+                                <div data-testid="planner-mobile-companion-nav" className="pointer-events-none absolute inset-x-3 bottom-3 z-[70]">
+                                    <div className="pointer-events-auto">
+                                        {mobileCompanionNav}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 ) : (

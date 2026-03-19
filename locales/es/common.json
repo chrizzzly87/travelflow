@@ -389,6 +389,125 @@
       "share": "Share",
       "shareDisabled": "Activate this trip to share it"
     },
+    "companion": {
+      "closePanel": "Close panel",
+      "nav": {
+        "ariaLabel": "Trip companion",
+        "plan": "Trip",
+        "places": "Places",
+        "explore": "Explore",
+        "more": "More"
+      },
+      "plan": {
+        "title": "Trip",
+        "description": "Keep the high-level trip context beside the planner.",
+        "focusLabel": "Current focus",
+        "focusHint": "Selected stop details stay in the right-side details panel.",
+        "empty": "Pick a city, transfer, or activity to edit it in the right-side details panel.",
+        "close": "Close trip sidebar"
+      },
+      "places": {
+        "title": "Places",
+        "description": "See the trip context behind each stop.",
+        "focusLabel": "Current city",
+        "empty": "Pick a city or activity to open destination context.",
+        "cityMeta": {
+          "arrives": "Arrives",
+          "stay": "Stay",
+          "savedStays": "Saved stays"
+        }
+      },
+      "explore": {
+        "title": "Explore",
+        "description": "Open quick discovery links for the active city.",
+        "empty": "Pick a city to explore stays, activities, and events.",
+        "focusLabel": "Explore from",
+        "focusDescription": "Use quick links to keep researching without losing your trip layout.",
+        "links": {
+          "stays": "Search stays",
+          "activities": "Search activities",
+          "events": "Search events"
+        },
+        "savedStaysTitle": "Saved stays",
+        "savedStaysEmpty": "No stays are saved for this city yet."
+      },
+      "more": {
+        "title": "More",
+        "description": "Open exports, history, and deeper trip controls.",
+        "overviewLabel": "Trip overview",
+        "actionsTitle": "Quick actions",
+        "historyTitle": "History and advanced tools",
+        "historyDescription": "Open the full trip panels when you need older versions, diagnostics, or deeper management tools.",
+        "openHistory": "Open trip history",
+        "openAdvanced": "Open full trip details"
+      }
+    },
+    "workspace": {
+      "mobileNavLabel": "Trip workspace navigation",
+      "demoBadge": "Thailand demo",
+      "demoHint": "Demo content is mocked until live destination services are wired in.",
+      "groups": {
+        "trip": "Trip",
+        "destination": "Destination",
+        "memories": "Memories"
+      },
+      "footer": {
+        "share": "Share",
+        "export": "Export",
+        "settings": "Settings"
+      },
+      "pages": {
+        "overview": {
+          "label": "Overview",
+          "eyebrow": "Overview",
+          "title": "Trip overview",
+          "description": "See your route, next steps, and travel pulse at a glance."
+        },
+        "planner": {
+          "label": "Planner",
+          "eyebrow": "Planner",
+          "title": "Planner workspace",
+          "description": "Edit the calendar, map, timeline, and selected-stop details in one focused workspace.",
+          "hint": "This page is fully live. The destination and language pages around it still use Thailand demo content while we wire real data."
+        },
+        "bookings": {
+          "label": "Bookings",
+          "eyebrow": "Bookings",
+          "title": "Bookings",
+          "description": "Track reservations, due decisions, and missing logistics in one place."
+        },
+        "places": {
+          "label": "Places",
+          "eyebrow": "Places",
+          "title": "Places",
+          "description": "Open country and city context with neighborhoods, safety notes, and arrival basics."
+        },
+        "explore": {
+          "label": "Explore",
+          "eyebrow": "Explore",
+          "title": "Explore",
+          "description": "Research activities, stays, and events without losing the trip layout."
+        },
+        "phrases": {
+          "label": "Phrases",
+          "eyebrow": "Phrases",
+          "title": "Phrases",
+          "description": "Keep useful translations, pronunciation, and flashcards close to the trip."
+        },
+        "notes": {
+          "label": "Notes",
+          "eyebrow": "Notes",
+          "title": "Notes",
+          "description": "Capture planning notes, diary stubs, and quick reminders for the route."
+        },
+        "photos": {
+          "label": "Photos",
+          "eyebrow": "Photos",
+          "title": "Photos",
+          "description": "Preview the future album space for memories, highlights, and recap visuals."
+        }
+      }
+    },
     "zoom": {
       "fit": "Fit",
       "fitAria": "Fit timeline to available space",

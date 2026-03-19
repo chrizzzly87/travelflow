@@ -18,9 +18,9 @@ import {
 import { saveTrip } from '../services/storageService';
 import {
     buildCreateTripUrl,
-    buildTripUrl,
     generateTripId,
 } from '../utils';
+import { buildTripWorkspacePath, DEFAULT_TRIP_WORKSPACE_PAGE } from '../shared/tripWorkspace';
 import type { ITrip, IViewSettings } from '../types';
 import type { ExampleTripLoaderRouteProps } from './tripRouteTypes';
 import { LazyTripView } from '../components/tripview/LazyTripView';
@@ -33,6 +33,7 @@ const areViewSettingsEqual = (a?: IViewSettings, b?: IViewSettings): boolean => 
         a.layoutMode === b.layoutMode
         && a.timelineMode === b.timelineMode
         && a.timelineView === b.timelineView
+        && a.activeCompanionSection === b.activeCompanionSection
         && a.mapDockMode === b.mapDockMode
         && a.mapStyle === b.mapStyle
         && a.routeMode === b.routeMode
@@ -195,6 +196,7 @@ export const ExampleTripLoaderRoute: React.FC<ExampleTripLoaderRouteProps> = ({
             const resolvedView: IViewSettings = {
                 layoutMode: generated.defaultView?.layoutMode ?? 'horizontal',
                 timelineView: generated.defaultView?.timelineView ?? 'horizontal',
+                activeCompanionSection: generated.defaultView?.activeCompanionSection,
                 mapStyle: generated.defaultView?.mapStyle ?? 'standard',
                 zoomLevel: generated.defaultView?.zoomLevel ?? 1,
                 routeMode: generated.defaultView?.routeMode,
@@ -406,7 +408,7 @@ export const ExampleTripLoaderRoute: React.FC<ExampleTripLoaderRouteProps> = ({
             await dbCreateTripVersion(cloned, viewSettings, 'Data: Copied trip');
         }
 
-        navigate(buildTripUrl(cloned.id));
+        navigate(buildTripWorkspacePath(`/trip/${encodeURIComponent(cloned.id)}`, DEFAULT_TRIP_WORKSPACE_PAGE));
     };
 
     const handleCreateSimilarTrip = () => {

@@ -31,6 +31,8 @@ import {
     generateVersionId,
     isUuid,
 } from '../utils';
+import { buildTripWorkspacePath, DEFAULT_TRIP_WORKSPACE_PAGE } from '../shared/tripWorkspace';
+import { buildPathFromLocationParts } from '../services/authNavigationService';
 import type { ITrip, IViewSettings } from '../types';
 import type { CommitOptions, SharedTripLoaderRouteProps } from './tripRouteTypes';
 import { LazyTripView } from '../components/tripview/LazyTripView';
@@ -43,6 +45,7 @@ const areViewSettingsEqual = (a?: IViewSettings, b?: IViewSettings): boolean => 
         a.layoutMode === b.layoutMode
         && a.timelineMode === b.timelineMode
         && a.timelineView === b.timelineView
+        && a.activeCompanionSection === b.activeCompanionSection
         && a.mapDockMode === b.mapDockMode
         && a.mapStyle === b.mapStyle
         && a.routeMode === b.routeMode
@@ -242,7 +245,11 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
             }
 
             if (versionId) {
-                const localEntry = findHistoryEntryByUrl(shared.trip.id, buildShareUrl(token, versionId));
+                const localEntry = findHistoryEntryByUrl(shared.trip.id, buildPathFromLocationParts({
+                    pathname: location.pathname,
+                    search: location.search,
+                    hash: '',
+                }));
                 if (localEntry?.snapshot?.trip) {
                     const resolvedView = resolveEffectiveView(localEntry.snapshot.view, localEntry.snapshot.trip.defaultView);
                     const nextState: SharedTripRouteState = {
@@ -276,7 +283,7 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
         if (shareMode !== 'edit' || !token) return;
         const label = options?.label || 'Updated trip';
         const commitTs = Date.now();
-        createLocalHistoryEntry(navigate, updatedTrip, view, label, options, commitTs, buildShareUrl(token));
+        createLocalHistoryEntry(navigate, updatedTrip, view, label, options, commitTs, location.pathname);
 
         const commit = async () => {
             const version = await dbUpdateSharedTrip(token, updatedTrip, view, label);
@@ -448,7 +455,7 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
             createLocalHistoryEntry(navigate, cloned, viewSettings, 'Data: Copied trip', undefined, Date.now());
             return;
         }
-        navigate(buildTripUrl(cloned.id));
+        navigate(buildTripWorkspacePath(`/trip/${encodeURIComponent(cloned.id)}`, DEFAULT_TRIP_WORKSPACE_PAGE));
     };
 
     const handleRouteViewSettingsChange = useCallback((settings: IViewSettings) => {

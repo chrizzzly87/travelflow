@@ -1,0 +1,189 @@
+// @vitest-environment jsdom
+import React from 'react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+
+import { TripWorkspaceMobileNav, TripWorkspaceShell } from '../../../components/tripview/TripWorkspaceShell';
+import { buildTripWorkspacePath, normalizeTripWorkspacePage, resolveTripWorkspaceRouteState } from '../../../shared/tripWorkspace';
+import type { ITrip } from '../../../types';
+
+vi.mock('react-i18next', () => ({
+    useTranslation: () => ({
+        t: (key: string) => {
+            const lookup: Record<string, string> = {
+                'tripView.workspace.mobileNavLabel': 'Trip workspace navigation',
+                'tripView.workspace.demoBadge': 'Thailand demo',
+                'tripView.workspace.demoHint': 'Demo content is mocked until live destination services are wired in.',
+                'tripView.workspace.groups.trip': 'Trip',
+                'tripView.workspace.groups.destination': 'Destination',
+                'tripView.workspace.groups.memories': 'Memories',
+                'tripView.workspace.footer.share': 'Share',
+                'tripView.workspace.footer.export': 'Export',
+                'tripView.workspace.footer.settings': 'Settings',
+                'tripView.workspace.pages.overview.label': 'Overview',
+                'tripView.workspace.pages.overview.eyebrow': 'Overview',
+                'tripView.workspace.pages.overview.title': 'Trip overview',
+                'tripView.workspace.pages.overview.description': 'See the trip at a glance.',
+                'tripView.workspace.pages.planner.label': 'Planner',
+                'tripView.workspace.pages.planner.eyebrow': 'Planner',
+                'tripView.workspace.pages.planner.title': 'Planner workspace',
+                'tripView.workspace.pages.planner.description': 'Edit the calendar, map, timeline, and selected-stop details in one focused workspace.',
+                'tripView.workspace.pages.planner.hint': 'This page is fully live. The destination and language pages around it still use Thailand demo content while we wire real data.',
+                'tripView.workspace.pages.bookings.label': 'Bookings',
+                'tripView.workspace.pages.bookings.eyebrow': 'Bookings',
+                'tripView.workspace.pages.bookings.title': 'Bookings',
+                'tripView.workspace.pages.bookings.description': 'Track reservations and missing logistics.',
+                'tripView.workspace.pages.places.label': 'Places',
+                'tripView.workspace.pages.places.eyebrow': 'Places',
+                'tripView.workspace.pages.places.title': 'Places',
+                'tripView.workspace.pages.places.description': 'Open country and city context.',
+                'tripView.workspace.pages.explore.label': 'Explore',
+                'tripView.workspace.pages.explore.eyebrow': 'Explore',
+                'tripView.workspace.pages.explore.title': 'Explore',
+                'tripView.workspace.pages.explore.description': 'Research stays, activities, and events.',
+                'tripView.workspace.pages.phrases.label': 'Phrases',
+                'tripView.workspace.pages.phrases.eyebrow': 'Phrases',
+                'tripView.workspace.pages.phrases.title': 'Phrases',
+                'tripView.workspace.pages.phrases.description': 'Keep useful translations close.',
+                'tripView.workspace.pages.notes.label': 'Notes',
+                'tripView.workspace.pages.notes.eyebrow': 'Notes',
+                'tripView.workspace.pages.notes.title': 'Notes',
+                'tripView.workspace.pages.notes.description': 'Capture planning notes and diary stubs.',
+                'tripView.workspace.pages.photos.label': 'Photos',
+                'tripView.workspace.pages.photos.eyebrow': 'Photos',
+                'tripView.workspace.pages.photos.title': 'Photos',
+                'tripView.workspace.pages.photos.description': 'Preview memory and album space.',
+            };
+            return lookup[key] ?? key;
+        },
+    }),
+}));
+
+const buildTrip = (): ITrip => ({
+    id: 'trip-thailand',
+    title: 'Thailand Highlights',
+    startDate: '2026-04-10',
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+    items: [
+        {
+            id: 'city-bangkok',
+            type: 'city',
+            title: 'Bangkok',
+            startDateOffset: 0,
+            duration: 3,
+            color: 'bg-amber-500',
+        },
+        {
+            id: 'city-chiang-mai',
+            type: 'city',
+            title: 'Chiang Mai',
+            startDateOffset: 3,
+            duration: 4,
+            color: 'bg-emerald-500',
+        },
+    ],
+});
+
+describe('shared/tripWorkspace', () => {
+    it('normalizes legacy and explicit workspace pages', () => {
+        expect(normalizeTripWorkspacePage('plan')).toBe('overview');
+        expect(normalizeTripWorkspacePage('places')).toBe('places');
+        expect(normalizeTripWorkspacePage('unknown')).toBeNull();
+    });
+
+    it('resolves workspace route state and page paths', () => {
+        expect(resolveTripWorkspaceRouteState('/trip/trip-1/places')).toEqual({
+            kind: 'trip',
+            basePath: '/trip/trip-1',
+            page: 'places',
+            hasExplicitPage: true,
+        });
+        expect(resolveTripWorkspaceRouteState('/example/template-1/planner')).toEqual({
+            kind: 'example',
+            basePath: '/example/template-1',
+            page: 'planner',
+            hasExplicitPage: true,
+        });
+        expect(resolveTripWorkspaceRouteState('/s/share-1')).toEqual({
+            kind: 'share',
+            basePath: '/s/share-1',
+            page: null,
+            hasExplicitPage: false,
+        });
+        expect(buildTripWorkspacePath('/trip/trip-1', 'planner')).toBe('/trip/trip-1/planner');
+    });
+});
+
+describe('components/tripview/TripWorkspaceShell', () => {
+    beforeEach(() => {
+        Object.defineProperty(window, 'matchMedia', {
+            writable: true,
+            value: vi.fn().mockImplementation((query: string) => ({
+                matches: !query.includes('max-width'),
+                media: query,
+                onchange: null,
+                addListener: vi.fn(),
+                removeListener: vi.fn(),
+                addEventListener: vi.fn(),
+                removeEventListener: vi.fn(),
+                dispatchEvent: vi.fn(),
+            })),
+        });
+    });
+
+    afterEach(() => {
+        cleanup();
+    });
+
+    it('renders the desktop sidebar and notifies page changes', () => {
+        const onPageChange = vi.fn();
+
+        render(
+            React.createElement(TripWorkspaceShell, {
+                trip: buildTrip(),
+                tripMeta: {
+                    dateRange: 'Apr 10 – Apr 18, 2026',
+                    totalDaysLabel: '8',
+                    cityCount: 2,
+                    distanceLabel: '860 km',
+                    summaryLine: 'Apr 10 – Apr 18 • 8 days • 2 cities',
+                },
+                activePage: 'overview',
+                onPageChange,
+                plannerPage: React.createElement('div', { 'data-testid': 'planner-page' }, 'planner'),
+                selectedItem: null,
+                selectedCities: [],
+                travelerWarnings: [],
+                isMobile: false,
+                onOpenTripInfoModal: vi.fn(),
+                onOpenShare: vi.fn(),
+                onOpenSettings: vi.fn(),
+            }),
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'Phrases' }));
+
+        expect(screen.getAllByText('Thailand Highlights').length).toBeGreaterThan(0);
+        expect(screen.getByText('Thailand demo')).toBeInTheDocument();
+        expect(screen.getByText('Trip overview')).toBeInTheDocument();
+        expect(onPageChange).toHaveBeenCalledWith('phrases');
+    });
+
+    it('renders the mobile bottom navigation and forwards taps', () => {
+        const onPageChange = vi.fn();
+
+        render(
+            React.createElement(TripWorkspaceMobileNav, {
+                tripId: 'trip-thailand',
+                activePage: 'overview',
+                onPageChange,
+            }),
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'Planner' }));
+
+        expect(screen.getByLabelText('Trip workspace navigation')).toBeInTheDocument();
+        expect(onPageChange).toHaveBeenCalledWith('planner');
+    });
+});

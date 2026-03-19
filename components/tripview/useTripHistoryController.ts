@@ -68,7 +68,7 @@ export const useTripHistoryController = ({
 
     const baseUrl = useMemo(() => {
         if (locationPathname.startsWith('/trip/')) {
-            return `/trip/${encodeURIComponent(tripId)}`;
+            return locationPathname;
         }
         if (locationPathname.startsWith('/s/')) {
             return locationPathname;

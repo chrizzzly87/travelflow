@@ -1204,7 +1204,6 @@ html:active-view-transition-type(blog-collapse)::view-transition-new(.blog-card-
   transform-style: preserve-3d;
 }
 
-
 .profile-passport-page-stack {
   position: absolute;
   inset: 0;

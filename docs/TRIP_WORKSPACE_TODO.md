@@ -35,74 +35,78 @@ Goal: Turn Trip View into a routed Trip Workspace with a fixed shadcn sidebar on
 - [x] Footer actions stay available for `Share`, `Export`, and `Settings`.
 
 ## Foundation and shell
-- [ ] Add the official shadcn `sidebar` component to the project and wire it into the trip workspace shell.
-- [ ] Replace the current custom left companion sidebar with the shadcn desktop shell while preserving the better mobile toolbar pattern.
-- [ ] Introduce a `Trip Workspace` app shell that treats the sidebar and content area as first-class layout primitives.
-- [ ] Make `Overview` the default content page when a trip opens.
-- [ ] Limit the current planner-specific right details panel to the `Planner` page only.
+- [x] Add the official shadcn `sidebar` component to the project and wire it into the trip workspace shell.
+- [x] Replace the current custom left companion sidebar with the shadcn desktop shell while preserving the better mobile toolbar pattern.
+- [x] Introduce a `Trip Workspace` app shell that treats the sidebar and content area as first-class layout primitives.
+- [x] Make `Overview` the default content page when a trip opens.
+- [x] Limit the current planner-specific right details panel to the `Planner` page only.
 - [ ] Keep the trip modal focused on basic trip actions and remove destination knowledge as its main job.
-- [ ] Audit current custom companion-sidebar work so only reusable pieces survive into the routed shell.
+- [x] Audit current custom companion-sidebar work so only reusable pieces survive into the routed shell.
 
 ## Routing and state
-- [ ] Add or normalize dedicated trip workspace routes for all first-class workspace pages.
-- [ ] Route: `/trips/:tripId/overview`
-- [ ] Route: `/trips/:tripId/planner`
-- [ ] Route: `/trips/:tripId/places`
-- [ ] Route: `/trips/:tripId/explore`
-- [ ] Route: `/trips/:tripId/phrases`
-- [ ] Route: `/trips/:tripId/bookings`
-- [ ] Route: `/trips/:tripId/notes`
-- [ ] Route: `/trips/:tripId/photos`
-- [ ] Decide how the existing trip loader routes compose with nested workspace routing and keep URL restoration stable for shared/example routes.
-- [ ] Persist the active workspace page in view settings or route state only where it helps restore the same destination cleanly.
-- [ ] Keep planner-specific view state isolated so map mode, timeline mode, and selection state do not leak into non-planner pages.
+- [x] Add or normalize dedicated trip workspace routes for all first-class workspace pages.
+- [x] Route: `/trip/:tripId/overview`
+- [x] Route: `/trip/:tripId/planner`
+- [x] Route: `/trip/:tripId/places`
+- [x] Route: `/trip/:tripId/explore`
+- [x] Route: `/trip/:tripId/phrases`
+- [x] Route: `/trip/:tripId/bookings`
+- [x] Route: `/trip/:tripId/notes`
+- [x] Route: `/trip/:tripId/photos`
+- [x] Decide how the existing trip loader routes compose with nested workspace routing and keep URL restoration stable for shared/example routes.
+- [x] Persist the active workspace page in route state and normalized view settings where it helps restore the same destination cleanly.
+- [x] Keep planner-specific view state isolated so map mode, timeline mode, and selection state do not leak into non-planner pages.
 
 ## Page backlog
-- [ ] `Overview`: build the trip dashboard with countdown, date range, next city, next booking, weather snapshot, top risks, quick tasks, and recent notes.
-- [ ] `Planner`: keep the current calendar + map + timeline workspace, with the right-side details panel available only here.
-- [ ] `Places`: build dedicated destination intelligence for country facts, official links, sockets, currency, connectivity, driving side, etiquette, religion or holiday context, safety notes, neighborhoods, transit, highlights, and saved stays.
-- [ ] `Explore`: build a discovery page for activities, upcoming events, neighborhoods, accommodation recommendations, and save-to-trip actions.
-- [ ] `Phrases`: build a lightweight language support page with useful phrases, translations, pronunciation, saved phrases, and simple flashcards.
-- [ ] `Bookings`: add a logistics page for reservations, confirmations, due dates, and missing-booking gaps.
-- [ ] `Notes`: add a diary and trip-notes page for daily notes, city notes, and planning checklists.
-- [ ] `Photos`: add a simple album page as the visual memory layer.
+- [x] `Overview`: build the trip dashboard with countdown, date range, next city, next booking, weather snapshot, top risks, quick tasks, and recent notes.
+- [x] `Planner`: keep the current calendar + map + timeline workspace, with the right-side details panel available only here.
+- [x] `Places`: build dedicated destination intelligence for country facts, official-link placeholders, sockets, connectivity, driving side, etiquette, safety notes, neighborhoods, transit, highlights, and saved stays.
+- [x] `Explore`: build a discovery page for activities, upcoming events, neighborhoods, accommodation recommendations, and save-to-trip actions.
+- [x] `Phrases`: build a lightweight language support page with useful phrases, translations, pronunciation, saved phrases, and simple flashcards.
+- [x] `Bookings`: add a logistics page for reservations, confirmations, due dates, and missing-booking gaps.
+- [x] `Notes`: add a diary and trip-notes page for daily notes, city notes, and planning checklists.
+- [x] `Photos`: add a simple album page as the visual memory layer.
 
 ## Phrases example requirements
-- [ ] Add a simple example route state such as `Japanese for Tokyo`.
-- [ ] Include phrase groups for `Basics`, `Transport`, `Food`, and `Emergency`.
-- [ ] Include at least one phrase card with translation, pronunciation, and `Save to Flashcards`.
-- [ ] Include at least one phrase card with copy and speak actions.
-- [ ] Include a compact flashcard summary with `due today`, `saved phrases`, and offline-pack state.
+- [x] Adapt the simple example route state to a Thailand demo with Thai phrases.
+- [x] Include phrase groups for `Basics`, `Transport`, `Food`, and `Emergency`.
+- [x] Include at least one phrase card with translation, pronunciation, and `Save to Flashcards`.
+- [x] Include at least one phrase card with copy and speak actions.
+- [x] Include a compact flashcard summary with `due today`, `saved phrases`, and offline-pack state.
 
 ## Data and content structure
 - [ ] Define how country guide data and city guide data are represented without overloading itinerary-item descriptions.
 - [ ] Decide which destination content is trip-specific versus general destination knowledge and label it clearly in the UI.
 - [ ] Add source and freshness treatment for dynamic travel information and official links.
-- [ ] Define the minimal booking, notes, and phrases example data needed for Phase 1 and early Phase 2 shells.
+- [x] Define the minimal booking, notes, and phrases example data needed for Phase 1 and early Phase 2 shells.
 - [ ] Plan map-surface scope for `Places` so city overlays follow the repository map workflow before implementation.
 
 ## UX clarity and navigation rules
-- [ ] Keep icons paired with clear labels in the desktop sidebar and mobile toolbar.
-- [ ] Ensure each page has one dominant job so users understand why they are there.
+- [x] Keep icons paired with clear labels in the desktop sidebar and mobile toolbar.
+- [x] Ensure each page has one dominant job so users understand why they are there.
 - [ ] Keep empty states instructional and action-oriented.
 - [ ] Make it visually obvious when content is trip-specific, city-specific, or country-level.
-- [ ] Preserve a dashboard feel on desktop instead of a planner-plus-panels feel.
+- [x] Preserve a dashboard feel on desktop instead of a planner-plus-panels feel.
 
 ## Validation and rollout
-- [ ] Add route and workspace regression coverage following `docs/TESTING_PHASE2_SCOPE.md`.
-- [ ] Add analytics for workspace navigation and page-level CTA interactions using the repo analytics convention.
+- [x] Add route and workspace regression coverage following `docs/TESTING_PHASE2_SCOPE.md`.
+- [x] Add analytics for workspace navigation and page-level CTA interactions using the repo analytics convention.
 - [ ] Validate any new or changed map surfaces against `docs/MAPS_INTEGRATION_WORKFLOW.md`.
 - [ ] Update locale files only when the new user-facing copy is ready for EN/DE sign-off.
-- [ ] Keep the existing draft release note accurate as the workspace implementation evolves.
+- [x] Keep the existing draft release note accurate as the workspace implementation evolves.
 
 ## Done
 - [x] Locked the Trip Workspace information architecture and phased scope.
 - [x] Locked the desktop sidebar grouping and the desktop/mobile navigation model.
 - [x] Wrote the execution tracker that we can update commit by commit.
+- [x] Installed the shadcn sidebar shell and turned Trip View into a routed Trip Workspace with `Overview` as the default page.
+- [x] Kept the planner as its own page with the calendar, map, timeline, and right-side selection details isolated there.
+- [x] Added dedicated workspace pages for `Overview`, `Places`, `Explore`, `Phrases`, `Bookings`, `Notes`, and `Photos` using Thailand demo data and clear demo badges.
+- [x] Added route helpers, loader updates, analytics hooks, locale wiring, and regression coverage for the workspace shell.
 
 ## Open
-- [ ] Start Phase 1 by installing the shadcn sidebar shell and making `Overview` the default page.
-- [ ] Convert the current planner screen into a dedicated `Planner` page instead of the whole trip surface.
-- [ ] Build the first dedicated routed pages: `Overview`, `Places`, `Explore`, and `Phrases`.
-- [ ] Keep the trip modal for basic actions only and move destination intelligence to the new pages.
-- [ ] Add regression coverage as the routed workspace shell lands.
+- [ ] Tighten the trip modal so it reads as a basic trip-actions surface, not a second destination hub.
+- [ ] Replace temporary English fallback workspace copy in secondary locales after EN/DE wording sign-off.
+- [ ] Add source freshness, official links, and clearer trip-specific vs general labels to the destination pages.
+- [ ] Turn the `Places` map placeholder into a real validated map surface that follows the repository map workflow.
+- [ ] Replace Thailand demo data with live bookings, discovery, phrase, and destination services when the backend inputs are ready.

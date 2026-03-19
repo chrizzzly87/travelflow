@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback, useEffect, useLayoutEffect, useMemo, Suspense, lazy } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { AppLanguage, ITrip, ITimelineItem, IViewSettings, ShareMode, TripGenerationAttemptSummary, TripGenerationState } from '../types';
+import { AppLanguage, ITrip, ITimelineItem, IViewSettings, ShareMode, TripGenerationAttemptSummary, TripGenerationState, TripWorkspacePage } from '../types';
 import { getDefaultCreateTripModel } from '../config/aiModelCatalog';
 import { buildLocalizedCreateTripPath, extractLocaleFromPath } from '../config/routes';
 import { DB_ENABLED } from '../config/db';
@@ -9,6 +9,7 @@ import { GoogleMapsLoader } from './GoogleMapsLoader';
 import { BASE_PIXELS_PER_DAY, DEFAULT_CITY_COLOR_PALETTE_ID, DEFAULT_DISTANCE_UNIT, buildShareUrl, formatDistance, getTimelineBounds, getTripDistanceKm, isInternalMapColorModeControlEnabled, normalizeMapColorMode } from '../utils';
 import { buildTripMapLocationContextQueries } from '../shared/tripMapCityResolution';
 import { getExampleMapViewTransitionName, getExampleTitleViewTransitionName } from '../shared/viewTransitionNames';
+import { buildTripWorkspacePath, DEFAULT_TRIP_WORKSPACE_PAGE, normalizeTripWorkspacePage, resolveTripWorkspaceRouteState } from '../shared/tripWorkspace';
 import { dbGetTrip, type DbTripAccessMetadata } from '../services/dbApi';
 import {
     buildTripCalendarExport,
@@ -85,6 +86,7 @@ import { TripTimelineCanvas } from './tripview/TripTimelineCanvas';
 import { TripViewHeader } from './tripview/TripViewHeader';
 import { TripViewHudOverlays } from './tripview/TripViewHudOverlays';
 import { TripViewPlannerWorkspace } from './tripview/TripViewPlannerWorkspace';
+import { TripWorkspaceShell } from './tripview/TripWorkspaceShell';
 import { TripViewStatusBanners } from './tripview/TripViewStatusBanners';
 import { showAppToast } from './ui/appToast';
 import {
@@ -527,6 +529,9 @@ interface TripViewModalLayerProps {
     detailsPanelContent: React.ReactNode;
     onCloseDetailsDrawer: () => void;
     onOpenDetailsDrawer: () => void;
+    companionPanelVisible: boolean;
+    companionPanelContent: React.ReactNode;
+    onCloseCompanionDrawer: () => void;
     addActivityState: { isOpen: boolean; dayOffset: number; location: string };
     onCloseAddActivity: () => void;
     onAddActivity: (...args: any[]) => void;
@@ -629,6 +634,9 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
     detailsPanelContent,
     onCloseDetailsDrawer,
     onOpenDetailsDrawer,
+    companionPanelVisible,
+    companionPanelContent,
+    onCloseCompanionDrawer,
     addActivityState,
     onCloseAddActivity,
     onAddActivity,
@@ -716,7 +724,23 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
     onClaimConflictLogin,
 }) => (
     <>
-        {isMobile && detailsPanelVisible && (
+        {isMobile && companionPanelVisible && (
+            <Suspense fallback={null}>
+                <TripDetailsDrawer
+                    open={companionPanelVisible}
+                    expanded={companionPanelVisible}
+                    onOpenChange={(open) => {
+                        if (!open) onCloseCompanionDrawer();
+                    }}
+                    onExpandedChange={(expanded) => {
+                        if (!expanded) onCloseCompanionDrawer();
+                    }}
+                >
+                    {companionPanelContent}
+                </TripDetailsDrawer>
+            </Suspense>
+        )}
+        {isMobile && !companionPanelVisible && detailsPanelVisible && (
             <Suspense fallback={null}>
                 <TripDetailsDrawer
                     open={detailsPanelVisible}
@@ -917,43 +941,51 @@ const renderDetailsPanelContent = ({
     cityColorPaletteId,
     onCityColorPaletteChange,
     onExportActivityCalendar,
-}: RenderDetailsPanelContentOptions): React.ReactNode => (
-    showSelectedCitiesPanel ? (
-        <Suspense fallback={<div className="h-full flex items-center justify-center text-xs text-gray-500">Loading selection panel...</div>}>
-            <SelectedCitiesPanel
-                selectedCities={selectedCitiesInTimeline}
-                onClose={onCloseSelection}
-                onApplyOrder={onApplySelectedCityOrder}
-                onReverse={onReverseSelectedCities}
-                timelineView={timelineView}
-                readOnly={!canEdit}
-            />
-        </Suspense>
-    ) : (
-        <Suspense fallback={<div className="h-full flex items-center justify-center text-xs text-gray-500">Loading details...</div>}>
-            <DetailsPanel
-                item={selectedDetailItem}
-                isOpen={!!selectedItemId}
-                onClose={onCloseSelection}
-                onUpdate={onUpdateItem}
-                onBatchUpdate={onBatchUpdateItem}
-                onDelete={onDeleteItem}
-                tripStartDate={tripStartDate}
-                tripItems={displayItems}
-                routeMode={routeMode}
-                routeStatus={selectedRouteStatus}
-                onForceFill={onForceFill}
-                forceFillMode={selectedCityForceFillMode}
-                forceFillLabel={selectedCityForceFillLabel}
-                variant="sidebar"
-                readOnly={!canEdit}
-                cityColorPaletteId={cityColorPaletteId}
-                onCityColorPaletteChange={onCityColorPaletteChange}
-                onExportActivityCalendar={onExportActivityCalendar}
-            />
-        </Suspense>
-    )
-);
+}: RenderDetailsPanelContentOptions): React.ReactNode => {
+    if (showSelectedCitiesPanel) {
+        return (
+            <Suspense fallback={<div className="h-full flex items-center justify-center text-xs text-gray-500">Loading selection panel...</div>}>
+                <SelectedCitiesPanel
+                    selectedCities={selectedCitiesInTimeline}
+                    onClose={onCloseSelection}
+                    onApplyOrder={onApplySelectedCityOrder}
+                    onReverse={onReverseSelectedCities}
+                    timelineView={timelineView}
+                    readOnly={!canEdit}
+                />
+            </Suspense>
+        );
+    }
+
+    if (selectedItemId) {
+        return (
+            <Suspense fallback={<div className="h-full flex items-center justify-center text-xs text-gray-500">Loading details...</div>}>
+                <DetailsPanel
+                    item={selectedDetailItem}
+                    isOpen={!!selectedItemId}
+                    onClose={onCloseSelection}
+                    onUpdate={onUpdateItem}
+                    onBatchUpdate={onBatchUpdateItem}
+                    onDelete={onDeleteItem}
+                    tripStartDate={tripStartDate}
+                    tripItems={displayItems}
+                    routeMode={routeMode}
+                    routeStatus={selectedRouteStatus}
+                    onForceFill={onForceFill}
+                    forceFillMode={selectedCityForceFillMode}
+                    forceFillLabel={selectedCityForceFillLabel}
+                    variant="sidebar"
+                    readOnly={!canEdit}
+                    cityColorPaletteId={cityColorPaletteId}
+                    onCityColorPaletteChange={onCityColorPaletteChange}
+                    onExportActivityCalendar={onExportActivityCalendar}
+                />
+            </Suspense>
+        );
+    }
+
+    return null;
+};
 
 const useTripViewRender = ({
     trip,
@@ -985,6 +1017,10 @@ const useTripViewRender = ({
     const { snapshot: connectivitySnapshot } = useConnectivityStatus();
     const { snapshot: syncSnapshot, retrySyncNow } = useSyncStatus();
     const isTripDetailRoute = location.pathname.startsWith('/trip/');
+    const workspaceRouteState = useMemo(
+        () => resolveTripWorkspaceRouteState(location.pathname),
+        [location.pathname]
+    );
     const locationState = location.state as ExampleTransitionLocationState | null;
     const useExampleSharedTransition = trip.isExample && (locationState?.useExampleSharedTransition ?? true);
     const mapViewTransitionName = getExampleMapViewTransitionName(useExampleSharedTransition);
@@ -1416,6 +1452,22 @@ const useTripViewRender = ({
         }),
         [location.hash, location.pathname, location.search],
     );
+    useEffect(() => {
+        if (!workspaceRouteState.basePath) return;
+        if (workspaceRouteState.hasExplicitPage) return;
+
+        navigate(buildPathFromLocationParts({
+            pathname: buildTripWorkspacePath(workspaceRouteState.basePath, DEFAULT_TRIP_WORKSPACE_PAGE),
+            search: location.search,
+            hash: location.hash,
+        }), { replace: true });
+    }, [
+        location.hash,
+        location.search,
+        navigate,
+        workspaceRouteState.basePath,
+        workspaceRouteState.hasExplicitPage,
+    ]);
     const paywallStripUpgradeCheckoutPath = useMemo(
         () => buildBillingCheckoutPath({
             tierKey: 'tier_mid',
@@ -1694,6 +1746,8 @@ const useTripViewRender = ({
         setRouteMode,
         showCityNames,
         setShowCityNames,
+        activeCompanionSection,
+        setActiveCompanionSection,
         zoomLevel,
         setZoomLevel,
         zoomBehavior,
@@ -1708,6 +1762,9 @@ const useTripViewRender = ({
         initialViewSettings,
         defaultDetailsWidth: DEFAULT_DETAILS_WIDTH,
     });
+    const activeWorkspacePage = useMemo<TripWorkspacePage>(() => (
+        normalizeTripWorkspacePage(workspaceRouteState.page ?? activeCompanionSection) ?? DEFAULT_TRIP_WORKSPACE_PAGE
+    ), [activeCompanionSection, workspaceRouteState.page]);
     const zoomChangeSourceRef = useRef<ZoomChangeSource>(null);
     const [isZoomDirty, setIsZoomDirty] = useState(false);
     const [mapDockMode, setMapDockMode] = useState<'docked' | 'floating'>(() => {
@@ -1741,6 +1798,10 @@ const useTripViewRender = ({
         pendingManualViewSettingsPersistRef.current = false;
         pendingManualVisualCommitRef.current = false;
     }, [trip.id]);
+    useEffect(() => {
+        if (normalizeTripWorkspacePage(activeCompanionSection) === activeWorkspacePage) return;
+        setActiveCompanionSection(activeWorkspacePage);
+    }, [activeCompanionSection, activeWorkspacePage, setActiveCompanionSection]);
     useEffect(() => {
         writeFloatingMapPreviewState({ mode: mapDockMode });
     }, [mapDockMode]);
@@ -1865,7 +1926,7 @@ const useTripViewRender = ({
         canAdminWrite: adminAccess?.canAdminWrite,
         hasInputSnapshot: Boolean(trip.aiMeta?.generation?.inputSnapshot),
         generationState,
-        latestAttemptOrchestration,
+        latestAttemptOrchestration: latestGenerationAttemptOrchestration,
         isRetryingGeneration,
         pendingAuthQueueRequestId,
     });
@@ -1901,6 +1962,7 @@ const useTripViewRender = ({
         layoutMode,
         timelineMode,
         timelineView,
+        activeCompanionSection: activeWorkspacePage,
         mapDockMode,
         mapStyle,
         routeMode,
@@ -1910,7 +1972,7 @@ const useTripViewRender = ({
         sidebarWidth: Math.round(sidebarWidth),
         detailsWidth: Math.round(detailsWidth),
         timelineHeight: Math.round(timelineHeight)
-    }), [detailsWidth, layoutMode, timelineMode, timelineView, mapDockMode, mapStyle, routeMode, showCityNames, zoomLevel, zoomBehavior, sidebarWidth, timelineHeight]);
+    }), [activeWorkspacePage, detailsWidth, layoutMode, timelineMode, timelineView, mapDockMode, mapStyle, routeMode, showCityNames, zoomLevel, zoomBehavior, sidebarWidth, timelineHeight]);
 
     const tripInfoRetryAnalyticsAttributes = useMemo(
         () => getAnalyticsDebugAttributes('trip_generation__trip_info--retry', {
@@ -2018,14 +2080,6 @@ const useTripViewRender = ({
                         t('tripView.generation.retry.queuedTitle'),
                     ),
                 );
-            } else if (result.state === 'succeeded') {
-                retryGenerationTabFeedbackSessionRef.current?.complete('success', {
-                    title: result.trip.title,
-                });
-                showToast(t('tripView.generation.retry.completed'), {
-                    tone: 'add',
-                    title: t('tripView.generation.retry.completedTitle'),
-                });
             } else {
                 pendingRetryGenerationStateRef.current = false;
                 retryGenerationTabFeedbackSessionRef.current?.complete('error');
@@ -2245,6 +2299,7 @@ const useTripViewRender = ({
         layoutMode,
         timelineMode,
         timelineView,
+        activeCompanionSection,
         mapDockMode,
         mapStyle,
         routeMode,
@@ -2263,6 +2318,7 @@ const useTripViewRender = ({
         setLayoutMode,
         setTimelineMode,
         setTimelineView,
+        setActiveCompanionSection,
         setMapDockMode,
         setZoomLevel,
         setZoomBehavior,
@@ -2537,10 +2593,10 @@ const useTripViewRender = ({
         selectedCitiesInTimeline,
         showSelectedCitiesPanel,
         hasSelection,
-        detailsPanelVisible,
-        openDetailsPanel,
-        closeDetailsPanel,
-        toggleDetailsPanel,
+        detailsPanelVisible: selectionDetailsPanelVisible,
+        openDetailsPanel: openSelectionDetailsPanel,
+        closeDetailsPanel: closeSelectionDetailsPanel,
+        toggleDetailsPanel: toggleSelectionDetailsPanel,
         clearSelection,
         handleTimelineSelect,
         applySelectedCityOrder,
@@ -2578,7 +2634,46 @@ const useTripViewRender = ({
         pendingCommitRef,
         onUpdateTrip,
     });
+    const isPlannerWorkspacePage = activeWorkspacePage === 'planner';
+    const detailsPanelVisible = isPlannerWorkspacePage && selectionDetailsPanelVisible;
+    const closeCompanionPanel = useCallback(() => {}, []);
+    const handleTogglePlannerPanel = useCallback(() => {
+        if (!hasSelection && !selectionDetailsPanelVisible) {
+            return;
+        }
+        toggleSelectionDetailsPanel();
+    }, [hasSelection, selectionDetailsPanelVisible, toggleSelectionDetailsPanel]);
     const isMobile = isMobileViewport;
+    const handleWorkspacePageChange = useCallback((page: TripWorkspacePage) => {
+        if (page === activeWorkspacePage) return;
+        if (!workspaceRouteState.basePath) return;
+
+        markManualViewChange();
+        setActiveCompanionSection(page);
+        if (page !== 'planner') {
+            closeSelectionDetailsPanel();
+        }
+        navigate(buildPathFromLocationParts({
+            pathname: buildTripWorkspacePath(workspaceRouteState.basePath, page),
+            search: location.search,
+            hash: location.hash,
+        }));
+    }, [
+        activeWorkspacePage,
+        closeSelectionDetailsPanel,
+        location.hash,
+        location.search,
+        markManualViewChange,
+        navigate,
+        setActiveCompanionSection,
+        workspaceRouteState.basePath,
+    ]);
+    useEffect(() => {
+        if (activeWorkspacePage === 'planner') return;
+        if (isMobileViewport) {
+            closeSelectionDetailsPanel();
+        }
+    }, [activeWorkspacePage, closeSelectionDetailsPanel, isMobileViewport]);
     const effectiveLayoutMode: 'vertical' | 'horizontal' = isMobile ? 'vertical' : layoutMode;
     const effectiveMapDockMode: 'docked' | 'floating' = isMobile ? 'docked' : mapDockMode;
     const paneLayoutCustomizedRef = useRef(false);
@@ -2791,13 +2886,15 @@ const useTripViewRender = ({
         if (nextIndex < 0 || nextIndex >= orderedCityIds.length) return;
 
         const nextCityId = orderedCityIds[nextIndex];
-        openDetailsPanel();
+        closeCompanionPanel();
+        openSelectionDetailsPanel();
         handleTimelineSelect(nextCityId, { isCity: true });
         focusCityBlockById(nextCityId);
     }, [
+        closeCompanionPanel,
         focusCityBlockById,
         handleTimelineSelect,
-        openDetailsPanel,
+        openSelectionDetailsPanel,
         orderedCityIds,
         selectedCitiesInTimeline,
         selectedItemId,
@@ -2945,7 +3042,7 @@ const useTripViewRender = ({
             isDetailsPanelVisible={detailsPanelVisible}
             onNavigatePreviousCity={() => handleNavigateSelectedCity('previous')}
             onNavigateNextCity={() => handleNavigateSelectedCity('next')}
-            onToggleDetailsPanel={toggleDetailsPanel}
+            onToggleDetailsPanel={handleTogglePlannerPanel}
         />
     );
 
@@ -3015,7 +3112,7 @@ const useTripViewRender = ({
     const detailsPanelContent = renderDetailsPanelContent({
         showSelectedCitiesPanel,
         selectedCitiesInTimeline,
-        onCloseSelection: showSelectedCitiesPanel ? clearSelection : closeDetailsPanel,
+        onCloseSelection: showSelectedCitiesPanel ? clearSelection : closeSelectionDetailsPanel,
         onApplySelectedCityOrder: applySelectedCityOrder,
         onReverseSelectedCities: handleReverseSelectedCities,
         timelineView,
@@ -3036,6 +3133,133 @@ const useTripViewRender = ({
         onCityColorPaletteChange: canEdit ? handleCityColorPaletteChange : undefined,
         onExportActivityCalendar: handleExportSelectedActivityCalendar,
     });
+    const plannerPageContent = (
+        <TripViewPlannerWorkspace
+            isPaywallLocked={isPaywallLocked}
+            isMobile={isMobile}
+            isMobileMapExpanded={isMobileMapExpanded}
+            onCloseMobileMap={() => setIsMobileMapExpanded(false)}
+            onToggleMobileMapExpanded={() => setIsMobileMapExpanded((value) => !value)}
+            timelineCanvas={timelineCanvas}
+            onTimelineTouchStart={handleTimelineTouchStart}
+            onTimelineTouchMove={handleTimelineTouchMove}
+            onTimelineTouchEnd={handleTimelineTouchEnd}
+            onZoomOut={() => {
+                trackEvent('trip_view__zoom', {
+                    direction: 'out',
+                    trip_id: trip.id,
+                    timeline_mode: timelineMode,
+                });
+                markZoomDirty();
+                setZoomLevel((value) => resolveSteppedZoomLevel(value, 'out'));
+            }}
+            onZoomIn={() => {
+                trackEvent('trip_view__zoom', {
+                    direction: 'in',
+                    trip_id: trip.id,
+                    timeline_mode: timelineMode,
+                });
+                markZoomDirty();
+                setZoomLevel((value) => resolveSteppedZoomLevel(value, 'in'));
+            }}
+            onTimelineModeChange={(mode) => {
+                if (mode === timelineMode) return;
+                trackEvent(mode === 'calendar' ? 'trip_view__mode--calendar' : 'trip_view__mode--timeline', {
+                    trip_id: trip.id,
+                });
+                markManualViewChange();
+                setTimelineMode(mode);
+            }}
+            onTimelineViewChange={(view) => {
+                if (view === timelineView) return;
+                trackEvent(
+                    view === 'horizontal'
+                        ? 'trip_view__layout_direction--horizontal'
+                        : 'trip_view__layout_direction--vertical',
+                    { trip_id: trip.id, target: 'timeline' }
+                );
+                markManualViewChange();
+                setTimelineView(view);
+            }}
+            zoomLevel={zoomLevel}
+            mapDockMode={mapDockMode}
+            onMapDockModeChange={(mode) => {
+                if (mode === mapDockMode) return;
+                trackEvent(
+                    mode === 'floating'
+                        ? 'trip_view__map_preview--minimize'
+                        : 'trip_view__map_preview--maximize',
+                    {
+                        trip_id: trip.id,
+                        layout_mode: layoutMode,
+                    }
+                );
+                markManualViewChange();
+                runWithOptionalViewTransition(() => {
+                    setMapDockMode(mode);
+                });
+            }}
+            timelineMode={timelineMode}
+            timelineView={timelineView}
+            mapViewportRef={mapViewportRef}
+            isMapBootstrapEnabled={isMapBootstrapEnabled}
+            ItineraryMapComponent={ItineraryMap}
+            mapLoadingFallback={<MapLoadingFallback />}
+            mapDeferredFallback={<MapDeferredFallback onLoadNow={enableMapBootstrap} />}
+            displayItems={displayTrip.items}
+            selectedItemId={selectedItemId}
+            onMapCitySelect={handleMapCitySelect}
+            onMapActivitySelect={handleMapActivitySelect}
+            layoutMode={layoutMode}
+            effectiveLayoutMode={effectiveLayoutMode}
+            onLayoutModeChange={(mode) => {
+                if (mode === layoutMode) return;
+                trackEvent(
+                    mode === 'horizontal'
+                        ? 'trip_view__layout_direction--horizontal'
+                        : 'trip_view__layout_direction--vertical',
+                    { trip_id: trip.id, target: 'map' }
+                );
+                markManualViewChange();
+                setLayoutMode(mode);
+            }}
+            mapStyle={mapStyle}
+            onMapStyleChange={(nextStyle) => {
+                if (nextStyle === mapStyle) return;
+                markManualViewChange();
+                setMapStyle(nextStyle);
+            }}
+            routeMode={routeMode}
+            onRouteModeChange={(nextMode) => {
+                if (nextMode === routeMode) return;
+                markManualViewChange();
+                setRouteMode(nextMode);
+            }}
+            showCityNames={showCityNames}
+            onShowCityNamesChange={(nextValue) => {
+                if (nextValue === showCityNames) return;
+                markManualViewChange();
+                setShowCityNames(nextValue);
+            }}
+            mapColorMode={mapColorMode}
+            onMapColorModeChange={allowMapColorModeControls ? handleMapColorModeChange : undefined}
+            initialMapFocusQuery={effectiveMapFocusQuery}
+            onRouteMetrics={handleRouteMetrics}
+            onRouteStatus={handleRouteStatus}
+            tripId={trip.id}
+            mapViewTransitionName={mapViewTransitionName}
+            sidebarWidth={sidebarWidth}
+            detailsWidth={detailsWidth}
+            timelineHeight={timelineHeight}
+            detailsPanelVisible={detailsPanelVisible}
+            detailsPanelContent={detailsPanelContent}
+            verticalLayoutTimelineRef={verticalLayoutTimelineRef}
+            onStartResizing={startResizing}
+            onSidebarResizeKeyDown={handleSidebarResizeKeyDown}
+            onDetailsResizeKeyDown={handleDetailsResizeKeyDown}
+            onTimelineResizeKeyDown={handleTimelineResizeKeyDown}
+        />
+    );
 
     if (viewMode === 'print') {
         return (
@@ -3056,7 +3280,7 @@ const useTripViewRender = ({
     }
 
     return (
-        <GoogleMapsLoader language={appLanguage} enabled={isMapBootstrapEnabled}>
+        <GoogleMapsLoader language={appLanguage} enabled={activeWorkspacePage === 'planner' && isMapBootstrapEnabled}>
             <div
                 className="relative h-screen w-screen flex flex-col bg-gray-50 overflow-hidden text-gray-900 font-sans selection:bg-accent-100 selection:text-accent-900"
                 data-tf-handoff-ready="true"
@@ -3160,138 +3384,32 @@ const useTripViewRender = ({
                 />
 
                 {/* Main Content */}
-                <main className="flex-1 relative overflow-hidden flex flex-col">
-                    <TripViewPlannerWorkspace
-                        isPaywallLocked={isPaywallLocked}
+                <main className="flex min-h-0 flex-1 overflow-hidden">
+                    <TripWorkspaceShell
+                        trip={displayTrip}
+                        tripMeta={tripMeta}
+                        activePage={activeWorkspacePage}
+                        onPageChange={handleWorkspacePageChange}
+                        plannerPage={plannerPageContent}
+                        selectedItem={selectedDetailItem}
+                        selectedCities={selectedCitiesInTimeline}
+                        travelerWarnings={travelerWarnings}
                         isMobile={isMobile}
-                        isMobileMapExpanded={isMobileMapExpanded}
-                        onCloseMobileMap={() => setIsMobileMapExpanded(false)}
-                        onToggleMobileMapExpanded={() => setIsMobileMapExpanded((value) => !value)}
-                        timelineCanvas={timelineCanvas}
-                        onTimelineTouchStart={handleTimelineTouchStart}
-                        onTimelineTouchMove={handleTimelineTouchMove}
-                        onTimelineTouchEnd={handleTimelineTouchEnd}
-                        onZoomOut={() => {
-                            trackEvent('trip_view__zoom', {
-                                direction: 'out',
-                                trip_id: trip.id,
-                                timeline_mode: timelineMode,
-                            });
-                            markZoomDirty();
-                            setZoomLevel((value) => resolveSteppedZoomLevel(value, 'out'));
+                        onOpenTripInfoModal={openTripInfoModal}
+                        onOpenShare={() => {
+                            void handleShare();
                         }}
-                        onZoomIn={() => {
-                            trackEvent('trip_view__zoom', {
-                                direction: 'in',
-                                trip_id: trip.id,
-                                timeline_mode: timelineMode,
-                            });
-                            markZoomDirty();
-                            setZoomLevel((value) => resolveSteppedZoomLevel(value, 'in'));
-                        }}
-                        onTimelineModeChange={(mode) => {
-                            if (mode === timelineMode) return;
-                            trackEvent(mode === 'calendar' ? 'trip_view__mode--calendar' : 'trip_view__mode--timeline', {
-                                trip_id: trip.id,
-                            });
-                            markManualViewChange();
-                            setTimelineMode(mode);
-                        }}
-                        onTimelineViewChange={(view) => {
-                            if (view === timelineView) return;
-                            trackEvent(
-                                view === 'horizontal'
-                                    ? 'trip_view__layout_direction--horizontal'
-                                    : 'trip_view__layout_direction--vertical',
-                                { trip_id: trip.id, target: 'timeline' }
-                            );
-                            markManualViewChange();
-                            setTimelineView(view);
-                        }}
-                        zoomLevel={zoomLevel}
-                        mapDockMode={mapDockMode}
-                        onMapDockModeChange={(mode) => {
-                            if (mode === mapDockMode) return;
-                            trackEvent(
-                                mode === 'floating'
-                                    ? 'trip_view__map_preview--minimize'
-                                    : 'trip_view__map_preview--maximize',
-                                {
-                                    trip_id: trip.id,
-                                    layout_mode: layoutMode,
-                                }
-                            );
-                            markManualViewChange();
-                            runWithOptionalViewTransition(() => {
-                                setMapDockMode(mode);
-                            });
-                        }}
-                        timelineMode={timelineMode}
-                        timelineView={timelineView}
-                        mapViewportRef={mapViewportRef}
-                        isMapBootstrapEnabled={isMapBootstrapEnabled}
-                        ItineraryMapComponent={ItineraryMap}
-                        mapLoadingFallback={<MapLoadingFallback />}
-                        mapDeferredFallback={<MapDeferredFallback onLoadNow={enableMapBootstrap} />}
-                        displayItems={displayTrip.items}
-                        selectedItemId={selectedItemId}
-                        onMapCitySelect={handleMapCitySelect}
-                        onMapActivitySelect={handleMapActivitySelect}
-                        layoutMode={layoutMode}
-                        effectiveLayoutMode={effectiveLayoutMode}
-                        onLayoutModeChange={(mode) => {
-                            if (mode === layoutMode) return;
-                            trackEvent(
-                                mode === 'horizontal'
-                                    ? 'trip_view__layout_direction--horizontal'
-                                    : 'trip_view__layout_direction--vertical',
-                                { trip_id: trip.id, target: 'map' }
-                            );
-                            markManualViewChange();
-                            setLayoutMode(mode);
-                        }}
-                        mapStyle={mapStyle}
-                        onMapStyleChange={(nextStyle) => {
-                            if (nextStyle === mapStyle) return;
-                            markManualViewChange();
-                            setMapStyle(nextStyle);
-                        }}
-                        routeMode={routeMode}
-                        onRouteModeChange={(nextMode) => {
-                            if (nextMode === routeMode) return;
-                            markManualViewChange();
-                            setRouteMode(nextMode);
-                        }}
-                        showCityNames={showCityNames}
-                        onShowCityNamesChange={(nextValue) => {
-                            if (nextValue === showCityNames) return;
-                            markManualViewChange();
-                            setShowCityNames(nextValue);
-                        }}
-                        mapColorMode={mapColorMode}
-                        onMapColorModeChange={allowMapColorModeControls ? handleMapColorModeChange : undefined}
-                        initialMapFocusQuery={effectiveMapFocusQuery}
-                        onRouteMetrics={handleRouteMetrics}
-                        onRouteStatus={handleRouteStatus}
-                        tripId={trip.id}
-                        mapViewTransitionName={mapViewTransitionName}
-                        sidebarWidth={sidebarWidth}
-                        detailsWidth={detailsWidth}
-                        timelineHeight={timelineHeight}
-                        detailsPanelVisible={detailsPanelVisible}
-                        detailsPanelContent={detailsPanelContent}
-                        verticalLayoutTimelineRef={verticalLayoutTimelineRef}
-                        onStartResizing={startResizing}
-                        onSidebarResizeKeyDown={handleSidebarResizeKeyDown}
-                        onDetailsResizeKeyDown={handleDetailsResizeKeyDown}
-                        onTimelineResizeKeyDown={handleTimelineResizeKeyDown}
+                        onOpenSettings={onOpenSettings}
                     />
                     <TripViewModalLayer
                         isMobile={isMobile}
-                        detailsPanelVisible={detailsPanelVisible}
+                        detailsPanelVisible={isPlannerWorkspacePage && detailsPanelVisible}
                         detailsPanelContent={detailsPanelContent}
-                        onCloseDetailsDrawer={closeDetailsPanel}
-                        onOpenDetailsDrawer={openDetailsPanel}
+                        onCloseDetailsDrawer={closeSelectionDetailsPanel}
+                        onOpenDetailsDrawer={openSelectionDetailsPanel}
+                        companionPanelVisible={false}
+                        companionPanelContent={null}
+                        onCloseCompanionDrawer={closeCompanionPanel}
                         addActivityState={addActivityState}
                         onCloseAddActivity={() => setAddActivityState({ ...addActivityState, isOpen: false })}
                         onAddActivity={handleAddActivityItem}

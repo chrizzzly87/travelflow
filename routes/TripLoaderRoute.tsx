@@ -14,7 +14,6 @@ import {
 import { findHistoryEntryByUrl } from '../services/historyService';
 import { getTripById, saveTrip } from '../services/storageService';
 import {
-    buildTripUrl,
     decompressTrip,
     isUuid,
 } from '../utils';
@@ -35,6 +34,7 @@ const areViewSettingsEqual = (a?: IViewSettings, b?: IViewSettings): boolean => 
         a.layoutMode === b.layoutMode
         && a.timelineMode === b.timelineMode
         && a.timelineView === b.timelineView
+        && a.activeCompanionSection === b.activeCompanionSection
         && a.mapDockMode === b.mapDockMode
         && a.mapStyle === b.mapStyle
         && a.routeMode === b.routeMode
@@ -203,7 +203,11 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
             let localResolvedView: IViewSettings | undefined;
 
             if (versionId) {
-                const localEntry = findHistoryEntryByUrl(tripId, buildTripUrl(tripId, versionId));
+                const localEntry = findHistoryEntryByUrl(tripId, buildPathFromLocationParts({
+                    pathname: location.pathname,
+                    search: location.search,
+                    hash: '',
+                }));
                 if (localEntry?.snapshot?.trip) {
                     const normalizedLocalSnapshotTrip = normalizeTripForRouteLoad(localEntry.snapshot.trip);
                     saveTrip(normalizedLocalSnapshotTrip, { preserveUpdatedAt: true });

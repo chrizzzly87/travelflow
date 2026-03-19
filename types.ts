@@ -12,6 +12,16 @@ export type ActivityType =
 export type MapStyle = 'minimal' | 'standard' | 'dark' | 'satellite' | 'clean' | 'cleanDark';
 export type RouteMode = 'simple' | 'realistic';
 export type RouteStatus = 'calculating' | 'ready' | 'failed' | 'idle';
+export type TripWorkspacePage =
+  | 'overview'
+  | 'planner'
+  | 'bookings'
+  | 'places'
+  | 'explore'
+  | 'phrases'
+  | 'notes'
+  | 'photos';
+export type TripCompanionSection = TripWorkspacePage | 'plan' | 'more';
 export type RouteFailureReason =
   | 'unsupported_mode'
   | 'invalid_distance'
@@ -265,6 +275,7 @@ export interface IViewSettings {
     layoutMode: 'vertical' | 'horizontal';
     timelineMode?: 'calendar' | 'timeline';
     timelineView: 'horizontal' | 'vertical'; // Calendar orientation
+    activeCompanionSection?: TripCompanionSection;
     mapStyle: MapStyle;
     zoomLevel: number;
     zoomBehavior?: ZoomBehavior;

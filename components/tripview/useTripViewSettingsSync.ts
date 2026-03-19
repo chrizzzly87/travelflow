@@ -1,13 +1,15 @@
 import { useEffect, useRef, type Dispatch, type MutableRefObject, type SetStateAction } from 'react';
 
 import { writeLocalStorageItem } from '../../services/browserStorageService';
-import type { IViewSettings, MapStyle, RouteMode } from '../../types';
+import type { IViewSettings, MapStyle, RouteMode, TripCompanionSection } from '../../types';
+import { normalizeTripWorkspacePage } from '../../shared/tripWorkspace';
 import { applyViewSettingsToSearchParams } from '../../utils';
 
 interface UseTripViewSettingsSyncOptions {
     layoutMode: 'vertical' | 'horizontal';
     timelineMode: 'calendar' | 'timeline';
     timelineView: 'horizontal' | 'vertical';
+    activeCompanionSection: TripCompanionSection;
     mapDockMode: 'docked' | 'floating';
     mapStyle: MapStyle;
     routeMode: RouteMode;
@@ -26,6 +28,7 @@ interface UseTripViewSettingsSyncOptions {
     setLayoutMode: Dispatch<SetStateAction<'vertical' | 'horizontal'>>;
     setTimelineMode: Dispatch<SetStateAction<'calendar' | 'timeline'>>;
     setTimelineView: Dispatch<SetStateAction<'horizontal' | 'vertical'>>;
+    setActiveCompanionSection: Dispatch<SetStateAction<TripCompanionSection>>;
     setMapDockMode: Dispatch<SetStateAction<'docked' | 'floating'>>;
     setZoomLevel: Dispatch<SetStateAction<number>>;
     setZoomBehavior: Dispatch<SetStateAction<NonNullable<IViewSettings['zoomBehavior']>>>;
@@ -59,6 +62,7 @@ export const useTripViewSettingsSync = ({
     layoutMode,
     timelineMode,
     timelineView,
+    activeCompanionSection,
     mapDockMode,
     mapStyle,
     routeMode,
@@ -77,6 +81,7 @@ export const useTripViewSettingsSync = ({
     setLayoutMode,
     setTimelineMode,
     setTimelineView,
+    setActiveCompanionSection,
     setMapDockMode,
     setZoomLevel,
     setZoomBehavior,
@@ -126,6 +131,7 @@ export const useTripViewSettingsSync = ({
                 layoutMode,
                 timelineMode,
                 timelineView,
+                activeCompanionSection,
                 mapDockMode,
                 mapStyle,
                 routeMode,
@@ -166,6 +172,7 @@ export const useTripViewSettingsSync = ({
         mapStyle,
         routeMode,
         timelineView,
+        activeCompanionSection,
         sidebarWidth,
         detailsWidth,
         timelineHeight,
@@ -193,6 +200,8 @@ export const useTripViewSettingsSync = ({
         if (initialViewSettings.layoutMode) setLayoutMode(initialViewSettings.layoutMode);
         if (initialViewSettings.timelineMode) setTimelineMode(initialViewSettings.timelineMode);
         if (initialViewSettings.timelineView) setTimelineView(initialViewSettings.timelineView);
+        const initialWorkspacePage = normalizeTripWorkspacePage(initialViewSettings.activeCompanionSection);
+        if (initialWorkspacePage) setActiveCompanionSection(initialWorkspacePage);
         if (initialViewSettings.mapDockMode) setMapDockMode(initialViewSettings.mapDockMode);
         if (typeof initialViewSettings.zoomLevel === 'number') setZoomLevel(initialViewSettings.zoomLevel);
         setZoomBehavior(initialViewSettings.zoomBehavior === 'manual' ? 'manual' : 'fit');
@@ -210,6 +219,7 @@ export const useTripViewSettingsSync = ({
         setLayoutMode,
         setTimelineMode,
         setTimelineView,
+        setActiveCompanionSection,
         setMapDockMode,
         setZoomLevel,
         setZoomBehavior,

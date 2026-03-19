@@ -11,7 +11,7 @@ const mocks = vi.hoisted(() => ({
   confirmDialog: vi.fn().mockResolvedValue(true),
   route: {
     templateId: 'template-1' as string | undefined,
-    pathname: '/examples/template-1',
+    pathname: '/example/template-1',
     search: '',
     hash: '',
     state: null as unknown,
@@ -28,7 +28,6 @@ const mocks = vi.hoisted(() => ({
   dbUpsertTrip: vi.fn(),
   dbCreateTripVersion: vi.fn(),
   saveTrip: vi.fn(),
-  buildTripUrl: vi.fn((tripId: string) => `/trip/${tripId}`),
   buildCreateTripUrl: vi.fn(() => '/create-trip?source=example'),
   generateTripId: vi.fn(() => 'cloned-example-trip'),
   loadExampleTemplateFactory: vi.fn(),
@@ -77,7 +76,6 @@ vi.mock('../../../services/storageService', () => ({
 
 vi.mock('../../../utils', () => ({
   buildCreateTripUrl: mocks.buildCreateTripUrl,
-  buildTripUrl: mocks.buildTripUrl,
   generateTripId: mocks.generateTripId,
 }));
 
@@ -122,7 +120,7 @@ describe('routes/ExampleTripLoaderRoute', () => {
     vi.clearAllMocks();
     mocks.tripViewProps.length = 0;
     mocks.route.templateId = 'template-1';
-    mocks.route.pathname = '/examples/template-1';
+    mocks.route.pathname = '/example/template-1';
     mocks.route.search = '';
     mocks.route.hash = '';
     mocks.route.state = null;
@@ -277,8 +275,7 @@ describe('routes/ExampleTripLoaderRoute', () => {
     expect(mocks.saveTrip).toHaveBeenCalled();
     expect(mocks.dbUpsertTrip).toHaveBeenCalled();
     expect(mocks.dbCreateTripVersion).toHaveBeenCalled();
-    expect(mocks.buildTripUrl).toHaveBeenCalledWith('cloned-example-trip');
-    expect(mocks.navigate).toHaveBeenCalledWith('/trip/cloned-example-trip');
+    expect(mocks.navigate).toHaveBeenCalledWith('/trip/cloned-example-trip/overview');
 
     act(() => {
       latestTripViewProps().exampleTripBanner.onCreateSimilarTrip();
@@ -323,7 +320,7 @@ describe('routes/ExampleTripLoaderRoute', () => {
     });
 
     expect(mocks.confirmDialog).toHaveBeenCalledTimes(1);
-    expect(mocks.navigate).toHaveBeenCalledWith('/checkout?tier=tier_mid&source=example_trip_limit_dialog&return_to=%2Fexamples%2Ftemplate-1');
+    expect(mocks.navigate).toHaveBeenCalledWith('/checkout?tier=tier_mid&source=example_trip_limit_dialog&return_to=%2Fexample%2Ftemplate-1');
     expect(mocks.saveTrip).not.toHaveBeenCalled();
     expect(mocks.dbUpsertTrip).not.toHaveBeenCalled();
     expect(mocks.dbCreateTripVersion).not.toHaveBeenCalled();

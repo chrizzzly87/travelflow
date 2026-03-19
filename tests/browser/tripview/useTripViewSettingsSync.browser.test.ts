@@ -9,6 +9,7 @@ const BASE_VIEW_SETTINGS: IViewSettings = {
   layoutMode: 'horizontal',
   timelineMode: 'calendar',
   timelineView: 'horizontal',
+  activeCompanionSection: 'overview',
   mapDockMode: 'docked',
   mapStyle: 'standard',
   routeMode: 'simple',
@@ -24,6 +25,7 @@ const makeHookProps = (): Parameters<typeof useTripViewSettingsSync>[0] => ({
   layoutMode: 'horizontal',
   timelineMode: 'calendar',
   timelineView: 'horizontal',
+  activeCompanionSection: 'overview',
   mapDockMode: 'docked',
   mapStyle: 'standard',
   routeMode: 'simple',
@@ -42,6 +44,7 @@ const makeHookProps = (): Parameters<typeof useTripViewSettingsSync>[0] => ({
   setLayoutMode: vi.fn(),
   setTimelineMode: vi.fn(),
   setTimelineView: vi.fn(),
+  setActiveCompanionSection: vi.fn(),
   setMapDockMode: vi.fn(),
   setZoomLevel: vi.fn(),
   setZoomBehavior: vi.fn(),
@@ -82,6 +85,7 @@ describe('components/tripview/useTripViewSettingsSync', () => {
     expect(params.get('layout')).toBe('horizontal');
     expect(params.get('timelineMode')).toBe('calendar');
     expect(params.get('timelineView')).toBe('horizontal');
+    expect(params.get('companion')).toBe('overview');
     expect(params.get('mapStyle')).toBe('standard');
     expect(params.get('routeMode')).toBe('simple');
     expect(params.get('cityNames')).toBe('1');
@@ -115,6 +119,7 @@ describe('components/tripview/useTripViewSettingsSync', () => {
       layoutMode: 'horizontal',
       timelineMode: 'calendar',
       timelineView: 'horizontal',
+      activeCompanionSection: 'overview',
       mapDockMode: 'docked',
       mapStyle: 'standard',
       routeMode: 'simple',
@@ -179,6 +184,7 @@ describe('components/tripview/useTripViewSettingsSync', () => {
       layoutMode: 'vertical',
       timelineMode: 'timeline',
       timelineView: 'vertical',
+      activeCompanionSection: 'places',
       mapDockMode: 'floating',
       mapStyle: 'dark',
       routeMode: 'realistic',
@@ -204,6 +210,7 @@ describe('components/tripview/useTripViewSettingsSync', () => {
     expect(props.setLayoutMode).toHaveBeenCalledWith('vertical');
     expect(props.setTimelineMode).toHaveBeenCalledWith('timeline');
     expect(props.setTimelineView).toHaveBeenCalledWith('vertical');
+    expect(props.setActiveCompanionSection).toHaveBeenCalledWith('places');
     expect(props.setMapDockMode).toHaveBeenCalledWith('floating');
     expect(props.setZoomLevel).toHaveBeenCalledWith(2.5);
     expect(props.setZoomBehavior).toHaveBeenCalledWith('manual');
@@ -219,6 +226,20 @@ describe('components/tripview/useTripViewSettingsSync', () => {
 
     expect(props.setMapStyle.mock.calls.length).toBe(mapStyleCalls);
     expect(props.setRouteMode.mock.calls.length).toBe(routeModeCalls);
+  });
+
+  it('normalizes legacy companion values to overview when applying initial workspace settings', () => {
+    const props = makeHookProps();
+    props.initialViewSettings = {
+      ...BASE_VIEW_SETTINGS,
+      activeCompanionSection: 'plan',
+    };
+
+    renderHook(() => {
+      useTripViewSettingsSync(props);
+    });
+
+    expect(props.setActiveCompanionSection).toHaveBeenCalledWith('overview');
   });
 
   it('does not re-emit unchanged settings when callback identity changes', () => {
