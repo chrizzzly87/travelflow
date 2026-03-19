@@ -1,0 +1,39 @@
+# Mapbox Runtime Follow-up Checklist
+
+This checklist tracks the remaining Mapbox-only work on the
+`codex/map-runtime-dual-provider-foundation` branch.
+
+## Shared state
+
+- [x] Restore shared TripView and route-loader behavior to current `origin/main`.
+- [x] Keep Mapbox visual changes isolated from planner commit/history sequencing.
+- [x] Add safe local-history fallback and self-heal for oversized visual entries.
+
+## Trip page rendering
+
+- [x] Show the Mapbox basemap while keeping planner functionality intact.
+- [x] Render trip overlays natively on the Mapbox trip page.
+- [x] Keep routes visible on first load before realistic directions finish computing.
+- [x] Add a north-up intro camera flow for Mapbox.
+- [x] Use the city/location name for trip labels instead of custom stay titles.
+- [x] Remove duplicate round-trip endpoint labels by deduping on the displayed city name.
+
+## Label and marker presentation
+
+- [x] Extract provider-aware city marker HTML.
+- [x] Extract provider-aware city label HTML.
+- [x] Add Mapbox-only projected label layout for crowded cities.
+- [ ] Improve label collision handling for very dense clusters.
+- [ ] Add richer photo/image marker inputs on top of the extracted marker presenter.
+
+## Styling
+
+- [x] Start clean and cleanDark from a cleaner Mapbox config baseline.
+- [ ] Reduce remaining place/road/highway clutter on clean styles.
+- [ ] Revisit admin boundary filtering so only country borders remain where intended.
+- [ ] Tune satellite border treatment after the main clean-style pass is stable.
+
+## Follow-up
+
+- [ ] Extract more Mapbox overlay orchestration out of `ItineraryMap`.
+- [ ] Revisit preview/OG Mapbox styling once the trip-page visual contract is stable.

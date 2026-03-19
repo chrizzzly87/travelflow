@@ -83,12 +83,14 @@ const MAPBOX_DARK_VISUAL_CONFIG = buildMapboxStandardVisualConfig({
 
 const MAPBOX_CLEAN_VISUAL_CONFIG = buildMapboxStandardVisualConfig({
   boundaryColor: MAPBOX_LIGHT_BOUNDARY_COLOR,
+  showPlaceLabels: false,
   showRoadsAndTransit: false,
   showPedestrianRoads: false,
 });
 
 const MAPBOX_CLEAN_DARK_VISUAL_CONFIG = buildMapboxStandardVisualConfig({
   boundaryColor: MAPBOX_DARK_BOUNDARY_COLOR,
+  showPlaceLabels: false,
   showRoadsAndTransit: false,
   showPedestrianRoads: false,
 });

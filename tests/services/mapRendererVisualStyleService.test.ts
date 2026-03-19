@@ -75,12 +75,29 @@ describe('services/mapRendererVisualStyleService', () => {
       basemap: {
         theme: 'faded',
         lightPreset: 'day',
-        showPlaceLabels: true,
+        showPlaceLabels: false,
         showPointOfInterestLabels: false,
         showTransitLabels: false,
         showRoadLabels: false,
         showAdminBoundaries: true,
         colorAdminBoundaries: '#1f2937',
+        showRoadsAndTransit: false,
+        showPedestrianRoads: false,
+      },
+    });
+  });
+
+  it('starts cleanDark from a no-place-label baseline before runtime polish hides extra clutter', () => {
+    expect(buildMapboxStyleConfig('cleanDark')).toEqual({
+      basemap: {
+        theme: 'monochrome',
+        lightPreset: 'night',
+        showPlaceLabels: false,
+        showPointOfInterestLabels: false,
+        showTransitLabels: false,
+        showRoadLabels: false,
+        showAdminBoundaries: true,
+        colorAdminBoundaries: '#ffffff',
         showRoadsAndTransit: false,
         showPedestrianRoads: false,
       },
