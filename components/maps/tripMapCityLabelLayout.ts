@@ -17,6 +17,7 @@ export interface TripMapProjectedCityLabelLayout {
   offsetPx: number;
   compact: boolean;
   tier: number;
+  hidden?: boolean;
 }
 
 interface ResolveTripMapProjectedCityLabelLayoutsOptions {
@@ -41,6 +42,14 @@ interface LabelRect {
   bottom: number;
 }
 
+interface CandidateLabelLayout {
+  layout: TripMapProjectedCityLabelLayout;
+  rect: LabelRect;
+  collisionPenalty: number;
+  viewportPenalty: number;
+  totalPenalty: number;
+}
+
 const LABEL_COLLISION_PADDING_PX = 8;
 const LABEL_VIEWPORT_GUTTER_PX = 10;
 const MAPBOX_COMPACT_NEIGHBOR_X_PX = 92;
@@ -49,6 +58,7 @@ const MAPBOX_ABOVE_TIER_STEP_PX = 18;
 const MAPBOX_BELOW_TIER_STEP_PX = 14;
 const MAPBOX_MAX_ABOVE_TIERS = 4;
 const MAPBOX_MAX_BELOW_TIERS = 2;
+const MAPBOX_HIDE_LABEL_TOTAL_PENALTY = 5;
 
 const expandRect = (rect: LabelRect, padding: number): LabelRect => ({
   left: rect.left - padding,
@@ -182,7 +192,9 @@ export const resolveTripMapProjectedCityLabelLayouts = ({
   const placedRects: LabelRect[] = [];
 
   const sortedLabels = [...labels].sort((left, right) => (
-    left.point.y - right.point.y || left.point.x - right.point.x
+    Number(Boolean(right.subLabel)) - Number(Boolean(left.subLabel))
+      || left.point.y - right.point.y
+      || left.point.x - right.point.x
   ));
 
   sortedLabels.forEach((label) => {
@@ -194,8 +206,7 @@ export const resolveTripMapProjectedCityLabelLayouts = ({
       compact,
     });
 
-    let bestLayout: TripMapProjectedCityLabelLayout | null = null;
-    let bestRect: LabelRect | null = null;
+    let bestCandidate: CandidateLabelLayout | null = null;
     let bestPenalty = Number.POSITIVE_INFINITY;
     const preferredAnchor: TripMapCityLabelAnchor = label.point.y <= estimatedBox.height + baseOffsetPx + 18
       ? 'below'
@@ -223,13 +234,18 @@ export const resolveTripMapProjectedCityLabelLayouts = ({
 
         if (totalPenalty < bestPenalty) {
           bestPenalty = totalPenalty;
-          bestLayout = {
-            anchor,
-            offsetPx: offsetPx + (tier * (anchor === 'below' ? MAPBOX_BELOW_TIER_STEP_PX : MAPBOX_ABOVE_TIER_STEP_PX)),
-            compact,
-            tier,
+          bestCandidate = {
+            layout: {
+              anchor,
+              offsetPx: offsetPx + (tier * (anchor === 'below' ? MAPBOX_BELOW_TIER_STEP_PX : MAPBOX_ABOVE_TIER_STEP_PX)),
+              compact,
+              tier,
+            },
+            rect,
+            collisionPenalty,
+            viewportPenalty,
+            totalPenalty,
           };
-          bestRect = rect;
         }
 
         if (collisionPenalty === 0 && viewportPenalty === 0) {
@@ -240,8 +256,8 @@ export const resolveTripMapProjectedCityLabelLayouts = ({
     };
 
     if (tryAnchor(preferredAnchor, true)) {
-      placedRects.push(bestRect!);
-      results.set(label.key, bestLayout!);
+      placedRects.push(bestCandidate!.rect);
+      results.set(label.key, bestCandidate!.layout);
       return;
     }
 
@@ -253,12 +269,28 @@ export const resolveTripMapProjectedCityLabelLayouts = ({
       tryAnchor(anchor, false);
     });
 
-    if (!bestLayout || !bestRect) {
+    if (!bestCandidate) {
       return;
     }
 
-    placedRects.push(bestRect);
-    results.set(label.key, bestLayout);
+    if (
+      !label.subLabel
+      && compact
+      && (
+        bestCandidate.totalPenalty >= MAPBOX_HIDE_LABEL_TOTAL_PENALTY
+        || bestCandidate.collisionPenalty >= 2
+        || (bestCandidate.collisionPenalty >= 1 && placedRects.length >= 2)
+      )
+    ) {
+      results.set(label.key, {
+        ...bestCandidate.layout,
+        hidden: true,
+      });
+      return;
+    }
+
+    placedRects.push(bestCandidate.rect);
+    results.set(label.key, bestCandidate.layout);
   });
 
   return results;

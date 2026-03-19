@@ -2634,6 +2634,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             cityLabelDescriptors.forEach(({ city, cityKey, key, labelName, subLabel, defaultAnchor }) => {
                 if (!city.coordinates) return;
                 const labelLayout = mapboxCityLabelLayouts.get(key);
+                if (labelLayout?.hidden) return;
                 const labelAnchor = labelLayout?.anchor ?? defaultAnchor;
                 const labelOffsetPx = labelLayout?.offsetPx ?? baseLabelOffsetPx;
                 const compact = labelLayout?.compact ?? false;

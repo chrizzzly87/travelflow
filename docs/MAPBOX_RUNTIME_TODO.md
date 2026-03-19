@@ -23,7 +23,7 @@ This checklist tracks the remaining Mapbox-only work on the
 - [x] Extract provider-aware city marker HTML.
 - [x] Extract provider-aware city label HTML.
 - [x] Add Mapbox-only projected label layout for crowded cities.
-- [ ] Improve label collision handling for very dense clusters.
+- [x] Improve label collision handling for very dense clusters.
 - [ ] Add richer photo/image marker inputs on top of the extracted marker presenter.
 
 ## Styling

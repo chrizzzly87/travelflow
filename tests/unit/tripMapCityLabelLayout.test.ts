@@ -78,4 +78,43 @@ describe('components/maps/tripMapCityLabelLayout', () => {
       offsetPx: 24,
     });
   });
+
+  it('hides the least important crowded Mapbox label when a dense cluster cannot be laid out cleanly', () => {
+    const layouts = resolveTripMapProjectedCityLabelLayouts({
+      provider: 'mapbox',
+      baseOffsetPx: 24,
+      viewport: { width: 960, height: 640 },
+      labels: [
+        {
+          key: 'bangkok',
+          point: { x: 420, y: 320 },
+          name: 'Bangkok',
+          subLabel: 'START • END',
+        },
+        {
+          key: 'siem-reap',
+          point: { x: 424, y: 322 },
+          name: 'Siem Reap',
+        },
+        {
+          key: 'phnom-penh',
+          point: { x: 428, y: 324 },
+          name: 'Phnom Penh',
+        },
+        {
+          key: 'ho-chi-minh-city',
+          point: { x: 432, y: 326 },
+          name: 'Ho Chi Minh City',
+        },
+      ],
+    });
+
+    expect(layouts.get('bangkok')?.hidden).not.toBe(true);
+    expect(layouts.get('siem-reap')?.hidden).not.toBe(true);
+    expect(layouts.get('phnom-penh')?.hidden).not.toBe(true);
+    expect(layouts.get('ho-chi-minh-city')).toMatchObject({
+      hidden: true,
+      compact: true,
+    });
+  });
 });
