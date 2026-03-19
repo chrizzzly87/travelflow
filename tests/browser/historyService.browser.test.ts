@@ -68,7 +68,10 @@ describe('services/historyService', () => {
 
     expect(result.persisted).toBe(true);
     expect(result.url).toMatch(/^\/trip\/trip-snapshot\?mode=planner&v=v-/);
-    expect(findHistoryEntryByUrl(trip.id, result.url)?.label).toBe('Visual: Changed map style');
+    const entry = findHistoryEntryByUrl(trip.id, result.url);
+    expect(entry?.label).toBe('Visual: Changed map style');
+    expect(entry?.snapshot?.trip).toBeUndefined();
+    expect(entry?.snapshot?.view?.mapStyle).toBe('satellite');
   });
 
   it('caps per-trip history to max size', () => {
@@ -128,5 +131,40 @@ describe('services/historyService', () => {
     window.removeEventListener('tf:history', listener as EventListener);
     setItemSpy.mockRestore();
     consoleSpy.mockRestore();
+  });
+
+  it('compacts older visual entries that still store full trip snapshots', () => {
+    const trip = makeTrip({ id: 'trip-compact' });
+    window.localStorage.setItem('travelflow_history_v1', JSON.stringify({
+      [trip.id]: [
+        {
+          id: 'legacy-visual',
+          tripId: trip.id,
+          url: `/trip/${trip.id}?v=legacy`,
+          label: 'Visual: Map view standard -> dark',
+          ts: 1,
+          snapshot: {
+            trip,
+            view: {
+              mapStyle: 'dark',
+              layoutMode: 'horizontal',
+              timelineMode: 'calendar',
+              timelineView: 'horizontal',
+              mapDockMode: 'docked',
+              routeMode: 'simple',
+              showCityNames: true,
+              zoomLevel: 1,
+              sidebarWidth: 550,
+              detailsWidth: 440,
+              timelineHeight: 340,
+            },
+          },
+        },
+      ],
+    }));
+
+    const entry = getHistoryEntries(trip.id)[0];
+    expect(entry.snapshot?.trip).toBeUndefined();
+    expect(entry.snapshot?.view?.mapStyle).toBe('dark');
   });
 });

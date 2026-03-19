@@ -472,6 +472,74 @@ describe('routes/TripLoaderRoute', () => {
     expect(mocks.dbGetTripVersion).not.toHaveBeenCalled();
   });
 
+  it('applies view-only local history snapshots when no local trip snapshot exists', async () => {
+    mocks.dbEnabled = true;
+    mocks.route.tripId = 'trip-local-view-only';
+    mocks.route.pathname = '/trip/trip-local-view-only';
+    mocks.route.search = '?v=view-only';
+
+    const localTrip = makeTrip({
+      id: 'trip-local-view-only',
+      title: 'Local trip',
+      updatedAt: 1000,
+      items: [
+        {
+          ...makeTravelItem('travel-view-only', 1, 'Legacy rail leg'),
+          transportMode: 'rail' as any,
+          routeDistanceKm: 420,
+          routeDurationHours: 6.5,
+        },
+      ],
+    });
+
+    mocks.findHistoryEntryByUrl.mockReturnValue({
+      id: 'entry-view-only',
+      tripId: 'trip-local-view-only',
+      url: '/trip/trip-local-view-only?v=view-only',
+      label: 'Visual: Map view standard -> dark',
+      ts: Date.now(),
+      snapshot: {
+        view: {
+          layoutMode: 'horizontal',
+          timelineMode: 'calendar',
+          timelineView: 'horizontal',
+          mapDockMode: 'docked',
+          mapStyle: 'dark',
+          routeMode: 'simple',
+          showCityNames: true,
+          zoomLevel: 1.25,
+          zoomBehavior: 'manual',
+          sidebarWidth: 560,
+          detailsWidth: 420,
+          timelineHeight: 360,
+        },
+      },
+    });
+    mocks.getTripById.mockReturnValue(localTrip);
+    mocks.connectivityState = 'offline';
+
+    const props = makeRouteProps();
+    render(React.createElement(TripLoaderRoute, props));
+
+    await waitFor(() => {
+      expect(props.onTripLoaded).toHaveBeenCalledTimes(1);
+    });
+
+    const [loadedTrip, loadedView] = props.onTripLoaded.mock.calls[0];
+    expect(loadedTrip.items[0]).toMatchObject({
+      type: 'travel',
+      transportMode: 'train',
+      routeDistanceKm: undefined,
+      routeDurationHours: undefined,
+    });
+    expect(loadedView).toMatchObject({
+      mapStyle: 'dark',
+      zoomBehavior: 'manual',
+      detailsWidth: 420,
+      timelineHeight: 360,
+    });
+  });
+
   it('refreshes from DB after reconnect when newer data is available', async () => {
     mocks.dbEnabled = true;
     mocks.route.tripId = 'trip-reconnect';

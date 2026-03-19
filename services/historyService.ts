@@ -9,7 +9,7 @@ export interface HistoryEntry {
     label: string;
     ts: number;
     snapshot?: {
-        trip: ITrip;
+        trip?: ITrip;
         view?: IViewSettings;
     };
 }
@@ -20,11 +20,51 @@ const HISTORY_WRITE_FALLBACK_ORIGIN = 'https://travelflow.invalid';
 
 type HistoryStore = Record<string, HistoryEntry[]>;
 
+const isVisualHistoryLabel = (label: string): boolean => /^visual:\s*/i.test(label);
+
+const compactHistoryEntrySnapshot = (entry: HistoryEntry): HistoryEntry => {
+    if (!entry.snapshot) return entry;
+    if (!isVisualHistoryLabel(entry.label)) return entry;
+    if (!entry.snapshot.trip) return entry;
+    return {
+        ...entry,
+        snapshot: entry.snapshot.view ? { view: entry.snapshot.view } : undefined,
+    };
+};
+
+const compactHistoryStoreSnapshots = (store: HistoryStore): { store: HistoryStore; didChange: boolean } => {
+    let didChange = false;
+    const compactedEntries = Object.entries(store).map(([tripId, entries]) => {
+        const nextEntries = entries.map((entry) => {
+            const compactedEntry = compactHistoryEntrySnapshot(entry);
+            if (compactedEntry !== entry) {
+                didChange = true;
+            }
+            return compactedEntry;
+        });
+        return [tripId, nextEntries] as const;
+    });
+
+    if (!didChange) {
+        return { store, didChange: false };
+    }
+
+    return {
+        store: Object.fromEntries(compactedEntries),
+        didChange: true,
+    };
+};
+
 const loadStore = (): HistoryStore => {
     try {
         const raw = readLocalStorageItem(HISTORY_KEY);
         if (!raw) return {};
-        return JSON.parse(raw) as HistoryStore;
+        const parsed = JSON.parse(raw) as HistoryStore;
+        const { store: compactedStore, didChange } = compactHistoryStoreSnapshots(parsed);
+        if (didChange) {
+            tryWriteStore(compactedStore);
+        }
+        return compactedStore;
     } catch (e) {
         console.error("Failed to load history store", e);
         return {};
@@ -52,11 +92,27 @@ const tryWriteStore = (store: HistoryStore): boolean => (
     writeLocalStorageItem(HISTORY_KEY, JSON.stringify(store))
 );
 
+const buildHistoryEntrySnapshot = (
+    label: string,
+    trip: ITrip | undefined,
+    view: IViewSettings | undefined,
+): HistoryEntry['snapshot'] => {
+    if (isVisualHistoryLabel(label)) {
+        return view ? { view } : undefined;
+    }
+    if (!trip && !view) return undefined;
+    return {
+        ...(trip ? { trip } : {}),
+        ...(view ? { view } : {}),
+    };
+};
+
 const saveStore = (
     store: HistoryStore,
     options?: { protectedEntry?: Pick<HistoryEntry, 'tripId' | 'url'> },
 ): boolean => {
-    if (tryWriteStore(store)) {
+    const { store: compactedStore } = compactHistoryStoreSnapshots(store);
+    if (tryWriteStore(compactedStore)) {
         return true;
     }
 
@@ -65,7 +121,7 @@ const saveStore = (
         protectedEntry?.tripId === entry.tripId && protectedEntry?.url === entry.url
     );
 
-    const prunedStore = cloneStore(store);
+    const prunedStore = cloneStore(compactedStore);
     const prunableSnapshotEntries = Object.values(prunedStore)
         .flat()
         .filter((entry) => entry.snapshot && !isProtectedEntry(entry))
@@ -75,6 +131,19 @@ const saveStore = (
         delete entry.snapshot;
         if (tryWriteStore(prunedStore)) {
             return true;
+        }
+    }
+
+    if (protectedEntry) {
+        const protectedEntries = (prunedStore[protectedEntry.tripId] || []).filter((entry) => entry.url === protectedEntry.url);
+        for (const entry of protectedEntries) {
+            const compactedEntry = compactHistoryEntrySnapshot(entry);
+            if (compactedEntry !== entry) {
+                Object.assign(entry, compactedEntry);
+                if (tryWriteStore(prunedStore)) {
+                    return true;
+                }
+            }
         }
     }
 
@@ -123,7 +192,7 @@ export const appendHistoryEntry = (
         url,
         label,
         ts: options?.ts ?? Date.now(),
-        snapshot: options?.snapshot,
+        snapshot: buildHistoryEntrySnapshot(label, options?.snapshot?.trip, options?.snapshot?.view),
     };
 
     const withoutDuplicate = list.filter(existing => existing.url !== url);

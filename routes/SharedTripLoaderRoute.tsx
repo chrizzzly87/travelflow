@@ -32,7 +32,8 @@ import {
     isUuid,
 } from '../utils';
 import type { ITrip, IViewSettings } from '../types';
-import { normalizeTripForRuntime, normalizeViewSettingsForRuntime } from '../shared/tripRuntimeNormalization';
+import { normalizeViewSettingsForRuntime } from '../shared/tripRuntimeNormalization';
+import { normalizeTripForRouteLoad } from '../shared/tripRouteLoadNormalization';
 import { areViewSettingsEqual } from '../shared/viewSettings';
 import type { CommitOptions, SharedTripLoaderRouteProps } from './tripRouteTypes';
 import { LazyTripView } from '../components/tripview/LazyTripView';
@@ -105,7 +106,7 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
         snapshotState,
         sourceShareVersionId,
     } = routeState;
-    const normalizedRenderedTrip = useMemo(() => (trip ? normalizeTripForRuntime(trip) : null), [trip]);
+    const normalizedRenderedTrip = useMemo(() => (trip ? normalizeTripForRouteLoad(trip) : null), [trip]);
     const resetRouteState = useCallback((options?: { preserveViewSettings?: boolean }) => {
         setRouteState((prev) => ({
             ...prev,
@@ -179,7 +180,7 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
                 navigate('/share-unavailable', { replace: true });
                 return;
             }
-            const normalizedSharedTrip = normalizeTripForRuntime(shared.trip);
+            const normalizedSharedTrip = normalizeTripForRouteLoad(shared.trip);
 
             const baseRouteState: SharedTripRouteState = {
                 shareMode: shared.mode,
@@ -192,7 +193,7 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
             if (versionId && isUuid(versionId)) {
                 const sharedVersion = await dbGetSharedTripVersion(token, versionId);
                 if (sharedVersion?.trip) {
-                    const normalizedSharedVersionTrip = normalizeTripForRuntime(sharedVersion.trip);
+                    const normalizedSharedVersionTrip = normalizeTripForRouteLoad(sharedVersion.trip);
                     const resolvedView = resolveEffectiveView(
                         sharedVersion.view ?? sharedVersion.shareView ?? shared.shareView,
                         normalizedSharedVersionTrip.defaultView,
@@ -214,7 +215,7 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
 
                 const version = await dbGetTripVersion(shared.trip.id, versionId);
                 if (version?.trip) {
-                    const normalizedVersionTrip = normalizeTripForRuntime(version.trip);
+                    const normalizedVersionTrip = normalizeTripForRouteLoad(version.trip);
                     const latestVersionMismatch = Boolean(shared.latestVersionId && shared.latestVersionId !== versionId);
                     const sharedUpdatedAt = typeof normalizedSharedTrip.updatedAt === 'number' ? normalizedSharedTrip.updatedAt : null;
                     const snapshotUpdatedAt = typeof normalizedVersionTrip.updatedAt === 'number' ? normalizedVersionTrip.updatedAt : null;
@@ -235,27 +236,28 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
                 }
             }
 
-            if (versionId) {
-                const localEntry = findHistoryEntryByUrl(shared.trip.id, buildShareUrl(token, versionId));
-                if (localEntry?.snapshot?.trip) {
-                    const normalizedLocalSnapshotTrip = normalizeTripForRuntime(localEntry.snapshot.trip);
-                    const resolvedView = resolveEffectiveView(localEntry.snapshot.view, normalizedLocalSnapshotTrip.defaultView);
-                    const nextState: SharedTripRouteState = {
-                        ...baseRouteState,
-                        viewSettings: resolvedView,
-                        sourceShareVersionId: isUuid(versionId) ? versionId : null,
-                        snapshotState: {
-                            hasNewer: true,
-                            latestUrl: buildShareUrl(token),
-                        },
-                    };
-                    applyRouteState(nextState);
-                    onTripLoaded(normalizedLocalSnapshotTrip, resolvedView);
-                    return;
-                }
+            const localHistoryEntry = versionId
+                ? findHistoryEntryByUrl(shared.trip.id, buildShareUrl(token, versionId))
+                : null;
+            const localHistoryView = normalizeViewSettingsForRuntime(localHistoryEntry?.snapshot?.view);
+            if (localHistoryEntry?.snapshot?.trip) {
+                const normalizedLocalSnapshotTrip = normalizeTripForRouteLoad(localHistoryEntry.snapshot.trip);
+                const resolvedView = resolveEffectiveView(localHistoryView, normalizedLocalSnapshotTrip.defaultView);
+                const nextState: SharedTripRouteState = {
+                    ...baseRouteState,
+                    viewSettings: resolvedView,
+                    sourceShareVersionId: isUuid(versionId) ? versionId : null,
+                    snapshotState: {
+                        hasNewer: true,
+                        latestUrl: buildShareUrl(token),
+                    },
+                };
+                applyRouteState(nextState);
+                onTripLoaded(normalizedLocalSnapshotTrip, resolvedView);
+                return;
             }
 
-            const resolvedView = resolveEffectiveView(shared.shareView ?? shared.view, normalizedSharedTrip.defaultView);
+            const resolvedView = resolveEffectiveView(localHistoryView ?? shared.shareView ?? shared.view, normalizedSharedTrip.defaultView);
             applyRouteState({
                 ...baseRouteState,
                 viewSettings: resolvedView,

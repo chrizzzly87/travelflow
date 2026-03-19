@@ -24,7 +24,8 @@ import {
     rememberAuthReturnPath,
 } from '../services/authNavigationService';
 import type { ITrip, IViewSettings } from '../types';
-import { normalizeTripForRuntime, normalizeViewSettingsForRuntime } from '../shared/tripRuntimeNormalization';
+import { normalizeViewSettingsForRuntime } from '../shared/tripRuntimeNormalization';
+import { normalizeTripForRouteLoad } from '../shared/tripRouteLoadNormalization';
 import { areViewSettingsEqual } from '../shared/viewSettings';
 import type { TripLoaderRouteProps } from './tripRouteTypes';
 import { LazyTripView } from '../components/tripview/LazyTripView';
@@ -90,7 +91,7 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
 
     const [viewSettings, setViewSettings] = useState<IViewSettings | undefined>(undefined);
     const [tripAccess, setTripAccess] = useState<DbTripAccess | null>(null);
-    const normalizedRenderedTrip = useMemo(() => (trip ? normalizeTripForRuntime(trip) : null), [trip]);
+    const normalizedRenderedTrip = useMemo(() => (trip ? normalizeTripForRouteLoad(trip) : null), [trip]);
 
     useDbSync(onLanguageLoaded);
 
@@ -143,7 +144,7 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
                     ...loadedTrip,
                     isFavorite: localTrip?.isFavorite ?? loadedTrip.isFavorite ?? false,
                 };
-                const normalizedTrip = normalizeTripForRuntime(mergedTrip);
+                const normalizedTrip = normalizeTripForRouteLoad(mergedTrip);
                 const effectiveView = resolveEffectiveView(view, normalizedTrip.defaultView);
                 setViewSettings(effectiveView);
                 onTripLoaded(normalizedTrip, effectiveView);
@@ -152,28 +153,29 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
 
             let localResolvedTrip: ITrip | null = null;
             let localResolvedView: IViewSettings | undefined;
+            const localHistoryEntry = versionId
+                ? findHistoryEntryByUrl(tripId, buildTripUrl(tripId, versionId))
+                : null;
+            const localHistoryView = normalizeViewSettingsForRuntime(localHistoryEntry?.snapshot?.view);
 
-            if (versionId) {
-                const localEntry = findHistoryEntryByUrl(tripId, buildTripUrl(tripId, versionId));
-                if (localEntry?.snapshot?.trip) {
-                    const normalizedLocalSnapshotTrip = normalizeTripForRuntime(localEntry.snapshot.trip);
+            if (localHistoryEntry?.snapshot?.trip) {
+                    const normalizedLocalSnapshotTrip = normalizeTripForRouteLoad(localHistoryEntry.snapshot.trip);
                     saveTrip(normalizedLocalSnapshotTrip, { preserveUpdatedAt: true });
                     localResolvedTrip = normalizedLocalSnapshotTrip;
-                    localResolvedView = resolveEffectiveView(localEntry.snapshot.view, normalizedLocalSnapshotTrip.defaultView);
+                    localResolvedView = resolveEffectiveView(localHistoryView, normalizedLocalSnapshotTrip.defaultView);
                     setViewSettings(localResolvedView);
                     onTripLoaded(localResolvedTrip, localResolvedView);
                     return;
-                }
             }
 
             const localTrip = getTripById(tripId);
             if (!localResolvedTrip && localTrip && connectivityState !== 'online') {
-                const normalizedLocalTrip = normalizeTripForRuntime(localTrip);
+                const normalizedLocalTrip = normalizeTripForRouteLoad(localTrip);
                 if (normalizedLocalTrip !== localTrip) {
                     saveTrip(normalizedLocalTrip, { preserveUpdatedAt: true });
                 }
                 localResolvedTrip = normalizedLocalTrip;
-                localResolvedView = resolveEffectiveView(normalizedLocalTrip.defaultView, normalizedLocalTrip.defaultView);
+                localResolvedView = resolveEffectiveView(localHistoryView ?? normalizedLocalTrip.defaultView, normalizedLocalTrip.defaultView);
                 setViewSettings(localResolvedView);
                 onTripLoaded(normalizedLocalTrip, localResolvedView);
                 if (connectivityState === 'offline') return;
@@ -183,9 +185,9 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
                 if (versionId && isUuid(versionId)) {
                     const version = await dbGetTripVersion(tripId, versionId);
                     if (version?.trip) {
-                        const normalizedVersionTrip = normalizeTripForRuntime(version.trip);
+                        const normalizedVersionTrip = normalizeTripForRouteLoad(version.trip);
                         saveTrip(normalizedVersionTrip, { preserveUpdatedAt: true });
-                        const resolvedView = resolveEffectiveView(version.view, normalizedVersionTrip.defaultView);
+                        const resolvedView = resolveEffectiveView(localHistoryView ?? version.view, normalizedVersionTrip.defaultView);
                         const localUpdatedAt = localResolvedTrip?.updatedAt ?? 0;
                         const dbUpdatedAt = normalizedVersionTrip.updatedAt ?? 0;
                         if (!localResolvedTrip || dbUpdatedAt >= localUpdatedAt) {
@@ -197,11 +199,11 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
                 }
                 const dbTrip = await dbGetTrip(tripId);
                 if (dbTrip?.trip) {
-                    const normalizedDbTrip = normalizeTripForRuntime(dbTrip.trip);
+                    const normalizedDbTrip = normalizeTripForRouteLoad(dbTrip.trip);
                     if (dbTrip.access.source === 'owner') {
                         saveTrip(normalizedDbTrip, { preserveUpdatedAt: true });
                     }
-                    const resolvedView = resolveEffectiveView(dbTrip.view, normalizedDbTrip.defaultView);
+                    const resolvedView = resolveEffectiveView(localHistoryView ?? dbTrip.view, normalizedDbTrip.defaultView);
                     const localUpdatedAt = localResolvedTrip?.updatedAt ?? 0;
                     const dbUpdatedAt = normalizedDbTrip.updatedAt ?? 0;
                     if (!localResolvedTrip || dbUpdatedAt >= localUpdatedAt) {
