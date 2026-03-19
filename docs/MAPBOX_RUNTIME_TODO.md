@@ -33,6 +33,8 @@ This checklist tracks the remaining Mapbox-only work on the
 - [x] Constrain visible Mapbox country-boundary layers to `admin_level = 0` when the style exposes that data.
 - [x] Replace fragile built-in country/admin boundary handling with a dedicated Countries v1 country-border overlay.
 - [x] Make country outlines zoom-aware so they stay slimmer at far zooms.
+- [x] Reapply clean-style Mapbox polish after late Standard layer loads so hidden roads and admin layers do not leak back in after the first paint.
+- [x] Keep Mapbox trip labels above-centered by default, hiding low-priority crowded pills before flipping them below the marker.
 - [ ] Revisit live border treatment so only the intended country outline remains on clean and satellite styles.
 - [ ] Tune satellite border treatment after the main clean-style pass is stable.
 - [ ] Verify that clean styles keep only country names plus the biggest city labels in live visual checks.

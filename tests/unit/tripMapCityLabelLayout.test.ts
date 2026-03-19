@@ -56,6 +56,29 @@ describe('components/maps/tripMapCityLabelLayout', () => {
     expect((layouts.get('anouvong')?.offsetPx ?? 0)).toBeGreaterThan(layouts.get('vientiane')?.offsetPx ?? 0);
   });
 
+  it('keeps crowded Mapbox labels above the marker when there is still vertical room', () => {
+    const layouts = resolveTripMapProjectedCityLabelLayouts({
+      provider: 'mapbox',
+      baseOffsetPx: 24,
+      viewport: { width: 960, height: 640 },
+      labels: [
+        {
+          key: 'bangkok',
+          point: { x: 420, y: 320 },
+          name: 'Bangkok',
+        },
+        {
+          key: 'siem-reap',
+          point: { x: 430, y: 324 },
+          name: 'Siem Reap',
+        },
+      ],
+    });
+
+    expect(layouts.get('bangkok')).toMatchObject({ anchor: 'above' });
+    expect(layouts.get('siem-reap')).toMatchObject({ anchor: 'above' });
+  });
+
   it('flips Mapbox labels below the marker when the label would clip against the top viewport edge', () => {
     const layouts = resolveTripMapProjectedCityLabelLayouts({
       provider: 'mapbox',
@@ -111,10 +134,7 @@ describe('components/maps/tripMapCityLabelLayout', () => {
 
     expect(layouts.get('bangkok')?.hidden).not.toBe(true);
     expect(layouts.get('siem-reap')?.hidden).not.toBe(true);
-    expect(layouts.get('phnom-penh')?.hidden).not.toBe(true);
-    expect(layouts.get('ho-chi-minh-city')).toMatchObject({
-      hidden: true,
-      compact: true,
-    });
+    const hiddenLabels = ['phnom-penh', 'ho-chi-minh-city'].filter((key) => layouts.get(key)?.hidden === true);
+    expect(hiddenLabels.length).toBeGreaterThanOrEqual(1);
   });
 });

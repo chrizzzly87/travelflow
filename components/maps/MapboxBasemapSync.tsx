@@ -319,6 +319,8 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
     let resizeObserver: ResizeObserver | null = null;
     let resizeTimeoutId: number | null = null;
     let settleResizeTimeoutId: number | null = null;
+    const polishTimeoutIds: number[] = [];
+    let polishRafId: number | null = null;
     let introTimeoutId: number | null = null;
     let introSettleTimeoutId: number | null = null;
     let hasCompletedInitialLoad = false;
@@ -406,6 +408,49 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
       }
       applyMapboxTripVisualPolish(mapboxMap, mapStyleRef.current);
       onStyleReload();
+    };
+
+    const scheduleMapboxVisualPolish = ({
+      notifyReload = false,
+      delayMs = 0,
+    }: {
+      notifyReload?: boolean;
+      delayMs?: number;
+    } = {}) => {
+      const run = () => {
+        polishRafId = null;
+        const mapboxMap = mapboxMapRef.current;
+        if (cancelled || !mapboxMap) return;
+        if (!isMapboxStyleReadyForRuntimeMutations(mapboxMap)) {
+          mapboxMap.once('idle', run);
+          return;
+        }
+        applyMapboxTripVisualPolish(mapboxMap, mapStyleRef.current);
+        if (notifyReload) {
+          onStyleReload?.();
+        }
+      };
+
+      const scheduleFrame = () => {
+        if (polishRafId !== null) {
+          window.cancelAnimationFrame(polishRafId);
+        }
+        polishRafId = window.requestAnimationFrame(run);
+      };
+
+      if (delayMs > 0) {
+        const timeoutId = window.setTimeout(() => {
+          const timeoutIndex = polishTimeoutIds.indexOf(timeoutId);
+          if (timeoutIndex >= 0) {
+            polishTimeoutIds.splice(timeoutIndex, 1);
+          }
+          scheduleFrame();
+        }, delayMs);
+        polishTimeoutIds.push(timeoutId);
+        return;
+      }
+
+      scheduleFrame();
     };
 
     const applyProjection = ({
@@ -678,6 +723,9 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
             force: true,
           });
           applyMapboxTripVisualPolish(mapboxMap, mapStyleRef.current);
+          scheduleMapboxVisualPolish();
+          scheduleMapboxVisualPolish({ delayMs: 180 });
+          scheduleMapboxVisualPolish({ delayMs: 520 });
           scheduleViewportResize(true);
           reportSurfaceReady(true);
           window.requestAnimationFrame(() => {
@@ -699,6 +747,9 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
             force: true,
           });
           applyMapboxTripVisualPolish(mapboxMap, mapStyleRef.current);
+          scheduleMapboxVisualPolish();
+          scheduleMapboxVisualPolish({ delayMs: 180 });
+          scheduleMapboxVisualPolish({ delayMs: 520 });
           scheduleViewportResize(true);
           reportSurfaceReady(true);
           if (hasCompletedInitialLoad) {
@@ -753,6 +804,7 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
       if (settleResizeTimeoutId !== null) {
         window.clearTimeout(settleResizeTimeoutId);
       }
+      polishTimeoutIds.splice(0).forEach((timeoutId) => window.clearTimeout(timeoutId));
       if (introTimeoutId !== null) {
         window.clearTimeout(introTimeoutId);
       }
@@ -766,6 +818,9 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
       if (mapboxToGoogleFrameRef.current !== null) {
         window.cancelAnimationFrame(mapboxToGoogleFrameRef.current);
         mapboxToGoogleFrameRef.current = null;
+      }
+      if (polishRafId !== null) {
+        window.cancelAnimationFrame(polishRafId);
       }
       reportSurfaceReady(false);
       onMapReadyChange?.(null);

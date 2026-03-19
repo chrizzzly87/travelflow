@@ -75,24 +75,24 @@ describe('services/mapRendererVisualStyleService', () => {
       basemap: {
         theme: 'faded',
         lightPreset: 'day',
-        showPlaceLabels: false,
+        showPlaceLabels: true,
         showPointOfInterestLabels: false,
         showTransitLabels: false,
         showRoadLabels: false,
         showAdminBoundaries: false,
-        colorAdminBoundaries: '#1f2937',
+        colorAdminBoundaries: '#64748b',
         showRoadsAndTransit: false,
         showPedestrianRoads: false,
       },
     });
   });
 
-  it('starts cleanDark from a no-place-label baseline before runtime polish hides extra clutter', () => {
+  it('starts cleanDark from a place-label baseline that runtime polish trims down to country names and major cities', () => {
     expect(buildMapboxStyleConfig('cleanDark')).toEqual({
       basemap: {
         theme: 'monochrome',
         lightPreset: 'night',
-        showPlaceLabels: false,
+        showPlaceLabels: true,
         showPointOfInterestLabels: false,
         showTransitLabels: false,
         showRoadLabels: false,
@@ -195,17 +195,17 @@ describe('services/mapRendererVisualStyleService', () => {
     applyMapboxTripVisualPolish({
       getStyle: () => ({
         layers: [
-          { id: 'road-primary', type: 'line' },
-          { id: 'bridge-motorway', type: 'line' },
-          { id: 'transportation-network', type: 'line', metadata: { featureSet: 'roads' } },
-          { id: 'settlement-major-label' },
-          { id: 'place-city-dot', type: 'circle', metadata: { featureSet: 'place' } },
-          { id: 'road-shield-symbol', type: 'symbol', metadata: { featureSet: 'roads' } },
-          { id: 'airport-symbol', type: 'symbol', metadata: { featureSet: 'place' } },
+          { id: 'road-primary', type: 'line', source: 'composite', 'source-layer': 'road' },
+          { id: 'bridge-motorway', type: 'line', source: 'composite', 'source-layer': 'road' },
+          { id: 'transportation-network', type: 'line', source: 'composite', 'source-layer': 'road', metadata: { featureSet: 'roads' } },
+          { id: 'settlement-major-label', type: 'symbol', source: 'composite', 'source-layer': 'place_label' },
+          { id: 'place-city-dot', type: 'circle', source: 'composite', 'source-layer': 'place_label', metadata: { featureSet: 'place' } },
+          { id: 'road-shield-symbol', type: 'symbol', source: 'composite', 'source-layer': 'road', metadata: { featureSet: 'roads' } },
+          { id: 'airport-symbol', type: 'symbol', source: 'composite', 'source-layer': 'place_label', metadata: { featureSet: 'place' } },
           { id: 'locality-label' },
           { id: 'country-label' },
-          { id: 'admin-0-boundary' },
-          { id: 'admin-1-boundary-bg', type: 'line', filter: ['==', ['get', 'admin_level'], 1] },
+          { id: 'admin-0-boundary', type: 'line', source: 'composite', 'source-layer': 'admin' },
+          { id: 'admin-1-boundary-bg', type: 'line', source: 'composite', 'source-layer': 'admin', filter: ['==', ['get', 'admin_level'], 1] },
         ],
       } as any),
       addLayer,
@@ -231,6 +231,9 @@ describe('services/mapRendererVisualStyleService', () => {
     expect(setLayoutProperty).toHaveBeenCalledWith('locality-label', 'visibility', 'none');
     expect(setLayoutProperty).toHaveBeenCalledWith('admin-0-boundary', 'visibility', 'none');
     expect(setLayoutProperty).toHaveBeenCalledWith('admin-1-boundary-bg', 'visibility', 'none');
+    expect(setPaintProperty).toHaveBeenCalledWith('road-primary', 'line-opacity', 0);
+    expect(setPaintProperty).toHaveBeenCalledWith('place-city-dot', 'circle-opacity', 0);
+    expect(setPaintProperty).toHaveBeenCalledWith('road-shield-symbol', 'text-opacity', 0);
     expect(setFilter).toHaveBeenCalledWith('settlement-major-label', expect.any(Array));
   });
 

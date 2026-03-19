@@ -41,6 +41,7 @@ const buildMapboxStyleDescriptor = (
 });
 
 const MAPBOX_LIGHT_BOUNDARY_COLOR = '#1f2937';
+const MAPBOX_CLEAN_LIGHT_BOUNDARY_COLOR = '#64748b';
 const MAPBOX_DARK_BOUNDARY_COLOR = '#ffffff';
 
 const buildMapboxStandardVisualConfig = ({
@@ -86,8 +87,8 @@ const MAPBOX_DARK_VISUAL_CONFIG = buildMapboxStandardVisualConfig({
 });
 
 const MAPBOX_CLEAN_VISUAL_CONFIG = buildMapboxStandardVisualConfig({
-  boundaryColor: MAPBOX_LIGHT_BOUNDARY_COLOR,
-  showPlaceLabels: false,
+  boundaryColor: MAPBOX_CLEAN_LIGHT_BOUNDARY_COLOR,
+  showPlaceLabels: true,
   showAdminBoundaries: false,
   showRoadsAndTransit: false,
   showPedestrianRoads: false,
@@ -95,7 +96,7 @@ const MAPBOX_CLEAN_VISUAL_CONFIG = buildMapboxStandardVisualConfig({
 
 const MAPBOX_CLEAN_DARK_VISUAL_CONFIG = buildMapboxStandardVisualConfig({
   boundaryColor: MAPBOX_DARK_BOUNDARY_COLOR,
-  showPlaceLabels: false,
+  showPlaceLabels: true,
   showAdminBoundaries: false,
   showRoadsAndTransit: false,
   showPedestrianRoads: false,
@@ -211,7 +212,7 @@ const MAPBOX_MAJOR_CITY_FILTER = [
 
 const MAPBOX_CLEAN_MAJOR_CITY_FILTER = [
   'any',
-  ['<=', ['coalesce', ['get', 'symbolrank'], 999], 3],
+  ['<=', ['coalesce', ['get', 'symbolrank'], 999], 2],
   ['>=', ['coalesce', ['get', 'capital'], 0], 1],
 ] as const;
 
@@ -524,7 +525,11 @@ const isMapboxTripCountryBoundaryLayer = (layer: MapboxStyleLayerLike): boolean 
 const shouldHideMapboxTripBoundaryLayer = (layer: MapboxStyleLayerLike): boolean => {
   const layerId = layer.id ?? '';
   if (!layerId) return false;
+  if (layer.source === MAPBOX_COUNTRIES_TILESET_SOURCE_ID) return false;
   if (MAPBOX_TRIP_HIDDEN_BOUNDARY_LAYERS.includes(layerId as typeof MAPBOX_TRIP_HIDDEN_BOUNDARY_LAYERS[number])) {
+    return true;
+  }
+  if (layer['source-layer'] === 'admin') {
     return true;
   }
   const searchText = getMapboxLayerSearchText(layer);
@@ -569,6 +574,9 @@ const shouldHideMapboxTripRoadGeometryLayer = (
   mapStyle: MapStyle,
 ): boolean => {
   if (!isCleanMapStyle(mapStyle)) return false;
+  if (layer['source-layer'] === 'road' || layer['source-layer'] === 'motorway_junction') {
+    return layer.type === 'line' || layer.type === 'fill';
+  }
   const layerId = layer.id ?? '';
   const searchText = getMapboxLayerSearchText(layer);
   const isRoadLikeGeometry = layer.type === 'line' || layer.type === 'fill';
@@ -581,6 +589,9 @@ const shouldHideMapboxTripCleanSettlementMarkerLayer = (
   mapStyle: MapStyle,
 ): boolean => {
   if (!isCleanMapStyle(mapStyle)) return false;
+  if (layer['source-layer'] === 'place_label') {
+    return layer.type === 'circle' || layer.type === 'fill';
+  }
   const searchText = getMapboxLayerSearchText(layer);
   return (layer.type === 'circle' || layer.type === 'fill')
     && (
@@ -614,9 +625,44 @@ const shouldHideMapboxTripCleanSymbolLayer = (
   mapStyle: MapStyle,
 ): boolean => {
   if (!isCleanMapStyle(mapStyle) || layer.type !== 'symbol') return false;
+  if (layer['source-layer'] === 'road' || layer['source-layer'] === 'motorway_junction') {
+    return true;
+  }
+  if (layer['source-layer'] === 'place_label') {
+    const layerId = layer.id ?? '';
+    if (/country-label/i.test(layerId)) return false;
+    return !/settlement-major-label/i.test(layerId);
+  }
   const searchText = getMapboxLayerSearchText(layer);
   if (searchText.includes('country-label')) return false;
   return MAPBOX_TRIP_CLEAN_SYMBOL_HIDE_PATTERNS.some((pattern) => pattern.test(searchText));
+};
+
+const hideMapboxLayer = (
+  map: MapboxStyleLayerVisibilityMap,
+  layer: MapboxStyleLayerLike,
+): void => {
+  if (!layer.id || !map.getLayer(layer.id)) return;
+  map.setLayoutProperty(layer.id, 'visibility', 'none');
+
+  switch (layer.type) {
+    case 'line':
+      map.setPaintProperty(layer.id, 'line-opacity', 0);
+      break;
+    case 'fill':
+      map.setPaintProperty(layer.id, 'fill-opacity', 0);
+      break;
+    case 'circle':
+      map.setPaintProperty(layer.id, 'circle-opacity', 0);
+      map.setPaintProperty(layer.id, 'circle-stroke-opacity', 0);
+      break;
+    case 'symbol':
+      map.setPaintProperty(layer.id, 'text-opacity', 0);
+      map.setPaintProperty(layer.id, 'icon-opacity', 0);
+      break;
+    default:
+      break;
+  }
 };
 
 export const applyMapboxTripVisualPolish = (
@@ -628,8 +674,7 @@ export const applyMapboxTripVisualPolish = (
   layers.forEach((layer) => {
     if (!layer.id) return;
     if (shouldHideMapboxTripBoundaryLayer(layer)) {
-      if (!map.getLayer(layer.id)) return;
-      map.setLayoutProperty(layer.id, 'visibility', 'none');
+      hideMapboxLayer(map, layer);
       return;
     }
     if (isMapboxMajorSettlementLayer(layer)) {
@@ -641,23 +686,19 @@ export const applyMapboxTripVisualPolish = (
       return;
     }
     if (shouldHideMapboxTripRoadGeometryLayer(layer, mapStyle)) {
-      if (!map.getLayer(layer.id)) return;
-      map.setLayoutProperty(layer.id, 'visibility', 'none');
+      hideMapboxLayer(map, layer);
       return;
     }
     if (shouldHideMapboxTripCleanSettlementMarkerLayer(layer, mapStyle)) {
-      if (!map.getLayer(layer.id)) return;
-      map.setLayoutProperty(layer.id, 'visibility', 'none');
+      hideMapboxLayer(map, layer);
       return;
     }
     if (shouldHideMapboxTripCleanSymbolLayer(layer, mapStyle)) {
-      if (!map.getLayer(layer.id)) return;
-      map.setLayoutProperty(layer.id, 'visibility', 'none');
+      hideMapboxLayer(map, layer);
       return;
     }
     if (!shouldHideMapboxTripLabelLayer(layer.id, mapStyle)) return;
-    if (!map.getLayer(layer.id)) return;
-    map.setLayoutProperty(layer.id, 'visibility', 'none');
+    hideMapboxLayer(map, layer);
   });
 };
 

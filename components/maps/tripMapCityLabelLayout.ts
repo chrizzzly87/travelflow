@@ -262,7 +262,7 @@ export const resolveTripMapProjectedCityLabelLayouts = ({
     }
 
     const anchorsToTry: TripMapCityLabelAnchor[] = preferredAnchor === 'above'
-      ? ['above', 'below']
+      ? ['above']
       : ['below', 'above'];
 
     anchorsToTry.forEach((anchor) => {
