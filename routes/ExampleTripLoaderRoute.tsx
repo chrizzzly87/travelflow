@@ -23,28 +23,10 @@ import {
     generateTripId,
 } from '../utils';
 import type { ITrip, IViewSettings } from '../types';
+import { areViewSettingsEqual } from '../shared/viewSettings';
 import type { ExampleTripLoaderRouteProps } from './tripRouteTypes';
 import { LazyTripView } from '../components/tripview/LazyTripView';
 import { TripRouteLoadingShell } from '../components/tripview/TripRouteLoadingShell';
-
-const areViewSettingsEqual = (a?: IViewSettings, b?: IViewSettings): boolean => {
-    if (!a && !b) return true;
-    if (!a || !b) return false;
-    return (
-        a.layoutMode === b.layoutMode
-        && a.timelineMode === b.timelineMode
-        && a.timelineView === b.timelineView
-        && a.mapDockMode === b.mapDockMode
-        && a.mapStyle === b.mapStyle
-        && a.routeMode === b.routeMode
-        && a.showCityNames === b.showCityNames
-        && a.zoomLevel === b.zoomLevel
-        && a.zoomBehavior === b.zoomBehavior
-        && a.sidebarWidth === b.sidebarWidth
-        && a.detailsWidth === b.detailsWidth
-        && a.timelineHeight === b.timelineHeight
-    );
-};
 
 type ExampleTemplateFactory = (createdAtIso: string) => ITrip;
 type ExampleTripCardSummary = {

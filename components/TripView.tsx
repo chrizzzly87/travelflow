@@ -1578,6 +1578,8 @@ const useTripViewRender = ({
         setShowCityNames,
         zoomLevel,
         setZoomLevel,
+        zoomBehavior,
+        setZoomBehavior,
         sidebarWidth,
         setSidebarWidth,
         timelineHeight,
@@ -1607,13 +1609,15 @@ const useTripViewRender = ({
             zoomChangeSourceRef.current = source;
         }
         if (source === 'manual') {
+            setZoomBehavior('manual');
             markManualViewChange();
             setIsZoomDirty(true);
         }
-    }, [markManualViewChange]);
+    }, [markManualViewChange, setZoomBehavior]);
     const markAutoFitZoomChange = useCallback(() => {
         zoomChangeSourceRef.current = 'auto';
-    }, []);
+        setZoomBehavior('fit');
+    }, [setZoomBehavior]);
     useEffect(() => {
         setIsZoomDirty(false);
         zoomChangeSourceRef.current = null;
@@ -1798,9 +1802,11 @@ const useTripViewRender = ({
         routeMode,
         showCityNames,
         zoomLevel: roundFiniteNumber(zoomLevel, 2, 1),
+        zoomBehavior,
         sidebarWidth: Math.round(toFiniteNumber(sidebarWidth, 560)),
+        detailsWidth: Math.round(toFiniteNumber(detailsWidth, DEFAULT_DETAILS_WIDTH)),
         timelineHeight: Math.round(toFiniteNumber(timelineHeight, 340))
-    }), [layoutMode, timelineMode, timelineView, mapDockMode, mapStyle, routeMode, showCityNames, zoomLevel, sidebarWidth, timelineHeight]);
+    }), [detailsWidth, layoutMode, mapDockMode, mapStyle, routeMode, showCityNames, sidebarWidth, timelineHeight, timelineMode, timelineView, zoomBehavior, zoomLevel]);
     const currentViewSettingsRef = useRef<IViewSettings>(currentViewSettings);
 
     useEffect(() => {
@@ -2145,7 +2151,9 @@ const useTripViewRender = ({
         routeMode,
         showCityNames,
         zoomLevel,
+        zoomBehavior,
         sidebarWidth,
+        detailsWidth,
         timelineHeight,
         viewMode,
         onViewSettingsChange,
@@ -2158,7 +2166,9 @@ const useTripViewRender = ({
         setTimelineView,
         setMapDockMode,
         setZoomLevel,
+        setZoomBehavior,
         setSidebarWidth,
+        setDetailsWidth,
         setTimelineHeight,
         setShowCityNames,
         suppressCommitRef,

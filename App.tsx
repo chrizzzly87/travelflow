@@ -280,7 +280,7 @@ const createLocalHistoryEntry = (
     ts?: number,
     baseUrlOverride?: string
 ) => {
-    const url = createTripHistorySnapshotEntry({
+    const { url } = createTripHistorySnapshotEntry({
         tripId: updatedTrip.id,
         trip: updatedTrip,
         view,

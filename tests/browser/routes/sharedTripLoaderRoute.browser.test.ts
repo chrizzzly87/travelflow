@@ -161,7 +161,10 @@ describe('routes/SharedTripLoaderRoute', () => {
     mocks.dbGetSharedTrip.mockResolvedValue(null);
     mocks.dbGetSharedTripVersion.mockResolvedValue(null);
     mocks.dbGetTripVersion.mockResolvedValue(null);
-    mocks.createTripHistorySnapshotEntry.mockImplementation(({ tripId }: { tripId: string }) => `/s/share-token?v=generated-version-id`);
+    mocks.createTripHistorySnapshotEntry.mockImplementation(({ tripId }: { tripId: string }) => ({
+      url: `/s/share-token?v=generated-version-id`,
+      persisted: true,
+    }));
     mocks.findHistoryEntryByUrl.mockReturnValue(null);
     mocks.dbCanCreateTrip.mockResolvedValue({ allowCreate: true, activeTripCount: 1, maxTripCount: 5 });
   });

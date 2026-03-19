@@ -57,7 +57,7 @@ describe('services/historyService', () => {
 
   it('creates snapshot history urls before navigation code needs to resolve them', () => {
     const trip = makeTrip({ id: 'trip-snapshot' });
-    const url = createTripHistorySnapshotEntry({
+    const result = createTripHistorySnapshotEntry({
       tripId: trip.id,
       trip,
       view: { mapStyle: 'satellite', layoutMode: 'horizontal', timelineMode: 'calendar', timelineView: 'horizontal', mapDockMode: 'docked', routeMode: 'simple', showCityNames: true, zoomLevel: 1, sidebarWidth: 550, timelineHeight: 400 },
@@ -66,8 +66,9 @@ describe('services/historyService', () => {
       baseUrlOverride: '/trip/trip-snapshot?mode=planner',
     });
 
-    expect(url).toMatch(/^\/trip\/trip-snapshot\?mode=planner&v=v-/);
-    expect(findHistoryEntryByUrl(trip.id, url)?.label).toBe('Visual: Changed map style');
+    expect(result.persisted).toBe(true);
+    expect(result.url).toMatch(/^\/trip\/trip-snapshot\?mode=planner&v=v-/);
+    expect(findHistoryEntryByUrl(trip.id, result.url)?.label).toBe('Visual: Changed map style');
   });
 
   it('caps per-trip history to max size', () => {
@@ -99,17 +100,30 @@ describe('services/historyService', () => {
     expect(findHistoryEntryByUrl(tripId, '/trip/missing')).toBeNull();
   });
 
-  it('swallows storage write failures while still emitting history events', () => {
+  it('falls back to the base trip url when a snapshot write cannot persist', () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const setItemSpy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
       throw new Error('quota');
     });
     const listener = vi.fn();
     window.addEventListener('tf:history', listener as EventListener);
+    const trip = makeTrip({ id: 'trip-write-fail' });
 
-    expect(() => appendHistoryEntry('trip-write-fail', '/trip/trip-write-fail?v=1', 'v1', { ts: 1 })).not.toThrow();
+    const result = createTripHistorySnapshotEntry({
+      tripId: trip.id,
+      trip,
+      label: 'Visual: Changed map style',
+      ts: 1,
+      baseUrlOverride: '/trip/trip-write-fail?mode=planner',
+    });
+
+    expect(result).toEqual({
+      url: '/trip/trip-write-fail?mode=planner',
+      persisted: false,
+    });
     expect(consoleSpy).toHaveBeenCalled();
-    expect(listener).toHaveBeenCalledTimes(1);
+    expect(listener).not.toHaveBeenCalled();
+    expect(getHistoryEntries(trip.id)).toEqual([]);
 
     window.removeEventListener('tf:history', listener as EventListener);
     setItemSpy.mockRestore();

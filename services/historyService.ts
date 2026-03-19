@@ -16,6 +16,7 @@ export interface HistoryEntry {
 
 const HISTORY_KEY = 'travelflow_history_v1';
 const MAX_HISTORY = 200;
+const HISTORY_WRITE_FALLBACK_ORIGIN = 'https://travelflow.invalid';
 
 type HistoryStore = Record<string, HistoryEntry[]>;
 
@@ -30,14 +31,70 @@ const loadStore = (): HistoryStore => {
     }
 };
 
-const saveStore = (store: HistoryStore) => {
-    try {
-        if (!writeLocalStorageItem(HISTORY_KEY, JSON.stringify(store))) {
-            throw new Error('History storage write failed');
-        }
-    } catch (e) {
-        console.error("Failed to save history store", e);
+const cloneStore = (store: HistoryStore): HistoryStore => (
+    Object.fromEntries(
+        Object.entries(store).map(([tripId, entries]) => [
+            tripId,
+            entries.map((entry) => ({
+                ...entry,
+                snapshot: entry.snapshot
+                    ? {
+                        trip: entry.snapshot.trip,
+                        view: entry.snapshot.view,
+                    }
+                    : undefined,
+            })),
+        ]),
+    )
+);
+
+const tryWriteStore = (store: HistoryStore): boolean => (
+    writeLocalStorageItem(HISTORY_KEY, JSON.stringify(store))
+);
+
+const saveStore = (
+    store: HistoryStore,
+    options?: { protectedEntry?: Pick<HistoryEntry, 'tripId' | 'url'> },
+): boolean => {
+    if (tryWriteStore(store)) {
+        return true;
     }
+
+    const protectedEntry = options?.protectedEntry;
+    const isProtectedEntry = (entry: HistoryEntry): boolean => (
+        protectedEntry?.tripId === entry.tripId && protectedEntry?.url === entry.url
+    );
+
+    const prunedStore = cloneStore(store);
+    const prunableSnapshotEntries = Object.values(prunedStore)
+        .flat()
+        .filter((entry) => entry.snapshot && !isProtectedEntry(entry))
+        .sort((a, b) => a.ts - b.ts);
+
+    for (const entry of prunableSnapshotEntries) {
+        delete entry.snapshot;
+        if (tryWriteStore(prunedStore)) {
+            return true;
+        }
+    }
+
+    const prunableEntries = Object.entries(prunedStore)
+        .flatMap(([tripId, entries]) => entries.map((entry) => ({ tripId, entry })))
+        .filter(({ entry }) => !isProtectedEntry(entry))
+        .sort((a, b) => a.entry.ts - b.entry.ts);
+
+    for (const { tripId, entry } of prunableEntries) {
+        prunedStore[tripId] = (prunedStore[tripId] || []).filter((candidate) => candidate.id !== entry.id);
+        if (prunedStore[tripId]?.length === 0) {
+            delete prunedStore[tripId];
+        }
+        if (tryWriteStore(prunedStore)) {
+            return true;
+        }
+    }
+
+    console.error("Failed to save history store", new Error('History storage write failed'));
+    return false;
 };
 
 export const getHistoryEntries = (tripId: string): HistoryEntry[] => {
@@ -58,7 +115,7 @@ export const appendHistoryEntry = (
     const store = loadStore();
     const list = store[tripId] || [];
 
-    if (list.length > 0 && list[0].url === url) return;
+    if (list.length > 0 && list[0].url === url) return true;
 
     const entry: HistoryEntry = {
         id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -73,12 +130,27 @@ export const appendHistoryEntry = (
     const merged = [entry, ...withoutDuplicate].sort((a, b) => b.ts - a.ts);
     const next = merged.slice(0, MAX_HISTORY);
     store[tripId] = next;
-    saveStore(store);
+    const persisted = saveStore(store, {
+        protectedEntry: {
+            tripId,
+            url,
+        },
+    });
 
-    if (typeof window !== 'undefined') {
+    if (persisted && typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('tf:history', { detail: { tripId, entry } }));
     }
+    return persisted;
+};
 
+const buildHistoryBaseUrl = (tripId: string, baseUrlOverride?: string): string => {
+    if (!baseUrlOverride) {
+        return buildTripUrl(tripId);
+    }
+    const origin = typeof window !== 'undefined' ? window.location.origin : HISTORY_WRITE_FALLBACK_ORIGIN;
+    const nextUrl = new URL(baseUrlOverride, origin);
+    nextUrl.searchParams.delete('v');
+    return `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`;
 };
 
 export const createTripHistorySnapshotEntry = ({
@@ -95,22 +167,25 @@ export const createTripHistorySnapshotEntry = ({
     label: string;
     ts?: number;
     baseUrlOverride?: string;
-}): string => {
+}): { url: string; persisted: boolean } => {
     const versionId = generateVersionId();
     const url = baseUrlOverride
         ? (() => {
-            const origin = typeof window !== 'undefined' ? window.location.origin : 'https://travelflow.invalid';
+            const origin = typeof window !== 'undefined' ? window.location.origin : HISTORY_WRITE_FALLBACK_ORIGIN;
             const nextUrl = new URL(baseUrlOverride, origin);
             nextUrl.searchParams.set('v', versionId);
             return `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`;
         })()
         : buildTripUrl(tripId, versionId);
 
-    appendHistoryEntry(tripId, url, label, {
+    const persisted = appendHistoryEntry(tripId, url, label, {
         snapshot: { trip, view },
         ts,
     });
-    return url;
+    return {
+        url: persisted ? url : buildHistoryBaseUrl(tripId, baseUrlOverride),
+        persisted,
+    };
 };
 
 export const findHistoryEntryByUrl = (tripId: string, url: string): HistoryEntry | null => {

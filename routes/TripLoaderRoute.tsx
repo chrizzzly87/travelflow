@@ -25,28 +25,10 @@ import {
 } from '../services/authNavigationService';
 import type { ITrip, IViewSettings } from '../types';
 import { normalizeTripForRuntime, normalizeViewSettingsForRuntime } from '../shared/tripRuntimeNormalization';
+import { areViewSettingsEqual } from '../shared/viewSettings';
 import type { TripLoaderRouteProps } from './tripRouteTypes';
 import { LazyTripView } from '../components/tripview/LazyTripView';
 import { TripRouteLoadingShell } from '../components/tripview/TripRouteLoadingShell';
-
-const areViewSettingsEqual = (a?: IViewSettings, b?: IViewSettings): boolean => {
-    if (!a && !b) return true;
-    if (!a || !b) return false;
-    return (
-        a.layoutMode === b.layoutMode
-        && a.timelineMode === b.timelineMode
-        && a.timelineView === b.timelineView
-        && a.mapDockMode === b.mapDockMode
-        && a.mapStyle === b.mapStyle
-        && a.routeMode === b.routeMode
-        && a.showCityNames === b.showCityNames
-        && a.zoomLevel === b.zoomLevel
-        && a.zoomBehavior === b.zoomBehavior
-        && a.sidebarWidth === b.sidebarWidth
-        && a.detailsWidth === b.detailsWidth
-        && a.timelineHeight === b.timelineHeight
-    );
-};
 
 const resolveTripInitialMapFocusQuery = (trip: ITrip): string | undefined => {
     const locations = trip.items

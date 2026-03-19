@@ -38,6 +38,27 @@ describe('components/TripView runtime ordering', () => {
         expect(zoomPropIndex).toBeLessThan(dockModePropIndex);
     });
 
+    it('keeps zoom behavior and details width in the live view snapshot wiring', () => {
+        const source = readFileSync(
+            resolve(process.cwd(), 'components/TripView.tsx'),
+            'utf8',
+        );
+
+        const currentViewSettingsIndex = source.indexOf('const currentViewSettings: IViewSettings = useMemo(() => ({');
+        const zoomBehaviorIndex = source.indexOf('zoomBehavior,', currentViewSettingsIndex);
+        const detailsWidthIndex = source.indexOf('detailsWidth: Math.round', currentViewSettingsIndex);
+        const syncHookIndex = source.indexOf('useTripViewSettingsSync({');
+        const syncZoomBehaviorIndex = source.indexOf('zoomBehavior,', syncHookIndex);
+        const syncDetailsWidthIndex = source.indexOf('detailsWidth,', syncHookIndex);
+
+        expect(currentViewSettingsIndex).toBeGreaterThan(-1);
+        expect(zoomBehaviorIndex).toBeGreaterThan(currentViewSettingsIndex);
+        expect(detailsWidthIndex).toBeGreaterThan(zoomBehaviorIndex);
+        expect(syncHookIndex).toBeGreaterThan(-1);
+        expect(syncZoomBehaviorIndex).toBeGreaterThan(syncHookIndex);
+        expect(syncDetailsWidthIndex).toBeGreaterThan(syncZoomBehaviorIndex);
+    });
+
     it('keeps mobile trip selection in the mainline two-step details mode', () => {
         const source = readFileSync(
             resolve(process.cwd(), 'components/TripView.tsx'),

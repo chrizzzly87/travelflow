@@ -5,6 +5,7 @@ import type { IViewSettings, MapStyle, RouteMode } from '../../types';
 import { applyViewSettingsToSearchParams } from '../../utils';
 import { roundFiniteNumber, toFiniteNumber } from '../../shared/numberUtils';
 import { normalizeViewSettingsForRuntime } from '../../shared/tripRuntimeNormalization';
+import { getNormalizedViewSettingsKey } from '../../shared/viewSettings';
 
 interface UseTripViewSettingsSyncOptions {
     layoutMode: 'vertical' | 'horizontal';
@@ -15,7 +16,9 @@ interface UseTripViewSettingsSyncOptions {
     routeMode: RouteMode;
     showCityNames: boolean;
     zoomLevel: number;
+    zoomBehavior: NonNullable<IViewSettings['zoomBehavior']>;
     sidebarWidth: number;
+    detailsWidth: number;
     timelineHeight: number;
     viewMode: 'planner' | 'print';
     onViewSettingsChange?: (settings: IViewSettings) => void;
@@ -28,7 +31,9 @@ interface UseTripViewSettingsSyncOptions {
     setTimelineView: Dispatch<SetStateAction<'horizontal' | 'vertical'>>;
     setMapDockMode: Dispatch<SetStateAction<'docked' | 'floating'>>;
     setZoomLevel: Dispatch<SetStateAction<number>>;
+    setZoomBehavior: Dispatch<SetStateAction<NonNullable<IViewSettings['zoomBehavior']>>>;
     setSidebarWidth: Dispatch<SetStateAction<number>>;
+    setDetailsWidth: Dispatch<SetStateAction<number>>;
     setTimelineHeight: Dispatch<SetStateAction<number>>;
     setShowCityNames: Dispatch<SetStateAction<boolean>>;
     suppressCommitRef: MutableRefObject<boolean>;
@@ -42,7 +47,9 @@ const normalizeSettingsForCallback = (settings: IViewSettings): IViewSettings =>
     ...settings,
     showCityNames: Boolean(settings.showCityNames),
     zoomLevel: roundFiniteNumber(settings.zoomLevel, 2, 1),
+    zoomBehavior: settings.zoomBehavior === 'manual' ? 'manual' : 'fit',
     sidebarWidth: Math.round(toFiniteNumber(settings.sidebarWidth, 560)),
+    detailsWidth: Math.round(toFiniteNumber(settings.detailsWidth, 440)),
     timelineHeight: Math.round(toFiniteNumber(settings.timelineHeight, 340)),
 });
 
@@ -55,7 +62,9 @@ export const useTripViewSettingsSync = ({
     routeMode,
     showCityNames,
     zoomLevel,
+    zoomBehavior,
     sidebarWidth,
+    detailsWidth,
     timelineHeight,
     viewMode,
     onViewSettingsChange,
@@ -68,7 +77,9 @@ export const useTripViewSettingsSync = ({
     setTimelineView,
     setMapDockMode,
     setZoomLevel,
+    setZoomBehavior,
     setSidebarWidth,
+    setDetailsWidth,
     setTimelineHeight,
     setShowCityNames,
     suppressCommitRef,
@@ -118,7 +129,9 @@ export const useTripViewSettingsSync = ({
                 routeMode,
                 showCityNames,
                 zoomLevel,
+                zoomBehavior,
                 sidebarWidth,
+                detailsWidth,
                 timelineHeight,
             };
             const settings = normalizeSettingsForCallback(rawSettings);
@@ -146,11 +159,13 @@ export const useTripViewSettingsSync = ({
         timelineMode,
         mapDockMode,
         zoomLevel,
+        zoomBehavior,
         viewMode,
         mapStyle,
         routeMode,
         timelineView,
         sidebarWidth,
+        detailsWidth,
         timelineHeight,
         showCityNames,
         onViewSettingsChange,
@@ -160,8 +175,9 @@ export const useTripViewSettingsSync = ({
         const normalizedInitialViewSettings = normalizeViewSettingsForRuntime(initialViewSettings);
         if (!normalizedInitialViewSettings) return;
 
-        const key = JSON.stringify(normalizedInitialViewSettings);
-        const currentKey = JSON.stringify(currentViewSettings);
+        const key = getNormalizedViewSettingsKey(normalizedInitialViewSettings);
+        const currentKey = getNormalizedViewSettingsKey(currentViewSettings);
+        if (!key || !currentKey) return;
         if (pendingManualViewSettingsPersistRef.current && key !== currentKey) {
             return;
         }
@@ -182,7 +198,9 @@ export const useTripViewSettingsSync = ({
         if (normalizedInitialViewSettings.timelineView) setTimelineView(normalizedInitialViewSettings.timelineView);
         if (normalizedInitialViewSettings.mapDockMode) setMapDockMode(normalizedInitialViewSettings.mapDockMode);
         if (typeof normalizedInitialViewSettings.zoomLevel === 'number') setZoomLevel(normalizedInitialViewSettings.zoomLevel);
+        setZoomBehavior(normalizedInitialViewSettings.zoomBehavior === 'manual' ? 'manual' : 'fit');
         if (typeof normalizedInitialViewSettings.sidebarWidth === 'number') setSidebarWidth(normalizedInitialViewSettings.sidebarWidth);
+        if (typeof normalizedInitialViewSettings.detailsWidth === 'number') setDetailsWidth(normalizedInitialViewSettings.detailsWidth);
         if (typeof normalizedInitialViewSettings.timelineHeight === 'number') setTimelineHeight(normalizedInitialViewSettings.timelineHeight);
         setShowCityNames(normalizedInitialViewSettings.showCityNames ?? true);
 
@@ -197,7 +215,9 @@ export const useTripViewSettingsSync = ({
         setTimelineView,
         setMapDockMode,
         setZoomLevel,
+        setZoomBehavior,
         setSidebarWidth,
+        setDetailsWidth,
         setTimelineHeight,
         setShowCityNames,
         suppressCommitRef,
