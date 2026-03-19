@@ -13,14 +13,9 @@ import { ActivityTypeIcon, formatActivityTypeLabel, getActivityTypeButtonClass }
 import { TransportModeIcon } from './TransportModeIcon';
 import { useAppDialog } from './AppDialogProvider';
 import { normalizeTransportMode, TRANSPORT_MODE_UI_ORDER } from '../shared/transportModes';
-import {
-  resolveCitySuggestion,
-  searchCitySuggestions,
-  searchHotelSuggestions,
-  type CityLookupSuggestion,
-  type HotelSearchResult,
-} from '../services/locationSearchService';
+import { resolveCitySuggestion, searchCitySuggestions, type CityLookupSuggestion } from '../shared/cityLookup';
 import { FlagIcon } from './flags/FlagIcon';
+import { NumberInput } from './ui/number-input';
 import { Switch } from './ui/switch';
 import { loadLazyComponentWithRecovery } from '../services/lazyImportRecovery';
 
@@ -71,6 +66,20 @@ interface CityDraft {
     countryName?: string;
     countryCode?: string;
 }
+
+interface HotelSearchResult {
+    id: string;
+    name: string;
+    address: string;
+}
+
+type SearchByTextResponseShape = {
+    places?: Array<{
+        id?: string;
+        displayName?: string | { text?: string };
+        formattedAddress?: string;
+    }>;
+};
 
 const CITY_NOTES_AI_ACTIONS: MarkdownAiAction[] = [
     {
@@ -146,7 +155,33 @@ const getCityNameFromText = (text: string): string => {
     return firstPart || text.trim();
 };
 
-export { mapSearchByTextPlacesToHotelResults } from '../services/locationSearchService';
+const resolvePlaceDisplayName = (displayName: unknown): string => {
+    if (typeof displayName === 'string') return displayName.trim();
+    if (displayName && typeof displayName === 'object') {
+        const text = (displayName as { text?: unknown }).text;
+        if (typeof text === 'string') return text.trim();
+    }
+    return '';
+};
+
+export const mapSearchByTextPlacesToHotelResults = (
+    response: SearchByTextResponseShape | null | undefined,
+): HotelSearchResult[] => {
+    const places = Array.isArray(response?.places) ? response.places : [];
+    return places
+        .map((place) => {
+            const name = resolvePlaceDisplayName(place?.displayName) || 'Hotel';
+            const address = (place?.formattedAddress || '').trim();
+            const id = (place?.id || '').trim() || `${name}-${address}`;
+            return {
+                id,
+                name,
+                address,
+            };
+        })
+        .filter((result) => result.id.length > 0)
+        .slice(0, 5);
+};
 
 export const DetailsPanel: React.FC<DetailsPanelProps> = ({ 
     item, 
@@ -930,13 +965,29 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
       const searchString = `${hotelQuery} in ${displayItem.location || displayItem.title}`;
 
       try {
-          const results = await searchHotelSuggestions(searchString, {
+          const importLibrary = (window as any).google?.maps?.importLibrary;
+          if (typeof importLibrary !== 'function') {
+              setHotelResults([]);
+              setHotelSearchUnavailable(true);
+              return;
+          }
+
+          const placesLibrary = await importLibrary('places');
+          const searchByText = placesLibrary?.Place?.searchByText;
+          if (typeof searchByText !== 'function') {
+              setHotelResults([]);
+              setHotelSearchUnavailable(true);
+              return;
+          }
+
+          const response = await searchByText({
+              textQuery: searchString,
               includedType: 'lodging',
+              maxResultCount: 5,
+              fields: ['id', 'displayName', 'formattedAddress'],
               language: mapLanguage,
-              maxResults: 5,
           });
-          setHotelResults(results);
-          setHotelSearchUnavailable(results.length === 0);
+          setHotelResults(mapSearchByTextPlacesToHotelResults(response as SearchByTextResponseShape));
       } catch (e) {
           console.error('Hotel search error', e);
           setHotelResults([]);
@@ -1313,19 +1364,6 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                       </div>
                   )}
              </div>
-             {supportsApproval && (
-                <div className="mb-3 flex items-center gap-2 text-xs text-gray-600">
-                    <Switch
-                        checked={isItemApproved}
-                        onCheckedChange={handleSetItemApproved}
-                        disabled={!canEdit}
-                        className="h-5 w-9 data-[state=checked]:bg-emerald-600 data-[state=unchecked]:bg-amber-400"
-                        aria-label="Toggle item approval"
-                    />
-                    <span className="font-medium">{isItemApproved ? 'Approved' : 'Needs approval'}</span>
-                </div>
-             )}
-             
              <textarea 
                 value={displayItem.title} 
                 onChange={canEdit ? ((e) => handleUpdate(displayItem.id, { title: e.target.value })) : undefined} 
@@ -1342,13 +1380,15 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                         <div className="flex flex-col gap-1">
                             <div className="flex items-center gap-2">
                                 <span className="text-sm font-medium">Duration:</span>
-                                <input
-                                    type="number"
+                                <NumberInput
                                     min="0.5"
+                                    step="0.5"
                                     value={Math.round(displayItem.duration * 24 * 10) / 10}
                                     onChange={canEdit ? ((e) => { const h = parseFloat(e.target.value); if (!isNaN(h) && h > 0) handleUpdate(displayItem.id, { duration: h / 24 }); }) : undefined}
                                     disabled={!canEdit}
-                                    className={`w-16 p-1 border-b border-gray-300 bg-transparent text-center font-bold text-gray-900 outline-none ${canEdit ? 'focus:border-accent-500' : 'cursor-not-allowed opacity-70'}`}
+                                    className={`h-auto w-16 rounded-none border-0 border-b border-gray-300 bg-transparent px-0 py-1 text-center font-bold text-gray-900 shadow-none ring-0 ${canEdit ? 'focus-visible:border-accent-500' : 'cursor-not-allowed opacity-70'}`}
+                                    overlayClassName="justify-center px-0 font-bold text-gray-900"
+                                    format={{ maximumFractionDigits: 1 }}
                                 />
                                 <span className="font-medium text-sm">hours</span>
                             </div>
@@ -1407,6 +1447,18 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                             </div>
                             {isCity && countryNameForDisplay && (
                                 <div className="text-xs text-gray-500 mt-0.5">{countryNameForDisplay}</div>
+                            )}
+                            {supportsApproval && (
+                                <div className="mt-3 flex items-center gap-2 text-xs text-gray-600">
+                                    <Switch
+                                        checked={isItemApproved}
+                                        onCheckedChange={handleSetItemApproved}
+                                        disabled={!canEdit}
+                                        className="h-5 w-9 data-[state=checked]:bg-emerald-600 data-[state=unchecked]:bg-amber-400"
+                                        aria-label="Toggle item approval"
+                                    />
+                                    <span className="font-medium">{isItemApproved ? 'Approved' : 'Needs approval'}</span>
+                                </div>
                             )}
                         </div>
                     </div>

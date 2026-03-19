@@ -178,7 +178,10 @@ describe('routes/TripLoaderRoute', () => {
     });
     mocks.getTripById.mockReturnValue(localTrip);
 
-    const props = makeRouteProps();
+    const props = {
+      ...makeRouteProps(),
+      trip: localTrip,
+    };
 
     render(React.createElement(TripLoaderRoute, props));
 
@@ -189,11 +192,7 @@ describe('routes/TripLoaderRoute', () => {
     const [loadedTrip, loadedView] = props.onTripLoaded.mock.calls[0];
     expect(loadedTrip.id).toBe('trip-shared');
     expect(loadedTrip.isFavorite).toBe(true);
-    expect(loadedView).toMatchObject({
-      ...sharedView,
-      timelineMode: 'calendar',
-      zoomBehavior: 'fit',
-    });
+    expect(loadedView).toEqual(sharedView);
     expect(mocks.navigate).not.toHaveBeenCalled();
   });
 
@@ -212,50 +211,6 @@ describe('routes/TripLoaderRoute', () => {
 
     await waitFor(() => {
       expect(mocks.renderedTripViewProps?.trip).toEqual(resolvedTrip);
-    });
-  });
-
-  it('normalizes malformed trip props before rendering the planner view', async () => {
-    const malformedTrip = makeTrip({
-      id: 'trip-inline-malformed',
-      title: 'Inline malformed trip',
-      items: [
-        {
-          id: 'city-inline-bad',
-          type: 'city',
-          title: 'Broken city',
-          startDateOffset: undefined as unknown as number,
-          duration: undefined as unknown as number,
-          color: 'bg-blue-100',
-          coordinates: { lat: undefined as unknown as number, lng: 13.405 },
-        } as any,
-      ],
-      defaultView: {
-        layoutMode: 'horizontal',
-        timelineView: 'horizontal',
-        mapStyle: 'standard',
-        zoomLevel: undefined as unknown as number,
-      } as any,
-    });
-    const props = makeRouteProps();
-
-    render(React.createElement(TripLoaderRoute, {
-      ...props,
-      trip: malformedTrip,
-    }));
-
-    await waitFor(() => {
-      expect(mocks.renderedTripViewProps?.trip).toBeTruthy();
-    });
-
-    expect((mocks.renderedTripViewProps?.trip as any).items[0]).toMatchObject({
-      startDateOffset: 0,
-      duration: 1,
-      coordinates: undefined,
-    });
-    expect(mocks.renderedTripViewProps?.initialViewSettings).toMatchObject({
-      zoomLevel: 1,
-      timelineMode: 'calendar',
     });
   });
 
@@ -326,59 +281,6 @@ describe('routes/TripLoaderRoute', () => {
     expect(loadedTravel.routeDurationHours).toBeUndefined();
     expect(mocks.saveTrip).toHaveBeenCalledWith(expect.objectContaining({
       id: 'trip-local-legacy',
-    }), { preserveUpdatedAt: true });
-  });
-
-  it('sanitizes malformed trip payloads before opening the planner route', async () => {
-    mocks.dbEnabled = true;
-    mocks.connectivityState = 'offline';
-    mocks.route.tripId = 'trip-malformed';
-    mocks.route.pathname = '/trip/trip-malformed';
-    const malformedTrip = makeTrip({
-      id: 'trip-malformed',
-      title: 'Malformed trip',
-      items: [
-        {
-          id: 'city-bad',
-          type: 'city',
-          title: 'Broken city',
-          startDateOffset: undefined as unknown as number,
-          duration: undefined as unknown as number,
-          color: 'bg-blue-100',
-          coordinates: { lat: undefined as unknown as number, lng: 13.405 },
-        } as any,
-      ],
-      defaultView: {
-        layoutMode: 'horizontal',
-        timelineView: 'horizontal',
-        mapStyle: 'standard',
-        zoomLevel: undefined as unknown as number,
-      } as any,
-    });
-    mocks.getTripById.mockReturnValue(malformedTrip);
-
-    const props = makeRouteProps();
-    render(React.createElement(TripLoaderRoute, props));
-
-    await waitFor(() => {
-      expect(props.onTripLoaded).toHaveBeenCalledTimes(1);
-    });
-
-    const [loadedTrip, loadedView] = props.onTripLoaded.mock.calls[0];
-    expect(loadedTrip.items[0]).toMatchObject({
-      startDateOffset: 0,
-      duration: 1,
-      coordinates: undefined,
-    });
-    expect(loadedView).toMatchObject({
-      layoutMode: 'horizontal',
-      timelineMode: 'calendar',
-      timelineView: 'horizontal',
-      mapStyle: 'standard',
-      zoomLevel: 1,
-    });
-    expect(mocks.saveTrip).toHaveBeenCalledWith(expect.objectContaining({
-      id: 'trip-malformed',
     }), { preserveUpdatedAt: true });
   });
 
@@ -454,90 +356,18 @@ describe('routes/TripLoaderRoute', () => {
       },
     });
 
-    const props = makeRouteProps();
+    const props = {
+      ...makeRouteProps(),
+      trip: localTrip,
+    };
     render(React.createElement(TripLoaderRoute, props));
 
     await waitFor(() => {
-      expect(props.onTripLoaded).toHaveBeenCalledWith(
-        expect.objectContaining({ id: 'trip-local-version' }),
-        expect.objectContaining({
-          ...localView,
-          timelineMode: 'calendar',
-          zoomBehavior: 'fit',
-        }),
-      );
+      expect(props.onTripLoaded).toHaveBeenCalledWith(localTrip, localView);
     });
     expect(props.onTripLoaded).toHaveBeenCalledTimes(1);
     expect(mocks.dbGetTrip).not.toHaveBeenCalled();
     expect(mocks.dbGetTripVersion).not.toHaveBeenCalled();
-  });
-
-  it('applies view-only local history snapshots when no local trip snapshot exists', async () => {
-    mocks.dbEnabled = true;
-    mocks.route.tripId = 'trip-local-view-only';
-    mocks.route.pathname = '/trip/trip-local-view-only';
-    mocks.route.search = '?v=view-only';
-
-    const localTrip = makeTrip({
-      id: 'trip-local-view-only',
-      title: 'Local trip',
-      updatedAt: 1000,
-      items: [
-        {
-          ...makeTravelItem('travel-view-only', 1, 'Legacy rail leg'),
-          transportMode: 'rail' as any,
-          routeDistanceKm: 420,
-          routeDurationHours: 6.5,
-        },
-      ],
-    });
-
-    mocks.findHistoryEntryByUrl.mockReturnValue({
-      id: 'entry-view-only',
-      tripId: 'trip-local-view-only',
-      url: '/trip/trip-local-view-only?v=view-only',
-      label: 'Visual: Map view standard -> dark',
-      ts: Date.now(),
-      snapshot: {
-        view: {
-          layoutMode: 'horizontal',
-          timelineMode: 'calendar',
-          timelineView: 'horizontal',
-          mapDockMode: 'docked',
-          mapStyle: 'dark',
-          routeMode: 'simple',
-          showCityNames: true,
-          zoomLevel: 1.25,
-          zoomBehavior: 'manual',
-          sidebarWidth: 560,
-          detailsWidth: 420,
-          timelineHeight: 360,
-        },
-      },
-    });
-    mocks.getTripById.mockReturnValue(localTrip);
-    mocks.connectivityState = 'offline';
-
-    const props = makeRouteProps();
-    render(React.createElement(TripLoaderRoute, props));
-
-    await waitFor(() => {
-      expect(props.onTripLoaded).toHaveBeenCalledTimes(1);
-    });
-
-    const [loadedTrip, loadedView] = props.onTripLoaded.mock.calls[0];
-    expect(loadedTrip.items[0]).toMatchObject({
-      type: 'travel',
-      transportMode: 'train',
-      routeDistanceKm: undefined,
-      routeDurationHours: undefined,
-    });
-    expect(loadedView).toMatchObject({
-      mapStyle: 'dark',
-      zoomBehavior: 'manual',
-      detailsWidth: 420,
-      timelineHeight: 360,
-    });
   });
 
   it('refreshes from DB after reconnect when newer data is available', async () => {
@@ -631,10 +461,7 @@ describe('routes/TripLoaderRoute', () => {
     const view = render(React.createElement(TripLoaderRoute, props));
 
     await waitFor(() => {
-      expect(mocks.renderedTripViewProps?.initialViewSettings).toMatchObject({
-        ...timelineView,
-        zoomBehavior: 'fit',
-      });
+      expect(mocks.renderedTripViewProps?.initialViewSettings).toEqual(timelineView);
     });
 
     await act(async () => {
@@ -643,28 +470,16 @@ describe('routes/TripLoaderRoute', () => {
     });
 
     await waitFor(() => {
-      expect(mocks.renderedTripViewProps?.initialViewSettings).toMatchObject({
-        ...calendarView,
-        zoomBehavior: 'fit',
-      });
+      expect(mocks.renderedTripViewProps?.initialViewSettings).toEqual(calendarView);
     });
 
     mocks.connectivityState = 'online';
     view.rerender(React.createElement(TripLoaderRoute, props));
 
     await waitFor(() => {
-      expect(props.onTripLoaded).toHaveBeenLastCalledWith(
-        expect.objectContaining({ id: 'trip-view-persistence' }),
-        expect.objectContaining({
-          ...calendarView,
-          zoomBehavior: 'fit',
-        }),
-      );
+      expect(props.onTripLoaded).toHaveBeenLastCalledWith(dbTrip, calendarView);
     });
-    expect(mocks.renderedTripViewProps?.initialViewSettings).toMatchObject({
-      ...calendarView,
-      zoomBehavior: 'fit',
-    });
+    expect(mocks.renderedTripViewProps?.initialViewSettings).toEqual(calendarView);
   });
 
   it('does not forward duplicate view-settings updates', async () => {
@@ -785,10 +600,7 @@ describe('routes/TripLoaderRoute', () => {
     });
 
     await waitFor(() => {
-      expect(mocks.dbUpdateTripShareViewSettings).toHaveBeenCalledWith('trip-sync-share-view', expect.objectContaining({
-        ...nextSettings,
-        zoomBehavior: 'fit',
-      }));
+      expect(mocks.dbUpdateTripShareViewSettings).toHaveBeenCalledWith('trip-sync-share-view', nextSettings);
     });
   });
 
@@ -863,5 +675,113 @@ describe('routes/TripLoaderRoute', () => {
 
     expect(mocks.saveTrip).toHaveBeenCalledTimes(1);
     expect(mocks.saveTrip).toHaveBeenCalledWith(dbTrip, { preserveUpdatedAt: true });
+  });
+
+  it('keeps owner trips editable and shareable when loading a local history snapshot', async () => {
+    mocks.dbEnabled = true;
+    mocks.route.tripId = 'trip-owned-history';
+    mocks.route.pathname = '/trip/trip-owned-history';
+    mocks.route.search = '?v=local-version';
+    mocks.connectivityState = 'offline';
+
+    const localView: IViewSettings = {
+      layoutMode: 'horizontal',
+      timelineMode: 'calendar',
+      timelineView: 'horizontal',
+      mapDockMode: 'docked',
+      mapStyle: 'dark',
+      routeMode: 'simple',
+      showCityNames: true,
+      zoomLevel: 1.2,
+      zoomBehavior: 'fit',
+      sidebarWidth: 560,
+      detailsWidth: 420,
+      timelineHeight: 340,
+    };
+    const localTrip = makeTrip({
+      id: 'trip-owned-history',
+      title: 'Owned history trip',
+      defaultView: localView,
+    });
+
+    mocks.findHistoryEntryByUrl.mockReturnValue({
+      snapshot: {
+        trip: localTrip,
+        view: localView,
+      },
+    });
+
+    const props = {
+      ...makeRouteProps(),
+      trip: localTrip,
+    };
+    render(React.createElement(TripLoaderRoute, props));
+
+    await waitFor(() => {
+      expect(props.onTripLoaded).toHaveBeenCalledWith(localTrip, localView);
+    });
+
+    await waitFor(() => {
+      expect(mocks.renderedTripViewProps).toEqual(expect.objectContaining({
+        readOnly: false,
+        canShare: true,
+      }));
+    });
+  });
+
+  it('keeps owner trips editable when a versioned url only has a local view snapshot', async () => {
+    mocks.dbEnabled = true;
+    mocks.route.tripId = 'trip-owned-view-only';
+    mocks.route.pathname = '/trip/trip-owned-view-only';
+    mocks.route.search = '?v=local-visual';
+    mocks.connectivityState = 'offline';
+
+    const localView: IViewSettings = {
+      layoutMode: 'horizontal',
+      timelineMode: 'calendar',
+      timelineView: 'horizontal',
+      mapDockMode: 'docked',
+      mapStyle: 'dark',
+      routeMode: 'simple',
+      showCityNames: true,
+      zoomLevel: 1.25,
+      zoomBehavior: 'manual',
+      sidebarWidth: 560,
+      detailsWidth: 420,
+      timelineHeight: 360,
+    };
+    const localTrip = makeTrip({
+      id: 'trip-owned-view-only',
+      title: 'Owned view-only trip',
+      defaultView: {
+        ...localView,
+        mapStyle: 'standard',
+        zoomBehavior: 'fit',
+      },
+    });
+
+    mocks.findHistoryEntryByUrl.mockReturnValue({
+      snapshot: {
+        view: localView,
+      },
+    });
+    mocks.getTripById.mockReturnValue(localTrip);
+
+    const props = {
+      ...makeRouteProps(),
+      trip: localTrip,
+    };
+    render(React.createElement(TripLoaderRoute, props));
+
+    await waitFor(() => {
+      expect(props.onTripLoaded).toHaveBeenCalledWith(localTrip, localView);
+    });
+
+    await waitFor(() => {
+      expect(mocks.renderedTripViewProps).toEqual(expect.objectContaining({
+        readOnly: false,
+        canShare: true,
+      }));
+    });
   });
 });

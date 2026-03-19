@@ -4,8 +4,6 @@ import { act, renderHook } from '@testing-library/react';
 
 import type { IViewSettings } from '../../../types';
 import { useTripViewSettingsSync } from '../../../components/tripview/useTripViewSettingsSync';
-import { normalizeViewSettingsForRuntime } from '../../../shared/tripRuntimeNormalization';
-import { getNormalizedViewSettingsKey } from '../../../shared/viewSettings';
 
 const BASE_VIEW_SETTINGS: IViewSettings = {
   layoutMode: 'horizontal',
@@ -89,6 +87,7 @@ describe('components/tripview/useTripViewSettingsSync', () => {
     expect(params.get('cityNames')).toBe('1');
     expect(params.get('zoom')).toBe('1.25');
     expect(params.get('sidebarWidth')).toBe('480');
+    expect(params.get('detailsWidth')).toBe('420');
     expect(params.get('timelineHeight')).toBe('320');
     expect(params.get('mode')).toBe('print');
 
@@ -195,12 +194,10 @@ describe('components/tripview/useTripViewSettingsSync', () => {
       useTripViewSettingsSync(hookProps);
     }, { initialProps: props });
 
-    const normalizedInitialViewSettings = normalizeViewSettingsForRuntime(props.initialViewSettings)!;
-
     expect(props.suppressCommitRef.current).toBe(true);
     expect(props.skipViewDiffRef.current).toBe(true);
-    expect(JSON.parse(props.appliedViewKeyRef.current as string)).toEqual(normalizedInitialViewSettings);
-    expect(props.prevViewRef.current).toEqual(normalizedInitialViewSettings);
+    expect(props.appliedViewKeyRef.current).toBe(JSON.stringify(props.initialViewSettings));
+    expect(props.prevViewRef.current).toEqual(props.initialViewSettings);
 
     expect(props.setMapStyle).toHaveBeenCalledWith('dark');
     expect(props.setRouteMode).toHaveBeenCalledWith('realistic');
@@ -222,21 +219,6 @@ describe('components/tripview/useTripViewSettingsSync', () => {
 
     expect(props.setMapStyle.mock.calls.length).toBe(mapStyleCalls);
     expect(props.setRouteMode.mock.calls.length).toBe(routeModeCalls);
-  });
-
-  it('does not suppress commits when the normalized initial view already matches the live view', () => {
-    const initialViewSettings = normalizeViewSettingsForRuntime(BASE_VIEW_SETTINGS);
-    const props = makeHookProps();
-    props.initialViewSettings = initialViewSettings;
-    props.currentViewSettings = initialViewSettings as IViewSettings;
-
-    renderHook(() => useTripViewSettingsSync(props));
-
-    expect(props.suppressCommitRef.current).toBe(false);
-    expect(props.skipViewDiffRef.current).toBe(false);
-    expect(props.appliedViewKeyRef.current).toBe(getNormalizedViewSettingsKey(initialViewSettings));
-    expect(props.setMapStyle).not.toHaveBeenCalled();
-    expect(props.setZoomBehavior).not.toHaveBeenCalled();
   });
 
   it('does not re-emit unchanged settings when callback identity changes', () => {
@@ -269,26 +251,5 @@ describe('components/tripview/useTripViewSettingsSync', () => {
 
     expect(secondCallback).not.toHaveBeenCalled();
     vi.useRealTimers();
-  });
-
-  it('does not reapply incoming initial view settings while a manual view change is still pending', () => {
-    const props = makeHookProps();
-    props.initialViewSettings = {
-      ...BASE_VIEW_SETTINGS,
-      mapStyle: 'dark',
-      routeMode: 'realistic',
-    };
-    props.currentViewSettings = {
-      ...BASE_VIEW_SETTINGS,
-      mapStyle: 'satellite',
-    };
-    props.pendingManualViewSettingsPersistRef.current = true;
-
-    renderHook(() => useTripViewSettingsSync(props));
-
-    expect(props.setMapStyle).not.toHaveBeenCalled();
-    expect(props.setRouteMode).not.toHaveBeenCalled();
-    expect(props.suppressCommitRef.current).toBe(false);
-    expect(props.skipViewDiffRef.current).toBe(false);
   });
 });

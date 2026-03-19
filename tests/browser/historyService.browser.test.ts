@@ -55,25 +55,6 @@ describe('services/historyService', () => {
     window.removeEventListener('tf:history', listener as EventListener);
   });
 
-  it('creates snapshot history urls before navigation code needs to resolve them', () => {
-    const trip = makeTrip({ id: 'trip-snapshot' });
-    const result = createTripHistorySnapshotEntry({
-      tripId: trip.id,
-      trip,
-      view: { mapStyle: 'satellite', layoutMode: 'horizontal', timelineMode: 'calendar', timelineView: 'horizontal', mapDockMode: 'docked', routeMode: 'simple', showCityNames: true, zoomLevel: 1, sidebarWidth: 550, timelineHeight: 400 },
-      label: 'Visual: Changed map style',
-      ts: 42,
-      baseUrlOverride: '/trip/trip-snapshot?mode=planner',
-    });
-
-    expect(result.persisted).toBe(true);
-    expect(result.url).toMatch(/^\/trip\/trip-snapshot\?mode=planner&v=v-/);
-    const entry = findHistoryEntryByUrl(trip.id, result.url);
-    expect(entry?.label).toBe('Visual: Changed map style');
-    expect(entry?.snapshot?.trip).toBeUndefined();
-    expect(entry?.snapshot?.view?.mapStyle).toBe('satellite');
-  });
-
   it('caps per-trip history to max size', () => {
     const tripId = 'trip-max';
     for (let i = 0; i < 220; i += 1) {
@@ -133,7 +114,60 @@ describe('services/historyService', () => {
     consoleSpy.mockRestore();
   });
 
-  it('compacts older visual entries that still store full trip snapshots', () => {
+  it('prunes older history entries before failing a new write', () => {
+    const tripId = 'trip-prune';
+    const originalSetItem = Storage.prototype.setItem;
+    window.localStorage.setItem('travelflow_history_v1', JSON.stringify({
+      [tripId]: [
+        {
+          id: 'old-1',
+          tripId,
+          url: `/trip/${tripId}?v=old-1`,
+          label: 'Old one',
+          ts: 1,
+          snapshot: {
+            trip: makeTrip({ id: tripId, title: 'Old one' }),
+          },
+        },
+        {
+          id: 'old-2',
+          tripId,
+          url: `/trip/${tripId}?v=old-2`,
+          label: 'Old two',
+          ts: 2,
+          snapshot: {
+            trip: makeTrip({ id: tripId, title: 'Old two' }),
+          },
+        },
+      ],
+    }));
+
+    let writeAttempts = 0;
+    const setItemSpy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (key, value) {
+      if (key === 'travelflow_history_v1' && writeAttempts === 0) {
+        writeAttempts += 1;
+        throw new Error('quota');
+      }
+      return originalSetItem.call(this, key, value);
+    });
+
+    const persisted = appendHistoryEntry(tripId, `/trip/${tripId}?v=new`, 'Newest', {
+      ts: 3,
+      snapshot: {
+        trip: makeTrip({ id: tripId, title: 'Newest' }),
+      },
+    });
+
+    expect(persisted).toBe(true);
+    expect(getHistoryEntries(tripId).map((entry) => entry.url)).toEqual([
+      `/trip/${tripId}?v=new`,
+      `/trip/${tripId}?v=old-2`,
+    ]);
+
+    setItemSpy.mockRestore();
+  });
+
+  it('compacts legacy visual entries that still store full trip snapshots', () => {
     const trip = makeTrip({ id: 'trip-compact' });
     window.localStorage.setItem('travelflow_history_v1', JSON.stringify({
       [trip.id]: [
@@ -154,6 +188,7 @@ describe('services/historyService', () => {
               routeMode: 'simple',
               showCityNames: true,
               zoomLevel: 1,
+              zoomBehavior: 'fit',
               sidebarWidth: 550,
               detailsWidth: 440,
               timelineHeight: 340,

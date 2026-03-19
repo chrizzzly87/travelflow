@@ -13,7 +13,6 @@ import {
 } from '../services/dbApi';
 import { findHistoryEntryByUrl } from '../services/historyService';
 import { getTripById, saveTrip } from '../services/storageService';
-import { resolveTripInitialViewSettings } from '../services/tripViewSettingsService';
 import {
     buildTripUrl,
     decompressTrip,
@@ -23,13 +22,30 @@ import {
     buildPathFromLocationParts,
     rememberAuthReturnPath,
 } from '../services/authNavigationService';
-import type { ITrip, IViewSettings } from '../types';
-import { normalizeViewSettingsForRuntime } from '../shared/tripRuntimeNormalization';
-import { normalizeTripForRouteLoad } from '../shared/tripRouteLoadNormalization';
-import { areViewSettingsEqual } from '../shared/viewSettings';
+import type { ITrip, ITimelineItem, IViewSettings } from '../types';
+import { normalizeTransportMode } from '../shared/transportModes';
 import type { TripLoaderRouteProps } from './tripRouteTypes';
 import { LazyTripView } from '../components/tripview/LazyTripView';
 import { TripRouteLoadingShell } from '../components/tripview/TripRouteLoadingShell';
+
+const areViewSettingsEqual = (a?: IViewSettings, b?: IViewSettings): boolean => {
+    if (!a && !b) return true;
+    if (!a || !b) return false;
+    return (
+        a.layoutMode === b.layoutMode
+        && a.timelineMode === b.timelineMode
+        && a.timelineView === b.timelineView
+        && a.mapDockMode === b.mapDockMode
+        && a.mapStyle === b.mapStyle
+        && a.routeMode === b.routeMode
+        && a.showCityNames === b.showCityNames
+        && a.zoomLevel === b.zoomLevel
+        && a.zoomBehavior === b.zoomBehavior
+        && a.sidebarWidth === b.sidebarWidth
+        && a.detailsWidth === b.detailsWidth
+        && a.timelineHeight === b.timelineHeight
+    );
+};
 
 const resolveTripInitialMapFocusQuery = (trip: ITrip): string | undefined => {
     const locations = trip.items
@@ -39,6 +55,41 @@ const resolveTripInitialMapFocusQuery = (trip: ITrip): string | undefined => {
     const uniqueLocations = Array.from(new Set(locations));
     if (uniqueLocations.length === 0) return undefined;
     return uniqueLocations.join(' || ');
+};
+
+const normalizeTripForRouteLoad = (trip: ITrip): ITrip => {
+    let didChange = false;
+
+    const normalizedItems = trip.items.map((item) => {
+        if (item.type !== 'travel' && item.type !== 'travel-empty') return item;
+
+        const nextMode = normalizeTransportMode(item.transportMode);
+        const nextType: ITimelineItem['type'] = nextMode === 'na' ? 'travel-empty' : 'travel';
+        const modeChanged = item.transportMode !== nextMode;
+        const typeChanged = item.type !== nextType;
+        const shouldClearRouteMetrics = (
+            modeChanged || nextMode === 'na'
+        ) && (
+            item.routeDistanceKm !== undefined || item.routeDurationHours !== undefined
+        );
+
+        if (!modeChanged && !typeChanged && !shouldClearRouteMetrics) return item;
+
+        didChange = true;
+        return {
+            ...item,
+            type: nextType,
+            transportMode: nextMode,
+            routeDistanceKm: shouldClearRouteMetrics ? undefined : item.routeDistanceKm,
+            routeDurationHours: shouldClearRouteMetrics ? undefined : item.routeDurationHours,
+        };
+    });
+
+    if (!didChange) return trip;
+    return {
+        ...trip,
+        items: normalizedItems,
+    };
 };
 
 const resolveSharedTripPathByTripId = async (tripId: string, versionId?: string | null): Promise<string | null> => {
@@ -88,10 +139,10 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
         const params = new URLSearchParams(location.search);
         return params.get('v');
     }, [location.search]);
+    const isDbVersionLookup = Boolean(versionId && isUuid(versionId));
 
     const [viewSettings, setViewSettings] = useState<IViewSettings | undefined>(undefined);
     const [tripAccess, setTripAccess] = useState<DbTripAccess | null>(null);
-    const normalizedRenderedTrip = useMemo(() => (trip ? normalizeTripForRouteLoad(trip) : null), [trip]);
 
     useDbSync(onLanguageLoaded);
 
@@ -128,12 +179,10 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
             }
 
             const resolveEffectiveView = (resolvedView?: IViewSettings, fallbackView?: IViewSettings) => {
-                const normalizedResolvedView = normalizeViewSettingsForRuntime(resolvedView);
-                const normalizedFallbackView = normalizeViewSettingsForRuntime(fallbackView);
                 if (!didRouteTargetChange && hasInSessionViewOverrideRef.current) {
-                    return normalizeViewSettingsForRuntime(latestViewSettingsRef.current) ?? normalizedResolvedView ?? normalizedFallbackView;
+                    return latestViewSettingsRef.current ?? resolvedView ?? fallbackView;
                 }
-                return normalizedResolvedView ?? normalizedFallbackView;
+                return resolvedView ?? fallbackView;
             };
 
             const sharedState = decompressTrip(tripId);
@@ -153,41 +202,56 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
 
             let localResolvedTrip: ITrip | null = null;
             let localResolvedView: IViewSettings | undefined;
-            const localHistoryEntry = versionId
-                ? findHistoryEntryByUrl(tripId, buildTripUrl(tripId, versionId))
-                : null;
-            const localHistoryView = normalizeViewSettingsForRuntime(localHistoryEntry?.snapshot?.view);
+            let versionedLocalHistoryView: IViewSettings | undefined;
 
-            if (localHistoryEntry?.snapshot?.trip) {
-                    const normalizedLocalSnapshotTrip = normalizeTripForRouteLoad(localHistoryEntry.snapshot.trip);
+            if (versionId && !isDbVersionLookup) {
+                const localEntry = findHistoryEntryByUrl(tripId, buildTripUrl(tripId, versionId));
+                if (localEntry?.snapshot?.trip) {
+                    const normalizedLocalSnapshotTrip = normalizeTripForRouteLoad(localEntry.snapshot.trip);
                     saveTrip(normalizedLocalSnapshotTrip, { preserveUpdatedAt: true });
                     localResolvedTrip = normalizedLocalSnapshotTrip;
-                    localResolvedView = resolveEffectiveView(localHistoryView, normalizedLocalSnapshotTrip.defaultView);
+                    localResolvedView = resolveEffectiveView(localEntry.snapshot.view, normalizedLocalSnapshotTrip.defaultView);
                     setViewSettings(localResolvedView);
                     onTripLoaded(localResolvedTrip, localResolvedView);
                     return;
+                }
+                if (localEntry?.snapshot?.view) {
+                    versionedLocalHistoryView = localEntry.snapshot.view;
+                }
             }
 
             const localTrip = getTripById(tripId);
+            if (!localResolvedTrip && localTrip && versionedLocalHistoryView) {
+                const normalizedLocalTrip = normalizeTripForRouteLoad(localTrip);
+                if (normalizedLocalTrip !== localTrip) {
+                    saveTrip(normalizedLocalTrip, { preserveUpdatedAt: true });
+                }
+                localResolvedTrip = normalizedLocalTrip;
+                localResolvedView = resolveEffectiveView(versionedLocalHistoryView, normalizedLocalTrip.defaultView);
+                setViewSettings(localResolvedView);
+                onTripLoaded(normalizedLocalTrip, localResolvedView);
+                if (connectivityState === 'offline') return;
+            }
+
             if (!localResolvedTrip && localTrip && connectivityState !== 'online') {
                 const normalizedLocalTrip = normalizeTripForRouteLoad(localTrip);
                 if (normalizedLocalTrip !== localTrip) {
                     saveTrip(normalizedLocalTrip, { preserveUpdatedAt: true });
                 }
                 localResolvedTrip = normalizedLocalTrip;
-                localResolvedView = resolveEffectiveView(localHistoryView ?? normalizedLocalTrip.defaultView, normalizedLocalTrip.defaultView);
+                localResolvedView = resolveEffectiveView(normalizedLocalTrip.defaultView, normalizedLocalTrip.defaultView);
                 setViewSettings(localResolvedView);
                 onTripLoaded(normalizedLocalTrip, localResolvedView);
                 if (connectivityState === 'offline') return;
             }
 
             if (DB_ENABLED && connectivityState !== 'offline') {
-                if (versionId && isUuid(versionId)) {
+                if (versionId && isDbVersionLookup) {
                     const version = await dbGetTripVersion(tripId, versionId);
                     if (version?.trip) {
                         const normalizedVersionTrip = normalizeTripForRouteLoad(version.trip);
                         saveTrip(normalizedVersionTrip, { preserveUpdatedAt: true });
-                        const resolvedView = resolveEffectiveView(localHistoryView ?? version.view, normalizedVersionTrip.defaultView);
+                        const resolvedView = resolveEffectiveView(version.view, normalizedVersionTrip.defaultView);
                         const localUpdatedAt = localResolvedTrip?.updatedAt ?? 0;
                         const dbUpdatedAt = normalizedVersionTrip.updatedAt ?? 0;
                         if (!localResolvedTrip || dbUpdatedAt >= localUpdatedAt) {
@@ -203,7 +267,7 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
                     if (dbTrip.access.source === 'owner') {
                         saveTrip(normalizedDbTrip, { preserveUpdatedAt: true });
                     }
-                    const resolvedView = resolveEffectiveView(localHistoryView ?? dbTrip.view, normalizedDbTrip.defaultView);
+                    const resolvedView = resolveEffectiveView(versionedLocalHistoryView ?? dbTrip.view, normalizedDbTrip.defaultView);
                     const localUpdatedAt = localResolvedTrip?.updatedAt ?? 0;
                     const dbUpdatedAt = normalizedDbTrip.updatedAt ?? 0;
                     if (!localResolvedTrip || dbUpdatedAt >= localUpdatedAt) {
@@ -255,41 +319,35 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
         onTripLoaded,
         tripId,
         versionId,
+        isDbVersionLookup,
         connectivitySnapshot.state,
     ]);
 
     const handleRouteViewSettingsChange = useCallback((settings: IViewSettings) => {
-        const normalizedSettings = normalizeViewSettingsForRuntime(settings);
-        if (!normalizedSettings) return;
-        if (areViewSettingsEqual(latestViewSettingsRef.current, normalizedSettings)) return;
+        if (areViewSettingsEqual(latestViewSettingsRef.current, settings)) return;
         hasInSessionViewOverrideRef.current = true;
-        latestViewSettingsRef.current = normalizedSettings;
-        setViewSettings(normalizedSettings);
-        onViewSettingsChange(normalizedSettings);
+        latestViewSettingsRef.current = settings;
+        setViewSettings(settings);
+        onViewSettingsChange(settings);
         if (!DB_ENABLED || !tripId) return;
         if (tripAccess?.source === 'public_read' || tripAccess?.source === 'admin_fallback') return;
-        void dbUpdateTripShareViewSettings(tripId, normalizedSettings).catch(() => undefined);
+        void dbUpdateTripShareViewSettings(tripId, settings).catch(() => undefined);
     }, [onViewSettingsChange, tripAccess?.source, tripId]);
 
-    if (!normalizedRenderedTrip) {
+    if (!trip) {
         return <TripRouteLoadingShell variant="loadingTrip" />;
     }
     const adminFallbackAccess = tripAccess?.source === 'admin_fallback' ? tripAccess : undefined;
     const isPublicReadView = tripAccess?.source === 'public_read';
-    const tripViewKey = `${normalizedRenderedTrip.id}:${adminFallbackAccess ? 'admin-fallback' : isPublicReadView ? 'public-read' : 'default'}`;
-    const initialRouteViewSettings = resolveTripInitialViewSettings({
-        preferredView: normalizeViewSettingsForRuntime(viewSettings),
-        fallbackView: normalizedRenderedTrip.defaultView,
-        allowPersistedOverrides: !versionId && !adminFallbackAccess && !isPublicReadView,
-    });
+    const tripViewKey = `${trip.id}:${adminFallbackAccess ? 'admin-fallback' : isPublicReadView ? 'public-read' : 'default'}`;
 
     return (
         <React.Suspense fallback={<TripRouteLoadingShell variant="preparingPlanner" />}>
             <LazyTripView
                 key={tripViewKey}
-                trip={normalizedRenderedTrip}
-                initialMapFocusQuery={resolveTripInitialMapFocusQuery(normalizedRenderedTrip)}
-                initialViewSettings={initialRouteViewSettings}
+                trip={trip}
+                initialMapFocusQuery={resolveTripInitialMapFocusQuery(trip)}
+                initialViewSettings={viewSettings ?? trip.defaultView}
                 onUpdateTrip={onUpdateTrip}
                 onCommitState={onCommitState}
                 onViewSettingsChange={handleRouteViewSettingsChange}

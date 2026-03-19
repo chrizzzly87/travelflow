@@ -20,146 +20,162 @@ const HISTORY_WRITE_FALLBACK_ORIGIN = 'https://travelflow.invalid';
 
 type HistoryStore = Record<string, HistoryEntry[]>;
 
-const isVisualHistoryLabel = (label: string): boolean => /^visual:\s*/i.test(label);
+const isVisualHistoryEntry = (entry: Pick<HistoryEntry, 'label'>): boolean => (
+    /^Visual:\s*/i.test(entry.label)
+);
 
-const compactHistoryEntrySnapshot = (entry: HistoryEntry): HistoryEntry => {
-    if (!entry.snapshot) return entry;
-    if (!isVisualHistoryLabel(entry.label)) return entry;
-    if (!entry.snapshot.trip) return entry;
-    return {
-        ...entry,
-        snapshot: entry.snapshot.view ? { view: entry.snapshot.view } : undefined,
-    };
-};
-
-const compactHistoryStoreSnapshots = (store: HistoryStore): { store: HistoryStore; didChange: boolean } => {
-    let didChange = false;
-    const compactedEntries = Object.entries(store).map(([tripId, entries]) => {
-        const nextEntries = entries.map((entry) => {
-            const compactedEntry = compactHistoryEntrySnapshot(entry);
-            if (compactedEntry !== entry) {
-                didChange = true;
-            }
-            return compactedEntry;
-        });
-        return [tripId, nextEntries] as const;
-    });
-
-    if (!didChange) {
-        return { store, didChange: false };
+const normalizeHistoryStore = (value: unknown): { store: HistoryStore; didMutate: boolean } => {
+    if (!value || typeof value !== 'object') {
+        return { store: {}, didMutate: false };
     }
 
-    return {
-        store: Object.fromEntries(compactedEntries),
-        didChange: true,
-    };
+    let didMutate = false;
+    const normalizedStore: HistoryStore = {};
+
+    Object.entries(value as Record<string, unknown>).forEach(([tripId, entries]) => {
+        if (!Array.isArray(entries)) {
+            didMutate = true;
+            return;
+        }
+
+        const normalizedEntries: HistoryEntry[] = [];
+        entries.forEach((entryValue) => {
+            if (!entryValue || typeof entryValue !== 'object') {
+                didMutate = true;
+                return;
+            }
+
+            const entryRecord = entryValue as Record<string, unknown>;
+            const url = typeof entryRecord.url === 'string' ? entryRecord.url : null;
+            const label = typeof entryRecord.label === 'string' ? entryRecord.label : null;
+            const ts = typeof entryRecord.ts === 'number' && Number.isFinite(entryRecord.ts)
+                ? entryRecord.ts
+                : Date.now();
+            if (!url || !label) {
+                didMutate = true;
+                return;
+            }
+
+            const snapshotRecord = entryRecord.snapshot && typeof entryRecord.snapshot === 'object'
+                ? entryRecord.snapshot as Record<string, unknown>
+                : null;
+            const nextSnapshot = snapshotRecord
+                ? {
+                    trip: snapshotRecord.trip as ITrip | undefined,
+                    view: snapshotRecord.view as IViewSettings | undefined,
+                }
+                : undefined;
+
+            const compactedSnapshot = (
+                nextSnapshot
+                && nextSnapshot.trip
+                && nextSnapshot.view
+                && isVisualHistoryEntry({ label })
+            )
+                ? { view: nextSnapshot.view }
+                : nextSnapshot;
+
+            if (compactedSnapshot !== nextSnapshot) {
+                didMutate = true;
+            }
+
+            normalizedEntries.push({
+                id: typeof entryRecord.id === 'string'
+                    ? entryRecord.id
+                    : `${ts}-${Math.random().toString(36).slice(2, 8)}`,
+                tripId: typeof entryRecord.tripId === 'string' ? entryRecord.tripId : tripId,
+                url,
+                label,
+                ts,
+                snapshot: compactedSnapshot,
+            });
+        });
+
+        const dedupedEntries = normalizedEntries
+            .sort((left, right) => right.ts - left.ts)
+            .reduce<HistoryEntry[]>((accumulator, entry) => {
+                if (accumulator.some((existing) => existing.url === entry.url)) {
+                    didMutate = true;
+                    return accumulator;
+                }
+                accumulator.push(entry);
+                return accumulator;
+            }, [])
+            .slice(0, MAX_HISTORY);
+
+        if (dedupedEntries.length !== normalizedEntries.length) {
+            didMutate = true;
+        }
+
+        if (dedupedEntries.length > 0) {
+            normalizedStore[tripId] = dedupedEntries;
+        } else if (entries.length > 0) {
+            didMutate = true;
+        }
+    });
+
+    return { store: normalizedStore, didMutate };
 };
 
 const loadStore = (): HistoryStore => {
     try {
         const raw = readLocalStorageItem(HISTORY_KEY);
         if (!raw) return {};
-        const parsed = JSON.parse(raw) as HistoryStore;
-        const { store: compactedStore, didChange } = compactHistoryStoreSnapshots(parsed);
-        if (didChange) {
-            tryWriteStore(compactedStore);
+        const parsed = JSON.parse(raw) as unknown;
+        const { store, didMutate } = normalizeHistoryStore(parsed);
+        if (didMutate) {
+            tryWriteStore(store);
         }
-        return compactedStore;
+        return store;
     } catch (e) {
         console.error("Failed to load history store", e);
         return {};
     }
 };
 
-const cloneStore = (store: HistoryStore): HistoryStore => (
-    Object.fromEntries(
-        Object.entries(store).map(([tripId, entries]) => [
-            tripId,
-            entries.map((entry) => ({
-                ...entry,
-                snapshot: entry.snapshot
-                    ? {
-                        trip: entry.snapshot.trip,
-                        view: entry.snapshot.view,
-                    }
-                    : undefined,
-            })),
-        ]),
-    )
-);
-
 const tryWriteStore = (store: HistoryStore): boolean => (
     writeLocalStorageItem(HISTORY_KEY, JSON.stringify(store))
 );
 
-const buildHistoryEntrySnapshot = (
-    label: string,
-    trip: ITrip | undefined,
-    view: IViewSettings | undefined,
-): HistoryEntry['snapshot'] => {
-    if (isVisualHistoryLabel(label)) {
-        return view ? { view } : undefined;
+const cloneStore = (store: HistoryStore): HistoryStore => (
+    Object.fromEntries(
+        Object.entries(store).map(([tripId, entries]) => [tripId, [...entries]])
+    )
+);
+
+const dropOldestHistoryEntry = (store: HistoryStore): boolean => {
+    let targetTripId: string | null = null;
+    let targetIndex = -1;
+    let oldestTs = Number.POSITIVE_INFINITY;
+
+    Object.entries(store).forEach(([tripId, entries]) => {
+        entries.forEach((entry, index) => {
+            if (entry.ts < oldestTs) {
+                oldestTs = entry.ts;
+                targetTripId = tripId;
+                targetIndex = index;
+            }
+        });
+    });
+
+    if (!targetTripId || targetIndex < 0) return false;
+
+    const nextEntries = [...store[targetTripId]];
+    nextEntries.splice(targetIndex, 1);
+    if (nextEntries.length === 0) {
+        delete store[targetTripId];
+    } else {
+        store[targetTripId] = nextEntries;
     }
-    if (!trip && !view) return undefined;
-    return {
-        ...(trip ? { trip } : {}),
-        ...(view ? { view } : {}),
-    };
+    return true;
 };
 
-const saveStore = (
-    store: HistoryStore,
-    options?: { protectedEntry?: Pick<HistoryEntry, 'tripId' | 'url'> },
-): boolean => {
-    const { store: compactedStore } = compactHistoryStoreSnapshots(store);
-    if (tryWriteStore(compactedStore)) {
-        return true;
-    }
+const saveStoreWithPruning = (store: HistoryStore): boolean => {
+    if (tryWriteStore(store)) return true;
 
-    const protectedEntry = options?.protectedEntry;
-    const isProtectedEntry = (entry: HistoryEntry): boolean => (
-        protectedEntry?.tripId === entry.tripId && protectedEntry?.url === entry.url
-    );
-
-    const prunedStore = cloneStore(compactedStore);
-    const prunableSnapshotEntries = Object.values(prunedStore)
-        .flat()
-        .filter((entry) => entry.snapshot && !isProtectedEntry(entry))
-        .sort((a, b) => a.ts - b.ts);
-
-    for (const entry of prunableSnapshotEntries) {
-        delete entry.snapshot;
-        if (tryWriteStore(prunedStore)) {
-            return true;
-        }
-    }
-
-    if (protectedEntry) {
-        const protectedEntries = (prunedStore[protectedEntry.tripId] || []).filter((entry) => entry.url === protectedEntry.url);
-        for (const entry of protectedEntries) {
-            const compactedEntry = compactHistoryEntrySnapshot(entry);
-            if (compactedEntry !== entry) {
-                Object.assign(entry, compactedEntry);
-                if (tryWriteStore(prunedStore)) {
-                    return true;
-                }
-            }
-        }
-    }
-
-    const prunableEntries = Object.entries(prunedStore)
-        .flatMap(([tripId, entries]) => entries.map((entry) => ({ tripId, entry })))
-        .filter(({ entry }) => !isProtectedEntry(entry))
-        .sort((a, b) => a.entry.ts - b.entry.ts);
-
-    for (const { tripId, entry } of prunableEntries) {
-        prunedStore[tripId] = (prunedStore[tripId] || []).filter((candidate) => candidate.id !== entry.id);
-        if (prunedStore[tripId]?.length === 0) {
-            delete prunedStore[tripId];
-        }
-        if (tryWriteStore(prunedStore)) {
-            return true;
-        }
+    const prunedStore = cloneStore(store);
+    while (dropOldestHistoryEntry(prunedStore)) {
+        if (tryWriteStore(prunedStore)) return true;
     }
 
     console.error("Failed to save history store", new Error('History storage write failed'));
@@ -180,7 +196,7 @@ export const appendHistoryEntry = (
     url: string,
     label: string,
     options?: { snapshot?: { trip: ITrip; view?: IViewSettings }; ts?: number }
-) => {
+): boolean => {
     const store = loadStore();
     const list = store[tripId] || [];
 
@@ -192,24 +208,21 @@ export const appendHistoryEntry = (
         url,
         label,
         ts: options?.ts ?? Date.now(),
-        snapshot: buildHistoryEntrySnapshot(label, options?.snapshot?.trip, options?.snapshot?.view),
+        snapshot: options?.snapshot,
     };
 
     const withoutDuplicate = list.filter(existing => existing.url !== url);
     const merged = [entry, ...withoutDuplicate].sort((a, b) => b.ts - a.ts);
     const next = merged.slice(0, MAX_HISTORY);
     store[tripId] = next;
-    const persisted = saveStore(store, {
-        protectedEntry: {
-            tripId,
-            url,
-        },
-    });
+    const didPersist = saveStoreWithPruning(store);
+    if (!didPersist) return false;
 
-    if (persisted && typeof window !== 'undefined') {
+    if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('tf:history', { detail: { tripId, entry } }));
     }
-    return persisted;
+
+    return true;
 };
 
 const buildHistoryBaseUrl = (tripId: string, baseUrlOverride?: string): string => {
@@ -251,6 +264,7 @@ export const createTripHistorySnapshotEntry = ({
         snapshot: { trip, view },
         ts,
     });
+
     return {
         url: persisted ? url : buildHistoryBaseUrl(tripId, baseUrlOverride),
         persisted,

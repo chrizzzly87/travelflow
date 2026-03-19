@@ -24,20 +24,36 @@ import {
 } from '../services/dbApi';
 import { createTripHistorySnapshotEntry, findHistoryEntryByUrl } from '../services/historyService';
 import { saveTrip } from '../services/storageService';
-import { resolveTripInitialViewSettings } from '../services/tripViewSettingsService';
 import {
     buildShareUrl,
     buildTripUrl,
     generateTripId,
+    generateVersionId,
     isUuid,
 } from '../utils';
 import type { ITrip, IViewSettings } from '../types';
-import { normalizeViewSettingsForRuntime } from '../shared/tripRuntimeNormalization';
-import { normalizeTripForRouteLoad } from '../shared/tripRouteLoadNormalization';
-import { areViewSettingsEqual } from '../shared/viewSettings';
 import type { CommitOptions, SharedTripLoaderRouteProps } from './tripRouteTypes';
 import { LazyTripView } from '../components/tripview/LazyTripView';
 import { TripRouteLoadingShell } from '../components/tripview/TripRouteLoadingShell';
+
+const areViewSettingsEqual = (a?: IViewSettings, b?: IViewSettings): boolean => {
+    if (!a && !b) return true;
+    if (!a || !b) return false;
+    return (
+        a.layoutMode === b.layoutMode
+        && a.timelineMode === b.timelineMode
+        && a.timelineView === b.timelineView
+        && a.mapDockMode === b.mapDockMode
+        && a.mapStyle === b.mapStyle
+        && a.routeMode === b.routeMode
+        && a.showCityNames === b.showCityNames
+        && a.zoomLevel === b.zoomLevel
+        && a.zoomBehavior === b.zoomBehavior
+        && a.sidebarWidth === b.sidebarWidth
+        && a.detailsWidth === b.detailsWidth
+        && a.timelineHeight === b.timelineHeight
+    );
+};
 
 type SharedTripSnapshotState = { hasNewer: boolean; latestUrl: string } | null;
 
@@ -106,7 +122,6 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
         snapshotState,
         sourceShareVersionId,
     } = routeState;
-    const normalizedRenderedTrip = useMemo(() => (trip ? normalizeTripForRouteLoad(trip) : null), [trip]);
     const resetRouteState = useCallback((options?: { preserveViewSettings?: boolean }) => {
         setRouteState((prev) => ({
             ...prev,
@@ -160,12 +175,10 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
             }
 
             const resolveEffectiveView = (resolvedView?: IViewSettings, fallbackView?: IViewSettings) => {
-                const normalizedResolvedView = normalizeViewSettingsForRuntime(resolvedView);
-                const normalizedFallbackView = normalizeViewSettingsForRuntime(fallbackView);
                 if (!didRouteTargetChange && hasInSessionViewOverrideRef.current) {
-                    return normalizeViewSettingsForRuntime(latestViewSettingsRef.current) ?? normalizedResolvedView ?? normalizedFallbackView;
+                    return latestViewSettingsRef.current ?? resolvedView ?? fallbackView;
                 }
-                return normalizedResolvedView ?? normalizedFallbackView;
+                return resolvedView ?? fallbackView;
             };
             const shared = await dbGetSharedTrip(token);
             if (!shared) {
@@ -180,7 +193,6 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
                 navigate('/share-unavailable', { replace: true });
                 return;
             }
-            const normalizedSharedTrip = normalizeTripForRouteLoad(shared.trip);
 
             const baseRouteState: SharedTripRouteState = {
                 shareMode: shared.mode,
@@ -193,10 +205,9 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
             if (versionId && isUuid(versionId)) {
                 const sharedVersion = await dbGetSharedTripVersion(token, versionId);
                 if (sharedVersion?.trip) {
-                    const normalizedSharedVersionTrip = normalizeTripForRouteLoad(sharedVersion.trip);
                     const resolvedView = resolveEffectiveView(
                         sharedVersion.view ?? sharedVersion.shareView ?? shared.shareView,
-                        normalizedSharedVersionTrip.defaultView,
+                        sharedVersion.trip.defaultView,
                     );
                     const latestVersionId = sharedVersion.latestVersionId ?? shared.latestVersionId ?? null;
                     const nextState: SharedTripRouteState = {
@@ -209,18 +220,17 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
                         },
                     };
                     applyRouteState(nextState);
-                    onTripLoaded(normalizedSharedVersionTrip, resolvedView);
+                    onTripLoaded(sharedVersion.trip, resolvedView);
                     return;
                 }
 
                 const version = await dbGetTripVersion(shared.trip.id, versionId);
                 if (version?.trip) {
-                    const normalizedVersionTrip = normalizeTripForRouteLoad(version.trip);
                     const latestVersionMismatch = Boolean(shared.latestVersionId && shared.latestVersionId !== versionId);
-                    const sharedUpdatedAt = typeof normalizedSharedTrip.updatedAt === 'number' ? normalizedSharedTrip.updatedAt : null;
-                    const snapshotUpdatedAt = typeof normalizedVersionTrip.updatedAt === 'number' ? normalizedVersionTrip.updatedAt : null;
+                    const sharedUpdatedAt = typeof shared.trip.updatedAt === 'number' ? shared.trip.updatedAt : null;
+                    const snapshotUpdatedAt = typeof version.trip.updatedAt === 'number' ? version.trip.updatedAt : null;
                     const newerByTimestamp = sharedUpdatedAt !== null && snapshotUpdatedAt !== null && sharedUpdatedAt > snapshotUpdatedAt;
-                    const resolvedView = resolveEffectiveView(version.view ?? shared.shareView, normalizedVersionTrip.defaultView);
+                    const resolvedView = resolveEffectiveView(version.view ?? shared.shareView, version.trip.defaultView);
                     const nextState: SharedTripRouteState = {
                         ...baseRouteState,
                         viewSettings: resolvedView,
@@ -231,39 +241,37 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
                         },
                     };
                     applyRouteState(nextState);
-                    onTripLoaded(normalizedVersionTrip, resolvedView);
+                    onTripLoaded(version.trip, resolvedView);
                     return;
                 }
             }
 
-            const localHistoryEntry = versionId
-                ? findHistoryEntryByUrl(shared.trip.id, buildShareUrl(token, versionId))
-                : null;
-            const localHistoryView = normalizeViewSettingsForRuntime(localHistoryEntry?.snapshot?.view);
-            if (localHistoryEntry?.snapshot?.trip) {
-                const normalizedLocalSnapshotTrip = normalizeTripForRouteLoad(localHistoryEntry.snapshot.trip);
-                const resolvedView = resolveEffectiveView(localHistoryView, normalizedLocalSnapshotTrip.defaultView);
-                const nextState: SharedTripRouteState = {
-                    ...baseRouteState,
-                    viewSettings: resolvedView,
-                    sourceShareVersionId: isUuid(versionId) ? versionId : null,
-                    snapshotState: {
-                        hasNewer: true,
-                        latestUrl: buildShareUrl(token),
-                    },
-                };
-                applyRouteState(nextState);
-                onTripLoaded(normalizedLocalSnapshotTrip, resolvedView);
-                return;
+            if (versionId) {
+                const localEntry = findHistoryEntryByUrl(shared.trip.id, buildShareUrl(token, versionId));
+                if (localEntry?.snapshot?.trip) {
+                    const resolvedView = resolveEffectiveView(localEntry.snapshot.view, localEntry.snapshot.trip.defaultView);
+                    const nextState: SharedTripRouteState = {
+                        ...baseRouteState,
+                        viewSettings: resolvedView,
+                        sourceShareVersionId: isUuid(versionId) ? versionId : null,
+                        snapshotState: {
+                            hasNewer: true,
+                            latestUrl: buildShareUrl(token),
+                        },
+                    };
+                    applyRouteState(nextState);
+                    onTripLoaded(localEntry.snapshot.trip, resolvedView);
+                    return;
+                }
             }
 
-            const resolvedView = resolveEffectiveView(localHistoryView ?? shared.shareView ?? shared.view, normalizedSharedTrip.defaultView);
+            const resolvedView = resolveEffectiveView(shared.shareView ?? shared.view, shared.trip.defaultView);
             applyRouteState({
                 ...baseRouteState,
                 viewSettings: resolvedView,
                 sourceShareVersionId: shared.latestVersionId ?? null,
             });
-            onTripLoaded(normalizedSharedTrip, resolvedView);
+            onTripLoaded(shared.trip, resolvedView);
         };
 
         void load();
@@ -449,28 +457,22 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
     };
 
     const handleRouteViewSettingsChange = useCallback((settings: IViewSettings) => {
-        const normalizedSettings = normalizeViewSettingsForRuntime(settings);
-        if (!normalizedSettings) return;
         const currentViewSettings = routeState.viewSettings;
-        if (areViewSettingsEqual(currentViewSettings, normalizedSettings)) return;
+        if (areViewSettingsEqual(currentViewSettings, settings)) return;
         hasInSessionViewOverrideRef.current = true;
-        setRouteState((prev) => ({ ...prev, viewSettings: normalizedSettings }));
-        onViewSettingsChange(normalizedSettings);
+        setRouteState((prev) => ({ ...prev, viewSettings: settings }));
+        onViewSettingsChange(settings);
     }, [onViewSettingsChange, routeState.viewSettings]);
 
-    if (!normalizedRenderedTrip) {
+    if (!trip) {
         return <TripRouteLoadingShell variant="loadingSharedTrip" />;
     }
 
     return (
         <React.Suspense fallback={<TripRouteLoadingShell variant="preparingSharedPlanner" />}>
             <LazyTripView
-                trip={normalizedRenderedTrip}
-                initialViewSettings={resolveTripInitialViewSettings({
-                    preferredView: normalizeViewSettingsForRuntime(viewSettings),
-                    fallbackView: normalizedRenderedTrip.defaultView,
-                    allowPersistedOverrides: false,
-                })}
+                trip={trip}
+                initialViewSettings={viewSettings ?? trip.defaultView}
                 onUpdateTrip={(updatedTrip) => onTripLoaded(updatedTrip, viewSettings ?? updatedTrip.defaultView)}
                 onCommitState={handleCommitShared}
                 onViewSettingsChange={handleRouteViewSettingsChange}
