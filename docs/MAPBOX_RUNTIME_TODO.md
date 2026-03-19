@@ -24,7 +24,7 @@ This checklist tracks the remaining Mapbox-only work on the
 - [x] Extract provider-aware city label HTML.
 - [x] Add Mapbox-only projected label layout for crowded cities.
 - [x] Improve label collision handling for very dense clusters.
-- [ ] Add richer photo/image marker inputs on top of the extracted marker presenter.
+- [x] Add richer photo/image marker inputs on top of the extracted marker presenter.
 
 ## Styling
 
@@ -32,6 +32,7 @@ This checklist tracks the remaining Mapbox-only work on the
 - [x] Reduce the remaining high-level road and highway clutter on clean styles.
 - [x] Constrain visible Mapbox country-boundary layers to `admin_level = 0` when the style exposes that data.
 - [x] Replace fragile built-in country/admin boundary handling with a dedicated Countries v1 country-border overlay.
+- [x] Make country outlines zoom-aware so they stay slimmer at far zooms.
 - [ ] Revisit live border treatment so only the intended country outline remains on clean and satellite styles.
 - [ ] Tune satellite border treatment after the main clean-style pass is stable.
 - [ ] Verify that clean styles keep only country names plus the biggest city labels in live visual checks.

@@ -255,6 +255,14 @@ const resolveMapboxCountryBoundaryPaint = (mapStyle: MapStyle): {
       glowOpacity: 0.34,
     };
   }
+  if (mapStyle === 'clean') {
+    return {
+      lineColor: 'rgba(100, 116, 139, 0.78)',
+      lineOpacity: 0.58,
+      glowColor: 'rgba(148, 163, 184, 0.28)',
+      glowOpacity: 0.1,
+    };
+  }
   if (isDarkMapStyle(mapStyle)) {
     return {
       lineColor: 'rgba(255, 255, 255, 0.96)',
@@ -269,6 +277,33 @@ const resolveMapboxCountryBoundaryPaint = (mapStyle: MapStyle): {
     glowColor: 'rgba(15, 23, 42, 0.22)',
     glowOpacity: 0.12,
   };
+};
+
+const resolveMapboxCountryBoundaryLineWidth = ({
+  mapStyle,
+  isGlow,
+}: {
+  mapStyle: MapStyle;
+  isGlow: boolean;
+}): any[] => {
+  if (mapStyle === 'satellite') {
+    return isGlow
+      ? ['interpolate', ['linear'], ['zoom'], 1, 0.28, 3, 0.52, 5, 0.95, 8, 1.7]
+      : ['interpolate', ['linear'], ['zoom'], 1, 0.16, 3, 0.32, 5, 0.62, 8, 1.15];
+  }
+  if (mapStyle === 'clean') {
+    return isGlow
+      ? ['interpolate', ['linear'], ['zoom'], 1, 0.18, 3, 0.34, 5, 0.64, 8, 1.1]
+      : ['interpolate', ['linear'], ['zoom'], 1, 0.1, 3, 0.2, 5, 0.4, 8, 0.76];
+  }
+  if (isDarkMapStyle(mapStyle)) {
+    return isGlow
+      ? ['interpolate', ['linear'], ['zoom'], 1, 0.22, 3, 0.42, 5, 0.8, 8, 1.36]
+      : ['interpolate', ['linear'], ['zoom'], 1, 0.12, 3, 0.24, 5, 0.48, 8, 0.9];
+  }
+  return isGlow
+    ? ['interpolate', ['linear'], ['zoom'], 1, 0.2, 3, 0.38, 5, 0.72, 8, 1.24]
+    : ['interpolate', ['linear'], ['zoom'], 1, 0.11, 3, 0.22, 5, 0.44, 8, 0.82];
 };
 
 const ensureMapboxCountryBoundarySource = (map: MapboxStyleLayerVisibilityMap): void => {
@@ -296,7 +331,7 @@ const upsertMapboxCountryBoundaryLayer = ({
   beforeId?: string;
   color: string;
   opacity: number;
-  lineWidth: number;
+  lineWidth: number | any[];
 }): void => {
   if (!map.getLayer(layerId)) {
     map.addLayer({
@@ -341,7 +376,7 @@ const applyMapboxCountryBoundaryOverlay = (
     beforeId,
     color: boundaryPaint.glowColor,
     opacity: boundaryPaint.glowOpacity,
-    lineWidth: mapStyle === 'satellite' ? 2.2 : 1.8,
+    lineWidth: resolveMapboxCountryBoundaryLineWidth({ mapStyle, isGlow: true }),
   });
   upsertMapboxCountryBoundaryLayer({
     map,
@@ -349,7 +384,7 @@ const applyMapboxCountryBoundaryOverlay = (
     beforeId,
     color: boundaryPaint.lineColor,
     opacity: boundaryPaint.lineOpacity,
-    lineWidth: mapStyle === 'satellite' ? 1.35 : 1.1,
+    lineWidth: resolveMapboxCountryBoundaryLineWidth({ mapStyle, isGlow: false }),
   });
 };
 

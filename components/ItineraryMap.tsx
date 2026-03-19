@@ -17,6 +17,7 @@ import { buildFlightRouteVisualPaths } from './maps/flightRouteGeometry';
 import { collectTripMapFitBoundsCoordinates } from './maps/tripMapFitBoundsGeometry';
 import { createGoogleMixedSurfaceController, type GoogleMixedSurfaceController } from './maps/googleMixedSurfaceController';
 import { buildTripMapCityMarkerHtml } from './maps/tripMapCityMarkerHtml';
+import { resolveTripMapCityMarkerImageUrl } from './maps/tripMapCityMarkerMedia';
 import {
     buildTripMapCityLabelHtml,
     resolveTripMapCityLabelPlacement,
@@ -1480,7 +1481,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     const mapboxMapRef = useRef<mapboxgl.Map | null>(null);
     const mapboxModuleRef = useRef<typeof import('mapbox-gl').default | null>(null);
     const markersRef = useRef<OverlayMarkerHandle[]>([]);
-    const cityMarkerMetaRef = useRef<Array<{ id: string; color: string; index: number; marker: OverlayMarkerHandle }>>([]);
+    const cityMarkerMetaRef = useRef<Array<{ id: string; color: string; imageUrl: string | null; index: number; marker: OverlayMarkerHandle }>>([]);
     const activityMarkerMetaRef = useRef<Array<{ id: string; title: string; type: ActivityType; marker: OverlayMarkerHandle; isVisible: boolean }>>([]);
     const activityMarkerPositionByIdRef = useRef<Map<string, google.maps.LatLngLiteral>>(new Map());
     const routesRef = useRef<any[]>([]); // stored polylines/renderers
@@ -2369,12 +2370,14 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 
                 const isSelected = city.id === selectedCityId;
                 const cityMarkerColor = resolveMapColor(city.color);
+                const cityMarkerImageUrl = resolveTripMapCityMarkerImageUrl(city);
                 const marker = createOverlayMarker({
                     position: markerPosition,
                     html: buildTripMapCityMarkerHtml({
                         provider: tripMapProvider,
                         index,
                         color: cityMarkerColor,
+                        imageUrl: cityMarkerImageUrl,
                         isSelected,
                         profile: effectiveMarkerRenderProfile.city,
                         selectedOutlineColor: resolveCssColorVar('--tf-accent-500', CITY_PIN_SELECTED_OUTLINE_FALLBACK),
@@ -2389,6 +2392,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 cityMarkerMetaRef.current.push({
                     id: city.id,
                     color: cityMarkerColor,
+                    imageUrl: cityMarkerImageUrl,
                     index,
                     marker,
                 });
@@ -2951,13 +2955,14 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         if (!mapInitialized) return;
         if (!isMapboxBasemapEnabled && !window.google?.maps?.OverlayView) return;
 
-        cityMarkerMetaRef.current.forEach(({ id, color, index, marker }) => {
+        cityMarkerMetaRef.current.forEach(({ id, color, imageUrl, index, marker }) => {
             const isSelected = id === selectedCityId;
             marker.update({
                 html: buildTripMapCityMarkerHtml({
                     provider: tripMapProvider,
                     index,
                     color,
+                    imageUrl,
                     isSelected,
                     profile: effectiveMarkerRenderProfile.city,
                     selectedOutlineColor: resolveCssColorVar('--tf-accent-500', CITY_PIN_SELECTED_OUTLINE_FALLBACK),
