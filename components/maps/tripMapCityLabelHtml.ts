@@ -96,9 +96,11 @@ export const buildTripMapCityLabelHtml = ({
     : '';
 
   return `
-    <div style="pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:${labelGapPx}px;max-width:${maxWidthPx}px;white-space:nowrap;transform:${placement.transform};text-align:${placement.textAlign};line-height:1.05;padding:${padding};border-radius:999px;background:${theme.background};border:1px solid ${theme.borderColor};box-shadow:${theme.boxShadow};backdrop-filter:blur(14px);">
-      <div style="max-width:${maxWidthPx}px;overflow:hidden;text-overflow:ellipsis;font-size:${nameFontSizePx}px;font-weight:800;color:${theme.textColor};text-shadow:${theme.textShadow};">${name}</div>
-      ${subLabelMarkup}
+    <div style="position:relative;width:0;height:0;pointer-events:none;">
+      <div style="position:absolute;left:0;top:0;display:flex;flex-direction:column;align-items:center;gap:${labelGapPx}px;max-width:${maxWidthPx}px;white-space:nowrap;transform:${placement.transform};text-align:${placement.textAlign};line-height:1.05;padding:${padding};border-radius:999px;background:${theme.background};border:1px solid ${theme.borderColor};box-shadow:${theme.boxShadow};backdrop-filter:blur(14px);">
+        <div style="max-width:${maxWidthPx}px;overflow:hidden;text-overflow:ellipsis;font-size:${nameFontSizePx}px;font-weight:800;color:${theme.textColor};text-shadow:${theme.textShadow};">${name}</div>
+        ${subLabelMarkup}
+      </div>
     </div>
   `;
 };

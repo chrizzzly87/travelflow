@@ -62,4 +62,18 @@ describe('components/maps/tripMapCityLabelHtml', () => {
       textAlign: 'center',
     });
   });
+
+  it('anchors Mapbox labels from a zero-size origin so the pill centers only once over the pin', () => {
+    const html = buildTripMapCityLabelHtml({
+      provider: 'mapbox',
+      name: 'Bangkok',
+      subLabel: 'START • END',
+      anchor: 'above',
+      style: 'standard',
+      offsetPx: 24,
+    });
+
+    expect(html).toContain('position:relative;width:0;height:0;pointer-events:none;');
+    expect(html).toContain('position:absolute;left:0;top:0;');
+  });
 });
