@@ -1,16 +1,18 @@
 ---
 id: rel-2026-03-17-map-runtime-dual-provider-foundation
-version: v0.0.0
+version: v0.104.0
 title: "Dual-provider map runtime foundation"
-date: 2026-03-17
-published_at: 2026-03-17T18:00:00Z
-status: draft
+date: 2026-03-20
+published_at: 2026-03-20T10:46:57Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Adds a shared map runtime foundation so Google and Mapbox can be tested side by side without changing the current production planner behavior."
 ---
 
 ## Changes
+- [x] [Improved] 🗺️ Trip maps, previews, and route rendering are more reliable after a broader behind-the-scenes map runtime refactor.
+- [x] [Improved] ✈️ City labels, route overlays, and flight-path rendering now behave more consistently across the trip planning experience.
 - [ ] [Internal] 🗺️ Added a shared map runtime contract, cookie override flow, and admin debugger controls so Google-only and mixed Mapbox-visual presets can be tested with the same resolver across planner, preview, and OG map surfaces.
 - [ ] [Internal] 🧪 Moved the admin map runtime controls into a dedicated Maps debugger tab and added a safer Google fallback when Mapbox basemap requests fail at runtime.
 - [ ] [Internal] 🧱 Fixed the Mapbox visual basemap mount so shared planner/blog map surfaces keep a full-height canvas instead of collapsing to an empty viewport during mixed-runtime testing.
