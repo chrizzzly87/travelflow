@@ -63,6 +63,7 @@
     "blurhash": "^2.0.5",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "cobe": "2.0.0",
     "diff": "^8.0.3",
     "flagpack": "^1.0.5",
     "framer-motion": "^12.34.3",

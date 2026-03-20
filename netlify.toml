@@ -41,6 +41,10 @@ exit 1
   function = "health"
 
 [[edge_functions]]
+  path = "/api/runtime/location"
+  function = "runtime-location"
+
+[[edge_functions]]
   path = "/api/billing/paddle/config"
   function = "paddle-config"
 

@@ -1,99 +1,135 @@
 {
   "hero": {
-    "pill": "Możliwości produktu",
-    "title": "Planuj mądrzej, podróżuj lepiej",
-    "description": "TravelFlow łączy generowanie AI, wizualną edycję i współpracę w jednym miejscu. Oto wszystko, co platforma potrafi zrobić dla Twojej kolejnej podróży."
+    "badge": "Interactive trip planning",
+    "titleBefore": "Build trips that already feel",
+    "titleHighlight": "ready to go",
+    "description": "TravelFlow turns destination ideas into a route your group can actually react to. Draft the itinerary with AI, shape it on a live map and timeline, then share a link that still feels polished when decisions get real.",
+    "primaryCta": "Start planning",
+    "secondaryCta": "See example trips",
+    "proof": [
+      "AI itinerary drafts in seconds",
+      "Drag the route until it feels right",
+      "Share one clean link before the group chat gets chaotic"
+    ]
   },
-  "heroCards": {
-    "ai": {
-      "title": "Generowanie planu przez AI",
-      "description": "Opisz, dokąd chcesz jechać, a TravelFlow utworzy cały plan — zoptymalizowane trasy, dobrane atrakcje i realistyczny timing — w mniej niż 30 sekund. Tryby Classic, Wizard i Surprise Me dopasowują się do Twojego stylu planowania."
+  "globe": {
+    "accessibility": "Interaktywny glob pokazujący trasy z twojego punktu startowego do kolorowych pomysłów na podróże po całym świecie.",
+    "fallbackTitle": "Zapasowy widok globu",
+    "fallbackDescription": "Nawet bez aktywnego globu nadal widać tutaj trasy, karty podróży i twój punkt startowy.",
+    "origin": {
+      "current": "Z {city}",
+      "countryFallback": "Z {country}",
+      "fallback": "Punkt startowy"
     },
-    "map": {
-      "title": "Interaktywna mapa i oś czasu",
-      "description": "Twoja podróż żyje na prawdziwej mapie z animowanymi liniami tras, markerami miast i dynamicznym przybliżeniem. Pod mapą wizualna oś czasu pokazuje każdy dzień na pierwszy rzut oka. Przełączaj style: satelita, teren i minimal."
-    },
-    "editing": {
-      "title": "Edycja metodą przeciągnij i upuść",
-      "description": "Zmieniaj kolejność miast, wydłużaj pobyty i dodawaj spontaniczne przystanki — wszystko przez przeciąganie na osi czasu. Daty, połączenia i mapa aktualizują się automatycznie, więc wszystko pozostaje spójne."
+    "cards": [
+      {
+        "id": "paris",
+        "emoji": "🗼",
+        "title": "Weekend w Paryzu",
+        "detail": "Kawiarnie i muzea do pozna."
+      },
+      {
+        "id": "fiji",
+        "emoji": "🌴",
+        "title": "Miodowy na Fiji",
+        "detail": "Plaza, lodzie i wolne tempo."
+      },
+      {
+        "id": "south-africa",
+        "emoji": "🦈",
+        "title": "Bialy rekin dive",
+        "detail": "Zimna woda i mocny dreszcz."
+      },
+      {
+        "id": "route66",
+        "emoji": "🛣️",
+        "title": "Route 66",
+        "detail": "Klasyczne motele i koniec nad oceanem."
+      }
+    ],
+    "preview": {
+      "title": "SEA 30 dni",
+      "alt": "Podglad 30-dniowej podrozy po Azji Poludniowo-Wschodniej"
     }
+  },
+  "bento": {
+    "badge": "Plan with momentum",
+    "title": "The pieces of trip planning finally stay in one place",
+    "subtitle": "Instead of jumping between docs, maps, screenshots, and half-finished chat threads, TravelFlow keeps the route, timing, and trip context moving together.",
+    "items": [
+      {
+        "id": "itinerary",
+        "eyebrow": "AI route draft",
+        "title": "Start from a route, not a blank page",
+        "description": "Describe the trip you want in plain language and get a believable first itinerary with city flow, pacing, and activity context already connected.",
+        "detail": "A first draft your group can react to immediately"
+      },
+      {
+        "id": "timeline",
+        "eyebrow": "Live map edits",
+        "title": "Refine the plan without breaking it",
+        "description": "Stretch a stay, reorder a city, or change the pace. TravelFlow keeps the map and timeline aligned so every edit still feels coherent.",
+        "detail": "Map and timing stay in sync"
+      },
+      {
+        "id": "inspiration",
+        "eyebrow": "Forkable inspiration",
+        "title": "Borrow proven ideas and make them yours",
+        "description": "Use community-style routes and inspiration as a smart starting point instead of rebuilding a believable trip from scratch.",
+        "detail": "Start from real travel energy"
+      },
+      {
+        "id": "sharing",
+        "eyebrow": "Crew review",
+        "title": "Share something your travel crew can understand fast",
+        "description": "Send one link with the route, the pacing, and the notes already in place so feedback happens on the actual trip, not on disconnected screenshots.",
+        "detail": "No account required"
+      },
+      {
+        "id": "relive",
+        "eyebrow": "Booking and handoff",
+        "title": "Leave with a plan that still feels polished",
+        "description": "When the route is ready, the practical context is still there: booking links, notes, and a cleaner print-friendly version for the final handoff.",
+        "detail": "Ready to share, save, or print"
+      }
+    ]
   },
   "workflow": {
-    "title": "Jak to działa",
-    "subtitle": "Od pomysłu do planu podróży w trzech krokach.",
-    "step1Title": "Wybierz kierunek",
-    "step1Description": "Wskaż kraje, wyspy albo pozwól trybowi Surprise Me zaproponować idealne miejsce na Twój termin.",
-    "step2Title": "Wygeneruj z AI",
-    "step2Description": "Nasz model szkicuje pełną trasę z rozkładem miast, atrakcjami i logistyką. Efekt dopracujesz w kilka sekund.",
-    "step3Title": "Dopracuj i udostępnij",
-    "step3Description": "Przeciągaj miasta, zmieniaj czas pobytu, dodawaj notatki. Potem udostępnij link — Twoja ekipa zobaczy mapę i oś czasu na żywo."
-  },
-  "more": {
-    "title": "I znacznie więcej",
-    "subtitle": "Każdy detal zaprojektowano tak, by usunąć tarcie z planowania podróży."
-  },
-  "secondary": {
-    "sharing": {
-      "title": "Udostępnianie jednym kliknięciem",
-      "description": "Wygeneruj link i wyślij go ekipie. Zobaczą pełną mapę, oś czasu i atrakcje — bez zakładania konta."
-    },
-    "community": {
-      "title": "Inspiracje społeczności",
-      "description": "Przeglądaj wyselekcjonowane podróże z całego świata. Skopiuj dowolny plan jako punkt startowy i dopasuj go do siebie."
-    },
-    "booking": {
-      "title": "Linki do rezerwacji",
-      "description": "Każda atrakcja sugerowana przez AI ma link do platform rezerwacyjnych — wycieczki, restauracje, transport — więc zarezerwujesz wszystko bez wychodzenia z TravelFlow."
-    },
-    "duration": {
-      "title": "Sprytne podpowiedzi czasu pobytu",
-      "description": "TravelFlow analizuje sezonowość i dystanse, by podpowiedzieć, ile czasu spędzić w każdym mieście, żeby podróż nie była zbyt napięta."
-    },
-    "mobile": {
-      "title": "Zoptymalizowane pod mobile",
-      "description": "Planuj w ruchu dzięki responsywnemu układowi dopracowanemu pod telefony i tablety. Mapa, oś czasu i edycja dopasowują się do mniejszych ekranów."
-    },
-    "print": {
-      "title": "Plany gotowe do druku",
-      "description": "Przełącz się na widok wydruku, by otrzymać czytelny plan podróży z nagłówkami dni, listą atrakcji i kluczową logistyką."
-    },
-    "routing": {
-      "title": "Trasy przez wiele krajów",
-      "description": "Wybierz kilka krajów lub wysp, a TravelFlow ułoży trasę między regionami z realistycznym czasem przejazdów."
-    },
-    "history": {
-      "title": "Historia wersji",
-      "description": "Każda istotna zmiana tworzy migawkę. Jednym kliknięciem wrócisz do wcześniejszej wersji podróży."
-    },
-    "privacy": {
-      "title": "Prywatność przede wszystkim",
-      "description": "Twoje podróże domyślnie zostają lokalnie. Opcjonalna synchronizacja w chmurze działa po zgodzie, a analityka uruchamia się dopiero po wyraźnym opt-in."
-    }
-  },
-  "comparison": {
-    "title": "Jak TravelFlow wypada na tle innych",
-    "subtitle": "Porównanie obok arkuszy kalkulacyjnych i innych narzędzi podróżniczych.",
-    "featureHeader": "Funkcja",
-    "travelflowHeader": "TravelFlow",
-    "spreadsheetHeader": "Arkusz",
-    "otherHeader": "Inne narzędzia",
-    "yes": "Tak",
-    "partial": "Częściowo",
-    "manual": "Ręcznie",
-    "freemium": "Freemium",
-    "rows": {
-      "ai": "Plan wygenerowany przez AI",
-      "interactiveMap": "Interaktywna mapa",
-      "dragDrop": "Oś czasu drag-and-drop",
-      "oneClickSharing": "Udostępnianie jednym kliknięciem",
-      "bookingLinks": "Linki do rezerwacji",
-      "offlineFirst": "Offline-first / dane lokalne",
-      "freeToUse": "Darmowe w użyciu"
+    "badge": "From spark to group-ready plan",
+    "title": "One flow for drafting, shaping, and sharing",
+    "subtitle": "TravelFlow works best when you want the exciting part of planning and the practical part of planning to live in the same place.",
+    "steps": [
+      {
+        "step": "01",
+        "title": "Start with a destination, a vibe, or a copied route",
+        "description": "Begin from a country list, a seasonal idea, or a travel concept that is still fuzzy. You do not need to know the perfect sequence yet."
+      },
+      {
+        "step": "02",
+        "title": "Shape the pacing with the map and timeline together",
+        "description": "See the route on the globe, then tighten the trip on the timeline until it feels realistic for transfers, energy, and group preferences."
+      },
+      {
+        "step": "03",
+        "title": "Share a version that still looks intentional",
+        "description": "When it is time to get feedback or book, the same plan already has the map, the structure, and the extra context people usually ask for."
+      }
+    ],
+    "glance": {
+      "eyebrow": "What your group sees",
+      "title": "A plan that already looks share-ready",
+      "description": "Maps, day-by-day timing, and the practical context stay aligned so reactions come faster and with less confusion.",
+      "items": [
+        "Live route view with pacing context",
+        "Booking-ready activity links when you need them",
+        "A cleaner print layout for the final version"
+      ]
     }
   },
   "cta": {
-    "title": "Zobacz to w praktyce",
-    "subtitle": "Utwórz swój pierwszy plan podróży z AI w mniej niż minutę.",
-    "button": "Zacznij planować — za darmo"
+    "badge": "Build it while the idea is still fresh",
+    "title": "Start with the route. Keep the travel mood.",
+    "subtitle": "Draft your next trip in minutes, then keep refining it in the same place instead of rebuilding it across five tools.",
+    "button": "Start planning"
   }
 }
