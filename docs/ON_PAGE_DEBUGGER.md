@@ -5,6 +5,7 @@ This project includes a global debug toolbar for developer-only QA flows.
 ## Panel layout
 - The toolbar is grouped into three tabs to reduce noise:
 - `Testing`: simulated login, forced browser connectivity, forced Supabase connectivity, trip-sync replay, trip-expired toggle.
+- `Testing`: simulated login, forced browser connectivity, forced Supabase connectivity, trip-sync replay, trip-expired toggle, runtime location snapshot.
 - `Tracking`: analytics overlay (off by default), Umami shortcut, navigation prefetch diagnostics, view-transition diagnostics.
 - `SEO`: OG playground, SEO/a11y checks, H1 marker, Lighthouse shortcut.
 
@@ -74,6 +75,14 @@ Safe call pattern when debug APIs may be stripped in production:
 - `window.toggleBrowserConnectivity?.('offline')`
 - `window.toggleSupabaseConnectivity?.('offline')`
 - `window.retryTripSyncNow?.()`
+
+### Runtime location diagnostics
+- The `Testing` tab includes a `Runtime Location` card backed by `/api/runtime/location`.
+- The card shows session load state, response source, fetched time, city/country, subdivision, timezone, postal code, and latitude/longitude.
+- Use `Refresh Runtime Location` to force a fresh Netlify lookup and replace any session-cached value.
+- The session snapshot is stored in `sessionStorage` key `tf_runtime_location_v1`.
+- Plain `pnpm dev` does not expose the Netlify edge route. Use `pnpm dev:netlify` for local parity.
+- Optional local geo mocking: start Netlify dev with `--geo=mock --country=<ISO_ALPHA2>` to test alternate countries.
 
 ### `window.toggleBrowserConnectivity(mode?)`
 Defined globally on all routes.
@@ -222,6 +231,36 @@ Consumer:
 - `OnPageDebugger` (View Transition Diagnostics panel)
 
 Event name:
+- `tf:runtime-location`
+
+Payload shape:
+```ts
+{
+  loading: boolean;
+  available: boolean;
+  source: 'netlify-context' | 'session-cache' | 'unavailable' | 'error';
+  fetchedAt: string | null;
+  location: {
+    city: string | null;
+    countryCode: string | null;
+    countryName: string | null;
+    subdivisionCode: string | null;
+    subdivisionName: string | null;
+    latitude: number | null;
+    longitude: number | null;
+    timezone: string | null;
+    postalCode: string | null;
+  };
+}
+```
+
+Producer:
+- `runtimeLocationService`
+
+Consumer:
+- `OnPageDebugger`
+
+Event name:
 - `tf:supabase-connectivity-status`
 
 Payload shape:
@@ -254,5 +293,7 @@ Consumer:
 - `window.toggleBrowserConnectivity('offline')` forces browser-level offline mode (Supabase becomes unreachable as a consequence).
 - `window.toggleSupabaseConnectivity('offline')` forces outage mode for planner resilience checks.
 - `window.retryTripSyncNow()` retries failed queued trip sync entries.
+- `Runtime Location` shows a live Netlify-backed session snapshot or a clear unavailable/error state.
+- `Refresh Runtime Location` replaces any session-cached location with a new request.
 - On marketing pages, Meta + H1 tools are visible and H1 highlight works.
 - Tracking boxes are disabled by default when opening the debugger.

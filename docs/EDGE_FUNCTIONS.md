@@ -23,6 +23,7 @@ Shared helpers live in `netlify/edge-lib/`.
 | `trip-og-playground.ts` | `/api/og/playground` | Dev tool — interactive UI to preview trip/site OG image endpoints directly | Dev tool |
 | `trip-map-preview.ts` | `/api/trip-map-preview` | Proxies Google Static Maps API; returns 302 redirect to styled map | API proxy |
 | `trip-share-resolve.ts` | `/api/trip-share-resolve` | Resolves active share token by trip id for non-owner route handoff | API |
+| `runtime-location.ts` | `/api/runtime/location` | Returns the current request’s normalized Netlify GeoIP snapshot for client bootstrap and debugger diagnostics | API |
 
 **Shared helper:** `netlify/edge-lib/trip-og-data.ts` — Supabase RPC calls, HTML escaping, URL builders, map API key access.
 
@@ -48,6 +49,7 @@ Trip/share pages ──▶ trip-og-meta.ts ──context.next()──▶ SPA ind
 
 /api/trip-map-preview ──▶ trip-map-preview.ts ──302──▶ Google Static Maps
 /api/trip-share-resolve ──▶ trip-share-resolve.ts ──JSON──▶ share token + canonical /s path
+/api/runtime/location ──▶ runtime-location.ts ──JSON──▶ normalized Netlify geo snapshot
 ```
 
 - **Middleware functions** (`*-meta.ts`) call `context.next()` to get the SPA HTML, then rewrite `<head>` tags before returning the response.
@@ -215,4 +217,5 @@ All CDN-cached functions use `max-age=0` for browser to always revalidate with t
 | **Paddle webhook requests return 401** | Invalid/missing `PADDLE_WEBHOOK_SECRET` or timestamp outside allowed window | Copy the exact destination secret from Paddle and verify `PADDLE_WEBHOOK_MAX_AGE_SECONDS` |
 | **Webhook verifies but tier never updates** | `PADDLE_WEBHOOK_SYNC_MODE=verify_only` is still enabled | Switch `PADDLE_WEBHOOK_SYNC_MODE=full` after Supabase schema migration is applied |
 | **Pricing checkout returns 404 in local Vite dev** | Netlify edge route is not active on plain `pnpm dev` | Run `pnpm dev:netlify` and route requests through port `8888` |
+| **`/api/runtime/location` returns HTML or empty data in local Vite dev** | Netlify edge route is not active on plain `pnpm dev`, or local geo mocking is not enabled | Run `pnpm dev:netlify`; optionally start Netlify dev with geo mocking (`--geo=mock --country=DE`) when testing geo-aware flows locally |
 | **Stale social previews** | CDN cache not yet expired | Append `?v=2` to force refetch, or purge via Netlify dashboard |

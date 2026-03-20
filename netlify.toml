@@ -145,6 +145,10 @@ exit 1
   function = "trip-share-resolve"
 
 [[edge_functions]]
+  path = "/api/runtime/location"
+  function = "runtime-location"
+
+[[edge_functions]]
   path = "/api/og/trip"
   function = "trip-og-image"
 
