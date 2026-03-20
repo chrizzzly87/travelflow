@@ -203,6 +203,14 @@ export const COOKIE_REGISTRY: CookieRegistry = {
       storage: 'sessionStorage',
     },
     {
+      name: 'tf_runtime_location_v1',
+      purpose: 'Stores the current session runtime location snapshot for geo-aware defaults and debugger diagnostics.',
+      duration: 'Session',
+      provider: 'TravelFlow',
+      storage: 'sessionStorage',
+      notes: 'Approximate Netlify-derived location only; no raw IP is stored.',
+    },
+    {
       name: 'tf_map_style',
       purpose: 'Persists selected map visual style.',
       duration: 'Persistent',

@@ -1,99 +1,135 @@
 {
   "hero": {
-    "pill": "Product Capabilities",
-    "title": "Plan smarter, travel better",
-    "description": "TravelFlow combines AI generation, visual editing, and collaboration into one workspace. Here is everything the platform can do for your next trip."
+    "badge": "انٹرایکٹو ٹرپ پلاننگ",
+    "titleBefore": "ایسے سفر بنائیں جو پہلے ہی",
+    "titleHighlight": "روانہ ہونے کے لیے تیار لگیں",
+    "description": "TravelFlow منزل کے خیالات کو ایک ایسے روٹ میں بدل دیتا ہے جس پر آپ کا گروپ واقعی ردِعمل دے سکے۔ AI سے پہلا ڈرافٹ بنائیں، اسے لائیو میپ اور ٹائم لائن پر بہتر کریں، پھر ایسا لنک شیئر کریں جو فیصلے سنجیدہ ہونے پر بھی صاف اور پالشڈ لگے۔",
+    "primaryCta": "پلاننگ شروع کریں",
+    "secondaryCta": "نمونہ ٹرپس دیکھیں",
+    "proof": [
+      "AI سفر ڈرافٹس چند سیکنڈ میں",
+      "روٹ کو تب تک ایڈجسٹ کریں جب تک وہ درست نہ لگے",
+      "گروپ چیٹ بکھرنے سے پہلے ایک صاف لنک"
+    ]
   },
-  "heroCards": {
-    "ai": {
-      "title": "AI Trip Generation",
-      "description": "Describe where you want to go and TravelFlow creates a full itinerary — optimized routes, curated activities, realistic timing — in under 30 seconds. Classic, Wizard, or Surprise Me modes adapt to how you like to plan."
+  "globe": {
+    "accessibility": "انٹرایکٹو گلوب پری ویو جو آپ کے نقطۂ آغاز سے دنیا بھر کی ٹرپ آئیڈیاز تک روٹس دکھاتی ہے۔",
+    "fallbackTitle": "انٹرایکٹو گلوب کا متبادل منظر",
+    "fallbackDescription": "لائیو گلوب نہ ہو تب بھی آپ روٹس، ٹرپ کارڈز اور اپنا نقطۂ آغاز دیکھ سکتے ہیں۔",
+    "origin": {
+      "current": "{city} سے",
+      "countryFallback": "{country} سے",
+      "fallback": "نقطۂ آغاز"
     },
-    "map": {
-      "title": "Interactive Map & Timeline",
-      "description": "Your trip lives on a real map with animated route lines, city markers, and dynamic zoom. Below the map, a visual timeline shows every day at a glance. Switch between satellite, terrain, and minimalist styles."
-    },
-    "editing": {
-      "title": "Drag-and-Drop Editing",
-      "description": "Reorder cities, stretch stay durations, and insert spontaneous stops — all by dragging on the timeline. Dates, connections, and the map update automatically so everything stays in sync."
+    "cards": [
+      {
+        "id": "paris",
+        "emoji": "🗼",
+        "title": "پیرس ویک اینڈ",
+        "detail": "کیفے اور دیر تک میوزیم۔"
+      },
+      {
+        "id": "fiji",
+        "emoji": "🌴",
+        "title": "فجی ہنی مون",
+        "detail": "ساحل، بوٹ اور نرم رفتار۔"
+      },
+      {
+        "id": "south-africa",
+        "emoji": "🦈",
+        "title": "گریٹ وائٹ ڈائیو",
+        "detail": "ٹھنڈا پانی اور زبردست سنسنی۔"
+      },
+      {
+        "id": "route66",
+        "emoji": "🛣️",
+        "title": "روٹ 66",
+        "detail": "کلاسک موٹلز اور ویسٹ کوسٹ اختتام۔"
+      }
+    ],
+    "preview": {
+      "title": "30 دن SEA",
+      "alt": "جنوب مشرقی ایشیا کے 30 دن کے بیک پیکنگ سفر کا پیش نظارہ"
     }
+  },
+  "bento": {
+    "badge": "رفتار کے ساتھ پلان کریں",
+    "title": "سفر کے حصے آخرکار ایک ہی جگہ رہتے ہیں",
+    "subtitle": "ڈاکس، میپس، اسکرین شاٹس اور ادھوری چیٹس کے درمیان بھاگنے کے بجائے TravelFlow روٹ، رفتار اور سفر کے تناظر کو ایک ساتھ رکھتا ہے۔",
+    "items": [
+      {
+        "id": "itinerary",
+        "eyebrow": "AI ڈرافٹ",
+        "title": "خالی صفحے سے نہیں، روٹ سے شروع کریں",
+        "description": "عام زبان میں سفر بیان کریں اور ایک قابلِ یقین پہلا itinerary حاصل کریں جس میں شہروں کا بہاؤ، رفتار اور تناظر پہلے ہی جڑا ہوا ہو۔",
+        "detail": "ایک پہلا ڈرافٹ جس پر آپ کا گروپ فوراً ردِعمل دے سکے"
+      },
+      {
+        "id": "timeline",
+        "eyebrow": "لائیو ایڈیٹس",
+        "title": "پلان کو توڑے بغیر بہتر کریں",
+        "description": "قیام بڑھائیں، شہر بدلیں یا رفتار تبدیل کریں۔ TravelFlow میپ اور ٹائم لائن کو ہم آہنگ رکھتا ہے تاکہ ہر تبدیلی پھر بھی مربوط لگے۔",
+        "detail": "میپ اور ٹائمنگ ساتھ رہتے ہیں"
+      },
+      {
+        "id": "inspiration",
+        "eyebrow": "دوبارہ استعمال ہونے والی انسپیریشن",
+        "title": "اچھی آئیڈیاز لیں اور انہیں اپنا بنائیں",
+        "description": "ہر بار صفر سے قابلِ یقین سفر بنانے کے بجائے ایسے روٹس سے شروع کریں جن میں پہلے ہی اصلی ٹریول انرجی ہو۔",
+        "detail": "حقیقی سفر کی انرجی سے آغاز کریں"
+      },
+      {
+        "id": "sharing",
+        "eyebrow": "گروپ ریویو",
+        "title": "ایسی چیز شیئر کریں جسے گروپ جلدی سمجھ لے",
+        "description": "ایک ہی لنک بھیجیں جس میں روٹ، رفتار اور نوٹس پہلے سے موجود ہوں تاکہ فیڈبیک اصل سفر پر آئے، بکھری ہوئی اسکرین شاٹس پر نہیں۔",
+        "detail": "اکاؤنٹ کے بغیر بھی"
+      },
+      {
+        "id": "relive",
+        "eyebrow": "بکنگ اور فائنل ہینڈ آف",
+        "title": "آخر میں بھی ایک پالشڈ پلان رکھیں",
+        "description": "جب روٹ تیار ہو جائے تو عملی تناظر ساتھ رہتا ہے: لنکس، نوٹس اور آخری ہینڈ آف کے لیے زیادہ صاف ورژن۔",
+        "detail": "شیئر، محفوظ یا پرنٹ کرنے کے لیے تیار"
+      }
+    ]
   },
   "workflow": {
-    "title": "How it works",
-    "subtitle": "From idea to itinerary in three steps.",
-    "step1Title": "Choose your destination",
-    "step1Description": "Pick countries, islands, or let Surprise Me suggest the perfect match for your travel window.",
-    "step2Title": "Generate with AI",
-    "step2Description": "Our model drafts a full route with city timing, activities, and logistics. Tweak the result in seconds.",
-    "step3Title": "Refine & share",
-    "step3Description": "Drag cities, adjust durations, add notes. Then share a link — your crew sees the live map and timeline."
-  },
-  "more": {
-    "title": "And so much more",
-    "subtitle": "Every detail is designed to remove friction from trip planning."
-  },
-  "secondary": {
-    "sharing": {
-      "title": "One-Click Sharing",
-      "description": "Generate a link and send it to your travel crew. They see the full map, timeline, and activities — no account needed."
-    },
-    "community": {
-      "title": "Community Inspirations",
-      "description": "Browse curated trips from travelers worldwide. Fork any itinerary as a starting point and make it your own."
-    },
-    "booking": {
-      "title": "Booking Links",
-      "description": "Every AI-suggested activity links to booking platforms — tours, restaurants, transport — so you can reserve without leaving TravelFlow."
-    },
-    "duration": {
-      "title": "Smart Duration Hints",
-      "description": "TravelFlow analyzes seasonal data and travel distances to suggest how long to spend in each city so you never feel rushed."
-    },
-    "mobile": {
-      "title": "Mobile-Optimized",
-      "description": "Plan on the go with a responsive layout tuned for phones and tablets. The map, timeline, and editing all adapt to smaller screens."
-    },
-    "print": {
-      "title": "Print-Ready Itineraries",
-      "description": "Switch to print view for a clean, paper-friendly itinerary with day headers, activity lists, and essential logistics."
-    },
-    "routing": {
-      "title": "Multi-Country Routing",
-      "description": "Select multiple countries or islands and TravelFlow builds a cross-border route with realistic transit between regions."
-    },
-    "history": {
-      "title": "Version History",
-      "description": "Every meaningful change creates a snapshot. Jump back to any previous version of your trip with a single click."
-    },
-    "privacy": {
-      "title": "Privacy-First",
-      "description": "Your trips stay local by default. Optional cloud sync is consent-gated, and analytics only run after explicit opt-in."
-    }
-  },
-  "comparison": {
-    "title": "How TravelFlow compares",
-    "subtitle": "Side-by-side against spreadsheet planning and other trip tools.",
-    "featureHeader": "Feature",
-    "travelflowHeader": "TravelFlow",
-    "spreadsheetHeader": "Spreadsheet",
-    "otherHeader": "Other Tools",
-    "yes": "Yes",
-    "partial": "Partial",
-    "manual": "Manual",
-    "freemium": "Freemium",
-    "rows": {
-      "ai": "AI-generated itinerary",
-      "interactiveMap": "Interactive map",
-      "dragDrop": "Drag-and-drop timeline",
-      "oneClickSharing": "One-click sharing",
-      "bookingLinks": "Booking links",
-      "offlineFirst": "Offline-first / local data",
-      "freeToUse": "Free to use"
+    "badge": "خیال سے گروپ ریڈی پلان تک",
+    "title": "ڈرافٹ، ریفائن اور شیئر کے لیے ایک ہی فلو",
+    "subtitle": "TravelFlow تب سب سے بہتر کام کرتا ہے جب آپ سفر کی پُرجوش اور عملی دونوں پلاننگ ایک ہی جگہ رکھنا چاہتے ہوں۔",
+    "steps": [
+      {
+        "step": "01",
+        "title": "منزل، موڈ یا کاپی شدہ روٹ سے شروع کریں",
+        "description": "ملکوں کی فہرست، موسمی خیال یا ابھی دھندلے سفر کے تصور سے آغاز کریں۔ ابھی آپ کو بہترین ترتیب جاننا ضروری نہیں۔"
+      },
+      {
+        "step": "02",
+        "title": "میپ اور ٹائم لائن کو ساتھ رکھ کر رفتار درست کریں",
+        "description": "گلوب پر روٹ دیکھیں، پھر ٹائم لائن پر اسے اس وقت تک بہتر کریں جب تک وہ ٹرانسفرز، انرجی اور گروپ ترجیحات کے لیے حقیقت پسندانہ نہ لگے۔"
+      },
+      {
+        "step": "03",
+        "title": "ایسا ورژن شیئر کریں جو پہلے ہی سوچا سمجھا لگے",
+        "description": "جب فیڈبیک یا بکنگ کا وقت آئے، تو اسی پلان میں پہلے سے میپ، ساخت اور وہ اضافی تناظر موجود ہو جو لوگ عام طور پر پوچھتے ہیں۔"
+      }
+    ],
+    "glance": {
+      "eyebrow": "آپ کے گروپ کو کیا دکھتا ہے",
+      "title": "ایسا پلان جو پہلے ہی شیئر کے لیے تیار لگے",
+      "description": "میپ، دن بہ دن رفتار اور عملی تناظر ایک ساتھ رہتے ہیں تاکہ ردِعمل زیادہ تیزی اور کم الجھن کے ساتھ آئیں۔",
+      "items": [
+        "رفتار کے تناظر کے ساتھ لائیو روٹ ویو",
+        "ضرورت پڑنے پر بکنگ کے لیے تیار لنکس",
+        "آخری ورژن کے لیے زیادہ صاف پرنٹ لے آؤٹ"
+      ]
     }
   },
   "cta": {
-    "title": "See it in action",
-    "subtitle": "Create your first AI-powered itinerary in under a minute.",
-    "button": "Start Planning — Free"
+    "badge": "خیال تازہ ہو تو اسی وقت بنائیں",
+    "title": "روٹ سے شروع کریں۔ سفر کا موڈ برقرار رکھیں۔",
+    "subtitle": "اپنا اگلا سفر چند منٹ میں ڈرافٹ کریں اور پھر اسے وہیں بہتر کرتے رہیں، بجائے اس کے کہ پانچ ٹولز میں دوبارہ بنائیں۔",
+    "button": "پلاننگ شروع کریں"
   }
 }

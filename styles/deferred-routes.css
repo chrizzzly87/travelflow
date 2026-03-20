@@ -13,7 +13,9 @@
 @source "../components/marketing/EarlyAccessBanner.tsx";
 @source "../components/marketing/TranslationNoticeBanner.tsx";
 @source "../components/marketing/SiteFooter.tsx";
+@source "../components/marketing/features/**/*.tsx";
 @source "../components/flags/FlagIcon.tsx";
+@source "../components/ui/card.tsx";
 @source "../components/admin/**/*.tsx";
 @source "../node_modules/@tremor/react/dist/**/*.{js,cjs}";
 @source "../pages/Admin*.tsx";
