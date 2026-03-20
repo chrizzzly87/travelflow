@@ -568,14 +568,6 @@ export const COOKIE_REGISTRY: CookieRegistry = {
       notes: 'Dynamic key suffix is module-specific.',
     },
     {
-      name: 'tf_runtime_location_v1',
-      purpose: 'Stores the current session runtime location snapshot for geo-aware defaults and debugger diagnostics.',
-      duration: 'Session',
-      provider: 'TravelFlow',
-      storage: 'sessionStorage',
-      notes: 'Approximate Netlify-derived location only; no raw IP is stored.',
-    },
-    {
       name: 'tf_connectivity_banner_dismissed_state_v1',
       purpose: 'Stores per-session dismissal state for outage/connectivity planner banner.',
       duration: 'Session',

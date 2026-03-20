@@ -16,6 +16,14 @@ describe('lib/legal cookie registry', () => {
     expect(result.errors).toEqual([]);
   });
 
+  it('registers the runtime location session key exactly once', () => {
+    const runtimeLocationEntries = getAllCookies().filter(
+      (cookie) => cookie.name === 'tf_runtime_location_v1',
+    );
+
+    expect(runtimeLocationEntries).toHaveLength(1);
+  });
+
   it('resolves cookie helpers consistently', () => {
     expect(isCookieRegistered('tf_cookie_consent_choice_v1')).toBe(true);
     expect(getCookieByName('tf_cookie_consent_choice_v1')).toBeDefined();
