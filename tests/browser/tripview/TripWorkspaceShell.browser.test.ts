@@ -73,6 +73,7 @@ const buildTrip = (): ITrip => ({
             startDateOffset: 0,
             duration: 3,
             color: 'bg-amber-500',
+            coordinates: { lat: 13.7563, lng: 100.5018 },
         },
         {
             id: 'city-chiang-mai',
@@ -81,6 +82,16 @@ const buildTrip = (): ITrip => ({
             startDateOffset: 3,
             duration: 4,
             color: 'bg-emerald-500',
+            coordinates: { lat: 18.7883, lng: 98.9853 },
+        },
+        {
+            id: 'city-krabi',
+            type: 'city',
+            title: 'Krabi',
+            startDateOffset: 7,
+            duration: 4,
+            color: 'bg-sky-500',
+            coordinates: { lat: 8.0863, lng: 98.9063 },
         },
     ],
 });
@@ -133,21 +144,24 @@ describe('components/tripview/TripWorkspaceShell', () => {
     });
 
     afterEach(() => {
+        vi.useRealTimers();
         cleanup();
     });
 
-    it('renders the desktop sidebar and notifies page changes', () => {
+    it('renders the desktop sidebar, overview widgets, and icon-collapse state', () => {
         const onPageChange = vi.fn();
+        vi.useFakeTimers();
+        vi.setSystemTime(new Date('2026-04-12T12:00:00Z'));
 
         render(
             React.createElement(TripWorkspaceShell, {
                 trip: buildTrip(),
                 tripMeta: {
-                    dateRange: 'Apr 10 – Apr 18, 2026',
-                    totalDaysLabel: '8',
-                    cityCount: 2,
-                    distanceLabel: '860 km',
-                    summaryLine: 'Apr 10 – Apr 18 • 8 days • 2 cities',
+                    dateRange: 'Apr 10 – Apr 20, 2026',
+                    totalDaysLabel: '11',
+                    cityCount: 3,
+                    distanceLabel: '1,540 km',
+                    summaryLine: 'Apr 10 – Apr 20 • 11 days • 3 cities',
                 },
                 activePage: 'overview',
                 onPageChange,
@@ -162,11 +176,21 @@ describe('components/tripview/TripWorkspaceShell', () => {
             }),
         );
 
+        const sidebarContainer = screen.getByTestId('trip-workspace-sidebar');
+        const sidebar = sidebarContainer.closest('[data-slot="sidebar"]');
+
+        expect(sidebar).not.toBeNull();
+        expect(sidebar).toHaveAttribute('data-state', 'expanded');
         fireEvent.click(screen.getByRole('button', { name: 'Phrases' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Collapse sidebar' }));
 
         expect(screen.getAllByText('Thailand Highlights').length).toBeGreaterThan(0);
         expect(screen.getByText('Thailand demo')).toBeInTheDocument();
         expect(screen.getByText('Trip overview')).toBeInTheDocument();
+        expect(screen.getByText('See the route day by day')).toBeInTheDocument();
+        expect(screen.getByText('Follow the route across Thailand')).toBeInTheDocument();
+        expect(screen.getByText('Today in Bangkok')).toBeInTheDocument();
+        expect(sidebar).toHaveAttribute('data-state', 'collapsed');
         expect(onPageChange).toHaveBeenCalledWith('phrases');
     });
 

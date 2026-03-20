@@ -14,6 +14,7 @@ import {
     ImagesSquare,
     NotePencil,
     ShareNetwork,
+    SidebarSimple,
     SpeakerHigh,
     Sparkle,
     SuitcaseRolling,
@@ -37,9 +38,10 @@ import {
     SidebarMenuItem,
     SidebarProvider,
     SidebarSeparator,
+    useSidebar,
 } from '../ui/sidebar';
 import { Badge } from '../ui/badge';
-import { Button } from '../ui/button';
+import { Button, buttonVariants } from '../ui/button';
 import {
     Card,
     CardAction,
@@ -50,8 +52,9 @@ import {
     CardTitle,
 } from '../ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
-
-type WorkspaceNavSource = 'desktop_sidebar' | 'mobile_toolbar';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
+import { TripWorkspaceOverviewCalendar } from './TripWorkspaceOverviewCalendar';
+import { TripWorkspaceOverviewMap } from './TripWorkspaceOverviewMap';
 
 interface TripMetaSummary {
     dateRange: string;
@@ -228,6 +231,54 @@ const formatStartDate = (value: string): string => new Intl.DateTimeFormat(undef
     day: 'numeric',
 }).format(new Date(value));
 
+const parseTripDate = (value: string): Date => {
+    const [year, month, day] = value.split('-').map(Number);
+    if ([year, month, day].every((part) => Number.isFinite(part))) {
+        return new Date(year, month - 1, day, 12, 0, 0, 0);
+    }
+
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) {
+        return new Date();
+    }
+
+    parsed.setHours(12, 0, 0, 0);
+    return parsed;
+};
+
+const addDays = (date: Date, days: number): Date => {
+    const nextDate = new Date(date);
+    nextDate.setDate(nextDate.getDate() + days);
+    nextDate.setHours(12, 0, 0, 0);
+    return nextDate;
+};
+
+const formatDateFromOffset = (tripStartDate: string, offset: number): string => new Intl.DateTimeFormat(undefined, {
+    month: 'short',
+    day: 'numeric',
+}).format(addDays(parseTripDate(tripStartDate), Math.floor(offset)));
+
+const resolveTripDayCount = (items: ITimelineItem[]): number => (
+    Math.max(1, items.reduce((maxDay, item) => (
+        Math.max(maxDay, Math.ceil(item.startDateOffset + item.duration))
+    ), 0))
+);
+
+const resolveCountdownLabel = (trip: ITrip): string => {
+    const today = new Date();
+    today.setHours(12, 0, 0, 0);
+    const tripStart = parseTripDate(trip.startDate);
+    const tripEnd = addDays(tripStart, resolveTripDayCount(trip.items) - 1);
+    const msPerDay = 24 * 60 * 60 * 1000;
+    const daysUntilStart = Math.round((tripStart.getTime() - today.getTime()) / msPerDay);
+
+    if (daysUntilStart > 1) return `${daysUntilStart} days`;
+    if (daysUntilStart === 1) return '1 day';
+    if (today >= tripStart && today <= tripEnd) return 'In progress';
+    if (today > tripEnd) return 'Wrapped';
+    return 'Starting today';
+};
+
 const resolveSortedCities = (items: ITimelineItem[]): ITimelineItem[] => (
     items
         .filter((item) => item.type === 'city')
@@ -310,6 +361,192 @@ const WorkspaceStatCard: React.FC<{
     </Card>
 );
 
+const TripWorkspaceDesktopSidebar: React.FC<{
+    trip: ITrip;
+    tripMeta: TripMetaSummary;
+    activePage: TripWorkspacePage;
+    onPageChange: (page: TripWorkspacePage) => void;
+    sidebarSections: Array<{
+        label: string;
+        pages: Array<{
+            page: TripWorkspacePage;
+            icon: React.ComponentType<{ size?: number; weight?: "fill" | "regular" | "thin" | "light" | "bold" | "duotone"; className?: string }>;
+        }>;
+    }>;
+    t: ReturnType<typeof useTranslation>['t'];
+    onOpenTripInfoModal: () => void;
+    onOpenShare: () => void;
+    onOpenSettings: () => void;
+}> = ({
+    trip,
+    tripMeta,
+    activePage,
+    onPageChange,
+    sidebarSections,
+    t,
+    onOpenTripInfoModal,
+    onOpenShare,
+    onOpenSettings,
+}) => {
+    const { state, toggleSidebar } = useSidebar();
+    const isCollapsed = state === 'collapsed';
+
+    const handleToggleSidebar = React.useCallback(() => {
+        const nextState = isCollapsed ? 'expanded' : 'collapsed';
+        trackEvent('trip_workspace__sidebar--toggle', {
+            trip_id: trip.id,
+            state: nextState,
+        });
+        toggleSidebar();
+    }, [isCollapsed, toggleSidebar, trip.id]);
+
+    return (
+        <Sidebar
+            className="border-r border-border/70 bg-sidebar/95"
+            variant="inset"
+            collapsible="icon"
+            data-testid="trip-workspace-sidebar"
+        >
+            <SidebarHeader className="gap-4 px-3 py-3">
+                <div className="flex items-start justify-between gap-2 group-data-[collapsible=icon]:justify-center">
+                    <div className="min-w-0 flex-1 rounded-3xl border border-sidebar-border bg-linear-to-br from-sidebar-accent via-sidebar to-sidebar-accent/40 p-4 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-2.5">
+                        <div className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center">
+                            <span className="inline-flex size-11 items-center justify-center rounded-2xl bg-background/80 text-accent-700 shadow-sm group-data-[collapsible=icon]:size-9">
+                                <AirplaneTakeoff size={22} weight="duotone" />
+                            </span>
+                            <div className="min-w-0 group-data-[collapsible=icon]:hidden">
+                                <p className="truncate text-sm font-semibold text-sidebar-foreground">{trip.title}</p>
+                                <p className="mt-1 line-clamp-2 text-xs leading-5 text-sidebar-foreground/70">{tripMeta.summaryLine}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <button
+                                type="button"
+                                aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                                className={`${buttonVariants({ variant: 'ghost', size: 'icon' })} size-8 shrink-0 rounded-xl border border-sidebar-border/80 bg-background/80 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground group-data-[collapsible=icon]:absolute group-data-[collapsible=icon]:top-3 group-data-[collapsible=icon]:end-3`}
+                                onClick={handleToggleSidebar}
+                                {...getAnalyticsDebugAttributes('trip_workspace__sidebar--toggle', {
+                                    trip_id: trip.id,
+                                    state: isCollapsed ? 'expanded' : 'collapsed',
+                                })}
+                            >
+                                <SidebarSimple size={18} weight="duotone" />
+                            </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="right">
+                            {isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                        </TooltipContent>
+                    </Tooltip>
+                </div>
+            </SidebarHeader>
+            <SidebarSeparator />
+            <SidebarContent className="px-2 py-3">
+                {sidebarSections.map((section) => (
+                    <SidebarGroup key={section.label}>
+                        <SidebarGroupLabel>{section.label}</SidebarGroupLabel>
+                        <SidebarGroupContent>
+                            <SidebarMenu>
+                                {section.pages.map(({ page, icon: Icon }) => (
+                                    <SidebarMenuItem key={page}>
+                                        <SidebarMenuButton
+                                            type="button"
+                                            isActive={activePage === page}
+                                            onClick={() => {
+                                                trackEvent('trip_workspace__page--open', {
+                                                    trip_id: trip.id,
+                                                    page,
+                                                    surface: 'desktop_sidebar',
+                                                });
+                                                onPageChange(page);
+                                            }}
+                                            tooltip={resolveWorkspacePageLabel(t, page)}
+                                            {...getAnalyticsDebugAttributes('trip_workspace__page--open', {
+                                                trip_id: trip.id,
+                                                page,
+                                                surface: 'desktop_sidebar',
+                                            })}
+                                        >
+                                            <Icon size={18} weight="duotone" />
+                                            <span>{resolveWorkspacePageLabel(t, page)}</span>
+                                        </SidebarMenuButton>
+                                    </SidebarMenuItem>
+                                ))}
+                            </SidebarMenu>
+                        </SidebarGroupContent>
+                    </SidebarGroup>
+                ))}
+            </SidebarContent>
+            <SidebarSeparator />
+            <SidebarFooter className="px-2 py-3">
+                <SidebarMenu>
+                    <SidebarMenuItem>
+                        <SidebarMenuButton
+                            type="button"
+                            tooltip={t('tripView.workspace.footer.share')}
+                            onClick={() => {
+                                trackEvent('trip_workspace__footer_action--open', {
+                                    trip_id: trip.id,
+                                    action: 'share',
+                                });
+                                onOpenShare();
+                            }}
+                            {...getAnalyticsDebugAttributes('trip_workspace__footer_action--open', {
+                                trip_id: trip.id,
+                                action: 'share',
+                            })}
+                        >
+                            <ShareNetwork size={18} weight="duotone" />
+                            <span>{t('tripView.workspace.footer.share')}</span>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                        <SidebarMenuButton
+                            type="button"
+                            tooltip={t('tripView.workspace.footer.export')}
+                            onClick={() => {
+                                trackEvent('trip_workspace__footer_action--open', {
+                                    trip_id: trip.id,
+                                    action: 'export',
+                                });
+                                onOpenTripInfoModal();
+                            }}
+                            {...getAnalyticsDebugAttributes('trip_workspace__footer_action--open', {
+                                trip_id: trip.id,
+                                action: 'export',
+                            })}
+                        >
+                            <DownloadSimple size={18} weight="duotone" />
+                            <span>{t('tripView.workspace.footer.export')}</span>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                        <SidebarMenuButton
+                            type="button"
+                            tooltip={t('tripView.workspace.footer.settings')}
+                            onClick={() => {
+                                trackEvent('trip_workspace__footer_action--open', {
+                                    trip_id: trip.id,
+                                    action: 'settings',
+                                });
+                                onOpenSettings();
+                            }}
+                            {...getAnalyticsDebugAttributes('trip_workspace__footer_action--open', {
+                                trip_id: trip.id,
+                                action: 'settings',
+                            })}
+                        >
+                            <GearSix size={18} weight="duotone" />
+                            <span>{t('tripView.workspace.footer.settings')}</span>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                </SidebarMenu>
+            </SidebarFooter>
+        </Sidebar>
+    );
+};
+
 const OverviewPage: React.FC<{
     trip: ITrip;
     tripMeta: TripMetaSummary;
@@ -317,8 +554,8 @@ const OverviewPage: React.FC<{
 }> = ({ trip, tripMeta, selectedCities }) => {
     const cityStops = resolveSortedCities(trip.items);
     const nextCity = selectedCities[0] ?? cityStops[1] ?? cityStops[0] ?? null;
-    const nextCityLabel = nextCity ? `${nextCity.title} • ${formatStartDate(trip.startDate)}` : 'Thailand sample';
-    const countdownLabel = '18 days';
+    const nextCityLabel = nextCity ? `${nextCity.title} • ${formatDateFromOffset(trip.startDate, nextCity.startDateOffset)}` : 'Thailand sample';
+    const countdownLabel = resolveCountdownLabel(trip);
 
     return (
         <div className="flex flex-col gap-4">
@@ -347,6 +584,11 @@ const OverviewPage: React.FC<{
                     value="Ao Nang stay"
                     hint="Demo booking queue: hotel is confirmed, boat transfer still missing."
                 />
+            </div>
+
+            <div className="grid gap-4 xl:grid-cols-[1.08fr_0.92fr]">
+                <TripWorkspaceOverviewCalendar trip={trip} cityStops={cityStops} />
+                <TripWorkspaceOverviewMap cityStops={cityStops} />
             </div>
 
             <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
@@ -990,120 +1232,17 @@ export const TripWorkspaceShell: React.FC<TripWorkspaceShellProps> = ({
     return (
         <SidebarProvider className="min-h-0 flex-1 bg-transparent" defaultOpen>
             {!isMobile && (
-                <Sidebar className="border-r border-border/70 bg-sidebar/95" variant="inset" collapsible="none">
-                    <SidebarHeader className="gap-4 px-4 py-4">
-                        <div className="rounded-3xl border border-sidebar-border bg-linear-to-br from-sidebar-accent via-sidebar to-sidebar-accent/40 p-4">
-                            <div className="flex items-center gap-3">
-                                <span className="inline-flex size-11 items-center justify-center rounded-2xl bg-background/80 text-accent-700 shadow-sm">
-                                    <AirplaneTakeoff size={22} weight="duotone" />
-                                </span>
-                                <div className="min-w-0">
-                                    <p className="truncate text-sm font-semibold text-sidebar-foreground">{trip.title}</p>
-                                    <p className="mt-1 line-clamp-2 text-xs leading-5 text-sidebar-foreground/70">{tripMeta.summaryLine}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </SidebarHeader>
-                    <SidebarSeparator />
-                    <SidebarContent className="px-2 py-3">
-                        {sidebarSections.map((section) => (
-                            <SidebarGroup key={section.label}>
-                                <SidebarGroupLabel>{section.label}</SidebarGroupLabel>
-                                <SidebarGroupContent>
-                                    <SidebarMenu>
-                                        {section.pages.map(({ page, icon: Icon }) => (
-                                            <SidebarMenuItem key={page}>
-                                                <SidebarMenuButton
-                                                    type="button"
-                                                    isActive={activePage === page}
-                                                    onClick={() => {
-                                                        trackEvent('trip_workspace__page--open', {
-                                                            trip_id: trip.id,
-                                                            page,
-                                                            surface: 'desktop_sidebar',
-                                                        });
-                                                        onPageChange(page);
-                                                    }}
-                                                    tooltip={resolveWorkspacePageLabel(t, page)}
-                                                    {...getAnalyticsDebugAttributes('trip_workspace__page--open', {
-                                                        trip_id: trip.id,
-                                                        page,
-                                                        surface: 'desktop_sidebar',
-                                                    })}
-                                                >
-                                                    <Icon size={18} weight="duotone" />
-                                                    <span>{resolveWorkspacePageLabel(t, page)}</span>
-                                                </SidebarMenuButton>
-                                            </SidebarMenuItem>
-                                        ))}
-                                    </SidebarMenu>
-                                </SidebarGroupContent>
-                            </SidebarGroup>
-                        ))}
-                    </SidebarContent>
-                    <SidebarSeparator />
-                    <SidebarFooter className="px-2 py-3">
-                        <SidebarMenu>
-                            <SidebarMenuItem>
-                                <SidebarMenuButton
-                                    type="button"
-                                    onClick={() => {
-                                        trackEvent('trip_workspace__footer_action--open', {
-                                            trip_id: trip.id,
-                                            action: 'share',
-                                        });
-                                        onOpenShare();
-                                    }}
-                                    {...getAnalyticsDebugAttributes('trip_workspace__footer_action--open', {
-                                        trip_id: trip.id,
-                                        action: 'share',
-                                    })}
-                                >
-                                    <ShareNetwork size={18} weight="duotone" />
-                                    <span>{t('tripView.workspace.footer.share')}</span>
-                                </SidebarMenuButton>
-                            </SidebarMenuItem>
-                            <SidebarMenuItem>
-                                <SidebarMenuButton
-                                    type="button"
-                                    onClick={() => {
-                                        trackEvent('trip_workspace__footer_action--open', {
-                                            trip_id: trip.id,
-                                            action: 'export',
-                                        });
-                                        onOpenTripInfoModal();
-                                    }}
-                                    {...getAnalyticsDebugAttributes('trip_workspace__footer_action--open', {
-                                        trip_id: trip.id,
-                                        action: 'export',
-                                    })}
-                                >
-                                    <DownloadSimple size={18} weight="duotone" />
-                                    <span>{t('tripView.workspace.footer.export')}</span>
-                                </SidebarMenuButton>
-                            </SidebarMenuItem>
-                            <SidebarMenuItem>
-                                <SidebarMenuButton
-                                    type="button"
-                                    onClick={() => {
-                                        trackEvent('trip_workspace__footer_action--open', {
-                                            trip_id: trip.id,
-                                            action: 'settings',
-                                        });
-                                        onOpenSettings();
-                                    }}
-                                    {...getAnalyticsDebugAttributes('trip_workspace__footer_action--open', {
-                                        trip_id: trip.id,
-                                        action: 'settings',
-                                    })}
-                                >
-                                    <GearSix size={18} weight="duotone" />
-                                    <span>{t('tripView.workspace.footer.settings')}</span>
-                                </SidebarMenuButton>
-                            </SidebarMenuItem>
-                        </SidebarMenu>
-                    </SidebarFooter>
-                </Sidebar>
+                <TripWorkspaceDesktopSidebar
+                    trip={trip}
+                    tripMeta={tripMeta}
+                    activePage={activePage}
+                    onPageChange={onPageChange}
+                    sidebarSections={sidebarSections}
+                    t={t}
+                    onOpenTripInfoModal={onOpenTripInfoModal}
+                    onOpenShare={onOpenShare}
+                    onOpenSettings={onOpenSettings}
+                />
             )}
             <SidebarInset className={insetClassName}>
                 {renderPage()}

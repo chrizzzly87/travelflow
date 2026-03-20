@@ -1,6 +1,6 @@
 # Trip Workspace TODO
 
-Last updated: 2026-03-19
+Last updated: 2026-03-20
 Owner: Codex + @chrizzzly
 Goal: Turn Trip View into a routed Trip Workspace with a fixed shadcn sidebar on desktop, matching mobile navigation, and dedicated pages for the main trip jobs.
 
@@ -83,10 +83,23 @@ Goal: Turn Trip View into a routed Trip Workspace with a fixed shadcn sidebar on
 
 ## UX clarity and navigation rules
 - [x] Keep icons paired with clear labels in the desktop sidebar and mobile toolbar.
+- [x] Support a desktop icon-collapse mode so the workspace can feel like a compact dashboard instead of a permanently wide rail.
 - [x] Ensure each page has one dominant job so users understand why they are there.
 - [ ] Keep empty states instructional and action-oriented.
 - [ ] Make it visually obvious when content is trip-specific, city-specific, or country-level.
 - [x] Preserve a dashboard feel on desktop instead of a planner-plus-panels feel.
+
+## Overview upgrades
+- [x] Add a color-coded timeline calendar to `Overview` so the route is visible without opening the planner.
+- [x] Highlight the current day inside the overview calendar when it falls within the trip window.
+- [x] Add a compact overview map that shows the high-level route without planner controls.
+- [x] Keep the overview map intentionally lighter than the planner map so the page reads like a dashboard, not an editor.
+
+## Next ideas backlog
+- [ ] Add a `Travel kit` page for packing lists, adapters, emergency numbers, and trip checklists.
+- [ ] Add a `Budget` page for planned spend, booked spend, and daily burn-rate tracking.
+- [ ] Add a `Documents` page for passports, visa notes, insurance, tickets, and booking PDFs.
+- [ ] Add a `Weather` layer for city-by-city forecasts, seasonal warnings, and disruption watchlists.
 
 ## Validation and rollout
 - [x] Add route and workspace regression coverage following `docs/TESTING_PHASE2_SCOPE.md`.
@@ -103,10 +116,15 @@ Goal: Turn Trip View into a routed Trip Workspace with a fixed shadcn sidebar on
 - [x] Kept the planner as its own page with the calendar, map, timeline, and right-side selection details isolated there.
 - [x] Added dedicated workspace pages for `Overview`, `Places`, `Explore`, `Phrases`, `Bookings`, `Notes`, and `Photos` using Thailand demo data and clear demo badges.
 - [x] Added route helpers, loader updates, analytics hooks, locale wiring, and regression coverage for the workspace shell.
+- [x] Added a true desktop sidebar collapse mode with icon-only navigation and tooltip-backed labels.
+- [x] Added a color-coded overview calendar and a compact overview route map so the trip dashboard has its own strong visual anchors.
 
 ## Open
 - [ ] Tighten the trip modal so it reads as a basic trip-actions surface, not a second destination hub.
 - [ ] Replace temporary English fallback workspace copy in secondary locales after EN/DE wording sign-off.
 - [ ] Add source freshness, official links, and clearer trip-specific vs general labels to the destination pages.
 - [ ] Turn the `Places` map placeholder into a real validated map surface that follows the repository map workflow.
+- [ ] Decide whether desktop sidebar collapse should persist per browser session before introducing a storage key and legal disclosure update.
+- [ ] Turn the new overview map and overview calendar copy into signed-off EN/DE locale keys when the wording is final.
 - [ ] Replace Thailand demo data with live bookings, discovery, phrase, and destination services when the backend inputs are ready.
+- [ ] Choose the next routed page after this slice: `Travel kit`, `Budget`, `Documents`, or `Weather`.
