@@ -1,6 +1,11 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from 'vitest';
-import { appendHistoryEntry, findHistoryEntryByUrl, getHistoryEntries } from '../../services/historyService';
+import {
+  appendHistoryEntry,
+  createTripHistorySnapshotEntry,
+  findHistoryEntryByUrl,
+  getHistoryEntries,
+} from '../../services/historyService';
 import { makeTrip } from '../helpers/tripFixtures';
 
 describe('services/historyService', () => {
@@ -79,20 +84,122 @@ describe('services/historyService', () => {
     expect(findHistoryEntryByUrl(tripId, '/trip/missing')).toBeNull();
   });
 
-  it('swallows storage write failures while still emitting history events', () => {
+  it('falls back to the base trip url when a snapshot write cannot persist', () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const setItemSpy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
       throw new Error('quota');
     });
     const listener = vi.fn();
     window.addEventListener('tf:history', listener as EventListener);
+    const trip = makeTrip({ id: 'trip-write-fail' });
 
-    expect(() => appendHistoryEntry('trip-write-fail', '/trip/trip-write-fail?v=1', 'v1', { ts: 1 })).not.toThrow();
+    const result = createTripHistorySnapshotEntry({
+      tripId: trip.id,
+      trip,
+      label: 'Visual: Changed map style',
+      ts: 1,
+      baseUrlOverride: '/trip/trip-write-fail?mode=planner',
+    });
+
+    expect(result).toEqual({
+      url: '/trip/trip-write-fail?mode=planner',
+      persisted: false,
+    });
     expect(consoleSpy).toHaveBeenCalled();
-    expect(listener).toHaveBeenCalledTimes(1);
+    expect(listener).not.toHaveBeenCalled();
+    expect(getHistoryEntries(trip.id)).toEqual([]);
 
     window.removeEventListener('tf:history', listener as EventListener);
     setItemSpy.mockRestore();
     consoleSpy.mockRestore();
+  });
+
+  it('prunes older history entries before failing a new write', () => {
+    const tripId = 'trip-prune';
+    const originalSetItem = Storage.prototype.setItem;
+    window.localStorage.setItem('travelflow_history_v1', JSON.stringify({
+      [tripId]: [
+        {
+          id: 'old-1',
+          tripId,
+          url: `/trip/${tripId}?v=old-1`,
+          label: 'Old one',
+          ts: 1,
+          snapshot: {
+            trip: makeTrip({ id: tripId, title: 'Old one' }),
+          },
+        },
+        {
+          id: 'old-2',
+          tripId,
+          url: `/trip/${tripId}?v=old-2`,
+          label: 'Old two',
+          ts: 2,
+          snapshot: {
+            trip: makeTrip({ id: tripId, title: 'Old two' }),
+          },
+        },
+      ],
+    }));
+
+    let writeAttempts = 0;
+    const setItemSpy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (key, value) {
+      if (key === 'travelflow_history_v1' && writeAttempts === 0) {
+        writeAttempts += 1;
+        throw new Error('quota');
+      }
+      return originalSetItem.call(this, key, value);
+    });
+
+    const persisted = appendHistoryEntry(tripId, `/trip/${tripId}?v=new`, 'Newest', {
+      ts: 3,
+      snapshot: {
+        trip: makeTrip({ id: tripId, title: 'Newest' }),
+      },
+    });
+
+    expect(persisted).toBe(true);
+    expect(getHistoryEntries(tripId).map((entry) => entry.url)).toEqual([
+      `/trip/${tripId}?v=new`,
+      `/trip/${tripId}?v=old-2`,
+    ]);
+
+    setItemSpy.mockRestore();
+  });
+
+  it('compacts legacy visual entries that still store full trip snapshots', () => {
+    const trip = makeTrip({ id: 'trip-compact' });
+    window.localStorage.setItem('travelflow_history_v1', JSON.stringify({
+      [trip.id]: [
+        {
+          id: 'legacy-visual',
+          tripId: trip.id,
+          url: `/trip/${trip.id}?v=legacy`,
+          label: 'Visual: Map view standard -> dark',
+          ts: 1,
+          snapshot: {
+            trip,
+            view: {
+              mapStyle: 'dark',
+              layoutMode: 'horizontal',
+              timelineMode: 'calendar',
+              timelineView: 'horizontal',
+              mapDockMode: 'docked',
+              routeMode: 'simple',
+              showCityNames: true,
+              zoomLevel: 1,
+              zoomBehavior: 'fit',
+              sidebarWidth: 550,
+              detailsWidth: 440,
+              timelineHeight: 340,
+            },
+          },
+        },
+      ],
+    }));
+
+    const entry = getHistoryEntries(trip.id)[0];
+    expect(entry.snapshot?.trip).toBeUndefined();
+    expect(entry.snapshot?.view?.mapStyle).toBe('dark');
   });
 });

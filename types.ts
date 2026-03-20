@@ -192,6 +192,7 @@ export interface ITimelineItem {
   link?: string;
   location?: string;
   coordinates?: ICoordinates; 
+  imageUrl?: string;
   cost?: string;
   countryCode?: string;
   countryName?: string;

@@ -24,10 +24,14 @@ import {
   getRouteOuterOutlineColor,
   getRouteOutlineColor,
   getMapLabelCityName,
+  resolveTripMapCityLabelName,
+  isCoordinateWithinSafeBounds,
   estimateRoutePixelSpan,
   estimateNearestMarkerGapPx,
+  resolveCityLabelPlacement,
   resolveMarkerRenderProfile,
   resolveMarkerRenderTier,
+  resolveMapViewportPadding,
   resolveZoomEnhancedCityMarkerProfile,
   resolveCrowdedCityMarkerProfile,
   resolveActivityMarkerPositions,
@@ -40,6 +44,7 @@ import {
   shouldSkipRouteFitForSelection,
   shouldDisplayActivityMarkers,
 } from '../../components/ItineraryMap';
+import { isFiniteLatLngLiteral } from '../../shared/coordinateUtils';
 
 describe('components/ItineraryMap route cache helpers', () => {
   it('filters persisted route entries by status and ttl', () => {
@@ -109,16 +114,39 @@ describe('components/ItineraryMap route cache helpers', () => {
     expect(getMapLabelCityName('')).toBe('');
   });
 
-  it('chooses label anchors that reduce overlap with adjacent route segments', () => {
+  it('prefers the location city over custom stay titles when building trip-map labels', () => {
+    expect(resolveTripMapCityLabelName({
+      title: 'Bangkok (Return)',
+      location: 'Bangkok, Thailand',
+    } as any)).toBe('Bangkok');
+
+    expect(resolveTripMapCityLabelName({
+      title: 'Luang Prabang',
+      location: '',
+    } as any)).toBe('Luang Prabang');
+  });
+
+  it('keeps city labels centered above markers for a steadier trip-map layout', () => {
     const city = { lat: 13.75, lng: 100.5 };
     const west = { lat: 13.75, lng: 100.2 };
     const east = { lat: 13.75, lng: 100.8 };
     const north = { lat: 14.05, lng: 100.5 };
     const south = { lat: 13.45, lng: 100.5 };
 
-    expect(resolveCityLabelAnchor(city, west, east)).toBe('below');
-    expect(resolveCityLabelAnchor(city, south, north)).toBe('right');
-    expect(resolveCityLabelAnchor(city, null, null)).toBe('right');
+    expect(resolveCityLabelAnchor(city, west, east)).toBe('above');
+    expect(resolveCityLabelAnchor(city, south, north)).toBe('above');
+    expect(resolveCityLabelAnchor(city, null, null)).toBe('above');
+  });
+
+  it('places city labels farther away from markers with anchor-aware transforms', () => {
+    expect(resolveCityLabelPlacement('right', 24)).toEqual({
+      transform: 'translate(24px, -50%)',
+      textAlign: 'left',
+    });
+    expect(resolveCityLabelPlacement('above', 20)).toEqual({
+      transform: 'translate(-50%, calc(-100% - 20px))',
+      textAlign: 'center',
+    });
   });
 
   it('uses dual-contrast outline colors', () => {
@@ -299,6 +327,41 @@ describe('components/ItineraryMap route cache helpers', () => {
     expect(dedupedGap).toBeGreaterThan(0);
   });
 
+  it('ignores malformed coordinate objects instead of crashing trip map helpers', () => {
+    expect(isFiniteLatLngLiteral({ lat: 52.52, lng: 13.405 })).toBe(true);
+    expect(isFiniteLatLngLiteral({ lat: undefined as unknown as number, lng: 13.405 })).toBe(false);
+    expect(isFiniteLatLngLiteral({ lat: 52.52, lng: Number.NaN })).toBe(false);
+
+    expect(estimateNearestMarkerGapPx([
+      { lat: undefined as unknown as number, lng: 13.405 },
+      { lat: 52.52, lng: 13.405 },
+    ] as Array<{ lat: number; lng: number }>, 11)).toBe(Number.POSITIVE_INFINITY);
+
+    const markers = resolveActivityMarkerPositions([
+      {
+        id: 'city-invalid',
+        type: 'city',
+        title: 'Broken city',
+        startDateOffset: 0,
+        duration: 2,
+        color: 'bg-blue-100 border-blue-300 text-blue-800',
+        coordinates: { lat: undefined as unknown as number, lng: 13.405 },
+      },
+      {
+        id: 'activity-invalid',
+        type: 'activity',
+        title: 'Broken activity',
+        startDateOffset: 0.2,
+        duration: 0.1,
+        color: 'bg-amber-100 border-amber-300 text-amber-800',
+        coordinates: { lat: 52.52, lng: undefined as unknown as number },
+        activityType: ['food'],
+      },
+    ] as any);
+
+    expect(markers).toEqual([]);
+  });
+
   it('resolves marker tier from viewport, zoom, and route density signals', () => {
     expect(resolveMarkerRenderTier({
       viewportWidth: 170,
@@ -378,6 +441,31 @@ describe('components/ItineraryMap route cache helpers', () => {
     expect(zoomBoostedDefaultProfile.size).toBeGreaterThan(defaultCityProfile.size);
     expect(zoomBoostedDefaultProfile.selectedSize).toBeGreaterThan(defaultCityProfile.selectedSize);
     expect(compactUnchangedProfile).toEqual(compactCityProfile);
+  });
+
+  it('shrinks default city markers at low zoom before growing them again on close-up views', () => {
+    const defaultCityProfile = resolveMarkerRenderProfile({ mapDockMode: 'docked', markerTier: 'default' }).city;
+    const farZoomProfile = resolveZoomEnhancedCityMarkerProfile({
+      baseProfile: defaultCityProfile,
+      markerTier: 'default',
+      zoom: 5.2,
+    });
+
+    expect(farZoomProfile.shape).toBe('circle');
+    expect(farZoomProfile.size).toBeLessThan(defaultCityProfile.size);
+    expect(farZoomProfile.showInnerDot).toBe(false);
+  });
+
+  it('switches default city markers into pin mode earlier on medium-close zoom levels', () => {
+    const defaultCityProfile = resolveMarkerRenderProfile({ mapDockMode: 'docked', markerTier: 'default' }).city;
+    const mediumZoomProfile = resolveZoomEnhancedCityMarkerProfile({
+      baseProfile: defaultCityProfile,
+      markerTier: 'default',
+      zoom: 10.4,
+    });
+
+    expect(mediumZoomProfile.shape).toBe('pin');
+    expect(mediumZoomProfile.size).toBeGreaterThanOrEqual(24);
   });
 
   it('flags low-fidelity transit paths as straight-like', () => {
@@ -586,6 +674,7 @@ describe('components/ItineraryMap route cache helpers', () => {
   it('recenters when zooming to a selected target even if it is already visible', () => {
     expect(resolveSelectionViewportActions({
       isTargetVisible: true,
+      isTargetWithinSafeZone: true,
       currentZoom: 9,
       targetZoom: 13,
     })).toEqual({
@@ -597,10 +686,23 @@ describe('components/ItineraryMap route cache helpers', () => {
   it('keeps viewport stable when selected target is visible and zoom is already sufficient', () => {
     expect(resolveSelectionViewportActions({
       isTargetVisible: true,
+      isTargetWithinSafeZone: true,
       currentZoom: 13,
       targetZoom: 13,
     })).toEqual({
       shouldPan: false,
+      shouldZoom: false,
+    });
+  });
+
+  it('re-centers when a selected target is visible but too close to the viewport edge', () => {
+    expect(resolveSelectionViewportActions({
+      isTargetVisible: true,
+      isTargetWithinSafeZone: false,
+      currentZoom: 13,
+      targetZoom: 13,
+    })).toEqual({
+      shouldPan: true,
       shouldZoom: false,
     });
   });
@@ -614,6 +716,45 @@ describe('components/ItineraryMap route cache helpers', () => {
       shouldPan: true,
       shouldZoom: false,
     });
+  });
+
+  it('creates roomier fit padding for floating map layouts', () => {
+    expect(resolveMapViewportPadding({
+      mapDockMode: 'docked',
+      mapViewportSize: { width: 640, height: 420 },
+    })).toEqual({
+      top: 130,
+      right: 130,
+      bottom: 130,
+      left: 130,
+    });
+
+    expect(resolveMapViewportPadding({
+      mapDockMode: 'floating',
+      mapViewportSize: { width: 640, height: 420 },
+    })).toEqual({
+      top: 148,
+      right: 140,
+      bottom: 148,
+      left: 140,
+    });
+  });
+
+  it('detects whether a selected target sits inside the safe-zone inset of the current bounds', () => {
+    const bounds = {
+      getNorthEast: () => ({ lat: () => 20, lng: () => 20 }),
+      getSouthWest: () => ({ lat: () => 10, lng: () => 10 }),
+    } as unknown as google.maps.LatLngBounds;
+
+    expect(isCoordinateWithinSafeBounds({
+      bounds,
+      point: { lat: 15, lng: 15 },
+    })).toBe(true);
+
+    expect(isCoordinateWithinSafeBounds({
+      bounds,
+      point: { lat: 11.6, lng: 15 },
+    })).toBe(false);
   });
 
   it('shows activity markers only when toggle is enabled and zoom is high enough', () => {

@@ -187,4 +187,16 @@ describe('components/TripInfoModal', () => {
 
     expect(props.onGoToHistoryEntry).toHaveBeenCalledWith(baseHistoryItem);
   });
+
+  it('stays resilient when a stale caller omits history items or cancel-edit wiring', () => {
+    const props = buildProps();
+
+    expect(() => {
+      render(React.createElement(TripInfoModal as any, {
+        ...props,
+        historyItems: undefined,
+        onCancelTitleEdit: undefined,
+      }));
+    }).not.toThrow();
+  });
 });

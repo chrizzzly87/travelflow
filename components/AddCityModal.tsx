@@ -3,7 +3,7 @@ import { Search, Loader2, AlertTriangle, ArrowRight } from 'lucide-react';
 import { useGoogleMaps } from './GoogleMapsLoader';
 import { AppModal } from './ui/app-modal';
 import { getStoredAppLanguage } from '../utils';
-import { resolveCitySuggestion, searchCitySuggestions, type CityLookupSuggestion } from '../shared/cityLookup';
+import { resolveCitySuggestion, searchCitySuggestions, type CityLookupSuggestion } from '../services/locationSearchService';
 
 interface AddCityModalProps {
     isOpen: boolean;

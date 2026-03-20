@@ -5,6 +5,9 @@ import {
   getHexFromColorClass,
   getTripDistanceKm,
 } from '../../utils';
+import { getClientMapRuntimeResolution, getMapboxAccessToken } from '../../services/mapRuntimeService';
+import { MAP_RUNTIME_CACHE_KEY_QUERY_PARAM } from '../../shared/mapRuntime';
+import { getMapboxStyleDescriptor } from '../../services/mapRendererVisualStyleService';
 
 interface TripRangeOffsets {
   startOffset: number;
@@ -214,6 +217,38 @@ const resolveLegColor = (legColors: string[], index: number, fallback: string): 
 
 const formatCoord = (coord: { lat: number; lng: number }): string => `${coord.lat.toFixed(6)},${coord.lng.toFixed(6)}`;
 
+const encodePolylineCoordinate = (value: number): string => {
+  let encoded = '';
+  let current = Math.round(value * 1e5);
+  current <<= 1;
+  if (value < 0) {
+    current = ~current;
+  }
+  while (current >= 0x20) {
+    encoded += String.fromCharCode((0x20 | (current & 0x1f)) + 63);
+    current >>= 5;
+  }
+  encoded += String.fromCharCode(current + 63);
+  return encoded;
+};
+
+const encodePolylinePath = (coordinates: Array<{ lat: number; lng: number }>): string => {
+  let previousLat = 0;
+  let previousLng = 0;
+  let encoded = '';
+
+  coordinates.forEach((coordinate) => {
+    const lat = Math.round(coordinate.lat * 1e5);
+    const lng = Math.round(coordinate.lng * 1e5);
+    encoded += encodePolylineCoordinate((lat - previousLat) / 1e5);
+    encoded += encodePolylineCoordinate((lng - previousLng) / 1e5);
+    previousLat = lat;
+    previousLng = lng;
+  });
+
+  return encoded;
+};
+
 export const buildDirectStaticMapPreviewUrlWithKey = (params: URLSearchParams, mapsApiKey: string): string | null => {
   const normalizedKey = mapsApiKey.trim();
   if (!normalizedKey) return null;
@@ -274,6 +309,64 @@ export const buildDirectStaticMapPreviewUrlWithKey = (params: URLSearchParams, m
 
   directParams.set('key', normalizedKey);
   return `https://maps.googleapis.com/maps/api/staticmap?${directParams.toString()}`;
+};
+
+export const buildDirectMapboxStaticMapPreviewUrlWithToken = (
+  params: URLSearchParams,
+  mapboxAccessToken: string,
+): string | null => {
+  const normalizedToken = mapboxAccessToken.trim();
+  if (!normalizedToken) return null;
+
+  const coords = parsePreviewCoords(params.get('coords'));
+  if (coords.length === 0) return null;
+
+  const style = parsePreviewStyle(params.get('style'));
+  const w = clampInt(Number.parseInt(params.get('w') || '640', 10), 240, 1280);
+  const h = clampInt(Number.parseInt(params.get('h') || '360', 10), 160, 960);
+  const scale = clampInt(Number.parseInt(params.get('scale') || '2', 10), 1, 2);
+  const colorMode = params.get('colorMode') === 'trip' ? 'trip' : 'brand';
+  const pathColor = colorMode === 'trip'
+    ? normalizeMapPreviewColor(params.get('pathColor'), BRAND_ROUTE_COLOR)
+    : BRAND_ROUTE_COLOR;
+  const requestedLegColors = parsePreviewLegColors(params.get('legColors'));
+  const legColors = coords.slice(0, -1).map((_, index) => (
+    colorMode === 'trip' ? resolveLegColor(requestedLegColors, index, pathColor) : BRAND_ROUTE_COLOR
+  ));
+  const startMarkerColor = normalizeMapPreviewColor(params.get('startMarkerColor'), legColors[0] || pathColor);
+  const endMarkerColor = normalizeMapPreviewColor(
+    params.get('endMarkerColor'),
+    legColors[legColors.length - 1] || pathColor,
+  );
+  const waypointColor = normalizeMapPreviewColor(params.get('waypointColor'), pathColor);
+
+  const overlays: string[] = [];
+
+  for (let index = 0; index < coords.length - 1; index += 1) {
+    const color = resolveLegColor(legColors, index, pathColor);
+    const encodedPolyline = encodePolylinePath([coords[index], coords[index + 1]]);
+    overlays.push(`path-4+${color}-0.85(${encodedPolyline})`);
+  }
+
+  const start = coords[0];
+  overlays.push(`pin-s-s+${startMarkerColor}(${start.lng.toFixed(6)},${start.lat.toFixed(6)})`);
+  if (coords.length > 1) {
+    const end = coords[coords.length - 1];
+    overlays.push(`pin-s-e+${endMarkerColor}(${end.lng.toFixed(6)},${end.lat.toFixed(6)})`);
+  }
+
+  coords.slice(1, -1).forEach((coord, index) => {
+    const color = legColors[index] || waypointColor;
+    overlays.push(`pin-s+${color}(${coord.lng.toFixed(6)},${coord.lat.toFixed(6)})`);
+  });
+
+  const descriptor = getMapboxStyleDescriptor(style === 'cleanDark' ? 'dark' : style);
+  const overlaySegment = overlays.map((overlay) => encodeURIComponent(overlay)).join(',');
+  const scaleSuffix = scale === 2 ? '@2x' : '';
+  const url = new URL(`https://api.mapbox.com/styles/v1/${descriptor.owner}/${descriptor.styleId}/static/${overlaySegment}/auto/${w}x${h}${scaleSuffix}`);
+  url.searchParams.set('padding', '32,32,32,32');
+  url.searchParams.set('access_token', normalizedToken);
+  return url.toString();
 };
 
 const resolveTripItemColorHex = (value?: string | null): string | null => {
@@ -380,6 +473,11 @@ const formatTripMonths = (trip: ITrip, locale: AppLanguage): string => {
 };
 
 const buildDirectStaticMapPreviewUrl = (params: URLSearchParams): string | null => {
+  const runtime = getClientMapRuntimeResolution();
+  if (runtime.effectiveSelection.staticMaps === 'mapbox') {
+    return buildDirectMapboxStaticMapPreviewUrlWithToken(params, getMapboxAccessToken());
+  }
+
   const rawMapsApiKey = typeof import.meta !== 'undefined'
     ? (import.meta.env?.VITE_GOOGLE_MAPS_API_KEY as string | undefined)
     : undefined;
@@ -404,6 +502,7 @@ export const buildMiniMapUrl = (
   mapLanguage: AppLanguage,
   options?: MiniMapOptions
 ): string | null => {
+  const runtime = getClientMapRuntimeResolution();
   const variant = options?.variant || 'standard';
 
   const coordinates = getTripCityItems(trip)
@@ -440,6 +539,7 @@ export const buildMiniMapUrl = (
   params.set('h', '360');
   params.set('scale', '2');
   params.set('language', mapLanguage);
+  params.set(MAP_RUNTIME_CACHE_KEY_QUERY_PARAM, runtime.activeSelectionKey);
 
   if (legColors.length > 0) {
     params.set('legColors', legColors.join('|'));

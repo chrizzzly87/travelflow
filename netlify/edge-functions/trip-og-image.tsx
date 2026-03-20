@@ -7,6 +7,7 @@ import {
   fallbackSummary,
   fetchSharedTrip,
   fetchSharedTripByTripId,
+  getMapboxAccessTokenFromEnv,
   getMapsApiKeyFromEnv,
   isMapColorMode,
   isOgMapStyle,
@@ -16,6 +17,7 @@ import {
   type TripOgMapLabel,
   type OgRouteMode,
 } from "../edge-lib/trip-og-data.ts";
+import { resolveEdgeMapRuntime } from "../edge-lib/map-runtime.ts";
 import { APP_NAME } from "../../config/appGlobals.ts";
 
 const IMAGE_WIDTH = 1200;
@@ -451,6 +453,8 @@ export default async (request: Request): Promise<Response> => {
     const versionId = isValidVersionId(requestedVersionId) ? requestedVersionId : null;
     const updateStamp = url.searchParams.get("u");
     const mapsApiKey = getMapsApiKeyFromEnv();
+    const mapboxAccessToken = getMapboxAccessTokenFromEnv();
+    const mapRuntime = resolveEdgeMapRuntime(request);
     const headingFonts = await loadHeadingFonts(url);
 
     const titleOverride = sanitizeText(url.searchParams.get("title"), 120);
@@ -483,9 +487,11 @@ export default async (request: Request): Promise<Response> => {
       if (sharedTrip) {
         summary = await buildTripOgSummary(sharedTrip.trip, {
           mapsApiKey,
+          mapboxAccessToken,
           mapStyle: mapStyleOverride ?? sharedTrip.viewSettings?.mapStyle,
           routeMode: routeModeOverride ?? sharedTrip.viewSettings?.routeMode,
           mapColorMode: mapColorModeOverride ?? sharedTrip.viewSettings?.mapColorMode ?? sharedTrip.trip.mapColorMode,
+          mapRuntimeSelection: mapRuntime.effectiveSelection,
           showStops: showStopsOverride ?? sharedTrip.viewSettings?.showStops,
           showCities: showCitiesOverride ??
             sharedTrip.viewSettings?.showCities ??
@@ -506,9 +512,11 @@ export default async (request: Request): Promise<Response> => {
         const sharedTrip = sharedByTripId.sharedTrip;
         summary = await buildTripOgSummary(sharedTrip.trip, {
           mapsApiKey,
+          mapboxAccessToken,
           mapStyle: mapStyleOverride ?? sharedTrip.viewSettings?.mapStyle,
           routeMode: routeModeOverride ?? sharedTrip.viewSettings?.routeMode,
           mapColorMode: mapColorModeOverride ?? sharedTrip.viewSettings?.mapColorMode ?? sharedTrip.trip.mapColorMode,
+          mapRuntimeSelection: mapRuntime.effectiveSelection,
           showStops: showStopsOverride ?? sharedTrip.viewSettings?.showStops,
           showCities: showCitiesOverride ??
             sharedTrip.viewSettings?.showCities ??

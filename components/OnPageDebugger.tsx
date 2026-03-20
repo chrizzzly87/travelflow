@@ -59,6 +59,22 @@ import {
     type PrefetchLinkHighlightDebugDetail,
     type PrefetchStats,
 } from '../services/navigationPrefetch';
+import { useAuth } from '../hooks/useAuth';
+import {
+    applyMapRuntimeAdminOverride,
+    getClientMapRuntimeResolution,
+} from '../services/mapRuntimeService';
+import {
+    MAP_RUNTIME_SUBSYSTEMS,
+    getSelectionForMapRuntimePreset,
+    isMapImplementation,
+    isMapRuntimePreset,
+    type MapImplementation,
+    type MapRuntimeOverride,
+    type MapRuntimePreset,
+    type MapRuntimeResolution,
+    type MapRuntimeSelection,
+} from '../shared/mapRuntime';
 import {
     getRuntimeLocationSnapshot,
     refreshRuntimeLocation,
@@ -68,12 +84,15 @@ import {
 
 const UMAMI_DASHBOARD_URL = 'https://cloud.umami.is/analytics/eu/websites/d8a78257-7625-4891-8954-1a20b10f7537';
 const DEBUG_AUTO_OPEN_STORAGE_KEY = 'tf_debug_auto_open';
+const DEBUG_OPEN_STORAGE_KEY = 'tf_debug_open';
+const DEBUG_ACTIVE_TAB_STORAGE_KEY = 'tf_debug_active_tab';
 const DEBUG_TRACKING_ENABLED_STORAGE_KEY = 'tf_debug_tracking_enabled';
 const DEBUG_PANEL_EXPANDED_STORAGE_KEY = 'tf_debug_panel_expanded';
 const DEBUG_H1_HIGHLIGHT_STORAGE_KEY = 'tf_debug_h1_highlight';
 const DEBUG_PREFETCH_SECTION_EXPANDED_STORAGE_KEY = 'tf_debug_prefetch_section_expanded';
 const DEBUG_VIEW_TRANSITION_SECTION_EXPANDED_STORAGE_KEY = 'tf_debug_view_transition_section_expanded';
 const DEBUG_PREFETCH_OVERLAY_STORAGE_KEY = 'tf_debug_prefetch_overlay';
+const DEBUG_MAP_RUNTIME_SECTION_EXPANDED_STORAGE_KEY = 'tf_debug_map_runtime_section_expanded';
 const TRIP_EXPIRED_DEBUG_EVENT = 'tf:trip-expired-debug';
 const SIMULATED_LOGIN_DEBUG_EVENT = 'tf:simulated-login-debug';
 const DEBUGGER_STATE_DEBUG_EVENT = 'tf:on-page-debugger-state';
@@ -107,7 +126,8 @@ interface DebugState {
     tracking: boolean;
 }
 
-type DebuggerTab = 'seo' | 'tracking' | 'testing';
+type DebuggerTab = 'seo' | 'tracking' | 'testing' | 'maps';
+type MapRuntimeDebugPresetInput = MapRuntimePreset | 'default' | 'google' | 'mapbox_visuals';
 
 interface MetaSnapshot {
     title: string;
@@ -201,6 +221,9 @@ interface OnPageDebuggerApi {
     runSeoAudit: () => AuditResult;
     runA11yAudit: () => AuditResult;
     runViewTransitionAudit: () => ViewTransitionDiagnostics;
+    setMapRuntimePreset: (preset: MapRuntimeDebugPresetInput) => void;
+    setMapRuntimeSelection: (selection: Partial<MapRuntimeSelection>, options?: { preset?: MapRuntimeDebugPresetInput }) => void;
+    getMapRuntime: () => MapRuntimeResolution;
     getState: () => DebugState;
 }
 
@@ -215,6 +238,11 @@ type DebugCommand =
         viewTransition?: boolean;
         offline?: boolean | 'offline' | 'degraded' | 'online';
         network?: boolean | 'offline' | 'online';
+        mapRuntime?: MapRuntimeDebugPresetInput;
+        mapRenderer?: MapImplementation;
+        mapRoutes?: MapImplementation;
+        mapLocationSearch?: MapImplementation;
+        mapStaticMaps?: MapImplementation;
     };
 
 declare global {
@@ -393,6 +421,35 @@ export const persistStoredDebuggerBoolean = (storageKey: string, value: boolean,
     }
 };
 
+export const readStoredDebuggerString = <T extends string>(
+    storageKey: string,
+    allowedValues: readonly T[],
+    fallbackValue: T,
+): T => {
+    try {
+        const raw = readLocalStorageItem(storageKey);
+        return allowedValues.includes(raw as T) ? (raw as T) : fallbackValue;
+    } catch {
+        return fallbackValue;
+    }
+};
+
+export const persistStoredDebuggerString = <T extends string>(
+    storageKey: string,
+    value: T,
+    fallbackValue: T,
+): void => {
+    try {
+        if (value === fallbackValue) {
+            removeLocalStorageItem(storageKey);
+            return;
+        }
+        writeLocalStorageItem(storageKey, value);
+    } catch {
+        // Ignore storage access issues.
+    }
+};
+
 const getAccessibleName = (element: HTMLElement): string => {
     const ariaLabel = element.getAttribute('aria-label');
     if (ariaLabel?.trim()) return ariaLabel.trim();
@@ -510,6 +567,107 @@ const formatPrefetchAttemptOutcome = (outcome: PrefetchAttemptOutcome): string =
 const formatPrefetchAttemptTime = (timestampMs: number): string => {
     if (!Number.isFinite(timestampMs)) return '';
     return new Date(timestampMs).toLocaleTimeString();
+};
+
+const MAP_RUNTIME_PRESET_LABELS: Record<MapRuntimePreset, string> = {
+    google_all: 'Google only',
+    mapbox_visual_google_services: 'Mapbox visuals',
+    mapbox_all: 'Mapbox all',
+};
+
+const DEBUGGER_TABS = ['testing', 'maps', 'tracking', 'seo'] as const satisfies readonly DebuggerTab[];
+
+const MAP_RUNTIME_IMPLEMENTATION_LABELS: Record<MapImplementation, string> = {
+    google: 'Google',
+    mapbox: 'Mapbox',
+};
+
+const MAP_RUNTIME_SUBSYSTEM_LABELS: Record<keyof MapRuntimeSelection, string> = {
+    renderer: 'Renderer',
+    routes: 'Routes',
+    locationSearch: 'Location search',
+    staticMaps: 'Static maps',
+};
+
+const normalizeMapRuntimeDebugPreset = (
+    value: unknown,
+): MapRuntimePreset | 'default' | null => {
+    if (value === 'default') return 'default';
+    if (value === 'google') return 'google_all';
+    if (value === 'mapbox_visuals') return 'mapbox_visual_google_services';
+    return isMapRuntimePreset(value) ? value : null;
+};
+
+const compactMapRuntimeSelectionOverride = (
+    selection: MapRuntimeSelection,
+    baseSelection: MapRuntimeSelection,
+): Partial<MapRuntimeSelection> => {
+    const override: Partial<MapRuntimeSelection> = {};
+
+    MAP_RUNTIME_SUBSYSTEMS.forEach((subsystem) => {
+        if (selection[subsystem] !== baseSelection[subsystem]) {
+            override[subsystem] = selection[subsystem];
+        }
+    });
+
+    return override;
+};
+
+export const buildMapRuntimeDebugOverride = (
+    command: {
+        preset?: unknown;
+        renderer?: unknown;
+        routes?: unknown;
+        locationSearch?: unknown;
+        staticMaps?: unknown;
+    },
+    runtime: Pick<MapRuntimeResolution, 'defaultPreset' | 'requestedSelection' | 'override'>,
+): MapRuntimeOverride | null => {
+    const requestedPreset = normalizeMapRuntimeDebugPreset(command.preset);
+    const activeOverridePreset = isMapRuntimePreset(runtime.override?.preset)
+        ? runtime.override.preset
+        : null;
+    const basePreset = requestedPreset && requestedPreset !== 'default'
+        ? requestedPreset
+        : activeOverridePreset || runtime.defaultPreset;
+    const baseSelection = getSelectionForMapRuntimePreset(basePreset);
+    const nextRequestedSelection = requestedPreset
+        ? { ...baseSelection }
+        : { ...runtime.requestedSelection };
+
+    if (isMapImplementation(command.renderer)) {
+        nextRequestedSelection.renderer = command.renderer;
+    }
+    if (isMapImplementation(command.routes)) {
+        nextRequestedSelection.routes = command.routes;
+    }
+    if (isMapImplementation(command.locationSearch)) {
+        nextRequestedSelection.locationSearch = command.locationSearch;
+    }
+    if (isMapImplementation(command.staticMaps)) {
+        nextRequestedSelection.staticMaps = command.staticMaps;
+    }
+
+    const selectionOverride = compactMapRuntimeSelectionOverride(nextRequestedSelection, baseSelection);
+    const overridePreset = requestedPreset === null
+        ? activeOverridePreset
+        : requestedPreset === 'default'
+            ? null
+            : requestedPreset;
+
+    if (!overridePreset && Object.keys(selectionOverride).length === 0) {
+        return null;
+    }
+
+    return {
+        ...(overridePreset ? { preset: overridePreset } : {}),
+        ...(Object.keys(selectionOverride).length > 0 ? { selection: selectionOverride } : {}),
+    };
+};
+
+const formatMapRuntimePresetLabel = (preset: MapRuntimePreset | null): string => {
+    if (!preset) return 'Custom mix';
+    return MAP_RUNTIME_PRESET_LABELS[preset];
 };
 
 const runSeoAudit = (): AuditResult => {
@@ -694,22 +852,34 @@ const buildOgPlaygroundUrl = (currentUrl: URL): string => {
 
 export const OnPageDebugger: React.FC = () => {
     const location = useLocation();
+    const { isAdmin, isLoading: isAuthLoading } = useAuth();
     const rafRef = useRef<number | null>(null);
     const h1RafRef = useRef<number | null>(null);
+    const mapRuntimeResolution = useMemo(() => getClientMapRuntimeResolution(), []);
 
     const isTripDetailRoute = /^\/trip\/[^/]+/.test(location.pathname);
     const showSeoTools = !isTripDetailRoute;
 
-    const [isOpen, setIsOpen] = useState(false);
+    const [isOpen, setIsOpen] = useState(() =>
+        readStoredDebuggerBoolean(
+            DEBUG_OPEN_STORAGE_KEY,
+            readStoredDebuggerBoolean(DEBUG_AUTO_OPEN_STORAGE_KEY, false),
+        )
+    );
     const [isExpanded, setIsExpanded] = useState(() =>
         readStoredDebuggerBoolean(DEBUG_PANEL_EXPANDED_STORAGE_KEY, true)
     );
-    const [activeTab, setActiveTab] = useState<DebuggerTab>('testing');
+    const [activeTab, setActiveTab] = useState<DebuggerTab>(() =>
+        readStoredDebuggerString(DEBUG_ACTIVE_TAB_STORAGE_KEY, DEBUGGER_TABS, 'testing')
+    );
     const [prefetchSectionExpanded, setPrefetchSectionExpanded] = useState(() =>
         readStoredDebuggerBoolean(DEBUG_PREFETCH_SECTION_EXPANDED_STORAGE_KEY, false)
     );
     const [viewTransitionSectionExpanded, setViewTransitionSectionExpanded] = useState(() =>
         readStoredDebuggerBoolean(DEBUG_VIEW_TRANSITION_SECTION_EXPANDED_STORAGE_KEY, false)
+    );
+    const [mapRuntimeSectionExpanded, setMapRuntimeSectionExpanded] = useState(() =>
+        readStoredDebuggerBoolean(DEBUG_MAP_RUNTIME_SECTION_EXPANDED_STORAGE_KEY, false)
     );
     const [prefetchOverlayEnabled, setPrefetchOverlayEnabled] = useState(() =>
         readStoredDebuggerBoolean(DEBUG_PREFETCH_OVERLAY_STORAGE_KEY, false)
@@ -767,6 +937,13 @@ export const OnPageDebugger: React.FC = () => {
     }, [autoOpenEnabled]);
 
     useEffect(() => {
+        if (isAuthLoading) return;
+        if (!isAdmin && activeTab === 'maps') {
+            setActiveTab('testing');
+        }
+    }, [activeTab, isAdmin, isAuthLoading]);
+
+    useEffect(() => {
         window.dispatchEvent(new CustomEvent<SimulatedLoginDebugDetail>(SIMULATED_LOGIN_DEBUG_EVENT, {
             detail: { available: true, loggedIn: simulatedLoggedInRef.current },
         }));
@@ -783,8 +960,16 @@ export const OnPageDebugger: React.FC = () => {
     }, [simulatedLoggedIn]);
 
     useEffect(() => {
+        persistStoredDebuggerBoolean(DEBUG_OPEN_STORAGE_KEY, isOpen, false);
+    }, [isOpen]);
+
+    useEffect(() => {
         persistStoredDebuggerBoolean(DEBUG_PANEL_EXPANDED_STORAGE_KEY, isExpanded, true);
     }, [isExpanded]);
+
+    useEffect(() => {
+        persistStoredDebuggerString(DEBUG_ACTIVE_TAB_STORAGE_KEY, activeTab, 'testing');
+    }, [activeTab]);
 
     useEffect(() => {
         persistStoredDebuggerBoolean(DEBUG_PREFETCH_SECTION_EXPANDED_STORAGE_KEY, prefetchSectionExpanded, false);
@@ -793,6 +978,10 @@ export const OnPageDebugger: React.FC = () => {
     useEffect(() => {
         persistStoredDebuggerBoolean(DEBUG_VIEW_TRANSITION_SECTION_EXPANDED_STORAGE_KEY, viewTransitionSectionExpanded, false);
     }, [viewTransitionSectionExpanded]);
+
+    useEffect(() => {
+        persistStoredDebuggerBoolean(DEBUG_MAP_RUNTIME_SECTION_EXPANDED_STORAGE_KEY, mapRuntimeSectionExpanded, false);
+    }, [mapRuntimeSectionExpanded]);
 
     useEffect(() => {
         persistStoredDebuggerBoolean(DEBUG_PREFETCH_OVERLAY_STORAGE_KEY, prefetchOverlayEnabled, false);
@@ -1112,6 +1301,32 @@ export const OnPageDebugger: React.FC = () => {
         return retrySyncNow();
     }, []);
 
+    const applyMapRuntimeOverride = useCallback((override: MapRuntimeOverride | null) => {
+        if (!isAdmin) return;
+        applyMapRuntimeAdminOverride(override);
+    }, [isAdmin]);
+
+    const applyMapRuntimePreset = useCallback((preset: MapRuntimeDebugPresetInput) => {
+        applyMapRuntimeOverride(
+            buildMapRuntimeDebugOverride({ preset }, mapRuntimeResolution),
+        );
+    }, [applyMapRuntimeOverride, mapRuntimeResolution]);
+
+    const applyMapRuntimeSelection = useCallback((
+        selection: Partial<MapRuntimeSelection>,
+        options?: { preset?: MapRuntimeDebugPresetInput },
+    ) => {
+        applyMapRuntimeOverride(
+            buildMapRuntimeDebugOverride({
+                preset: options?.preset,
+                renderer: selection.renderer,
+                routes: selection.routes,
+                locationSearch: selection.locationSearch,
+                staticMaps: selection.staticMaps,
+            }, mapRuntimeResolution),
+        );
+    }, [applyMapRuntimeOverride, mapRuntimeResolution]);
+
     const refreshRuntimeLocationNow = useCallback(() => {
         void refreshRuntimeLocation();
     }, []);
@@ -1237,8 +1452,27 @@ export const OnPageDebugger: React.FC = () => {
         runSeoAudit: runSeoAuditAndStore,
         runA11yAudit: runA11yAuditAndStore,
         runViewTransitionAudit: runViewTransitionAuditAndStore,
+        setMapRuntimePreset: applyMapRuntimePreset,
+        setMapRuntimeSelection: applyMapRuntimeSelection,
+        getMapRuntime: () => mapRuntimeResolution,
         getState: () => ({ open: isOpen, tracking: trackingEnabled }),
-    }), [isOpen, openLighthouse, openOgPlayground, openUmami, retryTripSyncNow, runA11yAuditAndStore, runSeoAuditAndStore, runViewTransitionAuditAndStore, setBrowserConnectivityMode, setSupabaseConnectivityMode, toggleSimulatedLogin, trackingEnabled]);
+    }), [
+        applyMapRuntimePreset,
+        applyMapRuntimeSelection,
+        isOpen,
+        mapRuntimeResolution,
+        openLighthouse,
+        openOgPlayground,
+        openUmami,
+        retryTripSyncNow,
+        runA11yAuditAndStore,
+        runSeoAuditAndStore,
+        runViewTransitionAuditAndStore,
+        setBrowserConnectivityMode,
+        setSupabaseConnectivityMode,
+        toggleSimulatedLogin,
+        trackingEnabled,
+    ]);
 
     useEffect(() => {
         const debugFn = (command?: DebugCommand): OnPageDebuggerApi => {
@@ -1283,6 +1517,24 @@ export const OnPageDebugger: React.FC = () => {
                 if (command.viewTransition) {
                     runViewTransitionAuditAndStore();
                 }
+                const hasMapRuntimeCommand = (
+                    command.mapRuntime !== undefined
+                    || isMapImplementation(command.mapRenderer)
+                    || isMapImplementation(command.mapRoutes)
+                    || isMapImplementation(command.mapLocationSearch)
+                    || isMapImplementation(command.mapStaticMaps)
+                );
+                if (hasMapRuntimeCommand && isAdmin) {
+                    applyMapRuntimeOverride(
+                        buildMapRuntimeDebugOverride({
+                            preset: command.mapRuntime,
+                            renderer: command.mapRenderer,
+                            routes: command.mapRoutes,
+                            locationSearch: command.mapLocationSearch,
+                            staticMaps: command.mapStaticMaps,
+                        }, mapRuntimeResolution),
+                    );
+                }
                 return api;
             }
 
@@ -1311,7 +1563,20 @@ export const OnPageDebugger: React.FC = () => {
             delete window.getSupabaseConnectivityState;
             delete window.retryTripSyncNow;
         };
-    }, [api, retryTripSyncNow, runA11yAuditAndStore, runSeoAuditAndStore, runViewTransitionAuditAndStore, setBrowserConnectivityMode, setSupabaseConnectivityMode, showSeoTools, toggleSimulatedLogin]);
+    }, [
+        api,
+        applyMapRuntimeOverride,
+        isAdmin,
+        mapRuntimeResolution,
+        retryTripSyncNow,
+        runA11yAuditAndStore,
+        runSeoAuditAndStore,
+        runViewTransitionAuditAndStore,
+        setBrowserConnectivityMode,
+        setSupabaseConnectivityMode,
+        showSeoTools,
+        toggleSimulatedLogin,
+    ]);
 
     useEffect(() => {
         return () => {
@@ -1323,6 +1588,9 @@ export const OnPageDebugger: React.FC = () => {
             }));
         };
     }, []);
+
+    const requestedMapRuntimePresetLabel = formatMapRuntimePresetLabel(mapRuntimeResolution.requestedPreset);
+    const activeMapRuntimePresetLabel = formatMapRuntimePresetLabel(mapRuntimeResolution.effectivePresetMatch);
 
     if (!isOpen) {
         return null;
@@ -1517,6 +1785,20 @@ export const OnPageDebugger: React.FC = () => {
                                     <Flask size={14} weight="duotone" />
                                     Testing
                                 </button>
+                                {isAdmin && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setActiveTab('maps')}
+                                        className={`inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-xs font-medium ${
+                                            activeTab === 'maps'
+                                                ? 'border-slate-900 bg-slate-900 text-white'
+                                                : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                                        }`}
+                                    >
+                                        <Globe size={14} weight="duotone" />
+                                        Maps
+                                    </button>
+                                )}
                                 <button
                                     type="button"
                                     onClick={() => setActiveTab('tracking')}
@@ -1556,157 +1838,170 @@ export const OnPageDebugger: React.FC = () => {
 
                             {activeTab === 'testing' && (
                                 <>
-                                    <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                                        <button
-                                            type="button"
-                                            onClick={() => toggleSimulatedLogin()}
-                                            className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
-                                                simulatedLoggedIn
-                                                    ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-                                                    : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
-                                            }`}
-                                        >
-                                            <User size={16} weight="duotone" />
-                                            {simulatedLoggedIn ? 'Disable Sim Login' : 'Enable Sim Login'}
-                                        </button>
+                                    <div className="mt-3 space-y-3">
+                                        <div className="rounded-md border border-slate-200 bg-white p-3 text-xs">
+                                            <div className="flex flex-wrap items-center justify-between gap-2">
+                                                <div>
+                                                    <h3 className="text-sm font-semibold text-slate-900">Session & Connectivity</h3>
+                                                    <p className="mt-1 text-[11px] leading-5 text-slate-600">
+                                                        Simulate auth, network, sync, and trip state without leaving the current page.
+                                                    </p>
+                                                </div>
+                                            </div>
 
-                                        <button
-                                            type="button"
-                                            onClick={() => setSupabaseConnectivityMode('offline')}
-                                            className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
-                                                connectivitySnapshot.isForced && connectivitySnapshot.forcedState === 'offline'
-                                                    ? 'border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100'
-                                                    : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
-                                            }`}
-                                        >
-                                            <Flask size={16} weight="duotone" />
-                                            Force Supabase Offline
-                                        </button>
+                                            <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => toggleSimulatedLogin()}
+                                                    className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
+                                                        simulatedLoggedIn
+                                                            ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                                                            : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                                                    }`}
+                                                >
+                                                    <User size={16} weight="duotone" />
+                                                    {simulatedLoggedIn ? 'Disable Sim Login' : 'Enable Sim Login'}
+                                                </button>
 
-                                        <button
-                                            type="button"
-                                            onClick={() => setBrowserConnectivityMode('offline')}
-                                            className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
-                                                browserConnectivitySnapshot.override === 'offline'
-                                                    ? 'border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100'
-                                                    : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
-                                            }`}
-                                        >
-                                            <Flask size={16} weight="duotone" />
-                                            Force Browser Offline
-                                        </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setSupabaseConnectivityMode('offline')}
+                                                    className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
+                                                        connectivitySnapshot.isForced && connectivitySnapshot.forcedState === 'offline'
+                                                            ? 'border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100'
+                                                            : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                                                    }`}
+                                                >
+                                                    <Flask size={16} weight="duotone" />
+                                                    Force Supabase Offline
+                                                </button>
 
-                                        <button
-                                            type="button"
-                                            onClick={() => setBrowserConnectivityMode('online')}
-                                            className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
-                                                browserConnectivitySnapshot.override === 'online'
-                                                    ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-                                                    : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
-                                            }`}
-                                        >
-                                            <Flask size={16} weight="duotone" />
-                                            Force Browser Online
-                                        </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setBrowserConnectivityMode('offline')}
+                                                    className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
+                                                        browserConnectivitySnapshot.override === 'offline'
+                                                            ? 'border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100'
+                                                            : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                                                    }`}
+                                                >
+                                                    <Flask size={16} weight="duotone" />
+                                                    Force Browser Offline
+                                                </button>
 
-                                        <button
-                                            type="button"
-                                            onClick={() => setBrowserConnectivityMode('clear')}
-                                            className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
-                                                browserConnectivitySnapshot.override
-                                                    ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-                                                    : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
-                                            }`}
-                                        >
-                                            <Flask size={16} weight="duotone" />
-                                            {browserConnectivitySnapshot.override ? 'Clear Browser Override' : 'Follow Browser Network'}
-                                        </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setBrowserConnectivityMode('online')}
+                                                    className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
+                                                        browserConnectivitySnapshot.override === 'online'
+                                                            ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                                                            : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                                                    }`}
+                                                >
+                                                    <Flask size={16} weight="duotone" />
+                                                    Force Browser Online
+                                                </button>
 
-                                        <button
-                                            type="button"
-                                            onClick={() => setSupabaseConnectivityMode('degraded')}
-                                            className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
-                                                connectivitySnapshot.isForced && connectivitySnapshot.forcedState === 'degraded'
-                                                    ? 'border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100'
-                                                    : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
-                                            }`}
-                                        >
-                                            <Flask size={16} weight="duotone" />
-                                            Force Supabase Degraded
-                                        </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setBrowserConnectivityMode('clear')}
+                                                    className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
+                                                        browserConnectivitySnapshot.override
+                                                            ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                                                            : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                                                    }`}
+                                                >
+                                                    <Flask size={16} weight="duotone" />
+                                                    {browserConnectivitySnapshot.override ? 'Clear Browser Override' : 'Follow Browser Network'}
+                                                </button>
 
-                                        <button
-                                            type="button"
-                                            onClick={() => setSupabaseConnectivityMode('clear')}
-                                            className="inline-flex items-center justify-center gap-2 rounded-md border border-cyan-300 bg-cyan-50 px-3 py-2 text-sm font-medium text-cyan-800 hover:bg-cyan-100"
-                                        >
-                                            <Flask size={16} weight="duotone" />
-                                            Set Supabase Normal
-                                        </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setSupabaseConnectivityMode('degraded')}
+                                                    className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
+                                                        connectivitySnapshot.isForced && connectivitySnapshot.forcedState === 'degraded'
+                                                            ? 'border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100'
+                                                            : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                                                    }`}
+                                                >
+                                                    <Flask size={16} weight="duotone" />
+                                                    Force Supabase Degraded
+                                                </button>
 
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                void retryTripSyncNow();
-                                            }}
-                                            className="inline-flex items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                                        >
-                                            <RocketLaunch size={16} weight="duotone" />
-                                            Retry Trip Sync
-                                        </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setSupabaseConnectivityMode('clear')}
+                                                    className="inline-flex items-center justify-center gap-2 rounded-md border border-cyan-300 bg-cyan-50 px-3 py-2 text-sm font-medium text-cyan-800 hover:bg-cyan-100"
+                                                >
+                                                    <Flask size={16} weight="duotone" />
+                                                    Set Supabase Normal
+                                                </button>
 
-                                        <button
-                                            type="button"
-                                            onClick={openAiBenchmark}
-                                            className="inline-flex items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                                        >
-                                            <Flask size={16} weight="duotone" />
-                                            Open AI Benchmark
-                                        </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        void retryTripSyncNow();
+                                                    }}
+                                                    className="inline-flex items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                                                >
+                                                    <RocketLaunch size={16} weight="duotone" />
+                                                    Retry Trip Sync
+                                                </button>
 
-                                        {isTripDetailRoute && (
-                                            <button
-                                                type="button"
-                                                onClick={() => toggleTripExpired()}
-                                                disabled={!tripExpiredToggleAvailable}
-                                                className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
-                                                    tripExpiredDebug
-                                                        ? 'border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100'
-                                                        : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
-                                                } ${tripExpiredToggleAvailable ? '' : 'opacity-50 cursor-not-allowed'}`}
-                                            >
-                                                <Flask size={16} weight="duotone" />
-                                                {tripExpiredDebug ? 'Set Trip Active' : 'Set Trip Expired'}
-                                            </button>
-                                        )}
-                                    </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={openAiBenchmark}
+                                                    className="inline-flex items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                                                >
+                                                    <Flask size={16} weight="duotone" />
+                                                    Open AI Benchmark
+                                                </button>
 
-                                    <div className="mt-3 grid gap-2 rounded-md border border-slate-200 bg-white p-2 text-xs text-slate-700 sm:grid-cols-2 lg:grid-cols-6">
-                                        <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1">
-                                            <strong className="text-slate-900">Browser:</strong>{' '}
-                                            {browserConnectivitySnapshot.isOnline ? 'online' : 'offline'}
-                                            {browserConnectivitySnapshot.override ? ` (forced ${browserConnectivitySnapshot.override})` : ''}
-                                        </div>
-                                        <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1">
-                                            <strong className="text-slate-900">Browser key:</strong>{' '}
-                                            <code>{BROWSER_CONNECTIVITY_OVERRIDE_STORAGE_KEY}</code>
-                                        </div>
-                                        <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1">
-                                            <strong className="text-slate-900">Connectivity:</strong>{' '}
-                                            {connectivitySnapshot.state}
-                                            {connectivitySnapshot.isForced ? ' (forced)' : ''}
-                                        </div>
-                                        <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1">
-                                            <strong className="text-slate-900">Override key:</strong>{' '}
-                                            <code>{CONNECTIVITY_DEBUG_OVERRIDE_STORAGE_KEY}</code>
-                                        </div>
-                                        <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1">
-                                            <strong className="text-slate-900">Queue:</strong>{' '}
-                                            pending {offlineQueueSnapshot.pendingCount}, failed {offlineQueueSnapshot.failedCount}
-                                        </div>
-                                        <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1">
-                                            <strong className="text-slate-900">Replay:</strong>{' '}
-                                            processed {syncRunSnapshot.processedCount}, ok {syncRunSnapshot.successCount}, failed {syncRunSnapshot.failedDuringRun}
+                                                {isTripDetailRoute && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleTripExpired()}
+                                                        disabled={!tripExpiredToggleAvailable}
+                                                        className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
+                                                            tripExpiredDebug
+                                                                ? 'border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100'
+                                                                : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                                                        } ${tripExpiredToggleAvailable ? '' : 'opacity-50 cursor-not-allowed'}`}
+                                                    >
+                                                        <Flask size={16} weight="duotone" />
+                                                        {tripExpiredDebug ? 'Set Trip Active' : 'Set Trip Expired'}
+                                                    </button>
+                                                )}
+                                            </div>
+
+                                            <div className="mt-3 grid gap-2 rounded-md border border-slate-200 bg-slate-50 p-2 text-xs text-slate-700 sm:grid-cols-2 lg:grid-cols-6">
+                                                <div className="rounded border border-slate-200 bg-white px-2 py-1">
+                                                    <strong className="text-slate-900">Browser:</strong>{' '}
+                                                    {browserConnectivitySnapshot.isOnline ? 'online' : 'offline'}
+                                                    {browserConnectivitySnapshot.override ? ` (forced ${browserConnectivitySnapshot.override})` : ''}
+                                                </div>
+                                                <div className="rounded border border-slate-200 bg-white px-2 py-1">
+                                                    <strong className="text-slate-900">Browser key:</strong>{' '}
+                                                    <code>{BROWSER_CONNECTIVITY_OVERRIDE_STORAGE_KEY}</code>
+                                                </div>
+                                                <div className="rounded border border-slate-200 bg-white px-2 py-1">
+                                                    <strong className="text-slate-900">Connectivity:</strong>{' '}
+                                                    {connectivitySnapshot.state}
+                                                    {connectivitySnapshot.isForced ? ' (forced)' : ''}
+                                                </div>
+                                                <div className="rounded border border-slate-200 bg-white px-2 py-1">
+                                                    <strong className="text-slate-900">Override key:</strong>{' '}
+                                                    <code>{CONNECTIVITY_DEBUG_OVERRIDE_STORAGE_KEY}</code>
+                                                </div>
+                                                <div className="rounded border border-slate-200 bg-white px-2 py-1">
+                                                    <strong className="text-slate-900">Queue:</strong>{' '}
+                                                    pending {offlineQueueSnapshot.pendingCount}, failed {offlineQueueSnapshot.failedCount}
+                                                </div>
+                                                <div className="rounded border border-slate-200 bg-white px-2 py-1">
+                                                    <strong className="text-slate-900">Replay:</strong>{' '}
+                                                    processed {syncRunSnapshot.processedCount}, ok {syncRunSnapshot.successCount}, failed {syncRunSnapshot.failedDuringRun}
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
 
@@ -1715,6 +2010,202 @@ export const OnPageDebugger: React.FC = () => {
                                         onRefresh={refreshRuntimeLocationNow}
                                     />
                                 </>
+                            )}
+
+                            {activeTab === 'maps' && isAdmin && (
+                                <div className="mt-3 rounded-lg border border-sky-200 bg-gradient-to-br from-sky-50 via-white to-slate-50 p-3 text-xs shadow-sm">
+                                    <div className="flex flex-wrap items-start justify-between gap-3">
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <h3 className="text-sm font-semibold text-slate-900">
+                                                    Map Runtime
+                                                </h3>
+                                                <span className="rounded-full border border-sky-200 bg-white px-2 py-0.5 text-[11px] font-medium text-sky-700">
+                                                    Active {activeMapRuntimePresetLabel}
+                                                </span>
+                                                <span className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[11px] text-slate-600">
+                                                    Override {mapRuntimeResolution.overrideSource}
+                                                </span>
+                                            </div>
+                                            <p className="mt-1 max-w-3xl text-[11px] leading-5 text-slate-600">
+                                                Switch this session between Google-only and Mapbox visuals. The override writes a session cookie and reloads so planner maps, preview images, and OG endpoints all stay aligned.
+                                            </p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => setMapRuntimeSectionExpanded((prev) => !prev)}
+                                            className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-[11px] font-medium text-slate-700 hover:bg-slate-50"
+                                        >
+                                            {mapRuntimeSectionExpanded ? <CaretDown size={14} /> : <CaretRight size={14} />}
+                                            {mapRuntimeSectionExpanded ? 'Hide Advanced Overrides' : 'Show Advanced Overrides'}
+                                        </button>
+                                    </div>
+
+                                    <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                                        <div className="rounded-md border border-slate-200 bg-white px-3 py-2 text-slate-700">
+                                            <div className="text-[11px] uppercase tracking-wide text-slate-500">Default</div>
+                                            <div className="mt-1 text-sm font-semibold text-slate-900">
+                                                {formatMapRuntimePresetLabel(mapRuntimeResolution.defaultPreset)}
+                                            </div>
+                                        </div>
+                                        <div className="rounded-md border border-slate-200 bg-white px-3 py-2 text-slate-700">
+                                            <div className="text-[11px] uppercase tracking-wide text-slate-500">Requested</div>
+                                            <div className="mt-1 text-sm font-semibold text-slate-900">
+                                                {requestedMapRuntimePresetLabel}
+                                            </div>
+                                        </div>
+                                        <div className="rounded-md border border-slate-200 bg-white px-3 py-2 text-slate-700">
+                                            <div className="text-[11px] uppercase tracking-wide text-slate-500">Mapbox Token</div>
+                                            <div className="mt-1 text-sm font-semibold text-slate-900">
+                                                {mapRuntimeResolution.availability.mapboxAccessTokenAvailable ? 'Available' : 'Missing'}
+                                            </div>
+                                            <div className="mt-1 text-[11px] text-slate-500">
+                                                Present in env only. Token restrictions can still block live tiles.
+                                            </div>
+                                        </div>
+                                        <div className="rounded-md border border-slate-200 bg-white px-3 py-2 text-slate-700">
+                                            <div className="text-[11px] uppercase tracking-wide text-slate-500">Google Key</div>
+                                            <div className="mt-1 text-sm font-semibold text-slate-900">
+                                                {mapRuntimeResolution.availability.googleMapsKeyAvailable ? 'Available' : 'Missing'}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                                        <button
+                                            type="button"
+                                            onClick={() => applyMapRuntimePreset('default')}
+                                            className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
+                                                mapRuntimeResolution.overrideSource === 'default'
+                                                    ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                                                    : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                                            }`}
+                                        >
+                                            Use Default
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => applyMapRuntimePreset('google')}
+                                            className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
+                                                mapRuntimeResolution.requestedPreset === 'google_all'
+                                                    ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                                                    : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                                            }`}
+                                        >
+                                            Force Google
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => applyMapRuntimePreset('mapbox_visuals')}
+                                            className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
+                                                mapRuntimeResolution.requestedPreset === 'mapbox_visual_google_services'
+                                                    ? 'border-sky-300 bg-sky-50 text-sky-700 hover:bg-sky-100'
+                                                    : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                                            }`}
+                                        >
+                                            Force Mapbox Visuals
+                                        </button>
+                                    </div>
+
+                                    <div className="mt-3 grid gap-2 lg:grid-cols-2 xl:grid-cols-4">
+                                        {MAP_RUNTIME_SUBSYSTEMS.map((subsystem) => {
+                                            const requestedImplementation = mapRuntimeResolution.requestedSelection[subsystem];
+                                            const effectiveImplementation = mapRuntimeResolution.effectiveSelection[subsystem];
+                                            const mapboxSupported = mapRuntimeResolution.implementationCapabilities.mapbox[subsystem];
+
+                                            return (
+                                                <div key={subsystem} className="rounded-md border border-slate-200 bg-white px-3 py-2 text-slate-700">
+                                                    <div className="text-[11px] uppercase tracking-wide text-slate-500">
+                                                        {MAP_RUNTIME_SUBSYSTEM_LABELS[subsystem]}
+                                                    </div>
+                                                    <div className="mt-1 text-sm font-semibold text-slate-900">
+                                                        {MAP_RUNTIME_IMPLEMENTATION_LABELS[effectiveImplementation]}
+                                                    </div>
+                                                    <div className="mt-1 text-[11px] text-slate-500">
+                                                        Requested {MAP_RUNTIME_IMPLEMENTATION_LABELS[requestedImplementation]}
+                                                    </div>
+                                                    {!mapboxSupported && (
+                                                        <div className="mt-2 text-[11px] text-slate-500">
+                                                            Mapbox falls back to Google here in v1.
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+
+                                    {mapRuntimeResolution.warnings.length > 0 && (
+                                        <div className="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-amber-900">
+                                            <strong>Runtime warnings:</strong>
+                                            <ul className="mt-1 space-y-0.5">
+                                                {mapRuntimeResolution.warnings.map((warning) => (
+                                                    <li key={warning}>{warning}</li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+
+                                    {mapRuntimeSectionExpanded && (
+                                        <div className="mt-3 rounded-md border border-slate-200 bg-white p-3">
+                                            <div className="flex flex-wrap items-center justify-between gap-2">
+                                                <div>
+                                                    <h4 className="text-sm font-semibold text-slate-900">Advanced Overrides</h4>
+                                                    <p className="mt-1 text-[11px] leading-5 text-slate-600">
+                                                        Mix individual subsystems when you want to test one implementation without changing the full preset.
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            <div className="mt-3 grid gap-2 lg:grid-cols-2">
+                                                {MAP_RUNTIME_SUBSYSTEMS.map((subsystem) => {
+                                                    const requestedImplementation = mapRuntimeResolution.requestedSelection[subsystem];
+                                                    const effectiveImplementation = mapRuntimeResolution.effectiveSelection[subsystem];
+                                                    const mapboxSupported = mapRuntimeResolution.implementationCapabilities.mapbox[subsystem];
+
+                                                    return (
+                                                        <div key={subsystem} className="rounded border border-slate-200 bg-slate-50 px-3 py-3 text-slate-700">
+                                                            <div className="flex items-center justify-between gap-2">
+                                                                <strong className="text-slate-900">{MAP_RUNTIME_SUBSYSTEM_LABELS[subsystem]}</strong>
+                                                                <span className="text-[11px] text-slate-500">
+                                                                    Requested {MAP_RUNTIME_IMPLEMENTATION_LABELS[requestedImplementation]} • Active {MAP_RUNTIME_IMPLEMENTATION_LABELS[effectiveImplementation]}
+                                                                </span>
+                                                            </div>
+                                                            <div className="mt-2 flex flex-wrap gap-2">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => applyMapRuntimeSelection({ [subsystem]: 'google' } as Partial<MapRuntimeSelection>)}
+                                                                    className={`rounded border px-2 py-1 font-medium ${
+                                                                        requestedImplementation === 'google'
+                                                                            ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
+                                                                            : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'
+                                                                    }`}
+                                                                >
+                                                                    Google
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => applyMapRuntimeSelection({ [subsystem]: 'mapbox' } as Partial<MapRuntimeSelection>)}
+                                                                    className={`rounded border px-2 py-1 font-medium ${
+                                                                        requestedImplementation === 'mapbox'
+                                                                            ? 'border-sky-300 bg-sky-50 text-sky-700'
+                                                                            : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100'
+                                                                    }`}
+                                                                >
+                                                                    Mapbox
+                                                                </button>
+                                                            </div>
+                                                            {!mapboxSupported && (
+                                                                <div className="mt-2 text-[11px] text-slate-500">
+                                                                    Mapbox requests for this subsystem fall back to Google in v1.
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
                             )}
 
                             {activeTab === 'tracking' && (

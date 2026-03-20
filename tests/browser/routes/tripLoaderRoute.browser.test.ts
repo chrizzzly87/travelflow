@@ -178,7 +178,10 @@ describe('routes/TripLoaderRoute', () => {
     });
     mocks.getTripById.mockReturnValue(localTrip);
 
-    const props = makeRouteProps();
+    const props = {
+      ...makeRouteProps(),
+      trip: localTrip,
+    };
 
     render(React.createElement(TripLoaderRoute, props));
 
@@ -353,7 +356,10 @@ describe('routes/TripLoaderRoute', () => {
       },
     });
 
-    const props = makeRouteProps();
+    const props = {
+      ...makeRouteProps(),
+      trip: localTrip,
+    };
     render(React.createElement(TripLoaderRoute, props));
 
     await waitFor(() => {
@@ -669,5 +675,113 @@ describe('routes/TripLoaderRoute', () => {
 
     expect(mocks.saveTrip).toHaveBeenCalledTimes(1);
     expect(mocks.saveTrip).toHaveBeenCalledWith(dbTrip, { preserveUpdatedAt: true });
+  });
+
+  it('keeps owner trips editable and shareable when loading a local history snapshot', async () => {
+    mocks.dbEnabled = true;
+    mocks.route.tripId = 'trip-owned-history';
+    mocks.route.pathname = '/trip/trip-owned-history';
+    mocks.route.search = '?v=local-version';
+    mocks.connectivityState = 'offline';
+
+    const localView: IViewSettings = {
+      layoutMode: 'horizontal',
+      timelineMode: 'calendar',
+      timelineView: 'horizontal',
+      mapDockMode: 'docked',
+      mapStyle: 'dark',
+      routeMode: 'simple',
+      showCityNames: true,
+      zoomLevel: 1.2,
+      zoomBehavior: 'fit',
+      sidebarWidth: 560,
+      detailsWidth: 420,
+      timelineHeight: 340,
+    };
+    const localTrip = makeTrip({
+      id: 'trip-owned-history',
+      title: 'Owned history trip',
+      defaultView: localView,
+    });
+
+    mocks.findHistoryEntryByUrl.mockReturnValue({
+      snapshot: {
+        trip: localTrip,
+        view: localView,
+      },
+    });
+
+    const props = {
+      ...makeRouteProps(),
+      trip: localTrip,
+    };
+    render(React.createElement(TripLoaderRoute, props));
+
+    await waitFor(() => {
+      expect(props.onTripLoaded).toHaveBeenCalledWith(localTrip, localView);
+    });
+
+    await waitFor(() => {
+      expect(mocks.renderedTripViewProps).toEqual(expect.objectContaining({
+        readOnly: false,
+        canShare: true,
+      }));
+    });
+  });
+
+  it('keeps owner trips editable when a versioned url only has a local view snapshot', async () => {
+    mocks.dbEnabled = true;
+    mocks.route.tripId = 'trip-owned-view-only';
+    mocks.route.pathname = '/trip/trip-owned-view-only';
+    mocks.route.search = '?v=local-visual';
+    mocks.connectivityState = 'offline';
+
+    const localView: IViewSettings = {
+      layoutMode: 'horizontal',
+      timelineMode: 'calendar',
+      timelineView: 'horizontal',
+      mapDockMode: 'docked',
+      mapStyle: 'dark',
+      routeMode: 'simple',
+      showCityNames: true,
+      zoomLevel: 1.25,
+      zoomBehavior: 'manual',
+      sidebarWidth: 560,
+      detailsWidth: 420,
+      timelineHeight: 360,
+    };
+    const localTrip = makeTrip({
+      id: 'trip-owned-view-only',
+      title: 'Owned view-only trip',
+      defaultView: {
+        ...localView,
+        mapStyle: 'standard',
+        zoomBehavior: 'fit',
+      },
+    });
+
+    mocks.findHistoryEntryByUrl.mockReturnValue({
+      snapshot: {
+        view: localView,
+      },
+    });
+    mocks.getTripById.mockReturnValue(localTrip);
+
+    const props = {
+      ...makeRouteProps(),
+      trip: localTrip,
+    };
+    render(React.createElement(TripLoaderRoute, props));
+
+    await waitFor(() => {
+      expect(props.onTripLoaded).toHaveBeenCalledWith(localTrip, localView);
+    });
+
+    await waitFor(() => {
+      expect(mocks.renderedTripViewProps).toEqual(expect.objectContaining({
+        readOnly: false,
+        canShare: true,
+      }));
+    });
   });
 });

@@ -59,6 +59,7 @@ interface TripTravelerWarning {
 }
 
 const EMPTY_TRAVELER_WARNINGS: TripTravelerWarning[] = [];
+const EMPTY_TRIP_HISTORY_ITEMS: TripHistoryModalItem[] = [];
 const FUTURE_DESTINATION_CHECK_KEYS = [
     'tripView.infoDialog.destination.futureChecks.visa',
     'tripView.infoDialog.destination.futureChecks.entryRules',
@@ -180,7 +181,7 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
     editTitleValue,
     onEditTitleValueChange,
     onCommitTitleEdit,
-    onCancelTitleEdit,
+    onCancelTitleEdit = () => undefined,
     onStartTitleEdit,
     canManageTripMetadata,
     canEdit,
@@ -205,7 +206,7 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
     onToggleShowAllHistory,
     onHistoryUndo,
     onHistoryRedo,
-    historyItems,
+    historyItems = EMPTY_TRIP_HISTORY_ITEMS,
     onGoToHistoryEntry,
     formatHistoryTime,
     pendingSyncCount,
