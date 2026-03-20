@@ -1,38 +1,38 @@
 {
   "hero": {
-    "badge": "Interactive trip planning",
-    "titleBefore": "Build trips that already feel",
-    "titleHighlight": "ready to go",
-    "description": "TravelFlow turns destination ideas into a route your group can actually react to. Draft the itinerary with AI, shape it on a live map and timeline, then share a link that still feels polished when decisions get real.",
-    "primaryCta": "Start planning",
-    "secondaryCta": "See example trips",
+    "badge": "انٹرایکٹو ٹرپ پلاننگ",
+    "titleBefore": "ایسے سفر بنائیں جو پہلے ہی",
+    "titleHighlight": "روانہ ہونے کے لیے تیار لگیں",
+    "description": "TravelFlow منزل کے خیالات کو ایک ایسے روٹ میں بدل دیتا ہے جس پر آپ کا گروپ واقعی ردِعمل دے سکے۔ AI سے پہلا ڈرافٹ بنائیں، اسے لائیو میپ اور ٹائم لائن پر بہتر کریں، پھر ایسا لنک شیئر کریں جو فیصلے سنجیدہ ہونے پر بھی صاف اور پالشڈ لگے۔",
+    "primaryCta": "پلاننگ شروع کریں",
+    "secondaryCta": "نمونہ ٹرپس دیکھیں",
     "proof": [
-      "AI itinerary drafts in seconds",
-      "Drag the route until it feels right",
-      "Share one clean link before the group chat gets chaotic"
+      "AI سفر ڈرافٹس چند سیکنڈ میں",
+      "روٹ کو تب تک ایڈجسٹ کریں جب تک وہ درست نہ لگے",
+      "گروپ چیٹ بکھرنے سے پہلے ایک صاف لنک"
     ]
   },
   "globe": {
-    "accessibility": "ایک انٹرایکٹو گلوب پری ویو جو آپ کے آغاز کے مقام سے دنیا بھر کی رنگین سفری آئیڈیاز تک راستے دکھاتا ہے۔",
-    "fallbackTitle": "گلوب کا متبادل منظر",
-    "fallbackDescription": "لائیو گلوب نہ بھی ہو تو بھی یہاں روٹس، ٹرپ کارڈز اور آپ کا آغازی مقام نظر آتا رہتا ہے۔",
+    "accessibility": "انٹرایکٹو گلوب پری ویو جو آپ کے نقطۂ آغاز سے دنیا بھر کی ٹرپ آئیڈیاز تک روٹس دکھاتی ہے۔",
+    "fallbackTitle": "انٹرایکٹو گلوب کا متبادل منظر",
+    "fallbackDescription": "لائیو گلوب نہ ہو تب بھی آپ روٹس، ٹرپ کارڈز اور اپنا نقطۂ آغاز دیکھ سکتے ہیں۔",
     "origin": {
       "current": "{city} سے",
       "countryFallback": "{country} سے",
-      "fallback": "آغازی مقام"
+      "fallback": "نقطۂ آغاز"
     },
     "cards": [
       {
         "id": "paris",
         "emoji": "🗼",
-        "title": "پیرس ویکینڈ",
+        "title": "پیرس ویک اینڈ",
         "detail": "کیفے اور دیر تک میوزیم۔"
       },
       {
         "id": "fiji",
         "emoji": "🌴",
         "title": "فجی ہنی مون",
-        "detail": "بیچ، بوٹ اور نرم رفتار۔"
+        "detail": "ساحل، بوٹ اور نرم رفتار۔"
       },
       {
         "id": "south-africa",
@@ -49,87 +49,87 @@
     ],
     "preview": {
       "title": "30 دن SEA",
-      "alt": "جنوب مشرقی ایشیا کے 30 دن کے سفر کا پیش نظارہ"
+      "alt": "جنوب مشرقی ایشیا کے 30 دن کے بیک پیکنگ سفر کا پیش نظارہ"
     }
   },
   "bento": {
-    "badge": "Plan with momentum",
-    "title": "The pieces of trip planning finally stay in one place",
-    "subtitle": "Instead of jumping between docs, maps, screenshots, and half-finished chat threads, TravelFlow keeps the route, timing, and trip context moving together.",
+    "badge": "رفتار کے ساتھ پلان کریں",
+    "title": "سفر کے حصے آخرکار ایک ہی جگہ رہتے ہیں",
+    "subtitle": "ڈاکس، میپس، اسکرین شاٹس اور ادھوری چیٹس کے درمیان بھاگنے کے بجائے TravelFlow روٹ، رفتار اور سفر کے تناظر کو ایک ساتھ رکھتا ہے۔",
     "items": [
       {
         "id": "itinerary",
-        "eyebrow": "AI route draft",
-        "title": "Start from a route, not a blank page",
-        "description": "Describe the trip you want in plain language and get a believable first itinerary with city flow, pacing, and activity context already connected.",
-        "detail": "A first draft your group can react to immediately"
+        "eyebrow": "AI ڈرافٹ",
+        "title": "خالی صفحے سے نہیں، روٹ سے شروع کریں",
+        "description": "عام زبان میں سفر بیان کریں اور ایک قابلِ یقین پہلا itinerary حاصل کریں جس میں شہروں کا بہاؤ، رفتار اور تناظر پہلے ہی جڑا ہوا ہو۔",
+        "detail": "ایک پہلا ڈرافٹ جس پر آپ کا گروپ فوراً ردِعمل دے سکے"
       },
       {
         "id": "timeline",
-        "eyebrow": "Live map edits",
-        "title": "Refine the plan without breaking it",
-        "description": "Stretch a stay, reorder a city, or change the pace. TravelFlow keeps the map and timeline aligned so every edit still feels coherent.",
-        "detail": "Map and timing stay in sync"
+        "eyebrow": "لائیو ایڈیٹس",
+        "title": "پلان کو توڑے بغیر بہتر کریں",
+        "description": "قیام بڑھائیں، شہر بدلیں یا رفتار تبدیل کریں۔ TravelFlow میپ اور ٹائم لائن کو ہم آہنگ رکھتا ہے تاکہ ہر تبدیلی پھر بھی مربوط لگے۔",
+        "detail": "میپ اور ٹائمنگ ساتھ رہتے ہیں"
       },
       {
         "id": "inspiration",
-        "eyebrow": "Forkable inspiration",
-        "title": "Borrow proven ideas and make them yours",
-        "description": "Use community-style routes and inspiration as a smart starting point instead of rebuilding a believable trip from scratch.",
-        "detail": "Start from real travel energy"
+        "eyebrow": "دوبارہ استعمال ہونے والی انسپیریشن",
+        "title": "اچھی آئیڈیاز لیں اور انہیں اپنا بنائیں",
+        "description": "ہر بار صفر سے قابلِ یقین سفر بنانے کے بجائے ایسے روٹس سے شروع کریں جن میں پہلے ہی اصلی ٹریول انرجی ہو۔",
+        "detail": "حقیقی سفر کی انرجی سے آغاز کریں"
       },
       {
         "id": "sharing",
-        "eyebrow": "Crew review",
-        "title": "Share something your travel crew can understand fast",
-        "description": "Send one link with the route, the pacing, and the notes already in place so feedback happens on the actual trip, not on disconnected screenshots.",
-        "detail": "No account required"
+        "eyebrow": "گروپ ریویو",
+        "title": "ایسی چیز شیئر کریں جسے گروپ جلدی سمجھ لے",
+        "description": "ایک ہی لنک بھیجیں جس میں روٹ، رفتار اور نوٹس پہلے سے موجود ہوں تاکہ فیڈبیک اصل سفر پر آئے، بکھری ہوئی اسکرین شاٹس پر نہیں۔",
+        "detail": "اکاؤنٹ کے بغیر بھی"
       },
       {
         "id": "relive",
-        "eyebrow": "Booking and handoff",
-        "title": "Leave with a plan that still feels polished",
-        "description": "When the route is ready, the practical context is still there: booking links, notes, and a cleaner print-friendly version for the final handoff.",
-        "detail": "Ready to share, save, or print"
+        "eyebrow": "بکنگ اور فائنل ہینڈ آف",
+        "title": "آخر میں بھی ایک پالشڈ پلان رکھیں",
+        "description": "جب روٹ تیار ہو جائے تو عملی تناظر ساتھ رہتا ہے: لنکس، نوٹس اور آخری ہینڈ آف کے لیے زیادہ صاف ورژن۔",
+        "detail": "شیئر، محفوظ یا پرنٹ کرنے کے لیے تیار"
       }
     ]
   },
   "workflow": {
-    "badge": "From spark to group-ready plan",
-    "title": "One flow for drafting, shaping, and sharing",
-    "subtitle": "TravelFlow works best when you want the exciting part of planning and the practical part of planning to live in the same place.",
+    "badge": "خیال سے گروپ ریڈی پلان تک",
+    "title": "ڈرافٹ، ریفائن اور شیئر کے لیے ایک ہی فلو",
+    "subtitle": "TravelFlow تب سب سے بہتر کام کرتا ہے جب آپ سفر کی پُرجوش اور عملی دونوں پلاننگ ایک ہی جگہ رکھنا چاہتے ہوں۔",
     "steps": [
       {
         "step": "01",
-        "title": "Start with a destination, a vibe, or a copied route",
-        "description": "Begin from a country list, a seasonal idea, or a travel concept that is still fuzzy. You do not need to know the perfect sequence yet."
+        "title": "منزل، موڈ یا کاپی شدہ روٹ سے شروع کریں",
+        "description": "ملکوں کی فہرست، موسمی خیال یا ابھی دھندلے سفر کے تصور سے آغاز کریں۔ ابھی آپ کو بہترین ترتیب جاننا ضروری نہیں۔"
       },
       {
         "step": "02",
-        "title": "Shape the pacing with the map and timeline together",
-        "description": "See the route on the globe, then tighten the trip on the timeline until it feels realistic for transfers, energy, and group preferences."
+        "title": "میپ اور ٹائم لائن کو ساتھ رکھ کر رفتار درست کریں",
+        "description": "گلوب پر روٹ دیکھیں، پھر ٹائم لائن پر اسے اس وقت تک بہتر کریں جب تک وہ ٹرانسفرز، انرجی اور گروپ ترجیحات کے لیے حقیقت پسندانہ نہ لگے۔"
       },
       {
         "step": "03",
-        "title": "Share a version that still looks intentional",
-        "description": "When it is time to get feedback or book, the same plan already has the map, the structure, and the extra context people usually ask for."
+        "title": "ایسا ورژن شیئر کریں جو پہلے ہی سوچا سمجھا لگے",
+        "description": "جب فیڈبیک یا بکنگ کا وقت آئے، تو اسی پلان میں پہلے سے میپ، ساخت اور وہ اضافی تناظر موجود ہو جو لوگ عام طور پر پوچھتے ہیں۔"
       }
     ],
     "glance": {
-      "eyebrow": "What your group sees",
-      "title": "A plan that already looks share-ready",
-      "description": "Maps, day-by-day timing, and the practical context stay aligned so reactions come faster and with less confusion.",
+      "eyebrow": "آپ کے گروپ کو کیا دکھتا ہے",
+      "title": "ایسا پلان جو پہلے ہی شیئر کے لیے تیار لگے",
+      "description": "میپ، دن بہ دن رفتار اور عملی تناظر ایک ساتھ رہتے ہیں تاکہ ردِعمل زیادہ تیزی اور کم الجھن کے ساتھ آئیں۔",
       "items": [
-        "Live route view with pacing context",
-        "Booking-ready activity links when you need them",
-        "A cleaner print layout for the final version"
+        "رفتار کے تناظر کے ساتھ لائیو روٹ ویو",
+        "ضرورت پڑنے پر بکنگ کے لیے تیار لنکس",
+        "آخری ورژن کے لیے زیادہ صاف پرنٹ لے آؤٹ"
       ]
     }
   },
   "cta": {
-    "badge": "Build it while the idea is still fresh",
-    "title": "Start with the route. Keep the travel mood.",
-    "subtitle": "Draft your next trip in minutes, then keep refining it in the same place instead of rebuilding it across five tools.",
-    "button": "Start planning"
+    "badge": "خیال تازہ ہو تو اسی وقت بنائیں",
+    "title": "روٹ سے شروع کریں۔ سفر کا موڈ برقرار رکھیں۔",
+    "subtitle": "اپنا اگلا سفر چند منٹ میں ڈرافٹ کریں اور پھر اسے وہیں بہتر کرتے رہیں، بجائے اس کے کہ پانچ ٹولز میں دوبارہ بنائیں۔",
+    "button": "پلاننگ شروع کریں"
   }
 }

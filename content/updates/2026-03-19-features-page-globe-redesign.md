@@ -13,6 +13,6 @@ summary: "Rebuilds the features page around a custom interactive globe hero, sha
 ## Changes
 - [x] [Improved] 🌍 The features page now opens with a custom interactive globe hero, anchored trip callouts, and a more polished planning-first story around TravelFlow.
 - [x] [Improved] 🧭 The globe hero now starts over Europe, keeps its travel callouts orbiting with the sphere, and cleans up the hero layout so the floating panels feel more intentional.
-- [x] [Improved] 📍 The globe now uses the session runtime location to highlight your starting point, draw routes out from it, and keep the travel chips smaller, shorter, and easier to read across languages.
+- [x] [Improved] 📍 The globe now uses the session runtime location to highlight your starting point, draw routes out from it, and keep the travel chips smaller, shorter, and easier to read across all supported languages.
 - [x] [Improved] 🧩 A new animated bento grid now shows how AI itineraries, route editing, crew sharing, and inspiration work together instead of listing features in isolation.
 - [ ] [Internal] 🧪 Added browser coverage for the new hero CTA analytics and the globe fallback path.

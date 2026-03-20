@@ -1,21 +1,21 @@
 {
   "hero": {
-    "badge": "Interactive trip planning",
-    "titleBefore": "Build trips that already feel",
-    "titleHighlight": "ready to go",
-    "description": "TravelFlow turns destination ideas into a route your group can actually react to. Draft the itinerary with AI, shape it on a live map and timeline, then share a link that still feels polished when decisions get real.",
-    "primaryCta": "Start planning",
-    "secondaryCta": "See example trips",
+    "badge": "برنامه‌ریزی تعاملی سفر",
+    "titleBefore": "سفرهایی بسازید که از همین حالا",
+    "titleHighlight": "آماده رفتن باشند",
+    "description": "TravelFlow ایده‌های مقصد را به مسیری تبدیل می‌کند که گروه شما واقعاً بتواند به آن واکنش نشان دهد. پیش‌نویس اولیه را با هوش مصنوعی بسازید، روی نقشه و تایم‌لاین زنده آن را شکل بدهید و بعد لینکی را به اشتراک بگذارید که وقتی تصمیم‌ها جدی می‌شوند هنوز هم مرتب و روشن به نظر برسد.",
+    "primaryCta": "شروع برنامه‌ریزی",
+    "secondaryCta": "دیدن سفرهای نمونه",
     "proof": [
-      "AI itinerary drafts in seconds",
-      "Drag the route until it feels right",
-      "Share one clean link before the group chat gets chaotic"
+      "پیش‌نویس سفر با هوش مصنوعی در چند ثانیه",
+      "مسیر را تا وقتی درست شود تنظیم کنید",
+      "یک لینک روشن پیش از شلوغ شدن چت گروهی"
     ]
   },
   "globe": {
-    "accessibility": "پیش‌نمایش تعاملی کره با مسیرهایی از نقطه شروع شما به ایده‌های رنگی سفر در سراسر جهان.",
-    "fallbackTitle": "نمای جایگزین کره",
-    "fallbackDescription": "حتی بدون کره زنده هم مسیرها، کارت‌های سفر و نقطه شروع شما اینجا دیده می‌شوند.",
+    "accessibility": "پیش‌نمایش تعاملی کره با مسیرهایی از نقطه شروع شما به ایده‌های سفر در سراسر جهان.",
+    "fallbackTitle": "نمای جایگزین کره تعاملی",
+    "fallbackDescription": "حتی بدون کره زنده هم می‌توانید مسیرها، کارت‌های سفر و نقطه شروع خود را ببینید.",
     "origin": {
       "current": "از {city}",
       "countryFallback": "از {country}",
@@ -25,111 +25,111 @@
       {
         "id": "paris",
         "emoji": "🗼",
-        "title": "آخرهفته پاريس",
-        "detail": "كافه و موزه تا ديروقت."
+        "title": "آخرهفته پاریس",
+        "detail": "کافه و موزه تا دیروقت."
       },
       {
         "id": "fiji",
         "emoji": "🌴",
-        "title": "ماه عسل فيجي",
-        "detail": "ساحل، قايق و ريتم آرام."
+        "title": "ماه عسل فیجی",
+        "detail": "ساحل، قایق و ریتم آرام."
       },
       {
         "id": "south-africa",
         "emoji": "🦈",
-        "title": "دايو كوسه سفيد",
-        "detail": "آب سرد و هيجان خالص."
+        "title": "دایو کوسه سفید",
+        "detail": "آب سرد و هیجان خالص."
       },
       {
         "id": "route66",
         "emoji": "🛣️",
         "title": "Route 66",
-        "detail": "متل كلاسيك و پايان در ساحل غربي."
+        "detail": "متل کلاسیک و پایان در ساحل غربی."
       }
     ],
     "preview": {
-      "title": "30 روز SEA",
-      "alt": "پيش نمايش سفر 30 روزه در آسياي جنوب شرقي"
+      "title": "۳۰ روز SEA",
+      "alt": "پیش‌نمایش سفر کوله‌گردی ۳۰ روزه در آسیای جنوب شرقی"
     }
   },
   "bento": {
-    "badge": "Plan with momentum",
-    "title": "The pieces of trip planning finally stay in one place",
-    "subtitle": "Instead of jumping between docs, maps, screenshots, and half-finished chat threads, TravelFlow keeps the route, timing, and trip context moving together.",
+    "badge": "با ریتم برنامه‌ریزی کنید",
+    "title": "تکه‌های سفر بالاخره در یک جا می‌مانند",
+    "subtitle": "به‌جای پریدن بین داکیومنت، نقشه، اسکرین‌شات و چت‌های نیمه‌کاره، TravelFlow مسیر، ریتم و زمینه سفر را کنار هم نگه می‌دارد.",
     "items": [
       {
         "id": "itinerary",
-        "eyebrow": "AI route draft",
-        "title": "Start from a route, not a blank page",
-        "description": "Describe the trip you want in plain language and get a believable first itinerary with city flow, pacing, and activity context already connected.",
-        "detail": "A first draft your group can react to immediately"
+        "eyebrow": "پیش‌نویس هوش مصنوعی",
+        "title": "از یک مسیر شروع کنید، نه از صفحه خالی",
+        "description": "سفر را با زبان طبیعی توضیح دهید و یک برنامه اولیه قابل‌باور بگیرید که جریان شهرها، ریتم و زمینه از قبل به هم وصل شده‌اند.",
+        "detail": "یک پیش‌نویس اولیه که گروه می‌تواند فوراً به آن واکنش نشان دهد"
       },
       {
         "id": "timeline",
-        "eyebrow": "Live map edits",
-        "title": "Refine the plan without breaking it",
-        "description": "Stretch a stay, reorder a city, or change the pace. TravelFlow keeps the map and timeline aligned so every edit still feels coherent.",
-        "detail": "Map and timing stay in sync"
+        "eyebrow": "ویرایش زنده",
+        "title": "برنامه را بدون شکستن آن تنظیم کنید",
+        "description": "اقامت را طولانی‌تر کنید، ترتیب شهرها را عوض کنید یا ریتم را تغییر دهید. TravelFlow نقشه و تایم‌لاین را همسو نگه می‌دارد تا هر ویرایش هنوز منسجم بماند.",
+        "detail": "نقشه و زمان‌بندی همسو می‌مانند"
       },
       {
         "id": "inspiration",
-        "eyebrow": "Forkable inspiration",
-        "title": "Borrow proven ideas and make them yours",
-        "description": "Use community-style routes and inspiration as a smart starting point instead of rebuilding a believable trip from scratch.",
-        "detail": "Start from real travel energy"
+        "eyebrow": "الهام قابل استفاده دوباره",
+        "title": "از ایده‌های خوب شروع کنید و آن را مال خودتان کنید",
+        "description": "به‌جای ساختن دوباره یک سفر قابل‌باور از صفر، از مسیرهایی شروع کنید که از قبل انرژی سفر واقعی دارند.",
+        "detail": "با انرژی واقعی سفر شروع کنید"
       },
       {
         "id": "sharing",
-        "eyebrow": "Crew review",
-        "title": "Share something your travel crew can understand fast",
-        "description": "Send one link with the route, the pacing, and the notes already in place so feedback happens on the actual trip, not on disconnected screenshots.",
-        "detail": "No account required"
+        "eyebrow": "بازخورد گروه",
+        "title": "چیزی را به اشتراک بگذارید که گروه سریع بفهمد",
+        "description": "یک لینک با مسیر، ریتم و یادداشت‌های آماده بفرستید تا بازخورد روی خود سفر شکل بگیرد، نه روی اسکرین‌شات‌های پراکنده.",
+        "detail": "بدون نیاز به حساب کاربری"
       },
       {
         "id": "relive",
-        "eyebrow": "Booking and handoff",
-        "title": "Leave with a plan that still feels polished",
-        "description": "When the route is ready, the practical context is still there: booking links, notes, and a cleaner print-friendly version for the final handoff.",
-        "detail": "Ready to share, save, or print"
+        "eyebrow": "رزرو و تحویل نهایی",
+        "title": "در پایان هم یک برنامه مرتب داشته باشید",
+        "description": "وقتی مسیر آماده شد، زمینه کاربردی هنوز همان‌جاست: لینک‌ها، یادداشت‌ها و نسخه‌ای تمیزتر برای تحویل نهایی.",
+        "detail": "آماده برای اشتراک، ذخیره یا چاپ"
       }
     ]
   },
   "workflow": {
-    "badge": "From spark to group-ready plan",
-    "title": "One flow for drafting, shaping, and sharing",
-    "subtitle": "TravelFlow works best when you want the exciting part of planning and the practical part of planning to live in the same place.",
+    "badge": "از جرقه تا برنامه آماده برای گروه",
+    "title": "یک جریان برای پیش‌نویس، تنظیم و اشتراک",
+    "subtitle": "TravelFlow وقتی بهترین است که بخواهید بخش هیجان‌انگیز و بخش عملی برنامه‌ریزی را در یک جا نگه دارید.",
     "steps": [
       {
         "step": "01",
-        "title": "Start with a destination, a vibe, or a copied route",
-        "description": "Begin from a country list, a seasonal idea, or a travel concept that is still fuzzy. You do not need to know the perfect sequence yet."
+        "title": "با مقصد، حال‌وهوا یا یک مسیر کپی‌شده شروع کنید",
+        "description": "از فهرست کشورها، یک ایده فصلی یا مفهومی که هنوز مبهم است شروع کنید. هنوز لازم نیست ترتیب دقیق را بدانید."
       },
       {
         "step": "02",
-        "title": "Shape the pacing with the map and timeline together",
-        "description": "See the route on the globe, then tighten the trip on the timeline until it feels realistic for transfers, energy, and group preferences."
+        "title": "ریتم را با نقشه و تایم‌لاین کنار هم تنظیم کنید",
+        "description": "مسیر را روی کره ببینید و بعد روی تایم‌لاین آن‌قدر تنظیمش کنید تا برای جابه‌جایی‌ها، انرژی و سلیقه گروه واقعی به نظر برسد."
       },
       {
         "step": "03",
-        "title": "Share a version that still looks intentional",
-        "description": "When it is time to get feedback or book, the same plan already has the map, the structure, and the extra context people usually ask for."
+        "title": "نسخه‌ای را به اشتراک بگذارید که از قبل بافکر به نظر می‌رسد",
+        "description": "وقتی وقت گرفتن بازخورد یا رزرو می‌رسد، همان برنامه از قبل نقشه، ساختار و زمینه اضافه‌ای را دارد که معمولاً همه می‌خواهند."
       }
     ],
     "glance": {
-      "eyebrow": "What your group sees",
-      "title": "A plan that already looks share-ready",
-      "description": "Maps, day-by-day timing, and the practical context stay aligned so reactions come faster and with less confusion.",
+      "eyebrow": "چیزی که گروه شما می‌بیند",
+      "title": "برنامه‌ای که از قبل آماده اشتراک به نظر می‌رسد",
+      "description": "نقشه، ریتم روزبه‌روز و زمینه عملی کنار هم می‌مانند تا واکنش‌ها سریع‌تر و روشن‌تر برسند.",
       "items": [
-        "Live route view with pacing context",
-        "Booking-ready activity links when you need them",
-        "A cleaner print layout for the final version"
+        "نمای زنده مسیر با زمینه ریتم",
+        "لینک‌های آماده رزرو وقتی لازم شوند",
+        "چیدمان چاپ تمیزتر برای نسخه نهایی"
       ]
     }
   },
   "cta": {
-    "badge": "Build it while the idea is still fresh",
-    "title": "Start with the route. Keep the travel mood.",
-    "subtitle": "Draft your next trip in minutes, then keep refining it in the same place instead of rebuilding it across five tools.",
-    "button": "Start planning"
+    "badge": "تا وقتی ایده تازه است بسازیدش",
+    "title": "از مسیر شروع کنید. حال‌وهوای سفر را نگه دارید.",
+    "subtitle": "سفر بعدی را در چند دقیقه پیش‌نویس کنید و بعد همان‌جا به اصلاحش ادامه دهید، نه این‌که آن را در پنج ابزار از نو بسازید.",
+    "button": "شروع برنامه‌ریزی"
   }
 }

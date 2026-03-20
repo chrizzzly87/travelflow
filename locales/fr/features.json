@@ -1,21 +1,21 @@
 {
   "hero": {
-    "badge": "Interactive trip planning",
-    "titleBefore": "Build trips that already feel",
-    "titleHighlight": "ready to go",
-    "description": "TravelFlow turns destination ideas into a route your group can actually react to. Draft the itinerary with AI, shape it on a live map and timeline, then share a link that still feels polished when decisions get real.",
-    "primaryCta": "Start planning",
-    "secondaryCta": "See example trips",
+    "badge": "Planification de voyage interactive",
+    "titleBefore": "Créez des voyages déjà",
+    "titleHighlight": "prêts à partir",
+    "description": "TravelFlow transforme des idées de destination en un itinéraire auquel votre groupe peut vraiment réagir. Lancez une première version avec l’IA, ajustez-la sur une carte et une timeline en direct, puis partagez un lien qui reste net quand les décisions deviennent concrètes.",
+    "primaryCta": "Commencer à planifier",
+    "secondaryCta": "Voir des voyages exemples",
     "proof": [
-      "AI itinerary drafts in seconds",
-      "Drag the route until it feels right",
-      "Share one clean link before the group chat gets chaotic"
+      "Brouillons d’itinéraire IA en quelques secondes",
+      "Ajustez la route jusqu’à ce qu’elle sonne juste",
+      "Un seul lien clair avant que le groupe s’emballe"
     ]
   },
   "globe": {
-    "accessibility": "Aperçu interactif du globe avec des itinéraires depuis votre point de départ vers des idées de voyage colorées autour du monde.",
+    "accessibility": "Aperçu interactif du globe montrant des routes depuis votre point de départ vers des idées de voyage dans le monde entier.",
     "fallbackTitle": "Version de secours du globe",
-    "fallbackDescription": "Même sans le globe en direct, les trajets, les cartes de voyage et votre point de départ restent visibles.",
+    "fallbackDescription": "Même sans globe en direct, vous pouvez toujours voir les routes, les cartes voyage et votre point de départ.",
     "origin": {
       "current": "Depuis {city}",
       "countryFallback": "Depuis {country}",
@@ -26,7 +26,7 @@
         "id": "paris",
         "emoji": "🗼",
         "title": "Week-end Paris",
-        "detail": "Cafes et musees tardifs."
+        "detail": "Cafés et musées tardifs."
       },
       {
         "id": "fiji",
@@ -37,99 +37,99 @@
       {
         "id": "south-africa",
         "emoji": "🦈",
-        "title": "Plongee grand blanc",
+        "title": "Plongée grand blanc",
         "detail": "Eau froide et gros frisson."
       },
       {
         "id": "route66",
         "emoji": "🛣️",
         "title": "Route 66",
-        "detail": "Motels vintage et fin cote ouest."
+        "detail": "Motels vintage et arrivée côte ouest."
       }
     ],
     "preview": {
-      "title": "SEA sac a dos 30 j",
-      "alt": "Apercu de voyage de 30 jours en Asie du Sud-Est"
+      "title": "SEA sac à dos 30 j",
+      "alt": "Aperçu d’un voyage sac à dos de 30 jours en Asie du Sud-Est"
     }
   },
   "bento": {
-    "badge": "Plan with momentum",
-    "title": "The pieces of trip planning finally stay in one place",
-    "subtitle": "Instead of jumping between docs, maps, screenshots, and half-finished chat threads, TravelFlow keeps the route, timing, and trip context moving together.",
+    "badge": "Planifiez avec élan",
+    "title": "Les pièces du voyage restent enfin au même endroit",
+    "subtitle": "Au lieu de jongler entre docs, cartes, captures et fils de discussion à moitié finis, TravelFlow garde la route, le rythme et le contexte ensemble.",
     "items": [
       {
         "id": "itinerary",
-        "eyebrow": "AI route draft",
-        "title": "Start from a route, not a blank page",
-        "description": "Describe the trip you want in plain language and get a believable first itinerary with city flow, pacing, and activity context already connected.",
-        "detail": "A first draft your group can react to immediately"
+        "eyebrow": "Brouillon IA",
+        "title": "Commencez par une route, pas par une page vide",
+        "description": "Décrivez le voyage en langage naturel et obtenez un premier itinéraire crédible avec enchaînement des villes, rythme et contexte déjà reliés.",
+        "detail": "Un premier brouillon auquel votre groupe peut réagir tout de suite"
       },
       {
         "id": "timeline",
-        "eyebrow": "Live map edits",
-        "title": "Refine the plan without breaking it",
-        "description": "Stretch a stay, reorder a city, or change the pace. TravelFlow keeps the map and timeline aligned so every edit still feels coherent.",
-        "detail": "Map and timing stay in sync"
+        "eyebrow": "Édits en direct",
+        "title": "Ajustez le plan sans le casser",
+        "description": "Allongez une étape, réordonnez une ville ou changez le rythme. TravelFlow garde la carte et la timeline alignées pour que chaque modification reste cohérente.",
+        "detail": "Carte et timing restent synchronisés"
       },
       {
         "id": "inspiration",
-        "eyebrow": "Forkable inspiration",
-        "title": "Borrow proven ideas and make them yours",
-        "description": "Use community-style routes and inspiration as a smart starting point instead of rebuilding a believable trip from scratch.",
-        "detail": "Start from real travel energy"
+        "eyebrow": "Inspiration réutilisable",
+        "title": "Prenez de bonnes idées et appropriez-les-vous",
+        "description": "Partez d’itinéraires déjà crédibles au lieu de reconstruire un voyage plausible depuis zéro à chaque fois.",
+        "detail": "Commencez avec une vraie énergie de voyage"
       },
       {
         "id": "sharing",
-        "eyebrow": "Crew review",
-        "title": "Share something your travel crew can understand fast",
-        "description": "Send one link with the route, the pacing, and the notes already in place so feedback happens on the actual trip, not on disconnected screenshots.",
-        "detail": "No account required"
+        "eyebrow": "Retour du groupe",
+        "title": "Partagez quelque chose que le groupe comprend vite",
+        "description": "Envoyez un seul lien avec la route, le rythme et les notes déjà en place pour que les retours portent sur le vrai voyage, pas sur des captures dispersées.",
+        "detail": "Aucun compte requis"
       },
       {
         "id": "relive",
-        "eyebrow": "Booking and handoff",
-        "title": "Leave with a plan that still feels polished",
-        "description": "When the route is ready, the practical context is still there: booking links, notes, and a cleaner print-friendly version for the final handoff.",
-        "detail": "Ready to share, save, or print"
+        "eyebrow": "Réservation et handoff",
+        "title": "Finissez avec un plan qui reste soigné",
+        "description": "Quand la route est prête, le contexte pratique est toujours là : liens, notes et une version plus propre pour le passage final.",
+        "detail": "Prêt à partager, enregistrer ou imprimer"
       }
     ]
   },
   "workflow": {
-    "badge": "From spark to group-ready plan",
-    "title": "One flow for drafting, shaping, and sharing",
-    "subtitle": "TravelFlow works best when you want the exciting part of planning and the practical part of planning to live in the same place.",
+    "badge": "De l’étincelle à un plan prêt pour le groupe",
+    "title": "Un seul flux pour créer, affiner et partager",
+    "subtitle": "TravelFlow est à son meilleur quand la partie excitante et la partie pratique de la préparation vivent au même endroit.",
     "steps": [
       {
         "step": "01",
-        "title": "Start with a destination, a vibe, or a copied route",
-        "description": "Begin from a country list, a seasonal idea, or a travel concept that is still fuzzy. You do not need to know the perfect sequence yet."
+        "title": "Commencez avec une destination, une vibe ou une route copiée",
+        "description": "Partez d’une liste de pays, d’une idée de saison ou d’un concept encore flou. Vous n’avez pas encore besoin de connaître l’ordre parfait."
       },
       {
         "step": "02",
-        "title": "Shape the pacing with the map and timeline together",
-        "description": "See the route on the globe, then tighten the trip on the timeline until it feels realistic for transfers, energy, and group preferences."
+        "title": "Ajustez le rythme avec carte et timeline ensemble",
+        "description": "Voyez la route sur le globe, puis resserrez-la sur la timeline jusqu’à ce qu’elle semble réaliste pour les transferts, l’énergie et les préférences du groupe."
       },
       {
         "step": "03",
-        "title": "Share a version that still looks intentional",
-        "description": "When it is time to get feedback or book, the same plan already has the map, the structure, and the extra context people usually ask for."
+        "title": "Partagez une version déjà pensée",
+        "description": "Quand il faut obtenir des retours ou réserver, le même plan contient déjà la carte, la structure et le contexte supplémentaire que tout le monde demande."
       }
     ],
     "glance": {
-      "eyebrow": "What your group sees",
-      "title": "A plan that already looks share-ready",
-      "description": "Maps, day-by-day timing, and the practical context stay aligned so reactions come faster and with less confusion.",
+      "eyebrow": "Ce que voit votre groupe",
+      "title": "Un plan qui semble déjà prêt à être partagé",
+      "description": "Carte, rythme jour par jour et détails pratiques restent alignés pour obtenir des réactions plus vite et plus clairement.",
       "items": [
-        "Live route view with pacing context",
-        "Booking-ready activity links when you need them",
-        "A cleaner print layout for the final version"
+        "Vue de route en direct avec contexte de rythme",
+        "Liens prêts à réserver quand il le faut",
+        "Une mise en page impression plus propre pour la version finale"
       ]
     }
   },
   "cta": {
-    "badge": "Build it while the idea is still fresh",
-    "title": "Start with the route. Keep the travel mood.",
-    "subtitle": "Draft your next trip in minutes, then keep refining it in the same place instead of rebuilding it across five tools.",
-    "button": "Start planning"
+    "badge": "Construisez-le tant que l’idée est fraîche",
+    "title": "Commencez par la route. Gardez l’ambiance du voyage.",
+    "subtitle": "Esquissez votre prochain voyage en quelques minutes puis continuez à l’affiner au même endroit au lieu de le reconstruire dans cinq outils.",
+    "button": "Commencer à planifier"
   }
 }

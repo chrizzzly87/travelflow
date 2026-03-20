@@ -1,24 +1,24 @@
 {
   "hero": {
-    "badge": "Interactive trip planning",
-    "titleBefore": "Build trips that already feel",
-    "titleHighlight": "ready to go",
-    "description": "TravelFlow turns destination ideas into a route your group can actually react to. Draft the itinerary with AI, shape it on a live map and timeline, then share a link that still feels polished when decisions get real.",
-    "primaryCta": "Start planning",
-    "secondaryCta": "See example trips",
+    "badge": "인터랙티브 여행 계획",
+    "titleBefore": "이미 떠날 준비가 된 듯한 여행을",
+    "titleHighlight": "만드세요",
+    "description": "TravelFlow는 목적지 아이디어를 그룹이 바로 반응할 수 있는 경로로 바꿔 줍니다. AI로 첫 일정을 만들고, 실시간 지도와 타임라인에서 다듬은 뒤, 실제 결정 단계에서도 완성도 있게 보이는 링크를 공유하세요.",
+    "primaryCta": "여행 계획 시작",
+    "secondaryCta": "예시 여행 보기",
     "proof": [
-      "AI itinerary drafts in seconds",
-      "Drag the route until it feels right",
-      "Share one clean link before the group chat gets chaotic"
+      "AI 일정 초안을 몇 초 만에",
+      "딱 맞을 때까지 경로 조정",
+      "단체 채팅이 복잡해지기 전 깔끔한 링크 하나"
     ]
   },
   "globe": {
-    "accessibility": "출발 지점에서 전 세계의 다채로운 여행 아이디어로 이어지는 경로를 보여주는 인터랙티브 글로브 미리보기입니다.",
-    "fallbackTitle": "글로브 대체 보기",
-    "fallbackDescription": "라이브 글로브가 없어도 여행 경로, 트립 카드, 출발 지점을 여기서 계속 볼 수 있습니다.",
+    "accessibility": "사용자 출발점에서 전 세계 여행 아이디어로 이어지는 경로를 보여 주는 인터랙티브 글로브 미리보기입니다.",
+    "fallbackTitle": "인터랙티브 글로브 대체 보기",
+    "fallbackDescription": "실시간 글로브가 없어도 경로, 여행 카드, 출발 지점을 계속 확인할 수 있습니다.",
     "origin": {
-      "current": "{city}에서 출발",
-      "countryFallback": "{country}에서 출발",
+      "current": "{city}에서",
+      "countryFallback": "{country}에서",
       "fallback": "출발 지점"
     },
     "cards": [
@@ -44,92 +44,92 @@
         "id": "route66",
         "emoji": "🛣️",
         "title": "루트66 드라이브",
-        "detail": "모텔과 함께 서해안으로 마무리."
+        "detail": "클래식 모텔과 서해안 피날레."
       }
     ],
     "preview": {
       "title": "30일 SEA 배낭",
-      "alt": "30일 동남아 배낭여행 미리보기"
+      "alt": "동남아시아 30일 배낭여행 미리보기"
     }
   },
   "bento": {
-    "badge": "Plan with momentum",
-    "title": "The pieces of trip planning finally stay in one place",
-    "subtitle": "Instead of jumping between docs, maps, screenshots, and half-finished chat threads, TravelFlow keeps the route, timing, and trip context moving together.",
+    "badge": "흐름 있게 계획하기",
+    "title": "여행 계획의 핵심이 드디어 한곳에 머뭅니다",
+    "subtitle": "문서, 지도, 스크린샷, 덜 끝난 채팅을 오가는 대신 TravelFlow는 경로, 페이스, 여행 맥락을 함께 묶어 둡니다.",
     "items": [
       {
         "id": "itinerary",
-        "eyebrow": "AI route draft",
-        "title": "Start from a route, not a blank page",
-        "description": "Describe the trip you want in plain language and get a believable first itinerary with city flow, pacing, and activity context already connected.",
-        "detail": "A first draft your group can react to immediately"
+        "eyebrow": "AI 초안",
+        "title": "빈 페이지가 아니라 경로에서 시작하세요",
+        "description": "자연어로 여행을 설명하면 도시 흐름, 페이스, 맥락이 이미 연결된 믿을 만한 첫 일정이 만들어집니다.",
+        "detail": "그룹이 바로 반응할 수 있는 첫 초안"
       },
       {
         "id": "timeline",
-        "eyebrow": "Live map edits",
-        "title": "Refine the plan without breaking it",
-        "description": "Stretch a stay, reorder a city, or change the pace. TravelFlow keeps the map and timeline aligned so every edit still feels coherent.",
-        "detail": "Map and timing stay in sync"
+        "eyebrow": "실시간 수정",
+        "title": "계획을 망치지 않고 다듬으세요",
+        "description": "체류를 늘리거나 도시 순서를 바꾸거나 페이스를 조정해도 됩니다. TravelFlow는 지도와 타임라인을 맞춰 두어 모든 수정이 여전히 자연스럽게 보이게 합니다.",
+        "detail": "지도와 일정 흐름이 계속 맞춰집니다"
       },
       {
         "id": "inspiration",
-        "eyebrow": "Forkable inspiration",
-        "title": "Borrow proven ideas and make them yours",
-        "description": "Use community-style routes and inspiration as a smart starting point instead of rebuilding a believable trip from scratch.",
-        "detail": "Start from real travel energy"
+        "eyebrow": "재활용 가능한 영감",
+        "title": "검증된 아이디어를 가져와 내 여행으로 만드세요",
+        "description": "매번 처음부터 설득력 있는 여행을 다시 짜는 대신, 이미 좋은 에너지가 있는 루트를 출발점으로 쓰세요.",
+        "detail": "진짜 여행 감각에서 출발"
       },
       {
         "id": "sharing",
-        "eyebrow": "Crew review",
-        "title": "Share something your travel crew can understand fast",
-        "description": "Send one link with the route, the pacing, and the notes already in place so feedback happens on the actual trip, not on disconnected screenshots.",
-        "detail": "No account required"
+        "eyebrow": "그룹 리뷰",
+        "title": "그룹이 빠르게 이해할 수 있는 것을 공유하세요",
+        "description": "경로, 페이스, 노트가 이미 들어간 링크 하나만 보내면 피드백이 흩어진 스크린샷이 아니라 실제 여행 계획 위에서 이뤄집니다.",
+        "detail": "계정 없이도 가능"
       },
       {
         "id": "relive",
-        "eyebrow": "Booking and handoff",
-        "title": "Leave with a plan that still feels polished",
-        "description": "When the route is ready, the practical context is still there: booking links, notes, and a cleaner print-friendly version for the final handoff.",
-        "detail": "Ready to share, save, or print"
+        "eyebrow": "예약과 마무리",
+        "title": "끝까지 완성도 있는 계획으로 남기세요",
+        "description": "경로가 준비된 뒤에도 실용적인 맥락은 그대로 남습니다. 링크, 메모, 그리고 최종 전달용으로 더 정돈된 버전까지 함께요.",
+        "detail": "공유·저장·출력 준비 완료"
       }
     ]
   },
   "workflow": {
-    "badge": "From spark to group-ready plan",
-    "title": "One flow for drafting, shaping, and sharing",
-    "subtitle": "TravelFlow works best when you want the exciting part of planning and the practical part of planning to live in the same place.",
+    "badge": "아이디어에서 그룹용 계획까지",
+    "title": "초안, 조정, 공유를 위한 하나의 흐름",
+    "subtitle": "TravelFlow는 여행의 설레는 부분과 실무적인 부분을 같은 곳에 두고 싶을 때 가장 잘 맞습니다.",
     "steps": [
       {
         "step": "01",
-        "title": "Start with a destination, a vibe, or a copied route",
-        "description": "Begin from a country list, a seasonal idea, or a travel concept that is still fuzzy. You do not need to know the perfect sequence yet."
+        "title": "목적지, 무드, 복사한 루트로 시작하세요",
+        "description": "국가 목록, 계절 아이디어, 아직 흐릿한 여행 콘셉트에서 출발해도 됩니다. 완벽한 순서는 아직 몰라도 괜찮습니다."
       },
       {
         "step": "02",
-        "title": "Shape the pacing with the map and timeline together",
-        "description": "See the route on the globe, then tighten the trip on the timeline until it feels realistic for transfers, energy, and group preferences."
+        "title": "지도와 타임라인을 함께 보며 페이스를 다듬으세요",
+        "description": "글로브에서 경로를 본 뒤, 이동과 에너지, 그룹 취향에 맞게 타임라인에서 현실감 있게 조정하세요."
       },
       {
         "step": "03",
-        "title": "Share a version that still looks intentional",
-        "description": "When it is time to get feedback or book, the same plan already has the map, the structure, and the extra context people usually ask for."
+        "title": "이미 의도가 느껴지는 버전을 공유하세요",
+        "description": "피드백이나 예약이 필요한 순간이 오면 같은 계획 안에 지도, 구조, 추가 맥락이 이미 다 들어 있습니다."
       }
     ],
     "glance": {
-      "eyebrow": "What your group sees",
-      "title": "A plan that already looks share-ready",
-      "description": "Maps, day-by-day timing, and the practical context stay aligned so reactions come faster and with less confusion.",
+      "eyebrow": "그룹이 보게 되는 것",
+      "title": "이미 공유할 준비가 된 것처럼 보이는 계획",
+      "description": "지도, 날짜별 흐름, 실용 정보가 함께 정렬되어 반응이 더 빠르고 덜 헷갈리게 들어옵니다.",
       "items": [
-        "Live route view with pacing context",
-        "Booking-ready activity links when you need them",
-        "A cleaner print layout for the final version"
+        "페이스 맥락이 있는 실시간 경로 보기",
+        "필요할 때 바로 쓰는 예약 링크",
+        "최종본을 위한 더 깔끔한 인쇄 레이아웃"
       ]
     }
   },
   "cta": {
-    "badge": "Build it while the idea is still fresh",
-    "title": "Start with the route. Keep the travel mood.",
-    "subtitle": "Draft your next trip in minutes, then keep refining it in the same place instead of rebuilding it across five tools.",
-    "button": "Start planning"
+    "badge": "아이디어가 생생할 때 바로 시작하세요",
+    "title": "경로부터 시작하세요. 여행 무드는 그대로 두세요.",
+    "subtitle": "다음 여행을 몇 분 안에 초안으로 만들고, 다섯 개의 도구를 오가며 다시 짜지 말고 같은 곳에서 계속 다듬으세요.",
+    "button": "여행 계획 시작"
   }
 }
