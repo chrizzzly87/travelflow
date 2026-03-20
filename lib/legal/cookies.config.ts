@@ -416,6 +416,22 @@ export const COOKIE_REGISTRY: CookieRegistry = {
       notes: 'Debug-only key; not used for production user profiling.',
     },
     {
+      name: 'tf_e2e_auth_sandbox_v1',
+      purpose: 'Stores local fake auth sandbox sessions for automated end-to-end testing in development.',
+      duration: 'Persistent (dev/test only)',
+      provider: 'TravelFlow',
+      storage: 'localStorage',
+      notes: 'Test-only key used by the local E2E auth sandbox; not part of production user state.',
+    },
+    {
+      name: 'tf_e2e_trip_claim_sandbox_v1',
+      purpose: 'Stores local fake trip-claim outcomes for automated end-to-end testing in development.',
+      duration: 'Persistent (dev/test only)',
+      provider: 'TravelFlow',
+      storage: 'localStorage',
+      notes: 'Test-only key used by the local trip-claim sandbox; not part of production user state.',
+    },
+    {
       name: 'tf_debug_supabase_connectivity_override',
       purpose: 'Stores forced Supabase connectivity mode (offline/degraded/online) for outage simulation.',
       duration: 'Persistent',
@@ -542,6 +558,14 @@ export const COOKIE_REGISTRY: CookieRegistry = {
       provider: 'TravelFlow',
       storage: 'sessionStorage',
       notes: 'Dynamic key suffix is module-specific.',
+    },
+    {
+      name: 'tf_runtime_location_v1',
+      purpose: 'Stores the current session runtime location snapshot for geo-aware defaults and debugger diagnostics.',
+      duration: 'Session',
+      provider: 'TravelFlow',
+      storage: 'sessionStorage',
+      notes: 'Approximate Netlify-derived location only; no raw IP is stored.',
     },
     {
       name: 'tf_connectivity_banner_dismissed_state_v1',

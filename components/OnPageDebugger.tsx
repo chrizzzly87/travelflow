@@ -75,6 +75,12 @@ import {
     type MapRuntimeResolution,
     type MapRuntimeSelection,
 } from '../shared/mapRuntime';
+import {
+    getRuntimeLocationSnapshot,
+    refreshRuntimeLocation,
+    subscribeRuntimeLocation,
+    type RuntimeLocationStoreSnapshot,
+} from '../services/runtimeLocationService';
 
 const UMAMI_DASHBOARD_URL = 'https://cloud.umami.is/analytics/eu/websites/d8a78257-7625-4891-8954-1a20b10f7537';
 const DEBUG_AUTO_OPEN_STORAGE_KEY = 'tf_debug_auto_open';
@@ -192,6 +198,11 @@ interface ViewTransitionDiagnostics {
     updatedAtLabel: string;
 }
 
+interface RuntimeLocationDebugCardProps {
+    snapshot: RuntimeLocationStoreSnapshot;
+    onRefresh: () => void;
+}
+
 interface OnPageDebuggerApi {
     show: () => void;
     hide: () => void;
@@ -280,6 +291,111 @@ const readMetaSnapshot = (): MetaSnapshot => {
         title: document.title.trim(),
         description: document.querySelector<HTMLMetaElement>('meta[name="description"]')?.content.trim() || '',
     };
+};
+
+const formatRuntimeLocationText = (value: string | null): string => value || '—';
+
+const formatRuntimeLocationCountry = (snapshot: RuntimeLocationStoreSnapshot): string => {
+    const { countryName, countryCode } = snapshot.location;
+    if (countryName && countryCode) return `${countryName} (${countryCode})`;
+    return countryName || countryCode || '—';
+};
+
+const formatRuntimeLocationSubdivision = (snapshot: RuntimeLocationStoreSnapshot): string => {
+    const { subdivisionName, subdivisionCode } = snapshot.location;
+    if (subdivisionName && subdivisionCode) return `${subdivisionName} (${subdivisionCode})`;
+    return subdivisionName || subdivisionCode || '—';
+};
+
+const formatRuntimeLocationCoordinates = (snapshot: RuntimeLocationStoreSnapshot): string => {
+    const { latitude, longitude } = snapshot.location;
+    if (latitude === null || longitude === null) return '—';
+    return `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+};
+
+const formatRuntimeLocationFetchedAt = (fetchedAt: string | null): string => {
+    if (!fetchedAt) return '—';
+    const parsed = new Date(fetchedAt);
+    if (Number.isNaN(parsed.getTime())) return fetchedAt;
+    return parsed.toLocaleTimeString();
+};
+
+export const RuntimeLocationDebugCard: React.FC<RuntimeLocationDebugCardProps> = ({ snapshot, onRefresh }) => {
+    const statusLabel = snapshot.loading
+        ? 'Loading'
+        : snapshot.source === 'error'
+            ? 'Error'
+            : snapshot.available
+                ? (snapshot.source === 'session-cache' ? 'Cached' : 'Detected')
+                : 'Unavailable';
+    const statusClassName = snapshot.loading
+        ? 'border-sky-300 bg-sky-50 text-sky-700'
+        : snapshot.source === 'error'
+            ? 'border-rose-300 bg-rose-50 text-rose-700'
+            : snapshot.available
+                ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
+                : 'border-slate-300 bg-slate-50 text-slate-600';
+
+    const statusMessage = snapshot.loading
+        ? 'Fetching the latest Netlify runtime location snapshot for this session.'
+        : snapshot.source === 'error'
+            ? 'Runtime location could not be loaded right now. Try a manual refresh or verify the Netlify edge route is active.'
+            : snapshot.available
+                ? 'Approximate GeoIP-derived location from the current session.'
+                : 'No runtime location is available yet. Plain Vite dev and requests without Netlify geo data will land here.';
+
+    return (
+        <div className="mt-3 rounded-md border border-slate-200 bg-white p-3 text-xs">
+            <div className="flex flex-wrap items-center gap-2">
+                <div className="flex items-center gap-2">
+                    <span className="font-semibold uppercase tracking-wide text-slate-500">Runtime Location</span>
+                    <span className={`rounded-md border px-2 py-1 ${statusClassName}`}>
+                        {statusLabel}
+                    </span>
+                </div>
+                <button
+                    type="button"
+                    onClick={onRefresh}
+                    disabled={snapshot.loading}
+                    className="ml-auto inline-flex items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                    <Globe size={14} weight="duotone" />
+                    {snapshot.loading ? 'Refreshing…' : 'Refresh Runtime Location'}
+                </button>
+            </div>
+
+            <p className="mt-2 rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-600">
+                {statusMessage}
+            </p>
+
+            <div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1">
+                    <strong className="text-slate-900">Source:</strong> {snapshot.source}
+                </div>
+                <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1">
+                    <strong className="text-slate-900">Fetched:</strong> {formatRuntimeLocationFetchedAt(snapshot.fetchedAt)}
+                </div>
+                <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1">
+                    <strong className="text-slate-900">City:</strong> {formatRuntimeLocationText(snapshot.location.city)}
+                </div>
+                <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1">
+                    <strong className="text-slate-900">Country:</strong> {formatRuntimeLocationCountry(snapshot)}
+                </div>
+                <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1">
+                    <strong className="text-slate-900">Subdivision:</strong> {formatRuntimeLocationSubdivision(snapshot)}
+                </div>
+                <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1">
+                    <strong className="text-slate-900">Timezone:</strong> {formatRuntimeLocationText(snapshot.location.timezone)}
+                </div>
+                <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1">
+                    <strong className="text-slate-900">Postal code:</strong> {formatRuntimeLocationText(snapshot.location.postalCode)}
+                </div>
+                <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1">
+                    <strong className="text-slate-900">Lat/Lon:</strong> {formatRuntimeLocationCoordinates(snapshot)}
+                </div>
+            </div>
+        </div>
+    );
 };
 
 export const readStoredDebuggerBoolean = (storageKey: string, fallbackValue: boolean): boolean => {
@@ -791,6 +907,9 @@ export const OnPageDebugger: React.FC = () => {
     const [connectivitySnapshot, setConnectivitySnapshot] = useState<ConnectivitySnapshot>(() => getConnectivitySnapshot());
     const [offlineQueueSnapshot, setOfflineQueueSnapshot] = useState<OfflineQueueSnapshot>(() => getQueueSnapshot());
     const [syncRunSnapshot, setSyncRunSnapshot] = useState<SyncRunSnapshot>(() => getSyncRunSnapshot());
+    const [runtimeLocationSnapshot, setRuntimeLocationSnapshot] = useState<RuntimeLocationStoreSnapshot>(() =>
+        getRuntimeLocationSnapshot()
+    );
     const [prefetchStats, setPrefetchStats] = useState<PrefetchStats>(() => getPrefetchStats());
     const [prefetchHighlightBoxes, setPrefetchHighlightBoxes] = useState<PrefetchHighlightBox[]>([]);
     const [viewTransitionDiagnostics, setViewTransitionDiagnostics] = useState<ViewTransitionDiagnostics>(() =>
@@ -917,11 +1036,15 @@ export const OnPageDebugger: React.FC = () => {
         const unsubscribeSync = subscribeSyncStatus((next) => {
             setSyncRunSnapshot(next);
         });
+        const unsubscribeRuntimeLocation = subscribeRuntimeLocation((next) => {
+            setRuntimeLocationSnapshot(next);
+        });
         return () => {
             unsubscribeBrowserConnectivity();
             unsubscribeConnectivity();
             unsubscribeQueue();
             unsubscribeSync();
+            unsubscribeRuntimeLocation();
         };
     }, []);
 
@@ -1203,6 +1326,10 @@ export const OnPageDebugger: React.FC = () => {
             }, mapRuntimeResolution),
         );
     }, [applyMapRuntimeOverride, mapRuntimeResolution]);
+
+    const refreshRuntimeLocationNow = useCallback(() => {
+        void refreshRuntimeLocation();
+    }, []);
 
     const handleTripExpiredEvent = useCallback((event: Event) => {
         const detail = (event as CustomEvent<TripExpiredDebugDetail>).detail;
@@ -1877,6 +2004,11 @@ export const OnPageDebugger: React.FC = () => {
                                             </div>
                                         </div>
                                     </div>
+
+                                    <RuntimeLocationDebugCard
+                                        snapshot={runtimeLocationSnapshot}
+                                        onRefresh={refreshRuntimeLocationNow}
+                                    />
                                 </>
                             )}
 

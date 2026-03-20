@@ -39,6 +39,7 @@ import { useAnalyticsBootstrap } from './app/bootstrap/useAnalyticsBootstrap';
 import { useAuthNavigationBootstrap } from './app/bootstrap/useAuthNavigationBootstrap';
 import { useDebuggerBootstrap } from './app/bootstrap/useDebuggerBootstrap';
 import { useNavigationContextBootstrap } from './app/bootstrap/useNavigationContextBootstrap';
+import { useRuntimeLocationBootstrap } from './app/bootstrap/useRuntimeLocationBootstrap';
 import { useWarmupGate } from './app/bootstrap/useWarmupGate';
 import { AppProviderShell } from './app/bootstrap/AppProviderShell';
 import { MarketingRouteLoadingShell } from './components/bootstrap/MarketingRouteLoadingShell';
@@ -366,6 +367,7 @@ const AppContent: React.FC = () => {
 
     useAuthNavigationBootstrap();
     useNavigationContextBootstrap();
+    useRuntimeLocationBootstrap();
     useAnalyticsBootstrap();
 
     useEffect(() => {
