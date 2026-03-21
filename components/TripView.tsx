@@ -2636,6 +2636,7 @@ const useTripViewRender = ({
     });
     const isPlannerWorkspacePage = activeWorkspacePage === 'planner';
     const isOverviewWorkspacePage = activeWorkspacePage === 'overview';
+    const isPlacesWorkspacePage = activeWorkspacePage === 'places';
     const detailsPanelVisible = isPlannerWorkspacePage && selectionDetailsPanelVisible;
     const closeCompanionPanel = useCallback(() => {}, []);
     const handleTogglePlannerPanel = useCallback(() => {
@@ -2669,6 +2670,12 @@ const useTripViewRender = ({
         setActiveCompanionSection,
         workspaceRouteState.basePath,
     ]);
+    const handleWorkspaceOpenPlannerItem = useCallback((itemId: string) => {
+        handleTimelineSelect(itemId, { isCity: true });
+        if (activeWorkspacePage !== 'planner') {
+            handleWorkspacePageChange('planner');
+        }
+    }, [activeWorkspacePage, handleTimelineSelect, handleWorkspacePageChange]);
     useEffect(() => {
         if (activeWorkspacePage === 'planner') return;
         if (isMobileViewport) {
@@ -3281,7 +3288,7 @@ const useTripViewRender = ({
     }
 
     return (
-        <GoogleMapsLoader language={appLanguage} enabled={isOverviewWorkspacePage || (isPlannerWorkspacePage && isMapBootstrapEnabled)}>
+        <GoogleMapsLoader language={appLanguage} enabled={isOverviewWorkspacePage || isPlacesWorkspacePage || (isPlannerWorkspacePage && isMapBootstrapEnabled)}>
             <div
                 className="relative h-screen w-screen flex flex-col bg-gray-50 overflow-hidden text-gray-900 font-sans selection:bg-accent-100 selection:text-accent-900"
                 data-tf-handoff-ready="true"
@@ -3401,6 +3408,7 @@ const useTripViewRender = ({
                             void handleShare();
                         }}
                         onOpenSettings={onOpenSettings}
+                        onOpenPlannerItem={handleWorkspaceOpenPlannerItem}
                     />
                     <TripViewModalLayer
                         isMobile={isMobile}

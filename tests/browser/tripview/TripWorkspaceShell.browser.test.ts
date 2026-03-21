@@ -4,8 +4,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 
 import { TripWorkspaceMobileNav, TripWorkspaceShell } from '../../../components/tripview/TripWorkspaceShell';
+import { TRIP_WORKSPACE_SIDEBAR_STATE_STORAGE_KEY } from '../../../components/tripview/workspace/tripWorkspaceSidebarState';
 import { buildTripWorkspacePath, normalizeTripWorkspacePage, resolveTripWorkspaceRouteState } from '../../../shared/tripWorkspace';
 import type { ITrip } from '../../../types';
+
+vi.mock('../../../components/GoogleMapsLoader', () => ({
+    useGoogleMaps: () => ({
+        isLoaded: false,
+        loadError: null,
+    }),
+}));
 
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({
@@ -128,6 +136,7 @@ describe('shared/tripWorkspace', () => {
 
 describe('components/tripview/TripWorkspaceShell', () => {
     beforeEach(() => {
+        window.localStorage.clear();
         Object.defineProperty(window, 'matchMedia', {
             writable: true,
             value: vi.fn().mockImplementation((query: string) => ({
@@ -148,7 +157,7 @@ describe('components/tripview/TripWorkspaceShell', () => {
         cleanup();
     });
 
-    it('renders the desktop sidebar, overview widgets, and icon-collapse state', () => {
+    it('renders the desktop sidebar, overview widgets, and persists icon-collapse state', async () => {
         const onPageChange = vi.fn();
         vi.useFakeTimers();
         vi.setSystemTime(new Date('2026-04-12T12:00:00Z'));
@@ -178,9 +187,12 @@ describe('components/tripview/TripWorkspaceShell', () => {
 
         const sidebarContainer = screen.getByTestId('trip-workspace-sidebar');
         const sidebar = sidebarContainer.closest('[data-slot="sidebar"]');
+        const sidebarFrame = document.querySelector('[data-slot="sidebar-container"]');
 
         expect(sidebar).not.toBeNull();
+        expect(sidebarFrame).not.toBeNull();
         expect(sidebar).toHaveAttribute('data-state', 'expanded');
+        expect(sidebarFrame).toHaveClass('absolute', 'inset-y-0', 'h-full');
         fireEvent.click(screen.getByRole('button', { name: 'Phrases' }));
         fireEvent.click(screen.getByRole('button', { name: 'Collapse sidebar' }));
 
@@ -192,6 +204,63 @@ describe('components/tripview/TripWorkspaceShell', () => {
         expect(screen.getByText('Today in Bangkok')).toBeInTheDocument();
         expect(sidebar).toHaveAttribute('data-state', 'collapsed');
         expect(onPageChange).toHaveBeenCalledWith('phrases');
+
+        expect(window.localStorage.getItem(TRIP_WORKSPACE_SIDEBAR_STATE_STORAGE_KEY)).toBe('collapsed');
+
+        cleanup();
+
+        render(
+            React.createElement(TripWorkspaceShell, {
+                trip: buildTrip(),
+                tripMeta: {
+                    dateRange: 'Apr 10 – Apr 20, 2026',
+                    totalDaysLabel: '11',
+                    cityCount: 3,
+                    distanceLabel: '1,540 km',
+                    summaryLine: 'Apr 10 – Apr 20 • 11 days • 3 cities',
+                },
+                activePage: 'overview',
+                onPageChange,
+                plannerPage: React.createElement('div', { 'data-testid': 'planner-page' }, 'planner'),
+                selectedItem: null,
+                selectedCities: [],
+                travelerWarnings: [],
+                isMobile: false,
+                onOpenTripInfoModal: vi.fn(),
+                onOpenShare: vi.fn(),
+                onOpenSettings: vi.fn(),
+            }),
+        );
+
+        expect(screen.getByTestId('trip-workspace-sidebar').closest('[data-slot="sidebar"]')).toHaveAttribute('data-state', 'collapsed');
+    });
+
+    it('keeps planner-only content inside the planner page shell', () => {
+        render(
+            React.createElement(TripWorkspaceShell, {
+                trip: buildTrip(),
+                tripMeta: {
+                    dateRange: 'Apr 10 – Apr 20, 2026',
+                    totalDaysLabel: '11',
+                    cityCount: 3,
+                    distanceLabel: '1,540 km',
+                    summaryLine: 'Apr 10 – Apr 20 • 11 days • 3 cities',
+                },
+                activePage: 'planner',
+                onPageChange: vi.fn(),
+                plannerPage: React.createElement('div', { 'data-testid': 'planner-page' }, 'planner'),
+                selectedItem: null,
+                selectedCities: [],
+                travelerWarnings: [],
+                isMobile: false,
+                onOpenTripInfoModal: vi.fn(),
+                onOpenShare: vi.fn(),
+                onOpenSettings: vi.fn(),
+            }),
+        );
+
+        expect(screen.getByTestId('planner-page')).toBeInTheDocument();
+        expect(screen.queryByText('Trip overview')).not.toBeInTheDocument();
     });
 
     it('renders the mobile bottom navigation and forwards taps', () => {

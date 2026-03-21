@@ -1,6 +1,6 @@
 # Trip Workspace TODO
 
-Last updated: 2026-03-20
+Last updated: 2026-03-21
 Owner: Codex + @chrizzzly
 Goal: Turn Trip View into a routed Trip Workspace with a fixed shadcn sidebar on desktop, matching mobile navigation, and dedicated pages for the main trip jobs.
 
@@ -79,7 +79,7 @@ Goal: Turn Trip View into a routed Trip Workspace with a fixed shadcn sidebar on
 - [ ] Decide which destination content is trip-specific versus general destination knowledge and label it clearly in the UI.
 - [ ] Add source and freshness treatment for dynamic travel information and official links.
 - [x] Define the minimal booking, notes, and phrases example data needed for Phase 1 and early Phase 2 shells.
-- [ ] Plan map-surface scope for `Places` so city overlays follow the repository map workflow before implementation.
+- [x] Move `Overview` and `Places` map surfaces onto the shared Trip map workflow instead of custom one-off map implementations.
 
 ## UX clarity and navigation rules
 - [x] Keep icons paired with clear labels in the desktop sidebar and mobile toolbar.
@@ -104,7 +104,7 @@ Goal: Turn Trip View into a routed Trip Workspace with a fixed shadcn sidebar on
 ## Validation and rollout
 - [x] Add route and workspace regression coverage following `docs/TESTING_PHASE2_SCOPE.md`.
 - [x] Add analytics for workspace navigation and page-level CTA interactions using the repo analytics convention.
-- [ ] Validate any new or changed map surfaces against `docs/MAPS_INTEGRATION_WORKFLOW.md`.
+- [x] Validate new and changed map surfaces against `docs/MAPS_INTEGRATION_WORKFLOW.md`.
 - [ ] Update locale files only when the new user-facing copy is ready for EN/DE sign-off.
 - [x] Keep the existing draft release note accurate as the workspace implementation evolves.
 
@@ -118,13 +118,16 @@ Goal: Turn Trip View into a routed Trip Workspace with a fixed shadcn sidebar on
 - [x] Added route helpers, loader updates, analytics hooks, locale wiring, and regression coverage for the workspace shell.
 - [x] Added a true desktop sidebar collapse mode with icon-only navigation and tooltip-backed labels.
 - [x] Added a color-coded overview calendar and a compact overview route map so the trip dashboard has its own strong visual anchors.
+- [x] Rebuilt the desktop workspace shell as a header-aware frame so the sidebar now sits below the Trip header and preserves full-height proportions.
+- [x] Swapped the overview and places map surfaces over to the shared Trip map implementation instead of the broken standalone workspace map.
+- [x] Split the new Trip Workspace into dedicated page components and added interactive flashcards, shortlist, notes, and photo demo behaviors.
+- [x] Added regression coverage for sidebar persistence, planner-only routing, and phrase flashcard interactions.
 
 ## Open
 - [ ] Tighten the trip modal so it reads as a basic trip-actions surface, not a second destination hub.
 - [ ] Replace temporary English fallback workspace copy in secondary locales after EN/DE wording sign-off.
 - [ ] Add source freshness, official links, and clearer trip-specific vs general labels to the destination pages.
-- [ ] Turn the `Places` map placeholder into a real validated map surface that follows the repository map workflow.
-- [ ] Decide whether desktop sidebar collapse should persist per browser session before introducing a storage key and legal disclosure update.
+- [ ] Add richer neighborhood and saved-stay overlays to the `Places` map now that the validated shared map surface is in place.
 - [ ] Turn the new overview map and overview calendar copy into signed-off EN/DE locale keys when the wording is final.
 - [ ] Replace Thailand demo data with live bookings, discovery, phrase, and destination services when the backend inputs are ready.
 - [ ] Choose the next routed page after this slice: `Travel kit`, `Budget`, `Documents`, or `Weather`.

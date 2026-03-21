@@ -39,6 +39,7 @@ interface ItineraryMapProps {
     onMapColorModeChange?: (mode: MapColorMode) => void;
     isPaywalled?: boolean;
     viewTransitionName?: string;
+    showControls?: boolean;
 }
 
 const MAP_STYLES = {
@@ -1400,8 +1401,10 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     mapColorMode = DEFAULT_MAP_COLOR_MODE,
     onMapColorModeChange,
     isPaywalled = false,
-    viewTransitionName
+    viewTransitionName,
+    showControls = true,
 }) => {
+    const resolvedMapDockMode = mapDockMode as 'docked' | 'floating';
     const mapInstanceIdRef = useRef(`tf-itinerary-map-${Math.random().toString(36).slice(2, 10)}`);
     const mapInstanceId = mapInstanceIdRef.current;
     const mapContainerRef = useRef<HTMLDivElement | null>(null);
@@ -1506,10 +1509,10 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     );
     const markerRenderProfile = useMemo(
         () => resolveMarkerRenderProfile({
-            mapDockMode,
+            mapDockMode: resolvedMapDockMode,
             markerTier: markerRenderTier,
         }),
-        [mapDockMode, markerRenderTier],
+        [markerRenderTier, resolvedMapDockMode],
     );
     const zoomEnhancedCityProfile = useMemo(
         () => resolveZoomEnhancedCityMarkerProfile({
@@ -3053,9 +3056,9 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 </div>
             )}
             
-            {/* Controls */}
-            <div data-floating-map-control="true" className="absolute top-4 end-4 z-[40] flex flex-col gap-2 pointer-events-none">
-                <div className="flex flex-col gap-2 pointer-events-auto">
+            {showControls && (
+                <div data-floating-map-control="true" className="absolute top-4 end-4 z-[40] flex flex-col gap-2 pointer-events-none">
+                    <div className="flex flex-col gap-2 pointer-events-auto">
                     {onMapDockModeToggle && (
                         <button
                             type="button"
@@ -3199,7 +3202,8 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                         </button>
                     )}
                 </div>
-            </div>
+                </div>
+            )}
         </div>
     );
 };

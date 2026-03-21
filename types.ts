@@ -21,6 +21,7 @@ export type TripWorkspacePage =
   | 'phrases'
   | 'notes'
   | 'photos';
+export type TripWorkspaceSidebarState = 'expanded' | 'collapsed';
 export type TripCompanionSection = TripWorkspacePage | 'plan' | 'more';
 export type RouteFailureReason =
   | 'unsupported_mode'

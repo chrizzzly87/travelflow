@@ -259,6 +259,13 @@ export const COOKIE_REGISTRY: CookieRegistry = {
       storage: 'localStorage',
     },
     {
+      name: 'tf_trip_workspace_sidebar_state_v1',
+      purpose: 'Persists whether the Trip Workspace sidebar is expanded or icon-collapsed.',
+      duration: 'Persistent',
+      provider: 'TravelFlow',
+      storage: 'localStorage',
+    },
+    {
       name: 'tf_timeline_height',
       purpose: 'Persists planner timeline panel height preference.',
       duration: 'Persistent',

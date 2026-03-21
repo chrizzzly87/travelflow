@@ -134,7 +134,7 @@ function SidebarProvider({
             } as React.CSSProperties
           }
           className={cn(
-            "group/sidebar-wrapper flex min-h-svh w-full has-data-[variant=inset]:bg-sidebar",
+            "group/sidebar-wrapper relative flex min-h-svh w-full has-data-[variant=inset]:bg-sidebar",
             className
           )}
           {...props}
@@ -150,6 +150,7 @@ function Sidebar({
   side = "left",
   variant = "sidebar",
   collapsible = "offcanvas",
+  desktopMode = "viewport",
   className,
   children,
   ...props
@@ -157,6 +158,7 @@ function Sidebar({
   side?: "left" | "right"
   variant?: "sidebar" | "floating" | "inset"
   collapsible?: "offcanvas" | "icon" | "none"
+  desktopMode?: "viewport" | "frame"
 }) {
   const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
 
@@ -224,7 +226,8 @@ function Sidebar({
       <div
         data-slot="sidebar-container"
         className={cn(
-          "fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) transition-[left,right,width] duration-200 ease-linear md:flex",
+          "z-10 hidden w-(--sidebar-width) transition-[left,right,width] duration-200 ease-linear md:flex",
+          desktopMode === "frame" ? "absolute inset-y-0 h-full" : "fixed inset-y-0 h-svh",
           side === "left"
             ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
             : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",
