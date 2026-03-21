@@ -7,7 +7,7 @@ published_at: 2026-03-19T08:00:00Z
 status: draft
 notify_in_app: false
 in_app_hours: 24
-summary: "Turns Trip View into a routed workspace with a header-aware desktop sidebar, focused planner page, shared-map overview cards, and dedicated pages for destination context, exploration, phrases, and trip logistics."
+summary: "Turns Trip View into a routed workspace with a header-aware desktop sidebar, focused planner page, shared-map overview cards, and dedicated pages for planning, destination context, trip support, and travel logistics."
 ---
 
 ## Changes
@@ -22,4 +22,5 @@ summary: "Turns Trip View into a routed workspace with a header-aware desktop si
 - [x] [Improved] 🧭 The trip modal now works more like a trip-actions hub, with a lighter handoff into `Places` instead of trying to be a second destination-info screen.
 - [x] [Improved] 🏷️ `Places` now makes trip-specific notes, general destination context, freshness, and demo source treatment much clearer, and its highlight toggles now drive a richer neighborhood-and-stay planning playground.
 - [x] [New feature] 🧰 A new `Travel kit` page keeps checklists, emergency references, cash/adapter prep, and offline-ready trip support close to the route instead of burying them in notes.
+- [x] [New feature] 📁 A new `Documents` page keeps passports, insurance, onward-proof notes, and transfer packets together with verification toggles and offline dossier prep for the trip.
 - [ ] [Internal] 🧪 Added routed workspace regression coverage for sidebar persistence, planner-only routing, phrase interactions, locale wiring, and analytics hooks for the new Trip Workspace flow.

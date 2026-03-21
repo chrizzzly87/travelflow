@@ -482,6 +482,12 @@
           "title": "Travel kit",
           "description": "Keep adapters, emergency info, arrival prep, and checklists close to the route."
         },
+        "documents": {
+          "label": "Documents",
+          "eyebrow": "Documents",
+          "title": "Documents",
+          "description": "Keep passports, insurance, booking proofs, and offline-ready references close to the route."
+        },
         "places": {
           "label": "Places",
           "eyebrow": "Places",

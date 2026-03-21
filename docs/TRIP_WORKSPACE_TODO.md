@@ -98,7 +98,7 @@ Goal: Turn Trip View into a routed Trip Workspace with a fixed shadcn sidebar on
 ## Next ideas backlog
 - [x] Add a `Travel kit` page for packing lists, adapters, emergency numbers, and trip checklists.
 - [ ] Add a `Budget` page for planned spend, booked spend, and daily burn-rate tracking.
-- [ ] Add a `Documents` page for passports, visa notes, insurance, tickets, and booking PDFs.
+- [x] Add a `Documents` page for passports, visa notes, insurance, tickets, and booking PDFs.
 - [ ] Add a `Weather` layer for city-by-city forecasts, seasonal warnings, and disruption watchlists.
 
 ## Validation and rollout
@@ -125,10 +125,11 @@ Goal: Turn Trip View into a routed Trip Workspace with a fixed shadcn sidebar on
 - [x] Tightened the trip modal into an actions-first surface and moved destination prep into a clean handoff to the routed `Places` page.
 - [x] Added clearer source freshness, trip-specific vs general context labels, and interactive overlay guidance to the `Places` page.
 - [x] Added a routed `Travel kit` page with interactive checklists, emergency quick references, offline prep toggles, converter tools, and Thailand demo support content.
+- [x] Added a routed `Documents` page with packet tabs, verification toggles, offline dossier prep, and quick links back into bookings, places, and travel support flows.
 
 ## Open
 - [ ] Replace temporary English fallback workspace copy in secondary locales after EN/DE wording sign-off.
 - [ ] Turn the new `Places` overlay guidance into true visual map overlays once the shared trip map exposes richer layer hooks.
 - [ ] Turn the new overview map and overview calendar copy into signed-off EN/DE locale keys when the wording is final.
-- [ ] Replace Thailand demo data with live bookings, discovery, phrase, and destination services when the backend inputs are ready.
-- [ ] Choose the next routed page after this slice: `Budget`, `Documents`, or `Weather`.
+- [ ] Replace Thailand demo data with live bookings, discovery, phrase, destination, travel-kit, and document services when the backend inputs are ready.
+- [ ] Choose the next routed page after this slice: `Budget` or `Weather`.

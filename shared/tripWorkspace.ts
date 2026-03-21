@@ -7,6 +7,7 @@ export const TRIP_WORKSPACE_PAGES: TripWorkspacePage[] = [
     'planner',
     'bookings',
     'travel-kit',
+    'documents',
     'places',
     'explore',
     'phrases',

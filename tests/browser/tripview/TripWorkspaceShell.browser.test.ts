@@ -45,6 +45,10 @@ vi.mock('react-i18next', () => ({
                 'tripView.workspace.pages.travel-kit.eyebrow': 'Travel kit',
                 'tripView.workspace.pages.travel-kit.title': 'Travel kit',
                 'tripView.workspace.pages.travel-kit.description': 'Keep adapters, emergency info, arrival prep, and checklists close to the route.',
+                'tripView.workspace.pages.documents.label': 'Documents',
+                'tripView.workspace.pages.documents.eyebrow': 'Documents',
+                'tripView.workspace.pages.documents.title': 'Documents',
+                'tripView.workspace.pages.documents.description': 'Keep passports, insurance, booking proofs, and offline-ready references close to the route.',
                 'tripView.workspace.pages.places.label': 'Places',
                 'tripView.workspace.pages.places.eyebrow': 'Places',
                 'tripView.workspace.pages.places.title': 'Places',
@@ -112,6 +116,7 @@ describe('shared/tripWorkspace', () => {
     it('normalizes legacy and explicit workspace pages', () => {
         expect(normalizeTripWorkspacePage('plan')).toBe('overview');
         expect(normalizeTripWorkspacePage('travel-kit')).toBe('travel-kit');
+        expect(normalizeTripWorkspacePage('documents')).toBe('documents');
         expect(normalizeTripWorkspacePage('places')).toBe('places');
         expect(normalizeTripWorkspacePage('unknown')).toBeNull();
     });
@@ -135,7 +140,7 @@ describe('shared/tripWorkspace', () => {
             page: null,
             hasExplicitPage: false,
         });
-        expect(buildTripWorkspacePath('/trip/trip-1', 'travel-kit')).toBe('/trip/trip-1/travel-kit');
+        expect(buildTripWorkspacePath('/trip/trip-1', 'documents')).toBe('/trip/trip-1/documents');
     });
 });
 
@@ -279,9 +284,9 @@ describe('components/tripview/TripWorkspaceShell', () => {
             }),
         );
 
-        fireEvent.click(screen.getByRole('button', { name: 'Travel kit' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Documents' }));
 
         expect(screen.getByLabelText('Trip workspace navigation')).toBeInTheDocument();
-        expect(onPageChange).toHaveBeenCalledWith('travel-kit');
+        expect(onPageChange).toHaveBeenCalledWith('documents');
     });
 });

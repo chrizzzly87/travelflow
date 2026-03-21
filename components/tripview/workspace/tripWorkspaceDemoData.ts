@@ -139,6 +139,29 @@ export interface TripWorkspaceTravelKitPack {
     includes: string[];
 }
 
+export type TripWorkspaceDocumentSectionId = 'entry' | 'transport' | 'stays' | 'coverage';
+
+export interface TripWorkspaceDocumentRecord {
+    id: string;
+    section: TripWorkspaceDocumentSectionId;
+    title: string;
+    status: 'Verified' | 'Review' | 'Missing';
+    scope: 'Trip-specific' | 'General destination';
+    carryMode: 'Offline' | 'Printed' | 'Either';
+    detail: string;
+    referenceLabel?: string;
+    referenceValue?: string;
+    sourceLine: string;
+    tags: string[];
+}
+
+export interface TripWorkspaceDocumentPacket {
+    id: string;
+    label: string;
+    detail: string;
+    documentIds: string[];
+}
+
 const normalizeValue = (value: string): string => value.toLowerCase().replace(/[^a-z]/g, '');
 
 export const resolveTripWorkspaceCityStops = (items: ITimelineItem[]): ITimelineItem[] =>
@@ -831,6 +854,127 @@ export const THAILAND_TRAVEL_KIT_PACKS: TripWorkspaceTravelKitPack[] = [
         label: 'Island transfer day',
         detail: 'This keeps the coastal leg calm when ferries, rain, and wet bags start to stack.',
         includes: ['Waterproof pouch', 'Quick-dry layer', 'Cash split', 'Offline booking screenshots'],
+    },
+];
+
+export const THAILAND_DOCUMENT_RECORDS: TripWorkspaceDocumentRecord[] = [
+    {
+        id: 'passport',
+        section: 'entry',
+        title: 'Passport and validity check',
+        status: 'Verified',
+        scope: 'General destination',
+        carryMode: 'Either',
+        detail: 'Keep the passport-validity rule visible before departure and store one offline copy in case airport Wi-Fi is unreliable.',
+        referenceLabel: 'Passport holder',
+        referenceValue: 'Primary traveler',
+        sourceLine: 'General entry prep',
+        tags: ['Identity', 'Entry', 'Before departure'],
+    },
+    {
+        id: 'onward-proof',
+        section: 'entry',
+        title: 'Onward travel proof',
+        status: 'Review',
+        scope: 'Trip-specific',
+        carryMode: 'Offline',
+        detail: 'Keep the Bangkok arrival flight plus the next booked exit or onward leg ready in one offline folder.',
+        referenceLabel: 'Current proof',
+        referenceValue: 'Bangkok → Chiang Mai flight',
+        sourceLine: 'Trip-specific entry handoff',
+        tags: ['Arrival', 'Flight', 'Keep offline'],
+    },
+    {
+        id: 'insurance',
+        section: 'coverage',
+        title: 'Insurance summary and emergency contact',
+        status: 'Verified',
+        scope: 'Trip-specific',
+        carryMode: 'Offline',
+        detail: 'Store policy number, support phone, and the “what counts as covered” summary where you can open it fast.',
+        referenceLabel: 'Policy ref',
+        referenceValue: 'TF-TH-4821',
+        sourceLine: 'Demo insurance packet',
+        tags: ['Medical', 'Support', 'Policy'],
+    },
+    {
+        id: 'flight-booking',
+        section: 'transport',
+        title: 'Domestic flight and baggage proof',
+        status: 'Review',
+        scope: 'Trip-specific',
+        carryMode: 'Offline',
+        detail: 'This one matters because cabin-only assumptions can break the route if baggage rules change on the Bangkok → Chiang Mai hop.',
+        referenceLabel: 'Booking code',
+        referenceValue: 'CNX84Q',
+        sourceLine: 'Trip-specific transport hinge',
+        tags: ['Flight', 'Baggage', 'Check-in'],
+    },
+    {
+        id: 'ferry-pack',
+        section: 'transport',
+        title: 'Island ferry confirmations',
+        status: 'Missing',
+        scope: 'Trip-specific',
+        carryMode: 'Printed',
+        detail: 'Boat counters and piers are the most likely part of the route to reward a printed backup when phone battery, rain, or signal gets messy.',
+        referenceLabel: 'Needed for',
+        referenceValue: 'Phuket → Phi Phi → Krabi',
+        sourceLine: 'South Thailand transfer packet',
+        tags: ['Ferry', 'Printed backup', 'Coast leg'],
+    },
+    {
+        id: 'hotel-sheet',
+        section: 'stays',
+        title: 'First-night stay sheet',
+        status: 'Verified',
+        scope: 'Trip-specific',
+        carryMode: 'Offline',
+        detail: 'Keep the Bangkok arrival hotel name, address, booking code, and map screenshot together for the first-night handoff.',
+        referenceLabel: 'Hotel code',
+        referenceValue: 'SATHORN-01',
+        sourceLine: 'Arrival stay handoff',
+        tags: ['Hotel', 'Arrival', 'Map screenshot'],
+    },
+    {
+        id: 'stay-balance',
+        section: 'stays',
+        title: 'Unbooked coast-base decision',
+        status: 'Missing',
+        scope: 'Trip-specific',
+        carryMode: 'Either',
+        detail: 'The route still needs one final coast-base decision before the full hotel packet can be trusted from end to end.',
+        referenceLabel: 'Blocked by',
+        referenceValue: 'Ao Nang vs Railay stay choice',
+        sourceLine: 'Booking-dependent packet',
+        tags: ['Missing stay', 'Coast leg', 'Decision blocker'],
+    },
+];
+
+export const THAILAND_DOCUMENT_PACKETS: TripWorkspaceDocumentPacket[] = [
+    {
+        id: 'entry-file',
+        label: 'Entry file',
+        detail: 'Everything needed to clear the first arrival without rummaging through email.',
+        documentIds: ['passport', 'onward-proof', 'hotel-sheet'],
+    },
+    {
+        id: 'coverage-file',
+        label: 'Coverage file',
+        detail: 'Support numbers, policy references, and medical context in one calm place.',
+        documentIds: ['insurance'],
+    },
+    {
+        id: 'air-and-rail',
+        label: 'Air and inland transport',
+        detail: 'The domestic flight packet matters because it shapes the rhythm of the north Thailand handoff.',
+        documentIds: ['flight-booking'],
+    },
+    {
+        id: 'island-transfer',
+        label: 'Island transfer packet',
+        detail: 'The coastal route is the one part of this trip where printed backups still make emotional sense.',
+        documentIds: ['ferry-pack', 'stay-balance'],
     },
 ];
 
