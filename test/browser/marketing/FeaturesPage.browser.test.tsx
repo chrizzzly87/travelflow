@@ -121,4 +121,19 @@ describe('pages/FeaturesPage', () => {
 
         expect(screen.getByText(featuresLocale.globe.fallbackDescription)).toBeInTheDocument();
     });
+
+    it('keeps the globe wrapper width-constrained for mobile layouts', () => {
+        render(
+            <MemoryRouter initialEntries={['/features']}>
+                <FeaturesPage />
+            </MemoryRouter>
+        );
+
+        const globe = screen.getByRole('img', { name: featuresLocale.globe.accessibility });
+
+        expect(globe.className).toContain('w-full');
+        expect(globe.className).toContain('max-w-[34rem]');
+        expect(globe.className).not.toContain('aspect-[1.02/0.98]');
+        expect(globe.className).not.toContain('min-h-[480px]');
+    });
 });

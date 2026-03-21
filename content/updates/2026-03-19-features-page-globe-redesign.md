@@ -16,4 +16,5 @@ summary: "Rebuilds the features page around a custom interactive globe hero, sha
 - [x] [Improved] 📍 The globe now uses the session runtime location to highlight your starting point, draw routes out from it, and keep the travel chips smaller, shorter, and easier to read across all supported languages.
 - [x] [Improved] 🧩 A new animated bento grid now shows how AI itineraries, route editing, crew sharing, and inspiration work together instead of listing features in isolation.
 - [ ] [Internal] 🧪 Added browser coverage for the new hero CTA analytics and the globe fallback path.
+- [ ] [Internal] 📱 Tightened the globe hero on small screens, tuned the native COBE arc profile, and removed the laggy origin-marker behavior so the route lines feel cleaner without custom path hacks.
 - [ ] [Internal] 🛠️ Fixed a duplicate runtime-location registry entry that blocked the merged release from reaching production.

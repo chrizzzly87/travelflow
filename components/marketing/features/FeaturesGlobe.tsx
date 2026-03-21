@@ -26,6 +26,7 @@ interface GlobePreviewCopy {
 }
 
 interface MarkerConfig {
+    color?: [number, number, number];
     id: string;
     location: GlobeLocation;
     size: number;
@@ -92,17 +93,17 @@ const displaySizeDefaults = {
     height: 520,
 };
 
-const globeRenderConfig = {
-    markerElevation: 0.018,
-    offset: [0, 20] as [number, number],
-    scale: 0.92,
-};
+const getGlobeRenderConfig = (displayWidth: number) => {
+    const phoneLayout = displayWidth < 440;
+    const compactLayout = displayWidth < 560;
 
-const globeMaskStyle: React.CSSProperties = {
-    WebkitMaskImage: 'radial-gradient(circle at center, black 0%, black 78%, rgba(0,0,0,0.95) 90%, transparent 99%)',
-    maskImage: 'radial-gradient(circle at center, black 0%, black 78%, rgba(0,0,0,0.95) 90%, transparent 99%)',
-    maskRepeat: 'no-repeat',
-    maskSize: '100% 100%',
+    return {
+        markerElevation: phoneLayout ? 0.0105 : compactLayout ? 0.0115 : 0.013,
+        offset: [0, phoneLayout ? 10 : compactLayout ? 14 : 18] as [number, number],
+        scale: phoneLayout ? 0.78 : compactLayout ? 0.82 : 0.86,
+        arcWidth: phoneLayout ? 0.42 : compactLayout ? 0.46 : 0.5,
+        arcHeight: phoneLayout ? 0.23 : compactLayout ? 0.27 : 0.3,
+    };
 };
 
 const getRuntimeCoordinates = (snapshot: RuntimeLocationStoreSnapshot): GlobeLocation | null => {
@@ -152,17 +153,20 @@ export const FeaturesGlobe: React.FC = () => {
     }, [t]);
 
     const preview = t('globe.preview', { returnObjects: true }) as GlobePreviewCopy;
+    const phoneLayout = displaySize.width < 440;
     const compactLayout = displaySize.width < 560;
+    const globeRenderConfig = useMemo(() => getGlobeRenderConfig(displaySize.width), [displaySize.width]);
     const originLocation = getRuntimeCoordinates(runtimeLocation) ?? DEFAULT_ORIGIN_LOCATION;
 
     const markerConfigs = useMemo<MarkerConfig[]>(() => ([
         {
             id: 'origin',
             location: originLocation,
-            size: 0.0001,
+            size: phoneLayout ? 0.024 : 0.028,
+            color: [0.952, 0.552, 0.157],
         },
         ...DESTINATION_MARKERS,
-    ]), [originLocation]);
+    ]), [originLocation, phoneLayout]);
 
     const arcConfigs = useMemo<ArcConfig[]>(() => ([
         ...buildConnectionArcs(originLocation),
@@ -183,23 +187,13 @@ export const FeaturesGlobe: React.FC = () => {
             offsetY: 0,
         },
         {
-            id: 'origin-core',
-            anchorId: 'origin',
-            anchorX: 0.5,
-            anchorY: 0.5,
-            depthBoost: 14,
-            minVisibility: -0.04,
-            offsetX: 0,
-            offsetY: 0,
-        },
-        {
             id: 'paris-panel',
             anchorId: 'paris',
-            anchorX: 0.08,
+            anchorX: 0.02,
             anchorY: 1,
             minVisibility: 0.03,
-            offsetX: compactLayout ? -6 : -10,
-            offsetY: compactLayout ? -28 : -34,
+            offsetX: phoneLayout ? 6 : compactLayout ? 10 : 14,
+            offsetY: phoneLayout ? -24 : compactLayout ? -30 : -36,
         },
         {
             id: 'fiji-panel',
@@ -207,8 +201,8 @@ export const FeaturesGlobe: React.FC = () => {
             anchorX: 0.18,
             anchorY: 0.16,
             minVisibility: 0.02,
-            offsetX: compactLayout ? 10 : 14,
-            offsetY: compactLayout ? 4 : 8,
+            offsetX: phoneLayout ? 7 : compactLayout ? 10 : 14,
+            offsetY: phoneLayout ? 2 : compactLayout ? 4 : 8,
         },
         {
             id: 'south-africa-panel',
@@ -216,8 +210,8 @@ export const FeaturesGlobe: React.FC = () => {
             anchorX: 0,
             anchorY: 0.56,
             minVisibility: -0.02,
-            offsetX: compactLayout ? 10 : 14,
-            offsetY: compactLayout ? -6 : -10,
+            offsetX: phoneLayout ? 7 : compactLayout ? 10 : 14,
+            offsetY: phoneLayout ? -3 : compactLayout ? -6 : -10,
         },
         {
             id: 'route66-panel',
@@ -225,8 +219,8 @@ export const FeaturesGlobe: React.FC = () => {
             anchorX: 0,
             anchorY: 0.74,
             minVisibility: -0.05,
-            offsetX: compactLayout ? 10 : 14,
-            offsetY: compactLayout ? -12 : -16,
+            offsetX: phoneLayout ? 7 : compactLayout ? 10 : 14,
+            offsetY: phoneLayout ? -8 : compactLayout ? -12 : -16,
         },
         {
             id: 'trip-preview',
@@ -235,11 +229,11 @@ export const FeaturesGlobe: React.FC = () => {
             anchorY: 0.16,
             depthBoost: 14,
             minVisibility: -0.1,
-            offsetX: compactLayout ? -46 : -54,
-            offsetY: compactLayout ? 18 : 24,
+            offsetX: phoneLayout ? -40 : compactLayout ? -46 : -54,
+            offsetY: phoneLayout ? 12 : compactLayout ? 18 : 24,
             rotateDeg: -5,
         },
-    ], [compactLayout]);
+    ], [compactLayout, phoneLayout]);
 
     useEffect(() => {
         const unsubscribe = subscribeRuntimeLocation((snapshot) => {
@@ -279,11 +273,13 @@ export const FeaturesGlobe: React.FC = () => {
         const updateSize = () => {
             const rect = node.getBoundingClientRect();
             const ratio = Math.min(typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1, 2);
-            const width = Math.max(640, Math.round((rect.width || 480) * ratio));
-            const height = Math.max(640, Math.round((rect.height || rect.width || 480) * ratio));
+            const displayWidth = Math.max(280, rect.width || 480);
+            const displayHeight = Math.max(320, rect.height || rect.width || 480);
+            const width = Math.max(640, Math.round(displayWidth * ratio));
+            const height = Math.max(640, Math.round(displayHeight * ratio));
             setDisplaySize({
-                width: rect.width || 480,
-                height: rect.height || rect.width || 480,
+                width: displayWidth,
+                height: displayHeight,
             });
             setCanvasSize({ width, height });
         };
@@ -314,9 +310,11 @@ export const FeaturesGlobe: React.FC = () => {
         let globe: { destroy?: () => void; update?: (state: Record<string, unknown>) => void } | undefined;
 
         const updateOverlays = () => {
-            const markerConfigMap = new Map(markerConfigsRef.current.map((marker) => [marker.id, marker]));
-            const overlayPadding = compactLayout ? 12 : 18;
-            const overlayScale = compactLayout ? 0.92 : 1;
+            const markerConfigMap = new Map<string, MarkerConfig>(
+                markerConfigsRef.current.map((marker) => [marker.id, marker] as const),
+            );
+            const overlayPadding = phoneLayout ? 8 : compactLayout ? 12 : 18;
+            const overlayScale = phoneLayout ? 0.84 : compactLayout ? 0.92 : 1;
 
             overlayConfigs.forEach((overlay) => {
                 const node = overlayRefs.current.get(overlay.id);
@@ -341,25 +339,19 @@ export const FeaturesGlobe: React.FC = () => {
                 const x = clamp(unclampedX, overlayPadding, displaySize.width - nodeWidth - overlayPadding);
                 const y = clamp(unclampedY, overlayPadding, displaySize.height - nodeHeight - overlayPadding);
                 const scale = overlay.id === 'origin-marker'
-                    ? 0.96 + (renderedVisibility * 0.08)
-                    : overlay.id === 'origin-core'
-                        ? 0.98 + (renderedVisibility * 0.04)
-                        : 0.92 + (renderedVisibility * 0.08);
+                    ? 0.92 + (renderedVisibility * 0.08)
+                    : 0.9 + (renderedVisibility * 0.08);
                 const blur = overlay.id === 'origin-marker'
-                    ? (1 - renderedVisibility) * 9
-                    : overlay.id === 'origin-core'
-                        ? (1 - renderedVisibility) * 2.5
-                        : (1 - renderedVisibility) * 15;
-                const translateY = overlay.id === 'origin-core' ? (1 - renderedVisibility) * 4 : (1 - renderedVisibility) * 10;
+                    ? (1 - renderedVisibility) * 6
+                    : (1 - renderedVisibility) * 12;
+                const translateY = overlay.id === 'origin-marker' ? (1 - renderedVisibility) * 2 : (1 - renderedVisibility) * 8;
 
                 node.style.opacity = renderedVisibility.toFixed(3);
-                node.style.visibility = renderedVisibility < 0.005 ? 'hidden' : 'visible';
                 node.style.transform = `translate3d(${x}px, ${y + translateY}px, 0) scale(${scale.toFixed(3)}) rotate(${overlay.rotateDeg ?? 0}deg)`;
+                node.style.transformOrigin = '';
                 node.style.filter = `blur(${blur.toFixed(2)}px)`;
                 node.style.zIndex = overlay.id === 'origin-marker'
                     ? '0'
-                    : overlay.id === 'origin-core'
-                        ? '26'
                     : `${20 + Math.round((projected.depth + 1) * 12) + (overlay.depthBoost ?? 0)}`;
             });
         };
@@ -401,8 +393,8 @@ export const FeaturesGlobe: React.FC = () => {
                     markerColor: [0.38, 0.31, 0.9],
                     glowColor: [0.995, 0.995, 0.995],
                     arcColor: [0.38, 0.31, 0.9],
-                    arcWidth: 0.58,
-                    arcHeight: 0.14,
+                    arcWidth: globeRenderConfig.arcWidth,
+                    arcHeight: globeRenderConfig.arcHeight,
                     markerElevation: globeRenderConfig.markerElevation,
                     scale: globeRenderConfig.scale,
                     offset: globeRenderConfig.offset,
@@ -451,7 +443,7 @@ export const FeaturesGlobe: React.FC = () => {
             cancelAnimationFrame(animationFrameId);
             globe?.destroy?.();
         };
-    }, [canvasSize.height, canvasSize.width, compactLayout, displaySize.height, displaySize.width, overlayConfigs, prefersReducedMotion]);
+    }, [canvasSize.height, canvasSize.width, compactLayout, displaySize.height, displaySize.width, globeRenderConfig.arcHeight, globeRenderConfig.arcWidth, globeRenderConfig.markerElevation, globeRenderConfig.offset, globeRenderConfig.scale, overlayConfigs, phoneLayout, prefersReducedMotion]);
 
     const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
         dragRef.current = {
@@ -496,7 +488,7 @@ export const FeaturesGlobe: React.FC = () => {
             role="img"
             aria-label={t('globe.accessibility')}
             className={cn(
-                'relative isolate aspect-[1.02/0.98] min-h-[480px] overflow-hidden',
+                'relative isolate mx-auto h-[min(88vw,24rem)] w-full max-w-[34rem] overflow-visible sm:h-[28rem] lg:mx-0 lg:ml-auto lg:h-[34rem]',
                 isDragging ? 'cursor-grabbing' : 'cursor-grab',
             )}
             onPointerDown={handlePointerDown}
@@ -505,25 +497,24 @@ export const FeaturesGlobe: React.FC = () => {
             onPointerCancel={handlePointerUp}
             style={{ touchAction: 'none' }}
         >
-            <div className="pointer-events-none absolute inset-0 z-0 [&>*]:invisible [&>*]:opacity-0">
+            <div className="pointer-events-none absolute inset-0 z-0">
                 <div
                     ref={(node) => {
                         if (node) overlayRefs.current.set('origin-marker', node);
                         else overlayRefs.current.delete('origin-marker');
                     }}
-                    className="absolute left-0 top-0 transition-[opacity,filter,transform] duration-500 ease-out will-change-transform"
+                    className="absolute left-0 top-0 will-change-transform"
                 >
-                    <span className="relative block size-10">
+                    <span className="relative block size-11">
                         <span
-                            className="absolute inset-[-9px] rounded-full border-2 border-[#f39a3d]/55 animate-ping"
-                            style={{ animationDuration: '2.4s' }}
+                            className="absolute inset-[-8px] rounded-full border-2 border-[#f39a3d]/65 animate-ping"
+                            style={{ animationDuration: '1.8s' }}
                         />
                         <span
-                            className="absolute inset-[-18px] rounded-full border border-[#f39a3d]/38 animate-ping"
-                            style={{ animationDelay: '0.55s', animationDuration: '3.1s' }}
+                            className="absolute inset-[-18px] rounded-full border border-[#f39a3d]/42 animate-ping"
+                            style={{ animationDelay: '0.28s', animationDuration: '2.4s' }}
                         />
-                        <span className="absolute inset-[1px] rounded-full bg-[#f7a454]/28 blur-lg" />
-                        <span className="absolute inset-[10px] rounded-full bg-[#f38b2a]/28 blur-sm" />
+                        <span className="absolute inset-[-2px] rounded-full bg-[#f7a454]/28 blur-lg" />
                     </span>
                 </div>
             </div>
@@ -535,33 +526,20 @@ export const FeaturesGlobe: React.FC = () => {
                     isFallback ? 'opacity-0' : 'opacity-100',
                 )}
                 aria-hidden="true"
-                style={globeMaskStyle}
             />
 
             {!isFallback ? (
-                <div className="pointer-events-none absolute inset-0 z-20 [&>*]:invisible [&>*]:opacity-0">
-                    <div
-                        ref={(node) => {
-                            if (node) overlayRefs.current.set('origin-core', node);
-                            else overlayRefs.current.delete('origin-core');
-                        }}
-                        className="absolute left-0 top-0 transition-[opacity,filter,transform] duration-500 ease-out will-change-transform"
-                    >
-                        <span className="relative block size-4">
-                            <span className="absolute inset-0 rounded-full border border-white/95 bg-[#f38b2a] shadow-[0_0_0_2px_rgba(255,255,255,0.92),0_0_16px_rgba(243,139,42,0.38)]" />
-                        </span>
-                    </div>
-
+                <div className="pointer-events-none absolute inset-0 z-20">
                     {parisCard ? (
                         <div
                             ref={(node) => {
                                 if (node) overlayRefs.current.set('paris-panel', node);
                                 else overlayRefs.current.delete('paris-panel');
                             }}
-                            className="absolute left-0 top-0 w-[7.6rem] rounded-[12px] border border-[#ddd1ff] bg-[#f7f3ff]/98 px-2.5 py-2 text-slate-800 shadow-[0_14px_22px_rgba(91,79,230,0.1)] transition-[opacity,filter,transform] duration-500 ease-out will-change-transform"
+                            className="absolute left-0 top-0 w-[6.8rem] rounded-[11px] border border-[#ddd1ff] bg-[#f7f3ff]/96 px-2 py-1.5 text-slate-800 will-change-transform sm:w-[7.1rem]"
                         >
-                            <p className="flex items-start gap-1.5 text-[0.76rem] font-semibold leading-[1.15] text-slate-900">
-                                <span className="shrink-0 text-[0.92rem]" aria-hidden="true">{parisCard.emoji}</span>
+                            <p className="flex items-start gap-1.5 text-[0.67rem] font-semibold leading-[1.15] text-slate-900 sm:text-[0.7rem]">
+                                <span className="shrink-0 text-[0.82rem] leading-none" aria-hidden="true">{parisCard.emoji}</span>
                                 <span>{parisCard.title}</span>
                             </p>
                         </div>
@@ -573,10 +551,10 @@ export const FeaturesGlobe: React.FC = () => {
                                 if (node) overlayRefs.current.set('fiji-panel', node);
                                 else overlayRefs.current.delete('fiji-panel');
                             }}
-                            className="absolute left-0 top-0 w-[7.9rem] rounded-[12px] border border-[#cbe9d7] bg-[#eef9f1]/98 px-2.5 py-2 text-slate-800 shadow-[0_14px_22px_rgba(36,116,88,0.1)] transition-[opacity,filter,transform] duration-500 ease-out will-change-transform"
+                            className="absolute left-0 top-0 w-[6.9rem] rounded-[11px] border border-[#cbe9d7] bg-[#eef9f1]/96 px-2 py-1.5 text-slate-800 will-change-transform sm:w-[7.2rem]"
                         >
-                            <p className="flex items-start gap-1.5 text-[0.76rem] font-semibold leading-[1.15] text-slate-900">
-                                <span className="shrink-0 text-[0.92rem]" aria-hidden="true">{fijiCard.emoji}</span>
+                            <p className="flex items-start gap-1.5 text-[0.67rem] font-semibold leading-[1.15] text-slate-900 sm:text-[0.7rem]">
+                                <span className="shrink-0 text-[0.82rem] leading-none" aria-hidden="true">{fijiCard.emoji}</span>
                                 <span>{fijiCard.title}</span>
                             </p>
                         </div>
@@ -588,10 +566,10 @@ export const FeaturesGlobe: React.FC = () => {
                                 if (node) overlayRefs.current.set('south-africa-panel', node);
                                 else overlayRefs.current.delete('south-africa-panel');
                             }}
-                            className="absolute left-0 top-0 w-[8.1rem] rounded-[12px] border border-[#cfe8ee] bg-[#eef8fb]/98 px-2.5 py-2 text-slate-800 shadow-[0_14px_22px_rgba(44,116,154,0.1)] transition-[opacity,filter,transform] duration-500 ease-out will-change-transform"
+                            className="absolute left-0 top-0 w-[7.1rem] rounded-[11px] border border-[#cfe8ee] bg-[#eef8fb]/96 px-2 py-1.5 text-slate-800 will-change-transform sm:w-[7.5rem]"
                         >
-                            <p className="flex items-start gap-1.5 text-[0.76rem] font-semibold leading-[1.15] text-slate-900">
-                                <span className="shrink-0 text-[0.92rem]" aria-hidden="true">{southAfricaCard.emoji}</span>
+                            <p className="flex items-start gap-1.5 text-[0.67rem] font-semibold leading-[1.15] text-slate-900 sm:text-[0.7rem]">
+                                <span className="shrink-0 text-[0.82rem] leading-none" aria-hidden="true">{southAfricaCard.emoji}</span>
                                 <span>{southAfricaCard.title}</span>
                             </p>
                         </div>
@@ -603,10 +581,10 @@ export const FeaturesGlobe: React.FC = () => {
                                 if (node) overlayRefs.current.set('route66-panel', node);
                                 else overlayRefs.current.delete('route66-panel');
                             }}
-                            className="absolute left-0 top-0 w-[7.4rem] rounded-[12px] border border-[#f0d5bf] bg-[#fff4e9]/98 px-2.5 py-2 text-slate-800 shadow-[0_14px_22px_rgba(170,96,78,0.1)] transition-[opacity,filter,transform] duration-500 ease-out will-change-transform"
+                            className="absolute left-0 top-0 w-[6.8rem] rounded-[11px] border border-[#f0d5bf] bg-[#fff4e9]/96 px-2 py-1.5 text-slate-800 will-change-transform sm:w-[7.1rem]"
                         >
-                            <p className="flex items-start gap-1.5 text-[0.76rem] font-semibold leading-[1.15] text-slate-900">
-                                <span className="shrink-0 text-[0.92rem]" aria-hidden="true">{route66Card.emoji}</span>
+                            <p className="flex items-start gap-1.5 text-[0.67rem] font-semibold leading-[1.15] text-slate-900 sm:text-[0.7rem]">
+                                <span className="shrink-0 text-[0.82rem] leading-none" aria-hidden="true">{route66Card.emoji}</span>
                                 <span>{route66Card.title}</span>
                             </p>
                         </div>
@@ -617,19 +595,19 @@ export const FeaturesGlobe: React.FC = () => {
                             if (node) overlayRefs.current.set('trip-preview', node);
                             else overlayRefs.current.delete('trip-preview');
                         }}
-                        className="absolute left-0 top-0 w-[9.75rem] border border-slate-200 bg-white px-2.5 py-2.5 shadow-[0_20px_34px_rgba(15,23,42,0.13)] transition-[opacity,filter,transform] duration-500 ease-out will-change-transform"
+                        className="absolute left-0 top-0 w-[8.45rem] border border-slate-200 bg-white px-2 py-2 shadow-[0_20px_34px_rgba(15,23,42,0.13)] will-change-transform sm:w-[9rem]"
                         style={{ borderRadius: '14px 14px 18px 18px' }}
                         >
                             <div className="overflow-hidden rounded-[10px] border border-slate-100">
                                 <img
                                     src="/images/trip-maps/thailand-islands.png"
                                     alt={preview.alt}
-                                    className="h-20 w-full object-cover"
+                                    className="h-16 w-full object-cover sm:h-18"
                                     loading="lazy"
                                 />
                             </div>
-                            <div className="pt-2.5">
-                                <p className="text-[0.78rem] font-semibold leading-[1.2] text-slate-900">
+                            <div className="pt-2">
+                                <p className="text-[0.68rem] font-semibold leading-[1.15] text-slate-900 sm:text-[0.72rem]">
                                     {preview.title}
                                 </p>
                             </div>

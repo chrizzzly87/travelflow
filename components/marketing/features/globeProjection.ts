@@ -42,12 +42,12 @@ const globeLocationToVector = ([latitude, longitude]: GlobeLocation) => {
     ] as const;
 };
 
-export const projectGlobeLocation = (
-    location: GlobeLocation,
+const projectGlobeVector = (
+    vector: readonly [number, number, number],
+    elevation: number,
     config: GlobeProjectionConfig,
 ): ProjectedGlobePoint => {
-    const vector = globeLocationToVector(location);
-    const radius = GLOBE_RADIUS + config.markerElevation;
+    const radius = GLOBE_RADIUS + elevation;
     const x = vector[0] * radius;
     const y = vector[1] * radius;
     const z = vector[2] * radius;
@@ -69,6 +69,14 @@ export const projectGlobeLocation = (
         visible,
         visibility: visible ? 1 : 0,
     };
+};
+
+
+export const projectGlobeLocation = (
+    location: GlobeLocation,
+    config: GlobeProjectionConfig,
+): ProjectedGlobePoint => {
+    return projectGlobeVector(globeLocationToVector(location), config.markerElevation, config);
 };
 
 export const getGlobeRotationForLocation = (location: GlobeLocation) => {

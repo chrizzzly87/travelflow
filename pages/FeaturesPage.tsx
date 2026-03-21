@@ -40,7 +40,7 @@ export const FeaturesPage: React.FC = () => {
 
     return (
         <MarketingLayout>
-            <section className="relative overflow-hidden pb-20 pt-8 md:pb-28 md:pt-14">
+            <section className="relative overflow-visible pb-20 pt-8 md:pb-28 md:pt-14">
                 <div className="relative grid gap-12 lg:grid-cols-[minmax(0,1.02fr)_minmax(460px,560px)] lg:items-center">
                     <div className="max-w-3xl">
                         <div className="animate-hero-stagger" style={{ '--stagger': '0ms' } as React.CSSProperties}>
