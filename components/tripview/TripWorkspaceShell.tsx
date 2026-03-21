@@ -23,6 +23,7 @@ import { TripWorkspacePlacesPage } from './workspace/TripWorkspacePlacesPage';
 import { TripWorkspaceExplorePage } from './workspace/TripWorkspaceExplorePage';
 import { TripWorkspacePhrasesPage } from './workspace/TripWorkspacePhrasesPage';
 import { TripWorkspaceBookingsPage } from './workspace/TripWorkspaceBookingsPage';
+import { TripWorkspaceTravelKitPage } from './workspace/TripWorkspaceTravelKitPage';
 import { TripWorkspaceNotesPage } from './workspace/TripWorkspaceNotesPage';
 import { TripWorkspacePhotosPage } from './workspace/TripWorkspacePhotosPage';
 import {
@@ -341,6 +342,16 @@ const TripWorkspaceRenderedPage: React.FC<TripWorkspaceRenderedPageProps> = ({
                     description={t('tripView.workspace.pages.bookings.description')}
                 >
                     <TripWorkspaceBookingsPage trip={trip} />
+                </TripWorkspacePageShell>
+            );
+        case 'travel-kit':
+            return (
+                <TripWorkspacePageShell
+                    page="travel-kit"
+                    title={t('tripView.workspace.pages.travel-kit.title')}
+                    description={t('tripView.workspace.pages.travel-kit.description')}
+                >
+                    <TripWorkspaceTravelKitPage trip={trip} onPageChange={onPageChange} />
                 </TripWorkspacePageShell>
             );
         case 'notes':

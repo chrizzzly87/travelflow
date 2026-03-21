@@ -16,6 +16,7 @@ export type TripWorkspacePage =
   | 'overview'
   | 'planner'
   | 'bookings'
+  | 'travel-kit'
   | 'places'
   | 'explore'
   | 'phrases'

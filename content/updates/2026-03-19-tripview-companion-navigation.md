@@ -21,4 +21,5 @@ summary: "Turns Trip View into a routed workspace with a header-aware desktop si
 - [x] [Improved] 🧳 The trip modal stays available for core actions like sharing, export, history, and settings while destination knowledge moves into dedicated workspace pages.
 - [x] [Improved] 🧭 The trip modal now works more like a trip-actions hub, with a lighter handoff into `Places` instead of trying to be a second destination-info screen.
 - [x] [Improved] 🏷️ `Places` now makes trip-specific notes, general destination context, freshness, and demo source treatment much clearer, and its highlight toggles now drive a richer neighborhood-and-stay planning playground.
+- [x] [New feature] 🧰 A new `Travel kit` page keeps checklists, emergency references, cash/adapter prep, and offline-ready trip support close to the route instead of burying them in notes.
 - [ ] [Internal] 🧪 Added routed workspace regression coverage for sidebar persistence, planner-only routing, phrase interactions, locale wiring, and analytics hooks for the new Trip Workspace flow.

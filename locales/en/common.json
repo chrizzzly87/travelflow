@@ -476,6 +476,12 @@
           "title": "Bookings",
           "description": "Track reservations, due decisions, and missing logistics in one place."
         },
+        "travel-kit": {
+          "label": "Travel kit",
+          "eyebrow": "Travel kit",
+          "title": "Travel kit",
+          "description": "Keep adapters, emergency info, arrival prep, and checklists close to the route."
+        },
         "places": {
           "label": "Places",
           "eyebrow": "Places",

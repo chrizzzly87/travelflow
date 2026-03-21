@@ -476,6 +476,12 @@
           "title": "Buchungen",
           "description": "Behalte Reservierungen, offene Entscheidungen und fehlende Logistik an einem Ort im Blick."
         },
+        "travel-kit": {
+          "label": "Travel-Kit",
+          "eyebrow": "Travel-Kit",
+          "title": "Travel-Kit",
+          "description": "Halte Adapter, Notfallinfos, Ankunftsvorbereitung und Checklisten direkt bei deiner Route bereit."
+        },
         "places": {
           "label": "Orte",
           "eyebrow": "Orte",

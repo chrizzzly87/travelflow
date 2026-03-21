@@ -41,6 +41,10 @@ vi.mock('react-i18next', () => ({
                 'tripView.workspace.pages.bookings.eyebrow': 'Bookings',
                 'tripView.workspace.pages.bookings.title': 'Bookings',
                 'tripView.workspace.pages.bookings.description': 'Track reservations and missing logistics.',
+                'tripView.workspace.pages.travel-kit.label': 'Travel kit',
+                'tripView.workspace.pages.travel-kit.eyebrow': 'Travel kit',
+                'tripView.workspace.pages.travel-kit.title': 'Travel kit',
+                'tripView.workspace.pages.travel-kit.description': 'Keep adapters, emergency info, arrival prep, and checklists close to the route.',
                 'tripView.workspace.pages.places.label': 'Places',
                 'tripView.workspace.pages.places.eyebrow': 'Places',
                 'tripView.workspace.pages.places.title': 'Places',
@@ -107,15 +111,16 @@ const buildTrip = (): ITrip => ({
 describe('shared/tripWorkspace', () => {
     it('normalizes legacy and explicit workspace pages', () => {
         expect(normalizeTripWorkspacePage('plan')).toBe('overview');
+        expect(normalizeTripWorkspacePage('travel-kit')).toBe('travel-kit');
         expect(normalizeTripWorkspacePage('places')).toBe('places');
         expect(normalizeTripWorkspacePage('unknown')).toBeNull();
     });
 
     it('resolves workspace route state and page paths', () => {
-        expect(resolveTripWorkspaceRouteState('/trip/trip-1/places')).toEqual({
+        expect(resolveTripWorkspaceRouteState('/trip/trip-1/travel-kit')).toEqual({
             kind: 'trip',
             basePath: '/trip/trip-1',
-            page: 'places',
+            page: 'travel-kit',
             hasExplicitPage: true,
         });
         expect(resolveTripWorkspaceRouteState('/example/template-1/planner')).toEqual({
@@ -130,7 +135,7 @@ describe('shared/tripWorkspace', () => {
             page: null,
             hasExplicitPage: false,
         });
-        expect(buildTripWorkspacePath('/trip/trip-1', 'planner')).toBe('/trip/trip-1/planner');
+        expect(buildTripWorkspacePath('/trip/trip-1', 'travel-kit')).toBe('/trip/trip-1/travel-kit');
     });
 });
 
@@ -193,7 +198,7 @@ describe('components/tripview/TripWorkspaceShell', () => {
         expect(sidebarFrame).not.toBeNull();
         expect(sidebar).toHaveAttribute('data-state', 'expanded');
         expect(sidebarFrame).toHaveClass('absolute', 'inset-y-0', 'h-full');
-        fireEvent.click(screen.getByRole('button', { name: 'Phrases' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Travel kit' }));
         fireEvent.click(screen.getByRole('button', { name: 'Collapse sidebar' }));
 
         expect(screen.getAllByText('Thailand Highlights').length).toBeGreaterThan(0);
@@ -203,7 +208,7 @@ describe('components/tripview/TripWorkspaceShell', () => {
         expect(screen.getByText('Follow the route across Thailand')).toBeInTheDocument();
         expect(screen.getByText('Today in Bangkok')).toBeInTheDocument();
         expect(sidebar).toHaveAttribute('data-state', 'collapsed');
-        expect(onPageChange).toHaveBeenCalledWith('phrases');
+        expect(onPageChange).toHaveBeenCalledWith('travel-kit');
 
         expect(window.localStorage.getItem(TRIP_WORKSPACE_SIDEBAR_STATE_STORAGE_KEY)).toBe('collapsed');
 
@@ -274,9 +279,9 @@ describe('components/tripview/TripWorkspaceShell', () => {
             }),
         );
 
-        fireEvent.click(screen.getByRole('button', { name: 'Planner' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Travel kit' }));
 
         expect(screen.getByLabelText('Trip workspace navigation')).toBeInTheDocument();
-        expect(onPageChange).toHaveBeenCalledWith('planner');
+        expect(onPageChange).toHaveBeenCalledWith('travel-kit');
     });
 });

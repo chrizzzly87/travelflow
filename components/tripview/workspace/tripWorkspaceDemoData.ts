@@ -106,6 +106,39 @@ export interface TripWorkspacePhraseCard {
     usage: string;
 }
 
+export type TripWorkspaceTravelKitSectionId = 'entry' | 'arrival' | 'islands';
+
+export interface TripWorkspaceTravelKitChecklistItem {
+    id: string;
+    section: TripWorkspaceTravelKitSectionId;
+    label: string;
+    detail: string;
+    scope: 'Trip-specific' | 'General destination';
+}
+
+export interface TripWorkspaceTravelKitUtility {
+    id: string;
+    label: string;
+    value: string;
+    detail: string;
+    badge: string;
+}
+
+export interface TripWorkspaceTravelKitEmergencyCard {
+    id: string;
+    title: string;
+    contact: string;
+    detail: string;
+    tone: 'secondary' | 'outline';
+}
+
+export interface TripWorkspaceTravelKitPack {
+    id: string;
+    label: string;
+    detail: string;
+    includes: string[];
+}
+
 const normalizeValue = (value: string): string => value.toLowerCase().replace(/[^a-z]/g, '');
 
 export const resolveTripWorkspaceCityStops = (items: ITimelineItem[]): ITimelineItem[] =>
@@ -684,6 +717,120 @@ export const THAILAND_PHRASE_CARDS: TripWorkspacePhraseCard[] = [
         local: 'Rong phayaban yoo tee nai?',
         pronunciation: 'rong pa-ya-ban yoo tee nai',
         usage: 'Keep this in the emergency pack even if you never use it.',
+    },
+];
+
+export const THAILAND_TRAVEL_KIT_CHECKLIST: TripWorkspaceTravelKitChecklistItem[] = [
+    {
+        id: 'passport-proof',
+        section: 'entry',
+        label: 'Keep passport validity and onward-proof handy',
+        detail: 'Thailand entry checks can still turn on passport rules, arrival mode, and proof of onward travel.',
+        scope: 'General destination',
+    },
+    {
+        id: 'esim-download',
+        section: 'entry',
+        label: 'Download eSIM and offline map pack before departure',
+        detail: 'Bangkok is easy, but the first working connection matters most on airport and ferry handoff days.',
+        scope: 'Trip-specific',
+    },
+    {
+        id: 'arrival-cash',
+        section: 'arrival',
+        label: 'Carry a small arrival cash buffer in THB',
+        detail: 'Cards work often, but ferries, food stalls, and first-night transport backups stay smoother with cash.',
+        scope: 'Trip-specific',
+    },
+    {
+        id: 'temple-pack',
+        section: 'arrival',
+        label: 'Keep temple-ready layers and easy shoes close',
+        detail: 'Dress rules matter more than a long facts sheet once the trip starts moving.',
+        scope: 'General destination',
+    },
+    {
+        id: 'boat-buffer',
+        section: 'islands',
+        label: 'Protect one flexible day for sea and transfer changes',
+        detail: 'The island leg works better when weather and boat timing do not destroy the whole route.',
+        scope: 'Trip-specific',
+    },
+    {
+        id: 'waterproof-pack',
+        section: 'islands',
+        label: 'Pack one waterproof bag and one quick-dry layer',
+        detail: 'This is the easiest way to reduce ferry-day friction across Phuket, Phi Phi, and Krabi.',
+        scope: 'Trip-specific',
+    },
+];
+
+export const THAILAND_TRAVEL_KIT_UTILITIES: TripWorkspaceTravelKitUtility[] = [
+    {
+        id: 'power',
+        label: 'Power kit',
+        value: 'Type A, B, C, O • 220V',
+        detail: 'A universal adapter covers almost the whole route without overthinking it.',
+        badge: 'Stable',
+    },
+    {
+        id: 'cash',
+        label: 'Cash rhythm',
+        value: 'City cards + island cash',
+        detail: 'Bangkok and Chiang Mai feel card-friendly, but island and night-market days still lean cash.',
+        badge: 'Updated weekly',
+    },
+    {
+        id: 'sim',
+        label: 'Connectivity',
+        value: 'Strong cities, weaker boat days',
+        detail: 'Use one eSIM plan and keep screenshots for bookings, ferry piers, and hotel names.',
+        badge: 'Updated this season',
+    },
+];
+
+export const THAILAND_TRAVEL_KIT_EMERGENCY_CARDS: TripWorkspaceTravelKitEmergencyCard[] = [
+    {
+        id: 'tourist-police',
+        title: 'Tourist Police',
+        contact: '1155',
+        detail: 'Best first call for tourist-facing help when you need an English-speaking bridge fast.',
+        tone: 'secondary',
+    },
+    {
+        id: 'medical',
+        title: 'Medical emergency',
+        contact: '1669',
+        detail: 'Keep this close even if it never leaves the demo support layer.',
+        tone: 'outline',
+    },
+    {
+        id: 'marine-weather',
+        title: 'Marine weather watch',
+        contact: 'Check the TMD marine bulletin',
+        detail: 'Boat-day choices are the first disruption risk for the south Thailand leg.',
+        tone: 'outline',
+    },
+];
+
+export const THAILAND_TRAVEL_KIT_PACKS: TripWorkspaceTravelKitPack[] = [
+    {
+        id: 'arrival-pack',
+        label: 'Arrival night',
+        detail: 'Use this when the first 24 hours should feel easy, clean, and low-friction.',
+        includes: ['eSIM QR ready', 'Cash buffer', 'Hotel name screenshot', 'One fresh outfit'],
+    },
+    {
+        id: 'temple-pack',
+        label: 'Temple and city day',
+        detail: 'A lighter city kit works better than carrying everything all day in Bangkok or Chiang Mai.',
+        includes: ['Shoulder cover', 'Easy shoes', 'Water bottle', 'Battery pack'],
+    },
+    {
+        id: 'island-pack',
+        label: 'Island transfer day',
+        detail: 'This keeps the coastal leg calm when ferries, rain, and wet bags start to stack.',
+        includes: ['Waterproof pouch', 'Quick-dry layer', 'Cash split', 'Offline booking screenshots'],
     },
 ];
 

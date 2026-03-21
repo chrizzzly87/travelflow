@@ -591,6 +591,7 @@ interface TripViewModalLayerProps {
     onExportCitiesCalendar: () => void;
     onExportAllCalendar: () => void;
     onOpenPrintLayout: () => void;
+    onOpenPlacesPage: () => void;
     shouldEnableReleaseNotice: boolean;
     isShareOpen: boolean;
     shareMode: ShareMode;
@@ -691,6 +692,7 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
     onExportCitiesCalendar,
     onExportAllCalendar,
     onOpenPrintLayout,
+    onOpenPlacesPage,
     shouldEnableReleaseNotice,
     isShareOpen,
     shareMode,
@@ -828,10 +830,7 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
                     onExportCitiesCalendar={onExportCitiesCalendar}
                     onExportAllCalendar={onExportAllCalendar}
                     onOpenPrintLayout={onOpenPrintLayout}
-                    onOpenPlacesPage={() => {
-                        closeTripInfoModal();
-                        handleWorkspacePageChange('places');
-                    }}
+                    onOpenPlacesPage={onOpenPlacesPage}
                 />
             </Suspense>
         )}
@@ -3484,6 +3483,10 @@ const useTripViewRender = ({
                         onOpenPrintLayout={() => {
                             closeTripInfoModal();
                             setViewMode('print');
+                        }}
+                        onOpenPlacesPage={() => {
+                            closeTripInfoModal();
+                            handleWorkspacePageChange('places');
                         }}
                         shouldEnableReleaseNotice={shouldEnableReleaseNotice}
                         isShareOpen={isShareOpen}

@@ -1,5 +1,6 @@
 import type { ComponentType } from 'react';
 import {
+    Backpack,
     CalendarBlank,
     Compass,
     GlobeHemisphereWest,
@@ -27,6 +28,7 @@ export const TRIP_WORKSPACE_NAV_ITEMS: TripWorkspaceNavItem[] = [
     { page: 'overview', icon: House, priority: 'primary' },
     { page: 'planner', icon: CalendarBlank, priority: 'primary' },
     { page: 'bookings', icon: SuitcaseRolling, priority: 'primary' },
+    { page: 'travel-kit', icon: Backpack, priority: 'primary' },
     { page: 'places', icon: GlobeHemisphereWest, priority: 'primary' },
     { page: 'explore', icon: Compass, priority: 'primary' },
     { page: 'phrases', icon: Translate, priority: 'primary' },
@@ -37,19 +39,18 @@ export const TRIP_WORKSPACE_NAV_ITEMS: TripWorkspaceNavItem[] = [
 export const TRIP_WORKSPACE_NAV_GROUPS: TripWorkspaceNavGroup[] = [
     {
         id: 'trip',
-        pages: TRIP_WORKSPACE_NAV_ITEMS.slice(0, 3),
+        pages: TRIP_WORKSPACE_NAV_ITEMS.slice(0, 4),
     },
     {
         id: 'destination',
-        pages: TRIP_WORKSPACE_NAV_ITEMS.slice(3, 6),
+        pages: TRIP_WORKSPACE_NAV_ITEMS.slice(4, 7),
     },
     {
         id: 'memories',
-        pages: TRIP_WORKSPACE_NAV_ITEMS.slice(6),
+        pages: TRIP_WORKSPACE_NAV_ITEMS.slice(7),
     },
 ];
 
 export const TRIP_WORKSPACE_PRIMARY_PAGES: TripWorkspaceNavItem[] = TRIP_WORKSPACE_NAV_ITEMS.filter(
     (item) => item.priority === 'primary',
 );
-
