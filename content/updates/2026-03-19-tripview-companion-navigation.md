@@ -19,4 +19,6 @@ summary: "Turns Trip View into a routed workspace with a header-aware desktop si
 - [x] [New feature] 📍 Overview and Places now use the shared Trip map implementation, giving the dashboard a high-level geography view while keeping the detailed editing map inside Planner.
 - [x] [New feature] 🇹🇭 Dedicated Thailand demo pages now cover destination context, discovery ideas, bookings, notes, photos, and interactive phrase flashcards while live data integrations are still being wired in.
 - [x] [Improved] 🧳 The trip modal stays available for core actions like sharing, export, history, and settings while destination knowledge moves into dedicated workspace pages.
+- [x] [Improved] 🧭 The trip modal now works more like a trip-actions hub, with a lighter handoff into `Places` instead of trying to be a second destination-info screen.
+- [x] [Improved] 🏷️ `Places` now makes trip-specific notes, general destination context, freshness, and demo source treatment much clearer, and its highlight toggles now drive a richer neighborhood-and-stay planning playground.
 - [ ] [Internal] 🧪 Added routed workspace regression coverage for sidebar persistence, planner-only routing, phrase interactions, locale wiring, and analytics hooks for the new Trip Workspace flow.

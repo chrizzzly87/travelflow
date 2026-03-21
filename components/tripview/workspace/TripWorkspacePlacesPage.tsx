@@ -44,14 +44,25 @@ export const TripWorkspacePlacesPage: React.FC<TripWorkspacePlacesPageProps> = (
     );
     const [activeTab, setActiveTab] = React.useState<'country' | 'cities'>('country');
     const [activeCityId, setActiveCityId] = React.useState(initialCityId);
-    const [activeHighlight, setActiveHighlight] = React.useState<string | null>(null);
+    const [activeLayerId, setActiveLayerId] = React.useState<string | null>(null);
 
     React.useEffect(() => {
         setActiveCityId(initialCityId);
     }, [initialCityId]);
 
+    React.useEffect(() => {
+        setActiveLayerId(null);
+    }, [activeCityId]);
+
     const activeCity = cityGuides.find((city) => city.id === activeCityId) ?? cityGuides[0] ?? null;
     const activeCityItem = activeCity ? getTripWorkspaceCityItem(trip, activeCity.id) : null;
+    const activeLayer = activeCity?.mapLayers.find((layer) => layer.id === activeLayerId) ?? null;
+    const visibleNeighborhoods = activeCity?.neighborhoods.filter((neighborhood) => (
+        !activeLayer || activeLayer.neighborhoodNames.includes(neighborhood.name)
+    )) ?? [];
+    const visibleStays = activeCity?.savedStays.filter((stay) => (
+        !activeLayer || activeLayer.stayAreas.includes(stay.area)
+    )) ?? [];
 
     return (
         <div className="flex flex-col gap-4">
@@ -61,6 +72,32 @@ export const TripWorkspacePlacesPage: React.FC<TripWorkspacePlacesPageProps> = (
                     <TabsTrigger value="cities">City guide</TabsTrigger>
                 </TabsList>
                 <TabsContent value="country" className="mt-4 flex flex-col gap-4">
+                    <Card className="border-border/80 bg-card/95 shadow-sm">
+                        <CardHeader className="gap-3">
+                            <div className="flex flex-wrap gap-2">
+                                <Badge variant="secondary">General destination</Badge>
+                                <Badge variant="outline">Updated weekly</Badge>
+                                <Badge variant="outline">Official links</Badge>
+                                <Badge variant="outline">Demo sources</Badge>
+                            </div>
+                            <CardDescription>Country prep split</CardDescription>
+                            <CardTitle>Keep practical rules separate from city-specific choices</CardTitle>
+                        </CardHeader>
+                        <CardContent className="grid gap-3 lg:grid-cols-2">
+                            <div className="rounded-[1.5rem] border border-border/70 bg-background px-4 py-3">
+                                <p className="text-sm font-medium text-foreground">General destination layer</p>
+                                <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                                    Visa rules, sockets, driving side, and etiquette belong here because they stay relevant across the whole Thailand route.
+                                </p>
+                            </div>
+                            <div className="rounded-[1.5rem] border border-border/70 bg-background px-4 py-3">
+                                <p className="text-sm font-medium text-foreground">Trip-specific reminders</p>
+                                <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                                    Payment gaps, boat-transfer connectivity, and night-arrival friction should stay visible because this specific itinerary leans on them.
+                                </p>
+                            </div>
+                        </CardContent>
+                    </Card>
                     <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
                         {THAILAND_COUNTRY_FACTS.map((fact) => (
                             <Card key={fact.label} className="border-border/80 bg-card/95 shadow-sm">
@@ -70,6 +107,10 @@ export const TripWorkspacePlacesPage: React.FC<TripWorkspacePlacesPageProps> = (
                                         {fact.badge ? <Badge variant="outline">{fact.badge}</Badge> : null}
                                     </div>
                                     <CardTitle className="text-lg leading-8">{fact.value}</CardTitle>
+                                    <div className="flex flex-wrap gap-2">
+                                        {fact.freshness ? <Badge variant="secondary">{fact.freshness}</Badge> : null}
+                                        {fact.sourceLine ? <Badge variant="outline">{fact.sourceLine}</Badge> : null}
+                                    </div>
                                 </CardHeader>
                                 {fact.link ? (
                                     <CardContent className="pt-0">
@@ -133,7 +174,8 @@ export const TripWorkspacePlacesPage: React.FC<TripWorkspacePlacesPageProps> = (
                                         <CardHeader className="gap-3">
                                             <div className="flex flex-wrap items-center gap-2">
                                                 <Badge variant="secondary">Trip-specific + general</Badge>
-                                                <Badge variant="outline">Demo sources</Badge>
+                                                <Badge variant="outline">{city.freshness}</Badge>
+                                                <Badge variant="outline">{city.sourceLine}</Badge>
                                             </div>
                                             <CardDescription>{city.role}</CardDescription>
                                             <CardTitle>{city.title}</CardTitle>
@@ -187,39 +229,68 @@ export const TripWorkspacePlacesPage: React.FC<TripWorkspacePlacesPageProps> = (
                                         eyebrow="City map"
                                         title={`${city.title} highlights`}
                                         description="This map now uses the same shared route engine as Planner, just scoped down to a calmer city preview."
-                                        badges={['Real map surface', 'Demo highlight toggles']}
+                                        badges={['Real map surface', 'Overlay playground']}
                                         items={activeCityItem ? [activeCityItem] : []}
                                         mapStyle="minimal"
                                         routeMode="simple"
                                         footer={(
                                             <div className="grid gap-3">
                                                 <div className="flex flex-wrap gap-2">
-                                                    {city.mapHighlights.map((highlight) => (
+                                                    {city.mapLayers.map((layer) => (
                                                         <button
-                                                            key={highlight}
+                                                            key={layer.id}
                                                             type="button"
-                                                            onClick={() => setActiveHighlight((current) => current === highlight ? null : highlight)}
+                                                            onClick={() => {
+                                                                trackEvent('trip_workspace__places_layer--toggle', {
+                                                                    trip_id: trip.id,
+                                                                    city_id: city.id,
+                                                                    layer_id: layer.id,
+                                                                    state: activeLayer?.id === layer.id ? 'off' : 'on',
+                                                                });
+                                                                setActiveLayerId((current) => current === layer.id ? null : layer.id);
+                                                            }}
                                                             className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
-                                                                activeHighlight === highlight
+                                                                activeLayer?.id === layer.id
                                                                     ? 'border-accent-500 bg-accent-50 text-accent-700'
                                                                     : 'border-border bg-background text-muted-foreground hover:border-accent-300 hover:text-foreground'
                                                             }`}
+                                                            {...getAnalyticsDebugAttributes('trip_workspace__places_layer--toggle', {
+                                                                trip_id: trip.id,
+                                                                city_id: city.id,
+                                                                layer_id: layer.id,
+                                                                state: activeLayer?.id === layer.id ? 'off' : 'on',
+                                                            })}
                                                         >
-                                                            {highlight}
+                                                            {layer.label}
                                                         </button>
                                                     ))}
                                                 </div>
-                                                {activeHighlight ? (
+                                                {activeLayer ? (
                                                     <div className="rounded-[1.5rem] border border-border/70 bg-background px-4 py-3">
-                                                        <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                                                            <MapPinLine size={16} weight="duotone" />
-                                                            Selected layer
+                                                        <div className="flex flex-wrap items-center gap-2">
+                                                            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                                                                <MapPinLine size={16} weight="duotone" />
+                                                                Selected layer
+                                                            </div>
+                                                            <Badge variant="secondary">{activeLayer.scope}</Badge>
+                                                            <Badge variant="outline">{activeLayer.freshness}</Badge>
+                                                            <Badge variant="outline">{activeLayer.sourceLine}</Badge>
                                                         </div>
                                                         <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                                                            Demo highlight active: {activeHighlight}. This is where live saved stays, quarter layers, and arrival anchors will plug in next.
+                                                            {activeLayer.detail}
                                                         </p>
                                                     </div>
-                                                ) : null}
+                                                ) : (
+                                                    <div className="rounded-[1.5rem] border border-dashed border-border bg-background/70 px-4 py-3">
+                                                        <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                                                            <MapPinLine size={16} weight="duotone" />
+                                                            Overlay playground
+                                                        </div>
+                                                        <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                                                            Toggle a layer to see which neighborhoods and saved stays it pulls into focus for this city.
+                                                        </p>
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
                                     />
@@ -229,35 +300,54 @@ export const TripWorkspacePlacesPage: React.FC<TripWorkspacePlacesPageProps> = (
                                     <Card className="border-border/80 bg-card/95 shadow-sm">
                                         <CardHeader>
                                             <CardDescription>Best quarters</CardDescription>
-                                            <CardTitle>Where the city feels different</CardTitle>
+                                            <CardTitle>{activeLayer ? `Neighborhoods for ${activeLayer.label.toLowerCase()}` : 'Where the city feels different'}</CardTitle>
                                         </CardHeader>
                                         <CardContent className="grid gap-3">
-                                            {city.neighborhoods.map((neighborhood) => (
+                                            {visibleNeighborhoods.map((neighborhood) => (
                                                 <div key={neighborhood.name} className="rounded-[1.5rem] border border-border/70 bg-background px-4 py-3">
                                                     <p className="text-sm font-medium text-foreground">{neighborhood.name}</p>
                                                     <p className="mt-2 text-sm leading-6 text-muted-foreground">{neighborhood.fit}</p>
                                                 </div>
                                             ))}
+                                            {visibleNeighborhoods.length === 0 ? (
+                                                <div className="rounded-[1.5rem] border border-dashed border-border bg-background/70 px-4 py-3 text-sm leading-6 text-muted-foreground">
+                                                    This layer doesn’t narrow neighborhood picks yet. It mainly acts as a planning reminder for the map legend.
+                                                </div>
+                                            ) : null}
                                         </CardContent>
                                     </Card>
                                     <Card className="border-border/80 bg-card/95 shadow-sm">
                                         <CardHeader>
                                             <CardDescription>Trip notes and saved stays</CardDescription>
-                                            <CardTitle>What to keep visible</CardTitle>
+                                            <CardTitle>Keep the trip layer separate from the general city guide</CardTitle>
                                         </CardHeader>
                                         <CardContent className="grid gap-3">
-                                            {city.savedStays.map((stay) => (
+                                            {visibleStays.map((stay) => (
                                                 <div key={stay.area} className="rounded-[1.5rem] border border-border/70 bg-background px-4 py-3">
                                                     <div className="flex items-center justify-between gap-3">
                                                         <p className="text-sm font-medium text-foreground">{stay.area}</p>
-                                                        <Badge variant="outline">{stay.vibe}</Badge>
+                                                        <div className="flex flex-wrap gap-2">
+                                                            <Badge variant="secondary">Trip stay</Badge>
+                                                            <Badge variant="outline">{stay.vibe}</Badge>
+                                                        </div>
                                                     </div>
                                                     <p className="mt-2 text-sm leading-6 text-muted-foreground">{stay.reason}</p>
                                                 </div>
                                             ))}
-                                            {city.notes.map((note) => (
-                                                <div key={note} className="rounded-[1.5rem] border border-border/70 bg-background px-4 py-3 text-sm leading-6 text-muted-foreground">
-                                                    {note}
+                                            {city.tripInsights.map((note) => (
+                                                <div key={note} className="rounded-[1.5rem] border border-border/70 bg-background px-4 py-3">
+                                                    <div className="flex flex-wrap gap-2">
+                                                        <Badge variant="secondary">Trip-specific</Badge>
+                                                    </div>
+                                                    <p className="mt-2 text-sm leading-6 text-muted-foreground">{note}</p>
+                                                </div>
+                                            ))}
+                                            {city.generalInsights.map((note) => (
+                                                <div key={note} className="rounded-[1.5rem] border border-border/70 bg-background px-4 py-3">
+                                                    <div className="flex flex-wrap gap-2">
+                                                        <Badge variant="outline">General destination</Badge>
+                                                    </div>
+                                                    <p className="mt-2 text-sm leading-6 text-muted-foreground">{note}</p>
                                                 </div>
                                             ))}
                                             {travelerWarnings.length > 0 ? (
@@ -271,7 +361,14 @@ export const TripWorkspacePlacesPage: React.FC<TripWorkspacePlacesPageProps> = (
                                                         ))}
                                                     </ul>
                                                 </div>
-                                            ) : null}
+                                            ) : (
+                                                <div className="rounded-[1.5rem] border border-dashed border-border bg-background/70 px-4 py-3">
+                                                    <p className="text-sm font-medium text-foreground">No saved traveler warnings yet</p>
+                                                    <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                                                        When planner notes call out late transfers, risky arrivals, or neighborhood cautions, they should stay visible here.
+                                                    </p>
+                                                </div>
+                                            )}
                                         </CardContent>
                                     </Card>
                                 </div>

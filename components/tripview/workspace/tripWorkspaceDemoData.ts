@@ -7,6 +7,8 @@ export interface TripWorkspaceCountryFact {
     label: string;
     value: string;
     badge?: string;
+    freshness?: string;
+    sourceLine?: string;
     link?: {
         label: string;
         href: string;
@@ -31,19 +33,33 @@ export interface TripWorkspaceCityStay {
     reason: string;
 }
 
+export interface TripWorkspaceCityMapLayer {
+    id: string;
+    label: string;
+    scope: 'Trip-specific' | 'General destination';
+    detail: string;
+    freshness: string;
+    sourceLine: string;
+    neighborhoodNames: string[];
+    stayAreas: string[];
+}
+
 export interface TripWorkspaceCityGuide {
     id: string;
     title: string;
     matchers: string[];
     role: string;
+    freshness: string;
+    sourceLine: string;
     idealStay: string;
     arrival: string;
     transit: string;
     officialLinks: Array<{ label: string; href: string }>;
     neighborhoods: TripWorkspaceCityNeighborhood[];
     highlights: string[];
-    mapHighlights: string[];
-    notes: string[];
+    mapLayers: TripWorkspaceCityMapLayer[];
+    tripInsights: string[];
+    generalInsights: string[];
     savedStays: TripWorkspaceCityStay[];
     events: Array<{ title: string; detail: string }>;
 }
@@ -102,33 +118,45 @@ export const THAILAND_COUNTRY_FACTS: TripWorkspaceCountryFact[] = [
         label: 'Visa basics',
         value: 'Short-stay entry rules shift by passport and arrival mode, so keep the live rule check close.',
         badge: 'General destination',
+        freshness: 'Updated weekly',
+        sourceLine: 'Official immigration source',
         link: { label: 'Thailand Immigration', href: 'https://www.immigration.go.th' },
     },
     {
         label: 'Sockets & voltage',
         value: 'Type A, B, C and O • 220V. A universal adapter keeps Bangkok hotels and island stays simple.',
         badge: 'Practical',
+        freshness: 'Stable',
+        sourceLine: 'Evergreen travel prep',
     },
     {
         label: 'Driving side',
         value: 'Left-hand traffic. Rental scooters feel very different between city streets and island roads.',
         badge: 'Practical',
+        freshness: 'Stable',
+        sourceLine: 'Transport rule of thumb',
     },
     {
         label: 'Connectivity',
         value: 'Good eSIM coverage in Bangkok, Chiang Mai, and Phuket, but boat transfer days can still dip.',
         badge: 'Trip-ready',
+        freshness: 'Updated this season',
+        sourceLine: 'Tourism + carrier summary',
         link: { label: 'Tourism Authority', href: 'https://www.tourismthailand.org' },
     },
     {
         label: 'Cash & cards',
         value: 'Cards work in city hotels and cafes, but night markets, ferries, and small food stalls still prefer cash.',
         badge: 'Practical',
+        freshness: 'Updated weekly',
+        sourceLine: 'Trip-specific payment note',
     },
     {
         label: 'Cultural context',
         value: 'Temple dress, easy shoes, and respectful body language matter more than over-planning facts lists.',
         badge: 'Context',
+        freshness: 'Stable',
+        sourceLine: 'General destination context',
     },
 ];
 
@@ -165,6 +193,8 @@ export const THAILAND_CITY_GUIDES: TripWorkspaceCityGuide[] = [
         title: 'Bangkok',
         matchers: ['bangkok'],
         role: 'Arrival base for food, markets, and a polished first landing.',
+        freshness: 'Updated this week',
+        sourceLine: 'Demo sources + official links',
         idealStay: '3-4 nights',
         arrival: 'Use Airport Rail Link or a booked Grab after a long-haul day. Sathorn and Ari reduce first-night friction.',
         transit: 'BTS and MRT cover the core. Boats are scenic and slower. Heat changes what “walkable” feels like fast.',
@@ -178,9 +208,33 @@ export const THAILAND_CITY_GUIDES: TripWorkspaceCityGuide[] = [
             { name: 'Talat Noi', fit: 'Texture, galleries, and riverside walks' },
         ],
         highlights: ['Opening-time temple loop', 'Talat Noi photo walk', 'Rooftop sunset with dress-code check'],
-        mapHighlights: ['Airport rail link anchor', 'Easy first-night zones', 'Food corridors after sunset'],
-        notes: [
+        mapLayers: [
+            {
+                id: 'arrival',
+                label: 'Arrival flow',
+                scope: 'Trip-specific',
+                detail: 'Keep the first-night base near easy airport handoffs, a low-friction dinner zone, and a simple morning reset route.',
+                freshness: 'Updated this week',
+                sourceLine: 'Trip-specific demo planning layer',
+                neighborhoodNames: ['Sathorn', 'Ari'],
+                stayAreas: ['Sathorn'],
+            },
+            {
+                id: 'food',
+                label: 'Food corridors',
+                scope: 'General destination',
+                detail: 'Late-opening food streets and market pockets matter more than landmark density once jet lag hits.',
+                freshness: 'Updated this season',
+                sourceLine: 'General city context',
+                neighborhoodNames: ['Talat Noi', 'Ari'],
+                stayAreas: ['Ari'],
+            },
+        ],
+        tripInsights: [
             'Trip-specific: use Bangkok as the recovery buffer before any domestic hop.',
+            'Trip-specific: keep the first full day light so the route starts with energy instead of friction.',
+        ],
+        generalInsights: [
             'General destination: temple logistics and traffic timing matter more than big list length.',
         ],
         savedStays: [
@@ -196,6 +250,8 @@ export const THAILAND_CITY_GUIDES: TripWorkspaceCityGuide[] = [
         title: 'Chiang Mai',
         matchers: ['chiangmai', 'chiangmai'],
         role: 'North Thailand reset for temples, cafés, and slower trip rhythm.',
+        freshness: 'Updated this week',
+        sourceLine: 'Demo sources + official links',
         idealStay: '4-5 nights',
         arrival: 'Airport transfers are quick. The Old City is easiest for a first orientation lap.',
         transit: 'Walkable core, then Grab for hills, craft spots, and evening moves.',
@@ -209,9 +265,32 @@ export const THAILAND_CITY_GUIDES: TripWorkspaceCityGuide[] = [
             { name: 'Riverside', fit: 'Slower evenings and calmer stays' },
         ],
         highlights: ['Cooking class with market visit', 'Early temple circuit', 'Craft village half-day'],
-        mapHighlights: ['Temple core', 'Cafe streets', 'Easy evening zones'],
-        notes: [
+        mapLayers: [
+            {
+                id: 'orientation',
+                label: 'Orientation loop',
+                scope: 'Trip-specific',
+                detail: 'The first two days work best when the stay anchors an easy temple loop, one café quarter, and a clean airport return.',
+                freshness: 'Updated this week',
+                sourceLine: 'Trip-specific demo planning layer',
+                neighborhoodNames: ['Old City', 'Riverside'],
+                stayAreas: ['Old City'],
+            },
+            {
+                id: 'cafe',
+                label: 'Cafe rhythm',
+                scope: 'General destination',
+                detail: 'Nimman and the riverside shift the city from temple-heavy to slower and more social.',
+                freshness: 'Updated this season',
+                sourceLine: 'General city context',
+                neighborhoodNames: ['Nimman', 'Riverside'],
+                stayAreas: ['Nimman'],
+            },
+        ],
+        tripInsights: [
             'Trip-specific: keep one unscheduled afternoon for slower café recovery.',
+        ],
+        generalInsights: [
             'General destination: haze and rain season layers should become live later.',
         ],
         savedStays: [
@@ -227,6 +306,8 @@ export const THAILAND_CITY_GUIDES: TripWorkspaceCityGuide[] = [
         title: 'Pai',
         matchers: ['pai'],
         role: 'Mountain decompression stop with a slower backpacker rhythm.',
+        freshness: 'Updated this week',
+        sourceLine: 'Demo sources + official links',
         idealStay: '2-3 nights',
         arrival: 'The minivan curves are the experience, so schedule a quiet evening after arrival.',
         transit: 'Scooters dominate, but walking and short songthaew trips are enough if you stay central.',
@@ -238,9 +319,32 @@ export const THAILAND_CITY_GUIDES: TripWorkspaceCityGuide[] = [
             { name: 'Riverside edge', fit: 'Quieter sleep and slower mornings' },
         ],
         highlights: ['Sunset viewpoint', 'Cafe morning', 'Hot spring or canyon split day'],
-        mapHighlights: ['Night market strip', 'Scooter loop anchors', 'Quiet stay pockets'],
-        notes: [
+        mapLayers: [
+            {
+                id: 'easy-base',
+                label: 'Easy base',
+                scope: 'Trip-specific',
+                detail: 'Staying close to the core keeps Pai from turning into a transport problem when the stop is meant to recover energy.',
+                freshness: 'Updated this week',
+                sourceLine: 'Trip-specific demo planning layer',
+                neighborhoodNames: ['Walking Street core'],
+                stayAreas: ['Central Pai'],
+            },
+            {
+                id: 'quiet',
+                label: 'Quiet mornings',
+                scope: 'General destination',
+                detail: 'The best slow-travel version of Pai comes from trading nightlife spill for calmer river-edge mornings.',
+                freshness: 'Updated this season',
+                sourceLine: 'General city context',
+                neighborhoodNames: ['Riverside edge'],
+                stayAreas: ['Central Pai'],
+            },
+        ],
+        tripInsights: [
             'Trip-specific: Pai works best as a breath, not as a productivity sprint.',
+        ],
+        generalInsights: [
             'General destination: roads and rain matter more than distance.',
         ],
         savedStays: [
@@ -253,6 +357,8 @@ export const THAILAND_CITY_GUIDES: TripWorkspaceCityGuide[] = [
         title: 'Phuket',
         matchers: ['phuket'],
         role: 'Beach gateway and transport hinge for the island leg.',
+        freshness: 'Updated this week',
+        sourceLine: 'Demo sources + official links',
         idealStay: '3-4 nights',
         arrival: 'Pick your beach zone before arrival; cross-island transfers are slower than they look on a map.',
         transit: 'Taxis and booked rides dominate. Beach choice changes the whole trip feel.',
@@ -266,10 +372,32 @@ export const THAILAND_CITY_GUIDES: TripWorkspaceCityGuide[] = [
             { name: 'Mai Khao', fit: 'Quiet reset close to the airport' },
         ],
         highlights: ['Old Town evening', 'Boat planning day', 'Beach + spa split'],
-        mapHighlights: ['Airport hinge', 'Best calm base zones', 'Easy boat handoff areas'],
-        notes: [
+        mapLayers: [
+            {
+                id: 'airport-hinge',
+                label: 'Airport hinge',
+                scope: 'Trip-specific',
+                detail: 'Phuket is strongest when it acts as the route hinge: easy arrival, easy boat handoff, minimal cross-island drag.',
+                freshness: 'Updated this week',
+                sourceLine: 'Trip-specific demo planning layer',
+                neighborhoodNames: ['Mai Khao', 'Kata'],
+                stayAreas: ['Kata'],
+            },
+            {
+                id: 'calm-zones',
+                label: 'Calm zones',
+                scope: 'General destination',
+                detail: 'Quiet beach edges change the island mood dramatically compared with nightlife-heavy strips.',
+                freshness: 'Updated this season',
+                sourceLine: 'General city context',
+                neighborhoodNames: ['Mai Khao', 'Old Town'],
+                stayAreas: ['Kata'],
+            },
+        ],
+        tripInsights: [
             'Trip-specific: use Phuket as the logistics hinge, not necessarily the best atmosphere stay.',
         ],
+        generalInsights: [],
         savedStays: [
             { area: 'Kata', vibe: 'Balanced beach base', reason: 'Easier mix of calm beach and restaurant access.' },
         ],
@@ -280,6 +408,8 @@ export const THAILAND_CITY_GUIDES: TripWorkspaceCityGuide[] = [
         title: 'Ko Phi Phi',
         matchers: ['kophiphi', 'phiphi', 'phi'],
         role: 'High-impact scenery stop for the iconic water-and-limestone mood.',
+        freshness: 'Updated this week',
+        sourceLine: 'Demo sources + official links',
         idealStay: '2-3 nights',
         arrival: 'Ferry timing matters. Build sea-condition slack into the transfer day.',
         transit: 'Mostly footpaths and boats. You feel the island scale immediately.',
@@ -291,10 +421,32 @@ export const THAILAND_CITY_GUIDES: TripWorkspaceCityGuide[] = [
             { name: 'Long Beach', fit: 'Quieter sleep and scenic mornings' },
         ],
         highlights: ['Sunrise viewpoint', 'Boat day with weather buffer', 'Slow beach afternoon'],
-        mapHighlights: ['Pier arrival zone', 'Viewpoint climb', 'Quieter stay edge'],
-        notes: [
+        mapLayers: [
+            {
+                id: 'pier-day',
+                label: 'Pier day',
+                scope: 'Trip-specific',
+                detail: 'Transfer-day friction is the main planning issue here, so keep the first and last nights easy on foot.',
+                freshness: 'Updated this week',
+                sourceLine: 'Trip-specific demo planning layer',
+                neighborhoodNames: ['Tonsai edge'],
+                stayAreas: ['Long Beach'],
+            },
+            {
+                id: 'quiet-scenery',
+                label: 'Quiet scenery',
+                scope: 'General destination',
+                detail: 'The better Phi Phi experience usually comes from trading party proximity for calmer dawn access.',
+                freshness: 'Updated this season',
+                sourceLine: 'General city context',
+                neighborhoodNames: ['Long Beach'],
+                stayAreas: ['Long Beach'],
+            },
+        ],
+        tripInsights: [
             'Trip-specific: keep one flexible island day for rough water or tour changes.',
         ],
+        generalInsights: [],
         savedStays: [
             { area: 'Long Beach', vibe: 'Calmer postcard base', reason: 'Better if the trip wants atmosphere over party spill.' },
         ],
@@ -305,6 +457,8 @@ export const THAILAND_CITY_GUIDES: TripWorkspaceCityGuide[] = [
         title: 'Krabi / Ao Nang',
         matchers: ['krabi', 'aonang'],
         role: 'The coast leg where scenery and logistics need a deliberate tradeoff.',
+        freshness: 'Updated this week',
+        sourceLine: 'Demo sources + official links',
         idealStay: '4-5 nights',
         arrival: 'Ao Nang is the easiest planning base. Railay is prettier but less forgiving when weather shifts.',
         transit: 'Boats define the pace. Tide, rain, and evening transfers change plans quickly.',
@@ -317,10 +471,32 @@ export const THAILAND_CITY_GUIDES: TripWorkspaceCityGuide[] = [
             { name: 'Koh Lanta', fit: 'Best slower island reset' },
         ],
         highlights: ['Longtail sunrise', 'Cliff and beach split day', 'Massage + seafood reset'],
-        mapHighlights: ['Boat hubs', 'Quiet beaches', 'Wet-weather fallback areas'],
-        notes: [
+        mapLayers: [
+            {
+                id: 'boat-hubs',
+                label: 'Boat hubs',
+                scope: 'Trip-specific',
+                detail: 'This coast leg works best when boat timing, bag drag, and weather buffers are treated as first-class decisions.',
+                freshness: 'Updated this week',
+                sourceLine: 'Trip-specific demo planning layer',
+                neighborhoodNames: ['Ao Nang', 'Railay'],
+                stayAreas: ['Ao Nang'],
+            },
+            {
+                id: 'slow-reset',
+                label: 'Slow reset',
+                scope: 'General destination',
+                detail: 'The most restorative version of Krabi usually means quieter beaches and less transfer churn.',
+                freshness: 'Updated this season',
+                sourceLine: 'General city context',
+                neighborhoodNames: ['Koh Lanta', 'Railay'],
+                stayAreas: ['Railay'],
+            },
+        ],
+        tripInsights: [
             'Trip-specific: this is the main booking-decision page because scenery and logistics pull in different directions.',
         ],
+        generalInsights: [],
         savedStays: [
             { area: 'Ao Nang', vibe: 'Planner-friendly', reason: 'Best if the trip values easy boat and transfer control.' },
             { area: 'Railay', vibe: 'Signature scenery', reason: 'Best if the coast leg should feel unforgettable first.' },

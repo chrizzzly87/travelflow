@@ -122,12 +122,12 @@ Goal: Turn Trip View into a routed Trip Workspace with a fixed shadcn sidebar on
 - [x] Swapped the overview and places map surfaces over to the shared Trip map implementation instead of the broken standalone workspace map.
 - [x] Split the new Trip Workspace into dedicated page components and added interactive flashcards, shortlist, notes, and photo demo behaviors.
 - [x] Added regression coverage for sidebar persistence, planner-only routing, and phrase flashcard interactions.
+- [x] Tightened the trip modal into an actions-first surface and moved destination prep into a clean handoff to the routed `Places` page.
+- [x] Added clearer source freshness, trip-specific vs general context labels, and interactive overlay guidance to the `Places` page.
 
 ## Open
-- [ ] Tighten the trip modal so it reads as a basic trip-actions surface, not a second destination hub.
 - [ ] Replace temporary English fallback workspace copy in secondary locales after EN/DE wording sign-off.
-- [ ] Add source freshness, official links, and clearer trip-specific vs general labels to the destination pages.
-- [ ] Add richer neighborhood and saved-stay overlays to the `Places` map now that the validated shared map surface is in place.
+- [ ] Turn the new `Places` overlay guidance into true visual map overlays once the shared trip map exposes richer layer hooks.
 - [ ] Turn the new overview map and overview calendar copy into signed-off EN/DE locale keys when the wording is final.
 - [ ] Replace Thailand demo data with live bookings, discovery, phrase, and destination services when the backend inputs are ready.
 - [ ] Choose the next routed page after this slice: `Travel kit`, `Budget`, `Documents`, or `Weather`.

@@ -11,8 +11,12 @@ vi.mock('react-i18next', () => ({
       if (key === 'tripView.infoDialog.tabs.general') return 'General';
       if (key === 'tripView.infoDialog.tabs.history') return 'History';
       if (key === 'tripView.infoDialog.tabs.export') return 'Export';
-      if (key === 'tripView.infoDialog.tabs.destination') return 'Destination';
       if (key === 'tripView.infoDialog.tabs.debug') return 'Debug';
+      if (key === 'tripView.workspace.pages.places.label') return 'Places';
+      if (key === 'tripView.workspace.pages.places.title') return 'Places';
+      if (key === 'tripView.workspace.pages.places.description') return 'Open country and city context.';
+      if (key === 'tripView.warningSummary.title') return 'traveler warnings';
+      if (key === 'tripView.infoDialog.destination.empty') return 'No destination snapshot yet.';
       if (key === 'tripView.infoDialog.general.titleLabel') return 'Trip title';
       if (key === 'tripView.infoDialog.general.editAction') return 'Edit Title';
       if (key === 'tripView.infoDialog.general.saveAction') return 'Save Title';
@@ -87,6 +91,7 @@ const buildProps = (): React.ComponentProps<typeof TripInfoModal> => ({
   onExportCitiesCalendar: vi.fn(),
   onExportAllCalendar: vi.fn(),
   onOpenPrintLayout: vi.fn(),
+  onOpenPlacesPage: vi.fn(),
 });
 
 describe('components/TripInfoModal', () => {
@@ -106,8 +111,9 @@ describe('components/TripInfoModal', () => {
     expect(screen.getByRole('tab', { name: 'General' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'History' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Export' })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'Destination' })).toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: 'Destination' })).not.toBeInTheDocument();
     expect(screen.queryByRole('tab', { name: 'Debug' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Places' })).toBeInTheDocument();
 
     const exportTab = screen.getByRole('tab', { name: 'Export' });
     fireEvent.mouseDown(exportTab, { button: 0 });
@@ -186,5 +192,17 @@ describe('components/TripInfoModal', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Go' }));
 
     expect(props.onGoToHistoryEntry).toHaveBeenCalledWith(baseHistoryItem);
+  });
+
+  it('uses the general tab to hand destination prep off to the places workspace', () => {
+    const props = buildProps();
+
+    render(React.createElement(TripInfoModal, props));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Places' }));
+
+    expect(props.onOpenPlacesPage).toHaveBeenCalledTimes(1);
+    expect(screen.getByText('Open country and city context.')).toBeInTheDocument();
+    expect(screen.getByText('No destination snapshot yet.')).toBeInTheDocument();
   });
 });

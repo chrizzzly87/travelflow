@@ -828,6 +828,10 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
                     onExportCitiesCalendar={onExportCitiesCalendar}
                     onExportAllCalendar={onExportAllCalendar}
                     onOpenPrintLayout={onOpenPrintLayout}
+                    onOpenPlacesPage={() => {
+                        closeTripInfoModal();
+                        handleWorkspacePageChange('places');
+                    }}
                 />
             </Suspense>
         )}

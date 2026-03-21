@@ -1,6 +1,5 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
-    AlertTriangle,
     Bug,
     ExternalLink,
     FileDown,
@@ -8,7 +7,6 @@ import {
     History,
     Info,
     MapPinned,
-    ShieldAlert,
     Sparkles,
     Star,
 } from 'lucide-react';
@@ -19,7 +17,6 @@ import { ICountryInfo, ITripAiMeta, TripGenerationAttemptSummary, TripGeneration
 import { getAnalyticsDebugAttributes } from '../services/analyticsService';
 import { normalizeTripGenerationAttemptsForDisplay } from '../services/tripGenerationDiagnosticsService';
 import { AiProviderLogo } from './admin/AiProviderLogo';
-import { CountryInfo } from './CountryInfo';
 import { type TripHistoryModalItem } from './TripHistoryModal';
 import { AppModal } from './ui/app-modal';
 import { Input } from './ui/input';
@@ -59,16 +56,8 @@ interface TripTravelerWarning {
 }
 
 const EMPTY_TRAVELER_WARNINGS: TripTravelerWarning[] = [];
-const FUTURE_DESTINATION_CHECK_KEYS = [
-    'tripView.infoDialog.destination.futureChecks.visa',
-    'tripView.infoDialog.destination.futureChecks.entryRules',
-    'tripView.infoDialog.destination.futureChecks.safety',
-    'tripView.infoDialog.destination.futureChecks.customs',
-    'tripView.infoDialog.destination.futureChecks.connectivity',
-    'tripView.infoDialog.destination.futureChecks.health',
-] as const;
 
-type TripInfoTabValue = 'general' | 'history' | 'export' | 'destination' | 'debug';
+type TripInfoTabValue = 'general' | 'history' | 'export' | 'debug';
 
 export interface TripInfoModalProps {
     isOpen: boolean;
@@ -118,6 +107,7 @@ export interface TripInfoModalProps {
     onExportCitiesCalendar?: () => void;
     onExportAllCalendar?: () => void;
     onOpenPrintLayout?: () => void;
+    onOpenPlacesPage?: () => void;
 }
 
 interface SummaryCardProps {
@@ -220,6 +210,7 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
     onExportCitiesCalendar,
     onExportAllCalendar,
     onOpenPrintLayout,
+    onOpenPlacesPage,
 }) => {
     const { t } = useTranslation('common');
     const editTitleInputRef = useRef<HTMLInputElement | null>(null);
@@ -338,11 +329,6 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
     };
 
     const titleFieldValue = isEditingTitle ? editTitleValue : tripTitle;
-    const destinationFutureChecks = useMemo(
-        () => FUTURE_DESTINATION_CHECK_KEYS.map((key) => t(key)),
-        [t]
-    );
-
     const canShowDebugTab = Boolean(adminMeta);
     const handleModalClose = () => {
         if (isEditingTitle) {
@@ -382,10 +368,6 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                         <TabsTrigger value="export" className={tabClassName}>
                             <FileDown size={15} />
                             <span>{t('tripView.infoDialog.tabs.export')}</span>
-                        </TabsTrigger>
-                        <TabsTrigger value="destination" className={tabClassName}>
-                            <Globe2 size={15} />
-                            <span>{t('tripView.infoDialog.tabs.destination')}</span>
                         </TabsTrigger>
                         {canShowDebugTab && (
                             <TabsTrigger value="debug" className={tabClassName}>
@@ -618,6 +600,39 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                                 )}
                             </section>
                         )}
+
+                        {onOpenPlacesPage && (
+                            <section className={modalSectionClassName}>
+                                <div className="flex items-center gap-2">
+                                    <Globe2 size={16} className="text-accent-700" />
+                                    <h3 className="text-base font-semibold text-slate-900">{t('tripView.workspace.pages.places.title')}</h3>
+                                </div>
+                                <p className="mt-2 text-sm leading-6 text-slate-600">
+                                    {t('tripView.workspace.pages.places.description')}
+                                </p>
+                                {!countryInfo && (
+                                    <p className="mt-2 text-sm leading-6 text-slate-600">
+                                        {isPaywallLocked
+                                            ? t('tripView.infoDialog.destination.locked')
+                                            : t('tripView.infoDialog.destination.empty')}
+                                    </p>
+                                )}
+                                {travelerWarnings.length > 0 && (
+                                    <p className="mt-2 text-sm leading-6 text-slate-600">
+                                        {travelerWarnings.length} {t('tripView.warningSummary.title')}
+                                    </p>
+                                )}
+                                <div className="mt-4">
+                                    <button
+                                        type="button"
+                                        onClick={onOpenPlacesPage}
+                                        className={modalSecondaryButtonClassName}
+                                    >
+                                        {t('tripView.workspace.pages.places.label')}
+                                    </button>
+                                </div>
+                            </section>
+                        )}
                     </TabsContent>
 
                     <TabsContent value="history" className="space-y-6">
@@ -736,68 +751,6 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                                 onAction={onOpenPrintLayout}
                             />
                         </div>
-                    </TabsContent>
-
-                    <TabsContent value="destination" className="space-y-6">
-                        {travelerWarnings.length > 0 && (
-                            <section className="rounded-md bg-amber-50 px-4 py-4">
-                                <div className="flex items-center gap-2">
-                                    <ShieldAlert size={16} className="text-amber-700" />
-                                    <h3 className="text-base font-semibold text-amber-950">{t('tripView.warningSummary.title')}</h3>
-                                </div>
-                                <p className="mt-2 text-sm leading-6 text-amber-900">
-                                    {t('tripView.warningSummary.description')}
-                                </p>
-                                <div className="mt-4 space-y-3">
-                                    {travelerWarnings.map((warning) => (
-                                        <div key={`${warning.cityName}-${warning.notes.join('|')}`} className="border-s-2 border-amber-300 ps-3">
-                                            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-amber-700">
-                                                {warning.cityName}
-                                            </p>
-                                            <ul className="mt-2 space-y-2 text-sm leading-6 text-slate-700">
-                                                {warning.notes.map((note) => (
-                                                    <li key={`${warning.cityName}-${note}`} className="flex items-start gap-2">
-                                                        <span className="mt-2 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" />
-                                                        <span>{note}</span>
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        </div>
-                                    ))}
-                                </div>
-                            </section>
-                        )}
-
-                        <section className={travelerWarnings.length > 0 ? modalSectionClassName : 'space-y-4'}>
-                            {countryInfo ? (
-                                <CountryInfo info={countryInfo} />
-                            ) : isPaywallLocked ? (
-                                <div className={modalSubtlePanelClassName}>
-                                    {t('tripView.infoDialog.destination.locked')}
-                                </div>
-                            ) : (
-                                <div className={modalSubtlePanelClassName}>
-                                    {t('tripView.infoDialog.destination.empty')}
-                                </div>
-                            )}
-                        </section>
-
-                        <section className={modalSectionClassName}>
-                            <div className="flex items-center gap-2">
-                                <AlertTriangle size={16} className="text-slate-600" />
-                                <h3 className="text-base font-semibold text-slate-900">{t('tripView.infoDialog.destination.futureChecksTitle')}</h3>
-                            </div>
-                            <p className="mt-2 text-sm leading-6 text-slate-600">
-                                {t('tripView.infoDialog.destination.futureChecksDescription')}
-                            </p>
-                            <div className="mt-4 flex flex-wrap gap-2">
-                                {destinationFutureChecks.map((label) => (
-                                    <span key={label} className="rounded-full border border-slate-300 bg-white px-3 py-1 text-sm font-medium text-slate-700">
-                                        {label}
-                                    </span>
-                                ))}
-                            </div>
-                        </section>
                     </TabsContent>
 
                     {canShowDebugTab && (
