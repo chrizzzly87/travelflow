@@ -133,6 +133,7 @@ Goal: Turn Trip View into a routed Trip Workspace with a fixed shadcn sidebar on
 - [x] Updated active locale files with the current Explore workflow copy and mode labels.
 - [x] Polished the Explore workflow board so it reads more like a kanban playground, with a dedicated drag handle, cleaner lane styling, and overlay layers that sit above the workspace shell correctly.
 - [x] Reworked the Explore board into a denser task-board layout with a true drag overlay, narrower lanes, and compact cards that stay visible while moving.
+- [x] Added visible kanban drop targets so dragging now shows clear target lanes and between-card insertion zones instead of only moving the floating card.
 
 ## Open
 - [ ] Turn the new `Places` overlay guidance into true visual map overlays once the shared trip map exposes richer layer hooks.

@@ -99,6 +99,41 @@ describe('components/tripview/workspace/tripActivityBoard', () => {
         expect(moved.map((card) => card.sortOrder)).toEqual([0, 1]);
     });
 
+    it('supports dropping after another card inside the same workflow lane', () => {
+        const moved = moveTripActivityBoardCard([
+            {
+                id: 'planned-a',
+                title: 'A',
+                cityItemId: 'city-bangkok',
+                source: 'planner',
+                status: 'planned',
+                activityType: ['culture'],
+                sortOrder: 0,
+            },
+            {
+                id: 'planned-b',
+                title: 'B',
+                cityItemId: 'city-bangkok',
+                source: 'planner',
+                status: 'planned',
+                activityType: ['food'],
+                sortOrder: 1,
+            },
+            {
+                id: 'planned-c',
+                title: 'C',
+                cityItemId: 'city-bangkok',
+                source: 'planner',
+                status: 'planned',
+                activityType: ['nightlife'],
+                sortOrder: 2,
+            },
+        ], 'planned-a', 'planned', 'planned-b', 'after');
+
+        expect(moved.map((card) => card.id)).toEqual(['planned-b', 'planned-a', 'planned-c']);
+        expect(moved.map((card) => card.sortOrder)).toEqual([0, 1, 2]);
+    });
+
     it('returns linked cards to shortlist by clearing the timeline link', () => {
         const returned = returnTripActivityBoardCardToShortlist([
             {

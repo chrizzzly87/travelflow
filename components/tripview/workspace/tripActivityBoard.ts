@@ -15,6 +15,8 @@ export const TRIP_ACTIVITY_WORKFLOW_STATUSES: TripActivityWorkflowStatus[] = [
     'done',
 ];
 
+export type TripActivityBoardInsertPosition = 'before' | 'after';
+
 const STATUS_INDEX = new Map<TripActivityWorkflowStatus, number>(
     TRIP_ACTIVITY_WORKFLOW_STATUSES.map((status, index) => [status, index]),
 );
@@ -141,10 +143,11 @@ const resolveInsertIndex = (
     cards: ITripActivityBoardCard[],
     targetStatus: TripActivityWorkflowStatus,
     overId?: string | null,
+    insertPosition: TripActivityBoardInsertPosition = 'before',
 ): number => {
     if (overId) {
         const overIndex = cards.findIndex((card) => card.id === overId);
-        if (overIndex >= 0) return overIndex;
+        if (overIndex >= 0) return insertPosition === 'after' ? overIndex + 1 : overIndex;
     }
 
     const lastMatchingIndex = [...cards]
@@ -160,6 +163,7 @@ export const moveTripActivityBoardCard = (
     cardId: string,
     targetStatus: TripActivityWorkflowStatus,
     overId?: string | null,
+    insertPosition: TripActivityBoardInsertPosition = 'before',
 ): ITripActivityBoardCard[] => {
     const nextCards = normalizeTripActivityBoardCards(cards).map((card) => ({ ...card }));
     const activeIndex = nextCards.findIndex((card) => card.id === cardId);
@@ -167,7 +171,7 @@ export const moveTripActivityBoardCard = (
 
     const [activeCard] = nextCards.splice(activeIndex, 1);
     activeCard.status = targetStatus;
-    const insertIndex = resolveInsertIndex(nextCards, targetStatus, overId);
+    const insertIndex = resolveInsertIndex(nextCards, targetStatus, overId, insertPosition);
     nextCards.splice(insertIndex, 0, activeCard);
 
     return reindexTripActivityBoardCards(nextCards);

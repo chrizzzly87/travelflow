@@ -2,6 +2,7 @@ import React from 'react';
 import {
     DndContext,
     DragOverlay,
+    type DragOverEvent,
     PointerSensor,
     closestCorners,
     useDroppable,
@@ -52,6 +53,7 @@ import {
     SelectValue,
 } from '../../ui/select';
 import {
+    type TripActivityBoardInsertPosition,
     TRIP_ACTIVITY_WORKFLOW_STATUSES,
     deriveTripActivityBoardCards,
     getActivityBoardCityLabel,
@@ -73,25 +75,41 @@ interface TripWorkspaceExploreBoardProps {
     onRemoveFromItinerary: (card: ITripActivityBoardCard) => void;
 }
 
+interface TripWorkspaceBoardDropHint {
+    status: TripActivityWorkflowStatus;
+    overCardId: string | null;
+    insertPosition: TripActivityBoardInsertPosition | null;
+}
+
 const STATUS_COPY: Record<TripActivityWorkflowStatus, {
     label: string;
     dotTone: string;
+    previewTone: string;
+    previewBarTone: string;
 }> = {
     shortlist: {
         label: 'Shortlist',
         dotTone: 'bg-sky-500',
+        previewTone: 'border-sky-300/80 bg-sky-100/80 ring-sky-200/70',
+        previewBarTone: 'bg-sky-200/90 ring-sky-300/80',
     },
     planned: {
         label: 'Planned',
         dotTone: 'bg-amber-500',
+        previewTone: 'border-amber-300/80 bg-amber-100/80 ring-amber-200/70',
+        previewBarTone: 'bg-amber-200/90 ring-amber-300/80',
     },
     booked: {
         label: 'Booked',
         dotTone: 'bg-emerald-500',
+        previewTone: 'border-emerald-300/80 bg-emerald-100/80 ring-emerald-200/70',
+        previewBarTone: 'bg-emerald-200/90 ring-emerald-300/80',
     },
     done: {
         label: 'Done',
         dotTone: 'bg-violet-500',
+        previewTone: 'border-violet-300/80 bg-violet-100/80 ring-violet-200/70',
+        previewBarTone: 'bg-violet-200/90 ring-violet-300/80',
     },
 };
 
@@ -315,11 +333,74 @@ const ExploreBoardCardOverlay: React.FC<{
     );
 };
 
+const ExploreBoardDropIndicator: React.FC<{
+    status: TripActivityWorkflowStatus;
+    expanded?: boolean;
+}> = ({
+    status,
+    expanded = false,
+}) => {
+    const statusCopy = STATUS_COPY[status];
+
+    return (
+        <div className={cn(
+            'w-full overflow-hidden rounded-xl border border-dashed px-2.5 ring-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.55)] transition-all duration-150 ease-out',
+            statusCopy.previewTone,
+            expanded ? 'py-2.5 opacity-100' : 'py-2 opacity-100',
+        )}>
+            <div className="flex w-full items-center gap-2">
+                <span className={cn('size-2.5 rounded-full shadow-sm', statusCopy.dotTone)} />
+                <div className={cn(
+                    'h-6 flex-1 rounded-lg ring-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.4)]',
+                    statusCopy.previewBarTone,
+                )} />
+            </div>
+        </div>
+    );
+};
+
+const resolveDropHint = (
+    event: DragOverEvent | DragEndEvent,
+    cards: ITripActivityBoardCard[],
+): TripWorkspaceBoardDropHint | null => {
+    const activeId = String(event.active.id);
+    const overId = event.over ? String(event.over.id) : null;
+    if (!overId) return null;
+
+    const activeCard = cards.find((card) => card.id === activeId) ?? null;
+    if (!activeCard) return null;
+
+    if (overId.startsWith('column-')) {
+        return {
+            status: overId.replace('column-', '') as TripActivityWorkflowStatus,
+            overCardId: null,
+            insertPosition: null,
+        };
+    }
+
+    const overCard = cards.find((card) => card.id === overId) ?? null;
+    if (!overCard || overCard.id === activeCard.id) return null;
+
+    const activeRect = event.active.rect.current.translated ?? event.active.rect.current.initial;
+    const activeCenterY = activeRect ? activeRect.top + activeRect.height / 2 : event.over.rect.top;
+    const insertPosition: TripActivityBoardInsertPosition = activeCenterY >= event.over.rect.top + event.over.rect.height / 2
+        ? 'after'
+        : 'before';
+
+    return {
+        status: overCard.status,
+        overCardId: overCard.id,
+        insertPosition,
+    };
+};
+
 const ExploreBoardColumn: React.FC<{
     status: TripActivityWorkflowStatus;
     cards: ITripActivityBoardCard[];
     trip: ITrip;
     isMobile: boolean;
+    activeCardId: string | null;
+    dropHint: TripWorkspaceBoardDropHint | null;
     onOpenPlannerItem?: (itemId: string) => void;
     onScheduleBoardCard: (card: ITripActivityBoardCard) => void;
     onUpdateStatus: (card: ITripActivityBoardCard, status: TripActivityWorkflowStatus) => void;
@@ -329,6 +410,8 @@ const ExploreBoardColumn: React.FC<{
     cards,
     trip,
     isMobile,
+    activeCardId,
+    dropHint,
     onOpenPlannerItem,
     onScheduleBoardCard,
     onUpdateStatus,
@@ -336,11 +419,13 @@ const ExploreBoardColumn: React.FC<{
 }) => {
     const { setNodeRef, isOver } = useDroppable({ id: `column-${status}` });
     const statusCopy = STATUS_COPY[status];
+    const columnHint = dropHint?.status === status ? dropHint : null;
+    const showColumnTailIndicator = Boolean(activeCardId) && columnHint !== null && !columnHint.overCardId;
 
     return (
         <section className={cn(
             'flex min-h-[29rem] w-[14.5rem] min-w-[14.5rem] max-w-[14.5rem] flex-col rounded-[1.6rem] border border-border/70 bg-muted/20 shadow-xs',
-            isOver && 'border-accent/40 bg-accent/5',
+            (isOver || showColumnTailIndicator) && 'border-accent/40 bg-accent/5',
         )}>
             <div className="border-b border-border/60 px-3 py-3">
                 <div className="flex items-center justify-between gap-3">
@@ -359,24 +444,37 @@ const ExploreBoardColumn: React.FC<{
                     'flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overflow-x-visible px-2.5 py-2.5',
                 )}
             >
+                {showColumnTailIndicator && cards.length === 0 ? (
+                    <ExploreBoardDropIndicator status={status} expanded />
+                ) : null}
                 <SortableContext items={cards.map((card) => card.id)} strategy={verticalListSortingStrategy}>
                     {cards.map((card) => (
-                        <ExploreBoardCard
-                            key={card.id}
-                            card={card}
-                            trip={trip}
-                            isMobile={isMobile}
-                            onOpenPlannerItem={onOpenPlannerItem}
-                            onScheduleBoardCard={onScheduleBoardCard}
-                            onUpdateStatus={onUpdateStatus}
-                            onRemoveFromItinerary={onRemoveFromItinerary}
-                        />
+                        <React.Fragment key={card.id}>
+                            {columnHint?.overCardId === card.id && columnHint.insertPosition === 'before' ? (
+                                <ExploreBoardDropIndicator status={status} expanded />
+                            ) : null}
+                            <ExploreBoardCard
+                                card={card}
+                                trip={trip}
+                                isMobile={isMobile}
+                                onOpenPlannerItem={onOpenPlannerItem}
+                                onScheduleBoardCard={onScheduleBoardCard}
+                                onUpdateStatus={onUpdateStatus}
+                                onRemoveFromItinerary={onRemoveFromItinerary}
+                            />
+                            {columnHint?.overCardId === card.id && columnHint.insertPosition === 'after' ? (
+                                <ExploreBoardDropIndicator status={status} expanded />
+                            ) : null}
+                        </React.Fragment>
                     ))}
                 </SortableContext>
                 {cards.length === 0 ? (
                     <div className="rounded-xl border border-dashed border-border/70 bg-background/75 px-3 py-4 text-xs leading-5 text-muted-foreground">
                         No cards in this lane yet.
                     </div>
+                ) : null}
+                {showColumnTailIndicator && cards.length > 0 ? (
+                    <ExploreBoardDropIndicator status={status} expanded />
                 ) : null}
             </div>
         </section>
@@ -397,6 +495,7 @@ export const TripWorkspaceExploreBoard: React.FC<TripWorkspaceExploreBoardProps>
 }) => {
     const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
     const [activeCardId, setActiveCardId] = React.useState<string | null>(null);
+    const [dropHint, setDropHint] = React.useState<TripWorkspaceBoardDropHint | null>(null);
 
     const derivedCards = React.useMemo(() => deriveTripActivityBoardCards(trip), [trip]);
     const materializedCards = React.useMemo(() => materializeTripActivityBoardCards(trip), [trip]);
@@ -459,20 +558,22 @@ export const TripWorkspaceExploreBoard: React.FC<TripWorkspaceExploreBoardProps>
         setActiveCardId(String(event.active.id));
     }, [isMobile]);
 
+    const handleDragOver = React.useCallback((event: DragOverEvent) => {
+        if (isMobile) return;
+        setDropHint(resolveDropHint(event, derivedCards));
+    }, [derivedCards, isMobile]);
+
     const handleDragEnd = React.useCallback((event: DragEndEvent) => {
         setActiveCardId(null);
+        const nextDropHint = resolveDropHint(event, derivedCards);
+        setDropHint(null);
         if (isMobile) return;
         const activeId = String(event.active.id);
-        const overId = event.over ? String(event.over.id) : null;
-        if (!overId || activeId === overId) return;
+        if (!nextDropHint && (!event.over || activeId === String(event.over.id))) return;
 
         const activeCard = derivedCards.find((card) => card.id === activeId);
         if (!activeCard) return;
-
-        const overCard = derivedCards.find((card) => card.id === overId) ?? null;
-        const targetStatus = overId.startsWith('column-')
-            ? overId.replace('column-', '') as TripActivityWorkflowStatus
-            : overCard?.status ?? activeCard.status;
+        const targetStatus = nextDropHint?.status ?? activeCard.status;
 
         if (activeCard.status === 'shortlist' && targetStatus === 'planned') {
             trackEvent('trip_workspace__activity_board_card--schedule', {
@@ -491,7 +592,13 @@ export const TripWorkspaceExploreBoard: React.FC<TripWorkspaceExploreBoardProps>
             return;
         }
 
-        const nextCards = moveTripActivityBoardCard(materializedCards, activeCard.id, targetStatus, overCard?.id);
+        const nextCards = moveTripActivityBoardCard(
+            materializedCards,
+            activeCard.id,
+            targetStatus,
+            nextDropHint?.overCardId,
+            nextDropHint?.insertPosition ?? 'before',
+        );
         trackEvent('trip_workspace__activity_board_card--move', {
             trip_id: trip.id,
             card_id: activeCard.id,
@@ -552,7 +659,11 @@ export const TripWorkspaceExploreBoard: React.FC<TripWorkspaceExploreBoardProps>
                 sensors={sensors}
                 collisionDetection={closestCorners}
                 onDragStart={handleDragStart}
-                onDragCancel={() => setActiveCardId(null)}
+                onDragOver={handleDragOver}
+                onDragCancel={() => {
+                    setActiveCardId(null);
+                    setDropHint(null);
+                }}
                 onDragEnd={handleDragEnd}
             >
                 <div className="overflow-x-auto pb-2">
@@ -568,6 +679,8 @@ export const TripWorkspaceExploreBoard: React.FC<TripWorkspaceExploreBoardProps>
                                 onScheduleBoardCard={onScheduleBoardCard}
                                 onUpdateStatus={handleUpdateStatus}
                                 onRemoveFromItinerary={onRemoveFromItinerary}
+                                activeCardId={activeCardId}
+                                dropHint={dropHint}
                             />
                         ))}
                     </div>
