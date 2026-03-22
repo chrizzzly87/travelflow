@@ -497,7 +497,7 @@ export const FeaturesGlobe: React.FC = () => {
             onPointerCancel={handlePointerUp}
             style={{ touchAction: 'none' }}
         >
-            <div className="pointer-events-none absolute inset-0 z-0">
+            <div className="pointer-events-none absolute inset-0 z-20">
                 <div
                     ref={(node) => {
                         if (node) overlayRefs.current.set('origin-marker', node);
