@@ -131,6 +131,7 @@ Goal: Turn Trip View into a routed Trip Workspace with a fixed shadcn sidebar on
 - [x] Added an Explore activity workflow board with drag-and-drop lanes on desktop, menu-based moves on mobile, planner scheduling handoff, and booked-activity visibility inside `Bookings`.
 - [x] Added unit and browser regression coverage for activity-board derivation, filter persistence, mobile move actions, and booked-activity summaries.
 - [x] Updated active locale files with the current Explore workflow copy and mode labels.
+- [x] Polished the Explore workflow board so it reads more like a kanban playground, with a dedicated drag handle, cleaner lane styling, and overlay layers that sit above the workspace shell correctly.
 
 ## Open
 - [ ] Turn the new `Places` overlay guidance into true visual map overlays once the shared trip map exposes richer layer hooks.

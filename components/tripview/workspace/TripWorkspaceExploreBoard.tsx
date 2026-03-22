@@ -18,6 +18,7 @@ import {
     ArrowSquareOut,
     CalendarBlank,
     CheckCircle,
+    DotsSixVertical,
     DotsThreeOutlineVertical,
     MapPin,
     SuitcaseRolling,
@@ -31,6 +32,7 @@ import type {
     TripActivityWorkflowStatus,
 } from '../../../types';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../../services/analyticsService';
+import { cn } from '../../../lib/utils';
 import { formatActivityTypeLabel } from '../../ActivityTypeVisuals';
 import { Badge } from '../../ui/badge';
 import { Button } from '../../ui/button';
@@ -43,7 +45,6 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '../../ui/dropdown-menu';
-import { ScrollArea } from '../../ui/scroll-area';
 import {
     Select,
     SelectContent,
@@ -75,26 +76,40 @@ interface TripWorkspaceExploreBoardProps {
     onRemoveFromItinerary: (card: ITripActivityBoardCard) => void;
 }
 
-const STATUS_COPY: Record<TripActivityWorkflowStatus, { label: string; detail: string; tone: string }> = {
+const STATUS_COPY: Record<TripActivityWorkflowStatus, {
+    label: string;
+    detail: string;
+    dotTone: string;
+    badgeTone: string;
+    laneTone: string;
+}> = {
     shortlist: {
         label: 'Shortlist',
         detail: 'High-signal ideas that still need a route slot.',
-        tone: 'border-sky-200/80 bg-sky-50/70 text-sky-700',
+        dotTone: 'bg-sky-500',
+        badgeTone: 'border-sky-200/80 bg-sky-50/90 text-sky-700',
+        laneTone: 'from-sky-50/95 via-background to-sky-100/55',
     },
     planned: {
         label: 'Planned',
         detail: 'Scheduled into the trip, but not confirmed as booked.',
-        tone: 'border-amber-200/80 bg-amber-50/70 text-amber-700',
+        dotTone: 'bg-amber-500',
+        badgeTone: 'border-amber-200/80 bg-amber-50/90 text-amber-700',
+        laneTone: 'from-amber-50/95 via-background to-amber-100/55',
     },
     booked: {
         label: 'Booked',
         detail: 'Locked decisions that should stay visible for logistics.',
-        tone: 'border-emerald-200/80 bg-emerald-50/70 text-emerald-700',
+        dotTone: 'bg-emerald-500',
+        badgeTone: 'border-emerald-200/80 bg-emerald-50/90 text-emerald-700',
+        laneTone: 'from-emerald-50/95 via-background to-emerald-100/55',
     },
     done: {
         label: 'Done',
         detail: 'Finished experiences worth keeping on the trip record.',
-        tone: 'border-violet-200/80 bg-violet-50/70 text-violet-700',
+        dotTone: 'bg-violet-500',
+        badgeTone: 'border-violet-200/80 bg-violet-50/90 text-violet-700',
+        laneTone: 'from-violet-50/95 via-background to-violet-100/55',
     },
 };
 
@@ -134,11 +149,11 @@ const ActivityBoardCardMenu: React.FC<{
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button type="button" variant="ghost" size="icon" aria-label="Open activity card menu">
+                <Button type="button" variant="ghost" size="icon-sm" aria-label="Open activity card menu" className="rounded-xl text-muted-foreground">
                     <DotsThreeOutlineVertical weight="duotone" />
                 </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuContent align="end" className="z-[1760] w-56 rounded-xl border-border/70 shadow-xl">
                 <DropdownMenuGroup>
                     {card.timelineItemId && onOpenPlannerItem ? (
                         <DropdownMenuItem
@@ -229,20 +244,42 @@ const ExploreBoardCard: React.FC<{
         transform: CSS.Transform.toString(transform),
         transition,
         opacity: isDragging ? 0.72 : 1,
+        zIndex: isDragging ? 30 : undefined,
     };
+    const dragHandleProps = isMobile ? {} : { ...attributes, ...listeners };
 
     return (
-        <div ref={setNodeRef} style={cardStyle} {...attributes} {...listeners}>
-            <Card className="border-border/70 bg-background shadow-sm transition-shadow hover:shadow-md">
+        <div ref={setNodeRef} style={cardStyle} className={cn('relative', isDragging && 'z-30')}>
+            <Card className={cn(
+                'overflow-hidden rounded-[1.5rem] border border-border/60 bg-background/95 shadow-[0_14px_32px_-24px_rgba(15,23,42,0.45)] transition-all',
+                'hover:-translate-y-0.5 hover:shadow-[0_18px_38px_-24px_rgba(15,23,42,0.5)]',
+                isDragging && 'ring-2 ring-accent/20 shadow-[0_24px_44px_-22px_rgba(15,23,42,0.55)]',
+            )}>
                 <CardHeader className="gap-3 pb-3">
-                    <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
+                    <div className="flex items-start gap-3">
+                        <button
+                            type="button"
+                            aria-label="Drag activity card"
+                            className={cn(
+                                'mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-xl border border-border/60 bg-muted/55 text-muted-foreground shadow-xs',
+                                'transition-colors hover:bg-muted hover:text-foreground',
+                                isMobile && 'hidden',
+                            )}
+                            {...dragHandleProps}
+                        >
+                            <DotsSixVertical weight="bold" />
+                        </button>
+                        <div className="min-w-0 flex-1">
                             <div className="flex flex-wrap items-center gap-2">
-                                <Badge variant="outline">{getActivityBoardCityLabel(card, trip.items)}</Badge>
-                                <Badge variant="secondary">{card.source === 'explore' ? 'Saved from discover' : 'From planner'}</Badge>
+                                <Badge variant="outline" className="rounded-full border-border/70 bg-background/80">
+                                    {getActivityBoardCityLabel(card, trip.items)}
+                                </Badge>
+                                <Badge variant="secondary" className="rounded-full">
+                                    {card.source === 'explore' ? 'Saved from discover' : 'From planner'}
+                                </Badge>
                             </div>
-                            <CardTitle className="mt-3 text-base leading-6">{card.title}</CardTitle>
-                            <CardDescription className="mt-2 text-sm leading-6">
+                            <CardTitle className="mt-3 text-[15px] leading-6">{card.title}</CardTitle>
+                            <CardDescription className="mt-2 max-w-[34ch] text-sm leading-6">
                                 {card.description || card.note || 'No summary yet.'}
                             </CardDescription>
                         </div>
@@ -256,10 +293,14 @@ const ExploreBoardCard: React.FC<{
                         />
                     </div>
                 </CardHeader>
-                <CardContent className="flex flex-col gap-4 pt-0">
+                <CardContent className="flex flex-col gap-4 border-t border-border/50 pt-4">
                     <div className="flex flex-wrap gap-2">
                         {card.activityType.slice(0, 3).map((type) => (
-                            <Badge key={type} variant={type === primaryType ? 'secondary' : 'outline'}>
+                            <Badge
+                                key={type}
+                                variant={type === primaryType ? 'secondary' : 'outline'}
+                                className="rounded-full"
+                            >
                                 {formatActivityTypeLabel(type)}
                             </Badge>
                         ))}
@@ -269,6 +310,7 @@ const ExploreBoardCard: React.FC<{
                             <Button
                                 type="button"
                                 size="sm"
+                                className="rounded-full"
                                 onClick={() => onScheduleBoardCard(card)}
                                 {...getAnalyticsDebugAttributes('trip_workspace__activity_board_card--schedule', {
                                     trip_id: trip.id,
@@ -280,31 +322,31 @@ const ExploreBoardCard: React.FC<{
                             </Button>
                         ) : null}
                         {card.status === 'planned' ? (
-                            <Button type="button" size="sm" variant="outline" onClick={() => onUpdateStatus(card, 'booked')}>
+                            <Button type="button" size="sm" variant="outline" className="rounded-full" onClick={() => onUpdateStatus(card, 'booked')}>
                                 <SuitcaseRolling data-icon="inline-start" weight="duotone" />
                                 Mark booked
                             </Button>
                         ) : null}
                         {card.status === 'booked' ? (
-                            <Button type="button" size="sm" variant="outline" onClick={() => onUpdateStatus(card, 'done')}>
+                            <Button type="button" size="sm" variant="outline" className="rounded-full" onClick={() => onUpdateStatus(card, 'done')}>
                                 <CheckCircle data-icon="inline-start" weight="duotone" />
                                 Mark done
                             </Button>
                         ) : null}
                         {card.timelineItemId && onOpenPlannerItem ? (
-                            <Button type="button" size="sm" variant="ghost" onClick={() => onOpenPlannerItem(card.timelineItemId!)}>
+                            <Button type="button" size="sm" variant="ghost" className="rounded-full" onClick={() => onOpenPlannerItem(card.timelineItemId!)}>
                                 <MapPin data-icon="inline-start" weight="duotone" />
                                 Open in planner
                             </Button>
                         ) : null}
                         {card.externalUrl ? (
-                            <Button type="button" size="sm" variant="ghost" onClick={() => openExternalUrl(card.externalUrl!)}>
+                            <Button type="button" size="sm" variant="ghost" className="rounded-full" onClick={() => openExternalUrl(card.externalUrl!)}>
                                 <ArrowSquareOut data-icon="inline-start" weight="duotone" />
                                 Research
                             </Button>
                         ) : null}
                         {card.timelineItemId ? (
-                            <Button type="button" size="sm" variant="ghost" onClick={() => onRemoveFromItinerary(card)}>
+                            <Button type="button" size="sm" variant="ghost" className="rounded-full text-muted-foreground hover:text-foreground" onClick={() => onRemoveFromItinerary(card)}>
                                 <Trash data-icon="inline-start" weight="duotone" />
                                 Remove from itinerary
                             </Button>
@@ -339,43 +381,53 @@ const ExploreBoardColumn: React.FC<{
     const statusCopy = STATUS_COPY[status];
 
     return (
-        <div className="flex min-h-[32rem] min-w-[18rem] flex-1 flex-col rounded-[1.75rem] border border-border/70 bg-card/80">
-            <div className={`rounded-t-[1.75rem] border-b px-4 py-4 ${statusCopy.tone}`}>
-                <div className="flex items-center justify-between gap-3">
+        <section className={cn(
+            'flex min-h-[35rem] w-[20rem] min-w-[20rem] max-w-[20rem] flex-col rounded-[1.75rem] border border-border/70',
+            'bg-linear-to-b shadow-[inset_0_1px_0_rgba(255,255,255,0.55)]',
+            statusCopy.laneTone,
+        )}>
+            <div className="border-b border-border/55 px-4 py-4 backdrop-blur-sm">
+                <div className="flex items-start justify-between gap-3">
                     <div>
-                        <p className="text-sm font-semibold">{statusCopy.label}</p>
-                        <p className="mt-1 text-xs leading-5 opacity-80">{statusCopy.detail}</p>
+                        <div className="flex items-center gap-2">
+                            <span className={cn('size-2.5 rounded-full', statusCopy.dotTone)} />
+                            <p className="text-sm font-semibold text-foreground">{statusCopy.label}</p>
+                        </div>
+                        <p className="mt-1 text-xs leading-5 text-muted-foreground">{statusCopy.detail}</p>
                     </div>
-                    <Badge variant="outline" className="bg-background/80">{cards.length}</Badge>
+                    <Badge variant="outline" className={cn('rounded-full bg-background/90', statusCopy.badgeTone)}>
+                        {cards.length}
+                    </Badge>
                 </div>
             </div>
-            <ScrollArea className="min-h-0 flex-1">
-                <div
-                    ref={setNodeRef}
-                    className={`flex min-h-full flex-col gap-3 px-4 py-4 transition-colors ${isOver ? 'bg-accent/5' : ''}`}
-                >
-                    <SortableContext items={cards.map((card) => card.id)} strategy={verticalListSortingStrategy}>
-                        {cards.map((card) => (
-                            <ExploreBoardCard
-                                key={card.id}
-                                card={card}
-                                trip={trip}
-                                isMobile={isMobile}
-                                onOpenPlannerItem={onOpenPlannerItem}
-                                onScheduleBoardCard={onScheduleBoardCard}
-                                onUpdateStatus={onUpdateStatus}
-                                onRemoveFromItinerary={onRemoveFromItinerary}
-                            />
-                        ))}
-                    </SortableContext>
-                    {cards.length === 0 ? (
-                        <div className="rounded-[1.5rem] border border-dashed border-border/70 bg-background/80 px-4 py-6 text-sm text-muted-foreground">
-                            No cards in this lane yet.
-                        </div>
-                    ) : null}
-                </div>
-            </ScrollArea>
-        </div>
+            <div
+                ref={setNodeRef}
+                className={cn(
+                    'flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overflow-x-visible px-4 py-4 transition-colors',
+                    isOver && 'bg-accent/5',
+                )}
+            >
+                <SortableContext items={cards.map((card) => card.id)} strategy={verticalListSortingStrategy}>
+                    {cards.map((card) => (
+                        <ExploreBoardCard
+                            key={card.id}
+                            card={card}
+                            trip={trip}
+                            isMobile={isMobile}
+                            onOpenPlannerItem={onOpenPlannerItem}
+                            onScheduleBoardCard={onScheduleBoardCard}
+                            onUpdateStatus={onUpdateStatus}
+                            onRemoveFromItinerary={onRemoveFromItinerary}
+                        />
+                    ))}
+                </SortableContext>
+                {cards.length === 0 ? (
+                    <div className="rounded-[1.5rem] border border-dashed border-border/65 bg-background/80 px-4 py-6 text-sm leading-6 text-muted-foreground">
+                        No cards in this lane yet.
+                    </div>
+                ) : null}
+            </div>
+        </section>
     );
 };
 
@@ -488,15 +540,22 @@ export const TripWorkspaceExploreBoard: React.FC<TripWorkspaceExploreBoardProps>
 
     return (
         <div className="flex flex-col gap-4">
-            <Card className="border-border/80 bg-linear-to-br from-accent/10 via-background to-sky-50 shadow-sm">
-                <CardHeader className="gap-3">
-                    <CardDescription>Activity workflow board</CardDescription>
-                    <CardTitle>Move ideas from shortlist to booked and done</CardTitle>
-                </CardHeader>
-                <CardContent className="flex flex-col gap-4">
-                    <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
+            <section className="rounded-[1.75rem] border border-border/70 bg-background/88 px-4 py-4 shadow-sm backdrop-blur-sm">
+                <div className="flex flex-col gap-4">
+                    <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+                        <div className="space-y-1">
+                            <p className="text-sm font-medium text-muted-foreground">Activity workflow board</p>
+                            <h3 className="text-lg font-semibold tracking-tight text-foreground">Move ideas from shortlist to booked and done</h3>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            <Badge variant="outline" className="rounded-full bg-background/90">{derivedCards.length} total cards</Badge>
+                            <Badge variant="secondary" className="rounded-full">{cardsByStatus.booked.length} booked</Badge>
+                            <Badge variant="outline" className="rounded-full bg-background/90">{cardsByStatus.done.length} done</Badge>
+                        </div>
+                    </div>
+                    <div className="grid gap-3 lg:grid-cols-[minmax(0,14rem)_minmax(0,14rem)_1fr]">
                         <Select value={cityFilter} onValueChange={onCityFilterChange}>
-                            <SelectTrigger className="h-10" aria-label="Filter activity board by city">
+                            <SelectTrigger className="h-11 rounded-xl border-border/70 bg-background/90 shadow-xs" aria-label="Filter activity board by city">
                                 <SelectValue placeholder="Filter by city" />
                             </SelectTrigger>
                             <SelectContent>
@@ -512,7 +571,7 @@ export const TripWorkspaceExploreBoard: React.FC<TripWorkspaceExploreBoardProps>
                             </SelectContent>
                         </Select>
                         <Select value={typeFilter} onValueChange={(value) => onTypeFilterChange(value as ActivityType | 'all')}>
-                            <SelectTrigger className="h-10" aria-label="Filter activity board by activity type">
+                            <SelectTrigger className="h-11 rounded-xl border-border/70 bg-background/90 shadow-xs" aria-label="Filter activity board by activity type">
                                 <SelectValue placeholder="Filter by activity type" />
                             </SelectTrigger>
                             <SelectContent>
@@ -527,20 +586,21 @@ export const TripWorkspaceExploreBoard: React.FC<TripWorkspaceExploreBoardProps>
                                 </SelectGroup>
                             </SelectContent>
                         </Select>
-                        <div className="flex items-center justify-end gap-2">
-                            <Badge variant="outline">{derivedCards.length} total cards</Badge>
-                            <Badge variant="secondary">{cardsByStatus.booked.length} booked</Badge>
+                        <div className="flex items-center gap-2 text-sm leading-6 text-muted-foreground lg:justify-end">
+                            <span className="rounded-full border border-border/70 bg-muted/45 px-3 py-2">
+                                Drag on desktop. Use the menu on mobile.
+                            </span>
                         </div>
                     </div>
                     <p className="text-sm leading-6 text-muted-foreground">
                         Activity leads saved from discovery land in <span className="font-medium text-foreground">Shortlist</span>. Planner activities appear here as <span className="font-medium text-foreground">Planned</span> cards, and mobile uses menu-based moves instead of drag and drop.
                     </p>
-                </CardContent>
-            </Card>
+                </div>
+            </section>
 
             <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={handleDragEnd}>
-                <ScrollArea className="w-full">
-                    <div className="flex min-w-max gap-4 pb-4">
+                <div className="overflow-x-auto pb-2">
+                    <div className="flex min-w-max items-start gap-4">
                         {TRIP_ACTIVITY_WORKFLOW_STATUSES.map((status) => (
                             <ExploreBoardColumn
                                 key={status}
@@ -555,7 +615,7 @@ export const TripWorkspaceExploreBoard: React.FC<TripWorkspaceExploreBoardProps>
                             />
                         ))}
                     </div>
-                </ScrollArea>
+                </div>
             </DndContext>
         </div>
     );
