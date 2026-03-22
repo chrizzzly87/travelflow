@@ -1,8 +1,14 @@
 // @vitest-environment jsdom
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+vi.mock('../../services/nearbyAirportsService', () => ({
+  fetchNearbyAirports: vi.fn(),
+}));
+
 import { RuntimeLocationDebugCard } from '../../components/OnPageDebugger';
+import { fetchNearbyAirports } from '../../services/nearbyAirportsService';
 import type { RuntimeLocationStoreSnapshot } from '../../services/runtimeLocationService';
 
 const makeSnapshot = (overrides?: Partial<RuntimeLocationStoreSnapshot>): RuntimeLocationStoreSnapshot => ({
@@ -25,6 +31,10 @@ const makeSnapshot = (overrides?: Partial<RuntimeLocationStoreSnapshot>): Runtim
 });
 
 describe('components/OnPageDebugger runtime location card', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it('renders the detected runtime location details and allows a manual refresh', () => {
     const onRefresh = vi.fn();
     render(React.createElement(RuntimeLocationDebugCard, {
@@ -39,6 +49,56 @@ describe('components/OnPageDebugger runtime location card', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Refresh Runtime Location' }));
     expect(onRefresh).toHaveBeenCalledTimes(1);
+  });
+
+  it('looks up nearby airports and renders the closest matches', async () => {
+    vi.mocked(fetchNearbyAirports).mockResolvedValue({
+      origin: { lat: 52.52, lng: 13.405 },
+      dataVersion: '2026-03-21-4086',
+      airports: [
+        {
+          rank: 1,
+          airDistanceKm: 18.9,
+          airport: {
+            ident: 'EDDB',
+            iataCode: 'BER',
+            icaoCode: 'EDDB',
+            name: 'Berlin Brandenburg Airport',
+            municipality: 'Berlin',
+            subdivisionName: 'Berlin',
+            regionCode: 'DE-BE',
+            countryCode: 'DE',
+            countryName: 'Germany',
+            latitude: 52.362247,
+            longitude: 13.500672,
+            timezone: 'Europe/Berlin',
+            airportType: 'large_airport',
+            scheduledService: true,
+            isCommercial: true,
+            commercialServiceTier: 'major',
+            isMajorCommercial: true,
+          },
+        },
+      ],
+    });
+
+    const view = render(React.createElement(RuntimeLocationDebugCard, {
+      snapshot: makeSnapshot(),
+      onRefresh: vi.fn(),
+    }));
+
+    fireEvent.click(within(view.container).getByRole('button', { name: 'Lookup Nearby Airports' }));
+
+    await waitFor(() => {
+      expect(fetchNearbyAirports).toHaveBeenCalledWith({
+        lat: 52.52,
+        lng: 13.405,
+        limit: 10,
+      });
+    });
+
+    expect(await screen.findByText(/Berlin Brandenburg Airport/)).toBeInTheDocument();
+    expect(screen.getByText(/18.9 km/)).toBeInTheDocument();
   });
 
   it('renders a clear unavailable state when no geo data exists', () => {

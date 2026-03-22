@@ -81,6 +81,8 @@ import {
     subscribeRuntimeLocation,
     type RuntimeLocationStoreSnapshot,
 } from '../services/runtimeLocationService';
+import { fetchNearbyAirports } from '../services/nearbyAirportsService';
+import type { NearbyAirportsResponse } from '../shared/airportReference';
 
 const UMAMI_DASHBOARD_URL = 'https://cloud.umami.is/analytics/eu/websites/d8a78257-7625-4891-8954-1a20b10f7537';
 const DEBUG_AUTO_OPEN_STORAGE_KEY = 'tf_debug_auto_open';
@@ -203,6 +205,12 @@ interface RuntimeLocationDebugCardProps {
     onRefresh: () => void;
 }
 
+interface NearbyAirportsLookupState {
+    loading: boolean;
+    error: string | null;
+    response: NearbyAirportsResponse | null;
+}
+
 interface OnPageDebuggerApi {
     show: () => void;
     hide: () => void;
@@ -320,7 +328,21 @@ const formatRuntimeLocationFetchedAt = (fetchedAt: string | null): string => {
     return parsed.toLocaleTimeString();
 };
 
+const formatNearbyAirportCode = (airport: NearbyAirportsResponse['airports'][number]['airport']): string => (
+    airport.iataCode || airport.icaoCode || airport.ident
+);
+
+const formatNearbyAirportDistance = (distanceKm: number): string => `${distanceKm.toFixed(1)} km`;
+
 export const RuntimeLocationDebugCard: React.FC<RuntimeLocationDebugCardProps> = ({ snapshot, onRefresh }) => {
+    const [latitudeInput, setLatitudeInput] = useState(() => snapshot.location.latitude?.toString() || '');
+    const [longitudeInput, setLongitudeInput] = useState(() => snapshot.location.longitude?.toString() || '');
+    const [limitInput, setLimitInput] = useState('10');
+    const [nearbyAirportsState, setNearbyAirportsState] = useState<NearbyAirportsLookupState>({
+        loading: false,
+        error: null,
+        response: null,
+    });
     const statusLabel = snapshot.loading
         ? 'Loading'
         : snapshot.source === 'error'
@@ -343,6 +365,63 @@ export const RuntimeLocationDebugCard: React.FC<RuntimeLocationDebugCardProps> =
             : snapshot.available
                 ? 'Approximate GeoIP-derived location from the current session.'
                 : 'No runtime location is available yet. Plain Vite dev and requests without Netlify geo data will land here.';
+    const hasRuntimeCoordinates = snapshot.location.latitude !== null && snapshot.location.longitude !== null;
+
+    useEffect(() => {
+        if (latitudeInput || longitudeInput) return;
+        if (snapshot.location.latitude !== null) {
+            setLatitudeInput(String(snapshot.location.latitude));
+        }
+        if (snapshot.location.longitude !== null) {
+            setLongitudeInput(String(snapshot.location.longitude));
+        }
+    }, [latitudeInput, longitudeInput, snapshot.location.latitude, snapshot.location.longitude]);
+
+    const applyRuntimeCoordinates = useCallback(() => {
+        setLatitudeInput(snapshot.location.latitude?.toString() || '');
+        setLongitudeInput(snapshot.location.longitude?.toString() || '');
+    }, [snapshot.location.latitude, snapshot.location.longitude]);
+
+    const handleNearbyAirportsLookup = useCallback(() => {
+        const latitude = Number(latitudeInput.trim());
+        const longitude = Number(longitudeInput.trim());
+        const parsedLimit = Number(limitInput.trim() || '10');
+
+        if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+            setNearbyAirportsState({
+                loading: false,
+                error: 'Enter valid latitude and longitude values before looking up airports.',
+                response: null,
+            });
+            return;
+        }
+
+        setNearbyAirportsState((current) => ({
+            ...current,
+            loading: true,
+            error: null,
+        }));
+
+        void fetchNearbyAirports({
+            lat: latitude,
+            lng: longitude,
+            limit: parsedLimit,
+        })
+            .then((response) => {
+                setNearbyAirportsState({
+                    loading: false,
+                    error: null,
+                    response,
+                });
+            })
+            .catch((error: unknown) => {
+                setNearbyAirportsState({
+                    loading: false,
+                    error: error instanceof Error ? error.message : 'Nearby airports could not be loaded right now.',
+                    response: null,
+                });
+            });
+    }, [latitudeInput, longitudeInput, limitInput]);
 
     return (
         <div className="mt-3 rounded-md border border-slate-200 bg-white p-3 text-xs">
@@ -393,6 +472,114 @@ export const RuntimeLocationDebugCard: React.FC<RuntimeLocationDebugCardProps> =
                 <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1">
                     <strong className="text-slate-900">Lat/Lon:</strong> {formatRuntimeLocationCoordinates(snapshot)}
                 </div>
+            </div>
+
+            <div className="mt-3 rounded-md border border-slate-200 bg-slate-50 p-3">
+                <div className="flex flex-wrap items-start gap-2">
+                    <div className="min-w-0 flex-1">
+                        <div className="font-semibold uppercase tracking-wide text-slate-500">Nearby Airports Tester</div>
+                        <p className="mt-1 text-slate-600">
+                            Query the nearby-airports endpoint with the current runtime coordinates or manual lat/lon overrides.
+                        </p>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={applyRuntimeCoordinates}
+                        disabled={!hasRuntimeCoordinates}
+                        className="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                        <Compass size={14} weight="duotone" />
+                        Use Runtime Coordinates
+                    </button>
+                    <button
+                        type="button"
+                        onClick={handleNearbyAirportsLookup}
+                        disabled={nearbyAirportsState.loading}
+                        className="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                        <MagnifyingGlass size={14} weight="duotone" />
+                        {nearbyAirportsState.loading ? 'Looking up…' : 'Lookup Nearby Airports'}
+                    </button>
+                </div>
+
+                <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                    <label className="flex flex-col gap-1 text-slate-600">
+                        <span className="font-medium text-slate-900">Latitude</span>
+                        <input
+                            aria-label="Nearby airport latitude"
+                            inputMode="decimal"
+                            value={latitudeInput}
+                            onChange={(event) => setLatitudeInput(event.target.value)}
+                            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+                            placeholder="52.5200"
+                        />
+                    </label>
+                    <label className="flex flex-col gap-1 text-slate-600">
+                        <span className="font-medium text-slate-900">Longitude</span>
+                        <input
+                            aria-label="Nearby airport longitude"
+                            inputMode="decimal"
+                            value={longitudeInput}
+                            onChange={(event) => setLongitudeInput(event.target.value)}
+                            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+                            placeholder="13.4050"
+                        />
+                    </label>
+                    <label className="flex flex-col gap-1 text-slate-600">
+                        <span className="font-medium text-slate-900">Limit</span>
+                        <input
+                            aria-label="Nearby airport result limit"
+                            inputMode="numeric"
+                            value={limitInput}
+                            onChange={(event) => setLimitInput(event.target.value)}
+                            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+                            placeholder="10"
+                        />
+                    </label>
+                </div>
+
+                {nearbyAirportsState.error && (
+                    <p className="mt-3 rounded border border-rose-200 bg-rose-50 px-3 py-2 text-rose-700">
+                        {nearbyAirportsState.error}
+                    </p>
+                )}
+
+                {nearbyAirportsState.response && (
+                    <div className="mt-3 rounded-md border border-slate-200 bg-white">
+                        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 px-3 py-2 text-slate-600">
+                            <span>
+                                Found {nearbyAirportsState.response.airports.length} commercial airports near{' '}
+                                {nearbyAirportsState.response.origin.lat.toFixed(4)}, {nearbyAirportsState.response.origin.lng.toFixed(4)}
+                            </span>
+                            <span>Data version {nearbyAirportsState.response.dataVersion}</span>
+                        </div>
+
+                        {nearbyAirportsState.response.airports.length > 0 ? (
+                            <ul className="divide-y divide-slate-200">
+                                {nearbyAirportsState.response.airports.map((entry) => (
+                                    <li key={`${entry.airport.ident}:${entry.rank}`} className="px-3 py-2">
+                                        <div className="flex flex-wrap items-center justify-between gap-2">
+                                            <div className="min-w-0 flex-1">
+                                                <div className="font-medium text-slate-900">
+                                                    #{entry.rank} {formatNearbyAirportCode(entry.airport)} · {entry.airport.name}
+                                                </div>
+                                                <div className="mt-1 text-slate-600">
+                                                    {entry.airport.municipality || entry.airport.subdivisionName || 'Unknown city'} · {entry.airport.countryName}
+                                                    {entry.airport.timezone ? ` · ${entry.airport.timezone}` : ''}
+                                                </div>
+                                            </div>
+                                            <div className="rounded-full border border-sky-200 bg-sky-50 px-2 py-1 font-medium text-sky-700">
+                                                {formatNearbyAirportDistance(entry.airDistanceKm)}
+                                            </div>
+                                        </div>
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <p className="px-3 py-3 text-slate-600">No commercial airports were returned for this lookup.</p>
+                        )}
+                    </div>
+                )}
             </div>
         </div>
     );

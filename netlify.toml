@@ -45,6 +45,10 @@ exit 1
   function = "runtime-location"
 
 [[edge_functions]]
+  path = "/api/runtime/nearby-airports"
+  function = "runtime-nearby-airports"
+
+[[edge_functions]]
   path = "/api/billing/paddle/config"
   function = "paddle-config"
 
@@ -127,6 +131,10 @@ exit 1
 [[edge_functions]]
   path = "/api/internal/admin/ai-worker-health"
   function = "admin-ai-worker-health"
+
+[[edge_functions]]
+  path = "/api/internal/admin/airports"
+  function = "admin-airports"
 
 [[edge_functions]]
   path = "/api/internal/admin/iam"

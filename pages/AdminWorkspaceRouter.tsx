@@ -13,6 +13,7 @@ const AdminAiTelemetryPage = lazyWithRecovery('AdminAiTelemetryPage', () => impo
 const AdminAiWorkerHealthPage = lazyWithRecovery('AdminAiWorkerHealthPage', () => import('./AdminAiWorkerHealthPage').then((module) => ({ default: module.AdminAiWorkerHealthPage })));
 const AdminUsersPage = lazyWithRecovery('AdminUsersPage', () => import('./AdminUsersPage').then((module) => ({ default: module.AdminUsersPage })));
 const AdminTripsPage = lazyWithRecovery('AdminTripsPage', () => import('./AdminTripsPage').then((module) => ({ default: module.AdminTripsPage })));
+const AdminAirportsPage = lazyWithRecovery('AdminAirportsPage', () => import('./AdminAirportsPage').then((module) => ({ default: module.AdminAirportsPage })));
 const AdminTiersPage = lazyWithRecovery('AdminTiersPage', () => import('./AdminTiersPage').then((module) => ({ default: module.AdminTiersPage })));
 const AdminBillingPage = lazyWithRecovery('AdminBillingPage', () => import('./AdminBillingPage').then((module) => ({ default: module.AdminBillingPage })));
 const AdminAuditPage = lazyWithRecovery('AdminAuditPage', () => import('./AdminAuditPage').then((module) => ({ default: module.AdminAuditPage })));
@@ -31,6 +32,7 @@ export const AdminWorkspaceRouter: React.FC = () => (
             <Route path="dashboard" element={<AdminDashboardPage />} />
             <Route path="users" element={<AdminUsersPage />} />
             <Route path="trips" element={<AdminTripsPage />} />
+            <Route path="airports" element={<AdminAirportsPage />} />
             <Route path="tiers" element={<AdminTiersPage />} />
             <Route path="billing" element={<AdminBillingPage />} />
             <Route path="audit" element={<AdminAuditPage />} />
