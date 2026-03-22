@@ -12,16 +12,22 @@ import {
     WarningCircle,
 } from '@phosphor-icons/react';
 
-import type { ITrip, TripWorkspacePage } from '../../../types';
+import type {
+    ITrip,
+    TripWorkspaceContextSelection,
+    TripWorkspacePage,
+} from '../../../types';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../../services/analyticsService';
 import {
-    THAILAND_TRAVEL_KIT_CHECKLIST,
-    THAILAND_TRAVEL_KIT_EMERGENCY_CARDS,
-    THAILAND_TRAVEL_KIT_PACKS,
-    THAILAND_TRAVEL_KIT_UTILITIES,
+    type TripWorkspaceDemoDataset,
     type TripWorkspaceTravelKitSectionId,
-    resolveTripWorkspaceCityStops,
 } from './tripWorkspaceDemoData';
+import {
+    filterTripWorkspaceEntriesBySelection,
+    resolveTripWorkspaceContextSnapshot,
+} from './tripWorkspaceContext';
+import { resolveTripWorkspaceFallbackTripMeta, useTripWorkspacePageContext } from './tripWorkspacePageContext';
+import { TripWorkspaceRouteContextBar } from './TripWorkspaceRouteContextBar';
 import { Badge } from '../../ui/badge';
 import { Button } from '../../ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../ui/card';
@@ -29,50 +35,106 @@ import { Checkbox } from '../../ui/checkbox';
 import { Switch } from '../../ui/switch';
 import { Tabs, TabsList, TabsTrigger } from '../../ui/tabs';
 
+interface TripMetaSummary {
+    dateRange: string;
+    totalDaysLabel: string;
+    cityCount: number;
+    distanceLabel: string | null;
+    summaryLine: string;
+}
+
 interface TripWorkspaceTravelKitPageProps {
     trip: ITrip;
+    tripMeta?: TripMetaSummary;
+    dataset?: TripWorkspaceDemoDataset;
+    contextSelection?: TripWorkspaceContextSelection;
+    onContextSelectionChange?: (next: TripWorkspaceContextSelection) => void;
     onPageChange: (page: TripWorkspacePage) => void;
 }
 
 const SECTION_COPY: Record<TripWorkspaceTravelKitSectionId, { label: string; detail: string }> = {
     entry: {
-        label: 'Before departure',
-        detail: 'Keep the one-time prep clear before the trip starts moving.',
+        label: 'Entry prep',
+        detail: 'Passport, entry, and pre-departure basics.',
     },
     arrival: {
         label: 'Arrival day',
         detail: 'Reduce first-night friction with the small things that actually matter.',
     },
+    border: {
+        label: 'Borders',
+        detail: 'Keep overland and cross-country prep operational instead of scattered.',
+    },
+    regional: {
+        label: 'Regional rhythm',
+        detail: 'SIMs, cash, and practical tools that carry across the full route.',
+    },
     islands: {
-        label: 'Island leg',
-        detail: 'Protect the south Thailand stretch from boat-day chaos and wet-bag energy.',
+        label: 'Water and coast',
+        detail: 'Sea-sensitive days, wet transfers, and coastal friction points.',
     },
 };
 
 const EUR_OPTIONS = [20, 50, 100, 250] as const;
-const EUR_TO_THB_RATE = 39;
+const EUR_TO_REGIONAL_RATE = 4170;
 
 export const TripWorkspaceTravelKitPage: React.FC<TripWorkspaceTravelKitPageProps> = ({
     trip,
+    tripMeta = resolveTripWorkspaceFallbackTripMeta(trip),
+    dataset,
+    contextSelection,
+    onContextSelectionChange,
     onPageChange,
 }) => {
-    const cityStops = React.useMemo(() => resolveTripWorkspaceCityStops(trip.items), [trip.items]);
+    const pageTripMeta = React.useMemo(
+        () => tripMeta ?? resolveTripWorkspaceFallbackTripMeta(trip),
+        [trip, tripMeta],
+    );
+    const {
+        dataset: pageDataset,
+        contextSelection: pageContextSelection,
+        onContextSelectionChange: handleContextSelectionChange,
+    } = useTripWorkspacePageContext({
+        trip,
+        dataset,
+        contextSelection,
+        onContextSelectionChange,
+    });
+    const context = React.useMemo(
+        () => resolveTripWorkspaceContextSnapshot(pageDataset, pageContextSelection),
+        [pageContextSelection, pageDataset],
+    );
     const [activeSection, setActiveSection] = React.useState<TripWorkspaceTravelKitSectionId>('entry');
-    const [checkedIds, setCheckedIds] = React.useState<string[]>(['passport-proof', 'esim-download']);
+    const [checkedIds, setCheckedIds] = React.useState<string[]>(['passport-proof', 'visa-check', 'regional-esim']);
     const [selectedAmount, setSelectedAmount] = React.useState<number>(100);
     const [isPhrasePackReady, setIsPhrasePackReady] = React.useState<boolean>(true);
     const [isBookingPackReady, setIsBookingPackReady] = React.useState<boolean>(true);
-    const [activePackId, setActivePackId] = React.useState<string>('island-pack');
+    const [activePackId, setActivePackId] = React.useState<string>(() => pageDataset.travelKitPacks[0]?.id ?? '');
 
     const sectionItems = React.useMemo(
-        () => THAILAND_TRAVEL_KIT_CHECKLIST.filter((item) => item.section === activeSection),
-        [activeSection],
+        () => filterTripWorkspaceEntriesBySelection(
+            pageDataset.travelKitChecklist.filter((item) => item.section === activeSection),
+            pageContextSelection,
+            activeSection === 'regional' ? 'country' : 'city',
+        ),
+        [activeSection, pageContextSelection, pageDataset.travelKitChecklist],
+    );
+    const countryUtilities = React.useMemo(
+        () => filterTripWorkspaceEntriesBySelection(pageDataset.travelKitUtilities, pageContextSelection, 'country'),
+        [pageContextSelection, pageDataset.travelKitUtilities],
+    );
+    const emergencyCards = React.useMemo(
+        () => filterTripWorkspaceEntriesBySelection(pageDataset.travelKitEmergencyCards, pageContextSelection, 'country'),
+        [pageContextSelection, pageDataset.travelKitEmergencyCards],
+    );
+    const packOptions = React.useMemo(
+        () => filterTripWorkspaceEntriesBySelection(pageDataset.travelKitPacks, pageContextSelection, 'country'),
+        [pageContextSelection, pageDataset.travelKitPacks],
     );
     const completedCount = checkedIds.length;
-    const remainingItem = THAILAND_TRAVEL_KIT_CHECKLIST.find((item) => !checkedIds.includes(item.id)) ?? null;
-    const currentCity = cityStops[0]?.title ?? 'Bangkok';
-    const convertedAmount = new Intl.NumberFormat('en-US').format(selectedAmount * EUR_TO_THB_RATE);
-    const activePack = THAILAND_TRAVEL_KIT_PACKS.find((pack) => pack.id === activePackId) ?? THAILAND_TRAVEL_KIT_PACKS[0];
+    const remainingItem = pageDataset.travelKitChecklist.find((item) => !checkedIds.includes(item.id)) ?? null;
+    const convertedAmount = new Intl.NumberFormat('en-US').format(selectedAmount * EUR_TO_REGIONAL_RATE);
+    const activePack = packOptions.find((pack) => pack.id === activePackId) ?? packOptions[0] ?? null;
 
     const handleChecklistToggle = React.useCallback((itemId: string) => {
         setCheckedIds((current) => {
@@ -98,30 +160,38 @@ export const TripWorkspaceTravelKitPage: React.FC<TripWorkspaceTravelKitPageProp
 
     return (
         <div className="flex flex-col gap-4">
+            <TripWorkspaceRouteContextBar
+                tripId={trip.id}
+                page="travel-kit"
+                dataset={pageDataset}
+                tripMeta={pageTripMeta}
+                selection={pageContextSelection}
+                onSelectionChange={handleContextSelectionChange}
+            />
+
             <Card className="overflow-hidden border-border/80 bg-linear-to-br from-accent/10 via-background to-emerald-50 shadow-sm">
                 <CardHeader className="gap-4">
                     <div className="flex flex-wrap gap-2">
-                        <Badge variant="secondary">Demo support layer</Badge>
-                        <Badge variant="outline">Trip support</Badge>
-                        <Badge variant="outline">Thailand route</Badge>
+                        <Badge variant="secondary">Trip support</Badge>
+                        <Badge variant="outline">{context.activeCountry?.name ?? 'Route-wide'}</Badge>
+                        <Badge variant="outline">Demo utilities</Badge>
                     </div>
                     <div className="grid gap-4 lg:grid-cols-[1.08fr_0.92fr] lg:items-start">
                         <div>
                             <CardDescription>Practical trip support</CardDescription>
                             <CardTitle>Keep the useful little things one click from the route</CardTitle>
                             <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
-                                This page holds the prep that gets lost inside notes and modals: entry basics,
-                                cash rhythm, emergency numbers, quick packing logic, and offline-ready trip support for Thailand.
+                                Travel kit is now country-aware first, then city-aware where that actually changes how you arrive, pay, stay connected, or cross a border.
                             </p>
                         </div>
                         <div className="grid gap-3 sm:grid-cols-3">
                             <div className="rounded-[1.5rem] border border-border/70 bg-background/90 px-4 py-3">
                                 <p className="text-xs font-medium uppercase tracking-[0.08em] text-muted-foreground">Ready now</p>
-                                <p className="mt-2 text-2xl font-semibold text-foreground">{completedCount}/{THAILAND_TRAVEL_KIT_CHECKLIST.length}</p>
+                                <p className="mt-2 text-2xl font-semibold text-foreground">{completedCount}/{pageDataset.travelKitChecklist.length}</p>
                             </div>
                             <div className="rounded-[1.5rem] border border-border/70 bg-background/90 px-4 py-3">
-                                <p className="text-xs font-medium uppercase tracking-[0.08em] text-muted-foreground">Current city</p>
-                                <p className="mt-2 text-lg font-semibold text-foreground">{currentCity}</p>
+                                <p className="text-xs font-medium uppercase tracking-[0.08em] text-muted-foreground">Current country</p>
+                                <p className="mt-2 text-lg font-semibold text-foreground">{context.activeCountry?.name ?? 'Route'}</p>
                             </div>
                             <div className="rounded-[1.5rem] border border-border/70 bg-background/90 px-4 py-3">
                                 <p className="text-xs font-medium uppercase tracking-[0.08em] text-muted-foreground">Next focus</p>
@@ -157,11 +227,11 @@ export const TripWorkspaceTravelKitPage: React.FC<TripWorkspaceTravelKitPageProp
                     <Card className="border-border/80 bg-card/95 shadow-sm">
                         <CardHeader className="gap-3">
                             <CardDescription>Interactive checklist</CardDescription>
-                            <CardTitle>Turn trip support into a usable pre-flight board</CardTitle>
+                            <CardTitle>Turn trip support into an actual route-prep board</CardTitle>
                         </CardHeader>
                         <CardContent className="flex flex-col gap-4">
                             <Tabs value={activeSection} onValueChange={(value) => setActiveSection(value as TripWorkspaceTravelKitSectionId)}>
-                                <TabsList className="w-full justify-start overflow-x-auto">
+                                <TabsList className="flex w-full flex-wrap justify-start">
                                     {Object.entries(SECTION_COPY).map(([id, section]) => (
                                         <TabsTrigger key={id} value={id}>{section.label}</TabsTrigger>
                                     ))}
@@ -169,9 +239,7 @@ export const TripWorkspaceTravelKitPage: React.FC<TripWorkspaceTravelKitPageProp
                             </Tabs>
                             <div className="rounded-[1.5rem] border border-border/70 bg-background px-4 py-3">
                                 <p className="text-sm font-medium text-foreground">{SECTION_COPY[activeSection].label}</p>
-                                <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                                    {SECTION_COPY[activeSection].detail}
-                                </p>
+                                <p className="mt-2 text-sm leading-6 text-muted-foreground">{SECTION_COPY[activeSection].detail}</p>
                             </div>
                             <div className="grid gap-3">
                                 {sectionItems.map((item) => {
@@ -184,30 +252,16 @@ export const TripWorkspaceTravelKitPage: React.FC<TripWorkspaceTravelKitPageProp
                                                     checked={isChecked}
                                                     onCheckedChange={() => handleChecklistToggle(item.id)}
                                                     aria-label={item.label}
-                                                    {...getAnalyticsDebugAttributes('trip_workspace__travel_kit_checklist--toggle', {
-                                                        trip_id: trip.id,
-                                                        item_id: item.id,
-                                                        active: !isChecked,
-                                                    })}
                                                 />
                                                 <div className="min-w-0 flex-1">
                                                     <div className="flex flex-wrap items-center gap-2">
                                                         <label htmlFor={`travel-kit-${item.id}`} className="cursor-pointer text-sm font-medium text-foreground">
                                                             {item.label}
                                                         </label>
-                                                        <Badge variant={item.scope === 'Trip-specific' ? 'secondary' : 'outline'}>
-                                                            {item.scope}
-                                                        </Badge>
-                                                        {isChecked ? (
-                                                            <Badge variant="outline">
-                                                                <CheckCircle className="mr-1 size-3.5" weight="duotone" />
-                                                                Ready
-                                                            </Badge>
-                                                        ) : null}
+                                                        <Badge variant={item.scope === 'Trip-specific' ? 'secondary' : 'outline'}>{item.scope}</Badge>
+                                                        {isChecked ? <Badge variant="outline"><CheckCircle data-icon="inline-start" weight="duotone" />Ready</Badge> : null}
                                                     </div>
-                                                    <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                                                        {item.detail}
-                                                    </p>
+                                                    <p className="mt-2 text-sm leading-6 text-muted-foreground">{item.detail}</p>
                                                 </div>
                                             </div>
                                         </div>
@@ -220,47 +274,39 @@ export const TripWorkspaceTravelKitPage: React.FC<TripWorkspaceTravelKitPageProp
                     <Card className="border-border/80 bg-card/95 shadow-sm">
                         <CardHeader>
                             <CardDescription>Pack presets</CardDescription>
-                            <CardTitle>Swap mental load for a few reusable trip modes</CardTitle>
+                            <CardTitle>Swap mental load for reusable trip modes</CardTitle>
                         </CardHeader>
                         <CardContent className="grid gap-4">
                             <div className="flex flex-wrap gap-2">
-                                {THAILAND_TRAVEL_KIT_PACKS.map((pack) => (
+                                {packOptions.map((pack) => (
                                     <button
                                         key={pack.id}
                                         type="button"
-                                        onClick={() => {
-                                            setActivePackId(pack.id);
-                                            trackEvent('trip_workspace__travel_kit_pack--select', {
-                                                trip_id: trip.id,
-                                                pack_id: pack.id,
-                                            });
-                                        }}
+                                        onClick={() => setActivePackId(pack.id)}
                                         className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
                                             activePackId === pack.id
                                                 ? 'border-accent-500 bg-accent-50 text-accent-700'
                                                 : 'border-border bg-background text-muted-foreground hover:border-accent-300 hover:text-foreground'
                                         }`}
-                                        {...getAnalyticsDebugAttributes('trip_workspace__travel_kit_pack--select', {
-                                            trip_id: trip.id,
-                                            pack_id: pack.id,
-                                        })}
                                     >
                                         {pack.label}
                                     </button>
                                 ))}
                             </div>
-                            <div className="rounded-[1.75rem] border border-border/70 bg-background px-4 py-4">
-                                <div className="flex items-center gap-2">
-                                    <Backpack size={18} weight="duotone" className="text-accent-700" />
-                                    <p className="text-sm font-medium text-foreground">{activePack.label}</p>
+                            {activePack ? (
+                                <div className="rounded-[1.75rem] border border-border/70 bg-background px-4 py-4">
+                                    <div className="flex items-center gap-2">
+                                        <Backpack size={18} weight="duotone" className="text-accent-700" />
+                                        <p className="text-sm font-medium text-foreground">{activePack.label}</p>
+                                    </div>
+                                    <p className="mt-2 text-sm leading-6 text-muted-foreground">{activePack.detail}</p>
+                                    <div className="mt-4 flex flex-wrap gap-2">
+                                        {activePack.includes.map((item) => (
+                                            <Badge key={item} variant="outline">{item}</Badge>
+                                        ))}
+                                    </div>
                                 </div>
-                                <p className="mt-2 text-sm leading-6 text-muted-foreground">{activePack.detail}</p>
-                                <div className="mt-4 flex flex-wrap gap-2">
-                                    {activePack.includes.map((item) => (
-                                        <Badge key={item} variant="outline">{item}</Badge>
-                                    ))}
-                                </div>
-                            </div>
+                            ) : null}
                         </CardContent>
                     </Card>
                 </div>
@@ -273,40 +319,30 @@ export const TripWorkspaceTravelKitPage: React.FC<TripWorkspaceTravelKitPageProp
                         </CardHeader>
                         <CardContent className="grid gap-4">
                             <div className="rounded-[1.75rem] border border-border/70 bg-background px-4 py-4">
-                                <p className="text-sm font-medium text-foreground">Quick EUR → THB pocket check</p>
+                                <p className="text-sm font-medium text-foreground">Quick EUR to route-cash pocket check</p>
                                 <div className="mt-3 flex flex-wrap gap-2">
                                     {EUR_OPTIONS.map((amount) => (
                                         <button
                                             key={amount}
                                             type="button"
-                                            onClick={() => {
-                                                setSelectedAmount(amount);
-                                                trackEvent('trip_workspace__travel_kit_converter--select', {
-                                                    trip_id: trip.id,
-                                                    amount_eur: amount,
-                                                });
-                                            }}
+                                            onClick={() => setSelectedAmount(amount)}
                                             className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
                                                 selectedAmount === amount
                                                     ? 'border-accent-500 bg-accent-50 text-accent-700'
                                                     : 'border-border bg-background text-muted-foreground hover:border-accent-300 hover:text-foreground'
                                             }`}
-                                            {...getAnalyticsDebugAttributes('trip_workspace__travel_kit_converter--select', {
-                                                trip_id: trip.id,
-                                                amount_eur: amount,
-                                            })}
                                         >
                                             {amount} EUR
                                         </button>
                                     ))}
                                 </div>
-                                <p className="mt-4 text-3xl font-semibold tracking-tight text-foreground">{convertedAmount} THB</p>
+                                <p className="mt-4 text-3xl font-semibold tracking-tight text-foreground">{convertedAmount} local-cash demo</p>
                                 <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                                    Demo conversion to keep first-day cash decisions tangible while live currency feeds are still pending.
+                                    Seeded conversion just to keep first-day cash decisions tangible before live currency feeds are wired in.
                                 </p>
                             </div>
                             <div className="grid gap-3">
-                                {THAILAND_TRAVEL_KIT_UTILITIES.map((utility) => (
+                                {countryUtilities.map((utility) => (
                                     <div key={utility.id} className="rounded-[1.5rem] border border-border/70 bg-background px-4 py-3">
                                         <div className="flex items-center justify-between gap-3">
                                             <p className="text-sm font-medium text-foreground">{utility.label}</p>
@@ -321,46 +357,16 @@ export const TripWorkspaceTravelKitPage: React.FC<TripWorkspaceTravelKitPageProp
                                 <div className="flex items-center justify-between gap-3">
                                     <div>
                                         <p className="text-sm font-medium text-foreground">Offline phrase pack</p>
-                                        <p className="mt-1 text-sm leading-6 text-muted-foreground">Keep translations close even when boat piers and transfers get patchy.</p>
+                                        <p className="mt-1 text-sm leading-6 text-muted-foreground">Keep translations close when piers, buses, or border posts get patchy.</p>
                                     </div>
-                                    <Switch
-                                        checked={isPhrasePackReady}
-                                        onCheckedChange={(checked) => {
-                                            setIsPhrasePackReady(checked);
-                                            trackEvent('trip_workspace__travel_kit_toggle--toggle', {
-                                                trip_id: trip.id,
-                                                toggle_id: 'phrase_pack',
-                                                active: checked,
-                                            });
-                                        }}
-                                        {...getAnalyticsDebugAttributes('trip_workspace__travel_kit_toggle--toggle', {
-                                            trip_id: trip.id,
-                                            toggle_id: 'phrase_pack',
-                                            active: !isPhrasePackReady,
-                                        })}
-                                    />
+                                    <Switch checked={isPhrasePackReady} onCheckedChange={setIsPhrasePackReady} />
                                 </div>
                                 <div className="flex items-center justify-between gap-3">
                                     <div>
                                         <p className="text-sm font-medium text-foreground">Booking screenshot stash</p>
-                                        <p className="mt-1 text-sm leading-6 text-muted-foreground">Use one offline pocket for ferry, hotel, and airport confirmation shots.</p>
+                                        <p className="mt-1 text-sm leading-6 text-muted-foreground">Use one offline pocket for border proofs, stays, ferries, and transfers.</p>
                                     </div>
-                                    <Switch
-                                        checked={isBookingPackReady}
-                                        onCheckedChange={(checked) => {
-                                            setIsBookingPackReady(checked);
-                                            trackEvent('trip_workspace__travel_kit_toggle--toggle', {
-                                                trip_id: trip.id,
-                                                toggle_id: 'booking_pack',
-                                                active: checked,
-                                            });
-                                        }}
-                                        {...getAnalyticsDebugAttributes('trip_workspace__travel_kit_toggle--toggle', {
-                                            trip_id: trip.id,
-                                            toggle_id: 'booking_pack',
-                                            active: !isBookingPackReady,
-                                        })}
-                                    />
+                                    <Switch checked={isBookingPackReady} onCheckedChange={setIsBookingPackReady} />
                                 </div>
                             </div>
                         </CardContent>
@@ -372,7 +378,7 @@ export const TripWorkspaceTravelKitPage: React.FC<TripWorkspaceTravelKitPageProp
                             <CardTitle>Put the important references where panic is less likely</CardTitle>
                         </CardHeader>
                         <CardContent className="grid gap-3">
-                            {THAILAND_TRAVEL_KIT_EMERGENCY_CARDS.map((card) => (
+                            {emergencyCards.map((card) => (
                                 <div key={card.id} className="rounded-[1.5rem] border border-border/70 bg-background px-4 py-4">
                                     <div className="flex flex-wrap items-center gap-2">
                                         <Badge variant={card.tone}>{card.title}</Badge>
@@ -387,7 +393,7 @@ export const TripWorkspaceTravelKitPage: React.FC<TripWorkspaceTravelKitPageProp
                                     Demo support note
                                 </div>
                                 <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                                    These references are intentionally lightweight placeholders until live emergency and embassy data services are wired in.
+                                    These support utilities are still demo content, but they now follow the current country so the workspace feels operational across multiple borders.
                                 </p>
                             </div>
                         </CardContent>
@@ -401,7 +407,7 @@ export const TripWorkspaceTravelKitPage: React.FC<TripWorkspaceTravelKitPageProp
                         <CardContent className="grid gap-3 text-sm leading-6 text-muted-foreground">
                             <div className="flex items-center gap-2 rounded-[1.5rem] border border-border/70 bg-background px-4 py-3 text-foreground">
                                 <Lightning size={18} weight="duotone" className="text-accent-700" />
-                                Power, cash, and offline prep live better here than inside planner notes.
+                                Power, cash, connectivity, and border prep live better here than inside planner notes.
                             </div>
                             <div className="flex items-center gap-2 rounded-[1.5rem] border border-border/70 bg-background px-4 py-3 text-foreground">
                                 <PhoneCall size={18} weight="duotone" className="text-accent-700" />
@@ -409,7 +415,7 @@ export const TripWorkspaceTravelKitPage: React.FC<TripWorkspaceTravelKitPageProp
                             </div>
                             <div className="flex items-center gap-2 rounded-[1.5rem] border border-border/70 bg-background px-4 py-3 text-foreground">
                                 <MapTrifold size={18} weight="duotone" className="text-accent-700" />
-                                It also creates a clean home for future utilities like documents, insurance, and disruption watchlists.
+                                The same structure now scales from Thailand to a multi-country SEA route without becoming overwhelming.
                             </div>
                         </CardContent>
                     </Card>

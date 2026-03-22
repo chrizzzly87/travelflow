@@ -10,6 +10,8 @@ interface UseTripViewSettingsSyncOptions {
     timelineMode: 'calendar' | 'timeline';
     timelineView: 'horizontal' | 'vertical';
     activeCompanionSection: TripCompanionSection;
+    workspaceCountryCode: string | null;
+    workspaceCityGuideId: string | null;
     mapDockMode: 'docked' | 'floating';
     mapStyle: MapStyle;
     routeMode: RouteMode;
@@ -29,6 +31,8 @@ interface UseTripViewSettingsSyncOptions {
     setTimelineMode: Dispatch<SetStateAction<'calendar' | 'timeline'>>;
     setTimelineView: Dispatch<SetStateAction<'horizontal' | 'vertical'>>;
     setActiveCompanionSection: Dispatch<SetStateAction<TripCompanionSection>>;
+    setWorkspaceCountryCode: Dispatch<SetStateAction<string | null>>;
+    setWorkspaceCityGuideId: Dispatch<SetStateAction<string | null>>;
     setMapDockMode: Dispatch<SetStateAction<'docked' | 'floating'>>;
     setZoomLevel: Dispatch<SetStateAction<number>>;
     setZoomBehavior: Dispatch<SetStateAction<NonNullable<IViewSettings['zoomBehavior']>>>;
@@ -50,6 +54,12 @@ const toFiniteNumber = (value: unknown, fallback: number): number => {
 
 const normalizeSettingsForCallback = (settings: IViewSettings): IViewSettings => ({
     ...settings,
+    workspaceCountryCode: typeof settings.workspaceCountryCode === 'string' && settings.workspaceCountryCode.trim().length > 0
+        ? settings.workspaceCountryCode
+        : undefined,
+    workspaceCityGuideId: typeof settings.workspaceCityGuideId === 'string' && settings.workspaceCityGuideId.trim().length > 0
+        ? settings.workspaceCityGuideId
+        : undefined,
     showCityNames: Boolean(settings.showCityNames),
     zoomLevel: Number(toFiniteNumber(settings.zoomLevel, 1).toFixed(2)),
     zoomBehavior: settings.zoomBehavior === 'manual' ? 'manual' : 'fit',
@@ -63,6 +73,8 @@ export const useTripViewSettingsSync = ({
     timelineMode,
     timelineView,
     activeCompanionSection,
+    workspaceCountryCode,
+    workspaceCityGuideId,
     mapDockMode,
     mapStyle,
     routeMode,
@@ -82,6 +94,8 @@ export const useTripViewSettingsSync = ({
     setTimelineMode,
     setTimelineView,
     setActiveCompanionSection,
+    setWorkspaceCountryCode,
+    setWorkspaceCityGuideId,
     setMapDockMode,
     setZoomLevel,
     setZoomBehavior,
@@ -132,6 +146,8 @@ export const useTripViewSettingsSync = ({
                 timelineMode,
                 timelineView,
                 activeCompanionSection,
+                workspaceCountryCode: workspaceCountryCode ?? undefined,
+                workspaceCityGuideId: workspaceCityGuideId ?? undefined,
                 mapDockMode,
                 mapStyle,
                 routeMode,
@@ -173,6 +189,8 @@ export const useTripViewSettingsSync = ({
         routeMode,
         timelineView,
         activeCompanionSection,
+        workspaceCountryCode,
+        workspaceCityGuideId,
         sidebarWidth,
         detailsWidth,
         timelineHeight,
@@ -202,6 +220,8 @@ export const useTripViewSettingsSync = ({
         if (initialViewSettings.timelineView) setTimelineView(initialViewSettings.timelineView);
         const initialWorkspacePage = normalizeTripWorkspacePage(initialViewSettings.activeCompanionSection);
         if (initialWorkspacePage) setActiveCompanionSection(initialWorkspacePage);
+        setWorkspaceCountryCode(initialViewSettings.workspaceCountryCode ?? null);
+        setWorkspaceCityGuideId(initialViewSettings.workspaceCityGuideId ?? null);
         if (initialViewSettings.mapDockMode) setMapDockMode(initialViewSettings.mapDockMode);
         if (typeof initialViewSettings.zoomLevel === 'number') setZoomLevel(initialViewSettings.zoomLevel);
         setZoomBehavior(initialViewSettings.zoomBehavior === 'manual' ? 'manual' : 'fit');
@@ -220,6 +240,8 @@ export const useTripViewSettingsSync = ({
         setTimelineMode,
         setTimelineView,
         setActiveCompanionSection,
+        setWorkspaceCountryCode,
+        setWorkspaceCityGuideId,
         setMapDockMode,
         setZoomLevel,
         setZoomBehavior,

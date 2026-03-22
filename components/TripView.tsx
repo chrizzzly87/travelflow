@@ -105,6 +105,7 @@ import {
     materializeTripActivityBoardCards,
     returnTripActivityBoardCardToShortlist,
 } from './tripview/workspace/tripActivityBoard';
+import type { TripWorkspaceContextSelection } from '../types';
 import { showAppToast } from './ui/appToast';
 import {
     TRIP_GENERATION_TIMEOUT_MS,
@@ -1792,6 +1793,12 @@ const useTripViewRender = ({
     const activeWorkspacePage = useMemo<TripWorkspacePage>(() => (
         normalizeTripWorkspacePage(workspaceRouteState.page ?? activeCompanionSection) ?? DEFAULT_TRIP_WORKSPACE_PAGE
     ), [activeCompanionSection, workspaceRouteState.page]);
+    const [workspaceCountryCode, setWorkspaceCountryCode] = useState<string | null>(() => (
+        initialViewSettings?.workspaceCountryCode ?? null
+    ));
+    const [workspaceCityGuideId, setWorkspaceCityGuideId] = useState<string | null>(() => (
+        initialViewSettings?.workspaceCityGuideId ?? null
+    ));
     const zoomChangeSourceRef = useRef<ZoomChangeSource>(null);
     const [isZoomDirty, setIsZoomDirty] = useState(false);
     const [mapDockMode, setMapDockMode] = useState<'docked' | 'floating'>(() => {
@@ -1829,6 +1836,12 @@ const useTripViewRender = ({
         if (normalizeTripWorkspacePage(activeCompanionSection) === activeWorkspacePage) return;
         setActiveCompanionSection(activeWorkspacePage);
     }, [activeCompanionSection, activeWorkspacePage, setActiveCompanionSection]);
+    const handleWorkspaceContextChange = useCallback((next: TripWorkspaceContextSelection) => {
+        if (next.countryCode === workspaceCountryCode && next.cityGuideId === workspaceCityGuideId) return;
+        markManualViewChange();
+        setWorkspaceCountryCode(next.countryCode);
+        setWorkspaceCityGuideId(next.cityGuideId);
+    }, [markManualViewChange, workspaceCityGuideId, workspaceCountryCode]);
     useEffect(() => {
         writeFloatingMapPreviewState({ mode: mapDockMode });
     }, [mapDockMode]);
@@ -1990,6 +2003,8 @@ const useTripViewRender = ({
         timelineMode,
         timelineView,
         activeCompanionSection: activeWorkspacePage,
+        workspaceCountryCode: workspaceCountryCode ?? undefined,
+        workspaceCityGuideId: workspaceCityGuideId ?? undefined,
         mapDockMode,
         mapStyle,
         routeMode,
@@ -1999,7 +2014,7 @@ const useTripViewRender = ({
         sidebarWidth: Math.round(sidebarWidth),
         detailsWidth: Math.round(detailsWidth),
         timelineHeight: Math.round(timelineHeight)
-    }), [activeWorkspacePage, detailsWidth, layoutMode, timelineMode, timelineView, mapDockMode, mapStyle, routeMode, showCityNames, zoomLevel, zoomBehavior, sidebarWidth, timelineHeight]);
+    }), [activeWorkspacePage, detailsWidth, layoutMode, timelineMode, timelineView, mapDockMode, mapStyle, routeMode, showCityNames, workspaceCityGuideId, workspaceCountryCode, zoomLevel, zoomBehavior, sidebarWidth, timelineHeight]);
 
     const tripInfoRetryAnalyticsAttributes = useMemo(
         () => getAnalyticsDebugAttributes('trip_generation__trip_info--retry', {
@@ -2329,6 +2344,8 @@ const useTripViewRender = ({
         timelineMode,
         timelineView,
         activeCompanionSection,
+        workspaceCountryCode,
+        workspaceCityGuideId,
         mapDockMode,
         mapStyle,
         routeMode,
@@ -2348,6 +2365,8 @@ const useTripViewRender = ({
         setTimelineMode,
         setTimelineView,
         setActiveCompanionSection,
+        setWorkspaceCountryCode,
+        setWorkspaceCityGuideId,
         setMapDockMode,
         setZoomLevel,
         setZoomBehavior,
@@ -3545,6 +3564,9 @@ const useTripViewRender = ({
                         selectedCities={selectedCitiesInTimeline}
                         travelerWarnings={travelerWarnings}
                         isMobile={isMobile}
+                        workspaceCountryCode={workspaceCountryCode}
+                        workspaceCityGuideId={workspaceCityGuideId}
+                        onWorkspaceContextChange={handleWorkspaceContextChange}
                         onOpenTripInfoModal={openTripInfoModal}
                         onOpenShare={() => {
                             void handleShare();

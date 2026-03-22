@@ -2,7 +2,7 @@
 
 Last updated: 2026-03-22
 Owner: Codex + @chrizzzly
-Goal: Turn Trip View into a routed Trip Workspace with a fixed shadcn sidebar on desktop, matching mobile navigation, and dedicated pages for the main trip jobs.
+Goal: Turn Trip View into a routed Trip Workspace with a fixed shadcn sidebar on desktop, matching mobile navigation, and shared trip -> country -> city context across the main trip jobs.
 
 ## Working rule
 - [x] Keep this file as the single implementation checklist for the Trip Workspace overhaul.
@@ -56,6 +56,14 @@ Goal: Turn Trip View into a routed Trip Workspace with a fixed shadcn sidebar on
 - [x] Decide how the existing trip loader routes compose with nested workspace routing and keep URL restoration stable for shared/example routes.
 - [x] Persist the active workspace page in route state and normalized view settings where it helps restore the same destination cleanly.
 - [x] Keep planner-specific view state isolated so map mode, timeline mode, and selection state do not leak into non-planner pages.
+- [x] Persist shared workspace route context so country and city selections survive page switches and route restoration.
+
+## Route context and SEA demo
+- [x] Add a shared route context bar to every non-planner page so users can move between trip, country, and city without losing the route shape.
+- [x] Replace the flat Thailand-only workspace seed with a multi-country Southeast Asia dataset based on the homepage backpacking route.
+- [x] Keep route-wide summaries and country rollups readable while letting deeper pages drill into the active country and city.
+- [x] Make standalone workspace pages manage local context changes correctly even when they are rendered outside the full Trip Workspace shell.
+- [x] Add data-level regression coverage for the SEA route builder, including return border crossings.
 
 ## Page backlog
 - [x] `Overview`: build the trip dashboard with countdown, date range, next city, next booking, weather snapshot, top risks, quick tasks, and recent notes.
@@ -71,16 +79,16 @@ Goal: Turn Trip View into a routed Trip Workspace with a fixed shadcn sidebar on
 - [x] `Photos`: add a simple album page as the visual memory layer.
 
 ## Phrases example requirements
-- [x] Adapt the simple example route state to a Thailand demo with Thai phrases.
+- [x] Adapt the example route state to a Southeast Asia demo with Thai, Khmer, Vietnamese, and Lao phrase packs.
 - [x] Include phrase groups for `Basics`, `Transport`, `Food`, and `Emergency`.
 - [x] Include at least one phrase card with translation, pronunciation, and `Save to Flashcards`.
 - [x] Include at least one phrase card with copy and speak actions.
 - [x] Include a compact flashcard summary with `due today`, `saved phrases`, and offline-pack state.
 
 ## Data and content structure
-- [ ] Define how country guide data and city guide data are represented without overloading itinerary-item descriptions.
-- [ ] Decide which destination content is trip-specific versus general destination knowledge and label it clearly in the UI.
-- [ ] Add source and freshness treatment for dynamic travel information and official links.
+- [x] Define how country guide data and city guide data are represented without overloading itinerary-item descriptions.
+- [x] Decide which destination content is trip-specific versus general destination knowledge and label it clearly in the UI.
+- [x] Add source and freshness treatment for dynamic travel information and official links.
 - [x] Define the minimal booking, notes, and phrases example data needed for Phase 1 and early Phase 2 shells.
 - [x] Define a lightweight trip-level activity workflow model so Explore can track shortlist, planned, booked, and done without overloading itinerary items.
 - [x] Move `Overview` and `Places` map surfaces onto the shared Trip map workflow instead of custom one-off map implementations.
@@ -90,7 +98,7 @@ Goal: Turn Trip View into a routed Trip Workspace with a fixed shadcn sidebar on
 - [x] Support a desktop icon-collapse mode so the workspace can feel like a compact dashboard instead of a permanently wide rail.
 - [x] Ensure each page has one dominant job so users understand why they are there.
 - [ ] Keep empty states instructional and action-oriented.
-- [ ] Make it visually obvious when content is trip-specific, city-specific, or country-level.
+- [x] Make it visually obvious when content is trip-specific, city-specific, or country-level.
 - [x] Preserve a dashboard feel on desktop instead of a planner-plus-panels feel.
 
 ## Overview upgrades
@@ -140,9 +148,13 @@ Goal: Turn Trip View into a routed Trip Workspace with a fixed shadcn sidebar on
 - [x] Reworked the Explore board into a denser task-board layout with a true drag overlay, narrower lanes, and compact cards that stay visible while moving.
 - [x] Added visible kanban drop targets so dragging now shows clear target lanes and between-card insertion zones instead of only moving the floating card.
 - [x] Refined the Explore board drag math so same-lane moves now keep showing a clear placeholder slot based on the lane geometry instead of losing the insertion preview when the hover target stays on the column.
+- [x] Reworked the workspace demo around the homepage-style Southeast Asia backpacking route so Places, Weather, Budget, Travel kit, Documents, Phrases, Explore, Notes, and Photos all read as a multi-country product instead of a Thailand-only mock.
+- [x] Added a shared trip -> country -> city context bar across non-planner pages and kept that context synced through Trip Workspace state restoration.
+- [x] Expanded `Places`, `Weather`, `Budget`, `Travel kit`, `Documents`, `Phrases`, `Explore`, `Notes`, and `Photos` around country-aware and city-aware route context instead of one flat destination layer.
+- [x] Fixed standalone workspace pages so route context switches work even outside the full Trip Workspace shell, and covered the SEA dataset builder with unit regressions.
 
 ## Open
-- [ ] Turn the new overview map and overview calendar copy into signed-off EN/DE locale keys when the wording is final.
-- [ ] Replace Thailand demo data with live bookings, discovery, activity-board, phrase, destination, travel-kit, document, budget, weather, and places-overlay services when the backend inputs are ready.
+- [ ] Replace the Southeast Asia demo dataset with live bookings, discovery, phrase, destination, travel-kit, document, budget, weather, and places-overlay services when the backend inputs are ready.
+- [ ] Deepen page empty states and first-time hints so sparse countries or cities still feel guided instead of quiet.
 - [ ] Decide whether the next destination polish should focus on richer map interactions like hover states and compare mode, or on service-backed freshness data.
-- [ ] Decide whether the next workspace utility slice should focus on `routing polish`, `planner-to-budget sync`, or `weather-driven map overlays`.
+- [ ] Decide whether the next workspace utility slice should focus on `planner-to-budget sync`, `weather-driven map overlays`, or `cross-page route transition summaries`.

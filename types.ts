@@ -28,6 +28,10 @@ export type TripWorkspacePage =
   | 'photos';
 export type TripWorkspaceSidebarState = 'expanded' | 'collapsed';
 export type TripCompanionSection = TripWorkspacePage | 'plan' | 'more';
+export interface TripWorkspaceContextSelection {
+    countryCode: string | null;
+    cityGuideId: string | null;
+}
 export type RouteFailureReason =
   | 'unsupported_mode'
   | 'invalid_distance'
@@ -297,6 +301,8 @@ export interface IViewSettings {
     timelineMode?: 'calendar' | 'timeline';
     timelineView: 'horizontal' | 'vertical'; // Calendar orientation
     activeCompanionSection?: TripCompanionSection;
+    workspaceCountryCode?: string;
+    workspaceCityGuideId?: string;
     mapStyle: MapStyle;
     zoomLevel: number;
     zoomBehavior?: ZoomBehavior;

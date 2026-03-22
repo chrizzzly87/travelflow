@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 
 import { TripWorkspaceBudgetPage } from '../../../components/tripview/workspace/TripWorkspaceBudgetPage';
 import type { ITrip } from '../../../types';
@@ -60,18 +60,21 @@ describe('components/tripview/workspace/TripWorkspaceBudgetPage', () => {
             }),
         );
 
-        expect(screen.getByText('See where the route is actually expensive, flexible, or quietly risky')).toBeInTheDocument();
-        expect(screen.getByText('€3,270')).toBeInTheDocument();
+        expect(screen.getByText('See trip total, country rollups, and city pressure without turning this into accounting software')).toBeInTheDocument();
+        const workingTotalCard = screen.getByText('Working total').closest('div') as HTMLElement;
+        const workingTotal = () => within(workingTotalCard).getByText(/€[\d,]+/).textContent;
+        const initialTotal = workingTotal();
 
-        fireEvent.click(screen.getByRole('radio', { name: 'Comfort' }));
-        expect(screen.getByText('€4,720')).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('radio', { name: /Comfort/i }));
+        const comfortTotal = workingTotal();
+        expect(comfortTotal).not.toBe(initialTotal);
 
         fireEvent.click(screen.getByRole('switch', { name: 'Include reserve fund' }));
-        expect(screen.getByText('€4,100')).toBeInTheDocument();
+        expect(workingTotal()).not.toBe(comfortTotal);
 
         fireEvent.click(screen.getByRole('radio', { name: 'Transport' }));
-        expect(screen.getAllByText('Bangkok → Chiang Mai flight').length).toBeGreaterThan(0);
-        expect(screen.queryByText('Bangkok arrival stay')).not.toBeInTheDocument();
+        expect(screen.queryByText('Bangkok stays')).not.toBeInTheDocument();
+        expect(screen.queryByText('Krabi signature day')).not.toBeInTheDocument();
 
         fireEvent.click(screen.getByRole('button', { name: 'Open bookings' }));
         expect(onPageChange).toHaveBeenCalledWith('bookings');

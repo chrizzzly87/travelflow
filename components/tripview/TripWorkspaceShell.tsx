@@ -6,6 +6,7 @@ import type {
     ITrip,
     ITripActivityBoardCard,
     ITimelineItem,
+    TripWorkspaceContextSelection,
     TripWorkspacePage,
     TripWorkspaceSidebarState,
 } from '../../types';
@@ -30,6 +31,11 @@ import { TripWorkspaceDocumentsPage } from './workspace/TripWorkspaceDocumentsPa
 import { TripWorkspaceWeatherPage } from './workspace/TripWorkspaceWeatherPage';
 import { TripWorkspaceNotesPage } from './workspace/TripWorkspaceNotesPage';
 import { TripWorkspacePhotosPage } from './workspace/TripWorkspacePhotosPage';
+import {
+    buildTripWorkspaceDemoDataset,
+    normalizeTripWorkspaceContextSelection,
+    type TripWorkspaceDemoDataset,
+} from './workspace/tripWorkspaceDemoData';
 import {
     Sidebar,
     SidebarContent,
@@ -67,7 +73,10 @@ interface TripWorkspaceShellProps {
     trip: ITrip;
     tripMeta: TripMetaSummary;
     activePage: TripWorkspacePage;
+    workspaceCountryCode: string | null;
+    workspaceCityGuideId: string | null;
     onPageChange: (page: TripWorkspacePage) => void;
+    onWorkspaceContextChange: (next: TripWorkspaceContextSelection) => void;
     exploreMode: 'discover' | 'board';
     onExploreModeChange: (mode: 'discover' | 'board') => void;
     plannerPage: React.ReactNode;
@@ -89,10 +98,13 @@ interface TripWorkspaceRenderedPageProps {
     plannerPage: React.ReactNode;
     trip: ITrip;
     tripMeta: TripMetaSummary;
+    dataset: TripWorkspaceDemoDataset;
+    contextSelection: TripWorkspaceContextSelection;
     selectedItem: ITimelineItem | null;
     selectedCities: ITimelineItem[];
     travelerWarnings: TravelerWarningSummary[];
     onPageChange: (page: TripWorkspacePage) => void;
+    onContextSelectionChange: (next: TripWorkspaceContextSelection) => void;
     onOpenPlannerItem?: (itemId: string) => void;
     exploreMode: 'discover' | 'board';
     onExploreModeChange: (mode: 'discover' | 'board') => void;
@@ -304,10 +316,13 @@ const TripWorkspaceRenderedPage: React.FC<TripWorkspaceRenderedPageProps> = ({
     plannerPage,
     trip,
     tripMeta,
+    dataset,
+    contextSelection,
     selectedItem,
     selectedCities,
     travelerWarnings,
     onPageChange,
+    onContextSelectionChange,
     onOpenPlannerItem,
     exploreMode,
     onExploreModeChange,
@@ -330,6 +345,10 @@ const TripWorkspaceRenderedPage: React.FC<TripWorkspaceRenderedPageProps> = ({
                 >
                     <TripWorkspacePlacesPage
                         trip={trip}
+                        tripMeta={tripMeta}
+                        dataset={dataset}
+                        contextSelection={contextSelection}
+                        onContextSelectionChange={onContextSelectionChange}
                         selectedItem={selectedItem}
                         travelerWarnings={travelerWarnings}
                     />
@@ -344,6 +363,10 @@ const TripWorkspaceRenderedPage: React.FC<TripWorkspaceRenderedPageProps> = ({
                 >
                     <TripWorkspaceExplorePage
                         trip={trip}
+                        tripMeta={tripMeta}
+                        dataset={dataset}
+                        contextSelection={contextSelection}
+                        onContextSelectionChange={onContextSelectionChange}
                         isMobile={isMobile}
                         mode={exploreMode}
                         onModeChange={onExploreModeChange}
@@ -361,7 +384,13 @@ const TripWorkspaceRenderedPage: React.FC<TripWorkspaceRenderedPageProps> = ({
                     title={t('tripView.workspace.pages.phrases.title')}
                     description={t('tripView.workspace.pages.phrases.description')}
                 >
-                    <TripWorkspacePhrasesPage trip={trip} />
+                    <TripWorkspacePhrasesPage
+                        trip={trip}
+                        tripMeta={tripMeta}
+                        dataset={dataset}
+                        contextSelection={contextSelection}
+                        onContextSelectionChange={onContextSelectionChange}
+                    />
                 </TripWorkspacePageShell>
             );
         case 'bookings':
@@ -371,7 +400,13 @@ const TripWorkspaceRenderedPage: React.FC<TripWorkspaceRenderedPageProps> = ({
                     title={t('tripView.workspace.pages.bookings.title')}
                     description={t('tripView.workspace.pages.bookings.description')}
                 >
-                    <TripWorkspaceBookingsPage trip={trip} />
+                    <TripWorkspaceBookingsPage
+                        trip={trip}
+                        tripMeta={tripMeta}
+                        dataset={dataset}
+                        contextSelection={contextSelection}
+                        onContextSelectionChange={onContextSelectionChange}
+                    />
                 </TripWorkspacePageShell>
             );
         case 'budget':
@@ -381,7 +416,14 @@ const TripWorkspaceRenderedPage: React.FC<TripWorkspaceRenderedPageProps> = ({
                     title={t('tripView.workspace.pages.budget.title')}
                     description={t('tripView.workspace.pages.budget.description')}
                 >
-                    <TripWorkspaceBudgetPage trip={trip} onPageChange={onPageChange} />
+                    <TripWorkspaceBudgetPage
+                        trip={trip}
+                        tripMeta={tripMeta}
+                        dataset={dataset}
+                        contextSelection={contextSelection}
+                        onContextSelectionChange={onContextSelectionChange}
+                        onPageChange={onPageChange}
+                    />
                 </TripWorkspacePageShell>
             );
         case 'travel-kit':
@@ -391,7 +433,14 @@ const TripWorkspaceRenderedPage: React.FC<TripWorkspaceRenderedPageProps> = ({
                     title={t('tripView.workspace.pages.travel-kit.title')}
                     description={t('tripView.workspace.pages.travel-kit.description')}
                 >
-                    <TripWorkspaceTravelKitPage trip={trip} onPageChange={onPageChange} />
+                    <TripWorkspaceTravelKitPage
+                        trip={trip}
+                        tripMeta={tripMeta}
+                        dataset={dataset}
+                        contextSelection={contextSelection}
+                        onContextSelectionChange={onContextSelectionChange}
+                        onPageChange={onPageChange}
+                    />
                 </TripWorkspacePageShell>
             );
         case 'documents':
@@ -401,7 +450,14 @@ const TripWorkspaceRenderedPage: React.FC<TripWorkspaceRenderedPageProps> = ({
                     title={t('tripView.workspace.pages.documents.title')}
                     description={t('tripView.workspace.pages.documents.description')}
                 >
-                    <TripWorkspaceDocumentsPage trip={trip} onPageChange={onPageChange} />
+                    <TripWorkspaceDocumentsPage
+                        trip={trip}
+                        tripMeta={tripMeta}
+                        dataset={dataset}
+                        contextSelection={contextSelection}
+                        onContextSelectionChange={onContextSelectionChange}
+                        onPageChange={onPageChange}
+                    />
                 </TripWorkspacePageShell>
             );
         case 'weather':
@@ -411,7 +467,14 @@ const TripWorkspaceRenderedPage: React.FC<TripWorkspaceRenderedPageProps> = ({
                     title={t('tripView.workspace.pages.weather.title')}
                     description={t('tripView.workspace.pages.weather.description')}
                 >
-                    <TripWorkspaceWeatherPage trip={trip} onPageChange={onPageChange} />
+                    <TripWorkspaceWeatherPage
+                        trip={trip}
+                        tripMeta={tripMeta}
+                        dataset={dataset}
+                        contextSelection={contextSelection}
+                        onContextSelectionChange={onContextSelectionChange}
+                        onPageChange={onPageChange}
+                    />
                 </TripWorkspacePageShell>
             );
         case 'notes':
@@ -421,7 +484,13 @@ const TripWorkspaceRenderedPage: React.FC<TripWorkspaceRenderedPageProps> = ({
                     title={t('tripView.workspace.pages.notes.title')}
                     description={t('tripView.workspace.pages.notes.description')}
                 >
-                    <TripWorkspaceNotesPage />
+                    <TripWorkspaceNotesPage
+                        trip={trip}
+                        tripMeta={tripMeta}
+                        dataset={dataset}
+                        contextSelection={contextSelection}
+                        onContextSelectionChange={onContextSelectionChange}
+                    />
                 </TripWorkspacePageShell>
             );
         case 'photos':
@@ -431,7 +500,13 @@ const TripWorkspaceRenderedPage: React.FC<TripWorkspaceRenderedPageProps> = ({
                     title={t('tripView.workspace.pages.photos.title')}
                     description={t('tripView.workspace.pages.photos.description')}
                 >
-                    <TripWorkspacePhotosPage />
+                    <TripWorkspacePhotosPage
+                        trip={trip}
+                        tripMeta={tripMeta}
+                        dataset={dataset}
+                        contextSelection={contextSelection}
+                        onContextSelectionChange={onContextSelectionChange}
+                    />
                 </TripWorkspacePageShell>
             );
         case 'overview':
@@ -445,6 +520,9 @@ const TripWorkspaceRenderedPage: React.FC<TripWorkspaceRenderedPageProps> = ({
                     <TripWorkspaceOverviewPage
                         trip={trip}
                         tripMeta={tripMeta}
+                        dataset={dataset}
+                        contextSelection={contextSelection}
+                        onContextSelectionChange={onContextSelectionChange}
                         selectedCities={selectedCities}
                         onPageChange={onPageChange}
                         onOpenPlannerItem={onOpenPlannerItem}
@@ -506,7 +584,10 @@ export const TripWorkspaceShell: React.FC<TripWorkspaceShellProps> = ({
     trip,
     tripMeta,
     activePage,
+    workspaceCountryCode,
+    workspaceCityGuideId,
     onPageChange,
+    onWorkspaceContextChange,
     exploreMode,
     onExploreModeChange,
     plannerPage,
@@ -523,6 +604,14 @@ export const TripWorkspaceShell: React.FC<TripWorkspaceShellProps> = ({
     onRemoveActivityFromItinerary,
 }) => {
     const { t } = useTranslation('common');
+    const dataset = React.useMemo(() => buildTripWorkspaceDemoDataset(trip), [trip]);
+    const contextSelection = React.useMemo(
+        () => normalizeTripWorkspaceContextSelection(dataset, {
+            countryCode: workspaceCountryCode,
+            cityGuideId: workspaceCityGuideId,
+        }),
+        [dataset, workspaceCityGuideId, workspaceCountryCode],
+    );
     const [sidebarState, setSidebarState] = React.useState<TripWorkspaceSidebarState>(() => (
         isMobile ? 'expanded' : readTripWorkspaceSidebarState()
     ));
@@ -571,21 +660,24 @@ export const TripWorkspaceShell: React.FC<TripWorkspaceShellProps> = ({
                 <SidebarInset className="min-h-0 overflow-hidden bg-transparent md:peer-data-[variant=inset]:m-0 md:peer-data-[variant=inset]:rounded-none md:peer-data-[variant=inset]:shadow-none">
                     <TripWorkspaceRenderedPage
                         activePage={activePage}
-                    plannerPage={plannerPage}
-                    trip={trip}
-                    tripMeta={tripMeta}
-                    selectedItem={selectedItem}
-                    selectedCities={selectedCities}
-                    travelerWarnings={travelerWarnings}
-                    onPageChange={onPageChange}
-                    onOpenPlannerItem={onOpenPlannerItem}
-                    exploreMode={exploreMode}
-                    onExploreModeChange={onExploreModeChange}
-                    isMobile={isMobile}
-                    onUpdateActivityBoard={onUpdateActivityBoard}
-                    onScheduleBoardCard={onScheduleBoardCard}
-                    onRemoveActivityFromItinerary={onRemoveActivityFromItinerary}
-                />
+                        plannerPage={plannerPage}
+                        trip={trip}
+                        tripMeta={tripMeta}
+                        dataset={dataset}
+                        contextSelection={contextSelection}
+                        selectedItem={selectedItem}
+                        selectedCities={selectedCities}
+                        travelerWarnings={travelerWarnings}
+                        onPageChange={onPageChange}
+                        onContextSelectionChange={onWorkspaceContextChange}
+                        onOpenPlannerItem={onOpenPlannerItem}
+                        exploreMode={exploreMode}
+                        onExploreModeChange={onExploreModeChange}
+                        isMobile={isMobile}
+                        onUpdateActivityBoard={onUpdateActivityBoard}
+                        onScheduleBoardCard={onScheduleBoardCard}
+                        onRemoveActivityFromItinerary={onRemoveActivityFromItinerary}
+                    />
                     {isMobile ? (
                         <TripWorkspaceMobileNav tripId={trip.id} activePage={activePage} onPageChange={onPageChange} />
                     ) : null}

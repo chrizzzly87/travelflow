@@ -144,26 +144,29 @@ describe('components/tripview/workspace/TripWorkspaceExplorePage', () => {
         render(React.createElement(ExploreHarness));
 
         const bangkokCard = screen.getByText('Talat Noi canal and photo walk').parentElement as HTMLElement;
-        const krabiCard = screen.getByText('Long-tail sunrise limestone loop').parentElement as HTMLElement;
-
         await user.click(within(bangkokCard).getByRole('button', { name: 'Save to board' }));
-        await user.click(within(krabiCard).getByRole('button', { name: 'Save to board' }));
+
+        await user.click(screen.getByRole('combobox'));
+        await user.click(await screen.findByRole('option', { name: 'Chiang Mai' }));
+
+        const chiangMaiCard = screen.getByText('Chiang Mai cooking class').parentElement as HTMLElement;
+        await user.click(within(chiangMaiCard).getByRole('button', { name: 'Save to board' }));
         await user.click(screen.getByRole('tab', { name: 'Board' }));
 
         expect(screen.getByText('Talat Noi canal and photo walk')).toBeInTheDocument();
-        expect(screen.getByText('Long-tail sunrise limestone loop')).toBeInTheDocument();
+        expect(screen.getByText('Chiang Mai cooking class')).toBeInTheDocument();
 
         await user.click(screen.getByRole('combobox', { name: 'Filter activity board by city' }));
         await user.click(await screen.findByRole('option', { name: 'Bangkok' }));
 
         expect(screen.getByText('Talat Noi canal and photo walk')).toBeInTheDocument();
-        expect(screen.queryByText('Long-tail sunrise limestone loop')).not.toBeInTheDocument();
+        expect(screen.queryByText('Chiang Mai cooking class')).not.toBeInTheDocument();
 
         await user.click(screen.getByRole('tab', { name: 'Discover' }));
         await user.click(screen.getByRole('tab', { name: 'Board' }));
 
         expect(screen.getByText('Talat Noi canal and photo walk')).toBeInTheDocument();
-        expect(screen.queryByText('Long-tail sunrise limestone loop')).not.toBeInTheDocument();
+        expect(screen.queryByText('Chiang Mai cooking class')).not.toBeInTheDocument();
         expect(analyticsMocks.trackEvent).toHaveBeenCalledWith(
             'trip_workspace__explore_activity_shortlist--create',
             expect.objectContaining({ trip_id: 'trip-thailand' }),

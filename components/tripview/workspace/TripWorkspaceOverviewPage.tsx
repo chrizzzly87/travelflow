@@ -5,16 +5,29 @@ import {
     ClockCountdown,
     MapPinLine,
     Notebook,
+    Signpost,
     Sparkle,
     SuitcaseRolling,
     WarningCircle,
 } from '@phosphor-icons/react';
 
-import type { ITrip, ITimelineItem, TripWorkspacePage } from '../../../types';
+import type {
+    ITrip,
+    ITimelineItem,
+    TripWorkspaceContextSelection,
+    TripWorkspacePage,
+} from '../../../types';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../../services/analyticsService';
 import { TripWorkspaceOverviewCalendar } from './TripWorkspaceOverviewCalendar';
-import { THAILAND_BOOKINGS, THAILAND_NOTES, THAILAND_SAFETY_SNAPSHOTS, resolveTripWorkspaceCityStops } from './tripWorkspaceDemoData';
+import {
+    getTripWorkspaceCityItem,
+    resolveTripWorkspaceCityStops,
+    type TripWorkspaceDemoDataset,
+} from './tripWorkspaceDemoData';
+import { resolveTripWorkspaceContextSnapshot } from './tripWorkspaceContext';
+import { resolveTripWorkspaceFallbackTripMeta, useTripWorkspacePageContext } from './tripWorkspacePageContext';
 import { TripWorkspaceMapCard } from './TripWorkspaceMapCard';
+import { TripWorkspaceRouteContextBar } from './TripWorkspaceRouteContextBar';
 import { Badge } from '../../ui/badge';
 import { Button } from '../../ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../ui/card';
@@ -29,7 +42,10 @@ interface TripMetaSummary {
 
 interface TripWorkspaceOverviewPageProps {
     trip: ITrip;
-    tripMeta: TripMetaSummary;
+    tripMeta?: TripMetaSummary;
+    dataset?: TripWorkspaceDemoDataset;
+    contextSelection?: TripWorkspaceContextSelection;
+    onContextSelectionChange?: (next: TripWorkspaceContextSelection) => void;
     selectedCities: ITimelineItem[];
     onPageChange: (page: TripWorkspacePage) => void;
     onOpenPlannerItem?: (itemId: string) => void;
@@ -43,18 +59,6 @@ const parseTripDate = (value: string): Date => {
     const parsed = new Date(value);
     parsed.setHours(12, 0, 0, 0);
     return parsed;
-};
-
-const resolveCurrentCity = (trip: ITrip, cityStops: ITimelineItem[]): ITimelineItem | null => {
-    const tripStartDate = parseTripDate(trip.startDate);
-    const todayAtNoon = new Date();
-    todayAtNoon.setHours(12, 0, 0, 0);
-    const dayOffset = Math.round((todayAtNoon.getTime() - tripStartDate.getTime()) / (1000 * 60 * 60 * 24));
-
-    return cityStops.find((item) => (
-        dayOffset >= Math.floor(item.startDateOffset)
-        && dayOffset < Math.ceil(item.startDateOffset + item.duration)
-    )) ?? cityStops[0] ?? null;
 };
 
 const resolveCountdownLabel = (trip: ITrip): string => {
@@ -71,18 +75,53 @@ const resolveCountdownLabel = (trip: ITrip): string => {
 
 export const TripWorkspaceOverviewPage: React.FC<TripWorkspaceOverviewPageProps> = ({
     trip,
-    tripMeta,
+    tripMeta = resolveTripWorkspaceFallbackTripMeta(trip),
+    dataset,
+    contextSelection,
+    onContextSelectionChange,
     selectedCities,
     onPageChange,
     onOpenPlannerItem,
 }) => {
+    const pageTripMeta = React.useMemo(
+        () => tripMeta ?? resolveTripWorkspaceFallbackTripMeta(trip),
+        [trip, tripMeta],
+    );
+    const {
+        dataset: pageDataset,
+        contextSelection: pageContextSelection,
+        onContextSelectionChange: handleContextSelectionChange,
+    } = useTripWorkspacePageContext({
+        trip,
+        dataset,
+        contextSelection,
+        onContextSelectionChange,
+    });
     const cityStops = React.useMemo(() => resolveTripWorkspaceCityStops(trip.items), [trip.items]);
-    const currentCity = React.useMemo(
-        () => selectedCities[0] ?? resolveCurrentCity(trip, cityStops),
-        [cityStops, selectedCities, trip],
+    const context = React.useMemo(
+        () => resolveTripWorkspaceContextSnapshot(pageDataset, pageContextSelection),
+        [pageContextSelection, pageDataset],
     );
     const countdownLabel = React.useMemo(() => resolveCountdownLabel(trip), [trip]);
-    const missingBooking = THAILAND_BOOKINGS.find((booking) => booking.status === 'Missing') ?? THAILAND_BOOKINGS[0];
+    const activeCityItem = React.useMemo(() => (
+        selectedCities[0]
+        ?? (context.activeCity ? getTripWorkspaceCityItem(trip, context.activeCity.id) : null)
+        ?? cityStops[0]
+        ?? null
+    ), [cityStops, context.activeCity, selectedCities, trip]);
+    const missingBooking = React.useMemo(
+        () => pageDataset.bookings.find((booking) => booking.status === 'Missing')
+            ?? pageDataset.bookings.find((booking) => booking.status === 'Needs review')
+            ?? pageDataset.bookings[0]
+            ?? null,
+        [pageDataset.bookings],
+    );
+    const recentNotes = React.useMemo(
+        () => pageDataset.notes.slice(0, 3),
+        [pageDataset.notes],
+    );
+    const activeSafety = context.activeCountry?.safety.slice(0, 4) ?? [];
+    const activeWeatherSignals = context.activeCity?.weather?.signals.slice(0, 3) ?? [];
 
     const handleQuickAction = React.useCallback((page: TripWorkspacePage, source: string) => {
         trackEvent('trip_workspace__overview_quick_action--open', {
@@ -94,29 +133,42 @@ export const TripWorkspaceOverviewPage: React.FC<TripWorkspaceOverviewPageProps>
     }, [onPageChange, trip.id]);
 
     const handleOpenPlanner = React.useCallback(() => {
-        if (currentCity) {
-            onOpenPlannerItem?.(currentCity.id);
+        if (activeCityItem) {
+            onOpenPlannerItem?.(activeCityItem.id);
         }
-        handleQuickAction('planner', 'current_city');
-    }, [currentCity, handleQuickAction, onOpenPlannerItem]);
+        handleQuickAction('planner', 'active_context_city');
+    }, [activeCityItem, handleQuickAction, onOpenPlannerItem]);
 
     return (
         <div className="flex flex-col gap-4">
+            <TripWorkspaceRouteContextBar
+                tripId={trip.id}
+                page="overview"
+                dataset={pageDataset}
+                tripMeta={pageTripMeta}
+                selection={pageContextSelection}
+                onSelectionChange={handleContextSelectionChange}
+            />
+
             <div className="grid gap-4 xl:grid-cols-[1.25fr_0.75fr]">
                 <Card className="overflow-hidden border-border/80 bg-linear-to-br from-accent/10 via-background to-emerald-50 shadow-sm">
                     <CardHeader className="gap-4">
                         <div className="flex flex-wrap items-center gap-2">
                             <Badge variant="secondary">{countdownLabel}</Badge>
-                            <Badge variant="outline">{tripMeta.summaryLine}</Badge>
+                            <Badge variant="outline">{pageDataset.routeSummary.countryCount} countries</Badge>
+                            <Badge variant="outline">{pageDataset.routeSummary.cityCount} cities</Badge>
                         </div>
-                        <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+                        <div className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
                             <div>
                                 <CardDescription>Trip pulse</CardDescription>
                                 <CardTitle className="mt-2 text-3xl leading-tight">
-                                    {currentCity ? `${currentCity.title} is the current route anchor.` : 'Thailand route at a glance.'}
+                                    {context.activeCity
+                                        ? `${context.activeCity.title} is the current planning lens inside a ${pageDataset.routeSummary.countryCount}-country route.`
+                                        : 'Multi-country route at a glance.'}
                                 </CardTitle>
                                 <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
-                                    Use Overview to spot the next decision fast, then jump into Planner, Bookings, or Phrases without losing the big picture.
+                                    Overview keeps the route readable before you drop into editing. Border changes, current country rhythm,
+                                    booking pressure, and useful next actions all stay in one place.
                                 </p>
                                 <div className="mt-5 flex flex-wrap gap-2">
                                     <Button
@@ -125,20 +177,20 @@ export const TripWorkspaceOverviewPage: React.FC<TripWorkspaceOverviewPageProps>
                                         {...getAnalyticsDebugAttributes('trip_workspace__overview_quick_action--open', {
                                             trip_id: trip.id,
                                             page: 'planner',
-                                            source: 'current_city',
+                                            source: 'active_context_city',
                                         })}
                                     >
                                         <MapPinLine data-icon="inline-start" weight="duotone" />
-                                        Open today in planner
+                                        Open this stop in planner
                                     </Button>
                                     <Button
                                         type="button"
                                         variant="outline"
-                                        onClick={() => handleQuickAction('bookings', 'missing_booking')}
+                                        onClick={() => handleQuickAction('bookings', 'booking_gap')}
                                         {...getAnalyticsDebugAttributes('trip_workspace__overview_quick_action--open', {
                                             trip_id: trip.id,
                                             page: 'bookings',
-                                            source: 'missing_booking',
+                                            source: 'booking_gap',
                                         })}
                                     >
                                         <SuitcaseRolling data-icon="inline-start" weight="duotone" />
@@ -147,28 +199,32 @@ export const TripWorkspaceOverviewPage: React.FC<TripWorkspaceOverviewPageProps>
                                     <Button
                                         type="button"
                                         variant="ghost"
-                                        onClick={() => handleQuickAction('phrases', 'region_phrases')}
+                                        onClick={() => handleQuickAction('phrases', 'country_language')}
                                         {...getAnalyticsDebugAttributes('trip_workspace__overview_quick_action--open', {
                                             trip_id: trip.id,
                                             page: 'phrases',
-                                            source: 'region_phrases',
+                                            source: 'country_language',
                                         })}
                                     >
                                         <Sparkle data-icon="inline-start" weight="duotone" />
-                                        Practice phrases
+                                        Practice {context.activeCountry?.languageName ?? 'local'} phrases
                                     </Button>
                                 </div>
                             </div>
                             <div className="grid gap-3">
                                 <div className="rounded-[1.75rem] border border-border/70 bg-background/85 p-4">
-                                    <p className="text-sm font-medium text-foreground">Date range</p>
-                                    <p className="mt-2 text-2xl font-semibold text-foreground">{tripMeta.dateRange}</p>
-                                    <p className="mt-2 text-sm text-muted-foreground">{tripMeta.totalDaysLabel} days planned across {tripMeta.cityCount} city phases.</p>
+                                    <p className="text-sm font-medium text-foreground">Current country</p>
+                                    <p className="mt-2 text-2xl font-semibold text-foreground">{context.activeCountry?.name ?? 'Route overview'}</p>
+                                    <p className="mt-2 text-sm leading-6 text-muted-foreground">{context.activeCountry?.routeRole ?? pageTripMeta.summaryLine}</p>
                                 </div>
                                 <div className="rounded-[1.75rem] border border-border/70 bg-background/85 p-4">
-                                    <p className="text-sm font-medium text-foreground">Next booking pressure</p>
-                                    <p className="mt-2 text-xl font-semibold text-foreground">{missingBooking.title}</p>
-                                    <p className="mt-2 text-sm leading-6 text-muted-foreground">{missingBooking.meta}</p>
+                                    <p className="text-sm font-medium text-foreground">Next transition</p>
+                                    <p className="mt-2 text-xl font-semibold text-foreground">
+                                        {pageDataset.routeSummary.nextBorderCrossing?.label ?? 'Single-country route'}
+                                    </p>
+                                    <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                                        {pageDataset.routeSummary.nextBorderCrossing?.detail ?? 'This route stays inside one country, so city handoffs matter more than border prep.'}
+                                    </p>
                                 </div>
                             </div>
                         </div>
@@ -198,8 +254,8 @@ export const TripWorkspaceOverviewPage: React.FC<TripWorkspaceOverviewPageProps>
                                     <AirplaneInFlight size={22} weight="duotone" />
                                 </span>
                                 <div>
-                                    <p className="text-sm font-medium text-foreground">Current city</p>
-                                    <p className="text-lg font-semibold text-foreground">{currentCity?.title ?? 'Thailand route'}</p>
+                                    <p className="text-sm font-medium text-foreground">Current lens</p>
+                                    <p className="text-lg font-semibold text-foreground">{context.activeCity?.title ?? context.activeCountry?.name ?? trip.title}</p>
                                 </div>
                             </div>
                         </div>
@@ -209,8 +265,8 @@ export const TripWorkspaceOverviewPage: React.FC<TripWorkspaceOverviewPageProps>
                                     <WarningCircle size={22} weight="duotone" />
                                 </span>
                                 <div>
-                                    <p className="text-sm font-medium text-foreground">Risk snapshot</p>
-                                    <p className="text-sm leading-6 text-muted-foreground">Sea-leg flexibility and late-night transfer quality are the biggest trip-shape risks.</p>
+                                    <p className="text-sm font-medium text-foreground">Booking pressure</p>
+                                    <p className="text-sm leading-6 text-muted-foreground">{missingBooking?.title ?? 'No booking blockers in this demo route.'}</p>
                                 </div>
                             </div>
                         </div>
@@ -218,12 +274,31 @@ export const TripWorkspaceOverviewPage: React.FC<TripWorkspaceOverviewPageProps>
                 </Card>
             </div>
 
+            <Card className="border-border/80 bg-card/95 shadow-sm">
+                <CardHeader className="gap-3">
+                    <CardDescription>Country progression</CardDescription>
+                    <CardTitle>See the route as a sequence of country chapters</CardTitle>
+                </CardHeader>
+                <CardContent className="grid gap-3 lg:grid-cols-4">
+                    {pageDataset.routeSummary.progression.map((entry, index) => (
+                        <div key={entry.code} className="rounded-[1.5rem] border border-border/70 bg-background px-4 py-4">
+                            <div className="flex items-center justify-between gap-3">
+                                <p className="text-sm font-medium text-foreground">{entry.name}</p>
+                                <Badge variant={context.activeCountry?.code === entry.code ? 'secondary' : 'outline'}>Leg {index + 1}</Badge>
+                            </div>
+                            <p className="mt-3 text-2xl font-semibold text-foreground">{entry.dayCount} days</p>
+                            <p className="mt-2 text-sm leading-6 text-muted-foreground">{entry.cityCount} city stops shape this country segment.</p>
+                        </div>
+                    ))}
+                </CardContent>
+            </Card>
+
             <div className="grid gap-4 xl:grid-cols-[1.08fr_0.92fr]">
                 <TripWorkspaceOverviewCalendar trip={trip} cityStops={cityStops} onOpenPlannerItem={onOpenPlannerItem} />
                 <TripWorkspaceMapCard
                     eyebrow="Route map"
-                    title="Follow the route across Thailand"
-                    description="Overview keeps the geography simple on purpose: order, spread, and broad travel shape."
+                    title={`Follow the route across ${pageDataset.routeSummary.countryCount} countries`}
+                    description="Overview keeps the geography simple on purpose: order, spread, and where the major transitions happen."
                     badges={['Shared trip map engine', `${cityStops.length} mapped stops`]}
                     items={cityStops}
                     mapStyle="clean"
@@ -232,11 +307,15 @@ export const TripWorkspaceOverviewPage: React.FC<TripWorkspaceOverviewPageProps>
                         <div className="grid gap-3 sm:grid-cols-2">
                             <div className="rounded-[1.5rem] border border-border/70 bg-background px-4 py-3">
                                 <p className="text-sm font-medium text-foreground">Distance</p>
-                                <p className="mt-1 text-sm leading-6 text-muted-foreground">{tripMeta.distanceLabel ?? 'Route distance loading'}</p>
+                                <p className="mt-1 text-sm leading-6 text-muted-foreground">{pageTripMeta.distanceLabel ?? 'Route distance loading'}</p>
                             </div>
                             <div className="rounded-[1.5rem] border border-border/70 bg-background px-4 py-3">
-                                <p className="text-sm font-medium text-foreground">Planner handoff</p>
-                                <p className="mt-1 text-sm leading-6 text-muted-foreground">Jump into Planner when you need routing, selection, and detailed stop edits.</p>
+                                <p className="text-sm font-medium text-foreground">Border rhythm</p>
+                                <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                                    {pageDataset.routeSummary.borderCrossings.length > 0
+                                        ? `${pageDataset.routeSummary.borderCrossings.length} cross-country handoff${pageDataset.routeSummary.borderCrossings.length === 1 ? '' : 's'} to plan around.`
+                                        : 'This route stays in one country.'}
+                                </p>
                             </div>
                         </div>
                     )}
@@ -250,13 +329,24 @@ export const TripWorkspaceOverviewPage: React.FC<TripWorkspaceOverviewPageProps>
                         <CardTitle>Important context stays visible</CardTitle>
                     </CardHeader>
                     <CardContent className="grid gap-3 sm:grid-cols-2">
-                        {THAILAND_SAFETY_SNAPSHOTS.map((snapshot) => (
+                        {activeSafety.map((snapshot) => (
                             <div key={snapshot.label} className="rounded-[1.5rem] border border-border/70 bg-background px-4 py-3">
                                 <div className="flex items-center justify-between gap-3">
                                     <p className="text-sm font-medium text-foreground">{snapshot.label}</p>
                                     <Badge variant={snapshot.tone}>{snapshot.score}</Badge>
                                 </div>
                                 <p className="mt-2 text-sm leading-6 text-muted-foreground">{snapshot.detail}</p>
+                            </div>
+                        ))}
+                        {activeWeatherSignals.map((signal) => (
+                            <div key={signal.label} className="rounded-[1.5rem] border border-border/70 bg-background px-4 py-3">
+                                <div className="flex items-center justify-between gap-3">
+                                    <p className="text-sm font-medium text-foreground">{signal.label}</p>
+                                    <Badge variant={signal.tone}>{signal.value}</Badge>
+                                </div>
+                                <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                                    {context.activeCity?.weather?.routeImpact ?? context.activeCountry?.bestTime ?? 'Route-aware weather detail is not available yet.'}
+                                </p>
                             </div>
                         ))}
                     </CardContent>
@@ -267,7 +357,7 @@ export const TripWorkspaceOverviewPage: React.FC<TripWorkspaceOverviewPageProps>
                         <CardTitle>Keep the travel brain dump useful</CardTitle>
                     </CardHeader>
                     <CardContent className="grid gap-3">
-                        {THAILAND_NOTES.map((note) => (
+                        {recentNotes.map((note) => (
                             <button
                                 key={note.id}
                                 type="button"
@@ -290,12 +380,18 @@ export const TripWorkspaceOverviewPage: React.FC<TripWorkspaceOverviewPageProps>
                             <div className="flex items-center justify-between gap-3">
                                 <div>
                                     <p className="text-sm font-medium text-foreground">Need deeper research?</p>
-                                    <p className="mt-1 text-sm text-muted-foreground">Open Explore for route-aware shortlist work.</p>
+                                    <p className="mt-1 text-sm text-muted-foreground">Open Explore for route-aware shortlist work or jump into the next border packet.</p>
                                 </div>
-                                <Button type="button" variant="outline" onClick={() => handleQuickAction('explore', 'research_handoff')}>
-                                    <Compass data-icon="inline-start" weight="duotone" />
-                                    Explore
-                                </Button>
+                                <div className="flex gap-2">
+                                    <Button type="button" variant="outline" onClick={() => handleQuickAction('explore', 'research_handoff')}>
+                                        <Compass data-icon="inline-start" weight="duotone" />
+                                        Explore
+                                    </Button>
+                                    <Button type="button" variant="ghost" onClick={() => handleQuickAction('documents', 'border_packet')}>
+                                        <Signpost data-icon="inline-start" weight="duotone" />
+                                        Documents
+                                    </Button>
+                                </div>
                             </div>
                         </div>
                     </CardContent>

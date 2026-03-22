@@ -34,6 +34,8 @@ const areViewSettingsEqual = (a?: IViewSettings, b?: IViewSettings): boolean => 
         && a.timelineMode === b.timelineMode
         && a.timelineView === b.timelineView
         && a.activeCompanionSection === b.activeCompanionSection
+        && a.workspaceCountryCode === b.workspaceCountryCode
+        && a.workspaceCityGuideId === b.workspaceCityGuideId
         && a.mapDockMode === b.mapDockMode
         && a.mapStyle === b.mapStyle
         && a.routeMode === b.routeMode
@@ -197,6 +199,8 @@ export const ExampleTripLoaderRoute: React.FC<ExampleTripLoaderRouteProps> = ({
                 layoutMode: generated.defaultView?.layoutMode ?? 'horizontal',
                 timelineView: generated.defaultView?.timelineView ?? 'horizontal',
                 activeCompanionSection: generated.defaultView?.activeCompanionSection,
+                workspaceCountryCode: generated.defaultView?.workspaceCountryCode,
+                workspaceCityGuideId: generated.defaultView?.workspaceCityGuideId,
                 mapStyle: generated.defaultView?.mapStyle ?? 'standard',
                 zoomLevel: generated.defaultView?.zoomLevel ?? 1,
                 routeMode: generated.defaultView?.routeMode,

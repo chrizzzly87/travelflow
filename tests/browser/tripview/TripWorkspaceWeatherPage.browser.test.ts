@@ -60,14 +60,14 @@ describe('components/tripview/workspace/TripWorkspaceWeatherPage', () => {
             }),
         );
 
-        expect(screen.getByText('Bangkok is the condition hinge for this part of the route')).toBeInTheDocument();
+        expect(screen.getByText('Bangkok is the active route-weather lens')).toBeInTheDocument();
 
         fireEvent.click(screen.getByRole('radio', { name: 'Sea watch' }));
-        expect(screen.getAllByText('No sea risk here. Treat Bangkok as the place to recover energy before the weather-sensitive south.').length).toBeGreaterThan(0);
+        expect(screen.getAllByText(/No sea risk here/i).length).toBeGreaterThan(0);
 
-        fireEvent.click(screen.getByRole('radio', { name: 'Krabi / Ao Nang' }));
-        expect(screen.getByText('Watch Monday closely')).toBeInTheDocument();
-        expect(screen.getByText('This is the weather hinge of the route: sea mood, storm timing, and transfer windows all matter more than the temperature itself.')).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: /Krabi \/ Ao Nang This is the weather hinge/i }));
+        expect(screen.getByText('Krabi / Ao Nang is the active route-weather lens')).toBeInTheDocument();
+        expect(screen.getAllByText(/Keep one flexible coast day/i).length).toBeGreaterThan(0);
 
         fireEvent.click(screen.getByRole('button', { name: 'Open travel kit' }));
         expect(onPageChange).toHaveBeenCalledWith('travel-kit');

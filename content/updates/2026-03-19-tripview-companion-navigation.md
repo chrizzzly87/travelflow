@@ -7,7 +7,7 @@ published_at: 2026-03-19T08:00:00Z
 status: draft
 notify_in_app: false
 in_app_hours: 24
-summary: "Turns Trip View into a routed workspace with a header-aware desktop sidebar, focused planner page, shared-map overview cards, and dedicated pages for planning, destination context, travel support, weather, budget, and logistics."
+summary: "Turns Trip View into a routed workspace with a header-aware desktop sidebar, shared trip-to-country-to-city context, and dedicated pages for planning, destination context, travel support, weather, budget, and logistics across a multi-country route."
 ---
 
 ## Changes
@@ -15,9 +15,10 @@ summary: "Turns Trip View into a routed workspace with a header-aware desktop si
 - [x] [Improved] 🧱 The desktop workspace shell is now header-aware, so the fixed sidebar starts below the Trip header, keeps full-height proportions, and no longer overlaps the main navigation.
 - [x] [Improved] 🗂️ The desktop sidebar can now collapse down to icon-only navigation with hover tooltips, and it remembers that preference when you reopen the workspace.
 - [x] [Improved] 🗺️ Planner is now one focused workspace where calendar, map, timeline, and right-side stop details live together instead of appearing across every trip screen.
+- [x] [Improved] 🌏 Non-planner pages now share a trip, country, and city route context, so places like `Places`, `Weather`, `Budget`, `Travel kit`, `Documents`, `Phrases`, and `Explore` stay in sync without dumping every destination detail at once.
 - [x] [Improved] 🗓️ Overview now includes a more legible color-coded route calendar with a highlighted current day, so you can read the trip rhythm without opening the planner first.
 - [x] [New feature] 📍 Overview and Places now use the shared Trip map implementation, giving the dashboard a high-level geography view while keeping the detailed editing map inside Planner.
-- [x] [New feature] 🇹🇭 Dedicated Thailand demo pages now cover destination context, discovery ideas, bookings, notes, photos, and interactive phrase flashcards while live data integrations are still being wired in.
+- [x] [New feature] 🧭 The workspace demo now follows a multi-country Southeast Asia route, so destination pages, weather, budgets, phrase packs, and travel support all feel closer to a real long-route trip instead of a single-country mock.
 - [x] [Improved] 🧳 The trip modal stays available for core actions like sharing, export, history, and settings while destination knowledge moves into dedicated workspace pages.
 - [x] [Improved] 🧭 The trip modal now works more like a trip-actions hub, with a lighter handoff into `Places` instead of trying to be a second destination-info screen.
 - [x] [Improved] 🏷️ `Places` now makes trip-specific notes, general destination context, freshness, and demo source treatment much clearer, and its highlight toggles now drive a richer neighborhood-and-stay planning playground.
@@ -31,4 +32,4 @@ summary: "Turns Trip View into a routed workspace with a header-aware desktop si
 - [x] [New feature] 📁 A new `Documents` page keeps passports, insurance, onward-proof notes, and transfer packets together with verification toggles and offline dossier prep for the trip.
 - [x] [New feature] 💸 A new `Budget` page keeps scenario-based spend pacing, category filters, and safety buffers visible across the route so cost pressure can shape booking and activity decisions earlier.
 - [x] [New feature] ⛅ A new `Weather` page keeps route-aware conditions, sea risk, and timing signals visible stop by stop, so weather starts informing the trip instead of sitting outside the workspace.
-- [ ] [Internal] 🧪 Added routed workspace regression coverage for sidebar persistence, planner-only routing, phrase interactions, Explore workflow board behavior, locale wiring, and analytics hooks for the new Trip Workspace flow.
+- [ ] [Internal] 🧪 Added routed workspace regression coverage for sidebar persistence, planner-only routing, SEA route-context behavior, phrase interactions, Explore workflow board behavior, locale wiring, and analytics hooks for the new Trip Workspace flow.

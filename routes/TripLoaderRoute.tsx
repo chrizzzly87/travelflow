@@ -35,6 +35,8 @@ const areViewSettingsEqual = (a?: IViewSettings, b?: IViewSettings): boolean => 
         && a.timelineMode === b.timelineMode
         && a.timelineView === b.timelineView
         && a.activeCompanionSection === b.activeCompanionSection
+        && a.workspaceCountryCode === b.workspaceCountryCode
+        && a.workspaceCityGuideId === b.workspaceCityGuideId
         && a.mapDockMode === b.mapDockMode
         && a.mapStyle === b.mapStyle
         && a.routeMode === b.routeMode

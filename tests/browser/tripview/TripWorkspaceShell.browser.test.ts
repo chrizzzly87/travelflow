@@ -235,7 +235,7 @@ describe('components/tripview/TripWorkspaceShell', () => {
         expect(screen.getByText('Thailand demo')).toBeInTheDocument();
         expect(screen.getByText('Trip overview')).toBeInTheDocument();
         expect(screen.getByText('See the route day by day')).toBeInTheDocument();
-        expect(screen.getByText('Follow the route across Thailand')).toBeInTheDocument();
+        expect(screen.getByText(/Follow the route across 1 countries/i)).toBeInTheDocument();
         expect(screen.getByText('Today in Bangkok')).toBeInTheDocument();
         expect(sidebar).toHaveAttribute('data-state', 'collapsed');
         expect(onPageChange).toHaveBeenCalledWith('travel-kit');

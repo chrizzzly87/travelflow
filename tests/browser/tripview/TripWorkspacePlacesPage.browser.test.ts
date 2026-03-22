@@ -60,18 +60,18 @@ describe('components/tripview/workspace/TripWorkspacePlacesPage', () => {
       }),
     );
 
-    expect(screen.getByText('Keep practical rules separate from city-specific choices')).toBeInTheDocument();
-    const cityGuideTab = screen.getByRole('tab', { name: 'City guide' });
-    fireEvent.mouseDown(cityGuideTab, { button: 0 });
-    await waitFor(() => expect(cityGuideTab).toHaveAttribute('data-state', 'active'));
-    fireEvent.click(screen.getByRole('radio', { name: 'Arrival flow' }));
+    expect(screen.getByText('Keep the regulatory and practical layer readable')).toBeInTheDocument();
+    expect(screen.getByText('Trip-specific city notes')).toBeInTheDocument();
+    expect(screen.queryByText('Traveler warnings')).not.toBeInTheDocument();
+    expect(screen.getByText(/Sathorn and Ari reduce first-night friction/i)).toBeInTheDocument();
 
-    expect(screen.getAllByText('Trip-specific').length).toBeGreaterThan(0);
-    expect(screen.getByText('No saved traveler warnings yet')).toBeInTheDocument();
-    expect(screen.getByText(/Keep the first-night base near easy airport handoffs/i)).toBeInTheDocument();
-    expect(screen.getByText('Neighborhoods for arrival flow')).toBeInTheDocument();
+    const districtsTab = screen.getByRole('tab', { name: 'Districts' });
+    fireEvent.mouseDown(districtsTab, { button: 0 });
+    await waitFor(() => expect(districtsTab).toHaveAttribute('data-state', 'active'));
+
+    expect(screen.getByRole('button', { name: 'All areas' })).toBeInTheDocument();
     expect(screen.getAllByText('Sathorn').length).toBeGreaterThan(0);
-    expect(screen.getByText('2 map zones')).toBeInTheDocument();
-    expect(screen.getAllByText('1 stay anchor').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Talat Noi').length).toBeGreaterThan(0);
+    expect(screen.getByText(/area anchors currently visible/i)).toBeInTheDocument();
   });
 });

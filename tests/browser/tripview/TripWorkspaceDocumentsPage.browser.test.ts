@@ -52,18 +52,18 @@ describe('components/tripview/workspace/TripWorkspaceDocumentsPage', () => {
             }),
         );
 
-        expect(screen.getByText('Keep the trip paperwork feeling calm, visible, and ready to hand off')).toBeInTheDocument();
-        expect(screen.getByText((value, node) => node?.textContent === '3/7')).toBeInTheDocument();
+        expect(screen.getByText('Keep packets grouped by route leg and country, not buried by document type')).toBeInTheDocument();
 
         fireEvent.mouseDown(screen.getByRole('tab', { name: 'Transport' }), { button: 0 });
-        fireEvent.click(screen.getByRole('button', { name: 'Island transfer packet' }));
-        expect(screen.getByText('The coastal route is the one part of this trip where printed backups still make emotional sense.')).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: 'Border packets' }));
+        expect(screen.getByText('Cross-country handoff proofs and next-city anchors.')).toBeInTheDocument();
 
-        fireEvent.click(screen.getByText('Domestic flight and baggage proof').closest('button') as HTMLButtonElement);
+        fireEvent.mouseDown(screen.getByRole('tab', { name: 'Entry' }), { button: 0 });
+        fireEvent.click(screen.getByText('Onward and border proof packet'));
         fireEvent.click(screen.getAllByRole('button', { name: 'Mark verified' })[0]);
-        expect(screen.getByText((value, node) => node?.textContent === '4/7')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Marked verified' })).toBeInTheDocument();
 
-        fireEvent.click(screen.getByRole('button', { name: 'Open travel kit' }));
-        expect(onPageChange).toHaveBeenCalledWith('travel-kit');
+        fireEvent.click(screen.getByRole('button', { name: 'Open places' }));
+        expect(onPageChange).toHaveBeenCalledWith('places');
     });
 });

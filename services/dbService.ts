@@ -379,6 +379,8 @@ const normalizeViewSettingsPayload = (value: unknown): IViewSettings | null => {
         timelineMode: isTimelineModeValue(view.timelineMode) ? view.timelineMode : 'calendar',
         timelineView: isTimelineViewValue(view.timelineView) ? view.timelineView : 'horizontal',
         activeCompanionSection: isTripCompanionSectionValue(view.activeCompanionSection) ? view.activeCompanionSection : undefined,
+        workspaceCountryCode: typeof view.workspaceCountryCode === 'string' && view.workspaceCountryCode.trim().length > 0 ? view.workspaceCountryCode : undefined,
+        workspaceCityGuideId: typeof view.workspaceCityGuideId === 'string' && view.workspaceCityGuideId.trim().length > 0 ? view.workspaceCityGuideId : undefined,
         mapStyle: isMapStyleValue(view.mapStyle) ? view.mapStyle : 'standard',
         zoomLevel: normalizeFiniteNumber(view.zoomLevel) ?? 1,
         zoomBehavior: isZoomBehaviorValue(view.zoomBehavior) ? view.zoomBehavior : 'fit',

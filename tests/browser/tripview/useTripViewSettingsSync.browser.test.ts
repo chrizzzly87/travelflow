@@ -19,6 +19,8 @@ const BASE_VIEW_SETTINGS: IViewSettings = {
   sidebarWidth: 480,
   detailsWidth: 420,
   timelineHeight: 320,
+  workspaceCountryCode: 'TH',
+  workspaceCityGuideId: 'bangkok',
 };
 
 const makeHookProps = (): Parameters<typeof useTripViewSettingsSync>[0] => ({
@@ -35,6 +37,8 @@ const makeHookProps = (): Parameters<typeof useTripViewSettingsSync>[0] => ({
   sidebarWidth: 480,
   detailsWidth: 420,
   timelineHeight: 320,
+  workspaceCountryCode: 'TH',
+  workspaceCityGuideId: 'bangkok',
   viewMode: 'planner',
   onViewSettingsChange: undefined,
   initialViewSettings: undefined,
@@ -52,6 +56,8 @@ const makeHookProps = (): Parameters<typeof useTripViewSettingsSync>[0] => ({
   setDetailsWidth: vi.fn(),
   setTimelineHeight: vi.fn(),
   setShowCityNames: vi.fn(),
+  setWorkspaceCountryCode: vi.fn(),
+  setWorkspaceCityGuideId: vi.fn(),
   suppressCommitRef: { current: false },
   pendingManualViewSettingsPersistRef: { current: false },
   skipViewDiffRef: { current: false },
@@ -129,6 +135,8 @@ describe('components/tripview/useTripViewSettingsSync', () => {
       sidebarWidth: 480,
       detailsWidth: 420,
       timelineHeight: 320,
+      workspaceCountryCode: 'TH',
+      workspaceCityGuideId: 'bangkok',
     });
     expect(replaceStateSpy).not.toHaveBeenCalled();
 

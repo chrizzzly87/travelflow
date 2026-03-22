@@ -96,8 +96,8 @@ describe('components/tripview/workspace/TripWorkspacePhrasesPage', () => {
         fireEvent.click(screen.getByText('Hello'));
         expect(screen.getByText('Sawasdee krap / ka')).toBeInTheDocument();
 
-        fireEvent.click(helloCardQueries.getByRole('button', { name: 'Saved to flashcards' }));
-        expect(helloCardQueries.getByRole('button', { name: 'Save to flashcards' })).toBeInTheDocument();
+        fireEvent.click(helloCardQueries.getByRole('button', { name: 'Save to flashcards' }));
+        expect(helloCardQueries.getByRole('button', { name: 'Saved to flashcards' })).toBeInTheDocument();
 
         fireEvent.click(helloCardQueries.getByRole('button', { name: 'Copy' }));
         await waitFor(() => {

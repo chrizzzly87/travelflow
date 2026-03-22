@@ -87,6 +87,16 @@ export const applyViewSettingsToSearchParams = (
     if (isTimelineViewMode(view.timelineView ?? null)) params.set('timelineView', view.timelineView);
     if (isTripCompanionSectionValue(view.activeCompanionSection ?? null)) params.set('companion', view.activeCompanionSection);
     else params.delete('companion');
+    if (typeof view.workspaceCountryCode === 'string' && view.workspaceCountryCode.trim().length > 0) {
+        params.set('workspaceCountry', view.workspaceCountryCode);
+    } else {
+        params.delete('workspaceCountry');
+    }
+    if (typeof view.workspaceCityGuideId === 'string' && view.workspaceCityGuideId.trim().length > 0) {
+        params.set('workspaceCity', view.workspaceCityGuideId);
+    } else {
+        params.delete('workspaceCity');
+    }
     if (isMapStyleValue(view.mapStyle ?? null)) params.set('mapStyle', view.mapStyle);
 
     if (isRouteModeValue(view.routeMode ?? null)) params.set('routeMode', view.routeMode);

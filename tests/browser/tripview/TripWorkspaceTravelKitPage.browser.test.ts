@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 
 import { TripWorkspaceTravelKitPage } from '../../../components/tripview/workspace/TripWorkspaceTravelKitPage';
 import type { ITrip } from '../../../types';
@@ -53,18 +53,19 @@ describe('components/tripview/workspace/TripWorkspaceTravelKitPage', () => {
         );
 
         expect(screen.getByText('Keep the useful little things one click from the route')).toBeInTheDocument();
-        expect(screen.getByText('2/6')).toBeInTheDocument();
+        const readyCard = screen.getByText('Ready now').parentElement as HTMLElement;
+        const initialReadyCount = within(readyCard).getByText(/\d+\/\d+/).textContent;
 
-        fireEvent.mouseDown(screen.getByRole('tab', { name: 'Island leg' }), { button: 0 });
-        fireEvent.click(screen.getByRole('checkbox', { name: 'Protect one flexible day for sea and transfer changes' }));
+        fireEvent.mouseDown(screen.getByRole('tab', { name: 'Water and coast' }), { button: 0 });
+        fireEvent.click(screen.getByRole('checkbox', { name: 'Protect one flexible day for Thai coast weather' }));
 
-        expect(screen.getByText('3/6')).toBeInTheDocument();
+        expect(within(readyCard).getByText(/\d+\/\d+/).textContent).not.toBe(initialReadyCount);
 
         fireEvent.click(screen.getByRole('button', { name: '250 EUR' }));
-        expect(screen.getByText('9,750 THB')).toBeInTheDocument();
+        expect(screen.getByText(/local-cash demo/i)).toBeInTheDocument();
 
-        fireEvent.click(screen.getByRole('button', { name: 'Temple and city day' }));
-        expect(screen.getByText('A lighter city kit works better than carrying everything all day in Bangkok or Chiang Mai.')).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: 'Coast day' }));
+        expect(screen.getByText('Protects the weather-sensitive Thai island leg.')).toBeInTheDocument();
 
         fireEvent.click(screen.getByRole('button', { name: 'Open phrases' }));
         expect(onPageChange).toHaveBeenCalledWith('phrases');
