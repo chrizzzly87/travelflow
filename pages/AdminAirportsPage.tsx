@@ -56,6 +56,9 @@ import {
     ensureRuntimeLocationLoaded,
 } from '../services/runtimeLocationService';
 import {
+    getProfileCountryOptionByCode,
+} from '../services/profileCountryService';
+import {
     reverseGeocodeCountry,
     resolveCitySuggestion,
     searchCitySuggestions,
@@ -230,6 +233,15 @@ const buildEmptyAirportDraft = (): AirportEditorDraft => ({
     scheduledService: true,
 });
 
+const updateDraftCountry = (draft: AirportEditorDraft, nextCountryCode: string): AirportEditorDraft => {
+    const selectedCountry = getProfileCountryOptionByCode(nextCountryCode);
+    return {
+        ...draft,
+        countryCode: selectedCountry?.code || '',
+        countryName: selectedCountry?.name || '',
+    };
+};
+
 const draftToAirport = (draft: AirportEditorDraft): AirportReference | null => {
     const latitude = Number(draft.latitude);
     const longitude = Number(draft.longitude);
@@ -242,7 +254,7 @@ const draftToAirport = (draft: AirportEditorDraft): AirportReference | null => {
         subdivisionName: draft.subdivisionName || null,
         regionCode: draft.regionCode || null,
         countryCode: draft.countryCode,
-        countryName: draft.countryName,
+        countryName: getProfileCountryOptionByCode(draft.countryCode)?.name || draft.countryName,
         latitude,
         longitude,
         timezone: draft.timezone || null,
@@ -2475,18 +2487,27 @@ export const AdminAirportsPage: React.FC = () => {
 
                                 <div className="grid gap-3 md:grid-cols-2">
                                     <div className="space-y-2">
-                                        <label htmlFor="admin-airports-editor-country-code" className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Country code</label>
-                                        <Input id="admin-airports-editor-country-code" value={editorDraft.countryCode} onChange={(event) => {
-                                            setEditorDraft((current) => current ? { ...current, countryCode: event.target.value.toUpperCase() } : current);
-                                            setEditorDirty(true);
-                                        }} />
+                                        <div className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Country or region</div>
+                                        <ProfileCountryRegionSelect
+                                            value={editorDraft.countryCode}
+                                            ariaLabel="Country or region"
+                                            placeholder="Select country or region"
+                                            emptyLabel="No matching countries"
+                                            toggleLabel="Toggle country options"
+                                            onValueChange={(value) => {
+                                                setEditorDraft((current) => current ? updateDraftCountry(current, value) : current);
+                                                setEditorDirty(true);
+                                            }}
+                                        />
                                     </div>
                                     <div className="space-y-2">
                                         <label htmlFor="admin-airports-editor-country-name" className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Country name</label>
-                                        <Input id="admin-airports-editor-country-name" value={editorDraft.countryName} onChange={(event) => {
-                                            setEditorDraft((current) => current ? { ...current, countryName: event.target.value } : current);
-                                            setEditorDirty(true);
-                                        }} />
+                                        <Input
+                                            id="admin-airports-editor-country-name"
+                                            value={editorDraft.countryName}
+                                            readOnly
+                                            className="bg-slate-50 text-slate-600"
+                                        />
                                     </div>
                                 </div>
 

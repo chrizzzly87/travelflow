@@ -271,8 +271,9 @@ describe('AdminAirportsPage', () => {
     await user.type(screen.getByLabelText('ICAO code'), 'EDDM');
     await user.type(screen.getByLabelText('Airport name'), 'Munich Airport');
     await user.type(screen.getByLabelText('Municipality'), 'Munich');
-    await user.type(screen.getByLabelText('Country code'), 'DE');
-    await user.type(screen.getByLabelText('Country name'), 'Germany');
+    await user.click(screen.getByLabelText('Country or region'));
+    await user.type(screen.getByLabelText('Country or region'), 'Germany');
+    await user.click(await screen.findByRole('option', { name: 'Germany' }));
     await user.clear(screen.getByLabelText('Latitude', { selector: 'input#admin-airports-editor-latitude' }));
     await user.type(screen.getByLabelText('Latitude', { selector: 'input#admin-airports-editor-latitude' }), '48.3538');
     await user.clear(screen.getByLabelText('Longitude', { selector: 'input#admin-airports-editor-longitude' }));

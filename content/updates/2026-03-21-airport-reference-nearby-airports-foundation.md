@@ -19,5 +19,6 @@ summary: "Adds a generated commercial-airport reference snapshot, nearby-airport
 - [ ] [Internal] 🧾 Added a fake digital boarding-pass lab in admin so the nearest commercial airport can be previewed as a realistic ticket artifact for future travel surfaces.
 - [ ] [Internal] 🗂️ Added bulk airport editing plus bulk deletes in admin for multi-row airport type, scheduled-service, timezone, and cleanup corrections without leaving the shared airport workspace.
 - [ ] [Internal] 🏳️ Swapped the airport country filters to the shared flag-aware country picker and added resizable airport-table columns so the admin workspace reuses the same selection and table ergonomics as other admin tools.
+- [ ] [Internal] ✅ Swapped the airport editor’s country field to the same shared flag-aware picker and auto-derived country names so catalog edits cannot drift into mismatched country code/name pairs.
 - [ ] [Internal] ➕ Added create and delete flows to the airport editor so admins can manage the catalog rows directly instead of only syncing and editing existing records.
 - [ ] [Internal] 🧪 Added regression coverage for airport snapshot generation, distance sorting, the nearby-airports edge route, the new admin airports route, and the admin workspace flows.
