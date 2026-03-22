@@ -476,6 +476,12 @@
           "title": "Buchungen",
           "description": "Behalte Reservierungen, offene Entscheidungen und fehlende Logistik an einem Ort im Blick."
         },
+        "budget": {
+          "label": "Budget",
+          "eyebrow": "Budget",
+          "title": "Budget",
+          "description": "Behalte Ausgabenrhythmus, Buchungsdruck und Puffer entlang der Route im Blick."
+        },
         "travel-kit": {
           "label": "Travel-Kit",
           "eyebrow": "Travel-Kit",
@@ -493,6 +499,12 @@
           "eyebrow": "Orte",
           "title": "Orte",
           "description": "Öffne Länder- und Städte-Kontext mit Vierteln, Sicherheitshinweisen und Ankunftsinfos."
+        },
+        "weather": {
+          "label": "Wetter",
+          "eyebrow": "Wetter",
+          "title": "Wetter",
+          "description": "Behalte wetterabhängige Bedingungen, Seerisiko und bessere Zeitfenster je Stopp im Blick."
         },
         "explore": {
           "label": "Entdecken",

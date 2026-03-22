@@ -24,8 +24,10 @@ import { TripWorkspacePlacesPage } from './workspace/TripWorkspacePlacesPage';
 import { TripWorkspaceExplorePage } from './workspace/TripWorkspaceExplorePage';
 import { TripWorkspacePhrasesPage } from './workspace/TripWorkspacePhrasesPage';
 import { TripWorkspaceBookingsPage } from './workspace/TripWorkspaceBookingsPage';
+import { TripWorkspaceBudgetPage } from './workspace/TripWorkspaceBudgetPage';
 import { TripWorkspaceTravelKitPage } from './workspace/TripWorkspaceTravelKitPage';
 import { TripWorkspaceDocumentsPage } from './workspace/TripWorkspaceDocumentsPage';
+import { TripWorkspaceWeatherPage } from './workspace/TripWorkspaceWeatherPage';
 import { TripWorkspaceNotesPage } from './workspace/TripWorkspaceNotesPage';
 import { TripWorkspacePhotosPage } from './workspace/TripWorkspacePhotosPage';
 import {
@@ -372,6 +374,16 @@ const TripWorkspaceRenderedPage: React.FC<TripWorkspaceRenderedPageProps> = ({
                     <TripWorkspaceBookingsPage trip={trip} />
                 </TripWorkspacePageShell>
             );
+        case 'budget':
+            return (
+                <TripWorkspacePageShell
+                    page="budget"
+                    title={t('tripView.workspace.pages.budget.title')}
+                    description={t('tripView.workspace.pages.budget.description')}
+                >
+                    <TripWorkspaceBudgetPage trip={trip} onPageChange={onPageChange} />
+                </TripWorkspacePageShell>
+            );
         case 'travel-kit':
             return (
                 <TripWorkspacePageShell
@@ -390,6 +402,16 @@ const TripWorkspaceRenderedPage: React.FC<TripWorkspaceRenderedPageProps> = ({
                     description={t('tripView.workspace.pages.documents.description')}
                 >
                     <TripWorkspaceDocumentsPage trip={trip} onPageChange={onPageChange} />
+                </TripWorkspacePageShell>
+            );
+        case 'weather':
+            return (
+                <TripWorkspacePageShell
+                    page="weather"
+                    title={t('tripView.workspace.pages.weather.title')}
+                    description={t('tripView.workspace.pages.weather.description')}
+                >
+                    <TripWorkspaceWeatherPage trip={trip} onPageChange={onPageChange} />
                 </TripWorkspacePageShell>
             );
         case 'notes':

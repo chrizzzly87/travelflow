@@ -163,6 +163,57 @@ export interface TripWorkspaceDocumentPacket {
     documentIds: string[];
 }
 
+export type TripWorkspaceBudgetScenarioId = 'lean' | 'balanced' | 'comfort';
+export type TripWorkspaceBudgetCategoryId = 'stay' | 'transport' | 'food' | 'activity' | 'buffer';
+
+export interface TripWorkspaceBudgetScenario {
+    id: TripWorkspaceBudgetScenarioId;
+    label: string;
+    vibe: string;
+    dailyTarget: number;
+    totalEstimate: number;
+    reserveBuffer: number;
+}
+
+export interface TripWorkspaceBudgetLineItem {
+    id: string;
+    cityId: string;
+    title: string;
+    category: TripWorkspaceBudgetCategoryId;
+    status: 'Locked' | 'Flexible' | 'Watch';
+    amount: number;
+    detail: string;
+}
+
+export type TripWorkspaceWeatherLensId = 'feel' | 'rain' | 'sea' | 'pack';
+
+export interface TripWorkspaceWeatherSignal {
+    label: string;
+    value: string;
+    tone: 'secondary' | 'outline';
+}
+
+export interface TripWorkspaceWeatherForecastDay {
+    label: string;
+    tempC: string;
+    condition: string;
+    rainChance: string;
+}
+
+export interface TripWorkspaceWeatherStop {
+    id: string;
+    title: string;
+    updateLine: string;
+    headline: string;
+    travelFeel: string;
+    caution: string;
+    activityWindow: string;
+    seaNote: string;
+    packNotes: string[];
+    forecast: TripWorkspaceWeatherForecastDay[];
+    signals: TripWorkspaceWeatherSignal[];
+}
+
 const normalizeValue = (value: string): string => value.toLowerCase().replace(/[^a-z]/g, '');
 
 export const resolveTripWorkspaceCityStops = (items: ITimelineItem[]): ITimelineItem[] =>
@@ -988,6 +1039,177 @@ export const THAILAND_DOCUMENT_PACKETS: TripWorkspaceDocumentPacket[] = [
         label: 'Island transfer packet',
         detail: 'The coastal route is the one part of this trip where printed backups still make emotional sense.',
         documentIds: ['ferry-pack', 'stay-balance'],
+    },
+];
+
+export const THAILAND_BUDGET_SCENARIOS: TripWorkspaceBudgetScenario[] = [
+    {
+        id: 'lean',
+        label: 'Lean',
+        vibe: 'Save the cash for one or two signature days and keep the route simple elsewhere.',
+        dailyTarget: 74,
+        totalEstimate: 1920,
+        reserveBuffer: 180,
+    },
+    {
+        id: 'balanced',
+        label: 'Balanced',
+        vibe: 'Comfortable city stays, a few strong activity days, and room for a weather detour.',
+        dailyTarget: 112,
+        totalEstimate: 2910,
+        reserveBuffer: 360,
+    },
+    {
+        id: 'comfort',
+        label: 'Comfort',
+        vibe: 'Nicer rooms, cleaner transfer buffers, and less need to optimize every small spend.',
+        dailyTarget: 158,
+        totalEstimate: 4100,
+        reserveBuffer: 620,
+    },
+];
+
+export const THAILAND_BUDGET_LINE_ITEMS: TripWorkspaceBudgetLineItem[] = [
+    {
+        id: 'budget-bangkok-stay',
+        cityId: 'bangkok',
+        title: 'Bangkok arrival stay',
+        category: 'stay',
+        status: 'Locked',
+        amount: 320,
+        detail: 'Three nights in Sathorn with the easy airport handoff already solved.',
+    },
+    {
+        id: 'budget-chiang-mai-flight',
+        cityId: 'chiang-mai',
+        title: 'Bangkok → Chiang Mai flight',
+        category: 'transport',
+        status: 'Watch',
+        amount: 96,
+        detail: 'Carry-on fare looks fine, but baggage rules could still nudge the real total upward.',
+    },
+    {
+        id: 'budget-chiang-mai-stay',
+        cityId: 'chiang-mai',
+        title: 'Chiang Mai stay block',
+        category: 'stay',
+        status: 'Flexible',
+        amount: 290,
+        detail: 'Old City is easiest, Nimman is nicer, and the cost swing changes the north rhythm fast.',
+    },
+    {
+        id: 'budget-food-rhythm',
+        cityId: 'bangkok',
+        title: 'Street food and café rhythm',
+        category: 'food',
+        status: 'Locked',
+        amount: 210,
+        detail: 'This route does not need big restaurant spending to feel rich if the day pacing is right.',
+    },
+    {
+        id: 'budget-signature-activities',
+        cityId: 'krabi',
+        title: 'Signature activity pocket',
+        category: 'activity',
+        status: 'Flexible',
+        amount: 175,
+        detail: 'Cooking class, one sunrise long-tail day, and one skyline or spa splurge still fit cleanly.',
+    },
+    {
+        id: 'budget-krabi-base',
+        cityId: 'krabi',
+        title: 'Krabi coast-base decision',
+        category: 'stay',
+        status: 'Watch',
+        amount: 420,
+        detail: 'Ao Nang keeps logistics cheaper; Railay pushes atmosphere up and transfer friction with it.',
+    },
+    {
+        id: 'budget-island-transfers',
+        cityId: 'phi-phi',
+        title: 'Island transfer chain',
+        category: 'transport',
+        status: 'Flexible',
+        amount: 165,
+        detail: 'Boat days are usually where the route quietly leaks money once timing gets sloppy.',
+    },
+    {
+        id: 'budget-weather-buffer',
+        cityId: 'krabi',
+        title: 'Weather and ferry buffer',
+        category: 'buffer',
+        status: 'Watch',
+        amount: 120,
+        detail: 'One protected cushion keeps the coast leg from turning one rough sea day into a cascade.',
+    },
+];
+
+export const THAILAND_WEATHER_STOPS: TripWorkspaceWeatherStop[] = [
+    {
+        id: 'bangkok',
+        title: 'Bangkok',
+        updateLine: 'Updated hourly demo pulse',
+        headline: 'Hot city start with late-day storm chances and a real need to front-load the good hours.',
+        travelFeel: 'Bangkok works best before the pavement stores heat. Mornings feel productive; afternoons feel heavier than the map suggests.',
+        caution: 'River hops and rooftop timing both get worse if you pretend a 16:00 departure feels like a 09:00 departure.',
+        activityWindow: 'Best window: 07:30-10:30 for temples, 18:00 onward for skyline and food.',
+        seaNote: 'No sea risk here. Treat Bangkok as the place to recover energy before the weather-sensitive south.',
+        packNotes: ['Light overshirt for malls and trains', 'Electrolytes on arrival day', 'Umbrella after lunch'],
+        forecast: [
+            { label: 'Fri', tempC: '34°', condition: 'Humid sun', rainChance: '20%' },
+            { label: 'Sat', tempC: '35°', condition: 'Late shower', rainChance: '45%' },
+            { label: 'Sun', tempC: '33°', condition: 'Cloud breaks', rainChance: '35%' },
+            { label: 'Mon', tempC: '34°', condition: 'Storm watch', rainChance: '60%' },
+        ],
+        signals: [
+            { label: 'Heat feel', value: 'High after noon', tone: 'secondary' },
+            { label: 'Transit risk', value: 'Traffic spikes in rain', tone: 'outline' },
+            { label: 'Photo light', value: 'Best at dawn and blue hour', tone: 'outline' },
+        ],
+    },
+    {
+        id: 'chiang-mai',
+        title: 'Chiang Mai',
+        updateLine: 'Updated daily demo pulse',
+        headline: 'Softer mornings, easier evenings, and a calmer pace as long as rain haze does not steal the hills.',
+        travelFeel: 'Chiang Mai rewards slower pacing more than density. You can do more with one quiet café block than with a packed checklist.',
+        caution: 'If the route wants mountain views, keep one fallback plan because haze and rain flatten the high-impact outings first.',
+        activityWindow: 'Best window: sunrise to 11:00 for temple or hill trips, after 17:30 for markets.',
+        seaNote: 'No marine risk, but haze can play the same role as rough water by killing the scenic version of the day.',
+        packNotes: ['Light layer for early scooters or songthaews', 'Mask if haze spikes', 'Portable fan helps less than you think'],
+        forecast: [
+            { label: 'Tue', tempC: '31°', condition: 'Bright and dry', rainChance: '15%' },
+            { label: 'Wed', tempC: '32°', condition: 'Cloudy heat', rainChance: '25%' },
+            { label: 'Thu', tempC: '30°', condition: 'Storm edge', rainChance: '55%' },
+            { label: 'Fri', tempC: '29°', condition: 'Rain break', rainChance: '40%' },
+        ],
+        signals: [
+            { label: 'Walk comfort', value: 'Good before lunch', tone: 'secondary' },
+            { label: 'Hill clarity', value: 'Variable this week', tone: 'outline' },
+            { label: 'Market nights', value: 'Safe bet after sunset', tone: 'secondary' },
+        ],
+    },
+    {
+        id: 'krabi',
+        title: 'Krabi / Ao Nang',
+        updateLine: 'Updated marine-aware demo pulse',
+        headline: 'This is the weather hinge of the route: sea mood, storm timing, and transfer windows all matter more than the temperature itself.',
+        travelFeel: 'The south is where the weather stops being background and starts changing the quality of the whole trip day.',
+        caution: 'Boat mornings can still look fine on land while turning rough enough to scramble the scenic plan by mid-route.',
+        activityWindow: 'Best window: sunrise to early lunch for long-tail or beach moves, inland fallback after 15:00.',
+        seaNote: 'Keep one flexible coast day. That single decision protects both your mood and your budget.',
+        packNotes: ['Dry bag for ferries', 'Quick-dry shirt', 'One clean inland fallback plan', 'Offline pier screenshots'],
+        forecast: [
+            { label: 'Sat', tempC: '32°', condition: 'Bright start', rainChance: '30%' },
+            { label: 'Sun', tempC: '31°', condition: 'Sea breeze', rainChance: '25%' },
+            { label: 'Mon', tempC: '30°', condition: 'Storm pockets', rainChance: '65%' },
+            { label: 'Tue', tempC: '31°', condition: 'Cloud + sun', rainChance: '40%' },
+        ],
+        signals: [
+            { label: 'Boat confidence', value: 'Watch Monday closely', tone: 'outline' },
+            { label: 'Beach payoff', value: 'Best before noon', tone: 'secondary' },
+            { label: 'Transfer drag', value: 'High in rain', tone: 'outline' },
+        ],
     },
 ];
 

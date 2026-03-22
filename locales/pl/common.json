@@ -474,6 +474,12 @@
           "title": "Bookings",
           "description": "Track reservations, due decisions, and missing logistics in one place."
         },
+        "budget": {
+          "label": "Budget",
+          "eyebrow": "Budget",
+          "title": "Budget",
+          "description": "Keep spend pace, booking pressure, and buffers visible across the route."
+        },
         "travel-kit": {
           "label": "Travel kit",
           "eyebrow": "Travel kit",
@@ -491,6 +497,12 @@
           "eyebrow": "Places",
           "title": "Places",
           "description": "Open country and city context with neighborhoods, safety notes, and arrival basics."
+        },
+        "weather": {
+          "label": "Weather",
+          "eyebrow": "Weather",
+          "title": "Weather",
+          "description": "Track route-aware conditions, sea risk, and better timing windows for each stop."
         },
         "explore": {
           "label": "Explore",

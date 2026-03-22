@@ -41,6 +41,10 @@ vi.mock('react-i18next', () => ({
                 'tripView.workspace.pages.bookings.eyebrow': 'Bookings',
                 'tripView.workspace.pages.bookings.title': 'Bookings',
                 'tripView.workspace.pages.bookings.description': 'Track reservations and missing logistics.',
+                'tripView.workspace.pages.budget.label': 'Budget',
+                'tripView.workspace.pages.budget.eyebrow': 'Budget',
+                'tripView.workspace.pages.budget.title': 'Budget',
+                'tripView.workspace.pages.budget.description': 'Keep spend pace, booking pressure, and buffers visible across the route.',
                 'tripView.workspace.pages.travel-kit.label': 'Travel kit',
                 'tripView.workspace.pages.travel-kit.eyebrow': 'Travel kit',
                 'tripView.workspace.pages.travel-kit.title': 'Travel kit',
@@ -53,6 +57,10 @@ vi.mock('react-i18next', () => ({
                 'tripView.workspace.pages.places.eyebrow': 'Places',
                 'tripView.workspace.pages.places.title': 'Places',
                 'tripView.workspace.pages.places.description': 'Open country and city context.',
+                'tripView.workspace.pages.weather.label': 'Weather',
+                'tripView.workspace.pages.weather.eyebrow': 'Weather',
+                'tripView.workspace.pages.weather.title': 'Weather',
+                'tripView.workspace.pages.weather.description': 'Track route-aware conditions, sea risk, and better timing windows for each stop.',
                 'tripView.workspace.pages.explore.label': 'Explore',
                 'tripView.workspace.pages.explore.eyebrow': 'Explore',
                 'tripView.workspace.pages.explore.title': 'Explore',
@@ -120,6 +128,8 @@ describe('shared/tripWorkspace', () => {
         expect(normalizeTripWorkspacePage('plan')).toBe('overview');
         expect(normalizeTripWorkspacePage('travel-kit')).toBe('travel-kit');
         expect(normalizeTripWorkspacePage('documents')).toBe('documents');
+        expect(normalizeTripWorkspacePage('budget')).toBe('budget');
+        expect(normalizeTripWorkspacePage('weather')).toBe('weather');
         expect(normalizeTripWorkspacePage('places')).toBe('places');
         expect(normalizeTripWorkspacePage('unknown')).toBeNull();
     });
@@ -129,6 +139,12 @@ describe('shared/tripWorkspace', () => {
             kind: 'trip',
             basePath: '/trip/trip-1',
             page: 'travel-kit',
+            hasExplicitPage: true,
+        });
+        expect(resolveTripWorkspaceRouteState('/trip/trip-1/weather')).toEqual({
+            kind: 'trip',
+            basePath: '/trip/trip-1',
+            page: 'weather',
             hasExplicitPage: true,
         });
         expect(resolveTripWorkspaceRouteState('/example/template-1/planner')).toEqual({
@@ -143,6 +159,7 @@ describe('shared/tripWorkspace', () => {
             page: null,
             hasExplicitPage: false,
         });
+        expect(buildTripWorkspacePath('/trip/trip-1', 'budget')).toBe('/trip/trip-1/budget');
         expect(buildTripWorkspacePath('/trip/trip-1', 'documents')).toBe('/trip/trip-1/documents');
     });
 });
@@ -302,9 +319,9 @@ describe('components/tripview/TripWorkspaceShell', () => {
             }),
         );
 
-        fireEvent.click(screen.getByRole('button', { name: 'Documents' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Weather' }));
 
         expect(screen.getByLabelText('Trip workspace navigation')).toBeInTheDocument();
-        expect(onPageChange).toHaveBeenCalledWith('documents');
+        expect(onPageChange).toHaveBeenCalledWith('weather');
     });
 });

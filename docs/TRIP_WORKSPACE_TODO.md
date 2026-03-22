@@ -65,6 +65,8 @@ Goal: Turn Trip View into a routed Trip Workspace with a fixed shadcn sidebar on
 - [x] `Explore`: add an activity workflow board with `Shortlist`, `Planned`, `Booked`, and `Done`, plus planner handoff and mobile-friendly move actions.
 - [x] `Phrases`: build a lightweight language support page with useful phrases, translations, pronunciation, saved phrases, and simple flashcards.
 - [x] `Bookings`: add a logistics page for reservations, confirmations, due dates, and missing-booking gaps.
+- [x] `Budget`: add a trip cost page for spend pace, booking pressure, scenario planning, and route-sensitive buffers.
+- [x] `Weather`: add a route-conditions page for city-by-city travel feel, rain risk, sea watch, and packing signals.
 - [x] `Notes`: add a diary and trip-notes page for daily notes, city notes, and planning checklists.
 - [x] `Photos`: add a simple album page as the visual memory layer.
 
@@ -99,9 +101,9 @@ Goal: Turn Trip View into a routed Trip Workspace with a fixed shadcn sidebar on
 
 ## Next ideas backlog
 - [x] Add a `Travel kit` page for packing lists, adapters, emergency numbers, and trip checklists.
-- [ ] Add a `Budget` page for planned spend, booked spend, and daily burn-rate tracking.
+- [x] Add a `Budget` page for planned spend, booked spend, and daily burn-rate tracking.
 - [x] Add a `Documents` page for passports, visa notes, insurance, tickets, and booking PDFs.
-- [ ] Add a `Weather` layer for city-by-city forecasts, seasonal warnings, and disruption watchlists.
+- [x] Add a `Weather` layer for city-by-city forecasts, seasonal warnings, and disruption watchlists.
 
 ## Validation and rollout
 - [x] Add route and workspace regression coverage following `docs/TESTING_PHASE2_SCOPE.md`.
@@ -128,6 +130,8 @@ Goal: Turn Trip View into a routed Trip Workspace with a fixed shadcn sidebar on
 - [x] Added clearer source freshness, trip-specific vs general context labels, and interactive overlay guidance to the `Places` page.
 - [x] Added a routed `Travel kit` page with interactive checklists, emergency quick references, offline prep toggles, converter tools, and Thailand demo support content.
 - [x] Added a routed `Documents` page with packet tabs, verification toggles, offline dossier prep, and quick links back into bookings, places, and travel support flows.
+- [x] Added a routed `Budget` page with scenario switching, cost-category filters, reserve controls, and route-aware spend pacing for the Thailand demo trip.
+- [x] Added a routed `Weather` page with route-stop switching, weather lenses, disruption framing, and quick links back into planner, places, and travel support pages.
 - [x] Added an Explore activity workflow board with drag-and-drop lanes on desktop, menu-based moves on mobile, planner scheduling handoff, and booked-activity visibility inside `Bookings`.
 - [x] Added unit and browser regression coverage for activity-board derivation, filter persistence, mobile move actions, and booked-activity summaries.
 - [x] Updated active locale files with the current Explore workflow copy and mode labels.
@@ -139,5 +143,5 @@ Goal: Turn Trip View into a routed Trip Workspace with a fixed shadcn sidebar on
 ## Open
 - [ ] Turn the new `Places` overlay guidance into true visual map overlays once the shared trip map exposes richer layer hooks.
 - [ ] Turn the new overview map and overview calendar copy into signed-off EN/DE locale keys when the wording is final.
-- [ ] Replace Thailand demo data with live bookings, discovery, activity-board, phrase, destination, travel-kit, and document services when the backend inputs are ready.
-- [ ] Choose the next routed page after this slice: `Budget` or `Weather`.
+- [ ] Replace Thailand demo data with live bookings, discovery, activity-board, phrase, destination, travel-kit, document, budget, and weather services when the backend inputs are ready.
+- [ ] Decide whether the next workspace utility slice should focus on `routing polish`, `planner-to-budget sync`, or `weather-driven map overlays`.
