@@ -278,7 +278,7 @@ describe('AdminAirportsPage', () => {
     expect(await screen.findByText('Airport Catalog')).toBeInTheDocument();
     expect(await screen.findByDisplayValue('Berlin Brandenburg Airport')).toBeInTheDocument();
 
-    await user.click(screen.getByText('Hamburg Airport'));
+    await user.click(screen.getByRole('row', { name: /HAM\s+EDDH\s+Hamburg Airport/i }));
     await waitFor(() => {
       expect(screen.getByDisplayValue('Hamburg Airport')).toBeInTheDocument();
     });
@@ -388,11 +388,12 @@ describe('AdminAirportsPage', () => {
 
   it('renders a fake ticket preview from the nearby-airport lookup', async () => {
     const user = userEvent.setup();
-    renderAdminAirportsPage();
+    renderAdminAirportsPage([
+      '/admin/airports?nearbyCity=Berlin%2C%20Germany&nearbyLat=52.52&nearbyLng=13.405',
+    ]);
 
     expect(await screen.findByRole('button', { name: 'Lookup nearby airports' })).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Use runtime location' }));
     await user.click(screen.getByRole('button', { name: 'Lookup nearby airports' }));
 
     expect(await screen.findByText('Digital Boarding Pass')).toBeInTheDocument();
@@ -443,11 +444,12 @@ describe('AdminAirportsPage', () => {
           },
         ],
       });
-    renderAdminAirportsPage();
+    renderAdminAirportsPage([
+      '/admin/airports?nearbyCity=Berlin%2C%20Germany&nearbyLat=52.52&nearbyLng=13.405',
+    ]);
 
     expect(await screen.findByRole('button', { name: 'Lookup nearby airports' })).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Use runtime location' }));
     await user.click(screen.getByRole('button', { name: 'Lookup nearby airports' }));
     await waitFor(() => {
       expect(mocks.fetchNearbyAirports).toHaveBeenCalledTimes(1);
@@ -471,15 +473,37 @@ describe('AdminAirportsPage', () => {
     expect(screen.getByLabelText('Resize timezone column')).toBeInTheDocument();
   });
 
+  it('defaults the nearby-airport tester to runtime location and major-only lookups', async () => {
+    renderAdminAirportsPage();
+
+    expect(await screen.findByDisplayValue('Berlin, Germany')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('52.52')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('13.405')).toBeInTheDocument();
+    expect(screen.getByText('Large airports used for big commercial traffic.')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(mocks.ensureRuntimeLocationLoaded).toHaveBeenCalledTimes(1);
+      expect(mocks.fetchNearbyAirports).toHaveBeenCalledWith(expect.objectContaining({
+        lat: 52.52,
+        lng: 13.405,
+        minimumServiceTier: 'major',
+      }));
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId('location-search').textContent).toContain('nearbyCity=Berlin');
+      expect(screen.getByTestId('location-search').textContent).toContain('nearbyLookup=1');
+    });
+  });
+
   it('persists airport filters in the URL and restores nearby lookups on refresh', async () => {
     renderAdminAirportsPage([
-      '/admin/airports?country=DE&catalogTier=major&nearbyCity=Berlin%2C%20Germany&nearbyLat=52.52&nearbyLng=13.405&nearbyLimit=3&nearbyTier=major&nearbySameCountry=1&nearbyLookup=1',
+      '/admin/airports?country=DE&catalogTier=major&nearbyCity=Berlin%2C%20Germany&nearbyLat=52.52&nearbyLng=13.405&nearbyLimit=3&nearbySameCountry=1&nearbyLookup=1',
     ]);
 
     expect(await screen.findByDisplayValue('Germany')).toBeInTheDocument();
     expect(screen.getByDisplayValue('Berlin, Germany')).toBeInTheDocument();
     expect(screen.getByDisplayValue('52.52')).toBeInTheDocument();
     expect(screen.getByDisplayValue('13.405')).toBeInTheDocument();
+    expect(screen.getByText('Large airports used for big commercial traffic.')).toBeInTheDocument();
     await waitFor(() => {
       expect(mocks.fetchNearbyAirports).toHaveBeenCalledWith(expect.objectContaining({
         lat: 52.52,

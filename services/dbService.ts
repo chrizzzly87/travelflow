@@ -2399,7 +2399,7 @@ export const dbFindNearestCommercialAirports = async ({
     lat,
     lng,
     limit = 10,
-    minimumServiceTier = 'local',
+    minimumServiceTier = 'major',
 }: {
     lat: number;
     lng: number;

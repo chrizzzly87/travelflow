@@ -64,7 +64,7 @@ export const parseNearbyAirportsRequest = (request: Request): {
     lat: asFiniteNumber(url.searchParams.get('lat')),
     lng: asFiniteNumber(url.searchParams.get('lng')),
     limit: clampNearbyAirportLimit(asFiniteNumber(url.searchParams.get('limit'))),
-    minimumServiceTier: parseCommercialServiceTier(url.searchParams.get('minimumServiceTier')),
+    minimumServiceTier: parseCommercialServiceTier(url.searchParams.get('minimumServiceTier'), 'major'),
     countryCode: typeof countryCode === 'string' && countryCode.trim()
       ? countryCode.trim().toUpperCase()
       : null,

@@ -104,7 +104,7 @@ describe('runtime nearby airports edge', () => {
       lat: 52.52,
       lng: 13.405,
       limit: 10,
-      minimumServiceTier: 'local',
+      minimumServiceTier: 'major',
       countryCode: null,
     }));
     await expect(response.json()).resolves.toEqual({

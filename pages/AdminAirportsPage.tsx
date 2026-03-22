@@ -55,6 +55,7 @@ import {
 } from '../services/nearbyAirportsService';
 import {
     ensureRuntimeLocationLoaded,
+    type RuntimeLocationStoreSnapshot,
 } from '../services/runtimeLocationService';
 import {
     getProfileCountryOptionByCode,
@@ -123,8 +124,12 @@ interface AdminAirportTesterFilters {
     lookupActive: boolean;
 }
 
+type AdminAirportTesterSearchParams = Pick<URLSearchParams, 'get'>;
+
 const AIRPORT_TABLE_PAGE_SIZE = 50;
 const ADMIN_AIRPORT_MAP_ID = 'admin-airports-map';
+const DEFAULT_ADMIN_AIRPORT_TESTER_LIMIT = '10';
+const DEFAULT_ADMIN_AIRPORT_TESTER_SERVICE_TIER: AirportCommercialServiceTier = 'major';
 const SERVICE_TIER_OPTIONS: Array<{ value: AirportCommercialServiceTier; label: string; helper: string }> = [
     { value: 'major', label: 'Major only', helper: 'Large airports used for big commercial traffic.' },
     { value: 'regional', label: 'Regional + major', helper: 'Typical passenger airports plus large hubs.' },
@@ -198,6 +203,79 @@ const parseQueryBoolean = (value: string | null): boolean => (
 const buildAirportTesterFilterSignature = (filters: AdminAirportTesterFilters): string => (
     `${filters.limitInput.trim()}|${filters.minimumServiceTier}|${filters.countryFilter}|${filters.sameCountryOnly ? '1' : '0'}`
 );
+
+const areTesterOriginsEqual = (left: TesterOrigin | null, right: TesterOrigin | null): boolean => {
+    if (!left && !right) return true;
+    if (!left || !right) return false;
+    return left.label === right.label
+        && left.lat === right.lat
+        && left.lng === right.lng
+        && left.countryCode === right.countryCode
+        && left.countryName === right.countryName;
+};
+
+const buildTesterOriginFromFilters = (
+    filters: Pick<AdminAirportTesterFilters, 'cityQuery' | 'latitudeInput' | 'longitudeInput'>,
+    currentOrigin: TesterOrigin | null,
+): TesterOrigin | null => {
+    const latitude = Number(filters.latitudeInput);
+    const longitude = Number(filters.longitudeInput);
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
+
+    const sameCoordinates = currentOrigin
+        && currentOrigin.lat === latitude
+        && currentOrigin.lng === longitude;
+
+    return {
+        label: filters.cityQuery.trim() || `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
+        lat: latitude,
+        lng: longitude,
+        countryCode: sameCoordinates ? currentOrigin.countryCode : null,
+        countryName: sameCoordinates ? currentOrigin.countryName : null,
+    };
+};
+
+const buildAdminAirportTesterFiltersFromSearchParams = (
+    searchParams: AdminAirportTesterSearchParams,
+): AdminAirportTesterFilters => ({
+    cityQuery: searchParams.get('nearbyCity') || '',
+    latitudeInput: searchParams.get('nearbyLat') || '',
+    longitudeInput: searchParams.get('nearbyLng') || '',
+    limitInput: searchParams.get('nearbyLimit') || DEFAULT_ADMIN_AIRPORT_TESTER_LIMIT,
+    minimumServiceTier: parseAirportCommercialServiceTier(searchParams.get('nearbyTier'), DEFAULT_ADMIN_AIRPORT_TESTER_SERVICE_TIER),
+    countryFilter: normalizeProfileCountryCode(searchParams.get('nearbyCountry')),
+    sameCountryOnly: parseQueryBoolean(searchParams.get('nearbySameCountry')),
+    lookupActive: parseQueryBoolean(searchParams.get('nearbyLookup')),
+});
+
+const areAdminAirportTesterFiltersEqual = (
+    left: AdminAirportTesterFilters,
+    right: AdminAirportTesterFilters,
+): boolean => left.cityQuery === right.cityQuery
+    && left.latitudeInput === right.latitudeInput
+    && left.longitudeInput === right.longitudeInput
+    && left.limitInput === right.limitInput
+    && left.minimumServiceTier === right.minimumServiceTier
+    && left.countryFilter === right.countryFilter
+    && left.sameCountryOnly === right.sameCountryOnly
+    && left.lookupActive === right.lookupActive;
+
+const hasNearbyTesterQueryState = (searchParams: AdminAirportTesterSearchParams): boolean => (
+    [
+        'nearbyCity',
+        'nearbyLat',
+        'nearbyLng',
+        'nearbyLimit',
+        'nearbyTier',
+        'nearbyCountry',
+        'nearbySameCountry',
+        'nearbyLookup',
+    ].some((key) => Boolean(searchParams.get(key)?.trim()))
+);
+
+const formatRuntimeLocationTesterLabel = (
+    location: RuntimeLocationStoreSnapshot['location'],
+): string => [location.city, location.countryName].filter(Boolean).join(', ') || 'Runtime location';
 
 const formatDateTime = (value: string | null | undefined): string => {
     if (!value) return '—';
@@ -543,18 +621,7 @@ const AdminAirportTester: React.FC<{
     const manualLookupInFlightRef = useRef(false);
     const [suggestions, setSuggestions] = useState<CityLookupSuggestion[]>([]);
     const [searchingSuggestions, setSearchingSuggestions] = useState(false);
-    const [origin, setOrigin] = useState<TesterOrigin | null>(() => {
-        const lat = Number(filters.latitudeInput);
-        const lng = Number(filters.longitudeInput);
-        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
-        return {
-            label: filters.cityQuery.trim() || `${lat.toFixed(4)}, ${lng.toFixed(4)}`,
-            lat,
-            lng,
-            countryCode: null,
-            countryName: null,
-        };
-    });
+    const [origin, setOrigin] = useState<TesterOrigin | null>(() => buildTesterOriginFromFilters(filters, null));
     const [lookupLoading, setLookupLoading] = useState(false);
     const [lookupError, setLookupError] = useState<string | null>(null);
     const [lookupResult, setLookupResult] = useState<NearbyAirportsResponse | null>(null);
@@ -630,6 +697,13 @@ const AdminAirportTester: React.FC<{
             lookupResult: displayLookupResult,
         });
     }, [displayLookupResult, onLookupContextChange, origin]);
+
+    useEffect(() => {
+        setOrigin((current) => {
+            const nextOrigin = buildTesterOriginFromFilters(filters, current);
+            return areTesterOriginsEqual(current, nextOrigin) ? current : nextOrigin;
+        });
+    }, [filters.cityQuery, filters.latitudeInput, filters.longitudeInput]);
 
     const selectOrigin = useCallback((label: string, lat: number, lng: number, countryCode?: string | null, countryName?: string | null) => {
         const nextOrigin = {
@@ -801,7 +875,6 @@ const AdminAirportTester: React.FC<{
                                                 suggestion.countryCode || null,
                                                 suggestion.countryName || null,
                                             );
-                                            setCityQuery(suggestion.label);
                                             setSuggestions([]);
                                         }}
                                         className="flex w-full items-start justify-between gap-3 border-b border-slate-100 px-3 py-2 text-left transition-colors hover:bg-slate-50 last:border-b-0"
@@ -1544,16 +1617,7 @@ export const AdminAirportsPage: React.FC = () => {
     const [countryFilter, setCountryFilter] = useState(() => normalizeProfileCountryCode(searchParams.get('country')));
     const [serviceTierFilter, setServiceTierFilter] = useState<AirportTableTierFilter>(() => parseAirportTableTierFilter(searchParams.get('catalogTier')));
     const [page, setPage] = useState(() => parsePositivePage(searchParams.get('page')));
-    const [testerFilters, setTesterFilters] = useState<AdminAirportTesterFilters>(() => ({
-        cityQuery: searchParams.get('nearbyCity') || '',
-        latitudeInput: searchParams.get('nearbyLat') || '',
-        longitudeInput: searchParams.get('nearbyLng') || '',
-        limitInput: searchParams.get('nearbyLimit') || '10',
-        minimumServiceTier: parseAirportCommercialServiceTier(searchParams.get('nearbyTier'), 'regional'),
-        countryFilter: normalizeProfileCountryCode(searchParams.get('nearbyCountry')),
-        sameCountryOnly: parseQueryBoolean(searchParams.get('nearbySameCountry')),
-        lookupActive: parseQueryBoolean(searchParams.get('nearbyLookup')),
-    }));
+    const [testerFilters, setTesterFilters] = useState<AdminAirportTesterFilters>(() => buildAdminAirportTesterFiltersFromSearchParams(searchParams));
     const [selectedAirportIdents, setSelectedAirportIdents] = useState<Set<string>>(() => new Set());
     const [selectedAirportIdent, setSelectedAirportIdent] = useState<string | null>(null);
     const [editorDraft, setEditorDraft] = useState<AirportEditorDraft | null>(null);
@@ -1562,6 +1626,7 @@ export const AdminAirportsPage: React.FC = () => {
     const [ticketTesterOrigin, setTicketTesterOrigin] = useState<TesterOrigin | null>(null);
     const [ticketTesterResult, setTicketTesterResult] = useState<NearbyAirportsResponse | null>(null);
     const selectedAirportIdentRef = useRef<string | null>(null);
+    const runtimeTesterBootstrapAttemptedRef = useRef(false);
     const resizeStateRef = useRef<{
         columnId: AirportTableColumnId;
         startX: number;
@@ -1681,6 +1746,72 @@ export const AdminAirportsPage: React.FC = () => {
     }, [page, safePage]);
 
     useEffect(() => {
+        const nextSearchValue = searchParams.get('q') || '';
+        const nextCountryFilter = normalizeProfileCountryCode(searchParams.get('country'));
+        const nextServiceTierFilter = parseAirportTableTierFilter(searchParams.get('catalogTier'));
+        const nextPage = parsePositivePage(searchParams.get('page'));
+        const nextTesterFilters = buildAdminAirportTesterFiltersFromSearchParams(searchParams);
+
+        if (searchValue !== nextSearchValue) {
+            setSearchValue(nextSearchValue);
+        }
+        if (countryFilter !== nextCountryFilter) {
+            setCountryFilter(nextCountryFilter);
+        }
+        if (serviceTierFilter !== nextServiceTierFilter) {
+            setServiceTierFilter(nextServiceTierFilter);
+        }
+        if (page !== nextPage) {
+            setPage(nextPage);
+        }
+        if (!areAdminAirportTesterFiltersEqual(testerFilters, nextTesterFilters)) {
+            setTesterFilters(nextTesterFilters);
+        }
+    }, [searchParams]);
+
+    useEffect(() => {
+        if (runtimeTesterBootstrapAttemptedRef.current) return;
+        if (hasNearbyTesterQueryState(searchParams)) {
+            runtimeTesterBootstrapAttemptedRef.current = true;
+            return;
+        }
+
+        runtimeTesterBootstrapAttemptedRef.current = true;
+        void (async () => {
+            const snapshot = await ensureRuntimeLocationLoaded();
+            const latitude = snapshot.location.latitude;
+            const longitude = snapshot.location.longitude;
+            if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
+
+            const runtimeDefaultFilters: AdminAirportTesterFilters = {
+                cityQuery: formatRuntimeLocationTesterLabel(snapshot.location),
+                latitudeInput: String(latitude),
+                longitudeInput: String(longitude),
+                limitInput: DEFAULT_ADMIN_AIRPORT_TESTER_LIMIT,
+                minimumServiceTier: DEFAULT_ADMIN_AIRPORT_TESTER_SERVICE_TIER,
+                countryFilter: '',
+                sameCountryOnly: false,
+                lookupActive: true,
+            };
+
+            setTesterFilters((current) => {
+                const currentHasExplicitValue = Boolean(current.cityQuery.trim())
+                    || Boolean(current.latitudeInput.trim())
+                    || Boolean(current.longitudeInput.trim())
+                    || current.limitInput.trim() !== DEFAULT_ADMIN_AIRPORT_TESTER_LIMIT
+                    || current.minimumServiceTier !== DEFAULT_ADMIN_AIRPORT_TESTER_SERVICE_TIER
+                    || current.lookupActive
+                    || Boolean(current.countryFilter)
+                    || current.sameCountryOnly;
+                if (currentHasExplicitValue) return current;
+                return areAdminAirportTesterFiltersEqual(current, runtimeDefaultFilters)
+                    ? current
+                    : runtimeDefaultFilters;
+            });
+        })();
+    }, [searchParams]);
+
+    useEffect(() => {
         const next = new URLSearchParams();
         const trimmedSearch = searchValue.trim();
         const trimmedNearbyCity = testerFilters.cityQuery.trim();
@@ -1695,8 +1826,8 @@ export const AdminAirportsPage: React.FC = () => {
         if (trimmedNearbyCity) next.set('nearbyCity', trimmedNearbyCity);
         if (trimmedNearbyLat) next.set('nearbyLat', trimmedNearbyLat);
         if (trimmedNearbyLng) next.set('nearbyLng', trimmedNearbyLng);
-        if (trimmedNearbyLimit && trimmedNearbyLimit !== '10') next.set('nearbyLimit', trimmedNearbyLimit);
-        if (testerFilters.minimumServiceTier !== 'regional') next.set('nearbyTier', testerFilters.minimumServiceTier);
+        if (trimmedNearbyLimit && trimmedNearbyLimit !== DEFAULT_ADMIN_AIRPORT_TESTER_LIMIT) next.set('nearbyLimit', trimmedNearbyLimit);
+        if (testerFilters.minimumServiceTier !== DEFAULT_ADMIN_AIRPORT_TESTER_SERVICE_TIER) next.set('nearbyTier', testerFilters.minimumServiceTier);
         if (testerFilters.countryFilter) next.set('nearbyCountry', testerFilters.countryFilter);
         if (testerFilters.sameCountryOnly) next.set('nearbySameCountry', '1');
         if (testerFilters.lookupActive) next.set('nearbyLookup', '1');

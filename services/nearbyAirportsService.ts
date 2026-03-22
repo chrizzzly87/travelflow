@@ -33,7 +33,7 @@ const buildNearbyAirportsUrl = (params: {
   searchParams.set('lat', String(params.lat));
   searchParams.set('lng', String(params.lng));
   searchParams.set('limit', String(clampNearbyAirportLimit(params.limit)));
-  searchParams.set('minimumServiceTier', parseCommercialServiceTier(params.minimumServiceTier));
+  searchParams.set('minimumServiceTier', parseCommercialServiceTier(params.minimumServiceTier, 'major'));
   const countryCode = typeof params.countryCode === 'string' ? params.countryCode.trim().toUpperCase() : '';
   if (countryCode) {
     searchParams.set('countryCode', countryCode);
@@ -58,7 +58,7 @@ export const fetchNearbyAirports = async ({
   lat,
   lng,
   limit = 10,
-  minimumServiceTier = 'local',
+  minimumServiceTier = 'major',
   countryCode = null,
   fetchImpl = fetch,
 }: {
@@ -95,7 +95,7 @@ export const fetchNearbyAirports = async ({
 
 export const fetchNearbyAirportsForRuntimeLocation = async ({
   limit = 10,
-  minimumServiceTier = 'local',
+  minimumServiceTier = 'major',
   fetchImpl = fetch,
   snapshot,
 }: {

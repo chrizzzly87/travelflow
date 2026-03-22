@@ -8586,7 +8586,7 @@ create or replace function public.find_nearest_commercial_airports(
   p_lat double precision,
   p_lng double precision,
   p_limit integer default 10,
-  p_min_service_tier text default 'local'
+  p_min_service_tier text default 'major'
 )
 returns table(
   ident text,
@@ -8644,7 +8644,7 @@ as $$
     from public.airports_reference ar
     where ar.is_commercial = true
       and (
-        case coalesce(p_min_service_tier, 'local')
+        case coalesce(p_min_service_tier, 'major')
           when 'major' then ar.commercial_service_tier = 'major'
           when 'regional' then ar.commercial_service_tier in ('regional', 'major')
           else ar.commercial_service_tier in ('local', 'regional', 'major')

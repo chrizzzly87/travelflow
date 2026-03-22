@@ -99,6 +99,7 @@ describe('services/nearbyAirportsService', () => {
 
     const requestUrl = new URL(fetchMock.mock.calls[0][0], 'https://travelflow.test');
     expect(requestUrl.searchParams.get('countryCode')).toBe('DE');
+    expect(requestUrl.searchParams.get('minimumServiceTier')).toBe('major');
   });
 
   it('uses provided runtime coordinates without requiring another runtime-location fetch', async () => {
@@ -117,6 +118,8 @@ describe('services/nearbyAirportsService', () => {
 
     expect(response?.origin).toEqual({ lat: 52.52, lng: 13.405 });
     expect(fetchMock).toHaveBeenCalledTimes(1);
+    const requestUrl = new URL(fetchMock.mock.calls[0][0], 'https://travelflow.test');
+    expect(requestUrl.searchParams.get('minimumServiceTier')).toBe('major');
   });
 
   it('returns null when runtime coordinates are unavailable', async () => {

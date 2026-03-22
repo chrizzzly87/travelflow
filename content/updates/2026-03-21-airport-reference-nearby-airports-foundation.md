@@ -1,10 +1,10 @@
 ---
 id: rel-2026-03-21-airport-reference-nearby-airports-foundation
-version: v0.0.0
+version: v0.105.0
 title: "Airport reference and nearby-airports foundation"
-date: 2026-03-21
-published_at: 2026-03-21T16:45:00Z
-status: draft
+date: 2026-03-22
+published_at: 2026-03-22T18:25:18Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Adds a generated commercial-airport reference snapshot, nearby-airport lookup tiers, and a dedicated admin workspace for syncing, bulk editing, map-testing, and fake ticket previews."
@@ -18,6 +18,7 @@ summary: "Adds a generated commercial-airport reference snapshot, nearby-airport
 - [ ] [Internal] 🎛️ Upgraded the admin airport tester with country scoping, same-country lookup mode, and softer map framing so current location plus nearby airports stay easier to inspect together.
 - [ ] [Internal] 🔁 Fixed the admin nearby-airport tester so same-country filtering now refreshes the result list, map, and fake-ticket context together instead of leaving stale cross-country rows behind.
 - [ ] [Internal] 🔗 Added URL-backed filter state for the airport admin workspace so catalog filters and nearby-airport tester settings survive refreshes and can auto-restore a prior lookup.
+- [ ] [Internal] 📌 Defaulted the nearby-airport tester to the user’s runtime location and major commercial hubs so refreshes reopen the same visible search context instead of an empty or broader fallback state.
 - [ ] [Internal] 🧾 Added a fake digital boarding-pass lab in admin so the nearest commercial airport can be previewed as a realistic ticket artifact for future travel surfaces.
 - [ ] [Internal] 🗂️ Added bulk airport editing plus bulk deletes in admin for multi-row airport type, scheduled-service, timezone, and cleanup corrections without leaving the shared airport workspace.
 - [ ] [Internal] 🏳️ Swapped the airport country filters to the shared flag-aware country picker and added resizable airport-table columns so the admin workspace reuses the same selection and table ergonomics as other admin tools.
