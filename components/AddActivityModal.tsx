@@ -13,6 +13,7 @@ interface AddActivityModalProps {
     onAdd: (item: Partial<ITimelineItem>) => void;
     trip?: ITrip | null;
     notes?: string;
+    initialDraft?: Partial<ITimelineItem> | null;
 }
 
 type AiServiceModule = typeof import('../services/aiService');
@@ -25,7 +26,16 @@ const loadAiService = async (): Promise<AiServiceModule> => {
     return aiServicePromise;
 };
 
-export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onClose, dayOffset, location, onAdd, trip, notes }) => {
+export const AddActivityModal: React.FC<AddActivityModalProps> = ({
+    isOpen,
+    onClose,
+    dayOffset,
+    location,
+    onAdd,
+    trip,
+    notes,
+    initialDraft,
+}) => {
     const [mode, setMode] = useState<'manual' | 'ai'>('manual');
     const [title, setTitle] = useState('');
     const [selectedTypes, setSelectedTypes] = useState<ActivityType[]>(['general']);
@@ -46,6 +56,16 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
             window.cancelAnimationFrame(rafId);
         };
     }, [isOpen, mode]);
+
+    useEffect(() => {
+        if (!isOpen) return;
+        setMode('manual');
+        setTitle(initialDraft?.title || '');
+        setDescription(initialDraft?.description || '');
+        setSelectedTypes(normalizeActivityTypes(initialDraft?.activityType));
+        setPrompt('');
+        setProposals([]);
+    }, [initialDraft, isOpen]);
 
     const handleManualAdd = () => {
         if (!title) return;

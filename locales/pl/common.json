@@ -496,7 +496,7 @@
           "label": "Explore",
           "eyebrow": "Explore",
           "title": "Explore",
-          "description": "Research activities, stays, and events without losing the trip layout."
+          "description": "Research activities, stays, events, and workflow decisions without losing the trip layout."
         },
         "phrases": {
           "label": "Phrases",
@@ -516,6 +516,13 @@
           "title": "Photos",
           "description": "Preview the future album space for memories, highlights, and recap visuals."
         }
+      },
+      "explore": {
+        "modes": {
+          "discover": "Discover",
+          "board": "Board"
+        },
+        "openBoard": "Open activity board"
       }
     },
     "zoom": {

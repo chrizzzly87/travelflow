@@ -56,7 +56,10 @@ vi.mock('react-i18next', () => ({
                 'tripView.workspace.pages.explore.label': 'Explore',
                 'tripView.workspace.pages.explore.eyebrow': 'Explore',
                 'tripView.workspace.pages.explore.title': 'Explore',
-                'tripView.workspace.pages.explore.description': 'Research stays, activities, and events.',
+                'tripView.workspace.pages.explore.description': 'Research activities, stays, events, and workflow decisions without losing the trip layout.',
+                'tripView.workspace.explore.modes.discover': 'Discover',
+                'tripView.workspace.explore.modes.board': 'Board',
+                'tripView.workspace.explore.openBoard': 'Open activity board',
                 'tripView.workspace.pages.phrases.label': 'Phrases',
                 'tripView.workspace.pages.phrases.eyebrow': 'Phrases',
                 'tripView.workspace.pages.phrases.title': 'Phrases',
@@ -184,6 +187,8 @@ describe('components/tripview/TripWorkspaceShell', () => {
                 },
                 activePage: 'overview',
                 onPageChange,
+                exploreMode: 'discover',
+                onExploreModeChange: vi.fn(),
                 plannerPage: React.createElement('div', { 'data-testid': 'planner-page' }, 'planner'),
                 selectedItem: null,
                 selectedCities: [],
@@ -192,6 +197,9 @@ describe('components/tripview/TripWorkspaceShell', () => {
                 onOpenTripInfoModal: vi.fn(),
                 onOpenShare: vi.fn(),
                 onOpenSettings: vi.fn(),
+                onUpdateActivityBoard: vi.fn(),
+                onScheduleBoardCard: vi.fn(),
+                onRemoveActivityFromItinerary: vi.fn(),
             }),
         );
 
@@ -231,6 +239,8 @@ describe('components/tripview/TripWorkspaceShell', () => {
                 },
                 activePage: 'overview',
                 onPageChange,
+                exploreMode: 'discover',
+                onExploreModeChange: vi.fn(),
                 plannerPage: React.createElement('div', { 'data-testid': 'planner-page' }, 'planner'),
                 selectedItem: null,
                 selectedCities: [],
@@ -239,6 +249,9 @@ describe('components/tripview/TripWorkspaceShell', () => {
                 onOpenTripInfoModal: vi.fn(),
                 onOpenShare: vi.fn(),
                 onOpenSettings: vi.fn(),
+                onUpdateActivityBoard: vi.fn(),
+                onScheduleBoardCard: vi.fn(),
+                onRemoveActivityFromItinerary: vi.fn(),
             }),
         );
 
@@ -258,6 +271,8 @@ describe('components/tripview/TripWorkspaceShell', () => {
                 },
                 activePage: 'planner',
                 onPageChange: vi.fn(),
+                exploreMode: 'discover',
+                onExploreModeChange: vi.fn(),
                 plannerPage: React.createElement('div', { 'data-testid': 'planner-page' }, 'planner'),
                 selectedItem: null,
                 selectedCities: [],
@@ -266,6 +281,9 @@ describe('components/tripview/TripWorkspaceShell', () => {
                 onOpenTripInfoModal: vi.fn(),
                 onOpenShare: vi.fn(),
                 onOpenSettings: vi.fn(),
+                onUpdateActivityBoard: vi.fn(),
+                onScheduleBoardCard: vi.fn(),
+                onRemoveActivityFromItinerary: vi.fn(),
             }),
         );
 

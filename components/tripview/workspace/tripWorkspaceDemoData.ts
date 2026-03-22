@@ -1,4 +1,4 @@
-import type { ITrip, ITimelineItem } from '../../../types';
+import type { ActivityType, ITrip, ITimelineItem } from '../../../types';
 
 export type PhraseCategory = 'basics' | 'transport' | 'food' | 'emergency';
 export type PhraseReviewRating = 'new' | 'easy' | 'practice';
@@ -69,6 +69,7 @@ export interface TripWorkspaceExploreLead {
     cityId: string;
     title: string;
     type: 'activity' | 'stay' | 'event';
+    activityTypes?: ActivityType[];
     description: string;
     query: string;
     reason: string;
@@ -569,6 +570,7 @@ export const THAILAND_EXPLORE_LEADS: TripWorkspaceExploreLead[] = [
         cityId: 'bangkok',
         title: 'Talat Noi canal and photo walk',
         type: 'activity',
+        activityTypes: ['culture', 'sightseeing'],
         description: 'A strong first Bangkok half-day with texture, river movement, and easy food wins.',
         query: 'Bangkok Talat Noi canal photo walk',
         reason: 'Works well right after arrival without burning the whole day.',
@@ -578,9 +580,20 @@ export const THAILAND_EXPLORE_LEADS: TripWorkspaceExploreLead[] = [
         cityId: 'chiang-mai',
         title: 'Chiang Mai cooking class',
         type: 'activity',
+        activityTypes: ['food', 'culture'],
         description: 'Reliable rainy-day anchor and one of the easiest memory-makers for this route.',
         query: 'Chiang Mai cooking class market tour',
         reason: 'Balances food, culture, and a clear booking decision.',
+    },
+    {
+        id: 'krabi-longtail-sunrise',
+        cityId: 'krabi',
+        title: 'Long-tail sunrise limestone loop',
+        type: 'activity',
+        activityTypes: ['adventure', 'beach', 'nature'],
+        description: 'A strong coast-day candidate when you want the big scenery payoff without sacrificing the whole afternoon.',
+        query: 'Krabi long tail sunrise island loop',
+        reason: 'Good signature-day option once the coast base is locked.',
     },
     {
         id: 'krabi-ao-nang-stay',

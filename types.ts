@@ -8,6 +8,7 @@ export type CityPlanStatus = 'confirmed' | 'uncertain';
 export type ActivityType = 
     'general' | 'food' | 'culture' | 'sightseeing' | 'relaxation' | 'nightlife' | 
     'sports' | 'hiking' | 'wildlife' | 'shopping' | 'adventure' | 'beach' | 'nature';
+export type TripActivityWorkflowStatus = 'shortlist' | 'planned' | 'booked' | 'done';
 
 export type MapStyle = 'minimal' | 'standard' | 'dark' | 'satellite' | 'clean' | 'cleanDark';
 export type RouteMode = 'simple' | 'realistic';
@@ -230,11 +231,26 @@ export interface ITimelineItem {
   loading?: boolean;
 }
 
+export interface ITripActivityBoardCard {
+  id: string;
+  title: string;
+  cityItemId: string | null;
+  timelineItemId?: string | null;
+  source: 'explore' | 'planner';
+  status: TripActivityWorkflowStatus;
+  activityType: ActivityType[];
+  description?: string;
+  externalUrl?: string;
+  note?: string;
+  sortOrder: number;
+}
+
 export interface ITrip {
   id: string;
   title: string;
   startDate: string; // ISO Date string
   items: ITimelineItem[];
+  activityBoard?: ITripActivityBoardCard[];
   countryInfo?: ICountryInfo;
   createdAt: number;
   updatedAt: number;

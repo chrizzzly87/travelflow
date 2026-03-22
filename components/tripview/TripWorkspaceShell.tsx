@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import type {
     ITrip,
+    ITripActivityBoardCard,
     ITimelineItem,
     TripWorkspacePage,
     TripWorkspaceSidebarState,
@@ -65,6 +66,8 @@ interface TripWorkspaceShellProps {
     tripMeta: TripMetaSummary;
     activePage: TripWorkspacePage;
     onPageChange: (page: TripWorkspacePage) => void;
+    exploreMode: 'discover' | 'board';
+    onExploreModeChange: (mode: 'discover' | 'board') => void;
     plannerPage: React.ReactNode;
     selectedItem: ITimelineItem | null;
     selectedCities: ITimelineItem[];
@@ -74,6 +77,9 @@ interface TripWorkspaceShellProps {
     onOpenShare: () => void;
     onOpenSettings: () => void;
     onOpenPlannerItem?: (itemId: string) => void;
+    onUpdateActivityBoard: (cards: ITripActivityBoardCard[], label: string) => void;
+    onScheduleBoardCard: (card: ITripActivityBoardCard) => void;
+    onRemoveActivityFromItinerary: (card: ITripActivityBoardCard) => void;
 }
 
 interface TripWorkspaceRenderedPageProps {
@@ -86,6 +92,12 @@ interface TripWorkspaceRenderedPageProps {
     travelerWarnings: TravelerWarningSummary[];
     onPageChange: (page: TripWorkspacePage) => void;
     onOpenPlannerItem?: (itemId: string) => void;
+    exploreMode: 'discover' | 'board';
+    onExploreModeChange: (mode: 'discover' | 'board') => void;
+    isMobile: boolean;
+    onUpdateActivityBoard: (cards: ITripActivityBoardCard[], label: string) => void;
+    onScheduleBoardCard: (card: ITripActivityBoardCard) => void;
+    onRemoveActivityFromItinerary: (card: ITripActivityBoardCard) => void;
 }
 
 const resolveWorkspacePageLabel = (
@@ -295,6 +307,12 @@ const TripWorkspaceRenderedPage: React.FC<TripWorkspaceRenderedPageProps> = ({
     travelerWarnings,
     onPageChange,
     onOpenPlannerItem,
+    exploreMode,
+    onExploreModeChange,
+    isMobile,
+    onUpdateActivityBoard,
+    onScheduleBoardCard,
+    onRemoveActivityFromItinerary,
 }) => {
     const { t } = useTranslation('common');
 
@@ -322,7 +340,16 @@ const TripWorkspaceRenderedPage: React.FC<TripWorkspaceRenderedPageProps> = ({
                     title={t('tripView.workspace.pages.explore.title')}
                     description={t('tripView.workspace.pages.explore.description')}
                 >
-                    <TripWorkspaceExplorePage trip={trip} />
+                    <TripWorkspaceExplorePage
+                        trip={trip}
+                        isMobile={isMobile}
+                        mode={exploreMode}
+                        onModeChange={onExploreModeChange}
+                        onOpenPlannerItem={onOpenPlannerItem}
+                        onUpdateActivityBoard={onUpdateActivityBoard}
+                        onScheduleBoardCard={onScheduleBoardCard}
+                        onRemoveFromItinerary={onRemoveActivityFromItinerary}
+                    />
                 </TripWorkspacePageShell>
             );
         case 'phrases':
@@ -458,6 +485,8 @@ export const TripWorkspaceShell: React.FC<TripWorkspaceShellProps> = ({
     tripMeta,
     activePage,
     onPageChange,
+    exploreMode,
+    onExploreModeChange,
     plannerPage,
     selectedItem,
     selectedCities,
@@ -467,6 +496,9 @@ export const TripWorkspaceShell: React.FC<TripWorkspaceShellProps> = ({
     onOpenShare,
     onOpenSettings,
     onOpenPlannerItem,
+    onUpdateActivityBoard,
+    onScheduleBoardCard,
+    onRemoveActivityFromItinerary,
 }) => {
     const { t } = useTranslation('common');
     const [sidebarState, setSidebarState] = React.useState<TripWorkspaceSidebarState>(() => (
@@ -517,15 +549,21 @@ export const TripWorkspaceShell: React.FC<TripWorkspaceShellProps> = ({
                 <SidebarInset className="min-h-0 overflow-hidden bg-transparent md:peer-data-[variant=inset]:m-0 md:peer-data-[variant=inset]:rounded-none md:peer-data-[variant=inset]:shadow-none">
                     <TripWorkspaceRenderedPage
                         activePage={activePage}
-                        plannerPage={plannerPage}
-                        trip={trip}
-                        tripMeta={tripMeta}
-                        selectedItem={selectedItem}
-                        selectedCities={selectedCities}
-                        travelerWarnings={travelerWarnings}
-                        onPageChange={onPageChange}
-                        onOpenPlannerItem={onOpenPlannerItem}
-                    />
+                    plannerPage={plannerPage}
+                    trip={trip}
+                    tripMeta={tripMeta}
+                    selectedItem={selectedItem}
+                    selectedCities={selectedCities}
+                    travelerWarnings={travelerWarnings}
+                    onPageChange={onPageChange}
+                    onOpenPlannerItem={onOpenPlannerItem}
+                    exploreMode={exploreMode}
+                    onExploreModeChange={onExploreModeChange}
+                    isMobile={isMobile}
+                    onUpdateActivityBoard={onUpdateActivityBoard}
+                    onScheduleBoardCard={onScheduleBoardCard}
+                    onRemoveActivityFromItinerary={onRemoveActivityFromItinerary}
+                />
                     {isMobile ? (
                         <TripWorkspaceMobileNav tripId={trip.id} activePage={activePage} onPageChange={onPageChange} />
                     ) : null}

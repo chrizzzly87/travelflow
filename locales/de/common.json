@@ -498,7 +498,7 @@
           "label": "Entdecken",
           "eyebrow": "Entdecken",
           "title": "Entdecken",
-          "description": "Recherchiere Aktivitäten, Unterkünfte und Events, ohne deinen Trip-Kontext zu verlieren."
+          "description": "Recherchiere Aktivitäten, Unterkünfte, Events und Workflow-Entscheidungen, ohne deinen Trip-Kontext zu verlieren."
         },
         "phrases": {
           "label": "Phrasen",
@@ -518,6 +518,13 @@
           "title": "Fotos",
           "description": "Vorschau auf den späteren Album-Bereich für Erinnerungen, Highlights und Rückblicke."
         }
+      },
+      "explore": {
+        "modes": {
+          "discover": "Entdecken",
+          "board": "Board"
+        },
+        "openBoard": "Aktivitäten-Board öffnen"
       }
     },
     "zoom": {

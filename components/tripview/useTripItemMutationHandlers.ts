@@ -8,6 +8,7 @@ interface AddActivityState {
     isOpen: boolean;
     dayOffset: number;
     location: string;
+    initialDraft: Partial<ITimelineItem> | null;
 }
 
 interface ToastOptions {
@@ -35,6 +36,7 @@ interface UseTripItemMutationHandlersOptions {
     pendingHistoryLabelRef: React.MutableRefObject<string | null>;
     onResetSuppressedCommit?: () => void;
     onUndoDelete?: (item: ITimelineItem, context: { previousItems: ITimelineItem[] }) => void;
+    onActivityAdded?: (item: ITimelineItem) => void;
 }
 
 export const useTripItemMutationHandlers = ({
@@ -55,6 +57,7 @@ export const useTripItemMutationHandlers = ({
     pendingHistoryLabelRef,
     onResetSuppressedCommit,
     onUndoDelete,
+    onActivityAdded,
 }: UseTripItemMutationHandlersOptions) => {
     const handleDeleteItem = useCallback((id: string, _strategy: 'item-only' | 'shift-gap' | 'pull-back' = 'item-only') => {
         markUserEdit();
@@ -143,7 +146,10 @@ export const useTripItemMutationHandlers = ({
         setIsAddCityModalOpen(true);
     }, [requireEdit, setIsAddCityModalOpen]);
 
-    const handleOpenAddActivity = useCallback((dayOffset: number) => {
+    const handleOpenAddActivity = useCallback((
+        dayOffset: number,
+        options?: { initialDraft?: Partial<ITimelineItem> | null },
+    ) => {
         if (!requireEdit()) return;
 
         const city = trip.items.find((item) => (
@@ -156,6 +162,7 @@ export const useTripItemMutationHandlers = ({
             isOpen: true,
             dayOffset,
             location: city?.title || trip.title,
+            initialDraft: options?.initialDraft ?? null,
         });
     }, [requireEdit, setAddActivityState, trip.items, trip.title]);
 
@@ -181,11 +188,13 @@ export const useTripItemMutationHandlers = ({
         setPendingLabel(`Data: Added activity "${newItem.title}"`);
         handleUpdateItems([...trip.items, newItem], { suppressCommitToast: true });
         showToast(`Activity "${newItem.title}" added`, { tone: 'add', title: 'Added' });
+        onActivityAdded?.(newItem);
     }, [
         addActivityState.dayOffset,
         addActivityState.location,
         handleUpdateItems,
         markUserEdit,
+        onActivityAdded,
         requireEdit,
         setPendingLabel,
         showToast,

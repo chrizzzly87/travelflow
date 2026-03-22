@@ -1,6 +1,6 @@
 # Trip Workspace TODO
 
-Last updated: 2026-03-21
+Last updated: 2026-03-22
 Owner: Codex + @chrizzzly
 Goal: Turn Trip View into a routed Trip Workspace with a fixed shadcn sidebar on desktop, matching mobile navigation, and dedicated pages for the main trip jobs.
 
@@ -62,6 +62,7 @@ Goal: Turn Trip View into a routed Trip Workspace with a fixed shadcn sidebar on
 - [x] `Planner`: keep the current calendar + map + timeline workspace, with the right-side details panel available only here.
 - [x] `Places`: build dedicated destination intelligence for country facts, official-link placeholders, sockets, connectivity, driving side, etiquette, safety notes, neighborhoods, transit, highlights, and saved stays.
 - [x] `Explore`: build a discovery page for activities, upcoming events, neighborhoods, accommodation recommendations, and save-to-trip actions.
+- [x] `Explore`: add an activity workflow board with `Shortlist`, `Planned`, `Booked`, and `Done`, plus planner handoff and mobile-friendly move actions.
 - [x] `Phrases`: build a lightweight language support page with useful phrases, translations, pronunciation, saved phrases, and simple flashcards.
 - [x] `Bookings`: add a logistics page for reservations, confirmations, due dates, and missing-booking gaps.
 - [x] `Notes`: add a diary and trip-notes page for daily notes, city notes, and planning checklists.
@@ -79,6 +80,7 @@ Goal: Turn Trip View into a routed Trip Workspace with a fixed shadcn sidebar on
 - [ ] Decide which destination content is trip-specific versus general destination knowledge and label it clearly in the UI.
 - [ ] Add source and freshness treatment for dynamic travel information and official links.
 - [x] Define the minimal booking, notes, and phrases example data needed for Phase 1 and early Phase 2 shells.
+- [x] Define a lightweight trip-level activity workflow model so Explore can track shortlist, planned, booked, and done without overloading itinerary items.
 - [x] Move `Overview` and `Places` map surfaces onto the shared Trip map workflow instead of custom one-off map implementations.
 
 ## UX clarity and navigation rules
@@ -105,7 +107,7 @@ Goal: Turn Trip View into a routed Trip Workspace with a fixed shadcn sidebar on
 - [x] Add route and workspace regression coverage following `docs/TESTING_PHASE2_SCOPE.md`.
 - [x] Add analytics for workspace navigation and page-level CTA interactions using the repo analytics convention.
 - [x] Validate new and changed map surfaces against `docs/MAPS_INTEGRATION_WORKFLOW.md`.
-- [ ] Update locale files only when the new user-facing copy is ready for EN/DE sign-off.
+- [x] Update active locale files for the current workspace copy and Explore workflow labels.
 - [x] Keep the existing draft release note accurate as the workspace implementation evolves.
 
 ## Done
@@ -126,10 +128,12 @@ Goal: Turn Trip View into a routed Trip Workspace with a fixed shadcn sidebar on
 - [x] Added clearer source freshness, trip-specific vs general context labels, and interactive overlay guidance to the `Places` page.
 - [x] Added a routed `Travel kit` page with interactive checklists, emergency quick references, offline prep toggles, converter tools, and Thailand demo support content.
 - [x] Added a routed `Documents` page with packet tabs, verification toggles, offline dossier prep, and quick links back into bookings, places, and travel support flows.
+- [x] Added an Explore activity workflow board with drag-and-drop lanes on desktop, menu-based moves on mobile, planner scheduling handoff, and booked-activity visibility inside `Bookings`.
+- [x] Added unit and browser regression coverage for activity-board derivation, filter persistence, mobile move actions, and booked-activity summaries.
+- [x] Updated active locale files with the current Explore workflow copy and mode labels.
 
 ## Open
-- [ ] Replace temporary English fallback workspace copy in secondary locales after EN/DE wording sign-off.
 - [ ] Turn the new `Places` overlay guidance into true visual map overlays once the shared trip map exposes richer layer hooks.
 - [ ] Turn the new overview map and overview calendar copy into signed-off EN/DE locale keys when the wording is final.
-- [ ] Replace Thailand demo data with live bookings, discovery, phrase, destination, travel-kit, and document services when the backend inputs are ready.
+- [ ] Replace Thailand demo data with live bookings, discovery, activity-board, phrase, destination, travel-kit, and document services when the backend inputs are ready.
 - [ ] Choose the next routed page after this slice: `Budget` or `Weather`.

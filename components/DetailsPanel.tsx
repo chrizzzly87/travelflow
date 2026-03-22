@@ -1,7 +1,7 @@
 import React, { Suspense, lazy, useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Trans, useTranslation } from 'react-i18next';
-import { ITimelineItem, TransportMode, ActivityType, IHotel, RouteMode, ICoordinates } from '../types';
+import { ITimelineItem, TransportMode, ActivityType, IHotel, RouteMode, ICoordinates, TripActivityWorkflowStatus } from '../types';
 import { X, MapPin, Clock, Trash2, Hotel, Search, AlertTriangle, ExternalLink, Sparkles, RefreshCw, Maximize, Minimize, Minus, Plus, Palette, Pencil } from 'lucide-react';
 import type { CityNotesEnhancementMode } from '../services/aiService';
 import { HexColorPicker } from 'react-colorful';
@@ -41,6 +41,8 @@ interface DetailsPanelProps {
   cityColorPaletteId?: string;
   onCityColorPaletteChange?: (paletteId: string, options: { applyToCities: boolean }) => void;
   onExportActivityCalendar?: (itemId: string) => void;
+  activityWorkflowStatus?: TripActivityWorkflowStatus | null;
+  onOpenExploreBoard?: (itemId: string) => void;
 }
 
 interface RouteDistanceTextInput {
@@ -201,7 +203,9 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
     readOnly = false,
     cityColorPaletteId = DEFAULT_CITY_COLOR_PALETTE_ID,
     onCityColorPaletteChange,
-    onExportActivityCalendar
+    onExportActivityCalendar,
+    activityWorkflowStatus = null,
+    onOpenExploreBoard,
 }) => {
   const canEdit = !readOnly;
   const [loading, setLoading] = useState(false);
@@ -230,6 +234,9 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
   const [hotelQuery, setHotelQuery] = useState('');
   const [isSearchingHotels, setIsSearchingHotels] = useState(false);
   const [hotelResults, setHotelResults] = useState<HotelSearchResult[]>([]);
+  const activityWorkflowLabel = activityWorkflowStatus
+    ? activityWorkflowStatus.charAt(0).toUpperCase() + activityWorkflowStatus.slice(1)
+    : 'Planned';
   
   // Places search state
   const [hotelSearchUnavailable, setHotelSearchUnavailable] = useState(false);
@@ -1752,6 +1759,23 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
 
              {isActivity && (
                  <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                     <div className="mb-4 rounded-xl border border-accent-100 bg-accent-50/70 px-4 py-3">
+                         <div className="flex flex-wrap items-center justify-between gap-3">
+                             <div>
+                                 <p className="text-[11px] font-bold uppercase tracking-wide text-accent-700">Explore board</p>
+                                 <p className="mt-1 text-sm text-gray-700">Workflow status: <span className="font-semibold text-gray-900">{activityWorkflowLabel}</span></p>
+                             </div>
+                             {onOpenExploreBoard ? (
+                                 <button
+                                     type="button"
+                                     onClick={() => onOpenExploreBoard(displayItem.id)}
+                                     className="rounded-lg border border-accent-200 bg-white px-3 py-1.5 text-xs font-semibold text-accent-700 transition-colors hover:border-accent-300 hover:bg-accent-100"
+                                 >
+                                     Open in Explore board
+                                 </button>
+                             ) : null}
+                         </div>
+                     </div>
                      <div className="mb-4 flex justify-end">
                          <button
                              type="button"

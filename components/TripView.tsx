@@ -1,7 +1,18 @@
 import React, { useState, useRef, useCallback, useEffect, useLayoutEffect, useMemo, Suspense, lazy } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { AppLanguage, ITrip, ITimelineItem, IViewSettings, ShareMode, TripGenerationAttemptSummary, TripGenerationState, TripWorkspacePage } from '../types';
+import {
+    AppLanguage,
+    ITrip,
+    ITripActivityBoardCard,
+    ITimelineItem,
+    IViewSettings,
+    ShareMode,
+    TripActivityWorkflowStatus,
+    TripGenerationAttemptSummary,
+    TripGenerationState,
+    TripWorkspacePage,
+} from '../types';
 import { getDefaultCreateTripModel } from '../config/aiModelCatalog';
 import { buildLocalizedCreateTripPath, extractLocaleFromPath } from '../config/routes';
 import { DB_ENABLED } from '../config/db';
@@ -88,6 +99,12 @@ import { TripViewHudOverlays } from './tripview/TripViewHudOverlays';
 import { TripViewPlannerWorkspace } from './tripview/TripViewPlannerWorkspace';
 import { TripWorkspaceShell } from './tripview/TripWorkspaceShell';
 import { TripViewStatusBanners } from './tripview/TripViewStatusBanners';
+import {
+    getTripActivityBoardCardForTimelineItem,
+    linkTripActivityBoardCard,
+    materializeTripActivityBoardCards,
+    returnTripActivityBoardCardToShortlist,
+} from './tripview/workspace/tripActivityBoard';
 import { showAppToast } from './ui/appToast';
 import {
     TRIP_GENERATION_TIMEOUT_MS,
@@ -532,7 +549,7 @@ interface TripViewModalLayerProps {
     companionPanelVisible: boolean;
     companionPanelContent: React.ReactNode;
     onCloseCompanionDrawer: () => void;
-    addActivityState: { isOpen: boolean; dayOffset: number; location: string };
+    addActivityState: { isOpen: boolean; dayOffset: number; location: string; initialDraft: Partial<ITimelineItem> | null };
     onCloseAddActivity: () => void;
     onAddActivity: (...args: any[]) => void;
     trip: ITrip;
@@ -772,6 +789,7 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
                     onAdd={onAddActivity}
                     trip={trip}
                     notes=""
+                    initialDraft={addActivityState.initialDraft}
                 />
             </Suspense>
         )}
@@ -919,6 +937,8 @@ interface RenderDetailsPanelContentOptions {
     cityColorPaletteId: string;
     onCityColorPaletteChange?: (paletteId: string, options: { applyToCities: boolean }) => void;
     onExportActivityCalendar?: (itemId: string) => void;
+    activityWorkflowStatus?: TripActivityWorkflowStatus | null;
+    onOpenExploreBoard?: (itemId: string) => void;
 }
 
 const renderDetailsPanelContent = ({
@@ -944,6 +964,8 @@ const renderDetailsPanelContent = ({
     cityColorPaletteId,
     onCityColorPaletteChange,
     onExportActivityCalendar,
+    activityWorkflowStatus,
+    onOpenExploreBoard,
 }: RenderDetailsPanelContentOptions): React.ReactNode => {
     if (showSelectedCitiesPanel) {
         return (
@@ -982,6 +1004,8 @@ const renderDetailsPanelContent = ({
                     cityColorPaletteId={cityColorPaletteId}
                     onCityColorPaletteChange={onCityColorPaletteChange}
                     onExportActivityCalendar={onExportActivityCalendar}
+                    activityWorkflowStatus={activityWorkflowStatus}
+                    onOpenExploreBoard={onOpenExploreBoard}
                 />
             </Suspense>
         );
@@ -2277,6 +2301,8 @@ const useTripViewRender = ({
         isAddCityModalOpen,
         setIsAddCityModalOpen,
     } = useTripEditModalState();
+    const [exploreMode, setExploreMode] = useState<'discover' | 'board'>('discover');
+    const [pendingScheduledBoardCardId, setPendingScheduledBoardCardId] = useState<string | null>(null);
 
     const {
         isShareOpen,
@@ -2592,6 +2618,35 @@ const useTripViewRender = ({
         normalizeOffsetsForTrip: normalizeNegativeOffsetsForTrip,
     });
 
+    const handleUpdateActivityBoard = useCallback((
+        nextCards: ITripActivityBoardCard[],
+        label: string,
+    ) => {
+        if (!requireEdit()) return;
+
+        markUserEdit();
+        const updatedTrip: ITrip = {
+            ...trip,
+            activityBoard: materializeTripActivityBoardCards({
+                ...trip,
+                activityBoard: nextCards,
+            }),
+            updatedAt: Date.now(),
+        };
+
+        setPendingLabel(label);
+        safeUpdateTrip(updatedTrip, { persist: true });
+        scheduleCommit(updatedTrip, currentViewSettings);
+    }, [
+        currentViewSettings,
+        markUserEdit,
+        requireEdit,
+        safeUpdateTrip,
+        scheduleCommit,
+        setPendingLabel,
+        trip,
+    ]);
+
     const {
         selectedCitiesInTimeline,
         showSelectedCitiesPanel,
@@ -2674,11 +2729,21 @@ const useTripViewRender = ({
         workspaceRouteState.basePath,
     ]);
     const handleWorkspaceOpenPlannerItem = useCallback((itemId: string) => {
-        handleTimelineSelect(itemId, { isCity: true });
+        const selectedItem = trip.items.find((candidate) => candidate.id === itemId) ?? null;
+        handleTimelineSelect(itemId, { isCity: selectedItem?.type === 'city' });
         if (activeWorkspacePage !== 'planner') {
             handleWorkspacePageChange('planner');
         }
-    }, [activeWorkspacePage, handleTimelineSelect, handleWorkspacePageChange]);
+    }, [activeWorkspacePage, handleTimelineSelect, handleWorkspacePageChange, trip.items]);
+    const handleOpenExploreBoard = useCallback((itemId: string) => {
+        if (selectedItemId !== itemId) {
+            handleTimelineSelect(itemId, { isCity: false });
+        }
+        setExploreMode('board');
+        if (activeWorkspacePage !== 'explore') {
+            handleWorkspacePageChange('explore');
+        }
+    }, [activeWorkspacePage, handleTimelineSelect, handleWorkspacePageChange, selectedItemId]);
     useEffect(() => {
         if (activeWorkspacePage === 'planner') return;
         if (isMobileViewport) {
@@ -2717,6 +2782,18 @@ const useTripViewRender = ({
         setPendingLabel,
         handleUpdateItems,
     });
+
+    const handleLinkPendingScheduledBoardCard = useCallback((item: ITimelineItem) => {
+        if (!pendingScheduledBoardCardId) return;
+        const nextBoard = linkTripActivityBoardCard(
+            materializeTripActivityBoardCards(trip),
+            pendingScheduledBoardCardId,
+            item,
+        );
+        handleUpdateActivityBoard(nextBoard, `Data: Planned activity "${item.title}" from Explore board`);
+        setPendingScheduledBoardCardId(null);
+        setExploreMode('board');
+    }, [handleUpdateActivityBoard, pendingScheduledBoardCardId, trip]);
 
     const {
         handleDeleteItem,
@@ -2782,7 +2859,59 @@ const useTripViewRender = ({
         onResetSuppressedCommit: () => {
             suppressCommitRef.current = false;
         },
+        onActivityAdded: handleLinkPendingScheduledBoardCard,
     });
+
+    const handleScheduleBoardCard = useCallback((card: ITripActivityBoardCard) => {
+        const cityItem = card.cityItemId
+            ? trip.items.find((item) => item.id === card.cityItemId) ?? null
+            : null;
+
+        setPendingScheduledBoardCardId(card.id);
+        setExploreMode('board');
+        handleOpenAddActivity(cityItem?.startDateOffset ?? 0, {
+            initialDraft: {
+                title: card.title,
+                description: card.description || card.note || '',
+                activityType: card.activityType,
+                location: cityItem?.title || trip.title,
+            },
+        });
+    }, [handleOpenAddActivity, trip.items, trip.title]);
+
+    const handleRemoveActivityFromItinerary = useCallback((card: ITripActivityBoardCard) => {
+        if (!card.timelineItemId || !requireEdit()) return;
+
+        markUserEdit();
+        const updatedTrip: ITrip = {
+            ...trip,
+            items: trip.items.filter((item) => item.id !== card.timelineItemId),
+            activityBoard: returnTripActivityBoardCardToShortlist(
+                materializeTripActivityBoardCards(trip),
+                card.id,
+            ),
+            updatedAt: Date.now(),
+        };
+
+        setPendingLabel(`Data: Returned activity "${card.title}" to shortlist`);
+        setSelectedItemId((current) => (current === card.timelineItemId ? null : current));
+        safeUpdateTrip(updatedTrip, { persist: true });
+        scheduleCommit(updatedTrip, currentViewSettings);
+        showToast(`Moved "${card.title}" back to the Explore shortlist`, {
+            tone: 'neutral',
+            title: 'Itinerary updated',
+        });
+    }, [
+        currentViewSettings,
+        markUserEdit,
+        requireEdit,
+        safeUpdateTrip,
+        scheduleCommit,
+        setPendingLabel,
+        setSelectedItemId,
+        showToast,
+        trip,
+    ]);
 
     const {
         verticalLayoutTimelineRef,
@@ -3120,6 +3249,12 @@ const useTripViewRender = ({
         handleTripCalendarExport('all', source);
     }, [handleTripCalendarExport]);
 
+    const selectedActivityBoardCard = useMemo(() => (
+        selectedDetailItem?.type === 'activity'
+            ? getTripActivityBoardCardForTimelineItem(trip, selectedDetailItem.id)
+            : null
+    ), [selectedDetailItem, trip]);
+
     const detailsPanelContent = renderDetailsPanelContent({
         showSelectedCitiesPanel,
         selectedCitiesInTimeline,
@@ -3143,6 +3278,8 @@ const useTripViewRender = ({
         cityColorPaletteId,
         onCityColorPaletteChange: canEdit ? handleCityColorPaletteChange : undefined,
         onExportActivityCalendar: handleExportSelectedActivityCalendar,
+        activityWorkflowStatus: selectedActivityBoardCard?.status ?? null,
+        onOpenExploreBoard: handleOpenExploreBoard,
     });
     const plannerPageContent = (
         <TripViewPlannerWorkspace
@@ -3401,6 +3538,8 @@ const useTripViewRender = ({
                         tripMeta={tripMeta}
                         activePage={activeWorkspacePage}
                         onPageChange={handleWorkspacePageChange}
+                        exploreMode={exploreMode}
+                        onExploreModeChange={setExploreMode}
                         plannerPage={plannerPageContent}
                         selectedItem={selectedDetailItem}
                         selectedCities={selectedCitiesInTimeline}
@@ -3412,6 +3551,9 @@ const useTripViewRender = ({
                         }}
                         onOpenSettings={onOpenSettings}
                         onOpenPlannerItem={handleWorkspaceOpenPlannerItem}
+                        onUpdateActivityBoard={handleUpdateActivityBoard}
+                        onScheduleBoardCard={handleScheduleBoardCard}
+                        onRemoveActivityFromItinerary={handleRemoveActivityFromItinerary}
                     />
                     <TripViewModalLayer
                         isMobile={isMobile}
@@ -3423,7 +3565,10 @@ const useTripViewRender = ({
                         companionPanelContent={null}
                         onCloseCompanionDrawer={closeCompanionPanel}
                         addActivityState={addActivityState}
-                        onCloseAddActivity={() => setAddActivityState({ ...addActivityState, isOpen: false })}
+                        onCloseAddActivity={() => {
+                            setPendingScheduledBoardCardId(null);
+                            setAddActivityState({ ...addActivityState, isOpen: false, initialDraft: null });
+                        }}
                         onAddActivity={handleAddActivityItem}
                         trip={trip}
                         isAddCityModalOpen={isAddCityModalOpen}
