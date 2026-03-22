@@ -11,10 +11,12 @@ import {
     getTripWorkspaceCityItem,
 } from './tripWorkspaceDemoData';
 import { TripWorkspaceMapCard } from './TripWorkspaceMapCard';
+import { TripWorkspacePlacesMapOverlay } from './TripWorkspacePlacesMapOverlay';
 import { Badge } from '../../ui/badge';
 import { Button } from '../../ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs';
+import { ToggleGroup, ToggleGroupItem } from '../../ui/toggle-group';
 
 interface TravelerWarningSummary {
     cityName: string;
@@ -227,44 +229,67 @@ export const TripWorkspacePlacesPage: React.FC<TripWorkspacePlacesPageProps> = (
 
                                     <TripWorkspaceMapCard
                                         eyebrow="City map"
-                                        title={`${city.title} highlights`}
-                                        description="This map now uses the same shared route engine as Planner, just scoped down to a calmer city preview."
-                                        badges={['Real map surface', 'Overlay playground']}
+                                        title={`${city.title} map layers`}
+                                        description="This city preview uses the shared Trip map and now pulls neighborhood zones, stay anchors, and route-focus paths directly onto the surface."
+                                        badges={['Shared map surface', 'Live demo overlays']}
                                         items={activeCityItem ? [activeCityItem] : []}
                                         mapStyle="minimal"
                                         routeMode="simple"
+                                        mapOverlay={(
+                                            <TripWorkspacePlacesMapOverlay
+                                                city={city}
+                                                activeLayer={activeLayer}
+                                                visibleNeighborhoods={visibleNeighborhoods}
+                                                visibleStays={visibleStays}
+                                            />
+                                        )}
                                         footer={(
                                             <div className="grid gap-3">
-                                                <div className="flex flex-wrap gap-2">
+                                                <ToggleGroup
+                                                    type="single"
+                                                    value={activeLayerId ?? 'all'}
+                                                    onValueChange={(value) => {
+                                                        if (!value) return;
+                                                        const nextLayerId = value === 'all' ? null : value;
+                                                        trackEvent('trip_workspace__places_layer--toggle', {
+                                                            trip_id: trip.id,
+                                                            city_id: city.id,
+                                                            layer_id: nextLayerId ?? 'all',
+                                                            state: nextLayerId ? 'focused' : 'all',
+                                                        });
+                                                        setActiveLayerId(nextLayerId);
+                                                    }}
+                                                    variant="outline"
+                                                    className="flex w-full flex-wrap gap-2"
+                                                >
+                                                    <ToggleGroupItem
+                                                        value="all"
+                                                        className="rounded-full"
+                                                        {...getAnalyticsDebugAttributes('trip_workspace__places_layer--toggle', {
+                                                            trip_id: trip.id,
+                                                            city_id: city.id,
+                                                            layer_id: 'all',
+                                                            state: activeLayer ? 'all' : 'active',
+                                                        })}
+                                                    >
+                                                        All areas
+                                                    </ToggleGroupItem>
                                                     {city.mapLayers.map((layer) => (
-                                                        <button
+                                                        <ToggleGroupItem
                                                             key={layer.id}
-                                                            type="button"
-                                                            onClick={() => {
-                                                                trackEvent('trip_workspace__places_layer--toggle', {
-                                                                    trip_id: trip.id,
-                                                                    city_id: city.id,
-                                                                    layer_id: layer.id,
-                                                                    state: activeLayer?.id === layer.id ? 'off' : 'on',
-                                                                });
-                                                                setActiveLayerId((current) => current === layer.id ? null : layer.id);
-                                                            }}
-                                                            className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
-                                                                activeLayer?.id === layer.id
-                                                                    ? 'border-accent-500 bg-accent-50 text-accent-700'
-                                                                    : 'border-border bg-background text-muted-foreground hover:border-accent-300 hover:text-foreground'
-                                                            }`}
+                                                            value={layer.id}
+                                                            className="rounded-full"
                                                             {...getAnalyticsDebugAttributes('trip_workspace__places_layer--toggle', {
                                                                 trip_id: trip.id,
                                                                 city_id: city.id,
                                                                 layer_id: layer.id,
-                                                                state: activeLayer?.id === layer.id ? 'off' : 'on',
+                                                                state: activeLayer?.id === layer.id ? 'active' : 'inactive',
                                                             })}
                                                         >
                                                             {layer.label}
-                                                        </button>
+                                                        </ToggleGroupItem>
                                                     ))}
-                                                </div>
+                                                </ToggleGroup>
                                                 {activeLayer ? (
                                                     <div className="rounded-[1.5rem] border border-border/70 bg-background px-4 py-3">
                                                         <div className="flex flex-wrap items-center gap-2">
@@ -279,15 +304,21 @@ export const TripWorkspacePlacesPage: React.FC<TripWorkspacePlacesPageProps> = (
                                                         <p className="mt-2 text-sm leading-6 text-muted-foreground">
                                                             {activeLayer.detail}
                                                         </p>
+                                                        <div className="mt-3 flex flex-wrap gap-2">
+                                                            <Badge variant="secondary">{visibleNeighborhoods.length} map zones</Badge>
+                                                            <Badge variant="outline">
+                                                                {visibleStays.length} stay {visibleStays.length === 1 ? 'anchor' : 'anchors'}
+                                                            </Badge>
+                                                        </div>
                                                     </div>
                                                 ) : (
                                                     <div className="rounded-[1.5rem] border border-dashed border-border bg-background/70 px-4 py-3">
                                                         <div className="flex items-center gap-2 text-sm font-medium text-foreground">
                                                             <MapPinLine size={16} weight="duotone" />
-                                                            Overlay playground
+                                                            Layered city preview
                                                         </div>
                                                         <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                                                            Toggle a layer to see which neighborhoods and saved stays it pulls into focus for this city.
+                                                            The map now surfaces every neighborhood anchor by default. Pick a layer to spotlight the route logic behind a calmer base, a food corridor, or a transfer hinge.
                                                         </p>
                                                     </div>
                                                 )}
@@ -322,6 +353,22 @@ export const TripWorkspacePlacesPage: React.FC<TripWorkspacePlacesPageProps> = (
                                             <CardTitle>Keep the trip layer separate from the general city guide</CardTitle>
                                         </CardHeader>
                                         <CardContent className="grid gap-3">
+                                            <div className="rounded-[1.5rem] border border-border/70 bg-background px-4 py-3">
+                                                <div className="flex flex-wrap gap-2">
+                                                    <Badge variant="secondary">Layer highlights</Badge>
+                                                    {activeLayer ? <Badge variant="outline">{activeLayer.label}</Badge> : null}
+                                                </div>
+                                                <div className="mt-3 flex flex-wrap gap-2">
+                                                    {city.highlights.map((highlight) => (
+                                                        <Badge key={highlight} variant="outline">{highlight}</Badge>
+                                                    ))}
+                                                </div>
+                                                {city.events[0] ? (
+                                                    <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                                                        Route moment: {city.events[0].detail}
+                                                    </p>
+                                                ) : null}
+                                            </div>
                                             {visibleStays.map((stay) => (
                                                 <div key={stay.area} className="rounded-[1.5rem] border border-border/70 bg-background px-4 py-3">
                                                     <div className="flex items-center justify-between gap-3">

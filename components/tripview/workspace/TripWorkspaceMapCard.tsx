@@ -19,6 +19,7 @@ interface TripWorkspaceMapCardProps {
     routeMode?: RouteMode;
     showCityNames?: boolean;
     footer?: React.ReactNode;
+    mapOverlay?: React.ReactNode;
     heightClassName?: string;
 }
 
@@ -32,6 +33,7 @@ export const TripWorkspaceMapCard: React.FC<TripWorkspaceMapCardProps> = ({
     routeMode = 'simple',
     showCityNames = true,
     footer = null,
+    mapOverlay = null,
     heightClassName = 'h-[320px] md:h-[360px]',
 }) => {
     const { isLoaded, loadError } = useGoogleMaps();
@@ -93,6 +95,7 @@ export const TripWorkspaceMapCard: React.FC<TripWorkspaceMapCardProps> = ({
                             </p>
                         </div>
                     )}
+                    {cityItems.length > 0 && !loadError ? mapOverlay : null}
                 </div>
                 {footer}
             </CardContent>

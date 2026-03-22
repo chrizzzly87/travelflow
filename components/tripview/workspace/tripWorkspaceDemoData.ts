@@ -22,15 +22,23 @@ export interface TripWorkspaceSafetySnapshot {
     tone: 'secondary' | 'outline';
 }
 
+export interface TripWorkspaceMapPercentPoint {
+    x: number;
+    y: number;
+}
+
 export interface TripWorkspaceCityNeighborhood {
     name: string;
     fit: string;
+    mapPosition: TripWorkspaceMapPercentPoint;
+    mapRadius: 'sm' | 'md' | 'lg';
 }
 
 export interface TripWorkspaceCityStay {
     area: string;
     vibe: string;
     reason: string;
+    mapPosition: TripWorkspaceMapPercentPoint;
 }
 
 export interface TripWorkspaceCityMapLayer {
@@ -42,6 +50,12 @@ export interface TripWorkspaceCityMapLayer {
     sourceLine: string;
     neighborhoodNames: string[];
     stayAreas: string[];
+    focusPath: TripWorkspaceMapPercentPoint[];
+    callout: {
+        label: string;
+        detail: string;
+        position: TripWorkspaceMapPercentPoint;
+    };
 }
 
 export interface TripWorkspaceCityGuide {
@@ -215,6 +229,7 @@ export interface TripWorkspaceWeatherStop {
 }
 
 const normalizeValue = (value: string): string => value.toLowerCase().replace(/[^a-z]/g, '');
+const point = (x: number, y: number): TripWorkspaceMapPercentPoint => ({ x, y });
 
 export const resolveTripWorkspaceCityStops = (items: ITimelineItem[]): ITimelineItem[] =>
     items
@@ -311,9 +326,9 @@ export const THAILAND_CITY_GUIDES: TripWorkspaceCityGuide[] = [
             { label: 'BTS Skytrain', href: 'https://www.bts.co.th/eng/' },
         ],
         neighborhoods: [
-            { name: 'Sathorn', fit: 'Arrival-friendly and polished stays' },
-            { name: 'Ari', fit: 'Cafe mornings and calmer rhythm' },
-            { name: 'Talat Noi', fit: 'Texture, galleries, and riverside walks' },
+            { name: 'Sathorn', fit: 'Arrival-friendly and polished stays', mapPosition: point(49, 60), mapRadius: 'lg' },
+            { name: 'Ari', fit: 'Cafe mornings and calmer rhythm', mapPosition: point(69, 34), mapRadius: 'md' },
+            { name: 'Talat Noi', fit: 'Texture, galleries, and riverside walks', mapPosition: point(38, 48), mapRadius: 'md' },
         ],
         highlights: ['Opening-time temple loop', 'Talat Noi photo walk', 'Rooftop sunset with dress-code check'],
         mapLayers: [
@@ -326,6 +341,12 @@ export const THAILAND_CITY_GUIDES: TripWorkspaceCityGuide[] = [
                 sourceLine: 'Trip-specific demo planning layer',
                 neighborhoodNames: ['Sathorn', 'Ari'],
                 stayAreas: ['Sathorn'],
+                focusPath: [point(78, 22), point(61, 41), point(49, 60)],
+                callout: {
+                    label: 'Arrival hinge',
+                    detail: 'Airport handoff, first-night base, then an easy BTS reach on day one.',
+                    position: point(63, 43),
+                },
             },
             {
                 id: 'food',
@@ -336,6 +357,12 @@ export const THAILAND_CITY_GUIDES: TripWorkspaceCityGuide[] = [
                 sourceLine: 'General city context',
                 neighborhoodNames: ['Talat Noi', 'Ari'],
                 stayAreas: ['Ari'],
+                focusPath: [point(33, 49), point(48, 43), point(69, 34)],
+                callout: {
+                    label: 'Late food drift',
+                    detail: 'Best when the route wants markets, river texture, and a softer café morning after.',
+                    position: point(50, 40),
+                },
             },
         ],
         tripInsights: [
@@ -346,8 +373,8 @@ export const THAILAND_CITY_GUIDES: TripWorkspaceCityGuide[] = [
             'General destination: temple logistics and traffic timing matter more than big list length.',
         ],
         savedStays: [
-            { area: 'Sathorn', vibe: 'Polished base', reason: 'Easiest handoff from airport to hotel to first dinner.' },
-            { area: 'Ari', vibe: 'Soft urban reset', reason: 'Better if the trip wants design cafés over nightlife.' },
+            { area: 'Sathorn', vibe: 'Polished base', reason: 'Easiest handoff from airport to hotel to first dinner.', mapPosition: point(50, 64) },
+            { area: 'Ari', vibe: 'Soft urban reset', reason: 'Better if the trip wants design cafés over nightlife.', mapPosition: point(71, 31) },
         ],
         events: [
             { title: 'Songkran window', detail: 'Mid-April changes transport, crowds, and hotel mood quickly.' },
@@ -368,9 +395,9 @@ export const THAILAND_CITY_GUIDES: TripWorkspaceCityGuide[] = [
             { label: 'Tourism Chiang Mai', href: 'https://www.tourismthailand.org/Destinations/Provinces/Chiang-Mai/101' },
         ],
         neighborhoods: [
-            { name: 'Old City', fit: 'Best first-timer orientation' },
-            { name: 'Nimman', fit: 'Cafe density and softer work blocks' },
-            { name: 'Riverside', fit: 'Slower evenings and calmer stays' },
+            { name: 'Old City', fit: 'Best first-timer orientation', mapPosition: point(48, 49), mapRadius: 'lg' },
+            { name: 'Nimman', fit: 'Cafe density and softer work blocks', mapPosition: point(33, 35), mapRadius: 'md' },
+            { name: 'Riverside', fit: 'Slower evenings and calmer stays', mapPosition: point(67, 56), mapRadius: 'md' },
         ],
         highlights: ['Cooking class with market visit', 'Early temple circuit', 'Craft village half-day'],
         mapLayers: [
@@ -383,6 +410,12 @@ export const THAILAND_CITY_GUIDES: TripWorkspaceCityGuide[] = [
                 sourceLine: 'Trip-specific demo planning layer',
                 neighborhoodNames: ['Old City', 'Riverside'],
                 stayAreas: ['Old City'],
+                focusPath: [point(36, 32), point(48, 47), point(67, 55)],
+                callout: {
+                    label: 'First two days',
+                    detail: 'Temple loop first, river dinner second, then an easy airport return.',
+                    position: point(55, 46),
+                },
             },
             {
                 id: 'cafe',
@@ -393,6 +426,12 @@ export const THAILAND_CITY_GUIDES: TripWorkspaceCityGuide[] = [
                 sourceLine: 'General city context',
                 neighborhoodNames: ['Nimman', 'Riverside'],
                 stayAreas: ['Nimman'],
+                focusPath: [point(28, 34), point(42, 43), point(64, 54)],
+                callout: {
+                    label: 'Slow-work arc',
+                    detail: 'Nimman mornings land best when they taper into a calmer riverside evening.',
+                    position: point(38, 39),
+                },
             },
         ],
         tripInsights: [
@@ -402,8 +441,8 @@ export const THAILAND_CITY_GUIDES: TripWorkspaceCityGuide[] = [
             'General destination: haze and rain season layers should become live later.',
         ],
         savedStays: [
-            { area: 'Old City', vibe: 'Easy orientation', reason: 'Best for a short first Chiang Mai stop.' },
-            { area: 'Nimman', vibe: 'Design-heavy and social', reason: 'Stronger if cafés and shops matter more.' },
+            { area: 'Old City', vibe: 'Easy orientation', reason: 'Best for a short first Chiang Mai stop.', mapPosition: point(49, 51) },
+            { area: 'Nimman', vibe: 'Design-heavy and social', reason: 'Stronger if cafés and shops matter more.', mapPosition: point(30, 33) },
         ],
         events: [
             { title: 'Sunday Walking Street', detail: 'Reliable low-planning anchor for one market night.' },
@@ -423,8 +462,8 @@ export const THAILAND_CITY_GUIDES: TripWorkspaceCityGuide[] = [
             { label: 'Pai overview', href: 'https://www.tourismthailand.org/Destinations/Provinces/Mae-Hong-Son/103' },
         ],
         neighborhoods: [
-            { name: 'Walking Street core', fit: 'Easy without a scooter' },
-            { name: 'Riverside edge', fit: 'Quieter sleep and slower mornings' },
+            { name: 'Walking Street core', fit: 'Easy without a scooter', mapPosition: point(48, 53), mapRadius: 'lg' },
+            { name: 'Riverside edge', fit: 'Quieter sleep and slower mornings', mapPosition: point(67, 45), mapRadius: 'md' },
         ],
         highlights: ['Sunset viewpoint', 'Cafe morning', 'Hot spring or canyon split day'],
         mapLayers: [
@@ -437,6 +476,12 @@ export const THAILAND_CITY_GUIDES: TripWorkspaceCityGuide[] = [
                 sourceLine: 'Trip-specific demo planning layer',
                 neighborhoodNames: ['Walking Street core'],
                 stayAreas: ['Central Pai'],
+                focusPath: [point(45, 56), point(53, 50)],
+                callout: {
+                    label: 'Low-friction base',
+                    detail: 'Keep the stop close enough that no extra transport is required once you arrive.',
+                    position: point(52, 47),
+                },
             },
             {
                 id: 'quiet',
@@ -447,6 +492,12 @@ export const THAILAND_CITY_GUIDES: TripWorkspaceCityGuide[] = [
                 sourceLine: 'General city context',
                 neighborhoodNames: ['Riverside edge'],
                 stayAreas: ['Central Pai'],
+                focusPath: [point(49, 53), point(63, 46), point(72, 43)],
+                callout: {
+                    label: 'Morning reset',
+                    detail: 'Trade late-night spill for the calmer river-edge version of Pai.',
+                    position: point(66, 39),
+                },
             },
         ],
         tripInsights: [
@@ -456,7 +507,7 @@ export const THAILAND_CITY_GUIDES: TripWorkspaceCityGuide[] = [
             'General destination: roads and rain matter more than distance.',
         ],
         savedStays: [
-            { area: 'Central Pai', vibe: 'Low-friction base', reason: 'Keeps the stop easy without extra transport.' },
+            { area: 'Central Pai', vibe: 'Low-friction base', reason: 'Keeps the stop easy without extra transport.', mapPosition: point(50, 54) },
         ],
         events: [],
     },
@@ -475,9 +526,9 @@ export const THAILAND_CITY_GUIDES: TripWorkspaceCityGuide[] = [
             { label: 'Tourism Phuket', href: 'https://www.tourismthailand.org/Destinations/Provinces/Phuket/104' },
         ],
         neighborhoods: [
-            { name: 'Old Town', fit: 'Culture and food over beach resort mode' },
-            { name: 'Kata', fit: 'Balanced beach stay' },
-            { name: 'Mai Khao', fit: 'Quiet reset close to the airport' },
+            { name: 'Old Town', fit: 'Culture and food over beach resort mode', mapPosition: point(48, 56), mapRadius: 'md' },
+            { name: 'Kata', fit: 'Balanced beach stay', mapPosition: point(62, 72), mapRadius: 'lg' },
+            { name: 'Mai Khao', fit: 'Quiet reset close to the airport', mapPosition: point(36, 19), mapRadius: 'md' },
         ],
         highlights: ['Old Town evening', 'Boat planning day', 'Beach + spa split'],
         mapLayers: [
@@ -490,6 +541,12 @@ export const THAILAND_CITY_GUIDES: TripWorkspaceCityGuide[] = [
                 sourceLine: 'Trip-specific demo planning layer',
                 neighborhoodNames: ['Mai Khao', 'Kata'],
                 stayAreas: ['Kata'],
+                focusPath: [point(35, 22), point(48, 45), point(61, 71)],
+                callout: {
+                    label: 'Logistics hinge',
+                    detail: 'The airport-to-beach handoff matters more here than trying to sample the whole island.',
+                    position: point(49, 42),
+                },
             },
             {
                 id: 'calm-zones',
@@ -500,6 +557,12 @@ export const THAILAND_CITY_GUIDES: TripWorkspaceCityGuide[] = [
                 sourceLine: 'General city context',
                 neighborhoodNames: ['Mai Khao', 'Old Town'],
                 stayAreas: ['Kata'],
+                focusPath: [point(34, 20), point(42, 37), point(48, 55)],
+                callout: {
+                    label: 'Quieter island mood',
+                    detail: 'The gentler Phuket version pairs calmer beaches with one Old Town evening instead of strip energy.',
+                    position: point(42, 35),
+                },
             },
         ],
         tripInsights: [
@@ -507,7 +570,7 @@ export const THAILAND_CITY_GUIDES: TripWorkspaceCityGuide[] = [
         ],
         generalInsights: [],
         savedStays: [
-            { area: 'Kata', vibe: 'Balanced beach base', reason: 'Easier mix of calm beach and restaurant access.' },
+            { area: 'Kata', vibe: 'Balanced beach base', reason: 'Easier mix of calm beach and restaurant access.', mapPosition: point(64, 75) },
         ],
         events: [],
     },
@@ -525,8 +588,8 @@ export const THAILAND_CITY_GUIDES: TripWorkspaceCityGuide[] = [
             { label: 'Marine weather', href: 'https://www.tmd.go.th/en/' },
         ],
         neighborhoods: [
-            { name: 'Tonsai edge', fit: 'Easy access with less late-night spillover' },
-            { name: 'Long Beach', fit: 'Quieter sleep and scenic mornings' },
+            { name: 'Tonsai edge', fit: 'Easy access with less late-night spillover', mapPosition: point(49, 48), mapRadius: 'md' },
+            { name: 'Long Beach', fit: 'Quieter sleep and scenic mornings', mapPosition: point(69, 63), mapRadius: 'lg' },
         ],
         highlights: ['Sunrise viewpoint', 'Boat day with weather buffer', 'Slow beach afternoon'],
         mapLayers: [
@@ -539,6 +602,12 @@ export const THAILAND_CITY_GUIDES: TripWorkspaceCityGuide[] = [
                 sourceLine: 'Trip-specific demo planning layer',
                 neighborhoodNames: ['Tonsai edge'],
                 stayAreas: ['Long Beach'],
+                focusPath: [point(47, 46), point(58, 53), point(68, 62)],
+                callout: {
+                    label: 'Pier day buffer',
+                    detail: 'First and last nights should minimize wet-bag, pier, and ferry friction.',
+                    position: point(57, 50),
+                },
             },
             {
                 id: 'quiet-scenery',
@@ -549,6 +618,12 @@ export const THAILAND_CITY_GUIDES: TripWorkspaceCityGuide[] = [
                 sourceLine: 'General city context',
                 neighborhoodNames: ['Long Beach'],
                 stayAreas: ['Long Beach'],
+                focusPath: [point(54, 51), point(63, 57), point(70, 62)],
+                callout: {
+                    label: 'Calmer postcard mood',
+                    detail: 'Shift away from the core and the island starts feeling scenic instead of crowded.',
+                    position: point(65, 58),
+                },
             },
         ],
         tripInsights: [
@@ -556,7 +631,7 @@ export const THAILAND_CITY_GUIDES: TripWorkspaceCityGuide[] = [
         ],
         generalInsights: [],
         savedStays: [
-            { area: 'Long Beach', vibe: 'Calmer postcard base', reason: 'Better if the trip wants atmosphere over party spill.' },
+            { area: 'Long Beach', vibe: 'Calmer postcard base', reason: 'Better if the trip wants atmosphere over party spill.', mapPosition: point(71, 64) },
         ],
         events: [],
     },
@@ -574,9 +649,9 @@ export const THAILAND_CITY_GUIDES: TripWorkspaceCityGuide[] = [
             { label: 'Krabi tourism', href: 'https://www.tourismthailand.org/Destinations/Provinces/Krabi/223' },
         ],
         neighborhoods: [
-            { name: 'Ao Nang', fit: 'Easiest logistics and day-trip base' },
-            { name: 'Railay', fit: 'Best scenery and atmosphere' },
-            { name: 'Koh Lanta', fit: 'Best slower island reset' },
+            { name: 'Ao Nang', fit: 'Easiest logistics and day-trip base', mapPosition: point(55, 56), mapRadius: 'lg' },
+            { name: 'Railay', fit: 'Best scenery and atmosphere', mapPosition: point(66, 49), mapRadius: 'md' },
+            { name: 'Koh Lanta', fit: 'Best slower island reset', mapPosition: point(30, 76), mapRadius: 'lg' },
         ],
         highlights: ['Longtail sunrise', 'Cliff and beach split day', 'Massage + seafood reset'],
         mapLayers: [
@@ -589,6 +664,12 @@ export const THAILAND_CITY_GUIDES: TripWorkspaceCityGuide[] = [
                 sourceLine: 'Trip-specific demo planning layer',
                 neighborhoodNames: ['Ao Nang', 'Railay'],
                 stayAreas: ['Ao Nang'],
+                focusPath: [point(50, 58), point(58, 53), point(66, 49)],
+                callout: {
+                    label: 'Boat timing core',
+                    detail: 'This layer makes it obvious where transfer ease wins over the prettiest base.',
+                    position: point(58, 51),
+                },
             },
             {
                 id: 'slow-reset',
@@ -599,6 +680,12 @@ export const THAILAND_CITY_GUIDES: TripWorkspaceCityGuide[] = [
                 sourceLine: 'General city context',
                 neighborhoodNames: ['Koh Lanta', 'Railay'],
                 stayAreas: ['Railay'],
+                focusPath: [point(33, 73), point(44, 64), point(66, 49)],
+                callout: {
+                    label: 'Scenery + recovery',
+                    detail: 'The coast gets softer when you bias toward calm beaches and fewer daily transfers.',
+                    position: point(43, 66),
+                },
             },
         ],
         tripInsights: [
@@ -606,8 +693,8 @@ export const THAILAND_CITY_GUIDES: TripWorkspaceCityGuide[] = [
         ],
         generalInsights: [],
         savedStays: [
-            { area: 'Ao Nang', vibe: 'Planner-friendly', reason: 'Best if the trip values easy boat and transfer control.' },
-            { area: 'Railay', vibe: 'Signature scenery', reason: 'Best if the coast leg should feel unforgettable first.' },
+            { area: 'Ao Nang', vibe: 'Planner-friendly', reason: 'Best if the trip values easy boat and transfer control.', mapPosition: point(53, 59) },
+            { area: 'Railay', vibe: 'Signature scenery', reason: 'Best if the coast leg should feel unforgettable first.', mapPosition: point(69, 47) },
         ],
         events: [
             { title: 'Boat weather buffer', detail: 'Keep one flexible coastal day for sea-condition changes.' },

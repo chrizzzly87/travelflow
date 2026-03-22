@@ -64,12 +64,14 @@ describe('components/tripview/workspace/TripWorkspacePlacesPage', () => {
     const cityGuideTab = screen.getByRole('tab', { name: 'City guide' });
     fireEvent.mouseDown(cityGuideTab, { button: 0 });
     await waitFor(() => expect(cityGuideTab).toHaveAttribute('data-state', 'active'));
-    fireEvent.click(screen.getByRole('button', { name: 'Arrival flow' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'Arrival flow' }));
 
     expect(screen.getAllByText('Trip-specific').length).toBeGreaterThan(0);
     expect(screen.getByText('No saved traveler warnings yet')).toBeInTheDocument();
     expect(screen.getByText(/Keep the first-night base near easy airport handoffs/i)).toBeInTheDocument();
     expect(screen.getByText('Neighborhoods for arrival flow')).toBeInTheDocument();
     expect(screen.getAllByText('Sathorn').length).toBeGreaterThan(0);
+    expect(screen.getByText('2 map zones')).toBeInTheDocument();
+    expect(screen.getAllByText('1 stay anchor').length).toBeGreaterThan(0);
   });
 });

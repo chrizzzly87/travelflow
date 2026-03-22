@@ -132,6 +132,7 @@ Goal: Turn Trip View into a routed Trip Workspace with a fixed shadcn sidebar on
 - [x] Added a routed `Documents` page with packet tabs, verification toggles, offline dossier prep, and quick links back into bookings, places, and travel support flows.
 - [x] Added a routed `Budget` page with scenario switching, cost-category filters, reserve controls, and route-aware spend pacing for the Thailand demo trip.
 - [x] Added a routed `Weather` page with route-stop switching, weather lenses, disruption framing, and quick links back into planner, places, and travel support pages.
+- [x] Turned the `Places` map into a real visual overlay surface with neighborhood zones, stay anchors, and route-focus paths instead of layer guidance text only.
 - [x] Added an Explore activity workflow board with drag-and-drop lanes on desktop, menu-based moves on mobile, planner scheduling handoff, and booked-activity visibility inside `Bookings`.
 - [x] Added unit and browser regression coverage for activity-board derivation, filter persistence, mobile move actions, and booked-activity summaries.
 - [x] Updated active locale files with the current Explore workflow copy and mode labels.
@@ -141,7 +142,7 @@ Goal: Turn Trip View into a routed Trip Workspace with a fixed shadcn sidebar on
 - [x] Refined the Explore board drag math so same-lane moves now keep showing a clear placeholder slot based on the lane geometry instead of losing the insertion preview when the hover target stays on the column.
 
 ## Open
-- [ ] Turn the new `Places` overlay guidance into true visual map overlays once the shared trip map exposes richer layer hooks.
 - [ ] Turn the new overview map and overview calendar copy into signed-off EN/DE locale keys when the wording is final.
-- [ ] Replace Thailand demo data with live bookings, discovery, activity-board, phrase, destination, travel-kit, document, budget, and weather services when the backend inputs are ready.
+- [ ] Replace Thailand demo data with live bookings, discovery, activity-board, phrase, destination, travel-kit, document, budget, weather, and places-overlay services when the backend inputs are ready.
+- [ ] Decide whether the next destination polish should focus on richer map interactions like hover states and compare mode, or on service-backed freshness data.
 - [ ] Decide whether the next workspace utility slice should focus on `routing polish`, `planner-to-budget sync`, or `weather-driven map overlays`.
