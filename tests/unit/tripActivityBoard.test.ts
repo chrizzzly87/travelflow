@@ -4,6 +4,7 @@ import type { ITrip } from '../../types';
 import {
     deriveTripActivityBoardCards,
     moveTripActivityBoardCard,
+    resolveTripActivityBoardInsertion,
     returnTripActivityBoardCardToShortlist,
 } from '../../components/tripview/workspace/tripActivityBoard';
 
@@ -132,6 +133,31 @@ describe('components/tripview/workspace/tripActivityBoard', () => {
 
         expect(moved.map((card) => card.id)).toEqual(['planned-b', 'planned-a', 'planned-c']);
         expect(moved.map((card) => card.sortOrder)).toEqual([0, 1, 2]);
+    });
+
+    it('resolves a between-card insertion slot from lane geometry', () => {
+        const insertion = resolveTripActivityBoardInsertion([
+            { id: 'planned-a', top: 100, height: 72 },
+            { id: 'planned-b', top: 188, height: 72 },
+            { id: 'planned-c', top: 276, height: 72 },
+        ], 210);
+
+        expect(insertion).toEqual({
+            overCardId: 'planned-b',
+            insertPosition: 'before',
+        });
+    });
+
+    it('resolves a tail insertion slot when dragging below the last card', () => {
+        const insertion = resolveTripActivityBoardInsertion([
+            { id: 'planned-a', top: 100, height: 72 },
+            { id: 'planned-b', top: 188, height: 72 },
+        ], 320);
+
+        expect(insertion).toEqual({
+            overCardId: 'planned-b',
+            insertPosition: 'after',
+        });
     });
 
     it('returns linked cards to shortlist by clearing the timeline link', () => {

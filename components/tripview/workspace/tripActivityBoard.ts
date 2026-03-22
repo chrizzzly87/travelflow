@@ -16,6 +16,11 @@ export const TRIP_ACTIVITY_WORKFLOW_STATUSES: TripActivityWorkflowStatus[] = [
 ];
 
 export type TripActivityBoardInsertPosition = 'before' | 'after';
+export interface TripActivityBoardInsertionCandidate {
+    id: string;
+    top: number;
+    height: number;
+}
 
 const STATUS_INDEX = new Map<TripActivityWorkflowStatus, number>(
     TRIP_ACTIVITY_WORKFLOW_STATUSES.map((status, index) => [status, index]),
@@ -156,6 +161,36 @@ const resolveInsertIndex = (
         .at(-1);
 
     return lastMatchingIndex ? lastMatchingIndex.index + 1 : cards.length;
+};
+
+export const resolveTripActivityBoardInsertion = (
+    candidates: TripActivityBoardInsertionCandidate[],
+    activeCenterY: number,
+): {
+    overCardId: string | null;
+    insertPosition: TripActivityBoardInsertPosition | null;
+} => {
+    if (candidates.length === 0) {
+        return {
+            overCardId: null,
+            insertPosition: null,
+        };
+    }
+
+    const sortedCandidates = [...candidates].sort((left, right) => left.top - right.top);
+    const nextCandidate = sortedCandidates.find((candidate) => activeCenterY <= candidate.top + candidate.height / 2);
+
+    if (nextCandidate) {
+        return {
+            overCardId: nextCandidate.id,
+            insertPosition: 'before',
+        };
+    }
+
+    return {
+        overCardId: sortedCandidates.at(-1)?.id ?? null,
+        insertPosition: 'after',
+    };
 };
 
 export const moveTripActivityBoardCard = (

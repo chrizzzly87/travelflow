@@ -3,6 +3,7 @@ import {
     DndContext,
     DragOverlay,
     type DragOverEvent,
+    type DragMoveEvent,
     PointerSensor,
     closestCorners,
     useDroppable,
@@ -60,6 +61,7 @@ import {
     getActivityBoardPrimaryType,
     materializeTripActivityBoardCards,
     moveTripActivityBoardCard,
+    resolveTripActivityBoardInsertion,
 } from './tripActivityBoard';
 
 interface TripWorkspaceExploreBoardProps {
@@ -117,6 +119,9 @@ const STATUS_OPTIONS = TRIP_ACTIVITY_WORKFLOW_STATUSES.map((status) => ({
     value: status,
     label: STATUS_COPY[status].label,
 }));
+
+const BOARD_COLUMN_ATTRIBUTE = 'data-activity-board-column';
+const BOARD_CARD_ATTRIBUTE = 'data-activity-board-card';
 
 const openExternalUrl = (href: string) => {
     if (typeof window === 'undefined') return;
@@ -253,7 +258,11 @@ const ExploreBoardCard: React.FC<{
     const dragHandleProps = isMobile ? {} : { ...attributes, ...listeners };
 
     return (
-        <div ref={setNodeRef} style={cardStyle}>
+        <div
+            ref={setNodeRef}
+            style={cardStyle}
+            data-activity-board-card={card.id}
+        >
             <Card className={cn(
                 'overflow-hidden rounded-2xl border border-border/70 bg-card shadow-xs transition-[transform,box-shadow,border-color]',
                 'hover:-translate-y-0.5 hover:border-border hover:shadow-md',
@@ -344,19 +353,58 @@ const ExploreBoardDropIndicator: React.FC<{
 
     return (
         <div className={cn(
-            'w-full overflow-hidden rounded-xl border border-dashed px-2.5 ring-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.55)] transition-all duration-150 ease-out',
+            'w-full overflow-hidden rounded-2xl border border-dashed px-2.5 ring-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.55)] transition-all duration-150 ease-out',
             statusCopy.previewTone,
-            expanded ? 'py-2.5 opacity-100' : 'py-2 opacity-100',
+            expanded ? 'py-2.5 opacity-100 shadow-sm' : 'py-2 opacity-100',
         )}>
             <div className="flex w-full items-center gap-2">
                 <span className={cn('size-2.5 rounded-full shadow-sm', statusCopy.dotTone)} />
-                <div className={cn(
-                    'h-6 flex-1 rounded-lg ring-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.4)]',
-                    statusCopy.previewBarTone,
-                )} />
+                <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                        <span className="truncate text-[11px] font-medium text-foreground/80">
+                            Drop into {statusCopy.label}
+                        </span>
+                        <div className={cn(
+                            'h-px flex-1 rounded-full',
+                            statusCopy.previewBarTone,
+                        )} />
+                    </div>
+                    <div className={cn(
+                        'mt-2 h-10 rounded-xl ring-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.4)]',
+                        statusCopy.previewBarTone,
+                    )} />
+                </div>
             </div>
         </div>
     );
+};
+
+const resolveDropHintFromBoardDom = (
+    status: TripActivityWorkflowStatus,
+    activeId: string,
+    activeCenterY: number | null,
+): TripWorkspaceBoardDropHint | null => {
+    if (typeof document === 'undefined' || activeCenterY === null) return null;
+
+    const columnElement = document.querySelector<HTMLElement>(`[${BOARD_COLUMN_ATTRIBUTE}="${status}"]`);
+    if (!columnElement) return null;
+
+    const candidates = Array.from(
+        columnElement.querySelectorAll<HTMLElement>(`[${BOARD_CARD_ATTRIBUTE}]`),
+    )
+        .map((element) => ({
+            id: element.dataset.activityBoardCard ?? '',
+            top: element.getBoundingClientRect().top,
+            height: element.getBoundingClientRect().height,
+        }))
+        .filter((candidate) => candidate.id && candidate.id !== activeId);
+
+    const insertion = resolveTripActivityBoardInsertion(candidates, activeCenterY);
+    return {
+        status,
+        overCardId: insertion.overCardId,
+        insertPosition: insertion.insertPosition,
+    };
 };
 
 const resolveDropHint = (
@@ -370,9 +418,13 @@ const resolveDropHint = (
     const activeCard = cards.find((card) => card.id === activeId) ?? null;
     if (!activeCard) return null;
 
+    const activeRect = event.active.rect.current.translated ?? event.active.rect.current.initial;
+    const activeCenterY = activeRect ? activeRect.top + activeRect.height / 2 : null;
+
     if (overId.startsWith('column-')) {
-        return {
-            status: overId.replace('column-', '') as TripActivityWorkflowStatus,
+        const columnStatus = overId.replace('column-', '') as TripActivityWorkflowStatus;
+        return resolveDropHintFromBoardDom(columnStatus, activeId, activeCenterY) ?? {
+            status: columnStatus,
             overCardId: null,
             insertPosition: null,
         };
@@ -381,9 +433,11 @@ const resolveDropHint = (
     const overCard = cards.find((card) => card.id === overId) ?? null;
     if (!overCard || overCard.id === activeCard.id) return null;
 
-    const activeRect = event.active.rect.current.translated ?? event.active.rect.current.initial;
-    const activeCenterY = activeRect ? activeRect.top + activeRect.height / 2 : event.over.rect.top;
-    const insertPosition: TripActivityBoardInsertPosition = activeCenterY >= event.over.rect.top + event.over.rect.height / 2
+    const domResolvedHint = resolveDropHintFromBoardDom(overCard.status, activeId, activeCenterY);
+    if (domResolvedHint) return domResolvedHint;
+
+    const fallbackCenterY = activeCenterY ?? event.over.rect.top;
+    const insertPosition: TripActivityBoardInsertPosition = fallbackCenterY >= event.over.rect.top + event.over.rect.height / 2
         ? 'after'
         : 'before';
 
@@ -440,6 +494,7 @@ const ExploreBoardColumn: React.FC<{
             </div>
             <div
                 ref={setNodeRef}
+                data-activity-board-column={status}
                 className={cn(
                     'flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overflow-x-visible px-2.5 py-2.5',
                 )}
@@ -496,6 +551,7 @@ export const TripWorkspaceExploreBoard: React.FC<TripWorkspaceExploreBoardProps>
     const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
     const [activeCardId, setActiveCardId] = React.useState<string | null>(null);
     const [dropHint, setDropHint] = React.useState<TripWorkspaceBoardDropHint | null>(null);
+    const activeTargetStatusRef = React.useRef<TripActivityWorkflowStatus | null>(null);
 
     const derivedCards = React.useMemo(() => deriveTripActivityBoardCards(trip), [trip]);
     const materializedCards = React.useMemo(() => materializeTripActivityBoardCards(trip), [trip]);
@@ -555,16 +611,38 @@ export const TripWorkspaceExploreBoard: React.FC<TripWorkspaceExploreBoardProps>
 
     const handleDragStart = React.useCallback((event: DragStartEvent) => {
         if (isMobile) return;
-        setActiveCardId(String(event.active.id));
-    }, [isMobile]);
+        const activeId = String(event.active.id);
+        const activeCard = derivedCards.find((card) => card.id === activeId) ?? null;
+        activeTargetStatusRef.current = activeCard?.status ?? null;
+        setActiveCardId(activeId);
+    }, [derivedCards, isMobile]);
+
+    const handleDragMove = React.useCallback((event: DragMoveEvent) => {
+        if (isMobile) return;
+        const activeId = String(event.active.id);
+        const activeCard = derivedCards.find((card) => card.id === activeId) ?? null;
+        if (!activeCard) return;
+
+        const activeRect = event.active.rect.current.translated ?? event.active.rect.current.initial;
+        const activeCenterY = activeRect ? activeRect.top + activeRect.height / 2 : null;
+        const targetStatus = activeTargetStatusRef.current ?? activeCard.status;
+        const nextHint = resolveDropHintFromBoardDom(targetStatus, activeId, activeCenterY);
+
+        if (nextHint) {
+            setDropHint(nextHint);
+        }
+    }, [derivedCards, isMobile]);
 
     const handleDragOver = React.useCallback((event: DragOverEvent) => {
         if (isMobile) return;
-        setDropHint(resolveDropHint(event, derivedCards));
+        const nextHint = resolveDropHint(event, derivedCards);
+        activeTargetStatusRef.current = nextHint?.status ?? activeTargetStatusRef.current;
+        setDropHint(nextHint);
     }, [derivedCards, isMobile]);
 
     const handleDragEnd = React.useCallback((event: DragEndEvent) => {
         setActiveCardId(null);
+        activeTargetStatusRef.current = null;
         const nextDropHint = resolveDropHint(event, derivedCards);
         setDropHint(null);
         if (isMobile) return;
@@ -659,9 +737,11 @@ export const TripWorkspaceExploreBoard: React.FC<TripWorkspaceExploreBoardProps>
                 sensors={sensors}
                 collisionDetection={closestCorners}
                 onDragStart={handleDragStart}
+                onDragMove={handleDragMove}
                 onDragOver={handleDragOver}
                 onDragCancel={() => {
                     setActiveCardId(null);
+                    activeTargetStatusRef.current = null;
                     setDropHint(null);
                 }}
                 onDragEnd={handleDragEnd}
