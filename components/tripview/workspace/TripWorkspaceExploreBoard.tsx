@@ -1,12 +1,14 @@
 import React from 'react';
 import {
     DndContext,
+    DragOverlay,
     PointerSensor,
     closestCorners,
     useDroppable,
     useSensor,
     useSensors,
     type DragEndEvent,
+    type DragStartEvent,
 } from '@dnd-kit/core';
 import {
     SortableContext,
@@ -15,15 +17,10 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import {
-    ArrowSquareOut,
-    CalendarBlank,
-    CheckCircle,
     DotsSixVertical,
     DotsThreeOutlineVertical,
-    MapPin,
-    SuitcaseRolling,
-    Trash,
 } from '@phosphor-icons/react';
+import { createPortal } from 'react-dom';
 
 import type {
     ActivityType,
@@ -31,12 +28,12 @@ import type {
     ITripActivityBoardCard,
     TripActivityWorkflowStatus,
 } from '../../../types';
-import { getAnalyticsDebugAttributes, trackEvent } from '../../../services/analyticsService';
+import { trackEvent } from '../../../services/analyticsService';
 import { cn } from '../../../lib/utils';
 import { formatActivityTypeLabel } from '../../ActivityTypeVisuals';
 import { Badge } from '../../ui/badge';
 import { Button } from '../../ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../ui/card';
+import { Card, CardHeader, CardTitle } from '../../ui/card';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -78,38 +75,23 @@ interface TripWorkspaceExploreBoardProps {
 
 const STATUS_COPY: Record<TripActivityWorkflowStatus, {
     label: string;
-    detail: string;
     dotTone: string;
-    badgeTone: string;
-    laneTone: string;
 }> = {
     shortlist: {
         label: 'Shortlist',
-        detail: 'High-signal ideas that still need a route slot.',
         dotTone: 'bg-sky-500',
-        badgeTone: 'border-sky-200/80 bg-sky-50/90 text-sky-700',
-        laneTone: 'from-sky-50/95 via-background to-sky-100/55',
     },
     planned: {
         label: 'Planned',
-        detail: 'Scheduled into the trip, but not confirmed as booked.',
         dotTone: 'bg-amber-500',
-        badgeTone: 'border-amber-200/80 bg-amber-50/90 text-amber-700',
-        laneTone: 'from-amber-50/95 via-background to-amber-100/55',
     },
     booked: {
         label: 'Booked',
-        detail: 'Locked decisions that should stay visible for logistics.',
         dotTone: 'bg-emerald-500',
-        badgeTone: 'border-emerald-200/80 bg-emerald-50/90 text-emerald-700',
-        laneTone: 'from-emerald-50/95 via-background to-emerald-100/55',
     },
     done: {
         label: 'Done',
-        detail: 'Finished experiences worth keeping on the trip record.',
         dotTone: 'bg-violet-500',
-        badgeTone: 'border-violet-200/80 bg-violet-50/90 text-violet-700',
-        laneTone: 'from-violet-50/95 via-background to-violet-100/55',
     },
 };
 
@@ -122,6 +104,10 @@ const openExternalUrl = (href: string) => {
     if (typeof window === 'undefined') return;
     window.open(href, '_blank', 'noopener,noreferrer');
 };
+
+const getActivityBoardSourceLabel = (card: ITripActivityBoardCard) => (
+    card.source === 'explore' ? 'Discover' : 'Planner'
+);
 
 const ActivityBoardCardMenu: React.FC<{
     card: ITripActivityBoardCard;
@@ -234,35 +220,35 @@ const ExploreBoardCard: React.FC<{
     onUpdateStatus,
     onRemoveFromItinerary,
 }) => {
+    const primaryType = getActivityBoardPrimaryType(card);
+    const cityLabel = getActivityBoardCityLabel(card, trip.items);
+    const sourceLabel = getActivityBoardSourceLabel(card);
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
         id: card.id,
         disabled: isMobile,
     });
-
-    const primaryType = getActivityBoardPrimaryType(card);
     const cardStyle = {
         transform: CSS.Transform.toString(transform),
         transition,
-        opacity: isDragging ? 0.72 : 1,
-        zIndex: isDragging ? 30 : undefined,
+        opacity: isDragging ? 0.12 : 1,
     };
     const dragHandleProps = isMobile ? {} : { ...attributes, ...listeners };
 
     return (
-        <div ref={setNodeRef} style={cardStyle} className={cn('relative', isDragging && 'z-30')}>
+        <div ref={setNodeRef} style={cardStyle}>
             <Card className={cn(
-                'overflow-hidden rounded-[1.5rem] border border-border/60 bg-background/95 shadow-[0_14px_32px_-24px_rgba(15,23,42,0.45)] transition-all',
-                'hover:-translate-y-0.5 hover:shadow-[0_18px_38px_-24px_rgba(15,23,42,0.5)]',
-                isDragging && 'ring-2 ring-accent/20 shadow-[0_24px_44px_-22px_rgba(15,23,42,0.55)]',
+                'overflow-hidden rounded-2xl border border-border/70 bg-card shadow-xs transition-[transform,box-shadow,border-color]',
+                'hover:-translate-y-0.5 hover:border-border hover:shadow-md',
+                isDragging && 'shadow-none',
             )}>
-                <CardHeader className="gap-3 pb-3">
-                    <div className="flex items-start gap-3">
+                <CardHeader className="px-3 py-3">
+                    <div className="flex items-start gap-2.5">
                         <button
                             type="button"
                             aria-label="Drag activity card"
                             className={cn(
-                                'mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-xl border border-border/60 bg-muted/55 text-muted-foreground shadow-xs',
-                                'transition-colors hover:bg-muted hover:text-foreground',
+                                'mt-0.5 inline-flex size-7 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors',
+                                'hover:bg-muted hover:text-foreground',
                                 isMobile && 'hidden',
                             )}
                             {...dragHandleProps}
@@ -270,18 +256,18 @@ const ExploreBoardCard: React.FC<{
                             <DotsSixVertical weight="bold" />
                         </button>
                         <div className="min-w-0 flex-1">
-                            <div className="flex flex-wrap items-center gap-2">
-                                <Badge variant="outline" className="rounded-full border-border/70 bg-background/80">
-                                    {getActivityBoardCityLabel(card, trip.items)}
+                            <CardTitle className="line-clamp-2 text-sm leading-5 font-medium">{card.title}</CardTitle>
+                            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                                <Badge variant="outline" className="rounded-full border-border/70 bg-background px-2 py-0.5 text-[11px]">
+                                    {cityLabel}
                                 </Badge>
-                                <Badge variant="secondary" className="rounded-full">
-                                    {card.source === 'explore' ? 'Saved from discover' : 'From planner'}
+                                <Badge variant="secondary" className="rounded-full px-2 py-0.5 text-[11px]">
+                                    {formatActivityTypeLabel(primaryType)}
                                 </Badge>
+                                <span className="text-[11px] font-medium text-muted-foreground">
+                                    {sourceLabel}
+                                </span>
                             </div>
-                            <CardTitle className="mt-3 text-[15px] leading-6">{card.title}</CardTitle>
-                            <CardDescription className="mt-2 max-w-[34ch] text-sm leading-6">
-                                {card.description || card.note || 'No summary yet.'}
-                            </CardDescription>
                         </div>
                         <ActivityBoardCardMenu
                             card={card}
@@ -293,68 +279,39 @@ const ExploreBoardCard: React.FC<{
                         />
                     </div>
                 </CardHeader>
-                <CardContent className="flex flex-col gap-4 border-t border-border/50 pt-4">
-                    <div className="flex flex-wrap gap-2">
-                        {card.activityType.slice(0, 3).map((type) => (
-                            <Badge
-                                key={type}
-                                variant={type === primaryType ? 'secondary' : 'outline'}
-                                className="rounded-full"
-                            >
-                                {formatActivityTypeLabel(type)}
-                            </Badge>
-                        ))}
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                        {card.status === 'shortlist' ? (
-                            <Button
-                                type="button"
-                                size="sm"
-                                className="rounded-full"
-                                onClick={() => onScheduleBoardCard(card)}
-                                {...getAnalyticsDebugAttributes('trip_workspace__activity_board_card--schedule', {
-                                    trip_id: trip.id,
-                                    card_id: card.id,
-                                })}
-                            >
-                                <CalendarBlank data-icon="inline-start" weight="duotone" />
-                                Plan it
-                            </Button>
-                        ) : null}
-                        {card.status === 'planned' ? (
-                            <Button type="button" size="sm" variant="outline" className="rounded-full" onClick={() => onUpdateStatus(card, 'booked')}>
-                                <SuitcaseRolling data-icon="inline-start" weight="duotone" />
-                                Mark booked
-                            </Button>
-                        ) : null}
-                        {card.status === 'booked' ? (
-                            <Button type="button" size="sm" variant="outline" className="rounded-full" onClick={() => onUpdateStatus(card, 'done')}>
-                                <CheckCircle data-icon="inline-start" weight="duotone" />
-                                Mark done
-                            </Button>
-                        ) : null}
-                        {card.timelineItemId && onOpenPlannerItem ? (
-                            <Button type="button" size="sm" variant="ghost" className="rounded-full" onClick={() => onOpenPlannerItem(card.timelineItemId!)}>
-                                <MapPin data-icon="inline-start" weight="duotone" />
-                                Open in planner
-                            </Button>
-                        ) : null}
-                        {card.externalUrl ? (
-                            <Button type="button" size="sm" variant="ghost" className="rounded-full" onClick={() => openExternalUrl(card.externalUrl!)}>
-                                <ArrowSquareOut data-icon="inline-start" weight="duotone" />
-                                Research
-                            </Button>
-                        ) : null}
-                        {card.timelineItemId ? (
-                            <Button type="button" size="sm" variant="ghost" className="rounded-full text-muted-foreground hover:text-foreground" onClick={() => onRemoveFromItinerary(card)}>
-                                <Trash data-icon="inline-start" weight="duotone" />
-                                Remove from itinerary
-                            </Button>
-                        ) : null}
-                    </div>
-                </CardContent>
             </Card>
         </div>
+    );
+};
+
+const ExploreBoardCardOverlay: React.FC<{
+    card: ITripActivityBoardCard;
+    trip: ITrip;
+}> = ({ card, trip }) => {
+    const primaryType = getActivityBoardPrimaryType(card);
+    const cityLabel = getActivityBoardCityLabel(card, trip.items);
+
+    return (
+        <Card className="w-[14.25rem] overflow-hidden rounded-2xl border border-border bg-card shadow-2xl shadow-black/15">
+            <CardHeader className="px-3 py-3">
+                <div className="flex items-start gap-2.5">
+                    <div className="mt-0.5 inline-flex size-7 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                        <DotsSixVertical weight="bold" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                        <CardTitle className="line-clamp-2 text-sm leading-5 font-medium">{card.title}</CardTitle>
+                        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                            <Badge variant="outline" className="rounded-full border-border/70 bg-background px-2 py-0.5 text-[11px]">
+                                {cityLabel}
+                            </Badge>
+                            <Badge variant="secondary" className="rounded-full px-2 py-0.5 text-[11px]">
+                                {formatActivityTypeLabel(primaryType)}
+                            </Badge>
+                        </div>
+                    </div>
+                </div>
+            </CardHeader>
+        </Card>
     );
 };
 
@@ -382,20 +339,16 @@ const ExploreBoardColumn: React.FC<{
 
     return (
         <section className={cn(
-            'flex min-h-[35rem] w-[20rem] min-w-[20rem] max-w-[20rem] flex-col rounded-[1.75rem] border border-border/70',
-            'bg-linear-to-b shadow-[inset_0_1px_0_rgba(255,255,255,0.55)]',
-            statusCopy.laneTone,
+            'flex min-h-[29rem] w-[14.5rem] min-w-[14.5rem] max-w-[14.5rem] flex-col rounded-[1.6rem] border border-border/70 bg-muted/20 shadow-xs',
+            isOver && 'border-accent/40 bg-accent/5',
         )}>
-            <div className="border-b border-border/55 px-4 py-4 backdrop-blur-sm">
-                <div className="flex items-start justify-between gap-3">
-                    <div>
-                        <div className="flex items-center gap-2">
-                            <span className={cn('size-2.5 rounded-full', statusCopy.dotTone)} />
-                            <p className="text-sm font-semibold text-foreground">{statusCopy.label}</p>
-                        </div>
-                        <p className="mt-1 text-xs leading-5 text-muted-foreground">{statusCopy.detail}</p>
+            <div className="border-b border-border/60 px-3 py-3">
+                <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                        <span className={cn('size-2 rounded-full', statusCopy.dotTone)} />
+                        <p className="text-sm font-medium text-foreground">{statusCopy.label}</p>
                     </div>
-                    <Badge variant="outline" className={cn('rounded-full bg-background/90', statusCopy.badgeTone)}>
+                    <Badge variant="outline" className="rounded-full bg-background px-2 py-0.5 text-[11px]">
                         {cards.length}
                     </Badge>
                 </div>
@@ -403,8 +356,7 @@ const ExploreBoardColumn: React.FC<{
             <div
                 ref={setNodeRef}
                 className={cn(
-                    'flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overflow-x-visible px-4 py-4 transition-colors',
-                    isOver && 'bg-accent/5',
+                    'flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overflow-x-visible px-2.5 py-2.5',
                 )}
             >
                 <SortableContext items={cards.map((card) => card.id)} strategy={verticalListSortingStrategy}>
@@ -422,7 +374,7 @@ const ExploreBoardColumn: React.FC<{
                     ))}
                 </SortableContext>
                 {cards.length === 0 ? (
-                    <div className="rounded-[1.5rem] border border-dashed border-border/65 bg-background/80 px-4 py-6 text-sm leading-6 text-muted-foreground">
+                    <div className="rounded-xl border border-dashed border-border/70 bg-background/75 px-3 py-4 text-xs leading-5 text-muted-foreground">
                         No cards in this lane yet.
                     </div>
                 ) : null}
@@ -444,6 +396,7 @@ export const TripWorkspaceExploreBoard: React.FC<TripWorkspaceExploreBoardProps>
     onRemoveFromItinerary,
 }) => {
     const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+    const [activeCardId, setActiveCardId] = React.useState<string | null>(null);
 
     const derivedCards = React.useMemo(() => deriveTripActivityBoardCards(trip), [trip]);
     const materializedCards = React.useMemo(() => materializeTripActivityBoardCards(trip), [trip]);
@@ -473,6 +426,10 @@ export const TripWorkspaceExploreBoard: React.FC<TripWorkspaceExploreBoardProps>
         ) as Record<TripActivityWorkflowStatus, ITripActivityBoardCard[]>,
         [filteredCards],
     );
+    const activeCard = React.useMemo(
+        () => activeCardId ? derivedCards.find((card) => card.id === activeCardId) ?? null : null,
+        [activeCardId, derivedCards],
+    );
 
     const handleUpdateStatus = React.useCallback((
         card: ITripActivityBoardCard,
@@ -497,7 +454,13 @@ export const TripWorkspaceExploreBoard: React.FC<TripWorkspaceExploreBoardProps>
         onUpdateActivityBoard(nextCards, `Data: Updated activity workflow for "${card.title}"`);
     }, [materializedCards, onScheduleBoardCard, onUpdateActivityBoard, trip.id]);
 
+    const handleDragStart = React.useCallback((event: DragStartEvent) => {
+        if (isMobile) return;
+        setActiveCardId(String(event.active.id));
+    }, [isMobile]);
+
     const handleDragEnd = React.useCallback((event: DragEndEvent) => {
+        setActiveCardId(null);
         if (isMobile) return;
         const activeId = String(event.active.id);
         const overId = event.over ? String(event.over.id) : null;
@@ -540,20 +503,10 @@ export const TripWorkspaceExploreBoard: React.FC<TripWorkspaceExploreBoardProps>
 
     return (
         <div className="flex flex-col gap-4">
-            <section className="rounded-[1.75rem] border border-border/70 bg-background/88 px-4 py-4 shadow-sm backdrop-blur-sm">
-                <div className="flex flex-col gap-4">
-                    <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-                        <div className="space-y-1">
-                            <p className="text-sm font-medium text-muted-foreground">Activity workflow board</p>
-                            <h3 className="text-lg font-semibold tracking-tight text-foreground">Move ideas from shortlist to booked and done</h3>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                            <Badge variant="outline" className="rounded-full bg-background/90">{derivedCards.length} total cards</Badge>
-                            <Badge variant="secondary" className="rounded-full">{cardsByStatus.booked.length} booked</Badge>
-                            <Badge variant="outline" className="rounded-full bg-background/90">{cardsByStatus.done.length} done</Badge>
-                        </div>
-                    </div>
-                    <div className="grid gap-3 lg:grid-cols-[minmax(0,14rem)_minmax(0,14rem)_1fr]">
+            <section className="rounded-2xl border border-border/70 bg-card/90 px-3 py-3 shadow-sm">
+                <div className="flex flex-col gap-3">
+                    <p className="text-sm font-medium text-foreground">Activity board</p>
+                    <div className="grid gap-3 lg:grid-cols-[minmax(0,12rem)_minmax(0,12rem)_1fr]">
                         <Select value={cityFilter} onValueChange={onCityFilterChange}>
                             <SelectTrigger className="h-11 rounded-xl border-border/70 bg-background/90 shadow-xs" aria-label="Filter activity board by city">
                                 <SelectValue placeholder="Filter by city" />
@@ -586,19 +539,22 @@ export const TripWorkspaceExploreBoard: React.FC<TripWorkspaceExploreBoardProps>
                                 </SelectGroup>
                             </SelectContent>
                         </Select>
-                        <div className="flex items-center gap-2 text-sm leading-6 text-muted-foreground lg:justify-end">
-                            <span className="rounded-full border border-border/70 bg-muted/45 px-3 py-2">
-                                Drag on desktop. Use the menu on mobile.
+                        <div className="flex items-center gap-2 text-xs leading-5 text-muted-foreground lg:justify-end">
+                            <span className="rounded-full border border-border/70 bg-background px-3 py-2">
+                                Desktop drag, mobile menu.
                             </span>
                         </div>
                     </div>
-                    <p className="text-sm leading-6 text-muted-foreground">
-                        Activity leads saved from discovery land in <span className="font-medium text-foreground">Shortlist</span>. Planner activities appear here as <span className="font-medium text-foreground">Planned</span> cards, and mobile uses menu-based moves instead of drag and drop.
-                    </p>
                 </div>
             </section>
 
-            <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={handleDragEnd}>
+            <DndContext
+                sensors={sensors}
+                collisionDetection={closestCorners}
+                onDragStart={handleDragStart}
+                onDragCancel={() => setActiveCardId(null)}
+                onDragEnd={handleDragEnd}
+            >
                 <div className="overflow-x-auto pb-2">
                     <div className="flex min-w-max items-start gap-4">
                         {TRIP_ACTIVITY_WORKFLOW_STATUSES.map((status) => (
@@ -616,6 +572,14 @@ export const TripWorkspaceExploreBoard: React.FC<TripWorkspaceExploreBoardProps>
                         ))}
                     </div>
                 </div>
+                {typeof document !== 'undefined'
+                    ? createPortal(
+                        <DragOverlay zIndex={1800}>
+                            {activeCard ? <ExploreBoardCardOverlay card={activeCard} trip={trip} /> : null}
+                        </DragOverlay>,
+                        document.body,
+                    )
+                    : null}
             </DndContext>
         </div>
     );

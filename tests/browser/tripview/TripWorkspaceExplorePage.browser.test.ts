@@ -202,4 +202,28 @@ describe('components/tripview/workspace/TripWorkspaceExplorePage', () => {
             status: 'shortlist',
         }));
     });
+
+    it('keeps board cards compact while preserving the drag handle on desktop', () => {
+        render(React.createElement(ExploreHarness, {
+            initialMode: 'board',
+            initialTrip: buildTrip({
+                activityBoard: [
+                    {
+                        id: 'explore-bangkok-talad-noi',
+                        title: 'Talat Noi canal and photo walk',
+                        cityItemId: 'city-bangkok',
+                        source: 'explore',
+                        status: 'shortlist',
+                        activityType: ['culture', 'sightseeing'],
+                        description: 'A strong first Bangkok half-day.',
+                        sortOrder: 0,
+                    },
+                ],
+            }),
+        }));
+
+        expect(screen.getByRole('button', { name: 'Drag activity card' })).toBeInTheDocument();
+        expect(screen.queryByText('A strong first Bangkok half-day.')).not.toBeInTheDocument();
+        expect(screen.getByText('Talat Noi canal and photo walk')).toBeInTheDocument();
+    });
 });

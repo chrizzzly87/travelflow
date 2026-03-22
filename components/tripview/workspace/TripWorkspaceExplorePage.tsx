@@ -97,41 +97,72 @@ export const TripWorkspaceExplorePage: React.FC<TripWorkspaceExplorePageProps> =
 
     return (
         <div className="flex flex-col gap-4">
-            <Card className={`border-border/80 shadow-sm ${isBoardMode ? 'bg-linear-to-br from-background via-background to-accent/6' : 'bg-linear-to-br from-accent/10 via-background to-sky-50'}`}>
-                <CardHeader className={isBoardMode ? 'gap-2' : 'gap-3'}>
-                    <CardDescription>Route-aware discovery and workflow</CardDescription>
-                    <CardTitle>Research what fits, then move strong activity ideas through the trip</CardTitle>
-                    <p className={`text-sm leading-6 text-muted-foreground ${isBoardMode ? 'max-w-2xl' : 'max-w-3xl'}`}>
-                        Explore still handles stays, events, and activity inspiration, but it now also owns the finer activity workflow with a board that tracks shortlist, planned, booked, and done.
-                    </p>
-                </CardHeader>
-                <CardContent className={`flex flex-col ${isBoardMode ? 'gap-3 pt-0' : 'gap-4'}`}>
-                    <div className={`flex ${isBoardMode ? 'flex-col gap-3 md:flex-row md:items-center md:justify-between' : 'flex-col gap-4'}`}>
-                        <Tabs value={mode} onValueChange={(value) => {
-                            trackEvent('trip_workspace__explore_mode--change', {
-                                trip_id: trip.id,
-                                mode: value,
-                            });
-                            onModeChange(value as 'discover' | 'board');
-                        }}>
-                            <TabsList className="grid w-full grid-cols-2 md:w-[20rem]">
-                                <TabsTrigger value="discover">
-                                    <Compass data-icon="inline-start" weight="duotone" />
-                                    {t('tripView.workspace.explore.modes.discover')}
-                                </TabsTrigger>
-                                <TabsTrigger value="board">
-                                    <Stack data-icon="inline-start" weight="duotone" />
-                                    {t('tripView.workspace.explore.modes.board')}
-                                </TabsTrigger>
-                            </TabsList>
-                        </Tabs>
-                        <div className="flex flex-wrap gap-2">
-                            <Badge variant="outline">{boardCards.filter((card) => card.status === 'shortlist').length} shortlisted activities</Badge>
-                            <Badge variant="secondary">{boardCards.filter((card) => card.status === 'booked').length} booked activities</Badge>
+            {isBoardMode ? (
+                <Card className="border-border/70 bg-card shadow-sm">
+                    <CardContent className="flex flex-col gap-3 px-4 py-3 md:flex-row md:items-center md:justify-between">
+                        <div className="flex flex-col gap-2">
+                            <Tabs value={mode} onValueChange={(value) => {
+                                trackEvent('trip_workspace__explore_mode--change', {
+                                    trip_id: trip.id,
+                                    mode: value,
+                                });
+                                onModeChange(value as 'discover' | 'board');
+                            }}>
+                                <TabsList className="grid w-full grid-cols-2 md:w-[20rem]">
+                                    <TabsTrigger value="discover">
+                                        <Compass data-icon="inline-start" weight="duotone" />
+                                        {t('tripView.workspace.explore.modes.discover')}
+                                    </TabsTrigger>
+                                    <TabsTrigger value="board">
+                                        <Stack data-icon="inline-start" weight="duotone" />
+                                        {t('tripView.workspace.explore.modes.board')}
+                                    </TabsTrigger>
+                                </TabsList>
+                            </Tabs>
                         </div>
-                    </div>
-                </CardContent>
-            </Card>
+                        <div className="flex flex-wrap gap-2">
+                            <Badge variant="outline">{boardCards.filter((card) => card.status === 'shortlist').length} shortlist</Badge>
+                            <Badge variant="secondary">{boardCards.filter((card) => card.status === 'booked').length} booked</Badge>
+                        </div>
+                    </CardContent>
+                </Card>
+            ) : (
+                <Card className="border-border/80 bg-linear-to-br from-accent/10 via-background to-sky-50 shadow-sm">
+                    <CardHeader className="gap-3">
+                        <CardDescription>Route-aware discovery and workflow</CardDescription>
+                        <CardTitle>Research what fits, then move strong activity ideas through the trip</CardTitle>
+                        <p className="max-w-3xl text-sm leading-6 text-muted-foreground">
+                            Explore still handles stays, events, and activity inspiration, but it now also owns the finer activity workflow with a board that tracks shortlist, planned, booked, and done.
+                        </p>
+                    </CardHeader>
+                    <CardContent className="flex flex-col gap-4">
+                        <div className="flex flex-col gap-4">
+                            <Tabs value={mode} onValueChange={(value) => {
+                                trackEvent('trip_workspace__explore_mode--change', {
+                                    trip_id: trip.id,
+                                    mode: value,
+                                });
+                                onModeChange(value as 'discover' | 'board');
+                            }}>
+                                <TabsList className="grid w-full grid-cols-2 md:w-[20rem]">
+                                    <TabsTrigger value="discover">
+                                        <Compass data-icon="inline-start" weight="duotone" />
+                                        {t('tripView.workspace.explore.modes.discover')}
+                                    </TabsTrigger>
+                                    <TabsTrigger value="board">
+                                        <Stack data-icon="inline-start" weight="duotone" />
+                                        {t('tripView.workspace.explore.modes.board')}
+                                    </TabsTrigger>
+                                </TabsList>
+                            </Tabs>
+                            <div className="flex flex-wrap gap-2">
+                                <Badge variant="outline">{boardCards.filter((card) => card.status === 'shortlist').length} shortlisted activities</Badge>
+                                <Badge variant="secondary">{boardCards.filter((card) => card.status === 'booked').length} booked activities</Badge>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
 
             {mode === 'board' ? (
                 <TripWorkspaceExploreBoard
