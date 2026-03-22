@@ -1,5 +1,6 @@
 import React, { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { Map as GoogleMap, useMap } from '@vis.gl/react-google-maps';
+import { useSearchParams } from 'react-router-dom';
 import {
     AirplaneTakeoff,
     ArrowsClockwise,
@@ -57,6 +58,7 @@ import {
 } from '../services/runtimeLocationService';
 import {
     getProfileCountryOptionByCode,
+    normalizeProfileCountryCode,
 } from '../services/profileCountryService';
 import {
     reverseGeocodeCountry,
@@ -110,6 +112,17 @@ type BulkScheduledServiceOption = 'leave' | 'enabled' | 'disabled';
 type BulkTimezoneMode = 'leave' | 'set' | 'clear';
 type AirportTableColumnId = 'code' | 'airport' | 'location' | 'tier' | 'type' | 'timezone';
 
+interface AdminAirportTesterFilters {
+    cityQuery: string;
+    latitudeInput: string;
+    longitudeInput: string;
+    limitInput: string;
+    minimumServiceTier: AirportCommercialServiceTier;
+    countryFilter: string;
+    sameCountryOnly: boolean;
+    lookupActive: boolean;
+}
+
 const AIRPORT_TABLE_PAGE_SIZE = 50;
 const ADMIN_AIRPORT_MAP_ID = 'admin-airports-map';
 const SERVICE_TIER_OPTIONS: Array<{ value: AirportCommercialServiceTier; label: string; helper: string }> = [
@@ -161,6 +174,30 @@ const AIRPORT_COLUMN_WIDTH_DEFAULT: Record<AirportTableColumnId, number> = {
     type: 130,
     timezone: 210,
 };
+
+const parseAirportTableTierFilter = (value: string | null): AirportTableTierFilter => (
+    value === 'major' || value === 'regional' || value === 'local' ? value : 'all'
+);
+
+const parseAirportCommercialServiceTier = (
+    value: string | null,
+    fallback: AirportCommercialServiceTier,
+): AirportCommercialServiceTier => (
+    value === 'major' || value === 'regional' || value === 'local' ? value : fallback
+);
+
+const parsePositivePage = (value: string | null): number => {
+    const parsed = Number.parseInt(value || '', 10);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+};
+
+const parseQueryBoolean = (value: string | null): boolean => (
+    value === '1' || value === 'true'
+);
+
+const buildAirportTesterFilterSignature = (filters: AdminAirportTesterFilters): string => (
+    `${filters.limitInput.trim()}|${filters.minimumServiceTier}|${filters.countryFilter}|${filters.sameCountryOnly ? '1' : '0'}`
+);
 
 const formatDateTime = (value: string | null | undefined): string => {
     if (!value) return '—';
@@ -497,26 +534,75 @@ const AdminAirportTestMapCanvas: React.FC<{
 };
 
 const AdminAirportTester: React.FC<{
+    filters: AdminAirportTesterFilters;
+    onFiltersChange: (patch: Partial<AdminAirportTesterFilters>) => void;
     onLookupContextChange?: (context: { origin: TesterOrigin | null; lookupResult: NearbyAirportsResponse | null }) => void;
-}> = ({ onLookupContextChange }) => {
+}> = ({ filters, onFiltersChange, onLookupContextChange }) => {
     const { isLoaded } = useGoogleMaps();
     const lookupRequestIdRef = useRef(0);
-    const [cityQuery, setCityQuery] = useState('');
+    const manualLookupInFlightRef = useRef(false);
     const [suggestions, setSuggestions] = useState<CityLookupSuggestion[]>([]);
     const [searchingSuggestions, setSearchingSuggestions] = useState(false);
-    const [origin, setOrigin] = useState<TesterOrigin | null>(null);
-    const [latitudeInput, setLatitudeInput] = useState('');
-    const [longitudeInput, setLongitudeInput] = useState('');
-    const [limitInput, setLimitInput] = useState('10');
-    const [minimumServiceTier, setMinimumServiceTier] = useState<AirportCommercialServiceTier>('regional');
-    const [countryFilter, setCountryFilter] = useState('');
-    const [sameCountryOnly, setSameCountryOnly] = useState(false);
+    const [origin, setOrigin] = useState<TesterOrigin | null>(() => {
+        const lat = Number(filters.latitudeInput);
+        const lng = Number(filters.longitudeInput);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+        return {
+            label: filters.cityQuery.trim() || `${lat.toFixed(4)}, ${lng.toFixed(4)}`,
+            lat,
+            lng,
+            countryCode: null,
+            countryName: null,
+        };
+    });
     const [lookupLoading, setLookupLoading] = useState(false);
     const [lookupError, setLookupError] = useState<string | null>(null);
     const [lookupResult, setLookupResult] = useState<NearbyAirportsResponse | null>(null);
+    const [lastLookupFilterSignature, setLastLookupFilterSignature] = useState('');
+    const filterSignature = useMemo(
+        () => buildAirportTesterFilterSignature(filters),
+        [filters],
+    );
+    const effectiveDisplayCountryCode = filters.sameCountryOnly
+        ? (origin?.countryCode || null)
+        : (filters.countryFilter || null);
+    const displayLookupResult = useMemo<NearbyAirportsResponse | null>(() => {
+        if (!lookupResult) return null;
+
+        const normalizedLimit = clampNearbyAirportLimit(Number(filters.limitInput));
+        const filteredAirports = lookupResult.airports
+            .filter((entry) => {
+                if (filters.sameCountryOnly && !origin?.countryCode) return false;
+                if (effectiveDisplayCountryCode && entry.airport.countryCode !== effectiveDisplayCountryCode) return false;
+                if (filters.minimumServiceTier === 'major') {
+                    return entry.airport.commercialServiceTier === 'major';
+                }
+                if (filters.minimumServiceTier === 'regional') {
+                    return entry.airport.commercialServiceTier !== 'local';
+                }
+                return true;
+            })
+            .slice(0, normalizedLimit)
+            .map((entry, index) => ({
+                ...entry,
+                rank: index + 1,
+            }));
+
+        return {
+            ...lookupResult,
+            airports: filteredAirports,
+        };
+    }, [
+        effectiveDisplayCountryCode,
+        filters.limitInput,
+        filters.minimumServiceTier,
+        filters.sameCountryOnly,
+        lookupResult,
+        origin?.countryCode,
+    ]);
 
     useEffect(() => {
-        const query = cityQuery.trim();
+        const query = filters.cityQuery.trim();
         if (!isLoaded || query.length < 2) {
             setSuggestions([]);
             setSearchingSuggestions(false);
@@ -536,7 +622,14 @@ const AdminAirportTester: React.FC<{
         }, 220);
 
         return () => window.clearTimeout(timeoutId);
-    }, [cityQuery, isLoaded]);
+    }, [filters.cityQuery, isLoaded]);
+
+    useEffect(() => {
+        onLookupContextChange?.({
+            origin,
+            lookupResult: displayLookupResult,
+        });
+    }, [displayLookupResult, onLookupContextChange, origin]);
 
     const selectOrigin = useCallback((label: string, lat: number, lng: number, countryCode?: string | null, countryName?: string | null) => {
         const nextOrigin = {
@@ -547,15 +640,14 @@ const AdminAirportTester: React.FC<{
             countryName: countryName || null,
         };
         setOrigin(nextOrigin);
-        setLatitudeInput(String(lat));
-        setLongitudeInput(String(lng));
+        onFiltersChange({
+            cityQuery: label,
+            latitudeInput: String(lat),
+            longitudeInput: String(lng),
+        });
         setLookupResult(null);
         setLookupError(null);
-        onLookupContextChange?.({
-            origin: nextOrigin,
-            lookupResult: null,
-        });
-    }, [onLookupContextChange]);
+    }, [onFiltersChange]);
 
     const handleUseRuntimeLocation = useCallback(async () => {
         const snapshot = await ensureRuntimeLocationLoaded();
@@ -571,7 +663,7 @@ const AdminAirportTester: React.FC<{
     }, [selectOrigin]);
 
     const handleResolveCity = useCallback(async () => {
-        const query = cityQuery.trim();
+        const query = filters.cityQuery.trim();
         if (!query) return;
         setLookupError(null);
         const resolved = await resolveCitySuggestion(query);
@@ -588,11 +680,11 @@ const AdminAirportTester: React.FC<{
             resolved.countryName || null,
         );
         setSuggestions([]);
-    }, [cityQuery, selectOrigin]);
+    }, [filters.cityQuery, selectOrigin]);
 
     const handleLookup = useCallback(async () => {
-        const lat = Number(latitudeInput);
-        const lng = Number(longitudeInput);
+        const lat = Number(filters.latitudeInput);
+        const lng = Number(filters.longitudeInput);
         if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
             setLookupError('Valid latitude and longitude are required.');
             return;
@@ -601,16 +693,16 @@ const AdminAirportTester: React.FC<{
         setLookupLoading(true);
         setLookupError(null);
         try {
-            let effectiveCountryCode = sameCountryOnly ? (origin?.countryCode || null) : (countryFilter || null);
+            let effectiveCountryCode = filters.sameCountryOnly ? (origin?.countryCode || null) : (filters.countryFilter || null);
             let nextOrigin = origin || {
-                label: `${lat.toFixed(4)}, ${lng.toFixed(4)}`,
+                label: filters.cityQuery.trim() || `${lat.toFixed(4)}, ${lng.toFixed(4)}`,
                 lat,
                 lng,
                 countryCode: null,
                 countryName: null,
             };
 
-            if (sameCountryOnly && !effectiveCountryCode) {
+            if (filters.sameCountryOnly && !effectiveCountryCode) {
                 const countryMatch = await reverseGeocodeCountry(lat, lng);
                 if (!countryMatch) {
                     throw new Error('Could not resolve an origin country from these coordinates. Pick a country manually or disable the same-country filter.');
@@ -626,22 +718,34 @@ const AdminAirportTester: React.FC<{
             const response = await fetchNearbyAirports({
                 lat,
                 lng,
-                limit: clampNearbyAirportLimit(Number(limitInput)),
-                minimumServiceTier,
+                limit: clampNearbyAirportLimit(Number(filters.limitInput)),
+                minimumServiceTier: filters.minimumServiceTier,
                 countryCode: effectiveCountryCode,
             });
             setLookupResult(response);
             setOrigin(nextOrigin);
-            onLookupContextChange?.({
-                origin: nextOrigin,
-                lookupResult: response,
-            });
+            setLastLookupFilterSignature(filterSignature);
         } catch (error) {
             setLookupError(error instanceof Error ? error.message : 'Airport lookup failed.');
         } finally {
             setLookupLoading(false);
+            manualLookupInFlightRef.current = false;
         }
-    }, [countryFilter, latitudeInput, limitInput, longitudeInput, minimumServiceTier, onLookupContextChange, origin, sameCountryOnly]);
+    }, [filterSignature, filters, origin]);
+
+    useEffect(() => {
+        const lat = Number(filters.latitudeInput);
+        const lng = Number(filters.longitudeInput);
+        if (manualLookupInFlightRef.current || !filters.lookupActive || lookupLoading || lookupResult) return;
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+        void handleLookup();
+    }, [filters.latitudeInput, filters.longitudeInput, filters.lookupActive, handleLookup, lookupLoading, lookupResult]);
+
+    useEffect(() => {
+        if (!filters.lookupActive || lookupLoading || !lookupResult) return;
+        if (lastLookupFilterSignature === filterSignature) return;
+        void handleLookup();
+    }, [filterSignature, filters.lookupActive, handleLookup, lastLookupFilterSignature, lookupLoading, lookupResult]);
 
     return (
         <AdminSurfaceCard className="space-y-4">
@@ -661,9 +765,11 @@ const AdminAirportTester: React.FC<{
                         <div className="relative">
                             <Input
                                 id="admin-airports-city-search"
-                                value={cityQuery}
+                                value={filters.cityQuery}
                                 onChange={(event) => {
-                                    setCityQuery(event.target.value);
+                                    onFiltersChange({
+                                        cityQuery: event.target.value,
+                                    });
                                     setLookupError(null);
                                 }}
                                 placeholder="Berlin, Germany"
@@ -718,8 +824,8 @@ const AdminAirportTester: React.FC<{
                                 id="admin-airports-latitude"
                                 type="number"
                                 step="0.000001"
-                                value={latitudeInput}
-                                onChange={(event) => setLatitudeInput(event.target.value)}
+                                value={filters.latitudeInput}
+                                onChange={(event) => onFiltersChange({ latitudeInput: event.target.value })}
                                 placeholder="52.5200"
                             />
                         </div>
@@ -729,8 +835,8 @@ const AdminAirportTester: React.FC<{
                                 id="admin-airports-longitude"
                                 type="number"
                                 step="0.000001"
-                                value={longitudeInput}
-                                onChange={(event) => setLongitudeInput(event.target.value)}
+                                value={filters.longitudeInput}
+                                onChange={(event) => onFiltersChange({ longitudeInput: event.target.value })}
                                 placeholder="13.4050"
                             />
                         </div>
@@ -739,7 +845,7 @@ const AdminAirportTester: React.FC<{
                     <div className="grid gap-3 sm:grid-cols-2">
                         <div className="space-y-2">
                             <div id="admin-airports-passenger-filter-label" className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Passenger Filter</div>
-                            <Select value={minimumServiceTier} onValueChange={(value) => setMinimumServiceTier(value as AirportCommercialServiceTier)}>
+                            <Select value={filters.minimumServiceTier} onValueChange={(value) => onFiltersChange({ minimumServiceTier: value as AirportCommercialServiceTier })}>
                                 <SelectTrigger aria-labelledby="admin-airports-passenger-filter-label" className="h-10">
                                     <SelectValue />
                                 </SelectTrigger>
@@ -752,7 +858,7 @@ const AdminAirportTester: React.FC<{
                                 </SelectContent>
                             </Select>
                             <p className="text-xs text-slate-500">
-                                {SERVICE_TIER_OPTIONS.find((option) => option.value === minimumServiceTier)?.helper}
+                                {SERVICE_TIER_OPTIONS.find((option) => option.value === filters.minimumServiceTier)?.helper}
                             </p>
                         </div>
                         <div className="space-y-2">
@@ -762,8 +868,8 @@ const AdminAirportTester: React.FC<{
                                 type="number"
                                 min={1}
                                 max={10}
-                                value={limitInput}
-                                onChange={(event) => setLimitInput(event.target.value)}
+                                value={filters.limitInput}
+                                onChange={(event) => onFiltersChange({ limitInput: event.target.value })}
                             />
                         </div>
                     </div>
@@ -771,20 +877,20 @@ const AdminAirportTester: React.FC<{
                     <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.95fr)]">
                         <div className="space-y-2">
                             <ProfileCountryRegionSelect
-                                value={countryFilter}
-                                disabled={sameCountryOnly}
+                                value={filters.countryFilter}
+                                disabled={filters.sameCountryOnly}
                                 ariaLabel="Nearby airport country filter"
                                 placeholder="All countries"
                                 emptyLabel="No matching countries"
                                 toggleLabel="Toggle airport country filter"
-                                onValueChange={(value) => setCountryFilter(value)}
+                                onValueChange={(value) => onFiltersChange({ countryFilter: value })}
                             />
                             <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
                                 <span>Filter nearby-airport results to one country.</span>
-                                {countryFilter && !sameCountryOnly && (
+                                {filters.countryFilter && !filters.sameCountryOnly && (
                                     <button
                                         type="button"
-                                        onClick={() => setCountryFilter('')}
+                                        onClick={() => onFiltersChange({ countryFilter: '' })}
                                         className="font-semibold text-slate-700 underline-offset-2 hover:underline"
                                     >
                                         Clear country filter
@@ -797,14 +903,14 @@ const AdminAirportTester: React.FC<{
                             <div>
                                 <div className="text-sm font-semibold text-slate-900">Same-country only</div>
                                 <div className="text-xs text-slate-500">
-                                    {sameCountryOnly
+                                    {filters.sameCountryOnly
                                         ? `Using ${origin?.countryName || origin?.countryCode || 'the origin country'} as the country filter.`
                                         : 'Keep results in the same country as the selected city or runtime location when possible.'}
                                 </div>
                             </div>
                             <Switch
-                                checked={sameCountryOnly}
-                                onCheckedChange={(checked) => setSameCountryOnly(Boolean(checked))}
+                                checked={filters.sameCountryOnly}
+                                onCheckedChange={(checked) => onFiltersChange({ sameCountryOnly: Boolean(checked) })}
                                 aria-label="Same-country only"
                             />
                         </div>
@@ -821,7 +927,13 @@ const AdminAirportTester: React.FC<{
                         </button>
                         <button
                             type="button"
-                            onClick={() => void handleLookup()}
+                            onClick={() => {
+                                if (!filters.lookupActive) {
+                                    onFiltersChange({ lookupActive: true });
+                                }
+                                manualLookupInFlightRef.current = true;
+                                void handleLookup();
+                            }}
                             disabled={lookupLoading}
                             className="inline-flex h-10 items-center gap-2 rounded-lg bg-accent-600 px-3 text-sm font-semibold text-white transition-colors hover:bg-accent-700 disabled:cursor-not-allowed disabled:opacity-70"
                         >
@@ -847,14 +959,14 @@ const AdminAirportTester: React.FC<{
                         </div>
                     )}
 
-                    {lookupResult && (
+                    {displayLookupResult && (
                         <div className="space-y-2 rounded-2xl border border-slate-200 bg-white p-3">
                             <div className="flex items-center justify-between gap-3">
                                 <div className="text-sm font-semibold text-slate-900">Nearest airports</div>
-                                <div className="text-xs text-slate-500">Data version {lookupResult.dataVersion}</div>
+                                <div className="text-xs text-slate-500">Data version {displayLookupResult.dataVersion}</div>
                             </div>
                             <div className="space-y-2">
-                                {lookupResult.airports.map((entry) => (
+                                {displayLookupResult.airports.map((entry) => (
                                     <div key={`${entry.airport.ident}-${entry.rank}`} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
                                         <div className="flex items-start justify-between gap-3">
                                             <div>
@@ -887,7 +999,7 @@ const AdminAirportTester: React.FC<{
                     )}
                 </div>
 
-                <AdminAirportTestMapCanvas origin={origin} result={lookupResult} />
+                <AdminAirportTestMapCanvas origin={origin} result={displayLookupResult} />
             </div>
         </AdminSurfaceCard>
     );
@@ -1418,6 +1530,7 @@ const AdminAirportTicketLab: React.FC<{
 
 export const AdminAirportsPage: React.FC = () => {
     const { confirm: confirmDialog } = useAppDialog();
+    const [searchParams, setSearchParams] = useSearchParams();
     const [catalog, setCatalog] = useState<AdminAirportCatalogResponse | null>(null);
     const [loading, setLoading] = useState(false);
     const [syncing, setSyncing] = useState(false);
@@ -1426,11 +1539,21 @@ export const AdminAirportsPage: React.FC = () => {
     const [deleting, setDeleting] = useState(false);
     const [bulkDeleting, setBulkDeleting] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
-    const [searchValue, setSearchValue] = useState('');
+    const [searchValue, setSearchValue] = useState(() => searchParams.get('q') || '');
     const deferredSearchValue = useDeferredValue(searchValue);
-    const [countryFilter, setCountryFilter] = useState('');
-    const [serviceTierFilter, setServiceTierFilter] = useState<AirportTableTierFilter>('all');
-    const [page, setPage] = useState(1);
+    const [countryFilter, setCountryFilter] = useState(() => normalizeProfileCountryCode(searchParams.get('country')));
+    const [serviceTierFilter, setServiceTierFilter] = useState<AirportTableTierFilter>(() => parseAirportTableTierFilter(searchParams.get('catalogTier')));
+    const [page, setPage] = useState(() => parsePositivePage(searchParams.get('page')));
+    const [testerFilters, setTesterFilters] = useState<AdminAirportTesterFilters>(() => ({
+        cityQuery: searchParams.get('nearbyCity') || '',
+        latitudeInput: searchParams.get('nearbyLat') || '',
+        longitudeInput: searchParams.get('nearbyLng') || '',
+        limitInput: searchParams.get('nearbyLimit') || '10',
+        minimumServiceTier: parseAirportCommercialServiceTier(searchParams.get('nearbyTier'), 'regional'),
+        countryFilter: normalizeProfileCountryCode(searchParams.get('nearbyCountry')),
+        sameCountryOnly: parseQueryBoolean(searchParams.get('nearbySameCountry')),
+        lookupActive: parseQueryBoolean(searchParams.get('nearbyLookup')),
+    }));
     const [selectedAirportIdents, setSelectedAirportIdents] = useState<Set<string>>(() => new Set());
     const [selectedAirportIdent, setSelectedAirportIdent] = useState<string | null>(null);
     const [editorDraft, setEditorDraft] = useState<AirportEditorDraft | null>(null);
@@ -1557,6 +1680,39 @@ export const AdminAirportsPage: React.FC = () => {
         }
     }, [page, safePage]);
 
+    useEffect(() => {
+        const next = new URLSearchParams();
+        const trimmedSearch = searchValue.trim();
+        const trimmedNearbyCity = testerFilters.cityQuery.trim();
+        const trimmedNearbyLat = testerFilters.latitudeInput.trim();
+        const trimmedNearbyLng = testerFilters.longitudeInput.trim();
+        const trimmedNearbyLimit = testerFilters.limitInput.trim();
+
+        if (trimmedSearch) next.set('q', trimmedSearch);
+        if (countryFilter) next.set('country', countryFilter);
+        if (serviceTierFilter !== 'all') next.set('catalogTier', serviceTierFilter);
+        if (safePage > 1) next.set('page', String(safePage));
+        if (trimmedNearbyCity) next.set('nearbyCity', trimmedNearbyCity);
+        if (trimmedNearbyLat) next.set('nearbyLat', trimmedNearbyLat);
+        if (trimmedNearbyLng) next.set('nearbyLng', trimmedNearbyLng);
+        if (trimmedNearbyLimit && trimmedNearbyLimit !== '10') next.set('nearbyLimit', trimmedNearbyLimit);
+        if (testerFilters.minimumServiceTier !== 'regional') next.set('nearbyTier', testerFilters.minimumServiceTier);
+        if (testerFilters.countryFilter) next.set('nearbyCountry', testerFilters.countryFilter);
+        if (testerFilters.sameCountryOnly) next.set('nearbySameCountry', '1');
+        if (testerFilters.lookupActive) next.set('nearbyLookup', '1');
+
+        if (next.toString() === searchParams.toString()) return;
+        setSearchParams(next, { replace: true });
+    }, [
+        countryFilter,
+        safePage,
+        searchParams,
+        searchValue,
+        serviceTierFilter,
+        setSearchParams,
+        testerFilters,
+    ]);
+
     const handleSelectAirport = useCallback(async (ident: string) => {
         if (ident === selectedAirportIdent) return;
         if (editorDirty) {
@@ -1579,6 +1735,13 @@ export const AdminAirportsPage: React.FC = () => {
     const handleTesterContextChange = useCallback((context: { origin: TesterOrigin | null; lookupResult: NearbyAirportsResponse | null }) => {
         setTicketTesterOrigin(context.origin);
         setTicketTesterResult(context.lookupResult);
+    }, []);
+
+    const handleTesterFiltersChange = useCallback((patch: Partial<AdminAirportTesterFilters>) => {
+        setTesterFilters((current) => ({
+            ...current,
+            ...patch,
+        }));
     }, []);
 
     const handleSearchValueChange = useCallback((value: string) => {
@@ -2100,7 +2263,11 @@ export const AdminAirportsPage: React.FC = () => {
 
                 <GoogleMapsLoader>
                     <div className="space-y-4">
-                        <AdminAirportTester onLookupContextChange={handleTesterContextChange} />
+                        <AdminAirportTester
+                            filters={testerFilters}
+                            onFiltersChange={handleTesterFiltersChange}
+                            onLookupContextChange={handleTesterContextChange}
+                        />
                         <AdminAirportTicketLab
                             catalogAirports={catalog?.airports || []}
                             origin={ticketTesterOrigin}

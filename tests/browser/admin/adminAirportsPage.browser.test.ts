@@ -3,6 +3,7 @@ import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 
 const mocks = vi.hoisted(() => ({
   adminBulkUpdateAirportCatalogRecords: vi.fn(),
@@ -19,12 +20,33 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('../../../components/admin/AdminShell', () => ({
-  AdminShell: ({ title, description, actions, children }: { title: string; description?: string; actions?: React.ReactNode; children: React.ReactNode }) => (
+  AdminShell: ({
+    title,
+    description,
+    actions,
+    children,
+    searchValue,
+    onSearchValueChange,
+  }: {
+    title: string;
+    description?: string;
+    actions?: React.ReactNode;
+    children: React.ReactNode;
+    searchValue?: string;
+    onSearchValueChange?: (value: string) => void;
+  }) => (
     React.createElement(
       'section',
       null,
       React.createElement('h1', null, title),
       description ? React.createElement('p', null, description) : null,
+      typeof searchValue === 'string'
+        ? React.createElement('input', {
+            'aria-label': 'Admin shell search',
+            value: searchValue,
+            onChange: (event: React.ChangeEvent<HTMLInputElement>) => onSearchValueChange?.(event.target.value),
+          })
+        : null,
       actions,
       children,
     )
@@ -75,6 +97,24 @@ vi.mock('../../../services/locationSearchService', () => ({
 }));
 
 import { AdminAirportsPage } from '../../../pages/AdminAirportsPage';
+
+const LocationSearchProbe: React.FC = () => {
+  const location = useLocation();
+  return React.createElement('output', { 'data-testid': 'location-search' }, location.search);
+};
+
+const renderAdminAirportsPage = (initialEntries: string[] = ['/admin/airports']) => (
+  render(
+    React.createElement(
+      MemoryRouter,
+      { initialEntries },
+      React.createElement(React.Fragment, null,
+        React.createElement(AdminAirportsPage),
+        React.createElement(LocationSearchProbe),
+      ),
+    ),
+  )
+);
 
 const buildAirport = (overrides?: Partial<Record<string, unknown>>) => ({
   ident: 'EDDB',
@@ -233,7 +273,7 @@ describe('AdminAirportsPage', () => {
 
   it('loads the airport catalog and lets admins save an edited row', async () => {
     const user = userEvent.setup();
-    render(React.createElement(AdminAirportsPage));
+    renderAdminAirportsPage();
 
     expect(await screen.findByText('Airport Catalog')).toBeInTheDocument();
     expect(await screen.findByDisplayValue('Berlin Brandenburg Airport')).toBeInTheDocument();
@@ -261,7 +301,7 @@ describe('AdminAirportsPage', () => {
 
   it('creates a new airport row from the admin editor', async () => {
     const user = userEvent.setup();
-    render(React.createElement(AdminAirportsPage));
+    renderAdminAirportsPage();
 
     expect(await screen.findByDisplayValue('Berlin Brandenburg Airport')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'New airport' }));
@@ -296,7 +336,7 @@ describe('AdminAirportsPage', () => {
 
   it('triggers the upstream sync action from the page', async () => {
     const user = userEvent.setup();
-    render(React.createElement(AdminAirportsPage));
+    renderAdminAirportsPage();
 
     expect(await screen.findByRole('button', { name: 'Sync from upstream' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Sync from upstream' }));
@@ -309,7 +349,7 @@ describe('AdminAirportsPage', () => {
 
   it('applies bulk edits to selected airports', async () => {
     const user = userEvent.setup();
-    render(React.createElement(AdminAirportsPage));
+    renderAdminAirportsPage();
 
     expect(await screen.findByRole('button', { name: 'Apply bulk edit' })).toBeInTheDocument();
 
@@ -334,7 +374,7 @@ describe('AdminAirportsPage', () => {
 
   it('deletes selected airport rows from the bulk editor', async () => {
     const user = userEvent.setup();
-    render(React.createElement(AdminAirportsPage));
+    renderAdminAirportsPage();
 
     expect(await screen.findByRole('button', { name: 'Delete selected' })).toBeInTheDocument();
 
@@ -348,7 +388,7 @@ describe('AdminAirportsPage', () => {
 
   it('renders a fake ticket preview from the nearby-airport lookup', async () => {
     const user = userEvent.setup();
-    render(React.createElement(AdminAirportsPage));
+    renderAdminAirportsPage();
 
     expect(await screen.findByRole('button', { name: 'Lookup nearby airports' })).toBeInTheDocument();
 
@@ -361,28 +401,95 @@ describe('AdminAirportsPage', () => {
     expect(screen.getAllByText('Berlin Brandenburg Airport').length).toBeGreaterThan(0);
   });
 
-  it('passes the same-country filter through to the nearby-airports lookup', async () => {
+  it('reruns the nearby-airport lookup when same-country filtering is enabled', async () => {
     const user = userEvent.setup();
-    render(React.createElement(AdminAirportsPage));
+    mocks.fetchNearbyAirports
+      .mockResolvedValueOnce({
+        origin: { lat: 52.52, lng: 13.405 },
+        dataVersion: '2026-03-21-4086',
+        airports: [
+          {
+            airport: buildAirport(),
+            airDistanceKm: 18.9,
+            rank: 1,
+          },
+          {
+            airport: buildAirport({
+              ident: 'LFPG',
+              iataCode: 'CDG',
+              icaoCode: 'LFPG',
+              name: 'Paris Charles de Gaulle Airport',
+              municipality: 'Paris',
+              subdivisionName: 'Ile-de-France',
+              regionCode: 'FR-IDF',
+              countryCode: 'FR',
+              countryName: 'France',
+              latitude: 49.0097,
+              longitude: 2.5479,
+            }),
+            airDistanceKm: 850.2,
+            rank: 2,
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        origin: { lat: 52.52, lng: 13.405 },
+        dataVersion: '2026-03-21-4086',
+        airports: [
+          {
+            airport: buildAirport(),
+            airDistanceKm: 18.9,
+            rank: 1,
+          },
+        ],
+      });
+    renderAdminAirportsPage();
 
     expect(await screen.findByRole('button', { name: 'Lookup nearby airports' })).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Use runtime location' }));
-    await user.click(screen.getByRole('switch', { name: 'Same-country only' }));
     await user.click(screen.getByRole('button', { name: 'Lookup nearby airports' }));
+    await waitFor(() => {
+      expect(mocks.fetchNearbyAirports).toHaveBeenCalledTimes(1);
+    });
+
+    await user.click(screen.getByRole('switch', { name: 'Same-country only' }));
 
     await waitFor(() => {
-      expect(mocks.fetchNearbyAirports).toHaveBeenCalledWith(expect.objectContaining({
+      expect(mocks.fetchNearbyAirports).toHaveBeenNthCalledWith(2, expect.objectContaining({
         countryCode: 'DE',
       }));
     });
+    expect(screen.getByTestId('location-search').textContent).toContain('nearbySameCountry=1');
   });
 
   it('renders resize handles for the airport table columns', async () => {
-    render(React.createElement(AdminAirportsPage));
+    renderAdminAirportsPage();
 
     expect(await screen.findByLabelText('Resize code column')).toBeInTheDocument();
     expect(screen.getByLabelText('Resize airport column')).toBeInTheDocument();
     expect(screen.getByLabelText('Resize timezone column')).toBeInTheDocument();
+  });
+
+  it('persists airport filters in the URL and restores nearby lookups on refresh', async () => {
+    renderAdminAirportsPage([
+      '/admin/airports?country=DE&catalogTier=major&nearbyCity=Berlin%2C%20Germany&nearbyLat=52.52&nearbyLng=13.405&nearbyLimit=3&nearbyTier=major&nearbySameCountry=1&nearbyLookup=1',
+    ]);
+
+    expect(await screen.findByDisplayValue('Germany')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Berlin, Germany')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('52.52')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('13.405')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(mocks.fetchNearbyAirports).toHaveBeenCalledWith(expect.objectContaining({
+        lat: 52.52,
+        lng: 13.405,
+        minimumServiceTier: 'major',
+      }));
+    });
+    expect(screen.getByTestId('location-search').textContent).toContain('country=DE');
+    expect(screen.getByTestId('location-search').textContent).toContain('catalogTier=major');
+    expect(screen.getByTestId('location-search').textContent).toContain('nearbySameCountry=1');
+    expect(screen.getByTestId('location-search').textContent).toContain('nearbyLookup=1');
   });
 });
