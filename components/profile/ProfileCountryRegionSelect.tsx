@@ -11,6 +11,7 @@ interface ProfileCountryRegionSelectProps {
     value: string;
     locale?: string;
     disabled?: boolean;
+    ariaLabel?: string;
     inputClassName?: string;
     placeholder?: string;
     emptyLabel?: string;
@@ -29,6 +30,7 @@ export const ProfileCountryRegionSelect: React.FC<ProfileCountryRegionSelectProp
     value,
     locale,
     disabled = false,
+    ariaLabel,
     inputClassName = '',
     placeholder = 'Search country or region',
     emptyLabel = 'No matches',
@@ -152,6 +154,7 @@ export const ProfileCountryRegionSelect: React.FC<ProfileCountryRegionSelectProp
                     aria-expanded={isOpen}
                     aria-controls={listboxId}
                     aria-autocomplete="list"
+                    aria-label={ariaLabel}
                     onFocus={handleInputFocus}
                     onChange={(event) => {
                         setSearch(event.target.value);

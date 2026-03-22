@@ -22,4 +22,11 @@ describe('admin navigation config', () => {
     expect(workerHealth?.path).toBe('/admin/ai-benchmark/worker-health');
     expect(workerHealth?.section).toBe('tools');
   });
+
+  it('includes airports entry in operations section', () => {
+    const airports = ADMIN_NAV_ITEMS.find((item) => item.id === 'airports');
+    expect(airports).toBeTruthy();
+    expect(airports?.path).toBe('/admin/airports');
+    expect(airports?.section).toBe('operations');
+  });
 });
