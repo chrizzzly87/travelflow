@@ -136,4 +136,18 @@ describe('pages/FeaturesPage', () => {
         expect(globe.className).not.toContain('aspect-[1.02/0.98]');
         expect(globe.className).not.toContain('min-h-[480px]');
     });
+
+    it('keeps the origin marker above the globe canvas', () => {
+        render(
+            <MemoryRouter initialEntries={['/features']}>
+                <FeaturesPage />
+            </MemoryRouter>
+        );
+
+        const globe = screen.getByRole('img', { name: featuresLocale.globe.accessibility });
+        const originMarkerLayer = globe.firstElementChild;
+
+        expect(originMarkerLayer).not.toBeNull();
+        expect(originMarkerLayer).toHaveClass('z-20');
+    });
 });
