@@ -204,6 +204,10 @@ const buildAirportTesterFilterSignature = (filters: AdminAirportTesterFilters): 
     `${filters.limitInput.trim()}|${filters.minimumServiceTier}|${filters.countryFilter}|${filters.sameCountryOnly ? '1' : '0'}`
 );
 
+const buildAirportTesterLookupAttemptSignature = (filters: AdminAirportTesterFilters): string => (
+    `${filters.latitudeInput.trim()}|${filters.longitudeInput.trim()}|${buildAirportTesterFilterSignature(filters)}`
+);
+
 const areTesterOriginsEqual = (left: TesterOrigin | null, right: TesterOrigin | null): boolean => {
     if (!left && !right) return true;
     if (!left || !right) return false;
@@ -626,8 +630,13 @@ const AdminAirportTester: React.FC<{
     const [lookupError, setLookupError] = useState<string | null>(null);
     const [lookupResult, setLookupResult] = useState<NearbyAirportsResponse | null>(null);
     const [lastLookupFilterSignature, setLastLookupFilterSignature] = useState('');
+    const [lastLookupAttemptSignature, setLastLookupAttemptSignature] = useState('');
     const filterSignature = useMemo(
         () => buildAirportTesterFilterSignature(filters),
+        [filters],
+    );
+    const lookupAttemptSignature = useMemo(
+        () => buildAirportTesterLookupAttemptSignature(filters),
         [filters],
     );
     const effectiveDisplayCountryCode = filters.sameCountryOnly
@@ -756,16 +765,20 @@ const AdminAirportTester: React.FC<{
         setSuggestions([]);
     }, [filters.cityQuery, selectOrigin]);
 
-    const handleLookup = useCallback(async () => {
+    const handleLookup = useCallback(async (options?: { force?: boolean }) => {
         const lat = Number(filters.latitudeInput);
         const lng = Number(filters.longitudeInput);
         if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
             setLookupError('Valid latitude and longitude are required.');
             return;
         }
+        if (!options?.force && lastLookupAttemptSignature === lookupAttemptSignature) {
+            return;
+        }
 
         setLookupLoading(true);
         setLookupError(null);
+        setLastLookupAttemptSignature(lookupAttemptSignature);
         try {
             let effectiveCountryCode = filters.sameCountryOnly ? (origin?.countryCode || null) : (filters.countryFilter || null);
             let nextOrigin = origin || {
@@ -800,26 +813,29 @@ const AdminAirportTester: React.FC<{
             setOrigin(nextOrigin);
             setLastLookupFilterSignature(filterSignature);
         } catch (error) {
+            setLookupResult(null);
             setLookupError(error instanceof Error ? error.message : 'Airport lookup failed.');
         } finally {
             setLookupLoading(false);
             manualLookupInFlightRef.current = false;
         }
-    }, [filterSignature, filters, origin]);
+    }, [filterSignature, filters, lastLookupAttemptSignature, lookupAttemptSignature, origin]);
 
     useEffect(() => {
         const lat = Number(filters.latitudeInput);
         const lng = Number(filters.longitudeInput);
         if (manualLookupInFlightRef.current || !filters.lookupActive || lookupLoading || lookupResult) return;
+        if (lastLookupAttemptSignature === lookupAttemptSignature) return;
         if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
         void handleLookup();
-    }, [filters.latitudeInput, filters.longitudeInput, filters.lookupActive, handleLookup, lookupLoading, lookupResult]);
+    }, [filters.latitudeInput, filters.longitudeInput, filters.lookupActive, handleLookup, lastLookupAttemptSignature, lookupAttemptSignature, lookupLoading, lookupResult]);
 
     useEffect(() => {
         if (!filters.lookupActive || lookupLoading || !lookupResult) return;
         if (lastLookupFilterSignature === filterSignature) return;
+        if (lastLookupAttemptSignature === lookupAttemptSignature) return;
         void handleLookup();
-    }, [filterSignature, filters.lookupActive, handleLookup, lastLookupFilterSignature, lookupLoading, lookupResult]);
+    }, [filterSignature, filters.lookupActive, handleLookup, lastLookupAttemptSignature, lastLookupFilterSignature, lookupAttemptSignature, lookupLoading, lookupResult]);
 
     return (
         <AdminSurfaceCard className="space-y-4">
@@ -1005,7 +1021,7 @@ const AdminAirportTester: React.FC<{
                                     onFiltersChange({ lookupActive: true });
                                 }
                                 manualLookupInFlightRef.current = true;
-                                void handleLookup();
+                                void handleLookup({ force: true });
                             }}
                             disabled={lookupLoading}
                             className="inline-flex h-10 items-center gap-2 rounded-lg bg-accent-600 px-3 text-sm font-semibold text-white transition-colors hover:bg-accent-700 disabled:cursor-not-allowed disabled:opacity-70"

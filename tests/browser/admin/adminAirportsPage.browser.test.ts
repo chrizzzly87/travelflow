@@ -494,6 +494,37 @@ describe('AdminAirportsPage', () => {
     });
   });
 
+  it('does not auto-retry a failed restored nearby-airport lookup until the user retries manually', async () => {
+    const user = userEvent.setup();
+    mocks.fetchNearbyAirports
+      .mockRejectedValueOnce(new Error('Nearby airports request failed with 500.'))
+      .mockResolvedValueOnce({
+        origin: { lat: 52.52, lng: 13.405 },
+        dataVersion: '2026-03-21-4086',
+        airports: [
+          {
+            airport: buildAirport(),
+            airDistanceKm: 18.9,
+            rank: 1,
+          },
+        ],
+      });
+
+    renderAdminAirportsPage();
+
+    expect(await screen.findByText('Nearby airports request failed with 500.')).toBeInTheDocument();
+    await new Promise((resolve) => window.setTimeout(resolve, 50));
+    expect(mocks.fetchNearbyAirports).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText('Nearest airports')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Lookup nearby airports' }));
+
+    await waitFor(() => {
+      expect(mocks.fetchNearbyAirports).toHaveBeenCalledTimes(2);
+    });
+    expect(await screen.findByText('Nearest airports')).toBeInTheDocument();
+  });
+
   it('persists airport filters in the URL and restores nearby lookups on refresh', async () => {
     renderAdminAirportsPage([
       '/admin/airports?country=DE&catalogTier=major&nearbyCity=Berlin%2C%20Germany&nearbyLat=52.52&nearbyLng=13.405&nearbyLimit=3&nearbySameCountry=1&nearbyLookup=1',
