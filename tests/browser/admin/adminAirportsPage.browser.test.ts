@@ -397,9 +397,12 @@ describe('AdminAirportsPage', () => {
     await user.click(screen.getByRole('button', { name: 'Lookup nearby airports' }));
 
     expect(await screen.findByText('Digital Boarding Pass')).toBeInTheDocument();
-    expect(screen.getByText('TravelFlow Air')).toBeInTheDocument();
+    expect(screen.getByText('Horizontal style')).toBeInTheDocument();
+    expect(screen.getAllByText('Vertical style').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('TravelFlow Air').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Alex Morgan').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Berlin Brandenburg Airport').length).toBeGreaterThan(0);
+    expect(screen.getAllByAltText('TravelFlow QR code').length).toBeGreaterThan(0);
   });
 
   it('renders a BER testing fallback before nearby-airport data arrives', async () => {
