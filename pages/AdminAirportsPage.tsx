@@ -1319,12 +1319,29 @@ const AdminAirportTicketLab: React.FC<{
         return next.toISOString().slice(0, 10);
     });
 
+    const fallbackDepartureOption = useMemo(() => {
+        if (nearbyResult) return null;
+        const berlinAirport = catalogAirports.find((airport) => airport.iataCode === 'BER' && airport.isCommercial)
+            || catalogAirports.find((airport) => airport.ident === 'EDDB' && airport.isCommercial)
+            || null;
+        return berlinAirport ? {
+            airport: berlinAirport,
+            airportAccessDistanceKm: null,
+            isFallback: true,
+        } : null;
+    }, [catalogAirports, nearbyResult]);
+
     const departureOptions = useMemo(
-        () => (nearbyResult?.airports || []).map((entry) => ({
-            airport: entry.airport,
-            airportAccessDistanceKm: entry.airDistanceKm,
-        })),
-        [nearbyResult],
+        () => {
+            const nearbyOptions = (nearbyResult?.airports || []).map((entry) => ({
+                airport: entry.airport,
+                airportAccessDistanceKm: entry.airDistanceKm,
+                isFallback: false,
+            }));
+            if (nearbyOptions.length > 0) return nearbyOptions;
+            return fallbackDepartureOption ? [fallbackDepartureOption] : [];
+        },
+        [fallbackDepartureOption, nearbyResult],
     );
 
     const selectedDeparture = useMemo(
@@ -1385,6 +1402,8 @@ const AdminAirportTicketLab: React.FC<{
         [ticket],
     );
 
+    const isUsingFallbackDeparture = Boolean(selectedDeparture?.isFallback);
+
     return (
         <AdminSurfaceCard className="space-y-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
@@ -1401,13 +1420,22 @@ const AdminAirportTicketLab: React.FC<{
                 )}
             </div>
 
-            {!nearbyResult && (
+            {!nearbyResult && fallbackDepartureOption && (
+                <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                    <div className="font-semibold text-amber-950">Testing fallback active</div>
+                    <div className="mt-1">
+                        Using Berlin Brandenburg Airport (BER) as the default ticket departure until you run a nearby-airport lookup.
+                    </div>
+                </div>
+            )}
+
+            {!nearbyResult && !fallbackDepartureOption && (
                 <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-500">
                     Run a nearby-airport lookup first, then this lab will use the closest commercial airport as the departure side of the fake ticket.
                 </div>
             )}
 
-            {nearbyResult && (
+            {ticket && (
                 <div className="grid gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(360px,1.1fr)]">
                     <div className="space-y-4">
                         <div className="grid gap-3 md:grid-cols-2">
@@ -1484,9 +1512,14 @@ const AdminAirportTicketLab: React.FC<{
                             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
                                 <div className="font-semibold text-slate-900">Departure context</div>
                                 <div className="mt-1">
-                                    {selectedDeparture.airport.name} · {selectedDeparture.airport.municipality || 'Unknown city'} · {formatDistance(selectedDeparture.airportAccessDistanceKm)}
+                                    {selectedDeparture.airport.name} · {selectedDeparture.airport.municipality || 'Unknown city'}
+                                    {selectedDeparture.airportAccessDistanceKm !== null ? ` · ${formatDistance(selectedDeparture.airportAccessDistanceKm)}` : ''}
                                 </div>
-                                {origin && (
+                                {isUsingFallbackDeparture ? (
+                                    <div className="mt-1 text-xs text-slate-500">
+                                        BER stays available as a reliable test fallback until a nearby lookup runs.
+                                    </div>
+                                ) : origin && (
                                     <div className="mt-1 text-xs text-slate-500">
                                         Based on {origin.label}
                                     </div>
@@ -1495,168 +1528,170 @@ const AdminAirportTicketLab: React.FC<{
                         )}
                     </div>
 
-                    {ticket && (
-                        <div className="relative overflow-hidden rounded-[32px] border border-slate-200 bg-[radial-gradient(circle_at_top_left,rgba(241,245,249,0.95),rgba(255,255,255,0.98)_38%,rgba(248,250,252,1)_100%)] shadow-[0_28px_80px_rgba(15,23,42,0.12)]">
-                            <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-[linear-gradient(90deg,rgba(15,23,42,0.95),rgba(30,41,59,0.92))]" />
-                            <div className="pointer-events-none absolute -top-7 right-8 font-heading text-[clamp(2.6rem,7vw,5.8rem)] font-black italic tracking-[-0.08em] text-slate-100/80">
-                                boarding pass
-                            </div>
-                            <div className="relative grid min-h-[520px] gap-0 md:min-h-[420px] md:grid-cols-[minmax(0,1fr)_208px]">
-                                <div className="relative overflow-hidden px-6 pb-6 pt-24 md:px-7">
-                                    <div className="flex items-start justify-between gap-4">
-                                        <div>
-                                            <div className="text-[11px] font-semibold uppercase tracking-[0.32em] text-slate-400">Digital Boarding Pass</div>
-                                            <div className="font-heading mt-3 text-2xl font-black tracking-[-0.04em] text-slate-950">{ticket.airlineName}</div>
+                    <div className="relative overflow-hidden rounded-[32px] border border-slate-200 bg-[radial-gradient(circle_at_top_left,rgba(241,245,249,0.95),rgba(255,255,255,0.98)_38%,rgba(248,250,252,1)_100%)] shadow-[0_28px_80px_rgba(15,23,42,0.12)]">
+                        <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-[linear-gradient(90deg,rgba(15,23,42,0.95),rgba(30,41,59,0.92))]" />
+                        <div className="pointer-events-none absolute -top-7 right-8 font-heading text-[clamp(2.6rem,7vw,5.8rem)] font-black italic tracking-[-0.08em] text-slate-100/80">
+                            boarding pass
+                        </div>
+                        <div className="relative grid min-h-[520px] gap-0 md:min-h-[420px] md:grid-cols-[minmax(0,1fr)_208px]">
+                            <div className="relative overflow-hidden px-6 pb-6 pt-24 md:px-7">
+                                <div className="flex items-start justify-between gap-4">
+                                    <div>
+                                        <div className="text-[11px] font-semibold uppercase tracking-[0.32em] text-slate-400">Digital Boarding Pass</div>
+                                        <div className="font-heading mt-3 text-2xl font-black tracking-[-0.04em] text-slate-950">{ticket.airlineName}</div>
+                                    </div>
+                                    <div className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 shadow-sm">
+                                        {ticket.flightNumber}
+                                    </div>
+                                </div>
+
+                                <div className="mt-10 grid items-end gap-4 md:grid-cols-[minmax(0,1fr)_80px_minmax(0,1fr)]">
+                                    <div>
+                                        <div className="font-heading text-[clamp(4.1rem,14vw,6.9rem)] font-black italic leading-none tracking-[-0.1em] text-slate-950">
+                                            {ticket.departureAirport.iataCode || ticket.departureAirport.ident}
                                         </div>
-                                        <div className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 shadow-sm">
-                                            {ticket.flightNumber}
+                                        <div className="mt-3 text-base font-medium text-slate-500">
+                                            {formatAirportTicketLocationLabel(ticket.departureAirport)}
                                         </div>
                                     </div>
-
-                                    <div className="mt-10 grid items-end gap-4 md:grid-cols-[minmax(0,1fr)_80px_minmax(0,1fr)]">
-                                        <div>
-                                            <div className="font-heading text-[clamp(4.1rem,14vw,6.9rem)] font-black italic leading-none tracking-[-0.1em] text-slate-950">
-                                                {ticket.departureAirport.iataCode || ticket.departureAirport.ident}
-                                            </div>
-                                            <div className="mt-3 text-base font-medium text-slate-500">
-                                                {formatAirportTicketLocationLabel(ticket.departureAirport)}
-                                            </div>
-                                        </div>
-                                        <div className="flex flex-col items-center justify-center gap-3 pb-4 text-slate-300">
-                                            <div className="h-px w-full bg-slate-200" />
-                                            <div className="text-3xl font-black">✈</div>
-                                            <div className="h-px w-full bg-slate-200" />
-                                        </div>
-                                        <div className="text-left md:text-right">
-                                            <div className="font-heading text-[clamp(4.1rem,14vw,6.9rem)] font-black italic leading-none tracking-[-0.1em] text-slate-950">
-                                                {ticket.arrivalAirport.iataCode || ticket.arrivalAirport.ident}
-                                            </div>
-                                            <div className="mt-3 text-base font-medium text-slate-500">
-                                                {formatAirportTicketLocationLabel(ticket.arrivalAirport)}
-                                            </div>
-                                        </div>
+                                    <div className="flex flex-col items-center justify-center gap-3 pb-4 text-slate-300">
+                                        <div className="h-px w-full bg-slate-200" />
+                                        <div className="text-3xl font-black">✈</div>
+                                        <div className="h-px w-full bg-slate-200" />
                                     </div>
-
-                                    <div className="mt-10 grid gap-4 border-t border-slate-200 pt-5 sm:grid-cols-2 xl:grid-cols-5">
-                                        <div>
-                                            <div className="text-[10px] font-semibold uppercase tracking-[0.26em] text-slate-400">Passenger</div>
-                                            <div className="mt-2 text-lg font-black tracking-[-0.03em] text-slate-950">{ticket.passengerName}</div>
+                                    <div className="text-left md:text-right">
+                                        <div className="font-heading text-[clamp(4.1rem,14vw,6.9rem)] font-black italic leading-none tracking-[-0.1em] text-slate-950">
+                                            {ticket.arrivalAirport.iataCode || ticket.arrivalAirport.ident}
                                         </div>
-                                        <div>
-                                            <div className="text-[10px] font-semibold uppercase tracking-[0.26em] text-slate-400">Date</div>
-                                            <div className="mt-2 text-lg font-black tracking-[-0.03em] text-slate-950">{ticket.departureDateLabel}</div>
-                                        </div>
-                                        <div>
-                                            <div className="text-[10px] font-semibold uppercase tracking-[0.26em] text-slate-400">Boarding</div>
-                                            <div className="mt-2 text-[1.65rem] font-black leading-none tracking-[-0.05em] text-slate-950">{ticket.boardingTimeLabel}</div>
-                                        </div>
-                                        <div>
-                                            <div className="text-[10px] font-semibold uppercase tracking-[0.26em] text-slate-400">Gate</div>
-                                            <div className="mt-2 text-[1.65rem] font-black leading-none tracking-[-0.05em] text-slate-950">{ticket.gate}</div>
-                                        </div>
-                                        <div>
-                                            <div className="text-[10px] font-semibold uppercase tracking-[0.26em] text-slate-400">Seat</div>
-                                            <div className="mt-2 text-[1.65rem] font-black leading-none tracking-[-0.05em] text-slate-950">{ticket.seat}</div>
-                                        </div>
-                                    </div>
-
-                                    <div className="mt-8 rounded-[26px] border border-slate-200 bg-slate-50/80 px-4 py-4">
-                                        <div className="flex flex-wrap items-center justify-between gap-3 text-[10px] font-semibold uppercase tracking-[0.24em] text-slate-400">
-                                            <span>{ticket.ticketNumber}</span>
-                                            <span>{ticket.bookingReference}</span>
-                                        </div>
-                                        <div className="mt-4 flex h-24 items-end gap-[3px]" aria-hidden="true">
-                                            {ticketBarcodeBars.map((bar) => (
-                                                <span
-                                                    key={bar.id}
-                                                    className={cn(
-                                                        'block rounded-[1px]',
-                                                        bar.muted ? 'bg-slate-500/80' : 'bg-slate-950',
-                                                    )}
-                                                    style={{
-                                                        width: `${bar.width}px`,
-                                                        height: `${bar.heightPercent}%`,
-                                                    }}
-                                                />
-                                            ))}
+                                        <div className="mt-3 text-base font-medium text-slate-500">
+                                            {formatAirportTicketLocationLabel(ticket.arrivalAirport)}
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="relative bg-[linear-gradient(180deg,#0f172a_0%,#111827_100%)] px-5 pb-6 pt-8 text-white">
-                                    <div className="absolute inset-y-8 left-0 hidden w-px border-l border-dashed border-white/25 md:block" />
-                                    <div className="absolute -left-3 top-14 hidden h-6 w-6 rounded-full bg-white shadow-[0_0_0_1px_rgba(148,163,184,0.28)] md:block" />
-                                    <div className="absolute -left-3 bottom-14 hidden h-6 w-6 rounded-full bg-white shadow-[0_0_0_1px_rgba(148,163,184,0.28)] md:block" />
-                                    <div className="text-[10px] font-semibold uppercase tracking-[0.28em] text-slate-400">Boarding Stub</div>
-                                    <div className="font-heading mt-6 text-5xl font-black italic leading-none tracking-[-0.12em] text-white">
-                                        {ticket.arrivalAirport.iataCode || ticket.arrivalAirport.ident}
+                                <div className="mt-10 grid gap-4 border-t border-slate-200 pt-5 sm:grid-cols-2 xl:grid-cols-5">
+                                    <div>
+                                        <div className="text-[10px] font-semibold uppercase tracking-[0.26em] text-slate-400">Passenger</div>
+                                        <div className="mt-2 text-lg font-black tracking-[-0.03em] text-slate-950">{ticket.passengerName}</div>
                                     </div>
-                                    <div className="mt-2 text-sm text-slate-300">
-                                        {ticket.arrivalAirport.name}
+                                    <div>
+                                        <div className="text-[10px] font-semibold uppercase tracking-[0.26em] text-slate-400">Date</div>
+                                        <div className="mt-2 text-lg font-black tracking-[-0.03em] text-slate-950">{ticket.departureDateLabel}</div>
                                     </div>
+                                    <div>
+                                        <div className="text-[10px] font-semibold uppercase tracking-[0.26em] text-slate-400">Boarding</div>
+                                        <div className="mt-2 text-[1.65rem] font-black leading-none tracking-[-0.05em] text-slate-950">{ticket.boardingTimeLabel}</div>
+                                    </div>
+                                    <div>
+                                        <div className="text-[10px] font-semibold uppercase tracking-[0.26em] text-slate-400">Gate</div>
+                                        <div className="mt-2 text-[1.65rem] font-black leading-none tracking-[-0.05em] text-slate-950">{ticket.gate}</div>
+                                    </div>
+                                    <div>
+                                        <div className="text-[10px] font-semibold uppercase tracking-[0.26em] text-slate-400">Seat</div>
+                                        <div className="mt-2 text-[1.65rem] font-black leading-none tracking-[-0.05em] text-slate-950">{ticket.seat}</div>
+                                    </div>
+                                </div>
 
-                                    <div className="mt-8 space-y-5">
-                                        <div>
-                                            <div className="text-[10px] font-semibold uppercase tracking-[0.26em] text-slate-500">Passenger</div>
-                                            <div className="mt-2 text-lg font-black tracking-[-0.03em]">{ticket.passengerName}</div>
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div>
-                                                <div className="text-[10px] font-semibold uppercase tracking-[0.26em] text-slate-500">Seat</div>
-                                                <div className="mt-2 text-2xl font-black tracking-[-0.05em]">{ticket.seat}</div>
-                                            </div>
-                                            <div>
-                                                <div className="text-[10px] font-semibold uppercase tracking-[0.26em] text-slate-500">Gate</div>
-                                                <div className="mt-2 text-2xl font-black tracking-[-0.05em]">{ticket.gate}</div>
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <div className="text-[10px] font-semibold uppercase tracking-[0.26em] text-slate-500">Boarding</div>
-                                            <div className="mt-2 text-2xl font-black tracking-[-0.05em]">{ticket.boardingTimeLabel}</div>
-                                        </div>
-                                        <div>
-                                            <div className="text-[10px] font-semibold uppercase tracking-[0.26em] text-slate-500">Cabin</div>
-                                            <div className="mt-2 text-base font-black uppercase tracking-[0.18em] text-slate-200">{formatCabinClassLabel(ticket.cabinClass)}</div>
-                                        </div>
+                                <div className="mt-8 rounded-[26px] border border-slate-200 bg-slate-50/80 px-4 py-4">
+                                    <div className="flex flex-wrap items-center justify-between gap-3 text-[10px] font-semibold uppercase tracking-[0.24em] text-slate-400">
+                                        <span>{ticket.ticketNumber}</span>
+                                        <span>{ticket.bookingReference}</span>
                                     </div>
-
-                                    <div className="mt-8 border-t border-white/10 pt-5">
-                                        <div className="text-[10px] font-semibold uppercase tracking-[0.26em] text-slate-500">Route</div>
-                                        <div className="mt-2 text-sm font-semibold tracking-[0.18em] text-slate-200">
-                                            {(ticket.departureAirport.iataCode || ticket.departureAirport.ident)} → {(ticket.arrivalAirport.iataCode || ticket.arrivalAirport.ident)}
-                                        </div>
-                                        <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-[11px] text-slate-300">
-                                            Fake preview only. Powered by nearby commercial airport data.
-                                        </div>
+                                    <div className="mt-4 flex h-24 items-end gap-[3px]" aria-hidden="true">
+                                        {ticketBarcodeBars.map((bar) => (
+                                            <span
+                                                key={bar.id}
+                                                className={cn(
+                                                    'block rounded-[1px]',
+                                                    bar.muted ? 'bg-slate-500/80' : 'bg-slate-950',
+                                                )}
+                                                style={{
+                                                    width: `${bar.width}px`,
+                                                    height: `${bar.heightPercent}%`,
+                                                }}
+                                            />
+                                        ))}
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="border-t border-slate-200 bg-slate-50/90 px-6 py-4 text-sm text-slate-600">
-                                <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                                    <span className="font-semibold text-slate-900">
-                                        Closest airport:
-                                    </span>
-                                    <span>{ticket.departureAirport.name}</span>
-                                    <span className="text-slate-400">•</span>
-                                    <span>{ticket.durationLabel}</span>
-                                    <span className="text-slate-400">•</span>
-                                    <span>{formatDistance(ticket.routeDistanceKm)}</span>
-                                    {ticket.airportAccessDistanceKm !== null && (
-                                        <>
-                                            <span className="text-slate-400">•</span>
-                                            <span>{formatDistance(ticket.airportAccessDistanceKm)} from origin</span>
-                                        </>
-                                    )}
+                            <div className="relative bg-[linear-gradient(180deg,#0f172a_0%,#111827_100%)] px-5 pb-6 pt-8 text-white">
+                                <div className="absolute inset-y-8 left-0 hidden w-px border-l border-dashed border-white/25 md:block" />
+                                <div className="absolute -left-3 top-14 hidden h-6 w-6 rounded-full bg-white shadow-[0_0_0_1px_rgba(148,163,184,0.28)] md:block" />
+                                <div className="absolute -left-3 bottom-14 hidden h-6 w-6 rounded-full bg-white shadow-[0_0_0_1px_rgba(148,163,184,0.28)] md:block" />
+                                <div className="text-[10px] font-semibold uppercase tracking-[0.28em] text-slate-400">Boarding Stub</div>
+                                <div className="font-heading mt-6 text-5xl font-black italic leading-none tracking-[-0.12em] text-white">
+                                    {ticket.arrivalAirport.iataCode || ticket.arrivalAirport.ident}
                                 </div>
-                                {ticket.originLabel && (
-                                    <div className="mt-1 text-xs uppercase tracking-[0.18em] text-slate-400">
-                                        Based on {ticket.originLabel}
+                                <div className="mt-2 text-sm text-slate-300">
+                                    {ticket.arrivalAirport.name}
+                                </div>
+
+                                <div className="mt-8 space-y-5">
+                                    <div>
+                                        <div className="text-[10px] font-semibold uppercase tracking-[0.26em] text-slate-500">Passenger</div>
+                                        <div className="mt-2 text-lg font-black tracking-[-0.03em]">{ticket.passengerName}</div>
                                     </div>
-                                )}
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <div className="text-[10px] font-semibold uppercase tracking-[0.26em] text-slate-500">Seat</div>
+                                            <div className="mt-2 text-2xl font-black tracking-[-0.05em]">{ticket.seat}</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-[10px] font-semibold uppercase tracking-[0.26em] text-slate-500">Gate</div>
+                                            <div className="mt-2 text-2xl font-black tracking-[-0.05em]">{ticket.gate}</div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div className="text-[10px] font-semibold uppercase tracking-[0.26em] text-slate-500">Boarding</div>
+                                        <div className="mt-2 text-2xl font-black tracking-[-0.05em]">{ticket.boardingTimeLabel}</div>
+                                    </div>
+                                    <div>
+                                        <div className="text-[10px] font-semibold uppercase tracking-[0.26em] text-slate-500">Cabin</div>
+                                        <div className="mt-2 text-base font-black uppercase tracking-[0.18em] text-slate-200">{formatCabinClassLabel(ticket.cabinClass)}</div>
+                                    </div>
+                                </div>
+
+                                <div className="mt-8 border-t border-white/10 pt-5">
+                                    <div className="text-[10px] font-semibold uppercase tracking-[0.26em] text-slate-500">Route</div>
+                                    <div className="mt-2 text-sm font-semibold tracking-[0.18em] text-slate-200">
+                                        {(ticket.departureAirport.iataCode || ticket.departureAirport.ident)} → {(ticket.arrivalAirport.iataCode || ticket.arrivalAirport.ident)}
+                                    </div>
+                                    <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-[11px] text-slate-300">
+                                        Fake preview only. Powered by nearby commercial airport data.
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    )}
+
+                        <div className="border-t border-slate-200 bg-slate-50/90 px-6 py-4 text-sm text-slate-600">
+                            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                                <span className="font-semibold text-slate-900">
+                                    {isUsingFallbackDeparture ? 'Testing airport:' : 'Closest airport:'}
+                                </span>
+                                <span>{ticket.departureAirport.name}</span>
+                                <span className="text-slate-400">•</span>
+                                <span>{ticket.durationLabel}</span>
+                                <span className="text-slate-400">•</span>
+                                <span>{formatDistance(ticket.routeDistanceKm)}</span>
+                                {ticket.airportAccessDistanceKm !== null && (
+                                    <>
+                                        <span className="text-slate-400">•</span>
+                                        <span>{formatDistance(ticket.airportAccessDistanceKm)} from origin</span>
+                                    </>
+                                )}
+                            </div>
+                            {isUsingFallbackDeparture ? (
+                                <div className="mt-1 text-xs uppercase tracking-[0.18em] text-slate-400">
+                                    BER fallback stays visible until you run a nearby-airport lookup
+                                </div>
+                            ) : ticket.originLabel && (
+                                <div className="mt-1 text-xs uppercase tracking-[0.18em] text-slate-400">
+                                    Based on {ticket.originLabel}
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 </div>
             )}
         </AdminSurfaceCard>

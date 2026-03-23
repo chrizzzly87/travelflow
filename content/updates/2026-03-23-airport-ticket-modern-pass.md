@@ -13,3 +13,4 @@ summary: "Refines the admin airport ticket lab with a cleaner, more modern board
 ## Changes
 - [ ] [Internal] 🎫 Reworked the admin fake boarding pass into a cleaner preview with oversized route codes, a simplified information layout, and a more realistic detachable stub.
 - [ ] [Internal] 🔤 Shifted the ticket styling toward bold headline typography and a restrained visual system so the airport preview feels more premium and easier to scan.
+- [ ] [Internal] 🛫 Added a deterministic BER testing fallback so the ticket lab still renders a useful preview before the first nearby-airport lookup runs.

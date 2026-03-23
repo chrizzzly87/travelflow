@@ -402,6 +402,16 @@ describe('AdminAirportsPage', () => {
     expect(screen.getAllByText('Berlin Brandenburg Airport').length).toBeGreaterThan(0);
   });
 
+  it('renders a BER testing fallback before nearby-airport data arrives', async () => {
+    mocks.fetchNearbyAirports.mockImplementation(() => new Promise(() => undefined));
+    renderAdminAirportsPage();
+
+    expect(await screen.findByText('Testing fallback active')).toBeInTheDocument();
+    expect(screen.getByText('Using Berlin Brandenburg Airport (BER) as the default ticket departure until you run a nearby-airport lookup.')).toBeInTheDocument();
+    expect(screen.getByText('Digital Boarding Pass')).toBeInTheDocument();
+    expect(screen.getAllByText('Berlin Brandenburg Airport').length).toBeGreaterThan(0);
+  });
+
   it('reruns the nearby-airport lookup when same-country filtering is enabled', async () => {
     const user = userEvent.setup();
     mocks.fetchNearbyAirports
