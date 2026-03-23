@@ -77,6 +77,7 @@ import {
 } from '../shared/airportReference';
 import {
     buildFakeAirportTicket,
+    type FakeAirportTicket,
     type FakeAirportTicketCabinClass,
 } from '../shared/fakeAirportTicket';
 
@@ -309,6 +310,230 @@ const formatCabinClassLabel = (cabinClass: FakeAirportTicketCabinClass): string 
     if (cabinClass === 'first') return 'First';
     if (cabinClass === 'business') return 'Business';
     return 'Economy';
+};
+
+const formatAirportTicketLocationLabel = (airport: AirportReference): string => (
+    [airport.municipality, airport.countryName].filter(Boolean).join(', ') || airport.name
+);
+
+const TICKET_QR_FALLBACK_DOMAIN = 'https://travelflowapp.netlify.app';
+
+const buildTicketBarcodeBars = (token: string): Array<{ id: string; width: number; muted: boolean }> => {
+    const normalized = token.replace(/[^A-Z0-9]/gi, '').toUpperCase() || 'TRAVELFLOW';
+    return Array.from({ length: 64 }, (_, index) => {
+        const charCode = normalized.charCodeAt(index % normalized.length);
+        return {
+            id: `ticket-bar-${index}`,
+            width: 1 + (charCode % 3),
+            muted: index % 9 === 0,
+        };
+    });
+};
+
+const buildTicketQrCodeUrl = (url: string): string => (
+    `https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=0&data=${encodeURIComponent(url)}`
+);
+
+const formatTicketMetaValue = (value: string): string => value.replace(/\s+/g, ' ').trim();
+
+const TICKET_CARD_SHADOW = 'shadow-[0_1px_0_rgba(255,255,255,0.72)_inset,0_30px_50px_-36px_rgba(15,23,42,0.46),0_14px_28px_-18px_rgba(15,23,42,0.18),0_0_0_1px_rgba(148,163,184,0.1)]';
+
+const TicketRouteLine: React.FC<{ vertical?: boolean }> = ({ vertical = false }) => {
+    if (vertical) {
+        return (
+            <div className="relative flex h-24 items-center justify-center" aria-hidden="true">
+                <div className="absolute bottom-0 left-1/2 top-0 w-px -translate-x-1/2 bg-slate-300" />
+                <span className="absolute left-1/2 top-1/2 inline-flex h-9 w-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-800 shadow-[0_8px_18px_-14px_rgba(15,23,42,0.45)]">
+                    <AirplaneTakeoff size={18} weight="fill" className="-rotate-90" />
+                </span>
+            </div>
+        );
+    }
+
+    return (
+        <div className="relative flex h-12 items-center justify-center" aria-hidden="true">
+            <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-slate-300" />
+            <span className="absolute left-1/2 top-1/2 inline-flex h-9 w-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-800 shadow-[0_8px_18px_-14px_rgba(15,23,42,0.45)]">
+                <AirplaneTakeoff size={18} weight="fill" />
+            </span>
+        </div>
+    );
+};
+
+const TicketMetaPill: React.FC<{
+    label: string;
+    value: string;
+}> = ({ label, value }) => (
+    <div className="min-w-0 space-y-1">
+        <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400">{label}</div>
+        <div
+            className="font-heading truncate text-[1.05rem] font-black tracking-[-0.04em] text-slate-950"
+            title={formatTicketMetaValue(value)}
+        >
+            {formatTicketMetaValue(value)}
+        </div>
+    </div>
+);
+
+const TicketBarcode: React.FC<{
+    bars: Array<{ id: string; width: number; muted: boolean }>;
+}> = ({ bars }) => (
+    <div className="overflow-hidden rounded-[10px] border border-slate-200 bg-white px-3 py-3">
+        <div className="flex h-[84px] items-stretch gap-px" aria-hidden="true">
+            {bars.map((bar) => (
+                <span
+                    key={bar.id}
+                    className={cn('block h-full', bar.muted ? 'bg-slate-500/65' : 'bg-slate-950')}
+                    style={{ width: `${bar.width}px` }}
+                />
+            ))}
+        </div>
+    </div>
+);
+
+const TicketQrBadge: React.FC<{
+    qrCodeUrl: string;
+}> = ({ qrCodeUrl }) => (
+    <div className="flex flex-col items-center gap-2 rounded-[10px] border border-slate-200 bg-white px-3 py-3">
+        <img
+            src={qrCodeUrl}
+            alt="TravelFlow QR code"
+            className="h-20 w-20 rounded-[8px] border border-slate-200 bg-slate-50 object-cover"
+            draggable={false}
+        />
+        <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Scan</div>
+    </div>
+);
+
+const AirportTicketPreviewCard: React.FC<{
+    ticket: FakeAirportTicket;
+    barcodeBars: Array<{ id: string; width: number; muted: boolean }>;
+    qrCodeUrl: string;
+    variant: 'horizontal' | 'vertical';
+    isUsingFallbackDeparture: boolean;
+}> = ({ ticket, barcodeBars, qrCodeUrl, variant, isUsingFallbackDeparture }) => {
+    const isVertical = variant === 'vertical';
+    const departureCode = ticket.departureAirport.iataCode || ticket.departureAirport.ident;
+    const arrivalCode = ticket.arrivalAirport.iataCode || ticket.arrivalAirport.ident;
+    const footerStatusLabel = isUsingFallbackDeparture ? 'BER default' : 'Live airport';
+
+    if (isVertical) {
+        return (
+            <div className={cn('select-none overflow-hidden rounded-[16px] border border-slate-200 bg-[linear-gradient(180deg,#f7f4eb_0%,#fcfbf7_100%)]', TICKET_CARD_SHADOW)}>
+                <div className="h-2.5 bg-[linear-gradient(90deg,#0f172a_0%,#334155_100%)]" />
+                <div className="space-y-5 px-5 py-5">
+                    <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                            <div className="text-[10px] font-semibold uppercase tracking-[0.24em] text-slate-400">Vertical style</div>
+                            <div className="font-heading mt-2 truncate text-xl font-black tracking-[-0.04em] text-slate-950">{ticket.airlineName}</div>
+                        </div>
+                        <div className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+                            {ticket.flightNumber}
+                        </div>
+                    </div>
+
+                    <div className="space-y-4">
+                        <div className="min-w-0">
+                            <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">From</div>
+                            <div className="font-heading mt-1 text-[clamp(3.4rem,14vw,4.8rem)] font-black leading-none tracking-[-0.09em] text-slate-950">
+                                {departureCode}
+                            </div>
+                            <div className="mt-2 truncate text-sm font-medium text-slate-500" title={formatAirportTicketLocationLabel(ticket.departureAirport)}>
+                                {formatAirportTicketLocationLabel(ticket.departureAirport)}
+                            </div>
+                        </div>
+
+                        <TicketRouteLine vertical />
+
+                        <div className="min-w-0">
+                            <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">To</div>
+                            <div className="font-heading mt-1 text-[clamp(3.4rem,14vw,4.8rem)] font-black leading-none tracking-[-0.09em] text-slate-950">
+                                {arrivalCode}
+                            </div>
+                            <div className="mt-2 truncate text-sm font-medium text-slate-500" title={formatAirportTicketLocationLabel(ticket.arrivalAirport)}>
+                                {formatAirportTicketLocationLabel(ticket.arrivalAirport)}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 border-t border-slate-200 pt-4">
+                        <TicketMetaPill label="Passenger" value={ticket.passengerName} />
+                        <TicketMetaPill label="Date" value={ticket.departureDateLabel} />
+                        <TicketMetaPill label="Gate" value={ticket.gate} />
+                        <TicketMetaPill label="Seat" value={ticket.seat} />
+                    </div>
+
+                    <div className="grid grid-cols-[minmax(0,1fr)_102px] gap-3">
+                        <TicketBarcode bars={barcodeBars} />
+                        <TicketQrBadge qrCodeUrl={qrCodeUrl} />
+                    </div>
+
+                    <div className="flex items-center justify-between gap-3 border-t border-slate-200 pt-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                        <span>{ticket.departureTimeLabel} → {ticket.arrivalTimeLabel}</span>
+                        <span>{footerStatusLabel}</span>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className={cn('select-none overflow-hidden rounded-[16px] border border-slate-200 bg-[linear-gradient(180deg,#f7f4eb_0%,#fcfbf7_100%)]', TICKET_CARD_SHADOW)}>
+            <div className="flex items-center justify-between gap-3 border-b border-slate-200 bg-[linear-gradient(90deg,#0f172a_0%,#334155_100%)] px-5 py-3 text-white">
+                <div className="min-w-0">
+                    <div className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/60">Digital Boarding Pass</div>
+                    <div className="font-heading mt-1 truncate text-xl font-black tracking-[-0.04em]">{ticket.airlineName}</div>
+                </div>
+                <div className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/80">
+                    {ticket.flightNumber}
+                </div>
+            </div>
+
+            <div className="space-y-5 px-5 py-5">
+                <div className="grid items-end gap-4 md:grid-cols-[minmax(0,1fr)_96px_minmax(0,1fr)]">
+                    <div className="min-w-0">
+                        <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">Departure</div>
+                        <div className="font-heading mt-2 text-[clamp(3.1rem,9vw,5rem)] font-black leading-none tracking-[-0.09em] text-slate-950">
+                            {departureCode}
+                        </div>
+                        <div className="mt-2 truncate text-base font-medium text-slate-500" title={formatAirportTicketLocationLabel(ticket.departureAirport)}>
+                            {formatAirportTicketLocationLabel(ticket.departureAirport)}
+                        </div>
+                    </div>
+
+                    <TicketRouteLine />
+
+                    <div className="min-w-0 text-left md:text-right">
+                        <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">Arrival</div>
+                        <div className="font-heading mt-2 text-[clamp(3.1rem,9vw,5rem)] font-black leading-none tracking-[-0.09em] text-slate-950">
+                            {arrivalCode}
+                        </div>
+                        <div className="mt-2 truncate text-base font-medium text-slate-500" title={formatAirportTicketLocationLabel(ticket.arrivalAirport)}>
+                            {formatAirportTicketLocationLabel(ticket.arrivalAirport)}
+                        </div>
+                    </div>
+                </div>
+
+                <div className="grid gap-4 border-t border-slate-200 pt-5 sm:grid-cols-2 xl:grid-cols-4">
+                    <TicketMetaPill label="Passenger" value={ticket.passengerName} />
+                    <TicketMetaPill label="Date" value={ticket.departureDateLabel} />
+                    <TicketMetaPill label="Gate" value={ticket.gate} />
+                    <TicketMetaPill label="Seat" value={ticket.seat} />
+                </div>
+
+                <div className="grid gap-3 border-t border-slate-200 pt-5 md:grid-cols-[minmax(0,1fr)_112px]">
+                    <TicketBarcode bars={barcodeBars} />
+                    <TicketQrBadge qrCodeUrl={qrCodeUrl} />
+                </div>
+
+                <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-slate-200 pt-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                    <span>{ticket.departureTimeLabel} → {ticket.arrivalTimeLabel}</span>
+                    <span>{ticket.durationLabel}</span>
+                    <span>{footerStatusLabel}</span>
+                </div>
+            </div>
+        </div>
+    );
 };
 
 const sortAirports = (airports: AirportReference[]): AirportReference[] => [...airports].sort((left, right) => (
@@ -1318,12 +1543,29 @@ const AdminAirportTicketLab: React.FC<{
         return next.toISOString().slice(0, 10);
     });
 
+    const fallbackDepartureOption = useMemo(() => {
+        if (nearbyResult) return null;
+        const berlinAirport = catalogAirports.find((airport) => airport.iataCode === 'BER' && airport.isCommercial)
+            || catalogAirports.find((airport) => airport.ident === 'EDDB' && airport.isCommercial)
+            || null;
+        return berlinAirport ? {
+            airport: berlinAirport,
+            airportAccessDistanceKm: null,
+            isFallback: true,
+        } : null;
+    }, [catalogAirports, nearbyResult]);
+
     const departureOptions = useMemo(
-        () => (nearbyResult?.airports || []).map((entry) => ({
-            airport: entry.airport,
-            airportAccessDistanceKm: entry.airDistanceKm,
-        })),
-        [nearbyResult],
+        () => {
+            const nearbyOptions = (nearbyResult?.airports || []).map((entry) => ({
+                airport: entry.airport,
+                airportAccessDistanceKm: entry.airDistanceKm,
+                isFallback: false,
+            }));
+            if (nearbyOptions.length > 0) return nearbyOptions;
+            return fallbackDepartureOption ? [fallbackDepartureOption] : [];
+        },
+        [fallbackDepartureOption, nearbyResult],
     );
 
     const selectedDeparture = useMemo(
@@ -1379,6 +1621,17 @@ const AdminAirportTicketLab: React.FC<{
         });
     }, [cabinClass, departureDate, origin?.label, passengerName, selectedDeparture, selectedDestination]);
 
+    const ticketBarcodeBars = useMemo(
+        () => (ticket ? buildTicketBarcodeBars(`${ticket.ticketNumber}${ticket.bookingReference}${ticket.flightNumber}${ticket.seat}`) : []),
+        [ticket],
+    );
+    const ticketQrCodeUrl = useMemo(
+        () => buildTicketQrCodeUrl(typeof window !== 'undefined' ? window.location.origin : TICKET_QR_FALLBACK_DOMAIN),
+        [],
+    );
+
+    const isUsingFallbackDeparture = Boolean(selectedDeparture?.isFallback);
+
     return (
         <AdminSurfaceCard className="space-y-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
@@ -1395,14 +1648,23 @@ const AdminAirportTicketLab: React.FC<{
                 )}
             </div>
 
-            {!nearbyResult && (
+            {!nearbyResult && fallbackDepartureOption && (
+                <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                    <div className="font-semibold text-amber-950">Testing fallback active</div>
+                    <div className="mt-1">
+                        Using Berlin Brandenburg Airport (BER) as the default ticket departure until you run a nearby-airport lookup.
+                    </div>
+                </div>
+            )}
+
+            {!nearbyResult && !fallbackDepartureOption && (
                 <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-500">
                     Run a nearby-airport lookup first, then this lab will use the closest commercial airport as the departure side of the fake ticket.
                 </div>
             )}
 
-            {nearbyResult && (
-                <div className="grid gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(360px,1.1fr)]">
+            {ticket && (
+                <div className="grid gap-4 xl:grid-cols-[minmax(0,0.92fr)_minmax(360px,1.08fr)]">
                     <div className="space-y-4">
                         <div className="grid gap-3 md:grid-cols-2">
                             <div className="space-y-2">
@@ -1478,9 +1740,14 @@ const AdminAirportTicketLab: React.FC<{
                             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
                                 <div className="font-semibold text-slate-900">Departure context</div>
                                 <div className="mt-1">
-                                    {selectedDeparture.airport.name} · {selectedDeparture.airport.municipality || 'Unknown city'} · {formatDistance(selectedDeparture.airportAccessDistanceKm)}
+                                    {selectedDeparture.airport.name} · {selectedDeparture.airport.municipality || 'Unknown city'}
+                                    {selectedDeparture.airportAccessDistanceKm !== null ? ` · ${formatDistance(selectedDeparture.airportAccessDistanceKm)}` : ''}
                                 </div>
-                                {origin && (
+                                {isUsingFallbackDeparture ? (
+                                    <div className="mt-1 text-xs text-slate-500">
+                                        BER stays available as a reliable test fallback until a nearby lookup runs.
+                                    </div>
+                                ) : origin && (
                                     <div className="mt-1 text-xs text-slate-500">
                                         Based on {origin.label}
                                     </div>
@@ -1489,128 +1756,57 @@ const AdminAirportTicketLab: React.FC<{
                         )}
                     </div>
 
-                    {ticket && (
-                        <div className="overflow-hidden rounded-[28px] border border-slate-900/10 bg-[linear-gradient(135deg,#0f172a_0%,#155e75_48%,#f8fafc_48%,#f8fafc_100%)] shadow-[0_24px_80px_rgba(15,23,42,0.18)]">
-                            <div className="grid gap-6 p-6 md:grid-cols-[minmax(0,1fr)_148px]">
-                                <div className="space-y-5">
-                                    <div className="flex items-start justify-between gap-4">
-                                        <div>
-                                            <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-100/80">Digital Boarding Pass</div>
-                                            <div className="mt-2 text-2xl font-black tracking-tight text-white">{ticket.airlineName}</div>
-                                        </div>
-                                        <div className="rounded-2xl border border-white/15 bg-white/10 px-3 py-2 text-right text-white backdrop-blur">
-                                            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-100/80">Flight</div>
-                                            <div className="mt-1 text-lg font-black">{ticket.flightNumber}</div>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid gap-3 rounded-[24px] border border-white/15 bg-white/10 p-4 text-white backdrop-blur md:grid-cols-[minmax(0,1fr)_44px_minmax(0,1fr)]">
-                                        <div>
-                                            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-100/80">From</div>
-                                            <div className="mt-2 text-4xl font-black tracking-tight">{ticket.departureAirport.iataCode || ticket.departureAirport.ident}</div>
-                                            <div className="mt-1 text-sm text-cyan-50">{ticket.departureAirport.name}</div>
-                                            <div className="text-xs text-cyan-100/80">{ticket.departureAirport.municipality || ticket.departureAirport.countryName}</div>
-                                        </div>
-                                        <div className="flex items-center justify-center text-2xl font-black text-cyan-100">→</div>
-                                        <div className="text-right">
-                                            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-100/80">To</div>
-                                            <div className="mt-2 text-4xl font-black tracking-tight">{ticket.arrivalAirport.iataCode || ticket.arrivalAirport.ident}</div>
-                                            <div className="mt-1 text-sm text-cyan-50">{ticket.arrivalAirport.name}</div>
-                                            <div className="text-xs text-cyan-100/80">{ticket.arrivalAirport.municipality || ticket.arrivalAirport.countryName}</div>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid gap-3 text-sm text-slate-900 md:grid-cols-4">
-                                        <div className="rounded-2xl bg-white/95 p-3">
-                                            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Date</div>
-                                            <div className="mt-1 font-semibold">{ticket.departureDateLabel}</div>
-                                        </div>
-                                        <div className="rounded-2xl bg-white/95 p-3">
-                                            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Boarding</div>
-                                            <div className="mt-1 font-semibold">{ticket.boardingTimeLabel}</div>
-                                        </div>
-                                        <div className="rounded-2xl bg-white/95 p-3">
-                                            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Departure</div>
-                                            <div className="mt-1 font-semibold">{ticket.departureTimeLabel}</div>
-                                        </div>
-                                        <div className="rounded-2xl bg-white/95 p-3">
-                                            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Arrival</div>
-                                            <div className="mt-1 font-semibold">{ticket.arrivalTimeLabel}</div>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid gap-3 text-sm text-slate-900 md:grid-cols-5">
-                                        <div className="rounded-2xl bg-white/95 p-3">
-                                            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Passenger</div>
-                                            <div className="mt-1 font-semibold">{ticket.passengerName}</div>
-                                        </div>
-                                        <div className="rounded-2xl bg-white/95 p-3">
-                                            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Seat</div>
-                                            <div className="mt-1 font-semibold">{ticket.seat}</div>
-                                        </div>
-                                        <div className="rounded-2xl bg-white/95 p-3">
-                                            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Gate</div>
-                                            <div className="mt-1 font-semibold">T{ticket.terminal} · {ticket.gate}</div>
-                                        </div>
-                                        <div className="rounded-2xl bg-white/95 p-3">
-                                            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Cabin</div>
-                                            <div className="mt-1 font-semibold">{formatCabinClassLabel(ticket.cabinClass)}</div>
-                                        </div>
-                                        <div className="rounded-2xl bg-white/95 p-3">
-                                            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Duration</div>
-                                            <div className="mt-1 font-semibold">{ticket.durationLabel}</div>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid gap-3 text-xs text-cyan-100/85 md:grid-cols-2">
-                                        <div className="rounded-2xl border border-white/15 bg-white/10 p-3 backdrop-blur">
-                                            <div className="font-semibold uppercase tracking-[0.18em]">Booking Reference</div>
-                                            <div className="mt-1 text-sm font-semibold text-white">{ticket.bookingReference}</div>
-                                            <div className="mt-2 font-semibold uppercase tracking-[0.18em]">Ticket Number</div>
-                                            <div className="mt-1 text-sm font-semibold text-white">{ticket.ticketNumber}</div>
-                                        </div>
-                                        <div className="rounded-2xl border border-white/15 bg-white/10 p-3 backdrop-blur">
-                                            <div className="font-semibold uppercase tracking-[0.18em]">Airport Access</div>
-                                            <div className="mt-1 text-sm font-semibold text-white">
-                                                {ticket.airportAccessDistanceKm !== null ? formatDistance(ticket.airportAccessDistanceKm) : 'Unknown'}
-                                            </div>
-                                            <div className="mt-2 font-semibold uppercase tracking-[0.18em]">Route Distance</div>
-                                            <div className="mt-1 text-sm font-semibold text-white">{formatDistance(ticket.routeDistanceKm)}</div>
-                                            {ticket.originLabel && (
-                                                <div className="mt-2 text-[11px] text-cyan-100/75">
-                                                    Origin: {ticket.originLabel}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
+                    <div className="space-y-4">
+                        <div className="space-y-2">
+                            <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Horizontal style</div>
+                            <AirportTicketPreviewCard
+                                ticket={ticket}
+                                barcodeBars={ticketBarcodeBars}
+                                qrCodeUrl={ticketQrCodeUrl}
+                                variant="horizontal"
+                                isUsingFallbackDeparture={isUsingFallbackDeparture}
+                            />
+                        </div>
+                        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(280px,0.7fr)]">
+                            <div className="rounded-[18px] border border-slate-200 bg-slate-50/90 px-4 py-4 text-sm text-slate-600">
+                                <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                                    <span className="font-semibold text-slate-900">
+                                        {isUsingFallbackDeparture ? 'Testing airport:' : 'Closest airport:'}
+                                    </span>
+                                    <span>{ticket.departureAirport.name}</span>
+                                    <span className="text-slate-400">•</span>
+                                    <span>{ticket.durationLabel}</span>
+                                    <span className="text-slate-400">•</span>
+                                    <span>{formatDistance(ticket.routeDistanceKm)}</span>
+                                    {ticket.airportAccessDistanceKm !== null && (
+                                        <>
+                                            <span className="text-slate-400">•</span>
+                                            <span>{formatDistance(ticket.airportAccessDistanceKm)} from origin</span>
+                                        </>
+                                    )}
                                 </div>
-
-                                <div className="rounded-[24px] bg-white/95 p-4 text-slate-900">
-                                    <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Boarding Group</div>
-                                    <div className="mt-1 text-lg font-black">{ticket.boardingGroup}</div>
-                                    <div className="mt-5 grid grid-cols-7 gap-1">
-                                        {Array.from({ length: 49 }, (_, cellIndex) => {
-                                            const token = `${ticket.bookingReference}-${ticket.flightNumber}-${cellIndex}`;
-                                            const fill = token.charCodeAt(cellIndex % token.length) % 3 === 0;
-                                            const cellId = `ticket-cell-${cellIndex}`;
-                                            return (
-                                                <span
-                                                    key={cellId}
-                                                    className={cn(
-                                                        'block h-3 w-3 rounded-[2px]',
-                                                        fill ? 'bg-slate-900' : 'bg-slate-200',
-                                                    )}
-                                                />
-                                            );
-                                        })}
+                                {isUsingFallbackDeparture ? (
+                                    <div className="mt-2 text-xs uppercase tracking-[0.18em] text-slate-400">
+                                        BER fallback stays visible until you run a nearby-airport lookup
                                     </div>
-                                    <div className="mt-5 rounded-2xl border border-dashed border-slate-300 px-3 py-2 text-[11px] text-slate-500">
-                                        Fake preview only. This is a generated admin artifact powered by the nearby-airport data model.
+                                ) : ticket.originLabel && (
+                                    <div className="mt-2 text-xs uppercase tracking-[0.18em] text-slate-400">
+                                        Based on {ticket.originLabel}
                                     </div>
-                                </div>
+                                )}
+                            </div>
+                            <div className="space-y-2">
+                                <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Vertical style</div>
+                                <AirportTicketPreviewCard
+                                    ticket={ticket}
+                                    barcodeBars={ticketBarcodeBars}
+                                    qrCodeUrl={ticketQrCodeUrl}
+                                    variant="vertical"
+                                    isUsingFallbackDeparture={isUsingFallbackDeparture}
+                                />
                             </div>
                         </div>
-                    )}
+                    </div>
                 </div>
             )}
         </AdminSurfaceCard>

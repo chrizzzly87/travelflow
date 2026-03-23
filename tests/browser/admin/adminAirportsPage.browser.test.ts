@@ -397,8 +397,21 @@ describe('AdminAirportsPage', () => {
     await user.click(screen.getByRole('button', { name: 'Lookup nearby airports' }));
 
     expect(await screen.findByText('Digital Boarding Pass')).toBeInTheDocument();
-    expect(screen.getByText('TravelFlow Air')).toBeInTheDocument();
-    expect(screen.getByText('Alex Morgan')).toBeInTheDocument();
+    expect(screen.getByText('Horizontal style')).toBeInTheDocument();
+    expect(screen.getAllByText('Vertical style').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('TravelFlow Air').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Alex Morgan').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Berlin Brandenburg Airport').length).toBeGreaterThan(0);
+    expect(screen.getAllByAltText('TravelFlow QR code').length).toBeGreaterThan(0);
+  });
+
+  it('renders a BER testing fallback before nearby-airport data arrives', async () => {
+    mocks.fetchNearbyAirports.mockImplementation(() => new Promise(() => undefined));
+    renderAdminAirportsPage();
+
+    expect(await screen.findByText('Testing fallback active')).toBeInTheDocument();
+    expect(screen.getByText('Using Berlin Brandenburg Airport (BER) as the default ticket departure until you run a nearby-airport lookup.')).toBeInTheDocument();
+    expect(screen.getByText('Digital Boarding Pass')).toBeInTheDocument();
     expect(screen.getAllByText('Berlin Brandenburg Airport').length).toBeGreaterThan(0);
   });
 
