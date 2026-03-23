@@ -1,10 +1,10 @@
 ---
 id: rel-2026-03-23-airport-ticket-modern-pass
-version: v0.0.0
+version: v0.106.0
 title: "Airport ticket preview polish"
 date: 2026-03-23
-published_at: 2026-03-23T09:00:00Z
-status: draft
+published_at: 2026-03-23T08:56:28Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Refines the admin airport ticket lab with a cleaner, more modern boarding-pass preview built around bold route typography."
