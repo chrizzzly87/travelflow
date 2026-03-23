@@ -1,6 +1,6 @@
 # Trip Workspace TODO
 
-Last updated: 2026-03-22
+Last updated: 2026-03-23
 Owner: Codex + @chrizzzly
 Goal: Turn Trip View into a routed Trip Workspace with a fixed shadcn sidebar on desktop, matching mobile navigation, and shared trip -> country -> city context across the main trip jobs.
 
@@ -152,6 +152,8 @@ Goal: Turn Trip View into a routed Trip Workspace with a fixed shadcn sidebar on
 - [x] Added a shared trip -> country -> city context bar across non-planner pages and kept that context synced through Trip Workspace state restoration.
 - [x] Expanded `Places`, `Weather`, `Budget`, `Travel kit`, `Documents`, `Phrases`, `Explore`, `Notes`, and `Photos` around country-aware and city-aware route context instead of one flat destination layer.
 - [x] Fixed standalone workspace pages so route context switches work even outside the full Trip Workspace shell, and covered the SEA dataset builder with unit regressions.
+- [x] Simplified the `Places` neighborhood renderer into numbered map zones plus a compact legend, so district overlays stay readable without colliding with city markers or stay labels.
+- [x] Swapped the `Places` map-layer pills over to the shared shadcn toggle-group pattern and covered the overlay structure with focused regression tests.
 
 ## Open
 - [ ] Replace the Southeast Asia demo dataset with live bookings, discovery, phrase, destination, travel-kit, document, budget, weather, and places-overlay services when the backend inputs are ready.

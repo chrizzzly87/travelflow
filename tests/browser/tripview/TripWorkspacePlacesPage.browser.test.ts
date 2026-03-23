@@ -69,7 +69,7 @@ describe('components/tripview/workspace/TripWorkspacePlacesPage', () => {
     fireEvent.mouseDown(districtsTab, { button: 0 });
     await waitFor(() => expect(districtsTab).toHaveAttribute('data-state', 'active'));
 
-    expect(screen.getByRole('button', { name: 'All areas' })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'All areas' })).toBeInTheDocument();
     expect(screen.getAllByText('Sathorn').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Talat Noi').length).toBeGreaterThan(0);
     expect(screen.getByText(/area anchors currently visible/i)).toBeInTheDocument();

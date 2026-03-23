@@ -20,6 +20,7 @@ import { Button } from '../../ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../ui/card';
 import { ScrollArea, ScrollBar } from '../../ui/scroll-area';
 import { Tabs, TabsList, TabsTrigger } from '../../ui/tabs';
+import { ToggleGroup, ToggleGroupItem } from '../../ui/toggle-group';
 
 interface TravelerWarningSummary {
     cityName: string;
@@ -359,33 +360,25 @@ export const TripWorkspacePlacesPage: React.FC<TripWorkspacePlacesPageProps> = (
                         {activeCityLens === 'districts' ? (
                             <div className="grid gap-3">
                                 <ScrollArea className="w-full whitespace-nowrap rounded-[1.5rem] border border-border/70 bg-background px-4 py-3">
-                                    <div className="flex gap-2 pb-2">
-                                        <button
-                                            type="button"
-                                            onClick={() => setActiveLayerId(null)}
-                                            className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
-                                                activeLayerId === null
-                                                    ? 'border-accent-500 bg-accent-50 text-accent-700'
-                                                    : 'border-border bg-background text-muted-foreground hover:border-accent-300 hover:text-foreground'
-                                            }`}
-                                        >
-                                            All areas
-                                        </button>
+                                    <ToggleGroup
+                                        type="single"
+                                        variant="outline"
+                                        size="sm"
+                                        className="w-max gap-2 pb-2"
+                                        aria-label="City map layers"
+                                        value={activeLayerId ?? '__all__'}
+                                        onValueChange={(value) => {
+                                            if (!value) return;
+                                            setActiveLayerId(value === '__all__' ? null : value);
+                                        }}
+                                    >
+                                        <ToggleGroupItem value="__all__">All areas</ToggleGroupItem>
                                         {activeCity?.mapLayers.map((layer) => (
-                                            <button
-                                                key={layer.id}
-                                                type="button"
-                                                onClick={() => setActiveLayerId(layer.id)}
-                                                className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
-                                                    activeLayerId === layer.id
-                                                        ? 'border-accent-500 bg-accent-50 text-accent-700'
-                                                        : 'border-border bg-background text-muted-foreground hover:border-accent-300 hover:text-foreground'
-                                                }`}
-                                            >
+                                            <ToggleGroupItem key={layer.id} value={layer.id}>
                                                 {layer.label}
-                                            </button>
+                                            </ToggleGroupItem>
                                         ))}
-                                    </div>
+                                    </ToggleGroup>
                                     <ScrollBar orientation="horizontal" />
                                 </ScrollArea>
                                 <div className="grid gap-3 md:grid-cols-2">
