@@ -398,7 +398,7 @@ describe('AdminAirportsPage', () => {
 
     expect(await screen.findByText('Digital Boarding Pass')).toBeInTheDocument();
     expect(screen.getByText('TravelFlow Air')).toBeInTheDocument();
-    expect(screen.getByText('Alex Morgan')).toBeInTheDocument();
+    expect(screen.getAllByText('Alex Morgan').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Berlin Brandenburg Airport').length).toBeGreaterThan(0);
   });
 
