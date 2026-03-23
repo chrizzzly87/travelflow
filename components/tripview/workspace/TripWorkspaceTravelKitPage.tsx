@@ -27,6 +27,7 @@ import {
     resolveTripWorkspaceContextSnapshot,
 } from './tripWorkspaceContext';
 import { resolveTripWorkspaceFallbackTripMeta, useTripWorkspacePageContext } from './tripWorkspacePageContext';
+import { TripWorkspaceCurrencyConverter } from './TripWorkspaceCurrencyConverter';
 import { TripWorkspaceRouteContextBar } from './TripWorkspaceRouteContextBar';
 import { Badge } from '../../ui/badge';
 import { Button } from '../../ui/button';
@@ -75,9 +76,6 @@ const SECTION_COPY: Record<TripWorkspaceTravelKitSectionId, { label: string; det
     },
 };
 
-const EUR_OPTIONS = [20, 50, 100, 250] as const;
-const EUR_TO_REGIONAL_RATE = 4170;
-
 export const TripWorkspaceTravelKitPage: React.FC<TripWorkspaceTravelKitPageProps> = ({
     trip,
     tripMeta = resolveTripWorkspaceFallbackTripMeta(trip),
@@ -106,7 +104,6 @@ export const TripWorkspaceTravelKitPage: React.FC<TripWorkspaceTravelKitPageProp
     );
     const [activeSection, setActiveSection] = React.useState<TripWorkspaceTravelKitSectionId>('entry');
     const [checkedIds, setCheckedIds] = React.useState<string[]>(['passport-proof', 'visa-check', 'regional-esim']);
-    const [selectedAmount, setSelectedAmount] = React.useState<number>(100);
     const [isPhrasePackReady, setIsPhrasePackReady] = React.useState<boolean>(true);
     const [isBookingPackReady, setIsBookingPackReady] = React.useState<boolean>(true);
     const [activePackId, setActivePackId] = React.useState<string>(() => pageDataset.travelKitPacks[0]?.id ?? '');
@@ -133,7 +130,6 @@ export const TripWorkspaceTravelKitPage: React.FC<TripWorkspaceTravelKitPageProp
     );
     const completedCount = checkedIds.length;
     const remainingItem = pageDataset.travelKitChecklist.find((item) => !checkedIds.includes(item.id)) ?? null;
-    const convertedAmount = new Intl.NumberFormat('en-US').format(selectedAmount * EUR_TO_REGIONAL_RATE);
     const activePack = packOptions.find((pack) => pack.id === activePackId) ?? packOptions[0] ?? null;
 
     const handleChecklistToggle = React.useCallback((itemId: string) => {
@@ -169,7 +165,7 @@ export const TripWorkspaceTravelKitPage: React.FC<TripWorkspaceTravelKitPageProp
                 onSelectionChange={handleContextSelectionChange}
             />
 
-            <Card className="overflow-hidden border-border/80 bg-linear-to-br from-accent/10 via-background to-emerald-50 shadow-sm">
+            <Card className="overflow-hidden border-border/80 bg-card/95 shadow-sm">
                 <CardHeader className="gap-4">
                     <div className="flex flex-wrap gap-2">
                         <Badge variant="secondary">Trip support</Badge>
@@ -313,34 +309,18 @@ export const TripWorkspaceTravelKitPage: React.FC<TripWorkspaceTravelKitPageProp
 
                 <div className="flex flex-col gap-4">
                     <Card className="border-border/80 bg-card/95 shadow-sm">
-                        <CardHeader>
+                    <CardHeader>
                             <CardDescription>Utilities and converter</CardDescription>
                             <CardTitle>Keep arrival-day friction small</CardTitle>
                         </CardHeader>
                         <CardContent className="grid gap-4">
-                            <div className="rounded-[1.75rem] border border-border/70 bg-background px-4 py-4">
-                                <p className="text-sm font-medium text-foreground">Quick EUR to route-cash pocket check</p>
-                                <div className="mt-3 flex flex-wrap gap-2">
-                                    {EUR_OPTIONS.map((amount) => (
-                                        <button
-                                            key={amount}
-                                            type="button"
-                                            onClick={() => setSelectedAmount(amount)}
-                                            className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
-                                                selectedAmount === amount
-                                                    ? 'border-accent-500 bg-accent-50 text-accent-700'
-                                                    : 'border-border bg-background text-muted-foreground hover:border-accent-300 hover:text-foreground'
-                                            }`}
-                                        >
-                                            {amount} EUR
-                                        </button>
-                                    ))}
-                                </div>
-                                <p className="mt-4 text-3xl font-semibold tracking-tight text-foreground">{convertedAmount} local-cash demo</p>
-                                <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                                    Seeded conversion just to keep first-day cash decisions tangible before live currency feeds are wired in.
-                                </p>
-                            </div>
+                            <TripWorkspaceCurrencyConverter
+                                countryCode={context.activeCountry?.code ?? null}
+                                currencyCode={context.activeCountry?.currencyCode ?? 'THB'}
+                                currencyName={context.activeCountry?.currencyName ?? 'Thai baht'}
+                                title="Quick arrival cash check"
+                                description="Use a real input to estimate what the first-day cash pocket should look like in the current country."
+                            />
                             <div className="grid gap-3">
                                 {countryUtilities.map((utility) => (
                                     <div key={utility.id} className="rounded-[1.5rem] border border-border/70 bg-background px-4 py-3">

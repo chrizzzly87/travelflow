@@ -60,13 +60,13 @@ describe('components/tripview/workspace/TripWorkspaceWeatherPage', () => {
             }),
         );
 
-        expect(screen.getByText('Bangkok is the active route-weather lens')).toBeInTheDocument();
+        expect(screen.getByText('Bangkok weather at a glance')).toBeInTheDocument();
 
-        fireEvent.click(screen.getByRole('radio', { name: 'Sea watch' }));
+        fireEvent.click(screen.getByRole('tab', { name: 'Sea watch' }));
         expect(screen.getAllByText(/No sea risk here/i).length).toBeGreaterThan(0);
 
         fireEvent.click(screen.getByRole('button', { name: /Krabi \/ Ao Nang This is the weather hinge/i }));
-        expect(screen.getByText('Krabi / Ao Nang is the active route-weather lens')).toBeInTheDocument();
+        expect(screen.getByText('Krabi / Ao Nang weather at a glance')).toBeInTheDocument();
         expect(screen.getAllByText(/Keep one flexible coast day/i).length).toBeGreaterThan(0);
 
         fireEvent.click(screen.getByRole('button', { name: 'Open travel kit' }));

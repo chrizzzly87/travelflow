@@ -163,7 +163,7 @@ const TripWorkspaceDesktopSidebar: React.FC<{
             data-testid="trip-workspace-sidebar"
         >
             <SidebarHeader className="gap-4 px-3 py-3">
-                <div className="rounded-[1.75rem] border border-sidebar-border/80 bg-linear-to-br from-sidebar-accent/65 via-sidebar to-sidebar-accent/30 p-3 shadow-sm group-data-[collapsible=icon]:p-2.5">
+                <div className="rounded-[1.75rem] border border-sidebar-border/80 bg-sidebar p-3 shadow-sm group-data-[collapsible=icon]:p-2.5">
                     <div className="flex items-start gap-3 group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:items-center">
                         <div className="inline-flex size-11 shrink-0 items-center justify-center rounded-2xl bg-background/92 text-accent-700 shadow-sm group-data-[collapsible=icon]:size-10">
                             <MapTrifold size={20} weight="duotone" />

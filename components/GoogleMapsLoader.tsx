@@ -113,27 +113,43 @@ export const GoogleMapsLoader: React.FC<GoogleMapsLoaderProps> = ({ children, la
         setLoadError(new Error('Failed to load Google Maps script'));
     }, []);
 
+    const contextValue = React.useMemo<GoogleMapsContextType>(() => {
+        if (!enabled) {
+            return { isLoaded: false, loadError: null };
+        }
+
+        if (!isApiKeyValid) {
+            return {
+                isLoaded: false,
+                loadError: loadError ?? new Error('Google Maps API key is missing or invalid for this deploy context'),
+            };
+        }
+
+        return { isLoaded, loadError };
+    }, [enabled, isApiKeyValid, isLoaded, loadError]);
+
     if (!shouldMountProvider) {
         return (
-            <GoogleMapsContext.Provider value={{ isLoaded, loadError }}>
+            <GoogleMapsContext.Provider value={contextValue}>
                 {children}
             </GoogleMapsContext.Provider>
         );
     }
 
     return (
-        <GoogleMapsContext.Provider value={{ isLoaded, loadError }}>
-            <APIProvider
-                key={providerKey}
-                apiKey={apiKey}
-                language={requestedMapLanguage}
-                libraries={GOOGLE_MAPS_LIBRARIES}
-                onLoad={handleProviderLoad}
-                onError={handleProviderError}
-            >
-                <GoogleMapsLoadStateBridge onLoadedChange={handleLoadedChange} />
-                {children}
-            </APIProvider>
+        <GoogleMapsContext.Provider value={contextValue}>
+            <React.Fragment key={providerKey}>
+                <APIProvider
+                    apiKey={apiKey}
+                    language={requestedMapLanguage}
+                    libraries={GOOGLE_MAPS_LIBRARIES}
+                    onLoad={handleProviderLoad}
+                    onError={handleProviderError}
+                >
+                    <GoogleMapsLoadStateBridge onLoadedChange={handleLoadedChange} />
+                    {children}
+                </APIProvider>
+            </React.Fragment>
         </GoogleMapsContext.Provider>
     );
 };

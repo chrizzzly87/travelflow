@@ -2714,6 +2714,7 @@ const useTripViewRender = ({
     const isPlannerWorkspacePage = activeWorkspacePage === 'planner';
     const isOverviewWorkspacePage = activeWorkspacePage === 'overview';
     const isPlacesWorkspacePage = activeWorkspacePage === 'places';
+    const isWeatherWorkspacePage = activeWorkspacePage === 'weather';
     const detailsPanelVisible = isPlannerWorkspacePage && selectionDetailsPanelVisible;
     const closeCompanionPanel = useCallback(() => {}, []);
     const handleTogglePlannerPanel = useCallback(() => {
@@ -3447,7 +3448,7 @@ const useTripViewRender = ({
     }
 
     return (
-        <GoogleMapsLoader language={appLanguage} enabled={isOverviewWorkspacePage || isPlacesWorkspacePage || (isPlannerWorkspacePage && isMapBootstrapEnabled)}>
+        <GoogleMapsLoader language={appLanguage} enabled={isOverviewWorkspacePage || isPlacesWorkspacePage || isWeatherWorkspacePage || (isPlannerWorkspacePage && isMapBootstrapEnabled)}>
             <div
                 className="relative h-screen w-screen flex flex-col bg-gray-50 overflow-hidden text-gray-900 font-sans selection:bg-accent-100 selection:text-accent-900"
                 data-tf-handoff-ready="true"

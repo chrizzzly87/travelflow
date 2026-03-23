@@ -151,7 +151,7 @@ export const TripWorkspaceOverviewPage: React.FC<TripWorkspaceOverviewPageProps>
             />
 
             <div className="grid gap-4 xl:grid-cols-[1.25fr_0.75fr]">
-                <Card className="overflow-hidden border-border/80 bg-linear-to-br from-accent/10 via-background to-emerald-50 shadow-sm">
+                <Card className="overflow-hidden border-border/80 bg-card/95 shadow-sm">
                     <CardHeader className="gap-4">
                         <div className="flex flex-wrap items-center gap-2">
                             <Badge variant="secondary">{countdownLabel}</Badge>

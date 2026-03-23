@@ -176,7 +176,7 @@ export const TripWorkspaceExplorePage: React.FC<TripWorkspaceExplorePageProps> =
                     </CardContent>
                 </Card>
             ) : (
-                <Card className="border-border/80 bg-linear-to-br from-accent/10 via-background to-sky-50 shadow-sm">
+                <Card className="border-border/80 bg-card/95 shadow-sm">
                     <CardHeader className="gap-3">
                         <CardDescription>Route-aware discovery and workflow</CardDescription>
                         <CardTitle>Research what fits in {context.activeCountry?.name ?? 'this country'}, then move strong ideas through the trip</CardTitle>

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 
 import { TripWorkspaceBudgetPage } from '../../../components/tripview/workspace/TripWorkspaceBudgetPage';
 import type { ITrip } from '../../../types';
@@ -50,7 +50,7 @@ const buildTrip = (): ITrip => ({
 });
 
 describe('components/tripview/workspace/TripWorkspaceBudgetPage', () => {
-    it('renders the budget workspace, updates scenario totals, and routes quick links back into the workspace', () => {
+    it('renders the budget workspace, updates scenario totals, and routes quick links back into the workspace', async () => {
         const onPageChange = vi.fn();
 
         render(
@@ -60,19 +60,22 @@ describe('components/tripview/workspace/TripWorkspaceBudgetPage', () => {
             }),
         );
 
-        expect(screen.getByText('See trip total, country rollups, and city pressure without turning this into accounting software')).toBeInTheDocument();
-        const workingTotalCard = screen.getByText('Working total').closest('div') as HTMLElement;
-        const workingTotal = () => within(workingTotalCard).getByText(/€[\d,]+/).textContent;
+        expect(screen.getByText('Follow the route budget without turning it into a spreadsheet')).toBeInTheDocument();
+        const workingTotal = () => screen.getByTestId('budget-working-total-value').textContent;
         const initialTotal = workingTotal();
 
-        fireEvent.click(screen.getByRole('radio', { name: /Comfort/i }));
+        const comfortTab = screen.getByRole('tab', { name: /Comfort/i });
+        fireEvent.mouseDown(comfortTab, { button: 0 });
+        await waitFor(() => expect(comfortTab).toHaveAttribute('data-state', 'active'));
+        await waitFor(() => expect(workingTotal()).not.toBe(initialTotal));
         const comfortTotal = workingTotal();
-        expect(comfortTotal).not.toBe(initialTotal);
 
         fireEvent.click(screen.getByRole('switch', { name: 'Include reserve fund' }));
-        expect(workingTotal()).not.toBe(comfortTotal);
+        await waitFor(() => expect(workingTotal()).not.toBe(comfortTotal));
 
-        fireEvent.click(screen.getByRole('radio', { name: 'Transport' }));
+        const transportTab = screen.getByRole('tab', { name: 'Transport' });
+        fireEvent.mouseDown(transportTab, { button: 0 });
+        await waitFor(() => expect(transportTab).toHaveAttribute('data-state', 'active'));
         expect(screen.queryByText('Bangkok stays')).not.toBeInTheDocument();
         expect(screen.queryByText('Krabi signature day')).not.toBeInTheDocument();
 

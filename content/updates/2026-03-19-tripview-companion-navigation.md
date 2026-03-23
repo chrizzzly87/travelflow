@@ -25,6 +25,7 @@ summary: "Turns Trip View into a routed workspace with a header-aware desktop si
 - [x] [Improved] 🗺️ `Places` city maps now show visual overlay zones, stay anchors, and route-focus paths directly on the shared trip map, so destination layers feel like a real planning surface instead of a text-only legend.
 - [x] [Fixed] 🧭 `Places` map overlays now use compact numbered neighborhood markers and a cleaner legend, so district guidance stays readable without stacking full area labels on top of the city map.
 - [x] [Fixed] 📍 `Places` neighborhood areas, stay anchors, and route-focus lines now draw as native map overlays and fit cleanly inside the visible viewport, so they stay attached while the map moves instead of floating like screen-space artwork.
+- [x] [Fixed] 🧩 `Weather` and other workspace maps now stay inside the shared Google Maps provider flow, so route pages stop crashing with provider errors when the map layer is disabled or still loading.
 - [x] [New feature] 📋 `Explore` now includes an activity workflow board with shortlist, planned, booked, and done lanes, so promising ideas can move from research into the itinerary without getting lost.
 - [x] [Improved] 🎛️ The new activity board now uses a cleaner kanban layout with safer drag handles and corrected overlay layering, so filters and card menus feel much closer to a polished dashboard tool.
 - [x] [Improved] 🪄 The activity board now uses a true floating drag preview with much denser cards and slimmer lanes, making it feel more like a focused task board than a mini details view.
@@ -34,4 +35,7 @@ summary: "Turns Trip View into a routed workspace with a header-aware desktop si
 - [x] [New feature] 📁 A new `Documents` page keeps passports, insurance, onward-proof notes, and transfer packets together with verification toggles and offline dossier prep for the trip.
 - [x] [New feature] 💸 A new `Budget` page keeps scenario-based spend pacing, category filters, and safety buffers visible across the route so cost pressure can shape booking and activity decisions earlier.
 - [x] [New feature] ⛅ A new `Weather` page keeps route-aware conditions, sea risk, and timing signals visible stop by stop, so weather starts informing the trip instead of sitting outside the workspace.
+- [x] [Improved] 📐 The shared workspace layout now uses calmer section spacing, tab-based route context, and fewer nested panel containers, so pages like `Places`, `Weather`, and `Budget` feel lighter and easier to scan.
+- [x] [Improved] 🌦️ `Weather` now reads more like a modern forecast workspace, with compact stop widgets, duotone weather icons, and a simple trend graph instead of generic stacked info blocks.
+- [x] [Improved] 💱 Travel support and budget tools now include a real-input currency converter, making the demo workspace feel more operational instead of button-driven.
 - [ ] [Internal] 🧪 Added routed workspace regression coverage for sidebar persistence, planner-only routing, SEA route-context behavior, phrase interactions, Explore workflow board behavior, locale wiring, and analytics hooks for the new Trip Workspace flow.

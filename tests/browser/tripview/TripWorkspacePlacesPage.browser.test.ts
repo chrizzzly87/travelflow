@@ -60,7 +60,7 @@ describe('components/tripview/workspace/TripWorkspacePlacesPage', () => {
       }),
     );
 
-    expect(screen.getByText('Keep the regulatory and practical layer readable')).toBeInTheDocument();
+    expect(screen.getByText('Keep the practical and regulatory layer readable')).toBeInTheDocument();
     expect(screen.getByText('Trip-specific city notes')).toBeInTheDocument();
     expect(screen.queryByText('Traveler warnings')).not.toBeInTheDocument();
     expect(screen.getByText(/Sathorn and Ari reduce first-night friction/i)).toBeInTheDocument();
@@ -72,6 +72,6 @@ describe('components/tripview/workspace/TripWorkspacePlacesPage', () => {
     expect(screen.getByRole('radio', { name: 'All areas' })).toBeInTheDocument();
     expect(screen.getAllByText('Sathorn').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Talat Noi').length).toBeGreaterThan(0);
-    expect(screen.getByText(/area anchors currently visible/i)).toBeInTheDocument();
+    expect(screen.getByText(/area anchors are visible in the active layer/i)).toBeInTheDocument();
   });
 });

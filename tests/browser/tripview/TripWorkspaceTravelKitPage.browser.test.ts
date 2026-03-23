@@ -61,8 +61,11 @@ describe('components/tripview/workspace/TripWorkspaceTravelKitPage', () => {
 
         expect(within(readyCard).getByText(/\d+\/\d+/).textContent).not.toBe(initialReadyCount);
 
-        fireEvent.click(screen.getByRole('button', { name: '250 EUR' }));
-        expect(screen.getByText(/local-cash demo/i)).toBeInTheDocument();
+        const eurInput = screen.getByRole('spinbutton', { name: 'EUR' });
+        const localInput = screen.getByRole('spinbutton', { name: 'THB' });
+        fireEvent.change(eurInput, { target: { value: '250' } });
+        expect(eurInput).toHaveValue(250);
+        expect(localInput).toHaveValue(9775);
 
         fireEvent.click(screen.getByRole('button', { name: 'Coast day' }));
         expect(screen.getByText('Protects the weather-sensitive Thai island leg.')).toBeInTheDocument();

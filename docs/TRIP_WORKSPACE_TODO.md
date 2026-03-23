@@ -156,9 +156,16 @@ Goal: Turn Trip View into a routed Trip Workspace with a fixed shadcn sidebar on
 - [x] Swapped the `Places` map-layer pills over to the shared shadcn toggle-group pattern and covered the overlay structure with focused regression tests.
 - [x] Moved `Places` neighborhood areas, stay anchors, and route paths onto native Google Maps circles, polylines, and overlay markers so they stay attached while the map pans.
 - [x] Fixed the `Places` map fit so city overlays are framed inside the visible viewport instead of zooming past the districts and hiding the planning geometry.
+- [x] Flattened the shared Trip Workspace scaffolding so route context and section framing rely more on whitespace, separators, and tabs instead of stacked card containers.
+- [x] Reworked the route context bar into a cleaner tab-based trip -> country -> city switcher, making non-planner pages feel more like a workspace and less like a pile of chips and cards.
+- [x] Rebuilt `Budget`, `Weather`, and `Places` around calmer section hierarchy, fewer nested surfaces, and more readable content blocks.
+- [x] Added real-input utility widgets for route support, including a usable currency converter and more widget-like weather modules with a compact forecast graph.
+- [x] Fixed the `Weather` workspace map crash by keeping the shared Google Maps provider state aligned with workspace page routing and disabled-map states.
+- [x] Renamed the `Places` overlay regression so it actually runs under the repo’s Vitest include rules.
 
 ## Open
 - [ ] Replace the Southeast Asia demo dataset with live bookings, discovery, phrase, destination, travel-kit, document, budget, weather, and places-overlay services when the backend inputs are ready.
 - [ ] Deepen page empty states and first-time hints so sparse countries or cities still feel guided instead of quiet.
 - [ ] Decide whether the next destination polish should focus on richer map interactions like hover states and compare mode, or on service-backed freshness data.
 - [ ] Decide whether the next workspace utility slice should focus on `planner-to-budget sync`, `weather-driven map overlays`, or `cross-page route transition summaries`.
+- [ ] Break the largest workspace pages into smaller section components once the information architecture feels stable enough to stop moving.

@@ -89,8 +89,8 @@ export const TripWorkspacePhotosPage: React.FC<TripWorkspacePhotosPageProps> = (
                                 <CardTitle>{photo.title}</CardTitle>
                             </CardHeader>
                             <CardContent className="flex flex-col gap-3">
-                                <div className="aspect-[4/3] overflow-hidden rounded-[1.75rem] border border-border/70 bg-linear-to-br from-accent/15 via-amber-50 to-emerald-50">
-                                    <div className="flex h-full items-end justify-between bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.75),_transparent_45%),linear-gradient(180deg,transparent_10%,rgba(15,23,42,0.08)_100%)] p-4">
+                                <div className="aspect-[4/3] overflow-hidden rounded-[1.75rem] border border-border/70 bg-muted/30">
+                                    <div className="flex h-full items-end justify-between bg-muted/20 p-4">
                                         <p className="text-xs font-medium uppercase tracking-[0.18em] text-foreground/60">{photo.mood}</p>
                                         {isFavorite ? <Badge variant="secondary">Saved</Badge> : null}
                                     </div>

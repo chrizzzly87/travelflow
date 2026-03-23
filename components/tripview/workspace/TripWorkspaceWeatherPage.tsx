@@ -21,11 +21,16 @@ import { resolveTripWorkspaceContextSnapshot } from './tripWorkspaceContext';
 import { resolveTripWorkspaceFallbackTripMeta, useTripWorkspacePageContext } from './tripWorkspacePageContext';
 import { TripWorkspaceMapCard } from './TripWorkspaceMapCard';
 import { TripWorkspaceRouteContextBar } from './TripWorkspaceRouteContextBar';
+import { TripWorkspaceSection } from './TripWorkspaceSection';
+import {
+    TripWorkspaceWeatherForecastStrip,
+    TripWorkspaceWeatherHeroWidget,
+    TripWorkspaceWeatherTrendChart,
+} from './TripWorkspaceWeatherWidgets';
 import { Badge } from '../../ui/badge';
 import { Button } from '../../ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../ui/card';
 import { ScrollArea, ScrollBar } from '../../ui/scroll-area';
-import { ToggleGroup, ToggleGroupItem } from '../../ui/toggle-group';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs';
 
 interface TripMetaSummary {
     dateRange: string;
@@ -47,23 +52,23 @@ interface TripWorkspaceWeatherPageProps {
 const LENS_COPY: Record<TripWorkspaceWeatherLensId, { label: string; title: string; description: string }> = {
     feel: {
         label: 'Travel feel',
-        title: 'How the day actually feels once you are moving',
-        description: 'This keeps focus on pace, comfort, and route quality rather than generic forecast noise.',
+        title: 'How the day feels once you are actually moving',
+        description: 'This lens keeps the focus on comfort, energy, and whether the route still feels worth doing at full strength.',
     },
     rain: {
         label: 'Rain risk',
-        title: 'Where showers change the plan instead of just the mood',
-        description: 'Use this when you need to understand which part of the city or route becomes weaker if rain lands badly.',
+        title: 'Where showers actually change the plan',
+        description: 'Use this when you need to understand which city day weakens first if rain lands in the wrong window.',
     },
     sea: {
         label: 'Sea watch',
-        title: 'Marine or transfer-sensitive pressure',
-        description: 'This lens matters most on island, ferry, or scenic-viewpoint days.',
+        title: 'Marine and transfer-sensitive pressure',
+        description: 'This matters most on ferries, islands, viewpoints, or scenic legs where weather affects payoff directly.',
     },
     pack: {
         label: 'Pack notes',
         title: 'What to keep reachable without overpacking',
-        description: 'Use this for the small items that reduce friction across country changes and weather swings.',
+        description: 'Use this for the small items that keep route quality high across country changes and mixed conditions.',
     },
 };
 
@@ -146,7 +151,7 @@ export const TripWorkspaceWeatherPage: React.FC<TripWorkspaceWeatherPageProps> =
     }, [activeLens, activeStop]);
 
     return (
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-6">
             <TripWorkspaceRouteContextBar
                 tripId={trip.id}
                 page="weather"
@@ -156,222 +161,202 @@ export const TripWorkspaceWeatherPage: React.FC<TripWorkspaceWeatherPageProps> =
                 onSelectionChange={handleContextSelectionChange}
             />
 
-            <Card className="overflow-hidden border-border/80 bg-linear-to-br from-sky-50 via-background to-cyan-50 shadow-sm">
-                <CardHeader className="gap-4">
-                    <div className="flex flex-wrap gap-2">
-                        <Badge variant="secondary">Decision weather</Badge>
-                        <Badge variant="outline">{activeCountry?.name ?? 'Route'}</Badge>
-                        <Badge variant="outline">{activeStop?.updateLine ?? 'Seeded route weather'}</Badge>
-                    </div>
-                    <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-                        <div>
-                            <CardDescription>Weather pulse</CardDescription>
-                            <CardTitle>{activeCity?.title ?? 'This stop'} is the active route-weather lens</CardTitle>
-                            <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
-                                Weather here is framed around planning consequences, not raw forecast density. Keep the route-wide pressure visible,
-                                then drill into the selected country and city only when it changes what you pack, book, or move.
-                            </p>
-                            <div className="mt-5 flex flex-wrap gap-2">
-                                <QuickWeatherLink icon={<GlobeHemisphereWest data-icon="inline-start" weight="duotone" />} label="Open places" page="places" tripId={trip.id} onPageChange={onPageChange} />
-                                <QuickWeatherLink icon={<Backpack data-icon="inline-start" weight="duotone" />} label="Open travel kit" page="travel-kit" tripId={trip.id} onPageChange={onPageChange} />
-                                <QuickWeatherLink icon={<CalendarBlank data-icon="inline-start" weight="duotone" />} label="Open planner" page="planner" tripId={trip.id} onPageChange={onPageChange} />
-                            </div>
-                        </div>
-                        <div className="grid gap-3 sm:grid-cols-3">
-                            {(activeStop?.signals ?? []).map((signal) => (
-                                <div key={signal.label} className="rounded-[1.5rem] border border-border/70 bg-background/90 px-4 py-3">
-                                    <p className="text-xs font-medium uppercase tracking-[0.08em] text-muted-foreground">{signal.label}</p>
-                                    <p className="mt-2 text-sm font-semibold leading-6 text-foreground">{signal.value}</p>
-                                    <Badge variant={signal.tone} className="mt-3">{activeCity?.title ?? activeCountry?.name}</Badge>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </CardHeader>
-            </Card>
-
-            <Card className="border-border/80 bg-card/95 shadow-sm">
-                <CardHeader className="gap-3">
-                    <CardDescription>Trip-wide weather pressure</CardDescription>
-                    <CardTitle>Read the route as a sequence of weather decisions</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <ScrollArea className="w-full whitespace-nowrap">
-                        <div className="flex gap-3 pb-2">
-                            {pageDataset.weatherStops.map((stop) => {
-                                const isActive = stop.id === activeStop?.id;
-                                return (
-                                    <button
-                                        key={stop.id}
-                                        type="button"
-                                        onClick={() => handleContextSelectionChange({
-                                            countryCode: stop.countryCode ?? pageContextSelection.countryCode,
-                                            cityGuideId: stop.id,
-                                        })}
-                                        className={`min-w-[12rem] rounded-[1.5rem] border px-4 py-3 text-left transition-colors ${
-                                            isActive
-                                                ? 'border-accent-500 bg-accent-50 text-accent-700'
-                                                : 'border-border bg-background text-muted-foreground hover:border-accent-300 hover:text-foreground'
-                                        }`}
-                                    >
-                                        <p className="text-sm font-medium">{stop.title}</p>
-                                        <p className="mt-2 text-xs leading-5">{stop.headline}</p>
-                                    </button>
-                                );
-                            })}
-                        </div>
-                        <ScrollBar orientation="horizontal" />
-                    </ScrollArea>
-                </CardContent>
-            </Card>
-
-            <div className="grid gap-4 xl:grid-cols-[1.08fr_0.92fr]">
-                <div className="flex flex-col gap-4">
-                    <Card className="border-border/80 bg-card/95 shadow-sm">
-                        <CardHeader className="gap-4">
-                            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                                <div>
-                                    <CardDescription>Country season layer</CardDescription>
-                                    <CardTitle>{activeCountry?.name ?? 'Country'} weather that matters for this route</CardTitle>
-                                </div>
-                                <Badge variant="outline">{activeCountry?.bestTime ?? 'Route season summary'}</Badge>
-                            </div>
-                        </CardHeader>
-                        <CardContent className="grid gap-3 md:grid-cols-3">
-                            {activeCountry?.seasonCards.map((card) => (
-                                <div key={card.title} className="rounded-[1.5rem] border border-border/70 bg-background px-4 py-3">
-                                    <div className="flex items-center justify-between gap-3">
-                                        <p className="text-sm font-medium text-foreground">{card.title}</p>
-                                        <Badge variant={card.tone}>{activeCountry.name}</Badge>
-                                    </div>
-                                    <p className="mt-2 text-sm leading-6 text-muted-foreground">{card.detail}</p>
-                                </div>
-                            ))}
-                        </CardContent>
-                    </Card>
-
-                    <Card className="border-border/80 bg-card/95 shadow-sm">
-                        <CardHeader className="gap-4">
-                            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                                <div>
-                                    <CardDescription>Condition lens</CardDescription>
-                                    <CardTitle>Read the selected city through the decision that matters right now</CardTitle>
-                                </div>
-                                <ToggleGroup
-                                    type="single"
-                                    value={activeLens}
-                                    onValueChange={(value) => {
-                                        if (!value) return;
-                                        setActiveLens(value as TripWorkspaceWeatherLensId);
-                                        trackEvent('trip_workspace__weather_lens--select', {
-                                            trip_id: trip.id,
-                                            lens: value,
-                                        });
-                                    }}
-                                    variant="outline"
-                                    className="flex w-full flex-wrap gap-2 lg:w-auto"
-                                >
-                                    {Object.entries(LENS_COPY).map(([value, entry]) => (
-                                        <ToggleGroupItem
-                                            key={value}
-                                            value={value}
-                                            className="rounded-full"
-                                            {...getAnalyticsDebugAttributes('trip_workspace__weather_lens--select', {
-                                                trip_id: trip.id,
-                                                lens: value,
+            <TripWorkspaceSection
+                eyebrow="Weather pulse"
+                title={`${activeCity?.title ?? 'Current stop'} weather at a glance`}
+                description="Weather belongs in the workspace as a decision layer. It should tell you what changes in the route, not bury you in generic forecast tables."
+                actions={<Badge variant="outline">{activeStop?.updateLine ?? 'Seeded route weather'}</Badge>}
+            >
+                <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
+                    <div className="space-y-5">
+                        <TripWorkspaceWeatherHeroWidget
+                            cityTitle={activeCity?.title ?? 'Current stop'}
+                            headline={activeStop?.headline ?? 'Weather detail is not available for this city yet.'}
+                            forecast={activeStop?.forecast ?? []}
+                            signals={activeStop?.signals ?? []}
+                        />
+                        <ScrollArea className="w-full whitespace-nowrap">
+                            <div className="flex gap-3 pb-2">
+                                {pageDataset.weatherStops.map((stop) => {
+                                    const isActive = stop.id === activeStop?.id;
+                                    return (
+                                        <button
+                                            key={stop.id}
+                                            type="button"
+                                            onClick={() => handleContextSelectionChange({
+                                                countryCode: stop.countryCode ?? pageContextSelection.countryCode,
+                                                cityGuideId: stop.id,
                                             })}
+                                            className={`min-w-[13rem] rounded-[1.5rem] border px-4 py-3 text-left transition-colors ${
+                                                isActive
+                                                    ? 'border-accent-500 bg-accent-50 text-accent-700'
+                                                    : 'border-border bg-background text-muted-foreground hover:border-accent-300 hover:text-foreground'
+                                            }`}
                                         >
-                                            {entry.label}
-                                        </ToggleGroupItem>
-                                    ))}
-                                </ToggleGroup>
+                                            <p className="text-sm font-medium">{stop.title}</p>
+                                            <p className="mt-2 text-xs leading-5">{stop.headline}</p>
+                                        </button>
+                                    );
+                                })}
                             </div>
-                            <div className="rounded-[1.5rem] border border-border/70 bg-background px-4 py-4">
-                                <p className="text-sm font-medium text-foreground">{activeLensCopy.title}</p>
-                                <p className="mt-2 text-sm leading-6 text-muted-foreground">{activeLensCopy.description}</p>
-                                <p className="mt-4 text-sm leading-6 text-foreground">{lensBody}</p>
-                            </div>
-                        </CardHeader>
-                        <CardContent className="grid gap-3 sm:grid-cols-2">
-                            {(activeStop?.forecast ?? []).map((day) => (
-                                <div key={day.label} className="rounded-[1.5rem] border border-border/70 bg-background px-4 py-4">
-                                    <div className="flex items-center justify-between gap-3">
-                                        <div>
-                                            <p className="text-sm font-medium text-foreground">{day.label}</p>
-                                            <p className="mt-2 text-lg font-semibold text-foreground">{day.tempC}</p>
-                                        </div>
-                                        <Badge variant="outline">{day.rainChance} rain</Badge>
-                                    </div>
-                                    <p className="mt-3 text-sm leading-6 text-muted-foreground">{day.condition}</p>
-                                </div>
+                            <ScrollBar orientation="horizontal" />
+                        </ScrollArea>
+                    </div>
+                    <div className="space-y-3 rounded-[1.75rem] border border-border/70 bg-muted/20 p-4">
+                        <div>
+                            <p className="text-sm font-medium text-foreground">Active country season</p>
+                            <p className="mt-2 text-lg font-semibold text-foreground">{activeCountry?.name ?? 'Route overview'}</p>
+                            <p className="mt-2 text-sm leading-6 text-muted-foreground">{activeCountry?.bestTime ?? 'Route season summary unavailable.'}</p>
+                        </div>
+                        <div className="grid gap-2 text-sm leading-6 text-muted-foreground">
+                            {activeCountry?.seasonCards.slice(0, 3).map((card) => (
+                                <p key={card.title}>
+                                    <span className="font-medium text-foreground">{card.title}:</span> {card.detail}
+                                </p>
                             ))}
-                        </CardContent>
-                    </Card>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            <QuickWeatherLink icon={<GlobeHemisphereWest data-icon="inline-start" weight="duotone" />} label="Open places" page="places" tripId={trip.id} onPageChange={onPageChange} />
+                            <QuickWeatherLink icon={<Backpack data-icon="inline-start" weight="duotone" />} label="Open travel kit" page="travel-kit" tripId={trip.id} onPageChange={onPageChange} />
+                            <QuickWeatherLink icon={<CalendarBlank data-icon="inline-start" weight="duotone" />} label="Open planner" page="planner" tripId={trip.id} onPageChange={onPageChange} />
+                        </div>
+                    </div>
                 </div>
+            </TripWorkspaceSection>
 
-                <div className="flex flex-col gap-4">
-                    <TripWorkspaceMapCard
-                        eyebrow="Weather map"
-                        title="Follow weather pressure across the route"
-                        description="This lighter map uses the same trip map workflow as the rest of the workspace, but keeps the focus on route timing rather than full editing."
-                        badges={[
-                            `${pageDataset.weatherStops.length} weather stops`,
-                            activeCountry?.name ?? 'Route-wide',
-                            activeCity?.title ?? 'Current city',
-                        ]}
-                        items={cityStops}
-                        mapStyle="clean"
-                        routeMode="simple"
-                        footer={(
-                            <div className="grid gap-3">
-                                <div className="rounded-[1.5rem] border border-border/70 bg-background px-4 py-3">
+            <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
+                <TripWorkspaceSection
+                    eyebrow="Forecast"
+                    title="Read the next days through the decision that matters"
+                    description="The tabs shift the reading lens, while the widgets stay compact and visual enough to scan quickly."
+                >
+                    <Tabs
+                        value={activeLens}
+                        onValueChange={(value) => {
+                            if (!value) return;
+                            setActiveLens(value as TripWorkspaceWeatherLensId);
+                            trackEvent('trip_workspace__weather_lens--select', {
+                                trip_id: trip.id,
+                                lens: value,
+                            });
+                        }}
+                    >
+                        <TabsList variant="line" className="w-full flex-wrap gap-5">
+                            {Object.entries(LENS_COPY).map(([value, entry]) => (
+                                <TabsTrigger
+                                    key={value}
+                                    value={value}
+                                    {...getAnalyticsDebugAttributes('trip_workspace__weather_lens--select', {
+                                        trip_id: trip.id,
+                                        lens: value,
+                                    })}
+                                >
+                                    {entry.label}
+                                </TabsTrigger>
+                            ))}
+                        </TabsList>
+                        {Object.entries(LENS_COPY).map(([value]) => (
+                            <TabsContent key={value} value={value} className="mt-6">
+                                <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_18rem]">
+                                    <div className="space-y-4">
+                                        <TripWorkspaceWeatherForecastStrip forecast={activeStop?.forecast ?? []} />
+                                        <TripWorkspaceWeatherTrendChart forecast={activeStop?.forecast ?? []} />
+                                    </div>
+                                    <div className="space-y-4">
+                                        <div className="rounded-[1.75rem] border border-border/70 bg-muted/20 p-4">
+                                            <p className="text-sm font-medium text-foreground">{activeLensCopy.title}</p>
+                                            <p className="mt-2 text-sm leading-6 text-muted-foreground">{activeLensCopy.description}</p>
+                                            <p className="mt-4 text-sm leading-6 text-foreground">{lensBody}</p>
+                                        </div>
+                                        <div className="space-y-3">
+                                            <div className="rounded-[1.5rem] border border-border/70 bg-muted/20 px-4 py-3">
+                                                <div className="flex items-center gap-3">
+                                                    <Wind size={18} weight="duotone" className="text-sky-700" />
+                                                    <p className="text-sm font-medium text-foreground">Best activity window</p>
+                                                </div>
+                                                <p className="mt-2 text-sm leading-6 text-muted-foreground">{activeStop?.activityWindow ?? 'No activity window seeded for this city yet.'}</p>
+                                            </div>
+                                            <div className="rounded-[1.5rem] border border-border/70 bg-muted/20 px-4 py-3">
+                                                <div className="flex items-center gap-3">
+                                                    <Waves size={18} weight="duotone" className="text-cyan-700" />
+                                                    <p className="text-sm font-medium text-foreground">Sea and transfer notes</p>
+                                                </div>
+                                                <p className="mt-2 text-sm leading-6 text-muted-foreground">{activeStop?.seaNote ?? 'No marine note seeded for this city yet.'}</p>
+                                            </div>
+                                            <div className="rounded-[1.5rem] border border-border/70 bg-muted/20 px-4 py-3">
+                                                <div className="flex items-center gap-3">
+                                                    <Lifebuoy size={18} weight="duotone" className="text-amber-700" />
+                                                    <p className="text-sm font-medium text-foreground">Caution</p>
+                                                </div>
+                                                <p className="mt-2 text-sm leading-6 text-muted-foreground">{activeStop?.caution ?? 'No caution note seeded for this city yet.'}</p>
+                                            </div>
+                                            <div className="rounded-[1.5rem] border border-border/70 bg-muted/20 px-4 py-3">
+                                                <div className="flex items-center gap-3">
+                                                    <Backpack size={18} weight="duotone" className="text-emerald-700" />
+                                                    <p className="text-sm font-medium text-foreground">Pack notes</p>
+                                                </div>
+                                                <p className="mt-2 text-sm leading-6 text-muted-foreground">{activeStop?.packNotes.join(' • ') ?? 'No pack notes seeded for this city yet.'}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </TabsContent>
+                        ))}
+                    </Tabs>
+                </TripWorkspaceSection>
+
+                <TripWorkspaceSection
+                    eyebrow="Country season layer"
+                    title={`${activeCountry?.name ?? 'Country'} weather that matters for this route`}
+                    description="This is the high-level season view. It stays compact so the city widgets can do the tactical work."
+                >
+                    <div className="space-y-3">
+                        {activeCountry?.seasonCards.map((card) => (
+                            <div key={card.title} className="rounded-[1.5rem] border border-border/70 bg-muted/20 px-4 py-3">
+                                <div className="flex items-center justify-between gap-3">
+                                    <p className="text-sm font-medium text-foreground">{card.title}</p>
+                                    <Badge variant={card.tone}>{activeCountry.name}</Badge>
+                                </div>
+                                <p className="mt-2 text-sm leading-6 text-muted-foreground">{card.detail}</p>
+                            </div>
+                        ))}
+                    </div>
+                </TripWorkspaceSection>
+            </div>
+
+            <TripWorkspaceSection
+                eyebrow="Weather map"
+                title="Route pressure across the full trip"
+                description="The map stays lightweight here. It is only for reading the route rhythm, not for editing it."
+            >
+                <TripWorkspaceMapCard
+                    frameVariant="plain"
+                    eyebrow="Route map"
+                    title="Follow weather pressure across the route"
+                    description="This uses the same trip map workflow as the rest of the workspace, but keeps the focus on timing and route sensitivity."
+                    badges={[
+                        `${pageDataset.weatherStops.length} weather stops`,
+                        activeCountry?.name ?? 'Route-wide',
+                        activeCity?.title ?? 'Current city',
+                    ]}
+                    items={cityStops}
+                    mapStyle="clean"
+                    routeMode="simple"
+                    footer={(
+                        <div className="rounded-[1.5rem] border border-border/70 bg-muted/20 px-4 py-3">
+                            <div className="flex items-center gap-3">
+                                <CloudSun size={18} weight="duotone" className="text-sky-700" />
+                                <div>
                                     <p className="text-sm font-medium text-foreground">Route impact</p>
-                                    <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                                    <p className="mt-1 text-sm leading-6 text-muted-foreground">
                                         {activeCity?.weather?.routeImpact ?? 'Weather impact notes are not available for this city yet.'}
                                     </p>
                                 </div>
                             </div>
-                        )}
-                    />
-
-                    <Card className="border-border/80 bg-card/95 shadow-sm">
-                        <CardHeader>
-                            <CardDescription>Active city weather notes</CardDescription>
-                            <CardTitle>What this changes in the plan</CardTitle>
-                        </CardHeader>
-                        <CardContent className="grid gap-3 text-sm leading-6 text-muted-foreground">
-                            <div className="rounded-[1.5rem] border border-border/70 bg-background px-4 py-3">
-                                <div className="flex items-center gap-3">
-                                    <Wind size={18} weight="duotone" className="text-sky-700" />
-                                    <p className="text-sm font-medium text-foreground">Best activity window</p>
-                                </div>
-                                <p className="mt-2">{activeStop?.activityWindow ?? 'No activity window seeded for this city yet.'}</p>
-                            </div>
-                            <div className="rounded-[1.5rem] border border-border/70 bg-background px-4 py-3">
-                                <div className="flex items-center gap-3">
-                                    <Waves size={18} weight="duotone" className="text-cyan-700" />
-                                    <p className="text-sm font-medium text-foreground">Sea and transfer notes</p>
-                                </div>
-                                <p className="mt-2">{activeStop?.seaNote ?? 'No marine note seeded for this city yet.'}</p>
-                            </div>
-                            <div className="rounded-[1.5rem] border border-border/70 bg-background px-4 py-3">
-                                <div className="flex items-center gap-3">
-                                    <Lifebuoy size={18} weight="duotone" className="text-amber-700" />
-                                    <p className="text-sm font-medium text-foreground">Caution</p>
-                                </div>
-                                <p className="mt-2">{activeStop?.caution ?? 'No caution note seeded for this city yet.'}</p>
-                            </div>
-                            <div className="rounded-[1.5rem] border border-border/70 bg-background px-4 py-3">
-                                <div className="flex items-center gap-3">
-                                    <Backpack size={18} weight="duotone" className="text-emerald-700" />
-                                    <p className="text-sm font-medium text-foreground">Pack notes</p>
-                                </div>
-                                <p className="mt-2">{activeStop?.packNotes.join(' • ') ?? 'No pack notes seeded for this city yet.'}</p>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-            </div>
+                        </div>
+                    )}
+                />
+            </TripWorkspaceSection>
         </div>
     );
 };

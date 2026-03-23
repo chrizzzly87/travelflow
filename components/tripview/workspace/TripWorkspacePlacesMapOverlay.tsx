@@ -43,7 +43,6 @@ export const TripWorkspacePlacesMapOverlay: React.FC<TripWorkspacePlacesMapOverl
 
     return (
         <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden rounded-[2rem]">
-            <div className="absolute inset-0 bg-linear-to-br from-white/8 via-transparent to-slate-950/10" />
             <div className="absolute start-4 top-4 w-[16.5rem] max-w-[calc(100%-7rem)]">
                 <div className="rounded-[1.35rem] border border-white/65 bg-background/92 px-3.5 py-3 shadow-sm backdrop-blur-md">
                     <div className="flex flex-wrap items-center gap-2">

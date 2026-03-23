@@ -180,7 +180,7 @@ export const TripWorkspaceDocumentsPage: React.FC<TripWorkspaceDocumentsPageProp
                 onSelectionChange={handleContextSelectionChange}
             />
 
-            <Card className="overflow-hidden border-border/80 bg-linear-to-br from-slate-50 via-background to-accent/10 shadow-sm">
+            <Card className="overflow-hidden border-border/80 bg-card/95 shadow-sm">
                 <CardHeader className="gap-4">
                     <div className="flex flex-wrap gap-2">
                         <Badge variant="secondary">Documents dossier</Badge>

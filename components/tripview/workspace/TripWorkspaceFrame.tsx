@@ -5,7 +5,7 @@ interface TripWorkspaceFrameProps {
 }
 
 export const TripWorkspaceFrame: React.FC<TripWorkspaceFrameProps> = ({ children }) => (
-    <div className="relative flex min-h-0 flex-1 overflow-hidden bg-[linear-gradient(180deg,rgba(248,250,252,0.92),rgba(248,250,252,0.72))]">
+    <div className="relative flex min-h-0 flex-1 overflow-hidden bg-background">
         {children}
     </div>
 );
