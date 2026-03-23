@@ -58,6 +58,13 @@
     "subtitle": "Invece di saltare tra documenti, mappe, screenshot e chat mezze finite, TravelFlow tiene insieme rotta, ritmo e contesto del viaggio.",
     "items": [
       {
+        "id": "airport",
+        "eyebrow": "",
+        "title": "Il prossimo volo ti aspetta gia",
+        "description": "TravelFlow ti aiuta a organizzare tutto il viaggio, dal primo volo ai trasferimenti, ai soggiorni e ai piccoli piani nel mezzo. Partiamo dall aeroporto piu vicino, cosi trasformare un idea in una rotta reale sembra molto meno caotico.",
+        "detail": "Parti vicino. Sogna piu in grande."
+      },
+      {
         "id": "itinerary",
         "eyebrow": "Bozza IA",
         "title": "Parti da una rotta, non da una pagina vuota",
@@ -92,7 +99,21 @@
         "description": "Quando la rotta è pronta, il contesto pratico resta lì: link, note e una versione più pulita per il passaggio finale.",
         "detail": "Pronto da condividere, salvare o stampare"
       }
-    ]
+    ],
+    "airportCard": {
+      "label": "Partenza piu vicina",
+      "defaultBadge": "Rotta da sogno",
+      "loadingBadge": "Cerchiamo la tua",
+      "readyBadge": "Piu vicino a te",
+      "defaultStatus": "Parti vicino a casa. Da li il resto puo aprirsi.",
+      "loadingStatus": "Cerchiamo la partenza piu vicina a te.",
+      "readyCityStatus": "Si parte vicino a {city}. Da li il resto puo aprirsi.",
+      "readyCountryStatus": "Si parte da {country}. Da li il resto puo aprirsi.",
+      "fallbackStatus": "Parti vicino a casa. Da li il resto puo aprirsi.",
+      "defaultChip": "Il tuo lato della mappa",
+      "cityChip": "Intorno a {city}",
+      "countryChip": "Da {country}"
+    }
   },
   "workflow": {
     "badge": "Dall’idea a un piano pronto per il gruppo",

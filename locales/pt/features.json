@@ -58,6 +58,13 @@
     "subtitle": "Em vez de saltar entre docs, mapas, capturas e conversas a meio, o TravelFlow mantém a rota, o ritmo e o contexto juntos.",
     "items": [
       {
+        "id": "airport",
+        "eyebrow": "",
+        "title": "O proximo voo ja espera",
+        "description": "A TravelFlow ajuda-te a organizar a viagem inteira, desde o primeiro voo ate aos transfers, estadias e pequenos planos pelo caminho. Comecamos pelo aeroporto mais proximo para que transformar uma ideia numa rota real pareca muito menos caotico.",
+        "detail": "Comeca perto. Sonha maior."
+      },
+      {
         "id": "itinerary",
         "eyebrow": "Rascunho com IA",
         "title": "Comece por uma rota, não por uma página em branco",
@@ -92,7 +99,21 @@
         "description": "Quando a rota está pronta, o contexto prático continua lá: links, notas e uma versão mais limpa para a entrega final.",
         "detail": "Pronto para partilhar, guardar ou imprimir"
       }
-    ]
+    ],
+    "airportCard": {
+      "label": "Partida mais proxima",
+      "defaultBadge": "Rota de sonho",
+      "loadingBadge": "A procurar a tua",
+      "readyBadge": "Mais perto de ti",
+      "defaultStatus": "Comeca perto de casa. A partir dai, o resto pode abrir-se.",
+      "loadingStatus": "A procurar a partida mais proxima de ti.",
+      "readyCityStatus": "A comecar perto de {city}. A partir dai, o resto pode abrir-se.",
+      "readyCountryStatus": "A comecar em {country}. A partir dai, o resto pode abrir-se.",
+      "fallbackStatus": "Comeca perto de casa. A partir dai, o resto pode abrir-se.",
+      "defaultChip": "O teu lado do mapa",
+      "cityChip": "Perto de {city}",
+      "countryChip": "A partir de {country}"
+    }
   },
   "workflow": {
     "badge": "Da faísca a um plano pronto para o grupo",

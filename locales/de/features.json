@@ -58,6 +58,13 @@
     "subtitle": "Statt zwischen Docs, Karten, Screenshots und halbfertigen Chats zu springen, haelt TravelFlow Route, Timing und Reisekontext in einer Bewegung.",
     "items": [
       {
+        "id": "airport",
+        "eyebrow": "",
+        "title": "Der naechste Flug wartet",
+        "description": "TravelFlow hilft dir, die ganze Reise zusammenzuhalten, vom ersten Flug bis zu Transfers, Unterkuenften und den kleinen Plaenen dazwischen. Wir starten mit dem Flughafen in deiner Naehe, damit aus Fernweh leichter eine echte Route wird.",
+        "detail": "Nah starten. Weiter traeumen."
+      },
+      {
         "id": "itinerary",
         "eyebrow": "KI-Entwurf",
         "title": "Starte mit einer Route statt mit einer leeren Seite",
@@ -92,7 +99,21 @@
         "description": "Wenn die Route steht, bleibt auch der praktische Kontext erhalten: Links, Notizen und eine aufgeraeumte Druckansicht fuer die finale Version.",
         "detail": "Bereit zum Teilen, Speichern oder Drucken"
       }
-    ]
+    ],
+    "airportCard": {
+      "label": "Naechster Abflug",
+      "defaultBadge": "Fernweh-Modus",
+      "loadingBadge": "Suchen wir",
+      "readyBadge": "Naeher bei dir",
+      "defaultStatus": "Starte nah bei dir. Von dort kann sich der Rest oeffnen.",
+      "loadingStatus": "Wir suchen den naechsten passenden Abflug in deiner Naehe.",
+      "readyCityStatus": "Start in der Naehe von {city}. Von dort kann sich der Rest oeffnen.",
+      "readyCountryStatus": "Start ab {country}. Von dort kann sich der Rest oeffnen.",
+      "fallbackStatus": "Starte nah bei dir. Von dort kann sich der Rest oeffnen.",
+      "defaultChip": "Deine Seite der Karte",
+      "cityChip": "Rund um {city}",
+      "countryChip": "Ab {country}"
+    }
   },
   "workflow": {
     "badge": "Von der Idee bis zur gruppentauglichen Route",

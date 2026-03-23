@@ -58,6 +58,13 @@
     "subtitle": "문서, 지도, 스크린샷, 덜 끝난 채팅을 오가는 대신 TravelFlow는 경로, 페이스, 여행 맥락을 함께 묶어 둡니다.",
     "items": [
       {
+        "id": "airport",
+        "eyebrow": "",
+        "title": "다음 비행이 기다리고 있어요",
+        "description": "TravelFlow는 첫 비행부터 이동, 숙박, 그리고 그 사이의 작은 계획까지 여행 전체를 한곳에서 정리해 줍니다. 가장 가까운 공항에서 시작하니, 여행을 꿈에서 실제 루트로 바꾸는 과정이 훨씬 덜 복잡해져요.",
+        "detail": "가깝게 시작하고, 더 크게 그려 보세요."
+      },
+      {
         "id": "itinerary",
         "eyebrow": "AI 초안",
         "title": "빈 페이지가 아니라 경로에서 시작하세요",
@@ -92,7 +99,21 @@
         "description": "경로가 준비된 뒤에도 실용적인 맥락은 그대로 남습니다. 링크, 메모, 그리고 최종 전달용으로 더 정돈된 버전까지 함께요.",
         "detail": "공유·저장·출력 준비 완료"
       }
-    ]
+    ],
+    "airportCard": {
+      "label": "가까운 출발지",
+      "defaultBadge": "드림 루트",
+      "loadingBadge": "찾는 중",
+      "readyBadge": "더 가까운 출발",
+      "defaultStatus": "집 가까이에서 시작하고, 나머지는 거기서부터 열어 두세요.",
+      "loadingStatus": "가장 가까운 출발 공항을 찾고 있어요.",
+      "readyCityStatus": "{city} 근처에서 시작해요. 나머지는 거기서부터 열려요.",
+      "readyCountryStatus": "{country}에서 시작해요. 나머지는 거기서부터 열려요.",
+      "fallbackStatus": "집 가까이에서 시작하고, 나머지는 거기서부터 열어 두세요.",
+      "defaultChip": "당신 쪽 지도",
+      "cityChip": "{city} 근처",
+      "countryChip": "{country}에서"
+    }
   },
   "workflow": {
     "badge": "아이디어에서 그룹용 계획까지",

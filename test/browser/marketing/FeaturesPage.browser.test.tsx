@@ -8,7 +8,16 @@ import featuresLocale from '../../../locales/en/features.json';
 const trackEventMock = vi.fn();
 const warmRouteAssetsMock = vi.fn();
 const originalGetContext = HTMLCanvasElement.prototype.getContext;
-const { runtimeLocationSnapshot } = vi.hoisted(() => ({
+const originalIntersectionObserver = globalThis.IntersectionObserver;
+const observerInstances: MockIntersectionObserver[] = [];
+
+const {
+    ensureRuntimeLocationLoadedMock,
+    fetchNearbyAirportsMock,
+    runtimeLocationSnapshot,
+} = vi.hoisted(() => ({
+    ensureRuntimeLocationLoadedMock: vi.fn(),
+    fetchNearbyAirportsMock: vi.fn(),
     runtimeLocationSnapshot: {
         available: false,
         source: 'unavailable' as const,
@@ -27,6 +36,50 @@ const { runtimeLocationSnapshot } = vi.hoisted(() => ({
         },
     },
 }));
+
+class MockIntersectionObserver {
+    readonly callback: IntersectionObserverCallback;
+    readonly elements = new Set<Element>();
+    readonly observe = vi.fn((element: Element) => {
+        this.elements.add(element);
+    });
+    readonly disconnect = vi.fn(() => {
+        this.elements.clear();
+    });
+    readonly unobserve = vi.fn((element: Element) => {
+        this.elements.delete(element);
+    });
+    readonly takeRecords = vi.fn(() => []);
+
+    constructor(callback: IntersectionObserverCallback) {
+        this.callback = callback;
+        observerInstances.push(this);
+    }
+}
+
+const triggerIntersection = (
+    target: Element,
+    options?: { intersectionRatio?: number; isIntersecting?: boolean },
+) => {
+    const intersectionRatio = options?.intersectionRatio ?? 1;
+    const isIntersecting = options?.isIntersecting ?? true;
+
+    observerInstances.forEach((observer) => {
+        if (!observer.elements.has(target)) return;
+
+        observer.callback([
+            {
+                boundingClientRect: target.getBoundingClientRect(),
+                intersectionRatio,
+                intersectionRect: target.getBoundingClientRect(),
+                isIntersecting,
+                rootBounds: null,
+                target,
+                time: Date.now(),
+            } as IntersectionObserverEntry,
+        ], observer as unknown as IntersectionObserver);
+    });
+};
 
 vi.mock('cobe', () => ({
     default: () => {
@@ -49,8 +102,12 @@ vi.mock('../../../services/navigationPrefetch', () => ({
 
 vi.mock('../../../services/runtimeLocationService', () => ({
     getRuntimeLocationSnapshot: () => runtimeLocationSnapshot,
-    ensureRuntimeLocationLoaded: vi.fn().mockResolvedValue(runtimeLocationSnapshot),
+    ensureRuntimeLocationLoaded: (...args: unknown[]) => ensureRuntimeLocationLoadedMock(...args),
     subscribeRuntimeLocation: () => () => undefined,
+}));
+
+vi.mock('../../../services/nearbyAirportsService', () => ({
+    fetchNearbyAirports: (...args: unknown[]) => fetchNearbyAirportsMock(...args),
 }));
 
 const getNestedValue = (key: string): unknown => key.split('.').reduce<unknown>((current, part) => {
@@ -60,12 +117,20 @@ const getNestedValue = (key: string): unknown => key.split('.').reduce<unknown>(
     return undefined;
 }, featuresLocale as unknown);
 
+const interpolateString = (template: string, options?: Record<string, unknown>) => template.replace(
+    /\{(\w+)\}/g,
+    (_, key: string) => {
+        const value = options?.[key];
+        return value == null ? `{${key}}` : String(value);
+    },
+);
+
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({
-        t: (key: string, options?: { returnObjects?: boolean }) => {
+        t: (key: string, options?: { returnObjects?: boolean } & Record<string, unknown>) => {
             const value = getNestedValue(key);
             if (options?.returnObjects) return value;
-            return typeof value === 'string' ? value : key;
+            return typeof value === 'string' ? interpolateString(value, options) : key;
         },
         i18n: {
             language: 'en',
@@ -81,12 +146,26 @@ describe('pages/FeaturesPage', () => {
         cleanup();
         trackEventMock.mockReset();
         warmRouteAssetsMock.mockReset();
+        ensureRuntimeLocationLoadedMock.mockReset();
+        fetchNearbyAirportsMock.mockReset();
+        ensureRuntimeLocationLoadedMock.mockResolvedValue(runtimeLocationSnapshot);
         HTMLCanvasElement.prototype.getContext = vi.fn(() => null) as typeof HTMLCanvasElement.prototype.getContext;
+        observerInstances.splice(0, observerInstances.length);
+        Object.defineProperty(globalThis, 'IntersectionObserver', {
+            configurable: true,
+            value: MockIntersectionObserver,
+            writable: true,
+        });
     });
 
     afterEach(() => {
         cleanup();
         HTMLCanvasElement.prototype.getContext = originalGetContext;
+        Object.defineProperty(globalThis, 'IntersectionObserver', {
+            configurable: true,
+            value: originalIntersectionObserver,
+            writable: true,
+        });
     });
 
     it('renders the new hero CTAs and tracks hero clicks', () => {
@@ -135,5 +214,86 @@ describe('pages/FeaturesPage', () => {
         expect(globe.className).toContain('max-w-[34rem]');
         expect(globe.className).not.toContain('aspect-[1.02/0.98]');
         expect(globe.className).not.toContain('min-h-[480px]');
+    });
+
+    it('defers the nearby-airport lookup until the airport bento card is fully visible', async () => {
+        ensureRuntimeLocationLoadedMock.mockResolvedValue({
+            available: true,
+            source: 'netlify-context',
+            fetchedAt: '2026-03-23T09:00:00.000Z',
+            loading: false,
+            location: {
+                city: 'Berlin',
+                countryCode: 'DE',
+                countryName: 'Germany',
+                subdivisionCode: 'DE-BE',
+                subdivisionName: 'Berlin',
+                latitude: 52.52,
+                longitude: 13.405,
+                timezone: 'Europe/Berlin',
+                postalCode: '10115',
+            },
+        });
+        fetchNearbyAirportsMock.mockResolvedValue({
+            dataVersion: 'test-airports',
+            origin: { lat: 52.52, lng: 13.405 },
+            airports: [
+                {
+                    airDistanceKm: 18.5,
+                    rank: 1,
+                    airport: {
+                        ident: 'EDDB',
+                        iataCode: 'BER',
+                        icaoCode: 'EDDB',
+                        name: 'Berlin Brandenburg Airport',
+                        municipality: 'Berlin',
+                        subdivisionName: 'Berlin',
+                        regionCode: 'DE-BE',
+                        countryCode: 'DE',
+                        countryName: 'Germany',
+                        latitude: 52.3667,
+                        longitude: 13.5033,
+                        timezone: 'Europe/Berlin',
+                        airportType: 'large_airport',
+                        scheduledService: true,
+                        isCommercial: true,
+                        commercialServiceTier: 'major',
+                        isMajorCommercial: true,
+                    },
+                },
+            ],
+        });
+
+        render(
+            <MemoryRouter initialEntries={['/features']}>
+                <FeaturesPage />
+            </MemoryRouter>
+        );
+
+        const airportCard = screen.getByTestId('features-airport-card');
+
+        expect(screen.getByText(featuresLocale.bento.airportCard.defaultStatus)).toBeInTheDocument();
+        expect(fetchNearbyAirportsMock).not.toHaveBeenCalled();
+
+        triggerIntersection(airportCard, { intersectionRatio: 0.5, isIntersecting: true });
+        await Promise.resolve();
+
+        expect(fetchNearbyAirportsMock).not.toHaveBeenCalled();
+
+        triggerIntersection(airportCard, { intersectionRatio: 1, isIntersecting: true });
+
+        await waitFor(() => {
+            expect(ensureRuntimeLocationLoadedMock).toHaveBeenCalled();
+            expect(fetchNearbyAirportsMock).toHaveBeenCalledWith(expect.objectContaining({
+                lat: 52.52,
+                lng: 13.405,
+                limit: 5,
+                minimumServiceTier: 'regional',
+            }));
+        });
+
+        await waitFor(() => {
+            expect(screen.getByText('Starting near Berlin. The rest can open up from there.')).toBeInTheDocument();
+        });
     });
 });

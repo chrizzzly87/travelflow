@@ -58,6 +58,13 @@
     "subtitle": "Zamiast skakać między dokumentami, mapami, screenami i niedokończonymi rozmowami, TravelFlow trzyma trasę, tempo i kontekst razem.",
     "items": [
       {
+        "id": "airport",
+        "eyebrow": "",
+        "title": "Nastepny lot juz czeka",
+        "description": "TravelFlow pomaga ogarnac cala podroz, od pierwszego lotu po transfery, noclegi i male plany pomiedzy nimi. Zaczynamy od najblizszego lotniska, dzieki czemu zamiana marzenia o wyjezdzie w prawdziwa trase jest duzo mniej chaotyczna.",
+        "detail": "Zacznij blisko. Mysl szerzej."
+      },
+      {
         "id": "itinerary",
         "eyebrow": "Szkic AI",
         "title": "Zacznij od trasy, nie od pustej strony",
@@ -92,7 +99,21 @@
         "description": "Gdy trasa jest gotowa, praktyczny kontekst wciąż tam jest: linki, notatki i czystsza wersja do finalnego przekazania.",
         "detail": "Gotowe do udostępnienia, zapisania lub wydruku"
       }
-    ]
+    ],
+    "airportCard": {
+      "label": "Najblizszy wylot",
+      "defaultBadge": "Wymarzona trasa",
+      "loadingBadge": "Szukamy twojej",
+      "readyBadge": "Blizej ciebie",
+      "defaultStatus": "Zacznij blisko domu. Od tego reszta moze sie otworzyc.",
+      "loadingStatus": "Szukamy najblizszego wylotu dla ciebie.",
+      "readyCityStatus": "Start blisko {city}. Od tego reszta moze sie otworzyc.",
+      "readyCountryStatus": "Start z {country}. Od tego reszta moze sie otworzyc.",
+      "fallbackStatus": "Zacznij blisko domu. Od tego reszta moze sie otworzyc.",
+      "defaultChip": "Twoja strona mapy",
+      "cityChip": "W okolicach {city}",
+      "countryChip": "Z {country}"
+    }
   },
   "workflow": {
     "badge": "Od iskry do planu gotowego dla grupy",
