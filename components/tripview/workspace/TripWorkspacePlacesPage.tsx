@@ -12,6 +12,11 @@ import {
 import { resolveTripWorkspaceContextSnapshot } from './tripWorkspaceContext';
 import { resolveTripWorkspaceFallbackTripMeta, useTripWorkspacePageContext } from './tripWorkspacePageContext';
 import { TripWorkspaceMapCard } from './TripWorkspaceMapCard';
+import {
+    buildTripWorkspacePlacesFitBoundsCoordinates,
+    buildTripWorkspacePlacesMapGeometry,
+} from './tripWorkspacePlacesMapGeometry';
+import { TripWorkspacePlacesMapNativeOverlay } from './TripWorkspacePlacesMapNativeOverlay';
 import { TripWorkspacePlacesMapOverlay } from './TripWorkspacePlacesMapOverlay';
 import { TripWorkspaceRouteContextBar } from './TripWorkspaceRouteContextBar';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../../ui/accordion';
@@ -94,6 +99,7 @@ export const TripWorkspacePlacesPage: React.FC<TripWorkspacePlacesPageProps> = (
         }),
         [activeCountry, cityStops],
     );
+    const activeCityCenter = activeCityItem?.coordinates ?? countryStops[0]?.coordinates ?? null;
 
     React.useEffect(() => {
         setActiveLayerId(null);
@@ -106,6 +112,19 @@ export const TripWorkspacePlacesPage: React.FC<TripWorkspacePlacesPageProps> = (
     const visibleStays = activeCity?.savedStays.filter((stay) => (
         !activeLayer || activeLayer.stayAreas.includes(stay.area)
     )) ?? [];
+    const activeMapGeometry = React.useMemo(
+        () => buildTripWorkspacePlacesMapGeometry({
+            origin: activeCityCenter,
+            visibleNeighborhoods,
+            visibleStays,
+            activeLayer,
+        }),
+        [activeCityCenter, activeLayer, visibleNeighborhoods, visibleStays],
+    );
+    const fitBoundsCoordinates = React.useMemo(
+        () => buildTripWorkspacePlacesFitBoundsCoordinates(activeMapGeometry),
+        [activeMapGeometry],
+    );
     const activeWarnings = travelerWarnings.find((warning) => warning.cityName === activeCity?.title)?.notes ?? [];
 
     return (
@@ -464,9 +483,19 @@ export const TripWorkspacePlacesPage: React.FC<TripWorkspacePlacesPageProps> = (
                     activeLayer?.scope ?? 'Mixed route view',
                 ]}
                 items={activeCityItem ? [activeCityItem] : countryStops}
-                mapStyle="clean"
+                mapStyle="standard"
                 routeMode="simple"
-                showCityNames={Boolean(activeCityItem)}
+                showCityNames={false}
+                fitBoundsCoordinates={fitBoundsCoordinates}
+                mapNativeOverlay={activeCity ? (
+                    <TripWorkspacePlacesMapNativeOverlay
+                        city={activeCity}
+                        cityCenter={activeCityCenter}
+                        activeLayer={activeLayer}
+                        visibleNeighborhoods={visibleNeighborhoods}
+                        visibleStays={visibleStays}
+                    />
+                ) : null}
                 mapOverlay={activeCity ? (
                     <TripWorkspacePlacesMapOverlay
                         city={activeCity}

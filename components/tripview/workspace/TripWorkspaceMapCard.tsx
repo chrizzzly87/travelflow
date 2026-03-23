@@ -1,7 +1,7 @@
 import React from 'react';
 import { GlobeHemisphereWest, MapPinArea, Path } from '@phosphor-icons/react';
 
-import type { ITimelineItem, MapStyle, RouteMode } from '../../../types';
+import type { ICoordinates, ITimelineItem, MapStyle, RouteMode } from '../../../types';
 import { useGoogleMaps } from '../../GoogleMapsLoader';
 import { ItineraryMap } from '../../ItineraryMap';
 import { Badge } from '../../ui/badge';
@@ -20,6 +20,8 @@ interface TripWorkspaceMapCardProps {
     showCityNames?: boolean;
     footer?: React.ReactNode;
     mapOverlay?: React.ReactNode;
+    mapNativeOverlay?: React.ReactNode;
+    fitBoundsCoordinates?: ICoordinates[];
     heightClassName?: string;
 }
 
@@ -34,6 +36,8 @@ export const TripWorkspaceMapCard: React.FC<TripWorkspaceMapCardProps> = ({
     showCityNames = true,
     footer = null,
     mapOverlay = null,
+    mapNativeOverlay = null,
+    fitBoundsCoordinates = [],
     heightClassName = 'h-[320px] md:h-[360px]',
 }) => {
     const { isLoaded, loadError } = useGoogleMaps();
@@ -85,6 +89,8 @@ export const TripWorkspaceMapCard: React.FC<TripWorkspaceMapCardProps> = ({
                             routeMode={routeMode}
                             showCityNames={showCityNames}
                             showControls={false}
+                            mapNativeOverlay={mapNativeOverlay}
+                            fitBoundsCoordinates={fitBoundsCoordinates}
                         />
                     ) : (
                         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 text-center">

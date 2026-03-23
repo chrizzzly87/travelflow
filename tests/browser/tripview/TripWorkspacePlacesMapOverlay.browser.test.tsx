@@ -11,7 +11,7 @@ describe('components/tripview/workspace/TripWorkspacePlacesMapOverlay', () => {
     cleanup();
   });
 
-  it('renders a compact legend with numbered neighborhood markers instead of repeated floating labels', () => {
+  it('renders a compact legend instead of floating map labels', () => {
     const city = getTripWorkspaceCityGuideById('bangkok');
 
     expect(city).not.toBeNull();
@@ -29,13 +29,12 @@ describe('components/tripview/workspace/TripWorkspacePlacesMapOverlay', () => {
 
     expect(screen.getByText('Districts on map')).toBeInTheDocument();
     expect(screen.getByText('Stay anchors')).toBeInTheDocument();
-    expect(screen.getAllByLabelText(/Neighborhood marker /i)).toHaveLength(city!.neighborhoods.length);
-    expect(screen.getAllByLabelText(/Stay anchor /i)).toHaveLength(city!.savedStays.length);
     expect(screen.getAllByText('Sathorn')).toHaveLength(1);
     expect(screen.queryByText('Polished base')).not.toBeInTheDocument();
+    expect(screen.getByText('Songkran window')).toBeInTheDocument();
   });
 
-  it('filters the overlay legend and markers to the active layer context', () => {
+  it('filters the overlay legend to the active layer context', () => {
     const city = getTripWorkspaceCityGuideById('bangkok');
 
     expect(city).not.toBeNull();
@@ -59,7 +58,6 @@ describe('components/tripview/workspace/TripWorkspacePlacesMapOverlay', () => {
     expect(screen.getByText('Arrival hinge')).toBeInTheDocument();
     expect(screen.getByText('Ari')).toBeInTheDocument();
     expect(screen.queryByText('Talat Noi')).not.toBeInTheDocument();
-    expect(screen.getAllByLabelText(/Neighborhood marker /i)).toHaveLength(visibleNeighborhoods.length);
-    expect(screen.getAllByLabelText(/Stay anchor /i)).toHaveLength(visibleStays.length);
+    expect(screen.getByText(/1 stay anchor active in this layer/i)).toBeInTheDocument();
   });
 });

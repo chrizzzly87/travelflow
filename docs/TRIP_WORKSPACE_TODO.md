@@ -154,6 +154,8 @@ Goal: Turn Trip View into a routed Trip Workspace with a fixed shadcn sidebar on
 - [x] Fixed standalone workspace pages so route context switches work even outside the full Trip Workspace shell, and covered the SEA dataset builder with unit regressions.
 - [x] Simplified the `Places` neighborhood renderer into numbered map zones plus a compact legend, so district overlays stay readable without colliding with city markers or stay labels.
 - [x] Swapped the `Places` map-layer pills over to the shared shadcn toggle-group pattern and covered the overlay structure with focused regression tests.
+- [x] Moved `Places` neighborhood areas, stay anchors, and route paths onto native Google Maps circles, polylines, and overlay markers so they stay attached while the map pans.
+- [x] Fixed the `Places` map fit so city overlays are framed inside the visible viewport instead of zooming past the districts and hiding the planning geometry.
 
 ## Open
 - [ ] Replace the Southeast Asia demo dataset with live bookings, discovery, phrase, destination, travel-kit, document, budget, weather, and places-overlay services when the backend inputs are ready.

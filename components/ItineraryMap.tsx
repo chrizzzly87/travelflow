@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useLayoutEffect, useState, useMemo, useRef } from 'react';
 import { Map as GoogleMap, useMap } from '@vis.gl/react-google-maps';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { ActivityType, ITimelineItem, MapColorMode, MapStyle, RouteFailureReason, RouteMode, RouteStatus } from '../types';
+import { ActivityType, ICoordinates, ITimelineItem, MapColorMode, MapStyle, RouteFailureReason, RouteMode, RouteStatus } from '../types';
 import { ArrowLeftRight, ArrowUpDown, Focus, Layers, Maximize2, Minimize2 } from 'lucide-react';
 import { MapPinArea } from '@phosphor-icons/react';
 import { readLocalStorageItem, writeLocalStorageItem } from '../services/browserStorageService';
@@ -40,6 +40,8 @@ interface ItineraryMapProps {
     isPaywalled?: boolean;
     viewTransitionName?: string;
     showControls?: boolean;
+    mapNativeOverlay?: React.ReactNode;
+    fitBoundsCoordinates?: ICoordinates[];
 }
 
 const MAP_STYLES = {
@@ -1403,6 +1405,8 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     isPaywalled = false,
     viewTransitionName,
     showControls = true,
+    mapNativeOverlay = null,
+    fitBoundsCoordinates = [],
 }) => {
     const resolvedMapDockMode = mapDockMode as 'docked' | 'floating';
     const mapInstanceIdRef = useRef(`tf-itinerary-map-${Math.random().toString(36).slice(2, 10)}`);
@@ -1452,6 +1456,10 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     const cityMapSignature = useMemo(
         () => cities.map((city) => `${city.id}|${city.coordinates?.lat},${city.coordinates?.lng}`).join('||'),
         [cities],
+    );
+    const fitBoundsCoordinateSignature = useMemo(
+        () => fitBoundsCoordinates.map((coordinates) => `${coordinates.lat},${coordinates.lng}`).join('||'),
+        [fitBoundsCoordinates],
     );
     const selectedCityId = useMemo(
         () => (selectedItemId && cities.some(city => city.id === selectedItemId) ? selectedItemId : null),
@@ -1563,7 +1571,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     }, []);
 
     const runFitBounds = useCallback(() => {
-        if (!googleMapRef.current || cities.length === 0) return;
+        if (!googleMapRef.current || (cities.length === 0 && fitBoundsCoordinates.length === 0)) return;
 
         const bounds = new window.google.maps.LatLngBounds();
         cities.forEach(city => {
@@ -1571,11 +1579,14 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 bounds.extend({ lat: city.coordinates.lat, lng: city.coordinates.lng });
             }
         });
+        fitBoundsCoordinates.forEach((coordinates) => {
+            bounds.extend({ lat: coordinates.lat, lng: coordinates.lng });
+        });
         googleMapRef.current.fitBounds(bounds, { top: 50, right: 50, bottom: 50, left: 50 });
-    }, [cities]);
+    }, [cities, fitBoundsCoordinates]);
 
     const scheduleFitWhenViewportReady = useCallback((maxAttempts = 14, options?: { respectSelection?: boolean }) => {
-        if (!googleMapRef.current || cities.length === 0 || typeof window === 'undefined') return;
+        if (!googleMapRef.current || (cities.length === 0 && fitBoundsCoordinates.length === 0) || typeof window === 'undefined') return;
         const respectSelection = options?.respectSelection ?? false;
         const selectionVersionAtSchedule = selectionVersionRef.current;
         cancelScheduledFit();
@@ -1583,7 +1594,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         let attemptCount = 0;
         const tryFit = () => {
             fitRafRef.current = null;
-            if (!googleMapRef.current || cities.length === 0) return;
+            if (!googleMapRef.current || (cities.length === 0 && fitBoundsCoordinates.length === 0)) return;
 
             const rect = mapContainerRef.current?.getBoundingClientRect();
             if (!isMapViewportReady(rect) && attemptCount < maxAttempts) {
@@ -1609,7 +1620,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         };
 
         fitRafRef.current = window.requestAnimationFrame(tryFit);
-    }, [cancelScheduledFit, cities.length, runFitBounds]);
+    }, [cancelScheduledFit, cities.length, fitBoundsCoordinates.length, runFitBounds]);
 
     useEffect(() => {
         scheduleFitWhenViewportReadyRef.current = scheduleFitWhenViewportReady;
@@ -2866,7 +2877,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             }
         }, 100);
         return () => clearTimeout(t);
-    }, [selectedActivityId, selectedCityId, mapInitialized, cityMapSignature, resolvedActivityMarkerPositionById]);
+    }, [selectedActivityId, selectedCityId, mapInitialized, cityMapSignature, fitBoundsCoordinateSignature, resolvedActivityMarkerPositionById]);
 
     // Fit Bounds
     const handleFit = () => {
@@ -2877,10 +2888,11 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     useEffect(() => {
         if (!mapInitialized || cities.length === 0) return;
         if (selectedActivityId || selectedCityId) return;
-        if (lastAutoFitCitySignatureRef.current === cityMapSignature) return;
-        lastAutoFitCitySignatureRef.current = cityMapSignature;
+        const autoFitSignature = `${cityMapSignature}::${fitBoundsCoordinateSignature}`;
+        if (lastAutoFitCitySignatureRef.current === autoFitSignature) return;
+        lastAutoFitCitySignatureRef.current = autoFitSignature;
         scheduleFitWhenViewportReadyRef.current(14, { respectSelection: true });
-    }, [cityMapSignature, mapInitialized, cities.length, selectedActivityId, selectedCityId]);
+    }, [cityMapSignature, fitBoundsCoordinateSignature, mapInitialized, cities.length, fitBoundsCoordinates.length, selectedActivityId, selectedCityId]);
 
     useEffect(() => {
         if (cities.length > 0) return;
@@ -3043,6 +3055,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                     className="h-full w-full"
                 >
                     <ItineraryMapInstanceBridge mapId={mapInstanceId} onMapInstanceChange={handleMapInstanceChange} />
+                    {mapNativeOverlay}
                 </GoogleMap>
             )}
             {!mapInitialized && !loadError && (
