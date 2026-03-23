@@ -2,10 +2,13 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
   persistStoredDebuggerBoolean,
+  persistStoredDebuggerString,
   readStoredDebuggerBoolean,
+  readStoredDebuggerString,
 } from '../../components/OnPageDebugger';
 
 const KEY = 'tf_debug_auto_open';
+const TAB_KEY = 'tf_debug_active_tab';
 
 describe('components/OnPageDebugger storage helpers', () => {
   beforeEach(() => {
@@ -31,5 +34,16 @@ describe('components/OnPageDebugger storage helpers', () => {
 
     persistStoredDebuggerBoolean(KEY, false, false);
     expect(window.localStorage.getItem(KEY)).toBeNull();
+  });
+
+  it('reads and persists debugger tab strings with fallback behavior', () => {
+    expect(readStoredDebuggerString(TAB_KEY, ['testing', 'maps', 'tracking', 'seo'], 'testing')).toBe('testing');
+
+    persistStoredDebuggerString(TAB_KEY, 'maps', 'testing');
+    expect(window.localStorage.getItem(TAB_KEY)).toBe('maps');
+    expect(readStoredDebuggerString(TAB_KEY, ['testing', 'maps', 'tracking', 'seo'], 'testing')).toBe('maps');
+
+    persistStoredDebuggerString(TAB_KEY, 'testing', 'testing');
+    expect(window.localStorage.getItem(TAB_KEY)).toBeNull();
   });
 });

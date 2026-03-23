@@ -153,3 +153,9 @@ export const dbRevokeTripShares = async (...args: Parameters<DbServiceModule['db
     const db = await loadDbService();
     return db.dbRevokeTripShares(...args);
 };
+
+export const dbFindNearestCommercialAirports = async (...args: Parameters<DbServiceModule['dbFindNearestCommercialAirports']>) => {
+    if (!DB_ENABLED) return [];
+    const db = await loadDbService();
+    return db.dbFindNearestCommercialAirports(...args);
+};

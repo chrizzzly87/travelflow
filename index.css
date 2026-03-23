@@ -6,6 +6,14 @@
 
 @custom-variant dark (&:is(.dark *));
 
+[data-tf-map-basemap="mapbox"] .gm-style > div:first-child {
+  opacity: 0 !important;
+}
+
+[data-tf-map-basemap="mapbox"] .gm-style {
+  background: transparent !important;
+}
+
 @source "./**/*.{ts,tsx}";
 @source not "./app/routes/DeferredAppRoutes.tsx";
 @source not "./components/CreateTripForm.tsx";
@@ -337,26 +345,6 @@ html[lang^="ur-"] {
 @layer utilities {
   .z-cookie-consent {
     z-index: var(--tf-layer-cookie-consent);
-  }
-
-  .tf-ios-zoom-safe-shell {
-    overflow: hidden;
-  }
-}
-
-@media (hover: none) and (pointer: coarse) {
-  @supports (-webkit-touch-callout: none) {
-    .tf-ios-zoom-safe-field {
-      font-size: 16px !important;
-      line-height: 1.25rem;
-      transform: scale(0.875);
-      transform-origin: left center;
-      width: calc(100% / 0.875);
-    }
-
-    html[dir="rtl"] .tf-ios-zoom-safe-field {
-      transform-origin: right center;
-    }
   }
 }
 
@@ -1160,15 +1148,6 @@ html:active-view-transition-type(blog-collapse)::view-transition-new(.blog-card-
   }
   body {
     @apply bg-background text-foreground;
-  }
-  button {
-    will-change: transform;
-    transition-property: transform, color, background-color, border-color, opacity, box-shadow;
-    transition-duration: 150ms;
-    transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
-  }
-  button:not(:disabled):not([data-no-press-scale='true']):active {
-    transform: scale(0.97);
   }
 }
 

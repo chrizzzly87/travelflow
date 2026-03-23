@@ -116,6 +116,15 @@ describe('components/tripview/TripViewPlannerWorkspace', () => {
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
   });
 
+  it('falls back to a safe zoom label when the incoming zoom level is malformed', () => {
+    const props = baseProps();
+    props.zoomLevel = undefined as unknown as number;
+
+    render(React.createElement(TripViewPlannerWorkspace, props));
+
+    expect(screen.getByRole('status')).toHaveTextContent('×1.0');
+  });
+
   it('renders the map above the timeline on mobile', () => {
     const props = baseProps();
     props.isMobile = true;

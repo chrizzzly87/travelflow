@@ -162,6 +162,8 @@ Goal: Turn Trip View into a routed Trip Workspace with a fixed shadcn sidebar on
 - [x] Added real-input utility widgets for route support, including a usable currency converter and more widget-like weather modules with a compact forecast graph.
 - [x] Fixed the `Weather` workspace map crash by keeping the shared Google Maps provider state aligned with workspace page routing and disabled-map states.
 - [x] Renamed the `Places` overlay regression so it actually runs under the repo’s Vitest include rules.
+- [x] Pulled the latest `main` branch into the Trip Workspace worktree and reconciled the new dual-provider map runtime with the routed workspace pages, Trip modal handoff, and shared route loaders.
+- [x] Verified the merged runtime through focused map regressions, full core tests, storage and i18n validation, React Doctor, and the full production build chain before redeploying preview.
 
 ## Open
 - [ ] Replace the Southeast Asia demo dataset with live bookings, discovery, phrase, destination, travel-kit, document, budget, weather, and places-overlay services when the backend inputs are ready.

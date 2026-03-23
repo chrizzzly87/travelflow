@@ -38,4 +38,5 @@ summary: "Turns Trip View into a routed workspace with a header-aware desktop si
 - [x] [Improved] 📐 The shared workspace layout now uses calmer section spacing, tab-based route context, and fewer nested panel containers, so pages like `Places`, `Weather`, and `Budget` feel lighter and easier to scan.
 - [x] [Improved] 🌦️ `Weather` now reads more like a modern forecast workspace, with compact stop widgets, duotone weather icons, and a simple trend graph instead of generic stacked info blocks.
 - [x] [Improved] 💱 Travel support and budget tools now include a real-input currency converter, making the demo workspace feel more operational instead of button-driven.
+- [ ] [Internal] 🧩 Pulled the latest shared map-runtime foundation into the Trip Workspace branch and reconciled the routed workspace maps, loaders, and modal handoff with the new dual-provider setup before preview deployment.
 - [ ] [Internal] 🧪 Added routed workspace regression coverage for sidebar persistence, planner-only routing, SEA route-context behavior, phrase interactions, Explore workflow board behavior, locale wiring, and analytics hooks for the new Trip Workspace flow.

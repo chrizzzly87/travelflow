@@ -1,17 +1,58 @@
 import React, { useCallback, useEffect, useLayoutEffect, useState, useMemo, useRef } from 'react';
 import { Map as GoogleMap, useMap } from '@vis.gl/react-google-maps';
 import { renderToStaticMarkup } from 'react-dom/server';
+import type mapboxgl from 'mapbox-gl';
 import { ActivityType, ICoordinates, ITimelineItem, MapColorMode, MapStyle, RouteFailureReason, RouteMode, RouteStatus } from '../types';
 import { ArrowLeftRight, ArrowUpDown, Focus, Layers, Maximize2, Minimize2 } from 'lucide-react';
 import { MapPinArea } from '@phosphor-icons/react';
 import { readLocalStorageItem, writeLocalStorageItem } from '../services/browserStorageService';
 import { buildRouteCacheKey, DEFAULT_MAP_COLOR_MODE, findTravelBetweenCities, getHexFromColorClass, getNormalizedCityName, pickPrimaryActivityType } from '../utils';
 import { getAnalyticsDebugAttributes } from '../services/analyticsService';
-import { useGoogleMaps } from './GoogleMapsLoader';
+import { useGoogleMaps, useMapRuntime } from './GoogleMapsLoader';
 import { normalizeTransportMode } from '../shared/transportModes';
-import { resolveCitySuggestion } from '../shared/cityLookup';
-import { mergeResolvedCityCoordinatesIntoItems, resolveMissingCityCoordinatesForItems } from '../shared/tripMapCityResolution';
 import { ActivityTypeIcon, getActivityTypePaletteParts } from './ActivityTypeVisuals';
+import { getMapSurfaceBackgroundColor, GOOGLE_BASEMAP_HIDDEN_STYLES } from '../services/mapRendererVisualStyleService';
+import { isMapboxStyleReadyForRuntimeMutations, MapboxBasemapSync } from './maps/MapboxBasemapSync';
+import { buildFlightRouteVisualPaths } from './maps/flightRouteGeometry';
+import { collectTripMapFitBoundsCoordinates } from './maps/tripMapFitBoundsGeometry';
+import { createGoogleMixedSurfaceController, type GoogleMixedSurfaceController } from './maps/googleMixedSurfaceController';
+import { buildTripMapCityMarkerHtml } from './maps/tripMapCityMarkerHtml';
+import { resolveTripMapCityMarkerImageUrl } from './maps/tripMapCityMarkerMedia';
+import {
+    buildTripMapCityLabelOverlayDescriptors,
+    buildTripMapCityOverlayDescriptors,
+    buildTripMapCoordinateGroupKey,
+    buildOverlappingMarkerPosition,
+    getMapLabelCityName,
+    offsetLatLngByMeters,
+    resolveTripMapCityLabelName,
+} from './maps/tripMapCityOverlayModel';
+import {
+    buildTripMapCityLabelHtml,
+    resolveTripMapCityLabelPlacement,
+    resolveTripMapCityLabelTheme,
+} from './maps/tripMapCityLabelHtml';
+import {
+    resolveTripMapProjectedCityLabelLayouts,
+    type TripMapProjectedCityLabelLayout,
+} from './maps/tripMapCityLabelLayout';
+import { buildMapboxDashedRouteDasharray, createMapboxLineHandle, createMapboxOverlayMarker, type MapboxLineLayerConfig } from './maps/mapboxOverlayRuntime';
+import {
+    resolveTripMapCityLabelOffsetPx,
+    resolveTripMapDarkRoutePresentation,
+    resolveTripMapFlightCurveOptions,
+    resolveTripMapFlightGroundShadowStyle,
+    type TripMapCityLabelAnchor,
+} from './maps/tripMapProviderPresentation';
+import { resolveActiveOverlayMapTarget, shouldHideGoogleMapCanvas } from './maps/mapRenderTarget';
+import {
+    getTripMapProviderTuning,
+    resolveTripMapSelectionSafeInsetRatio,
+    resolveTripMapViewportPadding,
+} from './maps/tripMapProviderTuning';
+import { GOOGLE_ROUTES_COMPUTE_FIELDS, computeGoogleRouteLeg, loadGoogleRouteRuntime } from '../services/routeService';
+import { isFiniteLatLngLiteral } from '../shared/coordinateUtils';
+import type { MapImplementation } from '../shared/mapRuntime';
 
 interface ItineraryMapProps {
     items: ITimelineItem[];
@@ -206,12 +247,11 @@ type OverlayMarkerUpdate = {
 };
 
 type OverlayMarkerHandle = {
-    setMap: (map: google.maps.Map | null) => void;
+    setMap: (map: unknown | null) => void;
     update: (updates: OverlayMarkerUpdate) => void;
 };
 
 const ROUTE_CACHE = new Map<string, RouteCacheEntry>();
-const CITY_COORDINATE_LOOKUP_CACHE = new Map<string, google.maps.LatLngLiteral | null>();
 export const ROUTE_FAILURE_TTL_MS = 5 * 60 * 1000;
 const ROUTE_STORAGE_KEY = 'tf_route_cache_v1';
 export const ROUTE_PERSIST_TTL_MS = 24 * 60 * 60 * 1000;
@@ -226,7 +266,6 @@ const ROUTE_STANDARD_GAP_COLOR = '#eef2f7';
 const ROUTE_DARK_GAP_COLOR = '#1b2230';
 const ROUTE_CLEAN_DARK_GAP_COLOR = '#1b2230';
 const EARTH_RADIUS_KM = 6371;
-const MARKER_OVERLAP_RADIUS_METERS = 420;
 const ACTIVITY_MARKER_OVERLAP_RADIUS_METERS = 260;
 const ACTIVITY_CITY_FALLBACK_MIN_SLOTS = 4;
 const MARKER_COORDINATE_GROUP_PRECISION = 5;
@@ -239,12 +278,7 @@ export const MAX_TRANSIT_ROUTE_CHECK_KM = 1400;
 export const MAX_DRIVING_ROUTE_CHECK_KM = 3000;
 export const TRANSIT_SECOND_PASS_MAX_KM = 320;
 export const TRANSIT_DRIVING_RETRY_MAX_KM = TRANSIT_SECOND_PASS_MAX_KM;
-export const ROUTES_COMPUTE_FIELDS = [
-    'path',
-    'distanceMeters',
-    'durationMillis',
-] as const;
-const ROUTES_COMPUTE_MINIMAL_FIELDS = ['path'] as const;
+export const ROUTES_COMPUTE_FIELDS = GOOGLE_ROUTES_COMPUTE_FIELDS;
 export type RouteApiMode = 'DRIVING' | 'WALKING' | 'BICYCLING' | 'TRANSIT';
 export type RouteAttemptPolicy = {
     shouldAttempt: boolean;
@@ -281,7 +315,7 @@ const CITY_MARKER_Z_INDEX = 320;
 const CITY_MARKER_SELECTED_Z_INDEX = 340;
 const ACTIVITY_MARKER_Z_INDEX = 240;
 const ACTIVITY_MARKER_SELECTED_Z_INDEX = 260;
-export const ACTIVITY_MARKERS_MIN_ZOOM = 9;
+export const ACTIVITY_MARKERS_MIN_ZOOM = getTripMapProviderTuning('google').markers.activityMinZoom;
 
 const resolveCityMarkerZIndex = (
     isSelected: boolean,
@@ -471,11 +505,12 @@ export const estimateNearestMarkerGapPx = (
     zoom: number | null,
 ): number => {
     if (!Number.isFinite(zoom)) return Number.POSITIVE_INFINITY;
-    if (coordinates.length < 2) return Number.POSITIVE_INFINITY;
+    const finiteCoordinates = coordinates.filter(isFiniteLatLngLiteral);
+    if (finiteCoordinates.length < 2) return Number.POSITIVE_INFINITY;
 
     const uniqueCoordinates: google.maps.LatLngLiteral[] = [];
     const seenCoordinateKeys = new Set<string>();
-    coordinates.forEach((coordinate) => {
+    finiteCoordinates.forEach((coordinate) => {
         const key = `${coordinate.lat.toFixed(MARKER_GAP_DEDUPE_PRECISION)},${coordinate.lng.toFixed(MARKER_GAP_DEDUPE_PRECISION)}`;
         if (seenCoordinateKeys.has(key)) return;
         seenCoordinateKeys.add(key);
@@ -498,18 +533,22 @@ export const estimateNearestMarkerGapPx = (
 };
 
 export const resolveMarkerRenderTier = ({
+    provider = 'google',
     viewportWidth,
     viewportHeight,
     zoom,
     routePixelSpan,
     nearestMarkerGapPx,
 }: {
+    provider?: MapImplementation;
     viewportWidth: number;
     viewportHeight: number;
     zoom: number | null;
     routePixelSpan: number;
     nearestMarkerGapPx: number;
 }): MarkerRenderTier => {
+    const tuning = getTripMapProviderTuning(provider);
+    const markerTierTuning = tuning.markers.tier;
     const shortEdge = Math.min(viewportWidth, viewportHeight);
     if (!Number.isFinite(shortEdge) || shortEdge <= 0) return 'default';
     const effectiveZoom = Number.isFinite(zoom) ? Number(zoom) : 11;
@@ -517,46 +556,86 @@ export const resolveMarkerRenderTier = ({
         ? routePixelSpan / (2 ** (effectiveZoom - MARKER_TIER_ROUTE_REFERENCE_ZOOM))
         : 0;
     const routeCoverage = shortEdge > 0 ? zoomNormalizedRouteSpan / shortEdge : 0;
-    const veryDenseRoute = Number.isFinite(routeCoverage) && routeCoverage > 2.8;
-    const extremeDenseRoute = Number.isFinite(routeCoverage) && routeCoverage > 3.8;
-    const lowZoom = effectiveZoom <= 6.75;
-    const veryLowZoom = effectiveZoom <= 5.25;
+    const veryDenseRoute = Number.isFinite(routeCoverage) && routeCoverage > markerTierTuning.denseRouteCoverage;
+    const extremeDenseRoute = Number.isFinite(routeCoverage) && routeCoverage > markerTierTuning.extremeDenseRouteCoverage;
+    const lowZoom = effectiveZoom <= markerTierTuning.lowZoom;
+    const veryLowZoom = effectiveZoom <= markerTierTuning.veryLowZoom;
 
-    if (shortEdge <= 185) return 'micro';
-    if (veryLowZoom && shortEdge <= 230) return 'micro';
-    if (shortEdge <= 230 && extremeDenseRoute) return 'micro';
-    if (shortEdge <= 260 && veryLowZoom && veryDenseRoute) return 'micro';
+    if (shortEdge <= markerTierTuning.microShortEdge) return 'micro';
+    if (veryLowZoom && shortEdge <= markerTierTuning.microVeryLowZoomMaxShortEdge) return 'micro';
+    if (shortEdge <= markerTierTuning.microVeryLowZoomMaxShortEdge && extremeDenseRoute) return 'micro';
+    if (shortEdge <= markerTierTuning.compactVeryLowZoomDenseMaxShortEdge && veryLowZoom && veryDenseRoute) return 'micro';
 
-    if (shortEdge <= 260) return 'compact';
+    if (shortEdge <= markerTierTuning.compactShortEdge) return 'compact';
     if (lowZoom) return 'compact';
-    if (shortEdge <= 340 && veryDenseRoute && effectiveZoom <= 8.5) return 'compact';
+    if (shortEdge <= markerTierTuning.compactDenseMaxShortEdge && veryDenseRoute && effectiveZoom <= markerTierTuning.compactDenseZoomCutoff) return 'compact';
     return 'default';
 };
 
 export const resolveZoomEnhancedCityMarkerProfile = ({
+    provider = 'google',
     baseProfile,
     markerTier,
     zoom,
 }: {
+    provider?: MapImplementation;
     baseProfile: CityMarkerRenderProfile;
     markerTier: MarkerRenderTier;
     zoom: number | null;
 }): CityMarkerRenderProfile => {
+    const tuning = getTripMapProviderTuning(provider);
+    const cityZoomTuning = tuning.markers.cityZoomProfile;
     if (markerTier !== 'default') return baseProfile;
     if (!Number.isFinite(zoom)) return baseProfile;
     const effectiveZoom = Number(zoom);
-    if (effectiveZoom < 10) return baseProfile;
+    if (effectiveZoom < cityZoomTuning.farCircleMaxZoom) {
+        return {
+            ...baseProfile,
+            shape: 'circle',
+            size: Math.max(16, Math.round(baseProfile.size * 0.64)),
+            selectedSize: Math.max(20, Math.round(baseProfile.selectedSize * 0.68)),
+            fontSize: Math.max(9, baseProfile.fontSize - 2),
+            selectedFontSize: Math.max(10, baseProfile.selectedFontSize - 2),
+            showInnerDot: false,
+            numberColor: '#ffffff',
+        };
+    }
+    if (effectiveZoom < cityZoomTuning.mediumCircleMaxZoom) {
+        return {
+            ...baseProfile,
+            shape: 'circle',
+            size: Math.max(20, Math.round(baseProfile.size * 0.8)),
+            selectedSize: Math.max(24, Math.round(baseProfile.selectedSize * 0.82)),
+            fontSize: Math.max(10, baseProfile.fontSize - 1),
+            selectedFontSize: Math.max(11, baseProfile.selectedFontSize - 1),
+            showInnerDot: false,
+        };
+    }
+    if (effectiveZoom < cityZoomTuning.nearCircleMaxZoom) {
+        return {
+            ...baseProfile,
+            shape: 'circle',
+            size: Math.max(22, Math.round(baseProfile.size * 0.9)),
+            selectedSize: Math.max(26, Math.round(baseProfile.selectedSize * 0.92)),
+        };
+    }
+    if (effectiveZoom < cityZoomTuning.compactPinMaxZoom) {
+        return {
+            ...baseProfile,
+            shape: 'pin',
+            size: Math.max(24, Math.round(baseProfile.size * 0.96)),
+            selectedSize: Math.max(28, Math.round(baseProfile.selectedSize * 0.98)),
+            fontSize: Math.max(11, baseProfile.fontSize),
+            selectedFontSize: Math.max(12, baseProfile.selectedFontSize),
+        };
+    }
 
-    const scale = effectiveZoom >= 13
-        ? 1.2
-        : effectiveZoom >= 12
-            ? 1.14
-            : effectiveZoom >= 11
-                ? 1.1
-                : 1.06;
+    const scaleBand = cityZoomTuning.scaleBands.find((entry) => effectiveZoom >= entry.minZoom);
+    const scale = scaleBand?.scale ?? 1.03;
 
     return {
         ...baseProfile,
+        shape: 'pin',
         size: Math.round(baseProfile.size * scale),
         selectedSize: Math.round(baseProfile.selectedSize * scale),
         fontSize: Math.min(baseProfile.fontSize + 1, 15),
@@ -565,22 +644,26 @@ export const resolveZoomEnhancedCityMarkerProfile = ({
 };
 
 export const resolveCrowdedCityMarkerProfile = ({
+    provider = 'google',
     baseProfile,
     markerTier,
     zoom,
     nearestMarkerGapPx,
 }: {
+    provider?: MapImplementation;
     baseProfile: CityMarkerRenderProfile;
     markerTier: MarkerRenderTier;
     zoom: number | null;
     nearestMarkerGapPx: number;
 }): CityMarkerRenderProfile => {
+    const tuning = getTripMapProviderTuning(provider);
+    const crowdingTuning = tuning.markers.crowding;
     if (markerTier === 'micro') return baseProfile;
     if (!Number.isFinite(nearestMarkerGapPx)) return baseProfile;
-    if (Number.isFinite(zoom) && Number(zoom) >= 10) return baseProfile;
+    if (Number.isFinite(zoom) && Number(zoom) >= crowdingTuning.disableCrowdingAtZoom) return baseProfile;
 
-    const veryCrowded = nearestMarkerGapPx < 10;
-    const crowded = nearestMarkerGapPx < 13;
+    const veryCrowded = nearestMarkerGapPx < crowdingTuning.veryCrowdedGapPx;
+    const crowded = nearestMarkerGapPx < crowdingTuning.crowdedGapPx;
     if (!crowded) return baseProfile;
 
     const scale = veryCrowded ? 0.8 : 0.9;
@@ -611,15 +694,6 @@ const normalizeRotationDegrees = (value?: number): number => {
     if (!Number.isFinite(value)) return 0;
     const normalized = (value as number) % 360;
     return normalized < 0 ? normalized + 360 : normalized;
-};
-
-const isRoutesFieldMaskError = (error: unknown): boolean => {
-    const message = error instanceof Error
-        ? error.message
-        : typeof error === 'string'
-            ? error
-            : '';
-    return /property fields/i.test(message) || /contains invalid fields/i.test(message) || /field mask/i.test(message);
 };
 
 export const mapRouteAttemptPolicyReasonToFailureReason = (
@@ -672,77 +746,6 @@ export const shouldLogRouteFailureWarning = ({
     }
     RECENT_ROUTE_FAILURE_WARNINGS.set(warningKey, nowMs);
     return true;
-};
-
-const buildCityMarkerSvgDataUrl = (
-    color: string,
-    isSelected: boolean,
-    profile: MarkerRenderProfile['city'],
-): { url: string; size: number } => {
-    const size = isSelected ? profile.selectedSize : profile.size;
-    const pinStroke = isSelected ? resolveCssColorVar('--tf-accent-500', CITY_PIN_SELECTED_OUTLINE_FALLBACK) : '#ffffff';
-    const ringStroke = isSelected ? resolveCssColorVar('--tf-accent-200', CITY_PIN_SELECTED_RING_FALLBACK) : '#dbe3ee';
-    const halo = isSelected ? 0.24 : 0.1;
-    const svg = `
-        <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 32 32">
-            <g transform="translate(4 2)">
-                <ellipse cx="12" cy="26.2" rx="6.4" ry="2.8" fill="#0f172a" opacity="0.16" />
-                <path d="M12 0.9c-5.9 0-10.7 4.8-10.7 10.7 0 7.9 10.7 17.8 10.7 17.8s10.7-9.9 10.7-17.8C22.7 5.7 17.9 0.9 12 0.9z" fill="${color}" stroke="${pinStroke}" stroke-width="${isSelected ? 1.9 : 1.5}" />
-                <circle cx="12" cy="11.6" r="${isSelected ? '8.5' : '7.8'}" fill="${color}" opacity="${halo}" />
-                <circle cx="12" cy="11.6" r="${isSelected ? '6.3' : '5.8'}" fill="#ffffff" stroke="${ringStroke}" stroke-width="${isSelected ? '1.55' : '1.25'}" />
-            </g>
-        </svg>
-    `;
-    const url = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
-    return { url, size };
-};
-
-const buildCityCircleMarkerHtml = (
-    index: number,
-    color: string,
-    isSelected: boolean,
-    profile: MarkerRenderProfile['city'],
-): string => {
-    const size = isSelected ? profile.selectedSize : profile.size;
-    const fontSize = isSelected ? profile.selectedFontSize : profile.fontSize;
-    const ringColor = '#ffffff';
-    const accentRing = resolveCssColorVar('--tf-accent-500', CITY_PIN_SELECTED_OUTLINE_FALLBACK);
-    const shadow = isSelected
-        ? `0 0 0 2px ${accentRing}, 0 6px 16px rgba(15,23,42,0.24)`
-        : '0 3px 10px rgba(15,23,42,0.15)';
-    const innerDotSize = Math.max(11, Math.round(size * 0.54));
-    const numberMarkup = `<span style="color:${profile.numberColor};font-weight:800;font-size:${fontSize}px;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;pointer-events:none;">${index + 1}</span>`;
-    const centerMarkup = profile.showInnerDot
-        ? `<div style="width:${innerDotSize}px;height:${innerDotSize}px;border-radius:9999px;background:#ffffff;display:flex;align-items:center;justify-content:center;">${numberMarkup}</div>`
-        : numberMarkup;
-    return `
-        <div style="position:relative;width:${size}px;height:${size}px;line-height:1;user-select:none;">
-            <div style="width:${size}px;height:${size}px;border-radius:9999px;background:${color};border:2px solid ${ringColor};box-shadow:${shadow};display:flex;align-items:center;justify-content:center;">
-                ${centerMarkup}
-            </div>
-        </div>
-    `;
-};
-
-const buildCityMarkerHtml = (
-    index: number,
-    color: string,
-    isSelected: boolean,
-    profile: MarkerRenderProfile,
-): string => {
-    if (profile.city.shape === 'circle') {
-        return buildCityCircleMarkerHtml(index, color, isSelected, profile.city);
-    }
-
-    const { url, size } = buildCityMarkerSvgDataUrl(color, isSelected, profile.city);
-    const fontSize = isSelected ? profile.city.selectedFontSize : profile.city.fontSize;
-    const numberTopPercent = isSelected ? 45 : 45.3;
-    return `
-        <div style="position:relative;width:${size}px;height:${size}px;line-height:1;user-select:none;">
-            <img src="${url}" alt="" draggable="false" style="display:block;width:${size}px;height:${size}px;pointer-events:none;" />
-            <span style="position:absolute;left:50%;top:${numberTopPercent}%;transform:translate(-50%,-50%);color:#0f172a;font-weight:800;font-size:${fontSize}px;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;pointer-events:none;">${index + 1}</span>
-        </div>
-    `;
 };
 
 const buildTransportMarkerHtml = (
@@ -877,39 +880,6 @@ export const isRoutePathLikelyStraight = (
     return hasStraightLikeDetour || hasStraightLikeShape;
 };
 
-export const offsetLatLngByMeters = (
-    origin: google.maps.LatLngLiteral,
-    eastMeters: number,
-    northMeters: number,
-): google.maps.LatLngLiteral => {
-    const metersPerDegreeLat = 111_320;
-    const safeCosine = Math.max(0.01, Math.cos((origin.lat * Math.PI) / 180));
-    const metersPerDegreeLng = metersPerDegreeLat * safeCosine;
-    return {
-        lat: origin.lat + (northMeters / metersPerDegreeLat),
-        lng: origin.lng + (eastMeters / metersPerDegreeLng),
-    };
-};
-
-export const buildOverlappingMarkerPosition = (
-    origin: google.maps.LatLngLiteral,
-    overlapIndex: number,
-    overlapCount: number,
-    radiusMeters = MARKER_OVERLAP_RADIUS_METERS,
-): google.maps.LatLngLiteral => {
-    if (overlapCount <= 1 || overlapIndex < 0 || overlapIndex >= overlapCount) {
-        return origin;
-    }
-    const angle = (-Math.PI / 2) + ((2 * Math.PI * overlapIndex) / overlapCount);
-    const eastMeters = Math.cos(angle) * radiusMeters;
-    const northMeters = Math.sin(angle) * radiusMeters;
-    return offsetLatLngByMeters(origin, eastMeters, northMeters);
-};
-
-const buildCoordinateGroupKey = (coordinates: google.maps.LatLngLiteral): string => (
-    `${coordinates.lat.toFixed(MARKER_COORDINATE_GROUP_PRECISION)},${coordinates.lng.toFixed(MARKER_COORDINATE_GROUP_PRECISION)}`
-);
-
 const ACTIVITY_ICON_MARKUP_CACHE = new Map<string, string>();
 
 const escapeHtml = (value: string): string => (
@@ -993,7 +963,7 @@ export const resolveActivityMarkerPositions = (
     items: ITimelineItem[],
 ): ResolvedActivityMarker[] => {
     const cityItems = items
-        .filter((item): item is ITimelineItem => item.type === 'city' && Boolean(item.coordinates))
+        .filter((item): item is ITimelineItem => item.type === 'city' && isFiniteLatLngLiteral(item.coordinates))
         .sort((left, right) => left.startDateOffset - right.startDateOffset);
     const activities = items
         .filter((item): item is ITimelineItem => item.type === 'activity')
@@ -1004,10 +974,10 @@ export const resolveActivityMarkerPositions = (
 
     const candidates = activities
         .map((activity) => {
-            const activityCoordinates = activity.coordinates || null;
+            const activityCoordinates = isFiniteLatLngLiteral(activity.coordinates) ? activity.coordinates : null;
             const ownerCity = activityCoordinates ? null : resolveActivityOwnerCity(activity, cityItems);
             const baseCoordinates = activityCoordinates || ownerCity?.coordinates || null;
-            if (!baseCoordinates) return null;
+            if (!isFiniteLatLngLiteral(baseCoordinates)) return null;
             const primaryType = pickPrimaryActivityType(activity.activityType);
             return {
                 id: activity.id,
@@ -1027,15 +997,16 @@ export const resolveActivityMarkerPositions = (
 
     const groupedByCoordinates = new Map<string, number[]>();
     candidates.forEach((candidate, index) => {
-        const key = buildCoordinateGroupKey(candidate.baseCoordinates);
+        const key = buildTripMapCoordinateGroupKey(candidate.baseCoordinates, MARKER_COORDINATE_GROUP_PRECISION);
+        if (!key) return;
         const grouped = groupedByCoordinates.get(key) ?? [];
         grouped.push(index);
         groupedByCoordinates.set(key, grouped);
     });
 
     return candidates.map((candidate, index) => {
-        const key = buildCoordinateGroupKey(candidate.baseCoordinates);
-        const grouped = groupedByCoordinates.get(key) ?? [];
+        const key = buildTripMapCoordinateGroupKey(candidate.baseCoordinates, MARKER_COORDINATE_GROUP_PRECISION);
+        const grouped = key ? (groupedByCoordinates.get(key) ?? []) : [];
         const overlapIndex = Math.max(0, grouped.indexOf(index));
         const overlapCount = candidate.coordinateSource === 'city'
             ? Math.max(ACTIVITY_CITY_FALLBACK_MIN_SLOTS, grouped.length)
@@ -1054,20 +1025,23 @@ export const resolveActivityMarkerPositions = (
 };
 
 export const resolveSelectedMapFocusPosition = ({
+    provider = 'google',
     selectedActivityId,
     selectedCityId,
     activityMarkerPositions,
     cities,
 }: {
+    provider?: MapImplementation;
     selectedActivityId?: string | null;
     selectedCityId?: string | null;
     activityMarkerPositions: Map<string, google.maps.LatLngLiteral>;
     cities: ITimelineItem[];
 }): { position: google.maps.LatLngLiteral; zoom: number } | null => {
+    const selectionTuning = getTripMapProviderTuning(provider).selection;
     if (selectedActivityId) {
         const activityPosition = activityMarkerPositions.get(selectedActivityId);
         if (activityPosition) {
-            return { position: activityPosition, zoom: 13 };
+            return { position: activityPosition, zoom: selectionTuning.activityFocusZoom };
         }
     }
     if (selectedCityId) {
@@ -1075,7 +1049,7 @@ export const resolveSelectedMapFocusPosition = ({
         if (selectedCity?.coordinates) {
             return {
                 position: { lat: selectedCity.coordinates.lat, lng: selectedCity.coordinates.lng },
-                zoom: 10,
+                zoom: selectionTuning.cityFocusZoom,
             };
         }
     }
@@ -1104,37 +1078,75 @@ export const shouldSkipRouteFitForSelection = ({
 
 export const resolveSelectionViewportActions = ({
     isTargetVisible,
+    isTargetWithinSafeZone,
     currentZoom,
     targetZoom,
 }: {
     isTargetVisible: boolean;
+    isTargetWithinSafeZone?: boolean;
     currentZoom: number | null;
     targetZoom: number;
 }): { shouldPan: boolean; shouldZoom: boolean } => {
+    const isTargetComfortablyVisible = isTargetWithinSafeZone ?? isTargetVisible;
     const shouldZoom = currentZoom === null || currentZoom < targetZoom;
-    const shouldPan = !isTargetVisible || shouldZoom;
+    const shouldPan = !isTargetComfortablyVisible || shouldZoom;
     return { shouldPan, shouldZoom };
 };
 
+export const resolveMapViewportPadding = ({
+    provider = 'google',
+    mapDockMode,
+    mapViewportSize,
+}: {
+    provider?: MapImplementation;
+    mapDockMode: 'docked' | 'floating';
+    mapViewportSize: { width: number; height: number } | null;
+}): google.maps.Padding => {
+    return resolveTripMapViewportPadding({
+        provider,
+        mapDockMode,
+        mapViewportSize,
+    });
+};
+
+export const isCoordinateWithinSafeBounds = ({
+    bounds,
+    point,
+    insetRatio = 0.22,
+}: {
+    bounds: google.maps.LatLngBounds;
+    point: google.maps.LatLngLiteral;
+    insetRatio?: number;
+}): boolean => {
+    const northEast = bounds.getNorthEast();
+    const southWest = bounds.getSouthWest();
+    const latSpan = northEast.lat() - southWest.lat();
+    const lngSpan = northEast.lng() - southWest.lng();
+    if (!Number.isFinite(latSpan) || !Number.isFinite(lngSpan)) return false;
+    if (latSpan <= 0 || lngSpan <= 0) return false;
+
+    const clampedInsetRatio = Math.max(0, Math.min(0.45, insetRatio));
+    const latInset = latSpan * clampedInsetRatio;
+    const lngInset = lngSpan * clampedInsetRatio;
+
+    return point.lat >= southWest.lat() + latInset
+        && point.lat <= northEast.lat() - latInset
+        && point.lng >= southWest.lng() + lngInset
+        && point.lng <= northEast.lng() - lngInset;
+};
+
 export const shouldDisplayActivityMarkers = ({
+    provider = 'google',
     isEnabled,
     zoom,
 }: {
+    provider?: MapImplementation;
     isEnabled: boolean;
     zoom: number | null | undefined;
 }): boolean => {
     if (!isEnabled) return false;
     if (!Number.isFinite(zoom)) return false;
-    return Number(zoom) >= ACTIVITY_MARKERS_MIN_ZOOM;
-};
-
-const getTransitFallbackDepartureTime = (): Date => {
-    const nextWindow = new Date();
-    nextWindow.setHours(12, 0, 0, 0);
-    if (nextWindow.getTime() <= Date.now()) {
-        nextWindow.setDate(nextWindow.getDate() + 1);
-    }
-    return nextWindow;
+    return Number(zoom) >= getTripMapProviderTuning(provider).markers.activityMinZoom;
 };
 
 export const isMapViewportReady = (rect: { width: number; height: number } | null | undefined): boolean => {
@@ -1142,67 +1154,23 @@ export const isMapViewportReady = (rect: { width: number; height: number } | nul
     return rect.width >= MAP_VIEWPORT_READY_MIN_DIMENSION_PX && rect.height >= MAP_VIEWPORT_READY_MIN_DIMENSION_PX;
 };
 
-export const getMapLabelCityName = (value?: string): string => {
-    const raw = typeof value === 'string' ? value.trim() : '';
-    if (!raw) return '';
-    const firstSegment = raw.split(',')[0]?.trim();
-    return firstSegment || raw;
+export {
+    buildOverlappingMarkerPosition,
+    getMapLabelCityName,
+    offsetLatLngByMeters,
+    resolveTripMapCityLabelName,
 };
 
-export type CityLabelAnchor = 'right' | 'left' | 'below' | 'above';
-
-const CITY_LABEL_ANCHOR_OFFSETS: Record<CityLabelAnchor, { x: number; y: number }> = {
-    right: { x: 22, y: 0 },
-    left: { x: -22, y: 0 },
-    below: { x: 0, y: 18 },
-    above: { x: 0, y: -18 },
-};
+export type CityLabelAnchor = TripMapCityLabelAnchor;
+export const resolveCityLabelPlacement = resolveTripMapCityLabelPlacement;
+export const resolveCityLabelTheme = resolveTripMapCityLabelTheme;
 
 export const resolveCityLabelAnchor = (
-    city: google.maps.LatLngLiteral,
-    previous?: google.maps.LatLngLiteral | null,
-    next?: google.maps.LatLngLiteral | null,
+    _city: google.maps.LatLngLiteral,
+    _previous?: google.maps.LatLngLiteral | null,
+    _next?: google.maps.LatLngLiteral | null,
 ): CityLabelAnchor => {
-    const metersPerDegreeLat = 111_320;
-    const metersPerDegreeLng = metersPerDegreeLat * Math.max(0.01, Math.cos((city.lat * Math.PI) / 180));
-    const segmentVectors: Array<{ x: number; y: number }> = [];
-
-    const pushVector = (point?: google.maps.LatLngLiteral | null) => {
-        if (!point) return;
-        const vector = {
-            x: (point.lng - city.lng) * metersPerDegreeLng,
-            y: (point.lat - city.lat) * metersPerDegreeLat,
-        };
-        if (Math.hypot(vector.x, vector.y) < 5) return;
-        segmentVectors.push(vector);
-    };
-
-    pushVector(previous);
-    pushVector(next);
-    if (segmentVectors.length === 0) return 'right';
-
-    const anchors: CityLabelAnchor[] = ['right', 'left', 'below', 'above'];
-    let bestAnchor: CityLabelAnchor = 'right';
-    let bestScore = Number.NEGATIVE_INFINITY;
-
-    anchors.forEach((anchor) => {
-        const candidate = CITY_LABEL_ANCHOR_OFFSETS[anchor];
-        let minDistance = Number.POSITIVE_INFINITY;
-
-        segmentVectors.forEach((vector) => {
-            const length = Math.hypot(vector.x, vector.y);
-            if (length <= 0) return;
-            const perpendicularDistance = Math.abs((vector.x * candidate.y) - (vector.y * candidate.x)) / length;
-            minDistance = Math.min(minDistance, perpendicularDistance);
-        });
-
-        if (minDistance > bestScore) {
-            bestScore = minDistance;
-            bestAnchor = anchor;
-        }
-    });
-
-    return bestAnchor;
+    return 'above';
 };
 
 export const buildRouteAttemptPolicy = (
@@ -1289,6 +1257,75 @@ export const buildRoutePolylinePairOptions = (
     };
 
     return { outerOutlineOptions, outlineOptions, mainOptions };
+};
+
+export const buildMapboxRouteLayerConfigs = ({
+    routeId,
+    options,
+    style,
+    provider = 'mapbox',
+}: {
+    routeId: string;
+    options: google.maps.PolylineOptions;
+    style: MapStyle;
+    provider?: MapImplementation;
+}): MapboxLineLayerConfig[] => {
+    const { outerOutlineOptions, outlineOptions, mainOptions } = buildRoutePolylinePairOptions(options, style);
+    const isDarkStyle = isDarkMapStyle(style);
+    const toLayerConfig = (
+        suffix: 'outer' | 'outline' | 'main',
+        layerOptions: google.maps.PolylineOptions,
+    ): MapboxLineLayerConfig | null => {
+        const dasharray = buildMapboxDashedRouteDasharray(
+            (layerOptions.icons as Array<{ repeat?: string }> | undefined),
+        );
+        const resolvedOpacity = (layerOptions.strokeOpacity ?? 0) > 0
+            ? Number(layerOptions.strokeOpacity)
+            : (dasharray ? 0.92 : 0);
+        if (resolvedOpacity <= 0) return null;
+        return {
+            id: `${routeId}-${suffix}`,
+            color: String(layerOptions.strokeColor ?? '#0f172a'),
+            opacity: resolvedOpacity,
+            width: Number(layerOptions.strokeWeight ?? 1),
+            dasharray,
+        };
+    };
+
+    if (isDarkStyle) {
+        const mainLayer = toLayerConfig('main', mainOptions);
+        if (!mainLayer) return [];
+        const darkRoutePresentation = resolveTripMapDarkRoutePresentation(provider, style);
+        const darkRouteLayers: MapboxLineLayerConfig[] = [];
+        darkRouteLayers.push({
+            id: `${routeId}-shadow`,
+            color: darkRoutePresentation.shadowColor,
+            opacity: darkRoutePresentation.shadowOpacity,
+            width: Math.max(1.5, mainLayer.width + darkRoutePresentation.shadowWidthBoost),
+            emissiveStrength: darkRoutePresentation.shadowEmissiveStrength,
+        });
+        if (!mainLayer.dasharray) {
+            darkRouteLayers.push({
+                id: `${routeId}-glow`,
+                color: mainLayer.color,
+                opacity: darkRoutePresentation.glowOpacity,
+                width: Math.max(1.3, mainLayer.width + darkRoutePresentation.glowWidthBoost),
+                emissiveStrength: darkRoutePresentation.glowEmissiveStrength,
+            });
+        }
+        darkRouteLayers.push({
+            ...mainLayer,
+            opacity: Math.max(mainLayer.opacity, darkRoutePresentation.mainOpacity),
+            emissiveStrength: darkRoutePresentation.mainEmissiveStrength,
+        });
+        return darkRouteLayers;
+    }
+
+    return [
+        toLayerConfig('outer', outerOutlineOptions),
+        toLayerConfig('outline', outlineOptions),
+        toLayerConfig('main', mainOptions),
+    ].filter((layer): layer is MapboxLineLayerConfig => Boolean(layer));
 };
 
 export const filterHydratedRouteCacheEntries = (
@@ -1413,8 +1450,10 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     const mapInstanceId = mapInstanceIdRef.current;
     const mapContainerRef = useRef<HTMLDivElement | null>(null);
     const googleMapRef = useRef<any>(null); // google.maps.Map
+    const mapboxMapRef = useRef<mapboxgl.Map | null>(null);
+    const mapboxModuleRef = useRef<typeof import('mapbox-gl').default | null>(null);
     const markersRef = useRef<OverlayMarkerHandle[]>([]);
-    const cityMarkerMetaRef = useRef<Array<{ id: string; color: string; index: number; marker: OverlayMarkerHandle }>>([]);
+    const cityMarkerMetaRef = useRef<Array<{ id: string; color: string; imageUrl: string | null; index: number; marker: OverlayMarkerHandle }>>([]);
     const activityMarkerMetaRef = useRef<Array<{ id: string; title: string; type: ActivityType; marker: OverlayMarkerHandle; isVisible: boolean }>>([]);
     const activityMarkerPositionByIdRef = useRef<Map<string, google.maps.LatLngLiteral>>(new Map());
     const routesRef = useRef<any[]>([]); // stored polylines/renderers
@@ -1422,37 +1461,54 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     const cityLabelOverlaysRef = useRef<any[]>([]);
     const lastFocusQueryRef = useRef<string | null>(null);
     const lastFitToRouteKeyRef = useRef<string | null>(null);
+    const lastAutoFitSignatureRef = useRef<string | null>(null);
     const fitRafRef = useRef<number | null>(null);
     const resizeAutoFitTimerRef = useRef<number | null>(null);
-    const lastAutoFitCitySignatureRef = useRef<string | null>(null);
+    const dockModeRefitTimerRef = useRef<number | null>(null);
     const scheduleFitWhenViewportReadyRef = useRef<(maxAttempts?: number, options?: { respectSelection?: boolean }) => void>(() => {});
     const onRouteMetricsRef = useRef<typeof onRouteMetrics>(onRouteMetrics);
     const onRouteStatusRef = useRef<typeof onRouteStatus>(onRouteStatus);
     const onCityMarkerSelectRef = useRef<typeof onCityMarkerSelect>(onCityMarkerSelect);
     const onActivityMarkerSelectRef = useRef<typeof onActivityMarkerSelect>(onActivityMarkerSelect);
+    const googleMixedSurfaceControllerRef = useRef<GoogleMixedSurfaceController | null>(null);
     
     const { isLoaded, loadError } = useGoogleMaps();
+    const { runtime, mapboxAccessToken } = useMapRuntime();
+    const [mapInstance, setMapInstance] = useState<google.maps.Map | null>(null);
     const [mapInitialized, setMapInitialized] = useState(false);
+    const [mapboxBasemapFailureKey, setMapboxBasemapFailureKey] = useState<string | null>(null);
+    const [isMapboxSurfaceReady, setIsMapboxSurfaceReady] = useState(false);
+    const [mapboxStyleReloadNonce, setMapboxStyleReloadNonce] = useState(0);
     const [activityMarkersEnabled, setActivityMarkersEnabled] = useState(false);
-    const [resolvedCityCoordinatesById, setResolvedCityCoordinatesById] = useState<Record<string, google.maps.LatLngLiteral>>({});
     const [mapZoomLevel, setMapZoomLevel] = useState<number | null>(null);
     const [mapViewportSize, setMapViewportSize] = useState<{ width: number; height: number } | null>(null);
+    const previousMapDockModeRef = useRef<'docked' | 'floating'>(mapDockMode);
     const mapActionsDisabled = !mapInitialized || Boolean(loadError);
     const activityMarkersEnabledRef = useRef(activityMarkersEnabled);
     const mapZoomLevelRef = useRef<number | null>(mapZoomLevel);
     
     // Internal state for menu, but style comes from props (or defaults to standard if not provided)
     const [isStyleMenuOpen, setIsStyleMenuOpen] = useState(false);
+    const mapboxBasemapAvailabilityKey = `${mapboxAccessToken}::${runtime.activeSelectionKey}`;
+    const mapboxBasemapAvailable = mapboxBasemapFailureKey !== mapboxBasemapAvailabilityKey;
+    const shouldUseRequestedMapboxBasemap = runtime.effectiveSelection.renderer === 'mapbox' && mapboxAccessToken.length > 0;
+    const isMapboxBasemapEnabled = shouldUseRequestedMapboxBasemap && mapboxBasemapAvailable;
+    const tripMapProvider = runtime.effectiveSelection.renderer;
+    const tripMapTuning = useMemo(() => getTripMapProviderTuning(tripMapProvider), [tripMapProvider]);
+    const mapSurfaceBackgroundColor = useMemo(() => getMapSurfaceBackgroundColor(activeStyle), [activeStyle]);
+    const shouldHideGoogleCanvasInMixedMode = shouldHideGoogleMapCanvas({
+        isMapboxEnabled: isMapboxBasemapEnabled,
+    });
     const shouldRenderMapCanvas = isLoaded && !loadError;
-    const mapItems = useMemo(
-        () => mergeResolvedCityCoordinatesIntoItems(items, resolvedCityCoordinatesById),
-        [items, resolvedCityCoordinatesById],
+    const shouldShowMapLoadingOverlay = !loadError && (
+        (!isMapboxBasemapEnabled && !mapInitialized)
+        || (isMapboxBasemapEnabled && !isMapboxSurfaceReady)
     );
     const cities = useMemo(() => 
-        mapItems
-            .filter(i => i.type === 'city' && i.coordinates)
+        items
+            .filter((item): item is ITimelineItem => item.type === 'city' && isFiniteLatLngLiteral(item.coordinates))
             .sort((a, b) => a.startDateOffset - b.startDateOffset),
-    [mapItems]);
+    [items]);
     const cityMapSignature = useMemo(
         () => cities.map((city) => `${city.id}|${city.coordinates?.lat},${city.coordinates?.lng}`).join('||'),
         [cities],
@@ -1482,16 +1538,16 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     selectedCityIdRef.current = selectedCityId;
     const resolvedActivityMarkerPositionById = useMemo(() => {
         const markerPositions = new Map<string, google.maps.LatLngLiteral>();
-        resolveActivityMarkerPositions(mapItems).forEach((marker) => {
+        resolveActivityMarkerPositions(items).forEach((marker) => {
             markerPositions.set(marker.id, marker.position);
         });
         return markerPositions;
-    }, [mapItems]);
+    }, [items]);
     const routePixelSpan = useMemo(
         () => estimateRoutePixelSpan(
             cities
                 .map((city) => city.coordinates)
-                .filter((coordinates): coordinates is google.maps.LatLngLiteral => Boolean(coordinates)),
+                .filter(isFiniteLatLngLiteral),
             mapZoomLevel,
         ),
         [cities, mapZoomLevel],
@@ -1500,20 +1556,21 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         () => estimateNearestMarkerGapPx(
             cities
                 .map((city) => city.coordinates)
-                .filter((coordinates): coordinates is google.maps.LatLngLiteral => Boolean(coordinates)),
+                .filter(isFiniteLatLngLiteral),
             mapZoomLevel,
         ),
         [cities, mapZoomLevel],
     );
     const markerRenderTier = useMemo(
         () => resolveMarkerRenderTier({
+            provider: tripMapProvider,
             viewportWidth: mapViewportSize?.width ?? 0,
             viewportHeight: mapViewportSize?.height ?? 0,
             zoom: mapZoomLevel,
             routePixelSpan,
             nearestMarkerGapPx,
         }),
-        [mapViewportSize, mapZoomLevel, nearestMarkerGapPx, routePixelSpan],
+        [mapViewportSize, mapZoomLevel, nearestMarkerGapPx, routePixelSpan, tripMapProvider],
     );
     const markerRenderProfile = useMemo(
         () => resolveMarkerRenderProfile({
@@ -1524,20 +1581,22 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     );
     const zoomEnhancedCityProfile = useMemo(
         () => resolveZoomEnhancedCityMarkerProfile({
+            provider: tripMapProvider,
             baseProfile: markerRenderProfile.city,
             markerTier: markerRenderTier,
             zoom: mapZoomLevel,
         }),
-        [mapZoomLevel, markerRenderProfile.city, markerRenderTier],
+        [mapZoomLevel, markerRenderProfile.city, markerRenderTier, tripMapProvider],
     );
     const crowdedCityProfile = useMemo(
         () => resolveCrowdedCityMarkerProfile({
+            provider: tripMapProvider,
             baseProfile: zoomEnhancedCityProfile,
             markerTier: markerRenderTier,
             zoom: mapZoomLevel,
             nearestMarkerGapPx,
         }),
-        [zoomEnhancedCityProfile, markerRenderTier, mapZoomLevel, nearestMarkerGapPx],
+        [zoomEnhancedCityProfile, markerRenderTier, mapZoomLevel, nearestMarkerGapPx, tripMapProvider],
     );
     const effectiveMarkerRenderProfile = useMemo(() => {
         if (crowdedCityProfile === markerRenderProfile.city) return markerRenderProfile;
@@ -1548,7 +1607,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     }, [crowdedCityProfile, markerRenderProfile]);
     const activityMarkerStylesById = useMemo(() => {
         const styles = new Map<string, { type: ActivityType; title: string }>();
-        mapItems.forEach((item) => {
+        items.forEach((item) => {
             if (item.type !== 'activity') return;
             styles.set(item.id, {
                 type: pickPrimaryActivityType(item.activityType),
@@ -1556,7 +1615,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             });
         });
         return styles;
-    }, [mapItems]);
+    }, [items]);
 
     const cancelScheduledFit = useCallback(() => {
         if (fitRafRef.current === null || typeof window === 'undefined') return;
@@ -1570,20 +1629,32 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         resizeAutoFitTimerRef.current = null;
     }, []);
 
+    const cancelDockModeRefitTimer = useCallback(() => {
+        if (dockModeRefitTimerRef.current === null || typeof window === 'undefined') return;
+        window.clearTimeout(dockModeRefitTimerRef.current);
+        dockModeRefitTimerRef.current = null;
+    }, []);
+
     const runFitBounds = useCallback(() => {
         if (!googleMapRef.current || (cities.length === 0 && fitBoundsCoordinates.length === 0)) return;
 
         const bounds = new window.google.maps.LatLngBounds();
-        cities.forEach(city => {
-            if (city.coordinates) {
-                bounds.extend({ lat: city.coordinates.lat, lng: city.coordinates.lng });
-            }
+        collectTripMapFitBoundsCoordinates({
+            cities,
+            items,
+            provider: tripMapProvider,
+        }).forEach((point) => {
+            bounds.extend(point);
         });
         fitBoundsCoordinates.forEach((coordinates) => {
             bounds.extend({ lat: coordinates.lat, lng: coordinates.lng });
         });
-        googleMapRef.current.fitBounds(bounds, { top: 50, right: 50, bottom: 50, left: 50 });
-    }, [cities, fitBoundsCoordinates]);
+        googleMapRef.current.fitBounds(bounds, resolveMapViewportPadding({
+            provider: tripMapProvider,
+            mapDockMode,
+            mapViewportSize,
+        }));
+    }, [cities, fitBoundsCoordinates, items, mapDockMode, mapViewportSize, tripMapProvider]);
 
     const scheduleFitWhenViewportReady = useCallback((maxAttempts = 14, options?: { respectSelection?: boolean }) => {
         if (!googleMapRef.current || (cities.length === 0 && fitBoundsCoordinates.length === 0) || typeof window === 'undefined') return;
@@ -1651,71 +1722,6 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     }, [mapZoomLevel]);
 
     useEffect(() => {
-        const activeCityIds = new Set(items.filter((item) => item.type === 'city').map((item) => item.id));
-        setResolvedCityCoordinatesById((previous) => {
-            let changed = false;
-            const next: Record<string, google.maps.LatLngLiteral> = {};
-
-            Object.entries(previous).forEach(([cityId, coordinates]) => {
-                if (!activeCityIds.has(cityId)) {
-                    changed = true;
-                    return;
-                }
-                next[cityId] = coordinates;
-            });
-
-            return changed ? next : previous;
-        });
-    }, [items]);
-
-    useEffect(() => {
-        if (!isLoaded || typeof window === 'undefined' || !window.google?.maps) return;
-
-        const pendingCities = items.some((item) => (
-            item.type === 'city'
-            && !item.coordinates
-            && !resolvedCityCoordinatesById[item.id]
-            && Boolean(item.location || item.title)
-        ));
-        if (!pendingCities) return;
-
-        let cancelled = false;
-        const resolveCoordinates = async () => {
-            const resolvedCoordinates = await resolveMissingCityCoordinatesForItems({
-                items,
-                focusLocationQuery,
-                existingResolvedCoordinatesByCityId: resolvedCityCoordinatesById,
-                cache: CITY_COORDINATE_LOOKUP_CACHE,
-                resolver: async (query) => {
-                    const suggestion = await resolveCitySuggestion(query);
-                    return suggestion?.coordinates ?? null;
-                },
-            });
-
-            if (cancelled || Object.keys(resolvedCoordinates).length === 0) return;
-
-            setResolvedCityCoordinatesById((previous) => {
-                let changed = false;
-                const next = { ...previous };
-
-                Object.entries(resolvedCoordinates).forEach(([cityId, coordinates]) => {
-                    if (next[cityId]) return;
-                    next[cityId] = coordinates;
-                    changed = true;
-                });
-
-                return changed ? next : previous;
-            });
-        };
-
-        void resolveCoordinates();
-
-        return () => {
-            cancelled = true;
-        };
-    }, [focusLocationQuery, isLoaded, items, resolvedCityCoordinatesById]);
-
-    useEffect(() => {
         if (!fitToRouteKey) {
             lastFitToRouteKeyRef.current = null;
             return;
@@ -1728,6 +1734,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     const handleMapInstanceChange = useCallback((map: google.maps.Map | null) => {
         if (googleMapRef.current === map) return;
         googleMapRef.current = map;
+        setMapInstance(map);
         setMapInitialized(Boolean(map));
         if (!map) {
             setMapZoomLevel(null);
@@ -1745,10 +1752,62 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         }
     }, []);
 
+    const handleMapboxMapReadyChange = useCallback((map: mapboxgl.Map | null) => {
+        mapboxMapRef.current = map;
+        if (!map) {
+            setIsMapboxSurfaceReady(false);
+        }
+    }, []);
+
+    const handleMapboxModuleReadyChange = useCallback((mapboxModule: typeof import('mapbox-gl').default | null) => {
+        mapboxModuleRef.current = mapboxModule;
+    }, []);
+
+    const handleMapboxSurfaceReadyChange = useCallback((isReady: boolean) => {
+        setIsMapboxSurfaceReady(isReady);
+    }, []);
+
+    const handleMapboxStyleReload = useCallback(() => {
+        setMapboxStyleReloadNonce((value) => value + 1);
+    }, []);
+
+    useEffect(() => {
+        googleMixedSurfaceControllerRef.current?.destroy();
+        googleMixedSurfaceControllerRef.current = null;
+        if (!mapInstance) return;
+
+        const controller = createGoogleMixedSurfaceController(mapInstance);
+        if (!controller) return;
+        googleMixedSurfaceControllerRef.current = controller;
+        controller.apply(shouldHideGoogleCanvasInMixedMode);
+
+        return () => {
+            if (googleMixedSurfaceControllerRef.current === controller) {
+                googleMixedSurfaceControllerRef.current = null;
+            }
+            controller.destroy();
+        };
+    }, [mapInstance, shouldHideGoogleCanvasInMixedMode]);
+
+    useEffect(() => {
+        googleMixedSurfaceControllerRef.current?.apply(shouldHideGoogleCanvasInMixedMode);
+    }, [shouldHideGoogleCanvasInMixedMode]);
+
     useEffect(() => {
         if (!mapActionsDisabled) return;
         setIsStyleMenuOpen(false);
     }, [mapActionsDisabled]);
+
+    useEffect(() => {
+        if (isMapboxBasemapEnabled) return;
+        setIsMapboxSurfaceReady(false);
+    }, [isMapboxBasemapEnabled]);
+
+    const handleMapboxBasemapError = useCallback((error: { message: string; status: number | null }) => {
+        console.warn('Mapbox basemap failed inside itinerary map; falling back to Google', error);
+        setIsMapboxSurfaceReady(false);
+        setMapboxBasemapFailureKey(mapboxBasemapAvailabilityKey);
+    }, [mapboxBasemapAvailabilityKey]);
 
     useEffect(() => {
         if (!mapInitialized || !googleMapRef.current) return;
@@ -1769,7 +1828,13 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         if (!googleMapRef.current) return;
         
         // Ensure we force a style update
-        if (activeStyle === 'satellite') {
+        if (isMapboxBasemapEnabled) {
+            googleMapRef.current.setMapTypeId('roadmap');
+            googleMapRef.current.setOptions({
+                styles: GOOGLE_BASEMAP_HIDDEN_STYLES,
+                backgroundColor: 'transparent',
+            });
+        } else if (activeStyle === 'satellite') {
             googleMapRef.current.setMapTypeId('satellite');
             googleMapRef.current.setOptions({ styles: null });
         } else {
@@ -1782,13 +1847,13 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 googleMapRef.current.setOptions({ styles: MAP_STYLES[activeStyle] });
             }
         }
-    }, [activeStyle, mapInitialized]);
+    }, [activeStyle, isMapboxBasemapEnabled, mapInitialized]);
 
     const mapRenderSignature = useMemo(() => {
         const citySignature = cities
             .map(city => `${city.id}|${city.title}|${city.color}|${city.coordinates?.lat},${city.coordinates?.lng}`)
             .join('||');
-        const activitySignature = mapItems
+        const activitySignature = items
             .filter((item) => item.type === 'activity')
             .map((item) => `${item.id}|${item.startDateOffset}|${item.duration}|${item.coordinates?.lat},${item.coordinates?.lng}`)
             .join('||');
@@ -1796,17 +1861,26 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             .slice(0, -1)
             .map((city, idx) => {
                 const nextCity = cities[idx + 1];
-                const travelItem = findTravelBetweenCities(mapItems, city, nextCity);
+                const travelItem = findTravelBetweenCities(items, city, nextCity);
                 const mode = normalizeTransportMode(travelItem?.transportMode);
                 return `${city.id}->${nextCity.id}:${mode}`;
             })
             .join('||');
         return `${citySignature}__${activitySignature}__${routeSignature}__${mapColorMode}`;
-    }, [cities, mapItems, mapColorMode]);
+    }, [cities, items, mapColorMode]);
 
     // Update Markers & Routes
     useEffect(() => {
-        if (!mapInitialized || !googleMapRef.current || !window.google?.maps?.OverlayView) return;
+        if (!mapInitialized || !googleMapRef.current || !window.google?.maps) return;
+        const mapboxMap = isMapboxBasemapEnabled ? mapboxMapRef.current : null;
+        const mapboxModule = isMapboxBasemapEnabled ? mapboxModuleRef.current : null;
+        if (isMapboxBasemapEnabled && !mapboxMap) return;
+        if (isMapboxBasemapEnabled && !mapboxModule) return;
+        if (isMapboxBasemapEnabled && (
+            !isMapboxSurfaceReady
+            || !isMapboxStyleReadyForRuntimeMutations(mapboxMap)
+        )) return;
+        if (!isMapboxBasemapEnabled && !window.google.maps.OverlayView) return;
 
         // 1. Clear existing markers & routes
         markersRef.current.forEach(m => m.setMap(null));
@@ -1822,6 +1896,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         cityLabelOverlaysRef.current = [];
         cityMarkerMetaRef.current = [];
         let isEffectDisposed = false;
+        let routeVisualIndex = 0;
         const isEffectActive = () => !isEffectDisposed;
 
         const createOverlayMarker = ({
@@ -1843,6 +1918,20 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             tooltipText?: string;
             markerDomId?: string;
         }): OverlayMarkerHandle => {
+            if (mapboxMap) {
+                return createMapboxOverlayMarker({
+                    map: mapboxMap,
+                    mapboxModule: mapboxModule!,
+                    position,
+                    html,
+                    zIndex,
+                    clickable,
+                    centerAnchor,
+                    onClick,
+                    markerDomId,
+                });
+            }
+
             const overlay = new window.google.maps.OverlayView();
             let markerDiv: HTMLDivElement | null = null;
             let currentPosition = position;
@@ -1923,7 +2012,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             overlay.setMap(googleMapRef.current);
 
             return {
-                setMap: (map: google.maps.Map | null) => overlay.setMap(map),
+                setMap: (map: unknown | null) => overlay.setMap((map as google.maps.Map | null) ?? null),
                 update: (updates: OverlayMarkerUpdate) => {
                     if (updates.position) {
                         currentPosition = updates.position;
@@ -2019,68 +2108,30 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             return getHeadingBetweenPoints(from, to);
         };
 
-        const normalizeRoutePathPoints = (rawPath: unknown): google.maps.LatLngLiteral[] => {
-            if (!Array.isArray(rawPath)) return [];
-            return rawPath
-                .map((point): google.maps.LatLngLiteral | null => {
-                    if (!point || typeof point !== 'object') return null;
-                    const latRaw = (point as { lat?: unknown }).lat;
-                    const lngRaw = (point as { lng?: unknown }).lng;
-
-                    if (typeof latRaw === 'number' && Number.isFinite(latRaw) && typeof lngRaw === 'number' && Number.isFinite(lngRaw)) {
-                        return { lat: latRaw, lng: lngRaw };
-                    }
-                    if (typeof latRaw === 'function' && typeof lngRaw === 'function') {
-                        const latValue = latRaw();
-                        const lngValue = lngRaw();
-                        if (Number.isFinite(latValue) && Number.isFinite(lngValue)) {
-                            return { lat: latValue, lng: lngValue };
-                        }
-                    }
-
-                    return null;
-                })
-                .filter((point): point is google.maps.LatLngLiteral => Boolean(point));
-        };
-
-        const computePathDistanceMeters = (path: google.maps.LatLngLiteral[]): number | undefined => {
-            if (path.length < 2) return undefined;
-            const geometry = window.google?.maps?.geometry?.spherical;
-            if (!geometry) return undefined;
-            let distanceMeters = 0;
-            for (let idx = 1; idx < path.length; idx++) {
-                distanceMeters += geometry.computeDistanceBetween(
-                    new window.google.maps.LatLng(path[idx - 1].lat, path[idx - 1].lng),
-                    new window.google.maps.LatLng(path[idx].lat, path[idx].lng),
-                );
-            }
-            return distanceMeters > 0 ? distanceMeters : undefined;
-        };
-
-        const parseDurationSeconds = (value: unknown): number | undefined => {
-            if (typeof value === 'number' && Number.isFinite(value)) {
-                return value > 10_000 ? value / 1000 : value;
-            }
-            if (typeof value === 'string') {
-                const secondsMatch = value.match(/^([0-9]+(?:\.[0-9]+)?)s$/);
-                if (secondsMatch) {
-                    const parsedSeconds = Number.parseFloat(secondsMatch[1]);
-                    return Number.isFinite(parsedSeconds) ? parsedSeconds : undefined;
-                }
-            }
-            if (value && typeof value === 'object') {
-                const secondsValue = (value as { seconds?: unknown }).seconds;
-                const nanosValue = (value as { nanos?: unknown }).nanos;
-                if (typeof secondsValue === 'number' && Number.isFinite(secondsValue)) {
-                    const nanosSeconds = typeof nanosValue === 'number' && Number.isFinite(nanosValue) ? nanosValue / 1_000_000_000 : 0;
-                    return secondsValue + nanosSeconds;
-                }
-            }
-            return undefined;
-        };
-
         const createRoutePolylinePair = (options: google.maps.PolylineOptions) => {
-            if (!isEffectActive() || !googleMapRef.current || !window.google?.maps?.Polyline) return null;
+            if (!isEffectActive()) return null;
+            if (mapboxMap) {
+                const path = (options.path ?? []) as google.maps.LatLngLiteral[];
+                if (path.length < 2) return null;
+                const routeId = `tf-mapbox-route-${routeVisualIndex}`;
+                routeVisualIndex += 1;
+                const layers = buildMapboxRouteLayerConfigs({
+                    routeId,
+                    options,
+                    style: activeStyle,
+                    provider: tripMapProvider,
+                });
+                if (layers.length === 0) return null;
+                const routeHandle = createMapboxLineHandle({
+                    map: mapboxMap,
+                    sourceId: `${routeId}-source`,
+                    path,
+                    layers,
+                });
+                routesRef.current.push(routeHandle);
+                return { outerOutline: null, outline: null, main: routeHandle };
+            }
+            if (!googleMapRef.current || !window.google?.maps?.Polyline) return null;
             const { outerOutlineOptions, outlineOptions, mainOptions } = buildRoutePolylinePairOptions(options, activeStyle);
             const shouldRenderOuterOutline = (outerOutlineOptions.strokeOpacity ?? 0) > 0 || ((outerOutlineOptions.icons?.length ?? 0) > 0);
             const shouldRenderInnerOutline = (outlineOptions.strokeOpacity ?? 0) > 0 || ((outlineOptions.icons?.length ?? 0) > 0);
@@ -2135,42 +2186,158 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             });
         };
 
+        const drawGroundShadowPath = (path: google.maps.LatLngLiteral[], weight = 3) => {
+            if (!isEffectActive()) return null;
+            const routeScale = Math.max(0.58, effectiveMarkerRenderProfile.routeStrokeScale);
+            const shadowStyle = resolveTripMapFlightGroundShadowStyle({
+                provider: tripMapProvider,
+                style: activeStyle,
+                baseWeight: weight * routeScale,
+            });
+            return createRoutePolylinePair({
+                path,
+                geodesic: true,
+                strokeColor: shadowStyle.color,
+                strokeOpacity: shadowStyle.opacity,
+                strokeWeight: shadowStyle.weight,
+                clickable: false,
+                zIndex: 34,
+            });
+        };
+
+        const clearRouteVisualHandle = (
+            handle: ReturnType<typeof createRoutePolylinePair> | null | undefined,
+        ) => {
+            if (!handle) return;
+            handle.outerOutline?.setMap(null);
+            handle.outline?.setMap(null);
+            handle.main?.setMap(null);
+        };
+
+        const drawFallbackLegVisual = ({
+            startCoordinates,
+            endCoordinates,
+            mode,
+            color,
+            includeTransportMarker,
+        }: {
+            startCoordinates: google.maps.LatLngLiteral;
+            endCoordinates: google.maps.LatLngLiteral;
+            mode: ReturnType<typeof normalizeTransportMode>;
+            color: string;
+            includeTransportMarker: boolean;
+        }) => {
+            const isFlightFallback = mode === 'plane';
+            const flightRouteVisualPaths = isFlightFallback
+                ? buildFlightRouteVisualPaths(
+                    startCoordinates,
+                    endCoordinates,
+                    resolveTripMapFlightCurveOptions(tripMapProvider),
+                )
+                : null;
+            const fallbackAirPath = flightRouteVisualPaths
+                ? flightRouteVisualPaths.airPath
+                : [
+                    { lat: startCoordinates.lat, lng: startCoordinates.lng },
+                    { lat: endCoordinates.lat, lng: endCoordinates.lng },
+                ];
+            const fallbackGroundPath = flightRouteVisualPaths?.groundPath ?? fallbackAirPath;
+            const isDashedFallback = mode !== 'plane';
+            const routeScale = Math.max(0.58, effectiveMarkerRenderProfile.routeStrokeScale);
+            const arrowIcon = {
+                path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                fillColor: color,
+                fillOpacity: 1,
+                strokeColor: color,
+                strokeOpacity: 1,
+                strokeWeight: 0.1,
+                scale: 3.2 * Math.max(0.72, routeScale),
+            };
+            const icons = isDashedFallback
+                ? [
+                    {
+                        icon: {
+                            path: 'M 0,-1 0,1',
+                            strokeColor: color,
+                            strokeOpacity: 0.9,
+                            scale: 2.5 * Math.max(0.72, routeScale),
+                        },
+                        offset: '0',
+                        repeat: '12px'
+                    },
+                    { icon: arrowIcon, offset: '25%' },
+                    { icon: arrowIcon, offset: '75%' }
+                ]
+                : [
+                    { icon: arrowIcon, offset: '25%' },
+                    { icon: arrowIcon, offset: '75%' },
+                ];
+
+            const groundShadowHandle = isFlightFallback
+                ? drawGroundShadowPath(fallbackGroundPath, 2.35)
+                : null;
+            const routeHandle = createRoutePolylinePair({
+                path: fallbackAirPath,
+                geodesic: !isFlightFallback,
+                strokeColor: color,
+                strokeOpacity: isDashedFallback ? 0 : 0.6,
+                strokeWeight: Math.max(1.05, 2 * effectiveMarkerRenderProfile.routeStrokeScale),
+                clickable: false,
+                icons,
+                zIndex: 35,
+            });
+
+            if (includeTransportMarker && mode !== 'na' && effectiveMarkerRenderProfile.transport.show) {
+                const midPoint = getPointAlongPath(fallbackAirPath, 0.5);
+                if (midPoint) {
+                    const markerHeading = mode === 'plane'
+                        ? getHeadingAlongPath(fallbackAirPath, 0.5)
+                        : undefined;
+                    const transportMarker = createOverlayMarker({
+                        position: midPoint,
+                        html: buildTransportMarkerHtml(mode, color, markerHeading, effectiveMarkerRenderProfile),
+                        zIndex: 50,
+                        centerAnchor: true,
+                    });
+                    transportMarkerMetaRef.current.push({
+                        mode,
+                        color,
+                        rotationDegrees: markerHeading,
+                        marker: transportMarker,
+                    });
+                }
+            }
+
+            return {
+                groundShadowHandle,
+                routeHandle,
+            };
+        };
+
         const brandRouteColor = '#4f46e5';
         const resolveMapColor = (colorToken: string): string =>
             mapColorMode === 'brand' ? brandRouteColor : getHexFromColorClass(colorToken);
-        const coordinateMarkerGroups = new Map<string, number[]>();
-
-        cities.forEach((city, index) => {
-            if (!city.coordinates) return;
-            const key = buildCoordinateGroupKey(city.coordinates);
-            const grouped = coordinateMarkerGroups.get(key) ?? [];
-            grouped.push(index);
-            coordinateMarkerGroups.set(key, grouped);
-        });
-
-        const resolveCityMarkerPosition = (city: ITimelineItem, index: number): google.maps.LatLngLiteral | null => {
-            if (!city.coordinates) return null;
-            const key = buildCoordinateGroupKey(city.coordinates);
-            const grouped = coordinateMarkerGroups.get(key);
-            if (!grouped || grouped.length <= 1) return city.coordinates;
-            const overlapIndex = grouped.indexOf(index);
-            if (overlapIndex < 0) return city.coordinates;
-            return buildOverlappingMarkerPosition(city.coordinates, overlapIndex, grouped.length);
-        };
+        const cityOverlayDescriptors = buildTripMapCityOverlayDescriptors(cities);
 
         if (!isPaywalled) {
             // 2. Add Markers
-            cities.forEach((city, index) => {
+            cityOverlayDescriptors.forEach(({ city, cityIndex, markerPosition }) => {
                 if (!isEffectActive()) return;
-                if (!city.coordinates) return;
-                const markerPosition = resolveCityMarkerPosition(city, index);
-                if (!markerPosition) return;
-                
                 const isSelected = city.id === selectedCityId;
                 const cityMarkerColor = resolveMapColor(city.color);
+                const cityMarkerImageUrl = resolveTripMapCityMarkerImageUrl(city);
                 const marker = createOverlayMarker({
                     position: markerPosition,
-                    html: buildCityMarkerHtml(index, cityMarkerColor, isSelected, effectiveMarkerRenderProfile),
+                    html: buildTripMapCityMarkerHtml({
+                        provider: tripMapProvider,
+                        index: cityIndex,
+                        color: cityMarkerColor,
+                        imageUrl: cityMarkerImageUrl,
+                        isSelected,
+                        profile: effectiveMarkerRenderProfile.city,
+                        selectedOutlineColor: resolveCssColorVar('--tf-accent-500', CITY_PIN_SELECTED_OUTLINE_FALLBACK),
+                        selectedRingColor: resolveCssColorVar('--tf-accent-200', CITY_PIN_SELECTED_RING_FALLBACK),
+                    }),
                     zIndex: resolveCityMarkerZIndex(isSelected, effectiveMarkerRenderProfile),
                     clickable: true,
                     onClick: () => onCityMarkerSelectRef.current?.(city.id),
@@ -2180,7 +2347,8 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 cityMarkerMetaRef.current.push({
                     id: city.id,
                     color: cityMarkerColor,
-                    index,
+                    imageUrl: cityMarkerImageUrl,
+                    index: cityIndex,
                     marker,
                 });
                 markersRef.current.push(marker);
@@ -2191,10 +2359,11 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 ? Number(currentZoomValue)
                 : mapZoomLevelRef.current;
             const shouldAttachActivityMarkers = shouldDisplayActivityMarkers({
+                provider: tripMapProvider,
                 isEnabled: activityMarkersEnabledRef.current,
                 zoom: resolvedZoomLevel,
             });
-            const activityMarkers = resolveActivityMarkerPositions(mapItems);
+            const activityMarkers = resolveActivityMarkerPositions(items);
             activityMarkers.forEach((activityMarker) => {
                 if (!isEffectActive()) return;
                 const isSelected = activityMarker.id === selectedActivityId;
@@ -2228,57 +2397,70 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         }
 
         if (!isPaywalled && showCityNames && googleMapRef.current) {
-            const startCity = cities[0];
-            const endCity = cities[cities.length - 1];
-            const startCityKey = getNormalizedCityName(startCity?.title);
-            const endCityKey = getNormalizedCityName(endCity?.title);
-            const isRoundTrip = !!(startCityKey && endCityKey && startCityKey === endCityKey);
-            const isCleanDarkLabelStyle = activeStyle === 'cleanDark';
-            const defaultLabelTextColor = '#111827';
-            const defaultLabelSubTextColor = 'var(--tf-primary)';
-            const defaultLabelTextShadow = '0 1px 2px rgba(255,255,255,0.8)';
-            const cleanDarkLabelTextColor = '#f8fafc';
-            const cleanDarkLabelSubTextColor = resolveCssColorVar('--tf-accent-200', '#c7d2fe');
-            const cleanDarkLabelTextShadow = '0 1px 2px rgba(11,18,32,0.88)';
+            const baseLabelOffsetPx = resolveTripMapCityLabelOffsetPx({
+                provider: tripMapProvider,
+                markerSize: effectiveMarkerRenderProfile.city.size,
+            });
 
             const createCityLabelOverlay = (
                 position: google.maps.LatLngLiteral,
                 name: string,
                 subLabel?: string,
                 anchor: CityLabelAnchor = 'right',
+                labelOffsetPx: number = baseLabelOffsetPx,
+                compact = false,
             ) => {
+                if (mapboxMap) {
+                    return createMapboxOverlayMarker({
+                        map: mapboxMap,
+                        mapboxModule: mapboxModule!,
+                        position,
+                        html: buildTripMapCityLabelHtml({
+                            provider: tripMapProvider,
+                            name,
+                            subLabel,
+                            anchor,
+                            style: activeStyle,
+                            offsetPx: labelOffsetPx,
+                            compact,
+                        }),
+                        zIndex: 120,
+                        centerAnchor: true,
+                    });
+                }
+
                 const overlay = new window.google.maps.OverlayView();
                 (overlay as any).div = null;
 
                 overlay.onAdd = function () {
                     const div = document.createElement('div');
+                    const placement = resolveCityLabelPlacement(
+                        anchor,
+                        labelOffsetPx,
+                    );
+                    const theme = resolveCityLabelTheme(activeStyle);
                     div.style.position = 'absolute';
-                    if (anchor === 'left') {
-                        div.style.transform = 'translate(calc(-100% - 12px), -50%)';
-                        div.style.textAlign = 'right';
-                    } else if (anchor === 'below') {
-                        div.style.transform = 'translate(-50%, 12px)';
-                        div.style.textAlign = 'center';
-                    } else if (anchor === 'above') {
-                        div.style.transform = 'translate(-50%, calc(-100% - 12px))';
-                        div.style.textAlign = 'center';
-                    } else {
-                        div.style.transform = 'translate(12px, -50%)';
-                        div.style.textAlign = 'left';
-                    }
+                    div.style.transform = placement.transform;
+                    div.style.textAlign = placement.textAlign;
                     div.style.pointerEvents = 'none';
                     div.style.display = 'flex';
                     div.style.flexDirection = 'column';
-                    div.style.gap = '1px';
+                    div.style.gap = '2px';
                     div.style.whiteSpace = 'nowrap';
                     div.style.zIndex = '120';
+                    div.style.padding = '6px 9px';
+                    div.style.borderRadius = '999px';
+                    div.style.background = theme.background;
+                    div.style.border = `1px solid ${theme.borderColor}`;
+                    div.style.boxShadow = theme.boxShadow;
+                    div.style.backdropFilter = 'blur(12px)';
 
                     const nameEl = document.createElement('div');
                     nameEl.textContent = name;
                     nameEl.style.fontSize = '13px';
                     nameEl.style.fontWeight = '700';
-                    nameEl.style.color = isCleanDarkLabelStyle ? cleanDarkLabelTextColor : defaultLabelTextColor;
-                    nameEl.style.textShadow = isCleanDarkLabelStyle ? cleanDarkLabelTextShadow : defaultLabelTextShadow;
+                    nameEl.style.color = theme.textColor;
+                    nameEl.style.textShadow = theme.textShadow;
 
                     div.appendChild(nameEl);
 
@@ -2286,11 +2468,11 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                         const subEl = document.createElement('div');
                         subEl.textContent = subLabel;
                         subEl.style.fontSize = '10px';
-                        subEl.style.fontWeight = '600';
-                        subEl.style.color = isCleanDarkLabelStyle ? cleanDarkLabelSubTextColor : defaultLabelSubTextColor;
+                        subEl.style.fontWeight = '700';
+                        subEl.style.color = theme.subTextColor;
                         subEl.style.textTransform = 'uppercase';
                         subEl.style.letterSpacing = '0.08em';
-                        subEl.style.textShadow = isCleanDarkLabelStyle ? cleanDarkLabelTextShadow : defaultLabelTextShadow;
+                        subEl.style.textShadow = theme.textShadow;
                         div.appendChild(subEl);
                     }
 
@@ -2321,55 +2503,63 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 return overlay;
             };
 
-            const shownRoundTripLabel = new Set<string>();
-            const findNeighborCoordinates = (fromIndex: number, direction: -1 | 1): google.maps.LatLngLiteral | null => {
-                let cursor = fromIndex + direction;
-                while (cursor >= 0 && cursor < cities.length) {
-                    const candidate = cities[cursor]?.coordinates;
-                    if (candidate) return candidate;
-                    cursor += direction;
-                }
-                return null;
-            };
+            const cityLabelDescriptors = buildTripMapCityLabelOverlayDescriptors({
+                provider: tripMapProvider,
+                cityOverlays: cityOverlayDescriptors,
+            });
 
-            cities.forEach((city, cityIndex) => {
-                if (!city.coordinates) return;
-                const cityKey = getNormalizedCityName(city.title);
-                const labelName = getMapLabelCityName(city.title || city.location) || city.title || city.location || '';
-                const previousCoordinates = findNeighborCoordinates(cityIndex, -1);
-                const nextCoordinates = findNeighborCoordinates(cityIndex, 1);
-                const labelAnchor = resolveCityLabelAnchor(city.coordinates, previousCoordinates, nextCoordinates);
-                if (isRoundTrip && cityKey && cityKey === startCityKey) {
-                    if (shownRoundTripLabel.has(cityKey)) return;
-                    shownRoundTripLabel.add(cityKey);
-                    const overlay = createCityLabelOverlay(
-                        { lat: city.coordinates.lat, lng: city.coordinates.lng },
-                        labelName,
-                        'START • END',
-                        labelAnchor,
-                    );
-                    cityLabelOverlaysRef.current.push(overlay);
-                    return;
-                }
+            const mapboxCityLabelLayouts = mapboxMap
+                ? resolveTripMapProjectedCityLabelLayouts({
+                    provider: tripMapProvider,
+                    labels: cityLabelDescriptors.flatMap((descriptor) => {
+                        try {
+                            const point = mapboxMap.project([
+                                descriptor.markerPosition.lng,
+                                descriptor.markerPosition.lat,
+                            ]);
+                            if (!Number.isFinite(point.x) || !Number.isFinite(point.y)) return [];
+                            return [{
+                                key: descriptor.key,
+                                point: { x: point.x, y: point.y },
+                                name: descriptor.labelName,
+                                subLabel: descriptor.subLabel,
+                            }];
+                        } catch {
+                            return [];
+                        }
+                    }),
+                    baseOffsetPx: baseLabelOffsetPx,
+                    viewport: {
+                        width: mapboxMap.getContainer().clientWidth,
+                        height: mapboxMap.getContainer().clientHeight,
+                    },
+                })
+                : new Map<string, TripMapProjectedCityLabelLayout>();
 
-                let subLabel: string | undefined;
-                if (startCity && city.id === startCity.id) subLabel = 'START';
-                if (endCity && city.id === endCity.id) subLabel = 'END';
-
+            cityLabelDescriptors.forEach(({ markerPosition, key, labelName, subLabel, defaultAnchor }) => {
+                const labelLayout = mapboxCityLabelLayouts.get(key);
+                if (labelLayout?.hidden) return;
+                const labelAnchor = labelLayout?.anchor ?? defaultAnchor;
+                const labelOffsetPx = labelLayout?.offsetPx ?? baseLabelOffsetPx;
+                const compact = labelLayout?.compact ?? false;
                 if (subLabel) {
                     const overlay = createCityLabelOverlay(
-                        { lat: city.coordinates.lat, lng: city.coordinates.lng },
+                        markerPosition,
                         labelName,
                         subLabel,
                         labelAnchor,
+                        labelOffsetPx,
+                        compact,
                     );
                     cityLabelOverlaysRef.current.push(overlay);
                 } else {
                     const overlay = createCityLabelOverlay(
-                        { lat: city.coordinates.lat, lng: city.coordinates.lng },
+                        markerPosition,
                         labelName,
                         undefined,
                         labelAnchor,
+                        labelOffsetPx,
+                        compact,
                     );
                     cityLabelOverlaysRef.current.push(overlay);
                 }
@@ -2380,26 +2570,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         const drawRoutes = async () => {
              if (!isEffectActive()) return;
              hydrateRouteCache();
-             const importLibrary = window.google?.maps?.importLibrary;
-             let computeRoutes: ((request: unknown) => Promise<unknown>) | null = null;
-             let routesTransitModes: Record<string, unknown> | null = null;
-
-             if (typeof importLibrary === 'function') {
-                 try {
-                     const routesLibrary = await importLibrary('routes' as never) as {
-                         Route?: { computeRoutes?: (request: unknown) => Promise<unknown> };
-                         TransitMode?: Record<string, unknown>;
-                     };
-                     if (routesLibrary?.Route && typeof routesLibrary.Route.computeRoutes === 'function') {
-                         computeRoutes = routesLibrary.Route.computeRoutes.bind(routesLibrary.Route);
-                     }
-                     if (routesLibrary?.TransitMode && typeof routesLibrary.TransitMode === 'object') {
-                         routesTransitModes = routesLibrary.TransitMode;
-                     }
-                 } catch (error) {
-                     console.warn('Failed to load Routes library; route checks will fall back to straight-line rendering', error);
-                 }
-             }
+             const googleRouteRuntime = await loadGoogleRouteRuntime();
              if (!isEffectActive()) return;
 
              for (let i = 0; i < cities.length - 1; i++) {
@@ -2408,7 +2579,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                  const end = cities[i+1];
                  if (!start.coordinates || !end.coordinates) continue;
 
-                 const travelItem = findTravelBetweenCities(mapItems, start, end);
+                 const travelItem = findTravelBetweenCities(items, start, end);
                  const mode = normalizeTransportMode(travelItem?.transportMode);
                  const startColor = resolveMapColor(start.color); // Color based on start city
                  const cacheKey = start.coordinates && end.coordinates
@@ -2426,6 +2597,15 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                      (travelModes[modeKey] ?? modeKey) as google.maps.TravelMode
                  );
                  const useRealRoute = wantsRealRoute && routeAttemptModes.length > 0;
+                 let provisionalRouteHandle: ReturnType<typeof createRoutePolylinePair> | null = null;
+                 let provisionalGroundShadowHandle: ReturnType<typeof createRoutePolylinePair> | null = null;
+
+                 const clearProvisionalFallbackVisual = () => {
+                     clearRouteVisualHandle(provisionalGroundShadowHandle);
+                     clearRouteVisualHandle(provisionalRouteHandle);
+                     provisionalGroundShadowHandle = null;
+                     provisionalRouteHandle = null;
+                 };
 
                  const requiresDirections = mode !== 'plane' && mode !== 'boat' && mode !== 'na';
                  if (wantsRealRoute && requiresDirections && !routeAttemptPolicy.shouldAttempt) {
@@ -2512,101 +2692,32 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                          if (travelItem && onRouteStatusRef.current) {
                              onRouteStatusRef.current(travelItem.id, 'calculating', { mode, routeKey: cacheKey });
                          }
+                         if (isEffectActive()) {
+                             const provisionalFallback = drawFallbackLegVisual({
+                                 startCoordinates: start.coordinates,
+                                 endCoordinates: end.coordinates,
+                                 mode,
+                                 color: startColor,
+                                 includeTransportMarker: false,
+                             });
+                             provisionalGroundShadowHandle = provisionalFallback.groundShadowHandle;
+                             provisionalRouteHandle = provisionalFallback.routeHandle;
+                         }
                          const tryRoute = async (travelMode: google.maps.TravelMode, attemptIndex: number) => {
                              if (!isEffectActive()) {
                                  throw new Error('Route draw cancelled');
                              }
                              const origin = { lat: start.coordinates.lat, lng: start.coordinates.lng };
                              const destination = { lat: end.coordinates.lat, lng: end.coordinates.lng };
-                             let path: google.maps.LatLngLiteral[] = [];
-                             let distanceKm: number | undefined;
-                             let durationHours: number | undefined;
-                             const isTransitMode = (
-                                 travelMode === travelModes.TRANSIT ||
-                                 travelMode === 'TRANSIT'
-                             );
-                             const transitDepartureTime = getTransitFallbackDepartureTime();
-
-                             if (!computeRoutes) {
-                                 throw new Error('Routes API unavailable');
-                             }
-
-                             const buildRouteRequest = (fields: readonly string[]): Record<string, unknown> => {
-                                 const routeRequest: Record<string, unknown> = {
-                                     origin,
-                                     destination,
-                                     travelMode,
-                                     fields,
-                                 };
-                                 if (isTransitMode) {
-                                     routeRequest.departureTime = transitDepartureTime;
-                                     const allowedTransitModes: unknown[] = [];
-                                     const isPrimaryTransitAttempt = attemptIndex === 0;
-                                     if (isPrimaryTransitAttempt && mode === 'train') {
-                                         if (routesTransitModes?.TRAIN) {
-                                             allowedTransitModes.push(routesTransitModes.TRAIN);
-                                         } else {
-                                             allowedTransitModes.push('TRAIN');
-                                         }
-                                         if (routesTransitModes?.RAIL) {
-                                             allowedTransitModes.push(routesTransitModes.RAIL);
-                                         }
-                                     }
-                                     if (isPrimaryTransitAttempt && mode === 'bus') {
-                                         if (routesTransitModes?.BUS) {
-                                             allowedTransitModes.push(routesTransitModes.BUS);
-                                         } else {
-                                             allowedTransitModes.push('BUS');
-                                         }
-                                     }
-                                     if (allowedTransitModes.length > 0) {
-                                         routeRequest.transitPreference = {
-                                             allowedTransitModes,
-                                         };
-                                     }
-                                 }
-                                 return routeRequest;
-                             };
-                             const applyRoutesResult = (routesResult: unknown) => {
-                                 const parsedResult = routesResult as {
-                                     routes?: Array<{
-                                         path?: unknown;
-                                         distanceMeters?: unknown;
-                                         durationMillis?: unknown;
-                                     }>;
-                                 };
-                                 const route = parsedResult.routes?.[0];
-                                 path = normalizeRoutePathPoints(route?.path);
-                                 const distanceMeters = typeof route?.distanceMeters === 'number' && Number.isFinite(route.distanceMeters)
-                                     ? route.distanceMeters
-                                     : computePathDistanceMeters(path);
-                                 distanceKm = distanceMeters ? distanceMeters / 1000 : undefined;
-
-                                 const durationSeconds = parseDurationSeconds(route?.durationMillis);
-                                 durationHours = durationSeconds ? durationSeconds / 3600 : undefined;
-                             };
-
-                             try {
-                                 const routesResult = await computeRoutes(buildRouteRequest(ROUTES_COMPUTE_FIELDS));
-                                 if (!isEffectActive()) {
-                                     throw new Error('Route draw cancelled');
-                                 }
-                                 applyRoutesResult(routesResult);
-                             } catch (computeRoutesError) {
-                                 if (!isEffectActive()) {
-                                     throw new Error('Route draw cancelled');
-                                 }
-
-                                 if (isRoutesFieldMaskError(computeRoutesError)) {
-                                     const fallbackResult = await computeRoutes(buildRouteRequest(ROUTES_COMPUTE_MINIMAL_FIELDS));
-                                     if (!isEffectActive()) {
-                                         throw new Error('Route draw cancelled');
-                                     }
-                                     applyRoutesResult(fallbackResult);
-                                 } else {
-                                     throw computeRoutesError;
-                                 }
-                             }
+                             const { path, distanceKm, durationHours } = await computeGoogleRouteLeg({
+                                 origin,
+                                 destination,
+                                 travelMode,
+                                 transportMode: mode,
+                                 attemptIndex,
+                                 routeRuntime: googleRouteRuntime,
+                                 isCancelled: () => !isEffectActive(),
+                             });
 
                              if (!path || path.length === 0) {
                                  throw new Error('No route path returned');
@@ -2618,6 +2729,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                                  throw new Error('Route draw cancelled');
                              }
 
+                             clearProvisionalFallbackVisual();
                              drawRoutePath(path, startColor, 3);
 
                              if (mode !== 'na' && effectiveMarkerRenderProfile.transport.show) {
@@ -2681,6 +2793,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                          }
                          if (!isEffectActive()) return;
 
+                         clearProvisionalFallbackVisual();
                          routingFailed = true;
                          const failureReason = classifyRouteComputationError(lastRouteError);
                          ROUTE_CACHE.set(cacheKey, {
@@ -2702,74 +2815,15 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                      }
                  }
 
-                 // Fallback / Flight: Draw Geodesic Polyline
-                 const isDashedFallback = mode !== 'plane';
-                 const arrowIcon = {
-                     path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW, 
-                     fillColor: startColor,
-                     fillOpacity: 1,
-                     strokeColor: startColor,
-                     strokeOpacity: 1,
-                     strokeWeight: 0.1,
-                     scale: 3.2 * Math.max(0.72, effectiveMarkerRenderProfile.routeStrokeScale)
-                 };
-                 const icons = isDashedFallback
-                     ? [
-                         {
-                             icon: {
-                                 path: 'M 0,-1 0,1',
-                                 strokeColor: startColor,
-                                 strokeOpacity: 0.9,
-                                 scale: 2.5 * Math.max(0.72, effectiveMarkerRenderProfile.routeStrokeScale),
-                             },
-                             offset: '0',
-                             repeat: '12px'
-                         },
-                         { icon: arrowIcon, offset: '25%' },
-                         { icon: arrowIcon, offset: '75%' }
-                       ]
-                     : [
-                         { icon: arrowIcon, offset: '25%' },
-                         { icon: arrowIcon, offset: '75%' },
-                     ];
+                 clearProvisionalFallbackVisual();
                  if (!isEffectActive()) return;
-                 createRoutePolylinePair({
-                     path: [
-                         { lat: start.coordinates.lat, lng: start.coordinates.lng },
-                         { lat: end.coordinates.lat, lng: end.coordinates.lng }
-                     ],
-                     geodesic: true,
-                     strokeColor: startColor,
-                     strokeOpacity: isDashedFallback ? 0 : 0.6,
-                     strokeWeight: Math.max(1.05, 2 * effectiveMarkerRenderProfile.routeStrokeScale),
-                     clickable: false,
-                     icons,
-                     zIndex: 35,
+                 drawFallbackLegVisual({
+                     startCoordinates: start.coordinates,
+                     endCoordinates: end.coordinates,
+                     mode,
+                     color: startColor,
+                     includeTransportMarker: true,
                  });
-
-                 const mid = getPointAlongPath([
-                     { lat: start.coordinates.lat, lng: start.coordinates.lng },
-                     { lat: end.coordinates.lat, lng: end.coordinates.lng },
-                 ], 0.5);
-                 if (mode !== 'na' && effectiveMarkerRenderProfile.transport.show) {
-                     if (!isEffectActive()) return;
-                     if (!mid) continue;
-                     const markerHeading = mode === 'plane'
-                         ? getHeadingBetweenPoints(start.coordinates, end.coordinates)
-                         : undefined;
-                     const transportMarker = createOverlayMarker({
-                         position: mid,
-                         html: buildTransportMarkerHtml(mode, startColor, markerHeading, effectiveMarkerRenderProfile),
-                         zIndex: 50,
-                         centerAnchor: true,
-                     });
-                     transportMarkerMetaRef.current.push({
-                         mode,
-                         color: startColor,
-                         rotationDegrees: markerHeading,
-                         marker: transportMarker,
-                     });
-                 }
              }
         };
 
@@ -2780,15 +2834,25 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             isEffectDisposed = true;
         };
 
-    }, [mapInitialized, mapRenderSignature, routeMode, showCityNames, isPaywalled, activeStyle, effectiveMarkerRenderProfile]); 
+    }, [activeStyle, effectiveMarkerRenderProfile, isMapboxBasemapEnabled, isMapboxSurfaceReady, isPaywalled, mapInitialized, mapRenderSignature, mapboxStyleReloadNonce, routeMode, showCityNames]); 
 
     useEffect(() => {
-        if (!mapInitialized || !window.google?.maps?.OverlayView) return;
+        if (!mapInitialized) return;
+        if (!isMapboxBasemapEnabled && !window.google?.maps?.OverlayView) return;
 
-        cityMarkerMetaRef.current.forEach(({ id, color, index, marker }) => {
+        cityMarkerMetaRef.current.forEach(({ id, color, imageUrl, index, marker }) => {
             const isSelected = id === selectedCityId;
             marker.update({
-                html: buildCityMarkerHtml(index, color, isSelected, effectiveMarkerRenderProfile),
+                html: buildTripMapCityMarkerHtml({
+                    provider: tripMapProvider,
+                    index,
+                    color,
+                    imageUrl,
+                    isSelected,
+                    profile: effectiveMarkerRenderProfile.city,
+                    selectedOutlineColor: resolveCssColorVar('--tf-accent-500', CITY_PIN_SELECTED_OUTLINE_FALLBACK),
+                    selectedRingColor: resolveCssColorVar('--tf-accent-200', CITY_PIN_SELECTED_RING_FALLBACK),
+                }),
                 zIndex: resolveCityMarkerZIndex(isSelected, effectiveMarkerRenderProfile),
             });
         });
@@ -2805,30 +2869,41 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 zIndex: isSelected ? ACTIVITY_MARKER_SELECTED_Z_INDEX : ACTIVITY_MARKER_Z_INDEX,
             });
         });
-    }, [activityMarkerStylesById, mapInitialized, selectedActivityId, selectedCityId, effectiveMarkerRenderProfile]);
+    }, [activityMarkerStylesById, isMapboxBasemapEnabled, mapInitialized, selectedActivityId, selectedCityId, effectiveMarkerRenderProfile]);
 
     useEffect(() => {
-        if (!mapInitialized || !googleMapRef.current) return;
+        if (!mapInitialized) return;
+        const activeOverlayTarget = resolveActiveOverlayMapTarget({
+            isMapboxEnabled: isMapboxBasemapEnabled,
+            googleMap: googleMapRef.current,
+            mapboxMap: mapboxMapRef.current,
+        });
         transportMarkerMetaRef.current.forEach((meta) => {
-            meta.marker.setMap(effectiveMarkerRenderProfile.transport.show ? googleMapRef.current : null);
+            meta.marker.setMap(effectiveMarkerRenderProfile.transport.show ? activeOverlayTarget : null);
             meta.marker.update({
                 html: buildTransportMarkerHtml(meta.mode, meta.color, meta.rotationDegrees, effectiveMarkerRenderProfile),
             });
         });
-    }, [mapInitialized, effectiveMarkerRenderProfile]);
+    }, [isMapboxBasemapEnabled, mapInitialized, effectiveMarkerRenderProfile]);
 
     useEffect(() => {
-        if (!mapInitialized || !googleMapRef.current) return;
+        if (!mapInitialized) return;
+        const activeOverlayTarget = resolveActiveOverlayMapTarget({
+            isMapboxEnabled: isMapboxBasemapEnabled,
+            googleMap: googleMapRef.current,
+            mapboxMap: mapboxMapRef.current,
+        });
         const shouldShow = shouldDisplayActivityMarkers({
+            provider: tripMapProvider,
             isEnabled: activityMarkersEnabled,
             zoom: mapZoomLevel,
         });
         activityMarkerMetaRef.current.forEach((meta) => {
             if (meta.isVisible === shouldShow) return;
-            meta.marker.setMap(shouldShow ? googleMapRef.current : null);
+            meta.marker.setMap(shouldShow ? activeOverlayTarget : null);
             meta.isVisible = shouldShow;
         });
-    }, [activityMarkersEnabled, mapInitialized, mapZoomLevel]);
+    }, [activityMarkersEnabled, isMapboxBasemapEnabled, mapInitialized, mapZoomLevel]);
 
     // Pan to selected
     useLayoutEffect(() => {
@@ -2843,6 +2918,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         const t = setTimeout(() => {
             if (!googleMapRef.current) return;
             const focusTarget = resolveSelectedMapFocusPosition({
+                provider: tripMapProvider,
                 selectedActivityId,
                 selectedCityId,
                 activityMarkerPositions: resolvedActivityMarkerPositionById,
@@ -2859,8 +2935,19 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 focusTarget.position.lng,
             );
             const isTargetVisible = Boolean(currentBounds?.contains?.(targetLatLng));
+            const isTargetWithinSafeZone = currentBounds
+                ? isCoordinateWithinSafeBounds({
+                    bounds: currentBounds,
+                    point: focusTarget.position,
+                    insetRatio: resolveTripMapSelectionSafeInsetRatio({
+                        provider: tripMapProvider,
+                        mapDockMode,
+                    }),
+                })
+                : false;
             const { shouldPan, shouldZoom } = resolveSelectionViewportActions({
                 isTargetVisible,
+                isTargetWithinSafeZone,
                 currentZoom,
                 targetZoom: focusTarget.zoom,
             });
@@ -2877,7 +2964,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             }
         }, 100);
         return () => clearTimeout(t);
-    }, [selectedActivityId, selectedCityId, mapInitialized, cityMapSignature, fitBoundsCoordinateSignature, resolvedActivityMarkerPositionById]);
+    }, [cityMapSignature, fitBoundsCoordinateSignature, mapDockMode, mapInitialized, resolvedActivityMarkerPositionById, selectedActivityId, selectedCityId, tripMapProvider]);
 
     // Fit Bounds
     const handleFit = () => {
@@ -2889,14 +2976,14 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         if (!mapInitialized || cities.length === 0) return;
         if (selectedActivityId || selectedCityId) return;
         const autoFitSignature = `${cityMapSignature}::${fitBoundsCoordinateSignature}`;
-        if (lastAutoFitCitySignatureRef.current === autoFitSignature) return;
-        lastAutoFitCitySignatureRef.current = autoFitSignature;
+        if (lastAutoFitSignatureRef.current === autoFitSignature) return;
+        lastAutoFitSignatureRef.current = autoFitSignature;
         scheduleFitWhenViewportReadyRef.current(14, { respectSelection: true });
     }, [cityMapSignature, fitBoundsCoordinateSignature, mapInitialized, cities.length, fitBoundsCoordinates.length, selectedActivityId, selectedCityId]);
 
     useEffect(() => {
         if (cities.length > 0) return;
-        lastAutoFitCitySignatureRef.current = null;
+        lastAutoFitSignatureRef.current = null;
     }, [cities.length]);
 
     // Re-center when an external "active route" key changes (e.g., opening a different saved plan).
@@ -2914,6 +3001,21 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         if (selectedActivityId || selectedCityId) return;
         scheduleFitWhenViewportReadyRef.current(14, { respectSelection: true });
     }, [cities.length, mapDockMode, mapInitialized, selectedActivityId, selectedCityId]);
+
+    useEffect(() => {
+        const previousDockMode = previousMapDockModeRef.current;
+        previousMapDockModeRef.current = mapDockMode;
+        if (!mapInitialized || cities.length === 0) return;
+        if (previousDockMode === mapDockMode) return;
+        cancelDockModeRefitTimer();
+        if (mapDockMode !== 'docked') return;
+        cancelResizeAutoFitTimer();
+        cancelScheduledFit();
+        dockModeRefitTimerRef.current = window.setTimeout(() => {
+            dockModeRefitTimerRef.current = null;
+            scheduleFitWhenViewportReadyRef.current(18, { respectSelection: false });
+        }, tripMapTuning.resize.dockModeRefitDelayMs);
+    }, [cancelDockModeRefitTimer, cancelResizeAutoFitTimer, cancelScheduledFit, cities.length, mapDockMode, mapInitialized, tripMapTuning.resize.dockModeRefitDelayMs]);
 
     useEffect(() => {
         if (!mapInitialized || !googleMapRef.current || typeof ResizeObserver === 'undefined') return;
@@ -2952,7 +3054,10 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                     width: Math.round(nextViewportSize.width),
                     height: Math.round(nextViewportSize.height),
                 });
-                if (widthDeltaSinceLastAutoFit < 24 && heightDeltaSinceLastAutoFit < 24) return;
+                if (
+                    widthDeltaSinceLastAutoFit < tripMapTuning.resize.autoFitViewportDeltaPx
+                    && heightDeltaSinceLastAutoFit < tripMapTuning.resize.autoFitViewportDeltaPx
+                ) return;
                 cancelResizeAutoFitTimer();
                 resizeAutoFitTimerRef.current = window.setTimeout(() => {
                     resizeAutoFitTimerRef.current = null;
@@ -2965,19 +3070,21 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
 
         return () => {
             observer.disconnect();
+            cancelDockModeRefitTimer();
             cancelResizeAutoFitTimer();
             if (resizeRafId !== null) {
                 window.cancelAnimationFrame(resizeRafId);
             }
         };
-    }, [cancelResizeAutoFitTimer, cities.length, mapDockMode, mapInitialized]);
+    }, [cancelDockModeRefitTimer, cancelResizeAutoFitTimer, cities.length, mapDockMode, mapInitialized, tripMapTuning.resize.autoFitViewportDeltaPx]);
 
     useEffect(() => (
         () => {
+            cancelDockModeRefitTimer();
             cancelResizeAutoFitTimer();
             cancelScheduledFit();
         }
-    ), [cancelResizeAutoFitTimer, cancelScheduledFit]);
+    ), [cancelDockModeRefitTimer, cancelResizeAutoFitTimer, cancelScheduledFit]);
 
     // If we don't have city coordinates yet, center the map on the selected country/location.
     // Supports one or multiple focus queries separated by "||".
@@ -3005,10 +3112,14 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             if (pending > 0 || cancelled || !googleMapRef.current || successCount === 0) return;
             if (successCount === 1 && singleLocation && !singleHasViewport) {
                 googleMapRef.current.setCenter(singleLocation);
-                googleMapRef.current.setZoom(5);
+                googleMapRef.current.setZoom(tripMapTuning.selection.queryFocusZoom);
                 return;
             }
-            googleMapRef.current.fitBounds(bounds, { top: 50, right: 50, bottom: 50, left: 50 });
+            googleMapRef.current.fitBounds(bounds, resolveMapViewportPadding({
+                provider: tripMapProvider,
+                mapDockMode,
+                mapViewportSize,
+            }));
         };
 
         queries.forEach((query) => {
@@ -3036,14 +3147,33 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         return () => {
             cancelled = true;
         };
-    }, [focusLocationQuery, mapInitialized, cities.length]);
+    }, [cities.length, focusLocationQuery, mapDockMode, mapInitialized, mapViewportSize, tripMapProvider, tripMapTuning.selection.queryFocusZoom]);
 
     return (
         <div
             ref={mapContainerRef}
-            className="relative w-full h-full group bg-gray-100"
-            style={viewTransitionName ? ({ viewTransitionName } as React.CSSProperties) : undefined}
+            className="relative w-full h-full group"
+            data-tf-map-basemap={isMapboxBasemapEnabled ? 'mapbox' : 'google'}
+            style={{
+                ...(viewTransitionName ? ({ viewTransitionName } as React.CSSProperties) : {}),
+                backgroundColor: mapSurfaceBackgroundColor,
+            }}
         >
+            {isMapboxBasemapEnabled && (
+                <MapboxBasemapSync
+                    accessToken={mapboxAccessToken}
+                    googleMap={googleMapRef.current}
+                    mapStyle={activeStyle}
+                    mapDockMode={mapDockMode}
+                    mapViewportSize={mapViewportSize}
+                    interactive
+                    onLoadError={handleMapboxBasemapError}
+                    onMapReadyChange={handleMapboxMapReadyChange}
+                    onModuleReadyChange={handleMapboxModuleReadyChange}
+                    onSurfaceReadyChange={handleMapboxSurfaceReadyChange}
+                    onStyleReload={handleMapboxStyleReload}
+                />
+            )}
             {shouldRenderMapCanvas && (
                 <GoogleMap
                     id={mapInstanceId}
@@ -3052,19 +3182,29 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                     disableDefaultUI
                     gestureHandling="cooperative"
                     reuseMaps
-                    className="h-full w-full"
+                    className={shouldHideGoogleCanvasInMixedMode
+                        ? 'pointer-events-none invisible absolute inset-0 z-10 h-full w-full bg-transparent opacity-0'
+                        : isMapboxBasemapEnabled
+                            ? 'pointer-events-none absolute inset-0 z-10 h-full w-full bg-transparent'
+                            : 'absolute inset-0 z-10 h-full w-full bg-transparent'}
                 >
                     <ItineraryMapInstanceBridge mapId={mapInstanceId} onMapInstanceChange={handleMapInstanceChange} />
                     {mapNativeOverlay}
                 </GoogleMap>
             )}
-            {!mapInitialized && !loadError && (
-                <div className="absolute inset-0 flex items-center justify-center text-sm text-gray-500 bg-gray-100">
+            {shouldShowMapLoadingOverlay && (
+                <div
+                    className="absolute inset-0 flex items-center justify-center text-sm text-gray-500"
+                    style={{ backgroundColor: mapSurfaceBackgroundColor }}
+                >
                     Loading Map...
                 </div>
             )}
             {loadError && (
-                <div className="absolute inset-0 flex items-center justify-center p-4 text-center text-sm text-red-500 bg-gray-100">
+                <div
+                    className="absolute inset-0 flex items-center justify-center p-4 text-center text-sm text-red-500"
+                    style={{ backgroundColor: mapSurfaceBackgroundColor }}
+                >
                     Error loading map: {loadError.message}
                 </div>
             )}
@@ -3090,22 +3230,18 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                         </button>
                     )}
                     {showLayoutControls && onLayoutChange && (
-                        <div className="inline-flex flex-col items-center gap-1 rounded-lg border border-gray-200 bg-white/90 p-1 shadow-sm backdrop-blur">
+                        <>
                             <button
-                                type="button"
                                 onClick={() => onLayoutChange('vertical')}
-                                className={`rounded-md p-2 transition-colors ${layoutMode === 'vertical' ? 'bg-accent-600 text-white' : 'text-gray-600 hover:bg-gray-100 hover:text-accent-600'}`} aria-label="Vertical layout"
-                                aria-pressed={layoutMode === 'vertical'}
+                                className={`p-2 rounded-lg shadow-md border transition-colors ${layoutMode === 'vertical' ? 'bg-accent-600 text-white border-accent-700' : 'bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50'}`} aria-label="Vertical layout"
                                 {...getAnalyticsDebugAttributes('trip_view__layout_direction--vertical', { surface: 'map_controls' })}
                             ><ArrowUpDown size={18} /></button>
                             <button
-                                type="button"
                                 onClick={() => onLayoutChange('horizontal')}
-                                className={`rounded-md p-2 transition-colors ${layoutMode === 'horizontal' ? 'bg-accent-600 text-white' : 'text-gray-600 hover:bg-gray-100 hover:text-accent-600'}`} aria-label="Horizontal layout"
-                                aria-pressed={layoutMode === 'horizontal'}
+                                className={`p-2 rounded-lg shadow-md border transition-colors ${layoutMode === 'horizontal' ? 'bg-accent-600 text-white border-accent-700' : 'bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50'}`} aria-label="Horizontal layout"
                                 {...getAnalyticsDebugAttributes('trip_view__layout_direction--horizontal', { surface: 'map_controls' })}
                             ><ArrowLeftRight size={18} /></button>
-                        </div>
+                        </>
                     )}
 
                     {onToggleExpanded && (

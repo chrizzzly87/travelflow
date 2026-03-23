@@ -205,4 +205,16 @@ describe('components/TripInfoModal', () => {
     expect(screen.getByText('Open country and city context.')).toBeInTheDocument();
     expect(screen.getByText('No destination snapshot yet.')).toBeInTheDocument();
   });
+
+  it('stays resilient when a stale caller omits history items or cancel-edit wiring', () => {
+    const props = buildProps();
+
+    expect(() => {
+      render(React.createElement(TripInfoModal as any, {
+        ...props,
+        historyItems: undefined,
+        onCancelTitleEdit: undefined,
+      }));
+    }).not.toThrow();
+  });
 });
