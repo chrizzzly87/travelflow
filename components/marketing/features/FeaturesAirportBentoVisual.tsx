@@ -47,7 +47,7 @@ const getDisplayCode = (airport: AirportReference | null): string => (
     || DEFAULT_AIRPORT_CODE
 );
 
-export const FeaturesAirportBentoVisual: React.FC = () => {
+export const FeaturesAirportBentoVisual: React.FC<{ isActive: boolean }> = ({ isActive }) => {
     const { t } = useTranslation('features');
     const [, startTransition] = React.useTransition();
     const [destinationIndex, setDestinationIndex] = React.useState(0);
@@ -61,6 +61,8 @@ export const FeaturesAirportBentoVisual: React.FC = () => {
     const ArrowIcon = isRtl ? ArrowLeft : ArrowRight;
 
     React.useEffect(() => {
+        if (!isActive) return;
+
         const intervalId = window.setInterval(() => {
             startTransition(() => {
                 setDestinationIndex((current) => (current + 1) % DREAM_DESTINATION_CODES.length);
@@ -70,9 +72,11 @@ export const FeaturesAirportBentoVisual: React.FC = () => {
         return () => {
             window.clearInterval(intervalId);
         };
-    }, [startTransition]);
+    }, [isActive, startTransition]);
 
     React.useEffect(() => {
+        if (!isActive) return;
+
         let cancelled = false;
 
         startTransition(() => {
@@ -103,12 +107,24 @@ export const FeaturesAirportBentoVisual: React.FC = () => {
             }
 
             try {
-                const response = await fetchNearbyAirports({
+                let response = await fetchNearbyAirports({
                     lat: latitude,
                     lng: longitude,
                     limit: AIRPORT_LOOKUP_LIMIT,
-                    minimumServiceTier: 'regional',
+                    minimumServiceTier: 'major',
                 });
+                if (cancelled) return;
+
+                if (response.airports.length === 0) {
+                    response = await fetchNearbyAirports({
+                        lat: latitude,
+                        lng: longitude,
+                        limit: AIRPORT_LOOKUP_LIMIT,
+                        minimumServiceTier: 'regional',
+                    });
+                    if (cancelled) return;
+                }
+
                 if (cancelled) return;
 
                 const airport = pickBestAirport(response.airports);
@@ -150,7 +166,7 @@ export const FeaturesAirportBentoVisual: React.FC = () => {
         return () => {
             cancelled = true;
         };
-    }, [startTransition]);
+    }, [isActive, startTransition]);
 
     const statusText = React.useMemo(() => {
         if (visualState.phase === 'ready') {
@@ -178,8 +194,8 @@ export const FeaturesAirportBentoVisual: React.FC = () => {
     const destinationCode = DREAM_DESTINATION_CODES[destinationIndex];
 
     return (
-        <div className="select-none">
-            <div className="flex items-center justify-center gap-3 sm:gap-5 md:justify-start">
+        <div className="w-full select-none">
+            <div className="flex items-center justify-start gap-3 sm:gap-5 lg:justify-end">
                 <SplitFlap
                     value={visualState.displayCode}
                     length={3}

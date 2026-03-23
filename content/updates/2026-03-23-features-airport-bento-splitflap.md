@@ -13,6 +13,8 @@ summary: "Makes the airport bento the lead Features card with a cleaner dual spl
 ## Changes
 - [x] [Improved] 🛫 The Features page now leads with a nearby-departure bento card that starts on DXB, then flips to the closest passenger airport around you once the full card comes into view.
 - [x] [Improved] ✨ The airport teaser now uses a cleaner two-board route animation with stronger consumer-facing copy, so the nearby departure feels more personal without feeling invasive.
+- [x] [Improved] ↔️ The airport teaser now spans the full row with a more horizontal route layout, so the departure and destination boards feel like one clean travel moment instead of a stacked card.
 - [ ] [Internal] 🎨 Simplified the airport teaser styling to use bare split-flap boards, a lighter card surface, and less chrome around the route moment.
+- [ ] [Internal] 🧭 Reworked the activation logic so the split-flap boards render immediately while the runtime-location and nearby-airport fetch stay deferred until the row is visible enough to start the transition.
 - [ ] [Internal] ⚡ Deferred the split-flap airport visual and nearby-airport lookup until the card is fully visible, keeping the feature lightweight for first load.
 - [ ] [Internal] 🧪 Added browser regression coverage so the airport lookup stays gated behind full in-view activation instead of firing early.

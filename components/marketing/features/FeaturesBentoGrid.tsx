@@ -1,22 +1,11 @@
-import React, { Suspense, lazy, useEffect, useRef, useState } from 'react';
-import { AirplaneTakeoff, ArrowLeft, ArrowRight, LinkSimple, MapTrifold, Printer, ShareNetwork, Sparkle } from '@phosphor-icons/react';
+import React, { useEffect, useRef, useState } from 'react';
+import { AirplaneTakeoff, LinkSimple, MapTrifold, Printer, ShareNetwork, Sparkle } from '@phosphor-icons/react';
 import type { Icon } from '@phosphor-icons/react';
-import { useTranslation } from 'react-i18next';
 import { Card, CardContent } from '../../ui/card';
 import { cn } from '../../../lib/utils';
-import { loadLazyComponentWithRecovery } from '../../../services/lazyImportRecovery';
+import { FeaturesAirportBentoVisual } from './FeaturesAirportBentoVisual';
 
-const AIRPORT_BENTO_VISIBILITY_THRESHOLD = 0.95;
-
-const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
-    moduleKey: string,
-    importer: () => Promise<TModule>
-) => lazy(() => loadLazyComponentWithRecovery(moduleKey, importer));
-
-const LazyFeaturesAirportBentoVisual = lazyWithRecovery(
-    'FeaturesAirportBentoVisual',
-    () => import('./FeaturesAirportBentoVisual').then((module) => ({ default: module.FeaturesAirportBentoVisual })),
-);
+const AIRPORT_BENTO_VISIBLE_AREA_RATIO = 0.72;
 
 export interface FeatureBentoItem {
     id: 'itinerary' | 'airport' | 'timeline' | 'inspiration' | 'sharing' | 'relive';
@@ -40,7 +29,7 @@ interface FeatureCardShellProps {
 
 const layoutClasses: Record<FeatureBentoItem['id'], string> = {
     itinerary: 'md:col-span-3',
-    airport: 'md:col-span-3 md:row-span-2',
+    airport: 'md:col-span-6',
     timeline: 'md:col-span-3',
     inspiration: 'md:col-span-2',
     sharing: 'md:col-span-2',
@@ -199,46 +188,10 @@ const ReliveVisual: React.FC<BentoVisualProps> = ({ item }) => (
     </div>
 );
 
-const AirportVisualFallback: React.FC = () => {
-    const { t } = useTranslation('features');
-    const isRtl = typeof document !== 'undefined' && document.documentElement.dir === 'rtl';
-    const ArrowIcon = isRtl ? ArrowLeft : ArrowRight;
-
-    return (
-        <div className="select-none">
-            <div className="flex items-center justify-center gap-3 sm:gap-5 md:justify-start">
-                <p
-                    className="font-black uppercase tracking-[0.36em] text-slate-950"
-                    style={{ fontFamily: 'var(--tf-font-heading)', fontSize: 'clamp(2.8rem,7vw,3.75rem)' }}
-                >
-                    DXB
-                </p>
-                <span className="flex items-center justify-center text-slate-300" aria-hidden="true">
-                    <ArrowIcon size={24} weight="regular" />
-                </span>
-                <p
-                    className="font-black uppercase tracking-[0.36em] text-slate-950"
-                    style={{ fontFamily: 'var(--tf-font-heading)', fontSize: 'clamp(2.8rem,7vw,3.75rem)' }}
-                >
-                    CDG
-                </p>
-            </div>
-
-            <div className="mt-6 max-w-lg">
-                <p className="text-balance text-sm leading-relaxed text-slate-600">
-                    {t('bento.airportCard.defaultStatus')}
-                </p>
-            </div>
-        </div>
-    );
-};
-
 const BentoVisual: React.FC<BentoVisualProps> = ({ item }) => {
     switch (item.id) {
         case 'itinerary':
             return <ItineraryVisual item={item} />;
-        case 'airport':
-            return <AirportVisualFallback />;
         case 'timeline':
             return <TimelineVisual item={item} />;
         case 'inspiration':
@@ -288,51 +241,94 @@ const AirportBentoCard: React.FC<{ index: number; item: FeatureBentoItem }> = ({
     item,
 }) => {
     const cardRef = useRef<HTMLDivElement | null>(null);
-    const [shouldLoadVisual, setShouldLoadVisual] = useState(false);
+    const [isAirportVisualActive, setIsAirportVisualActive] = useState(false);
 
     useEffect(() => {
-        if (shouldLoadVisual) return;
+        if (isAirportVisualActive) return;
 
         const node = cardRef.current;
         if (!node || typeof window === 'undefined' || typeof window.IntersectionObserver !== 'function') {
-            setShouldLoadVisual(true);
+            setIsAirportVisualActive(true);
             return;
         }
 
+        const activate = () => {
+            setIsAirportVisualActive(true);
+        };
+
+        const isMostlyVisible = () => {
+            const rect = node.getBoundingClientRect();
+            if (rect.width <= 0 || rect.height <= 0) {
+                return false;
+            }
+            const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+            const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+            const visibleHeight = Math.max(0, Math.min(rect.bottom, viewportHeight) - Math.max(rect.top, 0));
+            const visibleWidth = Math.max(0, Math.min(rect.right, viewportWidth) - Math.max(rect.left, 0));
+            const visibleArea = visibleHeight * visibleWidth;
+            const totalArea = Math.max(rect.width * rect.height, 1);
+            const fullyVisible = rect.top >= 0
+                && rect.left >= 0
+                && rect.bottom <= viewportHeight
+                && rect.right <= viewportWidth;
+
+            return fullyVisible || (visibleArea / totalArea) >= AIRPORT_BENTO_VISIBLE_AREA_RATIO;
+        };
+
         const observer = new window.IntersectionObserver((entries) => {
-            const fullyVisible = entries.some((entry) => (
-                entry.isIntersecting && entry.intersectionRatio >= AIRPORT_BENTO_VISIBILITY_THRESHOLD
+            const isVisibleEnough = entries.some((entry) => (
+                entry.isIntersecting && entry.intersectionRatio >= AIRPORT_BENTO_VISIBLE_AREA_RATIO
             ));
-            if (!fullyVisible) return;
-            setShouldLoadVisual(true);
+            if (!isVisibleEnough && !isMostlyVisible()) return;
+            activate();
             observer.disconnect();
         }, {
-            threshold: [AIRPORT_BENTO_VISIBILITY_THRESHOLD, 1],
+            threshold: [0, AIRPORT_BENTO_VISIBLE_AREA_RATIO, 1],
         });
 
+        const handleViewportChange = () => {
+            if (!isMostlyVisible()) return;
+            activate();
+            observer.disconnect();
+            window.removeEventListener('scroll', handleViewportChange);
+            window.removeEventListener('resize', handleViewportChange);
+        };
+
         observer.observe(node);
+        window.addEventListener('scroll', handleViewportChange, { passive: true });
+        window.addEventListener('resize', handleViewportChange);
+        handleViewportChange();
 
         return () => {
             observer.disconnect();
+            window.removeEventListener('scroll', handleViewportChange);
+            window.removeEventListener('resize', handleViewportChange);
         };
-    }, [shouldLoadVisual]);
+    }, [isAirportVisualActive]);
 
     return (
         <div
             ref={cardRef}
             className={layoutClasses[item.id]}
             data-testid="features-airport-card"
-            style={{ containIntrinsicSize: '420px', contentVisibility: 'auto' }}
         >
-            <FeatureCardShell index={index} item={item} hideEyebrow>
-                {shouldLoadVisual ? (
-                    <Suspense fallback={<AirportVisualFallback />}>
-                        <LazyFeaturesAirportBentoVisual />
-                    </Suspense>
-                ) : (
-                    <AirportVisualFallback />
-                )}
-            </FeatureCardShell>
+            <Card
+                className="group h-full animate-scroll-fade-up overflow-hidden rounded-[18px] border-slate-200 bg-white py-0 shadow-sm shadow-slate-200/60 transition-all hover:-translate-y-1 hover:shadow-md hover:shadow-slate-200/80"
+                style={{ animationDelay: `${index * 90}ms` }}
+            >
+                <CardContent className="grid gap-8 px-6 py-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(380px,auto)] lg:items-center lg:gap-12">
+                    <div>
+                        <h3 className="text-2xl font-black tracking-tight text-slate-950">
+                            {item.title}
+                        </h3>
+                        <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-600 md:text-base">
+                            {item.description}
+                        </p>
+                    </div>
+
+                    <FeaturesAirportBentoVisual isActive={isAirportVisualActive} />
+                </CardContent>
+            </Card>
         </div>
     );
 };

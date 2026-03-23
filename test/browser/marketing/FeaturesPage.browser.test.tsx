@@ -272,6 +272,9 @@ describe('pages/FeaturesPage', () => {
 
         const airportCard = screen.getByTestId('features-airport-card');
 
+        expect(airportCard.className).toContain('md:col-span-6');
+        expect(screen.getByRole('img', { name: 'DXB' })).toBeInTheDocument();
+        expect(screen.getByRole('img', { name: 'CDG' })).toBeInTheDocument();
         expect(screen.getByText(featuresLocale.bento.airportCard.defaultStatus)).toBeInTheDocument();
         expect(fetchNearbyAirportsMock).not.toHaveBeenCalled();
 
@@ -288,12 +291,16 @@ describe('pages/FeaturesPage', () => {
                 lat: 52.52,
                 lng: 13.405,
                 limit: 5,
-                minimumServiceTier: 'regional',
+                minimumServiceTier: 'major',
             }));
         });
 
         await waitFor(() => {
             expect(screen.getByText('Starting near Berlin. The rest can open up from there.')).toBeInTheDocument();
+        });
+
+        await waitFor(() => {
+            expect(screen.getByRole('img', { name: 'BER' })).toBeInTheDocument();
         });
     });
 });
