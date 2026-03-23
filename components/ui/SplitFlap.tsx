@@ -251,7 +251,7 @@ export const SplitFlap: React.FC<SplitFlapProps> = ({
 
                 return (
                     <FlapCell
-                        key={`${index}-${paddedValue[index] || padChar}`}
+                        key={index}
                         target={paddedValue[index] || padChar}
                         charset={nextCharset}
                         flipDuration={flipDuration}

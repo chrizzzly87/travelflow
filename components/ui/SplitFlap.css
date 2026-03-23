@@ -1,29 +1,32 @@
+/* ═══════════════════════════════════════════════
+   SplitFlap.css  –  3D Split-Flap Display
+   Sequential two-phase flip: top folds first,
+   then bottom unfolds. No simultaneous motion.
+   ═══════════════════════════════════════════════ */
+
 .sf-board {
   display: inline-flex;
   gap: 0.12em;
   padding: 0.35em 0.45em;
-  border-radius: 0.42em;
-  font-family: var(--tf-font-heading), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-  font-size: 1em;
-  font-weight: 800;
+  border-radius: 0.3em;
+  font-family: "Roboto Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-weight: 700;
   line-height: 1;
   user-select: none;
-  font-variant-numeric: tabular-nums;
 }
 
 .sf-board--dark {
-  background: #1a1d27;
+  background: #1a1a2e;
   box-shadow:
-    0 18px 36px -26px rgba(15, 23, 42, 0.66),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    0 4px 24px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .sf-board--light {
-  background: #ddd7ca;
+  background: #ddd8d0;
   box-shadow:
-    0 24px 40px -28px rgba(15, 23, 42, 0.3),
-    0 8px 18px -16px rgba(15, 23, 42, 0.24),
-    inset 0 1px 0 rgba(255, 255, 255, 0.78);
+    0 4px 24px rgba(0, 0, 0, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 
 .sf-board--bare {
@@ -33,10 +36,10 @@
   box-shadow: none;
 }
 
-.sf-board--sm { font-size: 1.15rem; }
-.sf-board--md { font-size: 1.8rem; }
-.sf-board--lg { font-size: 3.2rem; }
-.sf-board--xl { font-size: 5.2rem; }
+.sf-board--sm  { font-size: 1.2rem; }
+.sf-board--md  { font-size: 2rem; }
+.sf-board--lg  { font-size: 3.5rem; }
+.sf-board--xl  { font-size: 5.5rem; }
 
 .sf-cell {
   position: relative;
@@ -56,8 +59,8 @@
   backface-visibility: hidden;
 }
 
-.sf-top { top: 0; border-radius: 0.08em 0.08em 0 0; }
-.sf-bottom { bottom: 0; border-radius: 0 0 0.08em 0.08em; }
+.sf-top { top: 0; border-radius: 0.07em 0.07em 0 0; }
+.sf-bottom { bottom: 0; border-radius: 0 0 0.07em 0.07em; }
 
 .sf-ch {
   position: absolute;
@@ -67,7 +70,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 0.08em;
+  border-radius: 0.07em;
   text-rendering: geometricPrecision;
   -webkit-font-smoothing: antialiased;
 }
@@ -76,29 +79,29 @@
 .sf-bottom .sf-ch { bottom: 0; }
 
 .sf-board--dark .sf-ch {
-  background: #2b3344;
-  color: #f6f2e8;
+  background: #2b2b4c;
+  color: #e8e5dc;
 }
 
 .sf-board--dark .sf-top .sf-ch {
-  background: linear-gradient(180deg, #344056 0%, #2a3244 100%);
+  background: linear-gradient(180deg, #323258 0%, #2b2b4c 100%);
 }
 
 .sf-board--dark .sf-bottom .sf-ch {
-  background: linear-gradient(180deg, #252d3c 0%, #1f2634 100%);
+  background: linear-gradient(180deg, #272746 0%, #222240 100%);
 }
 
 .sf-board--light .sf-ch {
-  background: #f6f1e6;
-  color: #172033;
+  background: #f0ebe2;
+  color: #1a1a2e;
 }
 
 .sf-board--light .sf-top .sf-ch {
-  background: linear-gradient(180deg, #fcf8ef 0%, #f3ede2 100%);
+  background: linear-gradient(180deg, #f8f3ea 0%, #f0ebe2 100%);
 }
 
 .sf-board--light .sf-bottom .sf-ch {
-  background: linear-gradient(180deg, #ebe5d9 0%, #e2dbce 100%);
+  background: linear-gradient(180deg, #eae5dc 0%, #e2ddd4 100%);
 }
 
 .sf-cell::after {
@@ -113,20 +116,20 @@
 }
 
 .sf-board--dark .sf-cell::after {
-  background: rgba(0, 0, 0, 0.58);
+  background: rgba(0, 0, 0, 0.6);
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .sf-board--light .sf-cell::after {
-  background: rgba(15, 23, 42, 0.12);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.42);
+  background: rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
 }
 
 .sf-fold-top {
   z-index: 10;
   transform-origin: 50% 100%;
   animation: sf-fold var(--flip-half) var(--sf-ease-fold, ease-in) forwards;
-  box-shadow: 0 3px 8px rgba(15, 23, 42, 0.36);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.4);
 }
 
 .sf-unfold-btm {
@@ -164,8 +167,8 @@
   right: 0;
   bottom: 0;
   z-index: 8;
-  border-radius: 0 0 0.08em 0.08em;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.42) 0%, rgba(0, 0, 0, 0.05) 100%);
+  border-radius: 0 0 0.07em 0.07em;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0.08) 100%);
   animation: sf-shadow-in var(--flip-half) ease-in forwards;
   pointer-events: none;
 }

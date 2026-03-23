@@ -10,6 +10,13 @@ const DEFAULT_AIRPORT_CODE = 'DXB';
 const AIRPORT_LOOKUP_LIMIT = 5;
 const DREAM_DESTINATION_CODES = ['CDG', 'HNL', 'JFK', 'LAX', 'CPT', 'CMB', 'BKK', 'SYD'] as const;
 const DREAM_DESTINATION_ROTATION_MS = 2600;
+const FEATURES_SPLIT_FLAP_PROPS = {
+    flipDuration: 500,
+    drumSpeed: 125,
+    maxSteps: 5,
+    stagger: 150,
+    easing: 'natural' as const,
+};
 
 type AirportVisualPhase = 'idle' | 'loading' | 'ready' | 'fallback';
 
@@ -204,6 +211,7 @@ export const FeaturesAirportBentoVisual: React.FC<{ isActive: boolean }> = ({ is
                     theme="dark"
                     surface="bare"
                     className="tracking-[0.08em]"
+                    {...FEATURES_SPLIT_FLAP_PROPS}
                 />
                 <span className="flex items-center justify-center text-slate-300" aria-hidden="true">
                     <ArrowIcon size={24} weight="regular" />
@@ -216,6 +224,7 @@ export const FeaturesAirportBentoVisual: React.FC<{ isActive: boolean }> = ({ is
                     theme="dark"
                     surface="bare"
                     className="tracking-[0.08em]"
+                    {...FEATURES_SPLIT_FLAP_PROPS}
                 />
             </div>
 

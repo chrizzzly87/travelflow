@@ -16,5 +16,6 @@ summary: "Makes the airport bento the lead Features card with a cleaner dual spl
 - [x] [Improved] ↔️ The airport teaser now spans the full row with a more horizontal route layout, so the departure and destination boards feel like one clean travel moment instead of a stacked card.
 - [ ] [Internal] 🎨 Simplified the airport teaser styling to use bare split-flap boards, a lighter card surface, and less chrome around the route moment.
 - [ ] [Internal] 🧭 Reworked the activation logic so the split-flap boards render immediately while the runtime-location and nearby-airport fetch stay deferred until the row is visible enough to start the transition.
+- [ ] [Internal] 🛠️ Restored the original split-flap animation behavior from the playground component so the Features teaser uses the real sequential board flip instead of a remounted text swap.
 - [ ] [Internal] ⚡ Deferred the split-flap airport visual and nearby-airport lookup until the card is fully visible, keeping the feature lightweight for first load.
 - [ ] [Internal] 🧪 Added browser regression coverage so the airport lookup stays gated behind full in-view activation instead of firing early.
