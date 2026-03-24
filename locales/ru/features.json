@@ -58,6 +58,13 @@
     "subtitle": "Вместо прыжков между документами, картами, скриншотами и незавершёнными чатами TravelFlow держит маршрут, темп и контекст вместе.",
     "items": [
       {
+        "id": "airport",
+        "eyebrow": "",
+        "title": "Sleduyushchiy polet uzhe zhdet",
+        "description": "TravelFlow pomogaet sobrat vsyu poezdku v odno mesto: ot pervogo poleta do transferov, ostanovok i nebolshikh planov mezhdu nimi. My nachinaem s blizhayshego aeroporta, chtoby prevratit mechtu o poezdke v realnyy marshrut bylo namnogo proshche.",
+        "detail": "Nachnite ryadom. Mechtayte shire."
+      },
+      {
         "id": "itinerary",
         "eyebrow": "Черновик ИИ",
         "title": "Начинайте с маршрута, а не с пустой страницы",
@@ -92,7 +99,21 @@
         "description": "Когда маршрут готов, практический контекст остаётся рядом: ссылки, заметки и более чистая версия для финальной передачи.",
         "detail": "Готово к отправке, сохранению или печати"
       }
-    ]
+    ],
+    "airportCard": {
+      "label": "Ближайший вылет",
+      "defaultBadge": "Маршрут мечты",
+      "loadingBadge": "Ищем ваш",
+      "readyBadge": "Ближе к вам",
+      "defaultStatus": "Начните ближе к дому. Дальше маршрут может раскрыться.",
+      "loadingStatus": "Ищем ближайший вылет рядом с вами.",
+      "readyCityStatus": "Старт рядом с {city}. Дальше маршрут может раскрыться.",
+      "readyCountryStatus": "Старт из {country}. Дальше маршрут может раскрыться.",
+      "fallbackStatus": "Начните ближе к дому. Дальше маршрут может раскрыться.",
+      "defaultChip": "Ваша сторона карты",
+      "cityChip": "Рядом с {city}",
+      "countryChip": "Из {country}"
+    }
   },
   "workflow": {
     "badge": "От искры к маршруту для всей группы",

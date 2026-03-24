@@ -58,6 +58,13 @@
     "subtitle": "En vez de saltar entre docs, mapas, capturas y chats a medias, TravelFlow mantiene la ruta, el ritmo y el contexto del viaje juntos.",
     "items": [
       {
+        "id": "airport",
+        "eyebrow": "",
+        "title": "Tu proximo vuelo ya espera",
+        "description": "TravelFlow te ayuda a organizar todo el viaje, desde el primer vuelo hasta los traslados, las estancias y esos pequenos planes entre medias. Empezamos con el aeropuerto mas cercano para que convertir una idea en una ruta real se sienta mucho menos caotico.",
+        "detail": "Empieza cerca. Suena a lo grande."
+      },
+      {
         "id": "itinerary",
         "eyebrow": "Borrador con IA",
         "title": "Empieza con una ruta, no con una página en blanco",
@@ -92,7 +99,21 @@
         "description": "Cuando la ruta está lista, el contexto práctico sigue ahí: enlaces, notas y una versión más limpia para la entrega final.",
         "detail": "Listo para compartir, guardar o imprimir"
       }
-    ]
+    ],
+    "airportCard": {
+      "label": "Salida mas cercana",
+      "defaultBadge": "Ruta sonada",
+      "loadingBadge": "Buscando la tuya",
+      "readyBadge": "Mas cerca de ti",
+      "defaultStatus": "Empieza cerca de casa. Desde ahi, el resto puede abrirse.",
+      "loadingStatus": "Buscando el despegue mas cercano para ti.",
+      "readyCityStatus": "Empezando cerca de {city}. Desde ahi, el resto puede abrirse.",
+      "readyCountryStatus": "Empezando desde {country}. Desde ahi, el resto puede abrirse.",
+      "fallbackStatus": "Empieza cerca de casa. Desde ahi, el resto puede abrirse.",
+      "defaultChip": "Tu lado del mapa",
+      "cityChip": "Cerca de {city}",
+      "countryChip": "Desde {country}"
+    }
   },
   "workflow": {
     "badge": "De la chispa a un plan listo para el grupo",

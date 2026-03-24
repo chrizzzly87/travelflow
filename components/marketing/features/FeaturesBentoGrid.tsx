@@ -1,11 +1,16 @@
-import React from 'react';
-import { LinkSimple, MapTrifold, Printer, ShareNetwork, Sparkle } from '@phosphor-icons/react';
+import React, { useEffect, useRef, useState } from 'react';
+import { AirplaneTakeoff, LinkSimple, MapTrifold, Printer, ShareNetwork, Sparkle } from '@phosphor-icons/react';
 import type { Icon } from '@phosphor-icons/react';
 import { Card, CardContent } from '../../ui/card';
 import { cn } from '../../../lib/utils';
+import { FeaturesAirportBentoVisual } from './FeaturesAirportBentoVisual';
+
+const AIRPORT_BENTO_VISIBLE_AREA_RATIO = 0.72;
+const AIRPORT_BENTO_PREFETCH_AREA_RATIO = 0.14;
+const AIRPORT_BENTO_PREFETCH_MARGIN_PX = 180;
 
 export interface FeatureBentoItem {
-    id: 'itinerary' | 'timeline' | 'inspiration' | 'sharing' | 'relive';
+    id: 'itinerary' | 'airport' | 'timeline' | 'inspiration' | 'sharing' | 'relive';
     eyebrow: string;
     title: string;
     description: string;
@@ -16,8 +21,17 @@ interface BentoVisualProps {
     item: FeatureBentoItem;
 }
 
+interface FeatureCardShellProps {
+    IconComponent?: Icon;
+    index: number;
+    item: FeatureBentoItem;
+    children: React.ReactNode;
+    hideEyebrow?: boolean;
+}
+
 const layoutClasses: Record<FeatureBentoItem['id'], string> = {
-    itinerary: 'md:col-span-3 md:row-span-2',
+    itinerary: 'md:col-span-3',
+    airport: 'md:col-span-6',
     timeline: 'md:col-span-3',
     inspiration: 'md:col-span-2',
     sharing: 'md:col-span-2',
@@ -26,6 +40,7 @@ const layoutClasses: Record<FeatureBentoItem['id'], string> = {
 
 const iconMap: Record<FeatureBentoItem['id'], Icon> = {
     itinerary: Sparkle,
+    airport: AirplaneTakeoff,
     timeline: MapTrifold,
     inspiration: LinkSimple,
     sharing: ShareNetwork,
@@ -192,38 +207,204 @@ const BentoVisual: React.FC<BentoVisualProps> = ({ item }) => {
     }
 };
 
+const FeatureCardShell: React.FC<FeatureCardShellProps> = ({ IconComponent, index, item, children, hideEyebrow = false }) => (
+    <Card
+        className="group h-full animate-scroll-fade-up overflow-hidden rounded-[18px] border-slate-200 bg-white py-0 shadow-sm shadow-slate-200/60 transition-all hover:-translate-y-1 hover:shadow-md hover:shadow-slate-200/80"
+        style={{ animationDelay: `${index * 90}ms` }}
+    >
+        <CardContent className="flex h-full flex-col gap-6 px-6 pb-6 pt-6">
+            <div className="flex items-start justify-between gap-4">
+                <div>
+                    {!hideEyebrow && item.eyebrow ? (
+                        <p className="text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-accent-700">
+                            {item.eyebrow}
+                        </p>
+                    ) : null}
+                    <h3 className={cn('text-2xl font-black tracking-tight text-slate-950', hideEyebrow ? '' : 'mt-2')}>
+                        {item.title}
+                    </h3>
+                    <p className="mt-3 max-w-xl text-sm leading-relaxed text-slate-600">
+                        {item.description}
+                    </p>
+                </div>
+                {IconComponent ? (
+                    <div className="flex size-11 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-accent-700 shadow-sm">
+                        <IconComponent size={20} weight="regular" />
+                    </div>
+                ) : null}
+            </div>
+            <div className="mt-auto">{children}</div>
+        </CardContent>
+    </Card>
+);
+
+const AirportBentoCard: React.FC<{ index: number; item: FeatureBentoItem }> = ({
+    index,
+    item,
+}) => {
+    const cardRef = useRef<HTMLDivElement | null>(null);
+    const [isAirportLookupPrimed, setIsAirportLookupPrimed] = useState(false);
+    const [isAirportVisualActive, setIsAirportVisualActive] = useState(false);
+
+    useEffect(() => {
+        if (isAirportLookupPrimed && isAirportVisualActive) return;
+
+        const node = cardRef.current;
+        if (!node || typeof window === 'undefined' || typeof window.IntersectionObserver !== 'function') {
+            setIsAirportLookupPrimed(true);
+            setIsAirportVisualActive(true);
+            return;
+        }
+
+        const primeLookup = () => {
+            setIsAirportLookupPrimed(true);
+        };
+
+        const activateVisual = () => {
+            setIsAirportVisualActive(true);
+        };
+
+        const isWithinPrefetchWindow = () => {
+            const rect = node.getBoundingClientRect();
+            if (rect.width <= 0 || rect.height <= 0) {
+                return false;
+            }
+            const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+            const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+
+            return rect.bottom >= -AIRPORT_BENTO_PREFETCH_MARGIN_PX
+                && rect.right >= 0
+                && rect.left <= viewportWidth
+                && rect.top <= viewportHeight + AIRPORT_BENTO_PREFETCH_MARGIN_PX;
+        };
+
+        const isVisibleEnough = () => {
+            const rect = node.getBoundingClientRect();
+            if (rect.width <= 0 || rect.height <= 0) {
+                return false;
+            }
+            const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+            const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+            const visibleHeight = Math.max(0, Math.min(rect.bottom, viewportHeight) - Math.max(rect.top, 0));
+            const visibleWidth = Math.max(0, Math.min(rect.right, viewportWidth) - Math.max(rect.left, 0));
+            const visibleArea = visibleHeight * visibleWidth;
+            const totalArea = Math.max(rect.width * rect.height, 1);
+            const fullyVisible = rect.top >= 0
+                && rect.left >= 0
+                && rect.bottom <= viewportHeight
+                && rect.right <= viewportWidth;
+
+            return fullyVisible || (visibleArea / totalArea) >= AIRPORT_BENTO_VISIBLE_AREA_RATIO;
+        };
+
+        const observer = new window.IntersectionObserver((entries) => {
+            const intersectsPrefetchWindow = entries.some((entry) => (
+                entry.isIntersecting && entry.intersectionRatio >= AIRPORT_BENTO_PREFETCH_AREA_RATIO
+            ));
+            const intersectsVisibleThreshold = entries.some((entry) => (
+                entry.isIntersecting && entry.intersectionRatio >= AIRPORT_BENTO_VISIBLE_AREA_RATIO
+            ));
+
+            if (!isAirportLookupPrimed && (intersectsPrefetchWindow || isWithinPrefetchWindow())) {
+                primeLookup();
+            }
+
+            if (!isAirportVisualActive && (intersectsVisibleThreshold || isVisibleEnough())) {
+                activateVisual();
+            }
+
+            if ((isAirportLookupPrimed || intersectsPrefetchWindow || isWithinPrefetchWindow())
+                && (isAirportVisualActive || intersectsVisibleThreshold || isVisibleEnough())) {
+                observer.disconnect();
+            }
+        }, {
+            rootMargin: `${AIRPORT_BENTO_PREFETCH_MARGIN_PX}px 0px`,
+            threshold: [0, AIRPORT_BENTO_PREFETCH_AREA_RATIO, AIRPORT_BENTO_VISIBLE_AREA_RATIO, 1],
+        });
+
+        const handleViewportChange = () => {
+            if (!isAirportLookupPrimed && isWithinPrefetchWindow()) {
+                primeLookup();
+            }
+
+            if (!isAirportVisualActive && isVisibleEnough()) {
+                activateVisual();
+            }
+
+            if (!(isWithinPrefetchWindow() || isVisibleEnough())) return;
+            if (!isAirportLookupPrimed || !isAirportVisualActive) return;
+
+            observer.disconnect();
+            window.removeEventListener('scroll', handleViewportChange);
+            window.removeEventListener('resize', handleViewportChange);
+        };
+
+        observer.observe(node);
+        window.addEventListener('scroll', handleViewportChange, { passive: true });
+        window.addEventListener('resize', handleViewportChange);
+        handleViewportChange();
+
+        return () => {
+            observer.disconnect();
+            window.removeEventListener('scroll', handleViewportChange);
+            window.removeEventListener('resize', handleViewportChange);
+        };
+    }, [isAirportLookupPrimed, isAirportVisualActive]);
+
+    return (
+        <div
+            ref={cardRef}
+            className={layoutClasses[item.id]}
+            data-testid="features-airport-card"
+        >
+            <Card
+                className="group h-full animate-scroll-fade-up overflow-hidden rounded-[18px] border-slate-200 bg-white py-0 shadow-sm shadow-slate-200/60 transition-all hover:-translate-y-1 hover:shadow-md hover:shadow-slate-200/80"
+                style={{ animationDelay: `${index * 90}ms` }}
+            >
+                <CardContent className="grid gap-6 px-5 py-5 sm:px-6 sm:py-6 lg:grid-cols-[minmax(0,1fr)_minmax(420px,auto)] lg:items-center lg:gap-12 xl:grid-cols-[minmax(0,0.95fr)_minmax(500px,auto)]">
+                    <div className="min-w-0">
+                        <h3 className="text-2xl font-black tracking-tight text-slate-950">
+                            {item.title}
+                        </h3>
+                        <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-600 md:text-base">
+                            {item.description}
+                        </p>
+                    </div>
+
+                    <div className="min-w-0">
+                        <FeaturesAirportBentoVisual
+                            shouldPrefetch={isAirportLookupPrimed}
+                            isActive={isAirportVisualActive}
+                        />
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
+    );
+};
+
 export const FeaturesBentoGrid: React.FC<{ items: FeatureBentoItem[] }> = ({ items }) => {
     return (
         <div className="grid gap-5 md:grid-cols-6 md:auto-rows-[minmax(220px,auto)]">
             {items.map((item, index) => {
                 const IconComponent = iconMap[item.id];
 
+                if (item.id === 'airport') {
+                    return (
+                        <AirportBentoCard
+                            key={item.id}
+                            index={index}
+                            item={item}
+                        />
+                    );
+                }
+
                 return (
-                    <Card
-                        key={item.id}
-                        className={cn(
-                            'group animate-scroll-fade-up overflow-hidden rounded-[18px] border-slate-200 bg-white py-0 shadow-sm shadow-slate-200/60 transition-all hover:-translate-y-1 hover:shadow-md hover:shadow-slate-200/80',
-                            layoutClasses[item.id],
-                        )}
-                        style={{ animationDelay: `${index * 90}ms` }}
-                    >
-                        <CardContent className="flex h-full flex-col gap-6 px-6 pb-6 pt-6">
-                            <div className="flex items-start justify-between gap-4">
-                                <div>
-                                    <h3 className="text-2xl font-black tracking-tight text-slate-950">
-                                        {item.title}
-                                    </h3>
-                                    <p className="mt-3 max-w-xl text-sm leading-relaxed text-slate-600">
-                                        {item.description}
-                                    </p>
-                                </div>
-                                <div className="flex size-11 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-accent-700 shadow-sm">
-                                    <IconComponent size={20} weight="duotone" />
-                                </div>
-                            </div>
-                            <div className="mt-auto"><BentoVisual item={item} /></div>
-                        </CardContent>
-                    </Card>
+                    <div key={item.id} className={layoutClasses[item.id]}>
+                        <FeatureCardShell IconComponent={IconComponent} index={index} item={item}>
+                            <BentoVisual item={item} />
+                        </FeatureCardShell>
+                    </div>
                 );
             })}
         </div>

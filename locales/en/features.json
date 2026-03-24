@@ -58,6 +58,13 @@
     "subtitle": "Instead of jumping between docs, maps, screenshots, and half-finished chat threads, TravelFlow keeps the route, timing, and trip context moving together.",
     "items": [
       {
+        "id": "airport",
+        "eyebrow": "",
+        "title": "Next flight awaits",
+        "description": "TravelFlow helps you organize the whole trip, from the first flight to the transfers, stays, and little plans in between. We start with the airport closest to you, so turning a daydream into a real route feels far less chaotic.",
+        "detail": "Start close. Dream bigger."
+      },
+      {
         "id": "itinerary",
         "eyebrow": "AI route draft",
         "title": "Start from a route, not a blank page",
@@ -92,7 +99,21 @@
         "description": "When the route is ready, the practical context is still there: booking links, notes, and a cleaner print-friendly version for the final handoff.",
         "detail": "Ready to share, save, or print"
       }
-    ]
+    ],
+    "airportCard": {
+      "label": "Closest departure",
+      "defaultBadge": "Dream route",
+      "loadingBadge": "Finding yours",
+      "readyBadge": "Closer to you",
+      "defaultStatus": "Start close to home. Let the rest open up from there.",
+      "loadingStatus": "Looking for the closest takeoff near you.",
+      "readyCityStatus": "Starting near {city}. The rest can open up from there.",
+      "readyCountryStatus": "Starting from {country}. The rest can open up from there.",
+      "fallbackStatus": "Start close to home. Let the rest open up from there.",
+      "defaultChip": "Your side of the map",
+      "cityChip": "Around {city}",
+      "countryChip": "From {country}"
+    }
   },
   "workflow": {
     "badge": "From spark to group-ready plan",
