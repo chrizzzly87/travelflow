@@ -17,4 +17,5 @@ summary: "Rebuilds the features page around a custom interactive globe hero, sha
 - [x] [Improved] 🧩 A new animated bento grid now shows how AI itineraries, route editing, crew sharing, and inspiration work together instead of listing features in isolation.
 - [ ] [Internal] 🧪 Added browser coverage for the new hero CTA analytics and the globe fallback path.
 - [ ] [Internal] 📱 Tightened the globe hero on small screens, tuned the native COBE arc profile, and removed the laggy origin-marker behavior so the route lines feel cleaner without custom path hacks.
+- [ ] [Internal] 📍 Restored the animated origin pulse above the globe so the runtime starting point stays visible after the mobile polish pass.
 - [ ] [Internal] 🛠️ Fixed a duplicate runtime-location registry entry that blocked the merged release from reaching production.

@@ -264,13 +264,11 @@ describe('pages/FeaturesPage', () => {
                 },
             ],
         });
-
         render(
             <MemoryRouter initialEntries={['/features']}>
                 <FeaturesPage />
             </MemoryRouter>
         );
-
         const airportCard = screen.getByTestId('features-airport-card');
 
         expect(airportCard.className).toContain('md:col-span-6');
@@ -307,5 +305,19 @@ describe('pages/FeaturesPage', () => {
         });
 
         expect(screen.queryByText(/starting near berlin/i)).not.toBeInTheDocument();
+    });
+
+    it('keeps the origin marker above the globe canvas', () => {
+        render(
+            <MemoryRouter initialEntries={['/features']}>
+                <FeaturesPage />
+            </MemoryRouter>
+        );
+
+        const globe = screen.getByRole('img', { name: featuresLocale.globe.accessibility });
+        const originMarkerLayer = globe.firstElementChild;
+
+        expect(originMarkerLayer).not.toBeNull();
+        expect(originMarkerLayer).toHaveClass('z-20');
     });
 });

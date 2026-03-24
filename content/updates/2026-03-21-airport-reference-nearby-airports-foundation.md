@@ -17,6 +17,7 @@ summary: "Adds a generated commercial-airport reference snapshot, nearby-airport
 - [ ] [Internal] 🗺️ Added a Google city search + map-based airport tester in admin so nearby-airport lookups can be checked visually against manual coordinates or runtime location.
 - [ ] [Internal] 🎛️ Upgraded the admin airport tester with country scoping, same-country lookup mode, and softer map framing so current location plus nearby airports stay easier to inspect together.
 - [ ] [Internal] 🔁 Fixed the admin nearby-airport tester so same-country filtering now refreshes the result list, map, and fake-ticket context together instead of leaving stale cross-country rows behind.
+- [ ] [Internal] 🐞 Fixed the admin nearby-airport tester so failed auto-restored lookups stop retrying in a loop and clear stale nearby-airport results until someone retries manually.
 - [ ] [Internal] 🔗 Added URL-backed filter state for the airport admin workspace so catalog filters and nearby-airport tester settings survive refreshes and can auto-restore a prior lookup.
 - [ ] [Internal] 📌 Defaulted the nearby-airport tester to the user’s runtime location and major commercial hubs so refreshes reopen the same visible search context instead of an empty or broader fallback state.
 - [ ] [Internal] 🧾 Added a fake digital boarding-pass lab in admin so the nearest commercial airport can be previewed as a realistic ticket artifact for future travel surfaces.
