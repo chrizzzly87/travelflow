@@ -1,6 +1,5 @@
 import React from 'react';
 import { ArrowLeft, ArrowRight } from '@phosphor-icons/react';
-import { useTranslation } from 'react-i18next';
 import { SplitFlap, SPLIT_FLAP_CHARSET_ALPHA } from '../../ui/SplitFlap';
 import type { AirportReference, NearbyAirportResult } from '../../../shared/airportReference';
 import { fetchNearbyAirports } from '../../../services/nearbyAirportsService';
@@ -9,7 +8,7 @@ import { ensureRuntimeLocationLoaded } from '../../../services/runtimeLocationSe
 const DEFAULT_AIRPORT_CODE = 'DXB';
 const AIRPORT_LOOKUP_LIMIT = 5;
 const DREAM_DESTINATION_CODES = ['CDG', 'HNL', 'JFK', 'LAX', 'CPT', 'CMB', 'BKK', 'SYD'] as const;
-const DREAM_DESTINATION_ROTATION_MS = 2600;
+const DREAM_DESTINATION_ROTATION_MS = 5200;
 const ORIGIN_SPLIT_FLAP_PROPS = {
     flipDuration: 500,
     drumSpeed: 125,
@@ -65,11 +64,9 @@ export const FeaturesAirportBentoVisual: React.FC<{
     shouldPrefetch: boolean;
     isActive: boolean;
 }> = ({ shouldPrefetch, isActive }) => {
-    const { t } = useTranslation('features');
     const [, startTransition] = React.useTransition();
     const [destinationIndex, setDestinationIndex] = React.useState(0);
     const [displayCode, setDisplayCode] = React.useState(DEFAULT_AIRPORT_CODE);
-    const [hasRevealedOrigin, setHasRevealedOrigin] = React.useState(false);
     const [visualState, setVisualState] = React.useState<AirportVisualState>({
         city: null,
         country: null,
@@ -188,37 +185,10 @@ export const FeaturesAirportBentoVisual: React.FC<{
     React.useEffect(() => {
         if (!isActive) return;
 
-        setHasRevealedOrigin(true);
         setDisplayCode((current) => (
             current === visualState.resolvedCode ? current : visualState.resolvedCode
         ));
     }, [isActive, visualState.resolvedCode]);
-
-    const statusText = React.useMemo(() => {
-        if (!hasRevealedOrigin) {
-            return t('bento.airportCard.defaultStatus');
-        }
-        if (visualState.phase === 'ready') {
-            if (visualState.city) {
-                return t('bento.airportCard.readyCityStatus', {
-                    city: visualState.city,
-                });
-            }
-            if (visualState.country) {
-                return t('bento.airportCard.readyCountryStatus', {
-                    country: visualState.country,
-                });
-            }
-            return t('bento.airportCard.fallbackStatus');
-        }
-        if (visualState.phase === 'loading') {
-            return t('bento.airportCard.loadingStatus');
-        }
-        if (visualState.phase === 'fallback') {
-            return t('bento.airportCard.fallbackStatus');
-        }
-        return t('bento.airportCard.defaultStatus');
-    }, [hasRevealedOrigin, t, visualState.city, visualState.country, visualState.phase]);
 
     const destinationCode = DREAM_DESTINATION_CODES[destinationIndex];
 
@@ -251,12 +221,6 @@ export const FeaturesAirportBentoVisual: React.FC<{
                     className="tracking-[0.08em] drop-shadow-[0_10px_18px_rgba(15,23,42,0.12)]"
                     {...DESTINATION_SPLIT_FLAP_PROPS}
                 />
-            </div>
-
-            <div className="mt-5 max-w-xl sm:mt-6">
-                <p className="text-balance text-sm leading-relaxed text-slate-600">
-                    {statusText}
-                </p>
             </div>
         </div>
     );

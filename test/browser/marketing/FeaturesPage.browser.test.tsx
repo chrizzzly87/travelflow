@@ -277,7 +277,6 @@ describe('pages/FeaturesPage', () => {
         expect(screen.getByRole('img', { name: 'DXB' })).toBeInTheDocument();
         expect(screen.getByRole('img', { name: 'CDG' })).toBeInTheDocument();
         expect(screen.getByTestId('features-airport-route').className).toContain('justify-between');
-        expect(screen.getByText(featuresLocale.bento.airportCard.defaultStatus)).toBeInTheDocument();
         expect(fetchNearbyAirportsMock).not.toHaveBeenCalled();
 
         triggerIntersection(airportCard, { intersectionRatio: 0.2, isIntersecting: true });
@@ -294,7 +293,6 @@ describe('pages/FeaturesPage', () => {
 
         expect(screen.getByRole('img', { name: 'DXB' })).toBeInTheDocument();
         expect(screen.queryByRole('img', { name: 'BER' })).not.toBeInTheDocument();
-        expect(screen.getByText(featuresLocale.bento.airportCard.defaultStatus)).toBeInTheDocument();
 
         triggerIntersection(airportCard, { intersectionRatio: 0.5, isIntersecting: true });
         await Promise.resolve();
@@ -305,11 +303,9 @@ describe('pages/FeaturesPage', () => {
         triggerIntersection(airportCard, { intersectionRatio: 1, isIntersecting: true });
 
         await waitFor(() => {
-            expect(screen.getByText('Starting near Berlin. The rest can open up from there.')).toBeInTheDocument();
-        });
-
-        await waitFor(() => {
             expect(screen.getByRole('img', { name: 'BER' })).toBeInTheDocument();
         });
+
+        expect(screen.queryByText(/starting near berlin/i)).not.toBeInTheDocument();
     });
 });
