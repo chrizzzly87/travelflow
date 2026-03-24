@@ -10,10 +10,17 @@ const DEFAULT_AIRPORT_CODE = 'DXB';
 const AIRPORT_LOOKUP_LIMIT = 5;
 const DREAM_DESTINATION_CODES = ['CDG', 'HNL', 'JFK', 'LAX', 'CPT', 'CMB', 'BKK', 'SYD'] as const;
 const DREAM_DESTINATION_ROTATION_MS = 2600;
-const FEATURES_SPLIT_FLAP_PROPS = {
+const ORIGIN_SPLIT_FLAP_PROPS = {
     flipDuration: 500,
     drumSpeed: 125,
     maxSteps: 5,
+    stagger: 150,
+    easing: 'natural' as const,
+};
+const DESTINATION_SPLIT_FLAP_PROPS = {
+    flipDuration: 500,
+    drumSpeed: 95,
+    maxSteps: 8,
     stagger: 150,
     easing: 'natural' as const,
 };
@@ -23,7 +30,7 @@ type AirportVisualPhase = 'idle' | 'loading' | 'ready' | 'fallback';
 interface AirportVisualState {
     city: string | null;
     country: string | null;
-    displayCode: string;
+    resolvedCode: string;
     phase: AirportVisualPhase;
 }
 
@@ -54,22 +61,25 @@ const getDisplayCode = (airport: AirportReference | null): string => (
     || DEFAULT_AIRPORT_CODE
 );
 
-export const FeaturesAirportBentoVisual: React.FC<{ isActive: boolean }> = ({ isActive }) => {
+export const FeaturesAirportBentoVisual: React.FC<{
+    shouldPrefetch: boolean;
+    isActive: boolean;
+}> = ({ shouldPrefetch, isActive }) => {
     const { t } = useTranslation('features');
     const [, startTransition] = React.useTransition();
     const [destinationIndex, setDestinationIndex] = React.useState(0);
+    const [displayCode, setDisplayCode] = React.useState(DEFAULT_AIRPORT_CODE);
+    const [hasRevealedOrigin, setHasRevealedOrigin] = React.useState(false);
     const [visualState, setVisualState] = React.useState<AirportVisualState>({
         city: null,
         country: null,
-        displayCode: DEFAULT_AIRPORT_CODE,
+        resolvedCode: DEFAULT_AIRPORT_CODE,
         phase: 'idle',
     });
     const isRtl = typeof document !== 'undefined' && document.documentElement.dir === 'rtl';
     const ArrowIcon = isRtl ? ArrowLeft : ArrowRight;
 
     React.useEffect(() => {
-        if (!isActive) return;
-
         const intervalId = window.setInterval(() => {
             startTransition(() => {
                 setDestinationIndex((current) => (current + 1) % DREAM_DESTINATION_CODES.length);
@@ -79,10 +89,10 @@ export const FeaturesAirportBentoVisual: React.FC<{ isActive: boolean }> = ({ is
         return () => {
             window.clearInterval(intervalId);
         };
-    }, [isActive, startTransition]);
+    }, [startTransition]);
 
     React.useEffect(() => {
-        if (!isActive) return;
+        if (!shouldPrefetch) return;
 
         let cancelled = false;
 
@@ -106,7 +116,7 @@ export const FeaturesAirportBentoVisual: React.FC<{ isActive: boolean }> = ({ is
                     setVisualState({
                         city: resolvedCity,
                         country: resolvedCountry,
-                        displayCode: DEFAULT_AIRPORT_CODE,
+                        resolvedCode: DEFAULT_AIRPORT_CODE,
                         phase: 'fallback',
                     });
                 });
@@ -140,7 +150,7 @@ export const FeaturesAirportBentoVisual: React.FC<{ isActive: boolean }> = ({ is
                         setVisualState({
                             city: resolvedCity,
                             country: resolvedCountry,
-                            displayCode: DEFAULT_AIRPORT_CODE,
+                            resolvedCode: DEFAULT_AIRPORT_CODE,
                             phase: 'fallback',
                         });
                     });
@@ -151,7 +161,7 @@ export const FeaturesAirportBentoVisual: React.FC<{ isActive: boolean }> = ({ is
                     setVisualState({
                         city: resolvedCity || airport.municipality || null,
                         country: resolvedCountry || airport.countryName || null,
-                        displayCode: getDisplayCode(airport),
+                        resolvedCode: getDisplayCode(airport),
                         phase: 'ready',
                     });
                 });
@@ -161,7 +171,7 @@ export const FeaturesAirportBentoVisual: React.FC<{ isActive: boolean }> = ({ is
                     setVisualState({
                         city: resolvedCity,
                         country: resolvedCountry,
-                        displayCode: DEFAULT_AIRPORT_CODE,
+                        resolvedCode: DEFAULT_AIRPORT_CODE,
                         phase: 'fallback',
                     });
                 });
@@ -173,9 +183,21 @@ export const FeaturesAirportBentoVisual: React.FC<{ isActive: boolean }> = ({ is
         return () => {
             cancelled = true;
         };
-    }, [isActive, startTransition]);
+    }, [shouldPrefetch, startTransition]);
+
+    React.useEffect(() => {
+        if (!isActive) return;
+
+        setHasRevealedOrigin(true);
+        setDisplayCode((current) => (
+            current === visualState.resolvedCode ? current : visualState.resolvedCode
+        ));
+    }, [isActive, visualState.resolvedCode]);
 
     const statusText = React.useMemo(() => {
+        if (!hasRevealedOrigin) {
+            return t('bento.airportCard.defaultStatus');
+        }
         if (visualState.phase === 'ready') {
             if (visualState.city) {
                 return t('bento.airportCard.readyCityStatus', {
@@ -196,7 +218,7 @@ export const FeaturesAirportBentoVisual: React.FC<{ isActive: boolean }> = ({ is
             return t('bento.airportCard.fallbackStatus');
         }
         return t('bento.airportCard.defaultStatus');
-    }, [t, visualState.city, visualState.country, visualState.phase]);
+    }, [hasRevealedOrigin, t, visualState.city, visualState.country, visualState.phase]);
 
     const destinationCode = DREAM_DESTINATION_CODES[destinationIndex];
 
@@ -207,16 +229,16 @@ export const FeaturesAirportBentoVisual: React.FC<{ isActive: boolean }> = ({ is
                 className="flex w-full items-center justify-between gap-3 sm:gap-5 lg:justify-end"
             >
                 <SplitFlap
-                    value={visualState.displayCode}
+                    value={displayCode}
                     length={3}
                     charset={SPLIT_FLAP_CHARSET_ALPHA}
                     size="lg"
-                    theme="dark"
+                    theme="light"
                     surface="bare"
-                    className="tracking-[0.08em]"
-                    {...FEATURES_SPLIT_FLAP_PROPS}
+                    className="tracking-[0.08em] drop-shadow-[0_10px_18px_rgba(15,23,42,0.12)]"
+                    {...ORIGIN_SPLIT_FLAP_PROPS}
                 />
-                <span className="flex shrink-0 items-center justify-center text-slate-300" aria-hidden="true">
+                <span className="flex shrink-0 items-center justify-center text-slate-400" aria-hidden="true">
                     <ArrowIcon size={24} weight="regular" />
                 </span>
                 <SplitFlap
@@ -224,10 +246,10 @@ export const FeaturesAirportBentoVisual: React.FC<{ isActive: boolean }> = ({ is
                     length={3}
                     charset={SPLIT_FLAP_CHARSET_ALPHA}
                     size="lg"
-                    theme="dark"
+                    theme="light"
                     surface="bare"
-                    className="tracking-[0.08em]"
-                    {...FEATURES_SPLIT_FLAP_PROPS}
+                    className="tracking-[0.08em] drop-shadow-[0_10px_18px_rgba(15,23,42,0.12)]"
+                    {...DESTINATION_SPLIT_FLAP_PROPS}
                 />
             </div>
 

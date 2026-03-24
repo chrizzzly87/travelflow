@@ -89,8 +89,8 @@ const canvasSizeDefaults = {
 };
 
 const displaySizeDefaults = {
-    width: 620,
-    height: 620,
+    width: 560,
+    height: 560,
 };
 
 const getGlobeRenderConfig = (displayWidth: number) => {
@@ -273,8 +273,8 @@ export const FeaturesGlobe: React.FC = () => {
         const updateSize = () => {
             const rect = node.getBoundingClientRect();
             const ratio = Math.min(typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1, 2);
-            const displayWidth = Math.max(320, rect.width || 560);
-            const displayHeight = Math.max(360, rect.height || rect.width || 560);
+            const displayWidth = Math.max(300, rect.width || 520);
+            const displayHeight = Math.max(340, rect.height || rect.width || 520);
             const width = Math.max(640, Math.round(displayWidth * ratio));
             const height = Math.max(640, Math.round(displayHeight * ratio));
             setDisplaySize({
@@ -488,7 +488,7 @@ export const FeaturesGlobe: React.FC = () => {
             role="img"
             aria-label={t('globe.accessibility')}
             className={cn(
-                'relative isolate mx-auto h-[min(96vw,29rem)] w-full max-w-[40rem] overflow-visible sm:h-[31rem] lg:mx-0 lg:ml-auto lg:h-[39rem] xl:h-[42rem]',
+                'relative isolate mx-auto h-[min(90vw,25rem)] w-full max-w-[35rem] overflow-visible sm:h-[29rem] lg:mx-0 lg:ml-auto lg:h-[35rem]',
                 isDragging ? 'cursor-grabbing' : 'cursor-grab',
             )}
             onPointerDown={handlePointerDown}

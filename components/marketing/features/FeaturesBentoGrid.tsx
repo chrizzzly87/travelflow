@@ -6,6 +6,8 @@ import { cn } from '../../../lib/utils';
 import { FeaturesAirportBentoVisual } from './FeaturesAirportBentoVisual';
 
 const AIRPORT_BENTO_VISIBLE_AREA_RATIO = 0.72;
+const AIRPORT_BENTO_PREFETCH_AREA_RATIO = 0.14;
+const AIRPORT_BENTO_PREFETCH_MARGIN_PX = 180;
 
 export interface FeatureBentoItem {
     id: 'itinerary' | 'airport' | 'timeline' | 'inspiration' | 'sharing' | 'relive';
@@ -241,22 +243,42 @@ const AirportBentoCard: React.FC<{ index: number; item: FeatureBentoItem }> = ({
     item,
 }) => {
     const cardRef = useRef<HTMLDivElement | null>(null);
+    const [isAirportLookupPrimed, setIsAirportLookupPrimed] = useState(false);
     const [isAirportVisualActive, setIsAirportVisualActive] = useState(false);
 
     useEffect(() => {
-        if (isAirportVisualActive) return;
+        if (isAirportLookupPrimed && isAirportVisualActive) return;
 
         const node = cardRef.current;
         if (!node || typeof window === 'undefined' || typeof window.IntersectionObserver !== 'function') {
+            setIsAirportLookupPrimed(true);
             setIsAirportVisualActive(true);
             return;
         }
 
-        const activate = () => {
+        const primeLookup = () => {
+            setIsAirportLookupPrimed(true);
+        };
+
+        const activateVisual = () => {
             setIsAirportVisualActive(true);
         };
 
-        const isMostlyVisible = () => {
+        const isWithinPrefetchWindow = () => {
+            const rect = node.getBoundingClientRect();
+            if (rect.width <= 0 || rect.height <= 0) {
+                return false;
+            }
+            const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+            const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+
+            return rect.bottom >= -AIRPORT_BENTO_PREFETCH_MARGIN_PX
+                && rect.right >= 0
+                && rect.left <= viewportWidth
+                && rect.top <= viewportHeight + AIRPORT_BENTO_PREFETCH_MARGIN_PX;
+        };
+
+        const isVisibleEnough = () => {
             const rect = node.getBoundingClientRect();
             if (rect.width <= 0 || rect.height <= 0) {
                 return false;
@@ -276,19 +298,42 @@ const AirportBentoCard: React.FC<{ index: number; item: FeatureBentoItem }> = ({
         };
 
         const observer = new window.IntersectionObserver((entries) => {
-            const isVisibleEnough = entries.some((entry) => (
+            const intersectsPrefetchWindow = entries.some((entry) => (
+                entry.isIntersecting && entry.intersectionRatio >= AIRPORT_BENTO_PREFETCH_AREA_RATIO
+            ));
+            const intersectsVisibleThreshold = entries.some((entry) => (
                 entry.isIntersecting && entry.intersectionRatio >= AIRPORT_BENTO_VISIBLE_AREA_RATIO
             ));
-            if (!isVisibleEnough && !isMostlyVisible()) return;
-            activate();
-            observer.disconnect();
+
+            if (!isAirportLookupPrimed && (intersectsPrefetchWindow || isWithinPrefetchWindow())) {
+                primeLookup();
+            }
+
+            if (!isAirportVisualActive && (intersectsVisibleThreshold || isVisibleEnough())) {
+                activateVisual();
+            }
+
+            if ((isAirportLookupPrimed || intersectsPrefetchWindow || isWithinPrefetchWindow())
+                && (isAirportVisualActive || intersectsVisibleThreshold || isVisibleEnough())) {
+                observer.disconnect();
+            }
         }, {
-            threshold: [0, AIRPORT_BENTO_VISIBLE_AREA_RATIO, 1],
+            rootMargin: `${AIRPORT_BENTO_PREFETCH_MARGIN_PX}px 0px`,
+            threshold: [0, AIRPORT_BENTO_PREFETCH_AREA_RATIO, AIRPORT_BENTO_VISIBLE_AREA_RATIO, 1],
         });
 
         const handleViewportChange = () => {
-            if (!isMostlyVisible()) return;
-            activate();
+            if (!isAirportLookupPrimed && isWithinPrefetchWindow()) {
+                primeLookup();
+            }
+
+            if (!isAirportVisualActive && isVisibleEnough()) {
+                activateVisual();
+            }
+
+            if (!(isWithinPrefetchWindow() || isVisibleEnough())) return;
+            if (!isAirportLookupPrimed || !isAirportVisualActive) return;
+
             observer.disconnect();
             window.removeEventListener('scroll', handleViewportChange);
             window.removeEventListener('resize', handleViewportChange);
@@ -304,7 +349,7 @@ const AirportBentoCard: React.FC<{ index: number; item: FeatureBentoItem }> = ({
             window.removeEventListener('scroll', handleViewportChange);
             window.removeEventListener('resize', handleViewportChange);
         };
-    }, [isAirportVisualActive]);
+    }, [isAirportLookupPrimed, isAirportVisualActive]);
 
     return (
         <div
@@ -327,7 +372,10 @@ const AirportBentoCard: React.FC<{ index: number; item: FeatureBentoItem }> = ({
                     </div>
 
                     <div className="min-w-0">
-                        <FeaturesAirportBentoVisual isActive={isAirportVisualActive} />
+                        <FeaturesAirportBentoVisual
+                            shouldPrefetch={isAirportLookupPrimed}
+                            isActive={isAirportVisualActive}
+                        />
                     </div>
                 </CardContent>
             </Card>

@@ -201,7 +201,7 @@ describe('pages/FeaturesPage', () => {
         expect(screen.getByText(featuresLocale.globe.fallbackDescription)).toBeInTheDocument();
     });
 
-    it('gives the globe more room on mobile layouts without forcing a fixed aspect shell', () => {
+    it('keeps the globe compact enough for the original hero layout while reducing dead space', () => {
         render(
             <MemoryRouter initialEntries={['/features']}>
                 <FeaturesPage />
@@ -211,13 +211,13 @@ describe('pages/FeaturesPage', () => {
         const globe = screen.getByRole('img', { name: featuresLocale.globe.accessibility });
 
         expect(globe.className).toContain('w-full');
-        expect(globe.className).toContain('max-w-[40rem]');
-        expect(globe.className).toContain('h-[min(96vw,29rem)]');
+        expect(globe.className).toContain('max-w-[35rem]');
+        expect(globe.className).toContain('h-[min(90vw,25rem)]');
         expect(globe.className).not.toContain('aspect-[1.02/0.98]');
         expect(globe.className).not.toContain('min-h-[480px]');
     });
 
-    it('defers the nearby-airport lookup until the airport bento card is fully visible', async () => {
+    it('prefetches the nearby-airport lookup before full visibility but flips the departure board only when the card is visible enough', async () => {
         ensureRuntimeLocationLoadedMock.mockResolvedValue({
             available: true,
             source: 'netlify-context',
@@ -280,12 +280,7 @@ describe('pages/FeaturesPage', () => {
         expect(screen.getByText(featuresLocale.bento.airportCard.defaultStatus)).toBeInTheDocument();
         expect(fetchNearbyAirportsMock).not.toHaveBeenCalled();
 
-        triggerIntersection(airportCard, { intersectionRatio: 0.5, isIntersecting: true });
-        await Promise.resolve();
-
-        expect(fetchNearbyAirportsMock).not.toHaveBeenCalled();
-
-        triggerIntersection(airportCard, { intersectionRatio: 1, isIntersecting: true });
+        triggerIntersection(airportCard, { intersectionRatio: 0.2, isIntersecting: true });
 
         await waitFor(() => {
             expect(ensureRuntimeLocationLoadedMock).toHaveBeenCalled();
@@ -296,6 +291,18 @@ describe('pages/FeaturesPage', () => {
                 minimumServiceTier: 'major',
             }));
         });
+
+        expect(screen.getByRole('img', { name: 'DXB' })).toBeInTheDocument();
+        expect(screen.queryByRole('img', { name: 'BER' })).not.toBeInTheDocument();
+        expect(screen.getByText(featuresLocale.bento.airportCard.defaultStatus)).toBeInTheDocument();
+
+        triggerIntersection(airportCard, { intersectionRatio: 0.5, isIntersecting: true });
+        await Promise.resolve();
+
+        expect(screen.getByRole('img', { name: 'DXB' })).toBeInTheDocument();
+        expect(screen.queryByRole('img', { name: 'BER' })).not.toBeInTheDocument();
+
+        triggerIntersection(airportCard, { intersectionRatio: 1, isIntersecting: true });
 
         await waitFor(() => {
             expect(screen.getByText('Starting near Berlin. The rest can open up from there.')).toBeInTheDocument();
