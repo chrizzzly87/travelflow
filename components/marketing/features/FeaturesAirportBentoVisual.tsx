@@ -201,8 +201,11 @@ export const FeaturesAirportBentoVisual: React.FC<{ isActive: boolean }> = ({ is
     const destinationCode = DREAM_DESTINATION_CODES[destinationIndex];
 
     return (
-        <div className="w-full select-none">
-            <div className="flex items-center justify-start gap-3 sm:gap-5 lg:justify-end">
+        <div className="min-w-0 w-full select-none">
+            <div
+                data-testid="features-airport-route"
+                className="flex w-full items-center justify-between gap-3 sm:gap-5 lg:justify-end"
+            >
                 <SplitFlap
                     value={visualState.displayCode}
                     length={3}
@@ -213,7 +216,7 @@ export const FeaturesAirportBentoVisual: React.FC<{ isActive: boolean }> = ({ is
                     className="tracking-[0.08em]"
                     {...FEATURES_SPLIT_FLAP_PROPS}
                 />
-                <span className="flex items-center justify-center text-slate-300" aria-hidden="true">
+                <span className="flex shrink-0 items-center justify-center text-slate-300" aria-hidden="true">
                     <ArrowIcon size={24} weight="regular" />
                 </span>
                 <SplitFlap
@@ -228,7 +231,7 @@ export const FeaturesAirportBentoVisual: React.FC<{ isActive: boolean }> = ({ is
                 />
             </div>
 
-            <div className="mt-6 max-w-lg">
+            <div className="mt-5 max-w-xl sm:mt-6">
                 <p className="text-balance text-sm leading-relaxed text-slate-600">
                     {statusText}
                 </p>

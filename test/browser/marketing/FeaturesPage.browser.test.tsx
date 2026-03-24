@@ -201,7 +201,7 @@ describe('pages/FeaturesPage', () => {
         expect(screen.getByText(featuresLocale.globe.fallbackDescription)).toBeInTheDocument();
     });
 
-    it('keeps the globe wrapper width-constrained for mobile layouts', () => {
+    it('gives the globe more room on mobile layouts without forcing a fixed aspect shell', () => {
         render(
             <MemoryRouter initialEntries={['/features']}>
                 <FeaturesPage />
@@ -211,7 +211,8 @@ describe('pages/FeaturesPage', () => {
         const globe = screen.getByRole('img', { name: featuresLocale.globe.accessibility });
 
         expect(globe.className).toContain('w-full');
-        expect(globe.className).toContain('max-w-[34rem]');
+        expect(globe.className).toContain('max-w-[40rem]');
+        expect(globe.className).toContain('h-[min(96vw,29rem)]');
         expect(globe.className).not.toContain('aspect-[1.02/0.98]');
         expect(globe.className).not.toContain('min-h-[480px]');
     });
@@ -275,6 +276,7 @@ describe('pages/FeaturesPage', () => {
         expect(airportCard.className).toContain('md:col-span-6');
         expect(screen.getByRole('img', { name: 'DXB' })).toBeInTheDocument();
         expect(screen.getByRole('img', { name: 'CDG' })).toBeInTheDocument();
+        expect(screen.getByTestId('features-airport-route').className).toContain('justify-between');
         expect(screen.getByText(featuresLocale.bento.airportCard.defaultStatus)).toBeInTheDocument();
         expect(fetchNearbyAirportsMock).not.toHaveBeenCalled();
 

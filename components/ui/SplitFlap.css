@@ -13,6 +13,8 @@
   font-weight: 700;
   line-height: 1;
   user-select: none;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 .sf-board--dark {
@@ -36,10 +38,10 @@
   box-shadow: none;
 }
 
-.sf-board--sm  { font-size: 1.2rem; }
-.sf-board--md  { font-size: 2rem; }
-.sf-board--lg  { font-size: 3.5rem; }
-.sf-board--xl  { font-size: 5.5rem; }
+.sf-board--sm  { font-size: clamp(1rem, 4.8vw, 1.2rem); }
+.sf-board--md  { font-size: clamp(1.45rem, 7.2vw, 2rem); }
+.sf-board--lg  { font-size: clamp(2rem, 10.8vw, 3.5rem); }
+.sf-board--xl  { font-size: clamp(3rem, 15vw, 5.5rem); }
 
 .sf-cell {
   position: relative;
