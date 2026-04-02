@@ -6,7 +6,7 @@ import { AppLanguage, ITrip, ITimelineItem, IViewSettings } from './types';
 import { TripManagerProvider } from './contexts/TripManagerContext';
 import { CookieConsentBanner } from './components/marketing/CookieConsentBanner';
 import { saveTrip, getTripById } from './services/storageService';
-import { appendHistoryEntry } from './services/historyService';
+import { createTripHistorySnapshotEntry } from './services/historyService';
 import { buildTripUrl, generateVersionId, getStoredAppLanguage, setStoredAppLanguage } from './services/appRuntimeUtils';
 import { DB_ENABLED } from './config/db';
 import { GlobalTooltipLayer } from './components/GlobalTooltipLayer';
@@ -39,6 +39,7 @@ import { useAnalyticsBootstrap } from './app/bootstrap/useAnalyticsBootstrap';
 import { useAuthNavigationBootstrap } from './app/bootstrap/useAuthNavigationBootstrap';
 import { useDebuggerBootstrap } from './app/bootstrap/useDebuggerBootstrap';
 import { useNavigationContextBootstrap } from './app/bootstrap/useNavigationContextBootstrap';
+import { useRuntimeLocationBootstrap } from './app/bootstrap/useRuntimeLocationBootstrap';
 import { useWarmupGate } from './app/bootstrap/useWarmupGate';
 import { AppProviderShell } from './app/bootstrap/AppProviderShell';
 import { MarketingRouteLoadingShell } from './components/bootstrap/MarketingRouteLoadingShell';
@@ -280,10 +281,15 @@ const createLocalHistoryEntry = (
     ts?: number,
     baseUrlOverride?: string
 ) => {
-    const versionId = generateVersionId();
-    const url = baseUrlOverride ? `${baseUrlOverride}?v=${versionId}` : buildTripUrl(updatedTrip.id, versionId);
+    const { url } = createTripHistorySnapshotEntry({
+        tripId: updatedTrip.id,
+        trip: updatedTrip,
+        view,
+        label,
+        ts,
+        baseUrlOverride,
+    });
     navigate(url, { replace: options?.replace ?? false });
-    appendHistoryEntry(updatedTrip.id, url, label, { snapshot: { trip: updatedTrip, view }, ts });
     return url;
 };
 
@@ -361,6 +367,7 @@ const AppContent: React.FC = () => {
 
     useAuthNavigationBootstrap();
     useNavigationContextBootstrap();
+    useRuntimeLocationBootstrap();
     useAnalyticsBootstrap();
 
     useEffect(() => {

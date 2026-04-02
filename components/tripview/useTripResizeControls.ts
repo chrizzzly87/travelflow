@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, type Dispatch, type SetStateAction } from 'react';
 
 import { writeLocalStorageItem } from '../../services/browserStorageService';
+import type { IViewSettings } from '../../types';
 
 interface UseTripResizeControlsOptions {
     isMobile: boolean;
@@ -9,6 +10,7 @@ interface UseTripResizeControlsOptions {
     timelineMode: 'calendar' | 'timeline';
     timelineView: 'horizontal' | 'vertical';
     zoomLevel: number;
+    zoomBehavior: NonNullable<IViewSettings['zoomBehavior']>;
     isZoomDirty: boolean;
     clampZoomLevel: (value: number) => number;
     setZoomLevel: Dispatch<SetStateAction<number>>;
@@ -108,6 +110,7 @@ export const useTripResizeControls = ({
     timelineMode,
     timelineView,
     zoomLevel,
+    zoomBehavior,
     isZoomDirty,
     clampZoomLevel,
     setZoomLevel,
@@ -139,6 +142,8 @@ export const useTripResizeControls = ({
     const detailsResizeStartXRef = useRef(0);
     const detailsResizeStartWidthRef = useRef(detailsWidth);
     const previousMapDockModeRef = useRef(mapDockMode);
+    const previousLayoutModeRef = useRef(layoutMode);
+    const previousDetailsPanelVisibleRef = useRef(detailsPanelVisible);
     const previousTimelineModeRef = useRef(timelineMode);
     const previousTimelineViewRef = useRef(timelineView);
     const hasAutoFitRunRef = useRef(false);
@@ -216,7 +221,7 @@ export const useTripResizeControls = ({
         options?: { force?: boolean; source?: 'auto' | 'manual' },
     ) => {
         const fitMode: 'horizontal' | 'vertical' = mode || (timelineView === 'vertical' ? 'vertical' : 'horizontal');
-        if (!options?.force && isZoomDirty) return false;
+        if (!options?.force && (isZoomDirty || zoomBehavior === 'manual')) return false;
 
         const timelineViewport = verticalLayoutTimelineRef.current;
         if (!timelineViewport) return false;
@@ -264,20 +269,30 @@ export const useTripResizeControls = ({
         timelineView,
         verticalTimelineAutoFitPadding,
         zoomLevel,
+        zoomBehavior,
         zoomLevelPresets,
     ]);
 
     useEffect(() => {
         const previousMapDockMode = previousMapDockModeRef.current;
+        const previousLayoutMode = previousLayoutModeRef.current;
+        const previousDetailsPanelVisible = previousDetailsPanelVisibleRef.current;
         const previousTimelineMode = previousTimelineModeRef.current;
         const previousTimelineView = previousTimelineViewRef.current;
         const isFirstRenderAutoFit = !hasAutoFitRunRef.current;
         const didMapDockModeChange = previousMapDockMode !== mapDockMode;
+        const didLayoutModeChange = previousLayoutMode !== layoutMode;
+        const didDetailsPanelVisibilityChange = previousDetailsPanelVisible !== detailsPanelVisible;
         const didTimelineModeChange = previousTimelineMode !== timelineMode;
         const didTimelineViewChange = previousTimelineView !== timelineView;
+        const didHorizontalTimelineViewportChange = timelineView === 'horizontal'
+            && (didLayoutModeChange || didDetailsPanelVisibilityChange);
         const shouldAttemptAutoFit = timelineMode === 'calendar'
+            && zoomBehavior !== 'manual'
+            && !isZoomDirty
             && (
                 (didTimelineViewChange)
+                || didHorizontalTimelineViewportChange
                 || (!isZoomDirty && (
                     isFirstRenderAutoFit
                     || didMapDockModeChange
@@ -285,7 +300,7 @@ export const useTripResizeControls = ({
                 ))
             );
 
-        const shouldForceAutoFit = didTimelineViewChange;
+        const shouldForceAutoFit = didTimelineViewChange || didHorizontalTimelineViewportChange;
 
         if (shouldAttemptAutoFit) {
             const fitMode: 'horizontal' | 'vertical' = timelineView === 'vertical' ? 'vertical' : 'horizontal';
@@ -301,7 +316,7 @@ export const useTripResizeControls = ({
                 }
             };
             requestAnimationFrame(() => {
-                if (didTimelineViewChange) {
+                if (didTimelineViewChange || didHorizontalTimelineViewportChange) {
                     requestAnimationFrame(runAutoFit);
                     return;
                 }
@@ -310,10 +325,12 @@ export const useTripResizeControls = ({
         }
 
         previousMapDockModeRef.current = mapDockMode;
+        previousLayoutModeRef.current = layoutMode;
+        previousDetailsPanelVisibleRef.current = detailsPanelVisible;
         previousTimelineModeRef.current = timelineMode;
         previousTimelineViewRef.current = timelineView;
         hasAutoFitRunRef.current = true;
-    }, [fitTimelineZoom, isZoomDirty, mapDockMode, timelineMode, timelineView]);
+    }, [detailsPanelVisible, fitTimelineZoom, isZoomDirty, layoutMode, mapDockMode, timelineMode, timelineView, zoomBehavior]);
 
     const startResizing = useCallback((type: 'sidebar' | 'details' | 'timeline-h', startClientX?: number) => {
         isResizingRef.current = type;

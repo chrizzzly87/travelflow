@@ -130,6 +130,12 @@ export const dbCreateShareLink = async (...args: Parameters<DbServiceModule['dbC
     return db.dbCreateShareLink(...args);
 };
 
+export const dbUpdateTripShareViewSettings = async (...args: Parameters<DbServiceModule['dbUpdateTripShareViewSettings']>) => {
+    if (!DB_ENABLED) return false;
+    const db = await loadDbService();
+    return db.dbUpdateTripShareViewSettings(...args);
+};
+
 export const dbListTripShares = async (...args: Parameters<DbServiceModule['dbListTripShares']>) => {
     if (!DB_ENABLED) return [];
     const db = await loadDbService();
@@ -146,4 +152,10 @@ export const dbRevokeTripShares = async (...args: Parameters<DbServiceModule['db
     if (!DB_ENABLED) return 0;
     const db = await loadDbService();
     return db.dbRevokeTripShares(...args);
+};
+
+export const dbFindNearestCommercialAirports = async (...args: Parameters<DbServiceModule['dbFindNearestCommercialAirports']>) => {
+    if (!DB_ENABLED) return [];
+    const db = await loadDbService();
+    return db.dbFindNearestCommercialAirports(...args);
 };

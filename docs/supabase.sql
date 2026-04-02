@@ -63,6 +63,7 @@ create table if not exists public.trip_shares (
   token text not null unique,
   mode text not null check (mode in ('view', 'edit')),
   allow_copy boolean not null default true,
+  metadata jsonb not null default '{}'::jsonb,
   created_by uuid references auth.users,
   created_at timestamptz not null default now(),
   expires_at timestamptz,
@@ -269,6 +270,7 @@ alter table public.trips add column if not exists trip_expires_at timestamptz;
 alter table public.trips add column if not exists archived_at timestamptz;
 alter table public.trips add column if not exists source_kind text;
 alter table public.trips add column if not exists source_template_id text;
+alter table public.trip_shares add column if not exists metadata jsonb not null default '{}'::jsonb;
 alter table public.profiles add column if not exists passport_sticker_positions jsonb not null default '{}'::jsonb;
 alter table public.profiles add column if not exists passport_sticker_selection jsonb not null default '[]'::jsonb;
 alter table public.profiles add column if not exists terms_accepted_version text;
@@ -1145,6 +1147,8 @@ declare
   v_token text;
   v_existing_token text;
   v_existing_share_id uuid;
+  v_view_settings jsonb;
+  v_share_metadata jsonb;
 begin
   if p_mode not in ('view', 'edit') then
     raise exception 'Invalid share mode';
@@ -1166,6 +1170,22 @@ begin
     raise exception 'Not allowed';
   end if;
 
+  select t.view_settings
+    into v_view_settings
+    from public.trips t
+   where t.id = p_trip_id
+     and t.owner_id = auth.uid()
+   limit 1;
+
+  v_share_metadata := jsonb_build_object(
+    'shared_view_v1',
+    jsonb_build_object(
+      'schema', 'shared_view_v1',
+      'updated_at', now(),
+      'view', coalesce(v_view_settings, '{}'::jsonb)
+    )
+  );
+
   select s.token, s.id
     into v_existing_token, v_existing_share_id
     from public.trip_shares s
@@ -1177,14 +1197,17 @@ begin
    limit 1;
 
   if v_existing_token is not null then
+    update public.trip_shares
+       set metadata = coalesce(metadata, '{}'::jsonb) || v_share_metadata
+     where id = v_existing_share_id;
     return query select v_existing_token, p_mode, v_existing_share_id;
     return;
   end if;
 
   v_token := encode(gen_random_bytes(9), 'hex');
 
-  insert into public.trip_shares (trip_id, token, mode, allow_copy, created_by)
-  values (p_trip_id, v_token, p_mode, p_allow_copy, auth.uid())
+  insert into public.trip_shares (trip_id, token, mode, allow_copy, metadata, created_by)
+  values (p_trip_id, v_token, p_mode, p_allow_copy, v_share_metadata, auth.uid())
   returning id into share_id;
 
   insert into public.trip_user_events (trip_id, owner_id, action, source, metadata)
@@ -1211,6 +1234,7 @@ returns table(
   trip_id text,
   data jsonb,
   view_settings jsonb,
+  share_view_settings jsonb,
   status text,
   trip_expires_at timestamptz,
   mode text,
@@ -1227,6 +1251,7 @@ begin
     t.id,
     t.data,
     t.view_settings,
+    s.metadata -> 'shared_view_v1' -> 'view' as share_view_settings,
     t.status,
     t.trip_expires_at,
     s.mode,
@@ -1255,6 +1280,7 @@ returns table(
   trip_id text,
   data jsonb,
   view_settings jsonb,
+  share_view_settings jsonb,
   status text,
   trip_expires_at timestamptz,
   mode text,
@@ -1270,12 +1296,14 @@ declare
   v_trip_id text;
   v_mode text;
   v_allow_copy boolean;
+  v_share_view_settings jsonb;
   v_latest_version_id uuid;
 begin
   select
     s.trip_id,
     s.mode,
     s.allow_copy,
+    s.metadata -> 'shared_view_v1' -> 'view',
     (
       select tv.id
       from public.trip_versions tv
@@ -1283,7 +1311,7 @@ begin
       order by tv.created_at desc
       limit 1
     )
-    into v_trip_id, v_mode, v_allow_copy, v_latest_version_id
+    into v_trip_id, v_mode, v_allow_copy, v_share_view_settings, v_latest_version_id
     from public.trip_shares s
    where s.token = p_token
      and s.revoked_at is null
@@ -1298,6 +1326,7 @@ begin
     v.trip_id,
     v.data,
     v.view_settings,
+    v_share_view_settings,
     t.status,
     t.trip_expires_at,
     v_mode,
@@ -1312,6 +1341,52 @@ begin
   if not found then
     raise exception 'Version not found for share token';
   end if;
+end;
+$$;
+
+create or replace function public.update_trip_share_view_settings(
+  p_trip_id text,
+  p_view jsonb
+)
+returns table(updated_share_count integer)
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_owner uuid;
+  v_updated_count integer := 0;
+begin
+  v_owner := auth.uid();
+  if v_owner is null then
+    raise exception 'Not authenticated';
+  end if;
+
+  if not exists (
+    select 1
+      from public.trips t
+     where t.id = p_trip_id
+       and t.owner_id = v_owner
+  ) then
+    raise exception 'Not allowed';
+  end if;
+
+  update public.trip_shares s
+     set metadata = coalesce(s.metadata, '{}'::jsonb)
+       || jsonb_build_object(
+            'shared_view_v1',
+            jsonb_build_object(
+              'schema', 'shared_view_v1',
+              'updated_at', now(),
+              'view', coalesce(p_view, '{}'::jsonb)
+            )
+          )
+   where s.trip_id = p_trip_id
+     and s.revoked_at is null;
+
+  get diagnostics v_updated_count = row_count;
+
+  return query select v_updated_count;
 end;
 $$;
 
@@ -1359,6 +1434,19 @@ begin
          updated_at = now()
    where id = v_trip_id;
 
+  update public.trip_shares s
+     set metadata = coalesce(s.metadata, '{}'::jsonb)
+       || jsonb_build_object(
+            'shared_view_v1',
+            jsonb_build_object(
+              'schema', 'shared_view_v1',
+              'updated_at', now(),
+              'view', coalesce(p_view, '{}'::jsonb)
+            )
+          )
+   where s.trip_id = v_trip_id
+     and s.revoked_at is null;
+
   insert into public.trip_versions (trip_id, data, view_settings, label, created_by)
   values (v_trip_id, p_data, p_view, coalesce(p_label, 'Shared edit'), auth.uid())
   returning id into v_version_id;
@@ -1372,6 +1460,7 @@ grant usage on schema public to anon, authenticated;
 grant execute on function public.create_share_token(text, text, boolean) to anon, authenticated;
 grant execute on function public.get_shared_trip(text) to anon, authenticated;
 grant execute on function public.get_shared_trip_version(text, uuid) to anon, authenticated;
+grant execute on function public.update_trip_share_view_settings(text, jsonb) to anon, authenticated;
 grant execute on function public.update_shared_trip(text, jsonb, jsonb, text) to anon, authenticated;
 grant execute on function public.can_create_trip() to anon, authenticated;
 grant execute on function public.upsert_trip(text, jsonb, jsonb, text, date, boolean, text, text, text, timestamptz, text, text) to anon, authenticated;
@@ -8433,3 +8522,288 @@ using (
   not coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false)
   and (owner_id = auth.uid() or public.is_admin(auth.uid()))
 );
+
+-- =============================================================================
+-- Airport reference + nearby-airports foundation
+-- =============================================================================
+
+create table if not exists public.airports_reference (
+  ident text primary key,
+  iata_code text,
+  icao_code text,
+  name text not null,
+  municipality text,
+  subdivision_name text,
+  region_code text,
+  country_code text not null,
+  country_name text not null,
+  latitude double precision not null,
+  longitude double precision not null,
+  timezone text,
+  airport_type text not null,
+  scheduled_service boolean not null default false,
+  is_commercial boolean not null default false,
+  commercial_service_tier text not null default 'local',
+  is_major_commercial boolean not null default false
+);
+
+alter table public.airports_reference add column if not exists commercial_service_tier text not null default 'local';
+alter table public.airports_reference add column if not exists is_major_commercial boolean not null default false;
+
+create index if not exists airports_reference_commercial_idx on public.airports_reference (is_commercial);
+create index if not exists airports_reference_iata_idx on public.airports_reference (iata_code);
+create index if not exists airports_reference_icao_idx on public.airports_reference (icao_code);
+create index if not exists airports_reference_country_idx on public.airports_reference (country_code);
+create index if not exists airports_reference_service_tier_idx on public.airports_reference (commercial_service_tier);
+create index if not exists airports_reference_major_commercial_idx on public.airports_reference (is_major_commercial);
+
+create table if not exists public.airports_reference_metadata (
+  id text primary key,
+  data_version text not null,
+  generated_at timestamptz not null,
+  commercial_airport_count integer not null,
+  source_airport_count integer not null,
+  sources jsonb not null default '{}'::jsonb,
+  synced_at timestamptz not null default now(),
+  synced_by text
+);
+
+alter table public.airports_reference enable row level security;
+alter table public.airports_reference_metadata enable row level security;
+
+drop policy if exists "Airports reference public read" on public.airports_reference;
+create policy "Airports reference public read"
+on public.airports_reference for select
+using (true);
+
+drop policy if exists "Airports reference metadata public read" on public.airports_reference_metadata;
+create policy "Airports reference metadata public read"
+on public.airports_reference_metadata for select
+using (true);
+
+drop function if exists public.find_nearest_commercial_airports(double precision, double precision, integer);
+create or replace function public.find_nearest_commercial_airports(
+  p_lat double precision,
+  p_lng double precision,
+  p_limit integer default 10,
+  p_min_service_tier text default 'major'
+)
+returns table(
+  ident text,
+  iata_code text,
+  icao_code text,
+  name text,
+  municipality text,
+  subdivision_name text,
+  region_code text,
+  country_code text,
+  country_name text,
+  latitude double precision,
+  longitude double precision,
+  timezone text,
+  airport_type text,
+  scheduled_service boolean,
+  is_commercial boolean,
+  commercial_service_tier text,
+  is_major_commercial boolean,
+  air_distance_km double precision
+)
+language sql
+stable
+set search_path = public
+as $$
+  with limited_airports as (
+    select
+      ar.ident,
+      ar.iata_code,
+      ar.icao_code,
+      ar.name,
+      ar.municipality,
+      ar.subdivision_name,
+      ar.region_code,
+      ar.country_code,
+      ar.country_name,
+      ar.latitude,
+      ar.longitude,
+      ar.timezone,
+      ar.airport_type,
+      ar.scheduled_service,
+      ar.is_commercial,
+      ar.commercial_service_tier,
+      ar.is_major_commercial,
+      6371::double precision * acos(
+        least(
+          1::double precision,
+          greatest(
+            -1::double precision,
+            cos(radians(p_lat)) * cos(radians(ar.latitude)) * cos(radians(ar.longitude) - radians(p_lng))
+            + sin(radians(p_lat)) * sin(radians(ar.latitude))
+          )
+        )
+      ) as air_distance_km
+    from public.airports_reference ar
+    where ar.is_commercial = true
+      and (
+        case coalesce(p_min_service_tier, 'major')
+          when 'major' then ar.commercial_service_tier = 'major'
+          when 'regional' then ar.commercial_service_tier in ('regional', 'major')
+          else ar.commercial_service_tier in ('local', 'regional', 'major')
+        end
+      )
+      and p_lat between -90 and 90
+      and p_lng between -180 and 180
+  )
+  select
+    limited_airports.ident,
+    limited_airports.iata_code,
+    limited_airports.icao_code,
+    limited_airports.name,
+    limited_airports.municipality,
+    limited_airports.subdivision_name,
+    limited_airports.region_code,
+    limited_airports.country_code,
+    limited_airports.country_name,
+    limited_airports.latitude,
+    limited_airports.longitude,
+    limited_airports.timezone,
+    limited_airports.airport_type,
+    limited_airports.scheduled_service,
+    limited_airports.is_commercial,
+    limited_airports.commercial_service_tier,
+    limited_airports.is_major_commercial,
+    limited_airports.air_distance_km
+  from limited_airports
+  order by limited_airports.air_distance_km asc,
+           coalesce(limited_airports.iata_code, limited_airports.icao_code, limited_airports.ident) asc,
+           limited_airports.name asc,
+           limited_airports.ident asc
+  limit least(greatest(coalesce(p_limit, 10), 1), 10);
+$$;
+
+grant execute on function public.find_nearest_commercial_airports(double precision, double precision, integer, text) to anon, authenticated;
+
+drop function if exists public.admin_replace_airports_reference(jsonb, jsonb, text);
+create or replace function public.admin_replace_airports_reference(
+  p_rows jsonb,
+  p_metadata jsonb,
+  p_synced_by text default null
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_uid uuid := auth.uid();
+  v_request_role text := coalesce(auth.role(), '');
+  v_row_count integer := 0;
+begin
+  if jsonb_typeof(p_rows) is distinct from 'array' then
+    raise exception 'Airport rows payload must be a JSON array.';
+  end if;
+
+  if jsonb_typeof(p_metadata) is distinct from 'object' then
+    raise exception 'Airport metadata payload must be a JSON object.';
+  end if;
+
+  if v_request_role <> 'service_role' and not public.is_admin(v_uid) then
+    raise exception 'Admin access required.';
+  end if;
+
+  delete from public.airports_reference;
+
+  insert into public.airports_reference (
+    ident,
+    iata_code,
+    icao_code,
+    name,
+    municipality,
+    subdivision_name,
+    region_code,
+    country_code,
+    country_name,
+    latitude,
+    longitude,
+    timezone,
+    airport_type,
+    scheduled_service,
+    is_commercial,
+    commercial_service_tier,
+    is_major_commercial
+  )
+  select
+    upper(trim(coalesce(row ->> 'ident', ''))),
+    nullif(upper(trim(coalesce(row ->> 'iataCode', ''))), ''),
+    nullif(upper(trim(coalesce(row ->> 'icaoCode', ''))), ''),
+    trim(coalesce(row ->> 'name', '')),
+    nullif(trim(coalesce(row ->> 'municipality', '')), ''),
+    nullif(trim(coalesce(row ->> 'subdivisionName', '')), ''),
+    nullif(upper(trim(coalesce(row ->> 'regionCode', ''))), ''),
+    upper(trim(coalesce(row ->> 'countryCode', ''))),
+    trim(coalesce(row ->> 'countryName', '')),
+    (row ->> 'latitude')::double precision,
+    (row ->> 'longitude')::double precision,
+    nullif(trim(coalesce(row ->> 'timezone', '')), ''),
+    case trim(coalesce(row ->> 'airportType', ''))
+      when 'large_airport' then 'large_airport'
+      when 'medium_airport' then 'medium_airport'
+      else 'small_airport'
+    end,
+    lower(trim(coalesce(row ->> 'scheduledService', 'false'))) = 'true',
+    lower(trim(coalesce(row ->> 'isCommercial', 'false'))) = 'true',
+    case trim(coalesce(row ->> 'commercialServiceTier', ''))
+      when 'major' then 'major'
+      when 'regional' then 'regional'
+      else 'local'
+    end,
+    lower(trim(coalesce(row ->> 'isMajorCommercial', 'false'))) = 'true'
+  from jsonb_array_elements(p_rows) as row
+  where trim(coalesce(row ->> 'ident', '')) <> ''
+    and trim(coalesce(row ->> 'name', '')) <> ''
+    and trim(coalesce(row ->> 'countryCode', '')) <> ''
+    and trim(coalesce(row ->> 'countryName', '')) <> ''
+    and trim(coalesce(row ->> 'latitude', '')) <> ''
+    and trim(coalesce(row ->> 'longitude', '')) <> ''
+  ;
+
+  get diagnostics v_row_count = row_count;
+
+  insert into public.airports_reference_metadata (
+    id,
+    data_version,
+    generated_at,
+    commercial_airport_count,
+    source_airport_count,
+    sources,
+    synced_at,
+    synced_by
+  )
+  values (
+    'global',
+    coalesce(nullif(trim(p_metadata ->> 'dataVersion'), ''), 'unknown'),
+    coalesce(nullif(trim(p_metadata ->> 'generatedAt'), '')::timestamptz, now()),
+    coalesce(nullif(trim(p_metadata ->> 'commercialAirportCount'), '')::integer, v_row_count),
+    coalesce(nullif(trim(p_metadata ->> 'sourceAirportCount'), '')::integer, v_row_count),
+    coalesce(p_metadata -> 'sources', '{}'::jsonb),
+    now(),
+    nullif(trim(coalesce(p_synced_by, '')), '')
+  )
+  on conflict (id) do update set
+    data_version = excluded.data_version,
+    generated_at = excluded.generated_at,
+    commercial_airport_count = excluded.commercial_airport_count,
+    source_airport_count = excluded.source_airport_count,
+    sources = excluded.sources,
+    synced_at = excluded.synced_at,
+    synced_by = excluded.synced_by
+  ;
+
+  return jsonb_build_object(
+    'rowCount', v_row_count,
+    'dataVersion', coalesce(nullif(trim(p_metadata ->> 'dataVersion'), ''), 'unknown')
+  );
+end;
+$$;
+
+revoke all on function public.admin_replace_airports_reference(jsonb, jsonb, text) from public, anon, authenticated;
+grant execute on function public.admin_replace_airports_reference(jsonb, jsonb, text) to service_role;

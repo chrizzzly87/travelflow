@@ -113,7 +113,7 @@ describe('components/navigation/AccountMenu recent trips', () => {
     expect(mocks.trackEvent).toHaveBeenCalledWith('navigation__account_menu--recent_view_all');
   });
 
-  it('replaces the old planner/settings shortcuts with My Trips and Create Trip actions', async () => {
+  it('replaces the old planner/settings shortcuts with My Trips and Create Trip actions, and closes the menu before opening My Trips', async () => {
     const user = userEvent.setup();
     const onOpenTripManager = vi.fn();
     render(React.createElement(AccountMenu, {
@@ -132,11 +132,12 @@ describe('components/navigation/AccountMenu recent trips', () => {
     await user.click(screen.getByRole('button', { name: 'My Trips' }));
 
     expect(onOpenTripManager).toHaveBeenCalledTimes(1);
-    expect(screen.getByRole('menu', { name: 'Account menu' })).toBeInTheDocument();
+    expect(screen.queryByRole('menu', { name: 'Account menu' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Settings' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Stamps' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'View public profile' })).not.toBeInTheDocument();
 
+    await user.click(screen.getAllByRole('button', { name: /traveler/i })[0]);
     await user.click(screen.getByRole('button', { name: 'Create Trip' }));
 
     expect(mocks.navigate).toHaveBeenCalledWith('/create-trip');

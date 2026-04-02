@@ -1,5 +1,10 @@
 import type { PlanTierKey } from '../types';
 import {
+    normalizeAirportReference,
+    type AirportReference,
+    type AirportReferenceMetadata,
+} from '../shared/airportReference';
+import {
     LEGAL_TERMS_BINDING_LOCALE,
     LEGAL_TERMS_FALLBACK_CONTENT_DE,
     LEGAL_TERMS_FALLBACK_CONTENT_EN,
@@ -201,6 +206,32 @@ export interface AdminAsyncWorkerHealthResponse {
     summary: AdminAsyncWorkerHealthSummary;
     checks: AdminAsyncWorkerHealthCheckRecord[];
 }
+
+export interface AdminAirportCatalogMetadata extends AirportReferenceMetadata {
+    syncedAt: string | null;
+    syncedBy: string | null;
+}
+
+export interface AdminAirportCatalogResponse {
+    source: 'database' | 'snapshot';
+    databaseAvailable: boolean;
+    airports: AirportReference[];
+    metadata: AdminAirportCatalogMetadata | null;
+}
+
+export interface AdminAirportBulkUpdatePatch {
+    airportType?: AirportReference['airportType'];
+    scheduledService?: boolean;
+    timezone?: string | null;
+}
+
+const normalizeAirportIdentList = (value: unknown): string[] => (
+    Array.isArray(value)
+        ? value
+            .map((entry) => typeof entry === 'string' ? entry.trim().toUpperCase() : '')
+            .filter((entry): entry is string => entry.length > 0)
+        : []
+);
 
 export interface AdminAuditRecord {
     id: string;
@@ -1219,6 +1250,12 @@ const resolveInternalApiDevMessages = (path: string): { notFound: string; proxyF
             proxyFailure: 'Vite could not reach Netlify dev for worker health requests (connection refused on localhost:8888). Start `pnpm dev:netlify` before testing worker health.',
         };
     }
+    if (path.startsWith('/api/internal/admin/airports')) {
+        return {
+            notFound: 'Admin airports routes are unavailable in Vite-only dev. Run `pnpm dev:netlify` (or keep it running alongside `pnpm dev`) to test airport sync and edit actions.',
+            proxyFailure: 'Vite could not reach Netlify dev for admin airport requests (connection refused on localhost:8888). Start `pnpm dev:netlify` before testing airport sync and editing.',
+        };
+    }
     return null;
 };
 
@@ -1497,4 +1534,173 @@ export const adminGetAiWorkerHealth = async (
         },
         checks: Array.isArray(payload.checks) ? payload.checks : [],
     };
+};
+
+const normalizeAdminAirportCatalogMetadata = (value: unknown): AdminAirportCatalogMetadata | null => {
+    if (!value || typeof value !== 'object') return null;
+    const typed = value as Record<string, unknown>;
+    const sources = typed.sources && typeof typed.sources === 'object'
+        ? typed.sources as Record<string, unknown>
+        : null;
+    if (
+        typeof typed.dataVersion !== 'string'
+        || typeof typed.generatedAt !== 'string'
+        || typeof typed.commercialAirportCount !== 'number'
+        || typeof typed.sourceAirportCount !== 'number'
+        || typeof sources?.primary !== 'string'
+        || typeof sources?.mirror !== 'string'
+        || typeof sources?.enrichment !== 'string'
+    ) {
+        return null;
+    }
+
+    return {
+        dataVersion: typed.dataVersion,
+        generatedAt: typed.generatedAt,
+        commercialAirportCount: typed.commercialAirportCount,
+        sourceAirportCount: typed.sourceAirportCount,
+        sources: {
+            primary: sources.primary,
+            mirror: sources.mirror,
+            enrichment: sources.enrichment,
+        },
+        syncedAt: typeof typed.syncedAt === 'string' ? typed.syncedAt : null,
+        syncedBy: typeof typed.syncedBy === 'string' ? typed.syncedBy : null,
+    };
+};
+
+const normalizeAdminAirportCatalogPayload = (payload: Record<string, unknown>): AdminAirportCatalogResponse => ({
+    source: payload.source === 'database' ? 'database' : 'snapshot',
+    databaseAvailable: payload.databaseAvailable !== false,
+    airports: Array.isArray(payload.airports)
+        ? payload.airports
+            .map((entry) => normalizeAirportReference(entry))
+            .filter((entry): entry is AirportReference => Boolean(entry))
+        : [],
+    metadata: normalizeAdminAirportCatalogMetadata(payload.metadata),
+});
+
+export const adminGetAirportCatalog = async (): Promise<AdminAirportCatalogResponse> => {
+    if (shouldUseAdminMockData()) {
+        const mockAirports: AirportReference[] = [
+            {
+                ident: 'EDDB',
+                iataCode: 'BER',
+                icaoCode: 'EDDB',
+                name: 'Berlin Brandenburg Airport',
+                municipality: 'Berlin',
+                subdivisionName: 'Berlin',
+                regionCode: 'DE-BE',
+                countryCode: 'DE',
+                countryName: 'Germany',
+                latitude: 52.362247,
+                longitude: 13.500672,
+                timezone: 'Europe/Berlin',
+                airportType: 'large_airport',
+                scheduledService: true,
+                isCommercial: true,
+                commercialServiceTier: 'major',
+                isMajorCommercial: true,
+            },
+            {
+                ident: 'EDDH',
+                iataCode: 'HAM',
+                icaoCode: 'EDDH',
+                name: 'Hamburg Airport',
+                municipality: 'Hamburg',
+                subdivisionName: 'Hamburg',
+                regionCode: 'DE-HH',
+                countryCode: 'DE',
+                countryName: 'Germany',
+                latitude: 53.630402,
+                longitude: 9.988228,
+                timezone: 'Europe/Berlin',
+                airportType: 'large_airport',
+                scheduledService: true,
+                isCommercial: true,
+                commercialServiceTier: 'major',
+                isMajorCommercial: true,
+            },
+        ];
+        return {
+            source: 'snapshot',
+            databaseAvailable: false,
+            airports: mockAirports,
+            metadata: {
+                dataVersion: 'mock-2',
+                generatedAt: new Date().toISOString(),
+                commercialAirportCount: mockAirports.length,
+                sourceAirportCount: 2,
+                sources: {
+                    primary: 'mock-primary',
+                    mirror: 'mock-mirror',
+                    enrichment: 'mock-enrichment',
+                },
+                syncedAt: null,
+                syncedBy: null,
+            },
+        };
+    }
+
+    const payload = await callAdminInternalApiGet<Record<string, unknown>>('/api/internal/admin/airports');
+    return normalizeAdminAirportCatalogPayload(payload);
+};
+
+export const adminSyncAirportCatalog = async (): Promise<AdminAirportCatalogResponse> => {
+    const payload = await callAdminInternalApi<Record<string, unknown>>('/api/internal/admin/airports', {
+        action: 'sync',
+    });
+    return normalizeAdminAirportCatalogPayload(payload);
+};
+
+export const adminUpdateAirportCatalogRecord = async (airport: AirportReference): Promise<AirportReference> => {
+    const payload = await callAdminInternalApi<Record<string, unknown>>('/api/internal/admin/airports', {
+        action: 'update',
+        airport,
+    });
+    const updatedAirport = normalizeAirportReference(payload.airport);
+    if (!updatedAirport) {
+        throw new Error('Admin airport update returned an invalid row.');
+    }
+    return updatedAirport;
+};
+
+export const adminCreateAirportCatalogRecord = async (airport: AirportReference): Promise<AirportReference> => {
+    const payload = await callAdminInternalApi<Record<string, unknown>>('/api/internal/admin/airports', {
+        action: 'create',
+        airport,
+    });
+    const createdAirport = normalizeAirportReference(payload.airport);
+    if (!createdAirport) {
+        throw new Error('Admin airport create returned an invalid row.');
+    }
+    return createdAirport;
+};
+
+export const adminBulkUpdateAirportCatalogRecords = async ({
+    idents,
+    patch,
+}: {
+    idents: string[];
+    patch: AdminAirportBulkUpdatePatch;
+}): Promise<AirportReference[]> => {
+    const payload = await callAdminInternalApi<Record<string, unknown>>('/api/internal/admin/airports', {
+        action: 'bulkUpdate',
+        idents,
+        patch,
+    });
+
+    return Array.isArray(payload.airports)
+        ? payload.airports
+            .map((entry) => normalizeAirportReference(entry))
+            .filter((entry): entry is AirportReference => Boolean(entry))
+        : [];
+};
+
+export const adminDeleteAirportCatalogRecords = async (idents: string[]): Promise<string[]> => {
+    const payload = await callAdminInternalApi<Record<string, unknown>>('/api/internal/admin/airports', {
+        action: 'delete',
+        idents,
+    });
+    return normalizeAirportIdentList(payload.deletedIdents);
 };

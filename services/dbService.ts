@@ -2,6 +2,14 @@ import { ISharedTripResult, ISharedTripVersionResult, ITrip, ITripShareRecord, I
 import { isUuid } from '../utils';
 import { supabase, isSupabaseEnabled } from './supabaseClient';
 import {
+    clampNearbyAirportLimit,
+    normalizeAirportReference,
+    parseCommercialServiceTier,
+    type AirportCommercialServiceTier,
+    type AirportReference,
+    type NearbyAirportResult,
+} from '../shared/airportReference';
+import {
     readLocalStorageItem,
     writeLocalStorageItem,
 } from './browserStorageService';
@@ -102,6 +110,49 @@ const requireSupabase = () => {
         throw new Error('Supabase client not configured');
     }
     return supabase;
+};
+
+const mapAirportReferenceRow = (row: unknown): AirportReference | null => {
+    if (!row || typeof row !== 'object') return null;
+    const typed = row as Record<string, unknown>;
+    return normalizeAirportReference({
+        ident: typed.ident,
+        iataCode: typed.iata_code,
+        icaoCode: typed.icao_code,
+        name: typed.name,
+        municipality: typed.municipality,
+        subdivisionName: typed.subdivision_name,
+        regionCode: typed.region_code,
+        countryCode: typed.country_code,
+        countryName: typed.country_name,
+        latitude: typed.latitude,
+        longitude: typed.longitude,
+        timezone: typed.timezone,
+        airportType: typed.airport_type,
+        scheduledService: typed.scheduled_service,
+        isCommercial: typed.is_commercial,
+        commercialServiceTier: typed.commercial_service_tier,
+        isMajorCommercial: typed.is_major_commercial,
+    });
+};
+
+const mapNearbyAirportRow = (row: unknown): NearbyAirportResult | null => {
+    const airport = mapAirportReferenceRow(row);
+    if (!airport || !row || typeof row !== 'object') return null;
+    const typed = row as Record<string, unknown>;
+    const distanceRaw = typed.air_distance_km;
+    const airDistanceKm = typeof distanceRaw === 'number' && Number.isFinite(distanceRaw)
+        ? distanceRaw
+        : typeof distanceRaw === 'string'
+            ? Number(distanceRaw)
+            : NaN;
+    if (!Number.isFinite(airDistanceKm)) return null;
+
+    return {
+        airport,
+        airDistanceKm,
+        rank: 0,
+    };
 };
 
 const normalizeUsernameHandle = (value: unknown): string | null => {
@@ -359,8 +410,13 @@ const isRouteModeValue = (value: unknown): value is NonNullable<IViewSettings['r
 const isMapDockModeValue = (value: unknown): value is NonNullable<IViewSettings['mapDockMode']> =>
     value === 'docked' || value === 'floating';
 
+const isZoomBehaviorValue = (value: unknown): value is NonNullable<IViewSettings['zoomBehavior']> =>
+    value === 'fit' || value === 'manual';
+
 const normalizeFiniteNumber = (value: unknown): number | undefined =>
     typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+
+const TRIP_SHARE_VIEW_METADATA_KEY = 'shared_view_v1';
 
 const normalizeViewSettingsPayload = (value: unknown): IViewSettings | null => {
     if (!value || typeof value !== 'object') return null;
@@ -371,6 +427,7 @@ const normalizeViewSettingsPayload = (value: unknown): IViewSettings | null => {
         timelineView: isTimelineViewValue(view.timelineView) ? view.timelineView : 'horizontal',
         mapStyle: isMapStyleValue(view.mapStyle) ? view.mapStyle : 'standard',
         zoomLevel: normalizeFiniteNumber(view.zoomLevel) ?? 1,
+        zoomBehavior: isZoomBehaviorValue(view.zoomBehavior) ? view.zoomBehavior : 'fit',
         mapDockMode: isMapDockModeValue(view.mapDockMode) ? view.mapDockMode : undefined,
         routeMode: isRouteModeValue(view.routeMode) ? view.routeMode : undefined,
         showCityNames: typeof view.showCityNames === 'boolean' ? view.showCityNames : undefined,
@@ -378,6 +435,19 @@ const normalizeViewSettingsPayload = (value: unknown): IViewSettings | null => {
         detailsWidth: normalizeFiniteNumber(view.detailsWidth),
         timelineHeight: normalizeFiniteNumber(view.timelineHeight),
     };
+};
+
+const extractShareViewSettingsPayload = (row: Record<string, unknown>): IViewSettings | null => {
+    const directPayload = normalizeViewSettingsPayload(row.share_view_settings);
+    if (directPayload) return directPayload;
+
+    const metadata = row.share_metadata;
+    if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) return null;
+
+    const sharedViewEntry = (metadata as Record<string, unknown>)[TRIP_SHARE_VIEW_METADATA_KEY];
+    if (!sharedViewEntry || typeof sharedViewEntry !== 'object' || Array.isArray(sharedViewEntry)) return null;
+
+    return normalizeViewSettingsPayload((sharedViewEntry as Record<string, unknown>).view);
 };
 
 const normalizeTripForStorage = (trip: ITrip): ITrip => ({
@@ -2066,6 +2136,36 @@ export const dbCreateShareLink = async (tripId: string, mode: ShareMode): Promis
     return token ? { token } : { error: 'Invalid share token' };
 };
 
+export const dbUpdateTripShareViewSettings = async (
+    tripId: string,
+    view: IViewSettings,
+): Promise<boolean> => {
+    if (!DB_ENABLED) return false;
+
+    const normalizedView = normalizeViewSettingsPayload(view);
+    if (!normalizedView) return false;
+
+    const client = requireSupabase();
+    const sessionId = await ensureExistingDbSession();
+    if (!sessionId) return false;
+
+    const { error } = await client.rpc('update_trip_share_view_settings', {
+        p_trip_id: tripId,
+        p_view: normalizedView,
+    });
+
+    if (error) {
+        if (/update_trip_share_view_settings/i.test(error.message || '') && /function/i.test(error.message || '')) {
+            debugLog('dbUpdateTripShareViewSettings:missingFunction', { message: error.message });
+            return false;
+        }
+        console.error('Failed to sync trip share view settings', error);
+        return false;
+    }
+
+    return true;
+};
+
 export const dbGetSharedTrip = async (token: string): Promise<ISharedTripResult | null> => {
     if (!DB_ENABLED) return null;
     const client = requireSupabase();
@@ -2087,6 +2187,7 @@ export const dbGetSharedTrip = async (token: string): Promise<ISharedTripResult 
     return {
         trip: normalized,
         view: normalizeViewSettingsPayload(row.view_settings),
+        shareView: extractShareViewSettingsPayload(row as Record<string, unknown>),
         mode: row.mode as ShareMode,
         allowCopy: Boolean(row.allow_copy),
         latestVersionId: (row.latest_version_id as string | null | undefined) ?? null,
@@ -2123,6 +2224,7 @@ export const dbGetSharedTripVersion = async (
     return {
         trip: normalized,
         view: normalizeViewSettingsPayload(row.view_settings),
+        shareView: extractShareViewSettingsPayload(row as Record<string, unknown>),
         mode: row.mode as ShareMode,
         allowCopy: Boolean(row.allow_copy),
         latestVersionId: (row.latest_version_id as string | null | undefined) ?? null,
@@ -2291,6 +2393,46 @@ export const dbCanCreateTrip = async (): Promise<{
         activeTripCount,
         maxTripCount,
     };
+};
+
+export const dbFindNearestCommercialAirports = async ({
+    lat,
+    lng,
+    limit = 10,
+    minimumServiceTier = 'major',
+}: {
+    lat: number;
+    lng: number;
+    limit?: number;
+    minimumServiceTier?: AirportCommercialServiceTier;
+}): Promise<NearbyAirportResult[]> => {
+    if (!DB_ENABLED) return [];
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return [];
+
+    const client = requireSupabase();
+    const safeLimit = clampNearbyAirportLimit(limit);
+    const safeMinimumServiceTier = parseCommercialServiceTier(minimumServiceTier);
+    const { data, error } = await client.rpc('find_nearest_commercial_airports', {
+        p_lat: lat,
+        p_lng: lng,
+        p_limit: safeLimit,
+        p_min_service_tier: safeMinimumServiceTier,
+    });
+
+    if (error) {
+        console.error('Failed to fetch nearby commercial airports', error);
+        return [];
+    }
+
+    if (!Array.isArray(data)) return [];
+
+    return data
+        .map((row) => mapNearbyAirportRow(row))
+        .filter((airport): airport is NearbyAirportResult => Boolean(airport))
+        .map((result, index) => ({
+            ...result,
+            rank: index + 1,
+        }));
 };
 
 export const applyUserSettingsToLocalStorage = (settings: IUserSettings | null) => {

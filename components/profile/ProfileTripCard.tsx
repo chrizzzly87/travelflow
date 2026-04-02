@@ -159,6 +159,10 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
     [trip]
   );
   const displayTitle = trip.title;
+  const tripDetailPath = React.useMemo(
+    () => buildPath('tripDetail', { tripId: trip.id }),
+    [trip.id]
+  );
 
   const cityLanes = React.useMemo(() => (
     cityItems.map((item, index) => ({
@@ -199,6 +203,40 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
       style={{ contentVisibility: 'auto', containIntrinsicSize: '420px' }}
     >
       <div className={`relative aspect-[16/9] overflow-hidden ${isGenerationFailed ? 'bg-rose-50' : (isExpired ? 'bg-amber-50' : 'bg-slate-100')}`}>
+        <Link
+          to={tripDetailPath}
+          onClick={() => onOpen(trip)}
+          aria-label={`${labels.open}: ${displayTitle}`}
+          className="absolute inset-0 block cursor-pointer overflow-hidden"
+          {...(analyticsAttrs ? analyticsAttrs('open') : {})}
+        >
+          {!isNearViewport ? (
+            <div className="absolute inset-0 flex items-center justify-center bg-slate-100 text-xs font-medium text-slate-500">
+              {labels.mapLoading}
+            </div>
+          ) : mapUrl && !mapError ? (
+            <>
+              {!mapLoaded && (
+                <div className="absolute inset-0 flex items-center justify-center bg-slate-100 text-xs font-medium text-slate-500">
+                  {labels.mapLoading}
+                </div>
+              )}
+              <img
+                src={mapUrl}
+                alt={`Map preview for ${trip.title}`}
+                className={`h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.01] ${isExpired ? 'opacity-70 grayscale-[0.28]' : ''}`}
+                loading="lazy"
+                onLoad={() => setMapLoaded(true)}
+                onError={() => setMapError(true)}
+              />
+            </>
+          ) : (
+            <div className="flex h-full items-center justify-center px-3 text-center text-xs font-medium text-slate-500">
+              {labels.mapUnavailable}
+            </div>
+          )}
+        </Link>
+
         {isSelectable && onSelectionChange && (
           <div
             className={[
@@ -214,32 +252,6 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
               className="h-6 w-6 cursor-pointer rounded-md border border-white/90 bg-white/95 shadow-sm"
               {...(analyticsAttrs ? analyticsAttrs('select') : {})}
             />
-          </div>
-        )}
-
-        {!isNearViewport ? (
-          <div className="absolute inset-0 flex items-center justify-center bg-slate-100 text-xs font-medium text-slate-500">
-            {labels.mapLoading}
-          </div>
-        ) : mapUrl && !mapError ? (
-          <>
-            {!mapLoaded && (
-              <div className="absolute inset-0 flex items-center justify-center bg-slate-100 text-xs font-medium text-slate-500">
-                {labels.mapLoading}
-              </div>
-            )}
-            <img
-              src={mapUrl}
-              alt={`Map preview for ${trip.title}`}
-              className={`h-full w-full object-cover ${isExpired ? 'opacity-70 grayscale-[0.28]' : ''}`}
-              loading="lazy"
-              onLoad={() => setMapLoaded(true)}
-              onError={() => setMapError(true)}
-            />
-          </>
-        ) : (
-          <div className="flex h-full items-center justify-center px-3 text-center text-xs font-medium text-slate-500">
-            {labels.mapUnavailable}
           </div>
         )}
 
@@ -276,7 +288,16 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
       )}
 
       <div className="space-y-3 p-4">
-        <h3 className="line-clamp-2 text-2xl font-black leading-tight tracking-tight text-slate-900">{displayTitle}</h3>
+        <h3 className="line-clamp-2 text-2xl font-black leading-tight tracking-tight text-slate-900">
+          <Link
+            to={tripDetailPath}
+            onClick={() => onOpen(trip)}
+            className="inline cursor-pointer transition-colors hover:text-accent-700"
+            {...(analyticsAttrs ? analyticsAttrs('open') : {})}
+          >
+            {displayTitle}
+          </Link>
+        </h3>
 
         <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600">
           <span className="inline-flex items-center gap-1.5">
@@ -377,7 +398,7 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
 
       <div className={`${cityLanes.length > 0 || hasCreatorAttribution ? '' : 'border-t border-slate-100'} flex items-center justify-between gap-2 px-4 py-3`}>
         <Link
-          to={buildPath('tripDetail', { tripId: trip.id })}
+          to={tripDetailPath}
           onClick={() => onOpen(trip)}
           title={labels.openTooltip || 'Open trip'}
           aria-label={labels.openTooltip || labels.open}

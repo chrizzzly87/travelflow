@@ -61,6 +61,7 @@ import { resolveTripToastUndoAction } from './tripview/tripToastUndoAction';
 import { buildQueuedTripGenerationRetryToastOptions } from './tripview/tripGenerationRetryToast';
 import { useTripItemMutationHandlers } from './tripview/useTripItemMutationHandlers';
 import { useTripItemUpdateHandlers } from './tripview/useTripItemUpdateHandlers';
+import { useTripLiveUpdate, type PendingTripCommitState } from './tripview/useTripLiveUpdate';
 import { useTripRouteStatusState } from './tripview/useTripRouteStatusState';
 import { useTripResizeControls } from './tripview/useTripResizeControls';
 import { useTripShareActions } from './tripview/useTripShareActions';
@@ -1544,7 +1545,6 @@ const useTripViewRender = ({
                     }
                     return;
                 }
-
                 if (!isMobileViewport && !suppressToasts) {
                     showAppToast({
                         tone: 'warning',
@@ -1673,7 +1673,7 @@ const useTripViewRender = ({
     const editTitleInputRef = useRef<HTMLInputElement | null>(null);
     const pendingHistoryLabelRef = useRef<string | null>(null);
     const commitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const pendingCommitRef = useRef<{ trip: ITrip; view: IViewSettings; skipToast?: boolean } | null>(null);
+    const pendingCommitRef = useRef<PendingTripCommitState | null>(null);
     const suppressCommitRef = useRef(false);
     const pendingManualViewSettingsPersistRef = useRef(false);
     const pendingManualVisualCommitRef = useRef(false);
@@ -1696,6 +1696,8 @@ const useTripViewRender = ({
         setShowCityNames,
         zoomLevel,
         setZoomLevel,
+        zoomBehavior,
+        setZoomBehavior,
         sidebarWidth,
         setSidebarWidth,
         timelineHeight,
@@ -1724,13 +1726,15 @@ const useTripViewRender = ({
             zoomChangeSourceRef.current = source;
         }
         if (source === 'manual') {
+            setZoomBehavior('manual');
             markManualViewChange();
             setIsZoomDirty(true);
         }
-    }, [markManualViewChange]);
+    }, [markManualViewChange, setZoomBehavior]);
     const markAutoFitZoomChange = useCallback(() => {
         zoomChangeSourceRef.current = 'auto';
-    }, []);
+        setZoomBehavior('fit');
+    }, [setZoomBehavior]);
     useEffect(() => {
         setIsZoomDirty(false);
         zoomChangeSourceRef.current = null;
@@ -1861,6 +1865,7 @@ const useTripViewRender = ({
         canAdminWrite: adminAccess?.canAdminWrite,
         hasInputSnapshot: Boolean(trip.aiMeta?.generation?.inputSnapshot),
         generationState,
+        latestAttemptOrchestration,
         isRetryingGeneration,
         pendingAuthQueueRequestId,
     });
@@ -1901,10 +1906,11 @@ const useTripViewRender = ({
         routeMode,
         showCityNames,
         zoomLevel: Number(zoomLevel.toFixed(2)),
+        zoomBehavior,
         sidebarWidth: Math.round(sidebarWidth),
         detailsWidth: Math.round(detailsWidth),
         timelineHeight: Math.round(timelineHeight)
-    }), [detailsWidth, layoutMode, timelineMode, timelineView, mapDockMode, mapStyle, routeMode, showCityNames, zoomLevel, sidebarWidth, timelineHeight]);
+    }), [detailsWidth, layoutMode, timelineMode, timelineView, mapDockMode, mapStyle, routeMode, showCityNames, zoomLevel, zoomBehavior, sidebarWidth, timelineHeight]);
 
     const tripInfoRetryAnalyticsAttributes = useMemo(
         () => getAnalyticsDebugAttributes('trip_generation__trip_info--retry', {
@@ -2160,10 +2166,12 @@ const useTripViewRender = ({
         return false;
     }, [adminOverrideEnabled, canEdit, isAdminFallbackView, isTripLockedByArchive, isTripLockedByExpiry, showToast]);
 
-    const safeUpdateTrip = useCallback((updatedTrip: ITrip, options?: { persist?: boolean; preserveUpdatedAt?: boolean }) => {
-        if (!requireEdit()) return;
-        onUpdateTrip(updatedTrip, options);
-    }, [onUpdateTrip, requireEdit]);
+    const { safeUpdateTrip } = useTripLiveUpdate({
+        tripRef,
+        pendingCommitRef,
+        requireEdit,
+        onUpdateTrip,
+    });
 
     const showSavedToastForLabel = useCallback((label: string) => {
         const tone = resolveChangeTone(label);
@@ -2242,6 +2250,7 @@ const useTripViewRender = ({
         routeMode,
         showCityNames,
         zoomLevel,
+        zoomBehavior,
         sidebarWidth,
         detailsWidth,
         timelineHeight,
@@ -2256,6 +2265,7 @@ const useTripViewRender = ({
         setTimelineView,
         setMapDockMode,
         setZoomLevel,
+        setZoomBehavior,
         setSidebarWidth,
         setDetailsWidth,
         setTimelineHeight,
@@ -2684,6 +2694,7 @@ const useTripViewRender = ({
         timelineMode,
         timelineView,
         zoomLevel,
+        zoomBehavior,
         isZoomDirty,
         clampZoomLevel,
         setZoomLevel,

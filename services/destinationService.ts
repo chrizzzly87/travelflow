@@ -7,6 +7,7 @@ import {
 import { DESTINATION_RECOMMENDATION_PROFILES } from '../data/destinationRecommendationProfiles';
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from '../config/locales';
 import { COUNTRIES } from '../utils';
+import { buildCountrySearchKeys, getCountryAliases } from './countryAliasService';
 
 export type DestinationKind = 'country' | 'island';
 
@@ -124,6 +125,7 @@ export const ISLAND_DESTINATIONS: DestinationOption[] = ISLAND_DESTINATION_SEEDS
 export const DESTINATION_OPTIONS: DestinationOption[] = [
     ...COUNTRIES.map((country) => ({
         ...country,
+        aliases: getCountryAliases(country.code),
         kind: 'country' as const,
         localizedNames: buildLocalizedNamesFromDataset('country', country.code, country.name),
     })),
@@ -137,22 +139,19 @@ const DESTINATION_RECOMMENDATION_PROFILE_BY_CODE = new Map(
     Object.entries(DESTINATION_RECOMMENDATION_PROFILES).map(([code, profile]) => [code.toLowerCase(), profile])
 );
 
-const normalizeDestinationKey = (value: string): string => value.trim().toLocaleLowerCase();
-const normalizeMonths = (months: number[] = []): number[] => Array.from(
-    new Set(months.filter((month) => Number.isInteger(month) && month >= 1 && month <= 12))
-).sort((left, right) => left - right);
-
 const DESTINATION_BY_LOOKUP = new Map<string, DestinationOption>();
 
 const addDestinationLookup = (destination: DestinationOption, candidate?: string): void => {
     if (!candidate) return;
-    const normalized = normalizeDestinationKey(candidate);
-    if (!normalized || DESTINATION_BY_LOOKUP.has(normalized)) return;
-    DESTINATION_BY_LOOKUP.set(normalized, destination);
+    buildCountrySearchKeys(candidate).forEach((key) => {
+        if (!key || DESTINATION_BY_LOOKUP.has(key)) return;
+        DESTINATION_BY_LOOKUP.set(key, destination);
+    });
 };
 
 DESTINATION_OPTIONS.forEach((destination) => {
     addDestinationLookup(destination, destination.name);
+    addDestinationLookup(destination, destination.code);
     (destination.aliases || []).forEach((alias) => addDestinationLookup(destination, alias));
     Object.values(destination.localizedNames || {}).forEach((localizedName) => addDestinationLookup(destination, localizedName));
 });
@@ -160,6 +159,7 @@ DESTINATION_OPTIONS.forEach((destination) => {
 const getDestinationSearchTokens = (destination: DestinationOption): string[] => {
     const tokens = new Set<string>();
     tokens.add(destination.name);
+    tokens.add(destination.code);
     (destination.aliases || []).forEach((alias) => tokens.add(alias));
     Object.values(destination.localizedNames || {}).forEach((localizedName) => tokens.add(localizedName));
 
@@ -177,10 +177,38 @@ const getDestinationSearchTokens = (destination: DestinationOption): string[] =>
         .filter(Boolean);
 };
 
+const DESTINATION_SEARCH_KEYS = new Map(
+    DESTINATION_OPTIONS.map((destination) => {
+        const keys = new Set<string>();
+        getDestinationSearchTokens(destination).forEach((token) => {
+            buildCountrySearchKeys(token).forEach((key) => {
+                if (key) keys.add(key);
+            });
+        });
+        return [destination.code, Array.from(keys)] as const;
+    })
+);
+
+const matchesSearchKeys = (
+    candidateKeys: string[],
+    queryKeys: string[],
+    match: (candidate: string, query: string) => boolean
+): boolean => queryKeys.some((queryKey) => candidateKeys.some((candidateKey) => match(candidateKey, queryKey)));
+
+const normalizeMonths = (months: number[] = []): number[] => Array.from(
+    new Set(months.filter((month) => Number.isInteger(month) && month >= 1 && month <= 12))
+).sort((left, right) => left - right);
+
 export const getDestinationOptionByName = (value: string): DestinationOption | undefined => {
-    const normalized = normalizeDestinationKey(value);
-    if (!normalized) return undefined;
-    return DESTINATION_BY_LOOKUP.get(normalized);
+    const lookupKeys = buildCountrySearchKeys(value);
+    if (lookupKeys.length === 0) return undefined;
+
+    for (const key of lookupKeys) {
+        const match = DESTINATION_BY_LOOKUP.get(key);
+        if (match) return match;
+    }
+
+    return undefined;
 };
 
 export const getDestinationOptionByCode = (code: string): DestinationOption | undefined => {
@@ -321,13 +349,13 @@ export const searchDestinationOptions = (
     query: string,
     options: DestinationSearchOptions = {}
 ): DestinationOption[] => {
-    const normalizedQuery = normalizeDestinationKey(query);
+    const queryKeys = buildCountrySearchKeys(query);
     const excluded = new Set((options.excludeNames || []).map((name) => resolveDestinationName(name).toLocaleLowerCase()));
     const source = DESTINATION_OPTIONS.filter((destination) => !excluded.has(destination.name.toLocaleLowerCase()));
     const limit = options.limit || source.length;
     const normalizedMonths = normalizeMonths(options.months || []);
 
-    if (!normalizedQuery) {
+    if (queryKeys.length === 0) {
         return getRecommendedDestinationOptions({
             excludeNames: options.excludeNames,
             limit,
@@ -336,17 +364,14 @@ export const searchDestinationOptions = (
     }
 
     const startsWithMatches = source.filter((destination) => {
-        const tokens = getDestinationSearchTokens(destination);
-        return tokens.some((token) => token.toLocaleLowerCase().startsWith(normalizedQuery));
+        const destinationSearchKeys = DESTINATION_SEARCH_KEYS.get(destination.code) || [];
+        return matchesSearchKeys(destinationSearchKeys, queryKeys, (candidate, searchKey) => candidate.startsWith(searchKey));
     });
 
     const includesMatches = source.filter((destination) => {
         if (startsWithMatches.includes(destination)) return false;
-        const haystack = getDestinationSearchTokens(destination)
-            .filter(Boolean)
-            .join(' ')
-            .toLocaleLowerCase();
-        return haystack.includes(normalizedQuery);
+        const destinationSearchKeys = DESTINATION_SEARCH_KEYS.get(destination.code) || [];
+        return matchesSearchKeys(destinationSearchKeys, queryKeys, (candidate, searchKey) => candidate.includes(searchKey));
     });
 
     const rankedStartsWithMatches = sortDestinationOptionsByRecommendationScore(startsWithMatches, normalizedMonths);

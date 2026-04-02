@@ -42,11 +42,16 @@
     "build:netlify": "pnpm flags:sync && pnpm inspirations:images:optimize && pnpm blog:images:optimize && pnpm build:image-placeholders && pnpm og:site:build && pnpm og:site:validate && pnpm i18n:validate && pnpm supabase:validate && pnpm plans:validate-sync && pnpm updates:validate && pnpm toasts:validate && pnpm storage:validate && pnpm blog:validate && pnpm edge:validate && pnpm sitemap:generate && vite build",
     "preview": "vite preview",
     "maps:generate": "tsx scripts/generate-trip-maps.ts",
+    "airports:generate": "tsx scripts/generate-airports-reference.ts",
+    "countries:search:generate": "tsx scripts/generate-country-search-metadata.ts",
     "ai:eval": "tsx scripts/run-ai-eval.ts",
-    "ai:eval:ci": "tsx scripts/run-ai-eval.ts --ci"
+    "ai:eval:ci": "tsx scripts/run-ai-eval.ts --ci",
+    "ai:eval:security": "tsx scripts/run-ai-eval.ts --pack security",
+    "ai:eval:security:ci": "tsx scripts/run-ai-eval.ts --pack security --ci"
   },
   "dependencies": {
     "@google/genai": "latest",
+    "@number-flow/react": "^0.6.0",
     "@phosphor-icons/react": "^2.1.10",
     "@radix-ui/react-checkbox": "^1.2.3",
     "@radix-ui/react-dialog": "^1.1.15",
@@ -59,6 +64,7 @@
     "blurhash": "^2.0.5",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "cobe": "2.0.0",
     "diff": "^8.0.3",
     "flagpack": "^1.0.5",
     "framer-motion": "^12.34.3",
@@ -68,6 +74,7 @@
     "i18next-resources-to-backend": "^1.2.1",
     "lucide-react": "^0.575.0",
     "lz-string": "1.5.0",
+    "mapbox-gl": "^3.20.0",
     "prismjs": "^1.30.0",
     "radix-ui": "^1.4.3",
     "react": "18.3.1",

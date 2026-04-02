@@ -19,6 +19,7 @@
  */
 
 import { getMapsApiKeyFromEnv } from "../edge-lib/trip-og-data.ts";
+import { resolveEdgeMapRuntime } from "../edge-lib/map-runtime.ts";
 
 type MapPreviewStyle = "clean" | "minimal" | "standard" | "dark" | "satellite";
 type RoutePreviewMode = "simple" | "realistic";
@@ -87,6 +88,14 @@ const DARK_STYLE = [
   "feature:water|element:labels.text.stroke|color:0x0b3f5f",
 ];
 
+const MAPBOX_STYLE_IDS: Record<MapPreviewStyle, { owner: string; styleId: string }> = {
+  clean: { owner: "mapbox", styleId: "light-v11" },
+  minimal: { owner: "mapbox", styleId: "light-v11" },
+  standard: { owner: "mapbox", styleId: "streets-v12" },
+  dark: { owner: "mapbox", styleId: "dark-v11" },
+  satellite: { owner: "mapbox", styleId: "satellite-streets-v12" },
+};
+
 const clampInt = (value: number, min: number, max: number): number => {
   if (!Number.isFinite(value)) return min;
   return Math.max(min, Math.min(max, Math.round(value)));
@@ -110,6 +119,34 @@ const parseColorMode = (value: string | null): MapPreviewColorMode => {
 };
 
 const formatCoord = (coord: { lat: number; lng: number }): string => `${coord.lat.toFixed(6)},${coord.lng.toFixed(6)}`;
+
+const encodePolylineDelta = (delta: number): string => {
+  let current = delta < 0 ? ~(delta << 1) : delta << 1;
+  let encoded = "";
+  while (current >= 0x20) {
+    encoded += String.fromCharCode((0x20 | (current & 0x1f)) + 63);
+    current >>= 5;
+  }
+  encoded += String.fromCharCode(current + 63);
+  return encoded;
+};
+
+const encodePolyline = (coords: Array<{ lat: number; lng: number }>): string => {
+  let previousLat = 0;
+  let previousLng = 0;
+  let encoded = "";
+
+  coords.forEach((coord) => {
+    const lat = Math.round(coord.lat * 1e5);
+    const lng = Math.round(coord.lng * 1e5);
+    encoded += encodePolylineDelta(lat - previousLat);
+    encoded += encodePolylineDelta(lng - previousLng);
+    previousLat = lat;
+    previousLng = lng;
+  });
+
+  return encoded;
+};
 
 const parseCoords = (value: string): Array<{ lat: number; lng: number }> => {
   return value
@@ -212,6 +249,9 @@ const buildSimplePath = (
   return `color:0x${color}|weight:4|${coords.map(formatCoord).join("|")}`;
 };
 
+const buildMapboxPathOverlay = (encodedPolyline: string, color: string): string =>
+  `path-4+${color}-0.85(${encodedPolyline})`;
+
 const resolveLegColor = (legColors: string[], index: number, fallback: string): string => {
   if (legColors.length === 0) return fallback;
   return legColors[index] || legColors[legColors.length - 1] || fallback;
@@ -267,8 +307,122 @@ const buildRealisticPaths = async (
   return paths;
 };
 
+const buildMapboxSimpleSegmentOverlays = (
+  coords: Array<{ lat: number; lng: number }>,
+  legColors: string[],
+  fallbackColor: string,
+): string[] => {
+  if (coords.length < 2) return [];
+  const overlays: string[] = [];
+  for (let index = 0; index < coords.length - 1; index += 1) {
+    const color = resolveLegColor(legColors, index, fallbackColor);
+    overlays.push(buildMapboxPathOverlay(encodePolyline([coords[index], coords[index + 1]]), color));
+  }
+  return overlays;
+};
+
+const buildMapboxRealisticOverlays = async (
+  coords: Array<{ lat: number; lng: number }>,
+  legColors: string[],
+  fallbackColor: string,
+  apiKey: string,
+): Promise<string[]> => {
+  if (coords.length < 2) return [];
+  const overlays: string[] = [];
+  let calls = 0;
+
+  for (let index = 0; index < coords.length - 1; index += 1) {
+    const from = coords[index];
+    const to = coords[index + 1];
+    const color = resolveLegColor(legColors, index, fallbackColor);
+
+    let encodedPolyline: string | null = null;
+    if (calls < MAX_REALISTIC_DIRECTION_LEGS) {
+      encodedPolyline = await fetchDirectionsPolyline(from, to, apiKey);
+      calls += 1;
+    }
+
+    overlays.push(buildMapboxPathOverlay(encodedPolyline || encodePolyline([from, to]), color));
+  }
+
+  return overlays;
+};
+
+const buildMapboxMarkerOverlays = (
+  coords: Array<{ lat: number; lng: number }>,
+  legColors: string[],
+  pathColor: string,
+  startMarkerColor: string,
+  endMarkerColor: string,
+  waypointColor: string,
+): string[] => {
+  if (coords.length === 0) return [];
+
+  const overlays: string[] = [];
+  const start = coords[0];
+  overlays.push(`pin-s-s+${startMarkerColor}(${start.lng.toFixed(6)},${start.lat.toFixed(6)})`);
+
+  if (coords.length > 1) {
+    const end = coords[coords.length - 1];
+    overlays.push(`pin-s-e+${endMarkerColor}(${end.lng.toFixed(6)},${end.lat.toFixed(6)})`);
+  }
+
+  coords.slice(1, -1).forEach((coord, index) => {
+    const legWaypointColor = legColors[Math.min(index + 1, legColors.length - 1)] || waypointColor || pathColor;
+    overlays.push(`pin-s+${legWaypointColor}(${coord.lng.toFixed(6)},${coord.lat.toFixed(6)})`);
+  });
+
+  return overlays;
+};
+
+const buildMapboxStaticPreviewUrl = async ({
+  coords,
+  style,
+  routeMode,
+  legColors,
+  pathColor,
+  startMarkerColor,
+  endMarkerColor,
+  waypointColor,
+  width,
+  height,
+  scale,
+  mapboxToken,
+  googleApiKey,
+}: {
+  coords: Array<{ lat: number; lng: number }>;
+  style: MapPreviewStyle;
+  routeMode: RoutePreviewMode;
+  legColors: string[];
+  pathColor: string;
+  startMarkerColor: string;
+  endMarkerColor: string;
+  waypointColor: string;
+  width: number;
+  height: number;
+  scale: number;
+  mapboxToken: string;
+  googleApiKey: string;
+}): Promise<string> => {
+  const styleDescriptor = MAPBOX_STYLE_IDS[style] || MAPBOX_STYLE_IDS.standard;
+  const pathOverlays = routeMode === "realistic" && googleApiKey
+    ? await buildMapboxRealisticOverlays(coords, legColors, pathColor, googleApiKey)
+    : buildMapboxSimpleSegmentOverlays(coords, legColors, pathColor);
+  const overlays = [
+    ...pathOverlays,
+    ...buildMapboxMarkerOverlays(coords, legColors, pathColor, startMarkerColor, endMarkerColor, waypointColor),
+  ];
+  const overlaySegment = overlays.map((overlay) => encodeURIComponent(overlay)).join(",");
+  const scaleSuffix = scale === 2 ? "@2x" : "";
+  const url = new URL(`https://api.mapbox.com/styles/v1/${styleDescriptor.owner}/${styleDescriptor.styleId}/static/${overlaySegment}/auto/${width}x${height}${scaleSuffix}`);
+  url.searchParams.set("padding", "32,32,32,32");
+  url.searchParams.set("access_token", mapboxToken);
+  return url.toString();
+};
+
 export default async (request: Request) => {
   const url = new URL(request.url);
+  const mapRuntime = resolveEdgeMapRuntime(request);
   const coordsParam = url.searchParams.get("coords");
 
   if (!coordsParam) {
@@ -287,11 +441,8 @@ export default async (request: Request) => {
   const style = getEffectiveStaticMapStyle(requestedStyle);
   const routeMode = parseRouteMode(url.searchParams.get("routeMode"));
   const colorMode = parseColorMode(url.searchParams.get("colorMode"));
-
-  const apiKey = getMapsApiKeyFromEnv();
-  if (!apiKey) {
-    return new Response("Maps API key not configured", { status: 500 });
-  }
+  const googleApiKey = getMapsApiKeyFromEnv();
+  const mapboxToken = Deno.env.get("VITE_MAPBOX_ACCESS_TOKEN") || "";
 
   const requestedPathColor = normalizeColor(url.searchParams.get("pathColor"));
   const pathColor = colorMode === "trip" ? (requestedPathColor || BRAND_ROUTE_COLOR) : BRAND_ROUTE_COLOR;
@@ -309,6 +460,36 @@ export default async (request: Request) => {
   const waypointColor = requestedWaypointColor || pathColor;
   const mapLanguage = parseMapLanguage(url.searchParams.get("language"));
 
+  if (mapRuntime.effectiveSelection.staticMaps === "mapbox" && mapboxToken) {
+    const mapUrl = await buildMapboxStaticPreviewUrl({
+      coords,
+      style: requestedStyle,
+      routeMode,
+      legColors,
+      pathColor,
+      startMarkerColor,
+      endMarkerColor,
+      waypointColor,
+      width: w,
+      height: h,
+      scale,
+      mapboxToken,
+      googleApiKey,
+    });
+
+    return new Response(null, {
+      status: 302,
+      headers: {
+        Location: mapUrl,
+        "Cache-Control": "public, max-age=86400",
+      },
+    });
+  }
+
+  if (!googleApiKey) {
+    return new Response("Maps API key not configured", { status: 500 });
+  }
+
   const params = new URLSearchParams();
   params.set("size", `${w}x${h}`);
   params.set("scale", String(scale));
@@ -323,7 +504,7 @@ export default async (request: Request) => {
 
   const simplePathParams = buildSimpleSegmentPaths(coords, legColors, pathColor);
   const pathParams = routeMode === "realistic"
-    ? await buildRealisticPaths(coords, legColors, pathColor, apiKey)
+    ? await buildRealisticPaths(coords, legColors, pathColor, googleApiKey)
     : simplePathParams;
 
   if (pathParams.length === 0) {
@@ -350,7 +531,7 @@ export default async (request: Request) => {
     params.append("markers", `size:tiny|color:0x${legWaypointColor}|${formatCoord(coord)}`);
   });
 
-  params.set("key", apiKey);
+  params.set("key", googleApiKey);
 
   const mapUrl = `https://maps.googleapis.com/maps/api/staticmap?${params.toString()}`;
 

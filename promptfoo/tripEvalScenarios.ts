@@ -1,79 +1,14 @@
-import { buildClassicBenchmarkScenario } from '../services/aiBenchmarkClassicScenarioService.ts';
 import {
-    createSystemBenchmarkPresets,
     normalizeBenchmarkMaskScenario,
-    type BenchmarkMaskScenario,
 } from '../services/aiBenchmarkPreferencesService.ts';
 import { buildTripEvalAssertions } from './tripEvalAssertions.ts';
-
-const PRESET_START_DATE = '2026-04-10';
-const PRESET_END_DATE = '2026-04-24';
-
-export interface TripEvalExpectations {
-    routeOrder?: string[];
-    totalDays?: number;
-    specificCities?: string[];
-}
-
-export interface TripEvalVars {
-    scenarioId: string;
-    destinationPrompt: string;
-    startDate?: string;
-    roundTrip: boolean;
-    generationOptions: ReturnType<typeof buildClassicBenchmarkScenario>['generationOptions'];
-    expectations: TripEvalExpectations;
-    selectedDestinations: string[];
-}
-
-const SYSTEM_PRESETS_BY_ID = new Map(
-    createSystemBenchmarkPresets(PRESET_START_DATE, PRESET_END_DATE)
-        .map((preset) => [preset.id, preset]),
-);
-
-const getPresetScenario = (presetId: string): BenchmarkMaskScenario => {
-    const preset = SYSTEM_PRESETS_BY_ID.get(presetId);
-    if (!preset) {
-        throw new Error(`Missing benchmark preset ${presetId}.`);
-    }
-    return preset.scenario;
-};
-
-const buildFixture = (
-    scenarioId: string,
-    description: string,
-    scenario: BenchmarkMaskScenario,
-    expectations: TripEvalExpectations = {},
-) => {
-    const runtimeScenario = buildClassicBenchmarkScenario(scenario, { compactOutput: true });
-
-    return {
-        description,
-        vars: {
-            scenarioId,
-            destinationPrompt: runtimeScenario.destinationPrompt,
-            startDate: runtimeScenario.startDate,
-            roundTrip: runtimeScenario.roundTrip,
-            generationOptions: runtimeScenario.generationOptions,
-            expectations,
-            selectedDestinations: runtimeScenario.selectedDestinations,
-        } satisfies TripEvalVars,
-        metadata: {
-            scenarioId,
-            flow: 'classic',
-            roundTrip: runtimeScenario.roundTrip,
-        },
-        assert: buildTripEvalAssertions({
-            roundTrip: runtimeScenario.roundTrip,
-            expectations,
-        }),
-    };
-};
+import { buildTripEvalFixture, getPresetScenario } from './tripEvalFixtures.ts';
 
 const FAMILY_ROUTE_LOCK_SCENARIO = normalizeBenchmarkMaskScenario({
     destinations: 'Munich, Salzburg, Vienna',
     dateInputMode: 'flex',
-    startDate: PRESET_START_DATE,
-    endDate: PRESET_END_DATE,
+    startDate: '2026-04-10',
+    endDate: '2026-04-24',
     flexWeeks: 1,
     flexWindow: 'summer',
     budget: 'Medium',
@@ -107,23 +42,31 @@ const EXACT_DATE_CITY_PAIR_SCENARIO = normalizeBenchmarkMaskScenario({
     transportMask: 'train',
 });
 
+export type { TripEvalVars } from './tripEvalFixtures.ts';
+
 export const tripEvalTests = [
-    buildFixture(
+    buildTripEvalFixture(
         'system-japan-classic',
         'Japan classic baseline stays valid and returns to origin',
         getPresetScenario('system-japan-classic'),
+        {},
+        buildTripEvalAssertions,
     ),
-    buildFixture(
+    buildTripEvalFixture(
         'system-southeast-asia-loop',
         'Southeast Asia loop preserves a valid round-trip backpacking structure',
         getPresetScenario('system-southeast-asia-loop'),
+        {},
+        buildTripEvalAssertions,
     ),
-    buildFixture(
+    buildTripEvalFixture(
         'system-northern-germany',
         'Northern Germany short route remains stable for compact regional plans',
         getPresetScenario('system-northern-germany'),
+        {},
+        buildTripEvalAssertions,
     ),
-    buildFixture(
+    buildTripEvalFixture(
         'family-route-lock',
         'Family rail route respects a locked city order',
         FAMILY_ROUTE_LOCK_SCENARIO,
@@ -131,8 +74,9 @@ export const tripEvalTests = [
             routeOrder: ['Munich', 'Salzburg', 'Vienna'],
             totalDays: 7,
         },
+        buildTripEvalAssertions,
     ),
-    buildFixture(
+    buildTripEvalFixture(
         'exact-date-specific-cities',
         'Exact-date Portugal trip includes requested cities and matches total days',
         EXACT_DATE_CITY_PAIR_SCENARIO,
@@ -140,5 +84,6 @@ export const tripEvalTests = [
             totalDays: 8,
             specificCities: ['Lisbon', 'Porto'],
         },
+        buildTripEvalAssertions,
     ),
 ];

@@ -8,6 +8,7 @@ import { DB_ENABLED } from '../config/db';
 import {
     dbGetTrip,
     dbGetTripVersion,
+    dbUpdateTripShareViewSettings,
     type DbTripAccess,
 } from '../services/dbApi';
 import { findHistoryEntryByUrl } from '../services/historyService';
@@ -39,6 +40,7 @@ const areViewSettingsEqual = (a?: IViewSettings, b?: IViewSettings): boolean => 
         && a.routeMode === b.routeMode
         && a.showCityNames === b.showCityNames
         && a.zoomLevel === b.zoomLevel
+        && a.zoomBehavior === b.zoomBehavior
         && a.sidebarWidth === b.sidebarWidth
         && a.detailsWidth === b.detailsWidth
         && a.timelineHeight === b.timelineHeight
@@ -137,6 +139,7 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
         const params = new URLSearchParams(location.search);
         return params.get('v');
     }, [location.search]);
+    const isDbVersionLookup = Boolean(versionId && isUuid(versionId));
 
     const [viewSettings, setViewSettings] = useState<IViewSettings | undefined>(undefined);
     const [tripAccess, setTripAccess] = useState<DbTripAccess | null>(null);
@@ -199,8 +202,9 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
 
             let localResolvedTrip: ITrip | null = null;
             let localResolvedView: IViewSettings | undefined;
+            let versionedLocalHistoryView: IViewSettings | undefined;
 
-            if (versionId) {
+            if (versionId && !isDbVersionLookup) {
                 const localEntry = findHistoryEntryByUrl(tripId, buildTripUrl(tripId, versionId));
                 if (localEntry?.snapshot?.trip) {
                     const normalizedLocalSnapshotTrip = normalizeTripForRouteLoad(localEntry.snapshot.trip);
@@ -211,9 +215,24 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
                     onTripLoaded(localResolvedTrip, localResolvedView);
                     return;
                 }
+                if (localEntry?.snapshot?.view) {
+                    versionedLocalHistoryView = localEntry.snapshot.view;
+                }
             }
 
             const localTrip = getTripById(tripId);
+            if (!localResolvedTrip && localTrip && versionedLocalHistoryView) {
+                const normalizedLocalTrip = normalizeTripForRouteLoad(localTrip);
+                if (normalizedLocalTrip !== localTrip) {
+                    saveTrip(normalizedLocalTrip, { preserveUpdatedAt: true });
+                }
+                localResolvedTrip = normalizedLocalTrip;
+                localResolvedView = resolveEffectiveView(versionedLocalHistoryView, normalizedLocalTrip.defaultView);
+                setViewSettings(localResolvedView);
+                onTripLoaded(normalizedLocalTrip, localResolvedView);
+                if (connectivityState === 'offline') return;
+            }
+
             if (!localResolvedTrip && localTrip && connectivityState !== 'online') {
                 const normalizedLocalTrip = normalizeTripForRouteLoad(localTrip);
                 if (normalizedLocalTrip !== localTrip) {
@@ -227,7 +246,7 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
             }
 
             if (DB_ENABLED && connectivityState !== 'offline') {
-                if (versionId && isUuid(versionId)) {
+                if (versionId && isDbVersionLookup) {
                     const version = await dbGetTripVersion(tripId, versionId);
                     if (version?.trip) {
                         const normalizedVersionTrip = normalizeTripForRouteLoad(version.trip);
@@ -248,7 +267,7 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
                     if (dbTrip.access.source === 'owner') {
                         saveTrip(normalizedDbTrip, { preserveUpdatedAt: true });
                     }
-                    const resolvedView = resolveEffectiveView(dbTrip.view, normalizedDbTrip.defaultView);
+                    const resolvedView = resolveEffectiveView(versionedLocalHistoryView ?? dbTrip.view, normalizedDbTrip.defaultView);
                     const localUpdatedAt = localResolvedTrip?.updatedAt ?? 0;
                     const dbUpdatedAt = normalizedDbTrip.updatedAt ?? 0;
                     if (!localResolvedTrip || dbUpdatedAt >= localUpdatedAt) {
@@ -300,6 +319,7 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
         onTripLoaded,
         tripId,
         versionId,
+        isDbVersionLookup,
         connectivitySnapshot.state,
     ]);
 
@@ -309,7 +329,10 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
         latestViewSettingsRef.current = settings;
         setViewSettings(settings);
         onViewSettingsChange(settings);
-    }, [onViewSettingsChange]);
+        if (!DB_ENABLED || !tripId) return;
+        if (tripAccess?.source === 'public_read' || tripAccess?.source === 'admin_fallback') return;
+        void dbUpdateTripShareViewSettings(tripId, settings).catch(() => undefined);
+    }, [onViewSettingsChange, tripAccess?.source, tripId]);
 
     if (!trip) {
         return <TripRouteLoadingShell variant="loadingTrip" />;

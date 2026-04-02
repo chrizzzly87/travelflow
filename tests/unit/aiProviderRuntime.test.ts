@@ -55,6 +55,8 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
     expect(ensureModelAllowed('openai', 'gpt-5.4')).toBeNull();
     expect(ensureModelAllowed('openai', 'gpt-5.4-pro')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'openrouter/free')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'openai/gpt-5.4-nano')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'openai/gpt-5.4-mini')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'nvidia/nemotron-3-super-120b-a12b:free')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'z-ai/glm-5')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'x-ai/grok-4.20-beta')).toBeNull();
@@ -281,7 +283,7 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
     const responsesInit = (fetchMock.mock.calls[1] as [string, RequestInit])[1];
     const responsesBody = JSON.parse(String(responsesInit.body));
     expect(responsesBody).not.toHaveProperty('temperature');
-    expect(responsesBody.max_output_tokens).toBe(8192);
+    expect(responsesBody.max_output_tokens).toBe(12288);
     expect(responsesBody.text).toEqual({
       format: {
         type: 'json_schema',
@@ -300,6 +302,354 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
       promptTokens: 321,
       completionTokens: 654,
       totalTokens: 975,
+    });
+  });
+
+  it('falls back to OpenAI responses endpoint when chat completions rejects custom temperature', async () => {
+    stubDenoEnv({
+      OPENAI_API_KEY: 'openai-key',
+    });
+
+    fetchMock
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            error: {
+              message: "Unsupported value: 'temperature' does not support 0 with this model. Only the default (1) value is supported.",
+              type: 'invalid_request_error',
+              param: 'temperature',
+              code: 'unsupported_value',
+            },
+          }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } },
+        ),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({
+          output_text: '{"tripTitle":"OpenAI temp fallback","cities":[],"travelSegments":[],"activities":[]}',
+          usage: {
+            input_tokens: 111,
+            output_tokens: 222,
+            total_tokens: 333,
+          },
+        }),
+      );
+
+    const result = await generateProviderItinerary({
+      prompt: '{"request":"openai-temperature-fallback"}',
+      provider: 'openai',
+      model: 'gpt-5.4',
+      timeoutMs: 30_000,
+      jsonSchema: testStructuredOutputSchema,
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect((fetchMock.mock.calls[0] as [string])[0]).toBe('https://api.openai.com/v1/chat/completions');
+    expect((fetchMock.mock.calls[1] as [string])[0]).toBe('https://api.openai.com/v1/responses');
+    const chatInit = (fetchMock.mock.calls[0] as [string, RequestInit])[1];
+    const chatBody = JSON.parse(String(chatInit.body));
+    expect(chatBody.temperature).toBe(0);
+    const responsesInit = (fetchMock.mock.calls[1] as [string, RequestInit])[1];
+    const responsesBody = JSON.parse(String(responsesInit.body));
+    expect(responsesBody).not.toHaveProperty('temperature');
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.data.tripTitle).toBe('OpenAI temp fallback');
+    expect(result.value.meta.provider).toBe('openai');
+    expect(result.value.meta.model).toBe('gpt-5.4');
+    expect(result.value.meta.usage).toEqual({
+      promptTokens: 111,
+      completionTokens: 222,
+      totalTokens: 333,
+    });
+  });
+
+  it('returns an explicit refusal when OpenAI chat completions refuses structured output', async () => {
+    stubDenoEnv({
+      OPENAI_API_KEY: 'openai-key',
+    });
+
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({
+        choices: [
+          {
+            message: {
+              role: 'assistant',
+              refusal: "I'm sorry, I cannot assist with that request.",
+            },
+          },
+        ],
+        usage: {
+          prompt_tokens: 40,
+          completion_tokens: 5,
+          total_tokens: 45,
+        },
+      }),
+    );
+
+    const result = await generateProviderItinerary({
+      prompt: '{"request":"openai-chat-refusal"}',
+      provider: 'openai',
+      model: 'gpt-5-nano',
+      timeoutMs: 30_000,
+      jsonSchema: testStructuredOutputSchema,
+    });
+
+    expect(result.ok).toBe(false);
+    if (!('status' in result)) return;
+    expect(result.status).toBe(422);
+    expect(result.value.code).toBe('OPENAI_REFUSAL');
+    expect(result.value.details).toContain('cannot assist');
+  });
+
+  it('returns an explicit refusal when OpenAI responses content is a refusal block', async () => {
+    stubDenoEnv({
+      OPENAI_API_KEY: 'openai-key',
+    });
+
+    fetchMock
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            error: {
+              message: "Unsupported value: 'temperature' does not support 0 with this model. Only the default (1) value is supported.",
+              type: 'invalid_request_error',
+              param: 'temperature',
+              code: 'unsupported_value',
+            },
+          }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } },
+        ),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({
+          status: 'completed',
+          output: [
+            {
+              type: 'message',
+              role: 'assistant',
+              content: [
+                {
+                  type: 'refusal',
+                  refusal: "I'm sorry, I cannot assist with that request.",
+                },
+              ],
+            },
+          ],
+          usage: {
+            input_tokens: 10,
+            output_tokens: 4,
+            total_tokens: 14,
+          },
+        }),
+      );
+
+    const result = await generateProviderItinerary({
+      prompt: '{"request":"openai-responses-refusal"}',
+      provider: 'openai',
+      model: 'gpt-5.4',
+      timeoutMs: 30_000,
+      jsonSchema: testStructuredOutputSchema,
+    });
+
+    expect(result.ok).toBe(false);
+    if (!('status' in result)) return;
+    expect(result.status).toBe(422);
+    expect(result.value.code).toBe('OPENAI_REFUSAL');
+    expect(result.value.details).toContain('cannot assist');
+  });
+
+  it('returns an explicit incomplete error when OpenAI responses ends before any text content arrives', async () => {
+    stubDenoEnv({
+      OPENAI_API_KEY: 'openai-key',
+    });
+
+    fetchMock
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            error: {
+              message: "Unsupported value: 'temperature' does not support 0 with this model. Only the default (1) value is supported.",
+              type: 'invalid_request_error',
+              param: 'temperature',
+              code: 'unsupported_value',
+            },
+          }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } },
+        ),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({
+          status: 'incomplete',
+          incomplete_details: {
+            reason: 'max_output_tokens',
+          },
+          output: [],
+          usage: {
+            input_tokens: 100,
+            output_tokens: 0,
+            total_tokens: 100,
+          },
+        }),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({
+          status: 'incomplete',
+          incomplete_details: {
+            reason: 'max_output_tokens',
+          },
+          output: [],
+          usage: {
+            input_tokens: 120,
+            output_tokens: 0,
+            total_tokens: 120,
+          },
+        }),
+      );
+
+    const result = await generateProviderItinerary({
+      prompt: '{"request":"openai-incomplete"}',
+      provider: 'openai',
+      model: 'gpt-5-mini',
+      timeoutMs: 30_000,
+      jsonSchema: testStructuredOutputSchema,
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    const retryResponsesInit = (fetchMock.mock.calls[2] as [string, RequestInit])[1];
+    const retryResponsesBody = JSON.parse(String(retryResponsesInit.body));
+    expect(retryResponsesBody.input[0].content).toContain('exactly one minified JSON object');
+    expect(retryResponsesBody.input[1].content).toContain('IMPORTANT RETRY INSTRUCTIONS');
+    expect(retryResponsesBody.input[1].content).toContain('TRUNCATION RECOVERY MODE');
+
+    expect(result.ok).toBe(false);
+    if (!('status' in result)) return;
+    expect(result.status).toBe(502);
+    expect(result.value.code).toBe('OPENAI_RESPONSE_INCOMPLETE');
+    expect(result.value.details).toContain('max_output_tokens');
+  });
+
+  it('retries OpenAI responses with compact strict instructions after incomplete output and then succeeds', async () => {
+    stubDenoEnv({
+      OPENAI_API_KEY: 'openai-key',
+    });
+
+    fetchMock
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            error: {
+              message: "Unsupported value: 'temperature' does not support 0 with this model. Only the default (1) value is supported.",
+              type: 'invalid_request_error',
+              param: 'temperature',
+              code: 'unsupported_value',
+            },
+          }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } },
+        ),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({
+          status: 'incomplete',
+          incomplete_details: {
+            reason: 'max_output_tokens',
+          },
+          output: [],
+          usage: {
+            input_tokens: 100,
+            output_tokens: 0,
+            total_tokens: 100,
+          },
+        }),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({
+          output_text: '{"tripTitle":"OpenAI recovered","cities":[],"travelSegments":[],"activities":[]}',
+          usage: {
+            input_tokens: 90,
+            output_tokens: 120,
+            total_tokens: 210,
+          },
+        }),
+      );
+
+    const result = await generateProviderItinerary({
+      prompt: '{"request":"openai-incomplete-then-success"}',
+      provider: 'openai',
+      model: 'gpt-5-nano',
+      timeoutMs: 30_000,
+      jsonSchema: testStructuredOutputSchema,
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    const retryResponsesInit = (fetchMock.mock.calls[2] as [string, RequestInit])[1];
+    const retryResponsesBody = JSON.parse(String(retryResponsesInit.body));
+    expect(retryResponsesBody.input[0].content).toContain('exactly one minified JSON object');
+    expect(retryResponsesBody.input[1].content).toContain('IMPORTANT RETRY INSTRUCTIONS');
+    expect(retryResponsesBody.input[1].content).toContain('TRUNCATION RECOVERY MODE');
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.data.tripTitle).toBe('OpenAI recovered');
+    expect(result.value.meta.usage).toEqual({
+      promptTokens: 90,
+      completionTokens: 120,
+      totalTokens: 210,
+    });
+  });
+
+  it('accepts structured objects already parsed on the OpenAI responses payload', async () => {
+    stubDenoEnv({
+      OPENAI_API_KEY: 'openai-key',
+    });
+
+    fetchMock
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            error: {
+              message: "Unsupported value: 'temperature' does not support 0 with this model. Only the default (1) value is supported.",
+              type: 'invalid_request_error',
+              param: 'temperature',
+              code: 'unsupported_value',
+            },
+          }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } },
+        ),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({
+          status: 'completed',
+          output_parsed: {
+            tripTitle: 'Parsed object itinerary',
+            cities: [],
+            travelSegments: [],
+            activities: [],
+          },
+          usage: {
+            input_tokens: 12,
+            output_tokens: 34,
+            total_tokens: 46,
+          },
+        }),
+      );
+
+    const result = await generateProviderItinerary({
+      prompt: '{"request":"openai-output-parsed"}',
+      provider: 'openai',
+      model: 'gpt-5-mini',
+      timeoutMs: 30_000,
+      jsonSchema: testStructuredOutputSchema,
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.data.tripTitle).toBe('Parsed object itinerary');
+    expect(result.value.meta.usage).toEqual({
+      promptTokens: 12,
+      completionTokens: 34,
+      totalTokens: 46,
     });
   });
 
@@ -444,6 +794,49 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
     const init = (fetchMock.mock.calls[0] as [string, RequestInit])[1];
     const body = JSON.parse(String(init.body));
     expect(body.max_tokens).toBe(2048);
+    expect(result.ok).toBe(true);
+  });
+
+  it('preserves explicit maxOutputTokens for OpenAI structured output requests', async () => {
+    stubDenoEnv({
+      OPENAI_API_KEY: 'openai-key',
+    });
+
+    fetchMock
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            error: {
+              message: 'This is not a chat model and thus not supported in the v1/chat/completions endpoint. Did you mean to use v1/completions?',
+            },
+          }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } },
+        ),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({
+          output_text: '{"tripTitle":"Explicit override","cities":[],"travelSegments":[],"activities":[]}',
+          usage: {
+            input_tokens: 12,
+            output_tokens: 34,
+            total_tokens: 46,
+          },
+        }),
+      );
+
+    const result = await generateProviderItinerary({
+      prompt: '{"request":"openai-explicit-override"}',
+      provider: 'openai',
+      model: 'gpt-5.2',
+      timeoutMs: 30_000,
+      maxOutputTokens: 2_048,
+      jsonSchema: testStructuredOutputSchema,
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const responsesInit = (fetchMock.mock.calls[1] as [string, RequestInit])[1];
+    const responsesBody = JSON.parse(String(responsesInit.body));
+    expect(responsesBody.max_output_tokens).toBe(2048);
     expect(result.ok).toBe(true);
   });
 

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { ITrip } from '../../types';
 import {
+  classifyTripGenerationFailure,
   TRIP_GENERATION_STALE_GRACE_MS,
   TRIP_GENERATION_TIMEOUT_MS,
   createTripGenerationInputSnapshot,
@@ -200,6 +201,20 @@ describe('tripGenerationDiagnosticsService', () => {
     });
 
     expect(getTripGenerationState(queuedTrip, nowMs)).toBe('queued');
+  });
+
+  it('classifies OpenAI refusal and incomplete errors as quality failures', () => {
+    expect(classifyTripGenerationFailure({
+      code: 'OPENAI_REFUSAL',
+      message: 'OpenAI refused to generate itinerary output.',
+      status: 422,
+    }).kind).toBe('quality');
+
+    expect(classifyTripGenerationFailure({
+      code: 'OPENAI_RESPONSE_INCOMPLETE',
+      message: 'OpenAI response was incomplete before a valid itinerary object was returned.',
+      status: 502,
+    }).kind).toBe('quality');
   });
 
   it('treats queued async metadata as succeeded when materialized trip content exists and last success is newer than the attempt start', () => {

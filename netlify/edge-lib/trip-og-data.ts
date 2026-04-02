@@ -1,4 +1,9 @@
 import { APP_DEFAULT_DESCRIPTION } from "../../config/appGlobals.ts";
+import {
+  MAP_RUNTIME_CACHE_KEY_QUERY_PARAM,
+  buildMapRuntimeSelectionCacheKey,
+  type MapRuntimeSelection,
+} from "../../shared/mapRuntime.ts";
 
 const TRIP_VERSION_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -77,6 +82,14 @@ const DARK_MAP_STYLE = [
   "style=feature:water|element:labels.text.fill|color:0xb7d5ea",
   "style=feature:water|element:labels.text.stroke|color:0x0b3f5f",
 ].join("&");
+
+const MAPBOX_STYLE_IDS: Record<OgMapStyle, { owner: string; styleId: string }> = {
+  minimal: { owner: "mapbox", styleId: "light-v11" },
+  standard: { owner: "mapbox", styleId: "streets-v12" },
+  dark: { owner: "mapbox", styleId: "dark-v11" },
+  satellite: { owner: "mapbox", styleId: "satellite-streets-v12" },
+  clean: { owner: "mapbox", styleId: "light-v11" },
+};
 
 
 export type OgMapStyle = "minimal" | "standard" | "dark" | "satellite" | "clean";
@@ -582,6 +595,56 @@ const buildSimplePathParam = (coords: Coordinates[], color = "4f46e5", weight = 
   return `path=${encodeURIComponent(`color:0x${color}|weight:${weight}|${coords.map(formatCoord).join("|")}`)}`;
 };
 
+const encodePolylineDelta = (delta: number): string => {
+  let current = delta < 0 ? ~(delta << 1) : delta << 1;
+  let encoded = "";
+  while (current >= 0x20) {
+    encoded += String.fromCharCode((0x20 | (current & 0x1f)) + 63);
+    current >>= 5;
+  }
+  encoded += String.fromCharCode(current + 63);
+  return encoded;
+};
+
+const encodePolyline = (coords: Coordinates[]): string => {
+  let previousLat = 0;
+  let previousLng = 0;
+  let encoded = "";
+
+  coords.forEach((coord) => {
+    const lat = Math.round(coord.lat * 1e5);
+    const lng = Math.round(coord.lng * 1e5);
+    encoded += encodePolylineDelta(lat - previousLat);
+    encoded += encodePolylineDelta(lng - previousLng);
+    previousLat = lat;
+    previousLng = lng;
+  });
+
+  return encoded;
+};
+
+const buildMapboxMarkerOverlay = (
+  coord: Coordinates,
+  options: { size: "mid" | "tiny"; color: string; label?: string },
+): string => {
+  if (options.label) {
+    return `pin-s-${options.label.toLowerCase()}+${options.color}(${coord.lng.toFixed(6)},${coord.lat.toFixed(6)})`;
+  }
+  return `pin-s+${options.color}(${coord.lng.toFixed(6)},${coord.lat.toFixed(6)})`;
+};
+
+const buildMapboxPathOverlay = (encodedPolyline: string, color = "4f46e5", weight = 4): string =>
+  `path-${weight}+${color}-0.85(${encodedPolyline})`;
+
+const buildMapboxSimplePathOverlay = (
+  coords: Coordinates[],
+  color = "4f46e5",
+  weight = 4,
+): string | null => {
+  if (coords.length < 2) return null;
+  return buildMapboxPathOverlay(encodePolyline(coords), color, weight);
+};
+
 const normalizeCityName = (value?: string): string =>
   value
     ?.trim()
@@ -815,10 +878,51 @@ const buildRealisticPathParams = async (
   return pathParams;
 };
 
+const buildMapboxRealisticPathOverlays = async (
+  trip: TripPayload,
+  mapsApiKey: string,
+  color = "4f46e5",
+  weight = 4,
+): Promise<string[]> => {
+  const routeCities = getRouteCities(trip);
+  const items = getTripItems(trip);
+  const overlays: string[] = [];
+  if (routeCities.length < 2) return overlays;
+
+  let directionsCalls = 0;
+
+  for (let index = 0; index < routeCities.length - 1; index += 1) {
+    const fromCity = routeCities[index];
+    const toCity = routeCities[index + 1];
+    const fromCoord = fromCity.coordinates;
+    const toCoord = toCity.coordinates;
+    if (!fromCoord || !toCoord) continue;
+
+    let encodedPolyline: string | null = null;
+    if (directionsCalls < MAX_REALISTIC_DIRECTION_LEGS) {
+      const travelItem = findTravelBetweenCities(items, fromCity, toCity);
+      encodedPolyline = await fetchDirectionsPolyline(
+        fromCoord,
+        toCoord,
+        mapsApiKey,
+        travelItem?.transportMode,
+      );
+      directionsCalls += 1;
+    }
+
+    overlays.push(
+      buildMapboxPathOverlay(encodedPolyline || encodePolyline([fromCoord, toCoord]), color, weight),
+    );
+  }
+
+  return overlays;
+};
+
 export interface MapPreviewPreferences {
   mapStyle?: OgMapStyle;
   routeMode?: OgRouteMode;
   mapColorMode?: MapColorMode;
+  mapRuntimeSelection?: MapRuntimeSelection | null;
   showStops?: boolean;
   // Controls custom city-name overlays near route stops.
   showCities?: boolean;
@@ -834,10 +938,19 @@ interface MapPreviewResult {
 const buildMapPreviewUrl = async (
   trip: TripPayload,
   mapsApiKey?: string,
+  mapboxAccessToken?: string,
   mapLanguage = DEFAULT_MAP_LANGUAGE,
   preferences?: MapPreviewPreferences,
 ): Promise<MapPreviewResult> => {
-  if (!mapsApiKey) return { mapUrl: null, mapLabels: [] };
+  const staticMapImplementation = preferences?.mapRuntimeSelection?.staticMaps === "mapbox"
+    ? "mapbox"
+    : "google";
+  if (staticMapImplementation === "google" && !mapsApiKey) {
+    return { mapUrl: null, mapLabels: [] };
+  }
+  if (staticMapImplementation === "mapbox" && !mapboxAccessToken) {
+    return { mapUrl: null, mapLabels: [] };
+  }
 
   const routeCities = getRouteCities(trip);
   const routeCoordinates = routeCities
@@ -888,26 +1001,71 @@ const buildMapPreviewUrl = async (
   }
 
   let pathParams: string[] = [];
+  let mapboxPathOverlays: string[] = [];
   if (routeMode === "realistic") {
-    pathParams = await buildRealisticPathParams(trip, mapsApiKey, routeColor);
+    if (mapsApiKey) {
+      pathParams = await buildRealisticPathParams(trip, mapsApiKey, routeColor);
+      mapboxPathOverlays = await buildMapboxRealisticPathOverlays(trip, mapsApiKey, routeColor);
+    }
   }
 
   if (pathParams.length === 0) {
     const simplePath = buildSimplePathParam(routeCoordinates, routeColor);
     if (simplePath) pathParams = [simplePath];
   }
+  if (mapboxPathOverlays.length === 0) {
+    const simpleOverlay = buildMapboxSimplePathOverlay(routeCoordinates, routeColor);
+    if (simpleOverlay) mapboxPathOverlays = [simpleOverlay];
+  }
 
-  const styleParams = [getMapStyleQuery(effectiveMapStyle)];
+  const mapUrl = staticMapImplementation === "mapbox"
+    ? (() => {
+      const styleDescriptor = MAPBOX_STYLE_IDS[mapStyle] || MAPBOX_STYLE_IDS.standard;
+      const markerOverlays: string[] = [];
+      if (showStops) {
+        markerOverlays.push(
+          buildMapboxMarkerOverlay(start, {
+            size: "mid",
+            color: startMarkerColor,
+            label: routeCoordinates.length > 1 ? "S" : undefined,
+          }),
+        );
 
-  const mapUrl =
-    `https://maps.googleapis.com/maps/api/staticmap?size=${OG_MAP_WIDTH}x${OG_MAP_HEIGHT}&scale=2&maptype=${getMapType(effectiveMapStyle)}` +
-    `&center=${encodeURIComponent(formatCoord(viewport.center))}` +
-    `&zoom=${viewport.zoom}` +
-    (styleParams.filter(Boolean).length > 0 ? `&${styleParams.filter(Boolean).join("&")}` : "") +
-    `&language=${encodeURIComponent(mapLanguage)}` +
-    (markerParams.length > 0 ? `&${markerParams.join("&")}` : "") +
-    (pathParams.length > 0 ? `&${pathParams.join("&")}` : "") +
-    `&key=${encodeURIComponent(mapsApiKey)}`;
+        if (routeCoordinates.length > 1) {
+          markerOverlays.push(
+            buildMapboxMarkerOverlay(end, {
+              size: "mid",
+              color: endMarkerColor,
+              label: "E",
+            }),
+          );
+        }
+      }
+
+      const overlays = [...mapboxPathOverlays, ...markerOverlays];
+      const basePath = overlays.length > 0
+        ? `/styles/v1/${styleDescriptor.owner}/${styleDescriptor.styleId}/static/${overlays.map((overlay) => encodeURIComponent(overlay)).join(",")}/auto/${OG_MAP_WIDTH}x${OG_MAP_HEIGHT}@2x`
+        : `/styles/v1/${styleDescriptor.owner}/${styleDescriptor.styleId}/static/${viewport.center.lng.toFixed(6)},${viewport.center.lat.toFixed(6)},${viewport.zoom},0/${OG_MAP_WIDTH}x${OG_MAP_HEIGHT}@2x`;
+      const url = new URL(`https://api.mapbox.com${basePath}`);
+      if (overlays.length > 0) {
+        url.searchParams.set("padding", "32,32,32,32");
+      }
+      url.searchParams.set("access_token", mapboxAccessToken || "");
+      return url.toString();
+    })()
+    : (() => {
+      const styleParams = [getMapStyleQuery(effectiveMapStyle)];
+      return (
+        `https://maps.googleapis.com/maps/api/staticmap?size=${OG_MAP_WIDTH}x${OG_MAP_HEIGHT}&scale=2&maptype=${getMapType(effectiveMapStyle)}` +
+        `&center=${encodeURIComponent(formatCoord(viewport.center))}` +
+        `&zoom=${viewport.zoom}` +
+        (styleParams.filter(Boolean).length > 0 ? `&${styleParams.filter(Boolean).join("&")}` : "") +
+        `&language=${encodeURIComponent(mapLanguage)}` +
+        (markerParams.length > 0 ? `&${markerParams.join("&")}` : "") +
+        (pathParams.length > 0 ? `&${pathParams.join("&")}` : "") +
+        `&key=${encodeURIComponent(mapsApiKey || "")}`
+      );
+    })();
 
   return {
     mapUrl,
@@ -1091,15 +1249,18 @@ export const fetchSharedTripByTripId = async (
 };
 
 export const getMapsApiKeyFromEnv = (): string => readEnv("VITE_GOOGLE_MAPS_API_KEY");
+export const getMapboxAccessTokenFromEnv = (): string => readEnv("VITE_MAPBOX_ACCESS_TOKEN");
 
 export const buildTripOgSummary = async (
   trip: TripPayload,
   options?: {
     mapsApiKey?: string;
+    mapboxAccessToken?: string;
     mapLanguage?: string;
     mapStyle?: OgMapStyle;
     routeMode?: OgRouteMode;
     mapColorMode?: MapColorMode;
+    mapRuntimeSelection?: MapRuntimeSelection | null;
     showStops?: boolean;
     showCities?: boolean;
     // Legacy shared-view key from TripView map settings.
@@ -1122,11 +1283,13 @@ export const buildTripOgSummary = async (
     : await buildMapPreviewUrl(
       trip,
       options?.mapsApiKey,
+      options?.mapboxAccessToken,
       options?.mapLanguage || DEFAULT_MAP_LANGUAGE,
       {
         mapStyle: options?.mapStyle,
         routeMode: options?.routeMode,
         mapColorMode: options?.mapColorMode,
+        mapRuntimeSelection: options?.mapRuntimeSelection,
         showStops: options?.showStops,
         showCities: options?.showCities ?? options?.showCityNames,
         showCityNames: options?.showCityNames,
@@ -1152,6 +1315,7 @@ export const buildOgImageUrl = (
     tripId?: string;
     versionId?: string | null;
     updatedAt?: number | null;
+    mapRuntimeSelection?: MapRuntimeSelection | null;
     mapStyle?: OgMapStyle | null;
     routeMode?: OgRouteMode | null;
     mapColorMode?: MapColorMode | null;
@@ -1167,6 +1331,12 @@ export const buildOgImageUrl = (
   if (isValidVersionId(payload.versionId)) url.searchParams.set("v", payload.versionId);
   if (isFiniteNumber(payload.updatedAt)) {
     url.searchParams.set("u", String(Math.floor(payload.updatedAt)));
+  }
+  if (payload.mapRuntimeSelection) {
+    url.searchParams.set(
+      MAP_RUNTIME_CACHE_KEY_QUERY_PARAM,
+      buildMapRuntimeSelectionCacheKey(payload.mapRuntimeSelection),
+    );
   }
   if (isOgMapStyle(payload.mapStyle ?? null)) {
     url.searchParams.set("mapStyle", payload.mapStyle);

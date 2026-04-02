@@ -5,6 +5,7 @@ import {
   shouldAttemptTripManagerReverseGeocode,
   writeTripManagerCountryCache,
 } from '../../components/TripManager';
+import { buildLatLngPrecisionKey } from '../../shared/coordinateUtils';
 
 const COUNTRY_CACHE_KEY = 'travelflow_country_cache_v1';
 
@@ -68,5 +69,14 @@ describe('components/TripManager country cache helpers', () => {
       false,
       0,
     )).toBe(false);
+
+    expect(shouldAttemptTripManagerReverseGeocode(
+      { coordinates: { lat: undefined as unknown as number, lng: 9.99 } },
+      false,
+      2,
+    )).toBe(false);
+
+    expect(buildLatLngPrecisionKey({ lat: 53.55, lng: 9.99 }, 4)).toBe('53.5500,9.9900');
+    expect(buildLatLngPrecisionKey({ lat: undefined as unknown as number, lng: 9.99 }, 4)).toBeNull();
   });
 });

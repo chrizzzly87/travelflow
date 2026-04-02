@@ -2,6 +2,9 @@ import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const PROMPTFOO_ENV_FILE_FLAGS = ['--env-file', '--env-path'] as const;
+const AI_EVAL_PACKS = ['regression', 'security'] as const;
+
+export type AiEvalPack = (typeof AI_EVAL_PACKS)[number];
 
 const resolvePromptfooMaxConcurrency = (): string => {
   const rawValue = process.env.AI_EVAL_MAX_CONCURRENCY?.trim() || '';
@@ -41,6 +44,7 @@ export const resolveDefaultPromptfooEnvFile = (
 };
 
 interface BuildPromptfooArgsOptions {
+  artifactBasename: string;
   artifactsDir: string;
   fileExists?: (path: string) => boolean;
   promptfooConfigPath: string;
@@ -48,7 +52,39 @@ interface BuildPromptfooArgsOptions {
   rootDir: string;
 }
 
+export const extractAiEvalPack = (
+  args: string[],
+): { pack: AiEvalPack; remainingArgs: string[] } => {
+  let pack: AiEvalPack = 'regression';
+  const remainingArgs: string[] = [];
+
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg === '--pack') {
+      const nextValue = args[index + 1];
+      if (!nextValue || !AI_EVAL_PACKS.includes(nextValue as AiEvalPack)) {
+        throw new Error(`Invalid or missing value for --pack. Expected one of: ${AI_EVAL_PACKS.join(', ')}.`);
+      }
+      pack = nextValue as AiEvalPack;
+      index += 1;
+      continue;
+    }
+    if (arg.startsWith('--pack=')) {
+      const inlineValue = arg.slice('--pack='.length);
+      if (!AI_EVAL_PACKS.includes(inlineValue as AiEvalPack)) {
+        throw new Error(`Invalid value for --pack. Expected one of: ${AI_EVAL_PACKS.join(', ')}.`);
+      }
+      pack = inlineValue as AiEvalPack;
+      continue;
+    }
+    remainingArgs.push(arg);
+  }
+
+  return { pack, remainingArgs };
+};
+
 export const buildPromptfooArgs = ({
+  artifactBasename,
   artifactsDir,
   fileExists,
   promptfooConfigPath,
@@ -82,8 +118,8 @@ export const buildPromptfooArgs = ({
   if (isCi) {
     promptfooArgs.push(
       '--output',
-      resolve(artifactsDir, 'ai-trip-eval.json'),
-      resolve(artifactsDir, 'ai-trip-eval.html'),
+      resolve(artifactsDir, `${artifactBasename}.json`),
+      resolve(artifactsDir, `${artifactBasename}.html`),
       '--no-progress-bar',
     );
   }

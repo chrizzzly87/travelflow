@@ -912,7 +912,7 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
                     damping: 36,
                     mass: 0.9,
                 }}
-                className={`fixed overflow-hidden bg-gray-100 transition-[border-radius,box-shadow,border-width] duration-300 ease-out ${
+                className={`fixed overflow-hidden bg-transparent transition-[border-radius,box-shadow,border-width] duration-300 ease-out ${
                     mapDockMode === 'floating'
                         ? `${shouldPromoteMapLayer ? 'z-[84]' : 'z-[80]'} border-[4px] border-white ${
                             isFloatingMapDragging
@@ -941,7 +941,7 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
                             data-testid="floating-map-drag-handle"
                             data-floating-map-control="true"
                             onPointerDown={beginFloatingMapDrag}
-                            className={`group pointer-events-auto inline-flex h-8 w-24 items-center justify-center rounded-t-none rounded-b-full border-[4px] border-t-0 border-white bg-white/95 shadow-sm backdrop-blur-md touch-none transition-transform ${
+                            className={`group pointer-events-auto inline-flex h-8 w-24 items-center justify-center rounded-t-none rounded-b-full border-[4px] border-t-0 border-white bg-white shadow-sm touch-none transition-transform ${
                                 isHandlePressed || isFloatingMapDragging ? 'cursor-grabbing scale-[1.03]' : 'cursor-grab'
                             }`}
                             aria-label="Move floating map preview"
@@ -958,7 +958,7 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
                             data-testid="floating-map-resize-handle"
                             data-floating-map-control="true"
                             onClick={toggleFloatingMapSize}
-                            className="group pointer-events-auto relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border-[4px] border-white bg-white/92 text-gray-600 shadow-sm backdrop-blur-md transition-colors hover:bg-white hover:text-accent-600"
+                            className="group pointer-events-auto relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border-[4px] border-white bg-white text-gray-600 shadow-sm transition-colors hover:bg-white hover:text-accent-600"
                             aria-label={floatingMapSizePreset === 'lg'
                                 ? 'Use compact floating map size'
                                 : 'Use expanded floating map size'}
@@ -977,7 +977,7 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
                             data-testid="floating-map-orientation-toggle"
                             data-floating-map-control="true"
                             onClick={toggleFloatingMapOrientation}
-                            className="group pointer-events-auto relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border-[4px] border-white bg-white/92 text-gray-600 shadow-sm backdrop-blur-md transition-colors hover:bg-white hover:text-accent-600"
+                            className="group pointer-events-auto relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border-[4px] border-white bg-white text-gray-600 shadow-sm transition-colors hover:bg-white hover:text-accent-600"
                             aria-label={floatingMapOrientation === 'portrait'
                                 ? 'Switch floating map preview to landscape'
                                 : 'Switch floating map preview to portrait'}

@@ -133,6 +133,7 @@ describe('components/tripview/TripTimelineListView', () => {
     const heratHeading = screen.getByRole('heading', { name: 'Herat' });
     expect(heratHeading.closest('header')).toHaveClass('sticky');
     expect(screen.getByText('old citadel walls', { exact: false }).closest('header')).toBeNull();
+    expect(screen.getByLabelText('Days 3 - 5')).toBeInTheDocument();
 
     expect(screen.getByText('Iran')).toBeInTheDocument();
 

@@ -6,6 +6,14 @@
 
 @custom-variant dark (&:is(.dark *));
 
+[data-tf-map-basemap="mapbox"] .gm-style > div:first-child {
+  opacity: 0 !important;
+}
+
+[data-tf-map-basemap="mapbox"] .gm-style {
+  background: transparent !important;
+}
+
 @source "./**/*.{ts,tsx}";
 @source not "./app/routes/DeferredAppRoutes.tsx";
 @source not "./components/CreateTripForm.tsx";
@@ -338,25 +346,75 @@ html[lang^="ur-"] {
   .z-cookie-consent {
     z-index: var(--tf-layer-cookie-consent);
   }
-
-  .tf-ios-zoom-safe-shell {
-    overflow: hidden;
-  }
 }
 
-@media (hover: none) and (pointer: coarse) {
-  @supports (-webkit-touch-callout: none) {
-    .tf-ios-zoom-safe-field {
-      font-size: 16px !important;
-      line-height: 1.25rem;
-      transform: scale(0.875);
-      transform-origin: left center;
-      width: calc(100% / 0.875);
-    }
+@layer base {
+  :where(
+    button,
+    [role="button"],
+    [role="menuitem"],
+    [role="option"],
+    [role="checkbox"],
+    [role="radio"],
+    [role="switch"],
+    summary
+  ):not(:disabled):not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
 
-    html[dir="rtl"] .tf-ios-zoom-safe-field {
-      transform-origin: right center;
-    }
+  :where(
+    button,
+    [role="button"],
+    [role="menuitem"],
+    [role="option"],
+    [role="checkbox"],
+    [role="radio"],
+    [role="switch"],
+    summary
+  ):is(:disabled, [aria-disabled="true"]) {
+    cursor: not-allowed;
+  }
+
+  :where(
+    a[href],
+    button,
+    input:not([type="hidden"]),
+    textarea,
+    select,
+    summary,
+    [role="button"],
+    [role="menuitem"],
+    [role="option"],
+    [role="checkbox"],
+    [role="radio"],
+    [role="switch"]
+  ) {
+    transition:
+      outline-color 160ms ease,
+      outline-offset 160ms ease,
+      box-shadow 160ms ease,
+      border-color 160ms ease,
+      background-color 160ms ease,
+      color 160ms ease;
+  }
+
+  :where(
+    a[href],
+    button,
+    input:not([type="hidden"]),
+    textarea,
+    select,
+    summary,
+    [role="button"],
+    [role="menuitem"],
+    [role="option"],
+    [role="checkbox"],
+    [role="radio"],
+    [role="switch"]
+  ):focus-visible {
+    outline: 2px solid rgb(var(--tf-accent-rgb) / 0.82);
+    outline-offset: 3px;
+    box-shadow: 0 0 0 5px rgb(var(--tf-accent-rgb) / 0.14);
   }
 }
 
@@ -462,19 +520,21 @@ h6,
 @keyframes profile-greeting-letter-in {
   from {
     opacity: 0;
-    transform: translateY(18px) scale(0.985);
-    filter: blur(3px);
+    transform: translate3d(-0.14em, 0.48em, 0) scale(0.965);
+    filter: blur(12px);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translate3d(0, 0, 0) scale(1);
     filter: blur(0);
   }
 }
 
 .profile-greeting-letter {
   opacity: 0;
-  animation: profile-greeting-letter-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transform-origin: left bottom;
+  will-change: transform, opacity, filter;
+  animation: profile-greeting-letter-in 0.72s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 @keyframes profile-avatar-orbit-spin {
@@ -1158,15 +1218,6 @@ html:active-view-transition-type(blog-collapse)::view-transition-new(.blog-card-
   }
   body {
     @apply bg-background text-foreground;
-  }
-  button {
-    will-change: transform;
-    transition-property: transform, color, background-color, border-color, opacity, box-shadow;
-    transition-duration: 150ms;
-    transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
-  }
-  button:not(:disabled):not([data-no-press-scale='true']):active {
-    transform: scale(0.97);
   }
 }
 

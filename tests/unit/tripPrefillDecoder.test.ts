@@ -93,4 +93,24 @@ describe('services/tripPrefillDecoder', () => {
       pace: 'Fast',
     });
   });
+
+  it('accepts alias-backed destinations and stores canonical country names once', () => {
+    const encoded = encode({
+      countries: [
+        'England',
+        'UK',
+        'USA',
+        "Côte d'Ivoire",
+        'PRC',
+        "People's Republic of China",
+        'DR Kongo',
+        'Zaire',
+        'Ceylon',
+      ],
+    });
+
+    expect(decodeTripPrefill(encoded)).toEqual({
+      countries: ['United Kingdom', 'United States', 'Ivory Coast', 'China', 'Congo (Democratic Republic)', 'Sri Lanka'],
+    });
+  });
 });

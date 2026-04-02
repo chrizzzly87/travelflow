@@ -69,6 +69,8 @@ export const PROVIDER_ALLOWLIST: Record<string, Set<string>> = {
   openrouter: new Set([
     "openrouter/free",
     "openai/gpt-oss-20b:free",
+    "openai/gpt-5.4-nano",
+    "openai/gpt-5.4-mini",
     "qwen/qwen3-coder:free",
     "nvidia/nemotron-3-super-120b-a12b:free",
     "z-ai/glm-5",
@@ -178,6 +180,7 @@ const clipText = (value: string, max = 1_200): string => {
 };
 
 const PROVIDER_MAX_OUTPUT_TOKENS = resolveIntegerEnv("AI_PROVIDER_MAX_OUTPUT_TOKENS", 8_192, 1_024, 16_384);
+const OPENAI_STRUCTURED_OUTPUT_MAX_TOKENS = resolveIntegerEnv("AI_OPENAI_STRUCTURED_OUTPUT_MAX_TOKENS", 12_288, 1_024, 16_384);
 
 const STRICT_JSON_RETRY_INSTRUCTION = `
 IMPORTANT RETRY INSTRUCTIONS:
@@ -208,8 +211,17 @@ const isTokenLimitSignal = (value: unknown): boolean => {
   return /max[_\s-]?token|length/i.test(value);
 };
 
-const resolveOutputTokenBudget = (override?: number): number => {
-  if (!Number.isFinite(override)) return PROVIDER_MAX_OUTPUT_TOKENS;
+const resolveOutputTokenBudget = (
+  provider: string,
+  jsonSchema: StructuredOutputJsonSchema | undefined,
+  override?: number,
+): number => {
+  if (!Number.isFinite(override)) {
+    if (provider === "openai" && jsonSchema) {
+      return Math.max(PROVIDER_MAX_OUTPUT_TOKENS, OPENAI_STRUCTURED_OUTPUT_MAX_TOKENS);
+    }
+    return PROVIDER_MAX_OUTPUT_TOKENS;
+  }
   const parsed = Math.round(Number(override));
   return Math.max(1_024, Math.min(16_384, parsed));
 };
@@ -344,37 +356,133 @@ const extractOpenAiText = (content: unknown): string => {
     .join("\n");
 };
 
-const extractOpenAiResponsesText = (payload: unknown): string => {
-  if (!payload || typeof payload !== "object") return "";
-  const typed = payload as Record<string, unknown>;
+const asRecord = (value: unknown): Record<string, unknown> | null => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  return value as Record<string, unknown>;
+};
+
+const isStructuredOutputObject = (value: unknown): value is Record<string, unknown> => Boolean(asRecord(value));
+
+const extractOpenAiChatMessageDetails = (message: unknown): {
+  rawText: string;
+  refusal: string;
+  parsedObject: Record<string, unknown> | null;
+} => {
+  const typed = asRecord(message);
+  if (!typed) {
+    return {
+      rawText: "",
+      refusal: "",
+      parsedObject: null,
+    };
+  }
+
+  return {
+    rawText: extractOpenAiText(typed.content),
+    refusal: typeof typed.refusal === "string" ? typed.refusal : "",
+    parsedObject: isStructuredOutputObject(typed.parsed) ? typed.parsed : null,
+  };
+};
+
+const extractOpenAiResponsesDetails = (payload: unknown): {
+  rawText: string;
+  refusal: string;
+  parsedObject: Record<string, unknown> | null;
+  incompleteReason: string;
+  responseStatus: string;
+  contentTypes: string[];
+} => {
+  const typed = asRecord(payload);
+  if (!typed) {
+    return {
+      rawText: "",
+      refusal: "",
+      parsedObject: null,
+      incompleteReason: "",
+      responseStatus: "",
+      contentTypes: [],
+    };
+  }
+
+  const responseStatus = typeof typed.status === "string" ? typed.status : "";
+  const incompleteDetails = asRecord(typed.incomplete_details);
+  const incompleteReason = typeof incompleteDetails?.reason === "string" ? incompleteDetails.reason : "";
+  let parsedObject = isStructuredOutputObject(typed.output_parsed) ? typed.output_parsed : null;
+  let refusal = "";
+  const contentTypes = new Set<string>();
 
   if (typeof typed.output_text === "string") {
-    return typed.output_text;
+    return {
+      rawText: typed.output_text,
+      refusal,
+      parsedObject,
+      incompleteReason,
+      responseStatus,
+      contentTypes: [],
+    };
   }
   if (Array.isArray(typed.output_text)) {
-    return typed.output_text
-      .map((entry) => (typeof entry === "string" ? entry : ""))
-      .filter(Boolean)
-      .join("\n");
+    return {
+      rawText: typed.output_text
+        .map((entry) => (typeof entry === "string" ? entry : ""))
+        .filter(Boolean)
+        .join("\n"),
+      refusal,
+      parsedObject,
+      incompleteReason,
+      responseStatus,
+      contentTypes: [],
+    };
   }
 
   const output = Array.isArray(typed.output) ? typed.output : [];
-  return output
+  const rawText = output
     .flatMap((entry) => {
-      if (!entry || typeof entry !== "object") return [];
-      const content = (entry as { content?: unknown }).content;
+      const typedEntry = asRecord(entry);
+      if (!typedEntry) return [];
+      const content = typedEntry.content;
       if (!Array.isArray(content)) return [];
       return content.map((chunk) => {
-        if (!chunk || typeof chunk !== "object") return "";
-        const typedChunk = chunk as { text?: string; type?: string };
+        const typedChunk = asRecord(chunk);
+        if (!typedChunk) return "";
+        const chunkType = typeof typedChunk.type === "string" ? typedChunk.type : "";
+        if (chunkType) {
+          contentTypes.add(chunkType);
+        }
+        if (!parsedObject) {
+          if (isStructuredOutputObject(typedChunk.parsed)) {
+            parsedObject = typedChunk.parsed;
+          } else if (isStructuredOutputObject(typedChunk.json)) {
+            parsedObject = typedChunk.json;
+          }
+        }
+        if (!refusal && typeof typedChunk.refusal === "string") {
+          refusal = typedChunk.refusal;
+        }
         if (typeof typedChunk.text === "string") return typedChunk.text;
-        if (typedChunk.type === "output_text" && typeof typedChunk.text === "string") return typedChunk.text;
         return "";
       });
     })
     .filter(Boolean)
     .join("\n");
+
+  return {
+    rawText,
+    refusal,
+    parsedObject,
+    incompleteReason,
+    responseStatus,
+    contentTypes: Array.from(contentTypes),
+  };
 };
+
+const buildOpenAiResponsesRetryPrompt = (prompt: string, ultraCompact: boolean): string => (
+  [
+    STRICT_JSON_RETRY_INSTRUCTION,
+    ultraCompact ? ULTRA_COMPACT_RETRY_INSTRUCTION : "",
+    prompt,
+  ].filter(Boolean).join("\n\n")
+);
 
 const extractAnthropicText = (content: unknown): string => {
   if (!Array.isArray(content)) return "";
@@ -435,6 +543,14 @@ const isOpenAiChatEndpointModelMismatch = (details: string): boolean => {
   return normalized.includes("not a chat model")
     || normalized.includes("v1/chat/completions")
     || normalized.includes("did you mean to use v1/completions");
+};
+
+const isOpenAiDefaultTemperatureOnlyError = (details: string): boolean => {
+  const normalized = details.toLowerCase();
+  return (
+    (normalized.includes("temperature") && normalized.includes("only the default (1) value is supported"))
+    || (normalized.includes("\"param\":\"temperature\"") && normalized.includes("\"code\":\"unsupported_value\""))
+  );
 };
 
 export const ensureModelAllowed = (
@@ -662,23 +778,7 @@ const generateWithOpenAi = async (
     "Content-Type": "application/json",
   };
 
-  const parseOpenAiJson = (rawText: string, usageMeta: unknown): ProviderGenerationResult => {
-    let parsed: Record<string, unknown>;
-    try {
-      parsed = extractJsonObject(rawText);
-    } catch (error) {
-      return {
-        ok: false,
-        status: 502,
-        value: {
-          error: "OpenAI response could not be parsed as JSON itinerary payload.",
-          code: "OPENAI_PARSE_FAILED",
-          details: error instanceof Error ? error.message : "Unknown parsing error",
-          sample: rawText.slice(0, 800),
-        },
-      };
-    }
-
+  const buildOpenAiSuccess = (parsed: Record<string, unknown>, usageMeta: unknown): ProviderGenerationResult => {
     const usage = usageMeta && typeof usageMeta === "object" ? (usageMeta as Record<string, unknown>) : {};
     const promptTokens = Number(usage.prompt_tokens ?? usage.input_tokens);
     const completionTokens = Number(usage.completion_tokens ?? usage.output_tokens);
@@ -699,6 +799,26 @@ const generateWithOpenAi = async (
         },
       },
     };
+  };
+
+  const parseOpenAiJson = (rawText: string, usageMeta: unknown): ProviderGenerationResult => {
+    let parsed: Record<string, unknown>;
+    try {
+      parsed = extractJsonObject(rawText);
+    } catch (error) {
+      return {
+        ok: false,
+        status: 502,
+        value: {
+          error: "OpenAI response could not be parsed as JSON itinerary payload.",
+          code: "OPENAI_PARSE_FAILED",
+          details: error instanceof Error ? error.message : "Unknown parsing error",
+          sample: rawText.slice(0, 800),
+        },
+      };
+    }
+
+    return buildOpenAiSuccess(parsed, usageMeta);
   };
 
   const requestStartedAt = Date.now();
@@ -770,13 +890,28 @@ const generateWithOpenAi = async (
 
   if (chatResult.ok) {
     const chatPayload = chatResult.payload as Record<string, unknown>;
-    const rawText = extractOpenAiText(chatPayload?.choices?.[0]?.message?.content);
+    const messageDetails = extractOpenAiChatMessageDetails(chatPayload?.choices?.[0]?.message);
+    if (messageDetails.parsedObject) {
+      return buildOpenAiSuccess(messageDetails.parsedObject, chatPayload?.usage || {});
+    }
+    if (messageDetails.refusal) {
+      return {
+        ok: false,
+        status: 422,
+        value: {
+          error: "OpenAI refused to generate itinerary output.",
+          code: "OPENAI_REFUSAL",
+          details: clipText(messageDetails.refusal),
+        },
+      };
+    }
+    const rawText = messageDetails.rawText;
     return parseOpenAiJson(rawText, chatPayload?.usage || {});
   }
 
   const chatFailure = chatResult;
   const chatDetails = chatFailure.details;
-  if (!isOpenAiChatEndpointModelMismatch(chatDetails)) {
+  if (!isOpenAiChatEndpointModelMismatch(chatDetails) && !isOpenAiDefaultTemperatureOnlyError(chatDetails)) {
     return {
       ok: false,
       status: 502,
@@ -788,89 +923,175 @@ const generateWithOpenAi = async (
     };
   }
 
-  let responsesEndpointResult:
-    | { ok: true; payload: unknown }
-    | { ok: false; details: string };
+  let retryPrompt = prompt;
+  let retrySystemPrompt = SYSTEM_JSON_ONLY_PLANNER_PROMPT;
+  let ultraCompactRetry = false;
 
-  const responsesTimeoutMs = resolveAttemptTimeoutMs(requestStartedAt, timeoutMs);
-  if (!responsesTimeoutMs) {
-    return {
-      ok: false,
-      status: 504,
-      value: {
-        error: "OpenAI generation request timed out.",
-        code: "OPENAI_REQUEST_TIMEOUT",
-        details: `Provider request timed out after ${timeoutMs}ms.`,
-      },
-    };
-  }
+  for (let attempt = 1; attempt <= PROVIDER_PARSE_RETRY_MAX_ATTEMPTS; attempt += 1) {
+    const responsesTimeoutMs = resolveAttemptTimeoutMs(requestStartedAt, timeoutMs);
+    if (!responsesTimeoutMs) {
+      return {
+        ok: false,
+        status: 504,
+        value: {
+          error: "OpenAI generation request timed out.",
+          code: "OPENAI_REQUEST_TIMEOUT",
+          details: `Provider request timed out after ${timeoutMs}ms.`,
+        },
+      };
+    }
 
-  try {
-    responsesEndpointResult = await fetchWithTimeout(
-      "https://api.openai.com/v1/responses",
-      {
-        method: "POST",
-        headers: openAiHeaders,
-        body: JSON.stringify({
-          model,
-          input: [
-            {
-              role: "system",
-              content: SYSTEM_JSON_ONLY_PLANNER_PROMPT,
-            },
-            {
-              role: "user",
-              content: prompt,
-            },
-          ],
-          max_output_tokens: maxOutputTokens,
-          ...(buildOpenAiResponsesTextFormat(jsonSchema)
-            ? { text: buildOpenAiResponsesTextFormat(jsonSchema) }
-            : {}),
-        }),
-      },
-      responsesTimeoutMs,
-      async (response) => {
-        if (!response.ok) {
+    let responsesEndpointResult:
+      | { ok: true; payload: unknown }
+      | { ok: false; details: string };
+
+    try {
+      responsesEndpointResult = await fetchWithTimeout(
+        "https://api.openai.com/v1/responses",
+        {
+          method: "POST",
+          headers: openAiHeaders,
+          body: JSON.stringify({
+            model,
+            input: [
+              {
+                role: "system",
+                content: retrySystemPrompt,
+              },
+              {
+                role: "user",
+                content: retryPrompt,
+              },
+            ],
+            max_output_tokens: maxOutputTokens,
+            ...(buildOpenAiResponsesTextFormat(jsonSchema)
+              ? { text: buildOpenAiResponsesTextFormat(jsonSchema) }
+              : {}),
+          }),
+        },
+        responsesTimeoutMs,
+        async (response) => {
+          if (!response.ok) {
+            return {
+              ok: false as const,
+              details: await response.text(),
+            };
+          }
           return {
-            ok: false as const,
-            details: await response.text(),
+            ok: true as const,
+            payload: await response.json(),
           };
-        }
-        return {
-          ok: true as const,
-          payload: await response.json(),
-        };
-      },
-    );
-  } catch (error) {
-    return {
-      ok: false,
-      status: 504,
-      value: {
-        error: "OpenAI generation request timed out.",
-        code: "OPENAI_REQUEST_TIMEOUT",
-        details: error instanceof Error ? error.message : "Unknown timeout error",
-      },
-    };
+        },
+      );
+    } catch (error) {
+      return {
+        ok: false,
+        status: 504,
+        value: {
+          error: "OpenAI generation request timed out.",
+          code: "OPENAI_REQUEST_TIMEOUT",
+          details: error instanceof Error ? error.message : "Unknown timeout error",
+        },
+      };
+    }
+
+    if (!responsesEndpointResult.ok) {
+      const responsesFailure = responsesEndpointResult;
+      return {
+        ok: false,
+        status: 502,
+        value: {
+          error: "OpenAI generation request failed.",
+          code: "OPENAI_REQUEST_FAILED",
+          details: clipText(`chat_completions: ${chatDetails}\nresponses: ${responsesFailure.details}`),
+        },
+      };
+    }
+
+    const responsesPayload = responsesEndpointResult.payload as Record<string, unknown>;
+    const responsesDetails = extractOpenAiResponsesDetails(responsesPayload);
+    if (responsesDetails.parsedObject) {
+      return buildOpenAiSuccess(responsesDetails.parsedObject, responsesPayload?.usage || {});
+    }
+    if (responsesDetails.refusal) {
+      return {
+        ok: false,
+        status: 422,
+        value: {
+          error: "OpenAI refused to generate itinerary output.",
+          code: "OPENAI_REFUSAL",
+          details: clipText(responsesDetails.refusal),
+        },
+      };
+    }
+    if (responsesDetails.responseStatus === "incomplete") {
+      if (
+        attempt < PROVIDER_PARSE_RETRY_MAX_ATTEMPTS
+        && responsesDetails.incompleteReason === "max_output_tokens"
+      ) {
+        ultraCompactRetry = true;
+        retrySystemPrompt = SYSTEM_STRICT_MINIFIED_JSON_ONLY_PLANNER_PROMPT;
+        retryPrompt = buildOpenAiResponsesRetryPrompt(prompt, ultraCompactRetry);
+        continue;
+      }
+      return {
+        ok: false,
+        status: 502,
+        value: {
+          error: "OpenAI response was incomplete before a valid itinerary object was returned.",
+          code: "OPENAI_RESPONSE_INCOMPLETE",
+          details: clipText(
+            responsesDetails.incompleteReason
+              ? `OpenAI response status=incomplete (${responsesDetails.incompleteReason}).`
+              : "OpenAI response status=incomplete.",
+          ),
+        },
+      };
+    }
+
+    const rawText = responsesDetails.rawText;
+    if (!rawText.trim()) {
+      if (attempt < PROVIDER_PARSE_RETRY_MAX_ATTEMPTS) {
+        retrySystemPrompt = SYSTEM_STRICT_MINIFIED_JSON_ONLY_PLANNER_PROMPT;
+        retryPrompt = buildOpenAiResponsesRetryPrompt(prompt, ultraCompactRetry);
+        continue;
+      }
+      const statusDetails = responsesDetails.responseStatus
+        ? ` Response status=${responsesDetails.responseStatus}.`
+        : "";
+      const contentTypeDetails = responsesDetails.contentTypes.length > 0
+        ? ` Content types=${responsesDetails.contentTypes.join(", ")}.`
+        : "";
+      return {
+        ok: false,
+        status: 502,
+        value: {
+          error: "OpenAI response could not be parsed as JSON itinerary payload.",
+          code: "OPENAI_PARSE_FAILED",
+          details: clipText(`Provider returned empty content.${statusDetails}${contentTypeDetails}`),
+          sample: "",
+        },
+      };
+    }
+
+    const parsedResult = parseOpenAiJson(rawText, responsesPayload?.usage || {});
+    if (!parsedResult.ok && attempt < PROVIDER_PARSE_RETRY_MAX_ATTEMPTS) {
+      retrySystemPrompt = SYSTEM_STRICT_MINIFIED_JSON_ONLY_PLANNER_PROMPT;
+      retryPrompt = buildOpenAiResponsesRetryPrompt(prompt, ultraCompactRetry);
+      continue;
+    }
+    return parsedResult;
   }
 
-  if (!responsesEndpointResult.ok) {
-    const responsesFailure = responsesEndpointResult;
-    return {
-      ok: false,
-      status: 502,
-      value: {
-        error: "OpenAI generation request failed.",
-        code: "OPENAI_REQUEST_FAILED",
-        details: clipText(`chat_completions: ${chatDetails}\nresponses: ${responsesFailure.details}`),
-      },
-    };
-  }
-
-  const responsesPayload = responsesEndpointResult.payload as Record<string, unknown>;
-  const rawText = extractOpenAiResponsesText(responsesPayload);
-  return parseOpenAiJson(rawText, responsesPayload?.usage || {});
+  return {
+    ok: false,
+    status: 502,
+    value: {
+      error: "OpenAI generation request failed.",
+      code: "OPENAI_REQUEST_FAILED",
+      details: "OpenAI responses retry loop exhausted without a terminal result.",
+    },
+  };
 };
 
 const generateWithAnthropic = async (
@@ -1252,7 +1473,7 @@ export const generateProviderItinerary = async (
   const provider = options.provider.trim().toLowerCase();
   const requestedModel = options.model.trim();
   const model = PROVIDER_MODEL_ALIASES[provider]?.[requestedModel] ?? requestedModel;
-  const maxOutputTokens = resolveOutputTokenBudget(options.maxOutputTokens);
+  const maxOutputTokens = resolveOutputTokenBudget(provider, options.jsonSchema, options.maxOutputTokens);
 
   const allowlistError = ensureModelAllowed(provider, model);
   if (allowlistError) {

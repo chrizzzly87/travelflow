@@ -6,6 +6,7 @@ import {
   fallbackSummary,
   fetchSharedTrip,
   fetchSharedTripByTripId,
+  getMapboxAccessTokenFromEnv,
   getMapsApiKeyFromEnv,
   isMapColorMode,
   isOgMapStyle,
@@ -15,6 +16,7 @@ import {
   type OgRouteMode,
   parseRouteTarget,
 } from "../edge-lib/trip-og-data.ts";
+import { resolveEdgeMapRuntime } from "../edge-lib/map-runtime.ts";
 import { APP_NAME, APP_DEFAULT_DESCRIPTION } from "../../config/appGlobals.ts";
 
 const SITE_NAME = APP_NAME;
@@ -105,6 +107,7 @@ const buildFallbackMetadata = (
   routeTarget: NonNullable<ReturnType<typeof parseRouteTarget>>,
   pathname: string,
   overrides: OgPreferenceOverrides,
+  mapRuntimeSelection: ReturnType<typeof resolveEdgeMapRuntime>["effectiveSelection"],
 ): Metadata => {
   const pageTitle = `${SITE_NAME} Trip Planner`;
   const description = DEFAULT_DESCRIPTION;
@@ -112,6 +115,7 @@ const buildFallbackMetadata = (
   const ogImageUrl = buildOgImageUrl(origin, {
     tripId: routeTarget.tripId,
     versionId: routeTarget.versionId,
+    mapRuntimeSelection,
     mapStyle: overrides.mapStyle,
     routeMode: overrides.routeMode,
     mapColorMode: overrides.mapColorMode,
@@ -132,12 +136,20 @@ const buildShareMetadata = async (
   origin: string,
   routeTarget: ParsedRouteTarget,
   overrides: OgPreferenceOverrides,
+  mapRuntimeSelection: ReturnType<typeof resolveEdgeMapRuntime>["effectiveSelection"],
 ): Promise<Metadata> => {
   if (!routeTarget.token) {
-    return buildFallbackMetadata(origin, routeTarget, "/", overrides);
+    return buildFallbackMetadata(origin, routeTarget, "/", overrides, mapRuntimeSelection);
   }
 
-  return buildShareBackedMetadata(origin, routeTarget, routeTarget.token, await fetchSharedTrip(routeTarget.token, routeTarget.versionId), overrides);
+  return buildShareBackedMetadata(
+    origin,
+    routeTarget,
+    routeTarget.token,
+    await fetchSharedTrip(routeTarget.token, routeTarget.versionId),
+    overrides,
+    mapRuntimeSelection,
+  );
 };
 
 const buildShareBackedMetadata = async (
@@ -146,14 +158,18 @@ const buildShareBackedMetadata = async (
   token: string,
   sharedTrip: Awaited<ReturnType<typeof fetchSharedTrip>>,
   overrides: OgPreferenceOverrides,
+  mapRuntimeSelection: ReturnType<typeof resolveEdgeMapRuntime>["effectiveSelection"],
 ): Promise<Metadata> => {
   const mapsApiKey = getMapsApiKeyFromEnv();
+  const mapboxAccessToken = getMapboxAccessTokenFromEnv();
   const summary = sharedTrip
     ? await buildTripOgSummary(sharedTrip.trip, {
       mapsApiKey,
+      mapboxAccessToken,
       mapStyle: overrides.mapStyle ?? sharedTrip.viewSettings?.mapStyle,
       routeMode: overrides.routeMode ?? sharedTrip.viewSettings?.routeMode,
       mapColorMode: overrides.mapColorMode ?? sharedTrip.viewSettings?.mapColorMode ?? sharedTrip.trip.mapColorMode,
+      mapRuntimeSelection,
       showStops: overrides.showStops ?? sharedTrip.viewSettings?.showStops,
       showCities: overrides.showCities ??
         sharedTrip.viewSettings?.showCities ??
@@ -172,6 +188,7 @@ const buildShareBackedMetadata = async (
     ...ogImageRoutePayload,
     versionId: routeTarget.versionId ?? sharedTrip?.resolvedVersionId ?? null,
     updatedAt: summary.updatedAt,
+    mapRuntimeSelection,
     mapStyle: overrides.mapStyle ?? sharedTrip?.viewSettings?.mapStyle ?? null,
     routeMode: overrides.routeMode ?? sharedTrip?.viewSettings?.routeMode ?? null,
     mapColorMode: overrides.mapColorMode ?? sharedTrip?.viewSettings?.mapColorMode ?? sharedTrip?.trip.mapColorMode ?? null,
@@ -195,9 +212,10 @@ const buildTripRouteMetadata = async (
   origin: string,
   routeTarget: ParsedRouteTarget,
   overrides: OgPreferenceOverrides,
+  mapRuntimeSelection: ReturnType<typeof resolveEdgeMapRuntime>["effectiveSelection"],
 ): Promise<Metadata> => {
   if (!routeTarget.tripId) {
-    return buildFallbackMetadata(origin, routeTarget, "/", overrides);
+    return buildFallbackMetadata(origin, routeTarget, "/", overrides, mapRuntimeSelection);
   }
 
   const sharedByTripId = await fetchSharedTripByTripId(routeTarget.tripId, routeTarget.versionId);
@@ -208,15 +226,17 @@ const buildTripRouteMetadata = async (
       sharedByTripId.token,
       sharedByTripId.sharedTrip,
       overrides,
+      mapRuntimeSelection,
     );
   }
 
-  return buildFallbackMetadata(origin, routeTarget, "/", overrides);
+  return buildFallbackMetadata(origin, routeTarget, "/", overrides, mapRuntimeSelection);
 };
 
 export default async (request: Request, context: { next: () => Promise<Response> }): Promise<Response> => {
   const url = new URL(request.url);
   const routeTarget = parseRouteTarget(url);
+  const mapRuntime = resolveEdgeMapRuntime(request);
   const mapStyleQuery = url.searchParams.get("mapStyle")?.trim() || "";
   const routeModeQuery = url.searchParams.get("routeMode")?.trim() || "";
   const mapColorModeQuery = url.searchParams.get("mapColorMode")?.trim() || "";
@@ -244,8 +264,8 @@ export default async (request: Request, context: { next: () => Promise<Response>
 
   try {
     const metadata = routeTarget.token
-      ? await buildShareMetadata(url.origin, routeTarget, overrides)
-      : await buildTripRouteMetadata(url.origin, routeTarget, overrides);
+      ? await buildShareMetadata(url.origin, routeTarget, overrides, mapRuntime.effectiveSelection)
+      : await buildTripRouteMetadata(url.origin, routeTarget, overrides, mapRuntime.effectiveSelection);
 
     const html = await baseResponse.text();
     const rewrittenHtml = injectMetaTags(html, metadata);

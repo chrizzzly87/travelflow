@@ -3,8 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowSquareOut, DotsThreeVertical, MapPin, SpinnerGap, Trash, X } from '@phosphor-icons/react';
 import { AdminShell, type AdminDateRange } from '../components/admin/AdminShell';
 import { isIsoDateInRange } from '../components/admin/adminDateRange';
-import { AI_MODEL_CATALOG, getDefaultCreateTripModel } from '../config/aiModelCatalog';
-import { getAiProviderMetadata } from '../config/aiProviderCatalog';
+import { AI_MODEL_CATALOG, getDefaultCreateTripModel, sortAiModels } from '../config/aiModelCatalog';
 import {
     adminGetUserProfile,
     adminHardDeleteTrip,
@@ -138,14 +137,15 @@ const USER_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
 const relativeTimeFormatter = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
 const DEFAULT_RETRY_MODEL_ID = getDefaultCreateTripModel().id;
-const ACTIVE_RETRY_MODEL_OPTIONS = AI_MODEL_CATALOG
-    .filter((entry) => entry.availability === 'active')
+const ACTIVE_RETRY_MODEL_OPTIONS = sortAiModels(
+    AI_MODEL_CATALOG.filter((entry) => entry.availability === 'active')
+)
     .map((entry) => ({
         id: entry.id,
         provider: entry.provider,
-        providerLabel: getAiProviderMetadata(entry.provider).label,
+        providerLabel: entry.providerLabel,
         model: entry.model,
-        label: `${getAiProviderMetadata(entry.provider).label} · ${entry.model}`,
+        label: entry.label,
     }));
 
 const parseQueryMultiValue = <T extends string>(
@@ -918,6 +918,10 @@ export const AdminTripsPage: React.FC = () => {
         const value = selectedTripLatestAttemptMetadata?.orchestration;
         return typeof value === 'string' && value.trim().length > 0 ? value.trim() : null;
     }, [selectedTripLatestAttemptMetadata]);
+    const selectedTripLatestAttemptDetails = useMemo(() => {
+        const value = selectedTripLatestAttemptMetadata?.details;
+        return typeof value === 'string' && value.trim().length > 0 ? value.trim() : null;
+    }, [selectedTripLatestAttemptMetadata]);
     const selectedTripInputSnapshot = useMemo(() => {
         return selectedTripGenerationMeta?.inputSnapshot || null;
     }, [selectedTripGenerationMeta?.inputSnapshot]);
@@ -935,6 +939,11 @@ export const AdminTripsPage: React.FC = () => {
         () => selectedTripGenerationJobRows[0] || null,
         [selectedTripGenerationJobRows]
     );
+    const selectedTripLatestGenerationJobPayload = useMemo<Record<string, unknown> | null>(() => {
+        const payload = selectedTripLatestGenerationJob?.payload;
+        if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return null;
+        return payload as Record<string, unknown>;
+    }, [selectedTripLatestGenerationJob?.payload]);
 
     const groupedRetryModelOptions = useMemo(() => {
         const groups = new Map<string, typeof ACTIVE_RETRY_MODEL_OPTIONS>();
@@ -2620,11 +2629,43 @@ export const AdminTripsPage: React.FC = () => {
                                                     <dt className="text-xs font-semibold text-slate-500">Error message</dt>
                                                     <dd className="mt-1 break-words text-sm font-medium text-slate-800">{selectedTripLatestAttempt.errorMessage || 'n/a'}</dd>
                                                 </div>
+                                                <div className="sm:col-span-2 rounded-lg border border-slate-100 bg-slate-50 p-3">
+                                                    <dt className="text-xs font-semibold text-slate-500">Attempt metadata details</dt>
+                                                    <dd className="mt-1 break-words text-sm font-medium text-slate-800">{selectedTripLatestAttemptDetails || 'n/a'}</dd>
+                                                </div>
                                             </dl>
                                         ) : (
                                             <div className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-sm text-slate-600">
                                                 No generation attempts captured yet.
                                             </div>
+                                        )}
+                                        {selectedTripLatestGenerationJob && (
+                                            <dl className="grid gap-2 sm:grid-cols-2">
+                                                <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+                                                    <dt className="text-xs font-semibold text-slate-500">Job started at</dt>
+                                                    <dd className="mt-1 text-sm font-medium text-slate-800">
+                                                        {selectedTripLatestGenerationJob.startedAt
+                                                            ? `${formatRelativeTimestamp(selectedTripLatestGenerationJob.startedAt, 'n/a')} (${formatTimestamp(selectedTripLatestGenerationJob.startedAt, 'n/a')})`
+                                                            : 'n/a'}
+                                                    </dd>
+                                                </div>
+                                                <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+                                                    <dt className="text-xs font-semibold text-slate-500">Job finished at</dt>
+                                                    <dd className="mt-1 text-sm font-medium text-slate-800">
+                                                        {selectedTripLatestGenerationJob.finishedAt
+                                                            ? `${formatRelativeTimestamp(selectedTripLatestGenerationJob.finishedAt, 'n/a')} (${formatTimestamp(selectedTripLatestGenerationJob.finishedAt, 'n/a')})`
+                                                            : 'n/a'}
+                                                    </dd>
+                                                </div>
+                                                <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+                                                    <dt className="text-xs font-semibold text-slate-500">Job last error code</dt>
+                                                    <dd className="mt-1 break-words text-sm font-medium text-slate-800">{selectedTripLatestGenerationJob.lastErrorCode || 'n/a'}</dd>
+                                                </div>
+                                                <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+                                                    <dt className="text-xs font-semibold text-slate-500">Job last error message</dt>
+                                                    <dd className="mt-1 break-words text-sm font-medium text-slate-800">{selectedTripLatestGenerationJob.lastErrorMessage || 'n/a'}</dd>
+                                                </div>
+                                            </dl>
                                         )}
                                         {selectedTripGenerationAttempts.length > 0 && (
                                             <div className="space-y-1 rounded-lg border border-slate-100 bg-slate-50 p-2">
@@ -2690,8 +2731,24 @@ export const AdminTripsPage: React.FC = () => {
                                                 ))}
                                             </div>
                                         )}
-                                        {(selectedTripRequestPayload || selectedTripInputSnapshot) && (
+                                        {(selectedTripLatestAttemptMetadata || selectedTripLatestGenerationJobPayload || selectedTripRequestPayload || selectedTripInputSnapshot) && (
                                             <div className="space-y-2">
+                                                {selectedTripLatestAttemptMetadata && (
+                                                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-2">
+                                                        <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Attempt metadata JSON</p>
+                                                        <pre className="mt-1 max-h-48 overflow-auto rounded border border-slate-200 bg-slate-900 p-2 text-[10px] text-slate-100">
+                                                            {JSON.stringify(selectedTripLatestAttemptMetadata, null, 2)}
+                                                        </pre>
+                                                    </div>
+                                                )}
+                                                {selectedTripLatestGenerationJobPayload && (
+                                                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-2">
+                                                        <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Latest queue job payload JSON</p>
+                                                        <pre className="mt-1 max-h-48 overflow-auto rounded border border-slate-200 bg-slate-900 p-2 text-[10px] text-slate-100">
+                                                            {JSON.stringify(selectedTripLatestGenerationJobPayload, null, 2)}
+                                                        </pre>
+                                                    </div>
+                                                )}
                                                 {selectedTripRequestPayload && (
                                                     <div className="rounded-lg border border-slate-200 bg-slate-50 p-2">
                                                         <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Request payload JSON</p>
@@ -2717,7 +2774,7 @@ export const AdminTripsPage: React.FC = () => {
                                                     {selectedDrawerRetryModelOption && (
                                                         <div className="mb-1.5 inline-flex items-center gap-1.5 rounded-full border border-accent-200 bg-accent-50 px-2 py-0.5 text-[11px] font-semibold text-accent-800">
                                                             <AiProviderLogo provider={selectedDrawerRetryModelOption.provider} model={selectedDrawerRetryModelOption.model} size={12} />
-                                                            <span>{selectedDrawerRetryModelOption.providerLabel} · {selectedDrawerRetryModelOption.model}</span>
+                                                            <span>{selectedDrawerRetryModelOption.providerLabel} · {selectedDrawerRetryModelOption.label}</span>
                                                             <span className="rounded-full border border-accent-300 bg-white px-1.5 text-[10px] uppercase tracking-wide text-accent-700">current</span>
                                                         </div>
                                                     )}
@@ -2736,7 +2793,7 @@ export const AdminTripsPage: React.FC = () => {
                                                                         <SelectItem key={option.id} value={option.id}>
                                                                             <span className="inline-flex items-center gap-2">
                                                                                 <AiProviderLogo provider={option.provider} model={option.model} size={14} />
-                                                                                <span className="font-medium text-slate-800">{option.model}</span>
+                                                                                <span className="font-medium text-slate-800">{option.label}</span>
                                                                                 {option.id === drawerRetryModelId && (
                                                                                     <span className="rounded-full border border-accent-300 bg-accent-50 px-1.5 text-[10px] uppercase tracking-wide text-accent-700">
                                                                                         current

@@ -21,7 +21,7 @@ This file documents the current TravelFlow stack, major architecture decisions, 
 
 | Area | Current choice | Notes |
 | --- | --- | --- |
-| UI primitives | Radix primitives (`checkbox`, `select`, `switch`, `dialog`) | Wrapped in local `components/ui/*` components. |
+| UI primitives | Radix primitives plus local input/number-flow wrappers (`checkbox`, `select`, `switch`, `dialog`, `input`, `number-input`, `animated-number`) | Wrapped in local `components/ui/*` components. |
 | Drawer system | `vaul` | Wrapped in local `components/ui/drawer.tsx`. |
 | Design system style | "shadcn-style" local wrappers, not full generated shadcn registry | Reusable primitives are custom-maintained in-repo. |
 | Icons | `@phosphor-icons/react` and `lucide-react` | Chunk-split in Vite config. |

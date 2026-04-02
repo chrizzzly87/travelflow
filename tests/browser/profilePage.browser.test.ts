@@ -275,7 +275,7 @@ describe('pages/ProfilePage query-driven tabs and sort', () => {
     renderProfilePage('/profile');
 
     await waitFor(() => {
-      expect(screen.getAllByRole('link', { name: /create trip/i }).length).toBeGreaterThan(0);
+      expect(screen.getByRole('link', { name: /create trip/i })).toBeInTheDocument();
     });
   });
 
