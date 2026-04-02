@@ -982,7 +982,7 @@ export const ProfilePage: React.FC = () => {
                             {...getAnalyticsDebugAttributes('profile__shortcut--planner')}
                         >
                             <IdentificationCard size={16} />
-                            {t('common:createTrip')}
+                            {t('nav.createTrip', { ns: 'common' })}
                         </NavLink>
                         <button
                             type="button"
