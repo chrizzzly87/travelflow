@@ -86,6 +86,9 @@ vi.mock('react-i18next', () => ({
       if (key === 'sections.highlightsCount') {
         return `${options?.count ?? 0}/3 pinned`;
       }
+      if (key === 'nav.createTrip') {
+        return 'Create Trip';
+      }
       return key;
     },
     i18n: {
@@ -272,7 +275,7 @@ describe('pages/ProfilePage query-driven tabs and sort', () => {
     renderProfilePage('/profile');
 
     await waitFor(() => {
-      expect(screen.getAllByRole('link', { name: /common:createTrip/i }).length).toBeGreaterThan(0);
+      expect(screen.getByRole('link', { name: /create trip/i })).toBeInTheDocument();
     });
   });
 

@@ -189,7 +189,7 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
                                 ariaLabel={t('language.label')}
                                 value={selectedLocale}
                                 onChange={handleLocaleChange}
-                                triggerClassName="h-9 rounded-lg border-slate-200 bg-white py-2 pl-3 pr-3 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:border-slate-300 focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
+                                triggerClassName="h-9 rounded-lg border-slate-200 bg-white py-2 pl-3 pr-3 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:border-slate-300"
                             />
                         </div>
                         {isAuthenticated ? (

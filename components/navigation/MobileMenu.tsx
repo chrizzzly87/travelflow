@@ -6,7 +6,7 @@ import { NAV_ITEMS } from '../../config/navigation';
 import { LanguageSelect } from './LanguageSelect';
 import { useHasSavedTrips } from '../../hooks/useHasSavedTrips';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
-import { buildLocalizedCreateTripPath, buildLocalizedMarketingPath, buildPath, extractLocaleFromPath, getNamespacesForMarketingPath, getNamespacesForToolPath, isToolRoute } from '../../config/routes';
+import { buildLocalizedCreateTripPath, buildLocalizedMarketingPath, extractLocaleFromPath, getNamespacesForMarketingPath, getNamespacesForToolPath, isToolRoute } from '../../config/routes';
 import { AppLanguage } from '../../types';
 import { applyDocumentLocale, DEFAULT_LOCALE, normalizeLocale } from '../../config/locales';
 import { buildLocalizedLocation } from '../../services/localeRoutingService';
@@ -46,7 +46,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
     const { t, i18n } = useTranslation('common');
     const location = useLocation();
     const navigate = useNavigate();
-    const { isAuthenticated, isAdmin, logout, isLoading, profile } = useAuth();
+    const { isAuthenticated, isAdmin, logout, isLoading } = useAuth();
     const { openLoginModal } = useLoginModal();
     const panelRef = useRef<HTMLDivElement | null>(null);
     const closeButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -96,13 +96,6 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [isOpen, onClose]);
-
-    const publicProfilePath = useMemo(() => {
-        if (!isAuthenticated) return null;
-        const normalizedUsername = profile?.username?.trim().toLowerCase();
-        if (!normalizedUsername) return null;
-        return buildPath('publicProfile', { username: normalizedUsername });
-    }, [isAuthenticated, profile?.username]);
 
     const handleNavClick = (target: string) => {
         trackEvent(`mobile_nav__${target}`);
@@ -194,20 +187,14 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
         return [
             { id: 'profile', path: '/profile', label: 'Profile' },
             { id: 'profile_recent', path: '/profile?tab=recent', label: 'Recent trips' },
-            { id: 'stamps', path: '/profile/stamps', label: 'Stamps' },
             { id: 'settings', path: '/profile/settings', label: 'Settings' },
-            {
-                id: publicProfilePath ? 'public_profile' : 'public_profile_setup',
-                path: publicProfilePath || '/profile/settings',
-                label: 'View public profile',
-            },
         ];
-    }, [isAuthenticated, publicProfilePath]);
+    }, [isAuthenticated]);
 
     return (
         <>
             <div
-                className={`fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm transition-opacity duration-300 ${
+                className={`fixed inset-0 z-[1700] bg-slate-900/50 backdrop-blur-sm transition-opacity duration-300 ${
                     isOpen ? 'opacity-100' : 'pointer-events-none opacity-0'
                 }`}
                 aria-hidden="true"
@@ -222,7 +209,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
 
             <div
                 ref={panelRef}
-                className={`fixed inset-y-0 right-0 z-50 w-[85vw] max-w-sm bg-white shadow-2xl transition-transform duration-300 ease-out ${
+                className={`fixed inset-y-0 right-0 z-[1700] w-[85vw] max-w-sm bg-white shadow-2xl transition-transform duration-300 ease-out ${
                     isOpen ? 'translate-x-0' : 'translate-x-full'
                 }`}
                 role="dialog"
@@ -248,116 +235,118 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
                             ariaLabel={t('language.label')}
                             value={selectedLocale}
                             onChange={handleLocaleChange}
-                            triggerClassName="h-10 w-full rounded-xl border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 shadow-sm focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
+                            triggerClassName="h-10 w-full rounded-xl border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 shadow-sm"
                             contentAlign="start"
                         />
                     </div>
 
                     <nav className="flex-1 overflow-y-auto border-t border-slate-100 px-4 py-4">
-                        <div className="space-y-2">
-                        {onMyTripsClick && hasTrips ? (
-                            <button
-                                onClick={() => {
-                                    handleNavClick('my_trips');
-                                    onMyTripsClick();
-                                }}
-                                onMouseEnter={onMyTripsIntent}
-                                onFocus={onMyTripsIntent}
-                                onTouchStart={onMyTripsIntent}
-                                className="block w-full rounded-xl bg-accent-600 px-4 py-3 text-center text-base font-semibold text-white shadow-sm transition-colors hover:bg-accent-700"
-                                {...mobileNavDebugAttributes('my_trips')}
-                            >
-                                {t('nav.myTrips')}
-                            </button>
-                        ) : (
-                            <NavLink
-                                to={buildLocalizedCreateTripPath(activeLocale)}
-                                onClick={() => handleNavClick('create_trip')}
-                                className="block w-full rounded-xl bg-accent-600 px-4 py-3 text-center text-base font-semibold text-white shadow-sm transition-colors hover:bg-accent-700"
-                                {...mobileNavDebugAttributes('create_trip')}
-                            >
-                                {t('nav.createTrip')}
-                            </NavLink>
-                        )}
-                        {accountItems.map((item) => (
-                            <NavLink
-                                key={item.id}
-                                to={item.path}
-                                onClick={() => handleNavClick(item.id)}
-                                className="block w-full rounded-xl border border-slate-200 px-4 py-3 text-center text-base font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900"
-                                {...mobileNavDebugAttributes(item.id)}
-                            >
-                                {item.label}
-                            </NavLink>
-                        ))}
-                        {visibleItems.map((item) => (
-                            <NavLink
-                                key={item.id}
-                                to={buildLocalizedMarketingPath(item.routeKey, activeLocale)}
-                                className={navLinkClass}
-                                onClick={() => handleNavClick(item.id)}
-                                {...mobileNavDebugAttributes(item.id)}
-                            >
-                                {t(item.labelKey)}
-                            </NavLink>
-                        ))}
-                        {isAdmin && (
-                            <NavLink
-                                to="/admin"
-                                onClick={() => handleNavClick('admin_dashboard')}
-                                className="block w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-base font-medium text-slate-700 transition-colors hover:border-slate-300 hover:text-slate-900"
-                                {...mobileNavDebugAttributes('admin_dashboard')}
-                            >
-                                Admin dashboard
-                            </NavLink>
-                        )}
-                        {isAuthenticated ? (
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    void handleLogout();
-                                }}
-                                className="block w-full rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-center text-base font-semibold text-rose-700 transition-colors hover:bg-rose-100"
-                                {...mobileNavDebugAttributes('logout')}
-                            >
-                                Logout
-                            </button>
-                        ) : isLoading ? (
-                            <button
-                                type="button"
-                                disabled
-                                className="inline-flex w-full cursor-wait items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-3 text-center text-base font-medium text-slate-500 opacity-80"
-                                aria-disabled="true"
-                                aria-live="polite"
-                            >
-                                <Loader2 size={16} className="animate-spin" />
-                                {t('nav.login')}
-                            </button>
-                        ) : (
-                            <NavLink
-                                to={buildLocalizedMarketingPath('login', activeLocale)}
-                                onClick={handleLoginClick}
-                                className="block w-full rounded-xl border border-slate-200 px-4 py-3 text-center text-base font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900"
-                                {...mobileNavDebugAttributes('login')}
-                            >
-                                {t('nav.login')}
-                            </NavLink>
-                        )}
-                        <div className="pt-2">
-                            <div className="grid grid-cols-2 gap-2">
-                                {legalNavItems.map((item) => (
+                        <div className="flex min-h-full flex-col">
+                            <div className="space-y-2">
+                                {onMyTripsClick && hasTrips ? (
+                                    <button
+                                        onClick={() => {
+                                            handleNavClick('my_trips');
+                                            onMyTripsClick();
+                                        }}
+                                        onMouseEnter={onMyTripsIntent}
+                                        onFocus={onMyTripsIntent}
+                                        onTouchStart={onMyTripsIntent}
+                                        className="block w-full rounded-xl bg-accent-600 px-4 py-3 text-center text-base font-semibold text-white shadow-sm transition-colors hover:bg-accent-700"
+                                        {...mobileNavDebugAttributes('my_trips')}
+                                    >
+                                        {t('nav.myTrips')}
+                                    </button>
+                                ) : (
                                     <NavLink
-                                        key={`mobile-legal-${item.id}`}
-                                        to={buildLocalizedMarketingPath(item.id, activeLocale)}
+                                        to={buildLocalizedCreateTripPath(activeLocale)}
+                                        onClick={() => handleNavClick('create_trip')}
+                                        className="block w-full rounded-xl bg-accent-600 px-4 py-3 text-center text-base font-semibold text-white shadow-sm transition-colors hover:bg-accent-700"
+                                        {...mobileNavDebugAttributes('create_trip')}
+                                    >
+                                        {t('nav.createTrip')}
+                                    </NavLink>
+                                )}
+                                {accountItems.map((item) => (
+                                    <NavLink
+                                        key={item.id}
+                                        to={item.path}
                                         onClick={() => handleNavClick(item.id)}
-                                        className="block rounded-xl border border-slate-200 px-3 py-2 text-center text-sm font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900"
+                                        className="block w-full rounded-xl border border-slate-200 px-4 py-3 text-center text-base font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900"
                                         {...mobileNavDebugAttributes(item.id)}
                                     >
                                         {item.label}
                                     </NavLink>
                                 ))}
+                                {visibleItems.map((item) => (
+                                    <NavLink
+                                        key={item.id}
+                                        to={buildLocalizedMarketingPath(item.routeKey, activeLocale)}
+                                        className={navLinkClass}
+                                        onClick={() => handleNavClick(item.id)}
+                                        {...mobileNavDebugAttributes(item.id)}
+                                    >
+                                        {t(item.labelKey)}
+                                    </NavLink>
+                                ))}
                             </div>
-                        </div>
+                            <div className="mt-auto space-y-3 border-t border-slate-100 pt-4">
+                                {isAdmin && (
+                                    <NavLink
+                                        to="/admin"
+                                        onClick={() => handleNavClick('admin_dashboard')}
+                                        className="block w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-base font-medium text-slate-700 transition-colors hover:border-slate-300 hover:text-slate-900"
+                                        {...mobileNavDebugAttributes('admin_dashboard')}
+                                    >
+                                        Admin dashboard
+                                    </NavLink>
+                                )}
+                                {isAuthenticated ? (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            void handleLogout();
+                                        }}
+                                        className="block w-full rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-center text-base font-semibold text-rose-700 transition-colors hover:bg-rose-100"
+                                        {...mobileNavDebugAttributes('logout')}
+                                    >
+                                        Logout
+                                    </button>
+                                ) : isLoading ? (
+                                    <button
+                                        type="button"
+                                        disabled
+                                        className="inline-flex w-full cursor-wait items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-3 text-center text-base font-medium text-slate-500 opacity-80"
+                                        aria-disabled="true"
+                                        aria-live="polite"
+                                    >
+                                        <Loader2 size={16} className="animate-spin" />
+                                        {t('nav.login')}
+                                    </button>
+                                ) : (
+                                    <NavLink
+                                        to={buildLocalizedMarketingPath('login', activeLocale)}
+                                        onClick={handleLoginClick}
+                                        className="block w-full rounded-xl border border-slate-200 px-4 py-3 text-center text-base font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900"
+                                        {...mobileNavDebugAttributes('login')}
+                                    >
+                                        {t('nav.login')}
+                                    </NavLink>
+                                )}
+                                <div className="grid grid-cols-2 gap-2">
+                                    {legalNavItems.map((item) => (
+                                        <NavLink
+                                            key={`mobile-legal-${item.id}`}
+                                            to={buildLocalizedMarketingPath(item.id, activeLocale)}
+                                            onClick={() => handleNavClick(item.id)}
+                                            className="block rounded-xl border border-slate-200 px-3 py-2 text-center text-sm font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900"
+                                            {...mobileNavDebugAttributes(item.id)}
+                                        >
+                                            {item.label}
+                                        </NavLink>
+                                    ))}
+                                </div>
+                            </div>
                         </div>
                     </nav>
                 </div>
