@@ -348,6 +348,76 @@ html[lang^="ur-"] {
   }
 }
 
+@layer base {
+  :where(
+    button,
+    [role="button"],
+    [role="menuitem"],
+    [role="option"],
+    [role="checkbox"],
+    [role="radio"],
+    [role="switch"],
+    summary
+  ):not(:disabled):not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
+
+  :where(
+    button,
+    [role="button"],
+    [role="menuitem"],
+    [role="option"],
+    [role="checkbox"],
+    [role="radio"],
+    [role="switch"],
+    summary
+  ):is(:disabled, [aria-disabled="true"]) {
+    cursor: not-allowed;
+  }
+
+  :where(
+    a[href],
+    button,
+    input:not([type="hidden"]),
+    textarea,
+    select,
+    summary,
+    [role="button"],
+    [role="menuitem"],
+    [role="option"],
+    [role="checkbox"],
+    [role="radio"],
+    [role="switch"]
+  ) {
+    transition:
+      outline-color 160ms ease,
+      outline-offset 160ms ease,
+      box-shadow 160ms ease,
+      border-color 160ms ease,
+      background-color 160ms ease,
+      color 160ms ease;
+  }
+
+  :where(
+    a[href],
+    button,
+    input:not([type="hidden"]),
+    textarea,
+    select,
+    summary,
+    [role="button"],
+    [role="menuitem"],
+    [role="option"],
+    [role="checkbox"],
+    [role="radio"],
+    [role="switch"]
+  ):focus-visible {
+    outline: 2px solid rgb(var(--tf-accent-rgb) / 0.82);
+    outline-offset: 3px;
+    box-shadow: 0 0 0 5px rgb(var(--tf-accent-rgb) / 0.14);
+  }
+}
+
 input[type="checkbox"] {
   accent-color: var(--tf-accent-500);
 }

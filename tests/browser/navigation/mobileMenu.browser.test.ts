@@ -2,6 +2,7 @@
 import React from 'react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 
 const mocks = vi.hoisted(() => ({
@@ -115,5 +116,51 @@ describe('components/navigation/MobileMenu legal links', () => {
     expect(screen.queryByRole('link', { name: 'Users' })).toBeNull();
     expect(screen.queryByRole('link', { name: 'Trips' })).toBeNull();
     expect(screen.queryByRole('link', { name: 'AI Telemetry' })).toBeNull();
+  });
+
+  it('keeps the mobile menu close controls interactive above the sticky header layer', async () => {
+    const user = userEvent.setup();
+    const onClose = vi.fn();
+
+    render(
+      React.createElement(
+        MemoryRouter,
+        { initialEntries: ['/trip/example'] },
+        React.createElement(MobileMenu, {
+          isOpen: true,
+          onClose,
+        })
+      )
+    );
+
+    expect(screen.getByRole('dialog', { name: 'Navigation menu' })).toHaveClass('z-[1700]');
+
+    await user.click(screen.getByRole('button', { name: 'Close menu' }));
+    await user.click(screen.getByRole('button', { name: 'Close navigation menu', hidden: true }));
+
+    expect(onClose).toHaveBeenCalledTimes(2);
+  });
+
+  it('hides stamps and public-profile shortcuts from the authenticated mobile account section', () => {
+    mocks.isAuthenticated = true;
+    mocks.isAdmin = false;
+    mocks.profile = { username: 'owner' };
+
+    render(
+      React.createElement(
+        MemoryRouter,
+        { initialEntries: ['/profile'] },
+        React.createElement(MobileMenu, {
+          isOpen: true,
+          onClose: vi.fn(),
+        })
+      )
+    );
+
+    expect(screen.getByRole('link', { name: 'Profile' })).toHaveAttribute('href', '/profile');
+    expect(screen.getByRole('link', { name: 'Recent trips' })).toHaveAttribute('href', '/profile?tab=recent');
+    expect(screen.getByRole('link', { name: 'Settings' })).toHaveAttribute('href', '/profile/settings');
+    expect(screen.queryByRole('link', { name: 'Stamps' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'View public profile' })).toBeNull();
   });
 });
