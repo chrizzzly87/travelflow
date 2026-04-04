@@ -426,6 +426,8 @@
           "duration": "Duration",
           "totalDays": "Total days",
           "totalDaysValue": "{count} days",
+          "tripSpan": "일수와 숙박",
+          "tripSpanValue": "{days}일 / {nights}박",
           "cities": "Cities",
           "totalDistance": "Total distance",
           "owner": "Owner",

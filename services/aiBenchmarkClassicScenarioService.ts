@@ -1,6 +1,7 @@
 import { buildClassicItineraryPrompt, type GenerateOptions } from './aiService';
 import type { BenchmarkMaskScenario } from './aiBenchmarkPreferencesService';
 import { getDestinationPromptLabel, resolveDestinationName } from './destinationService';
+import { getEstimatedTripNightsFromTotalDays, getExactTripDateSpan } from '../shared/tripSpan';
 
 export interface ClassicBenchmarkScenarioBuildResult {
     prompt: string;
@@ -9,6 +10,7 @@ export interface ClassicBenchmarkScenarioBuildResult {
     destinationPrompt: string;
     selectedDestinations: string[];
     totalDays: number;
+    totalNights: number;
     generationOptions: GenerateOptions;
     input: {
         destinations: string[];
@@ -21,6 +23,7 @@ export interface ClassicBenchmarkScenarioBuildResult {
         specificCities: string;
         numCities: number | null;
         totalDays: number;
+        totalNights: number;
         roundTrip: boolean;
         routeLock: boolean;
         preferenceSignals: {
@@ -50,16 +53,6 @@ const parseBenchmarkDestinations = (value: string): string[] => {
         });
 };
 
-const getScenarioDateSpanDays = (startDate: string | null, endDate: string | null): number | null => {
-    if (!startDate || !endDate) return null;
-
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    const diffTime = Math.abs(end.getTime() - start.getTime());
-    if (!Number.isFinite(diffTime)) return null;
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-};
-
 const getFlexTotalDays = (flexWeeks: number): number => {
     if (!Number.isFinite(flexWeeks) || flexWeeks <= 0) return DEFAULT_FLEX_TOTAL_DAYS;
     return Math.max(7, Math.round(flexWeeks) * 7);
@@ -75,9 +68,13 @@ export const buildClassicBenchmarkScenario = (
     }
 
     const destinationPrompt = selectedDestinations.map((entry) => getDestinationPromptLabel(entry)).join(', ');
+    const exactTripSpan = scenario.dateInputMode === 'exact'
+        ? getExactTripDateSpan(scenario.startDate || '', scenario.endDate || '')
+        : null;
     const totalDays = scenario.dateInputMode === 'flex'
         ? getFlexTotalDays(scenario.flexWeeks)
-        : getScenarioDateSpanDays(scenario.startDate, scenario.endDate) || getFlexTotalDays(scenario.flexWeeks);
+        : exactTripSpan?.days || getFlexTotalDays(scenario.flexWeeks);
+    const totalNights = exactTripSpan?.nights ?? getEstimatedTripNightsFromTotalDays(totalDays);
 
     const generationOptions: GenerateOptions = {
         budget: scenario.budget,
@@ -86,6 +83,7 @@ export const buildClassicBenchmarkScenario = (
         specificCities: scenario.specificCities.trim() || undefined,
         roundTrip: scenario.roundTrip,
         totalDays,
+        totalNights,
         numCities: typeof scenario.numCities === 'number' ? scenario.numCities : undefined,
         destinationOrder: selectedDestinations,
         routeLock: scenario.routeLock,
@@ -99,6 +97,7 @@ export const buildClassicBenchmarkScenario = (
         destinationPrompt,
         selectedDestinations,
         totalDays,
+        totalNights,
         generationOptions,
         input: {
             destinations: selectedDestinations,
@@ -111,6 +110,7 @@ export const buildClassicBenchmarkScenario = (
             specificCities: scenario.specificCities,
             numCities: typeof scenario.numCities === 'number' ? scenario.numCities : null,
             totalDays,
+            totalNights,
             roundTrip: scenario.roundTrip,
             routeLock: scenario.routeLock,
             preferenceSignals: {

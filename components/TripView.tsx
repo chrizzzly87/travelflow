@@ -8,6 +8,7 @@ import { DB_ENABLED } from '../config/db';
 import { GoogleMapsLoader } from './GoogleMapsLoader';
 import { BASE_PIXELS_PER_DAY, DEFAULT_CITY_COLOR_PALETTE_ID, DEFAULT_DISTANCE_UNIT, buildShareUrl, formatDistance, getTimelineBounds, getTripDistanceKm, isInternalMapColorModeControlEnabled, normalizeMapColorMode } from '../utils';
 import { buildTripMapLocationContextQueries } from '../shared/tripMapCityResolution';
+import { getTripSpan } from '../shared/tripSpan';
 import { getExampleMapViewTransitionName, getExampleTitleViewTransitionName } from '../shared/viewTransitionNames';
 import { dbGetTrip, type DbTripAccessMetadata } from '../services/dbApi';
 import {
@@ -322,8 +323,9 @@ const normalizeNegativeOffsetsForTrip = (
 
 interface TripMetaSummary {
     dateRange: string;
-    totalDays: number;
-    totalDaysLabel: string;
+    days: number;
+    nights: number;
+    compactSpanLabel: string;
     cityCount: number;
     distanceLabel: string | null;
     summaryLine: string;
@@ -339,14 +341,11 @@ const buildTripMetaSummary = (trip: ITrip): TripMetaSummary => {
         .filter((item) => item.type === 'city')
         .sort((a, b) => a.startDateOffset - b.startDateOffset);
     const cityCount = cityItems.length;
-    const maxEnd = cityItems.reduce((max, city) => Math.max(max, city.startDateOffset + city.duration), 0);
-    const totalDaysRaw = Math.round(maxEnd * 2) / 2;
-    const totalDays = Number.isFinite(totalDaysRaw) ? totalDaysRaw : 0;
-
-    const startDate = new Date(trip.startDate);
-    const endOffsetDays = Math.max(0, Math.ceil(maxEnd) - 1);
-    const endDate = new Date(startDate);
-    endDate.setDate(startDate.getDate() + endOffsetDays);
+    const tripSpan = getTripSpan(trip);
+    const days = tripSpan.days;
+    const nights = tripSpan.nights;
+    const startDate = tripSpan.startDate;
+    const endDate = tripSpan.endDate;
 
     const formatDate = (value: Date) => value.toLocaleDateString(undefined, {
         month: 'short',
@@ -357,7 +356,6 @@ const buildTripMetaSummary = (trip: ITrip): TripMetaSummary => {
         ? formatDate(startDate)
         : `${formatDate(startDate)} – ${formatDate(endDate)}`;
 
-    const totalDaysLabel = totalDays % 1 === 0 ? totalDays.toFixed(0) : totalDays.toFixed(1);
     const citiesLabel = cityCount === 1 ? '1 city' : `${cityCount} cities`;
     const totalDistanceKm = getTripDistanceKm(trip.items);
     const distanceLabel = totalDistanceKm > 0
@@ -367,11 +365,12 @@ const buildTripMetaSummary = (trip: ITrip): TripMetaSummary => {
 
     return {
         dateRange,
-        totalDays,
-        totalDaysLabel,
+        days,
+        nights,
+        compactSpanLabel: tripSpan.compactLabel,
         cityCount,
         distanceLabel,
-        summaryLine: `${dateRange} • ${totalDaysLabel} days • ${citiesLabel}${distancePart}`,
+        summaryLine: `${dateRange} • ${tripSpan.compactLabel} • ${citiesLabel}${distancePart}`,
     };
 };
 
@@ -613,7 +612,7 @@ interface TripViewModalLayerProps {
     generationProgressMessage: string;
     loadingDestinationSummary: string;
     tripDateRange: string;
-    tripTotalDaysLabel: string;
+    tripSpanCompactLabel: string;
     pendingAuthModalStage: 'hidden' | 'loading' | 'locked';
     onContinuePendingAuth: () => void;
     isPendingAuthContinueDisabled: boolean;
@@ -706,7 +705,7 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
     generationProgressMessage,
     loadingDestinationSummary,
     tripDateRange,
-    tripTotalDaysLabel,
+    tripSpanCompactLabel,
     pendingAuthModalStage,
     onContinuePendingAuth,
     isPendingAuthContinueDisabled,
@@ -857,7 +856,7 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
             generationProgressMessage={generationProgressMessage}
             loadingDestinationSummary={loadingDestinationSummary}
             tripDateRange={tripDateRange}
-            tripTotalDaysLabel={tripTotalDaysLabel}
+            tripSpanCompactLabel={tripSpanCompactLabel}
             pendingAuthModalStage={pendingAuthModalStage}
             onContinuePendingAuth={onContinuePendingAuth}
             isPendingAuthContinueDisabled={isPendingAuthContinueDisabled}
@@ -3382,7 +3381,7 @@ const useTripViewRender = ({
                         generationProgressMessage={generationProgressMessage}
                         loadingDestinationSummary={loadingDestinationSummary}
                         tripDateRange={tripMeta.dateRange}
-                        tripTotalDaysLabel={tripMeta.totalDaysLabel}
+                        tripSpanCompactLabel={tripMeta.compactSpanLabel}
                         pendingAuthModalStage={pendingAuthModalStage}
                         onContinuePendingAuth={() => {
                             void handleResolvePendingAuthGeneration();

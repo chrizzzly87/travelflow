@@ -36,7 +36,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 
 interface TripMetaSummary {
     dateRange: string;
-    totalDaysLabel: string;
+    days: number;
+    nights: number;
     cityCount: number;
     distanceLabel: string | null;
 }
@@ -490,8 +491,11 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                             <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <SummaryCard label={t('tripView.infoDialog.general.meta.duration')} value={tripMeta.dateRange} />
                                 <SummaryCard
-                                    label={t('tripView.infoDialog.general.meta.totalDays')}
-                                    value={t('tripView.infoDialog.general.meta.totalDaysValue', { count: tripMeta.totalDaysLabel })}
+                                    label={t('tripView.infoDialog.general.meta.tripSpan')}
+                                    value={t('tripView.infoDialog.general.meta.tripSpanValue', {
+                                        days: tripMeta.days,
+                                        nights: tripMeta.nights,
+                                    })}
                                 />
                                 <SummaryCard label={t('tripView.infoDialog.general.meta.cities')} value={tripMeta.cityCount} />
                                 <SummaryCard label={t('tripView.infoDialog.general.meta.totalDistance')} value={tripMeta.distanceLabel || '—'} />

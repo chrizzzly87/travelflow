@@ -65,7 +65,7 @@ const tripCountryInfoJsonSchema = {
 const tripCityJsonSchema = {
   type: "object",
   additionalProperties: false,
-  properties: {
+    properties: {
     name: { type: "string", minLength: 1 },
     days: { type: "number", minimum: 0 },
     description: {
@@ -165,7 +165,7 @@ export const createGeminiTripItineraryResponseSchema = <TValue extends string | 
         type: Type.OBJECT,
         properties: {
           name: { type: Type.STRING },
-          days: { type: Type.NUMBER, description: "Number of days to stay" },
+          days: { type: Type.NUMBER, description: "Number of nights to stay in this stop" },
           description: { type: Type.STRING, description: "Markdown text that MUST contain 3 sections: '### Must See', '### Must Try', and '### Must Do' with checkbox lists." },
           lat: { type: Type.NUMBER, description: "Latitude of the city center" },
           lng: { type: Type.NUMBER, description: "Longitude of the city center" },

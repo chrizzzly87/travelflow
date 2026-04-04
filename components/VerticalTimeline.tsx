@@ -7,6 +7,7 @@ import { TransportModeIcon } from './TransportModeIcon';
 import { normalizeTransportMode } from '../shared/transportModes';
 import { getExampleCityLaneViewTransitionName } from '../shared/viewTransitionNames';
 import { buildRenderedTimelineDaySlots, buildRenderedTimelineMonths } from './tripview/timelineRenderedSlots';
+import { getTimelineVisualCenter, getTimelineVisualRange, getTimelineVisualSpan } from '../utils/timelineVisualLayout';
 
 interface VerticalTimelineProps {
   trip: ITrip;
@@ -130,22 +131,14 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
   const extraTimelineHeight = Math.max(0, renderedTimelineHeightTarget - totalHeight);
 
   const tripDayRange = React.useMemo(() => {
-    let minStart = Number.POSITIVE_INFINITY;
-    let maxEnd = Number.NEGATIVE_INFINITY;
-
-    trip.items.forEach((item) => {
-      if (!Number.isFinite(item.startDateOffset) || !Number.isFinite(item.duration)) return;
-      minStart = Math.min(minStart, item.startDateOffset);
-      maxEnd = Math.max(maxEnd, item.startDateOffset + item.duration);
-    });
-
-    if (!Number.isFinite(minStart) || !Number.isFinite(maxEnd) || maxEnd <= minStart) {
+    const visualRange = getTimelineVisualRange(trip.items);
+    if (!visualRange || visualRange.endOffset <= visualRange.startOffset) {
       return { start: 0, end: 0 };
     }
 
     return {
-      start: Math.floor(minStart),
-      end: Math.ceil(maxEnd),
+      start: Math.floor(visualRange.startOffset),
+      end: Math.ceil(visualRange.endOffset),
     };
   }, [trip.items]);
 
@@ -552,7 +545,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
     if (!targetItem || !containerRef.current) return;
 
     const container = containerRef.current;
-    const targetCenter = ((targetItem.startDateOffset - visualStartOffset + (targetItem.duration / 2)) * pixelsPerDay) + 32;
+    const targetCenter = ((getTimelineVisualCenter(targetItem, { vertical: true }) - visualStartOffset) * pixelsPerDay) + 32;
     const visibleStart = container.scrollTop + 80;
     const visibleEnd = container.scrollTop + container.clientHeight - 80;
 
@@ -830,10 +823,10 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
 
                     <div className="relative min-h-0 flex-1 overflow-visible" ref={travelLaneRef}>
                          {travelLinks.map(link => {
-                             const fromEnd = link.fromCity.startDateOffset + link.fromCity.duration;
-                             const toStart = link.toCity.startDateOffset;
-                             const rawFromBoundaryY = (fromEnd - visualStartOffset) * pixelsPerDay;
-                             const rawToBoundaryY = (toStart - visualStartOffset) * pixelsPerDay;
+                             const fromCitySpan = getTimelineVisualSpan(link.fromCity, { vertical: true });
+                             const toCitySpan = getTimelineVisualSpan(link.toCity, { vertical: true });
+                             const rawFromBoundaryY = (fromCitySpan.endOffset - visualStartOffset) * pixelsPerDay;
+                             const rawToBoundaryY = (toCitySpan.startOffset - visualStartOffset) * pixelsPerDay;
                              const {
                                  connectorTop,
                                  connectorHeight,

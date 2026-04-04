@@ -31,6 +31,19 @@ describe('services/aiService buildClassicItineraryPrompt', () => {
     expect(prompt).not.toContain('Benchmark compact-output mode');
   });
 
+  it('uses total nights as the stay budget for exact-date trips', () => {
+    const prompt = buildClassicItineraryPrompt('Japan', {
+      totalDays: 3,
+      totalNights: 2,
+      dateInputMode: 'exact',
+      promptMode: 'default',
+    });
+
+    expect(prompt).toContain('The full itinerary MUST cover exactly 2 total nights across all city stays.');
+    expect(prompt).toContain('the "days" field means nights stayed');
+    expect(prompt).toContain('The trip spans 3 calendar days including the arrival day and departure day.');
+  });
+
   it('includes traveler, route, timing, and transport preference signals', () => {
     const prompt = buildClassicItineraryPrompt('Japan, South Korea', {
       totalDays: 14,

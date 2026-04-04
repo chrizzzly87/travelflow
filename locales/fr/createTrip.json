@@ -23,6 +23,7 @@
       "flex": "Fenêtre flexible"
     },
     "summary": "Période provisoire : {days} jours au total.",
+    "summaryExact": "Période provisoire : {days} jours / {nights} nuits.",
     "labels": {
       "start": "Début",
       "end": "Fin",
@@ -140,6 +141,7 @@
     "destinations": "Destinations",
     "emptyDestinations": "Ajoutez des destinations pour prévisualiser votre itinéraire.",
     "days": "{days} jours",
+    "daysNights": "{days} jours / {nights} nuits",
     "avgPerStop": "Moy. {days} par étape",
     "addDestinations": "Ajoutez des destinations pour calculer les moyennes",
     "previewOnly": "Aperçu uniquement",
@@ -175,6 +177,7 @@
   "errors": {
     "destinationRequired": "Ajoutez au moins une destination avant de créer votre voyage.",
     "genericGenerate": "La génération du voyage a échoué. Veuillez réessayer.",
+    "minimumNightStay": "Choisissez une date de fin au moins une nuit après la date de début.",
     "offlineCreateDisabled": "Trip creation is unavailable while offline. Reconnect and try again."
   },
   "prefillBadge": "Prérempli depuis : {label}",
@@ -257,7 +260,7 @@
         "shoulder": "Shoulder season",
         "off": "Off-season risk"
       },
-      "exactLength": "{days} days",
+      "exactLength": "{days} jours / {nights} nuits",
       "flexLength": "About {weeks} weeks ({days} days)"
     },
     "preferences": {

@@ -10,7 +10,8 @@ vi.mock('react-i18next', () => ({
       if (key === 'tripView.infoDialog.tabs.debug') return 'Debug';
       if (key === 'tripView.infoDialog.general.meta.owner') return 'Owner';
       if (key === 'tripView.infoDialog.general.meta.access') return 'Access';
-      if (key === 'tripView.infoDialog.general.meta.totalDaysValue') return `${options?.count ?? ''} days`;
+      if (key === 'tripView.infoDialog.general.meta.tripSpan') return 'Days & nights';
+      if (key === 'tripView.infoDialog.general.meta.tripSpanValue') return `${options?.days ?? ''} days / ${options?.nights ?? ''} nights`;
       return key;
     },
   }),
@@ -38,7 +39,8 @@ describe('components/TripInfoModal ownership context', () => {
       isExamplePreview: false,
       tripMeta: {
         dateRange: 'Jan 1, 2026 – Jan 3, 2026',
-        totalDaysLabel: '3',
+        days: 3,
+        nights: 2,
         cityCount: 2,
         distanceLabel: '120 km',
       },
@@ -89,7 +91,8 @@ describe('components/TripInfoModal ownership context', () => {
       isExamplePreview: false,
       tripMeta: {
         dateRange: 'Jan 1, 2026 – Jan 3, 2026',
-        totalDaysLabel: '3',
+        days: 3,
+        nights: 2,
         cityCount: 2,
         distanceLabel: '120 km',
       },

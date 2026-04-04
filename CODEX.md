@@ -2,12 +2,13 @@
 
 ## Startup checklist
 1. Read `docs/UPDATE_FORMAT.md`.
-2. If the task changes product behavior, plan release-note updates alongside code changes.
-3. For any locale, translation, or page-routing change, read `docs/I18N_PAGE_WORKFLOW.md`.
-4. For any user-facing text changes (marketing, CTA, planner), read `docs/UX_COPY_GUIDELINES.md`.
-5. For analytics instrumentation, read `docs/ANALYTICS_CONVENTION.md`.
-6. For localized copy placeholders, always use ICU syntax (`{name}`), never `{{name}}` (project uses `i18next-icu`).
-7. For new locale keys, update all active locales (`en`, `es`, `de`, `fr`, `pt`, `ru`, `it`, `pl`, `ko`) and choose namespace intentionally (`common/pages/legal` vs route namespace).
+2. In fresh git worktrees, run `pnpm worktree:sync-env` before env-dependent commands if `.env` or `.env.local` is missing. A repo `post-checkout` hook should usually do this automatically for new worktrees, including Codex-created ones.
+3. If the task changes product behavior, plan release-note updates alongside code changes.
+4. For any locale, translation, or page-routing change, read `docs/I18N_PAGE_WORKFLOW.md`.
+5. For any user-facing text changes (marketing, CTA, planner), read `docs/UX_COPY_GUIDELINES.md`.
+6. For analytics instrumentation, read `docs/ANALYTICS_CONVENTION.md`.
+7. For localized copy placeholders, always use ICU syntax (`{name}`), never `{{name}}` (project uses `i18next-icu`).
+8. For new locale keys, update all active locales (`en`, `es`, `de`, `fr`, `pt`, `ru`, `it`, `pl`, `ko`) and choose namespace intentionally (`common/pages/legal` vs route namespace).
 
 ## Skill usage policy
 - For React performance or refactor work, consult `vercel-react-best-practices` and apply only the rules that materially affect the task.

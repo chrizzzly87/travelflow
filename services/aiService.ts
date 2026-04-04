@@ -128,6 +128,7 @@ const cityNotesSchema = {
 export interface GenerateOptions extends CreateTripPreferenceSignals {
     roundTrip?: boolean;
     totalDays?: number;
+    totalNights?: number;
     numCities?: number;
     budget?: string;
     pace?: string;
@@ -146,6 +147,7 @@ export interface WizardGenerateOptions extends CreateTripPreferenceSignals {
     endDate?: string;
     roundTrip?: boolean;
     totalDays?: number;
+    totalNights?: number;
     budget?: string;
     pace?: string;
     interests?: string[];
@@ -165,6 +167,7 @@ export interface SurpriseGenerateOptions {
     startDate?: string;
     endDate?: string;
     totalDays?: number;
+    totalNights?: number;
     monthLabels?: string[];
     durationWeeks?: number;
     seasonalEvents?: string[];
@@ -300,7 +303,9 @@ const BASE_ITINERARY_RULES_PROMPT = `
       Return a list of consecutive cities/stops.
       Important Rules for complex trips:
       1. Provide accurate Latitude and Longitude for each city/stop.
-      2. Treat multi-day excursions (like treks, cruises, jungle expeditions, or hikes) as separate 'cities/stops' with their own duration (days) and coordinates.
+      2. Treat multi-day excursions (like treks, cruises, jungle expeditions, or hikes) as separate 'cities/stops' with their own duration and coordinates.
+         - In the "cities" array, the "days" field means nights stayed in that stop.
+         - Arrival day and departure day each count as calendar days outside that night count.
       3. For EACH city description, you MUST include these exact markdown sections:
          ### Must See (3-4 items)
          ### Must Try (3-4 local foods)
@@ -330,7 +335,9 @@ const BASE_ITINERARY_RULES_PROMPT_COMPACT = `
       Return a concise list of consecutive cities/stops.
       Important Rules for compact benchmark output:
       1. Provide accurate Latitude and Longitude for each city/stop.
-      2. Treat multi-day excursions (like treks, cruises, jungle expeditions, or hikes) as separate 'cities/stops' with their own duration (days) and coordinates.
+      2. Treat multi-day excursions (like treks, cruises, jungle expeditions, or hikes) as separate 'cities/stops' with their own duration and coordinates.
+         - In the "cities" array, the "days" field means nights stayed in that stop.
+         - Arrival day and departure day each count as calendar days outside that night count.
       3. For EACH city description, you MUST include these exact markdown sections:
          ### Must See
          ### Must Try
@@ -368,6 +375,7 @@ const STRICT_JSON_OBJECT_CONTRACT_PROMPT = `
          - description
          - lat
          - lng
+         - IMPORTANT: "days" means nights stayed in that stop.
       5. "travelSegments" must be an array (can be empty) of objects with:
          - fromCityIndex
          - toCityIndex
@@ -390,9 +398,26 @@ const STRICT_JSON_OBJECT_CONTRACT_PROMPT = `
       12. Before finalizing your answer, run a self-check:
          - Every city.description contains all three headings: "### Must See", "### Must Try", "### Must Do".
          - Only add "### Heads Up" when a practical warning is genuinely needed.
+         - cities[].days is interpreted as nights stayed, not touched calendar days.
          - countryInfo is a single object, languages is an array, and the canonical countryInfo keys are used exactly.
          - Return exactly one JSON object and nothing else.
     `;
+
+const buildStayBudgetPrompt = (options: Pick<GenerateOptions, 'totalDays' | 'totalNights'>): string => {
+    if (typeof options.totalNights === 'number' && Number.isFinite(options.totalNights) && options.totalNights > 0) {
+        const totalNights = Math.round(options.totalNights);
+        const totalDays = typeof options.totalDays === 'number' && Number.isFinite(options.totalDays) && options.totalDays > 0
+            ? Math.round(options.totalDays)
+            : totalNights + 1;
+        return `The full itinerary MUST cover exactly ${totalNights} total nights across all city stays. In the "cities" array, the "days" field means nights stayed. The trip spans ${totalDays} calendar days including the arrival day and departure day. `;
+    }
+
+    if (typeof options.totalDays === 'number' && Number.isFinite(options.totalDays) && options.totalDays > 0) {
+        return `The full itinerary MUST cover exactly ${Math.round(options.totalDays)} total days across all city stays. `;
+    }
+
+    return '';
+};
 
 const BENCHMARK_COMPACT_OUTPUT_PROMPT = `
       Benchmark compact-output mode:
@@ -1359,7 +1384,7 @@ export const buildClassicItineraryPrompt = (prompt: string, options?: GenerateOp
         if (options.roundTrip) {
             detailedPrompt += ` Roundtrip is enabled. The FINAL city in "cities" MUST be the same place as the FIRST city (same city name and coordinates), representing the return to start. `;
         }
-        if (options.totalDays) detailedPrompt += ` The full itinerary MUST cover exactly ${options.totalDays} total days across all city stays. `;
+        detailedPrompt += buildStayBudgetPrompt(options);
         if (options.numCities) detailedPrompt += ` Visit exactly ${options.numCities} distinct cities/stops. `;
         if (options.budget) detailedPrompt += ` Budget level: ${options.budget}. `;
         if (options.pace) detailedPrompt += ` Travel pace: ${options.pace}. `;
@@ -1417,9 +1442,7 @@ export const buildWizardItineraryPrompt = (options: WizardGenerateOptions): stri
     if (options.roundTrip) {
         detailedPrompt += `Roundtrip is enabled. The FINAL city in "cities" MUST be the same place as the FIRST city (same city name and coordinates), representing the return to start. `;
     }
-    if (options.totalDays) {
-        detailedPrompt += `The full itinerary MUST cover exactly ${options.totalDays} total days across all city stays. `;
-    }
+    detailedPrompt += buildStayBudgetPrompt(options);
     if (options.budget) {
         detailedPrompt += `Budget level: ${options.budget}. `;
     }
@@ -1481,9 +1504,7 @@ export const buildSurpriseItineraryPrompt = (options: SurpriseGenerateOptions): 
     detailedPrompt += `This request comes from the "Surprise Me" flow, so the plan should feel exciting, varied, and season-aware while still practical. `;
     detailedPrompt += `${USER_PROMPT_DATA_GUARD_PROMPT} `;
 
-    if (options.totalDays) {
-        detailedPrompt += `The full itinerary MUST cover exactly ${options.totalDays} total days across all city stays. `;
-    }
+    detailedPrompt += buildStayBudgetPrompt(options);
     if (options.monthLabels && options.monthLabels.length > 0) {
         detailedPrompt += `${formatUserPromptDataListBlock('travel window months', options.monthLabels)} `;
     }

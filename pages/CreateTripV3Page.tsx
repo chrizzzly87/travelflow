@@ -49,6 +49,7 @@ import {
     getDaysDifference,
     getDefaultTripDates,
 } from '../utils';
+import { getEstimatedTripNightsFromTotalDays, getExactTripDateSpan } from '../shared/tripSpan';
 import {
     getDestinationOptionByName,
     getDestinationPromptLabel,
@@ -285,6 +286,7 @@ const buildPreviewTrip = (params: {
     destination: string;
     startDate: string;
     endDate: string;
+    totalNights: number;
     tripId?: string;
     title?: string;
     stopTitle: (index: number) => string;
@@ -293,10 +295,10 @@ const buildPreviewTrip = (params: {
     titleFallback: string;
 }): ITrip => {
     const now = Date.now();
-    const totalDays = getDaysDifference(params.startDate, params.endDate);
-    const cityCount = Math.max(1, Math.min(4, Math.max(2, Math.round(totalDays / 4))));
-    const baseDuration = Math.floor(totalDays / cityCount);
-    const remainder = totalDays % cityCount;
+    const totalNights = Math.max(1, Math.round(params.totalNights));
+    const cityCount = Math.max(1, Math.min(4, totalNights, Math.max(2, Math.round(totalNights / 4))));
+    const baseDuration = Math.floor(totalNights / cityCount);
+    const remainder = totalNights % cityCount;
     let offset = 0;
     const items: ITimelineItem[] = Array.from({ length: cityCount }).map((_, index) => {
         const duration = baseDuration + (index < remainder ? 1 : 0);
@@ -510,6 +512,26 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
         () => (dateInputMode === 'flex' ? Math.max(7, flexWeeks * 7) : getDaysDifference(startDate, endDate)),
         [dateInputMode, endDate, flexWeeks, startDate]
     );
+    const exactTripSpan = useMemo(
+        () => (dateInputMode === 'exact' ? getExactTripDateSpan(startDate, endDate) : null),
+        [dateInputMode, endDate, startDate]
+    );
+    const totalNights = useMemo(
+        () => (
+            dateInputMode === 'exact'
+                ? (exactTripSpan?.nights ?? 0)
+                : getEstimatedTripNightsFromTotalDays(totalDays)
+        ),
+        [dateInputMode, exactTripSpan, totalDays]
+    );
+    const exactDateRangeError = useMemo(
+        () => (
+            dateInputMode === 'exact' && startDate && endDate && totalNights < 1
+                ? t('errors.minimumNightStay')
+                : null
+        ),
+        [dateInputMode, endDate, startDate, t, totalNights]
+    );
     const destinationRecommendationMonths = useMemo(() => {
         if (dateInputMode === 'flex') {
             return FLEX_WINDOW_MONTHS[flexWindow];
@@ -669,14 +691,16 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
 
     const dateSummary = useMemo(() => {
         if (dateInputMode === 'exact') {
-            return `${new Date(`${startDate}T00:00:00`).toLocaleDateString(i18n.language, { month: 'short', day: 'numeric', year: 'numeric' })} - ${new Date(`${endDate}T00:00:00`).toLocaleDateString(i18n.language, { month: 'short', day: 'numeric', year: 'numeric' })} (${t('snapshot.days', { days: totalDays })})`;
+            const exactDays = exactTripSpan?.days ?? totalDays;
+            const exactNights = exactTripSpan?.nights ?? totalNights;
+            return `${new Date(`${startDate}T00:00:00`).toLocaleDateString(i18n.language, { month: 'short', day: 'numeric', year: 'numeric' })} - ${new Date(`${endDate}T00:00:00`).toLocaleDateString(i18n.language, { month: 'short', day: 'numeric', year: 'numeric' })} (${t('wizard.dates.exactLength', { days: exactDays, nights: exactNights })})`;
         }
         return t('wizard.review.flexDates', {
             weeks: flexWeeks,
             window: t(FLEX_WINDOW_OPTIONS.find((entry) => entry.id === flexWindow)?.labelKey || 'dates.flexWindow.options.shoulder'),
             days: totalDays,
         });
-    }, [dateInputMode, endDate, flexWeeks, flexWindow, i18n.language, startDate, t, totalDays]);
+    }, [dateInputMode, endDate, exactTripSpan, flexWeeks, flexWindow, i18n.language, startDate, t, totalDays, totalNights]);
 
     const draftMeta = useMemo<CreateTripPrefillDraft>(() => ({
         version: 2,
@@ -1137,13 +1161,22 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
     const canContinue = useMemo(() => {
         if (currentStepId === 'intent') return Boolean(wizardBranch);
         if (currentStepId === 'destinations') return selectedCountries.length > 0;
-        if (currentStepId === 'dates') return dateInputMode === 'flex' ? flexWeeks > 0 : Boolean(startDate && endDate);
+        if (currentStepId === 'dates') {
+            return dateInputMode === 'flex'
+                ? flexWeeks > 0
+                : Boolean(startDate && endDate && totalNights >= 1);
+        }
         return true;
-    }, [currentStepId, dateInputMode, endDate, flexWeeks, selectedCountries.length, startDate, wizardBranch]);
+    }, [currentStepId, dateInputMode, endDate, flexWeeks, selectedCountries.length, startDate, totalNights, wizardBranch]);
 
-    const canGenerate = selectedCountries.length > 0 && !isGenerating;
+    const canGenerate = selectedCountries.length > 0 && !isGenerating && (dateInputMode === 'flex' || totalNights >= 1);
 
     const handleGenerate = async () => {
+        if (dateInputMode === 'exact' && totalNights < 1) {
+            setGenerationError(t('errors.minimumNightStay'));
+            return;
+        }
+
         await maybeRequestTripReadyNotifications();
 
         const sessionUserId = await ensureDbSession();
@@ -1168,6 +1201,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
             endDate,
             roundTrip: isRoundTrip,
             totalDays,
+            totalNights: totalNights > 0 ? totalNights : undefined,
             budget,
             pace,
             interests: notes.split(',').map((token) => token.trim()).filter(Boolean),
@@ -1229,6 +1263,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                     destination: destinationLabel,
                     startDate,
                     endDate,
+                    totalNights: Math.max(1, totalNights),
                     tripId: generateTripId(),
                     title: destinationLabel,
                     stopTitle: (index) => t('wizard.loading.stopTitle', { index }),
@@ -1295,6 +1330,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
             destination: destinationLabel,
             startDate,
             endDate,
+            totalNights: Math.max(1, totalNights),
             title: destinationLabel,
             stopTitle: (index) => t('wizard.loading.stopTitle', { index }),
             stopDescription: t('wizard.loading.stopDescription'),
@@ -1322,6 +1358,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                     destination: destinationLabel,
                     startDate,
                     endDate,
+                    totalNights: Math.max(1, totalNights),
                     tripId,
                     title: destinationLabel,
                     stopTitle: (index) => t('wizard.loading.stopTitle', { index }),
@@ -1724,17 +1761,22 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                     )}
 
                     {dateInputMode === 'exact' ? (
-                        <DateRangePicker
-                            startDate={startDate}
-                            endDate={endDate}
-                            onChange={(nextStartDate, nextEndDate) => {
-                                setStartDate(nextStartDate);
-                                setEndDate(nextEndDate);
-                            }}
-                            showLabel={false}
-                            monthLabelFormat="long"
-                            locale={i18n.language}
-                        />
+                        <div className="space-y-3">
+                            <DateRangePicker
+                                startDate={startDate}
+                                endDate={endDate}
+                                onChange={(nextStartDate, nextEndDate) => {
+                                    setStartDate(nextStartDate);
+                                    setEndDate(nextEndDate);
+                                }}
+                                showLabel={false}
+                                monthLabelFormat="long"
+                                locale={i18n.language}
+                            />
+                            {exactDateRangeError && (
+                                <p className="text-sm font-medium text-rose-600">{exactDateRangeError}</p>
+                            )}
+                        </div>
                     ) : (
                         <div className="grid gap-4 md:grid-cols-[1fr,1fr]">
                             <NumberStepper
@@ -1763,7 +1805,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                     <div className="flex flex-wrap items-center justify-center gap-3 text-sm">
                         <span className="inline-flex items-center rounded-full border border-accent-200 bg-accent-50 px-3 py-1 font-medium text-accent-700">
                             {dateInputMode === 'exact'
-                                ? t('wizard.dates.exactLength', { days: totalDays })
+                                ? t('wizard.dates.exactLength', { days: exactTripSpan?.days ?? totalDays, nights: exactTripSpan?.nights ?? totalNights })
                                 : t('wizard.dates.flexLength', { weeks: flexWeeks, days: totalDays })}
                         </span>
                         {seasonQuality && (

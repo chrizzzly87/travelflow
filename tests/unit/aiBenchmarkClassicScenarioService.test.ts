@@ -57,9 +57,12 @@ describe('buildClassicBenchmarkScenario', () => {
     const result = buildClassicBenchmarkScenario(scenario);
 
     expect(result.totalDays).toBe(8);
+    expect(result.totalNights).toBe(7);
     expect(result.generationOptions.totalDays).toBe(8);
+    expect(result.generationOptions.totalNights).toBe(7);
     expect(result.generationOptions.specificCities).toBe('Lisbon, Porto');
     expect(result.input.totalDays).toBe(8);
+    expect(result.input.totalNights).toBe(7);
     expect(result.input.specificCities).toBe('Lisbon, Porto');
   });
 });

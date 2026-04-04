@@ -15,13 +15,13 @@ import { isTripExpiredByTimestamp } from '../../config/productLimits';
 import type { AppLanguage, ITrip } from '../../types';
 import { trackEvent } from '../../services/analyticsService';
 import { buildPath } from '../../config/routes';
+import { getTripSpan } from '../../shared/tripSpan';
 import { Checkbox } from '../ui/checkbox';
 import { getTripGenerationState } from '../../services/tripGenerationDiagnosticsService';
 import {
   buildMiniMapUrl,
   formatTripDateRange,
   formatTripSummaryLine,
-  getTripDurationDays,
   getTripCityItems,
   getTripCityStops,
 } from './tripPreviewUtils';
@@ -150,7 +150,7 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
   );
   const summaryLine = React.useMemo(() => formatTripSummaryLine(trip, locale), [trip, locale]);
   const dateRange = React.useMemo(() => formatTripDateRange(trip, locale), [trip, locale]);
-  const durationDays = React.useMemo(() => getTripDurationDays(trip), [trip]);
+  const tripSpan = React.useMemo(() => getTripSpan(trip), [trip]);
   const hasCreatorAttribution = showCreatorAttribution && Boolean(creatorHandle) && Boolean(creatorProfilePath);
   const isPublic = trip.showOnPublicProfile !== false;
   const isExpired = trip.status === 'expired' || isTripExpiredByTimestamp(trip.tripExpiresAt);
@@ -302,7 +302,7 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
         <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600">
           <span className="inline-flex items-center gap-1.5">
             <Clock size={15} weight="duotone" className="text-accent-500" />
-            {durationDays}
+            {tripSpan.compactLabel}
           </span>
           <span className="inline-flex items-center gap-1.5">
             <MapPin size={15} weight="duotone" className="text-accent-500" />

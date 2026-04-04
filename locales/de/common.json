@@ -426,6 +426,8 @@
           "duration": "Zeitraum",
           "totalDays": "Tage gesamt",
           "totalDaysValue": "{count} Tage",
+          "tripSpan": "Tage & Nächte",
+          "tripSpanValue": "{days} Tage / {nights} Nächte",
           "cities": "Städte",
           "totalDistance": "Gesamtdistanz",
           "owner": "Besitzer",

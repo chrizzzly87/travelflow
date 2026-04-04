@@ -16,7 +16,7 @@ import { TransportModeIcon } from './TransportModeIcon';
 import { normalizeTransportMode } from '../shared/transportModes';
 import { getExampleCityLaneViewTransitionName } from '../shared/viewTransitionNames';
 import { buildRenderedTimelineDaySlots, buildRenderedTimelineMonths } from './tripview/timelineRenderedSlots';
-import { getTimelineVisualSpan } from '../utils/timelineVisualLayout';
+import { getTimelineVisualCenter, getTimelineVisualRange, getTimelineVisualSpan } from '../utils/timelineVisualLayout';
 
 interface TimelineProps {
   trip: ITrip;
@@ -151,22 +151,14 @@ export const Timeline: React.FC<TimelineProps> = ({
   const extraTimelineWidth = Math.max(0, renderedTimelineWidth - totalWidth);
 
   const tripDayRange = React.useMemo(() => {
-    let minStart = Number.POSITIVE_INFINITY;
-    let maxEnd = Number.NEGATIVE_INFINITY;
-
-    trip.items.forEach((item) => {
-      if (!Number.isFinite(item.startDateOffset) || !Number.isFinite(item.duration)) return;
-      minStart = Math.min(minStart, item.startDateOffset);
-      maxEnd = Math.max(maxEnd, item.startDateOffset + item.duration);
-    });
-
-    if (!Number.isFinite(minStart) || !Number.isFinite(maxEnd) || maxEnd <= minStart) {
+    const visualRange = getTimelineVisualRange(trip.items);
+    if (!visualRange || visualRange.endOffset <= visualRange.startOffset) {
       return { start: 0, end: 0 };
     }
 
     return {
-      start: Math.floor(minStart),
-      end: Math.ceil(maxEnd),
+      start: Math.floor(visualRange.startOffset),
+      end: Math.ceil(visualRange.endOffset),
     };
   }, [trip.items]);
 
@@ -239,10 +231,10 @@ export const Timeline: React.FC<TimelineProps> = ({
   const transferChipLayoutById = React.useMemo(() => {
       const layout = buildHorizontalTransferLaneLayout(
           travelLinks.map((link) => {
-              const fromEnd = link.fromCity.startDateOffset + link.fromCity.duration;
-              const toStart = link.toCity.startDateOffset;
-              const fromX = (fromEnd - visualStartOffset) * pixelsPerDay;
-              const toX = (toStart - visualStartOffset) * pixelsPerDay;
+              const fromCitySpan = getTimelineVisualSpan(link.fromCity);
+              const toCitySpan = getTimelineVisualSpan(link.toCity);
+              const fromX = (fromCitySpan.endOffset - visualStartOffset) * pixelsPerDay;
+              const toX = (toCitySpan.startOffset - visualStartOffset) * pixelsPerDay;
               const segmentStart = Math.min(fromX, toX);
               const segmentEnd = Math.max(fromX, toX);
               const gapWidth = Math.max(2, segmentEnd - segmentStart);
@@ -697,7 +689,7 @@ export const Timeline: React.FC<TimelineProps> = ({
     if (!targetItem || !containerRef.current) return;
 
     const container = containerRef.current;
-    const targetCenter = ((targetItem.startDateOffset - visualStartOffset + (targetItem.duration / 2)) * pixelsPerDay) + 32;
+    const targetCenter = ((getTimelineVisualCenter(targetItem) - visualStartOffset) * pixelsPerDay) + 32;
     const visibleStart = container.scrollLeft + 80;
     const visibleEnd = container.scrollLeft + container.clientWidth - 80;
 
@@ -932,10 +924,10 @@ export const Timeline: React.FC<TimelineProps> = ({
                         style={{ height: `${transferLaneHeightPx}px` }}
                     >
                         {travelLinks.map(link => {
-                            const fromEnd = link.fromCity.startDateOffset + link.fromCity.duration;
-                            const toStart = link.toCity.startDateOffset;
-                            const fromX = (fromEnd - visualStartOffset) * pixelsPerDay;
-                            const toX = (toStart - visualStartOffset) * pixelsPerDay;
+                            const fromCitySpan = getTimelineVisualSpan(link.fromCity);
+                            const toCitySpan = getTimelineVisualSpan(link.toCity);
+                            const fromX = (fromCitySpan.endOffset - visualStartOffset) * pixelsPerDay;
+                            const toX = (toCitySpan.startOffset - visualStartOffset) * pixelsPerDay;
                             const segmentStart = Math.min(fromX, toX);
                             const segmentEnd = Math.max(fromX, toX);
                             const gapWidth = Math.max(2, segmentEnd - segmentStart);

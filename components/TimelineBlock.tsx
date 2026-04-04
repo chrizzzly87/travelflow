@@ -117,9 +117,15 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
   );
   const compactVerticalTitleSize = Math.max(9, Math.min(11, size * 0.28));
   const compactHorizontalTitleSize = Math.max(11, Math.min(12.5, compactHorizontalTitleHeightPx * 0.095));
-  const cityDayCount = isCity ? Math.max(1, Math.ceil(item.duration - 0.01)) : 0;
-  const cityNightCount = isCity ? Math.max(0, cityDayCount - 1) : 0;
-  const cityDurationFullLabel = `${cityDayCount} ${cityDayCount === 1 ? 'Day' : 'Days'} / ${cityNightCount} ${cityNightCount === 1 ? 'Night' : 'Nights'}`;
+  const formatCount = (value: number): string => {
+    const rounded = Math.round(value * 10) / 10;
+    return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1).replace(/\.0$/, '');
+  };
+  const cityDayCount = isCity
+    ? Math.max(1, Math.ceil(visualSpan.endOffset - 0.0001) - Math.floor(visualSpan.startOffset))
+    : 0;
+  const cityNightCount = isCity ? Math.max(0, Math.round(Math.max(0, item.duration) * 10) / 10) : 0;
+  const cityDurationFullLabel = `${formatCount(cityDayCount)} ${cityDayCount === 1 ? 'Day' : 'Days'} / ${formatCount(cityNightCount)} ${cityNightCount === 1 ? 'Night' : 'Nights'}`;
   const fallbackCountryFromLocation = item.location
     ? (() => {
         const parts = item.location.split(',').map(part => part.trim()).filter(Boolean);

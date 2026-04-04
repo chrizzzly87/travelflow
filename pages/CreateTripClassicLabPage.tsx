@@ -96,6 +96,7 @@ import {
     getDaysDifference,
     generateTripId,
 } from '../utils';
+import { getEstimatedTripNightsFromTotalDays, getExactTripDateSpan } from '../shared/tripSpan';
 import {
     DESTINATION_OPTIONS,
     getDestinationMetaLabel,
@@ -235,15 +236,15 @@ const buildLoadingTripPreview = (params: {
     destinationLabel: string;
     focusLocations: string[];
     startDate: string;
-    totalDays: number;
+    totalNights: number;
     requestedStops: number;
     roundTrip: boolean;
 }): ITrip => {
     const now = Date.now();
-    const totalDays = Math.max(1, Math.round(params.totalDays));
-    const stops = Math.max(1, Math.min(params.requestedStops, totalDays));
-    const baseDuration = Math.floor(totalDays / stops);
-    const remainder = totalDays % stops;
+    const totalNights = Math.max(1, Math.round(params.totalNights));
+    const stops = Math.max(1, Math.min(params.requestedStops, totalNights));
+    const baseDuration = Math.floor(totalNights / stops);
+    const remainder = totalNights % stops;
 
     let offset = 0;
     const normalizedFocusLocations = Array.from(
@@ -529,16 +530,66 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
         if (dateInputMode === 'flex') return Math.max(7, flexWeeks * 7);
         return getDaysDifference(startDate, endDate);
     }, [dateInputMode, endDate, flexWeeks, startDate]);
+    const exactTripSpan = useMemo(
+        () => (dateInputMode === 'exact' ? getExactTripDateSpan(startDate, endDate) : null),
+        [dateInputMode, endDate, startDate]
+    );
+    const totalNights = useMemo(
+        () => (
+            dateInputMode === 'exact'
+                ? (exactTripSpan?.nights ?? 0)
+                : getEstimatedTripNightsFromTotalDays(dayCount)
+        ),
+        [dateInputMode, dayCount, exactTripSpan]
+    );
+    const exactDateRangeError = useMemo(
+        () => (
+            dateInputMode === 'exact' && startDate && endDate && totalNights < 1
+                ? t('errors.minimumNightStay')
+                : null
+        ),
+        [dateInputMode, endDate, startDate, t, totalNights]
+    );
+    const plannerDurationLabel = useMemo(
+        () => (
+            dateInputMode === 'exact'
+                ? t('dates.summaryExact', {
+                    days: exactTripSpan?.days ?? dayCount,
+                    nights: exactTripSpan?.nights ?? totalNights,
+                })
+                : t('dates.summary', { days: dayCount })
+        ),
+        [dateInputMode, dayCount, exactTripSpan, t, totalNights]
+    );
+    const snapshotDurationLabel = useMemo(
+        () => (
+            dateInputMode === 'exact'
+                ? t('snapshot.daysNights', {
+                    days: exactTripSpan?.days ?? dayCount,
+                    nights: exactTripSpan?.nights ?? totalNights,
+                })
+                : t('snapshot.days', { days: dayCount })
+        ),
+        [dateInputMode, dayCount, exactTripSpan, t, totalNights]
+    );
+    const mobileSnapshotDurationValue = useMemo(
+        () => (
+            dateInputMode === 'exact'
+                ? (exactTripSpan?.compactLabel ?? `${Math.max(1, dayCount)}D/${Math.max(0, totalNights)}N`)
+                : String(dayCount)
+        ),
+        [dateInputMode, dayCount, exactTripSpan, totalNights]
+    );
 
     const mobileDateRangeLabel = useMemo(() => {
         const start = new Date(`${startDate}T00:00:00`);
         const end = new Date(`${endDate}T00:00:00`);
         if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
-            return t('dates.summary', { days: dayCount });
+            return plannerDurationLabel;
         }
         const formatter = new Intl.DateTimeFormat(i18n.language, { month: 'short', day: 'numeric' });
         return `${formatter.format(start)} - ${formatter.format(end)}`;
-    }, [dayCount, endDate, i18n.language, startDate, t]);
+    }, [dayCount, endDate, i18n.language, plannerDurationLabel, startDate]);
 
     const averageDaysPerStop = useMemo(() => {
         if (orderedDestinations.length === 0) return 0;
@@ -560,7 +611,9 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
     );
 
     const destinationComplete = orderedDestinations.length > 0;
-    const datesComplete = Boolean(startDate && endDate);
+    const datesComplete = dateInputMode === 'flex'
+        ? Boolean(startDate && endDate)
+        : Boolean(startDate && endDate && totalNights >= 1);
     const canLockRoute = destinations.length > 1;
     const isGenerationBlockedOffline = !isBrowserOnline;
 
@@ -1539,6 +1592,10 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
             showSubmitError(t('errors.destinationRequired'));
             return;
         }
+        if (dateInputMode === 'exact' && totalNights < 1) {
+            showSubmitError(t('errors.minimumNightStay'));
+            return;
+        }
 
         await maybeRequestTripReadyNotifications();
 
@@ -1618,6 +1675,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
             interests: notesInterests.length > 0 ? notesInterests : undefined,
             roundTrip,
             totalDays: dayCount,
+            totalNights: totalNights > 0 ? totalNights : undefined,
             dateInputMode,
             flexWeeks: dateInputMode === 'flex' ? flexWeeks : undefined,
             flexWindow: dateInputMode === 'flex' ? flexWindow : undefined,
@@ -1665,7 +1723,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                     destinationLabel,
                     focusLocations: localizedDestinationLabels,
                     startDate,
-                    totalDays: dayCount,
+                    totalNights: Math.max(1, totalNights),
                     requestedStops: Math.max(orderedDestinations.length, 2),
                     roundTrip,
                 });
@@ -1742,7 +1800,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
             destinationLabel,
             focusLocations: localizedDestinationLabels,
             startDate,
-            totalDays: dayCount,
+            totalNights: Math.max(1, totalNights),
             requestedStops: Math.max(orderedDestinations.length, 2),
             roundTrip,
         });
@@ -2153,26 +2211,31 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                 </div>
 
                                 {dateInputMode === 'exact' ? (
-                                    <DateRangePicker
-                                        startDate={startDate}
-                                        endDate={endDate}
-                                        onChange={(nextStartDate, nextEndDate) => {
-                                            setStartDate(nextStartDate);
-                                            setEndDate(nextEndDate);
-                                        }}
-                                        showLabel={false}
-                                        monthLabelFormat="long"
-                                        locale={i18n.language}
-                                        labels={{
-                                            start: t('dates.labels.start'),
-                                            end: t('dates.labels.end'),
-                                            selectDate: t('dates.labels.selectDate'),
-                                            selectStartDate: t('dates.labels.selectStartDate'),
-                                            selectEndDate: t('dates.labels.selectEndDate'),
-                                            previousMonth: t('dates.labels.previousMonth'),
-                                            nextMonth: t('dates.labels.nextMonth'),
-                                        }}
-                                    />
+                                    <div className="space-y-3">
+                                        <DateRangePicker
+                                            startDate={startDate}
+                                            endDate={endDate}
+                                            onChange={(nextStartDate, nextEndDate) => {
+                                                setStartDate(nextStartDate);
+                                                setEndDate(nextEndDate);
+                                            }}
+                                            showLabel={false}
+                                            monthLabelFormat="long"
+                                            locale={i18n.language}
+                                            labels={{
+                                                start: t('dates.labels.start'),
+                                                end: t('dates.labels.end'),
+                                                selectDate: t('dates.labels.selectDate'),
+                                                selectStartDate: t('dates.labels.selectStartDate'),
+                                                selectEndDate: t('dates.labels.selectEndDate'),
+                                                previousMonth: t('dates.labels.previousMonth'),
+                                                nextMonth: t('dates.labels.nextMonth'),
+                                            }}
+                                        />
+                                        {exactDateRangeError && (
+                                            <p className="text-sm font-medium text-rose-600">{exactDateRangeError}</p>
+                                        )}
+                                    </div>
                                 ) : (
                                     <div className="grid gap-3 sm:grid-cols-2">
                                         <label className="space-y-1.5 text-sm">
@@ -2234,7 +2297,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                 )}
 
                                 <div className="mt-3 border-t border-slate-200 pt-2 text-xs text-slate-500">
-                                    {t('dates.summary', { days: dayCount })}
+                                    {plannerDurationLabel}
                                 </div>
                             </section>
 
@@ -2537,7 +2600,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                     <div className="rounded-xl border border-white/15 bg-white/5 p-3">
                                         <div className="inline-flex items-center gap-2 text-sm font-semibold">
                                             <CalendarBlank size={15} weight="duotone" className="text-indigo-200" />
-                                            {t('snapshot.days', { days: dayCount })}
+                                            {snapshotDurationLabel}
                                         </div>
                                         <div className="mt-1 text-xs text-indigo-100/80">
                                             {orderedDestinations.length > 0
@@ -2654,7 +2717,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                 <button
                                     type="button"
                                     onClick={handleGenerateTrip}
-                                    disabled={isSubmitting || !destinationComplete || isGenerationBlockedOffline}
+                                        disabled={isSubmitting || !destinationComplete || isGenerationBlockedOffline || (dateInputMode === 'exact' && totalNights < 1)}
                                     className="inline-flex w-full items-center justify-center rounded-xl bg-white px-4 py-3 text-sm font-semibold text-indigo-900 transition-colors hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-60"
                                     {...getAnalyticsDebugAttributes('create_trip__cta--generate', {
                                         destination_count: orderedDestinations.length,
@@ -2773,14 +2836,14 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                         {mobileDateRangeLabel}
                                     </span>
                                     <span className="inline-flex items-center rounded-full border border-white/20 bg-white/5 px-2 py-0.5 text-[11px] font-medium text-indigo-100">
-                                        {t('snapshot.days', { days: dayCount })}
+                                        {snapshotDurationLabel}
                                     </span>
                                 </div>
                             </div>
                             <button
                                 type="button"
                                 onClick={handleGenerateTrip}
-                                disabled={isSubmitting || !destinationComplete || isGenerationBlockedOffline}
+                                disabled={isSubmitting || !destinationComplete || isGenerationBlockedOffline || (dateInputMode === 'exact' && totalNights < 1)}
                                 className="rounded-xl bg-white px-3.5 py-2.5 text-sm font-semibold text-indigo-900 shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
                                 {...getAnalyticsDebugAttributes('create_trip__cta--generate', {
                                     destination_count: orderedDestinations.length,
@@ -2805,7 +2868,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                             <div className="mt-2.5 grid grid-cols-2 gap-3 rounded-xl border border-white/15 bg-white/5 p-3.5 text-xs text-indigo-100">
                                 <div>
                                     <div className="font-semibold text-indigo-200">{t('mobileSnapshot.days')}</div>
-                                    <div>{dayCount}</div>
+                                    <div>{mobileSnapshotDurationValue}</div>
                                 </div>
                                 <div>
                                     <div className="font-semibold text-indigo-200">{t('mobileSnapshot.traveler')}</div>

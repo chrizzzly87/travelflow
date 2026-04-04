@@ -32,7 +32,27 @@ vi.mock('../../components/create-trip/CreateTripWizardCtaBanner', () => ({
 }));
 
 vi.mock('../../components/DateRangePicker', () => ({
-  DateRangePicker: () => React.createElement('div', { 'data-testid': 'date-range-picker' }),
+  DateRangePicker: ({
+    startDate,
+    endDate,
+    onChange,
+  }: {
+    startDate?: string;
+    endDate?: string;
+    onChange: (nextStartDate: string, nextEndDate: string) => void;
+  }) => React.createElement(
+    'div',
+    { 'data-testid': 'date-range-picker' },
+    React.createElement('div', null, `${startDate || 'unset'}:${endDate || 'unset'}`),
+    React.createElement('button', {
+      type: 'button',
+      onClick: () => onChange('2026-04-01', '2026-04-01'),
+    }, 'set-same-day-range'),
+    React.createElement('button', {
+      type: 'button',
+      onClick: () => onChange('2026-04-01', '2026-04-03'),
+    }, 'set-three-day-range'),
+  ),
 }));
 
 vi.mock('../../components/IdealTravelTimeline', () => ({
@@ -144,7 +164,28 @@ vi.mock('../../services/aiService', () => ({
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string) => key,
+    t: (key: string, options?: Record<string, unknown>) => {
+      if (
+        options
+        && typeof options.days === 'number'
+        && typeof options.nights === 'number'
+        && key === 'dates.summaryExact'
+      ) {
+        return `${options.days} days / ${options.nights} nights`;
+      }
+      if (
+        options
+        && typeof options.days === 'number'
+        && typeof options.nights === 'number'
+        && key === 'snapshot.daysNights'
+      ) {
+        return `${options.days} days / ${options.nights} nights`;
+      }
+      if (key === 'errors.minimumNightStay') {
+        return 'Choose an end date at least one night after your start date.';
+      }
+      return key;
+    },
     i18n: {
       language: 'en',
       resolvedLanguage: 'en',
@@ -210,5 +251,20 @@ describe('pages/CreateTripClassicLabPage', () => {
 
     expect(datesHeading.compareDocumentPosition(notesHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(notesHeading.compareDocumentPosition(travelerHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('shows exact-date day/night summaries and blocks same-day ranges', async () => {
+    const user = (await import('@testing-library/user-event')).default.setup();
+    renderPage();
+
+    for (const button of screen.getAllByRole('button', { name: 'set-same-day-range' })) {
+      await user.click(button);
+    }
+    expect(screen.getAllByText('Choose an end date at least one night after your start date.').length).toBeGreaterThan(0);
+
+    for (const button of screen.getAllByRole('button', { name: 'set-three-day-range' })) {
+      await user.click(button);
+    }
+    expect(screen.getAllByText('3 days / 2 nights').length).toBeGreaterThan(0);
   });
 });
