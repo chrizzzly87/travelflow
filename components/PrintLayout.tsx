@@ -1,7 +1,8 @@
 import React, { Suspense, lazy } from 'react';
 import { ITrip, ITimelineItem } from '../types';
-import { addDays, DEFAULT_DISTANCE_UNIT, formatDate, formatDistance, getHexFromColorClass, getTripDistanceKm, getTripDuration } from '../utils';
+import { addDays, DEFAULT_DISTANCE_UNIT, formatDate, formatDistance, getHexFromColorClass, getTripDistanceKm } from '../utils';
 import { MapPin, Calendar, Clock, ArrowRight, Hotel, StickyNote } from 'lucide-react';
+import { getTripSpan, getTripSpanFromOffsets } from '../shared/tripSpan';
 import { ItineraryMap } from './ItineraryMap';
 import { CountryInfo } from './CountryInfo';
 import { TransportModeIcon } from './TransportModeIcon';
@@ -61,8 +62,8 @@ const WEEKDAY_HEADERS = [
 // Helper to generate calendar grids
 const CalendarView: React.FC<{ trip: ITrip; onScrollTo: (id: string) => void }> = ({ trip, onScrollTo }) => {
     const startDate = parseLocalDate(trip.startDate);
-    const duration = getTripDuration(trip.items);
-    const endDate = addDays(startDate, duration);
+    const tripSpan = getTripSpan(trip);
+    const endDate = tripSpan.endDate;
     
     // Determine months spanned
     const months: Date[] = [];
@@ -106,13 +107,11 @@ const CalendarView: React.FC<{ trip: ITrip; onScrollTo: (id: string) => void }> 
                  <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3 border-b border-gray-100 pb-2">Trip Legend</h3>
                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2">
                      {cities.map((city, idx) => {
-                         const start = addDays(startDate, city.startDateOffset);
-                         const end = addDays(startDate, city.startDateOffset + city.duration);
-                         const nights = Number(city.duration.toFixed(1));
-                         const days = Math.ceil(city.duration + (city.duration % 1 === 0 ? 1 : 0)); 
-                         const shorthand = `${days}D/${nights}N`;
-                         
-                         const dateStr = `${formatLegendDate(start)} - ${formatLegendDate(end)}`;
+                         const citySpan = getTripSpanFromOffsets(trip.startDate, {
+                             startOffset: city.startDateOffset,
+                             endOffset: city.startDateOffset + city.duration,
+                         });
+                         const dateStr = `${formatLegendDate(citySpan.startDate)} - ${formatLegendDate(citySpan.endDate)}`;
                          const cityColor = getHexFromColorClass(city.color || '');
 
                          return (
@@ -130,7 +129,7 @@ const CalendarView: React.FC<{ trip: ITrip; onScrollTo: (id: string) => void }> 
                                      <div className="font-bold text-gray-800 truncate">{city.title}</div>
                                      <div className="text-gray-400 flex justify-between">
                                          <span>{dateStr}</span>
-                                         <span className="font-mono">{shorthand}</span>
+                                         <span className="font-mono">{citySpan.compactLabel}</span>
                                      </div>
                                  </div>
                              </button>
@@ -252,6 +251,7 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
     onExportAllCalendar,
 }) => {
   const tripStartDate = parseLocalDate(trip.startDate);
+  const tripSpan = getTripSpan(trip);
   const cities = trip.items.filter(i => i.type === 'city').sort((a, b) => a.startDateOffset - b.startDateOffset);
   const totalDistanceKm = getTripDistanceKm(trip.items);
   const distanceLabel = totalDistanceKm > 0
@@ -345,8 +345,8 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
                         <div>
                             <h1 className="text-4xl font-extrabold tracking-tight mb-2">{trip.title}</h1>
                             <div className="text-gray-500 font-medium flex gap-4">
-                                <span className="flex items-center gap-1"><Calendar size={16}/> {formatDate(tripStartDate)} - {formatDate(addDays(tripStartDate, getTripDuration(trip.items)))}</span>
-                                <span className="flex items-center gap-1"><Clock size={16}/> {Math.ceil(getTripDuration(trip.items))} Days</span>
+                                <span className="flex items-center gap-1"><Calendar size={16}/> {formatDate(tripSpan.startDate)} - {formatDate(tripSpan.endDate)}</span>
+                                <span className="flex items-center gap-1"><Clock size={16}/> {tripSpan.longLabel}</span>
                                 {distanceLabel && (
                                     <span className="flex items-center gap-1"><MapPin size={16}/> {distanceLabel}</span>
                                 )}
@@ -385,8 +385,12 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
                 {/* Detailed Itinerary (Subsequent Pages) */}
                 <div className="space-y-12 pt-8 print:pt-4">
                     {cities.map((city, idx) => {
-                        const cityStart = addDays(tripStartDate, city.startDateOffset);
-                        const cityEnd = addDays(tripStartDate, city.startDateOffset + city.duration);
+                        const citySpan = getTripSpanFromOffsets(trip.startDate, {
+                            startOffset: city.startDateOffset,
+                            endOffset: city.startDateOffset + city.duration,
+                        });
+                        const cityStart = citySpan.startDate;
+                        const cityEnd = citySpan.endDate;
                         
                         // Find travel TO this city
                         const arrivalTransport = trip.items.find(i => 
@@ -428,7 +432,7 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
                                             <h2 className="text-2xl font-bold text-gray-900">{city.title}</h2>
                                         </div>
                                         <div className="text-gray-500 font-medium ml-6">
-                                            {formatDate(cityStart)} — {formatDate(cityEnd)} <span className="text-gray-300 mx-2">|</span> {Number(city.duration.toFixed(1))} Nights
+                                            {formatDate(cityStart)} — {formatDate(cityEnd)} <span className="text-gray-300 mx-2">|</span> {citySpan.longLabel}
                                         </div>
                                     </div>
                                     <div className="text-4xl font-black text-gray-100 select-none">

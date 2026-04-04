@@ -426,6 +426,8 @@
           "duration": "Duration",
           "totalDays": "Total days",
           "totalDaysValue": "{count} days",
+          "tripSpan": "Días y noches",
+          "tripSpanValue": "{days} días / {nights} noches",
           "cities": "Cities",
           "totalDistance": "Total distance",
           "owner": "Owner",

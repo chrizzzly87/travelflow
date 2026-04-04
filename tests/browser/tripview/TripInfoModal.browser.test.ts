@@ -26,7 +26,8 @@ vi.mock('react-i18next', () => ({
       if (key === 'tripView.infoDialog.history.pendingSyncOne') return '1 latest change is saved locally and not synced yet.';
       if (key === 'tripView.infoDialog.general.favoriteAdd') return 'Add to favorites';
       if (key === 'tripView.infoDialog.general.favoriteOff') return 'Favorite';
-      if (key === 'tripView.infoDialog.general.meta.totalDaysValue') return `${options?.count ?? ''} days`;
+      if (key === 'tripView.infoDialog.general.meta.tripSpan') return 'Days & nights';
+      if (key === 'tripView.infoDialog.general.meta.tripSpanValue') return `${options?.days ?? ''} days / ${options?.nights ?? ''} nights`;
       return key;
     },
   }),
@@ -64,7 +65,8 @@ const buildProps = (): React.ComponentProps<typeof TripInfoModal> => ({
   isExamplePreview: false,
   tripMeta: {
     dateRange: 'Apr 1, 2026 – Apr 7, 2026',
-    totalDaysLabel: '7',
+    days: 7,
+    nights: 6,
     cityCount: 2,
     distanceLabel: '450 km',
   },

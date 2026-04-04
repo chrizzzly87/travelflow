@@ -21,6 +21,7 @@ This repository uses markdown release files as the source of truth for product u
 - For bug fixes, add a regression test that fails on the pre-fix behavior and passes with the fix.
 - Docs-only, copy-only, and style-only changes are exempt from mandatory new tests.
 - For behavioral changes, run `pnpm test:core` before finalizing whenever feasible.
+- In fresh git worktrees, run `pnpm worktree:sync-env` before starting env-dependent tooling if `.env` or `.env.local` is missing. This repo also installs a `post-checkout` hook to copy those files automatically when worktrees are created.
 - For PRs that add new files under `services/` or `config/`, include a corresponding `tests/**` entry in the PR checklist/description.
 - For TripView/route-loader orchestration work, follow `docs/TESTING_PHASE2_SCOPE.md` when planning component/hook regression coverage.
 - Release-note copy in `content/updates/*.md` is exempt from EN/DE style sign-off prompts; do not request bilingual sign-off for release notes unless the user explicitly asks for it.

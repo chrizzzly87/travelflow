@@ -2,6 +2,7 @@ import LZString from 'lz-string';
 import { ActivityType, AppLanguage, ICoordinates, ITrip, ITimelineItem, IViewSettings, ISharedState, MapColorMode, TransportMode, TripPrefillData } from './types';
 import { normalizeTransportMode } from './shared/transportModes';
 import { DEFAULT_LOCALE, localeToIntlLocale, normalizeLocale } from './config/locales';
+import { getTimelineVisualRange } from './utils/timelineVisualLayout';
 
 export const BASE_PIXELS_PER_DAY = 120; // Width of one day column (Base Zoom 1.0)
 export const PIXELS_PER_DAY = BASE_PIXELS_PER_DAY; // Deprecated: Use prop passed from parent for zooming
@@ -278,16 +279,9 @@ export const getTimelineBounds = (
     options: { minDays?: number } = {}
 ): TimelineBounds => {
     const minDays = Math.max(1, Math.floor(options.minDays ?? 1));
-    let minStart = Number.POSITIVE_INFINITY;
-    let maxEnd = Number.NEGATIVE_INFINITY;
+    const visualRange = getTimelineVisualRange(items);
 
-    items.forEach(item => {
-        if (!Number.isFinite(item.startDateOffset) || !Number.isFinite(item.duration)) return;
-        minStart = Math.min(minStart, item.startDateOffset);
-        maxEnd = Math.max(maxEnd, item.startDateOffset + Math.max(item.duration, 0));
-    });
-
-    if (!Number.isFinite(minStart) || !Number.isFinite(maxEnd)) {
+    if (!visualRange) {
         return {
             startOffset: 0,
             endOffset: minDays,
@@ -295,8 +289,8 @@ export const getTimelineBounds = (
         };
     }
 
-    const startOffset = Math.floor(minStart);
-    const endOffset = Math.max(startOffset + minDays, Math.ceil(maxEnd));
+    const startOffset = Math.floor(visualRange.startOffset);
+    const endOffset = Math.max(startOffset + minDays, Math.ceil(visualRange.endOffset));
 
     return {
         startOffset,

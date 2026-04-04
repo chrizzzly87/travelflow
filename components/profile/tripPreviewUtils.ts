@@ -8,11 +8,10 @@ import {
 import { getClientMapRuntimeResolution, getMapboxAccessToken } from '../../services/mapRuntimeService';
 import { MAP_RUNTIME_CACHE_KEY_QUERY_PARAM } from '../../shared/mapRuntime';
 import { getMapboxStyleDescriptor } from '../../services/mapRendererVisualStyleService';
-
-interface TripRangeOffsets {
-  startOffset: number;
-  endOffset: number;
-}
+import {
+  getTripRangeOffsets as getSharedTripRangeOffsets,
+  getTripSpan,
+} from '../../shared/tripSpan';
 
 export interface TripCityStop {
   id: string;
@@ -380,62 +379,20 @@ const resolveTripItemColorHex = (value?: string | null): string | null => {
   return resolvedHex;
 };
 
-const parseLocalDate = (dateStr: string): Date => {
-  if (!dateStr) return new Date();
-  const parts = dateStr.split('-').map(Number);
-  if (parts.length === 3 && parts.every((part) => Number.isFinite(part))) {
-    return new Date(parts[0], parts[1] - 1, parts[2]);
-  }
-  const parsed = new Date(dateStr);
-  return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
-};
-
-const addDays = (date: Date, days: number): Date => {
-  const next = new Date(date);
-  next.setDate(next.getDate() + days);
-  return next;
-};
-
 export const getTripCityItems = (trip: ITrip): ITimelineItem[] =>
   trip.items
     .filter((item) => item.type === 'city')
     .sort((a, b) => a.startDateOffset - b.startDateOffset);
 
-export const getTripRangeOffsets = (trip: ITrip): TripRangeOffsets => {
-  const cityItems = getTripCityItems(trip);
-  const source = cityItems.length > 0 ? cityItems : trip.items;
-
-  if (source.length === 0) {
-    return { startOffset: 0, endOffset: 1 };
-  }
-
-  let minStart = Number.POSITIVE_INFINITY;
-  let maxEnd = Number.NEGATIVE_INFINITY;
-
-  source.forEach((item) => {
-    if (!Number.isFinite(item.startDateOffset) || !Number.isFinite(item.duration)) return;
-    minStart = Math.min(minStart, item.startDateOffset);
-    maxEnd = Math.max(maxEnd, item.startDateOffset + item.duration);
-  });
-
-  if (!Number.isFinite(minStart) || !Number.isFinite(maxEnd) || maxEnd <= minStart) {
-    return { startOffset: 0, endOffset: 1 };
-  }
-
-  return { startOffset: minStart, endOffset: maxEnd };
-};
+export const getTripRangeOffsets = (trip: ITrip) => getSharedTripRangeOffsets(trip);
 
 export const getTripDateRange = (trip: ITrip): { start: Date; end: Date } => {
-  const baseStart = parseLocalDate(trip.startDate);
-  const range = getTripRangeOffsets(trip);
-  const start = addDays(baseStart, Math.floor(range.startOffset));
-  const end = addDays(baseStart, Math.ceil(range.endOffset) - 1);
-  return { start, end };
+  const tripSpan = getTripSpan(trip);
+  return { start: tripSpan.startDate, end: tripSpan.endDate };
 };
 
 export const getTripDurationDays = (trip: ITrip): number => {
-  const range = getTripRangeOffsets(trip);
-  return Math.max(1, Math.ceil(range.endOffset - range.startOffset));
+  return getTripSpan(trip).days;
 };
 
 export const formatTripDateRange = (trip: ITrip, locale: AppLanguage): string => {
@@ -486,7 +443,7 @@ const buildDirectStaticMapPreviewUrl = (params: URLSearchParams): string | null 
 };
 
 export const formatTripSummaryLine = (trip: ITrip, locale: AppLanguage = 'en'): string => {
-  const days = getTripDurationDays(trip);
+  const tripSpan = getTripSpan(trip);
   const cityCount = getTripCityItems(trip).length;
   const cityLabel = cityCount === 1 ? 'city' : 'cities';
   const totalDistanceKm = getTripDistanceKm(trip.items);
@@ -494,7 +451,7 @@ export const formatTripSummaryLine = (trip: ITrip, locale: AppLanguage = 'en'): 
     ? formatDistance(totalDistanceKm, DEFAULT_DISTANCE_UNIT, { maximumFractionDigits: 0 })
     : null;
   const distancePart = distanceLabel ? ` • ${distanceLabel}` : '';
-  return `${days} ${days === 1 ? 'day' : 'days'} • ${formatTripMonths(trip, locale)} • ${cityCount} ${cityLabel}${distancePart}`;
+  return `${tripSpan.compactLabel} • ${formatTripMonths(trip, locale)} • ${cityCount} ${cityLabel}${distancePart}`;
 };
 
 export const buildMiniMapUrl = (

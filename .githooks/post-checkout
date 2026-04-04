@@ -1,0 +1,34 @@
+#!/bin/sh
+set -eu
+
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+if [ -z "${repo_root}" ]; then
+  exit 0
+fi
+
+common_dir="$(git rev-parse --git-common-dir 2>/dev/null || true)"
+if [ -z "${common_dir}" ]; then
+  exit 0
+fi
+
+case "${common_dir}" in
+  /*) common_dir_abs="${common_dir}" ;;
+  *) common_dir_abs="$(cd "${repo_root}/${common_dir}" 2>/dev/null && pwd)" || exit 0 ;;
+esac
+
+source_root="$(cd "${common_dir_abs}/.." 2>/dev/null && pwd)" || exit 0
+
+for name in .env .env.local; do
+  source_path="${source_root}/${name}"
+  target_path="${repo_root}/${name}"
+
+  if [ ! -f "${source_path}" ]; then
+    continue
+  fi
+
+  if [ "${source_path}" = "${target_path}" ]; then
+    continue
+  fi
+
+  cp -fp "${source_path}" "${target_path}"
+done

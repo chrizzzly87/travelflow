@@ -26,7 +26,7 @@ interface TripViewHudOverlaysProps {
     generationProgressMessage: string;
     loadingDestinationSummary: string;
     tripDateRange: string;
-    tripTotalDaysLabel: string;
+    tripSpanCompactLabel: string;
     pendingAuthModalStage?: 'hidden' | 'loading' | 'locked';
     onContinuePendingAuth?: () => void;
     isPendingAuthContinueDisabled?: boolean;
@@ -49,7 +49,7 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
     generationProgressMessage,
     loadingDestinationSummary,
     tripDateRange,
-    tripTotalDaysLabel,
+    tripSpanCompactLabel,
     pendingAuthModalStage = 'hidden',
     onContinuePendingAuth,
     isPendingAuthContinueDisabled = false,
@@ -226,7 +226,7 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                                     </div>
                                 </div>
                                 <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-500">
-                                    {loadingDestinationSummary} • {tripDateRange} • {tripTotalDaysLabel} days
+                                    {loadingDestinationSummary} • {tripDateRange} • {tripSpanCompactLabel}
                                 </div>
                             </div>
                         ) : (
@@ -251,7 +251,7 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                                     </p>
 
                                     <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-500">
-                                        {loadingDestinationSummary} • {tripDateRange} • {tripTotalDaysLabel} days
+                                        {loadingDestinationSummary} • {tripDateRange} • {tripSpanCompactLabel}
                                     </div>
 
                                     <button
@@ -310,7 +310,7 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                             </div>
                         </div>
                         <div className="mt-3 text-xs text-gray-500">
-                            {loadingDestinationSummary} • {tripDateRange} • {tripTotalDaysLabel} days
+                            {loadingDestinationSummary} • {tripDateRange} • {tripSpanCompactLabel}
                         </div>
                         <div className="mt-3 h-1.5 rounded-full bg-gray-100 overflow-hidden">
                             <div className="h-full w-1/2 bg-gradient-to-r from-accent-500 to-accent-600 animate-pulse rounded-full" />
@@ -350,7 +350,7 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                                 </p>
 
                                 <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-500">
-                                    {loadingDestinationSummary} • {tripDateRange} • {tripTotalDaysLabel} days
+                                    {loadingDestinationSummary} • {tripDateRange} • {tripSpanCompactLabel}
                                 </div>
 
                                 <div className="mt-5 flex flex-wrap gap-2">

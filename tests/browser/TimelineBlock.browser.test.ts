@@ -117,4 +117,42 @@ describe('components/TimelineBlock keyboard city navigation', () => {
     expect(regularContent?.className).toContain('justify-start');
     expect(regularTitle?.className).toContain('text-[15px]');
   });
+
+  it('renders city stays on half-day boundaries in horizontal and vertical modes', () => {
+    const horizontal = render(
+      React.createElement(TimelineBlock, {
+        item: buildCityItem(),
+        isSelected: false,
+        isCity: true,
+        pixelsPerDay: 120,
+        onSelect: vi.fn(),
+        onResizeStart: vi.fn(),
+        onMoveStart: vi.fn(),
+      }),
+    );
+
+    const horizontalCityBlock = horizontal.container.querySelector<HTMLElement>('[data-city-id="city-1"]');
+    expect(horizontalCityBlock?.style.left).toBe('61px');
+    expect(horizontalCityBlock?.style.width).toBe('358px');
+    expect(horizontalCityBlock?.getAttribute('data-tooltip')).toBe('Bangkok • 4 Days / 3 Nights');
+
+    horizontal.unmount();
+
+    const vertical = render(
+      React.createElement(TimelineBlock, {
+        item: buildCityItem(),
+        isSelected: false,
+        isCity: true,
+        pixelsPerDay: 120,
+        vertical: true,
+        onSelect: vi.fn(),
+        onResizeStart: vi.fn(),
+        onMoveStart: vi.fn(),
+      }),
+    );
+
+    const verticalCityBlock = vertical.container.querySelector<HTMLElement>('[data-city-id="city-1"]');
+    expect(verticalCityBlock?.style.top).toBe('62px');
+    expect(verticalCityBlock?.style.height).toBe('356px');
+  });
 });
