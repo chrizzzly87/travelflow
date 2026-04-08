@@ -71,6 +71,8 @@ const hasAuthCallbackPayload = (): boolean => {
 const DEV_ADMIN_BYPASS_DISABLED_STORAGE_KEY = 'tf_dev_admin_bypass_disabled';
 const DEV_ADMIN_BYPASS_USER_ID = 'dev-admin-id';
 const OPTIMISTIC_AUTH_HINT_SESSION_LIFETIME_SECONDS = 300;
+const NON_CRITICAL_AUTH_BOOTSTRAP_IDLE_TIMEOUT_MS = 1800;
+const NON_CRITICAL_AUTH_BOOTSTRAP_FALLBACK_DELAY_MS = 250;
 const FREE_ENTITLEMENTS = getFreePlanEntitlements();
 
 export const shouldEnableDevAdminBypass = (
@@ -103,6 +105,22 @@ export const shouldUseDevAdminBypassSession = (
 
 export const shouldUseOptimisticMarketingAuthHint = (pathname: string): boolean =>
     !isAuthBootstrapCriticalPath(pathname);
+
+export const shouldDeferAuthBootstrap = (
+    pathname: string,
+    hasCallbackPayload: boolean
+): boolean => !hasCallbackPayload && !isAuthBootstrapCriticalPath(pathname);
+
+export const shouldEagerlyLoadAuthProfile = (pathname: string): boolean => {
+    const normalizedPath = stripLocalePrefix(pathname || '/');
+    if (normalizedPath.startsWith('/profile')) return true;
+    if (normalizedPath.startsWith('/checkout')) return true;
+    if (normalizedPath.startsWith('/admin')) return true;
+    if (normalizedPath.startsWith('/trip')) return true;
+    if (normalizedPath.startsWith('/create-trip')) return true;
+    if (normalizedPath.startsWith('/u/')) return true;
+    return false;
+};
 
 export const createOptimisticAccessFromSessionHint = (
     hint: PersistedSupabaseSessionHint
@@ -343,11 +361,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const nextAccess = await authService.getCurrentAccessContext();
         setAccess(nextAccess);
         if (nextAccess?.userId && !nextAccess.isAnonymous) {
-            await refreshProfile();
+            if (shouldEagerlyLoadAuthProfile(location.pathname)) {
+                await refreshProfile();
+            } else {
+                resetProfileState();
+            }
             return;
         }
         resetProfileState();
-    }, [refreshProfile, resetProfileState]);
+    }, [location.pathname, refreshProfile, resetProfileState]);
 
     useEffect(() => {
         let cancelled = false;
@@ -557,20 +579,94 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             };
         }
 
-        const shouldBootstrapImmediately = hasAuthCallbackPayload() || isAuthBootstrapCriticalPath(window.location.pathname);
-        if (!shouldBootstrapImmediately) {
+        const shouldUseDeferredBootstrap = shouldDeferAuthBootstrap(
+            window.location.pathname,
+            hasAuthCallbackPayload()
+        );
+        if (shouldUseDeferredBootstrap) {
             appendAuthTraceEntry({
                 ts: new Date().toISOString(),
                 flowId: 'auth-bootstrap',
-                attemptId: 'immediate-bootstrap',
+                attemptId: 'deferred-bootstrap',
                 step: 'bootstrap_non_critical_path',
                 result: 'success',
                 provider: 'supabase',
                 metadata: {
                     pathname: window.location.pathname,
-                    reason: 'always_initialize_on_page_load',
+                    reason: 'defer_until_idle',
                 },
             });
+
+            let fallbackTimeoutId: number | null = null;
+            let idleCallbackId: number | null = null;
+            let hasScheduledBootstrap = false;
+
+            const cancelDeferredBootstrap = () => {
+                if (fallbackTimeoutId !== null) {
+                    window.clearTimeout(fallbackTimeoutId);
+                    fallbackTimeoutId = null;
+                }
+                if (idleCallbackId !== null && 'cancelIdleCallback' in window) {
+                    (window as typeof window & {
+                        cancelIdleCallback: (id: number) => void;
+                    }).cancelIdleCallback(idleCallbackId);
+                    idleCallbackId = null;
+                }
+            };
+
+            const scheduleBootstrapWhenIdle = () => {
+                if (cancelled || hasScheduledBootstrap) return;
+                hasScheduledBootstrap = true;
+
+                if ('requestIdleCallback' in window) {
+                    idleCallbackId = (window as typeof window & {
+                        requestIdleCallback: (cb: IdleRequestCallback, options?: IdleRequestOptions) => number;
+                    }).requestIdleCallback(() => {
+                        idleCallbackId = null;
+                        triggerBootstrap();
+                    }, { timeout: NON_CRITICAL_AUTH_BOOTSTRAP_IDLE_TIMEOUT_MS });
+                    return;
+                }
+
+                fallbackTimeoutId = window.setTimeout(() => {
+                    fallbackTimeoutId = null;
+                    triggerBootstrap();
+                }, NON_CRITICAL_AUTH_BOOTSTRAP_FALLBACK_DELAY_MS);
+            };
+
+            if (document.readyState === 'complete') {
+                scheduleBootstrapWhenIdle();
+            } else {
+                const handleLoad = () => {
+                    window.removeEventListener('load', handleLoad);
+                    scheduleBootstrapWhenIdle();
+                };
+
+                window.addEventListener('load', handleLoad, { once: true });
+                fallbackTimeoutId = window.setTimeout(() => {
+                    window.removeEventListener('load', handleLoad);
+                    scheduleBootstrapWhenIdle();
+                }, NON_CRITICAL_AUTH_BOOTSTRAP_IDLE_TIMEOUT_MS);
+
+                return () => {
+                    cancelled = true;
+                    window.removeEventListener('load', handleLoad);
+                    cancelDeferredBootstrap();
+                    if (!hasBootstrappedRef.current) {
+                        isBootstrappingRef.current = false;
+                    }
+                    unsubscribe();
+                };
+            }
+
+            return () => {
+                cancelled = true;
+                cancelDeferredBootstrap();
+                if (!hasBootstrappedRef.current) {
+                    isBootstrappingRef.current = false;
+                }
+                unsubscribe();
+            };
         }
         triggerBootstrap();
 
