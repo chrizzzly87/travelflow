@@ -3,7 +3,6 @@ import { useEffect, useRef, type Dispatch, type MutableRefObject, type SetStateA
 import { writeLocalStorageItem } from '../../services/browserStorageService';
 import type { IViewSettings, MapStyle, RouteMode } from '../../types';
 import { applyViewSettingsToSearchParams } from '../../utils';
-import type { TripViewMode } from './useTripViewModeState';
 
 interface UseTripViewSettingsSyncOptions {
     layoutMode: 'vertical' | 'horizontal';
@@ -18,7 +17,7 @@ interface UseTripViewSettingsSyncOptions {
     sidebarWidth: number;
     detailsWidth: number;
     timelineHeight: number;
-    viewMode: TripViewMode;
+    viewMode: 'planner' | 'print';
     onViewSettingsChange?: (settings: IViewSettings) => void;
     initialViewSettings?: IViewSettings;
     currentViewSettings: IViewSettings;
@@ -151,8 +150,8 @@ export const useTripViewSettingsSync = ({
 
             const url = new URL(window.location.href);
             applyViewSettingsToSearchParams(url.searchParams, settings);
-            if (viewMode === 'planner') url.searchParams.delete('mode');
-            else url.searchParams.set('mode', viewMode);
+            if (viewMode === 'print') url.searchParams.set('mode', 'print');
+            else url.searchParams.delete('mode');
             window.history.replaceState({}, '', url.toString());
         }, 500);
 

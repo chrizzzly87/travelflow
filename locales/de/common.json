@@ -396,7 +396,7 @@
     },
     "infoDialog": {
       "title": "Trip-Details",
-      "description": "Kerndaten bearbeiten, Verlauf prüfen, die Reise exportieren und den Vorbereitungsbereich öffnen.",
+      "description": "Bearbeite Basisinfos, prüfe den Verlauf, exportiere den Trip und sieh dir Zielkontext an.",
       "close": "Dialog für Trip-Details schließen",
       "tabs": {
         "general": "Allgemein",
@@ -475,22 +475,18 @@
         }
       },
       "destination": {
-        "locked": "Zieldetails werden freigeschaltet, sobald diese Reise aktiviert ist.",
-        "empty": "Für diese Reise sind noch keine Zielinformationen verfügbar.",
-        "futureChecksTitle": "Nächste Vorbereitungs-Module",
-        "futureChecksDescription": "Der Vorbereitungsbereich ist live. Als Nächstes verwandeln wir Zielinfos in Warnungen, Dokumente, Budget, Packlisten, Importe und Reisetagebuch.",
+        "locked": "Zielinformationen werden freigeschaltet, sobald dieser Trip aktiviert ist.",
+        "empty": "Für diesen Trip sind noch keine Zielinformationen verfügbar.",
+        "futureChecksTitle": "Zukünftige Ziel-Checks",
+        "futureChecksDescription": "Dieser Bereich ist bereit für weitere tripspezifische Hinweise, sobald wir umfangreichere Zieldaten ergänzen.",
         "futureChecks": {
-          "alerts": "Warnungen",
-          "documents": "Dokumente",
-          "budget": "Budget",
-          "packing": "Packliste",
-          "imports": "Importe",
-          "journal": "Tagebuch"
-        },
-        "prepWorkspaceEyebrow": "Eigener Bereich",
-        "prepWorkspaceTitle": "Die Reisevorbereitung ist jetzt ein eigener Arbeitsbereich",
-        "prepWorkspaceDescription": "Halte das Modal kurz. Öffne den Vorbereitungsbereich für Einreise, Sicherheit, Geld, praktische Infos und quellenbasierte Updates zu dieser Route.",
-        "prepWorkspaceAction": "Vorbereitungsbereich öffnen"
+          "visa": "Visum",
+          "entryRules": "Einreise",
+          "safety": "Sicherheit",
+          "customs": "Zoll",
+          "connectivity": "Konnektivität",
+          "health": "Gesundheit"
+        }
       }
     },
     "claimConflict": {
@@ -505,30 +501,6 @@
         "prefill": "Dein Traveler-Setup, deine Daten und deine Transportwünsche werden übernommen.",
         "adjust": "Du kannst den Entwurf noch anpassen, bevor du eine neue Generierung startest."
       }
-    },
-    "workspaceNav": {
-      "planner": "Planung",
-      "prep": "Vorbereitung"
-    },
-    "prep": {
-      "eyebrow": "Reisevorbereitung",
-      "empty": "Für diese Reise gibt es noch keine Länder-Vorbereitung.",
-      "beforeDeparture": "Vor Abreise",
-      "onArrival": "Bei Ankunft",
-      "onTheGround": "Vor Ort",
-      "routeContext": "Reisekontext",
-      "departure": "Reisedaten",
-      "duration": "Dauer",
-      "country": "Land",
-      "cities": "Städte auf dieser Route",
-      "priorityChecks": "Priorisierte Checks",
-      "referenceUpdates": "Relevante Updates",
-      "travelerWarnings": "Reisehinweise",
-      "utilities": "Praktische Infos",
-      "currency": "Währung",
-      "languages": "Sprachen",
-      "power": "Strom",
-      "officialSources": "Offizielle Quellen"
     }
   },
   "tripRouteShell": {

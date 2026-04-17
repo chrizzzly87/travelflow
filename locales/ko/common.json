@@ -396,7 +396,7 @@
     },
     "infoDialog": {
       "title": "Trip details",
-      "description": "핵심 정보를 수정하고, 기록을 검토하고, 여행을 내보내고, 준비 공간을 여세요.",
+      "description": "Edit core info, review history, export the trip, and check destination context.",
       "close": "Close trip details dialog",
       "tabs": {
         "general": "General",
@@ -475,22 +475,18 @@
         }
       },
       "destination": {
-        "locked": "이 여행이 활성화되면 목적지 세부정보가 열립니다.",
-        "empty": "이 여행에는 아직 목적지 정보가 없습니다.",
-        "futureChecksTitle": "다음 준비 모듈",
-        "futureChecksDescription": "준비 공간은 이미 활성화되었습니다. 다음 단계는 목적지 가이드를 알림, 문서, 예산, 짐싸기, 가져오기, 여행 기록으로 바꾸는 것입니다.",
+        "locked": "Destination details unlock once this trip is activated.",
+        "empty": "No destination information is available for this trip yet.",
+        "futureChecksTitle": "Future destination checks",
+        "futureChecksDescription": "This tab is ready for more trip-specific guidance as we add richer destination data.",
         "futureChecks": {
-          "alerts": "알림",
-          "documents": "문서",
-          "budget": "예산",
-          "packing": "짐싸기",
-          "imports": "가져오기",
-          "journal": "기록"
-        },
-        "prepWorkspaceEyebrow": "전용 공간",
-        "prepWorkspaceTitle": "여행 준비가 이제 일정 안의 별도 공간에 있습니다",
-        "prepWorkspaceDescription": "모달은 짧게 유지하세요. 이 일정에 연결된 입국, 안전, 비용, 실용 정보, 공식 업데이트를 보려면 준비 공간을 여세요.",
-        "prepWorkspaceAction": "준비 공간 열기"
+          "visa": "Visa",
+          "entryRules": "Entry rules",
+          "safety": "Safety",
+          "customs": "Customs",
+          "connectivity": "Connectivity",
+          "health": "Health"
+        }
       }
     },
     "claimConflict": {
@@ -505,30 +501,6 @@
         "prefill": "Reuse your traveler setup, dates, and transport choices.",
         "adjust": "Adjust the draft before starting a fresh generation."
       }
-    },
-    "workspaceNav": {
-      "planner": "플래너",
-      "prep": "준비"
-    },
-    "prep": {
-      "eyebrow": "여행 준비 공간",
-      "empty": "이 여행에는 아직 국가 준비 스냅샷이 없습니다.",
-      "beforeDeparture": "출발 전",
-      "onArrival": "도착 후",
-      "onTheGround": "현지에서",
-      "routeContext": "일정 맥락",
-      "departure": "날짜",
-      "duration": "기간",
-      "country": "국가",
-      "cities": "이 경로의 도시",
-      "priorityChecks": "우선 확인 사항",
-      "referenceUpdates": "참고 업데이트",
-      "travelerWarnings": "여행자 주의사항",
-      "utilities": "실용 정보",
-      "currency": "통화",
-      "languages": "언어",
-      "power": "전원",
-      "officialSources": "공식 출처"
     }
   },
   "tripRouteShell": {

@@ -20,8 +20,6 @@ vi.mock('react-i18next', () => ({
       if (key === 'tripView.infoDialog.export.cities.action') return 'Export cities (.ics)';
       if (key === 'tripView.infoDialog.export.everything.action') return 'Download everything (.ics)';
       if (key === 'tripView.infoDialog.export.print.action') return 'Open print layout';
-      if (key === 'tripView.infoDialog.destination.prepWorkspaceAction') return 'Open prep workspace';
-      if (key === 'tripView.infoDialog.destination.prepWorkspaceTitle') return 'Travel prep moved into the trip workspace';
       if (key === 'tripView.infoDialog.history.undo') return 'Undo';
       if (key === 'tripView.infoDialog.history.redo') return 'Redo';
       if (key === 'tripView.infoDialog.history.go') return 'Go';
@@ -90,7 +88,6 @@ const buildProps = (): React.ComponentProps<typeof TripInfoModal> => ({
   onExportActivitiesCalendar: vi.fn(),
   onExportCitiesCalendar: vi.fn(),
   onExportAllCalendar: vi.fn(),
-  onOpenTravelPrepWorkspace: vi.fn(),
   onOpenPrintLayout: vi.fn(),
 });
 
@@ -203,45 +200,5 @@ describe('components/TripInfoModal', () => {
         onCancelTitleEdit: undefined,
       }));
     }).not.toThrow();
-  });
-
-  it('opens the prep workspace from the destination tab when a guide snapshot exists', async () => {
-    const props = buildProps();
-    props.countryInfo = {
-      countryCode: 'TH',
-      countryName: 'Thailand',
-      currencyCode: 'THB',
-      currencyName: 'Thai Baht',
-      exchangeRate: 43.35,
-      languages: ['Thai'],
-      electricSockets: 'Type A, Type B, Type C, Type O',
-      travelGuide: {
-        title: 'Thailand prep',
-        summary: 'Guide summary',
-        quickFacts: [
-          { label: 'Visa-free stay', value: 'Up to 60 days' },
-        ],
-        sections: [
-          {
-            id: 'entry',
-            title: 'Entry requirements',
-            summary: 'Passport, visa, and arrival card.',
-            bullets: ['Passport valid for six months.'],
-          },
-        ],
-      },
-    } as any;
-
-    render(React.createElement(TripInfoModal, props));
-
-    const destinationTab = screen.getByRole('tab', { name: 'Destination' });
-    fireEvent.mouseDown(destinationTab, { button: 0 });
-    await waitFor(() => expect(destinationTab).toHaveAttribute('data-state', 'active'));
-
-    expect(screen.getByText('Travel prep moved into the trip workspace')).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', { name: 'Open prep workspace' }));
-
-    expect(props.onOpenTravelPrepWorkspace).toHaveBeenCalledTimes(1);
   });
 });

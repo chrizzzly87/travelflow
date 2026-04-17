@@ -39,7 +39,7 @@ interface LayoutOption {
 }
 
 const GUIDE_SOURCE_URL = 'https://atobeach.com/thailand-travel-guide';
-const PLAYGROUND_EXAMPLE_ROUTE = '/example/thailand-travel-prep-playground?mode=prep';
+const PLAYGROUND_EXAMPLE_ROUTE = '/example/thailand-travel-prep-playground';
 
 const LAYOUT_OPTIONS: LayoutOption[] = [
     {
@@ -267,8 +267,8 @@ const NavigatorPreview: React.FC = () => (
             title="Top-nav country brief"
             description="Best fit for a public destination detail page. It keeps the page inspirational, but makes practical information and trip actions feel first-class instead of buried."
         />
-        <div className="overflow-hidden rounded-[30px] border border-stone-300 bg-[#efe8dc] shadow-[0_28px_60px_-34px_rgba(37,32,26,0.28)]">
-            <div className="border-b border-stone-300/80 bg-[#fcfaf5] px-6 py-4">
+        <div className="overflow-hidden rounded-[30px] border border-slate-300 bg-[linear-gradient(160deg,oklch(0.99_0.015_95)_0%,oklch(0.96_0.03_90)_55%,oklch(0.92_0.04_210)_100%)] shadow-xl shadow-slate-300/50">
+            <div className="border-b border-slate-300/80 bg-white/75 px-6 py-4 backdrop-blur">
                 <div className="flex flex-wrap items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
                         <div className="rounded-full bg-slate-950 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-white">
@@ -302,7 +302,7 @@ const NavigatorPreview: React.FC = () => (
                         </div>
                     </div>
 
-                    <aside className="rounded-[28px] border border-stone-200 bg-[#fffdf9] p-5 shadow-[0_18px_40px_-28px_rgba(37,32,26,0.22)]">
+                    <aside className="rounded-[28px] border border-white/80 bg-white/85 p-5 shadow-lg shadow-slate-300/40 backdrop-blur">
                         <div className="flex items-center gap-2 text-sm font-semibold text-amber-900">
                             <Warning size={18} weight="fill" />
                             Travel warning
@@ -316,7 +316,7 @@ const NavigatorPreview: React.FC = () => (
                     </aside>
                 </section>
 
-                <div className="sticky top-3 z-10 rounded-full border border-stone-300/70 bg-[#fcfaf5] px-3 py-2 shadow-[0_12px_28px_-22px_rgba(37,32,26,0.24)]">
+                <div className="sticky top-3 z-10 rounded-full border border-slate-300/70 bg-white/80 px-3 py-2 shadow-sm backdrop-blur">
                     <div className="flex flex-wrap gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-slate-600">
                         {GUIDE_SECTIONS.map((section) => (
                             <span key={section.id} className="rounded-full bg-slate-100 px-3 py-2">
@@ -352,8 +352,8 @@ const FieldGuidePreview: React.FC = () => (
             title="Sidebar field guide"
             description="Best fit for a denser country-information experience. This layout makes scanning, section jumping, and long-form prep information feel much more intentional."
         />
-        <div className="overflow-hidden rounded-[30px] border border-stone-300 bg-[#f1ece2] shadow-[0_28px_60px_-34px_rgba(37,32,26,0.28)]">
-            <div className="border-b border-stone-300/70 bg-[#fcfaf5] px-6 py-4">
+        <div className="overflow-hidden rounded-[30px] border border-slate-300 bg-[linear-gradient(180deg,oklch(0.98_0.012_85)_0%,oklch(0.95_0.015_215)_100%)] shadow-xl shadow-slate-300/50">
+            <div className="border-b border-slate-300/70 bg-white/70 px-6 py-4 backdrop-blur">
                 <div className="flex items-center justify-between gap-4">
                     <div>
                         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Field guide prototype</p>
@@ -366,7 +366,7 @@ const FieldGuidePreview: React.FC = () => (
             </div>
 
             <div className="grid gap-5 px-6 py-6 xl:grid-cols-[220px_minmax(0,1fr)_260px]">
-                <aside className="rounded-[26px] border border-stone-200 bg-[#fffdf9] p-4 shadow-[0_16px_36px_-28px_rgba(37,32,26,0.22)] xl:sticky xl:top-6 xl:h-fit">
+                <aside className="rounded-[26px] border border-white/80 bg-white/80 p-4 shadow-sm shadow-slate-200/80 xl:sticky xl:top-6 xl:h-fit">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Guide sections</p>
                     <div className="mt-4 grid gap-2">
                         {GUIDE_SECTIONS.map((section, index) => (
@@ -418,8 +418,8 @@ const PlannerAssistPreview: React.FC = () => (
             title="Planner companion"
             description="Best fit if we want country guidance to feel tightly integrated with trip creation and upcoming-trip prep. This is the most TravelFlow-native direction."
         />
-        <div className="overflow-hidden rounded-[30px] border border-stone-300 bg-[#f0ebe1] shadow-[0_28px_60px_-34px_rgba(37,32,26,0.28)]">
-            <div className="border-b border-stone-300/70 bg-[#fcfaf5] px-6 py-4">
+        <div className="overflow-hidden rounded-[30px] border border-slate-300 bg-[linear-gradient(180deg,oklch(0.98_0.01_220)_0%,oklch(0.93_0.03_200)_100%)] shadow-xl shadow-slate-300/50">
+            <div className="border-b border-slate-300/70 bg-white/75 px-6 py-4 backdrop-blur">
                 <div className="flex flex-wrap items-center justify-between gap-4">
                     <div>
                         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">TravelFlow-native solution</p>
@@ -432,7 +432,7 @@ const PlannerAssistPreview: React.FC = () => (
             </div>
 
             <div className="grid gap-5 px-6 py-6 xl:grid-cols-[240px_minmax(0,1fr)_280px]">
-                <aside className="rounded-[28px] border border-stone-200 bg-[#fffdf9] p-4 shadow-[0_16px_36px_-28px_rgba(37,32,26,0.22)]">
+                <aside className="rounded-[28px] border border-white/80 bg-white/80 p-4 shadow-sm shadow-slate-200/80">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Trip prep stack</p>
                     <div className="mt-4 grid gap-3">
                         <div className="rounded-2xl bg-slate-950 px-4 py-4 text-white">
@@ -529,7 +529,7 @@ export const AdminCountryGuideLabPage: React.FC = () => {
                         className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-slate-950 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-slate-900"
                         {...getAnalyticsDebugAttributes('admin__country_guide_lab_example_trip--open')}
                     >
-                        Open prep workspace
+                        Open testing trip
                     </Link>
                     <a
                         href={GUIDE_SOURCE_URL}
@@ -544,10 +544,10 @@ export const AdminCountryGuideLabPage: React.FC = () => {
             )}
         >
             <div className="space-y-6">
-                <section className="overflow-hidden rounded-[34px] border border-stone-300 bg-[#efe8dc] shadow-[0_34px_70px_-38px_rgba(37,32,26,0.28)]">
+                <section className="overflow-hidden rounded-[34px] border border-slate-300 bg-[linear-gradient(135deg,oklch(0.985_0.012_92)_0%,oklch(0.955_0.02_220)_50%,oklch(0.92_0.035_205)_100%)] shadow-xl shadow-slate-300/40">
                     <div className="grid gap-6 px-6 py-7 xl:grid-cols-[minmax(0,1.2fr)_340px] xl:px-8 xl:py-8">
                         <div>
-                            <p className="inline-flex items-center gap-2 rounded-full border border-stone-200 bg-[#fcfaf5] px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-slate-700">
+                            <p className="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/70 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-slate-700 backdrop-blur">
                                 <GlobeHemisphereWest size={16} weight="duotone" />
                                 Thailand guide experiment
                             </p>
@@ -559,21 +559,21 @@ export const AdminCountryGuideLabPage: React.FC = () => {
                             </p>
 
                             <div className="mt-6 grid gap-3 md:grid-cols-3">
-                                <div className="rounded-[26px] border border-stone-200 bg-[#fffdf9] p-5 shadow-[0_16px_36px_-28px_rgba(37,32,26,0.22)]">
+                                <div className="rounded-[26px] border border-white/80 bg-white/75 p-5 shadow-sm shadow-slate-200/80 backdrop-blur">
                                     <div className="flex items-center gap-3 text-slate-950">
                                         <Cards size={22} weight="duotone" />
                                         <p className="font-bold">Discover</p>
                                     </div>
                                     <p className="mt-3 text-sm leading-6 text-slate-600">Country detail pages should carry just enough inspiration to choose where to go and when.</p>
                                 </div>
-                                <div className="rounded-[26px] border border-stone-200 bg-[#fffdf9] p-5 shadow-[0_16px_36px_-28px_rgba(37,32,26,0.22)]">
+                                <div className="rounded-[26px] border border-white/80 bg-white/75 p-5 shadow-sm shadow-slate-200/80 backdrop-blur">
                                     <div className="flex items-center gap-3 text-slate-950">
                                         <ShieldCheck size={22} weight="duotone" />
                                         <p className="font-bold">Prepare</p>
                                     </div>
                                     <p className="mt-3 text-sm leading-6 text-slate-600">Entry rules, safety, health, money, SIM, and emergency data should become reusable trip-prep modules.</p>
                                 </div>
-                                <div className="rounded-[26px] border border-stone-200 bg-[#fffdf9] p-5 shadow-[0_16px_36px_-28px_rgba(37,32,26,0.22)]">
+                                <div className="rounded-[26px] border border-white/80 bg-white/75 p-5 shadow-sm shadow-slate-200/80 backdrop-blur">
                                     <div className="flex items-center gap-3 text-slate-950">
                                         <SuitcaseRolling size={22} weight="duotone" />
                                         <p className="font-bold">Go</p>

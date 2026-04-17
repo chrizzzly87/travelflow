@@ -20,12 +20,4 @@ describe('components/tripview/useTripViewModeState', () => {
 
     expect(result.current.viewMode).toBe('print');
   });
-
-  it('hydrates prep mode from URL query', () => {
-    window.history.replaceState({}, '', '/trip/trip-1?mode=prep');
-
-    const { result } = renderHook(() => useTripViewModeState());
-
-    expect(result.current.viewMode).toBe('prep');
-  });
 });

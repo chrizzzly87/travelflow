@@ -52,7 +52,7 @@ describe('pages/AdminCountryGuideLabPage', () => {
     expect(mocks.trackEvent).toHaveBeenCalledWith('admin__country_guide_lab--open');
     expect(screen.getByRole('heading', { name: 'Country Guide Lab' })).toBeInTheDocument();
     expect(screen.getByText('Thailand guide experiment')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Open prep workspace/i })).toHaveAttribute('href', '/example/thailand-travel-prep-playground?mode=prep');
+    expect(screen.getByRole('link', { name: /Open testing trip/i })).toHaveAttribute('href', '/example/thailand-travel-prep-playground');
     expect(screen.getByRole('link', { name: /Review source guide/i })).toHaveAttribute('href', 'https://atobeach.com/thailand-travel-guide');
 
     await user.click(screen.getByRole('tab', { name: 'Top Navigation' }));

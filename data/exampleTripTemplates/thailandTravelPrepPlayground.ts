@@ -31,22 +31,16 @@ export const THAILAND_TRAVEL_PREP_PLAYGROUND_TEMPLATE: Partial<ITrip> = {
                     tone: 'warning',
                 },
                 {
-                    label: 'Best season snapshot',
-                    value: 'November to early April',
-                    helper: 'Useful trip-timing context for the beach-heavy testing route.',
-                    tone: 'accent',
+                    label: 'Local SIM snapshot',
+                    value: '15 GB for about 499 THB',
+                    helper: 'Useful as a planning signal, but this should move to a fresher data source later.',
+                    tone: 'neutral',
                 },
                 {
                     label: 'Emergency numbers',
                     value: '191 / 1669 / 199',
                     helper: 'Police, ambulance, and fire services.',
                     tone: 'warning',
-                },
-                {
-                    label: 'SPF signal',
-                    value: '50+',
-                    helper: 'Strong example of the kind of practical packing signal that should surface before departure.',
-                    tone: 'neutral',
                 },
             ],
             sections: [
@@ -100,29 +94,12 @@ export const THAILAND_TRAVEL_PREP_PLAYGROUND_TEMPLATE: Partial<ITrip> = {
                     ],
                     tone: 'accent',
                 },
-                {
-                    id: 'transport',
-                    eyebrow: 'Getting around',
-                    title: 'Driving, scooters, and local transport',
-                    summary: 'Driving guidance matters most where travelers are tempted into scooter or car hire without checking licensing, helmet, and insurance rules first.',
-                    bullets: [
-                        'Thailand drives on the left, with motorway limits around 120 km/h and urban limits around 50 km/h.',
-                        'A UK licence may work for short visits, but an International Driving Permit is the safer planning assumption.',
-                        'Scooter or motorbike hire should surface engine-size, insurance, helmet, and passport-deposit warnings together.',
-                    ],
-                    tone: 'warning',
-                },
             ],
             utilities: [
                 {
                     label: 'Power',
                     value: '220V / 50Hz',
                     helper: 'Thailand commonly uses Types A, B, C, and O. UK adapters are usually needed.',
-                },
-                {
-                    label: 'Local SIM snapshot',
-                    value: '15 GB for about 499 THB',
-                    helper: 'Great fit for a prep card, but this should move to a fresher source if it ever becomes public.',
                 },
                 {
                     label: 'Wi-Fi snapshot',
@@ -133,16 +110,6 @@ export const THAILAND_TRAVEL_PREP_PLAYGROUND_TEMPLATE: Partial<ITrip> = {
                     label: 'Mobile coverage',
                     value: '4G and 5G are common on major tourist routes',
                     helper: 'A local SIM is usually easier than relying on roaming.',
-                },
-                {
-                    label: 'Calling code',
-                    value: '+66',
-                    helper: 'Helpful for embassy, hotel, and transfer contacts before departure.',
-                },
-                {
-                    label: 'Driving snapshot',
-                    value: 'Left side · 0.05% alcohol limit',
-                    helper: 'A compact legal reminder for any route with scooter or car-hire intent.',
                 },
                 {
                     label: 'British Embassy Bangkok',

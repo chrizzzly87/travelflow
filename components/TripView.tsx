@@ -70,7 +70,7 @@ import { useTripSelectionController } from './tripview/useTripSelectionControlle
 import { useTripTitleEditHandlers } from './tripview/useTripTitleEditHandlers';
 import { useTripTitleEditorState } from './tripview/useTripTitleEditorState';
 import { useTripUpdateItemsHandler } from './tripview/useTripUpdateItemsHandler';
-import { type TripWorkspaceMode, useTripViewModeState } from './tripview/useTripViewModeState';
+import { useTripViewModeState } from './tripview/useTripViewModeState';
 import { useTimelinePinchZoom } from './tripview/useTimelinePinchZoom';
 import { buildVisualHistoryLabel, resolveVisualDiff, type ZoomChangeSource } from './tripview/viewChangeDiff';
 import { readFloatingMapPreviewState, writeFloatingMapPreviewState } from './tripview/floatingMapPreviewState';
@@ -85,10 +85,8 @@ import {
 import { TripTimelineCanvas } from './tripview/TripTimelineCanvas';
 import { TripViewHeader } from './tripview/TripViewHeader';
 import { TripViewHudOverlays } from './tripview/TripViewHudOverlays';
-import { TripViewPrepWorkspace } from './tripview/TripViewPrepWorkspace';
 import { TripViewPlannerWorkspace } from './tripview/TripViewPlannerWorkspace';
 import { TripViewStatusBanners } from './tripview/TripViewStatusBanners';
-import { TripViewWorkspaceNav } from './tripview/TripViewWorkspaceNav';
 import { showAppToast } from './ui/appToast';
 import {
     TRIP_GENERATION_TIMEOUT_MS,
@@ -586,7 +584,6 @@ interface TripViewModalLayerProps {
     onExportActivitiesCalendar: () => void;
     onExportCitiesCalendar: () => void;
     onExportAllCalendar: () => void;
-    onOpenTravelPrepWorkspace: () => void;
     onOpenPrintLayout: () => void;
     shouldEnableReleaseNotice: boolean;
     isShareOpen: boolean;
@@ -684,7 +681,6 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
     onExportActivitiesCalendar,
     onExportCitiesCalendar,
     onExportAllCalendar,
-    onOpenTravelPrepWorkspace,
     onOpenPrintLayout,
     shouldEnableReleaseNotice,
     isShareOpen,
@@ -806,7 +802,6 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
                     onExportActivitiesCalendar={onExportActivitiesCalendar}
                     onExportCitiesCalendar={onExportCitiesCalendar}
                     onExportAllCalendar={onExportAllCalendar}
-                    onOpenTravelPrepWorkspace={onOpenTravelPrepWorkspace}
                     onOpenPrintLayout={onOpenPrintLayout}
                 />
             </Suspense>
@@ -1660,7 +1655,6 @@ const useTripViewRender = ({
         [canEdit, location.search]
     );
     const { viewMode, setViewMode } = useTripViewModeState();
-    const lastWorkspaceModeRef = useRef<TripWorkspaceMode>(viewMode === 'prep' ? 'prep' : 'planner');
     const currentUrl = location.pathname + location.search;
     const {
         isHistoryOpen,
@@ -3017,20 +3011,6 @@ const useTripViewRender = ({
         handleTripCalendarExport('all', source);
     }, [handleTripCalendarExport]);
 
-    useEffect(() => {
-        if (viewMode === 'print') return;
-        lastWorkspaceModeRef.current = viewMode;
-    }, [viewMode]);
-
-    const handleWorkspaceModeChange = useCallback((mode: TripWorkspaceMode) => {
-        setViewMode(mode);
-    }, [setViewMode]);
-
-    const handleOpenTravelPrepWorkspace = useCallback(() => {
-        closeTripInfoModal();
-        setViewMode('prep');
-    }, [closeTripInfoModal, setViewMode]);
-
     const detailsPanelContent = renderDetailsPanelContent({
         showSelectedCitiesPanel,
         selectedCitiesInTimeline,
@@ -3063,7 +3043,7 @@ const useTripViewRender = ({
                     <PrintLayout
                         trip={displayTrip}
                         isPaywalled={isPaywallLocked}
-                        onClose={() => setViewMode(lastWorkspaceModeRef.current)}
+                        onClose={() => setViewMode('planner')}
                         onUpdateTrip={handleUpdateItems}
                         onExportActivitiesCalendar={() => handleExportActivitiesCalendar('print_view')}
                         onExportCitiesCalendar={() => handleExportCitiesCalendar('print_view')}
@@ -3178,148 +3158,133 @@ const useTripViewRender = ({
                     exampleTripBanner={exampleTripBanner}
                 />
 
-                <TripViewWorkspaceNav
-                    activeMode={viewMode === 'prep' ? 'prep' : 'planner'}
-                    tripId={trip.id}
-                    onModeChange={handleWorkspaceModeChange}
-                />
-
                 {/* Main Content */}
                 <main className="flex-1 relative overflow-hidden flex flex-col">
-                    {viewMode === 'prep' ? (
-                        <TripViewPrepWorkspace
-                            trip={displayTrip}
-                            tripDateRange={tripMeta.dateRange}
-                            tripSpanCompactLabel={tripMeta.compactSpanLabel}
-                            travelerWarnings={travelerWarnings}
-                        />
-                    ) : (
-                        <TripViewPlannerWorkspace
-                            isPaywallLocked={isPaywallLocked}
-                            isMobile={isMobile}
-                            isMobileMapExpanded={isMobileMapExpanded}
-                            onCloseMobileMap={() => setIsMobileMapExpanded(false)}
-                            onToggleMobileMapExpanded={() => setIsMobileMapExpanded((value) => !value)}
-                            timelineCanvas={timelineCanvas}
-                            onTimelineTouchStart={handleTimelineTouchStart}
-                            onTimelineTouchMove={handleTimelineTouchMove}
-                            onTimelineTouchEnd={handleTimelineTouchEnd}
-                            onZoomOut={() => {
-                                trackEvent('trip_view__zoom', {
-                                    direction: 'out',
+                    <TripViewPlannerWorkspace
+                        isPaywallLocked={isPaywallLocked}
+                        isMobile={isMobile}
+                        isMobileMapExpanded={isMobileMapExpanded}
+                        onCloseMobileMap={() => setIsMobileMapExpanded(false)}
+                        onToggleMobileMapExpanded={() => setIsMobileMapExpanded((value) => !value)}
+                        timelineCanvas={timelineCanvas}
+                        onTimelineTouchStart={handleTimelineTouchStart}
+                        onTimelineTouchMove={handleTimelineTouchMove}
+                        onTimelineTouchEnd={handleTimelineTouchEnd}
+                        onZoomOut={() => {
+                            trackEvent('trip_view__zoom', {
+                                direction: 'out',
+                                trip_id: trip.id,
+                                timeline_mode: timelineMode,
+                            });
+                            markZoomDirty();
+                            setZoomLevel((value) => resolveSteppedZoomLevel(value, 'out'));
+                        }}
+                        onZoomIn={() => {
+                            trackEvent('trip_view__zoom', {
+                                direction: 'in',
+                                trip_id: trip.id,
+                                timeline_mode: timelineMode,
+                            });
+                            markZoomDirty();
+                            setZoomLevel((value) => resolveSteppedZoomLevel(value, 'in'));
+                        }}
+                        onTimelineModeChange={(mode) => {
+                            if (mode === timelineMode) return;
+                            trackEvent(mode === 'calendar' ? 'trip_view__mode--calendar' : 'trip_view__mode--timeline', {
+                                trip_id: trip.id,
+                            });
+                            markManualViewChange();
+                            setTimelineMode(mode);
+                        }}
+                        onTimelineViewChange={(view) => {
+                            if (view === timelineView) return;
+                            trackEvent(
+                                view === 'horizontal'
+                                    ? 'trip_view__layout_direction--horizontal'
+                                    : 'trip_view__layout_direction--vertical',
+                                { trip_id: trip.id, target: 'timeline' }
+                            );
+                            markManualViewChange();
+                            setTimelineView(view);
+                        }}
+                        zoomLevel={zoomLevel}
+                        mapDockMode={mapDockMode}
+                        onMapDockModeChange={(mode) => {
+                            if (mode === mapDockMode) return;
+                            trackEvent(
+                                mode === 'floating'
+                                    ? 'trip_view__map_preview--minimize'
+                                    : 'trip_view__map_preview--maximize',
+                                {
                                     trip_id: trip.id,
-                                    timeline_mode: timelineMode,
-                                });
-                                markZoomDirty();
-                                setZoomLevel((value) => resolveSteppedZoomLevel(value, 'out'));
-                            }}
-                            onZoomIn={() => {
-                                trackEvent('trip_view__zoom', {
-                                    direction: 'in',
-                                    trip_id: trip.id,
-                                    timeline_mode: timelineMode,
-                                });
-                                markZoomDirty();
-                                setZoomLevel((value) => resolveSteppedZoomLevel(value, 'in'));
-                            }}
-                            onTimelineModeChange={(mode) => {
-                                if (mode === timelineMode) return;
-                                trackEvent(mode === 'calendar' ? 'trip_view__mode--calendar' : 'trip_view__mode--timeline', {
-                                    trip_id: trip.id,
-                                });
-                                markManualViewChange();
-                                setTimelineMode(mode);
-                            }}
-                            onTimelineViewChange={(view) => {
-                                if (view === timelineView) return;
-                                trackEvent(
-                                    view === 'horizontal'
-                                        ? 'trip_view__layout_direction--horizontal'
-                                        : 'trip_view__layout_direction--vertical',
-                                    { trip_id: trip.id, target: 'timeline' }
-                                );
-                                markManualViewChange();
-                                setTimelineView(view);
-                            }}
-                            zoomLevel={zoomLevel}
-                            mapDockMode={mapDockMode}
-                            onMapDockModeChange={(mode) => {
-                                if (mode === mapDockMode) return;
-                                trackEvent(
-                                    mode === 'floating'
-                                        ? 'trip_view__map_preview--minimize'
-                                        : 'trip_view__map_preview--maximize',
-                                    {
-                                        trip_id: trip.id,
-                                        layout_mode: layoutMode,
-                                    }
-                                );
-                                markManualViewChange();
-                                runWithOptionalViewTransition(() => {
-                                    setMapDockMode(mode);
-                                });
-                            }}
-                            timelineMode={timelineMode}
-                            timelineView={timelineView}
-                            mapViewportRef={mapViewportRef}
-                            isMapBootstrapEnabled={isMapBootstrapEnabled}
-                            ItineraryMapComponent={ItineraryMap}
-                            mapLoadingFallback={<MapLoadingFallback />}
-                            mapDeferredFallback={<MapDeferredFallback onLoadNow={enableMapBootstrap} />}
-                            displayItems={displayTrip.items}
-                            selectedItemId={selectedItemId}
-                            onMapCitySelect={handleMapCitySelect}
-                            onMapActivitySelect={handleMapActivitySelect}
-                            layoutMode={layoutMode}
-                            effectiveLayoutMode={effectiveLayoutMode}
-                            onLayoutModeChange={(mode) => {
-                                if (mode === layoutMode) return;
-                                trackEvent(
-                                    mode === 'horizontal'
-                                        ? 'trip_view__layout_direction--horizontal'
-                                        : 'trip_view__layout_direction--vertical',
-                                    { trip_id: trip.id, target: 'map' }
-                                );
-                                markManualViewChange();
-                                setLayoutMode(mode);
-                            }}
-                            mapStyle={mapStyle}
-                            onMapStyleChange={(nextStyle) => {
-                                if (nextStyle === mapStyle) return;
-                                markManualViewChange();
-                                setMapStyle(nextStyle);
-                            }}
-                            routeMode={routeMode}
-                            onRouteModeChange={(nextMode) => {
-                                if (nextMode === routeMode) return;
-                                markManualViewChange();
-                                setRouteMode(nextMode);
-                            }}
-                            showCityNames={showCityNames}
-                            onShowCityNamesChange={(nextValue) => {
-                                if (nextValue === showCityNames) return;
-                                markManualViewChange();
-                                setShowCityNames(nextValue);
-                            }}
-                            mapColorMode={mapColorMode}
-                            onMapColorModeChange={allowMapColorModeControls ? handleMapColorModeChange : undefined}
-                            initialMapFocusQuery={effectiveMapFocusQuery}
-                            onRouteMetrics={handleRouteMetrics}
-                            onRouteStatus={handleRouteStatus}
-                            tripId={trip.id}
-                            mapViewTransitionName={mapViewTransitionName}
-                            sidebarWidth={sidebarWidth}
-                            detailsWidth={detailsWidth}
-                            timelineHeight={timelineHeight}
-                            detailsPanelVisible={detailsPanelVisible}
-                            detailsPanelContent={detailsPanelContent}
-                            verticalLayoutTimelineRef={verticalLayoutTimelineRef}
-                            onStartResizing={startResizing}
-                            onSidebarResizeKeyDown={handleSidebarResizeKeyDown}
-                            onDetailsResizeKeyDown={handleDetailsResizeKeyDown}
-                            onTimelineResizeKeyDown={handleTimelineResizeKeyDown}
-                        />
-                    )}
+                                    layout_mode: layoutMode,
+                                }
+                            );
+                            markManualViewChange();
+                            runWithOptionalViewTransition(() => {
+                                setMapDockMode(mode);
+                            });
+                        }}
+                        timelineMode={timelineMode}
+                        timelineView={timelineView}
+                        mapViewportRef={mapViewportRef}
+                        isMapBootstrapEnabled={isMapBootstrapEnabled}
+                        ItineraryMapComponent={ItineraryMap}
+                        mapLoadingFallback={<MapLoadingFallback />}
+                        mapDeferredFallback={<MapDeferredFallback onLoadNow={enableMapBootstrap} />}
+                        displayItems={displayTrip.items}
+                        selectedItemId={selectedItemId}
+                        onMapCitySelect={handleMapCitySelect}
+                        onMapActivitySelect={handleMapActivitySelect}
+                        layoutMode={layoutMode}
+                        effectiveLayoutMode={effectiveLayoutMode}
+                        onLayoutModeChange={(mode) => {
+                            if (mode === layoutMode) return;
+                            trackEvent(
+                                mode === 'horizontal'
+                                    ? 'trip_view__layout_direction--horizontal'
+                                    : 'trip_view__layout_direction--vertical',
+                                { trip_id: trip.id, target: 'map' }
+                            );
+                            markManualViewChange();
+                            setLayoutMode(mode);
+                        }}
+                        mapStyle={mapStyle}
+                        onMapStyleChange={(nextStyle) => {
+                            if (nextStyle === mapStyle) return;
+                            markManualViewChange();
+                            setMapStyle(nextStyle);
+                        }}
+                        routeMode={routeMode}
+                        onRouteModeChange={(nextMode) => {
+                            if (nextMode === routeMode) return;
+                            markManualViewChange();
+                            setRouteMode(nextMode);
+                        }}
+                        showCityNames={showCityNames}
+                        onShowCityNamesChange={(nextValue) => {
+                            if (nextValue === showCityNames) return;
+                            markManualViewChange();
+                            setShowCityNames(nextValue);
+                        }}
+                        mapColorMode={mapColorMode}
+                        onMapColorModeChange={allowMapColorModeControls ? handleMapColorModeChange : undefined}
+                        initialMapFocusQuery={effectiveMapFocusQuery}
+                        onRouteMetrics={handleRouteMetrics}
+                        onRouteStatus={handleRouteStatus}
+                        tripId={trip.id}
+                        mapViewTransitionName={mapViewTransitionName}
+                        sidebarWidth={sidebarWidth}
+                        detailsWidth={detailsWidth}
+                        timelineHeight={timelineHeight}
+                        detailsPanelVisible={detailsPanelVisible}
+                        detailsPanelContent={detailsPanelContent}
+                        verticalLayoutTimelineRef={verticalLayoutTimelineRef}
+                        onStartResizing={startResizing}
+                        onSidebarResizeKeyDown={handleSidebarResizeKeyDown}
+                        onDetailsResizeKeyDown={handleDetailsResizeKeyDown}
+                        onTimelineResizeKeyDown={handleTimelineResizeKeyDown}
+                    />
                     <TripViewModalLayer
                         isMobile={isMobile}
                         detailsPanelVisible={detailsPanelVisible}
@@ -3384,7 +3349,6 @@ const useTripViewRender = ({
                         onExportActivitiesCalendar={() => handleExportActivitiesCalendar('trip_info_modal')}
                         onExportCitiesCalendar={() => handleExportCitiesCalendar('trip_info_modal')}
                         onExportAllCalendar={() => handleExportAllCalendar('trip_info_modal')}
-                        onOpenTravelPrepWorkspace={handleOpenTravelPrepWorkspace}
                         onOpenPrintLayout={() => {
                             closeTripInfoModal();
                             setViewMode('print');

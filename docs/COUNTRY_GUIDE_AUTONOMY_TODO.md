@@ -5,9 +5,8 @@ Internal working list for the guide-backed planner companion track. Priorities r
 ## Now
 - [x] Add an admin-only country guide lab to compare top-nav, sidebar, and planner-companion layouts before shipping public country pages.
 - [x] Add a hidden Thailand testing trip at `/example/thailand-travel-prep-playground` so design, QA, and product can review the guide ideas inside a real itinerary.
-- [x] Replace the oversized destination modal guide with a dedicated in-tool prep workspace that keeps warnings, utilities, and official sources tied to the itinerary.
+- [x] Bring country-guide content into the planner destination modal with entry, safety, health, money, utility, and official-source sections.
 - [x] Add a direct admin handoff from the lab to the hidden testing trip so the design review loop stays one click.
-- [x] Document the no-gradient, paper-and-teal design rules in `DESIGN.md` so future guide and workspace work stays aligned.
 
 ## Next
 - [ ] Promote guide quick facts into trip-prep reminders so arrival-card deadlines, visa windows, insurance prompts, and legal warnings become actionable tasks.

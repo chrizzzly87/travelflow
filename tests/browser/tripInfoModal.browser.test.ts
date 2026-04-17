@@ -14,10 +14,6 @@ vi.mock('react-i18next', () => ({
     t: (key: string, options?: Record<string, unknown>) => {
       if (key === 'tripView.infoDialog.tabs.debug') return 'Debug';
       if (key === 'tripView.infoDialog.tabs.destination') return 'Destination';
-      if (key === 'tripView.infoDialog.destination.prepWorkspaceEyebrow') return 'Dedicated workspace';
-      if (key === 'tripView.infoDialog.destination.prepWorkspaceTitle') return 'Travel prep moved into the trip workspace';
-      if (key === 'tripView.infoDialog.destination.prepWorkspaceDescription') return 'Keep the modal short. Open the prep workspace for entry rules, safety, money, utilities, and source-backed updates tied to this itinerary.';
-      if (key === 'tripView.infoDialog.destination.prepWorkspaceAction') return 'Open prep workspace';
       if (key === 'tripView.infoDialog.general.meta.owner') return 'Owner';
       if (key === 'tripView.infoDialog.general.meta.access') return 'Access';
       if (key === 'tripView.infoDialog.general.meta.tripSpan') return 'Days & nights';
@@ -203,9 +199,8 @@ describe('components/TripInfoModal ownership context', () => {
     expect(screen.getByRole('tab', { name: 'Debug' })).toBeInTheDocument();
   });
 
-  it('renders the destination handoff card and tracks prep-workspace opens', async () => {
+  it('renders planner companion country-guide content in the destination tab and tracks official-source opens', async () => {
     const user = userEvent.setup();
-    const onOpenTravelPrepWorkspace = vi.fn();
 
     render(React.createElement(TripInfoModal, {
       isOpen: true,
@@ -302,21 +297,20 @@ describe('components/TripInfoModal ownership context', () => {
         ownerEmail: 'owner@example.com',
         accessSource: 'owner',
       },
-      onOpenTravelPrepWorkspace,
       onOpenPrintLayout: () => {},
     }));
 
     await user.click(screen.getByRole('tab', { name: 'Destination' }));
 
-    expect(screen.getByText('Travel prep moved into the trip workspace')).toBeInTheDocument();
+    expect(screen.getByText('Thailand travel-prep snapshot')).toBeInTheDocument();
+    expect(screen.getByText('Travel prep companion')).toBeInTheDocument();
     expect(screen.getByText('Entry requirements')).toBeInTheDocument();
-    expect(screen.queryByText('Recent guide updates worth testing')).not.toBeInTheDocument();
+    expect(screen.getByText('Recent guide updates worth testing')).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Open prep workspace' }));
+    await user.click(screen.getByRole('link', { name: /UK travel advice for Thailand/i }));
 
-    expect(onOpenTravelPrepWorkspace).toHaveBeenCalledTimes(1);
-    expect(mocks.trackEvent).toHaveBeenCalledWith('trip_view__travel_prep_workspace--open', {
-      source: 'trip_info_modal',
+    expect(mocks.trackEvent).toHaveBeenCalledWith('trip_view__country_guide_source', {
+      label: 'UK travel advice for Thailand',
     });
   });
 });

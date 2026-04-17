@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useRef, useState, type MutableRefObject } from 'react';
-import type { TripViewMode } from './useTripViewModeState';
 
 const DEFAULT_MAP_BOOTSTRAP_DELAY_MS = 900;
 const DEFAULT_MAP_BOOTSTRAP_MAX_WAIT_MS = 4000;
 const DEFAULT_MAP_BOOTSTRAP_INTERSECTION_THRESHOLD = 0.01;
 
 interface UseDeferredMapBootstrapOptions {
-    viewMode: TripViewMode;
+    viewMode: 'planner' | 'print';
     effectiveLayoutMode: 'vertical' | 'horizontal';
     isMobile: boolean;
     isMobileMapExpanded: boolean;

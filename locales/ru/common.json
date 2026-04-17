@@ -396,7 +396,7 @@
     },
     "infoDialog": {
       "title": "Trip details",
-      "description": "Редактируйте основные данные, просматривайте историю, экспортируйте поездку и открывайте раздел подготовки.",
+      "description": "Edit core info, review history, export the trip, and check destination context.",
       "close": "Close trip details dialog",
       "tabs": {
         "general": "General",
@@ -475,22 +475,18 @@
         }
       },
       "destination": {
-        "locked": "Детали направления откроются после активации этой поездки.",
-        "empty": "Для этой поездки пока нет информации о направлении.",
-        "futureChecksTitle": "Следующие модули подготовки",
-        "futureChecksDescription": "Раздел подготовки уже работает. Следующий слой — превратить данные о направлении в предупреждения, документы, бюджет, сборы, импорты и журнал поездки.",
+        "locked": "Destination details unlock once this trip is activated.",
+        "empty": "No destination information is available for this trip yet.",
+        "futureChecksTitle": "Future destination checks",
+        "futureChecksDescription": "This tab is ready for more trip-specific guidance as we add richer destination data.",
         "futureChecks": {
-          "alerts": "Предупреждения",
-          "documents": "Документы",
-          "budget": "Бюджет",
-          "packing": "Сборы",
-          "imports": "Импорт",
-          "journal": "Журнал"
-        },
-        "prepWorkspaceEyebrow": "Отдельный раздел",
-        "prepWorkspaceTitle": "Подготовка к поездке вынесена в рабочее пространство",
-        "prepWorkspaceDescription": "Оставьте модальное окно коротким. Откройте раздел подготовки для правил въезда, безопасности, денег, полезных сведений и обновлений по официальным источникам для этого маршрута.",
-        "prepWorkspaceAction": "Открыть раздел подготовки"
+          "visa": "Visa",
+          "entryRules": "Entry rules",
+          "safety": "Safety",
+          "customs": "Customs",
+          "connectivity": "Connectivity",
+          "health": "Health"
+        }
       }
     },
     "claimConflict": {
@@ -505,30 +501,6 @@
         "prefill": "Reuse your traveler setup, dates, and transport choices.",
         "adjust": "Adjust the draft before starting a fresh generation."
       }
-    },
-    "workspaceNav": {
-      "planner": "План",
-      "prep": "Подготовка"
-    },
-    "prep": {
-      "eyebrow": "Пространство подготовки",
-      "empty": "Для этой поездки пока нет странового блока подготовки.",
-      "beforeDeparture": "До вылета",
-      "onArrival": "По прибытии",
-      "onTheGround": "На месте",
-      "routeContext": "Контекст маршрута",
-      "departure": "Даты",
-      "duration": "Длительность",
-      "country": "Страна",
-      "cities": "Города на маршруте",
-      "priorityChecks": "Приоритетные проверки",
-      "referenceUpdates": "Справочные обновления",
-      "travelerWarnings": "Предупреждения для путешественника",
-      "utilities": "Полезное",
-      "currency": "Валюта",
-      "languages": "Языки",
-      "power": "Электричество",
-      "officialSources": "Официальные источники"
     }
   },
   "tripRouteShell": {
