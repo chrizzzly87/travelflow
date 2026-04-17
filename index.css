@@ -210,19 +210,19 @@
   --tf-font-heading: "Bricolage Grotesque", "Space Grotesk", "TravelFlow Global Fallback", "Noto Sans", "Avenir Next", "Segoe UI", sans-serif;
   --tf-font-body: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "TravelFlow Global Fallback", "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
   --tf-layer-cookie-consent: 12000;
-  /* Global accent currently uses an indigo palette. */
-  --tf-accent-50: #eef2ff;
-  --tf-accent-100: #e0e7ff;
-  --tf-accent-200: #c7d2fe;
-  --tf-accent-300: #a5b4fc;
-  --tf-accent-400: #818cf8;
-  --tf-accent-500: #6366f1;
-  --tf-accent-600: #4f46e5;
-  --tf-accent-700: #4338ca;
-  --tf-accent-800: #3730a3;
-  --tf-accent-900: #312e81;
-  --tf-accent-950: #1e1b4b;
-  --tf-accent-rgb: 79 70 229;
+  /* Product accent uses a grounded teal palette to avoid default AI-purple styling. */
+  --tf-accent-50: #eef7f4;
+  --tf-accent-100: #d8ece5;
+  --tf-accent-200: #b5d7ca;
+  --tf-accent-300: #8ac0ad;
+  --tf-accent-400: #609b87;
+  --tf-accent-500: #477a69;
+  --tf-accent-600: #365f52;
+  --tf-accent-700: #2b4c42;
+  --tf-accent-800: #243d36;
+  --tf-accent-900: #20342f;
+  --tf-accent-950: #0f1c19;
+  --tf-accent-rgb: 54 95 82;
 
   --tf-primary: var(--tf-accent-600);
   --tf-primary-hover: var(--tf-accent-700);
@@ -1204,7 +1204,7 @@ html:active-view-transition-type(blog-collapse)::view-transition-new(.blog-card-
   --chart-5: oklch(0.645 0.246 16.439);
   --sidebar: oklch(0.205 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary: oklch(0.52 0.09 182);
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.269 0 0);
   --sidebar-accent-foreground: oklch(0.985 0 0);

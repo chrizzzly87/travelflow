@@ -75,11 +75,16 @@ vi.mock('../../../services/storageService', () => ({
   saveTrip: mocks.saveTrip,
 }));
 
-vi.mock('../../../utils', () => ({
-  buildCreateTripUrl: mocks.buildCreateTripUrl,
-  buildTripUrl: mocks.buildTripUrl,
-  generateTripId: mocks.generateTripId,
-}));
+vi.mock('../../../utils', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../utils')>();
+  return {
+    ...actual,
+    buildCreateTripUrl: mocks.buildCreateTripUrl,
+    buildTripUrl: mocks.buildTripUrl,
+    generateTripId: mocks.generateTripId,
+    applyCityPaletteToItems: (items: unknown[]) => items,
+  };
+});
 
 vi.mock('../../../data/exampleTripTemplates/runtimeFactory', () => ({
   loadExampleTemplateFactory: mocks.loadExampleTemplateFactory,

@@ -131,6 +131,37 @@ describe('components/tripview/useTripViewSettingsSync', () => {
     vi.useRealTimers();
   });
 
+  it('writes prep mode into the URL and removes the mode query for planner', () => {
+    vi.useFakeTimers();
+    window.history.replaceState({}, '', '/trip/trip-3');
+
+    const prepProps = makeHookProps();
+    prepProps.viewMode = 'prep';
+
+    const { rerender } = renderHook((hookProps: Parameters<typeof useTripViewSettingsSync>[0]) => {
+      useTripViewSettingsSync(hookProps);
+    }, { initialProps: prepProps });
+
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+
+    expect(new URLSearchParams(window.location.search).get('mode')).toBe('prep');
+
+    rerender({
+      ...prepProps,
+      viewMode: 'planner',
+    });
+
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+
+    expect(new URLSearchParams(window.location.search).has('mode')).toBe(false);
+
+    vi.useRealTimers();
+  });
+
   it('does not emit callback updates until a manual view change is marked', () => {
     vi.useFakeTimers();
 

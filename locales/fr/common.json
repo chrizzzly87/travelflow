@@ -396,7 +396,7 @@
     },
     "infoDialog": {
       "title": "Trip details",
-      "description": "Edit core info, review history, export the trip, and check destination context.",
+      "description": "Modifier les infos clés, revoir l’historique, exporter le voyage et ouvrir l’espace de préparation.",
       "close": "Close trip details dialog",
       "tabs": {
         "general": "General",
@@ -475,18 +475,22 @@
         }
       },
       "destination": {
-        "locked": "Destination details unlock once this trip is activated.",
-        "empty": "No destination information is available for this trip yet.",
-        "futureChecksTitle": "Future destination checks",
-        "futureChecksDescription": "This tab is ready for more trip-specific guidance as we add richer destination data.",
+        "locked": "Les détails de la destination se débloquent une fois ce voyage activé.",
+        "empty": "Aucune information de destination n’est encore disponible pour ce voyage.",
+        "futureChecksTitle": "Prochains modules de préparation",
+        "futureChecksDescription": "L’espace de préparation est déjà actif. La prochaine étape consiste à transformer la donnée destination en alertes, documents, budget, bagages, imports et journal.",
         "futureChecks": {
-          "visa": "Visa",
-          "entryRules": "Entry rules",
-          "safety": "Safety",
-          "customs": "Customs",
-          "connectivity": "Connectivity",
-          "health": "Health"
-        }
+          "alerts": "Alertes",
+          "documents": "Documents",
+          "budget": "Budget",
+          "packing": "Bagages",
+          "imports": "Imports",
+          "journal": "Journal"
+        },
+        "prepWorkspaceEyebrow": "Espace dédié",
+        "prepWorkspaceTitle": "La préparation du voyage a quitté la modale",
+        "prepWorkspaceDescription": "Gardez la modale courte. Ouvrez l’espace de préparation pour l’entrée, la sécurité, l’argent, les infos pratiques et les mises à jour sourcées liées à cet itinéraire.",
+        "prepWorkspaceAction": "Ouvrir l’espace de préparation"
       }
     },
     "claimConflict": {
@@ -501,6 +505,30 @@
         "prefill": "Reuse your traveler setup, dates, and transport choices.",
         "adjust": "Adjust the draft before starting a fresh generation."
       }
+    },
+    "workspaceNav": {
+      "planner": "Planificateur",
+      "prep": "Préparation"
+    },
+    "prep": {
+      "eyebrow": "Espace de préparation",
+      "empty": "Aucun aperçu de préparation pays n’est disponible pour ce voyage.",
+      "beforeDeparture": "Avant le départ",
+      "onArrival": "À l’arrivée",
+      "onTheGround": "Sur place",
+      "routeContext": "Contexte de l’itinéraire",
+      "departure": "Dates",
+      "duration": "Durée",
+      "country": "Pays",
+      "cities": "Villes sur cet itinéraire",
+      "priorityChecks": "Contrôles prioritaires",
+      "referenceUpdates": "Mises à jour de référence",
+      "travelerWarnings": "Avertissements voyageurs",
+      "utilities": "Infos pratiques",
+      "currency": "Devise",
+      "languages": "Langues",
+      "power": "Électricité",
+      "officialSources": "Sources officielles"
     }
   },
   "tripRouteShell": {

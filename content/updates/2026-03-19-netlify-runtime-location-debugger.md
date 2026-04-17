@@ -18,4 +18,7 @@ summary: "Adds the first Netlify-backed runtime location snapshot so geo-aware e
 - [ ] [Internal] 🧳 Added an admin-only Country Guide Lab with top-nav, sidebar, and planner-companion layouts so guide-style travel prep content can be explored before shipping public country pages.
 - [ ] [Internal] 🧭 Turned the Thailand guide experiment into a hidden `/example/*` playground trip with a planner-side country companion, official-source cards, and a direct admin handoff for design testing.
 - [ ] [Internal] 📝 Added an autonomous country-guide execution todo so the next guide-backed planner features stay prioritized around entry rules, safety, health, utilities, reminders, and prep workflows.
+- [ ] [Internal] 🎨 Added a repo-level `DESIGN.md`, shifted the product accent away from default AI-purple, and locked the guide/prep direction to solid paper surfaces instead of decorative gradients.
+- [ ] [Internal] 🧭 Promoted travel prep into a dedicated trip workspace with a URL-backed `?mode=prep` view, a new in-tool workspace switcher, and a lighter destination modal that now hands off into the workspace.
+- [ ] [Internal] 🌴 Expanded the Thailand hidden example with season, SPF, driving, local calling, and trip-prep utility signals pulled from the guide audit so design and QA can test a richer operational prep surface.
 - [ ] [Internal] ⏱️ Stabilized date-sensitive profile settings and admin billing tests so the core suite stays green as the calendar moves forward.

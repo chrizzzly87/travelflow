@@ -396,7 +396,7 @@
     },
     "infoDialog": {
       "title": "Trip details",
-      "description": "Edit core info, review history, export the trip, and check destination context.",
+      "description": "Edit core info, review history, export the trip, and launch the prep workspace.",
       "close": "Close trip details dialog",
       "tabs": {
         "general": "General",
@@ -477,16 +477,20 @@
       "destination": {
         "locked": "Destination details unlock once this trip is activated.",
         "empty": "No destination information is available for this trip yet.",
-        "futureChecksTitle": "Future destination checks",
-        "futureChecksDescription": "This tab is ready for more trip-specific guidance as we add richer destination data.",
+        "futureChecksTitle": "Next prep modules",
+        "futureChecksDescription": "The prep workspace is live. The next layer is turning destination guidance into alerts, documents, budgeting, packing, imports, and journals.",
         "futureChecks": {
-          "visa": "Visa",
-          "entryRules": "Entry rules",
-          "safety": "Safety",
-          "customs": "Customs",
-          "connectivity": "Connectivity",
-          "health": "Health"
-        }
+          "alerts": "Alerts",
+          "documents": "Documents",
+          "budget": "Budget",
+          "packing": "Packing",
+          "imports": "Imports",
+          "journal": "Journal"
+        },
+        "prepWorkspaceEyebrow": "Dedicated workspace",
+        "prepWorkspaceTitle": "Travel prep moved into the trip workspace",
+        "prepWorkspaceDescription": "Keep the modal short. Open the prep workspace for entry rules, safety, money, utilities, and source-backed updates tied to this itinerary.",
+        "prepWorkspaceAction": "Open prep workspace"
       }
     },
     "claimConflict": {
@@ -501,6 +505,30 @@
         "prefill": "Reuse your traveler setup, dates, and transport choices.",
         "adjust": "Adjust the draft before starting a fresh generation."
       }
+    },
+    "workspaceNav": {
+      "planner": "Planner",
+      "prep": "Prep"
+    },
+    "prep": {
+      "eyebrow": "Travel prep workspace",
+      "empty": "No country-prep snapshot is available for this trip yet.",
+      "beforeDeparture": "Before departure",
+      "onArrival": "On arrival",
+      "onTheGround": "On the ground",
+      "routeContext": "Route context",
+      "departure": "Dates",
+      "duration": "Duration",
+      "country": "Country",
+      "cities": "Cities on this route",
+      "priorityChecks": "Priority checks",
+      "referenceUpdates": "Reference updates",
+      "travelerWarnings": "Traveler warnings",
+      "utilities": "Utilities",
+      "currency": "Currency",
+      "languages": "Languages",
+      "power": "Power",
+      "officialSources": "Official sources"
     }
   },
   "tripRouteShell": {

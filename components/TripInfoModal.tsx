@@ -16,10 +16,9 @@ import { useTranslation } from 'react-i18next';
 
 import { AI_MODEL_CATALOG, getDefaultCreateTripModel, sortAiModels } from '../config/aiModelCatalog';
 import { ICountryInfo, ITripAiMeta, TripGenerationAttemptSummary, TripGenerationState } from '../types';
-import { getAnalyticsDebugAttributes } from '../services/analyticsService';
+import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
 import { normalizeTripGenerationAttemptsForDisplay } from '../services/tripGenerationDiagnosticsService';
 import { AiProviderLogo } from './admin/AiProviderLogo';
-import { CountryGuideInfo } from './CountryGuideInfo';
 import { CountryInfo } from './CountryInfo';
 import { type TripHistoryModalItem } from './TripHistoryModal';
 import { AppModal } from './ui/app-modal';
@@ -63,12 +62,12 @@ interface TripTravelerWarning {
 const EMPTY_TRAVELER_WARNINGS: TripTravelerWarning[] = [];
 const EMPTY_TRIP_HISTORY_ITEMS: TripHistoryModalItem[] = [];
 const FUTURE_DESTINATION_CHECK_KEYS = [
-    'tripView.infoDialog.destination.futureChecks.visa',
-    'tripView.infoDialog.destination.futureChecks.entryRules',
-    'tripView.infoDialog.destination.futureChecks.safety',
-    'tripView.infoDialog.destination.futureChecks.customs',
-    'tripView.infoDialog.destination.futureChecks.connectivity',
-    'tripView.infoDialog.destination.futureChecks.health',
+    'tripView.infoDialog.destination.futureChecks.alerts',
+    'tripView.infoDialog.destination.futureChecks.documents',
+    'tripView.infoDialog.destination.futureChecks.budget',
+    'tripView.infoDialog.destination.futureChecks.packing',
+    'tripView.infoDialog.destination.futureChecks.imports',
+    'tripView.infoDialog.destination.futureChecks.journal',
 ] as const;
 
 type TripInfoTabValue = 'general' | 'history' | 'export' | 'destination' | 'debug';
@@ -120,6 +119,7 @@ export interface TripInfoModalProps {
     onExportActivitiesCalendar?: () => void;
     onExportCitiesCalendar?: () => void;
     onExportAllCalendar?: () => void;
+    onOpenTravelPrepWorkspace?: () => void;
     onOpenPrintLayout?: () => void;
 }
 
@@ -129,10 +129,10 @@ interface SummaryCardProps {
     wide?: boolean;
 }
 
-const modalSecondaryButtonClassName = 'inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60';
+const modalSecondaryButtonClassName = 'inline-flex h-10 items-center justify-center gap-2 rounded-md border border-stone-300 bg-white px-4 text-sm font-semibold text-stone-700 transition-colors hover:bg-[#f8f4ed] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60';
 const modalPrimaryButtonClassName = 'inline-flex h-10 items-center justify-center gap-2 rounded-md bg-accent-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-accent-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60';
-const modalSectionClassName = 'space-y-4 border-t border-slate-200 pt-6';
-const modalSubtlePanelClassName = 'rounded-md bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-600';
+const modalSectionClassName = 'space-y-4 border-t border-stone-200 pt-6';
+const modalSubtlePanelClassName = 'rounded-[1.25rem] border border-stone-200 bg-[#f8f4ed] px-4 py-4 text-sm leading-6 text-stone-600';
 const modalTextButtonClassName = 'inline-flex items-center text-sm font-semibold text-accent-700 transition-colors hover:text-accent-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2';
 const tabClassName = 'relative flex-none gap-2 px-0 data-[state=active]:[&_svg]:text-accent-600 [&_svg]:text-slate-400';
 
@@ -174,6 +174,15 @@ const ActionCard: React.FC<ActionCardProps> = ({
         </button>
     </div>
 );
+
+const buildTravelPrepHighlights = (countryInfo?: Partial<ICountryInfo> | ICountryInfo): string[] => {
+    const guide = countryInfo?.travelGuide;
+    if (!guide) return [];
+
+    const sectionTitles = guide.sections?.slice(0, 3).map((section) => section.title) || [];
+    const factHighlights = guide.quickFacts?.slice(0, 2).map((fact) => `${fact.label}: ${fact.value}`) || [];
+    return Array.from(new Set([...sectionTitles, ...factHighlights])).slice(0, 4);
+};
 
 export const TripInfoModal: React.FC<TripInfoModalProps> = ({
     isOpen,
@@ -222,6 +231,7 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
     onExportActivitiesCalendar,
     onExportCitiesCalendar,
     onExportAllCalendar,
+    onOpenTravelPrepWorkspace,
     onOpenPrintLayout,
 }) => {
     const { t } = useTranslation('common');
@@ -253,6 +263,14 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
     const recentAttempts = normalizeTripGenerationAttemptsForDisplay(attempts, { limit: 6 });
     const latestAttempt = recentAttempts[0] || latestAttemptFromMeta;
     const visibleHistoryItems = showAllHistory ? historyItems : historyItems.slice(0, 8);
+    const travelPrepHighlights = useMemo(() => buildTravelPrepHighlights(countryInfo), [countryInfo]);
+    const handleOpenTravelPrepWorkspace = () => {
+        if (!onOpenTravelPrepWorkspace) return;
+        trackEvent('trip_view__travel_prep_workspace--open', {
+            source: 'trip_info_modal',
+        });
+        onOpenTravelPrepWorkspace();
+    };
 
     const generationPill = (() => {
         if (resolvedGenerationState === 'failed') {
@@ -363,8 +381,9 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
             closeLabel={t('tripView.infoDialog.close')}
             size="xl"
             mobileSheet={false}
-            contentClassName="max-h-[88vh] sm:max-w-5xl"
-            bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
+            contentClassName="max-h-[88vh] border-stone-200 bg-[#fffdf9] sm:max-w-5xl"
+            bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden bg-[#fffdf9] p-0"
+            headerClassName="border-stone-200 bg-[#fcfaf5]"
             onEscapeKeyDown={(event) => {
                 if (!isEditingTitle) return;
                 event.preventDefault();
@@ -777,10 +796,55 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                         <section className={travelerWarnings.length > 0 ? modalSectionClassName : 'space-y-4'}>
                             {countryInfo ? (
                                 <div className="space-y-4">
-                                    <CountryInfo info={countryInfo} />
                                     {countryInfo.travelGuide && (
-                                        <CountryGuideInfo guide={countryInfo.travelGuide} />
+                                        <section className="rounded-[1.6rem] border border-stone-200 bg-[#fcfaf5] px-5 py-5">
+                                            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                                                <div className="max-w-2xl">
+                                                    <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-stone-500">
+                                                        {t('tripView.infoDialog.destination.prepWorkspaceEyebrow')}
+                                                    </p>
+                                                    <div className="mt-2 flex items-center gap-2 text-stone-950">
+                                                        <MapPinned size={16} className="text-accent-700" />
+                                                        <h3 className="text-lg font-bold">
+                                                            {t('tripView.infoDialog.destination.prepWorkspaceTitle')}
+                                                        </h3>
+                                                    </div>
+                                                    <p className="mt-3 text-sm leading-6 text-stone-600">
+                                                        {t('tripView.infoDialog.destination.prepWorkspaceDescription')}
+                                                    </p>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={handleOpenTravelPrepWorkspace}
+                                                    disabled={!onOpenTravelPrepWorkspace}
+                                                    className={`${modalPrimaryButtonClassName} shrink-0`}
+                                                    {...getAnalyticsDebugAttributes('trip_view__travel_prep_workspace--open', {
+                                                        source: 'trip_info_modal',
+                                                    })}
+                                                >
+                                                    {t('tripView.infoDialog.destination.prepWorkspaceAction')}
+                                                </button>
+                                            </div>
+                                            {travelPrepHighlights.length > 0 && (
+                                                <div className="mt-4 flex flex-wrap gap-2">
+                                                    {travelPrepHighlights.map((highlight) => (
+                                                        <span
+                                                            key={highlight}
+                                                            className="rounded-full border border-stone-300 bg-white px-3 py-1 text-sm font-medium text-stone-700"
+                                                        >
+                                                            {highlight}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
+                                            {countryInfo.travelGuide.disclaimer && (
+                                                <p className="mt-4 rounded-[1.15rem] border border-amber-200 bg-amber-50/90 px-4 py-3 text-sm leading-6 text-amber-950">
+                                                    {countryInfo.travelGuide.disclaimer}
+                                                </p>
+                                            )}
+                                        </section>
                                     )}
+                                    <CountryInfo info={countryInfo} />
                                 </div>
                             ) : isPaywallLocked ? (
                                 <div className={modalSubtlePanelClassName}>
