@@ -1,13 +1,19 @@
 // @vitest-environment jsdom
 import React from 'react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { TripInfoModal } from '../../components/TripInfoModal';
+
+const mocks = vi.hoisted(() => ({
+  trackEvent: vi.fn(),
+}));
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string, options?: Record<string, unknown>) => {
       if (key === 'tripView.infoDialog.tabs.debug') return 'Debug';
+      if (key === 'tripView.infoDialog.tabs.destination') return 'Destination';
       if (key === 'tripView.infoDialog.general.meta.owner') return 'Owner';
       if (key === 'tripView.infoDialog.general.meta.access') return 'Access';
       if (key === 'tripView.infoDialog.general.meta.tripSpan') return 'Days & nights';
@@ -17,7 +23,20 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
+vi.mock('../../services/analyticsService', async () => {
+  const actual = await vi.importActual<typeof import('../../services/analyticsService')>('../../services/analyticsService');
+  return {
+    ...actual,
+    trackEvent: mocks.trackEvent,
+    getAnalyticsDebugAttributes: () => ({}),
+  };
+});
+
 describe('components/TripInfoModal ownership context', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   afterEach(() => {
     cleanup();
   });
@@ -178,5 +197,120 @@ describe('components/TripInfoModal ownership context', () => {
     expect(screen.getByText('async_worker')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'tripView.generation.tripInfo.retry' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Debug' })).toBeInTheDocument();
+  });
+
+  it('renders planner companion country-guide content in the destination tab and tracks official-source opens', async () => {
+    const user = userEvent.setup();
+
+    render(React.createElement(TripInfoModal, {
+      isOpen: true,
+      onClose: () => {},
+      tripTitle: 'Thailand Travel Prep Playground',
+      isEditingTitle: false,
+      editTitleValue: 'Thailand Travel Prep Playground',
+      onEditTitleValueChange: () => {},
+      onCommitTitleEdit: () => {},
+      onCancelTitleEdit: () => {},
+      onStartTitleEdit: () => {},
+      canManageTripMetadata: true,
+      canEdit: true,
+      isFavorite: false,
+      onToggleFavorite: () => {},
+      isExamplePreview: true,
+      tripMeta: {
+        dateRange: 'Nov 8, 2026 – Nov 20, 2026',
+        days: 13,
+        nights: 12,
+        cityCount: 5,
+        distanceLabel: '1,800 km',
+      },
+      aiMeta: null,
+      forkMeta: null,
+      showAllHistory: false,
+      onToggleShowAllHistory: () => {},
+      onHistoryUndo: () => {},
+      onHistoryRedo: () => {},
+      historyItems: [],
+      onGoToHistoryEntry: () => {},
+      formatHistoryTime: () => 'now',
+      pendingSyncCount: 0,
+      failedSyncCount: 0,
+      countryInfo: {
+        countryCode: 'TH',
+        countryName: 'Thailand',
+        currencyCode: 'THB',
+        currencyName: 'Thai Baht',
+        exchangeRate: 43.35,
+        languages: ['Thai'],
+        electricSockets: 'Type A, Type B, Type C, Type O',
+        visaInfoUrl: 'https://www.gov.uk/foreign-travel-advice/thailand/entry-requirements',
+        auswaertigesAmtUrl: 'https://www.auswaertiges-amt.de/de/service/laender/thailand-node/thailandsicherheit/201558',
+        travelGuide: {
+          title: 'Thailand travel-prep snapshot',
+          summary: 'This hidden example trip turns country-guide content into a planner companion so TravelFlow can test trip-prep UX before shipping public country pages.',
+          disclaimer: 'Testing snapshot only. Verify current official travel advice before departure.',
+          quickFacts: [
+            {
+              label: 'Visa-free stay',
+              value: 'Up to 60 days',
+              tone: 'accent',
+            },
+          ],
+          sections: [
+            {
+              id: 'entry',
+              title: 'Entry requirements',
+              summary: 'The highest-value planning content is passport validity, visa-free duration, arrival-card timing, and overstay risk.',
+              bullets: ['Passport should stay valid for at least 6 months after arrival.'],
+              tone: 'accent',
+            },
+          ],
+          utilities: [
+            {
+              label: 'Emergency numbers',
+              value: '191 / 1669 / 199',
+            },
+          ],
+          officialLinks: [
+            {
+              label: 'UK travel advice for Thailand',
+              url: 'https://www.gov.uk/foreign-travel-advice/thailand',
+            },
+          ],
+          updates: [
+            {
+              id: 'border',
+              category: 'Border risk',
+              ageLabel: 'Reference snapshot',
+              title: 'Border disruption advice became more explicit',
+              summary: 'This belongs in a warning banner and in trip-prep reminders when a route gets close to affected regions.',
+            },
+          ],
+        },
+      },
+      isPaywallLocked: false,
+      ownerSummary: null,
+      ownerHint: null,
+      adminMeta: {
+        ownerUserId: 'owner-1',
+        ownerUsername: 'owner_user',
+        ownerEmail: 'owner@example.com',
+        accessSource: 'owner',
+      },
+      onOpenPrintLayout: () => {},
+    }));
+
+    await user.click(screen.getByRole('tab', { name: 'Destination' }));
+
+    expect(screen.getByText('Thailand travel-prep snapshot')).toBeInTheDocument();
+    expect(screen.getByText('Travel prep companion')).toBeInTheDocument();
+    expect(screen.getByText('Entry requirements')).toBeInTheDocument();
+    expect(screen.getByText('Recent guide updates worth testing')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('link', { name: /UK travel advice for Thailand/i }));
+
+    expect(mocks.trackEvent).toHaveBeenCalledWith('trip_view__country_guide_source', {
+      label: 'UK travel advice for Thailand',
+    });
   });
 });

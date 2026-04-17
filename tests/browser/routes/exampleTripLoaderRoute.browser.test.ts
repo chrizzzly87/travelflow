@@ -209,6 +209,42 @@ describe('routes/ExampleTripLoaderRoute', () => {
     });
   });
 
+  it('loads the hidden Thailand travel-prep playground from its direct custom URL', async () => {
+    mocks.route.templateId = 'thailand-travel-prep-playground';
+    mocks.route.pathname = '/example/thailand-travel-prep-playground';
+    mocks.getExampleTemplateSummary.mockReturnValue({
+      title: 'Thailand Travel Prep Playground',
+      countries: [{ name: 'Thailand' }],
+    });
+    mocks.loadExampleTemplateFactory.mockResolvedValue((createdAtIso: string) =>
+      makeTrip({
+        id: 'generated-thailand-playground',
+        title: 'Thailand Travel Prep Playground',
+        createdAt: Date.parse(createdAtIso),
+        updatedAt: Date.parse(createdAtIso),
+        isExample: true,
+        exampleTemplateId: 'thailand-travel-prep-playground',
+      })
+    );
+
+    const props = makeRouteProps();
+
+    render(React.createElement(ExampleTripLoaderRoute, props));
+
+    await waitFor(() => {
+      expect(props.onTripLoaded).toHaveBeenCalled();
+    });
+
+    const [loadedTrip] = props.onTripLoaded.mock.calls.at(-1) || [];
+
+    expect(mocks.trackEvent).toHaveBeenCalledWith('example_trip__open', {
+      template: 'thailand-travel-prep-playground',
+      country_count: 1,
+    });
+    expect(loadedTrip?.exampleTemplateId).toBe('thailand-travel-prep-playground');
+    expect(mocks.navigate).not.toHaveBeenCalledWith('/', { replace: true });
+  });
+
   it('redirects to home when template factory cannot be loaded', async () => {
     mocks.loadExampleTemplateFactory.mockResolvedValue(null);
     const props = makeRouteProps();

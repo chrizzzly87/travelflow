@@ -19,6 +19,10 @@ export {
     SOUTHEAST_ASIA_BACKPACKING_TEMPLATE,
     createSoutheastAsiaBackpackingTrip,
 } from './southeastAsiaBackpacking';
+export {
+    THAILAND_TRAVEL_PREP_PLAYGROUND_TEMPLATE,
+    createThailandTravelPrepPlaygroundTrip,
+} from './thailandTravelPrepPlayground';
 
 // Import templates and factories for the maps
 import { THAILAND_TEMPLATE, createThailandTrip } from './thailand';
@@ -35,6 +39,10 @@ import {
     SOUTHEAST_ASIA_BACKPACKING_TEMPLATE,
     createSoutheastAsiaBackpackingTrip,
 } from './southeastAsiaBackpacking';
+import {
+    THAILAND_TRAVEL_PREP_PLAYGROUND_TEMPLATE,
+    createThailandTravelPrepPlaygroundTrip,
+} from './thailandTravelPrepPlayground';
 
 interface ExampleTripTemplateConfig {
     paletteId: CityColorPaletteId;
@@ -141,6 +149,18 @@ export const EXAMPLE_TRIP_TEMPLATE_CONFIGS: Record<string, ExampleTripTemplateCo
         timelineHeight: 440,
         timelineHeightViewportRatio: 0.5,
     },
+    'thailand-travel-prep-playground': {
+        paletteId: 'ocean',
+        mapStyle: 'clean',
+        routeMode: 'realistic',
+        mapColorMode: 'trip',
+        layoutMode: 'horizontal',
+        timelineMode: 'timeline',
+        timelineView: 'vertical',
+        zoomLevel: 0.8,
+        timelineHeight: 440,
+        timelineHeightViewportRatio: 0.55,
+    },
 };
 
 export const getExampleTripTemplateConfig = (templateId: string): ExampleTripTemplateConfig => {
@@ -212,6 +232,10 @@ export const TRIP_TEMPLATES: Record<string, Partial<ITrip>> = {
         'southeast-asia-backpacking',
         SOUTHEAST_ASIA_BACKPACKING_TEMPLATE
     ),
+    'thailand-travel-prep-playground': applyTemplateConfigToPartial(
+        'thailand-travel-prep-playground',
+        THAILAND_TRAVEL_PREP_PLAYGROUND_TEMPLATE
+    ),
 };
 
 /** Map keyed by exampleTripCards id → factory function that creates a full ITrip */
@@ -229,6 +253,8 @@ export const TRIP_FACTORIES: Record<string, (startDate: string) => ITrip> = {
         applyTemplateConfigToTrip('husum-krokus-weekend', createHusumKrokusWeekendTrip(startDate)),
     'southeast-asia-backpacking': (startDate) =>
         applyTemplateConfigToTrip('southeast-asia-backpacking', createSoutheastAsiaBackpackingTrip(startDate)),
+    'thailand-travel-prep-playground': (startDate) =>
+        applyTemplateConfigToTrip('thailand-travel-prep-playground', createThailandTravelPrepPlaygroundTrip(startDate)),
 };
 
 export interface ExampleTemplateMiniCalendarCityLane {

@@ -171,6 +171,49 @@ export interface IHotel {
     notes?: string;
 }
 
+export type CountryGuideTone = 'accent' | 'warning' | 'neutral';
+
+export interface ICountryGuideFact {
+    label: string;
+    value: string;
+    helper?: string;
+    tone?: CountryGuideTone;
+}
+
+export interface ICountryGuideSection {
+    id: string;
+    eyebrow?: string;
+    title: string;
+    summary: string;
+    bullets: string[];
+    tone?: CountryGuideTone;
+}
+
+export interface ICountryGuideLink {
+    label: string;
+    url: string;
+    helper?: string;
+}
+
+export interface ICountryGuideUpdate {
+    id: string;
+    category: string;
+    ageLabel: string;
+    title: string;
+    summary: string;
+}
+
+export interface ICountryTravelGuide {
+    title: string;
+    summary: string;
+    disclaimer?: string;
+    quickFacts?: ICountryGuideFact[];
+    sections?: ICountryGuideSection[];
+    utilities?: ICountryGuideFact[];
+    officialLinks?: ICountryGuideLink[];
+    updates?: ICountryGuideUpdate[];
+}
+
 export interface ICountryInfo {
     currencyCode: string; // e.g. "JPY"
     currencyName: string; // e.g. "Japanese Yen"
@@ -179,6 +222,9 @@ export interface ICountryInfo {
     electricSockets: string; // Description e.g. "Type A, Type B"
     visaInfoUrl?: string; // Link to info
     auswaertigesAmtUrl?: string; // Link to German Foreign Office
+    countryCode?: string;
+    countryName?: string;
+    travelGuide?: ICountryTravelGuide;
 }
 
 export interface ITimelineItem {

@@ -19,6 +19,7 @@ import { ICountryInfo, ITripAiMeta, TripGenerationAttemptSummary, TripGeneration
 import { getAnalyticsDebugAttributes } from '../services/analyticsService';
 import { normalizeTripGenerationAttemptsForDisplay } from '../services/tripGenerationDiagnosticsService';
 import { AiProviderLogo } from './admin/AiProviderLogo';
+import { CountryGuideInfo } from './CountryGuideInfo';
 import { CountryInfo } from './CountryInfo';
 import { type TripHistoryModalItem } from './TripHistoryModal';
 import { AppModal } from './ui/app-modal';
@@ -775,7 +776,12 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
 
                         <section className={travelerWarnings.length > 0 ? modalSectionClassName : 'space-y-4'}>
                             {countryInfo ? (
-                                <CountryInfo info={countryInfo} />
+                                <div className="space-y-4">
+                                    <CountryInfo info={countryInfo} />
+                                    {countryInfo.travelGuide && (
+                                        <CountryGuideInfo guide={countryInfo.travelGuide} />
+                                    )}
+                                </div>
                             ) : isPaywallLocked ? (
                                 <div className={modalSubtlePanelClassName}>
                                     {t('tripView.infoDialog.destination.locked')}

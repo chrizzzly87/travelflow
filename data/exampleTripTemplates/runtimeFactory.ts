@@ -113,6 +113,18 @@ const EXAMPLE_TRIP_TEMPLATE_CONFIGS: Record<string, ExampleTripTemplateConfig> =
         timelineHeight: 440,
         timelineHeightViewportRatio: 0.5,
     },
+    'thailand-travel-prep-playground': {
+        paletteId: 'ocean',
+        mapStyle: 'clean',
+        routeMode: 'realistic',
+        mapColorMode: 'trip',
+        layoutMode: 'horizontal',
+        timelineMode: 'timeline',
+        timelineView: 'vertical',
+        zoomLevel: 0.8,
+        timelineHeight: 440,
+        timelineHeightViewportRatio: 0.55,
+    },
 };
 
 const EXAMPLE_TEMPLATE_SUMMARIES: Record<string, ExampleTripTemplateSummary> = {
@@ -167,6 +179,10 @@ const EXAMPLE_TEMPLATE_SUMMARIES: Record<string, ExampleTripTemplateSummary> = {
             { name: 'Vietnam' },
             { name: 'Laos' },
         ],
+    },
+    'thailand-travel-prep-playground': {
+        title: 'Thailand Travel Prep Playground',
+        countries: [{ name: 'Thailand' }],
     },
 };
 
@@ -259,6 +275,10 @@ export const loadExampleTemplateFactory = async (templateId: string): Promise<Ex
         case 'southeast-asia-backpacking': {
             const module = await import('./southeastAsiaBackpacking');
             return wrapFactory(templateId, module.createSoutheastAsiaBackpackingTrip);
+        }
+        case 'thailand-travel-prep-playground': {
+            const module = await import('./thailandTravelPrepPlayground');
+            return wrapFactory(templateId, module.createThailandTravelPrepPlaygroundTrip);
         }
         default:
             return null;

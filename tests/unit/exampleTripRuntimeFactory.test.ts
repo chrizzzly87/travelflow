@@ -50,4 +50,20 @@ describe('data/exampleTripTemplates/runtimeFactory', () => {
     expect(trip?.items.some((item) => item.type === 'city' && item.title === 'Husum')).toBe(true);
     expect(trip?.defaultView?.timelineMode).toBe('timeline');
   });
+
+  it('loads the hidden Thailand travel-prep playground template', async () => {
+    const summary = getExampleTemplateSummary('thailand-travel-prep-playground');
+    expect(summary?.title).toBe('Thailand Travel Prep Playground');
+    expect(summary?.countries.map((country) => country.name)).toEqual(['Thailand']);
+
+    const factory = await loadExampleTemplateFactory('thailand-travel-prep-playground');
+    expect(typeof factory).toBe('function');
+
+    const trip = factory?.('2026-11-08');
+    expect(trip?.title).toBe('Thailand Travel Prep Playground');
+    expect(trip?.countryInfo?.travelGuide?.quickFacts?.length).toBeGreaterThan(0);
+    expect(trip?.countryInfo?.travelGuide?.officialLinks?.length).toBeGreaterThan(0);
+    expect(trip?.defaultView?.timelineMode).toBe('timeline');
+    expect(trip?.items.some((item) => item.type === 'city' && item.title === 'Phuket')).toBe(true);
+  });
 });

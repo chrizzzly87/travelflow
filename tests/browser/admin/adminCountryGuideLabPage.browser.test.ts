@@ -3,6 +3,7 @@ import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router-dom';
 
 const mocks = vi.hoisted(() => ({
   trackEvent: vi.fn(),
@@ -46,11 +47,12 @@ describe('pages/AdminCountryGuideLabPage', () => {
   it('tracks page open and layout selection events', async () => {
     const user = userEvent.setup();
 
-    render(React.createElement(AdminCountryGuideLabPage));
+    render(React.createElement(MemoryRouter, null, React.createElement(AdminCountryGuideLabPage)));
 
     expect(mocks.trackEvent).toHaveBeenCalledWith('admin__country_guide_lab--open');
     expect(screen.getByRole('heading', { name: 'Country Guide Lab' })).toBeInTheDocument();
     expect(screen.getByText('Thailand guide experiment')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Open testing trip/i })).toHaveAttribute('href', '/example/thailand-travel-prep-playground');
     expect(screen.getByRole('link', { name: /Review source guide/i })).toHaveAttribute('href', 'https://atobeach.com/thailand-travel-guide');
 
     await user.click(screen.getByRole('tab', { name: 'Top Navigation' }));
@@ -71,7 +73,7 @@ describe('pages/AdminCountryGuideLabPage', () => {
   });
 
   it('renders the carry-over audit and recommended planner-centric direction', () => {
-    render(React.createElement(AdminCountryGuideLabPage));
+    render(React.createElement(MemoryRouter, null, React.createElement(AdminCountryGuideLabPage)));
 
     expect(screen.getAllByText('What should TravelFlow borrow from guide-style country pages?').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Entry rules and visa windows').length).toBeGreaterThan(0);

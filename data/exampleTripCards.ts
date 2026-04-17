@@ -36,6 +36,7 @@ export interface ExampleTripCard {
   mapImagePath?: string;
   templateId?: string;
   isRoundTrip?: boolean;
+  hidden?: boolean;
   localized?: Partial<Record<AppLanguage, ExampleTripCardLocalization>>;
 }
 
@@ -760,6 +761,21 @@ export const exampleTripCards: ExampleTripCard[] = [
     templateId: 'thailand-islands',
     isRoundTrip: true,
     localized: CARD_LOCALIZATIONS['thailand-islands'],
+  },
+  {
+    id: 'thailand-travel-prep-playground',
+    title: 'Thailand Travel Prep Playground',
+    countries: [{ name: 'Thailand', flag: '🇹🇭' }],
+    durationDays: 13,
+    cityCount: 5,
+    mapColor: 'bg-slate-100',
+    mapAccent: 'bg-slate-500',
+    username: 'prep_playground',
+    avatarColor: 'bg-slate-700',
+    tags: ['Travel Prep', 'Guide UX', 'Testing'],
+    mapImagePath: '/images/trip-maps/thailand-islands.png',
+    templateId: 'thailand-travel-prep-playground',
+    hidden: true,
   },
   {
     id: 'southeast-asia-backpacking',

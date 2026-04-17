@@ -9,6 +9,7 @@ import {
     SuitcaseRolling,
     Warning,
 } from '@phosphor-icons/react';
+import { Link } from 'react-router-dom';
 import { AdminShell } from '../components/admin/AdminShell';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
@@ -38,6 +39,7 @@ interface LayoutOption {
 }
 
 const GUIDE_SOURCE_URL = 'https://atobeach.com/thailand-travel-guide';
+const PLAYGROUND_EXAMPLE_ROUTE = '/example/thailand-travel-prep-playground';
 
 const LAYOUT_OPTIONS: LayoutOption[] = [
     {
@@ -518,15 +520,27 @@ export const AdminCountryGuideLabPage: React.FC = () => {
             showGlobalSearch={false}
             showDateRange={false}
             actions={(
-                <a
-                    href={GUIDE_SOURCE_URL}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-900 shadow-sm transition-colors hover:bg-slate-50"
-                >
-                    Review source guide
-                    <ArrowSquareOut size={16} weight="bold" />
-                </a>
+                <div className="flex flex-wrap items-center gap-3">
+                    <Link
+                        to={PLAYGROUND_EXAMPLE_ROUTE}
+                        onClick={() => {
+                            trackEvent('admin__country_guide_lab_example_trip--open');
+                        }}
+                        className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-slate-950 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-slate-900"
+                        {...getAnalyticsDebugAttributes('admin__country_guide_lab_example_trip--open')}
+                    >
+                        Open testing trip
+                    </Link>
+                    <a
+                        href={GUIDE_SOURCE_URL}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-900 shadow-sm transition-colors hover:bg-slate-50"
+                    >
+                        Review source guide
+                        <ArrowSquareOut size={16} weight="bold" />
+                    </a>
+                </div>
             )}
         >
             <div className="space-y-6">

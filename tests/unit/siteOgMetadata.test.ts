@@ -163,6 +163,11 @@ describe('site OG metadata resolver', () => {
     expect(exampleMeta.ogImageUrl).toContain('/api/og/trip?');
     expect(exampleMeta.ogImageUrl).toContain('title=26D+Temples+%26+Beaches');
     expect(exampleMeta.ogImageUrl).toContain('map=https%3A%2F%2Ftravelflowapp.netlify.app%2Fimages%2Ftrip-maps%2Fthailand-islands.png');
+
+    const hiddenExampleMeta = getMetadata('/example/thailand-travel-prep-playground');
+    expect(hiddenExampleMeta.canonicalPath).toBe('/example/thailand-travel-prep-playground');
+    expect(hiddenExampleMeta.pageTitle).toContain('Thailand Travel Prep Playground');
+    expect(hiddenExampleMeta.ogDescription).toContain('example trip template');
   });
 });
 
@@ -188,13 +193,14 @@ describe('site OG static generation helpers', () => {
     const pathnames = enumerateSiteOgPathnames({
       blogSlugs: ['how-to-plan-multi-city-trip'],
       countryNames: ['Japan'],
-      exampleTemplateIds: ['thailand-islands'],
+      exampleTemplateIds: ['thailand-islands', 'thailand-travel-prep-playground'],
     });
 
     expect(pathnames).toContain('/');
     expect(pathnames).toContain('/de/blog');
     expect(pathnames).toContain('/de/inspirations');
     expect(pathnames).toContain('/example/thailand-islands');
+    expect(pathnames).toContain('/example/thailand-travel-prep-playground');
     expect(pathnames).not.toContain('/de/features');
     expect(pathnames).not.toContain('/blog/how-to-plan-multi-city-trip');
     expect(pathnames).not.toContain('/inspirations/country/Japan');

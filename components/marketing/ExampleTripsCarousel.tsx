@@ -79,8 +79,18 @@ export const ExampleTripsCarousel: React.FC = () => {
     const mobileNormalizeTimeoutRef = useRef<number | null>(null);
     const mobilePointerActiveRef = useRef(false);
 
-    const doubledCards = useMemo(() => [...exampleTripCards, ...exampleTripCards], []);
-    const mobileLoopCards = useMemo(() => [...exampleTripCards, ...exampleTripCards, ...exampleTripCards], []);
+    const visibleExampleTripCards = useMemo(
+        () => exampleTripCards.filter((card) => !card.hidden),
+        []
+    );
+    const doubledCards = useMemo(
+        () => [...visibleExampleTripCards, ...visibleExampleTripCards],
+        [visibleExampleTripCards]
+    );
+    const mobileLoopCards = useMemo(
+        () => [...visibleExampleTripCards, ...visibleExampleTripCards, ...visibleExampleTripCards],
+        [visibleExampleTripCards]
+    );
 
     const prewarmTripView = useCallback(() => {
         if (!tripViewPrefetchRef.current) {
@@ -112,7 +122,9 @@ export const ExampleTripsCarousel: React.FC = () => {
             timelineHeight: generated.defaultView?.timelineHeight,
         };
         const selectedCard = exampleTripCards.find((card) => (card.templateId || '') === templateId) || null;
-        const templateCountries = selectedCard?.countries?.map((country) => country.name).filter(Boolean) || [];
+        const templateCountries = selectedCard?.countries?.flatMap((country) => (
+            country.name ? [country.name] : []
+        )) || [];
         const preparedTrip: ITrip = {
             ...generated,
             createdAt: nowMs,
@@ -197,7 +209,7 @@ export const ExampleTripsCarousel: React.FC = () => {
         if (firstCard) {
             cardWidthRef.current = firstCard.offsetWidth;
             cardStrideRef.current = firstCard.offsetWidth + gapPx;
-            loopWidthRef.current = cardStrideRef.current * exampleTripCards.length;
+            loopWidthRef.current = cardStrideRef.current * visibleExampleTripCards.length;
         } else {
             loopWidthRef.current = track.scrollWidth / 2;
         }
@@ -205,7 +217,7 @@ export const ExampleTripsCarousel: React.FC = () => {
         viewportWidthRef.current = container.clientWidth;
         offsetRef.current = normalizeLoopOffset(offsetRef.current, loopWidthRef.current);
         applyDesktopTransforms();
-    }, [applyDesktopTransforms]);
+    }, [applyDesktopTransforms, visibleExampleTripCards.length]);
 
     const measureMobileSetWidth = useCallback(() => {
         const scroller = mobileScrollerRef.current;
