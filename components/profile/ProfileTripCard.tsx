@@ -92,6 +92,67 @@ const buildLaneOutlineColor = (hexColor: string): string => {
   return luminance > 0.58 ? 'rgba(15, 23, 42, 0.16)' : 'rgba(255, 255, 255, 0.22)';
 };
 
+interface ProfileTripCardMapPreviewProps {
+  trip: ITrip;
+  tripDetailPath: string;
+  labels: ProfileTripCardLabels;
+  isExpired: boolean;
+  isNearViewport: boolean;
+  mapUrl: string | null;
+  onOpen: (trip: ITrip) => void;
+  analyticsAttrs?: ProfileTripCardProps['analyticsAttrs'];
+}
+
+const ProfileTripCardMapPreview: React.FC<ProfileTripCardMapPreviewProps> = ({
+  trip,
+  tripDetailPath,
+  labels,
+  isExpired,
+  isNearViewport,
+  mapUrl,
+  onOpen,
+  analyticsAttrs,
+}) => {
+  const [mapLoaded, setMapLoaded] = React.useState(false);
+  const [mapError, setMapError] = React.useState(false);
+
+  return (
+    <Link
+      to={tripDetailPath}
+      onClick={() => onOpen(trip)}
+      aria-label={`${labels.open}: ${trip.title}`}
+      className="absolute inset-0 block cursor-pointer overflow-hidden"
+      {...(analyticsAttrs ? analyticsAttrs('open') : {})}
+    >
+      {!isNearViewport ? (
+        <div className="absolute inset-0 flex items-center justify-center bg-slate-100 text-xs font-medium text-slate-500">
+          {labels.mapLoading}
+        </div>
+      ) : mapUrl && !mapError ? (
+        <>
+          {!mapLoaded && (
+            <div className="absolute inset-0 flex items-center justify-center bg-slate-100 text-xs font-medium text-slate-500">
+              {labels.mapLoading}
+            </div>
+          )}
+          <img
+            src={mapUrl}
+            alt={`Map preview for ${trip.title}`}
+            className={`h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.01] ${isExpired ? 'opacity-70 grayscale-[0.28]' : ''}`}
+            loading="lazy"
+            onLoad={() => setMapLoaded(true)}
+            onError={() => setMapError(true)}
+          />
+        </>
+      ) : (
+        <div className="flex h-full items-center justify-center px-3 text-center text-xs font-medium text-slate-500">
+          {labels.mapUnavailable}
+        </div>
+      )}
+    </Link>
+  );
+};
+
 export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
   trip,
   locale,
@@ -113,15 +174,8 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
   isSelectable = false,
   isSelected = false,
 }) => {
-  const [mapLoaded, setMapLoaded] = React.useState(false);
-  const [mapError, setMapError] = React.useState(false);
   const [isNearViewport, setIsNearViewport] = React.useState(false);
   const cardRef = React.useRef<HTMLElement | null>(null);
-
-  React.useEffect(() => {
-    setMapLoaded(false);
-    setMapError(false);
-  }, [trip.id, locale]);
 
   React.useEffect(() => {
     const node = cardRef.current;
@@ -203,39 +257,17 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
       style={{ contentVisibility: 'auto', containIntrinsicSize: '420px' }}
     >
       <div className={`relative aspect-[16/9] overflow-hidden ${isGenerationFailed ? 'bg-rose-50' : (isExpired ? 'bg-amber-50' : 'bg-slate-100')}`}>
-        <Link
-          to={tripDetailPath}
-          onClick={() => onOpen(trip)}
-          aria-label={`${labels.open}: ${displayTitle}`}
-          className="absolute inset-0 block cursor-pointer overflow-hidden"
-          {...(analyticsAttrs ? analyticsAttrs('open') : {})}
-        >
-          {!isNearViewport ? (
-            <div className="absolute inset-0 flex items-center justify-center bg-slate-100 text-xs font-medium text-slate-500">
-              {labels.mapLoading}
-            </div>
-          ) : mapUrl && !mapError ? (
-            <>
-              {!mapLoaded && (
-                <div className="absolute inset-0 flex items-center justify-center bg-slate-100 text-xs font-medium text-slate-500">
-                  {labels.mapLoading}
-                </div>
-              )}
-              <img
-                src={mapUrl}
-                alt={`Map preview for ${trip.title}`}
-                className={`h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.01] ${isExpired ? 'opacity-70 grayscale-[0.28]' : ''}`}
-                loading="lazy"
-                onLoad={() => setMapLoaded(true)}
-                onError={() => setMapError(true)}
-              />
-            </>
-          ) : (
-            <div className="flex h-full items-center justify-center px-3 text-center text-xs font-medium text-slate-500">
-              {labels.mapUnavailable}
-            </div>
-          )}
-        </Link>
+        <ProfileTripCardMapPreview
+          key={`${trip.id}:${locale}`}
+          trip={trip}
+          tripDetailPath={tripDetailPath}
+          labels={labels}
+          isExpired={isExpired}
+          isNearViewport={isNearViewport}
+          mapUrl={mapUrl}
+          onOpen={onOpen}
+          analyticsAttrs={analyticsAttrs}
+        />
 
         {isSelectable && onSelectionChange && (
           <div

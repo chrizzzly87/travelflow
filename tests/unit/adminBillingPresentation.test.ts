@@ -21,6 +21,7 @@ import type { AdminBillingSubscriptionRecord, AdminBillingWebhookEventRecord } f
 
 const NOW_ISO = '2026-03-08T10:00:00.000Z';
 const NOW_MS = Date.parse(NOW_ISO);
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 const subscription = (overrides: Partial<AdminBillingSubscriptionRecord>): AdminBillingSubscriptionRecord => ({
   user_id: '00000000-0000-0000-0000-000000000001',
@@ -108,14 +109,17 @@ describe('services/adminBillingPresentation', () => {
   });
 
   it('filters subscriptions and events by the requested admin date range', () => {
+    const recentIso = new Date(Date.now() - (3 * DAY_MS)).toISOString();
+    const staleIso = new Date(Date.now() - (120 * DAY_MS)).toISOString();
+
     expect(filterAdminBillingSubscriptionsByRange([
-      subscription({ updated_at: NOW_ISO }),
-      subscription({ user_id: '00000000-0000-0000-0000-000000000002', updated_at: '2025-10-01T00:00:00.000Z' }),
+      subscription({ updated_at: recentIso }),
+      subscription({ user_id: '00000000-0000-0000-0000-000000000002', updated_at: staleIso }),
     ], '30d')).toHaveLength(1);
 
     expect(filterAdminBillingWebhookEventsByRange([
-      event({ occurred_at: NOW_ISO }),
-      event({ event_id: 'evt_old', occurred_at: '2025-10-01T00:00:00.000Z' }),
+      event({ occurred_at: recentIso }),
+      event({ event_id: 'evt_old', occurred_at: staleIso }),
     ], '30d')).toHaveLength(1);
   });
 

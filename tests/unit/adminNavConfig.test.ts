@@ -16,6 +16,13 @@ describe('admin navigation config', () => {
     expect(designPlayground?.section).toBe('tools');
   });
 
+  it('includes country guide lab entry in tools section', () => {
+    const countryGuideLab = ADMIN_NAV_ITEMS.find((item) => item.id === 'country_guide_lab');
+    expect(countryGuideLab).toBeTruthy();
+    expect(countryGuideLab?.path).toBe('/admin/country-guide-lab');
+    expect(countryGuideLab?.section).toBe('tools');
+  });
+
   it('includes worker health entry in tools section', () => {
     const workerHealth = ADMIN_NAV_ITEMS.find((item) => item.id === 'ai_worker_health');
     expect(workerHealth).toBeTruthy();

@@ -426,7 +426,7 @@ describe('pages/ProfileSettingsPage username governance', () => {
   it('keeps edit action blocked during cooldown and emits blocked analytics', async () => {
     const user = userEvent.setup();
     mocks.auth.profile = buildProfile({
-      usernameChangedAt: '2026-01-15T00:00:00Z',
+      usernameChangedAt: new Date(Date.now() - (14 * 24 * 60 * 60 * 1000)).toISOString(),
     });
 
     renderPage();

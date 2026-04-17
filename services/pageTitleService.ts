@@ -127,6 +127,7 @@ export const resolvePageTitle = ({
         if (normalizedPath === '/admin/ai-benchmark') return titleWithAppName(`${labels.admin} · AI Benchmark`, appName);
         if (normalizedPath === '/admin/ai-benchmark/telemetry') return titleWithAppName(`${labels.admin} · AI Telemetry`, appName);
         if (normalizedPath === '/admin/ai-benchmark/worker-health') return titleWithAppName(`${labels.admin} · Worker Health`, appName);
+        if (normalizedPath === '/admin/country-guide-lab') return titleWithAppName(`${labels.admin} · Country Guide Lab`, appName);
         return titleWithAppName(labels.admin, appName);
     }
 

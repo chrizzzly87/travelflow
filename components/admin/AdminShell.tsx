@@ -72,6 +72,7 @@ const itemIcon = (icon: (typeof ADMIN_NAV_ITEMS)[number]['icon']) => {
     if (icon === 'users') return <UsersThree size={16} weight="duotone" />;
     if (icon === 'trips') return <SuitcaseRolling size={16} weight="duotone" />;
     if (icon === 'airports') return <AirplaneTakeoff size={16} weight="duotone" />;
+    if (icon === 'guide_lab') return <List size={16} weight="duotone" />;
     if (icon === 'tiers') return <StackSimple size={16} weight="duotone" />;
     if (icon === 'billing') return <CreditCard size={16} weight="duotone" />;
     if (icon === 'audit') return <Scroll size={16} weight="duotone" />;

@@ -19,6 +19,7 @@ const AdminBillingPage = lazyWithRecovery('AdminBillingPage', () => import('./Ad
 const AdminAuditPage = lazyWithRecovery('AdminAuditPage', () => import('./AdminAuditPage').then((module) => ({ default: module.AdminAuditPage })));
 const AdminOgToolsPage = lazyWithRecovery('AdminOgToolsPage', () => import('./AdminOgToolsPage').then((module) => ({ default: module.AdminOgToolsPage })));
 const AdminDesignSystemPlaygroundPage = lazyWithRecovery('AdminDesignSystemPlaygroundPage', () => import('./AdminDesignSystemPlaygroundPage').then((module) => ({ default: module.AdminDesignSystemPlaygroundPage })));
+const AdminCountryGuideLabPage = lazyWithRecovery('AdminCountryGuideLabPage', () => import('./AdminCountryGuideLabPage').then((module) => ({ default: module.AdminCountryGuideLabPage })));
 const AdminLegalTermsPage = lazyWithRecovery('AdminLegalTermsPage', () => import('./AdminLegalTermsPage').then((module) => ({ default: module.AdminLegalTermsPage })));
 
 const RouteLoadingFallback: React.FC = () => (
@@ -42,6 +43,7 @@ export const AdminWorkspaceRouter: React.FC = () => (
             <Route path="ai-benchmark/worker-health" element={<AdminAiWorkerHealthPage />} />
             <Route path="og-tools" element={<AdminOgToolsPage />} />
             <Route path="design-system-playground" element={<AdminDesignSystemPlaygroundPage />} />
+            <Route path="country-guide-lab" element={<AdminCountryGuideLabPage />} />
             <Route path="access" element={<Navigate to="/admin/users" replace />} />
             <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
         </Routes>

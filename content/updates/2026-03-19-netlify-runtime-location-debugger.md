@@ -14,3 +14,6 @@ summary: "Adds the first Netlify-backed runtime location snapshot so geo-aware e
 - [ ] [Internal] 🌍 Added a Netlify-backed runtime location snapshot endpoint plus session bootstrap plumbing for future geo-aware features.
 - [ ] [Internal] 🧭 Added a runtime location card to the on-page debugger so city, country, timezone, postal code, and coordinates are visible during QA.
 - [ ] [Internal] 🧪 Added edge and browser regression coverage for runtime location normalization, session caching, refresh flows, and debugger states.
+- [ ] [Internal] 🗺️ Added a repo-owned product gap roadmap plus new backlog specs for reservation import, travel alerts and documents, budgeting, packing checklists, external planning imports, and auto travel journaling so roadmap execution is linked to concrete GitHub issues.
+- [ ] [Internal] 🧳 Added an admin-only Country Guide Lab with top-nav, sidebar, and planner-companion layouts so guide-style travel prep content can be explored before shipping public country pages.
+- [ ] [Internal] ⏱️ Stabilized date-sensitive profile settings and admin billing tests so the core suite stays green as the calendar moves forward.
