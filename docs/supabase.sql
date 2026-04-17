@@ -111,6 +111,13 @@ create table if not exists public.plans (
   created_at timestamptz not null default now()
 );
 
+create table if not exists public.app_runtime_settings (
+  singleton boolean primary key default true,
+  planner_beta_open boolean not null default false,
+  updated_at timestamptz not null default now(),
+  updated_by uuid references auth.users on delete set null
+);
+
 create table if not exists public.subscriptions (
   user_id uuid primary key references auth.users on delete cascade,
   plan_id uuid references public.plans(id),
@@ -262,6 +269,40 @@ create table if not exists public.async_worker_health_checks (
   metadata jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now()
 );
+
+alter table public.app_runtime_settings add column if not exists planner_beta_open boolean;
+update public.app_runtime_settings
+set planner_beta_open = false
+where planner_beta_open is null;
+alter table public.app_runtime_settings alter column planner_beta_open set default false;
+alter table public.app_runtime_settings alter column planner_beta_open set not null;
+alter table public.app_runtime_settings add column if not exists updated_at timestamptz;
+update public.app_runtime_settings
+set updated_at = now()
+where updated_at is null;
+alter table public.app_runtime_settings alter column updated_at set default now();
+alter table public.app_runtime_settings alter column updated_at set not null;
+alter table public.app_runtime_settings
+  add column if not exists updated_by uuid references auth.users on delete set null;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'app_runtime_settings_singleton_true'
+      and conrelid = 'public.app_runtime_settings'::regclass
+  ) then
+    alter table public.app_runtime_settings
+      add constraint app_runtime_settings_singleton_true
+      check (singleton);
+  end if;
+end
+$$;
+
+insert into public.app_runtime_settings (singleton)
+values (true)
+on conflict (singleton) do nothing;
 
 -- Forward-compatible schema upgrades
 alter table public.trips add column if not exists sharing_enabled boolean not null default true;
@@ -853,6 +894,7 @@ alter table public.trip_collaborators enable row level security;
 alter table public.profiles enable row level security;
 alter table public.user_settings enable row level security;
 alter table public.plans enable row level security;
+alter table public.app_runtime_settings enable row level security;
 alter table public.subscriptions enable row level security;
 alter table public.billing_webhook_events enable row level security;
 alter table public.legal_terms_versions enable row level security;
@@ -1024,6 +1066,17 @@ drop policy if exists "Plans are readable" on public.plans;
 create policy "Plans are readable"
 on public.plans for select
 using (true);
+
+drop policy if exists "App runtime settings admin read" on public.app_runtime_settings;
+create policy "App runtime settings admin read"
+on public.app_runtime_settings for select
+using (public.is_admin(auth.uid()));
+
+drop policy if exists "App runtime settings admin update" on public.app_runtime_settings;
+create policy "App runtime settings admin update"
+on public.app_runtime_settings for update
+using (public.is_admin(auth.uid()))
+with check (public.is_admin(auth.uid()));
 
 -- Subscriptions policies
 drop policy if exists "Subscriptions are user-owned" on public.subscriptions;
@@ -7056,6 +7109,70 @@ begin
 end;
 $$;
 
+drop function if exists public.get_public_runtime_settings();
+create or replace function public.get_public_runtime_settings()
+returns table(
+  planner_beta_open boolean,
+  updated_at timestamptz
+)
+language sql
+security definer
+set search_path = public
+set row_security = off
+as $$
+  select
+    ars.planner_beta_open,
+    ars.updated_at
+  from public.app_runtime_settings ars
+  where ars.singleton = true
+  limit 1;
+$$;
+
+drop function if exists public.admin_update_runtime_settings(boolean);
+create or replace function public.admin_update_runtime_settings(
+  p_planner_beta_open boolean
+)
+returns public.app_runtime_settings
+language plpgsql
+security definer
+set search_path = public
+set row_security = off
+as $$
+declare
+  v_uid uuid := auth.uid();
+  v_result public.app_runtime_settings%rowtype;
+begin
+  if not public.is_admin(v_uid) then
+    raise exception 'Not allowed';
+  end if;
+
+  insert into public.app_runtime_settings as ars (
+    singleton,
+    planner_beta_open,
+    updated_at,
+    updated_by
+  )
+  values (
+    true,
+    coalesce(p_planner_beta_open, false),
+    now(),
+    v_uid
+  )
+  on conflict (singleton) do update
+  set planner_beta_open = excluded.planner_beta_open,
+      updated_at = excluded.updated_at,
+      updated_by = excluded.updated_by;
+
+  select *
+  into v_result
+  from public.app_runtime_settings ars
+  where ars.singleton = true
+  limit 1;
+
+  return v_result;
+end;
+$$;
+
 grant execute on function public.get_current_user_access() to anon, authenticated;
 grant execute on function public.accept_current_terms(text, text) to authenticated;
 grant execute on function public.admin_publish_terms_version(text, text, text, text, date, timestamptz, boolean, text, text, boolean) to authenticated;
@@ -7070,6 +7187,8 @@ grant execute on function public.admin_reset_user_terms_acceptance(uuid, text) t
 grant execute on function public.admin_update_user_tier(uuid, text) to authenticated;
 grant execute on function public.admin_update_user_overrides(uuid, jsonb) to authenticated;
 grant execute on function public.admin_update_plan_entitlements(text, jsonb) to authenticated;
+grant execute on function public.get_public_runtime_settings() to anon, authenticated;
+grant execute on function public.admin_update_runtime_settings(boolean) to authenticated;
 grant execute on function public.trip_generation_attempt_start(text, text, text, text, text, text, text, text, timestamptz, jsonb) to authenticated;
 grant execute on function public.trip_generation_attempt_start(text, text, text, text, text, text, text, text, timestamptz, jsonb) to service_role;
 grant execute on function public.trip_generation_attempt_finish(uuid, text, text, text, text, text, timestamptz, integer, integer, text, text, text, jsonb) to authenticated;
@@ -8807,3 +8926,19 @@ $$;
 
 revoke all on function public.admin_replace_airports_reference(jsonb, jsonb, text) from public, anon, authenticated;
 grant execute on function public.admin_replace_airports_reference(jsonb, jsonb, text) to service_role;
+
+-- Final RLS sweep so any public table that exists outside the explicit table list
+-- still gets locked down when this source-of-truth SQL is re-applied.
+do $$
+declare
+  r record;
+begin
+  for r in
+    select tablename
+    from pg_tables
+    where schemaname = 'public'
+  loop
+    execute format('alter table public.%I enable row level security;', r.tablename);
+  end loop;
+end
+$$;

@@ -26,6 +26,34 @@ const requiredPatterns = [
     label: 'grant user change lookup RPC',
     pattern: /grant execute on function public\.admin_get_user_change_log\(uuid\)\s+to authenticated;/i,
   },
+  {
+    label: 'app runtime settings table',
+    pattern: /create\s+table\s+if\s+not\s+exists\s+public\.app_runtime_settings\s*\(/i,
+  },
+  {
+    label: 'app runtime settings RLS',
+    pattern: /alter table public\.app_runtime_settings enable row level security;/i,
+  },
+  {
+    label: 'public runtime settings RPC',
+    pattern: /create\s+or\s+replace\s+function\s+public\.get_public_runtime_settings\(\)/i,
+  },
+  {
+    label: 'grant public runtime settings RPC',
+    pattern: /grant execute on function public\.get_public_runtime_settings\(\)\s+to anon,\s*authenticated;/i,
+  },
+  {
+    label: 'admin runtime settings RPC',
+    pattern: /create\s+or\s+replace\s+function\s+public\.admin_update_runtime_settings\(\s*p_planner_beta_open boolean\s*\)/i,
+  },
+  {
+    label: 'grant admin runtime settings RPC',
+    pattern: /grant execute on function public\.admin_update_runtime_settings\(boolean\)\s+to authenticated;/i,
+  },
+  {
+    label: 'final public-table RLS sweep',
+    pattern: /for r in\s+select tablename\s+from pg_tables\s+where schemaname = 'public'\s+loop\s+execute format\('alter table public\.\%I enable row level security;', r\.tablename\);/is,
+  },
 ];
 
 const fail = (message) => {

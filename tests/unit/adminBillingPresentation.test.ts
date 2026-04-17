@@ -19,8 +19,10 @@ import {
 } from '../../services/adminBillingPresentation';
 import type { AdminBillingSubscriptionRecord, AdminBillingWebhookEventRecord } from '../../services/adminService';
 
-const NOW_ISO = '2026-03-08T10:00:00.000Z';
-const NOW_MS = Date.parse(NOW_ISO);
+const DAY_MS = 24 * 60 * 60 * 1000;
+const NOW_MS = Date.now();
+const NOW_ISO = new Date(NOW_MS).toISOString();
+const futureIso = (days: number): string => new Date(NOW_MS + days * DAY_MS).toISOString();
 
 const subscription = (overrides: Partial<AdminBillingSubscriptionRecord>): AdminBillingSubscriptionRecord => ({
   user_id: '00000000-0000-0000-0000-000000000001',
@@ -72,7 +74,7 @@ describe('services/adminBillingPresentation', () => {
     const record = subscription({
       provider_status: 'canceled',
       subscription_status: 'inactive',
-      grace_ends_at: '2026-03-10T00:00:00.000Z',
+      grace_ends_at: futureIso(2),
     });
 
     expect(isAdminBillingGraceActive(record, NOW_MS)).toBe(true);
@@ -87,7 +89,7 @@ describe('services/adminBillingPresentation', () => {
           user_id: '00000000-0000-0000-0000-000000000002',
           provider_status: 'canceled',
           subscription_status: 'inactive',
-          grace_ends_at: '2026-03-11T00:00:00.000Z',
+          grace_ends_at: futureIso(3),
         }),
       ],
       [
@@ -110,12 +112,18 @@ describe('services/adminBillingPresentation', () => {
   it('filters subscriptions and events by the requested admin date range', () => {
     expect(filterAdminBillingSubscriptionsByRange([
       subscription({ updated_at: NOW_ISO }),
-      subscription({ user_id: '00000000-0000-0000-0000-000000000002', updated_at: '2025-10-01T00:00:00.000Z' }),
+      subscription({
+        user_id: '00000000-0000-0000-0000-000000000002',
+        updated_at: new Date(NOW_MS - 180 * DAY_MS).toISOString(),
+      }),
     ], '30d')).toHaveLength(1);
 
     expect(filterAdminBillingWebhookEventsByRange([
       event({ occurred_at: NOW_ISO }),
-      event({ event_id: 'evt_old', occurred_at: '2025-10-01T00:00:00.000Z' }),
+      event({
+        event_id: 'evt_old',
+        occurred_at: new Date(NOW_MS - 180 * DAY_MS).toISOString(),
+      }),
     ], '30d')).toHaveLength(1);
   });
 

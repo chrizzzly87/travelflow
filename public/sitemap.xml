@@ -2995,6 +2995,12 @@
     <xhtml:link rel="alternate" hreflang="x-default" href="https://travelflowapp.netlify.app/blog/how-to-plan-multi-city-trip" />
   </url>
   <url>
+    <loc>https://travelflowapp.netlify.app/de/blog/husum-weekend-krokusbluetenfest</loc>
+    <lastmod>2026-03-02T14:30:00Z</lastmod>
+    <xhtml:link rel="alternate" hreflang="de" href="https://travelflowapp.netlify.app/de/blog/husum-weekend-krokusbluetenfest" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://travelflowapp.netlify.app/de/blog/husum-weekend-krokusbluetenfest" />
+  </url>
+  <url>
     <loc>https://travelflowapp.netlify.app/blog/weekend-getaway-tips</loc>
     <lastmod>2026-02-01T10:00:00Z</lastmod>
     <xhtml:link rel="alternate" hreflang="en" href="https://travelflowapp.netlify.app/blog/weekend-getaway-tips" />
