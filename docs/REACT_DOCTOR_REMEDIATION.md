@@ -134,5 +134,6 @@ For React feature work:
 - Run `pnpm dlx react-doctor@latest . --verbose --diff` before finalizing.
 - Record the score in the PR validation notes when feasible.
 - Consult `vercel-react-best-practices` for affected components, data fetching, and async work.
+- Avoid new `useEffect` unless synchronizing with an external system; prefer render-time derivation, event handlers, `useMemo`, `useSyncExternalStore`, or `key`-based resets where they fit.
 - Treat new React Doctor errors as fix-before-merge.
 - Triage warnings by impact and avoid making the score worse without calling it out.
