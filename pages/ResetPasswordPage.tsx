@@ -22,7 +22,7 @@ const readHashParams = (hash: string): URLSearchParams => {
 export const ResetPasswordPage: React.FC = () => {
     const { t } = useTranslation('auth');
     const navigate = useNavigate();
-    const location = useLocation();
+    const routeLocation = useLocation();
     const [searchParams] = useSearchParams();
     const { isLoading, isAuthenticated, isAnonymous, updatePassword } = useAuth();
 
@@ -32,7 +32,7 @@ export const ResetPasswordPage: React.FC = () => {
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [infoMessage, setInfoMessage] = useState<string | null>(null);
 
-    const hashParams = useMemo(() => readHashParams(location.hash), [location.hash]);
+    const hashParams = useMemo(() => readHashParams(routeLocation.hash), [routeLocation.hash]);
     const callbackError = (searchParams.get('error_description') || searchParams.get('error') || hashParams.get('error_description') || hashParams.get('error') || '').trim();
 
     const rememberedNextPath = useMemo(() => getRememberedAuthReturnPath(), []);

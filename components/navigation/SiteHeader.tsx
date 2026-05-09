@@ -64,17 +64,17 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
 }) => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [pendingLocale, setPendingLocale] = useState<AppLanguage | null>(null);
-    const location = useLocation();
+    const routeLocation = useLocation();
     const navigate = useNavigate();
     const { t, i18n } = useTranslation('common');
     const { isAuthenticated, isAdmin, access, isLoading } = useAuth();
     const { openLoginModal } = useLoginModal();
 
     const activeLocale = useMemo<AppLanguage>(() => {
-        const routeLocale = extractLocaleFromPath(location.pathname);
+        const routeLocale = extractLocaleFromPath(routeLocation.pathname);
         if (routeLocale) return routeLocale;
         return normalizeLocale(i18n.resolvedLanguage ?? i18n.language ?? DEFAULT_LOCALE);
-    }, [i18n.language, i18n.resolvedLanguage, location.pathname]);
+    }, [i18n.language, i18n.resolvedLanguage, routeLocation.pathname]);
     const selectedLocale = pendingLocale ?? activeLocale;
 
     useEffect(() => {
@@ -98,19 +98,19 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
 
         setPendingLocale(nextLocale);
 
-        if (!isToolRoute(location.pathname)) {
-            void preloadLocaleNamespaces(nextLocale, getNamespacesForMarketingPath(location.pathname));
+        if (!isToolRoute(routeLocation.pathname)) {
+            void preloadLocaleNamespaces(nextLocale, getNamespacesForMarketingPath(routeLocation.pathname));
         } else {
-            void preloadLocaleNamespaces(nextLocale, getNamespacesForToolPath(location.pathname));
+            void preloadLocaleNamespaces(nextLocale, getNamespacesForToolPath(routeLocation.pathname));
         }
 
         applyDocumentLocale(nextLocale);
         void i18n.changeLanguage(nextLocale);
 
         const target = buildLocalizedLocation({
-            pathname: location.pathname,
-            search: location.search,
-            hash: location.hash,
+            pathname: routeLocation.pathname,
+            search: routeLocation.search,
+            hash: routeLocation.hash,
             targetLocale: nextLocale,
         });
         navigate(target);
@@ -130,9 +130,9 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
         openLoginModal({
             source: 'navigation_header',
             nextPath: buildPathFromLocationParts({
-                pathname: location.pathname,
-                search: location.search,
-                hash: location.hash,
+                pathname: routeLocation.pathname,
+                search: routeLocation.search,
+                hash: routeLocation.hash,
             }),
             reloadOnSuccess: true,
         });

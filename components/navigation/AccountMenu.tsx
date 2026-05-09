@@ -30,7 +30,7 @@ interface AccountMenuProps {
 type AnalyticsEventName = `${string}__${string}` | `${string}__${string}--${string}`;
 
 const sortByCreatedDesc = (trips: ITrip[]): ITrip[] =>
-    [...trips].sort((a, b) => {
+    trips.toSorted((a, b) => {
         const byCreated = (Number.isFinite(b.createdAt) ? b.createdAt : 0) - (Number.isFinite(a.createdAt) ? a.createdAt : 0);
         if (byCreated !== 0) return byCreated;
         return (Number.isFinite(b.updatedAt) ? b.updatedAt : 0) - (Number.isFinite(a.updatedAt) ? a.updatedAt : 0);
@@ -143,7 +143,7 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
     onPrewarmTripManager,
 }) => {
     const navigate = useNavigate();
-    const location = useLocation();
+    const routeLocation = useLocation();
     const { logout, profile } = useAuth();
     const { t } = useTranslation('common');
     const [isOpen, setIsOpen] = useState(false);
@@ -154,7 +154,7 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
     ));
     const containerRef = useRef<HTMLDivElement | null>(null);
 
-    const accountLabel = useMemo(() => labelFromPath(location.pathname), [location.pathname]);
+    const accountLabel = useMemo(() => labelFromPath(routeLocation.pathname), [routeLocation.pathname]);
     const accountDisplayName = useMemo(
         () => buildAccountDisplayName(profile, email, userId),
         [email, profile, userId]
@@ -170,8 +170,8 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
             : accountLabel;
     const shouldShowLabel = showLabel ?? !compact;
     const activeLocale = useMemo(
-        () => extractLocaleFromPath(location.pathname) || DEFAULT_LOCALE,
-        [location.pathname],
+        () => extractLocaleFromPath(routeLocation.pathname) || DEFAULT_LOCALE,
+        [routeLocation.pathname],
     );
 
     useEffect(() => {
@@ -235,7 +235,7 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
         trackEvent('navigation__account_menu--logout');
         setIsOpen(false);
         await logout();
-        const locale = extractLocaleFromPath(location.pathname) || DEFAULT_LOCALE;
+        const locale = extractLocaleFromPath(routeLocation.pathname) || DEFAULT_LOCALE;
         navigate(buildLocalizedMarketingPath('home', locale));
     };
 

@@ -292,9 +292,13 @@ const BlogMapCanvas: React.FC<BlogMapCanvasProps> = ({
     }, [activeCategory.spots, coordinatesBySpotId, geocodeSpotQuery, isLoaded]);
 
     useEffect(() => {
-        markerOverlaysRef.current.forEach((overlay) => overlay.setMap(null));
-        markerOverlaysRef.current = [];
-        if (!mapInstance || !window.google?.maps?.OverlayView) return;
+        const clearMarkerOverlays = () => {
+            markerOverlaysRef.current.forEach((overlay) => overlay.setMap(null));
+            markerOverlaysRef.current = [];
+        };
+
+        clearMarkerOverlays();
+        if (!mapInstance || !window.google?.maps?.OverlayView) return clearMarkerOverlays;
         const markerBorderColor = resolveCssColorVar('--tf-accent-400', BLOG_MAP_MARKER_BORDER_FALLBACK);
         const markerBackgroundColor = resolveCssColorVar('--tf-accent-50', BLOG_MAP_MARKER_BG_FALLBACK);
         const markerTextColor = resolveCssColorVar('--tf-accent-700', BLOG_MAP_MARKER_TEXT_FALLBACK);
@@ -340,7 +344,7 @@ const BlogMapCanvas: React.FC<BlogMapCanvasProps> = ({
                 markerNode.style.zIndex = '25';
                 markerNode.textContent = activeCategory.icon || `${markerIndex + 1}`;
                 markerNode.setAttribute('aria-label', spot.name);
-                markerNode.addEventListener('click', handleClick);
+                markerNode.onclick = handleClick;
 
                 const indexBadge = document.createElement('span');
                 indexBadge.textContent = String(markerIndex + 1);
@@ -375,7 +379,7 @@ const BlogMapCanvas: React.FC<BlogMapCanvasProps> = ({
 
             overlay.onRemove = function onRemove() {
                 if (!markerNode) return;
-                markerNode.removeEventListener('click', handleClick);
+                markerNode.onclick = null;
                 markerNode.remove();
                 markerNode = null;
             };
@@ -384,10 +388,7 @@ const BlogMapCanvas: React.FC<BlogMapCanvasProps> = ({
             markerOverlaysRef.current.push(overlay);
         });
 
-        return () => {
-            markerOverlaysRef.current.forEach((overlay) => overlay.setMap(null));
-            markerOverlaysRef.current = [];
-        };
+        return clearMarkerOverlays;
     }, [activeCategory.icon, activeCategory.id, mapInstance, markerSpots, postSlug]);
 
     useEffect(() => {

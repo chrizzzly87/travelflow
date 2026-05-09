@@ -127,17 +127,17 @@ const isSwitchAcknowledged = (): boolean => {
 };
 
 export const LanguageSuggestionBanner: React.FC = () => {
-    const location = useLocation();
+    const routeLocation = useLocation();
     const navigate = useNavigate();
 
     const activeLocale = useMemo<AppLanguage>(() => {
-        return extractLocaleFromPath(location.pathname) ?? DEFAULT_LOCALE;
-    }, [location.pathname]);
+        return extractLocaleFromPath(routeLocation.pathname) ?? DEFAULT_LOCALE;
+    }, [routeLocation.pathname]);
 
     const suggestedLocale = useMemo(() => {
-        if (isToolRoute(location.pathname)) return null;
+        if (isToolRoute(routeLocation.pathname)) return null;
         return getBrowserPreferredLocale(activeLocale);
-    }, [activeLocale, location.pathname]);
+    }, [activeLocale, routeLocation.pathname]);
 
     const [dismissed, setDismissed] = useState<boolean>(() => (
         isDismissedForSession() || isSwitchAcknowledged()
@@ -172,14 +172,14 @@ export const LanguageSuggestionBanner: React.FC = () => {
             }
         }
 
-        void preloadLocaleNamespaces(suggestedLocale, getNamespacesForMarketingPath(location.pathname));
+        void preloadLocaleNamespaces(suggestedLocale, getNamespacesForMarketingPath(routeLocation.pathname));
         applyDocumentLocale(suggestedLocale);
         void i18n.changeLanguage(suggestedLocale);
 
         const target = buildLocalizedLocation({
-            pathname: location.pathname,
-            search: location.search,
-            hash: location.hash,
+            pathname: routeLocation.pathname,
+            search: routeLocation.search,
+            hash: routeLocation.hash,
             targetLocale: suggestedLocale,
         });
         trackEvent('navigation__language_suggestion--switch', {

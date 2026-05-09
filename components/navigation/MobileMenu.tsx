@@ -44,7 +44,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
     const [pendingLocale, setPendingLocale] = useState<AppLanguage | null>(null);
     const hasTrips = useHasSavedTrips();
     const { t, i18n } = useTranslation('common');
-    const location = useLocation();
+    const routeLocation = useLocation();
     const navigate = useNavigate();
     const { isAuthenticated, isAdmin, logout, isLoading } = useAuth();
     const { openLoginModal } = useLoginModal();
@@ -58,10 +58,10 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
     });
 
     const activeLocale = useMemo<AppLanguage>(() => {
-        const routeLocale = extractLocaleFromPath(location.pathname);
+        const routeLocale = extractLocaleFromPath(routeLocation.pathname);
         if (routeLocale) return routeLocale;
         return normalizeLocale(i18n.resolvedLanguage ?? i18n.language ?? DEFAULT_LOCALE);
-    }, [i18n.language, i18n.resolvedLanguage, location.pathname]);
+    }, [i18n.language, i18n.resolvedLanguage, routeLocation.pathname]);
     const selectedLocale = pendingLocale ?? activeLocale;
 
     useEffect(() => {
@@ -115,9 +115,9 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
         openLoginModal({
             source: 'navigation_mobile',
             nextPath: buildPathFromLocationParts({
-                pathname: location.pathname,
-                search: location.search,
-                hash: location.hash,
+                pathname: routeLocation.pathname,
+                search: routeLocation.search,
+                hash: routeLocation.hash,
             }),
             reloadOnSuccess: true,
         });
@@ -146,19 +146,19 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
         setPendingLocale(nextLocale);
         onClose();
 
-        if (!isToolRoute(location.pathname)) {
-            void preloadLocaleNamespaces(nextLocale, getNamespacesForMarketingPath(location.pathname));
+        if (!isToolRoute(routeLocation.pathname)) {
+            void preloadLocaleNamespaces(nextLocale, getNamespacesForMarketingPath(routeLocation.pathname));
         } else {
-            void preloadLocaleNamespaces(nextLocale, getNamespacesForToolPath(location.pathname));
+            void preloadLocaleNamespaces(nextLocale, getNamespacesForToolPath(routeLocation.pathname));
         }
 
         applyDocumentLocale(nextLocale);
         void i18n.changeLanguage(nextLocale);
 
         const target = buildLocalizedLocation({
-            pathname: location.pathname,
-            search: location.search,
-            hash: location.hash,
+            pathname: routeLocation.pathname,
+            search: routeLocation.search,
+            hash: routeLocation.hash,
             targetLocale: nextLocale,
         });
         navigate(target);

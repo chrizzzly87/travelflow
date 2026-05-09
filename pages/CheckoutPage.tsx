@@ -173,7 +173,7 @@ const CheckoutStepSection: React.FC<CheckoutStepSectionProps> = ({ step, state, 
 );
 
 export const CheckoutPage: React.FC = () => {
-    const location = useLocation();
+    const routeLocation = useLocation();
     const navigate = useNavigate();
     const { t, i18n } = useTranslation(['pricing', 'profile', 'auth']);
     const {
@@ -238,8 +238,8 @@ export const CheckoutPage: React.FC = () => {
         [i18n.language, i18n.resolvedLanguage],
     );
     const checkoutLocationContext = useMemo(
-        () => readPaddleCheckoutLocationContext(location.search),
-        [location.search],
+        () => readPaddleCheckoutLocationContext(routeLocation.search),
+        [routeLocation.search],
     );
     const selectedTierKey = isPaidTierKey(checkoutLocationContext.tierKey)
         ? checkoutLocationContext.tierKey
@@ -287,10 +287,10 @@ export const CheckoutPage: React.FC = () => {
         && form.city.trim()
     );
     const travelerDetailsLocked = isEligibleAccount && travelerDetailsValid && !isTravelerDetailsEditing;
-    const hasPendingSignupTermsAcceptance = new URLSearchParams(location.search).get('signup_accept_terms') === '1';
+    const hasPendingSignupTermsAcceptance = new URLSearchParams(routeLocation.search).get('signup_accept_terms') === '1';
     const checkoutRedirectTo = typeof window !== 'undefined'
         ? window.location.href
-        : `${location.pathname}${location.search}${location.hash}`;
+        : `${routeLocation.pathname}${routeLocation.search}${routeLocation.hash}`;
     const termsPath = useMemo(() => buildLocalizedMarketingPath('terms', activeLocale), [activeLocale]);
     const privacyPath = useMemo(() => buildLocalizedMarketingPath('privacy', activeLocale), [activeLocale]);
     const contactPath = useMemo(() => buildLocalizedMarketingPath('contact', activeLocale), [activeLocale]);
@@ -473,10 +473,10 @@ export const CheckoutPage: React.FC = () => {
     useEffect(() => {
         if (!hasPendingSignupTermsAcceptance || !isEligibleAccount || isAuthLoading || !access) return;
 
-        const cleanedParams = new URLSearchParams(location.search);
+        const cleanedParams = new URLSearchParams(routeLocation.search);
         cleanedParams.delete('signup_accept_terms');
         const cleanedSearch = cleanedParams.toString();
-        const cleanedTarget = `${location.pathname}${cleanedSearch ? `?${cleanedSearch}` : ''}${location.hash || ''}`;
+        const cleanedTarget = `${routeLocation.pathname}${cleanedSearch ? `?${cleanedSearch}` : ''}${routeLocation.hash || ''}`;
 
         if (!access.termsAcceptanceRequired) {
             navigate(cleanedTarget, { replace: true });
@@ -520,9 +520,9 @@ export const CheckoutPage: React.FC = () => {
         hasPendingSignupTermsAcceptance,
         isAuthLoading,
         isEligibleAccount,
-        location.hash,
-        location.pathname,
-        location.search,
+        routeLocation.hash,
+        routeLocation.pathname,
+        routeLocation.search,
         navigate,
         refreshAccess,
         t,

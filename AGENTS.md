@@ -51,5 +51,6 @@ These instructions apply to all coding agents and LLM assistants working in this
 ## Skill usage policy
 - Use `vercel-react-best-practices` for React performance/refactor tasks to guide high-impact decisions, but apply only rules relevant to the current change.
 - Run `pnpm dlx react-doctor@latest . --verbose --diff` after substantial React changes; treat reported errors as fix-before-merge and triage warnings by impact/scope.
+- For new React feature work, record the React Doctor score before and after the change when feasible, and consult `vercel-react-best-practices` so the feature does not make React quality worse.
 - Use `find-skills` only when current skills/workflows do not clearly cover the task and a capability discovery step is needed.
 - Avoid skill/tool churn: do not run unrelated skills for routine edits.

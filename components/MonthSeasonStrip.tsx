@@ -1,6 +1,8 @@
 import React from 'react';
 import { MONTH_LABELS } from '../data/countryTravelData';
 
+const EMPTY_MONTHS: number[] = [];
+
 interface MonthSeasonStripProps {
     idealMonths: number[];
     shoulderMonths?: number[];
@@ -15,8 +17,8 @@ const hasMonth = (months: number[] | undefined, month: number): boolean => {
 
 export const MonthSeasonStrip: React.FC<MonthSeasonStripProps> = ({
     idealMonths,
-    shoulderMonths = [],
-    highlightedMonths = [],
+    shoulderMonths = EMPTY_MONTHS,
+    highlightedMonths = EMPTY_MONTHS,
     compact = false,
 }) => {
     return (

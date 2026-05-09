@@ -117,7 +117,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
     showGlobalSearch = true,
     showDateRange = true,
 }) => {
-    const location = useLocation();
+    const routeLocation = useLocation();
     const { access, isAdmin } = useAuth();
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(() => getStoredSidebarCollapseState());
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
@@ -150,7 +150,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
 
     useEffect(() => {
         setIsMobileSidebarOpen(false);
-    }, [location.pathname]);
+    }, [routeLocation.pathname]);
 
     useEffect(() => {
         if (!isMobileSidebarOpen) return;

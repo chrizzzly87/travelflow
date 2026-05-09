@@ -236,13 +236,13 @@ const BlogCard: React.FC<{
 
 export const BlogPage: React.FC = () => {
     const { t } = useTranslation('blog');
-    const location = useLocation();
-    const locale = extractLocaleFromPath(location.pathname) ?? DEFAULT_LOCALE;
+    const routeLocation = useLocation();
+    const locale = extractLocaleFromPath(routeLocation.pathname) ?? DEFAULT_LOCALE;
     const viewTransitionsEnabled = useMemo(() => supportsBlogViewTransitions(), []);
     const activeTransitionTarget = viewTransitionsEnabled ? getPendingBlogTransitionTarget() : null;
     const transitionNavigationState = useMemo(
-        () => getBlogTransitionNavigationState(location.state),
-        [location.state]
+        () => getBlogTransitionNavigationState(routeLocation.state),
+        [routeLocation.state]
     );
     const transitionTargetHint = useMemo(
         () => resolveBlogTransitionNavigationHint(transitionNavigationState, activeTransitionTarget),

@@ -1038,13 +1038,13 @@ const buildOgPlaygroundUrl = (currentUrl: URL): string => {
 };
 
 export const OnPageDebugger: React.FC = () => {
-    const location = useLocation();
+    const routeLocation = useLocation();
     const { isAdmin, isLoading: isAuthLoading } = useAuth();
     const rafRef = useRef<number | null>(null);
     const h1RafRef = useRef<number | null>(null);
     const mapRuntimeResolution = useMemo(() => getClientMapRuntimeResolution(), []);
 
-    const isTripDetailRoute = /^\/trip\/[^/]+/.test(location.pathname);
+    const isTripDetailRoute = /^\/trip\/[^/]+/.test(routeLocation.pathname);
     const showSeoTools = !isTripDetailRoute;
 
     const [isOpen, setIsOpen] = useState(() =>
@@ -1100,7 +1100,7 @@ export const OnPageDebugger: React.FC = () => {
     const [prefetchStats, setPrefetchStats] = useState<PrefetchStats>(() => getPrefetchStats());
     const [prefetchHighlightBoxes, setPrefetchHighlightBoxes] = useState<PrefetchHighlightBox[]>([]);
     const [viewTransitionDiagnostics, setViewTransitionDiagnostics] = useState<ViewTransitionDiagnostics>(() =>
-        buildViewTransitionDiagnostics(`${location.pathname}${location.search}`)
+        buildViewTransitionDiagnostics(`${routeLocation.pathname}${routeLocation.search}`)
     );
     const [viewTransitionEvents, setViewTransitionEvents] = useState<ViewTransitionEventEntry[]>([]);
     const simulatedLoggedInRef = useRef(simulatedLoggedIn);
@@ -1241,7 +1241,7 @@ export const OnPageDebugger: React.FC = () => {
             setH1HighlightBox(null);
             setSeoAudit(null);
         }
-    }, [location.pathname, location.search, showSeoTools]);
+    }, [routeLocation.pathname, routeLocation.search, showSeoTools]);
 
     const collectTrackingBoxes = useCallback(() => {
         const nodes = Array.from(document.querySelectorAll<HTMLElement>(ANALYTICS_DEBUG_SELECTOR));
@@ -1366,7 +1366,7 @@ export const OnPageDebugger: React.FC = () => {
         if (isOpen && trackingEnabled) {
             scheduleTrackingRefresh();
         }
-    }, [isOpen, location.pathname, location.search, scheduleTrackingRefresh, trackingEnabled]);
+    }, [isOpen, routeLocation.pathname, routeLocation.search, scheduleTrackingRefresh, trackingEnabled]);
 
     useEffect(() => {
         if (!isOpen || !showSeoTools || !h1HighlightEnabled) {
@@ -1399,7 +1399,7 @@ export const OnPageDebugger: React.FC = () => {
     useEffect(() => {
         if (!isOpen || !showSeoTools || !h1HighlightEnabled) return;
         scheduleH1Refresh();
-    }, [h1HighlightEnabled, isOpen, location.pathname, location.search, scheduleH1Refresh, showSeoTools]);
+    }, [h1HighlightEnabled, isOpen, routeLocation.pathname, routeLocation.search, scheduleH1Refresh, showSeoTools]);
 
     const openUmami = useCallback(() => {
         window.open(UMAMI_DASHBOARD_URL, '_blank', 'noopener,noreferrer');
@@ -1434,16 +1434,16 @@ export const OnPageDebugger: React.FC = () => {
     }, []);
 
     const runViewTransitionAuditAndStore = useCallback(() => {
-        const route = `${location.pathname}${location.search}`;
+        const route = `${routeLocation.pathname}${routeLocation.search}`;
         const result = buildViewTransitionDiagnostics(route);
         setViewTransitionDiagnostics(result);
         return result;
-    }, [location.pathname, location.search]);
+    }, [routeLocation.pathname, routeLocation.search]);
 
     useEffect(() => {
         if (!isOpen) return;
         runViewTransitionAuditAndStore();
-    }, [isOpen, location.pathname, location.search, runViewTransitionAuditAndStore]);
+    }, [isOpen, routeLocation.pathname, routeLocation.search, runViewTransitionAuditAndStore]);
 
     const toggleAutoOpen = useCallback(() => {
         const next = !autoOpenEnabled;

@@ -133,7 +133,7 @@ const formatDateLabel = (value: string, locale: string): string => {
 
 export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode = 'settings' }) => {
     const navigate = useNavigate();
-    const location = useLocation();
+    const routeLocation = useLocation();
     const { t, i18n } = useTranslation(['profile', 'pricing']);
     const {
         isLoading,
@@ -170,7 +170,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
     const [isCancelBillingSubmitting, setIsCancelBillingSubmitting] = useState(false);
     const [paddlePublicConfig, setPaddlePublicConfig] = useState<PaddlePublicConfig | null>(null);
     const billingRepairAttemptedRef = useRef(false);
-    const activeDiscountCode = useMemo(() => readBillingDiscountCodeFromSearch(location.search), [location.search]);
+    const activeDiscountCode = useMemo(() => readBillingDiscountCodeFromSearch(routeLocation.search), [routeLocation.search]);
     const accessBilling = access?.billing ?? null;
 
     const appLocale = useMemo(

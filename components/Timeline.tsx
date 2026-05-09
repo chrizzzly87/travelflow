@@ -39,6 +39,7 @@ interface TimelineProps {
   onToggleDetailsPanel?: () => void;
 }
 
+const EMPTY_SELECTED_CITY_IDS: string[] = [];
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 // Set to >0 if you want a visible gap below city cards before connectors start.
 const TRANSFER_CONNECTOR_TOP_GAP_PX = 0;
@@ -98,7 +99,7 @@ const buildTransferConnectorPath = (
 
 export const Timeline: React.FC<TimelineProps> = ({
   trip,
-  selectedCityIds = [],
+  selectedCityIds = EMPTY_SELECTED_CITY_IDS,
   selectedItemId,
   onSelect,
   onUpdateItems,

@@ -41,6 +41,7 @@ const FLOATING_MAP_ASPECT_RATIO: Record<FloatingMapOrientation, number> = {
 const FLOATING_MAP_ORIENTATION_SWAP_FACTOR = 1 / FLOATING_MAP_ASPECT_RATIO.portrait;
 const FLOATING_MAP_INTERACTION_SCALE = 1.01;
 const clampValue = (value: number, min: number, max: number): number => Math.max(min, Math.min(max, value));
+const noopCleanup = () => {};
 
 export const resolveFloatingMapPresetWidths = (baseWidth: number): Record<FloatingMapSizePreset, number> => {
     const clampedBase = clampValue(baseWidth, FLOATING_MAP_MIN_WIDTH, FLOATING_MAP_MAX_WIDTH);
@@ -619,9 +620,9 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
     ]);
 
     useEffect(() => {
-        if (mapDockMode !== 'docked') return;
+        if (mapDockMode !== 'docked') return noopCleanup;
         const anchor = dockedMapAnchorRef.current;
-        if (!anchor || typeof ResizeObserver !== 'function') return;
+        if (!anchor || typeof ResizeObserver !== 'function') return noopCleanup;
 
         const observer = new ResizeObserver(() => {
             const nextDockedRect = resolveDockedMapRect(anchor);
@@ -662,12 +663,15 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
                 window.cancelAnimationFrame(dockedModeSyncRafRef.current);
                 dockedModeSyncRafRef.current = null;
             }
-            clearDockedResizeSettleTimer();
+            if (dockedResizeSettleTimerRef.current !== null) {
+                clearTimeout(dockedResizeSettleTimerRef.current);
+                dockedResizeSettleTimerRef.current = null;
+            }
         };
     }, [applySurfaceGeometry, clearDockedResizeSettleTimer, dockedGeometryKey, dockedMapAnchorRef, mapDockMode]);
 
     useEffect(() => {
-        if (!isHandlePressed) return;
+        if (!isHandlePressed) return noopCleanup;
         const clearPressedState = () => setIsHandlePressed(false);
         window.addEventListener('pointerup', clearPressedState, true);
         window.addEventListener('pointercancel', clearPressedState, true);

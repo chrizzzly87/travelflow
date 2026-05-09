@@ -12,17 +12,17 @@ const CONTACT_LINK_EVENT = 'not_found__link--contact';
 
 export const NotFoundPage: React.FC = () => {
     const { t } = useTranslation('pages');
-    const location = useLocation();
-    const locale = extractLocaleFromPath(location.pathname) ?? DEFAULT_LOCALE;
+    const routeLocation = useLocation();
+    const locale = extractLocaleFromPath(routeLocation.pathname) ?? DEFAULT_LOCALE;
     const createTripPath = buildPath('createTrip');
     const contactPath = buildLocalizedMarketingPath('contact', locale);
 
     useEffect(() => {
         trackEvent('not_found__view', {
             locale,
-            path: `${location.pathname}${location.search}`,
+            path: `${routeLocation.pathname}${routeLocation.search}`,
         });
-    }, [locale, location.pathname, location.search]);
+    }, [locale, routeLocation.pathname, routeLocation.search]);
 
     return (
         <MarketingLayout>

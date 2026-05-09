@@ -19,8 +19,8 @@ const normalizeHashId = (hash: string): string => (
 );
 
 export const FaqPage: React.FC = () => {
-    const location = useLocation();
-    const locale = extractLocaleFromPath(location.pathname) ?? DEFAULT_LOCALE;
+    const routeLocation = useLocation();
+    const locale = extractLocaleFromPath(routeLocation.pathname) ?? DEFAULT_LOCALE;
     const [openItemIds, setOpenItemIds] = useState<string[]>(() => {
         const firstItemId = FAQ_SECTIONS[0]?.items[0]?.id;
         return firstItemId ? [firstItemId] : [];
@@ -45,9 +45,9 @@ export const FaqPage: React.FC = () => {
         didTrackViewRef.current = true;
         trackEvent('faq__view', {
             locale,
-            hash: normalizeHashId(location.hash) || null,
+            hash: normalizeHashId(routeLocation.hash) || null,
         });
-    }, [locale, location.hash]);
+    }, [locale, routeLocation.hash]);
 
     const handleHashNavigation = useCallback((rawHash: string) => {
         const hashId = normalizeHashId(rawHash);
@@ -78,8 +78,8 @@ export const FaqPage: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        handleHashNavigation(location.hash);
-    }, [handleHashNavigation, location.hash]);
+        handleHashNavigation(routeLocation.hash);
+    }, [handleHashNavigation, routeLocation.hash]);
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
@@ -110,7 +110,7 @@ export const FaqPage: React.FC = () => {
         });
 
         if (!nextOpen || typeof window === 'undefined') return;
-        window.history.replaceState(window.history.state, '', `${location.pathname}#${item.id}`);
+        window.history.replaceState(window.history.state, '', `${routeLocation.pathname}#${item.id}`);
     };
 
     const contactPath = buildLocalizedMarketingPath('contact', locale);

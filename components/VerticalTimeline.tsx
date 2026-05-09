@@ -29,6 +29,7 @@ interface VerticalTimelineProps {
   onToggleDetailsPanel?: () => void;
 }
 
+const EMPTY_SELECTED_CITY_IDS: string[] = [];
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 const CITY_VERTICAL_CONNECTOR_EDGE_INSET_PX = 0;
 const CITY_VERTICAL_CONNECTOR_GAP_PX = 0;
@@ -81,7 +82,7 @@ const buildVerticalConnectorPath = (
 
 export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
   trip,
-  selectedCityIds = [],
+  selectedCityIds = EMPTY_SELECTED_CITY_IDS,
   selectedItemId,
   onSelect,
   onUpdateItems,

@@ -179,10 +179,10 @@ const isLikelyQuotaStatus = (status: number): boolean => [402, 403, 409, 429, 50
 
 export const ContactPage: React.FC = () => {
     const { t } = useTranslation('common');
-    const location = useLocation();
-    const locale = extractLocaleFromPath(location.pathname) ?? DEFAULT_LOCALE;
+    const routeLocation = useLocation();
+    const locale = extractLocaleFromPath(routeLocation.pathname) ?? DEFAULT_LOCALE;
     const { access, profile } = useAuth();
-    const prefilledContactContext = useMemo(() => resolvePrefilledContactContext(location.state), [location.state]);
+    const prefilledContactContext = useMemo(() => resolvePrefilledContactContext(routeLocation.state), [routeLocation.state]);
 
     const [formState, setFormState] = useState<ContactFormState>({
         reason: prefilledContactContext.reason,
@@ -210,7 +210,7 @@ export const ContactPage: React.FC = () => {
     const nameTouchedRef = useRef(false);
     const emailTouchedRef = useRef(false);
 
-    const currentPath = `${location.pathname}${location.search}`;
+    const currentPath = `${routeLocation.pathname}${routeLocation.search}`;
     const lastVisitedPath = useMemo(() => getLastVisitedPath(currentPath), [currentPath]);
     const appVersion = useMemo(() => {
         const rawVersion = (import.meta.env.VITE_APP_VERSION || '').trim();
