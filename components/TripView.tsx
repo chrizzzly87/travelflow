@@ -3292,7 +3292,7 @@ const useTripViewRender = ({
                         onCloseDetailsDrawer={closeDetailsPanel}
                         onOpenDetailsDrawer={openDetailsPanel}
                         addActivityState={addActivityState}
-                        onCloseAddActivity={() => setAddActivityState({ ...addActivityState, isOpen: false })}
+                        onCloseAddActivity={() => setAddActivityState((prev) => ({ ...prev, isOpen: false }))}
                         onAddActivity={handleAddActivityItem}
                         trip={trip}
                         isAddCityModalOpen={isAddCityModalOpen}

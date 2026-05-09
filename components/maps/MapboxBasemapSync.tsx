@@ -309,8 +309,9 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
   mapViewportSizeRef.current = mapViewportSize;
 
   useEffect(() => {
-    if (!containerRef.current || !googleMap || !accessToken.trim()) return;
-    if (mapboxMapRef.current) return;
+    const noopCleanup = () => {};
+    if (!containerRef.current || !googleMap || !accessToken.trim()) return noopCleanup;
+    if (mapboxMapRef.current) return noopCleanup;
 
     let cancelled = false;
     let hasReportedFatalError = false;
@@ -324,6 +325,10 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
     let introTimeoutId: number | null = null;
     let introSettleTimeoutId: number | null = null;
     let hasCompletedInitialLoad = false;
+    let activeMapboxMap: mapboxgl.Map | null = null;
+    let handleMapboxLoad: (() => void) | null = null;
+    let handleMapboxStyleLoad: (() => void) | null = null;
+    let handleMapboxError: ((error: unknown) => void) | null = null;
 
     const getEffectiveViewportSize = () => resolveMapboxViewportSize({
       mapViewportSize: mapViewportSizeRef.current,
@@ -693,6 +698,7 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
         });
 
         mapboxMapRef.current = mapboxMap;
+        activeMapboxMap = mapboxMap;
         const initialViewportSize = getEffectiveViewportSize();
         if (initialViewportSize) {
           lastViewportSizeRef.current = initialViewportSize;
@@ -710,7 +716,7 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
         stretchMapboxViewport(mapboxMap);
         lastViewportSizeRef.current = null;
 
-        mapboxMap.on('load', () => {
+        handleMapboxLoad = () => {
           if (cancelled || mapboxMapRef.current !== mapboxMap) return;
           hasCompletedInitialLoad = true;
           flushViewportSize();
@@ -738,8 +744,8 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
               scheduleSync();
             }
           });
-        });
-        mapboxMap.on('style.load', () => {
+        };
+        handleMapboxStyleLoad = () => {
           if (cancelled || mapboxMapRef.current !== mapboxMap) return;
           flushViewportSize();
           applyProjection({
@@ -758,11 +764,15 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
               notifyStyleReloadWhenReady();
             });
           }
-        });
-        mapboxMap.on('error', (error) => {
+        };
+        handleMapboxError = (error: unknown) => {
           if (cancelled || mapboxMapRef.current !== mapboxMap) return;
           reportFatalError(error);
-        });
+        };
+
+        mapboxMap.on('load', handleMapboxLoad);
+        mapboxMap.on('style.load', handleMapboxStyleLoad);
+        mapboxMap.on('error', handleMapboxError);
 
         if (interactive) {
           mapboxMap.on('movestart', beginGestureSync);
@@ -774,7 +784,6 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
           mapboxMap.on('rotateend', endGestureSync);
           mapboxMap.on('pitchend', endGestureSync);
         }
-
         if (typeof ResizeObserver !== 'undefined') {
           resizeObserver = new ResizeObserver(() => {
             scheduleViewportResize(false);
@@ -797,6 +806,29 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
     return () => {
       cancelled = true;
       listeners.forEach((listener) => listener?.remove?.());
+      if (activeMapboxMap && handleMapboxLoad) {
+        activeMapboxMap.off('load', handleMapboxLoad);
+      }
+      if (activeMapboxMap && handleMapboxStyleLoad) {
+        activeMapboxMap.off('style.load', handleMapboxStyleLoad);
+      }
+      if (activeMapboxMap && handleMapboxError) {
+        activeMapboxMap.off('error', handleMapboxError);
+      }
+      if (activeMapboxMap && interactive) {
+        activeMapboxMap.off('movestart', beginGestureSync);
+        activeMapboxMap.off('zoomstart', beginGestureSync);
+        activeMapboxMap.off('rotatestart', beginGestureSync);
+        activeMapboxMap.off('pitchstart', beginGestureSync);
+        activeMapboxMap.off('moveend', endGestureSync);
+        activeMapboxMap.off('zoomend', endGestureSync);
+        activeMapboxMap.off('rotateend', endGestureSync);
+        activeMapboxMap.off('pitchend', endGestureSync);
+      }
+      activeMapboxMap = null;
+      handleMapboxLoad = null;
+      handleMapboxStyleLoad = null;
+      handleMapboxError = null;
       resizeObserver?.disconnect();
       if (resizeTimeoutId !== null) {
         window.clearTimeout(resizeTimeoutId);

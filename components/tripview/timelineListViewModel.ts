@@ -50,9 +50,25 @@ export interface TimelineListModel {
 
 const toDayOffset = (offset: number): number => Math.max(0, Math.floor(offset + OFFSET_EPSILON));
 
+const parseLocalDate = (dateValue: string): Date => {
+    const [year, month, day] = dateValue.split('-').map(Number);
+    if (
+        Number.isInteger(year)
+        && Number.isInteger(month)
+        && Number.isInteger(day)
+        && month >= 1
+        && month <= 12
+        && day >= 1
+        && day <= 31
+    ) {
+        return new Date(year, month - 1, day);
+    }
+    return new Date(dateValue);
+};
+
 const getDayDiff = (startDate: string, now: Date): number | null => {
     if (!startDate) return null;
-    const start = new Date(startDate);
+    const start = parseLocalDate(startDate);
     if (Number.isNaN(start.getTime())) return null;
 
     const startAtNoon = new Date(start);

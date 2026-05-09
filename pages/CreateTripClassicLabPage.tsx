@@ -2146,8 +2146,9 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                 )}
 
                                 <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                                    <label className="inline-flex items-start gap-2 rounded-xl bg-transparent px-1.5 py-1.5 text-xs text-slate-700 sm:items-center sm:text-sm">
+                                    <label htmlFor="classic-round-trip-switch" className="inline-flex items-start gap-2 rounded-xl bg-transparent px-1.5 py-1.5 text-xs text-slate-700 sm:items-center sm:text-sm">
                                         <Switch
+                                            id="classic-round-trip-switch"
                                             checked={roundTrip}
                                             onCheckedChange={handleRoundTripChange}
                                             {...getAnalyticsDebugAttributes('create_trip__toggle--roundtrip', { enabled: roundTrip })}
@@ -2158,8 +2159,9 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                         </span>
                                     </label>
 
-                                    <label className={['inline-flex items-start gap-2 rounded-xl bg-transparent px-1.5 py-1.5 text-xs text-slate-700 sm:items-center sm:text-sm', canLockRoute ? '' : 'opacity-50'].join(' ')}>
+                                    <label htmlFor="classic-route-lock-switch" className={['inline-flex items-start gap-2 rounded-xl bg-transparent px-1.5 py-1.5 text-xs text-slate-700 sm:items-center sm:text-sm', canLockRoute ? '' : 'opacity-50'].join(' ')}>
                                         <Switch
+                                            id="classic-route-lock-switch"
                                             checked={routeLock}
                                             onCheckedChange={handleRouteLockChange}
                                             disabled={!canLockRoute}
@@ -2515,9 +2517,9 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                                     top: snapshotRouteGeometry.lastY + 6,
                                                 }}
                                             />
-                                            {snapshotRouteGeometry.segmentMidpoints.map((midpoint, index) => (
+                                            {snapshotRouteGeometry.segmentMidpoints.map((midpoint) => (
                                                 <div
-                                                    key={`route-segment-arrow-${index}`}
+                                                    key={`route-segment-arrow-${midpoint.toFixed(2)}`}
                                                     className="pointer-events-none absolute h-0 w-0 border-l-[4px] border-r-[4px] border-t-[6px] border-l-transparent border-r-transparent border-t-indigo-300/95"
                                                     style={{
                                                         left: snapshotRouteGeometry.axisX - 4,
@@ -2573,7 +2575,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                                 const option = getDestinationOptionByName(destination);
                                                 const isFirst = index === 0;
                                                 return (
-                                                    <div key={`${destination}-${index}`} className="grid grid-cols-[2rem_minmax(0,1fr)] items-start gap-3 pb-4 last:pb-0">
+                                                    <div key={destination} className="grid grid-cols-[2rem_minmax(0,1fr)] items-start gap-3 pb-4 last:pb-0">
                                                         <div
                                                             ref={(node) => setSnapshotNodeRef(index, node)}
                                                             className="relative z-10 flex h-8 w-8 items-center justify-center rounded-full border border-white/30 bg-[#0f173b] text-sm shadow-lg shadow-black/20"

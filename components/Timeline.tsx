@@ -768,15 +768,15 @@ export const Timeline: React.FC<TimelineProps> = ({
                     <div className="flex flex-col h-full">
                         {/* Month Row */}
                         <div className="flex border-b border-gray-100 h-8 overflow-hidden bg-accent-50">
-                             {dateHeaders.months?.map((month, idx) => (
-                                 <div 
-                                    key={idx}
+                            {dateHeaders.months?.map((month) => (
+                                <div
+                                    key={`${month.name}-${month.startIndex}`}
                                     className="flex-shrink-0 flex items-center justify-center font-bold text-xs uppercase tracking-widest text-accent-900 border-r border-accent-100 bg-accent-50 last:border-0"
                                     style={{ width: `${month.widthPx}px` }}
-                                 >
-                                     {month.name}
-                                 </div>
-                             ))}
+                                >
+                                    {month.name}
+                                </div>
+                            ))}
                         </div>
                         {/* Day Row */}
                         <div className="flex flex-1">

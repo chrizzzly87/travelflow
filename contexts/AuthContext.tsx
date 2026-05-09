@@ -223,7 +223,7 @@ export const resolveAuthContextValue = (context: AuthContextValue | null): AuthC
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const location = useLocation();
+    const routeLocation = useLocation();
     const [session, setSession] = useState<Session | null>(null);
     const [access, setAccess] = useState<UserAccessContext | null>(null);
     const [profile, setProfile] = useState<UserProfileRecord | null>(null);
@@ -242,7 +242,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const isBootstrappingRef = useRef(false);
     const profileLoadRequestIdRef = useRef(0);
     const optimisticAuthHintRef = useRef<PersistedSupabaseSessionHint | null>(
-        shouldUseOptimisticMarketingAuthHint(location.pathname)
+        shouldUseOptimisticMarketingAuthHint(routeLocation.pathname)
             ? readPersistedSupabaseSessionHint()
             : null
     );
@@ -675,21 +675,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
             await authService.signOut();
         } finally {
-            if (shouldEnableDevAdminBypass(import.meta.env.DEV, import.meta.env.VITE_DEV_ADMIN_BYPASS, false, location.pathname)) {
+            if (shouldEnableDevAdminBypass(import.meta.env.DEV, import.meta.env.VITE_DEV_ADMIN_BYPASS, false, routeLocation.pathname)) {
                 setIsDevAdminBypassDisabled(true);
             }
             setAccess(null);
             setSession(null);
             resetProfileState();
         }
-    }, [location.pathname, resetProfileState]);
+    }, [routeLocation.pathname, resetProfileState]);
 
     const value = useMemo<AuthContextValue>(() => {
         const bypassEnabled = shouldEnableDevAdminBypass(
             import.meta.env.DEV,
             import.meta.env.VITE_DEV_ADMIN_BYPASS,
             isDevAdminBypassDisabled,
-            location.pathname
+            routeLocation.pathname
         );
         const useDevAdminBypass = shouldUseDevAdminBypassSession(bypassEnabled, session?.user?.id);
         // Development bypass for local admin testing.
@@ -734,7 +734,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             };
         }
 
-        const optimisticAuthHint = isLoading && shouldUseOptimisticMarketingAuthHint(location.pathname)
+        const optimisticAuthHint = isLoading && shouldUseOptimisticMarketingAuthHint(routeLocation.pathname)
             ? optimisticAuthHintRef.current
             : null;
         const effectiveSession = session ?? (
@@ -784,7 +784,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isDevAdminBypassDisabled,
         isLoading,
         isProfileLoading,
-        location.pathname,
+        routeLocation.pathname,
         loginWithOAuth,
         loginWithPassword,
         logout,

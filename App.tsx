@@ -352,15 +352,15 @@ const AppContent: React.FC = () => {
     const [dismissedTermsNoticeVersion, setDismissedTermsNoticeVersion] = useState<string | null>(null);
     const [appLanguage, setAppLanguage] = useState<AppLanguage>(() => getStoredAppLanguage());
     const navigate = useNavigate();
-    const location = useLocation();
+    const routeLocation = useLocation();
     const { snapshot: connectivitySnapshot } = useConnectivityStatus();
     const userSettingsSaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const pendingUserSettingsKeyRef = useRef<string | null>(null);
     const persistedUserSettingsKeyRef = useRef<string | null>(null);
     const shouldLoadDebugger = useDebuggerBootstrap({ appName: APP_NAME, isDev: IS_DEV });
     const isFirstLoadCritical = useMemo(
-        () => isFirstLoadCriticalPath(location.pathname),
-        [location.pathname]
+        () => isFirstLoadCriticalPath(routeLocation.pathname),
+        [routeLocation.pathname]
     );
     const isWarmupEnabled = useWarmupGate({ interactionOnly: isFirstLoadCritical });
     const shouldSuppressSpeculationRules = isFirstLoadCritical && !hasCompletedInitialRouteHandoff();
@@ -372,7 +372,7 @@ const AppContent: React.FC = () => {
 
     useEffect(() => {
         if (isAuthLoading) return;
-        const strippedPath = stripLocalePrefix(location.pathname);
+        const strippedPath = stripLocalePrefix(routeLocation.pathname);
         const isAuthPath = strippedPath === '/login' || strippedPath === '/auth/reset-password';
         if (!isAuthenticated || !access || access.isAnonymous || isAuthPath) return;
 
@@ -380,7 +380,7 @@ const AppContent: React.FC = () => {
             void logout();
             navigate('/login', { replace: true });
         }
-    }, [access, isAuthLoading, isAuthenticated, location.pathname, location.search, logout, navigate]);
+    }, [access, isAuthLoading, isAuthenticated, routeLocation.pathname, routeLocation.search, logout, navigate]);
 
     useEffect(() => {
         if (!isAuthenticated || !access || access.isAnonymous) return;
@@ -478,19 +478,19 @@ const AppContent: React.FC = () => {
             isAnonymous: Boolean(access?.isAnonymous),
             isAdmin: access?.role === 'admin',
             termsAcceptanceRequired: Boolean(access?.termsAcceptanceRequired),
-            pathname: location.pathname,
-            search: location.search,
+            pathname: routeLocation.pathname,
+            search: routeLocation.search,
         })) {
             return;
         }
 
-        const localeFromPath = extractLocaleFromPath(location.pathname);
+        const localeFromPath = extractLocaleFromPath(routeLocation.pathname);
         const activeLocale = localeFromPath ?? normalizeLocale(i18n.resolvedLanguage ?? i18n.language ?? appLanguage);
         const termsPath = buildLocalizedMarketingPath('terms', activeLocale);
         const currentRoutePath = buildPathFromLocationParts({
-            pathname: location.pathname,
-            search: location.search,
-            hash: location.hash,
+            pathname: routeLocation.pathname,
+            search: routeLocation.search,
+            hash: routeLocation.hash,
         });
         const nextPath = isSafeAuthReturnPath(currentRoutePath) ? currentRoutePath : '/create-trip';
         const query = new URLSearchParams();
@@ -498,7 +498,7 @@ const AppContent: React.FC = () => {
         query.set('next', nextPath);
 
         const redirectTarget = `${termsPath}?${query.toString()}`;
-        const currentTarget = `${location.pathname}${location.search}`;
+        const currentTarget = `${routeLocation.pathname}${routeLocation.search}`;
         if (currentTarget === redirectTarget) return;
 
         navigate(redirectTarget, { replace: true });
@@ -509,22 +509,22 @@ const AppContent: React.FC = () => {
         i18n.resolvedLanguage,
         isAuthLoading,
         isAuthenticated,
-        location.hash,
-        location.pathname,
-        location.search,
+        routeLocation.hash,
+        routeLocation.pathname,
+        routeLocation.search,
         navigate,
     ]);
 
     const resolvedRouteLocale = useMemo<AppLanguage>(() => {
-        const localeFromPath = extractLocaleFromPath(location.pathname);
-        if (isToolRoute(location.pathname)) {
+        const localeFromPath = extractLocaleFromPath(routeLocation.pathname);
+        if (isToolRoute(routeLocation.pathname)) {
             if (localeFromPath) return localeFromPath;
             return normalizeLocale(i18n.resolvedLanguage ?? i18n.language ?? appLanguage);
         }
 
         if (localeFromPath) return localeFromPath;
         return DEFAULT_LOCALE;
-    }, [appLanguage, i18n.language, i18n.resolvedLanguage, location.pathname]);
+    }, [appLanguage, i18n.language, i18n.resolvedLanguage, routeLocation.pathname]);
 
     const termsNoticeState = useMemo(
         () => resolveTermsNoticeState({
@@ -545,8 +545,8 @@ const AppContent: React.FC = () => {
         isAnonymous: Boolean(access?.isAnonymous),
         isAdmin: access?.role === 'admin',
         termsAcceptanceRequired: Boolean(access?.termsAcceptanceRequired),
-        pathname: location.pathname,
-        search: location.search,
+        pathname: routeLocation.pathname,
+        search: routeLocation.search,
     });
 
     const termsNoticeVersion = access?.termsCurrentVersion ?? null;
@@ -556,8 +556,8 @@ const AppContent: React.FC = () => {
         && dismissedTermsNoticeVersion !== termsNoticeVersion
     );
     const shouldShowForceTermsNotice = termsNoticeState === 'force';
-    const isTermsRoute = stripLocalePrefix(location.pathname) === '/terms';
-    const shouldEvaluateTermsGate = isToolRoute(location.pathname) && !isTermsRoute;
+    const isTermsRoute = stripLocalePrefix(routeLocation.pathname) === '/terms';
+    const shouldEvaluateTermsGate = isToolRoute(routeLocation.pathname) && !isTermsRoute;
     const canResolveTermsGate = !isAuthLoading && (!isAuthenticated || Boolean(access));
     const shouldBlockForTermsGate = shouldEvaluateTermsGate && (!canResolveTermsGate || forceRedirectApplies);
     const shouldRenderTermsNotice = (
@@ -584,9 +584,9 @@ const AppContent: React.FC = () => {
         const query = new URLSearchParams();
         if (mode === 'force') {
             const currentRoutePath = buildPathFromLocationParts({
-                pathname: location.pathname,
-                search: location.search,
-                hash: location.hash,
+                pathname: routeLocation.pathname,
+                search: routeLocation.search,
+                hash: routeLocation.hash,
             });
             const nextPath = isSafeAuthReturnPath(currentRoutePath) ? currentRoutePath : '/create-trip';
             query.set('accept', 'required');
@@ -596,7 +596,7 @@ const AppContent: React.FC = () => {
         }
         const target = query.size > 0 ? `${termsPath}?${query.toString()}` : termsPath;
         navigate(target, { replace: false });
-    }, [location.hash, location.pathname, location.search, navigate, resolvedRouteLocale]);
+    }, [routeLocation.hash, routeLocation.pathname, routeLocation.search, navigate, resolvedRouteLocale]);
 
     const pageTitleLabels = useMemo(() => ({
         features: t('nav.features', { ns: 'common' }),
@@ -624,10 +624,10 @@ const AppContent: React.FC = () => {
     }), [t, i18n.resolvedLanguage]);
 
     const blogPostTitle = useMemo(() => {
-        const blogSlug = getBlogSlugFromPath(location.pathname);
+        const blogSlug = getBlogSlugFromPath(routeLocation.pathname);
         if (!blogSlug) return null;
         return getBlogPostBySlugWithFallback(blogSlug, resolvedRouteLocale)?.title ?? null;
-    }, [location.pathname, resolvedRouteLocale]);
+    }, [routeLocation.pathname, resolvedRouteLocale]);
 
     // DB sync (session, upload, sync, user settings) is deferred to trip-related
     // routes via useDbSync to avoid unnecessary network calls on marketing pages.
@@ -642,31 +642,31 @@ const AppContent: React.FC = () => {
     }, [i18n, resolvedRouteLocale]);
 
     useEffect(() => {
-        if (isToolRoute(location.pathname)) return;
-        const localeFromPath = extractLocaleFromPath(location.pathname);
+        if (isToolRoute(routeLocation.pathname)) return;
+        const localeFromPath = extractLocaleFromPath(routeLocation.pathname);
         if (!localeFromPath) return;
         if (localeFromPath === appLanguage) return;
         setAppLanguage(localeFromPath);
-    }, [appLanguage, location.pathname]);
+    }, [appLanguage, routeLocation.pathname]);
 
     useEffect(() => {
-        if (!isToolRoute(location.pathname)) return;
-        const localeFromPath = extractLocaleFromPath(location.pathname);
+        if (!isToolRoute(routeLocation.pathname)) return;
+        const localeFromPath = extractLocaleFromPath(routeLocation.pathname);
         const resolvedToolLocale = localeFromPath ?? normalizeLocale(i18n.resolvedLanguage ?? i18n.language);
         if (resolvedToolLocale === appLanguage) return;
         setAppLanguage(resolvedToolLocale);
-    }, [appLanguage, i18n.language, i18n.resolvedLanguage, location.pathname]);
+    }, [appLanguage, i18n.language, i18n.resolvedLanguage, routeLocation.pathname]);
 
     useEffect(() => {
         const nextTitle = resolvePageTitle({
-            pathname: location.pathname,
+            pathname: routeLocation.pathname,
             appName: APP_NAME,
             labels: pageTitleLabels,
             tripTitle: trip?.title || null,
             blogPostTitle,
         });
         setCanonicalDocumentTitle(nextTitle);
-    }, [blogPostTitle, location.pathname, pageTitleLabels, trip?.title]);
+    }, [blogPostTitle, routeLocation.pathname, pageTitleLabels, trip?.title]);
 
     const isInitialLanguageRef = useRef(true);
     useEffect(() => {

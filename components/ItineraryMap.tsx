@@ -1796,16 +1796,20 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     }, [mapboxBasemapAvailabilityKey]);
 
     useEffect(() => {
-        if (!mapInitialized || !googleMapRef.current) return;
-        const mapInstance = googleMapRef.current as google.maps.Map;
-        const syncZoom = () => {
-            const nextZoom = mapInstance.getZoom?.();
-            setMapZoomLevel(Number.isFinite(nextZoom) ? Number(nextZoom) : null);
-        };
-        syncZoom();
-        const listener = mapInstance.addListener?.('zoom_changed', syncZoom);
+        let listener: google.maps.MapsEventListener | null = null;
+        if (mapInitialized && googleMapRef.current) {
+            const mapInstance = googleMapRef.current as google.maps.Map;
+            const syncZoom = () => {
+                const nextZoom = mapInstance.getZoom?.();
+                setMapZoomLevel(Number.isFinite(nextZoom) ? Number(nextZoom) : null);
+            };
+            syncZoom();
+            listener = mapInstance.addListener('zoom_changed', syncZoom);
+        }
         return () => {
-            listener?.remove?.();
+            if (listener) {
+                window.google?.maps?.event?.removeListener(listener);
+            }
         };
     }, [mapInitialized]);
 
@@ -1857,33 +1861,68 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
 
     // Update Markers & Routes
     useEffect(() => {
-        if (!mapInitialized || !googleMapRef.current || !window.google?.maps) return;
+        let isEffectDisposed = false;
         const mapboxMap = isMapboxBasemapEnabled ? mapboxMapRef.current : null;
         const mapboxModule = isMapboxBasemapEnabled ? mapboxModuleRef.current : null;
-        if (isMapboxBasemapEnabled && !mapboxMap) return;
-        if (isMapboxBasemapEnabled && !mapboxModule) return;
-        if (isMapboxBasemapEnabled && (
-            !isMapboxSurfaceReady
-            || !isMapboxStyleReadyForRuntimeMutations(mapboxMap)
-        )) return;
-        if (!isMapboxBasemapEnabled && !window.google.maps.OverlayView) return;
+        const canRenderMapVisuals = Boolean(
+            mapInitialized
+            && googleMapRef.current
+            && window.google?.maps
+            && (!isMapboxBasemapEnabled || mapboxMap)
+            && (!isMapboxBasemapEnabled || mapboxModule)
+            && (!isMapboxBasemapEnabled || (
+                isMapboxSurfaceReady
+                && mapboxMap
+                && isMapboxStyleReadyForRuntimeMutations(mapboxMap)
+            ))
+            && (isMapboxBasemapEnabled || window.google.maps.OverlayView)
+        );
+
+        const clearRenderedMapVisuals = () => {
+            markersRef.current.forEach((marker) => marker.setMap(null));
+            markersRef.current = [];
+            activityMarkerMetaRef.current.forEach(({ marker }) => marker.setMap(null));
+            activityMarkerMetaRef.current = [];
+            activityMarkerPositionByIdRef.current = new Map();
+            routesRef.current.forEach((route) => route.setMap(null));
+            routesRef.current = [];
+            transportMarkerMetaRef.current.forEach(({ marker }) => marker.setMap(null));
+            transportMarkerMetaRef.current = [];
+            cityLabelOverlaysRef.current.forEach((overlay) => overlay.setMap(null));
+            cityLabelOverlaysRef.current = [];
+            cityMarkerMetaRef.current = [];
+        };
 
         // 1. Clear existing markers & routes
-        markersRef.current.forEach(m => m.setMap(null));
-        markersRef.current = [];
-        activityMarkerMetaRef.current.forEach(({ marker }) => marker.setMap(null));
-        activityMarkerMetaRef.current = [];
-        activityMarkerPositionByIdRef.current = new Map();
-        routesRef.current.forEach(r => r.setMap(null));
-        routesRef.current = [];
-        transportMarkerMetaRef.current.forEach(({ marker }) => marker.setMap(null));
-        transportMarkerMetaRef.current = [];
-        cityLabelOverlaysRef.current.forEach(o => o.setMap(null));
-        cityLabelOverlaysRef.current = [];
-        cityMarkerMetaRef.current = [];
-        let isEffectDisposed = false;
+        clearRenderedMapVisuals();
+        if (!canRenderMapVisuals) {
+            return () => {
+                isEffectDisposed = true;
+                clearRenderedMapVisuals();
+            };
+        }
         let routeVisualIndex = 0;
         const isEffectActive = () => !isEffectDisposed;
+        let markerDomListeners: Array<{
+            target: HTMLDivElement;
+            type: 'click' | 'mouseenter' | 'mouseleave';
+            listener: EventListener;
+        }> = [];
+        const registerMarkerDomListener = (
+            target: HTMLDivElement,
+            type: 'click' | 'mouseenter' | 'mouseleave',
+            listener: EventListener,
+        ) => {
+            target.addEventListener(type, listener);
+            markerDomListeners.push({ target, type, listener });
+        };
+        const removeMarkerDomListeners = (target: HTMLDivElement) => {
+            markerDomListeners = markerDomListeners.filter((entry) => {
+                if (entry.target !== target) return true;
+                entry.target.removeEventListener(entry.type, entry.listener);
+                return false;
+            });
+        };
 
         const createOverlayMarker = ({
             position,
@@ -1924,16 +1963,16 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             let currentHtml = html;
             let currentZIndex = zIndex;
             let tooltipNode: HTMLDivElement | null = null;
-            const clickHandler = (event: MouseEvent) => {
+            const clickHandler: EventListener = (event) => {
                 event.stopPropagation();
                 onClick?.();
             };
-            const showTooltipHandler = () => {
+            const showTooltipHandler: EventListener = () => {
                 if (!tooltipNode) return;
                 tooltipNode.style.opacity = '1';
                 tooltipNode.style.transform = 'translate(-50%, calc(-100% - 14px))';
             };
-            const hideTooltipHandler = () => {
+            const hideTooltipHandler: EventListener = () => {
                 if (!tooltipNode) return;
                 tooltipNode.style.opacity = '0';
                 tooltipNode.style.transform = 'translate(-50%, calc(-100% - 8px))';
@@ -1948,12 +1987,12 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 markerDiv.style.zIndex = `${currentZIndex}`;
                 markerDiv.innerHTML = currentHtml;
                 if (clickable) {
-                    markerDiv.addEventListener('click', clickHandler);
+                    registerMarkerDomListener(markerDiv, 'click', clickHandler);
                 }
                 if (tooltipText) {
                     tooltipNode = markerDiv.querySelector('[data-role="activity-marker-tooltip"]');
-                    markerDiv.addEventListener('mouseenter', showTooltipHandler);
-                    markerDiv.addEventListener('mouseleave', hideTooltipHandler);
+                    registerMarkerDomListener(markerDiv, 'mouseenter', showTooltipHandler);
+                    registerMarkerDomListener(markerDiv, 'mouseleave', hideTooltipHandler);
                 }
                 const panes = this.getPanes();
                 const targetPane = clickable
@@ -1983,13 +2022,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
 
             overlay.onRemove = function onRemove() {
                 if (!markerDiv) return;
-                if (clickable) {
-                    markerDiv.removeEventListener('click', clickHandler);
-                }
-                if (tooltipText) {
-                    markerDiv.removeEventListener('mouseenter', showTooltipHandler);
-                    markerDiv.removeEventListener('mouseleave', hideTooltipHandler);
-                }
+                removeMarkerDomListeners(markerDiv);
                 markerDiv.remove();
                 markerDiv = null;
                 tooltipNode = null;
@@ -2818,6 +2851,11 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         }
         return () => {
             isEffectDisposed = true;
+            markerDomListeners.forEach(({ target, type, listener }) => {
+                target.removeEventListener(type, listener);
+            });
+            markerDomListeners = [];
+            clearRenderedMapVisuals();
         };
 
     }, [activeStyle, effectiveMarkerRenderProfile, isMapboxBasemapEnabled, isMapboxSurfaceReady, isPaywalled, mapInitialized, mapRenderSignature, mapboxStyleReloadNonce, routeMode, showCityNames]); 

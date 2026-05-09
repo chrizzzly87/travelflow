@@ -51,7 +51,7 @@ const resolveTripInitialMapFocusQuery = (trip: ITrip): string | undefined => {
     const locations = trip.items
         .filter((item) => item.type === 'city' && typeof item.location === 'string')
         .map((item) => item.location?.trim() ?? '')
-        .filter((location) => location.length > 0);
+        .filter((location) => routeLocation.length > 0);
     const uniqueLocations = Array.from(new Set(locations));
     if (uniqueLocations.length === 0) return undefined;
     return uniqueLocations.join(' || ');
@@ -127,7 +127,7 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
     onLanguageLoaded,
 }) => {
     const { tripId } = useParams();
-    const location = useLocation();
+    const routeLocation = useLocation();
     const navigate = useNavigate();
     const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
     const { snapshot: connectivitySnapshot } = useConnectivityStatus();
@@ -136,9 +136,9 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
     const latestViewSettingsRef = useRef<IViewSettings | undefined>(undefined);
     const hasInSessionViewOverrideRef = useRef(false);
     const versionId = useMemo(() => {
-        const params = new URLSearchParams(location.search);
+        const params = new URLSearchParams(routeLocation.search);
         return params.get('v');
-    }, [location.search]);
+    }, [routeLocation.search]);
     const isDbVersionLookup = Boolean(versionId && isUuid(versionId));
 
     const [viewSettings, setViewSettings] = useState<IViewSettings | undefined>(undefined);
@@ -163,9 +163,9 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
         const load = async () => {
             const connectivityState = connectivitySnapshot.state;
             const currentPath = buildPathFromLocationParts({
-                pathname: location.pathname,
-                search: location.search,
-                hash: location.hash,
+                pathname: routeLocation.pathname,
+                search: routeLocation.search,
+                hash: routeLocation.hash,
             });
 
             // Preserve in-session view preferences during connectivity refreshes
@@ -312,9 +312,9 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
     }, [
         isAuthLoading,
         isAuthenticated,
-        location.hash,
-        location.pathname,
-        location.search,
+        routeLocation.hash,
+        routeLocation.pathname,
+        routeLocation.search,
         navigate,
         onTripLoaded,
         tripId,

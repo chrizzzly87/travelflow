@@ -26,8 +26,11 @@ const isDismissedForSession = (): boolean => {
 
 export const TranslationNoticeBanner: React.FC = () => {
     const { t } = useTranslation('common');
-    const location = useLocation();
-    const activeLocale = useMemo(() => extractLocaleFromPath(location.pathname) ?? DEFAULT_LOCALE, [location.pathname]);
+    const routeLocation = useLocation();
+    const activeLocale = useMemo(
+        () => extractLocaleFromPath(routeLocation.pathname) ?? DEFAULT_LOCALE,
+        [routeLocation.pathname]
+    );
     const [dismissed, setDismissed] = useState<boolean>(() => isDismissedForSession());
 
     if (activeLocale === DEFAULT_LOCALE || dismissed) return null;
