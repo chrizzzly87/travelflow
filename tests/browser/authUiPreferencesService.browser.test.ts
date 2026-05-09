@@ -6,6 +6,7 @@ import {
   getLastUsedOAuthProvider,
   setLastUsedOAuthProvider,
   setPendingOAuthProvider,
+  subscribeLastUsedOAuthProvider,
 } from '../../services/authUiPreferencesService';
 import { setFixedSystemTime } from '../helpers/time';
 
@@ -15,6 +16,21 @@ describe('services/authUiPreferencesService', () => {
 
     setLastUsedOAuthProvider('google');
     expect(getLastUsedOAuthProvider()).toBe('google');
+  });
+
+  it('notifies subscribers when the last used oauth provider changes in the same tab', () => {
+    let notificationCount = 0;
+    const unsubscribe = subscribeLastUsedOAuthProvider(() => {
+      notificationCount += 1;
+    });
+
+    setLastUsedOAuthProvider('apple');
+
+    expect(notificationCount).toBe(1);
+    unsubscribe();
+
+    setLastUsedOAuthProvider('google');
+    expect(notificationCount).toBe(1);
   });
 
   it('returns null for malformed stored last-used payload', () => {

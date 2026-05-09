@@ -13,6 +13,7 @@ interface StoredOAuthPreference {
 
 const LAST_OAUTH_PROVIDER_STORAGE_KEY = 'tf_auth_last_oauth_provider_v1';
 const PENDING_OAUTH_PROVIDER_STORAGE_KEY = 'tf_auth_pending_oauth_provider_v1';
+const LAST_OAUTH_PROVIDER_CHANGE_EVENT = 'tf:auth-last-oauth-provider-updated';
 const MAX_PENDING_OAUTH_AGE_MS = 1000 * 60 * 15;
 
 const isValidProvider = (value: unknown): value is OAuthProviderPreference => {
@@ -39,6 +40,24 @@ export const setLastUsedOAuthProvider = (provider: OAuthProviderPreference): voi
         updatedAt: Date.now(),
     };
     writeLocalStorageItem(LAST_OAUTH_PROVIDER_STORAGE_KEY, JSON.stringify(payload));
+    window.dispatchEvent(new Event(LAST_OAUTH_PROVIDER_CHANGE_EVENT));
+};
+
+export const subscribeLastUsedOAuthProvider = (listener: () => void): (() => void) => {
+    if (typeof window === 'undefined') return () => undefined;
+
+    const handleStorage = (event: StorageEvent) => {
+        if (event.key && event.key !== LAST_OAUTH_PROVIDER_STORAGE_KEY) return;
+        listener();
+    };
+    const handleLocalChange = () => listener();
+
+    window.addEventListener('storage', handleStorage);
+    window.addEventListener(LAST_OAUTH_PROVIDER_CHANGE_EVENT, handleLocalChange);
+    return () => {
+        window.removeEventListener('storage', handleStorage);
+        window.removeEventListener(LAST_OAUTH_PROVIDER_CHANGE_EVENT, handleLocalChange);
+    };
 };
 
 export const setPendingOAuthProvider = (provider: OAuthProviderPreference): void => {

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import {
     ArrowRight,
     SpinnerGap as Loader2,
@@ -21,6 +21,7 @@ import {
     clearPendingOAuthProvider,
     getLastUsedOAuthProvider,
     setPendingOAuthProvider,
+    subscribeLastUsedOAuthProvider,
 } from '../../services/authUiPreferencesService';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
@@ -127,7 +128,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     const [infoMessage, setInfoMessage] = useState<string | null>(null);
     const [showAuthSupportMessage, setShowAuthSupportMessage] = useState(false);
     const [rememberLogin, setRememberLogin] = useState<boolean>(() => isRememberLoginEnabled());
-    const [lastUsedProvider, setLastUsedProviderState] = useState<OAuthProviderId | null>(() => getLastUsedOAuthProvider());
+    const lastUsedProvider = useSyncExternalStore(
+        subscribeLastUsedOAuthProvider,
+        getLastUsedOAuthProvider,
+        () => null
+    );
     const [sessionRestoreState, setSessionRestoreState] = useState<'idle' | 'restoring' | 'restored'>('idle');
     const hasHandledSuccessRef = useRef(false);
     const hasInteractiveAttemptRef = useRef(false);
@@ -226,14 +231,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             document.body.style.overflow = previousOverflow;
         };
     }, [isOpen]);
-
-    useEffect(() => {
-        const handleStorageUpdate = () => {
-            setLastUsedProviderState(getLastUsedOAuthProvider());
-        };
-        window.addEventListener('storage', handleStorageUpdate);
-        return () => window.removeEventListener('storage', handleStorageUpdate);
-    }, []);
 
     useEffect(() => {
         if (!isOpen || hasInteractiveAttemptRef.current) return;

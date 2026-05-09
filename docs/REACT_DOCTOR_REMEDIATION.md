@@ -10,7 +10,7 @@ Improve React Doctor health across the full repository while keeping this PR foc
 
 - Required: zero React Doctor error findings in the diff scan.
 - Required: zero React Doctor error findings in the full scan.
-- Target: move the full repository score toward `60 / 100` without broad visual churn.
+- Target: keep the PR diff at or above `75 / 100` while moving the full repository score toward `60 / 100` without broad visual churn.
 - Guardrail: only change files that React Doctor flagged or repo instructions require.
 
 ## Current Score Snapshot
@@ -19,8 +19,8 @@ Latest scanner used: `react-doctor v0.1.4`, resolved through `pnpm dlx react-doc
 
 - Initial user baseline: `49 / 100`, `73` errors, `5749` warnings, `356/814` files.
 - After core-page fixes: `51 / 100`, `33` errors, `5752` warnings, `356/821` files.
-- Current full scan: `54 / 100`, `0` errors, `5745` warnings, `354/821` files.
-- Current diff scan: `76 / 100`, `0` errors, `1536` warnings, `35/64` files.
+- Current full scan: `55 / 100`, `0` errors, `5737` warnings, `353/821` files.
+- Current diff scan: `76 / 100`, `0` errors, `1613` warnings, `38/77` files.
 
 ## Completed Changes
 
@@ -34,16 +34,21 @@ Latest scanner used: `react-doctor v0.1.4`, resolved through `pnpm dlx react-doc
 - [x] Hoisted default array props for timeline and season-strip components.
 - [x] Replaced one immutable sort spread with `toSorted()`.
 - [x] Cached month formatting work and replaced an index key in the ideal-travel timeline.
+- [x] Removed derived reset effects from example-trip and profile-trip map image state.
+- [x] Replaced share-link trip-id reset effects with active-trip derived state.
+- [x] Replaced auth last-used-provider storage sync effects with `useSyncExternalStore`.
+- [x] Fixed React DOM `fetchPriority` prop casing in the plane-window animation.
+- [x] Added jsdom storage fallback setup so local browser tests can validate storage flows reliably.
 
 ## Validation Log
 
 - [x] `pnpm dlx react-doctor@latest . --verbose`
-  - Result: `54 / 100`, `0` errors, `5745` warnings, `354/821` files.
-  - Share: `https://www.react.doctor/share?p=travelflow&s=54&w=5745&f=354`
+  - Result: `55 / 100`, `0` errors, `5737` warnings, `353/821` files.
+  - Share: `https://www.react.doctor/share?p=travelflow&s=55&w=5737&f=353`
 
 - [x] `pnpm dlx react-doctor@latest . --verbose --diff`
-  - Result: `76 / 100`, `0` errors, `1536` warnings, `35/64` files.
-  - Share: `https://www.react.doctor/share?p=travelflow&s=76&w=1536&f=35`
+  - Result: `76 / 100`, `0` errors, `1613` warnings, `38/77` files.
+  - Share: `https://www.react.doctor/share?p=travelflow&s=76&w=1613&f=38`
 
 - [x] `pnpm test:run tests/browser/pricingPage.browser.test.ts tests/browser/admin/adminAirportsPage.browser.test.ts tests/browser/admin/adminUsersPage.softDeleteToast.browser.test.ts`
   - Result: passed, `29` tests.
@@ -55,15 +60,16 @@ Latest scanner used: `react-doctor v0.1.4`, resolved through `pnpm dlx react-doc
   - Command: `pnpm test:run tests/browser/navigation/accountMenu.browser.test.ts tests/browser/navigation/mobileMenu.browser.test.ts tests/browser/navigation/siteHeader.authHint.browser.test.ts tests/browser/navigation/siteHeader.localeSwitch.browser.test.ts tests/browser/tripview/TripFloatingMapPreview.browser.test.ts tests/browser/VerticalTimeline.browser.test.ts tests/browser/TimelineBlock.browser.test.ts tests/browser/useDbSync.browser.test.ts test/components/OnPageDebuggerMapRuntime.test.tsx test/browser/marketing/FaqPage.browser.test.tsx tests/browser/routes/tripLoaderRoute.browser.test.ts tests/browser/routes/sharedTripLoaderRoute.browser.test.ts tests/browser/routes/exampleTripLoaderRoute.browser.test.ts tests/browser/itineraryMapControls.browser.test.ts tests/unit/fakeAirportTicket.test.ts tests/unit/timelineListViewModel.test.ts`
   - Result: passed, `75` tests.
 
+- [x] Focused effect/storage regression suite
+  - Command: `pnpm test:run tests/browser/authUiPreferencesService.browser.test.ts tests/browser/authModal.browser.test.ts tests/browser/loginPage.browser.test.ts tests/browser/profileTripCard.browser.test.ts tests/browser/tripview/useTripShareLifecycle.browser.test.ts`
+  - Result: passed, `26` tests.
+
 - [x] `pnpm build:netlify`
   - Result: passed through validators, sitemap generation, and Vite production build.
-  - Notes: emitted existing CSS/view-transition, dynamic-import, and chunk-size warnings.
+  - Notes: emitted existing release-version validation warnings, CSS/view-transition, dynamic-import, and chunk-size warnings.
 
-- [ ] `pnpm build`
-  - Result: attempted twice, both stopped during `test:core` coverage before build steps.
-  - First attempt: `tests/browser/tripManagerArchive.browser.test.ts` rendered empty state once, and `tests/browser/admin/adminAirportsPage.browser.test.ts` timed out once.
-  - Second attempt: `tests/browser/pricingPage.browser.test.ts`, `tests/browser/admin/adminAirportsPage.browser.test.ts`, and `tests/browser/admin/adminUsersPage.softDeleteToast.browser.test.ts` failed under the full coverage run.
-  - Follow-up: every failing file passed in isolation, so these are tracked as full-suite timing/state flakes rather than React Doctor remediation regressions.
+- [x] `pnpm test:core`
+  - Result: passed, `301` test files, `1353` tests, `1` skipped.
 
 ## Prioritized Todo
 
@@ -103,7 +109,7 @@ Latest scanner used: `react-doctor v0.1.4`, resolved through `pnpm dlx react-doc
 
 - [ ] `react/no-unknown-property`
   - Scope: `PlaneWindowAnimation`.
-  - Approach: use the React-supported `fetchPriority` prop.
+  - Status: fixed with React-supported `fetchPriority` casing.
 
 ### P3: Re-render And Effect Hygiene
 
@@ -116,13 +122,19 @@ Latest scanner used: `react-doctor v0.1.4`, resolved through `pnpm dlx react-doc
 
 - [ ] `prefer-use-sync-external-store`
   - Scope: auth/provider preference state synced from external stores.
-  - Approach: only change when the store has a clear subscribe/getSnapshot API.
+  - Status: fixed for auth/provider preference state; `ProfileStampsPage` trip storage remains.
+  - Approach: only change remaining stores when they have a cached subscribe/getSnapshot API.
+
+- [ ] `no-derived-state-effect`
+  - Status: fixed for example-trip/profile-trip image state and share-link trip changes.
+  - Remaining: `useTripOverlayController` route/mobile reset flow.
+  - Approach: convert overlay modal/map expansion state to an explicit reducer or keyed child controller.
 
 ### P4: Broad Warning Backlog
 
 - [ ] `design-no-default-tailwind-palette`
   - Count: roughly four thousand warnings.
-  - Reason deferred: this is broad visual/design-token work and should be planned separately to avoid a large unintended redesign.
+  - Reason deferred: this is the main blocker for `>75 / 100` full-repo score, but a direct sweep touched 164 files, lowered the diff score, and barely moved the full score. Plan this as a dedicated design-token migration with visual review.
 
 - [ ] `no-giant-component`, `prefer-useReducer`, `no-cascading-set-state`, `no-effect-chain`
   - Reason deferred: these are architectural refactors across large screens such as trip view, checkout, profile settings, and the debugger. They need focused tests and smaller PRs.

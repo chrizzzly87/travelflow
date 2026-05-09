@@ -80,4 +80,40 @@ describe('components/tripview/useTripShareLifecycle', () => {
       expect(result.current.shareUrlsByMode).toEqual({});
     });
   });
+
+  it('hydrates the active trip links after the trip id changes without a reset effect', () => {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      view: 'https://example.com/trip-1',
+    }));
+    window.localStorage.setItem('tf_share_links:trip-2', JSON.stringify({
+      edit: 'https://example.com/trip-2-edit',
+    }));
+
+    const { result, rerender } = renderHook(
+      ({ tripId }: { tripId: string }) => useTripShareLifecycle({
+        tripId,
+        canShare: true,
+        isTripLockedByExpiry: false,
+      }),
+      { initialProps: { tripId: 'trip-1' } },
+    );
+
+    expect(result.current.shareUrlsByMode).toEqual({
+      view: 'https://example.com/trip-1',
+    });
+
+    rerender({ tripId: 'trip-2' });
+
+    expect(result.current.shareUrlsByMode).toEqual({
+      edit: 'https://example.com/trip-2-edit',
+    });
+
+    act(() => {
+      result.current.setShareUrlsByMode({ view: 'https://example.com/trip-2-view' });
+    });
+
+    expect(result.current.shareUrlsByMode).toEqual({
+      view: 'https://example.com/trip-2-view',
+    });
+  });
 });

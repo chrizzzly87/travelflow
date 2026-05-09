@@ -123,6 +123,7 @@ vi.mock('../../services/authUiPreferencesService', () => ({
   clearPendingOAuthProvider: vi.fn(),
   getLastUsedOAuthProvider: () => null,
   setPendingOAuthProvider: vi.fn(),
+  subscribeLastUsedOAuthProvider: () => () => undefined,
 }));
 
 vi.mock('../../services/authSessionPersistenceService', () => ({

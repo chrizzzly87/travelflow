@@ -113,15 +113,8 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
   isSelectable = false,
   isSelected = false,
 }) => {
-  const [mapLoaded, setMapLoaded] = React.useState(false);
-  const [mapError, setMapError] = React.useState(false);
   const [isNearViewport, setIsNearViewport] = React.useState(false);
   const cardRef = React.useRef<HTMLElement | null>(null);
-
-  React.useEffect(() => {
-    setMapLoaded(false);
-    setMapError(false);
-  }, [trip.id, locale]);
 
   React.useEffect(() => {
     const node = cardRef.current;
@@ -148,6 +141,14 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
     () => (isNearViewport ? buildMiniMapUrl(trip, locale) : null),
     [isNearViewport, trip, locale]
   );
+  const [mapStatus, setMapStatus] = React.useState<{
+    key: string;
+    loaded: boolean;
+    error: boolean;
+  }>({ key: '', loaded: false, error: false });
+  const mapStatusKey = `${trip.id}:${locale}:${mapUrl || ''}`;
+  const mapLoaded = mapStatus.key === mapStatusKey && mapStatus.loaded;
+  const mapError = mapStatus.key === mapStatusKey && mapStatus.error;
   const summaryLine = React.useMemo(() => formatTripSummaryLine(trip, locale), [trip, locale]);
   const dateRange = React.useMemo(() => formatTripDateRange(trip, locale), [trip, locale]);
   const tripSpan = React.useMemo(() => getTripSpan(trip), [trip]);
@@ -226,8 +227,8 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
                 alt={`Map preview for ${trip.title}`}
                 className={`h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.01] ${isExpired ? 'opacity-70 grayscale-[0.28]' : ''}`}
                 loading="lazy"
-                onLoad={() => setMapLoaded(true)}
-                onError={() => setMapError(true)}
+                onLoad={() => setMapStatus({ key: mapStatusKey, loaded: true, error: false })}
+                onError={() => setMapStatus({ key: mapStatusKey, loaded: false, error: true })}
               />
             </>
           ) : (

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 
 import { DB_ENABLED } from '../../config/db';
 import {
@@ -61,15 +61,36 @@ export const useTripShareLifecycle = ({
 }: UseTripShareLifecycleOptions): UseTripShareLifecycleResult => {
     const [isShareOpen, setIsShareOpen] = useState(false);
     const [shareMode, setShareMode] = useState<ShareMode>('view');
-    const [shareUrlsByMode, setShareUrlsByMode] = useState<Partial<Record<ShareMode, string>>>(
-        () => readStoredShareLinks(tripId)
-    );
+    const [shareUrlsState, setShareUrlsState] = useState<{
+        tripId: string;
+        urls: Partial<Record<ShareMode, string>>;
+    }>(() => ({ tripId, urls: readStoredShareLinks(tripId) }));
     const [isGeneratingShare, setIsGeneratingShare] = useState(false);
-    const lastSyncedSharingLockRef = useRef<boolean | null>(null);
+    const lastSyncedSharingLockRef = useRef<{ tripId: string; value: boolean | null }>({
+        tripId,
+        value: null,
+    });
+    const storedShareUrlsForTrip = useMemo(() => readStoredShareLinks(tripId), [tripId]);
+    const shareUrlsByMode = shareUrlsState.tripId === tripId
+        ? shareUrlsState.urls
+        : storedShareUrlsForTrip;
 
-    useEffect(() => {
-        setShareUrlsByMode(readStoredShareLinks(tripId));
-    }, [tripId]);
+    const setShareUrlsByMode = useCallback<Dispatch<SetStateAction<Partial<Record<ShareMode, string>>>>>(
+        (nextShareUrls) => {
+            setShareUrlsState((current) => {
+                const currentUrls = current.tripId === tripId
+                    ? current.urls
+                    : readStoredShareLinks(tripId);
+                return {
+                    tripId,
+                    urls: typeof nextShareUrls === 'function'
+                        ? nextShareUrls(currentUrls)
+                        : nextShareUrls,
+                };
+            });
+        },
+        [tripId]
+    );
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
@@ -77,11 +98,10 @@ export const useTripShareLifecycle = ({
     }, [tripId, shareUrlsByMode]);
 
     useEffect(() => {
-        lastSyncedSharingLockRef.current = null;
-    }, [tripId]);
-
-    useEffect(() => {
         if (!canShare) return;
+        if (lastSyncedSharingLockRef.current.tripId !== tripId) {
+            lastSyncedSharingLockRef.current = { tripId, value: null };
+        }
         if (!DB_ENABLED) {
             if (isTripLockedByExpiry) {
                 setIsShareOpen(false);
@@ -91,8 +111,8 @@ export const useTripShareLifecycle = ({
             return;
         }
 
-        if (lastSyncedSharingLockRef.current === isTripLockedByExpiry) return;
-        lastSyncedSharingLockRef.current = isTripLockedByExpiry;
+        if (lastSyncedSharingLockRef.current.value === isTripLockedByExpiry) return;
+        lastSyncedSharingLockRef.current = { tripId, value: isTripLockedByExpiry };
 
         let canceled = false;
         void (async () => {

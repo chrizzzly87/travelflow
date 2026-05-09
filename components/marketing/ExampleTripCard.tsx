@@ -79,8 +79,15 @@ export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({
     const staticFallbackSrc = card.mapImagePath
         ? `${card.mapImagePath}?v=palette-20260210d`
         : null;
-    const [mapImageSrc, setMapImageSrc] = React.useState<string | null>(mapPreviewUrl || staticFallbackSrc);
-    const [dynamicBlurhash, setDynamicBlurhash] = React.useState<string>('');
+    const [failedMapImageSrc, setFailedMapImageSrc] = React.useState<string | null>(null);
+    const [dynamicBlurhash, setDynamicBlurhash] = React.useState<{ url: string; hash: string } | null>(null);
+    const preferredMapImageSrc = mapPreviewUrl || staticFallbackSrc;
+    const mapImageSrc = preferredMapImageSrc && preferredMapImageSrc !== failedMapImageSrc
+        ? preferredMapImageSrc
+        : staticFallbackSrc && staticFallbackSrc !== failedMapImageSrc
+            ? staticFallbackSrc
+            : null;
+    const previewBlurhash = dynamicBlurhash?.url === mapPreviewUrl ? dynamicBlurhash.hash : undefined;
     const mapViewTransitionName = getExampleMapViewTransitionName(enableSharedTransition);
     const titleViewTransitionName = getExampleTitleViewTransitionName(enableSharedTransition);
     const cityLanes = miniCalendar?.cityLanes || [];
@@ -94,17 +101,8 @@ export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({
     const resolvedCreatorHandle = creatorHandle || card.username;
     const localizedTitle = localizedCard.title;
 
-    React.useEffect(() => {
-        setMapImageSrc(mapPreviewUrl || staticFallbackSrc);
-        setDynamicBlurhash('');
-    }, [mapPreviewUrl, staticFallbackSrc]);
-
     const handleMapImageError = () => {
-        if (mapImageSrc === mapPreviewUrl && staticFallbackSrc && staticFallbackSrc !== mapImageSrc) {
-            setMapImageSrc(staticFallbackSrc);
-            return;
-        }
-        setMapImageSrc(null);
+        setFailedMapImageSrc(mapImageSrc);
     };
 
     React.useEffect(() => {
@@ -118,7 +116,7 @@ export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({
                 if (!response.ok) return;
                 const hash = (await response.text()).trim();
                 if (!hash || canceled) return;
-                setDynamicBlurhash(hash);
+                setDynamicBlurhash({ url: mapPreviewUrl, hash });
             } catch {
                 // Ignore preview placeholder fetch errors.
             }
@@ -147,7 +145,7 @@ export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({
                         sizes="(min-width: 768px) 340px, 300px"
                         srcSetWidths={[280, 340, 420, 560]}
                         placeholderKey={card.mapImagePath || mapImageSrc}
-                        placeholderBlurhash={mapImageSrc === mapPreviewUrl ? dynamicBlurhash : undefined}
+                        placeholderBlurhash={mapImageSrc === mapPreviewUrl ? previewBlurhash : undefined}
                         className="h-full w-full object-cover"
                         loading="lazy"
                         fetchPriority="low"

@@ -38,7 +38,7 @@ export const PlaneWindowAnimation: React.FC = () => {
                         className="h-full w-auto max-w-none shrink-0 object-cover"
                         loading="lazy"
                         decoding="async"
-                        fetchpriority="low"
+                        fetchPriority="low"
                     />
                     <img
                         src={cloudImageSrc}
@@ -47,7 +47,7 @@ export const PlaneWindowAnimation: React.FC = () => {
                         className="h-full w-auto max-w-none shrink-0 object-cover"
                         loading="lazy"
                         decoding="async"
-                        fetchpriority="low"
+                        fetchPriority="low"
                     />
                 </div>
             </div>
@@ -60,7 +60,7 @@ export const PlaneWindowAnimation: React.FC = () => {
                 className="relative z-10 h-full w-full object-contain drop-shadow-xl"
                 loading="lazy"
                 decoding="async"
-                fetchpriority="low"
+                fetchPriority="low"
             />
         </div>
     );

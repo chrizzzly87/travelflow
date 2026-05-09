@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { ArrowRight, SpinnerGap as Loader2 } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
@@ -36,6 +36,7 @@ import {
     clearPendingOAuthProvider,
     getLastUsedOAuthProvider,
     setPendingOAuthProvider,
+    subscribeLastUsedOAuthProvider,
 } from '../services/authUiPreferencesService';
 import { acceptCurrentTerms, isSupabaseAuthNotConfiguredError } from '../services/authService';
 import { normalizeAppLanguage } from '../utils';
@@ -133,7 +134,11 @@ export const LoginPage: React.FC = () => {
     const [infoMessage, setInfoMessage] = useState<string | null>(null);
     const [showAuthSupportMessage, setShowAuthSupportMessage] = useState(false);
     const [rememberLogin, setRememberLogin] = useState<boolean>(() => isRememberLoginEnabled());
-    const [lastUsedProvider, setLastUsedProvider] = useState<OAuthProviderId | null>(() => getLastUsedOAuthProvider());
+    const lastUsedProvider = useSyncExternalStore(
+        subscribeLastUsedOAuthProvider,
+        getLastUsedOAuthProvider,
+        () => null
+    );
 
     const oauthButtons = useMemo(() => getOAuthButtons(i18n.language), [i18n.language]);
     const authLocale = useMemo(() => normalizeAppLanguage(i18n.language), [i18n.language]);
@@ -170,14 +175,6 @@ export const LoginPage: React.FC = () => {
     useEffect(() => {
         rememberAuthReturnPath(nextPath);
     }, [nextPath]);
-
-    useEffect(() => {
-        const handleStorageUpdate = () => {
-            setLastUsedProvider(getLastUsedOAuthProvider());
-        };
-        window.addEventListener('storage', handleStorageUpdate);
-        return () => window.removeEventListener('storage', handleStorageUpdate);
-    }, []);
 
     useEffect(() => {
         const callbackError = searchParams.get('error_description') || searchParams.get('error');
