@@ -86,7 +86,7 @@ export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({
         : staticFallbackSrc && staticFallbackSrc !== failedMapImageSrc
             ? staticFallbackSrc
             : null;
-    const previewBlurhash = dynamicBlurhash?.url === mapPreviewUrl ? dynamicBlurhash.hash : undefined;
+    const previewBlurhash = dynamicBlurhash && dynamicBlurhash.url === mapPreviewUrl ? dynamicBlurhash.hash : undefined;
     const mapViewTransitionName = getExampleMapViewTransitionName(enableSharedTransition);
     const titleViewTransitionName = getExampleTitleViewTransitionName(enableSharedTransition);
     const cityLanes = miniCalendar?.cityLanes || [];
