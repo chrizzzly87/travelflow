@@ -1,18 +1,19 @@
-import React, { useMemo, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import { ConsentChoice, readStoredConsent, saveConsent } from '../../services/consentService';
 import { buildLocalizedMarketingPath, extractLocaleFromPath } from '../../config/routes';
 import { DEFAULT_LOCALE } from '../../config/locales';
 import { APP_NAME } from '../../config/appGlobals';
+import { useSafeRouteLocation } from '../../hooks/useSafeRouteLocation';
 
 export const CookieConsentBanner: React.FC = () => {
     const { t } = useTranslation('common');
-    const location = useLocation();
+    const location = useSafeRouteLocation();
     const locale = extractLocaleFromPath(location.pathname) ?? DEFAULT_LOCALE;
     const [consent, setConsent] = useState<ConsentChoice | null>(() => readStoredConsent());
-    const isVisible = useMemo(() => consent === null, [consent]);
+    const isVisible = consent === null;
 
     const handleConsent = (choice: ConsentChoice) => {
         setConsent(choice);

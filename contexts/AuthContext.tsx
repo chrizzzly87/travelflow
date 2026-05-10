@@ -1,6 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
-import { useLocation } from 'react-router-dom';
 import { getFreePlanEntitlements } from '../config/planCatalog';
 import { trackEvent } from '../services/analyticsService';
 import { appendAuthTraceEntry } from '../services/authTraceService';
@@ -21,6 +20,7 @@ import {
     readPersistedSupabaseSessionHint,
     type PersistedSupabaseSessionHint,
 } from '../services/authSessionPersistenceService';
+import { useSafeRouteLocation } from '../hooks/useSafeRouteLocation';
 
 type AuthServiceModule = typeof import('../services/authService');
 type ProfileServiceModule = typeof import('../services/profileService');
@@ -223,7 +223,7 @@ export const resolveAuthContextValue = (context: AuthContextValue | null): AuthC
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const routeLocation = useLocation();
+    const routeLocation = useSafeRouteLocation();
     const [session, setSession] = useState<Session | null>(null);
     const [access, setAccess] = useState<UserAccessContext | null>(null);
     const [profile, setProfile] = useState<UserProfileRecord | null>(null);

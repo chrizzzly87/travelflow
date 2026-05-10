@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AirplaneTakeoff, CaretDown, CaretRight, FolderSimple, ShieldCheck, SignOut, User } from '@phosphor-icons/react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../hooks/useAuth';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
@@ -8,6 +8,7 @@ import { buildLocalizedCreateTripPath, buildLocalizedMarketingPath, extractLocal
 import { DEFAULT_LOCALE } from '../../config/locales';
 import { getAllTrips } from '../../services/storageService';
 import type { ITrip } from '../../types';
+import { useSafeRouteLocation } from '../../hooks/useSafeRouteLocation';
 
 interface AccountMenuProps {
     email: string | null;
@@ -143,7 +144,7 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
     onPrewarmTripManager,
 }) => {
     const navigate = useNavigate();
-    const routeLocation = useLocation();
+    const routeLocation = useSafeRouteLocation();
     const { logout, profile } = useAuth();
     const { t } = useTranslation('common');
     const [isOpen, setIsOpen] = useState(false);

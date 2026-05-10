@@ -1,9 +1,10 @@
 import React from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import { buildLocalizedMarketingPath, extractLocaleFromPath } from '../../config/routes';
 import { DEFAULT_LOCALE, normalizeLocale } from '../../config/locales';
+import { useSafeRouteLocation } from '../../hooks/useSafeRouteLocation';
 
 interface SiteFooterProps {
     className?: string;
@@ -12,7 +13,7 @@ interface SiteFooterProps {
 export const SiteFooter: React.FC<SiteFooterProps> = ({ className }) => {
     const year = new Date().getFullYear();
     const { t, i18n } = useTranslation('common');
-    const location = useLocation();
+    const location = useSafeRouteLocation();
     const activeLocale = extractLocaleFromPath(location.pathname)
         ?? normalizeLocale(i18n.resolvedLanguage ?? i18n.language ?? DEFAULT_LOCALE);
 

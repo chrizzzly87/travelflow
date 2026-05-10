@@ -1,5 +1,5 @@
 import React, { Suspense, lazy, useEffect, useMemo, useState } from 'react';
-import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { List, SpinnerGap as Loader2 } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { LanguageSelect } from './LanguageSelect';
@@ -15,6 +15,7 @@ import { buildPathFromLocationParts } from '../../services/authNavigationService
 import { loadLazyComponentWithRecovery } from '../../services/lazyImportRecovery';
 import { warmRouteAssets } from '../../services/navigationPrefetch';
 import { AppBrand } from './AppBrand';
+import { useSafeRouteLocation } from '../../hooks/useSafeRouteLocation';
 
 const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
     moduleKey: string,
@@ -64,7 +65,7 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
 }) => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [pendingLocale, setPendingLocale] = useState<AppLanguage | null>(null);
-    const routeLocation = useLocation();
+    const routeLocation = useSafeRouteLocation();
     const navigate = useNavigate();
     const { t, i18n } = useTranslation('common');
     const { isAuthenticated, isAdmin, access, isLoading } = useAuth();

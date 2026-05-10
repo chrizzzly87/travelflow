@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { X, SpinnerGap as Loader2 } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { NAV_ITEMS } from '../../config/navigation';
@@ -16,6 +16,7 @@ import { useLoginModal } from '../../hooks/useLoginModal';
 import { buildPathFromLocationParts } from '../../services/authNavigationService';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
 import { AppBrand } from './AppBrand';
+import { useSafeRouteLocation } from '../../hooks/useSafeRouteLocation';
 
 interface MobileMenuProps {
     isOpen: boolean;
@@ -44,7 +45,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
     const [pendingLocale, setPendingLocale] = useState<AppLanguage | null>(null);
     const hasTrips = useHasSavedTrips();
     const { t, i18n } = useTranslation('common');
-    const routeLocation = useLocation();
+    const routeLocation = useSafeRouteLocation();
     const navigate = useNavigate();
     const { isAuthenticated, isAdmin, logout, isLoading } = useAuth();
     const { openLoginModal } = useLoginModal();

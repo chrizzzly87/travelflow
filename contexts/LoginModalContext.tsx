@@ -1,6 +1,7 @@
 import React, { createContext, Suspense, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { useSafeRouteLocation } from '../hooks/useSafeRouteLocation';
 import { trackEvent } from '../services/analyticsService';
 import {
     buildPathFromLocationParts,
@@ -53,7 +54,7 @@ const AuthModal = lazyWithRecovery('AuthModal', () => import('../components/auth
 
 export const LoginModalProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const navigate = useNavigate();
-    const routeLocation = useLocation();
+    const routeLocation = useSafeRouteLocation();
     const { isAuthenticated, isAnonymous, isLoading } = useAuth();
     const [state, setState] = useState<LoginModalState>(DEFAULT_MODAL_STATE);
 

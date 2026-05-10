@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { WarningCircle, X } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { DEFAULT_LOCALE } from '../../config/locales';
@@ -9,6 +9,7 @@ import {
     readSessionStorageItem,
     writeSessionStorageItem,
 } from '../../services/browserStorageService';
+import { useSafeRouteLocation } from '../../hooks/useSafeRouteLocation';
 
 const SESSION_DISMISS_KEY = 'tf_translation_notice_dismissed_session';
 const CONTACT_PREFILL_REASON = 'bug_report';
@@ -26,7 +27,7 @@ const isDismissedForSession = (): boolean => {
 
 export const TranslationNoticeBanner: React.FC = () => {
     const { t } = useTranslation('common');
-    const routeLocation = useLocation();
+    const routeLocation = useSafeRouteLocation();
     const activeLocale = useMemo(
         () => extractLocaleFromPath(routeLocation.pathname) ?? DEFAULT_LOCALE,
         [routeLocation.pathname]
