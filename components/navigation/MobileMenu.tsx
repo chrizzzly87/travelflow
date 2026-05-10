@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { X, SpinnerGap as Loader2 } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { NAV_ITEMS } from '../../config/navigation';
@@ -25,7 +25,7 @@ interface MobileMenuProps {
     onMyTripsIntent?: () => void;
 }
 
-const navLinkClass = (isActive: boolean) =>
+const navLinkClass = ({ isActive }: { isActive: boolean }) =>
     `block rounded-xl px-4 py-3 text-base font-semibold transition-colors ${
         isActive
             ? 'bg-accent-50 text-accent-700'
@@ -169,12 +169,6 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
     const mobileNavDebugAttributes = (target: string) =>
         getAnalyticsDebugAttributes(`mobile_nav__${target}`);
 
-    const isActivePath = (targetPath: string): boolean => {
-        const currentPath = routeLocation.pathname.replace(/\/+$/, '') || '/';
-        const normalizedTarget = targetPath.replace(/\/+$/, '') || '/';
-        return currentPath === normalizedTarget || (normalizedTarget !== '/' && currentPath.startsWith(`${normalizedTarget}/`));
-    };
-
     const legalNavItems = useMemo<Array<{ id: 'imprint' | 'privacy' | 'terms' | 'cookies'; label: string }>>(
         () => [
             { id: 'imprint', label: t('footer.imprint') },
@@ -265,51 +259,51 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
                                         {t('nav.myTrips')}
                                     </button>
                                 ) : (
-                                    <a
-                                        href={buildLocalizedCreateTripPath(activeLocale)}
+                                    <NavLink
+                                        to={buildLocalizedCreateTripPath(activeLocale)}
                                         onClick={() => handleNavClick('create_trip')}
                                         className="block w-full rounded-xl bg-accent-600 px-4 py-3 text-center text-base font-semibold text-white shadow-sm transition-colors hover:bg-accent-700"
                                         {...mobileNavDebugAttributes('create_trip')}
                                     >
                                         {t('nav.createTrip')}
-                                    </a>
+                                    </NavLink>
                                 )}
                                 {accountItems.map((item) => (
-                                    <a
+                                    <NavLink
                                         key={item.id}
-                                        href={item.path}
+                                        to={item.path}
                                         onClick={() => handleNavClick(item.id)}
                                         className="block w-full rounded-xl border border-slate-200 px-4 py-3 text-center text-base font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900"
                                         {...mobileNavDebugAttributes(item.id)}
                                     >
                                         {item.label}
-                                    </a>
+                                    </NavLink>
                                 ))}
                                 {visibleItems.map((item) => {
                                     const path = buildLocalizedMarketingPath(item.routeKey, activeLocale);
                                     return (
-                                        <a
+                                        <NavLink
                                             key={item.id}
-                                            href={path}
-                                            className={navLinkClass(isActivePath(path))}
+                                            to={path}
+                                            className={navLinkClass}
                                             onClick={() => handleNavClick(item.id)}
                                             {...mobileNavDebugAttributes(item.id)}
                                         >
                                             {t(item.labelKey)}
-                                        </a>
+                                        </NavLink>
                                     );
                                 })}
                             </div>
                             <div className="mt-auto space-y-3 border-t border-slate-100 pt-4">
                                 {isAdmin && (
-                                    <a
-                                        href="/admin"
+                                    <NavLink
+                                        to="/admin"
                                         onClick={() => handleNavClick('admin_dashboard')}
                                         className="block w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-base font-medium text-slate-700 transition-colors hover:border-slate-300 hover:text-slate-900"
                                         {...mobileNavDebugAttributes('admin_dashboard')}
                                     >
                                         Admin dashboard
-                                    </a>
+                                    </NavLink>
                                 )}
                                 {isAuthenticated ? (
                                     <button
@@ -334,26 +328,26 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
                                         {t('nav.login')}
                                     </button>
                                 ) : (
-                                    <a
-                                        href={buildLocalizedMarketingPath('login', activeLocale)}
+                                    <NavLink
+                                        to={buildLocalizedMarketingPath('login', activeLocale)}
                                         onClick={handleLoginClick}
                                         className="block w-full rounded-xl border border-slate-200 px-4 py-3 text-center text-base font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900"
                                         {...mobileNavDebugAttributes('login')}
                                     >
                                         {t('nav.login')}
-                                    </a>
+                                    </NavLink>
                                 )}
                                 <div className="grid grid-cols-2 gap-2">
                                     {legalNavItems.map((item) => (
-                                        <a
+                                        <NavLink
                                             key={`mobile-legal-${item.id}`}
-                                            href={buildLocalizedMarketingPath(item.id, activeLocale)}
+                                            to={buildLocalizedMarketingPath(item.id, activeLocale)}
                                             onClick={() => handleNavClick(item.id)}
                                             className="block rounded-xl border border-slate-200 px-3 py-2 text-center text-sm font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900"
                                             {...mobileNavDebugAttributes(item.id)}
                                         >
                                             {item.label}
-                                        </a>
+                                        </NavLink>
                                     ))}
                                 </div>
                             </div>

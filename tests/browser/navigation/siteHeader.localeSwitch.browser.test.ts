@@ -33,6 +33,7 @@ vi.mock('react-router-dom', () => ({
     href: to,
     onClick,
     className: typeof className === 'function' ? className({ isActive: false }) : className,
+    'data-router-navlink': 'true',
     ...props,
   }, children),
   useLocation: () => mocks.location,
@@ -143,6 +144,7 @@ describe('navigation locale switch handoff', () => {
     render(React.createElement(SiteHeader));
 
     expect(screen.getByTestId('language-select')).toHaveAttribute('data-value', 'es');
+    expect(screen.getByRole('link', { name: 'Create Trip' })).toHaveAttribute('data-router-navlink', 'true');
 
     await user.click(screen.getByRole('button', { name: 'Switch to English' }));
 
@@ -161,6 +163,7 @@ describe('navigation locale switch handoff', () => {
     }));
 
     expect(screen.getByTestId('language-select')).toHaveAttribute('data-value', 'es');
+    expect(screen.getByRole('link', { name: 'Create Trip' })).toHaveAttribute('data-router-navlink', 'true');
 
     await user.click(screen.getByRole('button', { name: 'Switch to English' }));
 

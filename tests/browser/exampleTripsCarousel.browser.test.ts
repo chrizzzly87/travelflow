@@ -9,9 +9,18 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('react-router-dom', () => ({
-  Link: () => {
-    throw new Error('React Router Link should not render inside ExampleTripsCarousel');
-  },
+  Link: ({
+    to,
+    children,
+    ...props
+  }: {
+    to: string;
+    children: React.ReactNode;
+  } & React.AnchorHTMLAttributes<HTMLAnchorElement>) => React.createElement('a', {
+    href: to,
+    'data-router-link': 'true',
+    ...props,
+  }, children),
   useNavigate: () => mocks.navigate,
 }));
 
@@ -78,11 +87,12 @@ describe('ExampleTripsCarousel', () => {
     } as unknown as typeof ResizeObserver;
   });
 
-  it('renders its inspirations CTA without React Router Link route-location reads', () => {
+  it('renders its inspirations CTA as a Router link with a stable href', () => {
     render(React.createElement(ExampleTripsCarousel));
 
     const cta = screen.getByRole('link', { name: /more inspirations/i });
     expect(cta).toHaveAttribute('href', '/inspirations');
+    expect(cta).toHaveAttribute('data-router-link', 'true');
 
     cta.addEventListener('click', (event) => event.preventDefault(), { once: true });
     fireEvent.click(cta);

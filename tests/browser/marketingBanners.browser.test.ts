@@ -21,6 +21,7 @@ vi.mock('react-router-dom', () => ({
     children: React.ReactNode;
   } & React.AnchorHTMLAttributes<HTMLAnchorElement>) => React.createElement('a', {
     href: to,
+    'data-router-link': 'true',
     ...props,
   }, children),
   useLocation: () => mocks.location,
@@ -83,6 +84,8 @@ describe('marketing banner crash guards', () => {
   it('accepts cookie consent when the router location is temporarily unavailable', async () => {
     const user = userEvent.setup();
     render(React.createElement(CookieConsentBanner));
+
+    expect(screen.getByRole('link', { name: 'Cookie Policy' })).toHaveAttribute('data-router-link', 'true');
 
     await user.click(screen.getByRole('button', { name: 'Accept all' }));
 

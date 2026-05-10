@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import { ConsentChoice, readStoredConsent, saveConsent } from '../../services/consentService';
@@ -31,9 +32,9 @@ export const CookieConsentBanner: React.FC = () => {
             <div className="mx-auto flex w-full max-w-4xl flex-col gap-3 rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-xl backdrop-blur sm:flex-row sm:items-center sm:justify-between sm:gap-6">
                 <p className="text-sm leading-6 text-slate-700">
                     {t('cookieBanner.message', { appName: APP_NAME })}{' '}
-                    <a href={buildLocalizedMarketingPath('cookies', locale)} className="font-semibold text-accent-700 hover:text-accent-800">
+                    <Link to={buildLocalizedMarketingPath('cookies', locale)} className="font-semibold text-accent-700 hover:text-accent-800">
                         {t('cookieBanner.policyLinkLabel')}
-                    </a>
+                    </Link>
                     .
                 </p>
                 <div className="flex shrink-0 items-center gap-2">

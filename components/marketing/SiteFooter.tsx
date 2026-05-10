@@ -1,4 +1,5 @@
 import React from 'react';
+import { NavLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import { buildLocalizedMarketingPath, extractLocaleFromPath } from '../../config/routes';
@@ -29,11 +30,11 @@ export const SiteFooter: React.FC<SiteFooterProps> = ({ className }) => {
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <p className="text-sm text-slate-600">{t('footer.rightsReserved', { year })}</p>
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-                        <a href={buildLocalizedMarketingPath('contact', activeLocale)} onClick={() => handleFooterClick('contact')} className="text-slate-600 hover:text-slate-900" {...footerDebugAttributes('contact')}>{t('footer.contact')}</a>
-                        <a href={buildLocalizedMarketingPath('imprint', activeLocale)} onClick={() => handleFooterClick('imprint')} className="text-slate-600 hover:text-slate-900" {...footerDebugAttributes('imprint')}>{t('footer.imprint')}</a>
-                        <a href={buildLocalizedMarketingPath('privacy', activeLocale)} onClick={() => handleFooterClick('privacy')} className="text-slate-600 hover:text-slate-900" {...footerDebugAttributes('privacy')}>{t('footer.privacy')}</a>
-                        <a href={buildLocalizedMarketingPath('terms', activeLocale)} onClick={() => handleFooterClick('terms')} className="text-slate-600 hover:text-slate-900" {...footerDebugAttributes('terms')}>{t('footer.terms')}</a>
-                        <a href={buildLocalizedMarketingPath('cookies', activeLocale)} onClick={() => handleFooterClick('cookies')} className="text-slate-600 hover:text-slate-900" {...footerDebugAttributes('cookies')}>{t('footer.cookies')}</a>
+                        <NavLink to={buildLocalizedMarketingPath('contact', activeLocale)} onClick={() => handleFooterClick('contact')} className="text-slate-600 hover:text-slate-900" {...footerDebugAttributes('contact')}>{t('footer.contact')}</NavLink>
+                        <NavLink to={buildLocalizedMarketingPath('imprint', activeLocale)} onClick={() => handleFooterClick('imprint')} className="text-slate-600 hover:text-slate-900" {...footerDebugAttributes('imprint')}>{t('footer.imprint')}</NavLink>
+                        <NavLink to={buildLocalizedMarketingPath('privacy', activeLocale)} onClick={() => handleFooterClick('privacy')} className="text-slate-600 hover:text-slate-900" {...footerDebugAttributes('privacy')}>{t('footer.privacy')}</NavLink>
+                        <NavLink to={buildLocalizedMarketingPath('terms', activeLocale)} onClick={() => handleFooterClick('terms')} className="text-slate-600 hover:text-slate-900" {...footerDebugAttributes('terms')}>{t('footer.terms')}</NavLink>
+                        <NavLink to={buildLocalizedMarketingPath('cookies', activeLocale)} onClick={() => handleFooterClick('cookies')} className="text-slate-600 hover:text-slate-900" {...footerDebugAttributes('cookies')}>{t('footer.cookies')}</NavLink>
                     </div>
                 </div>
                 <p className="mt-3 text-xs text-slate-400">

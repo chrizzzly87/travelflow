@@ -1,5 +1,5 @@
 import React, { Suspense, lazy, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { List, SpinnerGap as Loader2 } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { LanguageSelect } from './LanguageSelect';
@@ -42,7 +42,7 @@ interface SiteHeaderProps {
     hideCreateTrip?: boolean;
 }
 
-const navLinkClass = (isActive: boolean) => {
+const navLinkClass = ({ isActive }: { isActive: boolean }) => {
     const baseClass = 'relative font-semibold text-slate-500 transition-colors hover:text-slate-900 after:pointer-events-none after:absolute after:-bottom-4 after:left-0 after:h-0.5 after:w-full after:origin-center after:scale-x-0 after:rounded-full after:bg-accent-600 after:transition-transform';
     if (isActive) return `${baseClass} text-slate-900 after:scale-x-100`;
     return baseClass;
@@ -146,12 +146,6 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
         void warmRouteAssets(buildLocalizedCreateTripPath(selectedLocale), 'manual');
     };
 
-    const isActivePath = (targetPath: string): boolean => {
-        const currentPath = routeLocation.pathname.replace(/\/+$/, '') || '/';
-        const normalizedTarget = targetPath.replace(/\/+$/, '') || '/';
-        return currentPath === normalizedTarget || (normalizedTarget !== '/' && currentPath.startsWith(`${normalizedTarget}/`));
-    };
-
     const isGlass = variant === 'glass';
 
     const headerClass = isGlass
@@ -173,28 +167,28 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
                 style={{ viewTransitionName: 'site-header' }}
             >
                 <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-5 py-4 lg:px-8">
-                    <a
-                        href={buildLocalizedMarketingPath('home', activeLocale)}
+                    <NavLink
+                        to={buildLocalizedMarketingPath('home', activeLocale)}
                         onClick={() => handleNavClick('brand')}
                         className="flex items-center gap-2"
                         {...navDebugAttributes('brand')}
                     >
                         <AppBrand />
-                    </a>
+                    </NavLink>
 
                     <nav className="hidden items-center gap-4 text-sm lg:flex xl:gap-6">
                         {(['features', 'inspirations', 'updates', 'blog', 'pricing'] as const).map((routeKey) => {
                             const path = buildLocalizedMarketingPath(routeKey, activeLocale);
                             return (
-                                <a
+                                <NavLink
                                     key={routeKey}
-                                    href={path}
+                                    to={path}
                                     onClick={() => handleNavClick(routeKey)}
-                                    className={navLinkClass(isActivePath(path))}
+                                    className={navLinkClass}
                                     {...navDebugAttributes(routeKey)}
                                 >
                                     {t(`nav.${routeKey}`)}
-                                </a>
+                                </NavLink>
                             );
                         })}
                     </nav>
@@ -237,18 +231,18 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
                                 {t('nav.login')}
                             </span>
                         ) : (
-                            <a
-                                href={buildLocalizedMarketingPath('login', activeLocale)}
+                            <NavLink
+                                to={buildLocalizedMarketingPath('login', activeLocale)}
                                 onClick={handleLoginClick}
                                 className={loginClass}
                                 {...navDebugAttributes('login')}
                             >
                                 {t('nav.login')}
-                            </a>
+                            </NavLink>
                         )}
                         {!hideCreateTrip && (
-                            <a
-                                href={buildLocalizedCreateTripPath(activeLocale)}
+                            <NavLink
+                                to={buildLocalizedCreateTripPath(activeLocale)}
                                 onClick={() => handleNavClick('create_trip')}
                                 onMouseEnter={prewarmCreateTripRoute}
                                 onFocus={prewarmCreateTripRoute}
@@ -257,7 +251,7 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
                                 {...navDebugAttributes('create_trip')}
                             >
                                 {t('nav.createTrip')}
-                            </a>
+                            </NavLink>
                         )}
                         <button
                             onClick={() => setIsMobileMenuOpen(true)}

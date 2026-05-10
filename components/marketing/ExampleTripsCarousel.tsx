@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { ITrip, IViewSettings } from '../../types';
@@ -558,15 +558,15 @@ export const ExampleTripsCarousel: React.FC = () => {
             </div>
 
             <div className="mt-5">
-                <a
-                    href={INSPIRATIONS_LINK}
+                <Link
+                    to={INSPIRATIONS_LINK}
                     onClick={() => trackEvent('home__carousel_cta--inspirations')}
                     className="inline-flex items-center gap-1 text-sm font-semibold text-accent-600 transition-colors hover:text-accent-800"
                     {...getAnalyticsDebugAttributes('home__carousel_cta--inspirations')}
                 >
                     {uiCopy.moreInspirationsCta}
                     <ArrowRight size={14} weight="bold" />
-                </a>
+                </Link>
             </div>
         </section>
     );

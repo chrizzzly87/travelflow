@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Sparkle, ShareNetwork, LinkSimple, RocketLaunch } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
@@ -97,8 +98,8 @@ export const HeroSection: React.FC = () => {
                     </div>
 
                     <div className="mt-10 flex flex-wrap items-center gap-4 animate-hero-stagger" style={{ '--stagger': '240ms' } as React.CSSProperties}>
-                        <a
-                            href={buildPath('createTrip')}
+                        <Link
+                            to={buildPath('createTrip')}
                             onClick={() => handleCtaClick('start_planning')}
                             onMouseEnter={prewarmCreateTripRoute}
                             onFocus={prewarmCreateTripRoute}
@@ -107,7 +108,7 @@ export const HeroSection: React.FC = () => {
                             {...heroCtaDebugAttributes('start_planning')}
                         >
                             {t('common:buttons.startPlanning')}
-                        </a>
+                        </Link>
                         <a
                             href="#examples"
                             onClick={() => handleCtaClick('see_examples')}
