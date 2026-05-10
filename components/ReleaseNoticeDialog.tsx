@@ -1,5 +1,4 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { getLatestInAppRelease, getWebsiteVisibleItems, groupReleaseItemsByType } from '../services/releaseNotesService';
@@ -128,12 +127,12 @@ export const ReleaseNoticeDialog: React.FC<ReleaseNoticeDialogProps> = ({ enable
                     )}
                 </div>
                 <div className="flex flex-wrap items-center justify-end gap-2 border-t border-slate-100 px-6 py-4">
-                    <Link
-                        to="/updates"
+                    <a
+                        href="/updates"
                         className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:border-slate-400"
                     >
                         View full changelog
-                    </Link>
+                    </a>
                     <button
                         ref={dismissButtonRef}
                         type="button"

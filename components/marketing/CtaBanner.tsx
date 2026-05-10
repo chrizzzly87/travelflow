@@ -1,5 +1,4 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import { buildPath } from '../../config/routes';
@@ -19,8 +18,8 @@ export const CtaBanner: React.FC = () => {
                 <p className="relative mx-auto mt-4 max-w-xl text-base text-accent-100 md:text-lg">
                     {t('home:cta.subtitle')}
                 </p>
-                <Link
-                    to={buildPath('createTrip')}
+                <a
+                    href={buildPath('createTrip')}
                     onClick={() =>
                         trackEvent('home__bottom_cta')
                     }
@@ -28,7 +27,7 @@ export const CtaBanner: React.FC = () => {
                     {...getAnalyticsDebugAttributes('home__bottom_cta')}
                 >
                     {t('common:buttons.startPlanningFree')}
-                </Link>
+                </a>
             </div>
         </section>
     );

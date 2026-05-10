@@ -12,7 +12,7 @@ summary: "Cleans up the highest-priority React Doctor findings across core trip 
 
 ## Changes
 - [x] [Fixed] 📅 Calendar-based trip dates now stay on the intended day across time zones in trip list markers and ticket previews.
-- [x] [Fixed] 🛡️ Cookie and notice banners now dismiss safely without interrupting page loading.
+- [x] [Fixed] 🛡️ Cookie, notice, and homepage inspiration links now load safely without interrupting page loading.
 - [ ] [Internal] 🩺 Cleared React Doctor error findings across the full repository scan, including hook-order, route-location dependency, and cleanup issues.
 - [ ] [Internal] 🧪 Added regression coverage for the login modal hook fallback outside its provider.
 - [ ] [Internal] 📋 Added a React Doctor remediation tracker plus future-feature score and effect-discipline guardrails.

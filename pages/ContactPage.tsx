@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
     CheckCircle,
@@ -18,6 +18,7 @@ import { DEFAULT_LOCALE } from '../config/locales';
 import { CONTACT_FAQ_EXCERPT_ITEMS, type FaqItemWithSection } from '../data/faqContent';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
 import { useAuth } from '../hooks/useAuth';
+import { useSafeRouteLocation } from '../hooks/useSafeRouteLocation';
 import { getCurrentAccessContext } from '../services/authService';
 import { getLastVisitedPath } from '../services/navigationContextService';
 
@@ -175,14 +176,27 @@ const resolvePrefilledContactContext = (state: unknown): PrefilledContactContext
     };
 };
 
+const resolvePrefilledContactContextFromSearch = (search: string): PrefilledContactContext => {
+    const params = new URLSearchParams(search);
+    return resolvePrefilledContactContext({
+        reason: params.get('reason'),
+        subReason: params.get('subReason'),
+        source: params.get('source'),
+    });
+};
+
 const isLikelyQuotaStatus = (status: number): boolean => [402, 403, 409, 429, 503].includes(status);
 
 export const ContactPage: React.FC = () => {
     const { t } = useTranslation('common');
-    const routeLocation = useLocation();
+    const routeLocation = useSafeRouteLocation();
     const locale = extractLocaleFromPath(routeLocation.pathname) ?? DEFAULT_LOCALE;
     const { access, profile } = useAuth();
-    const prefilledContactContext = useMemo(() => resolvePrefilledContactContext(routeLocation.state), [routeLocation.state]);
+    const prefilledContactContext = useMemo(() => {
+        const stateContext = resolvePrefilledContactContext(routeLocation.state);
+        if (stateContext.reason) return stateContext;
+        return resolvePrefilledContactContextFromSearch(routeLocation.search);
+    }, [routeLocation.search, routeLocation.state]);
 
     const [formState, setFormState] = useState<ContactFormState>({
         reason: prefilledContactContext.reason,

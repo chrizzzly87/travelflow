@@ -1,7 +1,6 @@
 import React from 'react';
 import { Clock, MapPin, Repeat } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
 import {
     formatExampleTripCountLabel,
     formatExampleTripUiText,
@@ -267,8 +266,8 @@ export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({
                     {card.username[0].toUpperCase()}
                 </div>
                 {showCreatorAttribution && creatorProfilePath ? (
-                    <Link
-                        to={creatorProfilePath}
+                    <a
+                        href={creatorProfilePath}
                         onClick={() => {
                             onCreatorClick?.();
                             trackEvent('example_trip__creator_handle', {
@@ -278,7 +277,7 @@ export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({
                         className="text-xs font-semibold text-slate-600 transition-colors hover:text-accent-700 hover:underline"
                     >
                         @{resolvedCreatorHandle}
-                    </Link>
+                    </a>
                 ) : (
                     <span className="text-xs text-slate-500">{card.username}</span>
                 )}
