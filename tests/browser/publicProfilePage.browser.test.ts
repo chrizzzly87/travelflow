@@ -321,14 +321,14 @@ describe('pages/PublicProfilePage', () => {
     await waitFor(() => {
       expect(screen.getByRole('link', { name: 'publicProfile.ctaPlanTrip' })).toBeInTheDocument();
       expect(screen.getByRole('link', { name: 'publicProfile.ctaGetInspired' })).toBeInTheDocument();
+      expect(document.documentElement.getAttribute('data-public-profile-status')).toBe('404');
+      expect(
+        document.head
+          .querySelector('meta[name="robots"][data-managed-by="public-profile"]')
+          ?.getAttribute('content')
+      ).toBe('noindex, nofollow');
     });
     expect(screen.getByText('publicProfile.notFoundInvalidPassportTitle')).toBeInTheDocument();
-    expect(document.documentElement.getAttribute('data-public-profile-status')).toBe('404');
-    expect(
-      document.head
-        .querySelector('meta[name="robots"][data-managed-by="public-profile"]')
-        ?.getAttribute('content')
-    ).toBe('noindex, nofollow');
   });
 
   it('keeps the public profile loading state visually neutral while the handle lookup is pending', () => {
