@@ -909,13 +909,17 @@ export const AdminAiBenchmarkPage: React.FC = () => {
         setMessage(`Custom JSON applied to benchmark mask (${customScenarioDraftParse.flow}).`);
     }, [applyMaskScenario, customScenarioDraftParse.error, customScenarioDraftParse.flow, customScenarioDraftParse.scenario]);
 
-    const normalizePreferencesForClient = useCallback((value: unknown): BenchmarkPreferencesPayload => {
+    const normalizePreferencesForClient = useCallback((
+        value: unknown,
+        options?: { mergeFallbackModelIds?: boolean },
+    ): BenchmarkPreferencesPayload => {
         return normalizeBenchmarkPreferencesPayload(value, {
             fallbackPresets: defaultPresets,
             defaultStartDate: defaultDates.startDate,
             defaultEndDate: defaultDates.endDate,
             fallbackModelIds: defaultModelTargetIds,
             allowedModelIds: activeModelIdSet,
+            mergeFallbackModelIds: options?.mergeFallbackModelIds,
         });
     }, [activeModelIdSet, defaultDates.endDate, defaultDates.startDate, defaultModelTargetIds, defaultPresets]);
 
@@ -1070,7 +1074,9 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                 method: 'GET',
             }) as BenchmarkPreferencesApiResponse;
 
-            const normalized = normalizePreferencesForClient(payload.preferences || {});
+            const normalized = normalizePreferencesForClient(payload.preferences || {}, {
+                mergeFallbackModelIds: true,
+            });
             setModelTargetIds(normalized.modelTargets);
             setPresetConfigs(normalized.presets);
             setSelectedPresetId(normalized.selectedPresetId);

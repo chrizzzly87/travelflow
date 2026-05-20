@@ -85,6 +85,13 @@ describe('config/aiModelCatalog', () => {
     expect(options.slice(0, CREATE_TRIP_PREFERRED_MODEL_IDS.length).map((item) => item.id)).toEqual(
       [...CREATE_TRIP_PREFERRED_MODEL_IDS]
     );
+    expect([...CREATE_TRIP_PREFERRED_MODEL_IDS]).toEqual(expect.arrayContaining([
+      'openrouter:openai/gpt-5.5',
+      'openrouter:google/gemini-3.5-flash',
+      'openrouter:google/gemini-3.1-flash-lite',
+      'openrouter:x-ai/grok-4.3',
+      'openrouter:qwen/qwen3.5-plus-20260420',
+    ]));
     expect(new Set(options.map((item) => item.id))).toEqual(uniqueActiveIds);
     expect(options).toHaveLength(uniqueActiveIds.size);
   });
