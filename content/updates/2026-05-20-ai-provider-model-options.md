@@ -1,10 +1,10 @@
 ---
-id: rel-2026-03-06-ai-provider-model-options
-version: v0.0.0
+id: rel-2026-05-20-ai-provider-model-options
+version: v0.110.0
 title: "Expanded AI model options for planning and benchmark runs"
-date: 2026-03-06
-published_at: 2026-03-06T10:00:00Z
-status: draft
+date: 2026-05-20
+published_at: 2026-05-20T14:07:19Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Expanded trip planning and benchmark model coverage with more OpenRouter options and updated execution allowlists."
