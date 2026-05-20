@@ -57,10 +57,15 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
     expect(ensureModelAllowed('openrouter', 'openrouter/free')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'openai/gpt-5.4-nano')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'openai/gpt-5.4-mini')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'openai/gpt-5.5')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'google/gemini-3.5-flash')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'google/gemini-3.1-flash-lite')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'nvidia/nemotron-3-super-120b-a12b:free')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'z-ai/glm-5')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'x-ai/grok-4.3')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'x-ai/grok-4.20-beta')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'qwen/qwen3.5-9b')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'qwen/qwen3.5-plus-20260420')).toBeNull();
     expect(ensureModelAllowed('openai', 'gpt-5.4')).toBeNull();
     expect(ensureModelAllowed('anthropic', 'claude-sonnet-4.6')).toBeNull();
     expect(ensureModelAllowed('perplexity', 'perplexity/sonar')).toBeNull();

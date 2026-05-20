@@ -8,6 +8,7 @@ import {
   groupAiModelsByProvider,
   sortAiModels,
 } from '../../config/aiModelCatalog';
+import { BENCHMARK_DEFAULT_MODEL_IDS } from '../../services/aiBenchmarkPreferencesService';
 
 describe('config/aiModelCatalog', () => {
   it('includes latest provider additions and curated openrouter alternatives', () => {
@@ -23,14 +24,19 @@ describe('config/aiModelCatalog', () => {
     expect(modelIds.has('openrouter:openai/gpt-oss-20b:free')).toBe(true);
     expect(modelIds.has('openrouter:openai/gpt-5.4-nano')).toBe(true);
     expect(modelIds.has('openrouter:openai/gpt-5.4-mini')).toBe(true);
+    expect(modelIds.has('openrouter:openai/gpt-5.5')).toBe(true);
+    expect(modelIds.has('openrouter:google/gemini-3.5-flash')).toBe(true);
+    expect(modelIds.has('openrouter:google/gemini-3.1-flash-lite')).toBe(true);
     expect(modelIds.has('openrouter:nvidia/nemotron-3-super-120b-a12b:free')).toBe(true);
     expect(modelIds.has('openrouter:z-ai/glm-5')).toBe(true);
     expect(modelIds.has('openrouter:deepseek/deepseek-v3.2')).toBe(true);
+    expect(modelIds.has('openrouter:x-ai/grok-4.3')).toBe(true);
     expect(modelIds.has('openrouter:x-ai/grok-4.1-fast')).toBe(true);
     expect(modelIds.has('openrouter:x-ai/grok-4.20-beta')).toBe(true);
     expect(modelIds.has('openrouter:minimax/minimax-m2.5')).toBe(true);
     expect(modelIds.has('openrouter:moonshotai/kimi-k2.5')).toBe(true);
     expect(modelIds.has('openrouter:qwen/qwen3.5-9b')).toBe(true);
+    expect(modelIds.has('openrouter:qwen/qwen3.5-plus-20260420')).toBe(true);
     expect(modelIds.has('perplexity:perplexity/sonar')).toBe(true);
     expect(modelIds.has('perplexity:perplexity/sonar-pro')).toBe(true);
     expect(modelIds.has('qwen:qwen/qwen3.5-plus-02-15')).toBe(true);
@@ -81,5 +87,15 @@ describe('config/aiModelCatalog', () => {
     );
     expect(new Set(options.map((item) => item.id))).toEqual(uniqueActiveIds);
     expect(options).toHaveLength(uniqueActiveIds.size);
+  });
+
+  it('keeps default benchmark targets aligned with catalog entries', () => {
+    const activeIds = new Set(
+      AI_MODEL_CATALOG
+        .filter((item) => item.availability === 'active')
+        .map((item) => item.id)
+    );
+
+    expect(BENCHMARK_DEFAULT_MODEL_IDS.every((modelId) => activeIds.has(modelId))).toBe(true);
   });
 });
