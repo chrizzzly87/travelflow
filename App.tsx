@@ -176,7 +176,7 @@ const TripManagerLoadingFallback: React.FC<{ isOpen: boolean; onClose: () => voi
                 <button
                     type="button"
                     onClick={onClose}
-                    className="h-8 w-8 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+                    className="size-8 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100"
                     aria-label="Close"
                 >
                     x
@@ -185,9 +185,9 @@ const TripManagerLoadingFallback: React.FC<{ isOpen: boolean; onClose: () => voi
             <div className="px-3 py-2 border-b border-gray-100">
                 <div className="h-9 w-full rounded-md border border-gray-200 bg-gray-50 animate-pulse" />
             </div>
-            <div className="flex-1 overflow-y-auto px-2 py-2 space-y-2">
+            <div className="flex-1 overflow-y-auto p-2 space-y-2">
                 {TRIP_MANAGER_FALLBACK_ROWS.map((row) => (
-                    <div key={row} className="rounded-lg border border-gray-100 bg-white px-2 py-2">
+                    <div key={row} className="rounded-lg border border-gray-100 bg-white p-2">
                         <div className="animate-pulse">
                             <div className="h-3.5 w-32 rounded bg-gray-200" />
                             <div className="mt-2 h-2.5 w-44 rounded bg-gray-100" />
@@ -948,7 +948,7 @@ const AppContent: React.FC = () => {
                     >
                         <div className="flex min-w-0 items-start gap-3">
                             <span
-                                className={`mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border ${
+                                className={`mt-0.5 inline-flex size-9 shrink-0 items-center justify-center rounded-xl border ${
                                     shouldShowForceTermsNotice
                                         ? 'border-rose-200 bg-rose-100 text-rose-700'
                                         : 'border-accent-200 bg-accent-100 text-accent-700'

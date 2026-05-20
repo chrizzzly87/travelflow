@@ -172,7 +172,7 @@ export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({
 
             <div className="p-4">
                 <h3
-                    className="text-base font-bold text-slate-900"
+                    className="text-base font-semibold text-slate-900"
                     style={titleViewTransitionName ? ({ viewTransitionName: titleViewTransitionName } as React.CSSProperties) : undefined}
                 >
                     {localizedTitle}

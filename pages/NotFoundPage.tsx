@@ -47,7 +47,7 @@ export const NotFoundPage: React.FC = () => {
 
                 <div className="mt-10 flex w-full max-w-3xl flex-col items-center text-center md:mt-14">
                     <h1
-                        className="max-w-[18ch] text-2xl font-black leading-tight tracking-tight text-slate-900 md:text-5xl"
+                        className="max-w-[18ch] text-2xl font-semibold leading-tight tracking-tight text-slate-900 md:text-5xl"
                         style={{ fontFamily: 'var(--tf-font-heading)' }}
                     >
                         {t('notFound.headline')}

@@ -118,7 +118,7 @@ export const FaqPage: React.FC = () => {
     return (
         <MarketingLayout>
             <section className="pb-8 md:pb-12">
-                <h1 className="text-4xl font-black tracking-tight text-slate-900 md:text-6xl">
+                <h1 className="text-4xl font-semibold tracking-tight text-slate-900 md:text-6xl">
                     Frequently asked questions.
                 </h1>
                 <p className="mt-4 max-w-[100ch] text-sm leading-7 text-slate-600 md:text-base">
@@ -147,7 +147,7 @@ export const FaqPage: React.FC = () => {
                 {faqSections.map((section) => (
                     <section key={section.id} id={section.id} className="scroll-mt-28 border-b border-slate-200 py-10 md:py-12">
                         <div className="grid gap-6 md:grid-cols-[220px,minmax(0,1fr)] md:gap-8">
-                            <h2 className="text-3xl font-bold tracking-tight text-slate-900 md:text-[2rem]">
+                            <h2 className="text-3xl font-semibold tracking-tight text-slate-900 md:text-[2rem]">
                                 {section.title}
                             </h2>
                             <FaqAccordionList
@@ -169,7 +169,7 @@ export const FaqPage: React.FC = () => {
             </div>
 
             <section className="pt-10 md:pt-12">
-                <h2 className="text-xl font-bold text-slate-900 md:text-2xl">Still need help?</h2>
+                <h2 className="text-xl font-semibold text-slate-900 md:text-2xl">Still need help?</h2>
                 <p className="mt-3 max-w-[100ch] text-sm leading-6 text-slate-600">
                     Contact us with your question and we will route it to the right team.
                 </p>

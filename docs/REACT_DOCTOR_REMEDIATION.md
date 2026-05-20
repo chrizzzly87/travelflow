@@ -15,12 +15,13 @@ Improve React Doctor health across the full repository while keeping this PR foc
 
 ## Current Score Snapshot
 
-Latest scanner used: `react-doctor v0.1.4`, resolved through `pnpm dlx react-doctor@latest`.
+Latest scanner used: `react-doctor v0.2.1`, resolved through `pnpm dlx react-doctor@latest`.
+React Review status: npm package `react-review@1.0.6` does not expose a CLI binary; React Doctor now points to React Review as the GitHub App for PR comments and score tracking.
 
 - Initial user baseline: `49 / 100`, `73` errors, `5749` warnings, `356/814` files.
 - After core-page fixes: `51 / 100`, `33` errors, `5752` warnings, `356/821` files.
 - Current full scan: `55 / 100`, `0` errors, `5737` warnings, `353/821` files.
-- Current diff scan: `76 / 100`, `0` errors, `1613` warnings, `38/77` files.
+- Current diff scan: `84 / 100`, `0` errors, `185` warnings, `32/89` files.
 
 ## Completed Changes
 
@@ -39,6 +40,10 @@ Latest scanner used: `react-doctor v0.1.4`, resolved through `pnpm dlx react-doc
 - [x] Replaced auth last-used-provider storage sync effects with `useSyncExternalStore`.
 - [x] Fixed React DOM `fetchPriority` prop casing in the plane-window animation.
 - [x] Added jsdom storage fallback setup so local browser tests can validate storage flows reliably.
+- [x] Batched imperative DOM style writes in map/blog overlay code.
+- [x] Collapsed React Doctor duplicate Tailwind size/padding classes in flagged files.
+- [x] Applied the flagged heading-weight cleanup to scanner-reported heading tags.
+- [x] Rewrote safe repeated array passes to single-pass loops/reducers, including a real `TripLoaderRoute` undefined-variable crash risk.
 
 ## Validation Log
 
@@ -70,6 +75,18 @@ Latest scanner used: `react-doctor v0.1.4`, resolved through `pnpm dlx react-doc
 
 - [x] `pnpm test:core`
   - Result: passed, `301` test files, `1353` tests, `1` skipped.
+
+- [x] `pnpm dlx react-doctor@latest . --verbose --diff`
+  - Result: `84 / 100`, `0` errors, `185` warnings, `32/89` files.
+  - Share: `https://www.react.doctor/share?p=travelflow&s=84&w=185&f=32`
+  - Notes: latest package resolved to `react-doctor v0.2.1`; output advertises React Review as the GitHub App, not a local CLI.
+
+- [x] `pnpm test:core`
+  - Result: passed, `304` test files, `1357` tests, `1` skipped.
+
+- [x] `pnpm build:netlify`
+  - Result: passed through validators, sitemap generation, and Vite production build.
+  - Notes: emitted existing release-version validation warnings, CSS/view-transition, dynamic-import, and chunk-size warnings.
 
 ## Prioritized Todo
 

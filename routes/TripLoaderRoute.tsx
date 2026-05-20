@@ -48,13 +48,16 @@ const areViewSettingsEqual = (a?: IViewSettings, b?: IViewSettings): boolean => 
 };
 
 const resolveTripInitialMapFocusQuery = (trip: ITrip): string | undefined => {
-    const locations = trip.items
-        .filter((item) => item.type === 'city' && typeof item.location === 'string')
-        .map((item) => item.location?.trim() ?? '')
-        .filter((location) => routeLocation.length > 0);
-    const uniqueLocations = Array.from(new Set(locations));
-    if (uniqueLocations.length === 0) return undefined;
-    return uniqueLocations.join(' || ');
+    const uniqueLocations = new Set<string>();
+    for (const item of trip.items) {
+        if (item.type !== 'city' || typeof item.location !== 'string') continue;
+        const location = item.location.trim();
+        if (location.length > 0) {
+            uniqueLocations.add(location);
+        }
+    }
+    if (uniqueLocations.size === 0) return undefined;
+    return Array.from(uniqueLocations).join(' || ');
 };
 
 const normalizeTripForRouteLoad = (trip: ITrip): ITrip => {

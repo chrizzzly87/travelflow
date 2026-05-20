@@ -672,7 +672,7 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                                                 const showUnsyncedBadge = hasUnsyncedChanges && index === 0;
                                                 return (
                                                     <li key={item.id} className={`flex items-start gap-3 p-4 ${item.isCurrent ? 'bg-accent-50/60' : 'bg-white'}`}>
-                                                        <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md ${item.meta.iconClass}`}>
+                                                        <div className={`flex size-9 shrink-0 items-center justify-center rounded-md ${item.meta.iconClass}`}>
                                                             <Icon size={16} />
                                                         </div>
                                                         <div className="min-w-0 flex-1">
@@ -745,7 +745,7 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
 
                     <TabsContent value="destination" className="space-y-6">
                         {travelerWarnings.length > 0 && (
-                            <section className="rounded-md bg-amber-50 px-4 py-4">
+                            <section className="rounded-md bg-amber-50 p-4">
                                 <div className="flex items-center gap-2">
                                     <ShieldAlert size={16} className="text-amber-700" />
                                     <h3 className="text-base font-semibold text-amber-950">{t('tripView.warningSummary.title')}</h3>
@@ -762,7 +762,7 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                                             <ul className="mt-2 space-y-2 text-sm leading-6 text-slate-700">
                                                 {warning.notes.map((note) => (
                                                     <li key={`${warning.cityName}-${note}`} className="flex items-start gap-2">
-                                                        <span className="mt-2 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" />
+                                                        <span className="mt-2 inline-block size-1.5 shrink-0 rounded-full bg-amber-500" />
                                                         <span>{note}</span>
                                                     </li>
                                                 ))}

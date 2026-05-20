@@ -969,28 +969,27 @@ export const resolveActivityMarkerPositions = (
             return left.title.localeCompare(right.title);
         });
 
-    const candidates = activities
-        .map((activity) => {
-            const activityCoordinates = isFiniteLatLngLiteral(activity.coordinates) ? activity.coordinates : null;
-            const ownerCity = activityCoordinates ? null : resolveActivityOwnerCity(activity, cityItems);
-            const baseCoordinates = activityCoordinates || ownerCity?.coordinates || null;
-            if (!isFiniteLatLngLiteral(baseCoordinates)) return null;
-            const primaryType = pickPrimaryActivityType(activity.activityType);
-            return {
-                id: activity.id,
-                title: activity.title,
-                type: primaryType,
-                baseCoordinates,
-                coordinateSource: activityCoordinates ? 'activity' as const : 'city' as const,
-            };
-        })
-        .filter((entry): entry is {
-            id: string;
-            title: string;
-            type: ActivityType;
-            baseCoordinates: google.maps.LatLngLiteral;
-            coordinateSource: 'activity' | 'city';
-        } => Boolean(entry));
+    const candidates: Array<{
+        id: string;
+        title: string;
+        type: ActivityType;
+        baseCoordinates: google.maps.LatLngLiteral;
+        coordinateSource: 'activity' | 'city';
+    }> = [];
+    for (const activity of activities) {
+        const activityCoordinates = isFiniteLatLngLiteral(activity.coordinates) ? activity.coordinates : null;
+        const ownerCity = activityCoordinates ? null : resolveActivityOwnerCity(activity, cityItems);
+        const baseCoordinates = activityCoordinates || ownerCity?.coordinates || null;
+        if (!isFiniteLatLngLiteral(baseCoordinates)) continue;
+        const primaryType = pickPrimaryActivityType(activity.activityType);
+        candidates.push({
+            id: activity.id,
+            title: activity.title,
+            type: primaryType,
+            baseCoordinates,
+            coordinateSource: activityCoordinates ? 'activity' : 'city',
+        });
+    }
 
     const groupedByCoordinates = new Map<string, number[]>();
     candidates.forEach((candidate, index) => {
@@ -1532,23 +1531,28 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         });
         return markerPositions;
     }, [items]);
+    const finiteCityCoordinates = useMemo(() => {
+        const coordinates: google.maps.LatLngLiteral[] = [];
+        for (const city of cities) {
+            if (isFiniteLatLngLiteral(city.coordinates)) {
+                coordinates.push(city.coordinates);
+            }
+        }
+        return coordinates;
+    }, [cities]);
     const routePixelSpan = useMemo(
         () => estimateRoutePixelSpan(
-            cities
-                .map((city) => city.coordinates)
-                .filter(isFiniteLatLngLiteral),
+            finiteCityCoordinates,
             mapZoomLevel,
         ),
-        [cities, mapZoomLevel],
+        [finiteCityCoordinates, mapZoomLevel],
     );
     const nearestMarkerGapPx = useMemo(
         () => estimateNearestMarkerGapPx(
-            cities
-                .map((city) => city.coordinates)
-                .filter(isFiniteLatLngLiteral),
+            finiteCityCoordinates,
             mapZoomLevel,
         ),
-        [cities, mapZoomLevel],
+        [finiteCityCoordinates, mapZoomLevel],
     );
     const markerRenderTier = useMemo(
         () => resolveMarkerRenderTier({
@@ -1843,10 +1847,12 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         const citySignature = cities
             .map(city => `${city.id}|${city.title}|${city.color}|${city.coordinates?.lat},${city.coordinates?.lng}`)
             .join('||');
-        const activitySignature = items
-            .filter((item) => item.type === 'activity')
-            .map((item) => `${item.id}|${item.startDateOffset}|${item.duration}|${item.coordinates?.lat},${item.coordinates?.lng}`)
-            .join('||');
+        const activitySignature = items.reduce<string[]>((parts, item) => {
+            if (item.type === 'activity') {
+                parts.push(`${item.id}|${item.startDateOffset}|${item.duration}|${item.coordinates?.lat},${item.coordinates?.lng}`);
+            }
+            return parts;
+        }, []).join('||');
         const routeSignature = cities
             .slice(0, -1)
             .map((city, idx) => {
@@ -1969,22 +1975,28 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             };
             const showTooltipHandler: EventListener = () => {
                 if (!tooltipNode) return;
-                tooltipNode.style.opacity = '1';
-                tooltipNode.style.transform = 'translate(-50%, calc(-100% - 14px))';
+                Object.assign(tooltipNode.style, {
+                    opacity: '1',
+                    transform: 'translate(-50%, calc(-100% - 14px))',
+                });
             };
             const hideTooltipHandler: EventListener = () => {
                 if (!tooltipNode) return;
-                tooltipNode.style.opacity = '0';
-                tooltipNode.style.transform = 'translate(-50%, calc(-100% - 8px))';
+                Object.assign(tooltipNode.style, {
+                    opacity: '0',
+                    transform: 'translate(-50%, calc(-100% - 8px))',
+                });
             };
 
             overlay.onAdd = function onAdd() {
                 markerDiv = document.createElement('div');
-                markerDiv.style.position = 'absolute';
-                markerDiv.style.transform = centerAnchor ? 'translate(-50%, -50%)' : 'translate(-50%, -100%)';
-                markerDiv.style.pointerEvents = clickable ? 'auto' : 'none';
-                markerDiv.style.cursor = clickable ? 'pointer' : 'default';
-                markerDiv.style.zIndex = `${currentZIndex}`;
+                markerDiv.style.cssText = [
+                    'position: absolute',
+                    `transform: ${centerAnchor ? 'translate(-50%, -50%)' : 'translate(-50%, -100%)'}`,
+                    `pointer-events: ${clickable ? 'auto' : 'none'}`,
+                    `cursor: ${clickable ? 'pointer' : 'default'}`,
+                    `z-index: ${currentZIndex}`,
+                ].join('; ');
                 markerDiv.innerHTML = currentHtml;
                 if (clickable) {
                     registerMarkerDomListener(markerDiv, 'click', clickHandler);
@@ -2016,8 +2028,10 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 if (!projection) return;
                 const point = projection.fromLatLngToDivPixel(new window.google.maps.LatLng(currentPosition.lat, currentPosition.lng));
                 if (!point) return;
-                markerDiv.style.left = `${point.x}px`;
-                markerDiv.style.top = `${point.y}px`;
+                Object.assign(markerDiv.style, {
+                    left: `${point.x}px`,
+                    top: `${point.y}px`,
+                });
             };
 
             overlay.onRemove = function onRemove() {
@@ -2458,40 +2472,46 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                         labelOffsetPx,
                     );
                     const theme = resolveCityLabelTheme(activeStyle);
-                    div.style.position = 'absolute';
-                    div.style.transform = placement.transform;
-                    div.style.textAlign = placement.textAlign;
-                    div.style.pointerEvents = 'none';
-                    div.style.display = 'flex';
-                    div.style.flexDirection = 'column';
-                    div.style.gap = '2px';
-                    div.style.whiteSpace = 'nowrap';
-                    div.style.zIndex = '120';
-                    div.style.padding = '6px 9px';
-                    div.style.borderRadius = '999px';
-                    div.style.background = theme.background;
-                    div.style.border = `1px solid ${theme.borderColor}`;
-                    div.style.boxShadow = theme.boxShadow;
-                    div.style.backdropFilter = 'blur(12px)';
+                    div.style.cssText = [
+                        'position: absolute',
+                        `transform: ${placement.transform}`,
+                        `text-align: ${placement.textAlign}`,
+                        'pointer-events: none',
+                        'display: flex',
+                        'flex-direction: column',
+                        'gap: 2px',
+                        'white-space: nowrap',
+                        'z-index: 120',
+                        'padding: 6px 9px',
+                        'border-radius: 999px',
+                        `background: ${theme.background}`,
+                        `border: 1px solid ${theme.borderColor}`,
+                        `box-shadow: ${theme.boxShadow}`,
+                        'backdrop-filter: blur(12px)',
+                    ].join('; ');
 
                     const nameEl = document.createElement('div');
                     nameEl.textContent = name;
-                    nameEl.style.fontSize = '13px';
-                    nameEl.style.fontWeight = '700';
-                    nameEl.style.color = theme.textColor;
-                    nameEl.style.textShadow = theme.textShadow;
+                    nameEl.style.cssText = [
+                        'font-size: 13px',
+                        'font-weight: 700',
+                        `color: ${theme.textColor}`,
+                        `text-shadow: ${theme.textShadow}`,
+                    ].join('; ');
 
                     div.appendChild(nameEl);
 
                     if (subLabel) {
                         const subEl = document.createElement('div');
                         subEl.textContent = subLabel;
-                        subEl.style.fontSize = '10px';
-                        subEl.style.fontWeight = '700';
-                        subEl.style.color = theme.subTextColor;
-                        subEl.style.textTransform = 'uppercase';
-                        subEl.style.letterSpacing = '0.08em';
-                        subEl.style.textShadow = theme.textShadow;
+                        subEl.style.cssText = [
+                            'font-size: 10px',
+                            'font-weight: 700',
+                            `color: ${theme.subTextColor}`,
+                            'text-transform: uppercase',
+                            'letter-spacing: 0.08em',
+                            `text-shadow: ${theme.textShadow}`,
+                        ].join('; ');
                         div.appendChild(subEl);
                     }
 
@@ -2506,8 +2526,10 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                     if (!projection || !(overlay as any).div) return;
                     const point = projection.fromLatLngToDivPixel(new window.google.maps.LatLng(position.lat, position.lng));
                     if (point) {
-                        (overlay as any).div.style.left = `${point.x}px`;
-                        (overlay as any).div.style.top = `${point.y}px`;
+                        Object.assign((overlay as any).div.style, {
+                            left: `${point.x}px`,
+                            top: `${point.y}px`,
+                        });
                     }
                 };
 
@@ -3112,10 +3134,13 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     // If we don't have city coordinates yet, center the map on the selected country/location.
     // Supports one or multiple focus queries separated by "||".
     useEffect(() => {
-        const queries = (focusLocationQuery ?? '')
-            .split(/\s*\|\|\s*/)
-            .map((query) => query.trim())
-            .filter((query) => query.length > 0);
+        const queries: string[] = [];
+        for (const rawQuery of (focusLocationQuery ?? '').split(/\s*\|\|\s*/)) {
+            const query = rawQuery.trim();
+            if (query.length > 0) {
+                queries.push(query);
+            }
+        }
         if (queries.length === 0 || !mapInitialized || !googleMapRef.current || cities.length > 0) return;
         if (!window.google?.maps?.Geocoder) return;
         const focusKey = queries.join('||');

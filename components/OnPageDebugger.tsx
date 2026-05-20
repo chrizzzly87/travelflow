@@ -576,7 +576,7 @@ export const RuntimeLocationDebugCard: React.FC<RuntimeLocationDebugCardProps> =
                                 ))}
                             </ul>
                         ) : (
-                            <p className="px-3 py-3 text-slate-600">No commercial airports were returned for this lookup.</p>
+                            <p className="p-3 text-slate-600">No commercial airports were returned for this lookup.</p>
                         )}
                     </div>
                 )}
@@ -687,10 +687,13 @@ const collectTrackedViewTransitionNames = (): ViewTransitionNameSnapshot => {
         counts.set(transitionName, (counts.get(transitionName) || 0) + 1);
     });
 
-    const duplicates = Array.from(counts.entries())
-        .filter(([, count]) => count > 1)
-        .map(([name, count]) => `${name} (${count})`)
-        .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+    const duplicates: string[] = [];
+    for (const [name, count] of counts.entries()) {
+        if (count > 1) {
+            duplicates.push(`${name} (${count})`);
+        }
+    }
+    duplicates.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
 
     return { names, duplicates };
 };
@@ -1111,11 +1114,13 @@ export const OnPageDebugger: React.FC = () => {
         + prefetchStats.skippedBudget
         + prefetchStats.skippedUnsupportedPath;
     const recentPrefetchAttempts = prefetchStats.recentAttempts.slice(0, 10);
-    const recentlyWarmedRoutePaths = Array.from(new Set(
-        prefetchStats.recentAttempts
-            .filter((attempt) => attempt.outcome === 'scheduled' || attempt.outcome === 'already-warm')
-            .map((attempt) => attempt.path)
-    )).slice(0, 8);
+    const recentlyWarmedRoutePathSet = new Set<string>();
+    for (const attempt of prefetchStats.recentAttempts) {
+        if (attempt.outcome === 'scheduled' || attempt.outcome === 'already-warm') {
+            recentlyWarmedRoutePathSet.add(attempt.path);
+        }
+    }
+    const recentlyWarmedRoutePaths = Array.from(recentlyWarmedRoutePathSet).slice(0, 8);
 
     useEffect(() => {
         if (autoOpenEnabled) {
@@ -2350,7 +2355,7 @@ export const OnPageDebugger: React.FC = () => {
                                                     const mapboxSupported = mapRuntimeResolution.implementationCapabilities.mapbox[subsystem];
 
                                                     return (
-                                                        <div key={subsystem} className="rounded border border-slate-200 bg-slate-50 px-3 py-3 text-slate-700">
+                                                        <div key={subsystem} className="rounded border border-slate-200 bg-slate-50 p-3 text-slate-700">
                                                             <div className="flex items-center justify-between gap-2">
                                                                 <strong className="text-slate-900">{MAP_RUNTIME_SUBSYSTEM_LABELS[subsystem]}</strong>
                                                                 <span className="text-[11px] text-slate-500">
@@ -2447,7 +2452,7 @@ export const OnPageDebugger: React.FC = () => {
                                         <button
                                             type="button"
                                             onClick={() => setPrefetchSectionExpanded((prev) => !prev)}
-                                            className="flex w-full items-center justify-between gap-2 rounded-md px-1 py-1 text-left hover:bg-slate-50"
+                                            className="flex w-full items-center justify-between gap-2 rounded-md p-1 text-left hover:bg-slate-50"
                                         >
                                             <div className="flex items-center gap-2">
                                                 <span className="font-semibold uppercase tracking-wide text-slate-500">Navigation Prefetch</span>
@@ -2544,7 +2549,7 @@ export const OnPageDebugger: React.FC = () => {
                                         <button
                                             type="button"
                                             onClick={() => setViewTransitionSectionExpanded((prev) => !prev)}
-                                            className="flex w-full items-center justify-between gap-2 rounded-md px-1 py-1 text-left hover:bg-slate-50"
+                                            className="flex w-full items-center justify-between gap-2 rounded-md p-1 text-left hover:bg-slate-50"
                                         >
                                             <div className="flex items-center gap-2">
                                                 <h3 className="font-semibold uppercase tracking-wide text-slate-500">

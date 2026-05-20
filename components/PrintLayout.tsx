@@ -91,20 +91,24 @@ const CalendarView: React.FC<{ trip: ITrip; onScrollTo: (id: string) => void }> 
 
         const diffDays = Math.round((currentCheck.getTime() - tripStart.getTime()) / (1000 * 60 * 60 * 24));
         
-        return cities.filter(c => {
+        const overlappingCities: Array<{ item: (typeof cities)[number]; dayIndex: number }> = [];
+        cities.forEach(c => {
             const start = c.startDateOffset;
             const end = c.startDateOffset + c.duration;
             // Check intersection: City interval [start, end) overlaps with Day interval [diffDays, diffDays+1)
             // Intersection exists if start < dayEnd AND end > dayStart
-            return start < (diffDays + 1) && end > diffDays;
-        }).map(c => ({ item: c, dayIndex: diffDays }));
+            if (start < (diffDays + 1) && end > diffDays) {
+                overlappingCities.push({ item: c, dayIndex: diffDays });
+            }
+        });
+        return overlappingCities;
     };
 
     return (
         <div className="flex flex-col gap-6 pb-4 w-full">
              {/* Legend */}
              <div className="pt-2">
-                 <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3 border-b border-gray-100 pb-2">Trip Legend</h3>
+                 <h3 className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-3 border-b border-gray-100 pb-2">Trip Legend</h3>
                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2">
                      {cities.map((city, idx) => {
                          const citySpan = getTripSpanFromOffsets(trip.startDate, {
@@ -122,7 +126,7 @@ const CalendarView: React.FC<{ trip: ITrip; onScrollTo: (id: string) => void }> 
                                 onClick={() => onScrollTo(city.id)}
                              >
                                  <div
-                                     className="w-3 h-3 rounded-full flex-shrink-0"
+                                     className="size-3 rounded-full flex-shrink-0"
                                      style={{ backgroundColor: cityColor }}
                                  />
                                  <div className="flex-1 min-w-0">
@@ -150,7 +154,7 @@ const CalendarView: React.FC<{ trip: ITrip; onScrollTo: (id: string) => void }> 
 
                     return (
                         <div key={monthDate.toISOString()} className="break-inside-avoid">
-                            <h4 className="font-bold text-gray-900 mb-3 capitalize text-sm">
+                            <h4 className="font-semibold text-gray-900 mb-3 capitalize text-sm">
                                 {monthDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                             </h4>
                             <div className="grid grid-cols-7 gap-1 text-center">
@@ -281,7 +285,7 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
             
             {/* Navigation Bar (Hidden on Print) */}
             <div className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 shadow-sm flex items-center justify-between px-8 print:hidden z-50">
-                <h1 className="font-bold text-lg text-gray-700">Trip List View</h1>
+                <h1 className="font-semibold text-lg text-gray-700">Trip List View</h1>
                 <div className="flex gap-4">
                     <button
                         type="button"
@@ -343,7 +347,7 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
                     {/* Header */}
                     <header className="flex-shrink-0 mb-6 border-b-2 border-gray-900 pb-4 flex justify-between items-end">
                         <div>
-                            <h1 className="text-4xl font-extrabold tracking-tight mb-2">{trip.title}</h1>
+                            <h1 className="text-4xl font-semibold tracking-tight mb-2">{trip.title}</h1>
                             <div className="text-gray-500 font-medium flex gap-4">
                                 <span className="flex items-center gap-1"><Calendar size={16}/> {formatDate(tripSpan.startDate)} - {formatDate(tripSpan.endDate)}</span>
                                 <span className="flex items-center gap-1"><Clock size={16}/> {tripSpan.longLabel}</span>
@@ -428,8 +432,8 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
                                 <div className="flex items-start justify-between mb-6">
                                     <div>
                                         <div className="flex items-center gap-3 mb-1">
-                                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: cityColor }} />
-                                            <h2 className="text-2xl font-bold text-gray-900">{city.title}</h2>
+                                            <div className="size-3 rounded-full" style={{ backgroundColor: cityColor }} />
+                                            <h2 className="text-2xl font-semibold text-gray-900">{city.title}</h2>
                                         </div>
                                         <div className="text-gray-500 font-medium ml-6">
                                             {formatDate(cityStart)} — {formatDate(cityEnd)} <span className="text-gray-300 mx-2">|</span> {citySpan.longLabel}
@@ -516,8 +520,8 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
                                             
                                             return (
                                                 <div key={dIdx} className="relative pl-6 border-l-2 border-gray-100 pb-2 last:pb-0">
-                                                    <div className="absolute -left-[5px] top-0 w-2.5 h-2.5 rounded-full bg-gray-300 ring-4 ring-white" />
-                                                    <h4 className="font-bold text-gray-900 text-sm mb-3">
+                                                    <div className="absolute -left-[5px] top-0 size-2.5 rounded-full bg-gray-300 ring-4 ring-white" />
+                                                    <h4 className="font-semibold text-gray-900 text-sm mb-3">
                                                         Day {globalDayIndex} <span className="text-gray-400 font-normal mx-1">•</span> {day.date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
                                                     </h4>
                                                     

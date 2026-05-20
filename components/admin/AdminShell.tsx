@@ -83,7 +83,7 @@ const itemIcon = (icon: (typeof ADMIN_NAV_ITEMS)[number]['icon']) => {
 
 const buildDesktopNavClass = ({ isActive }: { isActive: boolean }, isCollapsed: boolean) => {
     const base = isCollapsed
-        ? 'flex items-center justify-center rounded-xl border px-2 py-2 text-sm transition-colors'
+        ? 'flex items-center justify-center rounded-xl border p-2 text-sm transition-colors'
         : 'flex items-center gap-2 rounded-xl border px-3 py-2 text-sm transition-colors';
     if (isActive) {
         return `${base} border-accent-200 bg-accent-50 font-semibold text-accent-900`;
@@ -188,10 +188,13 @@ export const AdminShell: React.FC<AdminShellProps> = ({
     };
 
     const navSections = useMemo(
-        () => ADMIN_NAV_SECTIONS.map((section) => ({
-            ...section,
-            items: ADMIN_NAV_ITEMS.filter((item) => item.section === section.id),
-        })).filter((section) => section.items.length > 0),
+        () => ADMIN_NAV_SECTIONS.reduce<Array<(typeof ADMIN_NAV_SECTIONS)[number] & { items: Array<(typeof ADMIN_NAV_ITEMS)[number]> }>>((sections, section) => {
+            const items = ADMIN_NAV_ITEMS.filter((item) => item.section === section.id);
+            if (items.length > 0) {
+                sections.push({ ...section, items });
+            }
+            return sections;
+        }, []),
         []
     );
 
@@ -252,7 +255,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                     <button
                         type="button"
                         onClick={() => setIsMobileSidebarOpen(false)}
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50"
+                        className="inline-flex size-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50"
                         aria-label="Close navigation"
                     >
                         <X size={16} />
@@ -326,7 +329,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                     <button
                         type="button"
                         onClick={() => setIsSidebarCollapsed((current) => !current)}
-                        className="absolute -right-4 top-6 z-50 inline-flex h-8 w-8 items-center justify-center rounded-full border border-accent-300 bg-white text-accent-700 shadow-sm hover:bg-accent-50"
+                        className="absolute -right-4 top-6 z-50 inline-flex size-8 items-center justify-center rounded-full border border-accent-300 bg-white text-accent-700 shadow-sm hover:bg-accent-50"
                         aria-label={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
                         {...getAnalyticsDebugAttributes('admin__menu--collapse_toggle')}
                     >
@@ -336,20 +339,20 @@ export const AdminShell: React.FC<AdminShellProps> = ({
 
                 <main className="min-w-0 flex-1 min-h-dvh" data-tf-handoff-ready="true">
                     <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
-                        <div className="grid gap-3 px-4 py-4 md:px-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+                        <div className="grid gap-3 p-4 md:px-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
                             <div className="min-w-0 self-start text-left">
                                 <div className="flex items-center gap-2">
                                     <button
                                         type="button"
                                         onClick={() => setIsMobileSidebarOpen(true)}
-                                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 lg:hidden"
+                                        className="inline-flex size-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 lg:hidden"
                                         aria-label="Open navigation"
                                     >
                                         <List size={16} />
                                     </button>
                                     <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-accent-700">Admin workspace</p>
                                 </div>
-                                <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-900 md:text-3xl">{title}</h1>
+                                <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-900 md:text-3xl">{title}</h1>
                                 {description && (
                                     <p className="mt-1 max-w-3xl text-sm text-slate-600">{description}</p>
                                 )}

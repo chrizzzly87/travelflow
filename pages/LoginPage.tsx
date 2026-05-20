@@ -441,7 +441,7 @@ export const LoginPage: React.FC = () => {
             <div className="mx-auto grid max-w-5xl gap-6 lg:grid-cols-[1fr_360px]">
                 <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
                     <p className="text-xs font-semibold uppercase tracking-wide text-accent-600">{t('hero.eyebrow')}</p>
-                    <h1 className="mt-3 text-3xl font-black tracking-tight text-slate-900 md:text-4xl">{t('hero.title')}</h1>
+                    <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-900 md:text-4xl">{t('hero.title')}</h1>
                     <p className="mt-3 text-sm leading-6 text-slate-600">{t('hero.description')}</p>
                     {claimRequestId && (
                         <div className="mt-4 rounded-2xl border border-accent-200 bg-accent-50 px-4 py-3 text-sm text-accent-900">
@@ -562,7 +562,7 @@ export const LoginPage: React.FC = () => {
                                         setHasAcceptedTerms(event.target.checked);
                                         trackEvent(event.target.checked ? 'auth__terms_consent--accept' : 'auth__terms_consent--reject', { source: 'login_page' });
                                     }}
-                                    className="mt-0.5 h-4 w-4 rounded border-slate-300"
+                                    className="mt-0.5 size-4 rounded border-slate-300"
                                     {...getAnalyticsDebugAttributes('auth__terms_consent--accept', { source: 'login_page' })}
                                 />
                                 <span>
@@ -672,7 +672,7 @@ export const LoginPage: React.FC = () => {
                 </section>
 
                 <aside className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
-                    <h2 className="text-base font-bold text-slate-900">{t('benefits.title')}</h2>
+                    <h2 className="text-base font-semibold text-slate-900">{t('benefits.title')}</h2>
                     <ul className="mt-4 space-y-3 text-sm text-slate-600">
                         {(t('benefits.items', { returnObjects: true }) as string[]).map((item) => (
                             <li key={item} className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">

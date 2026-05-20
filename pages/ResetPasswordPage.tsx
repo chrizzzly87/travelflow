@@ -108,7 +108,7 @@ export const ResetPasswordPage: React.FC = () => {
             <div className="mx-auto grid max-w-4xl gap-6 lg:grid-cols-[1fr_320px]">
                 <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
                     <p className="text-xs font-semibold uppercase tracking-wide text-accent-600">{t('reset.eyebrow')}</p>
-                    <h1 className="mt-3 text-3xl font-black tracking-tight text-slate-900 md:text-4xl">{t('reset.title')}</h1>
+                    <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-900 md:text-4xl">{t('reset.title')}</h1>
                     <p className="mt-3 text-sm leading-6 text-slate-600">{t('reset.description')}</p>
 
                     {!isLoading && (!isAuthenticated || isAnonymous) && (
@@ -179,7 +179,7 @@ export const ResetPasswordPage: React.FC = () => {
                 </section>
 
                 <aside className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
-                    <h2 className="text-base font-bold text-slate-900">{t('benefits.title')}</h2>
+                    <h2 className="text-base font-semibold text-slate-900">{t('benefits.title')}</h2>
                     <ul className="mt-4 space-y-3 text-sm text-slate-600">
                         {(t('benefits.items', { returnObjects: true }) as string[]).map((item) => (
                             <li key={item} className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">

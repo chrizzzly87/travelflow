@@ -511,7 +511,7 @@ export const ContactPage: React.FC = () => {
         <MarketingLayout>
             <section className="grid gap-10 lg:grid-cols-2 lg:items-start lg:gap-12">
                 <div className="max-w-2xl">
-                    <h1 className="text-4xl font-black tracking-tight text-slate-900 md:text-5xl">
+                    <h1 className="text-4xl font-semibold tracking-tight text-slate-900 md:text-5xl">
                         {t('contact.title')}
                     </h1>
                     <p className="mt-5 max-w-xl text-sm leading-7 text-slate-600 md:text-base">
@@ -540,7 +540,7 @@ export const ContactPage: React.FC = () => {
                                     type="button"
                                     disabled
                                     aria-label={label}
-                                    className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white text-slate-500 shadow-sm ring-1 ring-slate-200 transition-colors hover:bg-accent-50 hover:text-accent-700 disabled:cursor-not-allowed"
+                                    className="inline-flex size-10 items-center justify-center rounded-full bg-white text-slate-500 shadow-sm ring-1 ring-slate-200 transition-colors hover:bg-accent-50 hover:text-accent-700 disabled:cursor-not-allowed"
                                 >
                                     <Icon size={18} weight="duotone" />
                                 </button>
@@ -773,7 +773,7 @@ export const ContactPage: React.FC = () => {
             </section>
 
             <section className="mt-14 border-t border-slate-200 pt-10 md:mt-16 md:pt-12">
-                <h2 className="text-3xl font-black tracking-tight text-slate-900 md:text-4xl">
+                <h2 className="text-3xl font-semibold tracking-tight text-slate-900 md:text-4xl">
                     Frequently asked questions
                 </h2>
                 <p className="mt-2 text-sm leading-6 text-slate-600">

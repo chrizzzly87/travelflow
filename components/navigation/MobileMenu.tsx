@@ -224,7 +224,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
                             ref={closeButtonRef}
                             type="button"
                             onClick={onClose}
-                            className="flex h-9 w-9 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+                            className="flex size-9 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
                             aria-label="Close menu"
                         >
                             <X size={20} weight="bold" />
@@ -241,7 +241,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
                         />
                     </div>
 
-                    <nav className="flex-1 overflow-y-auto border-t border-slate-100 px-4 py-4">
+                    <nav className="flex-1 overflow-y-auto border-t border-slate-100 p-4">
                         <div className="flex min-h-full flex-col">
                             <div className="space-y-2">
                                 {onMyTripsClick && hasTrips ? (

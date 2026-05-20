@@ -558,13 +558,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4">
                     <div className="min-w-0">
                         <p className="text-xs font-semibold uppercase tracking-wide text-accent-600">{t('hero.eyebrow')}</p>
-                        <h2 className="mt-1 text-lg font-bold text-slate-900">{t('hero.title')}</h2>
+                        <h2 className="mt-1 text-lg font-semibold text-slate-900">{t('hero.title')}</h2>
                         <p className="mt-1 text-sm text-slate-600">{t('hero.description')}</p>
                     </div>
                     <button
                         ref={closeButtonRef}
                         type="button"
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                        className="inline-flex size-8 items-center justify-center rounded-md border border-slate-200 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
                         onClick={() => {
                             if (sessionRestoreState === 'restoring') return;
                             trackEvent('auth__modal--close', { source, reason: 'dismiss' });
@@ -715,7 +715,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                                                 setHasAcceptedTerms(event.target.checked);
                                                 trackEvent(event.target.checked ? 'auth__terms_consent--accept' : 'auth__terms_consent--reject', { source: 'auth_modal' });
                                             }}
-                                            className="mt-0.5 h-4 w-4 rounded border-slate-300"
+                                            className="mt-0.5 size-4 rounded border-slate-300"
                                             {...getAnalyticsDebugAttributes('auth__terms_consent--accept', { source: 'auth_modal' })}
                                         />
                                         <span>

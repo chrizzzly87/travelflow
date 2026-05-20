@@ -178,8 +178,7 @@ export const stretchMapboxViewport = (
   const canvas = mapboxMap.getCanvas();
 
   [container, canvasContainer, canvas].forEach((element) => {
-    element.style.width = '100%';
-    element.style.height = '100%';
+    element.style.cssText += '; width: 100%; height: 100%';
   });
 };
 

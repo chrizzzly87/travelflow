@@ -153,7 +153,7 @@ const CheckoutStepSection: React.FC<CheckoutStepSectionProps> = ({ step, state, 
         <div className="flex items-start gap-4">
             <div
                 className={cn(
-                    'mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold',
+                    'mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold',
                     state === 'complete'
                         ? 'bg-accent-50 text-accent-700 ring-1 ring-accent-200'
                         : state === 'active'
@@ -870,7 +870,7 @@ export const CheckoutPage: React.FC = () => {
 
     const completedPanel = checkoutCompleted ? (
         <div ref={inlineCheckoutSectionRef} className="space-y-5">
-            <div className="rounded-2xl bg-emerald-50 px-6 py-6 shadow-sm ring-1 ring-emerald-100">
+            <div className="rounded-2xl bg-emerald-50 p-6 shadow-sm ring-1 ring-emerald-100">
                 <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">
                     {t('checkout.successEyebrow', { ns: 'pricing' })}
                 </p>
@@ -1895,7 +1895,7 @@ export const CheckoutPage: React.FC = () => {
                                     title={t('checkout.upgradeTitle', { ns: 'pricing' })}
                                 >
                                     <div className="max-w-3xl space-y-6">
-                                        <div className="rounded-2xl border border-slate-200 bg-white px-5 py-5 shadow-sm">
+                                        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                                             <p className={checkoutSectionLabelClassName}>{t('checkout.upgradeSummaryLabel', { ns: 'pricing' })}</p>
                                             <div className="mt-3 flex flex-wrap items-end justify-between gap-4">
                                                 <div>
@@ -1969,7 +1969,7 @@ export const CheckoutPage: React.FC = () => {
                                         : t('checkout.manageBillingTitle', { ns: 'pricing' })}
                                 >
                                     <div className="max-w-3xl space-y-5">
-                                        <div className="rounded-2xl border border-slate-200 bg-white px-5 py-5 shadow-sm">
+                                        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                                             <p className="text-sm leading-6 text-slate-600">
                                                 {isCurrentPlanFlow
                                                     ? t('checkout.currentPlanDescription', {
@@ -2085,7 +2085,7 @@ export const CheckoutPage: React.FC = () => {
                                                         <button
                                                             type="button"
                                                             onClick={handleClearVoucher}
-                                                            className="inline-flex h-5 w-5 items-center justify-center rounded-full text-emerald-700 transition-colors hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
+                                                            className="inline-flex size-5 items-center justify-center rounded-full text-emerald-700 transition-colors hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
                                                             aria-label={t('voucher.clearCta', { ns: 'pricing' })}
                                                             {...getAnalyticsDebugAttributes('checkout__voucher--clear')}
                                                         >

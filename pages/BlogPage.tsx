@@ -184,7 +184,7 @@ const BlogCard: React.FC<{
                 </div>
                 <div className="flex flex-1 flex-col rounded-b-2xl bg-white p-5">
                     <h3
-                        className="text-base font-bold text-slate-900 group-hover:text-accent-700 transition-colors line-clamp-2"
+                        className="text-base font-semibold text-slate-900 group-hover:text-accent-700 transition-colors line-clamp-2"
                         style={
                             transitionNames
                                 ? ({
@@ -326,7 +326,7 @@ export const BlogPage: React.FC = () => {
                     {t('index.pill')}
                 </span>
                 <h1
-                    className="mt-5 text-4xl font-black tracking-tight text-slate-900 md:text-6xl"
+                    className="mt-5 text-4xl font-semibold tracking-tight text-slate-900 md:text-6xl"
                     style={{ fontFamily: 'var(--tf-font-heading)' }}
                 >
                     {t('index.title')}
@@ -448,9 +448,9 @@ export const BlogPage: React.FC = () => {
 
             <section className="pb-16 md:pb-24 animate-scroll-scale-in">
                 <div className="relative rounded-3xl bg-gradient-to-br from-accent-600 to-accent-800 px-8 py-14 text-center md:px-16 md:py-20 overflow-hidden">
-                    <div className="pointer-events-none absolute -top-20 -right-20 h-60 w-60 rounded-full bg-white/10 blur-[60px]" />
+                    <div className="pointer-events-none absolute -top-20 -right-20 size-60 rounded-full bg-white/10 blur-[60px]" />
                     <h2
-                        className="relative text-3xl font-black tracking-tight text-white md:text-5xl"
+                        className="relative text-3xl font-semibold tracking-tight text-white md:text-5xl"
                         style={{ fontFamily: 'var(--tf-font-heading)' }}
                     >
                         {t('index.communityCtaTitle')}

@@ -551,12 +551,19 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
             city ? `${joined || baseInput}-${city}` : '',
         ];
 
-        return Array.from(new Set(
-            rawCandidates
-                .map((candidate) => sanitize(candidate))
-                .filter((candidate) => candidate.length >= 3 && candidate.length <= 40 && USERNAME_CANONICAL_PATTERN.test(candidate))
-                .filter((candidate) => candidate !== current)
-        ));
+        const candidates = new Set<string>();
+        for (const rawCandidate of rawCandidates) {
+            const candidate = sanitize(rawCandidate);
+            if (
+                candidate.length >= 3
+                && candidate.length <= 40
+                && USERNAME_CANONICAL_PATTERN.test(candidate)
+                && candidate !== current
+            ) {
+                candidates.add(candidate);
+            }
+        }
+        return Array.from(candidates);
     };
 
     const fetchUsernameSuggestions = async (input: string): Promise<string[]> => {
@@ -857,7 +864,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                         <CaretRight size={12} weight="bold" aria-hidden="true" />
                         <span className="text-slate-600">{t('settings.breadcrumb.settings')}</span>
                     </nav>
-                    <h1 className="text-3xl font-black tracking-tight text-slate-900 md:text-4xl">{heading}</h1>
+                    <h1 className="text-3xl font-semibold tracking-tight text-slate-900 md:text-4xl">{heading}</h1>
                     <p className="max-w-3xl text-sm leading-6 text-slate-600">{description}</p>
                 </section>
 
@@ -892,8 +899,10 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                             </SelectTrigger>
                                             <SelectContent>
                                                 <SelectItem value={PROFILE_GENDER_UNSPECIFIED}>{t('settings.fields.unspecified')}</SelectItem>
-                                                {PROFILE_GENDER_OPTIONS.filter((option) => option.value !== '').map((option) => (
-                                                    <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                                                {PROFILE_GENDER_OPTIONS.map((option) => (
+                                                    option.value === ''
+                                                        ? null
+                                                        : <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
                                                 ))}
                                             </SelectContent>
                                         </Select>
@@ -1151,7 +1160,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                 )}
                             </div>
 
-                            <section id="billing-management" className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-4">
+                            <section id="billing-management" className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
                                 <div className="flex flex-wrap items-start justify-between gap-4">
                                     <div className="space-y-1">
                                         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.billing.eyebrow')}</p>
@@ -1164,7 +1173,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                 </div>
 
                                 {billingLifecycleState === 'canceled_grace' && (
-                                    <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-4">
+                                    <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
                                         <div className="flex flex-wrap items-start justify-between gap-4">
                                             <div className="space-y-2">
                                                 <p className="text-sm font-semibold text-amber-900">{t('settings.billing.canceledGrace.title')}</p>
@@ -1198,7 +1207,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                 )}
 
                                 {billingLifecycleState === 'inactive' && hasPaidTier && (
-                                    <div className="mt-4 rounded-xl border border-accent-200 bg-accent-50/70 px-4 py-4">
+                                    <div className="mt-4 rounded-xl border border-accent-200 bg-accent-50/70 p-4">
                                         <div className="flex flex-wrap items-start justify-between gap-4">
                                             <div className="space-y-2">
                                                 <p className="text-sm font-semibold text-slate-900">{t('settings.billing.inactive.title')}</p>
@@ -1234,17 +1243,17 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                 )}
 
                                 <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                                    <div className="rounded-lg border border-slate-200 bg-white px-3 py-3">
+                                    <div className="rounded-lg border border-slate-200 bg-white p-3">
                                         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.billing.currentPlanLabel')}</p>
                                         <p className="mt-1 text-sm font-semibold text-slate-900">{currentTierLabel}</p>
                                     </div>
-                                    <div className="rounded-lg border border-slate-200 bg-white px-3 py-3">
+                                    <div className="rounded-lg border border-slate-200 bg-white p-3">
                                         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.billing.statusLabel')}</p>
                                         <p className="mt-1 text-sm font-semibold text-slate-900">
                                             {billingStatusLabel}
                                         </p>
                                     </div>
-                                    <div className="rounded-lg border border-slate-200 bg-white px-3 py-3">
+                                    <div className="rounded-lg border border-slate-200 bg-white p-3">
                                         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.billing.renewalLabel')}</p>
                                         <p className="mt-1 text-sm font-semibold text-slate-900">
                                             {billingState.currentPeriodEnd
@@ -1252,7 +1261,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                                 : '—'}
                                         </p>
                                     </div>
-                                    <div className="rounded-lg border border-slate-200 bg-white px-3 py-3">
+                                    <div className="rounded-lg border border-slate-200 bg-white p-3">
                                         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.billing.subscriptionIdLabel')}</p>
                                         <p className="mt-1 truncate font-mono text-xs text-slate-700" title={billingState.providerSubscriptionId || ''}>
                                             {billingState.providerSubscriptionId || '—'}

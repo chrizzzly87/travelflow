@@ -135,6 +135,25 @@ type ChoiceOption<TId extends string> = {
     icon: React.ComponentType<{ size?: number; weight?: 'duotone' | 'fill' | 'regular' | 'bold' | 'thin' | 'light' }>;
 };
 
+const formatChoiceSummary = <TId extends string>(
+    selectedIds: TId[],
+    options: Array<ChoiceOption<TId>>,
+    translate: (key: string) => string,
+): string => {
+    const optionsById = new Map<TId, ChoiceOption<TId>>();
+    for (const option of options) {
+        optionsById.set(option.id, option);
+    }
+    const labels: string[] = [];
+    for (const selectedId of selectedIds) {
+        const option = optionsById.get(selectedId);
+        if (option) {
+            labels.push(translate(option.labelKey));
+        }
+    }
+    return labels.join(', ');
+};
+
 type IntentOption = {
     id: CreateTripWizardBranch;
     icon: React.ComponentType<{ size?: number; weight?: 'duotone' | 'fill' | 'regular' | 'bold' | 'thin' | 'light' }>;
@@ -255,8 +274,15 @@ const toIsoDate = (date: Date): string => {
 
 const clampNumber = (value: number, min: number, max: number): number => Math.max(min, Math.min(value, max));
 
-const monthLabelsFromNumbers = (months: number[]): string[] =>
-    months.filter((month) => month >= 1 && month <= 12).map((month) => MONTH_LABELS[month - 1]);
+const monthLabelsFromNumbers = (months: number[]): string[] => {
+    const labels: string[] = [];
+    for (const month of months) {
+        if (month >= 1 && month <= 12) {
+            labels.push(MONTH_LABELS[month - 1]);
+        }
+    }
+    return labels;
+};
 
 const formatDestinationList = (destinations: string[]): string => {
     if (destinations.length === 0) return '—';
@@ -341,7 +367,7 @@ const NumberStepper: React.FC<{
                 type="button"
                 onClick={() => onChange(clampNumber(value - 1, min, max))}
                 disabled={value <= min}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-600 transition-colors hover:border-accent-300 hover:text-accent-700 disabled:cursor-not-allowed disabled:opacity-40"
+                className="inline-flex size-9 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-600 transition-colors hover:border-accent-300 hover:text-accent-700 disabled:cursor-not-allowed disabled:opacity-40"
             >
                 -
             </button>
@@ -350,7 +376,7 @@ const NumberStepper: React.FC<{
                 type="button"
                 onClick={() => onChange(clampNumber(value + 1, min, max))}
                 disabled={value >= max}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-600 transition-colors hover:border-accent-300 hover:text-accent-700 disabled:cursor-not-allowed disabled:opacity-40"
+                className="inline-flex size-9 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-600 transition-colors hover:border-accent-300 hover:text-accent-700 disabled:cursor-not-allowed disabled:opacity-40"
             >
                 +
             </button>
@@ -492,14 +518,15 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
 
     const seasonCountryNames = useMemo(() => {
         const seen = new Set<string>();
-        return selectedCountries
-            .map((country) => getDestinationSeasonCountryName(country))
-            .filter((countryName) => {
-                const key = countryName.toLocaleLowerCase();
-                if (seen.has(key)) return false;
-                seen.add(key);
-                return true;
-            });
+        const countryNames: string[] = [];
+        for (const country of selectedCountries) {
+            const countryName = getDestinationSeasonCountryName(country);
+            const key = countryName.toLocaleLowerCase();
+            if (seen.has(key)) continue;
+            seen.add(key);
+            countryNames.push(countryName);
+        }
+        return countryNames;
     }, [selectedCountries]);
 
     const selectedIslandNames = useMemo(
@@ -649,29 +676,17 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
     }, [t, travelerDetailSummary, travelerType]);
 
     const styleSummary = useMemo(
-        () => selectedStyles
-            .map((styleId) => STYLE_CHOICES.find((entry) => entry.id === styleId))
-            .filter((entry): entry is ChoiceOption<string> => Boolean(entry))
-            .map((entry) => t(entry.labelKey))
-            .join(', '),
+        () => formatChoiceSummary(selectedStyles, STYLE_CHOICES, t),
         [selectedStyles, t]
     );
 
     const vibeSummary = useMemo(
-        () => selectedVibes
-            .map((vibeId) => VIBE_CHOICES.find((entry) => entry.id === vibeId))
-            .filter((entry): entry is ChoiceOption<string> => Boolean(entry))
-            .map((entry) => t(entry.labelKey))
-            .join(', '),
+        () => formatChoiceSummary(selectedVibes, VIBE_CHOICES, t),
         [selectedVibes, t]
     );
 
     const transportSummary = useMemo(
-        () => transportModes
-            .map((mode) => TRANSPORT_OPTIONS.find((entry) => entry.id === mode))
-            .filter((entry): entry is ChoiceOption<TransportMode> => Boolean(entry))
-            .map((entry) => t(entry.labelKey))
-            .join(', '),
+        () => formatChoiceSummary(transportModes, TRANSPORT_OPTIONS, t),
         [t, transportModes]
     );
 
@@ -1413,7 +1428,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                 <div className="pointer-events-none absolute inset-0 z-[1800] flex items-center justify-center p-4 sm:p-6">
                     <div className="w-full max-w-xl rounded-3xl border border-accent-100 bg-white/95 px-5 py-4 shadow-xl backdrop-blur-sm">
                         <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-accent-100 text-accent-600">
+                            <div className="flex size-10 items-center justify-center rounded-full bg-accent-100 text-accent-600">
                                 <Loader2 size={18} className="animate-spin" />
                             </div>
                             <div className="min-w-0">
@@ -1590,7 +1605,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                 <div className="space-y-6">
                     <div className="text-center">
                         <div className="text-xs font-semibold uppercase tracking-[0.16em] text-accent-600">{t('wizard.intent.eyebrow')}</div>
-                        <h1 className="mt-2 text-3xl font-bold text-slate-950 sm:text-4xl">{t('wizard.intent.title')}</h1>
+                        <h1 className="mt-2 text-3xl font-semibold text-slate-950 sm:text-4xl">{t('wizard.intent.title')}</h1>
                         <p className="mx-auto mt-3 max-w-2xl text-sm text-slate-600 sm:text-base">{t('wizard.intent.description')}</p>
                     </div>
 
@@ -1612,11 +1627,11 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                                     {...getAnalyticsDebugAttributes('create_trip_wizard__branch--select', { branch: option.id })}
                                 >
                                     <div className="flex items-start justify-between gap-3">
-                                        <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-700">
+                                        <span className="inline-flex size-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-700">
                                             <Icon size={20} weight="duotone" />
                                         </span>
                                         {active && (
-                                            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-accent-600 text-white">
+                                            <span className="inline-flex size-6 items-center justify-center rounded-full bg-accent-600 text-white">
                                                 <Check size={12} />
                                             </span>
                                         )}
@@ -1635,7 +1650,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
             return (
                 <div className="space-y-6">
                     <div className="text-center">
-                        <h2 className="text-3xl font-bold text-slate-950">{t('wizard.destination.title')}</h2>
+                        <h2 className="text-3xl font-semibold text-slate-950">{t('wizard.destination.title')}</h2>
                         <p className="mx-auto mt-2 max-w-2xl text-sm text-slate-600">
                             {wizardBranch === 'known_destinations_exact_dates' || wizardBranch === 'known_destinations_flexible_dates'
                                 ? t('wizard.destination.knownDescription')
@@ -1729,7 +1744,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
             return (
                 <div className="space-y-6">
                     <div className="text-center">
-                        <h2 className="text-3xl font-bold text-slate-950">{t('wizard.dates.title')}</h2>
+                        <h2 className="text-3xl font-semibold text-slate-950">{t('wizard.dates.title')}</h2>
                         <p className="mx-auto mt-2 max-w-2xl text-sm text-slate-600">
                             {dateModeLocked === 'exact'
                                 ? t('wizard.dates.exactDescription')
@@ -1836,7 +1851,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
             return (
                 <div className="space-y-6">
                     <div className="text-center">
-                        <h2 className="text-3xl font-bold text-slate-950">{t('wizard.preferences.title')}</h2>
+                        <h2 className="text-3xl font-semibold text-slate-950">{t('wizard.preferences.title')}</h2>
                         <p className="mx-auto mt-2 max-w-2xl text-sm text-slate-600">{t('wizard.preferences.description')}</p>
                     </div>
 
@@ -1877,7 +1892,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                                         type="button"
                                         onClick={() => toggleChip(entry.id, selectedStyles, setSelectedStyles)}
                                         className={[
-                                            'rounded-2xl border px-3 py-3 text-start transition-all',
+                                            'rounded-2xl border p-3 text-start transition-all',
                                             active
                                                 ? 'border-accent-500 bg-accent-50 text-accent-900 shadow-sm shadow-accent-100'
                                                 : 'border-slate-200 bg-white text-slate-700 hover:border-accent-300 hover:bg-accent-50/60',
@@ -1905,7 +1920,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                                         type="button"
                                         onClick={() => toggleChip(entry.id, selectedVibes, setSelectedVibes)}
                                         className={[
-                                            'rounded-2xl border px-3 py-3 text-start transition-all',
+                                            'rounded-2xl border p-3 text-start transition-all',
                                             active
                                                 ? 'border-accent-500 bg-accent-50 text-accent-900 shadow-sm shadow-accent-100'
                                                 : 'border-slate-200 bg-white text-slate-700 hover:border-accent-300 hover:bg-accent-50/60',
@@ -1933,7 +1948,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                                         type="button"
                                         onClick={() => toggleTransportMode(entry.id)}
                                         className={[
-                                            'rounded-2xl border px-3 py-3 text-start transition-all',
+                                            'rounded-2xl border p-3 text-start transition-all',
                                             active
                                                 ? 'border-accent-500 bg-accent-50 text-accent-900 shadow-sm shadow-accent-100'
                                                 : 'border-slate-200 bg-white text-slate-700 hover:border-accent-300 hover:bg-accent-50/60',
@@ -1957,7 +1972,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
             return (
                 <div className="space-y-6">
                     <div className="text-center">
-                        <h2 className="text-3xl font-bold text-slate-950">{t('wizard.details.title')}</h2>
+                        <h2 className="text-3xl font-semibold text-slate-950">{t('wizard.details.title')}</h2>
                         <p className="mx-auto mt-2 max-w-2xl text-sm text-slate-600">{t('wizard.details.description')}</p>
                     </div>
 
@@ -2044,7 +2059,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
         return (
             <div className="space-y-6">
                 <div className="text-center">
-                    <h2 className="text-3xl font-bold text-slate-950">{t('wizard.review.title')}</h2>
+                    <h2 className="text-3xl font-semibold text-slate-950">{t('wizard.review.title')}</h2>
                     <p className="mx-auto mt-2 max-w-2xl text-sm text-slate-600">{t('wizard.review.description')}</p>
                 </div>
 

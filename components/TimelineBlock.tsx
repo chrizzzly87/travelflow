@@ -595,9 +595,9 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
                 ${isSelected ? 'bg-white border border-accent-300 text-accent-500 group-hover/handle:bg-accent-500 group-hover/handle:text-white group-hover/handle:border-accent-600' : 'bg-white/80 border border-gray-200 group-hover/handle:bg-accent-500 group-hover/handle:border-accent-600 group-hover/handle:text-white'}
             `}>
                <div className={`flex gap-[2px] opacity-50 ${vertical ? 'flex-row' : 'flex-col'}`}>
-                 <div className="w-0.5 h-0.5 bg-current rounded-full"></div>
-                 <div className="w-0.5 h-0.5 bg-current rounded-full"></div>
-                 <div className="w-0.5 h-0.5 bg-current rounded-full"></div>
+                 <div className="size-0.5 bg-current rounded-full"></div>
+                 <div className="size-0.5 bg-current rounded-full"></div>
+                 <div className="size-0.5 bg-current rounded-full"></div>
                </div>
             </div>
         </div>
@@ -620,9 +620,9 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
                 ${isSelected ? 'bg-white border border-accent-300 text-accent-500 group-hover/handle:bg-accent-500 group-hover/handle:text-white group-hover/handle:border-accent-600' : 'bg-white/80 border border-gray-200 group-hover/handle:bg-accent-500 group-hover/handle:border-accent-600 group-hover/handle:text-white'}
             `}>
                <div className={`flex gap-[2px] opacity-50 ${vertical ? 'flex-row' : 'flex-col'}`}>
-                 <div className="w-0.5 h-0.5 bg-current rounded-full"></div>
-                 <div className="w-0.5 h-0.5 bg-current rounded-full"></div>
-                 <div className="w-0.5 h-0.5 bg-current rounded-full"></div>
+                 <div className="size-0.5 bg-current rounded-full"></div>
+                 <div className="size-0.5 bg-current rounded-full"></div>
+                 <div className="size-0.5 bg-current rounded-full"></div>
                </div>
             </div>
         </div>

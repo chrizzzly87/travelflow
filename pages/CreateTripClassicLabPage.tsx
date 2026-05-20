@@ -148,6 +148,25 @@ type ChoiceOption<TId extends string> = {
     icon: React.ComponentType<{ size?: number; weight?: 'duotone' | 'fill' | 'regular' | 'bold' | 'thin' | 'light' }>;
 };
 
+const formatChoiceSummary = <TId extends string>(
+    selectedIds: TId[],
+    options: Array<ChoiceOption<TId>>,
+    translate: (key: string) => string,
+): string => {
+    const optionsById = new Map<TId, ChoiceOption<TId>>();
+    for (const option of options) {
+        optionsById.set(option.id, option);
+    }
+    const labels: string[] = [];
+    for (const selectedId of selectedIds) {
+        const option = optionsById.get(selectedId);
+        if (option) {
+            labels.push(translate(option.labelKey));
+        }
+    }
+    return labels.join(', ');
+};
+
 const STYLE_CHOICES: Array<ChoiceOption<string>> = [
     { id: 'culture', labelKey: 'style.options.culture', icon: Buildings },
     { id: 'food', labelKey: 'style.options.food', icon: ForkKnife },
@@ -247,18 +266,19 @@ const buildLoadingTripPreview = (params: {
     const remainder = totalNights % stops;
 
     let offset = 0;
-    const normalizedFocusLocations = Array.from(
-        new Set(
-            params.focusLocations
-                .map((location) => location.trim())
-                .filter((location) => location.length > 0)
-        )
-    );
+    const normalizedFocusLocations = new Set<string>();
+    for (const rawLocation of params.focusLocations) {
+        const location = rawLocation.trim();
+        if (location.length > 0) {
+            normalizedFocusLocations.add(location);
+        }
+    }
+    const focusLocations = Array.from(normalizedFocusLocations);
     const fallbackLocation = params.destinationLabel.trim() || 'Destination';
     const items = Array.from({ length: stops }).map((_, index) => {
         const cityDuration = baseDuration + (index < remainder ? 1 : 0);
-        const location = normalizedFocusLocations.length > 0
-            ? normalizedFocusLocations[index % normalizedFocusLocations.length]
+        const location = focusLocations.length > 0
+            ? focusLocations[index % focusLocations.length]
             : fallbackLocation;
         const item = {
             id: `loading-city-${index}-${now}`,
@@ -318,7 +338,7 @@ const NumberStepper: React.FC<{
                 type="button"
                 onClick={() => onChange(clampNumber(value - 1, min, max))}
                 disabled={value <= min}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-colors hover:border-accent-300 hover:text-accent-700 disabled:cursor-not-allowed disabled:opacity-40"
+                className="inline-flex size-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-colors hover:border-accent-300 hover:text-accent-700 disabled:cursor-not-allowed disabled:opacity-40"
             >
                 <Minus size={14} />
             </button>
@@ -327,7 +347,7 @@ const NumberStepper: React.FC<{
                 type="button"
                 onClick={() => onChange(clampNumber(value + 1, min, max))}
                 disabled={value >= max}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-colors hover:border-accent-300 hover:text-accent-700 disabled:cursor-not-allowed disabled:opacity-40"
+                className="inline-flex size-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-colors hover:border-accent-300 hover:text-accent-700 disabled:cursor-not-allowed disabled:opacity-40"
             >
                 <Plus size={14} />
             </button>
@@ -618,16 +638,8 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
     const isGenerationBlockedOffline = !isBrowserOnline;
 
     const travelerSummary = t(`traveler.options.${travelerType}`);
-    const styleSummary = selectedStyles
-        .map((styleId) => STYLE_CHOICES.find((entry) => entry.id === styleId))
-        .filter((entry): entry is ChoiceOption<string> => Boolean(entry))
-        .map((entry) => t(entry.labelKey))
-        .join(', ');
-    const transportSummary = transportModes
-        .map((mode) => TRANSPORT_OPTIONS.find((entry) => entry.id === mode))
-        .filter((entry): entry is ChoiceOption<TransportMode> => Boolean(entry))
-        .map((entry) => t(entry.labelKey))
-        .join(', ');
+    const styleSummary = formatChoiceSummary(selectedStyles, STYLE_CHOICES, t);
+    const transportSummary = formatChoiceSummary(transportModes, TRANSPORT_OPTIONS, t);
 
     const travelerDetailSummary = useMemo(() => {
         const getGenderLabel = (gender: TravelerGender): string => {
@@ -1937,8 +1949,8 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
     return (
         <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,#eef2ff_0%,#f8fafc_50%,#ffffff_100%)] text-slate-900">
             <div className="pointer-events-none fixed inset-0 opacity-60">
-                <div className="absolute -left-16 top-12 h-56 w-56 rounded-full bg-accent-200/50 blur-3xl" />
-                <div className="absolute right-0 top-24 h-64 w-64 rounded-full bg-cyan-200/40 blur-3xl" />
+                <div className="absolute -left-16 top-12 size-56 rounded-full bg-accent-200/50 blur-3xl" />
+                <div className="absolute right-0 top-24 size-64 rounded-full bg-cyan-200/40 blur-3xl" />
             </div>
 
             <div className="relative z-10">
@@ -2146,7 +2158,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                 )}
 
                                 <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                                    <label htmlFor="classic-round-trip-switch" className="inline-flex items-start gap-2 rounded-xl bg-transparent px-1.5 py-1.5 text-xs text-slate-700 sm:items-center sm:text-sm">
+                                    <label htmlFor="classic-round-trip-switch" className="inline-flex items-start gap-2 rounded-xl bg-transparent p-1.5 text-xs text-slate-700 sm:items-center sm:text-sm">
                                         <Switch
                                             id="classic-round-trip-switch"
                                             checked={roundTrip}
@@ -2159,7 +2171,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                         </span>
                                     </label>
 
-                                    <label htmlFor="classic-route-lock-switch" className={['inline-flex items-start gap-2 rounded-xl bg-transparent px-1.5 py-1.5 text-xs text-slate-700 sm:items-center sm:text-sm', canLockRoute ? '' : 'opacity-50'].join(' ')}>
+                                    <label htmlFor="classic-route-lock-switch" className={['inline-flex items-start gap-2 rounded-xl bg-transparent p-1.5 text-xs text-slate-700 sm:items-center sm:text-sm', canLockRoute ? '' : 'opacity-50'].join(' ')}>
                                         <Switch
                                             id="classic-route-lock-switch"
                                             checked={routeLock}
@@ -2247,7 +2259,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                                     type="button"
                                                     onClick={() => setFlexWeeks((previous) => clampNumber(previous - 1, 1, 8))}
                                                     disabled={flexWeeks <= 1}
-                                                    className="inline-flex h-6 w-6 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+                                                    className="inline-flex size-6 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
                                                     aria-label="Decrease weeks"
                                                 >
                                                     <Minus size={13} />
@@ -2268,7 +2280,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                                     type="button"
                                                     onClick={() => setFlexWeeks((previous) => clampNumber(previous + 1, 1, 8))}
                                                     disabled={flexWeeks >= 8}
-                                                    className="inline-flex h-6 w-6 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+                                                    className="inline-flex size-6 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
                                                     aria-label="Increase weeks"
                                                 >
                                                     <Plus size={13} />
@@ -2357,7 +2369,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                                         role="button"
                                                         tabIndex={0}
                                                         className={[
-                                                            'group relative rounded-xl border px-3 py-3 text-left transition-colors',
+                                                            'group relative rounded-xl border p-3 text-left transition-colors',
                                                             active
                                                                 ? 'border-accent-400 bg-accent-50 text-accent-900'
                                                                 : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300',
@@ -2372,7 +2384,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                                             aria-label={t('traveler.settings.open', { traveler: t(entry.labelKey) })}
                                                             title={t('traveler.settings.open', { traveler: t(entry.labelKey) })}
                                                             className={[
-                                                                'absolute right-2 top-2 inline-flex h-7 w-7 items-center justify-center rounded-lg border transition-all',
+                                                                'absolute right-2 top-2 inline-flex size-7 items-center justify-center rounded-lg border transition-all',
                                                                 active
                                                                     ? 'border-accent-300 bg-white text-accent-700 opacity-100'
                                                                     : 'border-slate-200 bg-white text-slate-500 opacity-0 group-hover:opacity-100',
@@ -2496,7 +2508,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                         <Compass size={13} weight="duotone" />
                                         {t('snapshot.title')}
                                     </div>
-                                    <h2 className="text-xl font-bold leading-tight text-white">{routeHeadline}</h2>
+                                    <h2 className="text-xl font-semibold leading-tight text-white">{routeHeadline}</h2>
                                 </div>
 
                                 <div ref={snapshotRouteRef} className="relative rounded-xl border border-white/15 bg-white/5 p-3">
@@ -2511,7 +2523,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                                 }}
                                             />
                                             <div
-                                                className="pointer-events-none absolute h-0 w-0 border-l-[5px] border-r-[5px] border-t-[8px] border-l-transparent border-r-transparent border-t-indigo-300/85"
+                                                className="pointer-events-none absolute size-0 border-l-[5px] border-r-[5px] border-t-[8px] border-l-transparent border-r-transparent border-t-indigo-300/85"
                                                 style={{
                                                     left: snapshotRouteGeometry.axisX - 5,
                                                     top: snapshotRouteGeometry.lastY + 6,
@@ -2520,7 +2532,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                             {snapshotRouteGeometry.segmentMidpoints.map((midpoint) => (
                                                 <div
                                                     key={`route-segment-arrow-${midpoint.toFixed(2)}`}
-                                                    className="pointer-events-none absolute h-0 w-0 border-l-[4px] border-r-[4px] border-t-[6px] border-l-transparent border-r-transparent border-t-indigo-300/95"
+                                                    className="pointer-events-none absolute size-0 border-l-[4px] border-r-[4px] border-t-[6px] border-l-transparent border-r-transparent border-t-indigo-300/95"
                                                     style={{
                                                         left: snapshotRouteGeometry.axisX - 4,
                                                         top: midpoint - 3,
@@ -2542,21 +2554,21 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                                 }}
                                             />
                                             <div
-                                                className="pointer-events-none absolute h-0 w-0 border-b-[4px] border-l-[6px] border-t-[4px] border-b-transparent border-t-transparent border-l-indigo-300/90"
+                                                className="pointer-events-none absolute size-0 border-b-[4px] border-l-[6px] border-t-[4px] border-b-transparent border-t-transparent border-l-indigo-300/90"
                                                 style={{
                                                     left: snapshotRouteGeometry.loopLeft + routeLoopSegmentWidth / 2 - 6,
                                                     top: snapshotRouteGeometry.firstY - 4,
                                                 }}
                                             />
                                             <div
-                                                className="pointer-events-none absolute h-0 w-0 border-l-[4px] border-r-[4px] border-b-[6px] border-l-transparent border-r-transparent border-b-indigo-300/90"
+                                                className="pointer-events-none absolute size-0 border-l-[4px] border-r-[4px] border-b-[6px] border-l-transparent border-r-transparent border-b-indigo-300/90"
                                                 style={{
                                                     left: snapshotRouteGeometry.loopLeft - 3,
                                                     top: snapshotRouteGeometry.firstY + routeLoopSegmentHeight / 2 - 6,
                                                 }}
                                             />
                                             <div
-                                                className="pointer-events-none absolute h-0 w-0 border-r-[6px] border-b-[4px] border-t-[4px] border-b-transparent border-t-transparent border-r-indigo-300/90"
+                                                className="pointer-events-none absolute size-0 border-r-[6px] border-b-[4px] border-t-[4px] border-b-transparent border-t-transparent border-r-indigo-300/90"
                                                 style={{
                                                     left: snapshotRouteGeometry.loopLeft + routeLoopSegmentWidth / 2 - 3,
                                                     top: snapshotRouteGeometry.lastY - 4,
@@ -2578,7 +2590,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                                     <div key={destination} className="grid grid-cols-[2rem_minmax(0,1fr)] items-start gap-3 pb-4 last:pb-0">
                                                         <div
                                                             ref={(node) => setSnapshotNodeRef(index, node)}
-                                                            className="relative z-10 flex h-8 w-8 items-center justify-center rounded-full border border-white/30 bg-[#0f173b] text-sm shadow-lg shadow-black/20"
+                                                            className="relative z-10 flex size-8 items-center justify-center rounded-full border border-white/30 bg-[#0f173b] text-sm shadow-lg shadow-black/20"
                                                         >
                                                             <FlagIcon value={option?.flag || '🌍'} size="xs" />
                                                         </div>

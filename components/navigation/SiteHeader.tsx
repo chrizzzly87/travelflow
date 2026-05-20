@@ -157,8 +157,8 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
         : 'hidden sm:inline-flex rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900';
 
     const burgerClass = isGlass
-        ? 'flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 transition-colors hover:bg-white/60 hover:text-slate-900 lg:hidden'
-        : 'flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 lg:hidden';
+        ? 'flex size-9 items-center justify-center rounded-lg text-slate-600 transition-colors hover:bg-white/60 hover:text-slate-900 lg:hidden'
+        : 'flex size-9 items-center justify-center rounded-lg text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 lg:hidden';
 
     return (
         <>
@@ -206,7 +206,7 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
                             <Suspense
                                 fallback={(
                                     <span
-                                        className="hidden h-9 w-9 rounded-full border border-slate-200 bg-slate-100 lg:inline-flex"
+                                        className="hidden size-9 rounded-full border border-slate-200 bg-slate-100 lg:inline-flex"
                                         aria-hidden="true"
                                     />
                                 )}
