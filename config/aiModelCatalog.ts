@@ -27,6 +27,11 @@ export const DEFAULT_CREATE_TRIP_MODEL_ID = `${'openai'}:${CURRENT_RUNTIME_MODEL
 
 export const CREATE_TRIP_PREFERRED_MODEL_IDS = [
     DEFAULT_CREATE_TRIP_MODEL_ID,
+    'openrouter:openai/gpt-5.5',
+    'openrouter:google/gemini-3.5-flash',
+    'openrouter:google/gemini-3.1-flash-lite',
+    'openrouter:x-ai/grok-4.3',
+    'openrouter:qwen/qwen3.5-plus-20260420',
     'openrouter:minimax/minimax-m2.5',
     'perplexity:perplexity/sonar-pro',
 ] as const;

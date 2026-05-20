@@ -1625,7 +1625,7 @@ const handleTelemetry = async (
 
 const normalizeBenchmarkPreferencesForStorage = (
   value: unknown,
-  options: { defaultStartDate: string; defaultEndDate: string },
+  options: { defaultStartDate: string; defaultEndDate: string; mergeFallbackModelIds?: boolean },
 ): BenchmarkPreferencesPayload => {
   const fallbackPresets = createSystemBenchmarkPresets(options.defaultStartDate, options.defaultEndDate);
   return normalizeBenchmarkPreferencesPayload(value, {
@@ -1634,6 +1634,7 @@ const normalizeBenchmarkPreferencesForStorage = (
     defaultStartDate: options.defaultStartDate,
     defaultEndDate: options.defaultEndDate,
     allowedModelIds: ACTIVE_BENCHMARK_MODEL_ID_SET,
+    mergeFallbackModelIds: options.mergeFallbackModelIds,
   });
 };
 
@@ -1792,6 +1793,7 @@ const handlePreferences = async (
     }, {
       defaultStartDate: startDate,
       defaultEndDate: endDate,
+      mergeFallbackModelIds: true,
     });
 
     // Ensure first access has a persisted row in DB instead of local storage only.
