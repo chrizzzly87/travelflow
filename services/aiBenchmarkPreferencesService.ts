@@ -40,11 +40,16 @@ export interface BenchmarkPreferencesPayload {
 
 export const BENCHMARK_DEFAULT_MODEL_IDS = [
     'openai:gpt-5.4',
+    'openrouter:openai/gpt-5.5',
+    'openrouter:google/gemini-3.5-flash',
+    'openrouter:google/gemini-3.1-flash-lite',
+    'openrouter:x-ai/grok-4.3',
     'gemini:gemini-3.1-pro-preview',
     'gemini:gemini-3-pro-preview',
     'openai:gpt-5.2-pro',
     'anthropic:claude-sonnet-4.6',
     'perplexity:perplexity/sonar',
+    'openrouter:qwen/qwen3.5-plus-20260420',
     'qwen:qwen/qwen3.5-plus-02-15',
 ];
 

@@ -8,6 +8,17 @@ import {
 } from '../../services/aiBenchmarkPreferencesService';
 
 describe('services/aiBenchmarkPreferencesService', () => {
+  it('includes the latest OpenRouter models in the default benchmark target pool', () => {
+    expect(BENCHMARK_DEFAULT_MODEL_IDS).toEqual(expect.arrayContaining([
+      'openrouter:openai/gpt-5.5',
+      'openrouter:google/gemini-3.5-flash',
+      'openrouter:google/gemini-3.1-flash-lite',
+      'openrouter:x-ai/grok-4.3',
+      'openrouter:qwen/qwen3.5-plus-20260420',
+    ]));
+    expect(new Set(BENCHMARK_DEFAULT_MODEL_IDS).size).toBe(BENCHMARK_DEFAULT_MODEL_IDS.length);
+  });
+
   it('builds three system presets with injected default dates', () => {
     const presets = createSystemBenchmarkPresets('2026-03-01', '2026-03-15');
 
