@@ -20,8 +20,8 @@ React Review status: npm package `react-review@1.0.6` does not expose a CLI bina
 
 - Initial user baseline: `49 / 100`, `73` errors, `5749` warnings, `356/814` files.
 - After core-page fixes: `51 / 100`, `33` errors, `5752` warnings, `356/821` files.
-- Current full scan: `69 / 100`, `0` errors, `810` warnings, `207/825` files.
-- Current diff scan: `78 / 100`, `0` errors, `435` warnings, `73/165` files.
+- Current full scan: `69 / 100`, `0` errors, `810` warnings, `207/826` files.
+- Current diff scan: `78 / 100`, `0` errors, `441` warnings, `75/185` files.
 
 ## Completed Changes
 
@@ -58,6 +58,7 @@ React Review status: npm package `react-review@1.0.6` does not expose a CLI bina
 - [x] Guarded add-city manual lookups against stale async results and added coverage for map-unavailable/manual-resolution edge cases.
 - [x] Consolidated generation progress message rotation into a reducer with timer regression coverage.
 - [x] Replaced additional component string parsing and country-label pipelines with single-pass transforms in tested timeline, example-trip, detail, and country-select surfaces.
+- [x] Converted the CountrySelect browser coverage to a `.test.ts` file so it runs under the repo's current Vitest include pattern.
 
 ## Validation Log
 
@@ -271,8 +272,19 @@ React Review status: npm package `react-review@1.0.6` does not expose a CLI bina
   - Share: `https://www.react.doctor/share?p=travelflow&s=69&w=810&f=207`
 
 - [x] Focused component single-pass regression suite
-  - Command: `pnpm test:run tests/browser/exampleTripsCarousel.browser.test.ts tests/browser/tripview/TripTimelineListView.browser.test.ts tests/unit/detailsPanelPlacesSearch.test.ts tests/unit/detailsPanelRouteDistanceText.test.ts`
-  - Result: passed, `15` tests.
+  - Command: `pnpm test:run tests/browser/addCityModal.browser.test.ts tests/browser/countrySelect.browser.test.ts tests/browser/exampleTripsCarousel.browser.test.ts tests/browser/tripview/TripTimelineListView.browser.test.ts tests/unit/detailsPanelPlacesSearch.test.ts tests/unit/detailsPanelRouteDistanceText.test.ts`
+  - Result: passed, `21` tests.
+
+- [x] `npx react-doctor@latest . --verbose --diff`
+  - Result: `78 / 100`, `0` errors, `441` warnings, `75/185` files.
+  - Share: `https://www.react.doctor/share?p=travelflow&s=78&w=441&f=75`
+
+- [x] `npx react-doctor@latest . --verbose`
+  - Result: `69 / 100`, `0` errors, `810` warnings, `207/826` files.
+  - Share: `https://www.react.doctor/share?p=travelflow&s=69&w=810&f=207`
+
+- [x] `pnpm test:core`
+  - Result: passed, `308` test files, `1369` tests, `1` skipped.
 
 - [x] IDE lint diagnostics
   - Result: no linter errors found in edited immutable-sort batch files.

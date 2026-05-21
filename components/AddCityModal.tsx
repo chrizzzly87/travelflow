@@ -52,6 +52,7 @@ const addCityModalReducer = (
                 inputValue: action.value,
                 error: null,
                 isManualMode: false,
+                isResolvingSelection: false,
             };
         case 'suggestionsIdle':
             return {

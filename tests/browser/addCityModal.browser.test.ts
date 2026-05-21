@@ -124,6 +124,19 @@ describe('AddCityModal', () => {
 
     expect(onAdd).not.toHaveBeenCalled();
     expect(screen.getByLabelText('Search City')).toHaveValue('New query');
+
+    locationSearchMocks.resolveCitySuggestion.mockResolvedValueOnce({
+      id: 'new-result',
+      name: 'New Result',
+      label: 'New Result',
+      coordinates: { lat: 3, lng: 4 },
+    });
+
+    fireEvent.keyDown(screen.getByLabelText('Search City'), { key: 'Enter' });
+
+    await waitFor(() => {
+      expect(onAdd).toHaveBeenCalledWith('New Result', 3, 4);
+    });
   });
 
   it('shows a map loading error before manual resolution is available', async () => {
