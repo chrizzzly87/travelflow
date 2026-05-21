@@ -36,3 +36,5 @@ summary: "Cleans up the highest-priority React Doctor findings across core trip 
 - [ ] [Internal] 🧵 Reduced component string-parsing iteration debt in tested timeline, examples, details, and country-selection surfaces.
 - [ ] [Internal] 🧪 Ensured country-selection browser coverage runs under the repository's current Vitest include rules.
 - [ ] [Internal] 🧳 Reduced profile stamp metric parsing to single-pass timestamp collection.
+- [ ] [Internal] 🧭 Reduced planner, details, trip-manager, and admin query/filter parsing to single-pass transforms.
+- [ ] [Internal] 🗺️ Reduced trip preview coordinate and leg-color parsing to single-pass transforms.
