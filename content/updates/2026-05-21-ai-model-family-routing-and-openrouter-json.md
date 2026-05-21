@@ -3,7 +3,7 @@ id: rel-2026-05-21-ai-model-family-routing-and-openrouter-json
 version: v0.112.0
 title: "Clearer AI model families and stronger JSON generation"
 date: 2026-05-21
-published_at: 2026-05-21T06:51:29Z
+published_at: 2026-05-21T07:09:31Z
 status: published
 notify_in_app: false
 in_app_hours: 24
