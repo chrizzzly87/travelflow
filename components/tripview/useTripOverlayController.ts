@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type Dispatch, type SetStateAction } from 'react';
+import { useCallback, useEffect, useReducer, type Dispatch, type SetStateAction } from 'react';
 
 interface UseTripOverlayControllerOptions {
     tripId: string;
@@ -19,67 +19,129 @@ interface UseTripOverlayControllerResult {
     closeTripInfoModal: () => void;
 }
 
+interface TripOverlayState {
+    isHistoryOpen: boolean;
+    isTripInfoOpen: boolean;
+    isTripInfoHistoryExpanded: boolean;
+    isMobileMapExpanded: boolean;
+}
+
+type TripOverlayKey = keyof TripOverlayState;
+
+type TripOverlayAction =
+    | { type: 'set'; key: TripOverlayKey; value: SetStateAction<boolean> }
+    | { type: 'resetTripOverlays' }
+    | { type: 'closeFirstOpenOverlay' };
+
+const INITIAL_TRIP_OVERLAY_STATE: TripOverlayState = {
+    isHistoryOpen: false,
+    isTripInfoOpen: false,
+    isTripInfoHistoryExpanded: false,
+    isMobileMapExpanded: false,
+};
+
+const resolveBooleanStateAction = (
+    current: boolean,
+    action: SetStateAction<boolean>
+): boolean => (
+    typeof action === 'function' ? (action as (value: boolean) => boolean)(current) : action
+);
+
+const tripOverlayReducer = (
+    state: TripOverlayState,
+    action: TripOverlayAction
+): TripOverlayState => {
+    switch (action.type) {
+        case 'set': {
+            const nextValue = resolveBooleanStateAction(state[action.key], action.value);
+            return state[action.key] === nextValue ? state : {
+                ...state,
+                [action.key]: nextValue,
+            };
+        }
+        case 'resetTripOverlays':
+            return {
+                ...state,
+                isMobileMapExpanded: false,
+                isTripInfoOpen: false,
+                isTripInfoHistoryExpanded: false,
+            };
+        case 'closeFirstOpenOverlay':
+            if (state.isHistoryOpen) {
+                return { ...state, isHistoryOpen: false };
+            }
+            if (state.isTripInfoOpen) {
+                return { ...state, isTripInfoOpen: false };
+            }
+            if (state.isMobileMapExpanded) {
+                return { ...state, isMobileMapExpanded: false };
+            }
+            return state;
+        default:
+            return state;
+    }
+};
+
 export const useTripOverlayController = ({
     tripId,
     isMobileViewport,
     prewarmTripInfoModal,
 }: UseTripOverlayControllerOptions): UseTripOverlayControllerResult => {
-    const [isHistoryOpen, setIsHistoryOpen] = useState(false);
-    const [isTripInfoOpen, setIsTripInfoOpen] = useState(false);
-    const [isTripInfoHistoryExpanded, setIsTripInfoHistoryExpanded] = useState(false);
-    const [isMobileMapExpanded, setIsMobileMapExpanded] = useState(false);
+    const [state, dispatch] = useReducer(tripOverlayReducer, INITIAL_TRIP_OVERLAY_STATE);
+
+    const setIsHistoryOpen = useCallback<Dispatch<SetStateAction<boolean>>>((value) => {
+        dispatch({ type: 'set', key: 'isHistoryOpen', value });
+    }, []);
+
+    const setIsTripInfoOpen = useCallback<Dispatch<SetStateAction<boolean>>>((value) => {
+        dispatch({ type: 'set', key: 'isTripInfoOpen', value });
+    }, []);
+
+    const setIsTripInfoHistoryExpanded = useCallback<Dispatch<SetStateAction<boolean>>>((value) => {
+        dispatch({ type: 'set', key: 'isTripInfoHistoryExpanded', value });
+    }, []);
+
+    const setIsMobileMapExpanded = useCallback<Dispatch<SetStateAction<boolean>>>((value) => {
+        dispatch({ type: 'set', key: 'isMobileMapExpanded', value });
+    }, []);
 
     const openTripInfoModal = useCallback(() => {
         prewarmTripInfoModal?.();
-        setIsTripInfoOpen(true);
+        dispatch({ type: 'set', key: 'isTripInfoOpen', value: true });
     }, [prewarmTripInfoModal]);
 
     const closeTripInfoModal = useCallback(() => {
-        setIsTripInfoOpen(false);
+        dispatch({ type: 'set', key: 'isTripInfoOpen', value: false });
     }, []);
 
     useEffect(() => {
-        setIsMobileMapExpanded(false);
-        setIsTripInfoOpen(false);
-        setIsTripInfoHistoryExpanded(false);
+        dispatch({ type: 'resetTripOverlays' });
     }, [tripId]);
 
     useEffect(() => {
         if (isMobileViewport) return;
-        setIsMobileMapExpanded(false);
-        setIsTripInfoOpen(false);
-        setIsTripInfoHistoryExpanded(false);
+        dispatch({ type: 'resetTripOverlays' });
     }, [isMobileViewport]);
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
         const handleKeyDown = (event: KeyboardEvent) => {
             if (event.key !== 'Escape') return;
-            if (isHistoryOpen) {
-                setIsHistoryOpen(false);
-                return;
-            }
-            if (isTripInfoOpen) {
-                setIsTripInfoOpen(false);
-                return;
-            }
-            if (isMobileMapExpanded) {
-                setIsMobileMapExpanded(false);
-            }
+            dispatch({ type: 'closeFirstOpenOverlay' });
         };
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [isHistoryOpen, isTripInfoOpen, isMobileMapExpanded]);
+    }, []);
 
     return {
-        isHistoryOpen,
+        isHistoryOpen: state.isHistoryOpen,
         setIsHistoryOpen,
-        isTripInfoOpen,
+        isTripInfoOpen: state.isTripInfoOpen,
         setIsTripInfoOpen,
-        isTripInfoHistoryExpanded,
+        isTripInfoHistoryExpanded: state.isTripInfoHistoryExpanded,
         setIsTripInfoHistoryExpanded,
-        isMobileMapExpanded,
+        isMobileMapExpanded: state.isMobileMapExpanded,
         setIsMobileMapExpanded,
         openTripInfoModal,
         closeTripInfoModal,

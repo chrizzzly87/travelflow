@@ -20,7 +20,7 @@ React Review status: npm package `react-review@1.0.6` does not expose a CLI bina
 
 - Initial user baseline: `49 / 100`, `73` errors, `5749` warnings, `356/814` files.
 - After core-page fixes: `51 / 100`, `33` errors, `5752` warnings, `356/821` files.
-- Current full scan: `68 / 100`, `0` errors, `821` warnings, `210/822` files.
+- Current full scan: `69 / 100`, `0` errors, `817` warnings, `209/822` files.
 - Current diff scan: `78 / 100`, `0` errors, `435` warnings, `73/165` files.
 
 ## Completed Changes
@@ -53,6 +53,7 @@ React Review status: npm package `react-review@1.0.6` does not expose a CLI bina
 - [x] Cleared immutable-sort and min/max loop warnings in focused utility, admin, profile, storage, and export paths without relying on ES2023-only `toSorted()`.
 - [x] Replaced tested map/filter parsing pipelines with single-pass `flatMap` cleanup in storage, blog, legal, trip-generation, airport, destination, and map helpers.
 - [x] Consolidated network status connectivity/probe updates into a reducer so online state, connection snapshots, and probe state commit coherently.
+- [x] Consolidated trip overlay booleans into a reducer while preserving the existing setter API and Escape-close ordering.
 
 ## Validation Log
 
@@ -232,6 +233,14 @@ React Review status: npm package `react-review@1.0.6` does not expose a CLI bina
 - [x] Focused network status reducer regression suite
   - Command: `pnpm test:run tests/browser/useNetworkStatus.browser.test.ts`
   - Result: passed, `2` tests.
+
+- [x] `npx react-doctor@latest . --verbose`
+  - Result: `69 / 100`, `0` errors, `817` warnings, `209/822` files.
+  - Share: `https://www.react.doctor/share?p=travelflow&s=69&w=817&f=209`
+
+- [x] Focused trip overlay reducer regression suite
+  - Command: `pnpm test:run tests/browser/tripview/useTripOverlayController.browser.test.ts tests/browser/tripview/TripViewPlannerWorkspace.browser.test.ts tests/unit/tripViewRuntimeOrder.test.ts`
+  - Result: passed, `16` tests.
 
 - [x] IDE lint diagnostics
   - Result: no linter errors found in edited immutable-sort batch files.
