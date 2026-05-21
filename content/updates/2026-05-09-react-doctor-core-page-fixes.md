@@ -23,3 +23,4 @@ summary: "Cleans up the highest-priority React Doctor findings across core trip 
 - [ ] [Internal] 🧭 Raised the latest React Doctor diff score to `91/100` by clearing safe timeline, admin navigation, floating-map, and listener-subscription findings.
 - [ ] [Internal] 🧾 Stopped committing generated coverage reports so validation runs no longer clutter PR diffs.
 - [ ] [Internal] 🎞️ Raised the latest React Doctor diff score to `92/100` by consolidating intentional blog view-transition state commits.
+- [ ] [Internal] 🔐 Reduced reset-password form state warning debt while preserving the existing auth UI behavior.
