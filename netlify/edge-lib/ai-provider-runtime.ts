@@ -207,7 +207,8 @@ const SYSTEM_STRICT_MINIFIED_JSON_ONLY_PLANNER_PROMPT =
 const ULTRA_COMPACT_RETRY_INSTRUCTION = `
 TRUNCATION RECOVERY MODE:
 - Keep the JSON intentionally short to avoid token truncation.
-- Use at most 8 cities and at most 16 activities.
+- Use at most 6 cities.
+- Use at most 1 activity per city.
 - Prefer short practical text over narrative prose.
 `.trim();
 
@@ -490,6 +491,14 @@ const extractOpenAiResponsesDetails = (payload: unknown): {
 };
 
 const buildOpenAiResponsesRetryPrompt = (prompt: string, ultraCompact: boolean): string => (
+  [
+    STRICT_JSON_RETRY_INSTRUCTION,
+    ultraCompact ? ULTRA_COMPACT_RETRY_INSTRUCTION : "",
+    prompt,
+  ].filter(Boolean).join("\n\n")
+);
+
+const buildProviderRetryPrompt = (prompt: string, ultraCompact: boolean): string => (
   [
     STRICT_JSON_RETRY_INSTRUCTION,
     ultraCompact ? ULTRA_COMPACT_RETRY_INSTRUCTION : "",
@@ -1329,11 +1338,8 @@ const generateWithOpenRouter = async (
       };
     }
 
-    const retryInstructions = forceUltraCompactJson
-      ? `${STRICT_JSON_RETRY_INSTRUCTION}\n${ULTRA_COMPACT_RETRY_INSTRUCTION}`
-      : STRICT_JSON_RETRY_INSTRUCTION;
     const promptBody = forceStrictJson
-      ? `${prompt}\n\n${retryInstructions}`
+      ? buildProviderRetryPrompt(prompt, forceUltraCompactJson)
       : prompt;
 
     let responseResult:
