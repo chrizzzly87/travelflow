@@ -48,9 +48,9 @@ export const AdminFilterMenu: React.FC<AdminFilterMenuProps> = ({
     const selectedCount = selectedValues.length;
     const allSelected = options.length > 0 && selectedCount === options.length;
     const selectedLabels = useMemo(
-        () => options
-            .filter((option) => selectedSet.has(option.value))
-            .map((option) => option.label),
+        () => options.flatMap((option) => (
+            selectedSet.has(option.value) ? [option.label] : []
+        )),
         [options, selectedSet]
     );
     const groupedOptions = useMemo(() => {
@@ -111,9 +111,9 @@ export const AdminFilterMenu: React.FC<AdminFilterMenuProps> = ({
     }, [isOpen, updateMenuPosition]);
 
     const emitNextValues = (nextSet: Set<string>) => {
-        const ordered = options
-            .map((option) => option.value)
-            .filter((optionValue) => nextSet.has(optionValue));
+        const ordered = options.flatMap((option) => (
+            nextSet.has(option.value) ? [option.value] : []
+        ));
         onSelectedValuesChange(ordered);
     };
 

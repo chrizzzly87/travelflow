@@ -172,17 +172,13 @@ export const mapSearchByTextPlacesToHotelResults = (
 ): HotelSearchResult[] => {
     const places = Array.isArray(response?.places) ? response.places : [];
     return places
-        .map((place) => {
+        .flatMap((place) => {
             const name = resolvePlaceDisplayName(place?.displayName) || 'Hotel';
             const address = (place?.formattedAddress || '').trim();
             const id = (place?.id || '').trim() || `${name}-${address}`;
-            return {
-                id,
-                name,
-                address,
-            };
+            if (id.length === 0) return [];
+            return [{ id, name, address }];
         })
-        .filter((result) => result.id.length > 0)
         .slice(0, 5);
 };
 
@@ -539,17 +535,15 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
           const normalizedStart = Number(displayItem.startDateOffset.toFixed(3));
           const defaultGroupId = `city-option-${normalizedStart}`;
           const nextGroupId = displayItem.cityPlanGroupId || defaultGroupId;
-          const siblingOptionIndexes = sortedCityItems
-              .filter(entry =>
-                  entry.id !== displayItem.id
-                  && entry.cityPlanStatus === 'uncertain'
-                  && entry.cityPlanGroupId === nextGroupId
-              )
-              .map(entry => (
-                  typeof entry.cityPlanOptionIndex === 'number' && Number.isFinite(entry.cityPlanOptionIndex)
-                      ? Number(entry.cityPlanOptionIndex)
-                      : -1
-              ));
+          const siblingOptionIndexes = sortedCityItems.flatMap((entry) => {
+              if (entry.id === displayItem.id) return [];
+              if (entry.cityPlanStatus !== 'uncertain') return [];
+              if (entry.cityPlanGroupId !== nextGroupId) return [];
+              const optionIndex = typeof entry.cityPlanOptionIndex === 'number' && Number.isFinite(entry.cityPlanOptionIndex)
+                  ? Number(entry.cityPlanOptionIndex)
+                  : -1;
+              return [optionIndex];
+          });
           const existingOptionIndex = (typeof displayItem.cityPlanOptionIndex === 'number' && Number.isFinite(displayItem.cityPlanOptionIndex))
               ? Number(displayItem.cityPlanOptionIndex)
               : undefined;

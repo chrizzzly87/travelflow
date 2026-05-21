@@ -178,8 +178,10 @@ const parseCountryFromText = (item: ITimelineItem): CountryMatch | null => {
   for (const value of values) {
     const tokens = value
       .split(/[,\-|/]/g)
-      .map(token => token.trim())
-      .filter(Boolean);
+      .flatMap((token) => {
+        const trimmed = token.trim();
+        return trimmed ? [trimmed] : [];
+      });
 
     for (let i = tokens.length - 1; i >= 0; i--) {
       const match = getCountryFromToken(tokens[i]);

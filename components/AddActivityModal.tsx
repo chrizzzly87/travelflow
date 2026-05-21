@@ -72,16 +72,24 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
             tripTitle: trip?.title || "My Trip",
             preferences: notes || "",
             dayNumber: Math.floor(dayOffset),
-            cities: trip?.items.filter(i => i.type === 'city').map(c => ({ 
-                name: c.title, 
-                dayOffset: c.startDateOffset, 
-                duration: c.duration 
-            })) || [],
-            activities: trip?.items.filter(i => i.type === 'activity').map(a => ({ 
-                title: a.title, 
-                dayOffset: a.startDateOffset,
-                type: Array.isArray(a.activityType) ? a.activityType.join(', ') : a.activityType 
-            })) || []
+            cities: trip?.items.flatMap((item) => (
+                item.type === 'city'
+                    ? [{
+                        name: item.title,
+                        dayOffset: item.startDateOffset,
+                        duration: item.duration,
+                    }]
+                    : []
+            )) || [],
+            activities: trip?.items.flatMap((item) => (
+                item.type === 'activity'
+                    ? [{
+                        title: item.title,
+                        dayOffset: item.startDateOffset,
+                        type: Array.isArray(item.activityType) ? item.activityType.join(', ') : item.activityType,
+                    }]
+                    : []
+            )) || []
         };
 
         try {

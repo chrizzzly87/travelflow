@@ -343,8 +343,10 @@ const parseQueryMultiValue = <T extends string>(
     const unique = new Set<string>();
     value
         .split(',')
-        .map((chunk) => chunk.trim())
-        .filter(Boolean)
+        .flatMap((chunk) => {
+            const trimmed = chunk.trim();
+            return trimmed ? [trimmed] : [];
+        })
         .forEach((chunk) => {
             if (allowSet.has(chunk)) {
                 unique.add(chunk);
@@ -522,8 +524,10 @@ const resolveActivationStatus = (user: AdminUserRecord): UserActivationStatus =>
         ...(Array.isArray(user.auth_providers) ? user.auth_providers : []),
         user.auth_provider || '',
     ]
-        .map((value) => value.trim().toLowerCase())
-        .filter(Boolean);
+        .flatMap((value) => {
+            const trimmed = value.trim().toLowerCase();
+            return trimmed ? [trimmed] : [];
+        });
     const hasAnonymousProvider = providerCandidates.some((provider) => provider === 'anonymous' || provider === 'anon');
     if (Boolean(user.is_anonymous) || hasAnonymousProvider) return 'anonymous';
 

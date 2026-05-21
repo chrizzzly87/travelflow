@@ -186,8 +186,10 @@ const parseQueryMultiValue = (value: string | null): string[] => {
     return Array.from(new Set(
         value
             .split(',')
-            .map((part) => part.trim())
-            .filter(Boolean)
+            .flatMap((part) => {
+                const trimmed = part.trim();
+                return trimmed ? [trimmed] : [];
+            })
     ));
 };
 

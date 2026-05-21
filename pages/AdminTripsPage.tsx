@@ -157,8 +157,10 @@ const parseQueryMultiValue = <T extends string>(
     const unique = new Set<string>();
     value
         .split(',')
-        .map((chunk) => chunk.trim())
-        .filter(Boolean)
+        .flatMap((chunk) => {
+            const trimmed = chunk.trim();
+            return trimmed ? [trimmed] : [];
+        })
         .forEach((chunk) => {
             if (allowSet.has(chunk)) unique.add(chunk);
         });
@@ -170,8 +172,10 @@ const parseRawQueryMultiValue = (value: string | null): string[] => {
     return Array.from(new Set(
         value
             .split(',')
-            .map((chunk) => chunk.trim())
-            .filter(Boolean)
+            .flatMap((chunk) => {
+                const trimmed = chunk.trim();
+                return trimmed ? [trimmed] : [];
+            })
     ));
 };
 

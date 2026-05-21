@@ -655,7 +655,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
     ]);
 
     const providerOptions = useMemo(() => {
-        const values = Array.from(new Set(runs.map((run) => run.provider).filter(Boolean)));
+        const values = Array.from(new Set(runs.flatMap((run) => (run.provider ? [run.provider] : []))));
         values.sort((left, right) => {
             const orderDelta = getAiProviderSortOrder(left) - getAiProviderSortOrder(right);
             if (orderDelta !== 0) return orderDelta;
