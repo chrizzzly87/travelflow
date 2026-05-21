@@ -322,15 +322,15 @@ const pickCityRouteComponentWinner = (componentCities: ITimelineItem[]): ITimeli
 
     const explicitApproved = componentCities.filter((city) => city.isApproved === true);
     if (explicitApproved.length > 0) {
-        return [...explicitApproved].sort(compareCityRouteOrder)[0] || null;
+        return explicitApproved.toSorted(compareCityRouteOrder)[0] || null;
     }
 
     const confirmed = componentCities.filter((city) => (city.cityPlanStatus || 'confirmed') !== 'uncertain');
     if (confirmed.length > 0) {
-        return [...confirmed].sort(compareCityRouteOrder)[0] || null;
+        return confirmed.toSorted(compareCityRouteOrder)[0] || null;
     }
 
-    return [...componentCities].sort(compareCityRouteOrder)[0] || null;
+    return componentCities.toSorted(compareCityRouteOrder)[0] || null;
 };
 
 export const buildCityOverlapLayout = (
@@ -477,7 +477,7 @@ export const buildHorizontalTransferLaneLayout = (
 
     if (normalized.length === 0) return [];
 
-    const ordered = [...normalized].sort((a, b) => {
+    const ordered = normalized.toSorted((a, b) => {
         if (a.chipLeft !== b.chipLeft) return a.chipLeft - b.chipLeft;
         if (a.centerX !== b.centerX) return a.centerX - b.centerX;
         return a.index - b.index;
@@ -586,9 +586,11 @@ export const findTravelBetweenCities = (
 
     if (candidates.length === 0) return null;
 
-    return candidates.sort((a, b) =>
-        Math.abs(a.startDateOffset - fromEnd) - Math.abs(b.startDateOffset - fromEnd)
-    )[0];
+    return candidates.reduce((nearest, candidate) => {
+        const nearestDistance = Math.abs(nearest.startDateOffset - fromEnd);
+        const candidateDistance = Math.abs(candidate.startDateOffset - fromEnd);
+        return candidateDistance < nearestDistance ? candidate : nearest;
+    });
 };
 
 export interface TravelLegMetrics {
@@ -1192,9 +1194,11 @@ export const applyCityPaletteToItems = (
 };
 
 export const getTripPrimaryCityColorHex = (items: ITimelineItem[]): string => {
-    const firstCity = items
-        .filter(item => item.type === 'city')
-        .sort((a, b) => a.startDateOffset - b.startDateOffset)[0];
+    const firstCity = items.reduce<ITimelineItem | null>((earliest, item) => {
+        if (item.type !== 'city') return earliest;
+        if (!earliest || item.startDateOffset < earliest.startDateOffset) return item;
+        return earliest;
+    }, null);
     if (!firstCity?.color) return '#4f46e5';
     return getHexFromColorClass(firstCity.color);
 };

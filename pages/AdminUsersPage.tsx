@@ -1841,7 +1841,7 @@ export const AdminUsersPage: React.FC = () => {
             return String(user.account_status || 'active').toLowerCase();
         };
 
-        const sorted = [...filtered].sort((a, b) => {
+        const sorted = filtered.toSorted((a, b) => {
             const left = getSortValue(a);
             const right = getSortValue(b);
             let base = 0;

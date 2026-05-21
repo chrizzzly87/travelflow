@@ -610,7 +610,7 @@ export const groupBenchmarkRunComments = (
   return Array.from(grouped.values())
     .map((group) => ({
       ...group,
-      comments: [...group.comments].sort((left, right) => {
+      comments: group.comments.toSorted((left, right) => {
         const rightTs = Date.parse(right.updatedAt);
         const leftTs = Date.parse(left.updatedAt);
         const safeRight = Number.isFinite(rightTs) ? rightTs : 0;

@@ -345,7 +345,7 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
             if (!Number.isFinite(rightMs)) return -1;
             return leftMs - rightMs;
         };
-        const next = [...sampleAdminTableRows].sort((left, right) => {
+        const next = sampleAdminTableRows.toSorted((left, right) => {
             let result = 0;
             if (sampleTableSortKey === 'trip') result = compareText(left.trip, right.trip);
             if (sampleTableSortKey === 'owner') result = compareText(left.owner, right.owner);

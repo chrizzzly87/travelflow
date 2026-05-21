@@ -455,7 +455,7 @@ const toReleaseTs = (releasedAt: string): number => {
 };
 
 export const sortAiModels = (items: AiModelCatalogItem[]): AiModelCatalogItem[] => {
-    return [...items].sort((left, right) => {
+    return items.toSorted((left, right) => {
         const providerDelta = getAiProviderSortOrder(left.provider) - getAiProviderSortOrder(right.provider);
         if (providerDelta !== 0) return providerDelta;
 

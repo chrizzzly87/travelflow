@@ -25,3 +25,4 @@ summary: "Cleans up the highest-priority React Doctor findings across core trip 
 - [ ] [Internal] 🎞️ Raised the latest React Doctor diff score to `92/100` by consolidating intentional blog view-transition state commits.
 - [ ] [Internal] 🔐 Reduced reset-password form state warning debt while preserving the existing auth UI behavior.
 - [ ] [Internal] 📐 Reduced full-scan visual warning debt with Tailwind shorthand and heading-weight cleanup.
+- [ ] [Internal] 🧮 Raised the full React Doctor scan to `68/100` by clearing immutable-sort and nearest-item loop findings.

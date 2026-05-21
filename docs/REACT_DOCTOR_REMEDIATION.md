@@ -15,13 +15,13 @@ Improve React Doctor health across the full repository while keeping this PR foc
 
 ## Current Score Snapshot
 
-Latest scanner used: `react-doctor v0.2.1`, resolved through `pnpm dlx react-doctor@latest`.
+Latest scanner used: `react-doctor v0.2.1`, resolved through `npx react-doctor@latest`.
 React Review status: npm package `react-review@1.0.6` does not expose a CLI binary; React Doctor now points to React Review as the GitHub App for PR comments and score tracking.
 
 - Initial user baseline: `49 / 100`, `73` errors, `5749` warnings, `356/814` files.
 - After core-page fixes: `51 / 100`, `33` errors, `5752` warnings, `356/821` files.
-- Current full scan: `66 / 100`, `0` errors, `881` warnings, `222/822` files.
-- Current diff scan: `77 / 100`, `0` errors, `444` warnings, `72/152` files.
+- Current full scan: `68 / 100`, `0` errors, `847` warnings, `217/822` files.
+- Current diff scan: `78 / 100`, `0` errors, `435` warnings, `73/165` files.
 
 ## Completed Changes
 
@@ -50,6 +50,7 @@ React Review status: npm package `react-review@1.0.6` does not expose a CLI bina
 - [x] Replaced flagged fallback/loading copy punctuation and the blog table-of-contents anchor command.
 - [x] Cleared the latest safe diff warnings for timeline keyboard semantics, handler-only drag state, one-sided alert accents, render-helper calls, listener resubscriptions, floating-map style allocation, intentional blog view-transition flushes, and reset-password form state.
 - [x] Applied visual-equivalent Tailwind shorthand cleanup for repeated size/padding classes and softened flagged heading weights.
+- [x] Cleared immutable-sort and min/max loop warnings in focused utility, admin, profile, storage, and export paths.
 
 ## Validation Log
 
@@ -201,6 +202,21 @@ React Review status: npm package `react-review@1.0.6` does not expose a CLI bina
 
 - [x] IDE lint diagnostics
   - Result: no linter errors found in edited `components/` and `pages/` files.
+
+- [x] `npx react-doctor@latest . --verbose --diff`
+  - Result: `78 / 100`, `0` errors, `435` warnings, `73/165` files.
+  - Share: `https://www.react.doctor/share?p=travelflow&s=78&w=435&f=73`
+
+- [x] `npx react-doctor@latest . --verbose`
+  - Result: `68 / 100`, `0` errors, `847` warnings, `217/822` files.
+  - Share: `https://www.react.doctor/share?p=travelflow&s=68&w=847&f=217`
+
+- [x] Focused immutable-sort utility regression suite
+  - Command: `pnpm test:run tests/unit/adminDashboardChartData.test.ts tests/unit/adminAiTelemetryChartData.test.ts tests/unit/cityRouteAndTransferLayout.test.ts tests/unit/tripCalendarExportService.test.ts tests/unit/profileTripState.test.ts tests/unit/offlineChangeQueue.test.ts tests/unit/destinationService.test.ts tests/unit/aiBenchmarkValidationInternals.test.ts tests/browser/storageService.browser.test.ts tests/browser/tripManagerArchive.browser.test.ts`
+  - Result: passed, `66` tests.
+
+- [x] IDE lint diagnostics
+  - Result: no linter errors found in edited immutable-sort batch files.
 
 ## Prioritized Todo
 

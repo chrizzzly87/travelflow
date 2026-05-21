@@ -83,8 +83,8 @@ const readQueue = (): OfflineTripQueueEntry[] => {
 };
 
 const writeQueue = (entries: OfflineTripQueueEntry[]): OfflineTripQueueEntry[] => {
-  const normalized = [...entries]
-    .sort((a, b) => a.queuedAt - b.queuedAt)
+  const normalized = entries
+    .toSorted((a, b) => a.queuedAt - b.queuedAt)
     .slice(-MAX_QUEUE_ENTRIES);
   writeLocalStorageItem(OFFLINE_QUEUE_STORAGE_KEY, JSON.stringify(normalized));
   return normalized;
@@ -103,8 +103,8 @@ const readConflictBackups = (): OfflineConflictBackupEntry[] => {
 };
 
 const writeConflictBackups = (entries: OfflineConflictBackupEntry[]): OfflineConflictBackupEntry[] => {
-  const normalized = [...entries]
-    .sort((a, b) => b.capturedAt - a.capturedAt)
+  const normalized = entries
+    .toSorted((a, b) => b.capturedAt - a.capturedAt)
     .slice(0, MAX_CONFLICT_BACKUPS);
   writeLocalStorageItem(OFFLINE_CONFLICT_BACKUPS_STORAGE_KEY, JSON.stringify(normalized));
   return normalized;

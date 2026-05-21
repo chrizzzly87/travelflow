@@ -28,8 +28,8 @@ const toDayKey = (isoDate: string | null | undefined): string | null => {
 const toDayLabel = (dayKey: string): string => `${dayKey.slice(8, 10)}.${dayKey.slice(5, 7)}`;
 
 const sortAndSliceRecent = <TRow extends RowWithDate>(rows: TRow[], maxDays: number): TRow[] => (
-    [...rows]
-        .sort((a, b) => a.date.localeCompare(b.date))
+    rows
+        .toSorted((a, b) => a.date.localeCompare(b.date))
         .slice(-Math.max(1, maxDays))
 );
 

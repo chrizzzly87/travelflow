@@ -99,7 +99,7 @@ describe('buildHorizontalTransferLaneLayout', () => {
     });
 
     byLane.forEach((laneItems) => {
-      const sorted = [...laneItems].sort((a, b) => a.left - b.left);
+      const sorted = laneItems.toSorted((a, b) => a.left - b.left);
       for (let i = 1; i < sorted.length; i += 1) {
         expect(sorted[i].left).toBeGreaterThanOrEqual(sorted[i - 1].right + 8);
       }

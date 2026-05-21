@@ -242,7 +242,7 @@ const buildTravelEvent = (
 };
 
 const sortByStartOffset = (items: ITimelineItem[]): ITimelineItem[] => {
-    return [...items].sort((left, right) => {
+    return items.toSorted((left, right) => {
         if (left.startDateOffset !== right.startDateOffset) return left.startDateOffset - right.startDateOffset;
         return left.title.localeCompare(right.title);
     });
@@ -280,7 +280,7 @@ export const buildTripCalendarExport = ({
         const cityEvents = cityItems.map((item, index) => buildCityEvent(item, index, baseDate));
         const activityEvents = activityItems.map((item, index) => buildActivityEvent(item, index, baseDate, activityOwnerCityMap.get(item.id)));
         const travelEvents = travelItems.map((item, index) => buildTravelEvent(item, index, baseDate, cityItems));
-        events = [...cityEvents, ...activityEvents, ...travelEvents].sort((left, right) => (
+        events = [...cityEvents, ...activityEvents, ...travelEvents].toSorted((left, right) => (
             new Date(left.start).getTime() - new Date(right.start).getTime()
         ));
     }

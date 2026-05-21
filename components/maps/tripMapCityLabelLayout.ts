@@ -191,7 +191,7 @@ export const resolveTripMapProjectedCityLabelLayouts = ({
   const compactMaxWidthPx = Math.max(124, Math.round(defaultMaxWidthPx * 0.84));
   const placedRects: LabelRect[] = [];
 
-  const sortedLabels = [...labels].sort((left, right) => (
+  const sortedLabels = labels.toSorted((left, right) => (
     Number(Boolean(right.subLabel)) - Number(Boolean(left.subLabel))
       || left.point.y - right.point.y
       || left.point.x - right.point.x

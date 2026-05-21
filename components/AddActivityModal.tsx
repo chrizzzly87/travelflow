@@ -121,10 +121,10 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
         if (selectedTypes.includes(type)) {
             // Prevent empty selection
             if (selectedTypes.length > 1) {
-                setSelectedTypes(selectedTypes.filter(t => t !== type));
+                setSelectedTypes((currentTypes) => currentTypes.filter(t => t !== type));
             }
         } else {
-            setSelectedTypes([...selectedTypes, type]);
+            setSelectedTypes((currentTypes) => [...currentTypes, type]);
         }
     };
 
