@@ -82,8 +82,11 @@ const resolveAutoFitZoom = (
     if (!Number.isFinite(clampedTarget)) return NaN;
 
     const normalizedPresets = zoomLevelPresets
-        .map((value) => clampZoomLevel(value))
-        .filter((value, index, values) => Number.isFinite(value) && values.indexOf(value) === index)
+        .flatMap((value) => {
+            const clamped = clampZoomLevel(value);
+            return Number.isFinite(clamped) ? [clamped] : [];
+        })
+        .filter((value, index, values) => values.indexOf(value) === index)
         .sort((left, right) => left - right);
 
     if (normalizedPresets.length === 0) return clampedTarget;

@@ -53,9 +53,10 @@ export const buildUserLevelCumulativeStackedChartData = (
     if (labels.length === 0) return [];
 
     const labelByKey = new Map(userLevelBreakdown.map((item) => [item.key, item.label]));
-    const dynamicDayKeys = Array.from(new Set(visibleRangeUsers
-        .map((user) => toDayKey(user.created_at))
-        .filter((dayKey): dayKey is string => typeof dayKey === 'string'))).sort((a, b) => a.localeCompare(b));
+    const dynamicDayKeys = Array.from(new Set(visibleRangeUsers.flatMap((user) => {
+        const dayKey = toDayKey(user.created_at);
+        return typeof dayKey === 'string' ? [dayKey] : [];
+    }))).sort((a, b) => a.localeCompare(b));
     const staticRangeDayCount = dateRange === '7d' ? 7 : dateRange === '30d' ? 30 : dateRange === '90d' ? 90 : null;
     const dayKeys = staticRangeDayCount
         ? Array.from({ length: staticRangeDayCount }, (_, index) => {

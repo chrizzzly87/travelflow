@@ -20,7 +20,7 @@ React Review status: npm package `react-review@1.0.6` does not expose a CLI bina
 
 - Initial user baseline: `49 / 100`, `73` errors, `5749` warnings, `356/814` files.
 - After core-page fixes: `51 / 100`, `33` errors, `5752` warnings, `356/821` files.
-- Current full scan: `69 / 100`, `0` errors, `792` warnings, `205/825` files.
+- Current full scan: `69 / 100`, `0` errors, `787` warnings, `203/825` files.
 - Current diff scan: `78 / 100`, `0` errors, `428` warnings, `74/187` files.
 
 ## Completed Changes
@@ -62,6 +62,7 @@ React Review status: npm package `react-review@1.0.6` does not expose a CLI bina
 - [x] Reduced profile stamp metric parsing to single-pass timestamp collection with focused profile stamp coverage.
 - [x] Reduced planner, details, trip-manager, and admin query/filter parsing to single-pass transforms with focused regression coverage.
 - [x] Reduced trip preview coordinate and leg-color parsing to single-pass transforms with focused preview URL coverage.
+- [x] Reduced trip resize preset normalization and admin dashboard day-key parsing to single-pass transforms with focused regression coverage.
 
 ## Validation Log
 

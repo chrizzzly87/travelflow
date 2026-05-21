@@ -38,3 +38,4 @@ summary: "Cleans up the highest-priority React Doctor findings across core trip 
 - [ ] [Internal] 🧳 Reduced profile stamp metric parsing to single-pass timestamp collection.
 - [ ] [Internal] 🧭 Reduced planner, details, trip-manager, and admin query/filter parsing to single-pass transforms.
 - [ ] [Internal] 🗺️ Reduced trip preview coordinate and leg-color parsing to single-pass transforms.
+- [ ] [Internal] 📊 Reduced trip resize preset and admin dashboard day-key parsing to single-pass transforms.
