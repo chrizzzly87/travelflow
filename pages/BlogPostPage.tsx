@@ -228,8 +228,14 @@ const BlogMapCanvas: React.FC<BlogMapCanvasProps> = ({
 }) => {
     const { isLoaded, loadError } = useGoogleMaps();
     const [mapInstance, setMapInstance] = useState<google.maps.Map | null>(null);
-    const [coordinatesBySpotId, setCoordinatesBySpotId] = useState<Record<string, google.maps.LatLngLiteral | null | undefined>>({});
-    const [isResolvingSpots, setIsResolvingSpots] = useState(false);
+    const [spotResolutionState, setSpotResolutionState] = useState<{
+        coordinatesBySpotId: Record<string, google.maps.LatLngLiteral | null | undefined>;
+        isResolvingSpots: boolean;
+    }>({
+        coordinatesBySpotId: {},
+        isResolvingSpots: false,
+    });
+    const { coordinatesBySpotId, isResolvingSpots } = spotResolutionState;
     const markerOverlaysRef = useRef<google.maps.OverlayView[]>([]);
 
     const mapZoom = Number.isFinite(config.mapZoom) ? Math.max(2, Math.min(18, Math.round(config.mapZoom as number))) : 13;
@@ -266,24 +272,22 @@ const BlogMapCanvas: React.FC<BlogMapCanvasProps> = ({
         if (unresolvedSpots.length === 0) return;
 
         let cancelled = false;
-        setIsResolvingSpots(true);
+        setSpotResolutionState((current) => ({ ...current, isResolvingSpots: true }));
         const geocoder = new window.google.maps.Geocoder();
 
         void Promise.all(unresolvedSpots.map((spot) => geocodeSpotQuery(geocoder, spot)))
             .then((results) => {
                 if (cancelled) return;
-                setCoordinatesBySpotId((current) => {
-                    const next = { ...current };
+                setSpotResolutionState((current) => {
+                    const coordinatesBySpotId = { ...current.coordinatesBySpotId };
                     results.forEach(({ id, coordinates }) => {
-                        next[id] = coordinates;
+                        coordinatesBySpotId[id] = coordinates;
                     });
-                    return next;
+                    return {
+                        coordinatesBySpotId,
+                        isResolvingSpots: false,
+                    };
                 });
-            })
-            .finally(() => {
-                if (!cancelled) {
-                    setIsResolvingSpots(false);
-                }
             });
 
         return () => {

@@ -1110,11 +1110,14 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
     ]);
 
     const setCountriesFromString = useCallback((value: string) => {
-        setSelectedCountries(
-            value
-                ? value.split(',').map((entry) => resolveDestinationName(entry.trim())).filter(Boolean)
-                : []
-        );
+        if (!value) {
+            setSelectedCountries([]);
+            return;
+        }
+        setSelectedCountries(value.split(',').flatMap((entry) => {
+            const destinationName = resolveDestinationName(entry.trim());
+            return destinationName ? [destinationName] : [];
+        }));
     }, []);
 
     const togglePopularPick = useCallback((name: string) => {
@@ -1219,7 +1222,10 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
             totalNights: totalNights > 0 ? totalNights : undefined,
             budget,
             pace,
-            interests: notes.split(',').map((token) => token.trim()).filter(Boolean),
+            interests: notes.split(',').flatMap((token) => {
+                const interest = token.trim();
+                return interest ? [interest] : [];
+            }),
             notes: notes.trim() || undefined,
             specificCities: specificCities.trim() || undefined,
             dateInputMode,

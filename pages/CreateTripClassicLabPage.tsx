@@ -1677,10 +1677,10 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                 }
                 : {}),
         };
-        const notesInterests = notes
-            .split(',')
-            .map((token) => token.trim())
-            .filter(Boolean);
+        const notesInterests = notes.split(',').flatMap((token) => {
+            const interest = token.trim();
+            return interest ? [interest] : [];
+        });
         const classicGenerateOptions = {
             budget,
             pace,

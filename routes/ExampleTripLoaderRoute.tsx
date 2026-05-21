@@ -158,12 +158,12 @@ export const ExampleTripLoaderRoute: React.FC<ExampleTripLoaderRouteProps> = ({
         };
     }, [applyTemplateResources, markTemplateFactoryLoading, prefetchedTemplateCard, templateId]);
 
-    const templateCountries = useMemo(
-        () => templateCard?.countries?.map((country) => country.name).filter(Boolean)
-            || prefetchedTrip?.exampleTemplateCountries
-            || [],
-        [templateCard, prefetchedTrip]
-    );
+    const templateCountries = useMemo(() => {
+        if (!templateCard?.countries) {
+            return prefetchedTrip?.exampleTemplateCountries || [];
+        }
+        return templateCard.countries.flatMap((country) => country.name ? [country.name] : []);
+    }, [templateCard, prefetchedTrip]);
 
     useEffect(() => {
         if (!templateId) {

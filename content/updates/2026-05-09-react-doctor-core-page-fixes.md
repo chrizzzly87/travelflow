@@ -18,3 +18,4 @@ summary: "Cleans up the highest-priority React Doctor findings across core trip 
 - [ ] [Internal] 📋 Added a React Doctor remediation tracker plus future-feature score and effect-discipline guardrails.
 - [ ] [Internal] 🧭 Reduced unnecessary effect-based state sync in auth, trip cards, and trip sharing flows.
 - [ ] [Internal] 🧹 Raised the latest React Doctor diff score to `84/100` by clearing safe duplicate styling, heading-weight, DOM-style batching, and repeated array-iteration findings.
+- [ ] [Internal] ⚡ Raised the latest React Doctor diff score to `85/100` by consolidating safe state updates in auth, profile, blog, login, route-loading, and trip preview flows.

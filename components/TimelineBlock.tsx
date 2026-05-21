@@ -128,7 +128,11 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
   const cityDurationFullLabel = `${formatCount(cityDayCount)} ${cityDayCount === 1 ? 'Day' : 'Days'} / ${formatCount(cityNightCount)} ${cityNightCount === 1 ? 'Night' : 'Nights'}`;
   const fallbackCountryFromLocation = item.location
     ? (() => {
-        const parts = item.location.split(',').map(part => part.trim()).filter(Boolean);
+        const parts: string[] = [];
+        for (const rawPart of item.location.split(',')) {
+          const part = rawPart.trim();
+          if (part) parts.push(part);
+        }
         return parts.length > 0 ? parts[parts.length - 1] : undefined;
       })()
     : undefined;
@@ -150,7 +154,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
       onMoveStart(e, item.id);
   };
 
-  const handleClick = (e: React.MouseEvent) => {
+  const selectTimelineBlock = (e: React.MouseEvent) => {
       e.stopPropagation();
       onSelect(item.id, { multi: isCity && (e.shiftKey || e.metaKey || e.ctrlKey), isCity });
   };
@@ -356,9 +360,9 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
       `}
       style={finalStyle}
       onPointerDown={handlePointerDown}
-      onClick={handleClick}
+      onClick={selectTimelineBlock}
       onKeyDown={handleKeyDown}
-      role={isCity ? 'button' : undefined}
+      role="button"
       tabIndex={isCity && isSelected ? 0 : -1}
       aria-expanded={isCity && isSelected ? isDetailsPanelVisible : undefined}
       data-tooltip={cityTooltipText}

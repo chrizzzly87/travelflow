@@ -99,6 +99,26 @@ type TimedRequestOutcome<T> = (
     | { status: 'timeout' }
 );
 
+type SessionRestoreState = 'idle' | 'restoring' | 'restored';
+
+interface AuthFeedbackState {
+    isSubmitting: boolean;
+    hasAcceptedTerms: boolean;
+    errorMessage: string | null;
+    infoMessage: string | null;
+    showAuthSupportMessage: boolean;
+    sessionRestoreState: SessionRestoreState;
+}
+
+const DEFAULT_AUTH_FEEDBACK_STATE: AuthFeedbackState = {
+    isSubmitting: false,
+    hasAcceptedTerms: false,
+    errorMessage: null,
+    infoMessage: null,
+    showAuthSupportMessage: false,
+    sessionRestoreState: 'idle',
+};
+
 export const AuthModal: React.FC<AuthModalProps> = ({
     isOpen,
     source,
@@ -122,18 +142,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     const [mode, setMode] = useState<AuthMode>('login');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
-    const [errorMessage, setErrorMessage] = useState<string | null>(null);
-    const [infoMessage, setInfoMessage] = useState<string | null>(null);
-    const [showAuthSupportMessage, setShowAuthSupportMessage] = useState(false);
+    const [authFeedback, setAuthFeedback] = useState<AuthFeedbackState>(DEFAULT_AUTH_FEEDBACK_STATE);
+    const {
+        isSubmitting,
+        hasAcceptedTerms,
+        errorMessage,
+        infoMessage,
+        showAuthSupportMessage,
+        sessionRestoreState,
+    } = authFeedback;
     const [rememberLogin, setRememberLogin] = useState<boolean>(() => isRememberLoginEnabled());
     const lastUsedProvider = useSyncExternalStore(
         subscribeLastUsedOAuthProvider,
         getLastUsedOAuthProvider,
         () => null
     );
-    const [sessionRestoreState, setSessionRestoreState] = useState<'idle' | 'restoring' | 'restored'>('idle');
     const hasHandledSuccessRef = useRef(false);
     const hasInteractiveAttemptRef = useRef(false);
     const pendingRequestRef = useRef(0);
@@ -155,6 +178,34 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     const secondaryInputId = 'auth-modal-secondary';
     const rememberLoginInputId = 'auth-modal-remember-login';
     const fieldClassName = 'mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-accent-500 [&:user-invalid]:border-rose-400 [&:user-invalid]:bg-rose-50 [&:user-invalid]:text-rose-900 [&:user-invalid]:focus:ring-rose-200';
+
+    const updateAuthFeedback = useCallback((patch: Partial<AuthFeedbackState>) => {
+        setAuthFeedback((current) => ({ ...current, ...patch }));
+    }, []);
+
+    const setIsSubmitting = useCallback((isSubmitting: boolean) => {
+        updateAuthFeedback({ isSubmitting });
+    }, [updateAuthFeedback]);
+
+    const setHasAcceptedTerms = useCallback((hasAcceptedTerms: boolean) => {
+        updateAuthFeedback({ hasAcceptedTerms });
+    }, [updateAuthFeedback]);
+
+    const setErrorMessage = useCallback((errorMessage: string | null) => {
+        updateAuthFeedback({ errorMessage });
+    }, [updateAuthFeedback]);
+
+    const setInfoMessage = useCallback((infoMessage: string | null) => {
+        updateAuthFeedback({ infoMessage });
+    }, [updateAuthFeedback]);
+
+    const setShowAuthSupportMessage = useCallback((showAuthSupportMessage: boolean) => {
+        updateAuthFeedback({ showAuthSupportMessage });
+    }, [updateAuthFeedback]);
+
+    const setSessionRestoreState = useCallback((sessionRestoreState: SessionRestoreState) => {
+        updateAuthFeedback({ sessionRestoreState });
+    }, [updateAuthFeedback]);
 
     const oauthRedirectTo = useMemo(() => {
         if (typeof window === 'undefined') return undefined;
@@ -212,14 +263,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
     useEffect(() => {
         if (!isOpen) {
-            setIsSubmitting(false);
-            setErrorMessage(null);
-            setInfoMessage(null);
-            setShowAuthSupportMessage(false);
-            setSessionRestoreState('idle');
+            setAuthFeedback(DEFAULT_AUTH_FEEDBACK_STATE);
             hasHandledSuccessRef.current = false;
             hasInteractiveAttemptRef.current = false;
-            setHasAcceptedTerms(false);
             pendingRequestRef.current += 1;
             return;
         }
@@ -234,15 +280,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
     useEffect(() => {
         if (!isOpen || hasInteractiveAttemptRef.current) return;
-        if (isLoading) {
-            setSessionRestoreState('restoring');
-            return;
-        }
-        if (isAuthenticated && !isAnonymous) {
-            setSessionRestoreState('restored');
-            return;
-        }
-        setSessionRestoreState('idle');
+        const nextSessionRestoreState: SessionRestoreState = isLoading
+            ? 'restoring'
+            : isAuthenticated && !isAnonymous
+                ? 'restored'
+                : 'idle';
+        setSessionRestoreState(nextSessionRestoreState);
     }, [isAnonymous, isAuthenticated, isLoading, isOpen]);
 
     useEffect(() => {
@@ -281,13 +324,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         if (sessionRestoreState !== 'restoring') return;
         const timer = window.setTimeout(() => {
             if (sessionRestoreState !== 'restoring') return;
-            setSessionRestoreState('idle');
-            setErrorMessage(t(
-                isOnline
-                    ? (isSlowConnection ? 'errors.restore_timeout_slow_network' : 'errors.restore_timeout')
-                    : 'errors.offline'
-            ));
-            setInfoMessage(null);
+            updateAuthFeedback({
+                sessionRestoreState: 'idle',
+                errorMessage: t(
+                    isOnline
+                        ? (isSlowConnection ? 'errors.restore_timeout_slow_network' : 'errors.restore_timeout')
+                        : 'errors.offline'
+                ),
+                infoMessage: null,
+            });
             trackEvent('auth__modal--restore_timeout', {
                 source,
                 is_online: isOnline,
@@ -295,7 +340,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             });
         }, getAuthRestoreTimeoutMs(isSlowConnection));
         return () => window.clearTimeout(timer);
-    }, [isOnline, isOpen, isSlowConnection, sessionRestoreState, source, t]);
+    }, [isOnline, isOpen, isSlowConnection, sessionRestoreState, source, t, updateAuthFeedback]);
 
     if (!isOpen) return null;
     const isRestoreBlocked = sessionRestoreState === 'restoring' || sessionRestoreState === 'restored';
@@ -303,9 +348,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     const handleModeChange = (nextMode: AuthMode) => {
         if (isRestoreBlocked) return;
         setMode(nextMode);
-        setErrorMessage(null);
-        setInfoMessage(null);
-        setShowAuthSupportMessage(false);
+        updateAuthFeedback({
+            errorMessage: null,
+            infoMessage: null,
+            showAuthSupportMessage: false,
+        });
         trackEvent('auth__method--select', { method: nextMode, source: 'modal' });
     };
 

@@ -57,6 +57,13 @@ interface UsernameCheckState {
     error: string | null;
 }
 
+type SubscriptionSummary = Awaited<ReturnType<typeof getCurrentSubscriptionSummary>>;
+
+interface BillingSummaryState {
+    summary: SubscriptionSummary;
+    isLoading: boolean;
+}
+
 const EMPTY_FORM: ProfileFormState = {
     firstName: '',
     lastName: '',
@@ -164,8 +171,12 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
         error: null,
     });
     const [requiredFieldErrors, setRequiredFieldErrors] = useState<RequiredFieldErrors>(EMPTY_REQUIRED_FIELD_ERRORS);
-    const [subscriptionSummary, setSubscriptionSummary] = useState<Awaited<ReturnType<typeof getCurrentSubscriptionSummary>>>(null);
-    const [isBillingLoading, setIsBillingLoading] = useState(false);
+    const [billingSummaryState, setBillingSummaryState] = useState<BillingSummaryState>({
+        summary: null,
+        isLoading: false,
+    });
+    const subscriptionSummary = billingSummaryState.summary;
+    const isBillingLoading = billingSummaryState.isLoading;
     const [isManageBillingSubmitting, setIsManageBillingSubmitting] = useState(false);
     const [isCancelBillingSubmitting, setIsCancelBillingSubmitting] = useState(false);
     const [paddlePublicConfig, setPaddlePublicConfig] = useState<PaddlePublicConfig | null>(null);
@@ -227,7 +238,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
         };
     }, []);
 
-    const loadSubscriptionSummaryWithRetry = useCallback(async (): Promise<Awaited<ReturnType<typeof getCurrentSubscriptionSummary>>> => {
+    const loadSubscriptionSummaryWithRetry = useCallback(async (): Promise<SubscriptionSummary> => {
         for (let attempt = 0; attempt < 3; attempt += 1) {
             const summary = await getCurrentSubscriptionSummary();
             if (summary) {
@@ -242,14 +253,13 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
 
     useEffect(() => {
         if (!isAuthenticated) {
-            setSubscriptionSummary(null);
-            setIsBillingLoading(false);
+            setBillingSummaryState({ summary: null, isLoading: false });
             billingRepairAttemptedRef.current = false;
             return;
         }
 
         let cancelled = false;
-        setIsBillingLoading(true);
+        setBillingSummaryState((current) => ({ ...current, isLoading: true }));
         void (async () => {
             let summary = await loadSubscriptionSummaryWithRetry();
             const shouldAttemptRepair = !billingRepairAttemptedRef.current && (
@@ -270,17 +280,12 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                 }
             }
             if (cancelled) return;
-            setSubscriptionSummary(summary);
+            setBillingSummaryState({ summary, isLoading: false });
         })()
             .catch((error) => {
                 if (cancelled) return;
                 console.warn('Failed to load profile billing summary.', error);
-                setSubscriptionSummary(null);
-            })
-            .finally(() => {
-                if (!cancelled) {
-                    setIsBillingLoading(false);
-                }
+                setBillingSummaryState({ summary: null, isLoading: false });
             });
 
         return () => {

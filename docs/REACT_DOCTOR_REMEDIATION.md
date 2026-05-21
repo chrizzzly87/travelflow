@@ -21,7 +21,7 @@ React Review status: npm package `react-review@1.0.6` does not expose a CLI bina
 - Initial user baseline: `49 / 100`, `73` errors, `5749` warnings, `356/814` files.
 - After core-page fixes: `51 / 100`, `33` errors, `5752` warnings, `356/821` files.
 - Current full scan: `55 / 100`, `0` errors, `5737` warnings, `353/821` files.
-- Current diff scan: `84 / 100`, `0` errors, `185` warnings, `32/89` files.
+- Current diff scan: `85 / 100`, `0` errors, `170` warnings, `31/89` files.
 
 ## Completed Changes
 
@@ -44,6 +44,8 @@ React Review status: npm package `react-review@1.0.6` does not expose a CLI bina
 - [x] Collapsed React Doctor duplicate Tailwind size/padding classes in flagged files.
 - [x] Applied the flagged heading-weight cleanup to scanner-reported heading tags.
 - [x] Rewrote safe repeated array passes to single-pass loops/reducers, including a real `TripLoaderRoute` undefined-variable crash risk.
+- [x] Consolidated safe route, auth, profile, blog, login, and trip preview state updates to reduce unnecessary rerenders and cascading effect state.
+- [x] Kept `TripLoaderRoute` view/access state updates coherent while preserving in-session view override behavior.
 
 ## Validation Log
 
@@ -68,6 +70,26 @@ React Review status: npm package `react-review@1.0.6` does not expose a CLI bina
 - [x] Focused effect/storage regression suite
   - Command: `pnpm test:run tests/browser/authUiPreferencesService.browser.test.ts tests/browser/authModal.browser.test.ts tests/browser/loginPage.browser.test.ts tests/browser/profileTripCard.browser.test.ts tests/browser/tripview/useTripShareLifecycle.browser.test.ts`
   - Result: passed, `26` tests.
+
+- [x] `pnpm build:netlify`
+  - Result: passed through validators, sitemap generation, and Vite production build.
+  - Notes: emitted existing release-version validation warnings, CSS/view-transition, dynamic-import, and chunk-size warnings.
+
+- [x] Focused state/effect regression suite
+  - Command: `pnpm test:run tests/browser/authModal.browser.test.ts tests/browser/loginPage.browser.test.ts tests/browser/profileSettingsPage.browser.test.ts tests/browser/exampleTripCard.browser.test.ts tests/browser/createTripWizard.browser.test.ts tests/browser/createTripClassicLabPage.browser.test.ts tests/browser/routes/exampleTripLoaderRoute.browser.test.ts tests/browser/tripview/TripFloatingMapPreview.browser.test.ts tests/browser/TimelineBlock.browser.test.ts`
+  - Result: passed, `56` tests.
+
+- [x] Focused route-loader regression suite
+  - Command: `pnpm test:run tests/browser/routes/tripLoaderRoute.browser.test.ts tests/browser/routes/exampleTripLoaderRoute.browser.test.ts tests/browser/tripview/TripFloatingMapPreview.browser.test.ts`
+  - Result: passed, `33` tests.
+
+- [x] `pnpm dlx react-doctor@latest . --verbose --diff`
+  - Result: `85 / 100`, `0` errors, `170` warnings, `31/89` files.
+  - Share: `https://www.react.doctor/share?p=travelflow&s=85&w=170&f=31`
+  - Notes: latest package resolved to `react-doctor v0.2.1`; React Review remains a GitHub App integration rather than a local scanner CLI.
+
+- [x] `pnpm test:core`
+  - Result: passed, `304` test files, `1357` tests, `1` skipped.
 
 - [x] `pnpm build:netlify`
   - Result: passed through validators, sitemap generation, and Vite production build.
@@ -118,6 +140,7 @@ React Review status: npm package `react-review@1.0.6` does not expose a CLI bina
 
 - [ ] Timeline clickable containers
   - Findings: `jsx-a11y/no-static-element-interactions`, `jsx-a11y/click-events-have-key-events`.
+  - Status: fixed for `TimelineBlock`; timeline scroll containers remain because they need a separate drag/scroll-safe interaction pass.
   - Approach: use semantic controls or keyboard-equivalent handling without disrupting drag/scroll behavior.
 
 - [ ] Admin label associations

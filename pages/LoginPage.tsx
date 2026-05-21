@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { ArrowRight, SpinnerGap as Loader2 } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
@@ -128,7 +128,7 @@ export const LoginPage: React.FC = () => {
     const [password, setPassword] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isPostAuthProcessing, setIsPostAuthProcessing] = useState(false);
-    const [hasPostAuthAttempted, setHasPostAuthAttempted] = useState(false);
+    const hasPostAuthAttemptedRef = useRef(false);
     const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [infoMessage, setInfoMessage] = useState<string | null>(null);
@@ -192,9 +192,9 @@ export const LoginPage: React.FC = () => {
 
     const processPostAuthClaims = useCallback(async () => {
         if (!assetClaimId && !claimRequestId) return;
-        if (hasPostAuthAttempted) return;
+        if (hasPostAuthAttemptedRef.current) return;
 
-        setHasPostAuthAttempted(true);
+        hasPostAuthAttemptedRef.current = true;
         setIsPostAuthProcessing(true);
         setErrorMessage(null);
         setInfoMessage(t('states.queuedProcessing'));
@@ -250,7 +250,7 @@ export const LoginPage: React.FC = () => {
         } finally {
             setIsPostAuthProcessing(false);
         }
-    }, [assetClaimId, claimRequestId, hasPostAuthAttempted, navigate, nextPath, t]);
+    }, [assetClaimId, claimRequestId, navigate, nextPath, t]);
 
     useEffect(() => {
         if (isLoading) return;
