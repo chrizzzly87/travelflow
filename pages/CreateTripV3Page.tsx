@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -467,7 +467,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
     const [enforceIslandOnly, setEnforceIslandOnly] = useState(true);
 
     const [prefillMeta, setPrefillMeta] = useState<TripPrefillData['meta'] | null>(null);
-    const [prefillHydrated, setPrefillHydrated] = useState(false);
+    const prefillHydratedRef = useRef(false);
 
     const [isGenerating, setIsGenerating] = useState(false);
     const [generationError, setGenerationError] = useState<string | null>(null);
@@ -868,13 +868,13 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
     useEffect(() => {
         const raw = searchParams.get('prefill');
         if (!raw) {
-            setPrefillHydrated(true);
+            prefillHydratedRef.current = true;
             return;
         }
 
         const data = decodeTripPrefill(raw);
         if (!data) {
-            setPrefillHydrated(true);
+            prefillHydratedRef.current = true;
             return;
         }
 
@@ -1011,13 +1011,13 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
             }));
         }
 
-        setPrefillHydrated(true);
+        prefillHydratedRef.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
-        if (!prefillHydrated) return;
+        if (!prefillHydratedRef.current) return;
 
         const params = new URLSearchParams(window.location.search);
         if (!hasPersistableState) {
@@ -1061,7 +1061,6 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
         isRoundTrip,
         notes,
         pace,
-        prefillHydrated,
         prefillMeta?.author,
         prefillMeta?.label,
         prefillMeta?.source,

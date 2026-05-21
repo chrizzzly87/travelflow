@@ -21,3 +21,4 @@ summary: "Cleans up the highest-priority React Doctor findings across core trip 
 - [ ] [Internal] ⚡ Raised the latest React Doctor diff score to `85/100` by consolidating safe state updates in auth, profile, blog, login, route-loading, and trip preview flows.
 - [ ] [Internal] 🧯 Raised the latest React Doctor diff score to `87/100` by clearing flagged render-time date, loading-copy, and blog navigation findings.
 - [ ] [Internal] 🧭 Raised the latest React Doctor diff score to `91/100` by clearing safe timeline, admin navigation, floating-map, and listener-subscription findings.
+- [ ] [Internal] 🧳 Reduced create-trip prefill persistence rerenders while keeping the latest React Doctor diff score at `91/100`.
