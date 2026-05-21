@@ -29,6 +29,30 @@ describe('useTripOverlayController', () => {
     expect(result.current.isMobileMapExpanded).toBe(false);
   });
 
+  it('resets mobile-only overlays when leaving the mobile viewport', () => {
+    const { result, rerender } = renderHook(
+      ({ isMobileViewport }) => useTripOverlayController({
+        tripId: 'trip-a',
+        isMobileViewport,
+      }),
+      { initialProps: { isMobileViewport: true } },
+    );
+
+    act(() => {
+      result.current.setIsHistoryOpen(true);
+      result.current.setIsTripInfoOpen(true);
+      result.current.setIsTripInfoHistoryExpanded(true);
+      result.current.setIsMobileMapExpanded(true);
+    });
+
+    rerender({ isMobileViewport: false });
+
+    expect(result.current.isHistoryOpen).toBe(true);
+    expect(result.current.isTripInfoOpen).toBe(false);
+    expect(result.current.isTripInfoHistoryExpanded).toBe(false);
+    expect(result.current.isMobileMapExpanded).toBe(false);
+  });
+
   it('closes the first visible overlay on Escape and preserves setter callbacks', () => {
     const prewarmTripInfoModal = vi.fn();
     const { result } = renderHook(() => useTripOverlayController({
