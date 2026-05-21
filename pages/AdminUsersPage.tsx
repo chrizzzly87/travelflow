@@ -341,17 +341,11 @@ const parseQueryMultiValue = <T extends string>(
     if (!value) return [];
     const allowSet = new Set<string>(allowedValues);
     const unique = new Set<string>();
-    value
-        .split(',')
-        .flatMap((chunk) => {
-            const trimmed = chunk.trim();
-            return trimmed ? [trimmed] : [];
-        })
-        .forEach((chunk) => {
-            if (allowSet.has(chunk)) {
-                unique.add(chunk);
-            }
-        });
+    for (const chunk of value.split(',')) {
+        const trimmed = chunk.trim();
+        if (!trimmed || !allowSet.has(trimmed)) continue;
+        unique.add(trimmed);
+    }
     return allowedValues.filter((candidate) => unique.has(candidate));
 };
 
