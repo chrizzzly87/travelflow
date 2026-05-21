@@ -236,6 +236,15 @@ const CREATE_TRIP_PREFERRED_MODEL_ID_SET = new Set(Object.keys(MODEL_PREFERENCE_
 const CREATE_TRIP_MODELS = getCreateTripModelOptions(AI_MODEL_CATALOG);
 const IS_DEV = Boolean((import.meta as any)?.env?.DEV);
 
+const createRegionDisplayNames = (locale: string): Intl.DisplayNames | null => {
+    try {
+        const RegionDisplayNames = Intl.DisplayNames;
+        return new RegionDisplayNames([locale], { type: 'region' });
+    } catch {
+        return null;
+    }
+};
+
 const toIsoDate = (date: Date): string => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -450,13 +459,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
         await requestTripReadyNotificationPermission();
     }, [confirm, t]);
 
-    const regionDisplayNames = useMemo(() => {
-        try {
-            return new Intl.DisplayNames([i18n.language], { type: 'region' });
-        } catch {
-            return null;
-        }
-    }, [i18n.language]);
+    const regionDisplayNames = useMemo(() => createRegionDisplayNames(i18n.language), [i18n.language]);
 
     const getLocalizedCountryName = useCallback((countryCode: string | undefined, fallback: string): string => {
         if (!countryCode || countryCode.length !== 2 || !regionDisplayNames) return fallback;
@@ -607,8 +610,8 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
         if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
             return plannerDurationLabel;
         }
-        const formatter = new Intl.DateTimeFormat(i18n.language, { month: 'short', day: 'numeric' });
-        return `${formatter.format(start)} - ${formatter.format(end)}`;
+        const dateFormatOptions: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
+        return `${start.toLocaleDateString(i18n.language, dateFormatOptions)} - ${end.toLocaleDateString(i18n.language, dateFormatOptions)}`;
     }, [dayCount, endDate, i18n.language, plannerDurationLabel, startDate]);
 
     const averageDaysPerStop = useMemo(() => {
@@ -1147,14 +1150,20 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
         snapshotNodeRefs.current = snapshotNodeRefs.current.slice(0, routeTimelineDestinations.length);
     }, [routeTimelineDestinations.length]);
 
+    const updateSnapshotRouteGeometryRef = useRef(updateSnapshotRouteGeometry);
+    useEffect(() => {
+        updateSnapshotRouteGeometryRef.current = updateSnapshotRouteGeometry;
+    }, [updateSnapshotRouteGeometry]);
+
     useLayoutEffect(() => {
         updateSnapshotRouteGeometry();
     }, [routeTimelineDestinations, roundTrip, routeLock, updateSnapshotRouteGeometry]);
 
     useEffect(() => {
-        window.addEventListener('resize', updateSnapshotRouteGeometry);
-        return () => window.removeEventListener('resize', updateSnapshotRouteGeometry);
-    }, [updateSnapshotRouteGeometry]);
+        const handleResize = () => updateSnapshotRouteGeometryRef.current();
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     useEffect(() => {
         if (typeof ResizeObserver === 'undefined') return;
@@ -2545,7 +2554,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                     {showLockedRouteLines && snapshotRouteGeometry && roundTrip && (
                                         <>
                                             <div
-                                                className="pointer-events-none absolute rounded-l-2xl border-b-2 border-l-2 border-t-2 border-indigo-300/70"
+                                                className="pointer-events-none absolute rounded-s-2xl border-y-2 border-indigo-300/70 shadow-[inset_2px_0_0_rgba(165,180,252,0.7)]"
                                                 style={{
                                                     left: snapshotRouteGeometry.loopLeft,
                                                     top: snapshotRouteGeometry.firstY,

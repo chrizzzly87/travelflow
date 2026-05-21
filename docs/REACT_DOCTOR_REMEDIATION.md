@@ -20,8 +20,8 @@ React Review status: npm package `react-review@1.0.6` does not expose a CLI bina
 
 - Initial user baseline: `49 / 100`, `73` errors, `5749` warnings, `356/814` files.
 - After core-page fixes: `51 / 100`, `33` errors, `5752` warnings, `356/821` files.
-- Current full scan: `55 / 100`, `0` errors, `5737` warnings, `353/821` files.
-- Current diff scan: `87 / 100`, `0` errors, `153` warnings, `31/89` files.
+- Current full scan: `66 / 100`, `0` errors, `1029` warnings, `235/825` files.
+- Current diff scan: `91 / 100`, `0` errors, `121` warnings, `30/90` files.
 
 ## Completed Changes
 
@@ -48,6 +48,7 @@ React Review status: npm package `react-review@1.0.6` does not expose a CLI bina
 - [x] Kept `TripLoaderRoute` view/access state updates coherent while preserving in-session view override behavior.
 - [x] Removed render-time date construction from flagged account, billing, trip-info, and print calendar JSX paths.
 - [x] Replaced flagged fallback/loading copy punctuation and the blog table-of-contents anchor command.
+- [x] Cleared the latest safe diff warnings for timeline keyboard semantics, handler-only drag state, one-sided alert accents, render-helper calls, listener resubscriptions, and floating-map style allocation.
 
 ## Validation Log
 
@@ -127,6 +128,29 @@ React Review status: npm package `react-review@1.0.6` does not expose a CLI bina
 - [x] `pnpm build:netlify`
   - Result: passed through validators, sitemap generation, and Vite production build.
   - Notes: emitted existing release-version validation warnings, CSS/view-transition, dynamic-import, and chunk-size warnings.
+
+- [x] Focused safe-warning regression suite
+  - Command: `pnpm test:run tests/browser/VerticalTimeline.browser.test.ts tests/browser/TimelineBlock.browser.test.ts tests/browser/tripview/TripFloatingMapPreview.browser.test.ts test/components/OnPageDebuggerMapRuntime.test.tsx tests/browser/createTripClassicLabPage.browser.test.ts tests/browser/createTripWizard.browser.test.ts tests/browser/checkoutPage.browser.test.ts tests/browser/admin/AdminShell.storage.browser.test.ts tests/unit/blogViewTransitions.test.ts`
+  - Result: passed, `64` tests.
+
+- [x] `pnpm dlx react-doctor@latest . --verbose --diff`
+  - Result: `91 / 100`, `0` errors, `121` warnings, `30/90` files.
+  - Share: `https://www.react.doctor/share?p=travelflow&s=91&w=121&f=30`
+  - Notes: remaining diff warnings are architectural reducer/effect-chain/component-boundary work plus intentional async retry/view-transition patterns.
+
+- [x] `pnpm dlx react-doctor@latest . --verbose`
+  - Result: `66 / 100`, `0` errors, `1029` warnings, `235/825` files.
+  - Share: `https://www.react.doctor/share?p=travelflow&s=66&w=1029&f=235`
+
+- [x] `git diff --check`
+  - Result: passed.
+
+- [x] `pnpm test:core`
+  - Result: passed, `304` test files, `1357` tests, `1` skipped.
+
+- [x] `pnpm build:netlify`
+  - Result: passed through validators, sitemap generation, and Vite production build.
+  - Notes: emitted existing release-version validation warnings, Node deprecation warnings, and Vite chunk-size warnings.
 
 ## Prioritized Todo
 

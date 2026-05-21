@@ -1339,16 +1339,29 @@ export const OnPageDebugger: React.FC = () => {
         });
     }, [collectH1Highlight]);
 
+    const scheduleTrackingRefreshRef = useRef(scheduleTrackingRefresh);
+    const scheduleH1RefreshRef = useRef(scheduleH1Refresh);
+
+    useEffect(() => {
+        scheduleTrackingRefreshRef.current = scheduleTrackingRefresh;
+    }, [scheduleTrackingRefresh]);
+
+    useEffect(() => {
+        scheduleH1RefreshRef.current = scheduleH1Refresh;
+    }, [scheduleH1Refresh]);
+
     useEffect(() => {
         if (!isOpen || !trackingEnabled) {
             setTrackingBoxes([]);
             return;
         }
 
-        scheduleTrackingRefresh();
-        window.addEventListener('resize', scheduleTrackingRefresh);
-        window.addEventListener('scroll', scheduleTrackingRefresh, true);
-        const observer = new MutationObserver(scheduleTrackingRefresh);
+        const handleTrackingRefresh = () => scheduleTrackingRefreshRef.current();
+
+        handleTrackingRefresh();
+        window.addEventListener('resize', handleTrackingRefresh);
+        window.addEventListener('scroll', handleTrackingRefresh, true);
+        const observer = new MutationObserver(handleTrackingRefresh);
         observer.observe(document.body, {
             childList: true,
             subtree: true,
@@ -1362,10 +1375,10 @@ export const OnPageDebugger: React.FC = () => {
                 rafRef.current = null;
             }
             observer.disconnect();
-            window.removeEventListener('resize', scheduleTrackingRefresh);
-            window.removeEventListener('scroll', scheduleTrackingRefresh, true);
+            window.removeEventListener('resize', handleTrackingRefresh);
+            window.removeEventListener('scroll', handleTrackingRefresh, true);
         };
-    }, [collectTrackingBoxes, isOpen, scheduleTrackingRefresh, trackingEnabled]);
+    }, [isOpen, trackingEnabled]);
 
     useEffect(() => {
         if (isOpen && trackingEnabled) {
@@ -1379,10 +1392,12 @@ export const OnPageDebugger: React.FC = () => {
             return;
         }
 
-        scheduleH1Refresh();
-        window.addEventListener('resize', scheduleH1Refresh);
-        window.addEventListener('scroll', scheduleH1Refresh, true);
-        const observer = new MutationObserver(scheduleH1Refresh);
+        const handleH1Refresh = () => scheduleH1RefreshRef.current();
+
+        handleH1Refresh();
+        window.addEventListener('resize', handleH1Refresh);
+        window.addEventListener('scroll', handleH1Refresh, true);
+        const observer = new MutationObserver(handleH1Refresh);
         observer.observe(document.body, {
             childList: true,
             subtree: true,
@@ -1396,10 +1411,10 @@ export const OnPageDebugger: React.FC = () => {
                 h1RafRef.current = null;
             }
             observer.disconnect();
-            window.removeEventListener('resize', scheduleH1Refresh);
-            window.removeEventListener('scroll', scheduleH1Refresh, true);
+            window.removeEventListener('resize', handleH1Refresh);
+            window.removeEventListener('scroll', handleH1Refresh, true);
         };
-    }, [h1HighlightEnabled, isOpen, scheduleH1Refresh, showSeoTools]);
+    }, [h1HighlightEnabled, isOpen, showSeoTools]);
 
     useEffect(() => {
         if (!isOpen || !showSeoTools || !h1HighlightEnabled) return;

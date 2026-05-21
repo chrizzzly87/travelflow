@@ -111,10 +111,10 @@ const resolveDiscountBadgeLabel = (
     lookup: BillingDiscountLookup | null,
     fallbackCode: string | null,
 ): string | null => {
-    const formatCurrency = (amount: number, currencyCode: string) => `-${new Intl.NumberFormat(locale, {
+    const formatCurrency = (amount: number, currencyCode: string) => `-${(amount / 100).toLocaleString(locale, {
         style: 'currency',
         currency: currencyCode,
-    }).format(amount / 100)}`;
+    })}`;
 
     if (lookup?.estimate?.savingsAmount && lookup.estimate.currencyCode) {
         return formatCurrency(lookup.estimate.savingsAmount, lookup.estimate.currencyCode);
@@ -898,7 +898,7 @@ export const CheckoutPage: React.FC = () => {
                 ) : null}
 
                 {completedFlowMode === 'acquisition' && postPaymentSyncState === 'delayed' ? (
-                    <div className="mt-5 border-s-4 border-amber-500 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                    <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
                         <p className="font-semibold">{t('checkout.paymentSyncDelayedTitle', { ns: 'pricing' })}</p>
                         <p className="mt-1">{t('checkout.paymentSyncDelayedDescription', { ns: 'pricing' })}</p>
                     </div>
@@ -919,7 +919,7 @@ export const CheckoutPage: React.FC = () => {
                 ) : null}
 
                 {postPaymentClaimState === 'error' && postPaymentClaimErrorMessage ? (
-                    <div className="mt-5 border-s-4 border-amber-500 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                    <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
                         <p className="font-semibold">{t('checkout.successClaimNeedsAttention', { ns: 'pricing' })}</p>
                         <p className="mt-1">{postPaymentClaimErrorMessage}</p>
                     </div>
@@ -1569,7 +1569,7 @@ export const CheckoutPage: React.FC = () => {
                 <section className="mt-8 grid gap-10 xl:gap-16 lg:grid-cols-[minmax(0,1fr)_400px] xl:grid-cols-[minmax(0,1fr)_440px] lg:items-start">
                     <div className="order-1 min-w-0">
                         {paddlePublicConfig?.issues.length ? (
-                            <div className="mb-6 border-s-4 border-rose-500 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+                            <div className="mb-6 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
                                 <p className="font-semibold">{t('checkout.errorTitle', { ns: 'pricing' })}</p>
                                 <p className="mt-1">{t('checkout.errorConfig', { ns: 'pricing' })}</p>
                             </div>
@@ -1667,7 +1667,7 @@ export const CheckoutPage: React.FC = () => {
                                         ) : null}
 
                                         {showAuthSupportMessage ? (
-                                            <div className="border-s-4 border-rose-500 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+                                            <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
                                                 <p className="font-semibold">{t('errors.auth_unavailable_title', { ns: 'auth' })}</p>
                                                 <p className="mt-1">{t('errors.auth_unavailable_body', { ns: 'auth' })}</p>
                                                 <Link
@@ -1682,12 +1682,12 @@ export const CheckoutPage: React.FC = () => {
                                                 </Link>
                                             </div>
                                         ) : authErrorMessage ? (
-                                            <div className="border-s-4 border-rose-500 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+                                            <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
                                                 {authErrorMessage}
                                             </div>
                                         ) : null}
                                         {authInfoMessage ? (
-                                            <div className="border-s-4 border-emerald-500 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+                                            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
                                                 {authInfoMessage}
                                             </div>
                                         ) : null}
@@ -1744,7 +1744,7 @@ export const CheckoutPage: React.FC = () => {
                                     </div>
 
                                     {checkoutErrorMessage ? (
-                                        <div className="border-s-4 border-rose-500 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+                                        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
                                             {checkoutErrorMessage}
                                         </div>
                                     ) : null}
@@ -1936,7 +1936,7 @@ export const CheckoutPage: React.FC = () => {
                                         </div>
 
                                         {checkoutErrorMessage ? (
-                                            <div className="border-s-4 border-rose-500 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+                                            <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
                                                 {checkoutErrorMessage}
                                             </div>
                                         ) : null}

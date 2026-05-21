@@ -3,7 +3,6 @@ import React, { useMemo } from 'react';
 const MONTH_INITIALS_FALLBACK = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'] as const;
 const EMPTY_MONTHS: number[] = [];
 const MONTH_INITIAL_CHAR_PATTERN = /\p{L}|\p{N}/u;
-const monthFormatterCache = new Map<string, Intl.DateTimeFormat>();
 
 interface IdealTravelTimelineProps {
     idealMonths: number[];
@@ -14,15 +13,6 @@ interface IdealTravelTimelineProps {
 const hasMonth = (months: number[] | undefined, month: number): boolean => {
     if (!months || months.length === 0) return false;
     return months.includes(month);
-};
-
-const getMonthFormatter = (locale: string): Intl.DateTimeFormat => {
-    const cachedFormatter = monthFormatterCache.get(locale);
-    if (cachedFormatter) return cachedFormatter;
-
-    const formatter = new Intl.DateTimeFormat(locale, { month: 'long', timeZone: 'UTC' });
-    monthFormatterCache.set(locale, formatter);
-    return formatter;
 };
 
 export const IdealTravelTimeline: React.FC<IdealTravelTimelineProps> = ({
@@ -38,9 +28,10 @@ export const IdealTravelTimeline: React.FC<IdealTravelTimelineProps> = ({
             || 'en';
 
         try {
-            const formatter = getMonthFormatter(resolvedLocale);
             return Array.from({ length: 12 }, (_, index) => {
-                const monthLabel = formatter.format(new Date(Date.UTC(2024, index, 1))).trim();
+                const monthLabel = new Date(Date.UTC(2024, index, 1))
+                    .toLocaleString(resolvedLocale, { month: 'long', timeZone: 'UTC' })
+                    .trim();
                 const firstLetter = Array.from(monthLabel).find((char) => MONTH_INITIAL_CHAR_PATTERN.test(char));
                 return (firstLetter || MONTH_INITIALS_FALLBACK[index]).toLocaleUpperCase(resolvedLocale);
             });

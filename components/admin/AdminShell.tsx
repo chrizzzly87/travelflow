@@ -105,6 +105,52 @@ const DATE_RANGE_OPTIONS: Array<{ value: AdminDateRange; label: string }> = [
     { value: 'all', label: 'All time' },
 ];
 
+type AdminNavSection = (typeof ADMIN_NAV_SECTIONS)[number] & { items: Array<(typeof ADMIN_NAV_ITEMS)[number]> };
+
+interface AdminNavItemsProps {
+    mode: 'desktop' | 'mobile';
+    sections: AdminNavSection[];
+    isSidebarCollapsed: boolean;
+    onMenuItemClick: (id: string, mode: 'desktop' | 'mobile') => void;
+}
+
+const AdminNavItems: React.FC<AdminNavItemsProps> = ({
+    mode,
+    sections,
+    isSidebarCollapsed,
+    onMenuItemClick,
+}) => (
+    <>
+        {sections.map((section) => (
+            <section key={`section-${mode}-${section.id}`} className="space-y-1.5">
+                {(mode === 'mobile' || !isSidebarCollapsed) && (
+                    <div className="px-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                        {section.label}
+                    </div>
+                )}
+                <div className="space-y-1">
+                    {section.items.map((item) => (
+                        <NavLink
+                            key={`${mode}-item-${item.id}`}
+                            to={item.path}
+                            end={item.path === '/admin/ai-benchmark'}
+                            title={isSidebarCollapsed && mode === 'desktop' ? item.label : undefined}
+                            className={(nav) => mode === 'desktop'
+                                ? buildDesktopNavClass(nav, isSidebarCollapsed)
+                                : buildMobileNavClass(nav)}
+                            onClick={() => onMenuItemClick(item.id, mode)}
+                            {...getAnalyticsDebugAttributes(`admin__menu--${item.id}`)}
+                        >
+                            {itemIcon(item.icon)}
+                            {(mode === 'mobile' || !isSidebarCollapsed) && <span>{item.label}</span>}
+                        </NavLink>
+                    ))}
+                </div>
+            </section>
+        ))}
+    </>
+);
+
 export const AdminShell: React.FC<AdminShellProps> = ({
     title,
     description,
@@ -198,36 +244,10 @@ export const AdminShell: React.FC<AdminShellProps> = ({
         []
     );
 
-    const renderNavItems = (mode: 'desktop' | 'mobile') => navSections.map((section) => (
-        <section key={`section-${mode}-${section.id}`} className="space-y-1.5">
-            {(mode === 'mobile' || !isSidebarCollapsed) && (
-                <div className="px-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
-                    {section.label}
-                </div>
-            )}
-            <div className="space-y-1">
-                {section.items.map((item) => (
-                    <NavLink
-                        key={`${mode}-item-${item.id}`}
-                        to={item.path}
-                        end={item.path === '/admin/ai-benchmark'}
-                        title={isSidebarCollapsed && mode === 'desktop' ? item.label : undefined}
-                        className={(nav) => mode === 'desktop'
-                            ? buildDesktopNavClass(nav, isSidebarCollapsed)
-                            : buildMobileNavClass(nav)}
-                        onClick={() => {
-                            emitMenuEvent(item.id);
-                            if (mode === 'mobile') setIsMobileSidebarOpen(false);
-                        }}
-                        {...getAnalyticsDebugAttributes(`admin__menu--${item.id}`)}
-                    >
-                        {itemIcon(item.icon)}
-                        {(mode === 'mobile' || !isSidebarCollapsed) && <span>{item.label}</span>}
-                    </NavLink>
-                ))}
-            </div>
-        </section>
-    ));
+    const handleMenuItemClick = (id: string, mode: 'desktop' | 'mobile') => {
+        emitMenuEvent(id);
+        if (mode === 'mobile') setIsMobileSidebarOpen(false);
+    };
 
     return (
         <div className="min-h-dvh bg-slate-100 text-slate-900 [&_.rounded-full]:select-none">
@@ -263,7 +283,12 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                 </div>
 
                 <div className="mt-4 flex-1 space-y-4 overflow-y-auto pr-1">
-                    {renderNavItems('mobile')}
+                    <AdminNavItems
+                        mode="mobile"
+                        sections={navSections}
+                        isSidebarCollapsed={isSidebarCollapsed}
+                        onMenuItemClick={handleMenuItemClick}
+                    />
                 </div>
 
                 {isAdmin && (
@@ -300,7 +325,12 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                         </NavLink>
 
                         <div className="mt-4 flex-1 space-y-4 overflow-y-auto pr-1">
-                            {renderNavItems('desktop')}
+                            <AdminNavItems
+                                mode="desktop"
+                                sections={navSections}
+                                isSidebarCollapsed={isSidebarCollapsed}
+                                onMenuItemClick={handleMenuItemClick}
+                            />
                         </div>
 
                         {isAdmin && (

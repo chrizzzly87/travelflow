@@ -411,6 +411,15 @@ const StepDots: React.FC<{
     </div>
 );
 
+const createRegionDisplayNames = (locale: string): Intl.DisplayNames | null => {
+    try {
+        const RegionDisplayNames = Intl.DisplayNames;
+        return new RegionDisplayNames([locale], { type: 'region' });
+    } catch {
+        return null;
+    }
+};
+
 export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenerated, onOpenManager }) => {
     const { t, i18n } = useTranslation('createTrip');
     const navigate = useNavigate();
@@ -482,13 +491,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
         await requestTripReadyNotificationPermission();
     }, [confirm, t]);
 
-    const regionDisplayNames = useMemo(() => {
-        try {
-            return new Intl.DisplayNames([i18n.language], { type: 'region' });
-        } catch {
-            return null;
-        }
-    }, [i18n.language]);
+    const regionDisplayNames = useMemo(() => createRegionDisplayNames(i18n.language), [i18n.language]);
 
     const getLocalizedCountryName = useCallback((countryCode: string | undefined, fallback: string): string => {
         if (!countryCode || countryCode.length !== 2 || !regionDisplayNames) return fallback;
@@ -1883,7 +1886,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
 
                     <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
                         <div className="mb-3 text-sm font-semibold text-slate-900">{travelerSummary}</div>
-                        {renderTravelerDetails()}
+                        {travelerDetailsContent}
                     </div>
 
                     <div className="space-y-3">
@@ -2137,6 +2140,9 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
         );
     };
 
+    const travelerDetailsContent = renderTravelerDetails();
+    const stepContent = renderStepContent();
+
     return (
         <div className="relative isolate flex min-h-screen w-full flex-col overflow-hidden bg-slate-50">
             <HeroWebGLBackground className="z-0" />
@@ -2161,7 +2167,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                 </div>
 
                 <div className="w-full max-w-5xl rounded-[2rem] border border-white/70 bg-white/90 p-5 shadow-[0_30px_90px_rgba(15,23,42,0.12)] backdrop-blur md:p-8">
-                    {renderStepContent()}
+                    {stepContent}
 
                     {currentStepId !== 'intent' && (
                         <div className="mt-8 flex flex-col gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:items-center sm:justify-between">

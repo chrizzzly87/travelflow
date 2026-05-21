@@ -720,7 +720,7 @@ const createMarkdownComponents = (mapContext: { locale: string; postSlug: string
         );
     },
     blockquote: ({ children }) => (
-        <blockquote className="mb-4 border-l-4 border-accent-300 pl-4 italic text-slate-500">{children}</blockquote>
+        <blockquote className="mb-4 rounded-xl border border-accent-100 bg-accent-50/40 px-4 py-3 italic text-slate-500">{children}</blockquote>
     ),
     table: ({ children }) => (
         <div className="mb-4 overflow-x-auto">
@@ -1100,7 +1100,7 @@ export const BlogPostPage: React.FC = () => {
                                 ))}
                             </div>
 
-                            <p className="mt-6 border-l-4 border-accent-200 pl-4 text-lg leading-relaxed text-slate-600">
+                            <p className="mt-6 rounded-xl border border-accent-100 bg-accent-50/40 px-4 py-3 text-lg leading-relaxed text-slate-600">
                                 {post.summary}
                             </p>
 

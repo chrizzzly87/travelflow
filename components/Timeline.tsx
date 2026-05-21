@@ -50,6 +50,15 @@ const TRANSFER_CHIP_HEIGHT_PX = 32;
 const TRANSFER_CHIP_ROW_GAP_PX = 10;
 const TRANSFER_LANE_VERTICAL_PADDING_PX = 4;
 
+const createIdleDragState = (): IDragState => ({
+  isDragging: false,
+  itemId: null,
+  action: null,
+  startX: 0,
+  originalOffset: 0,
+  originalDuration: 0,
+});
+
 const parseLocalTripDate = (value: string): Date | null => {
   if (!value) return null;
 
@@ -130,16 +139,9 @@ export const Timeline: React.FC<TimelineProps> = ({
   const isDraggingRef = useRef(false);
   const dragStartPosRef = useRef(0);
 
-  const [dragState, setDragState] = useState<IDragState>({
-    isDragging: false,
-    itemId: null,
-    action: null,
-    startX: 0,
-    originalOffset: 0,
-    originalDuration: 0,
-  });
+  const dragStateRef = useRef<IDragState>(createIdleDragState());
 
-  const [hoverTravelStart, setHoverTravelStart] = useState<number | null>(null);
+  const hoverTravelStartRef = useRef<number | null>(null);
   const [cityBottomAnchorY, setCityBottomAnchorY] = useState<number | null>(null);
   const [containerWidth, setContainerWidth] = useState(0);
 
@@ -378,7 +380,7 @@ export const Timeline: React.FC<TimelineProps> = ({
 
   const handleTravelMouseMove = (e: React.MouseEvent) => {
       if (!canEdit) {
-          if (hoverTravelStart !== null) setHoverTravelStart(null);
+          hoverTravelStartRef.current = null;
           return;
       }
       if (!travelLaneRef.current) return;
@@ -386,7 +388,7 @@ export const Timeline: React.FC<TimelineProps> = ({
       // Prevent ghost from showing up if we are hovering over an existing block
       const target = e.target as HTMLElement;
       if (target.closest('.timeline-block-item')) {
-          setHoverTravelStart(null);
+          hoverTravelStartRef.current = null;
           return;
       }
 
@@ -404,18 +406,18 @@ export const Timeline: React.FC<TimelineProps> = ({
       
       if (start < visualStartOffset) start = visualStartOffset;
       
-      setHoverTravelStart(start);
+      hoverTravelStartRef.current = start;
   };
 
   const handleTravelMouseLeave = () => {
-      setHoverTravelStart(null);
+      hoverTravelStartRef.current = null;
   };
 
   const handleTravelClick = () => {
       if (!canEdit) return;
-      if (hoverTravelStart !== null) {
-          createTravelItem(hoverTravelStart, 1.0);
-          setHoverTravelStart(null);
+      if (hoverTravelStartRef.current !== null) {
+          createTravelItem(hoverTravelStartRef.current, 1.0);
+          hoverTravelStartRef.current = null;
       }
   };
 
@@ -433,14 +435,14 @@ export const Timeline: React.FC<TimelineProps> = ({
     // Snapshot items at drag start to avoid cumulative drift on fast moves
     dragStartItemsRef.current = trip.items.map(i => ({ ...i }));
 
-    setDragState({
+    dragStateRef.current = {
       isDragging: false, 
       itemId: id,
       action: direction === 'left' ? 'resize-left' : 'resize-right',
       startX: e.clientX,
       originalOffset: item.startDateOffset,
       originalDuration: item.duration,
-    });
+    };
   };
 
   const handleMoveStart = (e: React.MouseEvent | React.PointerEvent, id: string) => {
@@ -454,19 +456,20 @@ export const Timeline: React.FC<TimelineProps> = ({
 
     dragStartItemsRef.current = trip.items.map(i => ({ ...i }));
 
-    setDragState({
+    dragStateRef.current = {
       isDragging: false, 
       itemId: id,
       action: 'move',
       startX: e.clientX,
       originalOffset: item.startDateOffset,
       originalDuration: item.duration,
-    });
+    };
   };
 
   useEffect(() => {
     const handlePointerMove = (e: PointerEvent) => {
       // Check if we have an active operation
+      const dragState = dragStateRef.current;
       if (!dragState.itemId || !dragState.action) return;
 
       const deltaX = e.clientX - dragStartPosRef.current;
@@ -476,8 +479,7 @@ export const Timeline: React.FC<TimelineProps> = ({
       if (!isDraggingRef.current) {
         if (Math.abs(deltaX) < 5) return; // 5px threshold
         isDraggingRef.current = true;
-        // Update state to reflect dragging (visuals)
-        setDragState(prev => ({ ...prev, isDragging: true }));
+        dragStateRef.current = { ...dragState, isDragging: true };
       }
 
       const baseItems = dragStartItemsRef.current || trip.items;
@@ -583,14 +585,7 @@ export const Timeline: React.FC<TimelineProps> = ({
       isDraggingRef.current = false;
       dragStartItemsRef.current = null;
       latestDragItemsRef.current = null;
-      setDragState({
-        isDragging: false,
-        itemId: null,
-        action: null,
-        startX: 0,
-        originalOffset: 0,
-        originalDuration: 0
-      });
+      dragStateRef.current = createIdleDragState();
     };
 
     window.addEventListener('pointermove', handlePointerMove);
@@ -602,7 +597,7 @@ export const Timeline: React.FC<TimelineProps> = ({
       window.removeEventListener('pointerup', handlePointerUp);
       window.removeEventListener('pointercancel', handlePointerUp);
     };
-  }, [dragState, trip.items, onUpdateItems, pixelsPerDay]);
+  }, [trip.items, onUpdateItems, pixelsPerDay]);
 
 
   // --- Render Helpers ---
@@ -706,11 +701,19 @@ export const Timeline: React.FC<TimelineProps> = ({
     lastAutoScrollSelectionRef.current = selectedItemId;
   }, [selectedItemId, selectionVisibilityKey, trip.items, pixelsPerDay, visualStartOffset]);
 
+  const handleTimelineKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === 'Escape') {
+      handleBlockSelect(null);
+    }
+  };
+
   return (
     <div 
       className="w-full h-full overflow-auto bg-white relative timeline-scroll" 
       ref={containerRef}
+      role="presentation"
       onClick={() => handleBlockSelect(null)}
+      onKeyDown={handleTimelineKeyDown}
     >
         <div className="relative min-h-full" style={{ minWidth: '100%', width: `${totalWidth}px` }}>
             {todaySlot && (
