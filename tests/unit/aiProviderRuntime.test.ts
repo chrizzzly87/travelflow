@@ -939,6 +939,58 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
     expect(result.value.data.title).toBe('Recovered after parse retry');
   });
 
+  it('escalates openrouter parse retries to ultra-compact JSON after truncated content', async () => {
+    stubDenoEnv({
+      OPENROUTER_API_KEY: 'test-key',
+    });
+
+    fetchMock
+      .mockResolvedValueOnce(
+        jsonResponse({
+          model: 'google/gemini-3.5-flash',
+          choices: [{ message: { content: 'not-json' } }],
+          usage: {},
+        }),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({
+          model: 'google/gemini-3.5-flash',
+          choices: [
+            {
+              finish_reason: 'length',
+              message: {
+                content: '{"tripTitle":"Indochina Explorer","countryInfo":{"visaInfoUrl":"https://www.auswaertiges-amt.de/de/service/laender/thailand-node/thailandsicherheit',
+              },
+            },
+          ],
+          usage: { prompt_tokens: 30, completion_tokens: 8192, total_tokens: 8222 },
+        }),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({
+          model: 'google/gemini-3.5-flash',
+          choices: [{ message: { content: '{"tripTitle":"Recovered compact JSON"}' } }],
+          usage: { prompt_tokens: 31, completion_tokens: 40, total_tokens: 71 },
+        }),
+      );
+
+    const result = await generateProviderItinerary({
+      prompt: '{"request":"gemini-openrouter"}',
+      provider: 'openrouter',
+      model: 'google/gemini-3.5-flash',
+      timeoutMs: 60_000,
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    const thirdBody = JSON.parse(String((fetchMock.mock.calls[2] as [string, RequestInit])[1].body));
+    expect(thirdBody.messages[0].content).toContain('Return exactly one minified JSON object');
+    expect(thirdBody.messages[1].content).toContain('TRUNCATION RECOVERY MODE');
+    expect(thirdBody.messages[1].content).toContain('Use at most 8 cities');
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.data.tripTitle).toBe('Recovered compact JSON');
+  });
+
   it('returns parse failure when openrouter content is not valid json object', async () => {
     stubDenoEnv({
       OPENROUTER_API_KEY: 'test-key',
