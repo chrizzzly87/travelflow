@@ -20,7 +20,7 @@ React Review status: npm package `react-review@1.0.6` does not expose a CLI bina
 
 - Initial user baseline: `49 / 100`, `73` errors, `5749` warnings, `356/814` files.
 - After core-page fixes: `51 / 100`, `33` errors, `5752` warnings, `356/821` files.
-- Current full scan: `66 / 100`, `0` errors, `1029` warnings, `235/825` files.
+- Current full scan: `66 / 100`, `0` errors, `1027` warnings, `235/822` files.
 - Current diff scan: `92 / 100`, `0` errors, `118` warnings, `29/91` files.
 
 ## Completed Changes
@@ -171,6 +171,20 @@ React Review status: npm package `react-review@1.0.6` does not expose a CLI bina
 - [x] `pnpm dlx react-doctor@latest . --verbose --diff`
   - Result: `91 / 100`, `0` errors, `121` warnings, `30/90` files.
   - Share: `https://www.react.doctor/share?p=travelflow&s=91&w=121&f=30`
+
+- [x] `pnpm test:core`
+  - Result: passed, `1357` tests, `1` skipped.
+
+- [x] `pnpm dlx react-doctor@latest . --verbose --diff`
+  - Result: `92 / 100`, `0` errors, `118` warnings, `29/91` files.
+  - Share: `https://www.react.doctor/share?p=travelflow&s=92&w=118&f=29`
+
+- [x] `pnpm dlx react-doctor@latest . --verbose`
+  - Result: `66 / 100`, `0` errors, `1027` warnings, `235/822` files.
+  - Share: `https://www.react.doctor/share?p=travelflow&s=66&w=1027&f=235`
+
+- [x] `pnpm updates:validate`
+  - Result: passed with existing canonical-version warnings for older published update files.
 
 ## Prioritized Todo
 
