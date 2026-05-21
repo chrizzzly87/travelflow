@@ -21,7 +21,7 @@ React Review status: npm package `react-review@1.0.6` does not expose a CLI bina
 - Initial user baseline: `49 / 100`, `73` errors, `5749` warnings, `356/814` files.
 - After core-page fixes: `51 / 100`, `33` errors, `5752` warnings, `356/821` files.
 - Current full scan: `66 / 100`, `0` errors, `1029` warnings, `235/825` files.
-- Current diff scan: `91 / 100`, `0` errors, `121` warnings, `30/90` files.
+- Current diff scan: `92 / 100`, `0` errors, `119` warnings, `30/91` files.
 
 ## Completed Changes
 
@@ -48,7 +48,7 @@ React Review status: npm package `react-review@1.0.6` does not expose a CLI bina
 - [x] Kept `TripLoaderRoute` view/access state updates coherent while preserving in-session view override behavior.
 - [x] Removed render-time date construction from flagged account, billing, trip-info, and print calendar JSX paths.
 - [x] Replaced flagged fallback/loading copy punctuation and the blog table-of-contents anchor command.
-- [x] Cleared the latest safe diff warnings for timeline keyboard semantics, handler-only drag state, one-sided alert accents, render-helper calls, listener resubscriptions, and floating-map style allocation.
+- [x] Cleared the latest safe diff warnings for timeline keyboard semantics, handler-only drag state, one-sided alert accents, render-helper calls, listener resubscriptions, floating-map style allocation, and intentional blog view-transition flushes.
 
 ## Validation Log
 
@@ -136,6 +136,14 @@ React Review status: npm package `react-review@1.0.6` does not expose a CLI bina
 - [x] `pnpm dlx react-doctor@latest . --verbose --diff`
   - Result: `91 / 100`, `0` errors, `121` warnings, `30/90` files.
   - Share: `https://www.react.doctor/share?p=travelflow&s=91&w=121&f=30`
+
+- [x] Focused blog/example route regression suite
+  - Command: `pnpm test:run tests/unit/blogViewTransitions.test.ts tests/browser/routes/exampleTripLoaderRoute.browser.test.ts`
+  - Result: passed, `28` tests.
+
+- [x] `pnpm dlx react-doctor@latest . --verbose --diff`
+  - Result: `92 / 100`, `0` errors, `119` warnings, `30/91` files.
+  - Share: `https://www.react.doctor/share?p=travelflow&s=92&w=119&f=30`
   - Notes: remaining diff warnings are architectural reducer/effect-chain/component-boundary work plus intentional async retry/view-transition patterns.
 
 - [x] `pnpm dlx react-doctor@latest . --verbose`

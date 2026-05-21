@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { flushSync } from 'react-dom';
 import { useParams, Link, useLocation, Navigate, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Clock, User, Tag, ArrowRight, Compass, Article, ArrowSquareOut } from '@phosphor-icons/react';
@@ -24,6 +23,7 @@ import { normalizeAppLanguage } from '../utils';
 import type { Components } from 'react-markdown';
 import {
     BLOG_VIEW_TRANSITION_CLASSES,
+    commitBlogTransitionState,
     createBlogTransitionNavigationState,
     getBlogTransitionStyle,
     getBlogPostViewTransitionNames,
@@ -919,13 +919,13 @@ export const BlogPostPage: React.FC = () => {
             beforeTransition: () => {
                 setPendingBlogTransitionMode(useColdFallback ? 'title-only' : 'full');
                 setPendingBlogTransitionTarget(transitionTarget);
-                flushSync(() => {
+                commitBlogTransitionState(() => {
                     setIsTransitionSource(true);
                 });
             },
             type: 'blog-collapse',
             update: () => {
-                flushSync(() => {
+                commitBlogTransitionState(() => {
                     navigate(blogPath, {
                         state: createBlogTransitionNavigationState('post', transitionTarget),
                     });

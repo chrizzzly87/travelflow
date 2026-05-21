@@ -133,6 +133,7 @@ export const ExampleTripLoaderRoute: React.FC<ExampleTripLoaderRouteProps> = ({
 
         const loadTemplateResources = async () => {
             try {
+                if (cancelled) return;
                 const { getExampleTemplateSummary, loadExampleTemplateFactory } = await import('../data/exampleTripTemplates/runtimeFactory');
                 if (cancelled) return;
                 const nextFactory = await loadExampleTemplateFactory(templateId);
