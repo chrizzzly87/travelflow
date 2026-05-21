@@ -139,7 +139,10 @@ const appendNotes = (existing: string, addition: string): string => {
 
 const getCountryFromText = (text?: string): { countryName?: string; countryCode?: string } => {
     if (!text) return {};
-    const parts = text.split(',').map(part => part.trim()).filter(Boolean);
+    const parts = text.split(',').flatMap((part) => {
+        const trimmed = part.trim();
+        return trimmed ? [trimmed] : [];
+    });
     if (parts.length < 2) return {};
     const rawCountry = parts[parts.length - 1];
     const matched = COUNTRIES.find(country => country.name.toLocaleLowerCase() === rawCountry.toLocaleLowerCase());

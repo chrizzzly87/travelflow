@@ -267,10 +267,10 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
 
     const showCountryRooftitle = useMemo(() => {
         const countryLabels = new Set(
-            model.sections
-                .map((section) => section.city.countryName?.trim() || section.city.countryCode?.trim() || '')
-                .map((value) => value.toLowerCase())
-                .filter(Boolean),
+            model.sections.flatMap((section) => {
+                const value = section.city.countryName?.trim() || section.city.countryCode?.trim() || '';
+                return value ? [value.toLowerCase()] : [];
+            }),
         );
         return countryLabels.size > 1;
     }, [model.sections]);

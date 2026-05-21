@@ -112,7 +112,9 @@ export const ExampleTripsCarousel: React.FC = () => {
             timelineHeight: generated.defaultView?.timelineHeight,
         };
         const selectedCard = exampleTripCards.find((card) => (card.templateId || '') === templateId) || null;
-        const templateCountries = selectedCard?.countries?.map((country) => country.name).filter(Boolean) || [];
+        const templateCountries = selectedCard?.countries?.flatMap((country) => (
+            country.name ? [country.name] : []
+        )) || [];
         const preparedTrip: ITrip = {
             ...generated,
             createdAt: nowMs,

@@ -33,3 +33,4 @@ summary: "Cleans up the highest-priority React Doctor findings across core trip 
 - [ ] [Internal] 🏙️ Reduced add-city modal state-update debt while preserving suggestion search and manual fallback behavior.
 - [ ] [Internal] 🧭 Hardened add-city manual lookup handling against stale async results.
 - [ ] [Internal] ⏱️ Reduced generation progress timer state debt while preserving rotating status messages.
+- [ ] [Internal] 🧵 Reduced component string-parsing iteration debt in tested timeline, examples, details, and country-selection surfaces.
