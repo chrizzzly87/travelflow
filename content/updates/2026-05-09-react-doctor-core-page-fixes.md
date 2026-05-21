@@ -30,3 +30,4 @@ summary: "Cleans up the highest-priority React Doctor findings across core trip 
 - [ ] [Internal] 🧯 Kept the immutable-sort cleanup compatible with the app's current ES2022 runtime target.
 - [ ] [Internal] 📶 Reduced network status state-update debt while preserving offline recovery behavior.
 - [ ] [Internal] 🪟 Raised the full React Doctor scan to `69/100` by consolidating trip overlay state updates.
+- [ ] [Internal] 🏙️ Reduced add-city modal state-update debt while preserving suggestion search and manual fallback behavior.

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useReducer, useRef } from 'react';
 import { Search, Loader2, AlertTriangle, ArrowRight } from 'lucide-react';
 import { useGoogleMaps } from './GoogleMapsLoader';
 import { AppModal } from './ui/app-modal';
@@ -11,13 +11,90 @@ interface AddCityModalProps {
     onAdd: (name: string, lat: number, lng: number) => void;
 }
 
+interface AddCityModalState {
+    inputValue: string;
+    isManualMode: boolean;
+    error: string | null;
+    isResolvingSelection: boolean;
+    suggestions: CityLookupSuggestion[];
+    isSearchingSuggestions: boolean;
+}
+
+type AddCityModalAction =
+    | { type: 'reset' }
+    | { type: 'inputChanged'; value: string }
+    | { type: 'suggestionsIdle' }
+    | { type: 'suggestionsSearchStarted' }
+    | { type: 'suggestionsSearchFinished'; suggestions: CityLookupSuggestion[] }
+    | { type: 'manualResolveStarted' }
+    | { type: 'manualResolveFailed'; error: string }
+    | { type: 'mapUnavailable'; error: string };
+
+const INITIAL_ADD_CITY_MODAL_STATE: AddCityModalState = {
+    inputValue: '',
+    isManualMode: false,
+    error: null,
+    isResolvingSelection: false,
+    suggestions: [],
+    isSearchingSuggestions: false,
+};
+
+const addCityModalReducer = (
+    state: AddCityModalState,
+    action: AddCityModalAction
+): AddCityModalState => {
+    switch (action.type) {
+        case 'reset':
+            return INITIAL_ADD_CITY_MODAL_STATE;
+        case 'inputChanged':
+            return {
+                ...state,
+                inputValue: action.value,
+                error: null,
+                isManualMode: false,
+            };
+        case 'suggestionsIdle':
+            return {
+                ...state,
+                suggestions: [],
+                isSearchingSuggestions: false,
+            };
+        case 'suggestionsSearchStarted':
+            return {
+                ...state,
+                isSearchingSuggestions: true,
+            };
+        case 'suggestionsSearchFinished':
+            return {
+                ...state,
+                suggestions: action.suggestions,
+                isSearchingSuggestions: false,
+            };
+        case 'manualResolveStarted':
+            return {
+                ...state,
+                error: null,
+                isResolvingSelection: true,
+            };
+        case 'manualResolveFailed':
+            return {
+                ...state,
+                error: action.error,
+                isManualMode: true,
+                isResolvingSelection: false,
+            };
+        case 'mapUnavailable':
+            return {
+                ...state,
+                error: action.error,
+            };
+        default:
+            return state;
+    }
+};
+
 export const AddCityModal: React.FC<AddCityModalProps> = ({ isOpen, onClose, onAdd }) => {
-    const [inputValue, setInputValue] = useState('');
-    const [isManualMode, setIsManualMode] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [isResolvingSelection, setIsResolvingSelection] = useState(false);
-    const [suggestions, setSuggestions] = useState<CityLookupSuggestion[]>([]);
-    const [isSearchingSuggestions, setIsSearchingSuggestions] = useState(false);
+    const [state, dispatch] = useReducer(addCityModalReducer, INITIAL_ADD_CITY_MODAL_STATE);
     
     const inputRef = useRef<HTMLInputElement>(null);
     const lookupRequestIdRef = useRef(0);
@@ -28,12 +105,7 @@ export const AddCityModal: React.FC<AddCityModalProps> = ({ isOpen, onClose, onA
 
     const resetModalState = useCallback(() => {
         lookupRequestIdRef.current += 1;
-        setInputValue('');
-        setError(null);
-        setIsManualMode(false);
-        setIsResolvingSelection(false);
-        setSuggestions([]);
-        setIsSearchingSuggestions(false);
+        dispatch({ type: 'reset' });
     }, []);
 
     const handleClose = useCallback(() => {
@@ -53,35 +125,32 @@ export const AddCityModal: React.FC<AddCityModalProps> = ({ isOpen, onClose, onA
 
     useEffect(() => {
         if (!isOpen) {
-            setSuggestions([]);
-            setIsSearchingSuggestions(false);
+            dispatch({ type: 'suggestionsIdle' });
             return;
         }
 
-        const query = inputValue.trim();
+        const query = state.inputValue.trim();
         if (!isLoaded || query.length < 2) {
-            setSuggestions([]);
-            setIsSearchingSuggestions(false);
+            dispatch({ type: 'suggestionsIdle' });
             return;
         }
 
         const requestId = lookupRequestIdRef.current + 1;
         lookupRequestIdRef.current = requestId;
-        setIsSearchingSuggestions(true);
+        dispatch({ type: 'suggestionsSearchStarted' });
 
         const timeoutId = window.setTimeout(() => {
             void (async () => {
                 const nextSuggestions = await searchCitySuggestions(query, { language: mapLanguage, maxResults: 5 });
                 if (lookupRequestIdRef.current !== requestId) return;
-                setSuggestions(nextSuggestions);
-                setIsSearchingSuggestions(false);
+                dispatch({ type: 'suggestionsSearchFinished', suggestions: nextSuggestions });
             })();
         }, 220);
 
         return () => {
             window.clearTimeout(timeoutId);
         };
-    }, [inputValue, isLoaded, isOpen, mapLanguage]);
+    }, [isLoaded, isOpen, mapLanguage, state.inputValue]);
 
     const handleSuggestionSelect = (suggestion: CityLookupSuggestion) => {
         onAdd(suggestion.name, suggestion.coordinates.lat, suggestion.coordinates.lng);
@@ -89,21 +158,24 @@ export const AddCityModal: React.FC<AddCityModalProps> = ({ isOpen, onClose, onA
     };
 
     const handleManualSubmit = async () => {
-        const query = inputValue.trim();
+        const query = state.inputValue.trim();
         if (!query) return;
         if (!isLoaded) {
-            setError('Map services are still loading. Please try again in a moment.');
+            dispatch({
+                type: 'mapUnavailable',
+                error: 'Map services are still loading. Please try again in a moment.',
+            });
             return;
         }
 
-        setIsResolvingSelection(true);
-        setError(null);
+        dispatch({ type: 'manualResolveStarted' });
         const result = await resolveCitySuggestion(query, { language: mapLanguage });
-        setIsResolvingSelection(false);
 
         if (!result) {
-            setError('No matching city found. Try "City, Country" or choose a suggestion.');
-            setIsManualMode(true);
+            dispatch({
+                type: 'manualResolveFailed',
+                error: 'No matching city found. Try "City, Country" or choose a suggestion.',
+            });
             return;
         }
 
@@ -113,9 +185,9 @@ export const AddCityModal: React.FC<AddCityModalProps> = ({ isOpen, onClose, onA
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'Escape') handleClose();
-        if (e.key === 'Enter' && !isResolvingSelection) {
+        if (e.key === 'Enter' && !state.isResolvingSelection) {
             e.preventDefault();
-            const firstSuggestion = suggestions[0];
+            const firstSuggestion = state.suggestions[0];
             if (firstSuggestion) {
                 handleSuggestionSelect(firstSuggestion);
                 return;
@@ -139,54 +211,52 @@ export const AddCityModal: React.FC<AddCityModalProps> = ({ isOpen, onClose, onA
                 inputRef.current?.focus();
             }}
         >
-            {error && (
+            {state.error && (
                  <div className="mb-4 flex items-start gap-2 rounded-lg border border-yellow-100 bg-yellow-50 p-3 text-sm text-yellow-700">
                     <AlertTriangle size={16} className="mt-0.5 shrink-0" />
-                    <div>{error}</div>
+                    <div>{state.error}</div>
                 </div>
             )}
             
             <div className="space-y-4">
                 <div>
                     <label htmlFor={cityInputId} className="mb-2 block text-xs font-bold uppercase text-gray-500">
-                        {isManualMode ? "City Name" : "Search City"}
+                        {state.isManualMode ? "City Name" : "Search City"}
                     </label>
                     <div className="relative">
                         <input 
                             id={cityInputId}
                             ref={inputRef}
                             type="text" 
-                            value={inputValue}
+                            value={state.inputValue}
                             onChange={e => {
-                                setInputValue(e.target.value);
-                                setError(null);
-                                setIsManualMode(false);
+                                dispatch({ type: 'inputChanged', value: e.target.value });
                             }}
                             onKeyDown={handleKeyDown}
                             className="w-full rounded-xl border border-gray-200 bg-gray-50 py-3 pl-10 pr-4 text-gray-800 outline-none placeholder-gray-400 focus:ring-2 focus:ring-accent-500"
                             placeholder="e.g. Kyoto, Japan"
                         />
                         <div className="absolute left-3 top-3.5 text-gray-400">
-                            {!isLoaded || isSearchingSuggestions ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
+                            {!isLoaded || state.isSearchingSuggestions ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
                         </div>
                         
-                        {isManualMode && (
+                        {state.isManualMode && (
                             <button 
                                 type="button"
                                 onClick={() => void handleManualSubmit()}
                                 className="absolute right-2 top-2 rounded-lg bg-accent-600 p-1.5 text-white transition-colors hover:bg-accent-700"
-                                disabled={!inputValue.trim() || isResolvingSelection} aria-label="Add destination"
+                                disabled={!state.inputValue.trim() || state.isResolvingSelection} aria-label="Add destination"
                             >
-                                {isResolvingSelection ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
+                                {state.isResolvingSelection ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
                             </button>
                         )}
                     </div>
-                    {(isSearchingSuggestions || suggestions.length > 0) && (
+                    {(state.isSearchingSuggestions || state.suggestions.length > 0) && (
                         <div className="mt-2 rounded-lg border border-gray-200 bg-white shadow-sm max-h-44 overflow-y-auto">
-                            {isSearchingSuggestions && (
+                            {state.isSearchingSuggestions && (
                                 <div className="px-3 py-2 text-xs text-gray-500">Searching cities...</div>
                             )}
-                            {!isSearchingSuggestions && suggestions.map((suggestion) => (
+                            {!state.isSearchingSuggestions && state.suggestions.map((suggestion) => (
                                 <button
                                     key={suggestion.id}
                                     type="button"
