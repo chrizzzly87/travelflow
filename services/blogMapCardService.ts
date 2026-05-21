@@ -111,9 +111,10 @@ const parseCategory = (value: unknown, usedIds: Set<string>, fallbackIndex: numb
 
     const rawSpots = Array.isArray(value.spots) ? value.spots : [];
     const spotIds = new Set<string>();
-    const spots = rawSpots
-        .map((spot, index) => parseSpot(spot, spotIds, index))
-        .filter((spot): spot is BlogMapSpot => Boolean(spot));
+    const spots = rawSpots.flatMap((spot, index): BlogMapSpot[] => {
+        const parsed = parseSpot(spot, spotIds, index);
+        return parsed ? [parsed] : [];
+    });
 
     if (spots.length === 0) return null;
 
@@ -152,9 +153,10 @@ export const parseBlogMapCardConfig = (rawJson: string): BlogMapCardConfig | nul
 
     const rawCategories = Array.isArray(parsed.categories) ? parsed.categories : [];
     const categoryIds = new Set<string>();
-    const categories = rawCategories
-        .map((category, index) => parseCategory(category, categoryIds, index))
-        .filter((category): category is BlogMapCategory => Boolean(category));
+    const categories = rawCategories.flatMap((category, index): BlogMapCategory[] => {
+        const parsedCategory = parseCategory(category, categoryIds, index);
+        return parsedCategory ? [parsedCategory] : [];
+    });
 
     if (categories.length === 0) return null;
 
@@ -202,9 +204,10 @@ export const buildGoogleMapsSpotQuery = (query: string, regionContext?: string):
 };
 
 export const buildGoogleMapsCategoryQuery = (spots: BlogMapSpot[], regionContext?: string): string => {
-    const spotQueries = spots
-        .map((spot) => buildGoogleMapsSpotQuery(spot.query, regionContext))
-        .filter((query) => query.length > 0);
+    const spotQueries = spots.flatMap((spot) => {
+        const query = buildGoogleMapsSpotQuery(spot.query, regionContext);
+        return query.length > 0 ? [query] : [];
+    });
 
     if (spotQueries.length === 0) return '';
     if (spotQueries.length === 1) return spotQueries[0];

@@ -172,8 +172,10 @@ const parseReleaseFile = (sourcePath: string, raw: string): ReleaseNote | null =
 };
 
 const allReleaseNotes: ReleaseNote[] = Object.entries(UPDATE_FILES)
-    .map(([sourcePath, raw]) => parseReleaseFile(sourcePath, raw))
-    .filter((entry): entry is ReleaseNote => !!entry)
+    .flatMap(([sourcePath, raw]) => {
+        const entry = parseReleaseFile(sourcePath, raw);
+        return entry ? [entry] : [];
+    })
     .sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt));
 
 export const getAllReleaseNotes = (): ReleaseNote[] => allReleaseNotes;

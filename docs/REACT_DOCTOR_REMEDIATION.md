@@ -20,7 +20,7 @@ React Review status: npm package `react-review@1.0.6` does not expose a CLI bina
 
 - Initial user baseline: `49 / 100`, `73` errors, `5749` warnings, `356/814` files.
 - After core-page fixes: `51 / 100`, `33` errors, `5752` warnings, `356/821` files.
-- Current full scan: `68 / 100`, `0` errors, `847` warnings, `217/822` files.
+- Current full scan: `68 / 100`, `0` errors, `823` warnings, `210/822` files.
 - Current diff scan: `78 / 100`, `0` errors, `435` warnings, `73/165` files.
 
 ## Completed Changes
@@ -51,6 +51,7 @@ React Review status: npm package `react-review@1.0.6` does not expose a CLI bina
 - [x] Cleared the latest safe diff warnings for timeline keyboard semantics, handler-only drag state, one-sided alert accents, render-helper calls, listener resubscriptions, floating-map style allocation, intentional blog view-transition flushes, and reset-password form state.
 - [x] Applied visual-equivalent Tailwind shorthand cleanup for repeated size/padding classes and softened flagged heading weights.
 - [x] Cleared immutable-sort and min/max loop warnings in focused utility, admin, profile, storage, and export paths.
+- [x] Replaced tested map/filter parsing pipelines with single-pass `flatMap` cleanup in storage, blog, legal, trip-generation, airport, destination, and map helpers.
 
 ## Validation Log
 
@@ -217,6 +218,17 @@ React Review status: npm package `react-review@1.0.6` does not expose a CLI bina
 
 - [x] IDE lint diagnostics
   - Result: no linter errors found in edited immutable-sort batch files.
+
+- [x] `npx react-doctor@latest . --verbose`
+  - Result: `68 / 100`, `0` errors, `823` warnings, `210/822` files.
+  - Share: `https://www.react.doctor/share?p=travelflow&s=68&w=823&f=210`
+
+- [x] Focused single-pass parsing regression suite
+  - Command: `pnpm test:run tests/browser/storageService.browser.test.ts tests/unit/destinationService.test.ts tests/unit/blogService.test.ts tests/unit/releaseNotesService.test.ts tests/unit/blogMapCardService.test.ts tests/unit/blogCalendarCardService.test.ts tests/unit/adminLegalTermsPage.test.ts tests/services/tripGenerationJobService.test.ts tests/unit/airportReference.test.ts tests/unit/tripMapCityResolution.test.ts tests/unit/cityLookup.test.ts`
+  - Result: passed, `70` tests.
+
+- [x] IDE lint diagnostics
+  - Result: no linter errors found in edited single-pass parsing batch files.
 
 ## Prioritized Todo
 

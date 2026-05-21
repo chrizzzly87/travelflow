@@ -96,9 +96,10 @@ export const getAllTrips = (): ITrip[] => {
         if (!raw) return [];
         const parsed = JSON.parse(raw);
         if (!Array.isArray(parsed)) return [];
-        const trips = parsed
-            .map(normalizeTrip)
-            .filter((trip): trip is ITrip => Boolean(trip));
+        const trips = parsed.flatMap((value): ITrip[] => {
+            const trip = normalizeTrip(value);
+            return trip ? [trip] : [];
+        });
         return sortTripsByUpdatedAtDesc(trips);
     } catch (e) {
         console.error("Failed to load trips from storage", e);
@@ -168,9 +169,10 @@ export const getTripById = (id: string): ITrip | undefined => {
 
 export const setAllTrips = (trips: ITrip[]): void => {
     try {
-        const normalized = trips
-            .map(normalizeTrip)
-            .filter((trip): trip is ITrip => Boolean(trip));
+        const normalized = trips.flatMap((value): ITrip[] => {
+            const trip = normalizeTrip(value);
+            return trip ? [trip] : [];
+        });
         const writeResult = writeTripsWithPruning(normalized);
         if (!writeResult.success) {
             throw new Error('Trip storage write failed');

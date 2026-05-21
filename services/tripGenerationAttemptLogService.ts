@@ -127,9 +127,10 @@ export const listOwnerTripGenerationAttempts = async (
         });
         if (error) return [];
         const rows = Array.isArray(data) ? data : [];
-        return rows
-            .map((row) => parseAttemptSummary(row))
-            .filter((row): row is TripGenerationAttemptSummary => Boolean(row));
+        return rows.flatMap((row): TripGenerationAttemptSummary[] => {
+            const summary = parseAttemptSummary(row);
+            return summary ? [summary] : [];
+        });
     } catch {
         return [];
     }
@@ -149,9 +150,10 @@ export const listAdminTripGenerationAttempts = async (
         });
         if (error) return [];
         const rows = Array.isArray(data) ? data : [];
-        return rows
-            .map((row) => parseAttemptSummary(row))
-            .filter((row): row is TripGenerationAttemptSummary => Boolean(row));
+        return rows.flatMap((row): TripGenerationAttemptSummary[] => {
+            const summary = parseAttemptSummary(row);
+            return summary ? [summary] : [];
+        });
     } catch {
         return [];
     }

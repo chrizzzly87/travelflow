@@ -73,8 +73,10 @@ const resolveCountryFromAddressComponents = (components: AddressComponentLike[])
 const resolveCountryFromLabel = (label: string): { countryName?: string } => {
   const parts = label
     .split(',')
-    .map((part) => part.trim())
-    .filter(Boolean);
+    .flatMap((part) => {
+      const trimmed = part.trim();
+      return trimmed ? [trimmed] : [];
+    });
   if (parts.length < 2) return {};
   const countryName = parts[parts.length - 1];
   return { countryName: countryName || undefined };

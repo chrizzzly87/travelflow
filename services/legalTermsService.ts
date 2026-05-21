@@ -113,10 +113,10 @@ export const listLegalTermsVersions = async (): Promise<LegalTermsVersionRecord[
 
   if (error || !Array.isArray(data)) return [fallbackTermsVersion()];
 
-  const parsed = data
-    .map((row) => parseLegalTermsRow(row as Record<string, unknown>))
-    .filter((row): row is LegalTermsVersionRecord => Boolean(row))
-    .map(withFallbackContent);
+  const parsed = data.flatMap((row): LegalTermsVersionRecord[] => {
+    const termsRow = parseLegalTermsRow(row as Record<string, unknown>);
+    return termsRow ? [withFallbackContent(termsRow)] : [];
+  });
 
   if (parsed.length === 0) return [fallbackTermsVersion()];
   return parsed;

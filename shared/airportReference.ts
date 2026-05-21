@@ -229,8 +229,10 @@ export const normalizeAirportReference = (value: unknown): AirportReference | nu
 export const normalizeAirportSnapshot = (value: unknown): AirportReference[] => {
   if (!Array.isArray(value)) return [];
   return value
-    .map((entry) => normalizeAirportReference(entry))
-    .filter((entry): entry is AirportReference => Boolean(entry))
+    .flatMap((entry): AirportReference[] => {
+      const airport = normalizeAirportReference(entry);
+      return airport ? [airport] : [];
+    })
     .sort(compareAirportIdentity);
 };
 
@@ -287,9 +289,10 @@ export const normalizeNearbyAirportsResponse = (value: unknown): NearbyAirportsR
   const lng = asNullableNumber(origin?.lng);
   const dataVersion = asRequiredString(typed.dataVersion);
   const airports = Array.isArray(typed.airports)
-    ? typed.airports
-      .map((entry) => normalizeNearbyAirportResult(entry))
-      .filter((entry): entry is NearbyAirportResult => Boolean(entry))
+    ? typed.airports.flatMap((entry): NearbyAirportResult[] => {
+      const airport = normalizeNearbyAirportResult(entry);
+      return airport ? [airport] : [];
+    })
     : [];
 
   if (lat === null || lng === null || !dataVersion) return null;

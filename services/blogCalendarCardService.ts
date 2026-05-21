@@ -77,9 +77,10 @@ export const parseBlogCalendarCardConfig = (rawJson: string): BlogCalendarCardCo
     if (!title) return null;
 
     const rawEvents = Array.isArray(parsed.events) ? parsed.events : [];
-    const events = rawEvents
-        .map((event, index) => parseEvent(event, index))
-        .filter((event): event is BlogCalendarEvent => Boolean(event));
+    const events = rawEvents.flatMap((event, index): BlogCalendarEvent[] => {
+        const parsedEvent = parseEvent(event, index);
+        return parsedEvent ? [parsedEvent] : [];
+    });
 
     if (events.length === 0) return null;
 

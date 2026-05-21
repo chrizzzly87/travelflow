@@ -21,8 +21,10 @@ const dedupeCaseInsensitive = (values: string[]): string[] => {
 const splitQueryList = (value?: string | null): string[] => (
   normalizeText(value)
     .split(/\s*\|\|\s*/)
-    .map((entry) => entry.trim())
-    .filter(Boolean)
+    .flatMap((entry) => {
+      const trimmed = entry.trim();
+      return trimmed ? [trimmed] : [];
+    })
 );
 
 const asRecord = (value: unknown): Record<string, unknown> | null => (
@@ -33,15 +35,20 @@ const asRecord = (value: unknown): Record<string, unknown> | null => (
 
 const asStringArray = (value: unknown): string[] => (
   Array.isArray(value)
-    ? value.map((entry) => normalizeText(entry)).filter(Boolean)
+    ? value.flatMap((entry) => {
+      const normalized = normalizeText(entry);
+      return normalized ? [normalized] : [];
+    })
     : []
 );
 
 const extractLocationSuffixes = (value: string): string[] => {
   const parts = value
     .split(',')
-    .map((part) => part.trim())
-    .filter(Boolean);
+    .flatMap((part) => {
+      const trimmed = part.trim();
+      return trimmed ? [trimmed] : [];
+    });
 
   if (parts.length < 2) return [];
 
