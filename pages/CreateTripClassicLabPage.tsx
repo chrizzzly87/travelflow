@@ -425,7 +425,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
 
     const [notes, setNotes] = useState('');
     const [prefillMeta, setPrefillMeta] = useState<TripPrefillData['meta'] | null>(null);
-    const prefillHydratedRef = useRef(false);
+    const [prefillHydrated, setPrefillHydrated] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
     const [selectedModelId, setSelectedModelId] = useState<string>(DEFAULT_CREATE_TRIP_MODEL_ID);
@@ -814,13 +814,13 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
     useEffect(() => {
         const raw = searchParams.get('prefill');
         if (!raw) {
-            prefillHydratedRef.current = true;
+            setPrefillHydrated(true);
             return;
         }
 
         const data = decodeTripPrefill(raw);
         if (!data) {
-            prefillHydratedRef.current = true;
+            setPrefillHydrated(true);
             return;
         }
 
@@ -960,7 +960,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
             }
         }
 
-        prefillHydratedRef.current = true;
+        setPrefillHydrated(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
@@ -1078,7 +1078,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
-        if (!prefillHydratedRef.current) return;
+        if (!prefillHydrated) return;
 
         const currentParams = new URLSearchParams(window.location.search);
 
@@ -1125,6 +1125,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
         hasPersistableState,
         notes,
         pace,
+        prefillHydrated,
         prefillMeta?.author,
         prefillMeta?.label,
         prefillMeta?.source,

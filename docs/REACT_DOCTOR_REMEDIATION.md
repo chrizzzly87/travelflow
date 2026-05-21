@@ -21,7 +21,7 @@ React Review status: npm package `react-review@1.0.6` does not expose a CLI bina
 - Initial user baseline: `49 / 100`, `73` errors, `5749` warnings, `356/814` files.
 - After core-page fixes: `51 / 100`, `33` errors, `5752` warnings, `356/821` files.
 - Current full scan: `66 / 100`, `0` errors, `1029` warnings, `235/825` files.
-- Current diff scan: `91 / 100`, `0` errors, `115` warnings, `30/90` files.
+- Current diff scan: `91 / 100`, `0` errors, `121` warnings, `30/90` files.
 
 ## Completed Changes
 
@@ -49,7 +49,6 @@ React Review status: npm package `react-review@1.0.6` does not expose a CLI bina
 - [x] Removed render-time date construction from flagged account, billing, trip-info, and print calendar JSX paths.
 - [x] Replaced flagged fallback/loading copy punctuation and the blog table-of-contents anchor command.
 - [x] Cleared the latest safe diff warnings for timeline keyboard semantics, handler-only drag state, one-sided alert accents, render-helper calls, listener resubscriptions, and floating-map style allocation.
-- [x] Converted create-trip prefill hydration gates from render state to refs so URL persistence no longer needs an extra render.
 
 ## Validation Log
 
@@ -153,13 +152,9 @@ React Review status: npm package `react-review@1.0.6` does not expose a CLI bina
   - Result: passed through validators, sitemap generation, and Vite production build.
   - Notes: emitted existing release-version validation warnings, Node deprecation warnings, and Vite chunk-size warnings.
 
-- [x] Create-trip prefill ref regression suite
-  - Command: `pnpm test:run tests/browser/createTripClassicLabPage.browser.test.ts tests/browser/createTripWizard.browser.test.ts`
-  - Result: passed, `6` tests.
-
 - [x] `pnpm dlx react-doctor@latest . --verbose --diff`
-  - Result: `91 / 100`, `0` errors, `115` warnings, `30/90` files.
-  - Share: `https://www.react.doctor/share?p=travelflow&s=91&w=115&f=30`
+  - Result: `91 / 100`, `0` errors, `121` warnings, `30/90` files.
+  - Share: `https://www.react.doctor/share?p=travelflow&s=91&w=121&f=30`
 
 ## Prioritized Todo
 

@@ -558,19 +558,12 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
     lastAutoScrollSelectionRef.current = selectedItemId;
   }, [selectedItemId, selectionVisibilityKey, trip.items, pixelsPerDay, visualStartOffset]);
 
-  const handleTimelineKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
-    if (event.key === 'Escape') {
-      handleBlockSelect(null);
-    }
-  };
-
   return (
     <div 
       className="h-full overflow-auto bg-white relative timeline-scroll" 
       ref={containerRef}
       role="presentation"
       onClick={() => handleBlockSelect(null)}
-      onKeyDown={handleTimelineKeyDown}
     >
         <div className="relative flex min-h-full" style={{ height: `${renderedTimelineHeight + 32}px` }}>
             {todaySlot && (
