@@ -41,3 +41,5 @@ summary: "Cleans up the highest-priority React Doctor findings across core trip 
 - [ ] [Internal] 📊 Reduced trip resize preset and admin dashboard day-key parsing to single-pass transforms.
 - [ ] [Internal] 📝 Reduced markdown editor serialization and model catalog ordering to single-pass transforms.
 - [ ] [Internal] 🛠️ Reduced admin benchmark, audit diff, and user-selection parsing to single-pass transforms.
+- [ ] [Internal] 🔎 Simplified admin query multi-value parsing to single-pass loops.
+- [ ] [Internal] 🧰 Reduced tested utility iteration debt in provider labels, JSON diff focus, timeline activities, FAQ excerpts, and city lookup parsing.

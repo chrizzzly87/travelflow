@@ -144,6 +144,7 @@ const CONTACT_FAQ_EXCERPT_ITEM_IDS = [
   'billing-refund-policy',
 ] as const;
 
-export const CONTACT_FAQ_EXCERPT_ITEMS: FaqItemWithSection[] = CONTACT_FAQ_EXCERPT_ITEM_IDS
-  .map((itemId) => getFaqItemById(itemId))
-  .filter((item): item is FaqItemWithSection => Boolean(item));
+export const CONTACT_FAQ_EXCERPT_ITEMS: FaqItemWithSection[] = CONTACT_FAQ_EXCERPT_ITEM_IDS.flatMap((itemId) => {
+    const item = getFaqItemById(itemId);
+    return item ? [item] : [];
+});

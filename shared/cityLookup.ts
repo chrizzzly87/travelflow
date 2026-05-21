@@ -108,27 +108,25 @@ export const mapSearchByTextResponseToCitySuggestions = (
   maxResults = 5,
 ): CityLookupSuggestion[] => {
   const places = Array.isArray(response?.places) ? response.places : [];
-  const mapped = places
-    .map((place) => {
+  const mapped = places.flatMap((place) => {
       const coordinates = normalizeCoordinates(place?.location);
-      if (!coordinates) return null;
+      if (!coordinates) return [];
 
       const label = normalizeText(place?.formattedAddress);
       const name = resolveDisplayName(place?.displayName) || label.split(',')[0]?.trim() || '';
-      if (!name) return null;
+      if (!name) return [];
 
       const countryFromComponents = resolveCountryFromAddressComponents(normalizeAddressComponents(place?.addressComponents));
       const countryFromLabel = resolveCountryFromLabel(label);
-      return {
+      return [{
         id: normalizeText(place?.id) || `${name}-${coordinates.lat.toFixed(5)}-${coordinates.lng.toFixed(5)}`,
         name,
         label: label || name,
         coordinates,
         countryName: countryFromComponents.countryName ?? countryFromLabel.countryName,
         countryCode: countryFromComponents.countryCode,
-      } satisfies CityLookupSuggestion;
-    })
-    .filter((value): value is CityLookupSuggestion => Boolean(value));
+      } satisfies CityLookupSuggestion];
+    });
 
   return dedupeSuggestions(mapped).slice(0, maxResults);
 };
@@ -156,30 +154,28 @@ const mapGeocoderResultsToCitySuggestions = (
   results: google.maps.GeocoderResult[],
   maxResults = 5,
 ): CityLookupSuggestion[] => {
-  const mapped = results
-    .map((result) => {
+  const mapped = results.flatMap((result) => {
       const location = result.geometry?.location;
-      if (!location) return null;
+      if (!location) return [];
       const coordinates: ICoordinates = {
         lat: location.lat(),
         lng: location.lng(),
       };
       const label = normalizeText(result.formatted_address);
       const name = label.split(',')[0]?.trim() || label;
-      if (!name) return null;
+      if (!name) return [];
       const country = resolveCountryFromAddressComponents(
         normalizeAddressComponents(result.address_components as unknown),
       );
-      return {
+      return [{
         id: normalizeText(result.place_id) || `${name}-${coordinates.lat.toFixed(5)}-${coordinates.lng.toFixed(5)}`,
         name,
         label: label || name,
         coordinates,
         countryName: country.countryName,
         countryCode: country.countryCode,
-      } satisfies CityLookupSuggestion;
-    })
-    .filter((value): value is CityLookupSuggestion => Boolean(value));
+      } satisfies CityLookupSuggestion];
+    });
 
   return dedupeSuggestions(mapped).slice(0, maxResults);
 };

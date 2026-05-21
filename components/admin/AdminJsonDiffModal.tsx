@@ -42,10 +42,9 @@ const buildFocusedRenderEntries = (
     rows: JsonDiffRow[],
     contextRadius = 2
 ): FocusedRenderEntry[] => {
-    const changedIndices = rows
-        .map((row, index) => ({ row, index }))
-        .filter((entry) => isChangedRow(entry.row))
-        .map((entry) => entry.index);
+    const changedIndices = rows.flatMap((row, index) => (
+        isChangedRow(row) ? [index] : []
+    ));
 
     if (changedIndices.length === 0) {
         return rows.map((row, index) => ({ kind: 'row', index, row }));

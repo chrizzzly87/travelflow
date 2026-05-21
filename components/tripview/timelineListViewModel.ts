@@ -153,17 +153,18 @@ export const buildTimelineListModel = (
         const cityStartDay = toDayOffset(cityStart);
         const cityEndDay = Math.max(cityStartDay + 1, Math.ceil(cityEnd - OFFSET_EPSILON));
 
-        const sectionActivities = activities
-            .filter((activity) => activity.startDateOffset >= (cityStart - OFFSET_EPSILON) && activity.startDateOffset < (cityEnd - OFFSET_EPSILON))
-            .map((activity) => {
-                const dayOffset = toDayOffset(activity.startDateOffset);
-                const isToday = todayOffset !== null && dayOffset === todayOffset;
-                return {
-                    item: activity,
-                    dayOffset,
-                    isToday,
-                };
-            });
+        const sectionActivities = activities.flatMap((activity) => {
+            if (activity.startDateOffset < (cityStart - OFFSET_EPSILON) || activity.startDateOffset >= (cityEnd - OFFSET_EPSILON)) {
+                return [];
+            }
+            const dayOffset = toDayOffset(activity.startDateOffset);
+            const isToday = todayOffset !== null && dayOffset === todayOffset;
+            return [{
+                item: activity,
+                dayOffset,
+                isToday,
+            }];
+        });
 
         const todayActivity = sectionActivities.find((activity) => activity.isToday) || null;
         const hasTodayInCityWindow = todayOffset !== null && todayOffset >= cityStartDay && todayOffset < cityEndDay;
