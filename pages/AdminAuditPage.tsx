@@ -359,13 +359,15 @@ const buildAuditDiffEntries = (log: AdminAuditRecord): AuditDiffEntry[] => {
     const after = asRecord(log.after_data);
     const keys = Array.from(new Set([...Object.keys(before), ...Object.keys(after)]));
     return keys
-        .filter((key) => !NOISY_DIFF_KEYS.has(key))
-        .filter((key) => toComparableValue(before[key]) !== toComparableValue(after[key]))
-        .map((key) => ({
-            key,
-            beforeValue: before[key],
-            afterValue: after[key],
-        }))
+        .flatMap((key) => {
+            if (NOISY_DIFF_KEYS.has(key)) return [];
+            if (toComparableValue(before[key]) === toComparableValue(after[key])) return [];
+            return [{
+                key,
+                beforeValue: before[key],
+                afterValue: after[key],
+            }];
+        })
         .sort((a, b) => a.key.localeCompare(b.key));
 };
 

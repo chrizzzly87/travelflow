@@ -427,9 +427,11 @@ const summarizeRunsLocal = (rows: BenchmarkRun[]): BenchmarkSummary => {
     const failed = rows.filter((run) => run.status === 'failed').length;
     const running = rows.filter((run) => run.status === 'running').length;
     const queued = rows.filter((run) => run.status === 'queued').length;
-    const completedLatencies = rows
-        .filter((run) => run.status === 'completed' && typeof run.latency_ms === 'number')
-        .map((run) => Number(run.latency_ms));
+    const completedLatencies = rows.flatMap((run) => (
+        run.status === 'completed' && typeof run.latency_ms === 'number'
+            ? [Number(run.latency_ms)]
+            : []
+    ));
     const averageLatencyMs = completedLatencies.length > 0
         ? Math.round(completedLatencies.reduce((sum, value) => sum + value, 0) / completedLatencies.length)
         : null;
@@ -543,7 +545,10 @@ export const AdminAiBenchmarkPage: React.FC = () => {
     const pendingImportedScenarioRef = useRef<ReturnType<typeof decodeBenchmarkScenarioImportPayload> | null>(null);
 
     const sortedModels = useMemo(() => sortAiModels(AI_MODEL_CATALOG), []);
-    const activeModelIdSet = useMemo(() => new Set(sortedModels.filter((model) => model.availability === 'active').map((model) => model.id)), [sortedModels]);
+    const activeModelIdSet = useMemo(
+        () => new Set(sortedModels.flatMap((model) => (model.availability === 'active' ? [model.id] : []))),
+        [sortedModels],
+    );
     const defaultPresets = useMemo(
         () => createSystemBenchmarkPresets(defaultDates.startDate, defaultDates.endDate),
         [defaultDates.endDate, defaultDates.startDate]
@@ -572,14 +577,13 @@ export const AdminAiBenchmarkPage: React.FC = () => {
 
     const selectedTargets = useMemo(() => {
         const seen = new Set<string>();
-        return modelTargetIds
-            .map((modelId) => AI_MODEL_CATALOG.find((model) => model.id === modelId))
-            .filter((model): model is NonNullable<typeof model> => Boolean(model && model.availability === 'active'))
-            .filter((model) => {
-                if (seen.has(model.id)) return false;
-                seen.add(model.id);
-                return true;
-            });
+        return modelTargetIds.flatMap((modelId) => {
+            const model = AI_MODEL_CATALOG.find((entry) => entry.id === modelId);
+            if (!model || model.availability !== 'active') return [];
+            if (seen.has(model.id)) return [];
+            seen.add(model.id);
+            return [model];
+        });
     }, [modelTargetIds]);
     const selectedTargetIdSet = useMemo(() => new Set(selectedTargets.map((target) => target.id)), [selectedTargets]);
     const inactiveTargetIdSet = useMemo(() => new Set(inactiveModelTargetIds), [inactiveModelTargetIds]);

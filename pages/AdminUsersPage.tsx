@@ -2089,7 +2089,9 @@ export const AdminUsersPage: React.FC = () => {
     useEffect(() => {
         setSelectedUserIds((current) => {
             if (current.size === 0) return current;
-            const eligible = new Set(filteredUsers.filter((user) => isUserHardDeleteEligible(user)).map((user) => user.user_id));
+            const eligible = new Set(filteredUsers.flatMap((user) => (
+                isUserHardDeleteEligible(user) ? [user.user_id] : []
+            )));
             let changed = false;
             const next = new Set<string>();
             current.forEach((userId) => {

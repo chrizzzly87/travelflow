@@ -63,6 +63,7 @@ React Review status: npm package `react-review@1.0.6` does not expose a CLI bina
 - [x] Reduced planner, details, trip-manager, and admin query/filter parsing to single-pass transforms with focused regression coverage.
 - [x] Reduced trip preview coordinate and leg-color parsing to single-pass transforms with focused preview URL coverage.
 - [x] Reduced trip resize preset normalization and admin dashboard day-key parsing to single-pass transforms with focused regression coverage.
+- [x] Reduced markdown editor serialization, task-line parsing, model catalog ordering, and admin benchmark/audit selection parsing to single-pass transforms with focused regression coverage.
 
 ## Validation Log
 
@@ -320,6 +321,18 @@ React Review status: npm package `react-review@1.0.6` does not expose a CLI bina
 
 - [x] `pnpm test:core`
   - Result: passed, `308` test files, `1369` tests, `1` skipped.
+
+- [x] Focused markdown/admin iteration regression suite
+  - Command: `pnpm test:run tests/browser/MarkdownEditor.browser.test.ts tests/unit/aiModelCatalog.test.ts tests/unit/adminAuditPage.labels.test.ts tests/unit/adminAuditUndoDiff.test.ts tests/unit/adminAuditPage.import.test.ts tests/browser/admin/adminUsersPage.softDeleteToast.browser.test.ts`
+  - Result: passed, `26` tests.
+
+- [x] `npx react-doctor@latest . --verbose --diff`
+  - Result: `78 / 100`, `0` errors, `416` warnings, `74/189` files.
+  - Share: `https://www.react.doctor/share?p=travelflow&s=78&w=416&f=74`
+
+- [x] `npx react-doctor@latest . --verbose`
+  - Result: `69 / 100`, `0` errors, `773` warnings, `201/825` files.
+  - Share: `https://www.react.doctor/share?p=travelflow&s=69&w=773&f=201`
 
 - [x] IDE lint diagnostics
   - Result: no linter errors found in edited immutable-sort batch files.
