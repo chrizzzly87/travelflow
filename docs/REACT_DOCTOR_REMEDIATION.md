@@ -20,8 +20,8 @@ React Review status: npm package `react-review@1.0.6` does not expose a CLI bina
 
 - Initial user baseline: `49 / 100`, `73` errors, `5749` warnings, `356/814` files.
 - After core-page fixes: `51 / 100`, `33` errors, `5752` warnings, `356/821` files.
-- Current full scan: `69 / 100`, `0` errors, `787` warnings, `203/825` files.
-- Current diff scan: `78 / 100`, `0` errors, `428` warnings, `74/187` files.
+- Current full scan: `69 / 100`, `0` errors, `773` warnings, `201/825` files.
+- Current diff scan: `78 / 100`, `0` errors, `416` warnings, `74/189` files.
 
 ## Completed Changes
 
