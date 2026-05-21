@@ -57,14 +57,14 @@ export const getTripSourceLabelKey = (trip: ITrip): TripSourceLabelKey => {
 };
 
 export const sortTripsByCreatedDesc = (trips: ITrip[]): ITrip[] =>
-  trips.toSorted((a, b) => {
+  Array.from(trips).sort((a, b) => {
     const byCreated = normalizeTimestamp(b.createdAt) - normalizeTimestamp(a.createdAt);
     if (byCreated !== 0) return byCreated;
     return normalizeTimestamp(b.updatedAt) - normalizeTimestamp(a.updatedAt);
   });
 
 export const sortTripsByUpdatedDesc = (trips: ITrip[]): ITrip[] =>
-  trips.toSorted((a, b) => {
+  Array.from(trips).sort((a, b) => {
     const byUpdated = normalizeTimestamp(b.updatedAt) - normalizeTimestamp(a.updatedAt);
     if (byUpdated !== 0) return byUpdated;
     return normalizeTimestamp(b.createdAt) - normalizeTimestamp(a.createdAt);

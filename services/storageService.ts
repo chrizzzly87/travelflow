@@ -30,7 +30,7 @@ const normalizeTrip = (trip: unknown): ITrip | null => {
 };
 
 const sortTripsByUpdatedAtDesc = (trips: ITrip[]): ITrip[] =>
-    trips.toSorted((a: ITrip, b: ITrip) => b.updatedAt - a.updatedAt);
+    Array.from(trips).sort((a: ITrip, b: ITrip) => b.updatedAt - a.updatedAt);
 
 const tryWriteTrips = (trips: ITrip[]): boolean => writeLocalStorageItem(STORAGE_KEY, JSON.stringify(trips));
 

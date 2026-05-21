@@ -31,7 +31,7 @@ interface AccountMenuProps {
 type AnalyticsEventName = `${string}__${string}` | `${string}__${string}--${string}`;
 
 const sortByCreatedDesc = (trips: ITrip[]): ITrip[] =>
-    trips.toSorted((a, b) => {
+    Array.from(trips).sort((a, b) => {
         const byCreated = (Number.isFinite(b.createdAt) ? b.createdAt : 0) - (Number.isFinite(a.createdAt) ? a.createdAt : 0);
         if (byCreated !== 0) return byCreated;
         return (Number.isFinite(b.updatedAt) ? b.updatedAt : 0) - (Number.isFinite(a.updatedAt) ? a.updatedAt : 0);

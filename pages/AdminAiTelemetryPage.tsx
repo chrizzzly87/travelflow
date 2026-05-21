@@ -412,8 +412,8 @@ export const AdminAiTelemetryPage: React.FC = () => {
     );
 
     const successRateLeaders = useMemo(() => {
-        return successfulModels
-            .toSorted((left, right) => right.successRate - left.successRate || right.total - left.total)
+        return Array.from(successfulModels)
+            .sort((left, right) => right.successRate - left.successRate || right.total - left.total)
             .slice(0, rankLimit);
     }, [rankLimit, successfulModels]);
 
@@ -527,8 +527,8 @@ export const AdminAiTelemetryPage: React.FC = () => {
     }, [monthlyCostHistorySeries]);
 
     const providerVolumeChartData = useMemo(() => {
-        return telemetryProviders
-            .toSorted((left, right) => right.total - left.total)
+        return Array.from(telemetryProviders)
+            .sort((left, right) => right.total - left.total)
             .slice(0, 10)
             .map((row) => ({
                 providerId: row.provider,
@@ -636,8 +636,8 @@ export const AdminAiTelemetryPage: React.FC = () => {
     }, [selectedProviderShare]);
 
     const modelVolumeBarListData = useMemo(() => {
-        return telemetryModels
-            .toSorted((left, right) => right.total - left.total)
+        return Array.from(telemetryModels)
+            .sort((left, right) => right.total - left.total)
             .slice(0, 12)
             .map((row) => ({
                 key: row.key,

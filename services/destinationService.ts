@@ -329,7 +329,7 @@ const sortDestinationOptionsByRecommendationScore = (
     months: number[]
 ): DestinationOption[] => {
     const normalizedMonths = normalizeMonths(months);
-    return options.toSorted((left, right) => {
+    return Array.from(options).sort((left, right) => {
         const scoreDelta = getDestinationRecommendationScore(right, normalizedMonths) - getDestinationRecommendationScore(left, normalizedMonths);
         if (scoreDelta !== 0) return scoreDelta;
         return left.name.localeCompare(right.name);

@@ -1056,7 +1056,7 @@ export const AdminTripsPage: React.FC = () => {
             }
             return 0;
         };
-        return visibleTrips.toSorted((left, right) => {
+        return Array.from(visibleTrips).sort((left, right) => {
             const base = compareBySortColumn(left, right);
             if (base === 0) return left.trip_id.localeCompare(right.trip_id);
             return sortDirection === 'asc' ? base : -base;

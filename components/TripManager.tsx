@@ -1217,11 +1217,11 @@ export const TripManager: React.FC<TripManagerProps> = ({
   const regularTrips = React.useMemo(() => filteredTrips.filter(trip => !trip.isFavorite), [filteredTrips]);
 
   const favoriteSortedByUpdate = React.useMemo(
-    () => favoriteTrips.toSorted(compareByUpdatedDesc),
+    () => Array.from(favoriteTrips).sort(compareByUpdatedDesc),
     [favoriteTrips]
   );
   const regularSortedByUpdate = React.useMemo(
-    () => regularTrips.toSorted(compareByUpdatedDesc),
+    () => Array.from(regularTrips).sort(compareByUpdatedDesc),
     [regularTrips]
   );
   const favoriteByTravelDate = React.useMemo(() => splitTripsByTravelDate(favoriteTrips), [favoriteTrips]);

@@ -536,7 +536,7 @@ const AirportTicketPreviewCard: React.FC<{
     );
 };
 
-const sortAirports = (airports: AirportReference[]): AirportReference[] => airports.toSorted((left, right) => (
+const sortAirports = (airports: AirportReference[]): AirportReference[] => Array.from(airports).sort((left, right) => (
     left.countryCode.localeCompare(right.countryCode)
     || (left.iataCode || left.icaoCode || left.ident).localeCompare(right.iataCode || right.icaoCode || right.ident)
     || left.name.localeCompare(right.name)

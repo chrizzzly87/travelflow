@@ -317,20 +317,27 @@ const compareCityRouteOrder = (a: ITimelineItem, b: ITimelineItem): number => {
     return a.id.localeCompare(b.id);
 };
 
+const pickFirstCityRouteOrder = (cities: ITimelineItem[]): ITimelineItem | null => {
+    if (cities.length === 0) return null;
+    return cities.reduce((winner, city) => (
+        compareCityRouteOrder(city, winner) < 0 ? city : winner
+    ));
+};
+
 const pickCityRouteComponentWinner = (componentCities: ITimelineItem[]): ITimelineItem | null => {
     if (componentCities.length === 0) return null;
 
     const explicitApproved = componentCities.filter((city) => city.isApproved === true);
     if (explicitApproved.length > 0) {
-        return explicitApproved.toSorted(compareCityRouteOrder)[0] || null;
+        return pickFirstCityRouteOrder(explicitApproved);
     }
 
     const confirmed = componentCities.filter((city) => (city.cityPlanStatus || 'confirmed') !== 'uncertain');
     if (confirmed.length > 0) {
-        return confirmed.toSorted(compareCityRouteOrder)[0] || null;
+        return pickFirstCityRouteOrder(confirmed);
     }
 
-    return componentCities.toSorted(compareCityRouteOrder)[0] || null;
+    return pickFirstCityRouteOrder(componentCities);
 };
 
 export const buildCityOverlapLayout = (
@@ -477,7 +484,7 @@ export const buildHorizontalTransferLaneLayout = (
 
     if (normalized.length === 0) return [];
 
-    const ordered = normalized.toSorted((a, b) => {
+    const ordered = Array.from(normalized).sort((a, b) => {
         if (a.chipLeft !== b.chipLeft) return a.chipLeft - b.chipLeft;
         if (a.centerX !== b.centerX) return a.centerX - b.centerX;
         return a.index - b.index;

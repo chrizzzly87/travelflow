@@ -46,7 +46,7 @@ const TURN_DURATION_MS = 520;
 const TURN_SWAP_DELAY_MS = 220;
 
 const sortGroupStamps = (stamps: ProfileStampProgress[]): ProfileStampProgress[] => {
-  return stamps.toSorted((a, b) => {
+  return Array.from(stamps).sort((a, b) => {
     if (a.achieved !== b.achieved) return a.achieved ? -1 : 1;
     if ((a.achievedAt || 0) !== (b.achievedAt || 0)) return (b.achievedAt || 0) - (a.achievedAt || 0);
     return a.targetValue - b.targetValue;

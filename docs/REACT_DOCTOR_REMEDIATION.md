@@ -50,7 +50,7 @@ React Review status: npm package `react-review@1.0.6` does not expose a CLI bina
 - [x] Replaced flagged fallback/loading copy punctuation and the blog table-of-contents anchor command.
 - [x] Cleared the latest safe diff warnings for timeline keyboard semantics, handler-only drag state, one-sided alert accents, render-helper calls, listener resubscriptions, floating-map style allocation, intentional blog view-transition flushes, and reset-password form state.
 - [x] Applied visual-equivalent Tailwind shorthand cleanup for repeated size/padding classes and softened flagged heading weights.
-- [x] Cleared immutable-sort and min/max loop warnings in focused utility, admin, profile, storage, and export paths.
+- [x] Cleared immutable-sort and min/max loop warnings in focused utility, admin, profile, storage, and export paths without relying on ES2023-only `toSorted()`.
 - [x] Replaced tested map/filter parsing pipelines with single-pass `flatMap` cleanup in storage, blog, legal, trip-generation, airport, destination, and map helpers.
 
 ## Validation Log
@@ -215,6 +215,14 @@ React Review status: npm package `react-review@1.0.6` does not expose a CLI bina
 - [x] Focused immutable-sort utility regression suite
   - Command: `pnpm test:run tests/unit/adminDashboardChartData.test.ts tests/unit/adminAiTelemetryChartData.test.ts tests/unit/cityRouteAndTransferLayout.test.ts tests/unit/tripCalendarExportService.test.ts tests/unit/profileTripState.test.ts tests/unit/offlineChangeQueue.test.ts tests/unit/destinationService.test.ts tests/unit/aiBenchmarkValidationInternals.test.ts tests/browser/storageService.browser.test.ts tests/browser/tripManagerArchive.browser.test.ts`
   - Result: passed, `66` tests.
+
+- [x] `gpt-5.5-high` review of immutable-sort and single-pass parsing commits
+  - Result: found no concrete flatMap/reduce regression, but flagged ES2023 `toSorted()` runtime compatibility risk against the repo's ES2022 target.
+  - Follow-up: replaced all `toSorted()` usage with ES2022-compatible immutable sorting patterns and rechecked React Doctor.
+
+- [x] Focused sort-compatibility regression suite
+  - Command: `pnpm test:run tests/unit/cityRouteAndTransferLayout.test.ts tests/unit/adminDashboardChartData.test.ts tests/unit/adminAiTelemetryChartData.test.ts tests/unit/tripCalendarExportService.test.ts tests/unit/profileTripState.test.ts tests/unit/offlineChangeQueue.test.ts tests/unit/destinationService.test.ts tests/browser/storageService.browser.test.ts tests/browser/tripManagerArchive.browser.test.ts`
+  - Result: passed, `58` tests.
 
 - [x] IDE lint diagnostics
   - Result: no linter errors found in edited immutable-sort batch files.

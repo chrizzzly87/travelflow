@@ -78,7 +78,7 @@ const CalendarView: React.FC<{ trip: ITrip; onScrollTo: (id: string) => void }> 
     const tripSpan = React.useMemo(() => getTripSpan(trip), [trip]);
     const endDate = tripSpan.endDate;
     const cities = React.useMemo(
-        () => trip.items.filter(i => i.type === 'city').toSorted((a,b) => a.startDateOffset - b.startDateOffset),
+        () => Array.from(trip.items.filter(i => i.type === 'city')).sort((a,b) => a.startDateOffset - b.startDateOffset),
         [trip.items]
     );
     const calendarMonths = React.useMemo<CalendarMonthModel[]>(() => {
