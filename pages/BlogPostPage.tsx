@@ -1127,21 +1127,20 @@ export const BlogPostPage: React.FC = () => {
                                                             isActive ? 'bg-accent-500' : 'bg-transparent'
                                                         }`}
                                                     />
-                                                    <a
-                                                        href={`#${heading.slug}`}
-                                                        onClick={(event) => {
-                                                            event.preventDefault();
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
                                                             document.getElementById(heading.slug)?.scrollIntoView({ behavior: 'smooth' });
                                                             window.history.pushState(null, '', `#${heading.slug}`);
                                                         }}
-                                                        className={`block py-1.5 pl-4 text-[13px] leading-snug transition-colors duration-200 ${
+                                                        className={`block w-full py-1.5 pl-4 text-left text-[13px] leading-snug transition-colors duration-200 ${
                                                             isActive
                                                                 ? 'font-semibold text-accent-700'
                                                                 : 'text-slate-500 hover:text-slate-800'
                                                         }`}
                                                     >
                                                         {heading.text}
-                                                    </a>
+                                                    </button>
                                                 </li>
                                             );
                                         })}

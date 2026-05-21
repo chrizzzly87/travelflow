@@ -90,6 +90,11 @@ const isMissingLinkedSubscriptionError = (error: unknown): boolean =>
     error instanceof Error && error.message.includes('No paid Paddle subscription is linked');
 const isExistingSubscriptionCheckoutError = (error: unknown): boolean =>
     Boolean(error && typeof error === 'object' && (((error as BillingApiError).code === 'existing_paid_subscription') || ((error as BillingApiError).code === 'existing_paid_subscription_requires_refresh')));
+const formatCheckoutRenewalDate = (value: string): string => {
+    const parsed = Date.parse(value);
+    if (!Number.isFinite(parsed)) return value;
+    return new Date(parsed).toLocaleDateString();
+};
 
 const extractPaddleEventDiscountCode = (event: PaddleCheckoutEvent): string | null => {
     const data = asOptionalObject(event.data);
@@ -1980,7 +1985,7 @@ export const CheckoutPage: React.FC = () => {
                                             </p>
                                             {subscriptionSummary?.currentPeriodEnd ? (
                                                 <p className="mt-3 text-sm text-slate-500">
-                                                    {t('checkout.renewalDateLabel', { ns: 'pricing' })}: {new Date(subscriptionSummary.currentPeriodEnd).toLocaleDateString()}
+                                                    {t('checkout.renewalDateLabel', { ns: 'pricing' })}: {formatCheckoutRenewalDate(subscriptionSummary.currentPeriodEnd)}
                                                 </p>
                                             ) : null}
                                         </div>

@@ -21,7 +21,7 @@ React Review status: npm package `react-review@1.0.6` does not expose a CLI bina
 - Initial user baseline: `49 / 100`, `73` errors, `5749` warnings, `356/814` files.
 - After core-page fixes: `51 / 100`, `33` errors, `5752` warnings, `356/821` files.
 - Current full scan: `55 / 100`, `0` errors, `5737` warnings, `353/821` files.
-- Current diff scan: `85 / 100`, `0` errors, `170` warnings, `31/89` files.
+- Current diff scan: `87 / 100`, `0` errors, `153` warnings, `31/89` files.
 
 ## Completed Changes
 
@@ -46,6 +46,8 @@ React Review status: npm package `react-review@1.0.6` does not expose a CLI bina
 - [x] Rewrote safe repeated array passes to single-pass loops/reducers, including a real `TripLoaderRoute` undefined-variable crash risk.
 - [x] Consolidated safe route, auth, profile, blog, login, and trip preview state updates to reduce unnecessary rerenders and cascading effect state.
 - [x] Kept `TripLoaderRoute` view/access state updates coherent while preserving in-session view override behavior.
+- [x] Removed render-time date construction from flagged account, billing, trip-info, and print calendar JSX paths.
+- [x] Replaced flagged fallback/loading copy punctuation and the blog table-of-contents anchor command.
 
 ## Validation Log
 
@@ -70,6 +72,22 @@ React Review status: npm package `react-review@1.0.6` does not expose a CLI bina
 - [x] Focused effect/storage regression suite
   - Command: `pnpm test:run tests/browser/authUiPreferencesService.browser.test.ts tests/browser/authModal.browser.test.ts tests/browser/loginPage.browser.test.ts tests/browser/profileTripCard.browser.test.ts tests/browser/tripview/useTripShareLifecycle.browser.test.ts`
   - Result: passed, `26` tests.
+
+- [x] `pnpm build:netlify`
+  - Result: passed through validators, sitemap generation, and Vite production build.
+  - Notes: emitted existing release-version validation warnings, CSS/view-transition, dynamic-import, and chunk-size warnings.
+
+- [x] Focused render/copy regression suite
+  - Command: `pnpm test:run tests/browser/navigation/accountMenu.browser.test.ts tests/browser/profileSettingsPage.browser.test.ts tests/browser/tripview/TripInfoModal.browser.test.ts tests/browser/checkoutPage.browser.test.ts tests/browser/itineraryMapControls.browser.test.ts tests/browser/routes/exampleTripLoaderRoute.browser.test.ts tests/browser/tripview/TripViewPlannerWorkspace.browser.test.ts tests/browser/TimelineBlock.browser.test.ts`
+  - Result: passed, `66` tests.
+
+- [x] `pnpm dlx react-doctor@latest . --verbose --diff`
+  - Result: `87 / 100`, `0` errors, `153` warnings, `31/89` files.
+  - Share: `https://www.react.doctor/share?p=travelflow&s=87&w=153&f=31`
+  - Notes: latest package resolved to `react-doctor v0.2.1`; remaining warnings are mostly reducer/effect-chain/component-boundary work.
+
+- [x] `pnpm test:core`
+  - Result: passed, `304` test files, `1357` tests, `1` skipped.
 
 - [x] `pnpm build:netlify`
   - Result: passed through validators, sitemap generation, and Vite production build.

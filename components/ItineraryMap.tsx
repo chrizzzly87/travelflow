@@ -3244,7 +3244,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                     className="absolute inset-0 flex items-center justify-center text-sm text-gray-500"
                     style={{ backgroundColor: mapSurfaceBackgroundColor }}
                 >
-                    Loading Map...
+                    Loading map…
                 </div>
             )}
             {loadError && (

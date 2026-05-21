@@ -442,13 +442,13 @@ interface ExampleTransitionLocationState {
 
 const MapLoadingFallback: React.FC = () => (
     <div className="h-full w-full flex items-center justify-center bg-gray-100 text-xs text-gray-500">
-        Loading map...
+        Loading map…
     </div>
 );
 
 const MapDeferredFallback: React.FC<{ onLoadNow: () => void }> = ({ onLoadNow }) => (
     <div className="h-full w-full flex flex-col items-center justify-center gap-3 bg-gray-100 text-xs text-gray-500">
-        <span>Preparing map...</span>
+        <span>Preparing map…</span>
         <button
             type="button"
             onClick={onLoadNow}
@@ -918,7 +918,7 @@ const renderDetailsPanelContent = ({
     onExportActivityCalendar,
 }: RenderDetailsPanelContentOptions): React.ReactNode => (
     showSelectedCitiesPanel ? (
-        <Suspense fallback={<div className="h-full flex items-center justify-center text-xs text-gray-500">Loading selection panel...</div>}>
+        <Suspense fallback={<div className="h-full flex items-center justify-center text-xs text-gray-500">Loading selection panel…</div>}>
             <SelectedCitiesPanel
                 selectedCities={selectedCitiesInTimeline}
                 onClose={onCloseSelection}
@@ -929,7 +929,7 @@ const renderDetailsPanelContent = ({
             />
         </Suspense>
     ) : (
-        <Suspense fallback={<div className="h-full flex items-center justify-center text-xs text-gray-500">Loading details...</div>}>
+        <Suspense fallback={<div className="h-full flex items-center justify-center text-xs text-gray-500">Loading details…</div>}>
             <DetailsPanel
                 item={selectedDetailItem}
                 isOpen={!!selectedItemId}
@@ -3048,7 +3048,7 @@ const useTripViewRender = ({
     if (viewMode === 'print') {
         return (
             <GoogleMapsLoader language={appLanguage}>
-                <Suspense fallback={<div className="h-screen w-screen flex items-center justify-center text-sm text-gray-500">Preparing print layout...</div>}>
+                <Suspense fallback={<div className="h-screen w-screen flex items-center justify-center text-sm text-gray-500">Preparing print layout…</div>}>
                     <PrintLayout
                         trip={displayTrip}
                         isPaywalled={isPaywallLocked}

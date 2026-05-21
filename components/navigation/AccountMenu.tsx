@@ -37,6 +37,11 @@ const sortByCreatedDesc = (trips: ITrip[]): ITrip[] =>
         return (Number.isFinite(b.updatedAt) ? b.updatedAt : 0) - (Number.isFinite(a.updatedAt) ? a.updatedAt : 0);
     });
 
+const formatRecentTripDate = (timestamp: number): string => {
+    if (!Number.isFinite(timestamp)) return '';
+    return new Date(timestamp).toLocaleDateString();
+};
+
 const computeInitial = (
     profile: { firstName?: string; lastName?: string; displayName?: string | null; username?: string | null } | null,
     email: string | null,
@@ -315,7 +320,7 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
                                     >
                                         <span className="truncate">{trip.title}</span>
                                         <span className="text-[11px] text-slate-400">
-                                            {new Date(trip.createdAt).toLocaleDateString()}
+                                            {formatRecentTripDate(trip.createdAt)}
                                         </span>
                                     </button>
                                 ))

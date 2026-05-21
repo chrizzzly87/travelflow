@@ -72,6 +72,13 @@ const FUTURE_DESTINATION_CHECK_KEYS = [
 
 type TripInfoTabValue = 'general' | 'history' | 'export' | 'destination' | 'debug';
 
+const formatAttemptTimestamp = (value: string | null | undefined): string => {
+    if (!value) return '—';
+    const parsed = Date.parse(value);
+    if (!Number.isFinite(parsed)) return value;
+    return new Date(parsed).toLocaleString();
+};
+
 export interface TripInfoModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -826,8 +833,8 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                                     <SummaryCard label={t('tripView.generation.tripInfo.requestId')} value={<span className="font-mono text-[12px] break-all">{latestAttempt?.requestId || '—'}</span>} />
                                     <SummaryCard label={t('tripView.generation.tripInfo.httpStatus')} value={latestAttempt?.statusCode ?? '—'} />
                                     <SummaryCard label={t('tripView.generation.tripInfo.runTime')} value={formatDurationMs(latestAttempt?.durationMs)} />
-                                    <SummaryCard label={t('tripView.generation.tripInfo.started')} value={latestAttempt?.startedAt ? new Date(latestAttempt.startedAt).toLocaleString() : '—'} />
-                                    <SummaryCard label={t('tripView.generation.tripInfo.finished')} value={latestAttempt?.finishedAt ? new Date(latestAttempt.finishedAt).toLocaleString() : '—'} />
+                                    <SummaryCard label={t('tripView.generation.tripInfo.started')} value={formatAttemptTimestamp(latestAttempt?.startedAt)} />
+                                    <SummaryCard label={t('tripView.generation.tripInfo.finished')} value={formatAttemptTimestamp(latestAttempt?.finishedAt)} />
                                     <SummaryCard label={t('tripView.generation.tripInfo.failureKind')} value={latestAttempt?.failureKind || '—'} />
                                     <SummaryCard label={t('tripView.generation.tripInfo.errorCode')} value={latestAttempt?.errorCode || '—'} />
                                     <SummaryCard label={t('tripView.generation.tripInfo.errorMessage')} value={latestAttempt?.errorMessage || '—'} wide />

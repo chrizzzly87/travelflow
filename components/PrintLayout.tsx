@@ -59,50 +59,72 @@ const WEEKDAY_HEADERS = [
     { id: 'sun', label: 'S' },
 ];
 
+interface CalendarDayModel {
+    day: number;
+    activeCities: Array<{ item: ITimelineItem; dayIndex: number }>;
+    isWeekend: boolean;
+}
+
+interface CalendarMonthModel {
+    id: string;
+    label: string;
+    startOffset: number;
+    days: CalendarDayModel[];
+}
+
 // Helper to generate calendar grids
 const CalendarView: React.FC<{ trip: ITrip; onScrollTo: (id: string) => void }> = ({ trip, onScrollTo }) => {
-    const startDate = parseLocalDate(trip.startDate);
-    const tripSpan = getTripSpan(trip);
+    const startDate = React.useMemo(() => parseLocalDate(trip.startDate), [trip.startDate]);
+    const tripSpan = React.useMemo(() => getTripSpan(trip), [trip]);
     const endDate = tripSpan.endDate;
-    
-    // Determine months spanned
-    const months: Date[] = [];
-    let current = new Date(startDate);
-    current.setDate(1); // Start at beginning of month
-    
-    // Safety break
-    let loops = 0;
-    while ((current <= endDate || (current.getMonth() <= endDate.getMonth() && current.getFullYear() <= endDate.getFullYear())) && loops < 12) {
-        months.push(new Date(current));
-        current.setMonth(current.getMonth() + 1);
-        loops++;
-    }
+    const cities = React.useMemo(
+        () => trip.items.filter(i => i.type === 'city').toSorted((a,b) => a.startDateOffset - b.startDateOffset),
+        [trip.items]
+    );
+    const calendarMonths = React.useMemo<CalendarMonthModel[]>(() => {
+        const months: Date[] = [];
+        let current = new Date(startDate);
+        current.setDate(1);
 
-    const cities = trip.items.filter(i => i.type === 'city').sort((a,b) => a.startDateOffset - b.startDateOffset);
+        let loops = 0;
+        while ((current <= endDate || (current.getMonth() <= endDate.getMonth() && current.getFullYear() <= endDate.getFullYear())) && loops < 12) {
+            months.push(new Date(current));
+            current.setMonth(current.getMonth() + 1);
+            loops++;
+        }
 
-    // Find all cities overlapping with a specific date
-    const getCitiesForDate = (date: Date) => {
-        // Use Noon to avoid DST issues when calculating difference
         const tripStart = new Date(startDate);
         tripStart.setHours(12, 0, 0, 0);
-        
-        const currentCheck = new Date(date);
-        currentCheck.setHours(12, 0, 0, 0);
 
-        const diffDays = Math.round((currentCheck.getTime() - tripStart.getTime()) / (1000 * 60 * 60 * 24));
-        
-        const overlappingCities: Array<{ item: (typeof cities)[number]; dayIndex: number }> = [];
-        cities.forEach(c => {
-            const start = c.startDateOffset;
-            const end = c.startDateOffset + c.duration;
-            // Check intersection: City interval [start, end) overlaps with Day interval [diffDays, diffDays+1)
-            // Intersection exists if start < dayEnd AND end > dayStart
-            if (start < (diffDays + 1) && end > diffDays) {
-                overlappingCities.push({ item: c, dayIndex: diffDays });
-            }
+        return months.map((monthDate) => {
+            const daysInMonth = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0).getDate();
+            const firstDayOfWeek = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1).getDay();
+            const startOffset = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1;
+            const days = Array.from({ length: daysInMonth }, (_, index) => {
+                const day = index + 1;
+                const date = new Date(monthDate.getFullYear(), monthDate.getMonth(), day);
+                date.setHours(12, 0, 0, 0);
+                const dayIndex = Math.round((date.getTime() - tripStart.getTime()) / (1000 * 60 * 60 * 24));
+                const activeCities = cities.flatMap((city) => {
+                    const cityStart = city.startDateOffset;
+                    const cityEnd = city.startDateOffset + city.duration;
+                    return cityStart < dayIndex + 1 && cityEnd > dayIndex ? [{ item: city, dayIndex }] : [];
+                });
+                return {
+                    day,
+                    activeCities,
+                    isWeekend: date.getDay() === 0 || date.getDay() === 6,
+                };
+            });
+
+            return {
+                id: monthDate.toISOString(),
+                label: monthDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+                startOffset,
+                days,
+            };
         });
-        return overlappingCities;
-    };
+    }, [cities, endDate, startDate]);
 
     return (
         <div className="flex flex-col gap-6 pb-4 w-full">
@@ -144,18 +166,11 @@ const CalendarView: React.FC<{ trip: ITrip; onScrollTo: (id: string) => void }> 
 
              {/* Months Grid */}
              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-8">
-                {months.map(monthDate => {
-                    const daysInMonth = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0).getDate();
-                    const firstDayOfWeek = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1).getDay(); // 0 = Sun, 1 = Mon
-                    // Adjust for Monday start? Let's stick to Sun (0) or Mon (1) based on locale/preference. 
-                    // Let's assume standard Calendar grid (Sun start usually, or Mon).
-                    // Let's use Monday start (1) for travel apps usually.
-                    const startOffset = (firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1); 
-
+                {calendarMonths.map((month) => {
                     return (
-                        <div key={monthDate.toISOString()} className="break-inside-avoid">
+                        <div key={month.id} className="break-inside-avoid">
                             <h4 className="font-semibold text-gray-900 mb-3 capitalize text-sm">
-                                {monthDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                                {month.label}
                             </h4>
                             <div className="grid grid-cols-7 gap-1 text-center">
                                 {/* Weekday Headers */}
@@ -164,17 +179,12 @@ const CalendarView: React.FC<{ trip: ITrip; onScrollTo: (id: string) => void }> 
                                 ))}
 
                                 {/* Empties */}
-                                {Array.from({ length: startOffset }).map((_, i) => (
+                                {Array.from({ length: month.startOffset }).map((_, i) => (
                                     <div key={`empty-${i}`} />
                                 ))}
 
                                 {/* Days */}
-                                {Array.from({ length: daysInMonth }).map((_, i) => {
-                                    const day = i + 1;
-                                    const date = new Date(monthDate.getFullYear(), monthDate.getMonth(), day);
-                                    const activeCities = getCitiesForDate(date);
-                                    const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-
+                                {month.days.map(({ day, activeCities, isWeekend }) => {
                                     const dayCellClass = `
                                         aspect-square relative flex items-center justify-center isolate border border-transparent text-xs
                                         ${isWeekend ? 'bg-gray-50/50' : ''}
@@ -436,7 +446,7 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
                                             <h2 className="text-2xl font-semibold text-gray-900">{city.title}</h2>
                                         </div>
                                         <div className="text-gray-500 font-medium ml-6">
-                                            {formatDate(cityStart)} — {formatDate(cityEnd)} <span className="text-gray-300 mx-2">|</span> {citySpan.longLabel}
+                                            {formatDate(cityStart)} to {formatDate(cityEnd)} <span className="text-gray-300 mx-2">|</span> {citySpan.longLabel}
                                         </div>
                                     </div>
                                     <div className="text-4xl font-black text-gray-100 select-none">
@@ -503,7 +513,7 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
                                         {/* Editable Notes Area */}
                                         <div className="border border-gray-200 rounded-lg p-4 bg-[linear-gradient(white_29px,#eee_30px)] bg-[length:100%_30px] pt-1">
                                             <div className="text-xs text-gray-400 font-bold uppercase mb-1 flex items-center gap-1"><StickyNote size={12}/> Notes</div>
-                                            <Suspense fallback={<div className="rounded border border-gray-200 bg-white px-3 py-2 text-xs text-gray-500">Loading notes...</div>}>
+                                            <Suspense fallback={<div className="rounded border border-gray-200 bg-white px-3 py-2 text-xs text-gray-500">Loading notes…</div>}>
                                                 <LazyMarkdownEditor
                                                     value={city.description || ''}
                                                     onChange={(val) => handleUpdateNotes(city.id, val)}

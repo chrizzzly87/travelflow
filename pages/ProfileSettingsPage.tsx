@@ -1262,7 +1262,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.billing.renewalLabel')}</p>
                                         <p className="mt-1 text-sm font-semibold text-slate-900">
                                             {billingState.currentPeriodEnd
-                                                ? new Date(billingState.currentPeriodEnd).toLocaleDateString(appLocale)
+                                                ? formatDateLabel(billingState.currentPeriodEnd, appLocale)
                                                 : '—'}
                                         </p>
                                     </div>
