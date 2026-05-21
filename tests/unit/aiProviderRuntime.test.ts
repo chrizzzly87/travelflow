@@ -188,7 +188,8 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
     const retryInit = (fetchMock.mock.calls[1] as [string, RequestInit])[1];
     const retryBody = JSON.parse(String(retryInit.body));
     expect(retryBody.contents?.[0]?.parts?.[0]?.text).toContain('TRUNCATION RECOVERY MODE');
-    expect(retryBody.contents?.[0]?.parts?.[0]?.text).toContain('Use at most 8 cities and at most 16 activities');
+    expect(retryBody.contents?.[0]?.parts?.[0]?.text).toContain('Use at most 6 cities');
+    expect(retryBody.contents?.[0]?.parts?.[0]?.text).toContain('Use at most 1 activity per city');
 
     expect(result.ok).toBe(false);
     if (!('status' in result)) return;
@@ -984,8 +985,10 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
     expect(fetchMock).toHaveBeenCalledTimes(3);
     const thirdBody = JSON.parse(String((fetchMock.mock.calls[2] as [string, RequestInit])[1].body));
     expect(thirdBody.messages[0].content).toContain('Return exactly one minified JSON object');
+    expect(thirdBody.messages[1].content).toMatch(/^IMPORTANT RETRY INSTRUCTIONS:/);
     expect(thirdBody.messages[1].content).toContain('TRUNCATION RECOVERY MODE');
-    expect(thirdBody.messages[1].content).toContain('Use at most 8 cities');
+    expect(thirdBody.messages[1].content).toContain('Use at most 6 cities');
+    expect(thirdBody.messages[1].content).toContain('Use at most 1 activity per city');
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.value.data.tripTitle).toBe('Recovered compact JSON');
