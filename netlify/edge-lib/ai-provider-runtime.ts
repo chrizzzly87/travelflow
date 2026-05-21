@@ -1337,8 +1337,8 @@ const generateWithOpenRouter = async (
           body: JSON.stringify({
             model,
             max_tokens: maxOutputTokens,
-            temperature: 0.2,
-            response_format: { type: "text" },
+            temperature: 0,
+            response_format: { type: "json_object" },
             messages: [
               {
                 role: "system",

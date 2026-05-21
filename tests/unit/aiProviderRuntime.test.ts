@@ -755,11 +755,12 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
     const perplexityRequest = (fetchMock.mock.calls[0] as [string, RequestInit])[1];
     const perplexityBody = JSON.parse(String(perplexityRequest.body));
     expect(perplexityBody.model).toBe('perplexity/sonar');
-    expect(perplexityBody.response_format?.type).toBe('text');
+    expect(perplexityBody.response_format?.type).toBe('json_object');
     const qwenRequest = (fetchMock.mock.calls[1] as [string, RequestInit])[1];
     const qwenBody = JSON.parse(String(qwenRequest.body));
     expect(qwenBody.model).toBe('qwen/qwen3.5-plus-02-15');
-    expect(qwenBody.response_format?.type).toBe('text');
+    expect(qwenBody.response_format?.type).toBe('json_object');
+    expect(qwenBody.temperature).toBe(0);
 
     expect(perplexityResult.ok).toBe(true);
     if (perplexityResult.ok) {
@@ -772,6 +773,35 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
       expect(qwenResult.value.meta.provider).toBe('qwen');
       expect(qwenResult.value.meta.model).toBe('qwen/qwen3.5-plus-02-15');
     }
+  });
+
+  it('requests OpenRouter Gemini models in JSON mode for itinerary payloads', async () => {
+    stubDenoEnv({
+      OPENROUTER_API_KEY: 'test-key',
+    });
+
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({
+        model: 'google/gemini-3.5-flash',
+        choices: [{ message: { content: '{"title":"Gemini json mode"}' } }],
+        usage: { prompt_tokens: 1, completion_tokens: 2, total_tokens: 3 },
+      }),
+    );
+
+    const result = await generateProviderItinerary({
+      prompt: '{"request":"gemini-openrouter"}',
+      provider: 'openrouter',
+      model: 'google/gemini-3.5-flash',
+      timeoutMs: 30_000,
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const init = (fetchMock.mock.calls[0] as [string, RequestInit])[1];
+    const body = JSON.parse(String(init.body));
+    expect(body.model).toBe('google/gemini-3.5-flash');
+    expect(body.response_format).toEqual({ type: 'json_object' });
+    expect(body.temperature).toBe(0);
+    expect(result.ok).toBe(true);
   });
 
   it('passes maxOutputTokens override through to provider requests', async () => {
