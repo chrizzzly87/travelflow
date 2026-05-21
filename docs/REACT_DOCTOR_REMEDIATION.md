@@ -20,8 +20,8 @@ React Review status: npm package `react-review@1.0.6` does not expose a CLI bina
 
 - Initial user baseline: `49 / 100`, `73` errors, `5749` warnings, `356/814` files.
 - After core-page fixes: `51 / 100`, `33` errors, `5752` warnings, `356/821` files.
-- Current full scan: `69 / 100`, `0` errors, `810` warnings, `207/826` files.
-- Current diff scan: `78 / 100`, `0` errors, `441` warnings, `75/185` files.
+- Current full scan: `69 / 100`, `0` errors, `805` warnings, `206/825` files.
+- Current diff scan: `78 / 100`, `0` errors, `441` warnings, `75/187` files.
 
 ## Completed Changes
 
@@ -59,6 +59,7 @@ React Review status: npm package `react-review@1.0.6` does not expose a CLI bina
 - [x] Consolidated generation progress message rotation into a reducer with timer regression coverage.
 - [x] Replaced additional component string parsing and country-label pipelines with single-pass transforms in tested timeline, example-trip, detail, and country-select surfaces.
 - [x] Converted the CountrySelect browser coverage to a `.test.ts` file so it runs under the repo's current Vitest include pattern.
+- [x] Reduced profile stamp metric parsing to single-pass timestamp collection with focused profile stamp coverage.
 
 ## Validation Log
 
@@ -285,6 +286,18 @@ React Review status: npm package `react-review@1.0.6` does not expose a CLI bina
 
 - [x] `pnpm test:core`
   - Result: passed, `308` test files, `1369` tests, `1` skipped.
+
+- [x] Focused profile stamp regression suite
+  - Command: `pnpm test:run tests/unit/profileStamps.test.ts tests/browser/profilePage.browser.test.ts tests/browser/publicProfileStampsPage.browser.test.ts`
+  - Result: passed, `28` tests.
+
+- [x] `npx react-doctor@latest . --verbose --diff`
+  - Result: `78 / 100`, `0` errors, `441` warnings, `75/187` files.
+  - Share: `https://www.react.doctor/share?p=travelflow&s=78&w=441&f=75`
+
+- [x] `npx react-doctor@latest . --verbose`
+  - Result: `69 / 100`, `0` errors, `805` warnings, `206/825` files.
+  - Share: `https://www.react.doctor/share?p=travelflow&s=69&w=805&f=206`
 
 - [x] IDE lint diagnostics
   - Result: no linter errors found in edited immutable-sort batch files.

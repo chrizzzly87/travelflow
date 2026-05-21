@@ -208,6 +208,13 @@ const maxTimestamp = (values: Array<number | null>): number | null => {
   return Math.max(...normalized);
 };
 
+const timestampValues = (trips: ITrip[], selector: (trip: ITrip) => unknown): number[] => {
+  return trips.flatMap((trip) => {
+    const timestamp = asTimestamp(selector(trip));
+    return typeof timestamp === 'number' ? [timestamp] : [];
+  });
+};
+
 const nthTimestamp = (timestamps: number[], threshold: number): number | null => {
   if (threshold <= 0) return null;
   if (timestamps.length < threshold) return null;
@@ -227,21 +234,14 @@ export const computeProfileStampMetrics = (
   const cityCount = trips.reduce((sum, trip) => (
     sum + trip.items.filter((item) => item.type === 'city').length
   ), 0);
-  const tripCreatedAtAsc = trips
-    .map((trip) => asTimestamp(trip.createdAt))
-    .filter((value): value is number => typeof value === 'number')
-    .sort((a, b) => a - b);
-  const activeTripUpdatedAtAsc = activeTrips
-    .map((trip) => asTimestamp(trip.updatedAt))
-    .filter((value): value is number => typeof value === 'number')
-    .sort((a, b) => a - b);
-  const favoriteUpdatedAtAsc = favoriteTrips
-    .map((trip) => asTimestamp(trip.updatedAt))
-    .filter((value): value is number => typeof value === 'number')
-    .sort((a, b) => a - b);
+  const tripCreatedAtAsc = timestampValues(trips, (trip) => trip.createdAt).sort((a, b) => a - b);
+  const activeTripUpdatedAtAsc = timestampValues(activeTrips, (trip) => trip.updatedAt).sort((a, b) => a - b);
+  const favoriteUpdatedAtAsc = timestampValues(favoriteTrips, (trip) => trip.updatedAt).sort((a, b) => a - b);
   const pinnedAtAsc = pinnedTrips
-    .map((trip) => asTimestamp(trip.pinnedAt) ?? asTimestamp(trip.updatedAt))
-    .filter((value): value is number => typeof value === 'number')
+    .flatMap((trip) => {
+      const timestamp = asTimestamp(trip.pinnedAt) ?? asTimestamp(trip.updatedAt);
+      return typeof timestamp === 'number' ? [timestamp] : [];
+    })
     .sort((a, b) => a - b);
 
   return {
@@ -323,9 +323,10 @@ export const getPassportDisplayStamps = (
   const selectedIds = normalizePassportStickerSelection(selectedStampIds, normalizedLimit);
   const selectedMap = new Map(unlocked.map((stamp) => [stamp.definition.id, stamp] as const));
 
-  const selectedStamps = selectedIds
-    .map((stampId) => selectedMap.get(stampId) || null)
-    .filter((stamp): stamp is ProfileStampProgress => Boolean(stamp));
+  const selectedStamps = selectedIds.flatMap((stampId) => {
+    const stamp = selectedMap.get(stampId);
+    return stamp ? [stamp] : [];
+  });
 
   if (selectedStamps.length >= normalizedLimit) {
     return selectedStamps.slice(0, normalizedLimit);

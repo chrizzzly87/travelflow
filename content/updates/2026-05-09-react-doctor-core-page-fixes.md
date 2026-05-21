@@ -35,3 +35,4 @@ summary: "Cleans up the highest-priority React Doctor findings across core trip 
 - [ ] [Internal] ⏱️ Reduced generation progress timer state debt while preserving rotating status messages.
 - [ ] [Internal] 🧵 Reduced component string-parsing iteration debt in tested timeline, examples, details, and country-selection surfaces.
 - [ ] [Internal] 🧪 Ensured country-selection browser coverage runs under the repository's current Vitest include rules.
+- [ ] [Internal] 🧳 Reduced profile stamp metric parsing to single-pass timestamp collection.
