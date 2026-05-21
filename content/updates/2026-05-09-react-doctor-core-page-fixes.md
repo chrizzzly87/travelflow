@@ -31,4 +31,5 @@ summary: "Cleans up the highest-priority React Doctor findings across core trip 
 - [ ] [Internal] 📶 Reduced network status state-update debt while preserving offline recovery behavior.
 - [ ] [Internal] 🪟 Raised the full React Doctor scan to `69/100` by consolidating trip overlay state updates.
 - [ ] [Internal] 🏙️ Reduced add-city modal state-update debt while preserving suggestion search and manual fallback behavior.
+- [ ] [Internal] 🧭 Hardened add-city manual lookup handling against stale async results.
 - [ ] [Internal] ⏱️ Reduced generation progress timer state debt while preserving rotating status messages.

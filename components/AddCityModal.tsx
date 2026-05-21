@@ -98,6 +98,7 @@ export const AddCityModal: React.FC<AddCityModalProps> = ({ isOpen, onClose, onA
     
     const inputRef = useRef<HTMLInputElement>(null);
     const lookupRequestIdRef = useRef(0);
+    const manualResolveRequestIdRef = useRef(0);
     const cityInputId = 'add-city-input';
     const mapLanguage = getStoredAppLanguage();
     
@@ -105,6 +106,7 @@ export const AddCityModal: React.FC<AddCityModalProps> = ({ isOpen, onClose, onA
 
     const resetModalState = useCallback(() => {
         lookupRequestIdRef.current += 1;
+        manualResolveRequestIdRef.current += 1;
         dispatch({ type: 'reset' });
     }, []);
 
@@ -168,8 +170,11 @@ export const AddCityModal: React.FC<AddCityModalProps> = ({ isOpen, onClose, onA
             return;
         }
 
+        const requestId = manualResolveRequestIdRef.current + 1;
+        manualResolveRequestIdRef.current = requestId;
         dispatch({ type: 'manualResolveStarted' });
         const result = await resolveCitySuggestion(query, { language: mapLanguage });
+        if (manualResolveRequestIdRef.current !== requestId) return;
 
         if (!result) {
             dispatch({
@@ -230,6 +235,7 @@ export const AddCityModal: React.FC<AddCityModalProps> = ({ isOpen, onClose, onA
                             type="text" 
                             value={state.inputValue}
                             onChange={e => {
+                                manualResolveRequestIdRef.current += 1;
                                 dispatch({ type: 'inputChanged', value: e.target.value });
                             }}
                             onKeyDown={handleKeyDown}

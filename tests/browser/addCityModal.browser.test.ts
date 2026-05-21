@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import React from 'react';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AddCityModal } from '../../components/AddCityModal';
@@ -10,8 +10,12 @@ const locationSearchMocks = vi.hoisted(() => ({
   resolveCitySuggestion: vi.fn(),
 }));
 
+const googleMapsMocks = vi.hoisted(() => ({
+  isLoaded: true,
+}));
+
 vi.mock('../../components/GoogleMapsLoader', () => ({
-  useGoogleMaps: () => ({ isLoaded: true }),
+  useGoogleMaps: () => ({ isLoaded: googleMapsMocks.isLoaded }),
 }));
 
 vi.mock('../../services/locationSearchService', () => ({
@@ -30,6 +34,7 @@ const renderAddCityModal = (props?: {
 
 describe('AddCityModal', () => {
   beforeEach(() => {
+    googleMapsMocks.isLoaded = true;
     locationSearchMocks.searchCitySuggestions.mockResolvedValue([
       {
         id: 'kyoto-japan',
@@ -83,5 +88,55 @@ describe('AddCityModal', () => {
 
     expect(await screen.findByText('No matching city found. Try "City, Country" or choose a suggestion.')).toBeInTheDocument();
     expect(screen.getByLabelText('City Name')).toBeInTheDocument();
+  });
+
+  it('ignores stale manual resolution results after the input changes', async () => {
+    const onAdd = vi.fn();
+    let resolveManualLookup: ((value: unknown) => void) | null = null;
+    locationSearchMocks.resolveCitySuggestion.mockReturnValue(new Promise((resolve) => {
+      resolveManualLookup = resolve;
+    }));
+
+    renderAddCityModal({ onAdd });
+
+    fireEvent.change(screen.getByLabelText('Search City'), {
+      target: { value: 'Old query' },
+    });
+    fireEvent.keyDown(screen.getByLabelText('Search City'), { key: 'Enter' });
+
+    await waitFor(() => {
+      expect(locationSearchMocks.resolveCitySuggestion).toHaveBeenCalledWith('Old query', expect.any(Object));
+    });
+
+    fireEvent.change(screen.getByLabelText('Search City'), {
+      target: { value: 'New query' },
+    });
+
+    await act(async () => {
+      resolveManualLookup?.({
+        id: 'old-result',
+        name: 'Old Result',
+        label: 'Old Result',
+        coordinates: { lat: 1, lng: 2 },
+      });
+      await Promise.resolve();
+    });
+
+    expect(onAdd).not.toHaveBeenCalled();
+    expect(screen.getByLabelText('Search City')).toHaveValue('New query');
+  });
+
+  it('shows a map loading error before manual resolution is available', async () => {
+    googleMapsMocks.isLoaded = false;
+
+    renderAddCityModal();
+
+    fireEvent.change(screen.getByLabelText('Search City'), {
+      target: { value: 'Kyoto' },
+    });
+    fireEvent.keyDown(screen.getByLabelText('Search City'), { key: 'Enter' });
+
+    expect(await screen.findByText('Map services are still loading. Please try again in a moment.')).toBeInTheDocument();
+    expect(locationSearchMocks.resolveCitySuggestion).not.toHaveBeenCalled();
   });
 });

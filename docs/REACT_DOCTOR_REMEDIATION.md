@@ -55,6 +55,7 @@ React Review status: npm package `react-review@1.0.6` does not expose a CLI bina
 - [x] Consolidated network status connectivity/probe updates into a reducer so online state, connection snapshots, and probe state commit coherently.
 - [x] Consolidated trip overlay booleans into a reducer while preserving the existing setter API and Escape-close ordering.
 - [x] Consolidated add-city modal form/search state into a reducer while preserving debounced suggestions and manual fallback behavior.
+- [x] Guarded add-city manual lookups against stale async results and added coverage for map-unavailable/manual-resolution edge cases.
 - [x] Consolidated generation progress message rotation into a reducer with timer regression coverage.
 
 ## Validation Log
@@ -251,6 +252,10 @@ React Review status: npm package `react-review@1.0.6` does not expose a CLI bina
 - [x] Focused add-city reducer regression suite
   - Command: `pnpm test:run tests/browser/addCityModal.browser.test.ts tests/unit/addCityModalPlacesMigration.test.ts`
   - Result: passed, `3` tests.
+
+- [x] Focused add-city stale async regression suite
+  - Command: `pnpm test:run tests/browser/addCityModal.browser.test.ts tests/unit/addCityModalPlacesMigration.test.ts`
+  - Result: passed, `5` tests.
 
 - [x] `npx react-doctor@latest . --verbose`
   - Result: `69 / 100`, `0` errors, `814` warnings, `208/825` files.
