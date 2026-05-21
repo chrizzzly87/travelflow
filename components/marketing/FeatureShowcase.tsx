@@ -78,12 +78,12 @@ export const FeatureShowcase: React.FC = () => {
                                 !isEven ? 'md:flex-row-reverse' : ''
                             }`}
                         >
-                            <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-accent-50 text-accent-600 shadow-sm ring-1 ring-accent-100 transition-transform duration-300 hover:scale-110 hover:shadow-md md:h-24 md:w-24">
+                            <div className="flex size-20 shrink-0 items-center justify-center rounded-2xl bg-accent-50 text-accent-600 shadow-sm ring-1 ring-accent-100 transition-transform duration-300 hover:scale-110 hover:shadow-md md:size-24">
                                 <IconComponent size={40} weight="duotone" />
                             </div>
 
                             <div className="max-w-lg">
-                                <h3 className="text-xl font-bold text-slate-900">
+                                <h3 className="text-xl font-semibold text-slate-900">
                                     {feature.title}
                                 </h3>
                                 <p className="mt-2 text-base leading-relaxed text-slate-600">

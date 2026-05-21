@@ -1424,7 +1424,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
 
     if (isGenerating && previewTrip) {
         return (
-            <div className="relative h-screen w-screen">
+            <div className="relative size-screen">
                 <TripView
                     trip={previewTrip}
                     onUpdateTrip={setPreviewTrip}
@@ -1836,7 +1836,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                             <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1 text-slate-600">
                                 <span
                                     className={[
-                                        'inline-block h-2.5 w-2.5 rounded-full',
+                                        'inline-block size-2.5 rounded-full',
                                         seasonQuality.quality === 'great'
                                             ? 'bg-emerald-500'
                                             : seasonQuality.quality === 'shoulder'

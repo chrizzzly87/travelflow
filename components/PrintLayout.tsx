@@ -290,7 +290,7 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-white text-gray-900 font-sans w-full h-full overflow-y-auto no-scrollbar print:static print:h-auto print:overflow-visible">
+    <div className="fixed inset-0 z-[9999] bg-white text-gray-900 font-sans size-full overflow-y-auto no-scrollbar print:static print:h-auto print:overflow-visible">
         <div className="p-8 max-w-[1400px] mx-auto print:p-0 print:max-w-none print:w-full print:h-auto print:overflow-visible">
             
             {/* Navigation Bar (Hidden on Print) */}

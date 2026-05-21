@@ -98,11 +98,11 @@ export const ProfileStampCard: React.FC<ProfileStampCardProps> = ({
       <div
         className={`relative flex-1 w-full flex items-center justify-center overflow-hidden rounded-lg bg-slate-50 transition-colors group-hover:bg-slate-100`}
       >
-        <div className="relative h-4/5 w-4/5">
+        <div className="relative size-4/5">
           <img
             src={stamp.definition.assetPath}
             alt={stamp.definition.title}
-            className="h-full w-full object-contain drop-shadow-sm transition-transform duration-300 group-hover:scale-110"
+            className="size-full object-contain drop-shadow-sm transition-transform duration-300 group-hover:scale-110"
             loading="lazy"
           />
         </div>

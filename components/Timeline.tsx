@@ -703,7 +703,7 @@ export const Timeline: React.FC<TimelineProps> = ({
 
   return (
     <div 
-      className="w-full h-full overflow-auto bg-white relative timeline-scroll" 
+      className="size-full overflow-auto bg-white relative timeline-scroll"
       ref={containerRef}
       role="presentation"
       onClick={() => handleBlockSelect(null)}
@@ -978,7 +978,7 @@ export const Timeline: React.FC<TimelineProps> = ({
 
                             return (
                                 <div key={link.id} className="absolute inset-0 overflow-visible pointer-events-none z-0">
-                                    <svg className="absolute inset-0 w-full h-full overflow-visible pointer-events-none" aria-hidden="true">
+                                    <svg className="absolute inset-0 size-full overflow-visible pointer-events-none" aria-hidden="true">
                                         <path
                                             d={fromPath}
                                             fill="none"
@@ -1050,7 +1050,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                                  <button
                                      onClick={(e) => { e.stopPropagation(); if (!canEdit) return; onAddActivity(day.dayOffset); }}
                                      disabled={!canEdit}
-                                     className={`w-full h-full mx-1 rounded-md border border-dashed border-transparent flex items-center justify-center text-gray-300 transition-all ${canEdit ? 'hover:border-gray-300 hover:bg-gray-50 hover:text-accent-500' : 'cursor-not-allowed opacity-40'}`}
+                                     className={`size-full mx-1 rounded-md border border-dashed border-transparent flex items-center justify-center text-gray-300 transition-all ${canEdit ? 'hover:border-gray-300 hover:bg-gray-50 hover:text-accent-500' : 'cursor-not-allowed opacity-40'}`}
                                      aria-label={`Add activity for ${day.date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`}
                                  >
                                      <Plus size={16} />

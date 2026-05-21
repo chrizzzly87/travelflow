@@ -431,7 +431,7 @@ const TripRowActionsMenu: React.FC<{
                 type="button"
                 onClick={() => setIsOpen((current) => !current)}
                 disabled={disabled}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-300 text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex size-8 items-center justify-center rounded-md border border-slate-300 text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                 aria-label="Open trip actions"
             >
                 <DotsThreeVertical size={16} />
@@ -2466,7 +2466,7 @@ export const AdminTripsPage: React.FC = () => {
                                                                             {isStart || isEnd ? (
                                                                                 <MapPin weight="fill" size={13} className={`relative z-10 ${pinClass}`} />
                                                                             ) : (
-                                                                                <span className="relative z-10 h-1.5 w-1.5 rounded-full bg-indigo-400" />
+                                                                                <span className="relative z-10 size-1.5 rounded-full bg-indigo-400" />
                                                                             )}
                                                                         </div>
                                                                         <div className="flex min-w-0 flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
@@ -2487,11 +2487,11 @@ export const AdminTripsPage: React.FC = () => {
                                                             <img
                                                                 src={previewMapUrl}
                                                                 alt={`Map preview for ${selectedFullTrip.title}`}
-                                                                className="h-full w-full object-cover"
+                                                                className="size-full object-cover"
                                                                 loading="lazy"
                                                             />
                                                         ) : (
-                                                            <div className="flex h-full w-full items-center justify-center text-[11px] text-gray-500">
+                                                            <div className="flex size-full items-center justify-center text-[11px] text-gray-500">
                                                                 Map preview unavailable
                                                             </div>
                                                         )}

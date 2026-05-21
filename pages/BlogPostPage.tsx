@@ -425,7 +425,7 @@ const BlogMapCanvas: React.FC<BlogMapCanvasProps> = ({
                 title={`${config.title} - ${activeCategory.label}`}
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
-                className="h-full w-full border-0"
+                className="size-full border-0"
                 allowFullScreen
             />
         );
@@ -434,7 +434,7 @@ const BlogMapCanvas: React.FC<BlogMapCanvasProps> = ({
     const shouldRenderMapCanvas = isLoaded || !!mapInstance;
 
     return (
-        <div className="relative h-full w-full">
+        <div className="relative size-full">
             {shouldRenderMapCanvas && (
                 <GoogleMap
                     id={mapId}
@@ -445,7 +445,7 @@ const BlogMapCanvas: React.FC<BlogMapCanvasProps> = ({
                     clickableIcons={false}
                     styles={BLOG_MAP_CANVAS_STYLES}
                     reuseMaps
-                    className="h-full w-full"
+                    className="size-full"
                 >
                     <BlogMapInstanceBridge mapId={mapId} onMapInstanceChange={setMapInstance} />
                 </GoogleMap>
@@ -684,7 +684,7 @@ const createMarkdownComponents = (mapContext: { locale: string; postSlug: string
                             srcSetWidths={[480, 768, 1024, 1536]}
                             placeholderKey={normalizedSrc}
                             loading="lazy"
-                            className="absolute inset-0 h-full w-full object-cover"
+                            className="absolute inset-0 size-full object-cover"
                         />
                     </div>
                 </div>
@@ -1043,7 +1043,7 @@ export const BlogPostPage: React.FC = () => {
                                         loading="eager"
                                         fetchPriority="high"
                                         onError={() => setHasHeaderImageError(true)}
-                                        className="absolute inset-0 h-full w-full object-cover"
+                                        className="absolute inset-0 size-full object-cover"
                                         skipFade={!!postTransitionNames}
                                     />
                                 </div>

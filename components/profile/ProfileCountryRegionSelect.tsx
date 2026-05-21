@@ -137,7 +137,7 @@ export const ProfileCountryRegionSelect: React.FC<ProfileCountryRegionSelectProp
                     {selectedCountry ? (
                         <FlagIcon code={selectedCountry.code} size="sm" fallback={null} className="block" />
                     ) : (
-                        <span className="flex h-4 w-4 items-center justify-center">
+                        <span className="flex size-4 items-center justify-center">
                             <GlobeHemisphereWest size={16} weight="duotone" className="text-slate-400" />
                         </span>
                     )}
@@ -174,7 +174,7 @@ export const ProfileCountryRegionSelect: React.FC<ProfileCountryRegionSelectProp
                                 inputRef.current?.focus();
                             }
                         }}
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+                        className="inline-flex size-8 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
                         aria-label={toggleLabel}
                         tabIndex={-1}
                     >

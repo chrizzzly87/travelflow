@@ -20,8 +20,8 @@ React Review status: npm package `react-review@1.0.6` does not expose a CLI bina
 
 - Initial user baseline: `49 / 100`, `73` errors, `5749` warnings, `356/814` files.
 - After core-page fixes: `51 / 100`, `33` errors, `5752` warnings, `356/821` files.
-- Current full scan: `66 / 100`, `0` errors, `1027` warnings, `235/822` files.
-- Current diff scan: `92 / 100`, `0` errors, `118` warnings, `29/91` files.
+- Current full scan: `66 / 100`, `0` errors, `881` warnings, `222/822` files.
+- Current diff scan: `77 / 100`, `0` errors, `444` warnings, `72/152` files.
 
 ## Completed Changes
 
@@ -49,6 +49,7 @@ React Review status: npm package `react-review@1.0.6` does not expose a CLI bina
 - [x] Removed render-time date construction from flagged account, billing, trip-info, and print calendar JSX paths.
 - [x] Replaced flagged fallback/loading copy punctuation and the blog table-of-contents anchor command.
 - [x] Cleared the latest safe diff warnings for timeline keyboard semantics, handler-only drag state, one-sided alert accents, render-helper calls, listener resubscriptions, floating-map style allocation, intentional blog view-transition flushes, and reset-password form state.
+- [x] Applied visual-equivalent Tailwind shorthand cleanup for repeated size/padding classes and softened flagged heading weights.
 
 ## Validation Log
 
@@ -185,6 +186,21 @@ React Review status: npm package `react-review@1.0.6` does not expose a CLI bina
 
 - [x] `pnpm updates:validate`
   - Result: passed with existing canonical-version warnings for older published update files.
+
+- [x] `pnpm dlx react-doctor@latest . --verbose --diff`
+  - Result: `77 / 100`, `0` errors, `444` warnings, `72/152` files.
+  - Share: `https://www.react.doctor/share?p=travelflow&s=77&w=444&f=72`
+  - Notes: this broad visual-equivalent full-scan cleanup improves the full backlog but expands the diff scan to more pre-existing warnings.
+
+- [x] `pnpm dlx react-doctor@latest . --verbose`
+  - Result: `66 / 100`, `0` errors, `881` warnings, `222/822` files.
+  - Share: `https://www.react.doctor/share?p=travelflow&s=66&w=881&f=222`
+
+- [x] `pnpm test:core`
+  - Result: passed, `304` test files, `1357` tests, `1` skipped.
+
+- [x] IDE lint diagnostics
+  - Result: no linter errors found in edited `components/` and `pages/` files.
 
 ## Prioritized Todo
 

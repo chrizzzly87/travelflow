@@ -278,7 +278,7 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
                                                 );
                                             })()}
                                             <div className="flex justify-between items-start mb-2">
-                                                <h4 className="font-bold text-gray-900">{p.title}</h4>
+                                                <h4 className="font-semibold text-gray-900">{p.title}</h4>
                                                 <span className="text-xs bg-white border border-gray-200 px-2 py-1 rounded-full uppercase font-bold text-gray-500">AI</span>
                                             </div>
                                             <p className="text-sm text-gray-600 mb-3">{p.description}</p>

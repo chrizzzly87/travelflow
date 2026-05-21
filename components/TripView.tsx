@@ -441,13 +441,13 @@ interface ExampleTransitionLocationState {
 }
 
 const MapLoadingFallback: React.FC = () => (
-    <div className="h-full w-full flex items-center justify-center bg-gray-100 text-xs text-gray-500">
+    <div className="size-full flex items-center justify-center bg-gray-100 text-xs text-gray-500">
         Loading map…
     </div>
 );
 
 const MapDeferredFallback: React.FC<{ onLoadNow: () => void }> = ({ onLoadNow }) => (
-    <div className="h-full w-full flex flex-col items-center justify-center gap-3 bg-gray-100 text-xs text-gray-500">
+    <div className="size-full flex flex-col items-center justify-center gap-3 bg-gray-100 text-xs text-gray-500">
         <span>Preparing map…</span>
         <button
             type="button"
@@ -3048,7 +3048,7 @@ const useTripViewRender = ({
     if (viewMode === 'print') {
         return (
             <GoogleMapsLoader language={appLanguage}>
-                <Suspense fallback={<div className="h-screen w-screen flex items-center justify-center text-sm text-gray-500">Preparing print layout…</div>}>
+                <Suspense fallback={<div className="size-screen flex items-center justify-center text-sm text-gray-500">Preparing print layout…</div>}>
                     <PrintLayout
                         trip={displayTrip}
                         isPaywalled={isPaywallLocked}
@@ -3066,7 +3066,7 @@ const useTripViewRender = ({
     return (
         <GoogleMapsLoader language={appLanguage} enabled={isMapBootstrapEnabled}>
             <div
-                className="relative h-screen w-screen flex flex-col bg-gray-50 overflow-hidden text-gray-900 font-sans selection:bg-accent-100 selection:text-accent-900"
+                className="relative size-screen flex flex-col bg-gray-50 overflow-hidden text-gray-900 font-sans selection:bg-accent-100 selection:text-accent-900"
                 data-tf-handoff-ready="true"
             >
                 

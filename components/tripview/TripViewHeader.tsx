@@ -105,7 +105,7 @@ export const TripViewHeader: React.FC<TripViewHeaderProps> = ({
                     onMouseEnter={onPrewarmTripInfo}
                     onFocus={onPrewarmTripInfo}
                     onTouchStart={onPrewarmTripInfo}
-                    className="group flex min-w-0 flex-1 items-start gap-1 rounded-xl px-1 py-1 text-left transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 sm:gap-2 sm:px-2"
+                    className="group flex min-w-0 flex-1 items-start gap-1 rounded-xl p-1 text-left transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 sm:gap-2 sm:px-2"
                     aria-label={titleTooltip}
                     data-tooltip={titleTooltip}
                     data-no-press-scale="true"
@@ -140,7 +140,7 @@ export const TripViewHeader: React.FC<TripViewHeaderProps> = ({
                         onClick={onShare}
                         disabled={isTripLockedByExpiry}
                         title={isTripLockedByExpiry ? t('tripView.header.shareDisabled') : undefined}
-                        className={`${headerPrimaryButtonClassName} ${isMobile ? 'h-10 w-10 justify-center px-0' : ''} ${
+                        className={`${headerPrimaryButtonClassName} ${isMobile ? 'size-10 justify-center px-0' : ''} ${
                             isTripLockedByExpiry
                                 ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
                                 : ''
@@ -165,7 +165,7 @@ export const TripViewHeader: React.FC<TripViewHeaderProps> = ({
                         showCurrentPageSummary={false}
                         onOpenTripManager={onOpenManager}
                         triggerClassName={isMobile
-                            ? 'h-10 w-10 justify-center px-0'
+                            ? 'size-10 justify-center px-0'
                             : 'gap-2 rounded-md px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900'}
                     />
                 ) : (

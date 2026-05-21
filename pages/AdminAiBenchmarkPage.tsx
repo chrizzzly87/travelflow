@@ -1925,7 +1925,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                 <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-6">
                     <div className="flex flex-wrap items-start justify-between gap-4">
                         <div>
-                            <h2 className="text-base font-bold text-slate-900">Benchmark execution context</h2>
+                            <h2 className="text-base font-semibold text-slate-900">Benchmark execution context</h2>
                             <p className="mt-1 max-w-3xl text-sm text-slate-600">
                                 Default create-trip benchmark workspace. Configure session input on the left and compare selected model targets on the right.
                                 Session identifiers and filters persist in the URL.
@@ -1959,7 +1959,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                 <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                         <div>
-                            <h3 className="text-base font-bold text-slate-900">7-day telemetry quick view</h3>
+                            <h3 className="text-base font-semibold text-slate-900">7-day telemetry quick view</h3>
                             <p className="text-xs text-slate-500">
                                 Three quick ranking cards. Open the full telemetry page for detailed charts and filters.
                             </p>
@@ -2023,7 +2023,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                     <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
                         <div className="flex items-start justify-between gap-3">
                             <div>
-                                <h3 className="text-lg font-bold text-slate-900">Create-trip benchmark mask</h3>
+                                <h3 className="text-lg font-semibold text-slate-900">Create-trip benchmark mask</h3>
                                 <p className="mt-1 text-xs text-slate-500">
                                     Pick a preset and edit in modal so the results table stays in view.
                                 </p>
@@ -2173,7 +2173,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
 
                     <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
                         <div className="flex flex-wrap items-center justify-between gap-2">
-                            <h3 className="text-lg font-bold text-slate-900">Model targets + execution</h3>
+                            <h3 className="text-lg font-semibold text-slate-900">Model targets + execution</h3>
                             <div className="flex flex-wrap items-center gap-2">
                                 <button
                                     type="button"
@@ -2372,7 +2372,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                 <section ref={resultsSectionRef} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
-                            <h3 className="text-lg font-bold text-slate-900">Benchmark runs</h3>
+                            <h3 className="text-lg font-semibold text-slate-900">Benchmark runs</h3>
                             <p className="text-xs text-slate-500">
                                 Session: {session ? `${session.name || 'Unnamed'} (${session.share_token})` : 'No session loaded'}
                             </p>
@@ -2702,7 +2702,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                     </div>
 
                     <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
-                        <h4 className="text-sm font-bold text-slate-800">Model dashboard</h4>
+                        <h4 className="text-sm font-semibold text-slate-800">Model dashboard</h4>
                         <p className="text-[11px] text-slate-500">Averages are computed from persisted runs in the loaded session.</p>
 
                         <div className="mt-2 overflow-x-auto">
@@ -2811,7 +2811,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                                     disabled={disabled}
                                                     onClick={() => toggleModelDraft(model.id)}
                                                     className={[
-                                                        'flex w-full items-center justify-between rounded-md border px-2 py-2 text-left text-xs',
+                                                        'flex w-full items-center justify-between rounded-md border p-2 text-left text-xs',
                                                         selected
                                                             ? 'border-accent-300 bg-accent-50 text-accent-900'
                                                             : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50',

@@ -223,7 +223,7 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
               <img
                 src={mapUrl}
                 alt={`Map preview for ${trip.title}`}
-                className={`h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.01] ${isExpired ? 'opacity-70 grayscale-[0.28]' : ''}`}
+                className={`size-full object-cover transition-transform duration-300 group-hover:scale-[1.01] ${isExpired ? 'opacity-70 grayscale-[0.28]' : ''}`}
                 loading="lazy"
                 onLoad={() => setMapStatus({ key: mapStatusKey, loaded: true, error: false })}
                 onError={() => setMapStatus({ key: mapStatusKey, loaded: false, error: true })}

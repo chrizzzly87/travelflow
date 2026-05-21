@@ -246,8 +246,8 @@ export const AdminDashboardPage: React.FC = () => {
                                 href={`/admin/users?user=${encodeURIComponent(user.user_id)}&drawer=user`}
                                 className="flex items-center group hover:bg-slate-50 p-2 -mx-2 rounded-lg transition-colors cursor-pointer"
                             >
-                                <span className="relative flex shrink-0 overflow-hidden rounded-full h-9 w-9 border border-transparent group-hover:border-slate-200 group-hover:shadow-sm transition-all">
-                                    <span className="flex h-full w-full items-center justify-center rounded-full bg-slate-100 text-slate-500 font-semibold uppercase group-hover:bg-white transition-colors">
+                                <span className="relative flex shrink-0 overflow-hidden rounded-full size-9 border border-transparent group-hover:border-slate-200 group-hover:shadow-sm transition-all">
+                                    <span className="flex size-full items-center justify-center rounded-full bg-slate-100 text-slate-500 font-semibold uppercase group-hover:bg-white transition-colors">
                                         {getUserName(user).charAt(0)}
                                     </span>
                                 </span>
@@ -262,7 +262,7 @@ export const AdminDashboardPage: React.FC = () => {
                             </a>
                         ))}
                         {scopedUsers.length === 0 && !isLoading && (
-                            <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-3 text-sm text-slate-500">
+                            <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 text-sm text-slate-500">
                                 No users found for this filter.
                             </div>
                         )}

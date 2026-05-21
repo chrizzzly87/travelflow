@@ -20,9 +20,9 @@ export const CreateTripWizardCtaBanner: React.FC<CreateTripWizardCtaBannerProps>
 }) => {
     return (
         <section className={className}>
-            <div className="relative overflow-hidden rounded-2xl border border-indigo-200 bg-gradient-to-br from-indigo-600 via-indigo-700 to-indigo-900 px-5 py-5 text-white shadow-lg">
-                <div className="pointer-events-none absolute -right-14 -top-16 h-40 w-40 rounded-full bg-white/15 blur-2xl" />
-                <div className="pointer-events-none absolute -bottom-12 -left-12 h-36 w-36 rounded-full bg-indigo-200/20 blur-2xl" />
+            <div className="relative overflow-hidden rounded-2xl border border-indigo-200 bg-gradient-to-br from-indigo-600 via-indigo-700 to-indigo-900 p-5 text-white shadow-lg">
+                <div className="pointer-events-none absolute -right-14 -top-16 size-40 rounded-full bg-white/15 blur-2xl" />
+                <div className="pointer-events-none absolute -bottom-12 -left-12 size-36 rounded-full bg-indigo-200/20 blur-2xl" />
 
                 <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0">

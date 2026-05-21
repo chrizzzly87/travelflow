@@ -591,7 +591,7 @@ const TripTooltip: React.FC<TripTooltipProps> = ({ trip, position, onHoverStart,
       onMouseEnter={onHoverStart}
       onMouseLeave={onHoverEnd}
     >
-      <div className="h-full w-full rounded-xl border border-gray-200 bg-white shadow-2xl overflow-hidden flex flex-col">
+      <div className="size-full rounded-xl border border-gray-200 bg-white shadow-2xl overflow-hidden flex flex-col">
         <div className="px-3.5 py-3 border-b border-gray-100">
           <div className="flex items-center justify-between gap-3">
             <div className="text-sm font-semibold text-gray-800 truncate">{trip.title}</div>
@@ -645,7 +645,7 @@ const TripTooltip: React.FC<TripTooltipProps> = ({ trip, position, onHoverStart,
                         {isStart || isEnd ? (
                           <MapPin size={13} className={`relative z-10 ${pinClass}`} />
                         ) : (
-                          <span className="relative z-10 h-1.5 w-1.5 rounded-full bg-accent-400" />
+                          <span className="relative z-10 size-1.5 rounded-full bg-accent-400" />
                         )}
                       </div>
                       <div className="min-w-0 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
@@ -660,7 +660,7 @@ const TripTooltip: React.FC<TripTooltipProps> = ({ trip, position, onHoverStart,
           </div>
 
           <div className="p-2 bg-gray-50 min-h-0">
-            <div className="h-full w-full rounded-lg border border-gray-200 bg-gray-100 overflow-hidden relative">
+            <div className="size-full rounded-lg border border-gray-200 bg-gray-100 overflow-hidden relative">
               {shouldLoadMap ? (
                 mapUrl && !mapError ? (
                   <>
@@ -668,19 +668,19 @@ const TripTooltip: React.FC<TripTooltipProps> = ({ trip, position, onHoverStart,
                     <img
                       src={mapUrl}
                       alt={`Map preview for ${trip.title}`}
-                      className="h-full w-full object-cover"
+                      className="size-full object-cover"
                       loading="lazy"
                       onLoad={() => setMapLoaded(true)}
                       onError={() => setMapError(true)}
                     />
                   </>
                 ) : (
-                  <div className="h-full w-full flex items-center justify-center text-[11px] text-gray-500">
+                  <div className="size-full flex items-center justify-center text-[11px] text-gray-500">
                     Map preview unavailable
                   </div>
                 )
               ) : (
-                <div className="h-full w-full flex items-center justify-center text-[11px] text-gray-500">
+                <div className="size-full flex items-center justify-center text-[11px] text-gray-500">
                   Loading preview...
                 </div>
               )}
@@ -748,7 +748,7 @@ const TripListSkeleton: React.FC<{ syncing: boolean }> = ({ syncing }) => (
       <div className="h-3 w-24 rounded bg-gray-100" />
     </div>
     {TRIP_SKELETON_ROWS.map((row) => (
-      <div key={row} className="rounded-lg border border-gray-100 bg-white px-2 py-2">
+      <div key={row} className="rounded-lg border border-gray-100 bg-white p-2">
         <div className="animate-pulse">
           <div className="h-3.5 w-32 rounded bg-gray-200" />
           <div className="mt-2 h-2.5 w-48 max-w-[85%] rounded bg-gray-100" />
@@ -1260,7 +1260,7 @@ export const TripManager: React.FC<TripManagerProps> = ({
       >
         <button
           type="button"
-          className="h-full w-full bg-black/20 backdrop-blur-sm"
+          className="size-full bg-black/20 backdrop-blur-sm"
           onClick={onClose}
           aria-label="Close My Plans panel"
         />
@@ -1281,7 +1281,7 @@ export const TripManager: React.FC<TripManagerProps> = ({
               <button
                 type="button"
                 onClick={() => setSortMode('updated')}
-                className={`group relative inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors ${
+                className={`group relative inline-flex size-7 items-center justify-center rounded-md transition-colors ${
                   sortMode === 'updated'
                     ? 'bg-white text-accent-600 shadow-sm'
                     : 'text-gray-400 hover:text-gray-600 hover:bg-white/80'
@@ -1293,7 +1293,7 @@ export const TripManager: React.FC<TripManagerProps> = ({
               <button
                 type="button"
                 onClick={() => setSortMode('travelDate')}
-                className={`group relative inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors ${
+                className={`group relative inline-flex size-7 items-center justify-center rounded-md transition-colors ${
                   sortMode === 'travelDate'
                     ? 'bg-white text-accent-600 shadow-sm'
                     : 'text-gray-400 hover:text-gray-600 hover:bg-white/80'
@@ -1323,7 +1323,7 @@ export const TripManager: React.FC<TripManagerProps> = ({
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-2 py-2 space-y-2" onScroll={hideHoverNow}>
+        <div className="flex-1 overflow-y-auto p-2 space-y-2" onScroll={hideHoverNow}>
           {showLoadingSkeleton ? (
             <TripListSkeleton syncing={isSyncingTrips} />
           ) : trips.length === 0 ? (

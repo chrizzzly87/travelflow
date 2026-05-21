@@ -82,7 +82,7 @@ export const ProfileVisitorSummary: React.FC<ProfileVisitorSummaryProps> = ({
   const profileIdentityCard = (
     <article className={`relative flex h-full flex-col rounded-2xl border border-slate-200 bg-white px-6 pb-6 pt-16 text-center shadow-sm ${compactCard ? 'min-h-[320px]' : 'min-h-[480px]'}`}>
       <div className="absolute inset-x-0 top-0 -translate-y-1/2">
-        <div className={`relative mx-auto h-24 w-24 ${status.ringClassName}`}>
+        <div className={`relative mx-auto size-24 ${status.ringClassName}`}>
           <span className="absolute inset-0 inline-flex items-center justify-center rounded-full border-4 border-white bg-accent-100 text-2xl font-black text-accent-800 shadow-md ring-2 ring-current">
             {initials}
           </span>

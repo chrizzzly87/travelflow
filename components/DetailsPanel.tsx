@@ -1199,7 +1199,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
   const isItemApproved = supportsApproval ? displayItem.isApproved !== false : true;
 
   const Content = (
-      <div className={`flex flex-col h-full w-full min-w-0 bg-gray-50 ${variant === 'sidebar' ? 'border-l border-gray-200' : 'rounded-t-[20px] sm:rounded-2xl'}`}>
+      <div className={`flex flex-col size-full min-w-0 bg-gray-50 ${variant === 'sidebar' ? 'border-l border-gray-200' : 'rounded-t-[20px] sm:rounded-2xl'}`}>
           <style>{`.pac-container { z-index: 10000 !important; }`}</style>
           {/* Header */}
           <div className="bg-white p-4 sm:p-6 border-b border-gray-100 pb-6 relative flex-shrink-0">
@@ -1273,7 +1273,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                                                         key={`${activeCityPalette.id}-color-${paletteColor}`}
                                                         onClick={() => { if (!canEdit) return; handleUpdate(displayItem.id, { color: paletteColor }); }}
                                                         disabled={!canEdit}
-                                                        className={`h-6 w-6 rounded-full border-2 transition-transform ${isSelected ? 'border-gray-900 shadow-inner' : 'border-transparent'} ${canEdit ? 'hover:scale-110 hover:border-gray-200' : 'opacity-50 cursor-not-allowed'}`}
+                                                        className={`size-6 rounded-full border-2 transition-transform ${isSelected ? 'border-gray-900 shadow-inner' : 'border-transparent'} ${canEdit ? 'hover:scale-110 hover:border-gray-200' : 'opacity-50 cursor-not-allowed'}`}
                                                         style={{ backgroundColor: paletteColor }}
                                                         title="Palette color"
                                                     />
@@ -1471,7 +1471,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
              {isCity && isValidDate && isDurationEditorOpen && (
                 <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 space-y-4">
                     <div className="flex justify-between items-center pb-2 border-b border-gray-50">
-                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Schedule</h3>
+                        <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Schedule</h3>
                         <div className="flex items-center gap-2">
                             <div className="text-xs font-medium text-accent-600 bg-accent-50 px-2 py-0.5 rounded">{Number(previewDuration.toFixed(1))} Nights</div>
                             {onForceFill && forceFillLabel && (
@@ -1559,7 +1559,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
              {isCity && isCityEditorOpen && (
                 <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 space-y-4">
                     <div className="flex justify-between items-center pb-2 border-b border-gray-50">
-                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">City</h3>
+                        <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">City</h3>
                         <div className="text-xs text-gray-500">Search with Google Places</div>
                     </div>
                     {citySearchError && (
@@ -1623,7 +1623,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
              {isCity && (
                  <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
                      <div className="flex justify-between items-center mb-4">
-                         <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5"><Hotel size={14} /> Accomodation</h3>
+                         <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-1.5"><Hotel size={14} /> Accomodation</h3>
                          <button
                              onClick={addHotel}
                              disabled={!canEdit}
@@ -1729,7 +1729,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
 
              {isTransport && (
                  <div className={`bg-white p-5 rounded-2xl shadow-sm border ${normalizedTransportMode === 'na' ? 'border-gray-200 bg-gray-50/40' : 'border-gray-100'}`}>
-                     <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Transportation Mode</h3>
+                     <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Transportation Mode</h3>
                      <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(96px, 1fr))' }}>
                          {(TRANSPORT_MODE_UI_ORDER as TransportMode[]).map(mode => (
                              <button 
@@ -1770,7 +1770,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                              Export to calendar (.ics)
                          </button>
                      </div>
-                     <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Activity Types</h3>
+                     <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Activity Types</h3>
                      <div className="flex flex-wrap gap-2 mb-6">
                         {ALL_ACTIVITY_TYPES.map(type => {
                             const isSelectedType = selectedActivityTypes.includes(type);
@@ -1787,13 +1787,13 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                             );
                         })}
                      </div>
-                     <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Check Availability</h3>
+                     <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Check Availability</h3>
                      <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}><button onClick={() => openExternalLink('gyg')} className="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-[#ff5533]/5 text-[#ff5533] border border-[#ff5533]/20 hover:bg-[#ff5533]/10 font-medium text-xs">GYG <ExternalLink size={12} /></button><button onClick={() => openExternalLink('tripadvisor')} className="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-[#34e0a1]/10 text-[#00aa6c] border border-[#34e0a1]/20 hover:bg-[#34e0a1]/20 font-medium text-xs">TripAdvisor <ExternalLink size={12} /></button></div>
                  </div>
              )}
 
              <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex-1">
-                <div className="flex justify-between items-center mb-2"><h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Notes</h3></div>
+                <div className="flex justify-between items-center mb-2"><h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Notes</h3></div>
                 <Suspense
                     fallback={<div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-500">Loading notes editor...</div>}
                 >

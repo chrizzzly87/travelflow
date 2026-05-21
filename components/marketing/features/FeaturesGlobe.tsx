@@ -595,7 +595,7 @@ export const FeaturesGlobe: React.FC = () => {
                             if (node) overlayRefs.current.set('trip-preview', node);
                             else overlayRefs.current.delete('trip-preview');
                         }}
-                        className="absolute left-0 top-0 w-[8.45rem] border border-slate-200 bg-white px-2 py-2 shadow-[0_20px_34px_rgba(15,23,42,0.13)] will-change-transform sm:w-[9rem]"
+                        className="absolute left-0 top-0 w-[8.45rem] border border-slate-200 bg-white p-2 shadow-[0_20px_34px_rgba(15,23,42,0.13)] will-change-transform sm:w-[9rem]"
                         style={{ borderRadius: '14px 14px 18px 18px' }}
                         >
                             <div className="overflow-hidden rounded-[10px] border border-slate-100">

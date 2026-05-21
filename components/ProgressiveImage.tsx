@@ -117,16 +117,16 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
         : undefined;
 
     return (
-        <div className="relative h-full w-full overflow-hidden">
+        <div className="relative size-full overflow-hidden">
             {placeholderDataUrl && !isLoaded && !hasError && (
                 <img
                     src={placeholderDataUrl}
                     alt=""
                     aria-hidden="true"
-                    className="pointer-events-none absolute inset-0 h-full w-full scale-[1.04] object-cover blur-lg"
+                    className="pointer-events-none absolute inset-0 size-full scale-[1.04] object-cover blur-lg"
                 />
             )}
-            <picture className="absolute inset-0 block h-full w-full">
+            <picture className="absolute inset-0 block size-full">
                 {avifSrcSet && <source type="image/avif" srcSet={avifSrcSet} sizes={sizes} />}
                 {webpSrcSet && <source type="image/webp" srcSet={webpSrcSet} sizes={sizes} />}
                 <img
@@ -139,7 +139,7 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
                     {...fetchPriorityAttr}
                     width={resolvedWidth}
                     height={resolvedHeight}
-                    className={`${className || 'h-full w-full object-cover'} transition-opacity duration-300 ${isLoaded || skipFade ? 'opacity-100' : 'opacity-0'}`}
+                    className={`${className || 'size-full object-cover'} transition-opacity duration-300 ${isLoaded || skipFade ? 'opacity-100' : 'opacity-0'}`}
                     onLoad={() => setIsLoaded(true)}
                     onError={() => {
                         setHasError(true);

@@ -997,7 +997,7 @@ const UserRowActionsMenu: React.FC<{
                 type="button"
                 onClick={() => setIsOpen((current) => !current)}
                 disabled={disabled}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-300 text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex size-8 items-center justify-center rounded-md border border-slate-300 text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                 aria-label="Open user actions"
             >
                 <DotsThreeVertical size={16} />
@@ -1211,22 +1211,22 @@ const LoginTypeFilterMenu: React.FC<{
                     <div className="h-px bg-slate-100" />
                     <div className="space-y-0.5 p-1">
                         <label className="relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-2 pr-2 text-sm outline-none hover:bg-slate-100 hover:text-slate-900 group">
-                            <div className="mr-2 flex h-4 w-4 shrink-0 items-center justify-center">
+                            <div className="mr-2 flex size-4 shrink-0 items-center justify-center">
                                 <Checkbox
                                     checked={selectedLoginTypeSet.has('password')}
                                     onCheckedChange={(checked) => setLoginTypeChecked('password', Boolean(checked))}
-                                    className="h-4 w-4"
+                                    className="size-4"
                                 />
                             </div>
                             <span>Username/password</span>
                             <span className="ml-auto text-xs text-slate-500">{counts.password}</span>
                         </label>
                         <label className="relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-2 pr-2 text-sm outline-none hover:bg-slate-100 hover:text-slate-900 group">
-                            <div className="mr-2 flex h-4 w-4 shrink-0 items-center justify-center">
+                            <div className="mr-2 flex size-4 shrink-0 items-center justify-center">
                                 <Checkbox
                                     checked={socialCheckboxState}
                                     onCheckedChange={(checked) => setSocialParentChecked(Boolean(checked))}
-                                    className="h-4 w-4"
+                                    className="size-4"
                                 />
                             </div>
                             <span>Social</span>
@@ -1243,11 +1243,11 @@ const LoginTypeFilterMenu: React.FC<{
                                         key={`social-provider-filter-${option.value}`}
                                         className="relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-2 pr-2 text-xs outline-none hover:bg-slate-100 hover:text-slate-900 group"
                                     >
-                                        <div className="mr-2 flex h-3.5 w-3.5 shrink-0 items-center justify-center">
+                                        <div className="mr-2 flex size-3.5 shrink-0 items-center justify-center">
                                             <Checkbox
                                                 checked={checked}
                                                 onCheckedChange={() => toggleSocialProvider(option.value)}
-                                                className="h-3.5 w-3.5 rounded-[2px]"
+                                                className="size-3.5 rounded-[2px]"
                                             />
                                         </div>
                                         <Icon size={12} className="mr-1.5 text-slate-500" />
@@ -1258,11 +1258,11 @@ const LoginTypeFilterMenu: React.FC<{
                             })}
                         </div>
                         <label className="relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-2 pr-2 text-sm outline-none hover:bg-slate-100 hover:text-slate-900 group">
-                            <div className="mr-2 flex h-4 w-4 shrink-0 items-center justify-center">
+                            <div className="mr-2 flex size-4 shrink-0 items-center justify-center">
                                 <Checkbox
                                     checked={selectedLoginTypeSet.has('unknown')}
                                     onCheckedChange={(checked) => setLoginTypeChecked('unknown', Boolean(checked))}
-                                    className="h-4 w-4"
+                                    className="size-4"
                                 />
                             </div>
                             <span>Unknown</span>
@@ -3829,7 +3829,7 @@ export const AdminUsersPage: React.FC = () => {
                                     </a>
                                 </div>
                                 <div className="grid gap-3 sm:grid-cols-2">
-                                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
+                                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Subscription status</span>
                                         <div className="mt-2 flex flex-wrap items-center gap-2">
                                             <span className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold ${subscriptionStatusPillClass(resolveUserSubscriptionStatus(selectedUser))}`}>
@@ -3843,7 +3843,7 @@ export const AdminUsersPage: React.FC = () => {
                                             Provider: {humanizeAdminBillingStatus(selectedUser.provider_status || selectedUser.subscription_status)}
                                         </div>
                                     </div>
-                                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
+                                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Recurring amount</span>
                                         <div className="mt-2 text-sm font-semibold text-slate-900">
                                             {selectedUser.subscription_amount !== null && selectedUser.subscription_amount !== undefined
@@ -3851,23 +3851,23 @@ export const AdminUsersPage: React.FC = () => {
                                                 : '—'}
                                         </div>
                                     </div>
-                                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
+                                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Provider subscription ID</span>
                                         <div className="mt-2 break-all font-mono text-[11px] text-slate-700">
                                             {selectedUser.provider_subscription_id || '—'}
                                         </div>
                                     </div>
-                                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
+                                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Paddle price ID</span>
                                         <div className="mt-2 break-all font-mono text-[11px] text-slate-700">
                                             {selectedUser.provider_price_id || '—'}
                                         </div>
                                     </div>
-                                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
+                                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Current period end</span>
                                         <div className="mt-2 text-sm font-semibold text-slate-900">{formatOptionalTimestamp(selectedUser.current_period_end)}</div>
                                     </div>
-                                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
+                                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Cancellation / grace</span>
                                         <div className="mt-2 space-y-1 text-xs text-slate-600">
                                             <div>Cancel at: {formatOptionalTimestamp(selectedUser.cancel_at)}</div>
@@ -3876,7 +3876,7 @@ export const AdminUsersPage: React.FC = () => {
                                             <div>Downgrades at: {formatOptionalTimestamp(resolveUserSubscriptionDowngradeAt(selectedUser))}</div>
                                         </div>
                                     </div>
-                                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 sm:col-span-2">
+                                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 sm:col-span-2">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Latest billing event</span>
                                         <div className="mt-2 grid gap-2 text-xs text-slate-600 sm:grid-cols-[minmax(0,1fr)_auto]">
                                             <div className="space-y-1">

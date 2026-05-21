@@ -57,7 +57,7 @@ export const SelectedCitiesPanel: React.FC<SelectedCitiesPanelProps> = ({
                 </button>
                 <div className="pr-10">
                     <div className="text-xs font-bold uppercase tracking-wider text-accent-600">Selected Cities</div>
-                    <h2 className="text-xl font-bold text-gray-900 mt-1">{selectedCities.length} selected</h2>
+                    <h2 className="text-xl font-semibold text-gray-900 mt-1">{selectedCities.length} selected</h2>
                     <p className="text-xs text-gray-500 mt-2">
                         Reorder the selected stops, then apply. Activities move with their city, and changed routes are reset to N/A.
                     </p>
@@ -104,7 +104,7 @@ export const SelectedCitiesPanel: React.FC<SelectedCitiesPanelProps> = ({
                         >
                             <div className="text-xs font-bold text-gray-400 w-5 text-center">{index + 1}</div>
                             <div
-                                className="w-2.5 h-2.5 rounded-full"
+                                className="size-2.5 rounded-full"
                                 style={{ backgroundColor: colorHex }}
                             />
                             <div className="min-w-0">

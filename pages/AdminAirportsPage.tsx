@@ -343,7 +343,7 @@ const TicketRouteLine: React.FC<{ vertical?: boolean }> = ({ vertical = false })
         return (
             <div className="relative flex h-24 items-center justify-center" aria-hidden="true">
                 <div className="absolute bottom-0 left-1/2 top-0 w-px -translate-x-1/2 bg-slate-300" />
-                <span className="absolute left-1/2 top-1/2 inline-flex h-9 w-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-800 shadow-[0_8px_18px_-14px_rgba(15,23,42,0.45)]">
+                <span className="absolute left-1/2 top-1/2 inline-flex size-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-800 shadow-[0_8px_18px_-14px_rgba(15,23,42,0.45)]">
                     <AirplaneTakeoff size={18} weight="fill" className="-rotate-90" />
                 </span>
             </div>
@@ -353,7 +353,7 @@ const TicketRouteLine: React.FC<{ vertical?: boolean }> = ({ vertical = false })
     return (
         <div className="relative flex h-12 items-center justify-center" aria-hidden="true">
             <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-slate-300" />
-            <span className="absolute left-1/2 top-1/2 inline-flex h-9 w-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-800 shadow-[0_8px_18px_-14px_rgba(15,23,42,0.45)]">
+            <span className="absolute left-1/2 top-1/2 inline-flex size-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-800 shadow-[0_8px_18px_-14px_rgba(15,23,42,0.45)]">
                 <AirplaneTakeoff size={18} weight="fill" />
             </span>
         </div>
@@ -378,7 +378,7 @@ const TicketMetaPill: React.FC<{
 const TicketBarcode: React.FC<{
     bars: Array<{ id: string; width: number; muted: boolean }>;
 }> = ({ bars }) => (
-    <div className="overflow-hidden rounded-[10px] border border-slate-200 bg-white px-3 py-3">
+    <div className="overflow-hidden rounded-[10px] border border-slate-200 bg-white p-3">
         <div className="flex h-[84px] items-stretch gap-px" aria-hidden="true">
             {bars.map((bar) => (
                 <span
@@ -394,11 +394,11 @@ const TicketBarcode: React.FC<{
 const TicketQrBadge: React.FC<{
     qrCodeUrl: string;
 }> = ({ qrCodeUrl }) => (
-    <div className="flex flex-col items-center gap-2 rounded-[10px] border border-slate-200 bg-white px-3 py-3">
+    <div className="flex flex-col items-center gap-2 rounded-[10px] border border-slate-200 bg-white p-3">
         <img
             src={qrCodeUrl}
             alt="TravelFlow QR code"
-            className="h-20 w-20 rounded-[8px] border border-slate-200 bg-slate-50 object-cover"
+            className="size-20 rounded-[8px] border border-slate-200 bg-slate-50 object-cover"
             draggable={false}
         />
         <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Scan</div>
@@ -421,7 +421,7 @@ const AirportTicketPreviewCard: React.FC<{
         return (
             <div className={cn('select-none overflow-hidden rounded-[16px] border border-slate-200 bg-[linear-gradient(180deg,#f7f4eb_0%,#fcfbf7_100%)]', TICKET_CARD_SHADOW)}>
                 <div className="h-2.5 bg-[linear-gradient(90deg,#0f172a_0%,#334155_100%)]" />
-                <div className="space-y-5 px-5 py-5">
+                <div className="space-y-5 p-5">
                     <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
                             <div className="text-[10px] font-semibold uppercase tracking-[0.24em] text-slate-400">Vertical style</div>
@@ -489,7 +489,7 @@ const AirportTicketPreviewCard: React.FC<{
                 </div>
             </div>
 
-            <div className="space-y-5 px-5 py-5">
+            <div className="space-y-5 p-5">
                 <div className="grid items-end gap-4 md:grid-cols-[minmax(0,1fr)_96px_minmax(0,1fr)]">
                     <div className="min-w-0">
                         <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">Departure</div>
@@ -819,7 +819,7 @@ const AdminAirportTestMapCanvas: React.FC<{
                     gestureHandling="cooperative"
                     clickableIcons={false}
                     reuseMaps
-                    className="h-full w-full"
+                    className="size-full"
                 >
                     <AdminAirportMapBridge mapId={ADMIN_AIRPORT_MAP_ID} onMapInstanceChange={setMapInstance} />
                 </GoogleMap>
@@ -1768,7 +1768,7 @@ const AdminAirportTicketLab: React.FC<{
                             />
                         </div>
                         <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(280px,0.7fr)]">
-                            <div className="rounded-[18px] border border-slate-200 bg-slate-50/90 px-4 py-4 text-sm text-slate-600">
+                            <div className="rounded-[18px] border border-slate-200 bg-slate-50/90 p-4 text-sm text-slate-600">
                                 <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                                     <span className="font-semibold text-slate-900">
                                         {isUsingFallbackDeparture ? 'Testing airport:' : 'Closest airport:'}

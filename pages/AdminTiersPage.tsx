@@ -109,7 +109,7 @@ const EntitlementCard: React.FC<{
                             type="checkbox"
                             checked={Boolean(parsed[p.key])}
                             onChange={(e) => updateField(p.key, e.target.checked)}
-                            className="h-4 w-4 rounded border-slate-300 text-accent-600 focus:ring-accent-600"
+                            className="size-4 rounded border-slate-300 text-accent-600 focus:ring-accent-600"
                         />
                         <span className="text-xs font-medium text-slate-700">{p.label}</span>
                     </label>

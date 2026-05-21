@@ -673,7 +673,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                                     }}
                                 >
                                     {isUltraZoomedOut ? (
-                                        <div className="flex h-full w-full items-center justify-center gap-1.5 text-center">
+                                        <div className="flex size-full items-center justify-center gap-1.5 text-center">
                                             <span className={`text-xs font-bold uppercase leading-none ${isToday ? 'text-red-500' : slot.isWeekend ? 'text-red-400' : 'text-gray-400'}`}>
                                                 {slot.date.toLocaleDateString('en-US', { weekday: 'narrow' })}
                                             </span>
@@ -682,7 +682,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                                             </span>
                                         </div>
                                     ) : isZoomedOut ? (
-                                        <div className="flex h-full w-full flex-col items-center justify-center text-center">
+                                        <div className="flex size-full flex-col items-center justify-center text-center">
                                             <span className={`text-xs font-bold uppercase leading-none ${isToday ? 'text-red-500' : slot.isWeekend ? 'text-red-400' : 'text-gray-400'}`}>
                                                 {slot.date.toLocaleDateString('en-US', { weekday: 'narrow' })}
                                             </span>
@@ -894,7 +894,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
 
                              return (
                                  <div key={link.id} className="absolute inset-0 overflow-visible pointer-events-none">
-                                     <svg className="absolute inset-0 w-full h-full overflow-visible pointer-events-none" aria-hidden="true">
+                                     <svg className="absolute inset-0 size-full overflow-visible pointer-events-none" aria-hidden="true">
                                          <path
                                              d={fromPath}
                                              fill="none"

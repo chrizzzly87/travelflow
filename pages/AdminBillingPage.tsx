@@ -350,7 +350,7 @@ export const AdminBillingPage: React.FC = () => {
             ) : null}
 
             {lastReconcileSummary ? (
-                <section className="mb-4 rounded-2xl border border-accent-200 bg-accent-50/70 px-4 py-4 text-sm text-slate-800 shadow-sm">
+                <section className="mb-4 rounded-2xl border border-accent-200 bg-accent-50/70 p-4 text-sm text-slate-800 shadow-sm">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
                             <p className="font-semibold text-slate-900">Latest Paddle reconciliation</p>
@@ -380,7 +380,7 @@ export const AdminBillingPage: React.FC = () => {
                             </div>
                             <p className="mt-2 text-sm text-slate-500">Current MRR-eligible subscriptions after the latest billing sync.</p>
                         </div>
-                        <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-accent-200 bg-accent-50 text-accent-700">
+                        <span className="inline-flex size-10 items-center justify-center rounded-full border border-accent-200 bg-accent-50 text-accent-700">
                             <ShieldCheck size={18} weight="duotone" />
                         </span>
                     </div>
@@ -395,7 +395,7 @@ export const AdminBillingPage: React.FC = () => {
                             </div>
                             <p className="mt-2 text-sm text-slate-500">Includes subscriptions scheduled to cancel and grace-access accounts.</p>
                         </div>
-                        <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-amber-200 bg-amber-50 text-amber-700">
+                        <span className="inline-flex size-10 items-center justify-center rounded-full border border-amber-200 bg-amber-50 text-amber-700">
                             <CreditCard size={18} weight="duotone" />
                         </span>
                     </div>
@@ -410,7 +410,7 @@ export const AdminBillingPage: React.FC = () => {
                             </div>
                             <p className="mt-2 text-sm text-slate-500">Events that need replay or payload inspection.</p>
                         </div>
-                        <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-rose-200 bg-rose-50 text-rose-700">
+                        <span className="inline-flex size-10 items-center justify-center rounded-full border border-rose-200 bg-rose-50 text-rose-700">
                             <WarningCircle size={18} weight="duotone" />
                         </span>
                     </div>
@@ -425,7 +425,7 @@ export const AdminBillingPage: React.FC = () => {
                             </div>
                             <p className="mt-2 text-sm text-slate-500">Webhook records that did not resolve to a TravelFlow user.</p>
                         </div>
-                        <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-slate-100 text-slate-700">
+                        <span className="inline-flex size-10 items-center justify-center rounded-full border border-slate-200 bg-slate-100 text-slate-700">
                             <LinkBreak size={18} weight="duotone" />
                         </span>
                     </div>

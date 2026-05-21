@@ -124,7 +124,7 @@ const InspirationVisual: React.FC<BentoVisualProps> = ({ item }) => (
                 src="/images/inspirations/cherry-blossom-trail-480.webp"
                 alt=""
                 aria-hidden="true"
-                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+                className="size-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
                 loading="lazy"
             />
             <div className="absolute inset-x-4 bottom-4 rounded-[12px] border border-slate-200 bg-white/96 p-4">
@@ -361,7 +361,7 @@ const AirportBentoCard: React.FC<{ index: number; item: FeatureBentoItem }> = ({
                 className="group h-full animate-scroll-fade-up overflow-hidden rounded-[18px] border-slate-200 bg-white py-0 shadow-sm shadow-slate-200/60 transition-all hover:-translate-y-1 hover:shadow-md hover:shadow-slate-200/80"
                 style={{ animationDelay: `${index * 90}ms` }}
             >
-                <CardContent className="grid gap-6 px-5 py-5 sm:px-6 sm:py-6 lg:grid-cols-[minmax(0,1fr)_minmax(420px,auto)] lg:items-center lg:gap-12 xl:grid-cols-[minmax(0,0.95fr)_minmax(500px,auto)]">
+                <CardContent className="grid gap-6 p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_minmax(420px,auto)] lg:items-center lg:gap-12 xl:grid-cols-[minmax(0,0.95fr)_minmax(500px,auto)]">
                     <div className="min-w-0">
                         <h3 className="text-2xl font-black tracking-tight text-slate-950">
                             {item.title}

@@ -167,7 +167,7 @@ const BlogCard: React.FC<{
                                     loading={imageLoading}
                                     fetchPriority={imageFetchPriority}
                                     onError={() => setHasImageError(true)}
-                                    className={`absolute inset-0 h-full w-full rounded-t-2xl object-cover ${BLOG_CARD_IMAGE_TRANSITION} scale-100`}
+                                    className={`absolute inset-0 size-full rounded-t-2xl object-cover ${BLOG_CARD_IMAGE_TRANSITION} scale-100`}
                                     skipFade={!!transitionNames}
                                 />
                             </div>

@@ -23,22 +23,22 @@ export const TripGenerationSkeleton: React.FC = () => {
     }, []);
 
     return (
-        <div className="flex flex-col h-full w-full bg-white overflow-hidden animate-in fade-in duration-500">
+        <div className="flex flex-col size-full bg-white overflow-hidden animate-in fade-in duration-500">
             {/* Header Skeleton */}
             <div className="h-16 border-b border-gray-100 flex items-center px-6 justify-between shrink-0 bg-white z-10">
                 <div className="flex items-center gap-4">
-                    <div className="w-8 h-8 bg-gray-200 rounded-lg animate-pulse" />
+                    <div className="size-8 bg-gray-200 rounded-lg animate-pulse" />
                     <div className="w-32 h-6 bg-gray-200 rounded animate-pulse" />
                 </div>
                 <div className="flex gap-2">
-                    <div className="w-10 h-10 bg-gray-200 rounded-lg animate-pulse" />
+                    <div className="size-10 bg-gray-200 rounded-lg animate-pulse" />
                     <div className="w-24 h-10 bg-gray-200 rounded-lg animate-pulse" />
                 </div>
             </div>
 
             <div className="flex flex-1 overflow-hidden relative">
                 {/* Simulated Vertical Layout (Map Top, Timeline Bottom) */}
-                <div className="flex flex-col w-full h-full">
+                <div className="flex flex-col size-full">
                     
                     {/* Map Skeleton */}
                     <div className="h-1/3 bg-gray-50 border-b border-gray-100 relative overflow-hidden">
@@ -48,7 +48,7 @@ export const TripGenerationSkeleton: React.FC = () => {
                              ))}
                         </div>
                         <div className="absolute inset-0 flex items-center justify-center">
-                            <Map className="text-gray-300 w-16 h-16 animate-bounce opacity-50" />
+                            <Map className="text-gray-300 size-16 animate-bounce opacity-50" />
                         </div>
                     </div>
 
@@ -59,7 +59,7 @@ export const TripGenerationSkeleton: React.FC = () => {
                              {[...Array(6)].map((_, i) => (
                                  <div key={i} className="flex flex-col items-center gap-2 w-full">
                                      <div className="w-10 h-3 bg-gray-100 rounded animate-pulse" />
-                                     <div className="w-8 h-8 bg-gray-100 rounded-full animate-pulse" />
+                                     <div className="size-8 bg-gray-100 rounded-full animate-pulse" />
                                  </div>
                              ))}
                         </div>
@@ -73,7 +73,7 @@ export const TripGenerationSkeleton: React.FC = () => {
                                      
                                      {/* City Block */}
                                      <div className="w-4/5 h-24 bg-gray-50 rounded-xl animate-pulse border border-gray-100 flex items-center p-4 gap-4 shadow-sm">
-                                         <div className="w-12 h-12 bg-gray-200 rounded-full shrink-0" />
+                                         <div className="size-12 bg-gray-200 rounded-full shrink-0" />
                                          <div className="space-y-3 flex-1">
                                              <div className="w-1/3 h-4 bg-gray-200 rounded" />
                                              <div className="w-2/3 h-3 bg-gray-200 rounded" />
@@ -83,8 +83,8 @@ export const TripGenerationSkeleton: React.FC = () => {
                                      {/* Travel Block */}
                                      {i < 2 && (
                                         <div className="w-full flex items-center gap-4 px-8 opacity-60">
-                                            <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
-                                                <Plane className="text-gray-300 w-4 h-4" />
+                                            <div className="size-8 rounded-full bg-gray-100 flex items-center justify-center">
+                                                <Plane className="text-gray-300 size-4" />
                                             </div>
                                             <div className="h-0.5 flex-1 bg-gray-100" />
                                         </div>
@@ -101,11 +101,11 @@ export const TripGenerationSkeleton: React.FC = () => {
                         <div className="relative">
                             <div className="absolute inset-0 bg-accent-100 rounded-full animate-ping opacity-30" />
                             <div className="bg-accent-50 p-4 rounded-full text-accent-600 relative z-10">
-                                <Loader2 className="w-8 h-8 animate-spin" />
+                                <Loader2 className="size-8 animate-spin" />
                             </div>
                         </div>
                         <div className="space-y-2">
-                            <h3 className="text-xl font-bold text-gray-900 tracking-tight">Planning Trip...</h3>
+                            <h3 className="text-xl font-semibold text-gray-900 tracking-tight">Planning Trip...</h3>
                             <p className="text-sm text-gray-500 font-medium h-5 transition-all duration-300 ease-in-out">{message}</p>
                         </div>
                         

@@ -435,7 +435,7 @@ export const PricingPage: React.FC = () => {
                                     style.surfaceClass,
                                 )}
                             >
-                                <div className={cn('border-b border-slate-200 px-6 py-6', style.headerClass)}>
+                                <div className={cn('border-b border-slate-200 p-6', style.headerClass)}>
                                     <div className="flex items-start justify-between gap-3">
                                         {(isPaidTier || isCurrentTier) ? (
                                             <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${style.badgeClass}`}>
@@ -452,7 +452,7 @@ export const PricingPage: React.FC = () => {
                                             <div className="text-sm font-medium text-slate-500">{t('shared.perMonth')}</div>
                                         </div>
                                     </div>
-                                    <h2 className="mt-5 text-2xl font-bold tracking-tight text-slate-900">
+                                    <h2 className="mt-5 text-2xl font-semibold tracking-tight text-slate-900">
                                         {t(`tiers.${tier.publicSlug}.name`)}
                                     </h2>
                                     <p className="mt-2 max-w-[24rem] text-sm leading-6 text-slate-600">
@@ -460,7 +460,7 @@ export const PricingPage: React.FC = () => {
                                     </p>
                                 </div>
 
-                                <div className="flex flex-1 flex-col px-6 py-6">
+                                <div className="flex flex-1 flex-col p-6">
                                 <ul className="space-y-3">
                                     {featureList.map((feature) => (
                                         <li key={feature} className="flex items-start gap-3 text-sm leading-6 text-slate-700">

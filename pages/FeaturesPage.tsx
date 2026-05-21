@@ -134,7 +134,7 @@ export const FeaturesPage: React.FC = () => {
                                                 </div>
                                             </div>
                                             <div className="min-w-0">
-                                                <h3 className="text-lg font-bold text-slate-950">{step.title}</h3>
+                                                <h3 className="text-lg font-semibold text-slate-950">{step.title}</h3>
                                                 <p className="mt-2 text-sm leading-relaxed text-slate-600 md:text-base">
                                                     {step.description}
                                                 </p>
@@ -152,7 +152,7 @@ export const FeaturesPage: React.FC = () => {
                                 src="/images/trip-maps/japan-spring.png"
                                 alt=""
                                 aria-hidden="true"
-                                className="h-full w-full object-cover"
+                                className="size-full object-cover"
                                 loading="lazy"
                             />
                         </div>

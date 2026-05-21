@@ -921,8 +921,8 @@ export const MapboxBasemapSync: React.FC<MapboxBasemapSyncProps> = ({
     <div
       ref={containerRef}
       className={interactive
-        ? 'absolute inset-0 z-0 h-full w-full overflow-hidden'
-        : 'pointer-events-none absolute inset-0 z-0 h-full w-full overflow-hidden'}
+        ? 'absolute inset-0 z-0 size-full overflow-hidden'
+        : 'pointer-events-none absolute inset-0 z-0 size-full overflow-hidden'}
       aria-hidden="true"
     />
   );

@@ -1010,7 +1010,7 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
                         </button>
                     </div>
                 )}
-                <div className="h-full w-full overflow-hidden" style={{ borderRadius: 'inherit' }}>
+                <div className="size-full overflow-hidden" style={{ borderRadius: 'inherit' }}>
                     {children}
                 </div>
                 {isFloatingMapSettling && <span className="sr-only">Settling floating map preview</span>}

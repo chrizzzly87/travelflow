@@ -459,7 +459,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                         </section>
                     )}
 
-                    <div className="px-4 py-5 md:px-6 md:py-6">
+                    <div className="px-4 py-5 md:p-6">
                         {children}
                     </div>
                 </main>

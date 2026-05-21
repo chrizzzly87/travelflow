@@ -289,7 +289,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
         const str = formatDate(date);
         const isSelected = str === startDate || str === endDate;
         if (!isSelected) return "";
-        return "relative z-10 h-9 w-9 flex items-center justify-center rounded-full bg-accent-600 text-white shadow-md transition-colors group-hover:bg-accent-700";
+        return "relative z-10 size-9 flex items-center justify-center rounded-full bg-accent-600 text-white shadow-md transition-colors group-hover:bg-accent-700";
     };
 
     const days = getDaysInMonth(viewDate.getFullYear(), viewDate.getMonth());

@@ -1745,7 +1745,7 @@ export const AdminAuditPage: React.FC = () => {
                         </colgroup>
                         <thead>
                             <tr className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-                                <th className="bg-slate-50 px-2 py-2">
+                                <th className="bg-slate-50 p-2">
                                     <Checkbox
                                         checked={areAllPageRowsSelected ? true : hasSomePageRowsSelected ? 'indeterminate' : false}
                                         onCheckedChange={(checked) => togglePageSelection(Boolean(checked))}
@@ -1868,7 +1868,7 @@ export const AdminAuditPage: React.FC = () => {
 
                                 return (
                                     <tr key={entryKey} className={`border-b border-slate-100 align-top transition-colors ${ADMIN_TABLE_ROW_SURFACE_CLASS}`}>
-                                        <td className="px-2 py-2">
+                                        <td className="p-2">
                                             <Checkbox
                                                 checked={isRowSelected}
                                                 onCheckedChange={() => toggleRowSelection(entryKey)}

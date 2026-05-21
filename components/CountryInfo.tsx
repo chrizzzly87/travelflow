@@ -77,7 +77,7 @@ export const CountryInfo: React.FC<CountryInfoProps> = ({ info }) => {
     return (
         <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
             <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
-                <h3 className="font-bold text-gray-800 text-sm uppercase tracking-wider flex items-center gap-2">
+                <h3 className="font-semibold text-gray-800 text-sm uppercase tracking-wider flex items-center gap-2">
                     <Globe size={16} className="text-accent-600"/> Destination Info
                 </h3>
             </div>
@@ -97,7 +97,7 @@ export const CountryInfo: React.FC<CountryInfoProps> = ({ info }) => {
                                 value={amount}
                                 onChange={(e) => setAmount(Number(e.target.value))}
                                 disabled={!converterEnabled}
-                                className={`w-full min-w-0 border-none bg-transparent px-0 py-0 font-bold shadow-none ring-0 ${converterEnabled ? 'text-gray-800' : 'text-gray-400 cursor-not-allowed'}`}
+                                className={`w-full min-w-0 border-none bg-transparent p-0 font-bold shadow-none ring-0 ${converterEnabled ? 'text-gray-800' : 'text-gray-400 cursor-not-allowed'}`}
                                 overlayClassName="px-0 font-bold"
                                 format={{ maximumFractionDigits: 2 }}
                             />

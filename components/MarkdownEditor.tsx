@@ -133,7 +133,7 @@ const markdownToHtml = (markdown: string): string => {
                 if (currentTask) {
                     const checked = currentTask[1].toLowerCase() === 'x';
                     const content = inlineMarkdownToHtml(currentTask[2]);
-                    items.push(`<li data-task-list-item="true" class="my-2 list-none ps-0"><label class="flex items-start gap-3"><input type="checkbox" ${checked ? 'checked' : ''} contenteditable="false" class="mt-0.5 h-4 w-4 shrink-0 rounded-[4px] border border-slate-500 accent-accent-600" /><span class="${MARKDOWN_TASK_TEXT_CLASS}">${content}</span></label></li>`);
+                    items.push(`<li data-task-list-item="true" class="my-2 list-none ps-0"><label class="flex items-start gap-3"><input type="checkbox" ${checked ? 'checked' : ''} contenteditable="false" class="mt-0.5 size-4 shrink-0 rounded-[4px] border border-slate-500 accent-accent-600" /><span class="${MARKDOWN_TASK_TEXT_CLASS}">${content}</span></label></li>`);
                     i += 1;
                     continue;
                 }
@@ -397,7 +397,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
 
     const handleChecklist = () => {
         focusEditor();
-        document.execCommand('insertHTML', false, `<ul data-task-list="true"><li data-task-list-item="true"><label class="flex items-start gap-3"><input type="checkbox" contenteditable="false" class="mt-0.5 h-4 w-4 shrink-0 rounded-[4px] border border-slate-500 accent-accent-600" /><span class="${MARKDOWN_TASK_TEXT_CLASS}">New item</span></label></li></ul>`);
+        document.execCommand('insertHTML', false, `<ul data-task-list="true"><li data-task-list-item="true"><label class="flex items-start gap-3"><input type="checkbox" contenteditable="false" class="mt-0.5 size-4 shrink-0 rounded-[4px] border border-slate-500 accent-accent-600" /><span class="${MARKDOWN_TASK_TEXT_CLASS}">New item</span></label></li></ul>`);
         syncMarkdownFromEditor();
     };
 
@@ -474,7 +474,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                                 {...props}
                                 disabled
                                 readOnly
-                                className="me-3 mt-0.5 inline-block h-4 w-4 align-top"
+                                className="me-3 mt-0.5 inline-block size-4 align-top"
                                 style={{ pointerEvents: 'none' }}
                             />
                         ),

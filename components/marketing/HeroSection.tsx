@@ -69,8 +69,8 @@ export const HeroSection: React.FC = () => {
 
     return (
         <section className="relative pt-8 pb-16 md:pt-16 md:pb-24">
-            <div className="pointer-events-none absolute -right-32 -top-20 h-[420px] w-[420px] rounded-full bg-accent-300/40 blur-[100px]" />
-            <div className="pointer-events-none absolute -bottom-32 -left-20 h-[380px] w-[380px] rounded-full bg-accent-200/50 blur-[100px]" />
+            <div className="pointer-events-none absolute -right-32 -top-20 size-[420px] rounded-full bg-accent-300/40 blur-[100px]" />
+            <div className="pointer-events-none absolute -bottom-32 -left-20 size-[380px] rounded-full bg-accent-200/50 blur-[100px]" />
 
             <div className="relative flex items-center gap-8 lg:gap-12">
                 <div className="max-w-3xl flex-1">

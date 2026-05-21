@@ -268,7 +268,7 @@ const getPlaygroundGenerationPillClass = (value: PlaygroundTableRow['generation'
 };
 
 const ComponentUsageReferences: React.FC<{ definition: ComponentGroupDefinition }> = ({ definition }) => (
-    <div className="space-y-2 rounded-xl border border-slate-200 bg-white px-3 py-3">
+    <div className="space-y-2 rounded-xl border border-slate-200 bg-white p-3">
         <div className={subtleHeadingClassName}>Where used</div>
         <div className="space-y-1.5 text-xs text-slate-700">
             <p>

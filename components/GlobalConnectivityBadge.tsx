@@ -68,7 +68,7 @@ export const GlobalConnectivityBadge: React.FC = () => {
     })();
 
     const pulsingDot = (tone: 'offline' | 'online') => (
-        <span className="relative inline-flex h-3.5 w-3.5 items-center justify-center" aria-hidden="true">
+        <span className="relative inline-flex size-3.5 items-center justify-center" aria-hidden="true">
             <span
                 className={`absolute inset-0 rounded-full border ${
                     tone === 'offline' ? 'border-rose-400/80' : 'border-emerald-400/80'
@@ -79,7 +79,7 @@ export const GlobalConnectivityBadge: React.FC = () => {
                     tone === 'offline' ? 'border-rose-400/70' : 'border-emerald-400/70'
                 } animate-ping [animation-delay:900ms]`}
             />
-            <span className={`relative h-2 w-2 rounded-full ${tone === 'offline' ? 'bg-rose-500' : 'bg-emerald-500'}`} />
+            <span className={`relative size-2 rounded-full ${tone === 'offline' ? 'bg-rose-500' : 'bg-emerald-500'}`} />
         </span>
     );
 
@@ -92,7 +92,7 @@ export const GlobalConnectivityBadge: React.FC = () => {
         : badgeState === 'syncing'
             ? {
                 shell: 'border-amber-300 bg-amber-50/95 text-amber-900',
-                icon: <Spinner className="h-3.5 w-3.5 text-amber-600" aria-hidden="true" />,
+                icon: <Spinner className="size-3.5 text-amber-600" aria-hidden="true" />,
                 label: t('connectivity.globalBadge.syncing'),
             }
             : {

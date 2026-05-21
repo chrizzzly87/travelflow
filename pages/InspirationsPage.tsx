@@ -154,17 +154,17 @@ const DestinationCard: React.FC<{ destination: Destination }> = ({ destination }
                         loading="lazy"
                         fetchPriority="low"
                         onError={() => setHasImageError(true)}
-                        className={`absolute inset-0 h-full w-full rounded-t-2xl object-cover ${CARD_IMAGE_ZOOM_TRANSITION} scale-[1.06] group-hover:scale-100`}
+                        className={`absolute inset-0 size-full rounded-t-2xl object-cover ${CARD_IMAGE_ZOOM_TRANSITION} scale-[1.06] group-hover:scale-100`}
                     />
                     <div className={CARD_IMAGE_FADE} />
                     <div className={CARD_IMAGE_PROGRESSIVE_BLUR} />
                 </>
             ) : (
                 <>
-                    <div className={`absolute left-[22%] top-[28%] h-2.5 w-2.5 rounded-full ${destination.mapAccent}`} />
-                    <div className={`absolute left-[48%] top-[55%] h-2 w-2 rounded-full ${destination.mapAccent} opacity-70`} />
-                    <div className={`absolute left-[72%] top-[38%] h-3 w-3 rounded-full ${destination.mapAccent}`} />
-                    <svg className="absolute inset-0 h-full w-full" viewBox="0 0 340 128" fill="none" preserveAspectRatio="none">
+                    <div className={`absolute left-[22%] top-[28%] size-2.5 rounded-full ${destination.mapAccent}`} />
+                    <div className={`absolute left-[48%] top-[55%] size-2 rounded-full ${destination.mapAccent} opacity-70`} />
+                    <div className={`absolute left-[72%] top-[38%] size-3 rounded-full ${destination.mapAccent}`} />
+                    <svg className="absolute inset-0 size-full" viewBox="0 0 340 128" fill="none" preserveAspectRatio="none">
                         <path d="M75 36 L163 70 L245 49" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4 4" className="text-slate-400/40" />
                     </svg>
                 </>
@@ -172,7 +172,7 @@ const DestinationCard: React.FC<{ destination: Destination }> = ({ destination }
         </div>
 
         <div className="p-4">
-            <h3 className="text-base font-bold text-slate-900 group-hover:text-accent-700 transition-colors">{destination.title}</h3>
+            <h3 className="text-base font-semibold text-slate-900 group-hover:text-accent-700 transition-colors">{destination.title}</h3>
             <p className="mt-1.5 text-sm leading-relaxed text-slate-500 line-clamp-2">{destination.description}</p>
 
             <div className="mt-4 border-t border-slate-100 pt-3">
@@ -237,19 +237,19 @@ const FestivalCard: React.FC<{ event: FestivalEventType; nextDate: Date }> = ({ 
                         loading="lazy"
                         fetchPriority="low"
                         onError={() => setHasImageError(true)}
-                        className={`absolute inset-0 h-full w-full rounded-t-2xl object-cover ${CARD_IMAGE_ZOOM_TRANSITION} scale-[1.06] group-hover:scale-100`}
+                        className={`absolute inset-0 size-full rounded-t-2xl object-cover ${CARD_IMAGE_ZOOM_TRANSITION} scale-[1.06] group-hover:scale-100`}
                     />
                     <div className={CARD_IMAGE_FADE} />
                     <div className={CARD_IMAGE_PROGRESSIVE_BLUR} />
                 </>
             ) : (
-                <div className="flex h-full w-full items-center justify-center">
+                <div className="flex size-full items-center justify-center">
                     <Confetti size={36} weight="duotone" className="text-slate-400/40" />
                 </div>
             )}
         </div>
         <div className="flex flex-1 flex-col p-4">
-            <h3 className="text-base font-bold text-slate-900 group-hover:text-accent-700 transition-colors">{event.name}</h3>
+            <h3 className="text-base font-semibold text-slate-900 group-hover:text-accent-700 transition-colors">{event.name}</h3>
             <p className="mt-1 line-clamp-1 text-xs font-medium text-slate-400 inline-flex items-center gap-1.5">
                 <FlagIcon value={event.flag} />
                 {locationLabel}
@@ -292,11 +292,11 @@ const GetawayCard: React.FC<{ getaway: WeekendGetawayType }> = ({ getaway }) => 
         className={`group flex items-start gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm ${CARD_HOVER_TRANSITION} hover:-translate-y-0.5 hover:shadow-lg`}
         {...getAnalyticsDebugAttributes('inspirations__getaway_card', { title: getaway.title, destination: getaway.to })}
     >
-        <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-xl ${getaway.mapColor}`}>
+        <div className={`flex size-14 shrink-0 items-center justify-center rounded-xl ${getaway.mapColor}`}>
             <AirplaneTakeoff size={24} weight="duotone" className={getaway.mapAccent.replace('bg-', 'text-')} />
         </div>
         <div className="min-w-0 flex-1">
-            <h3 className="text-base font-bold text-slate-900 group-hover:text-accent-700 transition-colors">{getaway.title}</h3>
+            <h3 className="text-base font-semibold text-slate-900 group-hover:text-accent-700 transition-colors">{getaway.title}</h3>
             <p className="mt-0.5 text-xs font-medium text-slate-400 inline-flex items-center gap-1.5">
                 <FlagIcon value={getaway.flag} />
                 {getaway.to} · {getaway.durationDays} days
@@ -324,7 +324,7 @@ const CountryPill: React.FC<{ group: CountryGroup }> = ({ group }) => (
     >
         <FlagIcon value={group.flag} size="2xl" />
         <div className="min-w-0 flex-1">
-            <h3 className="text-sm font-bold text-slate-900 group-hover:text-accent-700 transition-colors">{group.country}</h3>
+            <h3 className="text-sm font-semibold text-slate-900 group-hover:text-accent-700 transition-colors">{group.country}</h3>
             <p className="text-xs text-slate-400">{group.bestMonths}</p>
             <div className="mt-1.5 flex flex-wrap gap-1">
                 {group.tags.map((tag) => (
@@ -455,7 +455,7 @@ export const InspirationsPage: React.FC = () => {
                     )}
                     {filteredDestinations && filteredDestinations.length > 0 && (
                         <div className="mb-8">
-                            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">{t('inspirations.searchSections.destinations')}</h3>
+                            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">{t('inspirations.searchSections.destinations')}</h3>
                             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                                 {filteredDestinations.map((d) => <DestinationCard key={d.title} destination={d} />)}
                             </div>
@@ -463,7 +463,7 @@ export const InspirationsPage: React.FC = () => {
                     )}
                     {filteredFestivals && filteredFestivals.length > 0 && (
                         <div className="mb-8">
-                            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">{t('inspirations.searchSections.eventsFestivals')}</h3>
+                            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">{t('inspirations.searchSections.eventsFestivals')}</h3>
                             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                                 {filteredFestivals.map((e) => <FestivalCard key={e.name} event={e} nextDate={getNextOccurrence(e, new Date())} />)}
                             </div>
@@ -471,7 +471,7 @@ export const InspirationsPage: React.FC = () => {
                     )}
                     {filteredGetaways && filteredGetaways.length > 0 && (
                         <div className="mb-8">
-                            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">{t('inspirations.searchSections.weekendGetaways')}</h3>
+                            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">{t('inspirations.searchSections.weekendGetaways')}</h3>
                             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                                 {filteredGetaways.map((g) => <GetawayCard key={g.title} getaway={g} />)}
                             </div>
@@ -485,7 +485,7 @@ export const InspirationsPage: React.FC = () => {
                 <>
                     {/* Anchor nav */}
                     <nav className="pb-8 animate-hero-stagger" style={{ '--stagger': '200ms' } as React.CSSProperties}>
-                        <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">{t('inspirations.jumpTo')}</h2>
+                        <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">{t('inspirations.jumpTo')}</h2>
                         <div className="flex flex-wrap gap-2">
                             {sections.map((s) => {
                                 const SIcon = s.icon;
@@ -505,7 +505,7 @@ export const InspirationsPage: React.FC = () => {
 
                     {/* Quick start pills */}
                     <section className="pb-12 animate-hero-stagger" style={{ '--stagger': '280ms' } as React.CSSProperties}>
-                        <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">{t('inspirations.quickStart')}</h2>
+                        <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">{t('inspirations.quickStart')}</h2>
                         <div className="flex flex-wrap gap-2">
                             {quickIdeas.map((idea) => {
                                 const ideaLabel = stripLeadingFlagEmoji(idea.label);
@@ -537,7 +537,7 @@ export const InspirationsPage: React.FC = () => {
                             return (
                                 <section key={category.id} className="py-12 md:py-16 border-t border-slate-200">
                                     <div className="animate-scroll-blur-in flex items-start gap-4">
-                                        <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ring-1 ${category.color}`}>
+                                        <div className={`flex size-12 shrink-0 items-center justify-center rounded-2xl ring-1 ${category.color}`}>
                                             <CategoryIcon size={24} weight="duotone" />
                                         </div>
                                         <div className="min-w-0 flex-1">
@@ -574,7 +574,7 @@ export const InspirationsPage: React.FC = () => {
                     <section id="months" className="py-12 md:py-16 border-t border-slate-200">
                         <div className="animate-scroll-blur-in">
                             <div className="flex items-start gap-4">
-                                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-sky-50 text-sky-600 ring-1 ring-sky-100">
+                                <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-sky-50 text-sky-600 ring-1 ring-sky-100">
                                     <CalendarDots size={24} weight="duotone" />
                                 </div>
                                 <div className="min-w-0 flex-1">
@@ -650,7 +650,7 @@ export const InspirationsPage: React.FC = () => {
                     <section id="countries" className="py-12 md:py-16 border-t border-slate-200">
                         <div className="animate-scroll-blur-in">
                             <div className="flex items-start gap-4">
-                                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-teal-50 text-teal-600 ring-1 ring-teal-100">
+                                <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-teal-50 text-teal-600 ring-1 ring-teal-100">
                                     <Globe size={24} weight="duotone" />
                                 </div>
                                 <div className="min-w-0 flex-1">
@@ -678,7 +678,7 @@ export const InspirationsPage: React.FC = () => {
                     <section id="festivals" className="py-12 md:py-16 border-t border-slate-200">
                         <div className="animate-scroll-blur-in">
                             <div className="flex items-start gap-4">
-                                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-fuchsia-50 text-fuchsia-600 ring-1 ring-fuchsia-100">
+                                <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-fuchsia-50 text-fuchsia-600 ring-1 ring-fuchsia-100">
                                     <Confetti size={24} weight="duotone" />
                                 </div>
                                 <div className="min-w-0 flex-1">
@@ -719,7 +719,7 @@ export const InspirationsPage: React.FC = () => {
                     <section id="weekends" className="py-12 md:py-16 border-t border-slate-200">
                         <div className="animate-scroll-blur-in">
                             <div className="flex items-start gap-4">
-                                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 ring-1 ring-amber-100">
+                                <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 ring-1 ring-amber-100">
                                     <Lightning size={24} weight="duotone" />
                                 </div>
                                 <div className="min-w-0 flex-1">
@@ -768,8 +768,8 @@ export const InspirationsPage: React.FC = () => {
                     {/* ── Bottom CTA ── */}
                     <section className="pb-16 md:pb-24 animate-scroll-scale-in">
                         <div className="relative rounded-3xl bg-gradient-to-br from-accent-600 to-accent-800 px-8 py-14 text-center md:px-16 md:py-20 overflow-hidden">
-                            <div className="pointer-events-none absolute -top-20 -right-20 h-60 w-60 rounded-full bg-white/10 blur-[60px]" />
-                            <div className="pointer-events-none absolute -bottom-16 -left-16 h-48 w-48 rounded-full bg-accent-400/20 blur-[50px]" />
+                            <div className="pointer-events-none absolute -top-20 -right-20 size-60 rounded-full bg-white/10 blur-[60px]" />
+                            <div className="pointer-events-none absolute -bottom-16 -left-16 size-48 rounded-full bg-accent-400/20 blur-[50px]" />
 
                             <h2 className="relative text-3xl font-black tracking-tight text-white md:text-5xl" style={{ fontFamily: "var(--tf-font-heading)" }}>
                                 {t('inspirations.bottomCta.title')}

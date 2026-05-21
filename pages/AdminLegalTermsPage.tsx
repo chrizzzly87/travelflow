@@ -341,7 +341,7 @@ export const AdminLegalTermsPage: React.FC = () => {
                             <label className="inline-flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800">
                                 <input
                                     type="checkbox"
-                                    className="mt-0.5 h-4 w-4 rounded border-slate-300 text-accent-600 focus:ring-accent-500"
+                                    className="mt-0.5 size-4 rounded border-slate-300 text-accent-600 focus:ring-accent-500"
                                     checked={draft.requiresReaccept}
                                     onChange={(event) => handleDraftField('requiresReaccept', event.target.checked)}
                                 />
@@ -441,7 +441,7 @@ export const AdminLegalTermsPage: React.FC = () => {
                             {versions.map((version) => (
                                 <article
                                     key={version.version}
-                                    className={`rounded-xl border px-3 py-3 text-sm ${version.isCurrent ? 'border-accent-300 bg-accent-50' : 'border-slate-200 bg-white'}`}
+                                    className={`rounded-xl border p-3 text-sm ${version.isCurrent ? 'border-accent-300 bg-accent-50' : 'border-slate-200 bg-white'}`}
                                 >
                                     <div className="flex flex-wrap items-start justify-between gap-2">
                                         <div>

@@ -237,7 +237,7 @@ export const AppDialogProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                         className="relative z-10 w-full max-w-md overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-2xl"
                     >
                         <div className="px-5 py-4 border-b border-gray-100">
-                            <h2 id="app-dialog-title" className="text-base font-bold text-gray-900">
+                            <h2 id="app-dialog-title" className="text-base font-semibold text-gray-900">
                                 {activeRequest.options.title || (activeRequest.kind === 'confirm' ? 'Confirm Action' : 'Input Required')}
                             </h2>
                         </div>

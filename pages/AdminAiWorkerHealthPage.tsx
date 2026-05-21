@@ -152,7 +152,7 @@ const WorkerHealthInfoButton: React.FC<{
         aria-label={ariaLabel}
         title={tooltip}
         data-tooltip={tooltip}
-        className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition-colors hover:border-slate-300 hover:text-slate-700"
+        className="inline-flex size-5 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition-colors hover:border-slate-300 hover:text-slate-700"
     >
         <Info size={12} weight="bold" />
     </button>
@@ -417,7 +417,7 @@ export const AdminAiWorkerHealthPage: React.FC = () => {
                 <AdminSurfaceCard className="space-y-4">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                         <div>
-                            <h2 className="text-lg font-bold text-slate-900">Recent checks</h2>
+                            <h2 className="text-lg font-semibold text-slate-900">Recent checks</h2>
                             <p className="text-sm text-slate-500">
                                 Newest rows first. Heartbeats show cron health, watchdog rows capture stale-queue incidents, and canaries prove the drain path end to end.
                             </p>

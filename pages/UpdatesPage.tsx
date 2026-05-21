@@ -156,7 +156,7 @@ export const UpdatesPage: React.FC = () => {
                             }
                         >
                             <div className="flex flex-wrap items-start justify-between gap-3">
-                                <h2 className="text-xl font-bold tracking-tight text-slate-900">{release.title}</h2>
+                                <h2 className="text-xl font-semibold tracking-tight text-slate-900">{release.title}</h2>
                                 <div className="text-right">
                                     <span
                                         className={

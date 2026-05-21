@@ -202,7 +202,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
             >
                 <button
                     type="button"
-                    className="h-full w-full"
+                    className="size-full"
                     onClick={onClose}
                     aria-label="Close navigation menu"
                 />

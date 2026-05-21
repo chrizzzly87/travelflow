@@ -165,7 +165,7 @@ const buildMarkdownComponents = (
                         <Checkbox
                             checked={resolvedChecked}
                             disabled={!onToggleTaskCheckbox}
-                            className="mt-0.5 h-4 w-4 shrink-0"
+                            className="mt-0.5 size-4 shrink-0"
                             aria-label={resolvedChecked ? 'Completed task' : 'Open task'}
                             onClick={(event) => {
                                 event.stopPropagation();

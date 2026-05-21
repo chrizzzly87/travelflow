@@ -400,7 +400,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
 
       {/* Main Content Container */}
       {isCompactHorizontalActivity ? (
-        <div className="relative h-full w-full pointer-events-none overflow-hidden">
+        <div className="relative size-full pointer-events-none overflow-hidden">
           {!isTravel && !isEmptyTravel && item.type === 'activity' && !isCompactVerticalActivity && (
             <div className="absolute inset-x-0 top-1.5 flex justify-center">
               <ActivityTypeIcon
@@ -445,7 +445,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
           )}
         </div>
       ) : (
-      <div className={`flex items-center px-1.5 relative h-full w-full pointer-events-none overflow-hidden
+      <div className={`flex items-center px-1.5 relative size-full pointer-events-none overflow-hidden
           ${vertical 
              ? (
                 isCompactVerticalActivity
