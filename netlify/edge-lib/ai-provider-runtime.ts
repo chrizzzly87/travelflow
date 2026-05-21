@@ -132,7 +132,7 @@ const GEMINI_PRICING_PER_MILLION: Record<string, { input: number; output: number
 };
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-const OPENROUTER_MAX_ATTEMPTS = 2;
+const OPENROUTER_MAX_ATTEMPTS = 3;
 const OPENROUTER_RETRYABLE_STATUS = new Set([429, 500, 502, 503, 504]);
 const PROVIDER_PARSE_RETRY_MAX_ATTEMPTS = 2;
 
@@ -214,6 +214,14 @@ TRUNCATION RECOVERY MODE:
 const isTokenLimitSignal = (value: unknown): boolean => {
   if (typeof value !== "string") return false;
   return /max[_\s-]?token|length/i.test(value);
+};
+
+const looksLikeTruncatedJsonObject = (raw: string): boolean => {
+  const trimmed = raw.trim();
+  const firstBrace = trimmed.indexOf("{");
+  if (firstBrace === -1) return false;
+  const lastBrace = trimmed.lastIndexOf("}");
+  return lastBrace <= firstBrace;
 };
 
 const resolveOutputTokenBudget = (
@@ -1304,6 +1312,7 @@ const generateWithOpenRouter = async (
 
   let lastError: ProviderGenerationResult | null = null;
   let forceStrictJson = false;
+  let forceUltraCompactJson = false;
   const requestStartedAt = Date.now();
 
   for (let attempt = 1; attempt <= OPENROUTER_MAX_ATTEMPTS; attempt += 1) {
@@ -1319,6 +1328,13 @@ const generateWithOpenRouter = async (
         },
       };
     }
+
+    const retryInstructions = forceUltraCompactJson
+      ? `${STRICT_JSON_RETRY_INSTRUCTION}\n${ULTRA_COMPACT_RETRY_INSTRUCTION}`
+      : STRICT_JSON_RETRY_INSTRUCTION;
+    const promptBody = forceStrictJson
+      ? `${prompt}\n\n${retryInstructions}`
+      : prompt;
 
     let responseResult:
       | { ok: true; payload: unknown }
@@ -1348,7 +1364,7 @@ const generateWithOpenRouter = async (
               },
               {
                 role: "user",
-                content: prompt,
+                content: promptBody,
               },
             ],
           }),
@@ -1404,24 +1420,35 @@ const generateWithOpenRouter = async (
     }
 
     const payload = responseResult.payload as Record<string, unknown>;
-    const rawText = extractOpenAiText(payload?.choices?.[0]?.message?.content);
+    const firstChoice = (payload?.choices as Array<Record<string, unknown>> | undefined)?.[0];
+    const finishReason = typeof firstChoice?.finish_reason === "string" ? firstChoice.finish_reason : "";
+    const rawText = extractOpenAiText((firstChoice?.message as Record<string, unknown> | undefined)?.content);
 
     let parsed: Record<string, unknown>;
     try {
       parsed = extractJsonObject(rawText);
     } catch (error) {
+      const parseDetails = error instanceof Error ? error.message : "Unknown parsing error";
+      const detailsWithReason = finishReason
+        ? `${parseDetails} OpenRouter finish_reason=${finishReason}.`
+        : parseDetails;
       lastError = {
         ok: false,
         status: 502,
         value: {
           error: "OpenRouter response could not be parsed as JSON itinerary payload.",
           code: "OPENROUTER_PARSE_FAILED",
-          details: error instanceof Error ? error.message : "Unknown parsing error",
+          details: forceUltraCompactJson
+            ? `${detailsWithReason} Likely truncated output; compact retry constraints were applied.`
+            : detailsWithReason,
           sample: rawText.slice(0, 800),
         },
       };
-      if (attempt < OPENROUTER_MAX_ATTEMPTS) {
+      const shouldUseUltraCompact = isTokenLimitSignal(finishReason) || looksLikeTruncatedJsonObject(rawText);
+      const shouldRetryParseFailure = attempt < PROVIDER_PARSE_RETRY_MAX_ATTEMPTS || shouldUseUltraCompact;
+      if (attempt < OPENROUTER_MAX_ATTEMPTS && shouldRetryParseFailure) {
         forceStrictJson = true;
+        forceUltraCompactJson = forceUltraCompactJson || shouldUseUltraCompact;
         continue;
       }
       return lastError;
