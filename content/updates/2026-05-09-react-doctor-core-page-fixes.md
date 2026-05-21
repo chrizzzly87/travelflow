@@ -28,3 +28,4 @@ summary: "Cleans up the highest-priority React Doctor findings across core trip 
 - [ ] [Internal] 🧮 Raised the full React Doctor scan to `68/100` by clearing immutable-sort and nearest-item loop findings.
 - [ ] [Internal] 🔁 Reduced single-pass parsing debt across tested storage, blog, legal, trip-generation, airport, and destination helpers.
 - [ ] [Internal] 🧯 Kept the immutable-sort cleanup compatible with the app's current ES2022 runtime target.
+- [ ] [Internal] 📶 Reduced network status state-update debt while preserving offline recovery behavior.

@@ -20,7 +20,7 @@ React Review status: npm package `react-review@1.0.6` does not expose a CLI bina
 
 - Initial user baseline: `49 / 100`, `73` errors, `5749` warnings, `356/814` files.
 - After core-page fixes: `51 / 100`, `33` errors, `5752` warnings, `356/821` files.
-- Current full scan: `68 / 100`, `0` errors, `823` warnings, `210/822` files.
+- Current full scan: `68 / 100`, `0` errors, `821` warnings, `210/822` files.
 - Current diff scan: `78 / 100`, `0` errors, `435` warnings, `73/165` files.
 
 ## Completed Changes
@@ -52,6 +52,7 @@ React Review status: npm package `react-review@1.0.6` does not expose a CLI bina
 - [x] Applied visual-equivalent Tailwind shorthand cleanup for repeated size/padding classes and softened flagged heading weights.
 - [x] Cleared immutable-sort and min/max loop warnings in focused utility, admin, profile, storage, and export paths without relying on ES2023-only `toSorted()`.
 - [x] Replaced tested map/filter parsing pipelines with single-pass `flatMap` cleanup in storage, blog, legal, trip-generation, airport, destination, and map helpers.
+- [x] Consolidated network status connectivity/probe updates into a reducer so online state, connection snapshots, and probe state commit coherently.
 
 ## Validation Log
 
@@ -223,6 +224,14 @@ React Review status: npm package `react-review@1.0.6` does not expose a CLI bina
 - [x] Focused sort-compatibility regression suite
   - Command: `pnpm test:run tests/unit/cityRouteAndTransferLayout.test.ts tests/unit/adminDashboardChartData.test.ts tests/unit/adminAiTelemetryChartData.test.ts tests/unit/tripCalendarExportService.test.ts tests/unit/profileTripState.test.ts tests/unit/offlineChangeQueue.test.ts tests/unit/destinationService.test.ts tests/browser/storageService.browser.test.ts tests/browser/tripManagerArchive.browser.test.ts`
   - Result: passed, `58` tests.
+
+- [x] `npx react-doctor@latest . --verbose`
+  - Result: `68 / 100`, `0` errors, `821` warnings, `210/822` files.
+  - Share: `https://www.react.doctor/share?p=travelflow&s=68&w=821&f=210`
+
+- [x] Focused network status reducer regression suite
+  - Command: `pnpm test:run tests/browser/useNetworkStatus.browser.test.ts`
+  - Result: passed, `2` tests.
 
 - [x] IDE lint diagnostics
   - Result: no linter errors found in edited immutable-sort batch files.
