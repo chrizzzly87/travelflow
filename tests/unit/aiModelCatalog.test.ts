@@ -52,27 +52,36 @@ describe('config/aiModelCatalog', () => {
     expect(defaultModel.isCurrentRuntime).toBe(true);
   });
 
-  it('sorts openrouter after direct providers and new provider families', () => {
+  it('sorts model families with OpenAI first even when a model is served through OpenRouter', () => {
     const sorted = sortAiModels(AI_MODEL_CATALOG);
-    const providerOrder = sorted.map((item) => item.provider);
+    const providerLabelOrder = sorted.map((item) => item.providerLabel);
 
-    const firstOpenRouterIndex = providerOrder.indexOf('openrouter');
-    const lastQwenIndex = providerOrder.lastIndexOf('qwen');
+    expect(providerLabelOrder[0]).toBe('OpenAI');
+    expect(sorted.find((item) => item.id === 'openrouter:openai/gpt-5.5')?.providerLabel).toBe('OpenAI');
+    expect(sorted.find((item) => item.id === 'openrouter:google/gemini-3.5-flash')?.providerLabel).toBe('Google Gemini');
+    expect(sorted.find((item) => item.id === 'openrouter:x-ai/grok-4.3')?.providerLabel).toBe('xAI');
+    expect(sorted.find((item) => item.id === 'openrouter:qwen/qwen3.5-plus-20260420')?.providerLabel).toBe('Qwen');
 
-    expect(firstOpenRouterIndex).toBeGreaterThan(-1);
-    expect(lastQwenIndex).toBeGreaterThan(-1);
-    expect(firstOpenRouterIndex).toBeGreaterThan(lastQwenIndex);
+    expect(providerLabelOrder.indexOf('OpenAI')).toBeLessThan(providerLabelOrder.indexOf('Google Gemini'));
   });
 
-  it('groups entries by provider label', () => {
+  it('groups entries by model family label instead of routing gateway label', () => {
     const grouped = groupAiModelsByProvider(AI_MODEL_CATALOG);
     expect(grouped['Google Gemini']?.length).toBeGreaterThan(0);
     expect(grouped.OpenAI?.length).toBeGreaterThan(0);
     expect(grouped.Anthropic?.length).toBeGreaterThan(0);
     expect(grouped.Perplexity?.length).toBeGreaterThan(0);
     expect(grouped.Qwen?.length).toBeGreaterThan(0);
-    expect(grouped.OpenRouter?.length).toBeGreaterThan(0);
+    expect(grouped.xAI?.map((item) => item.id)).toContain('openrouter:x-ai/grok-4.3');
     expect(grouped['OpenRouter (Free)']?.length).toBeGreaterThan(0);
+    expect(grouped['OpenRouter (Free)']?.map((item) => item.id)).toEqual(['openrouter:openrouter/free']);
+    expect(grouped.OpenAI?.map((item) => item.id)).toContain('openrouter:openai/gpt-5.5');
+    expect(grouped['Google Gemini']?.map((item) => item.id)).toEqual(expect.arrayContaining([
+      'openrouter:google/gemini-3.5-flash',
+      'openrouter:google/gemini-3.1-flash-lite',
+    ]));
+    expect(grouped.Qwen?.map((item) => item.id)).toContain('openrouter:qwen/qwen3.5-plus-20260420');
+    expect(grouped.OpenRouter).toBeUndefined();
   });
 
   it('prioritizes create-trip preferred models and keeps full active coverage', () => {

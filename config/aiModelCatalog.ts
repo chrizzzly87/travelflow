@@ -38,6 +38,22 @@ export const CREATE_TRIP_PREFERRED_MODEL_IDS = [
 
 const ESTIMATE_NOTE = 'Estimate for one classic itinerary generation; real cost varies by prompt/output size.';
 
+const MODEL_FAMILY_SORT_ORDER: Record<string, number> = {
+    OpenAI: 0,
+    'Google Gemini': 1,
+    Anthropic: 2,
+    xAI: 3,
+    Perplexity: 4,
+    Qwen: 5,
+    MiniMax: 6,
+    'Moonshot AI': 7,
+    'Z.ai': 8,
+    DeepSeek: 9,
+    NVIDIA: 10,
+    'OpenRouter (Free)': 11,
+    OpenRouter: 12,
+};
+
 type RawAiModelCatalogItem = Omit<AiModelCatalogItem, 'providerLabel' | 'providerShortName'> & {
     providerLabel?: string;
     providerShortName?: string;
@@ -309,7 +325,8 @@ const RAW_AI_MODEL_CATALOG: RawAiModelCatalogItem[] = [
     {
         id: 'openrouter:openai/gpt-oss-20b:free',
         provider: 'openrouter',
-        providerLabel: 'OpenRouter (Free)',
+        providerLabel: 'OpenAI',
+        providerShortName: 'OpenAI',
         model: 'openai/gpt-oss-20b:free',
         label: 'GPT-OSS 20B (Free)',
         availability: 'active',
@@ -320,7 +337,8 @@ const RAW_AI_MODEL_CATALOG: RawAiModelCatalogItem[] = [
     {
         id: 'openrouter:qwen/qwen3-coder:free',
         provider: 'openrouter',
-        providerLabel: 'OpenRouter (Free)',
+        providerLabel: 'Qwen',
+        providerShortName: 'Qwen',
         model: 'qwen/qwen3-coder:free',
         label: 'Qwen3 Coder (Free)',
         availability: 'active',
@@ -331,7 +349,8 @@ const RAW_AI_MODEL_CATALOG: RawAiModelCatalogItem[] = [
     {
         id: 'openrouter:nvidia/nemotron-3-super-120b-a12b:free',
         provider: 'openrouter',
-        providerLabel: 'OpenRouter (Free)',
+        providerLabel: 'NVIDIA',
+        providerShortName: 'NVIDIA',
         model: 'nvidia/nemotron-3-super-120b-a12b:free',
         label: 'Nemotron 3 Super (Free)',
         availability: 'active',
@@ -342,7 +361,8 @@ const RAW_AI_MODEL_CATALOG: RawAiModelCatalogItem[] = [
     {
         id: 'openrouter:openai/gpt-5.4-nano',
         provider: 'openrouter',
-        providerLabel: 'OpenRouter',
+        providerLabel: 'OpenAI',
+        providerShortName: 'OpenAI',
         model: 'openai/gpt-5.4-nano',
         label: 'GPT-5.4 Nano',
         availability: 'active',
@@ -353,7 +373,8 @@ const RAW_AI_MODEL_CATALOG: RawAiModelCatalogItem[] = [
     {
         id: 'openrouter:openai/gpt-5.4-mini',
         provider: 'openrouter',
-        providerLabel: 'OpenRouter',
+        providerLabel: 'OpenAI',
+        providerShortName: 'OpenAI',
         model: 'openai/gpt-5.4-mini',
         label: 'GPT-5.4 Mini',
         availability: 'active',
@@ -364,7 +385,8 @@ const RAW_AI_MODEL_CATALOG: RawAiModelCatalogItem[] = [
     {
         id: 'openrouter:google/gemini-3.5-flash',
         provider: 'openrouter',
-        providerLabel: 'OpenRouter',
+        providerLabel: 'Google Gemini',
+        providerShortName: 'Gemini',
         model: 'google/gemini-3.5-flash',
         label: 'Gemini 3.5 Flash',
         availability: 'active',
@@ -376,7 +398,8 @@ const RAW_AI_MODEL_CATALOG: RawAiModelCatalogItem[] = [
     {
         id: 'openrouter:google/gemini-3.1-flash-lite',
         provider: 'openrouter',
-        providerLabel: 'OpenRouter',
+        providerLabel: 'Google Gemini',
+        providerShortName: 'Gemini',
         model: 'google/gemini-3.1-flash-lite',
         label: 'Gemini 3.1 Flash Lite',
         availability: 'active',
@@ -388,7 +411,8 @@ const RAW_AI_MODEL_CATALOG: RawAiModelCatalogItem[] = [
     {
         id: 'openrouter:x-ai/grok-4.3',
         provider: 'openrouter',
-        providerLabel: 'OpenRouter',
+        providerLabel: 'xAI',
+        providerShortName: 'xAI',
         model: 'x-ai/grok-4.3',
         label: 'Grok 4.3',
         availability: 'active',
@@ -400,7 +424,8 @@ const RAW_AI_MODEL_CATALOG: RawAiModelCatalogItem[] = [
     {
         id: 'openrouter:openai/gpt-5.5',
         provider: 'openrouter',
-        providerLabel: 'OpenRouter',
+        providerLabel: 'OpenAI',
+        providerShortName: 'OpenAI',
         model: 'openai/gpt-5.5',
         label: 'GPT-5.5',
         availability: 'active',
@@ -412,7 +437,8 @@ const RAW_AI_MODEL_CATALOG: RawAiModelCatalogItem[] = [
     {
         id: 'openrouter:qwen/qwen3.5-plus-20260420',
         provider: 'openrouter',
-        providerLabel: 'OpenRouter',
+        providerLabel: 'Qwen',
+        providerShortName: 'Qwen',
         model: 'qwen/qwen3.5-plus-20260420',
         label: 'Qwen3.5 Plus 2026-04-20',
         availability: 'active',
@@ -424,7 +450,8 @@ const RAW_AI_MODEL_CATALOG: RawAiModelCatalogItem[] = [
     {
         id: 'openrouter:z-ai/glm-5',
         provider: 'openrouter',
-        providerLabel: 'OpenRouter',
+        providerLabel: 'Z.ai',
+        providerShortName: 'Z.ai',
         model: 'z-ai/glm-5',
         label: 'GLM 5',
         availability: 'active',
@@ -436,7 +463,8 @@ const RAW_AI_MODEL_CATALOG: RawAiModelCatalogItem[] = [
     {
         id: 'openrouter:deepseek/deepseek-v3.2',
         provider: 'openrouter',
-        providerLabel: 'OpenRouter',
+        providerLabel: 'DeepSeek',
+        providerShortName: 'DeepSeek',
         model: 'deepseek/deepseek-v3.2',
         label: 'DeepSeek V3.2',
         availability: 'active',
@@ -448,7 +476,8 @@ const RAW_AI_MODEL_CATALOG: RawAiModelCatalogItem[] = [
     {
         id: 'openrouter:x-ai/grok-4.1-fast',
         provider: 'openrouter',
-        providerLabel: 'OpenRouter',
+        providerLabel: 'xAI',
+        providerShortName: 'xAI',
         model: 'x-ai/grok-4.1-fast',
         label: 'Grok 4.1 Fast',
         availability: 'active',
@@ -460,7 +489,8 @@ const RAW_AI_MODEL_CATALOG: RawAiModelCatalogItem[] = [
     {
         id: 'openrouter:x-ai/grok-4.20-beta',
         provider: 'openrouter',
-        providerLabel: 'OpenRouter',
+        providerLabel: 'xAI',
+        providerShortName: 'xAI',
         model: 'x-ai/grok-4.20-beta',
         label: 'Grok 4.20 Beta',
         availability: 'active',
@@ -471,7 +501,8 @@ const RAW_AI_MODEL_CATALOG: RawAiModelCatalogItem[] = [
     {
         id: 'openrouter:minimax/minimax-m2.5',
         provider: 'openrouter',
-        providerLabel: 'OpenRouter',
+        providerLabel: 'MiniMax',
+        providerShortName: 'MiniMax',
         model: 'minimax/minimax-m2.5',
         label: 'MiniMax M2.5',
         availability: 'active',
@@ -483,7 +514,8 @@ const RAW_AI_MODEL_CATALOG: RawAiModelCatalogItem[] = [
     {
         id: 'openrouter:moonshotai/kimi-k2.5',
         provider: 'openrouter',
-        providerLabel: 'OpenRouter',
+        providerLabel: 'Moonshot AI',
+        providerShortName: 'Moonshot',
         model: 'moonshotai/kimi-k2.5',
         label: 'Kimi K2.5',
         availability: 'active',
@@ -495,7 +527,8 @@ const RAW_AI_MODEL_CATALOG: RawAiModelCatalogItem[] = [
     {
         id: 'openrouter:qwen/qwen3.5-9b',
         provider: 'openrouter',
-        providerLabel: 'OpenRouter',
+        providerLabel: 'Qwen',
+        providerShortName: 'Qwen',
         model: 'qwen/qwen3.5-9b',
         label: 'Qwen3.5-9B',
         availability: 'active',
@@ -519,9 +552,15 @@ const toReleaseTs = (releasedAt: string): number => {
     return Number.isFinite(parsed) ? parsed : 0;
 };
 
+const getModelFamilySortOrder = (item: AiModelCatalogItem): number => {
+    const labelOrder = MODEL_FAMILY_SORT_ORDER[item.providerLabel];
+    if (Number.isFinite(labelOrder)) return labelOrder;
+    return 100 + getAiProviderSortOrder(item.provider);
+};
+
 export const sortAiModels = (items: AiModelCatalogItem[]): AiModelCatalogItem[] => {
     return [...items].sort((left, right) => {
-        const providerDelta = getAiProviderSortOrder(left.provider) - getAiProviderSortOrder(right.provider);
+        const providerDelta = getModelFamilySortOrder(left) - getModelFamilySortOrder(right);
         if (providerDelta !== 0) return providerDelta;
 
         const releaseDelta = toReleaseTs(right.releasedAt) - toReleaseTs(left.releasedAt);
