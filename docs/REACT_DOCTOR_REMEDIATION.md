@@ -301,6 +301,25 @@ React Review status: npm package `react-review@1.0.6` does not expose a CLI bina
   - Result: `69 / 100`, `0` errors, `805` warnings, `206/825` files.
   - Share: `https://www.react.doctor/share?p=travelflow&s=69&w=805&f=206`
 
+- [x] Focused planner/admin iteration regression suite
+  - Command: `pnpm test:run tests/unit/detailsPanelPlacesSearch.test.ts tests/unit/detailsPanelRouteDistanceText.test.ts tests/browser/tripManagerArchive.browser.test.ts tests/browser/tripManagerCountryCache.browser.test.ts tests/unit/adminTripsPage.import.test.ts tests/unit/adminAuditPage.import.test.ts tests/unit/adminAuditPage.labels.test.ts tests/browser/admin/adminUsersPage.softDeleteToast.browser.test.ts tests/unit/adminFilterMenu.test.ts`
+  - Result: passed, `29` tests.
+
+- [x] Focused trip preview parsing regression suite
+  - Command: `pnpm test:run tests/unit/tripPreviewUtils.test.ts tests/unit/tripPreviewUtilsMapRuntime.test.ts`
+  - Result: passed, `7` tests.
+
+- [x] `npx react-doctor@latest . --verbose --diff`
+  - Result: `78 / 100`, `0` errors, `428` warnings, `74/187` files.
+  - Share: `https://www.react.doctor/share?p=travelflow&s=78&w=428&f=74`
+
+- [x] `npx react-doctor@latest . --verbose`
+  - Result: `69 / 100`, `0` errors, `792` warnings, `205/825` files.
+  - Share: `https://www.react.doctor/share?p=travelflow&s=69&w=792&f=205`
+
+- [x] `pnpm test:core`
+  - Result: passed, `308` test files, `1369` tests, `1` skipped.
+
 - [x] IDE lint diagnostics
   - Result: no linter errors found in edited immutable-sort batch files.
 
