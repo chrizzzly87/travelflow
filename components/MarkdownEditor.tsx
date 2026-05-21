@@ -233,23 +233,27 @@ const serializeInlineChildren = (element: HTMLElement, skipNode?: Node): string 
 };
 
 const serializeList = (listElement: HTMLOListElement | HTMLUListElement, ordered: boolean): string => {
+    let listIndex = 0;
     const lines = Array.from(listElement.children)
-        .filter((child): child is HTMLLIElement => child instanceof HTMLLIElement)
-        .map((li, index) => {
-            const taskCheckbox = li.querySelector<HTMLInputElement>('input[type="checkbox"]');
-            const content = serializeInlineChildren(li).trim();
+        .flatMap((child) => {
+            if (!(child instanceof HTMLLIElement)) return [];
+            listIndex += 1;
+            const taskCheckbox = child.querySelector<HTMLInputElement>('input[type="checkbox"]');
+            const content = serializeInlineChildren(child).trim();
 
             if (taskCheckbox) {
-                return `- [${taskCheckbox.checked ? 'x' : ' '}] ${content}`.trimEnd();
+                const line = `- [${taskCheckbox.checked ? 'x' : ' '}] ${content}`.trimEnd();
+                return line.trim().length > 0 ? [line] : [];
             }
 
             if (ordered) {
-                return `${index + 1}. ${content}`.trimEnd();
+                const line = `${listIndex}. ${content}`.trimEnd();
+                return line.trim().length > 0 ? [line] : [];
             }
 
-            return `- ${content}`.trimEnd();
-        })
-        .filter((line) => line.trim().length > 0);
+            const line = `- ${content}`.trimEnd();
+            return line.trim().length > 0 ? [line] : [];
+        });
 
     return lines.join('\n');
 };
@@ -276,8 +280,10 @@ const serializeBlockNode = (node: Node): string => {
     if (tag === 'div') {
         if (node.hasAttribute('data-heads-up-group')) {
             return Array.from(node.children)
-                .map((child) => serializeBlockNode(child))
-                .filter((line) => line.trim().length > 0)
+                .flatMap((child) => {
+                    const line = serializeBlockNode(child);
+                    return line.trim().length > 0 ? [line] : [];
+                })
                 .join('\n');
         }
 
@@ -287,8 +293,10 @@ const serializeBlockNode = (node: Node): string => {
         }
 
         const children = Array.from(node.childNodes)
-            .map((child) => serializeBlockNode(child))
-            .filter((line) => line.trim().length > 0);
+            .flatMap((child) => {
+                const line = serializeBlockNode(child);
+                return line.trim().length > 0 ? [line] : [];
+            });
 
         if (children.length > 0) {
             return children.join('\n');
@@ -304,8 +312,10 @@ const serializeBlockNode = (node: Node): string => {
 
 const htmlToMarkdown = (root: HTMLElement): string => {
     const blockLines = Array.from(root.childNodes)
-        .map((node) => serializeBlockNode(node))
-        .filter((line) => line.trim().length > 0);
+        .flatMap((node) => {
+            const line = serializeBlockNode(node);
+            return line.trim().length > 0 ? [line] : [];
+        });
 
     if (blockLines.length === 0) {
         return normalizeMarkdownOutput(root.textContent || '');
