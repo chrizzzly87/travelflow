@@ -55,7 +55,7 @@ export const FeatureShowcase: React.FC = () => {
     return (
         <section className="py-16 md:py-24">
             <div className="animate-scroll-blur-in">
-                <h2 className="text-3xl font-black tracking-tight text-slate-900 md:text-4xl">
+                <h2 className="text-3xl font-semibold tracking-tight text-slate-900 md:text-4xl">
                     {t('featureShowcase.title')}
                 </h2>
                 <p className="mt-3 max-w-xl text-base text-slate-600">
@@ -73,7 +73,7 @@ export const FeatureShowcase: React.FC = () => {
 
                     return (
                         <div
-                            key={`${feature.title}-${index}`}
+                            key={feature.title}
                             className={`${slideClass} flex flex-col gap-6 md:flex-row md:items-center md:gap-12 ${
                                 !isEven ? 'md:flex-row-reverse' : ''
                             }`}

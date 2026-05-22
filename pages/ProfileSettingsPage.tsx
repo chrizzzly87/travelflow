@@ -239,16 +239,19 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
     }, []);
 
     const loadSubscriptionSummaryWithRetry = useCallback(async (): Promise<SubscriptionSummary> => {
-        for (let attempt = 0; attempt < 3; attempt += 1) {
+        const loadAttempt = async (attempt: number): Promise<SubscriptionSummary> => {
             const summary = await getCurrentSubscriptionSummary();
             if (summary) {
                 return summary;
             }
-            if (attempt < 2) {
-                await new Promise((resolve) => window.setTimeout(resolve, 250 * (attempt + 1)));
+            if (attempt >= 2) {
+                return null;
             }
-        }
-        return null;
+            await new Promise((resolve) => window.setTimeout(resolve, 250 * (attempt + 1)));
+            return loadAttempt(attempt + 1);
+        };
+
+        return loadAttempt(0);
     }, []);
 
     useEffect(() => {

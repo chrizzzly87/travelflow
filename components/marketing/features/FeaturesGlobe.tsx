@@ -346,13 +346,15 @@ export const FeaturesGlobe: React.FC = () => {
                     : (1 - renderedVisibility) * 12;
                 const translateY = overlay.id === 'origin-marker' ? (1 - renderedVisibility) * 2 : (1 - renderedVisibility) * 8;
 
-                node.style.opacity = renderedVisibility.toFixed(3);
-                node.style.transform = `translate3d(${x}px, ${y + translateY}px, 0) scale(${scale.toFixed(3)}) rotate(${overlay.rotateDeg ?? 0}deg)`;
-                node.style.transformOrigin = '';
-                node.style.filter = `blur(${blur.toFixed(2)}px)`;
-                node.style.zIndex = overlay.id === 'origin-marker'
-                    ? '0'
-                    : `${20 + Math.round((projected.depth + 1) * 12) + (overlay.depthBoost ?? 0)}`;
+                Object.assign(node.style, {
+                    opacity: renderedVisibility.toFixed(3),
+                    transform: `translate3d(${x}px, ${y + translateY}px, 0) scale(${scale.toFixed(3)}) rotate(${overlay.rotateDeg ?? 0}deg)`,
+                    transformOrigin: '',
+                    filter: `blur(${blur.toFixed(2)}px)`,
+                    zIndex: overlay.id === 'origin-marker'
+                        ? '0'
+                        : `${20 + Math.round((projected.depth + 1) * 12) + (overlay.depthBoost ?? 0)}`,
+                });
             });
         };
 
@@ -372,6 +374,7 @@ export const FeaturesGlobe: React.FC = () => {
                     return;
                 }
 
+                if (isCancelled) return;
                 const cobeModule = await import('cobe');
                 if (isCancelled) return;
 
@@ -508,11 +511,11 @@ export const FeaturesGlobe: React.FC = () => {
                     <span className="relative block size-11">
                         <span
                             className="absolute inset-[-8px] rounded-full border-2 border-[#f39a3d]/65 animate-ping"
-                            style={{ animationDuration: '1.8s' }}
+                            style={{ animationDuration: '900ms' }}
                         />
                         <span
                             className="absolute inset-[-18px] rounded-full border border-[#f39a3d]/42 animate-ping"
-                            style={{ animationDelay: '0.28s', animationDuration: '2.4s' }}
+                            style={{ animationDelay: '0.28s', animationDuration: '950ms' }}
                         />
                         <span className="absolute inset-[-2px] rounded-full bg-[#f7a454]/28 blur-lg" />
                     </span>

@@ -21,7 +21,7 @@ export const ShareUnavailablePage: React.FC = () => {
                 <div className="inline-flex size-10 items-center justify-center rounded-md border border-accent-200 bg-accent-50 text-accent-700">
                     <WarningCircle size={20} weight="duotone" />
                 </div>
-                <h1 className="mt-4 text-3xl font-black tracking-tight text-slate-900">{t('shareUnavailable.title')}</h1>
+                <h1 className="mt-4 text-3xl font-semibold tracking-tight text-slate-900">{t('shareUnavailable.title')}</h1>
                 <p className="mt-3 text-sm leading-6 text-slate-600">
                     {description}
                 </p>

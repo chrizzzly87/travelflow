@@ -39,23 +39,27 @@ import {
     resolveAdminBillingStatusTone,
 } from '../services/adminBillingPresentation';
 
+const adminBillingDateTimeFormatter = new Intl.DateTimeFormat(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+});
+
+const adminBillingDateFormatter = new Intl.DateTimeFormat(undefined, {
+    dateStyle: 'medium',
+});
+
 const formatDateTime = (value: string | null | undefined): string => {
     if (!value) return '—';
     const timestamp = Date.parse(value);
     if (!Number.isFinite(timestamp)) return '—';
-    return new Intl.DateTimeFormat(undefined, {
-        dateStyle: 'medium',
-        timeStyle: 'short',
-    }).format(new Date(timestamp));
+    return adminBillingDateTimeFormatter.format(new Date(timestamp));
 };
 
 const formatCompactDate = (value: string | null | undefined): string => {
     if (!value) return '—';
     const timestamp = Date.parse(value);
     if (!Number.isFinite(timestamp)) return '—';
-    return new Intl.DateTimeFormat(undefined, {
-        dateStyle: 'medium',
-    }).format(new Date(timestamp));
+    return adminBillingDateFormatter.format(new Date(timestamp));
 };
 
 const humanizeEventType = (value: string | null | undefined): string => {

@@ -112,6 +112,7 @@ const BlogLinks: React.FC<{ slugs?: string[]; asText?: boolean }> = ({ slugs, as
 const CARD_IMAGE_SIZES = '(min-width: 1280px) 24vw, (min-width: 1024px) 30vw, (min-width: 640px) 46vw, 100vw';
 const CARD_HOVER_TRANSITION = 'transform-gpu will-change-transform transition-[transform,box-shadow,border-color] duration-200 ease-out motion-reduce:transition-none';
 const CARD_IMAGE_ZOOM_TRANSITION = 'transform-gpu will-change-transform transition-transform duration-300 ease-out motion-reduce:transition-none';
+const INSPIRATIONS_FALLBACK_DATE = new Date(2026, 0, 1);
 const CARD_IMAGE_FADE = 'pointer-events-none absolute inset-0 bg-gradient-to-t from-slate-950/28 via-slate-900/8 to-transparent opacity-70';
 const CARD_IMAGE_PROGRESSIVE_BLUR = 'pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-slate-950/10 backdrop-blur-md [mask-image:linear-gradient(to_top,black_0%,rgba(0,0,0,0.7)_42%,transparent_100%)]';
 
@@ -403,6 +404,17 @@ export const InspirationsPage: React.FC = () => {
 
     // Selected month data
     const selectedMonth = monthEntries[selectedMonthIndex];
+    const selectedMonthRouteDates = useMemo(() => {
+        const now = new Date();
+        const monthNum = selectedMonthIndex;
+        const year = monthNum >= now.getMonth() ? now.getFullYear() : now.getFullYear() + 1;
+        const monthStart = new Date(year, monthNum, 1);
+
+        return {
+            startDate: toIso(monthStart),
+            endDate: toIso(addDaysLocal(monthStart, 13)),
+        };
+    }, [selectedMonthIndex]);
 
     // Upcoming festivals sorted by next occurrence
     const upcomingFestivals = useMemo(() => {
@@ -411,6 +423,7 @@ export const InspirationsPage: React.FC = () => {
             .map((event) => ({ ...event, nextDate: getNextOccurrence(event, now) }))
             .sort((a, b) => a.nextDate.getTime() - b.nextDate.getTime());
     }, []);
+    const upcomingFestivalDateByName = useMemo(() => new Map(upcomingFestivals.map((event) => [event.name, event.nextDate])), [upcomingFestivals]);
 
     return (
         <MarketingLayout>
@@ -420,7 +433,7 @@ export const InspirationsPage: React.FC = () => {
                     <Backpack size={14} weight="duotone" />
                     {t('inspirations.hero.pill')}
                 </span>
-                <h1 className="mt-5 text-4xl font-black tracking-tight text-slate-900 md:text-6xl" style={{ fontFamily: "var(--tf-font-heading)" }}>
+                <h1 className="mt-5 text-4xl font-semibold tracking-tight text-slate-900 md:text-6xl" style={{ fontFamily: "var(--tf-font-heading)" }}>
                     {t('inspirations.hero.title')}
                 </h1>
                 <p className="mt-5 max-w-2xl text-lg leading-relaxed text-slate-600">
@@ -465,7 +478,13 @@ export const InspirationsPage: React.FC = () => {
                         <div className="mb-8">
                             <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">{t('inspirations.searchSections.eventsFestivals')}</h3>
                             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                                {filteredFestivals.map((e) => <FestivalCard key={e.name} event={e} nextDate={getNextOccurrence(e, new Date())} />)}
+                                {filteredFestivals.map((event) => (
+                                    <FestivalCard
+                                        key={event.name}
+                                        event={event}
+                                        nextDate={upcomingFestivalDateByName.get(event.name) ?? getNextOccurrence(event, upcomingFestivals[0]?.nextDate ?? INSPIRATIONS_FALLBACK_DATE)}
+                                    />
+                                ))}
                             </div>
                         </div>
                     )}
@@ -542,7 +561,7 @@ export const InspirationsPage: React.FC = () => {
                                         </div>
                                         <div className="min-w-0 flex-1">
                                             <div className="flex items-start justify-between gap-4">
-                                                <h2 className="text-2xl font-black tracking-tight text-slate-900 md:text-3xl">{category.title}</h2>
+                                                <h2 className="text-2xl font-semibold tracking-tight text-slate-900 md:text-3xl">{category.title}</h2>
                                                 {idx === 0 && (
                                                     <Link to={buildLocalizedMarketingPath('inspirationsThemes', locale)} onClick={() => trackEvent('inspirations__section--themes')} className="shrink-0 mt-1 inline-flex items-center gap-1 text-sm font-semibold text-accent-600 hover:text-accent-800 transition-colors" {...getAnalyticsDebugAttributes('inspirations__section--themes')}>
                                                         {t('inspirations.links.allThemes')}
@@ -579,13 +598,13 @@ export const InspirationsPage: React.FC = () => {
                                 </div>
                                 <div className="min-w-0 flex-1">
                                     <div className="flex items-start justify-between gap-4">
-                                        <h2 className="text-2xl font-black tracking-tight text-slate-900 md:text-3xl">{t('inspirations.sections.bestTimeTitle')}</h2>
+                                        <h2 className="text-2xl font-semibold tracking-tight text-slate-900 md:text-3xl">{t('inspirations.sections.bestTimeTitle')}</h2>
                                         <Link to={buildLocalizedMarketingPath('inspirationsBestTime', locale)} onClick={() => trackEvent('inspirations__section--months')} className="shrink-0 mt-1 inline-flex items-center gap-1 text-sm font-semibold text-accent-600 hover:text-accent-800 transition-colors" {...getAnalyticsDebugAttributes('inspirations__section--months')}>
                                             {t('inspirations.links.monthGuide')}
                                             <ArrowRight size={14} weight="bold" />
                                         </Link>
                                     </div>
-                                    <p className="mt-1 text-base text-slate-500">When to go where — pick a month</p>
+                                    <p className="mt-1 text-base text-slate-500">When to go where: pick a month</p>
                                 </div>
                             </div>
                         </div>
@@ -614,22 +633,17 @@ export const InspirationsPage: React.FC = () => {
                             key={selectedMonthIndex}
                             className="mt-6 max-w-2xl animate-content-fade-in rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
                         >
-                            <h3 className="text-xl font-black text-slate-900" style={{ fontFamily: "var(--tf-font-heading)" }}>
+                            <h3 className="text-xl font-semibold text-slate-900" style={{ fontFamily: "var(--tf-font-heading)" }}>
                                 {selectedMonth.month}
                             </h3>
                             <p className="mt-3 text-base leading-relaxed text-slate-600">{selectedMonth.description}</p>
                             <div className="mt-4 flex flex-wrap gap-2">
                                 {selectedMonth.destinations.map((dest, i) => {
-                                    const now = new Date();
-                                    const monthNum = selectedMonthIndex;
-                                    const year = monthNum >= now.getMonth() ? now.getFullYear() : now.getFullYear() + 1;
-                                    const monthStart = new Date(year, monthNum, 1);
-                                    const monthEnd = addDaysLocal(monthStart, 13);
                                     const countries = resolveDestinationCodes([selectedMonth.destinationCodes[i]]);
                                     return (
                                         <Link
                                             key={dest}
-                                            to={buildCreateTripUrl({ countries, startDate: toIso(monthStart), endDate: toIso(monthEnd), meta: { source: 'inspirations', label: `${selectedMonth.month} in ${dest}` } })}
+                                            to={buildCreateTripUrl({ countries, startDate: selectedMonthRouteDates.startDate, endDate: selectedMonthRouteDates.endDate, meta: { source: 'inspirations', label: `${selectedMonth.month} in ${dest}` } })}
                                             className="rounded-full bg-sky-50 px-3 py-1 text-sm font-semibold text-sky-700 transition-colors hover:bg-sky-100"
                                         >
                                             {dest}
@@ -655,13 +669,13 @@ export const InspirationsPage: React.FC = () => {
                                 </div>
                                 <div className="min-w-0 flex-1">
                                     <div className="flex items-start justify-between gap-4">
-                                        <h2 className="text-2xl font-black tracking-tight text-slate-900 md:text-3xl">{t('inspirations.sections.browseCountryTitle')}</h2>
+                                        <h2 className="text-2xl font-semibold tracking-tight text-slate-900 md:text-3xl">{t('inspirations.sections.browseCountryTitle')}</h2>
                                         <Link to={buildLocalizedMarketingPath('inspirationsCountries', locale)} onClick={() => trackEvent('inspirations__section--countries')} className="shrink-0 mt-1 inline-flex items-center gap-1 text-sm font-semibold text-accent-600 hover:text-accent-800 transition-colors" {...getAnalyticsDebugAttributes('inspirations__section--countries')}>
                                             {t('inspirations.links.allCountries')}
                                             <ArrowRight size={14} weight="bold" />
                                         </Link>
                                     </div>
-                                    <p className="mt-1 text-base text-slate-500">Find trips by destination — {countryGroups.length} countries and counting</p>
+                                    <p className="mt-1 text-base text-slate-500">Find trips by destination, {countryGroups.length} countries and counting</p>
                                 </div>
                             </div>
                         </div>
@@ -683,14 +697,14 @@ export const InspirationsPage: React.FC = () => {
                                 </div>
                                 <div className="min-w-0 flex-1">
                                     <div className="flex items-start justify-between gap-4">
-                                        <h2 className="text-2xl font-black tracking-tight text-slate-900 md:text-3xl">{t('inspirations.sections.upcomingFestivalsTitle')}</h2>
+                                        <h2 className="text-2xl font-semibold tracking-tight text-slate-900 md:text-3xl">{t('inspirations.sections.upcomingFestivalsTitle')}</h2>
                                         <Link to={buildLocalizedMarketingPath('inspirationsFestivals', locale)} onClick={() => trackEvent('inspirations__section--festivals')} className="shrink-0 mt-1 inline-flex items-center gap-1 text-sm font-semibold text-accent-600 hover:text-accent-800 transition-colors" {...getAnalyticsDebugAttributes('inspirations__section--festivals')}>
                                             {t('inspirations.links.allEvents')}
                                             <ArrowRight size={14} weight="bold" />
                                         </Link>
                                     </div>
                                     <p className="mt-1 text-base text-slate-500">
-                                        {upcomingFestivals.length} celebrations sorted by next date — plan around the world's most unforgettable moments
+                                        {upcomingFestivals.length} celebrations sorted by next date, plan around the world's most unforgettable moments
                                     </p>
                                 </div>
                             </div>
@@ -724,13 +738,13 @@ export const InspirationsPage: React.FC = () => {
                                 </div>
                                 <div className="min-w-0 flex-1">
                                     <div className="flex items-start justify-between gap-4">
-                                        <h2 className="text-2xl font-black tracking-tight text-slate-900 md:text-3xl">{t('inspirations.sections.weekendTitle')}</h2>
+                                        <h2 className="text-2xl font-semibold tracking-tight text-slate-900 md:text-3xl">{t('inspirations.sections.weekendTitle')}</h2>
                                         <Link to={buildLocalizedMarketingPath('inspirationsWeekendGetaways', locale)} onClick={() => trackEvent('inspirations__section--weekends')} className="shrink-0 mt-1 inline-flex items-center gap-1 text-sm font-semibold text-accent-600 hover:text-accent-800 transition-colors" {...getAnalyticsDebugAttributes('inspirations__section--weekends')}>
                                             {t('inspirations.links.allGetaways')}
                                             <ArrowRight size={14} weight="bold" />
                                         </Link>
                                     </div>
-                                    <p className="mt-1 text-base text-slate-500">Short trips you can book on a whim — 2–3 days, zero overthinking</p>
+                                    <p className="mt-1 text-base text-slate-500">Short trips you can book on a whim: 2–3 days, zero overthinking</p>
                                 </div>
                             </div>
                         </div>
@@ -747,19 +761,19 @@ export const InspirationsPage: React.FC = () => {
                     <section className="py-14 md:py-20 border-t border-slate-200">
                         <div className="animate-scroll-blur-in grid gap-8 text-center sm:grid-cols-2 md:grid-cols-4">
                             <div>
-                                <div className="text-4xl font-black text-accent-600">18+</div>
+                                <div className="text-4xl font-semibold text-accent-600">18+</div>
                                 <div className="mt-1 text-sm text-slate-500">{t('inspirations.stats.curatedDestinations')}</div>
                             </div>
                             <div>
-                                <div className="text-4xl font-black text-accent-600">12</div>
+                                <div className="text-4xl font-semibold text-accent-600">12</div>
                                 <div className="mt-1 text-sm text-slate-500">{t('inspirations.stats.countriesCovered')}</div>
                             </div>
                             <div>
-                                <div className="text-4xl font-black text-accent-600">{festivalEvents.length}</div>
+                                <div className="text-4xl font-semibold text-accent-600">{festivalEvents.length}</div>
                                 <div className="mt-1 text-sm text-slate-500">{t('inspirations.stats.festivalsEvents')}</div>
                             </div>
                             <div>
-                                <div className="text-4xl font-black text-accent-600">6</div>
+                                <div className="text-4xl font-semibold text-accent-600">6</div>
                                 <div className="mt-1 text-sm text-slate-500">{t('inspirations.stats.weekendGetaways')}</div>
                             </div>
                         </div>
@@ -771,7 +785,7 @@ export const InspirationsPage: React.FC = () => {
                             <div className="pointer-events-none absolute -top-20 -right-20 size-60 rounded-full bg-white/10 blur-[60px]" />
                             <div className="pointer-events-none absolute -bottom-16 -left-16 size-48 rounded-full bg-accent-400/20 blur-[50px]" />
 
-                            <h2 className="relative text-3xl font-black tracking-tight text-white md:text-5xl" style={{ fontFamily: "var(--tf-font-heading)" }}>
+                            <h2 className="relative text-3xl font-semibold tracking-tight text-white md:text-5xl" style={{ fontFamily: "var(--tf-font-heading)" }}>
                                 {t('inspirations.bottomCta.title')}
                             </h2>
                             <p className="relative mx-auto mt-4 max-w-xl text-base text-accent-100 md:text-lg">

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Check } from '@phosphor-icons/react';
 import { Trans, useTranslation } from 'react-i18next';
@@ -38,6 +38,32 @@ interface TierStyle {
     highlighted?: boolean;
 }
 
+interface SubscriptionSummaryState {
+    summary: BillingSubscriptionSummary | null;
+    loading: boolean;
+}
+
+type SubscriptionSummaryAction =
+    | { type: 'reset' }
+    | { type: 'loading' }
+    | { type: 'resolved'; summary: BillingSubscriptionSummary | null };
+
+const subscriptionSummaryReducer = (
+    state: SubscriptionSummaryState,
+    action: SubscriptionSummaryAction,
+): SubscriptionSummaryState => {
+    switch (action.type) {
+        case 'reset':
+            return { summary: null, loading: false };
+        case 'loading':
+            return { ...state, loading: true };
+        case 'resolved':
+            return { summary: action.summary, loading: false };
+        default:
+            return state;
+    }
+};
+
 const TIER_STYLE: Record<'backpacker' | 'explorer' | 'globetrotter', TierStyle> = {
     backpacker: {
         badgeClass: 'border-slate-300 bg-slate-100 text-slate-700',
@@ -69,8 +95,10 @@ export const PricingPage: React.FC = () => {
     const activeDiscountCode = readBillingDiscountCodeFromSearch(location.search);
     const { access, isAuthenticated, refreshAccess } = useAuth();
     const [paddlePublicConfig, setPaddlePublicConfig] = useState<PaddlePublicConfig | null>(null);
-    const [subscriptionSummary, setSubscriptionSummary] = useState<BillingSubscriptionSummary | null>(null);
-    const [isSubscriptionSummaryLoading, setIsSubscriptionSummaryLoading] = useState(false);
+    const [subscriptionSummaryState, dispatchSubscriptionSummary] = useReducer(subscriptionSummaryReducer, {
+        summary: null,
+        loading: false,
+    });
     const unlimitedLabel = t('shared.unlimited');
     const noExpiryLabel = t('shared.noExpiry');
     const enabledLabel = t('shared.enabled');
@@ -81,16 +109,19 @@ export const PricingPage: React.FC = () => {
     const billingRepairAttemptedRef = useRef(false);
 
     const loadSubscriptionSummaryWithRetry = useCallback(async (): Promise<BillingSubscriptionSummary | null> => {
-        for (let attempt = 0; attempt < 3; attempt += 1) {
+        const loadAttempt = async (attempt: number): Promise<BillingSubscriptionSummary | null> => {
             const summary = await getCurrentSubscriptionSummary();
             if (summary) {
                 return summary;
             }
-            if (attempt < 2) {
-                await new Promise((resolve) => window.setTimeout(resolve, 250 * (attempt + 1)));
+            if (attempt >= 2) {
+                return null;
             }
-        }
-        return null;
+            await new Promise((resolve) => window.setTimeout(resolve, 250 * (attempt + 1)));
+            return loadAttempt(attempt + 1);
+        };
+
+        return loadAttempt(0);
     }, []);
 
     useEffect(() => {
@@ -111,14 +142,13 @@ export const PricingPage: React.FC = () => {
 
     useEffect(() => {
         if (!isEligibleAccount) {
-            setSubscriptionSummary(null);
-            setIsSubscriptionSummaryLoading(false);
+            dispatchSubscriptionSummary({ type: 'reset' });
             billingRepairAttemptedRef.current = false;
             return;
         }
 
         let cancelled = false;
-        setIsSubscriptionSummaryLoading(true);
+        dispatchSubscriptionSummary({ type: 'loading' });
         void (async () => {
             let summary = await loadSubscriptionSummaryWithRetry();
             const shouldAttemptRepair = !billingRepairAttemptedRef.current && (
@@ -139,17 +169,12 @@ export const PricingPage: React.FC = () => {
                 }
             }
             if (cancelled) return;
-            setSubscriptionSummary(summary);
+            dispatchSubscriptionSummary({ type: 'resolved', summary });
         })()
             .catch((error) => {
                 if (cancelled) return;
                 console.warn('Failed to load current billing summary on pricing.', error);
-                setSubscriptionSummary(null);
-            })
-            .finally(() => {
-                if (!cancelled) {
-                    setIsSubscriptionSummaryLoading(false);
-                }
+                dispatchSubscriptionSummary({ type: 'reset' });
             });
 
         return () => {
@@ -157,6 +182,7 @@ export const PricingPage: React.FC = () => {
         };
     }, [access?.tierKey, accessBilling?.providerSubscriptionId, isEligibleAccount, loadSubscriptionSummaryWithRetry, refreshAccess]);
 
+    const { summary: subscriptionSummary, loading: isSubscriptionSummaryLoading } = subscriptionSummaryState;
     const billingState = {
         providerSubscriptionId: subscriptionSummary?.providerSubscriptionId ?? accessBilling?.providerSubscriptionId ?? null,
         providerStatus: subscriptionSummary?.providerStatus ?? accessBilling?.providerStatus ?? null,
@@ -186,6 +212,9 @@ export const PricingPage: React.FC = () => {
         graceEndsAt: billingState.graceEndsAt,
         billingAccessUntil: billingState.accessUntil,
     });
+    const billingAccessUntilLabel = billingState.accessUntil
+        ? billingState.accessUntil.slice(0, 10)
+        : '—';
 
     const effectiveActiveTierKey = resolveEffectiveBillingTierKey({
         currentTierKey: activeTierKey,
@@ -228,7 +257,7 @@ export const PricingPage: React.FC = () => {
             <div className="py-8 md:py-16">
                 <div className="mx-auto mb-12 max-w-3xl text-center md:mb-16">
                     <h1
-                        className="text-4xl font-extrabold tracking-tight text-slate-900 sm:text-5xl"
+                        className="text-4xl font-semibold tracking-tight text-slate-900 sm:text-5xl"
                         style={{ fontFamily: 'var(--tf-font-heading)' }}
                     >
                         {t('hero.title')}
@@ -255,9 +284,7 @@ export const PricingPage: React.FC = () => {
                                 <p className="max-w-3xl text-sm leading-6 text-slate-700">
                                     {billingLifecycleState === 'canceled_grace'
                                         ? t('shared.canceledGraceHelper', {
-                                            date: billingState.accessUntil
-                                                ? new Date(billingState.accessUntil).toLocaleDateString()
-                                                : '—',
+                                            date: billingAccessUntilLabel,
                                         })
                                         : t('shared.inactiveHelper')}
                                 </p>

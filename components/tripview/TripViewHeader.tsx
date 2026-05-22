@@ -53,23 +53,17 @@ export const TripViewHeader: React.FC<TripViewHeaderProps> = ({
         ? ({ viewTransitionName: titleViewTransitionName } as React.CSSProperties)
         : undefined;
     const titleAreaRef = useRef<HTMLButtonElement | null>(null);
-    const [showTripSummary, setShowTripSummary] = useState(false);
+    const [titleAreaWidth, setTitleAreaWidth] = useState<number | null>(null);
+    const showTripSummary = !isMobile && (titleAreaWidth === null || titleAreaWidth >= 520);
 
     useEffect(() => {
-        if (isMobile || typeof window === 'undefined') {
-            setShowTripSummary(false);
-            return;
-        }
+        if (isMobile || typeof window === 'undefined') return undefined;
 
         const target = titleAreaRef.current;
-        if (!target || typeof ResizeObserver === 'undefined') {
-            setShowTripSummary(true);
-            return;
-        }
+        if (!target || typeof ResizeObserver === 'undefined') return undefined;
 
         const updateSummaryVisibility = () => {
-            const nextWidth = target.getBoundingClientRect().width;
-            setShowTripSummary(nextWidth >= 520);
+            setTitleAreaWidth(target.getBoundingClientRect().width);
         };
 
         updateSummaryVisibility();

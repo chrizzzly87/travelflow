@@ -296,6 +296,8 @@ const formatAuditValue = (value: unknown): string => {
     return JSON.stringify(value);
 };
 
+const FALLBACK_AUDIT_TIMESTAMP = '1970-01-01T00:00:00.000Z';
+
 const formatAccountStatusLabel = (status: string | null | undefined): string => {
     const normalized = (status || 'active').toLowerCase();
     if (normalized === 'disabled') return 'Suspended';
@@ -1679,7 +1681,7 @@ export const AdminAuditPage: React.FC = () => {
             <Dialog open={isCustomRangeDialogOpen} onOpenChange={setIsCustomRangeDialogOpen}>
                 <DialogContent className="w-[min(96vw,640px)] overflow-hidden rounded-2xl p-0">
                     <DialogHeader className="border-b border-slate-200">
-                        <DialogTitle className="text-base font-black text-slate-900">Custom time range</DialogTitle>
+                        <DialogTitle className="text-base font-semibold text-slate-900">Custom time range</DialogTitle>
                         <DialogDescription className="text-sm text-slate-600">
                             Pick the start and end date used by the audit filters and replay export.
                         </DialogDescription>
@@ -1702,7 +1704,7 @@ export const AdminAuditPage: React.FC = () => {
                             onClick={() => setIsCustomRangeDialogOpen(false)}
                             className="inline-flex h-9 items-center rounded-lg border border-slate-300 px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
                         >
-                            Done
+                            Apply range
                         </button>
                     </DialogFooter>
                 </DialogContent>
@@ -1880,7 +1882,7 @@ export const AdminAuditPage: React.FC = () => {
                                             />
                                         </td>
                                         {isColumnVisible('when') && (
-                                            <td className="px-3 py-2 text-xs text-slate-600">{new Date(log.created_at).toLocaleString()}</td>
+                                            <td className="px-3 py-2 text-xs text-slate-600">{formatAuditValue(log.created_at)}</td>
                                         )}
                                         {isColumnVisible('actor') && (
                                             <td
@@ -2069,7 +2071,7 @@ export const AdminAuditPage: React.FC = () => {
                                                             disabled={Boolean(revertingEntryKey)}
                                                             className="inline-flex h-7 items-center justify-center rounded-md border border-amber-300 px-2 text-[11px] font-semibold text-amber-800 hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-50"
                                                         >
-                                                            {isUndoing ? 'Undoing...' : getUndoActionLabel(timelineEntry)}
+                                                            {isUndoing ? 'Undoing…' : getUndoActionLabel(timelineEntry)}
                                                         </button>
                                                     ) : (
                                                         <span className="inline-flex h-7 items-center justify-center rounded-md border border-slate-200 px-2 text-[11px] font-medium text-slate-400">
@@ -2094,7 +2096,7 @@ export const AdminAuditPage: React.FC = () => {
                                     <td className="px-3 py-6 text-sm text-slate-500" colSpan={tableColumnCount}>
                                         <span className="inline-flex items-center gap-2">
                                             <SpinnerGap size={14} className="animate-spin" />
-                                            Loading change logs...
+                                            Loading change logs…
                                         </span>
                                     </td>
                                 </tr>
@@ -2164,7 +2166,7 @@ export const AdminAuditPage: React.FC = () => {
                 >
                     <div className="flex h-full flex-col">
                         <div className="border-b border-slate-200 px-5 py-4">
-                            <h2 className="text-base font-black text-slate-900">User details</h2>
+                            <h2 className="text-base font-semibold text-slate-900">User details</h2>
                             <p className="truncate text-sm text-slate-600">
                                 {userIdentity.email || (
                                     <CopyableUuid value={userIdentity.userId} textClassName="max-w-[360px] truncate text-sm" />
@@ -2179,7 +2181,7 @@ export const AdminAuditPage: React.FC = () => {
                             )}
                             {isLoadingUserProfile ? (
                                 <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
-                                    Loading user profile...
+                                    Loading user profile…
                                 </div>
                             ) : (
                                 <>
@@ -2221,7 +2223,7 @@ export const AdminAuditPage: React.FC = () => {
                                                 }
                                                 className="inline-flex h-8 items-center rounded-lg border border-emerald-300 px-3 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"
                                             >
-                                                {isRestoringUser ? 'Restoring...' : 'Restore user'}
+                                                {isRestoringUser ? 'Restoring…' : 'Restore user'}
                                             </button>
                                         </div>
                                         {resolvedUserAccountStatus !== 'deleted' && (
@@ -2263,7 +2265,7 @@ export const AdminAuditPage: React.FC = () => {
                 >
                     <div className="flex h-full flex-col">
                         <div className="border-b border-slate-200 px-5 py-4">
-                            <h2 className="text-base font-black text-slate-900">Trip details</h2>
+                            <h2 className="text-base font-semibold text-slate-900">Trip details</h2>
                             <p className="truncate text-sm text-slate-600">
                                 {tripIdentity.title || (
                                     <CopyableUuid value={tripIdentity.tripId} textClassName="max-w-[360px] truncate text-sm" />
@@ -2278,7 +2280,7 @@ export const AdminAuditPage: React.FC = () => {
                             )}
                             {isLoadingTripRecord ? (
                                 <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
-                                    Loading trip details...
+                                    Loading trip details…
                                 </div>
                             ) : (
                                 <>
@@ -2297,10 +2299,10 @@ export const AdminAuditPage: React.FC = () => {
                                                     <CopyableUuid value={tripIdentity.ownerId} textClassName="break-all text-sm" />
                                                 </div>
                                             )}
-                                            <div><span className="font-semibold text-slate-800">Expires at:</span> {tripIdentity.expiresAt ? new Date(tripIdentity.expiresAt).toLocaleString() : 'Not set'}</div>
+                                            <div><span className="font-semibold text-slate-800">Expires at:</span> {tripIdentity.expiresAt ? formatAuditValue(tripIdentity.expiresAt) : 'Not set'}</div>
                                             <div><span className="font-semibold text-slate-800">Source:</span> {tripIdentity.sourceKind || 'n/a'}</div>
-                                            <div><span className="font-semibold text-slate-800">Created:</span> {tripIdentity.createdAt ? new Date(tripIdentity.createdAt).toLocaleString() : 'n/a'}</div>
-                                            <div><span className="font-semibold text-slate-800">Updated:</span> {tripIdentity.updatedAt ? new Date(tripIdentity.updatedAt).toLocaleString() : 'n/a'}</div>
+                                            <div><span className="font-semibold text-slate-800">Created:</span> {tripIdentity.createdAt ? formatAuditValue(tripIdentity.createdAt) : 'n/a'}</div>
+                                            <div><span className="font-semibold text-slate-800">Updated:</span> {tripIdentity.updatedAt ? formatAuditValue(tripIdentity.updatedAt) : 'n/a'}</div>
                                         </div>
                                         {tripIdentity.ownerId && (
                                             <button
@@ -2308,7 +2310,7 @@ export const AdminAuditPage: React.FC = () => {
                                                 onClick={() => {
                                                     if (!tripIdentity.ownerId) return;
                                                     openTargetDrawer({
-                                                        id: selectedTripLog?.id || `audit-owner-${Date.now()}`,
+                                                        id: selectedTripLog?.id || `audit-owner-${tripIdentity.ownerId}`,
                                                         actor_user_id: null,
                                                         actor_email: null,
                                                         action: 'audit.open_owner_from_trip',
@@ -2317,7 +2319,7 @@ export const AdminAuditPage: React.FC = () => {
                                                         before_data: null,
                                                         after_data: null,
                                                         metadata: null,
-                                                        created_at: selectedTripLog?.created_at || new Date().toISOString(),
+                                                        created_at: selectedTripLog?.created_at || tripIdentity.createdAt || FALLBACK_AUDIT_TIMESTAMP,
                                                     });
                                                 }}
                                                 className="inline-flex h-8 items-center rounded-lg border border-slate-300 px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50"

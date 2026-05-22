@@ -267,6 +267,8 @@ const getPlaygroundGenerationPillClass = (value: PlaygroundTableRow['generation'
     return 'border-emerald-300 bg-emerald-50 text-emerald-700';
 };
 
+const formatPlaygroundTimestamp = (value: string): string => new Date(value).toLocaleString();
+
 const ComponentUsageReferences: React.FC<{ definition: ComponentGroupDefinition }> = ({ definition }) => (
     <div className="space-y-2 rounded-xl border border-slate-200 bg-white p-3">
         <div className={subtleHeadingClassName}>Where used</div>
@@ -1128,7 +1130,7 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
                                                 </span>
                                             </TableCell>
                                             <TableCell className={`px-4 py-3 text-sm text-slate-700 ${isSampleTableSorted('updated') ? ADMIN_TABLE_SORTED_CELL_CLASS : ''}`}>
-                                                {new Date(row.updated).toLocaleString()}
+                                                {formatPlaygroundTimestamp(row.updated)}
                                             </TableCell>
                                         </TableRow>
                                     );

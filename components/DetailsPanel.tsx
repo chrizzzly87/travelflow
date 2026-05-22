@@ -1580,7 +1580,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                     {(isSearchingCities || citySuggestions.length > 0) && (
                         <div className="mt-2 rounded-lg border border-gray-200 bg-white shadow-sm max-h-44 overflow-y-auto">
                             {isSearchingCities && (
-                                <div className="px-3 py-2 text-xs text-gray-500">Searching cities...</div>
+                                <div className="px-3 py-2 text-xs text-gray-500">Searching cities…</div>
                             )}
                             {!isSearchingCities && citySuggestions.map((suggestion) => (
                                 <button
@@ -1644,7 +1644,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                                                     void handleHotelSearch();
                                                 }
                                             }) : undefined}
-                                            placeholder="Search hotels..."
+                                            placeholder="Search hotels…"
                                             disabled={!canEdit}
                                             className={`w-full pl-8 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900 outline-none ${canEdit ? 'focus:ring-1 focus:ring-accent-500' : 'opacity-60 cursor-not-allowed'}`}
                                         />
@@ -1792,7 +1792,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
              <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex-1">
                 <div className="flex justify-between items-center mb-2"><h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Notes</h3></div>
                 <Suspense
-                    fallback={<div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-500">Loading notes editor...</div>}
+                    fallback={<div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-500">Loading notes editor…</div>}
                 >
                     <LazyMarkdownEditor
                         key={displayItem.id}
@@ -1824,7 +1824,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                         </div>
                         <div className="p-4 bg-white">
                             <Suspense
-                                fallback={<div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-500">Loading preview...</div>}
+                                fallback={<div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-500">Loading preview…</div>}
                             >
                                 <LazyMarkdownEditor value={proposedNotesPreview} readOnly />
                             </Suspense>
@@ -1863,7 +1863,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                             </button>
                         </div>
                         {loading && !aiDetails ? (
-                            <div className="text-sm text-accent-600/70 py-2">Loading...</div>
+                            <div className="text-sm text-accent-600/70 py-2">Loading…</div>
                         ) : (
                             <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' }}>
                                 <div className="bg-white p-3 rounded-lg border border-accent-100 shadow-sm">

@@ -253,7 +253,7 @@ export const AdminLegalTermsPage: React.FC = () => {
                     </div>
 
                     {!draft ? (
-                        <p className="mt-4 text-sm text-slate-600">{isLoading ? 'Loading terms...' : 'No terms version available.'}</p>
+                        <p className="mt-4 text-sm text-slate-600">{isLoading ? 'Loading terms…' : 'No terms version available.'}</p>
                     ) : (
                         <div className="mt-4 space-y-4">
                             <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
@@ -338,20 +338,21 @@ export const AdminLegalTermsPage: React.FC = () => {
                                 />
                             </label>
 
-                            <label className="inline-flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800">
+                            <div className="inline-flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800">
                                 <input
+                                    id="legal-terms-requires-reaccept"
                                     type="checkbox"
                                     className="mt-0.5 size-4 rounded border-slate-300 text-accent-600 focus:ring-accent-500"
                                     checked={draft.requiresReaccept}
                                     onChange={(event) => handleDraftField('requiresReaccept', event.target.checked)}
                                 />
-                                <span>
+                                <label htmlFor="legal-terms-requires-reaccept">
                                     <span className="font-semibold">Force re-acceptance</span>
                                     <span className="mt-1 block text-xs text-slate-600">
                                         Enabled: users must accept before protected usage continues. Disabled: users are informed only (no block).
                                     </span>
-                                </span>
-                            </label>
+                                </label>
+                            </div>
 
                             <div className="grid gap-3 lg:grid-cols-2">
                                 <label className="space-y-1 text-xs font-semibold text-slate-700">
@@ -395,7 +396,7 @@ export const AdminLegalTermsPage: React.FC = () => {
                                     disabled={isPublishing}
                                     className="inline-flex h-10 items-center rounded-lg bg-accent-700 px-4 text-sm font-semibold text-white hover:bg-accent-800 disabled:cursor-not-allowed disabled:opacity-60"
                                 >
-                                    {isPublishing ? 'Publishing...' : 'Publish as Current'}
+                                    {isPublishing ? 'Publishing…' : 'Publish as Current'}
                                 </button>
                             </div>
                         </div>
@@ -433,7 +434,7 @@ export const AdminLegalTermsPage: React.FC = () => {
                     </div>
 
                     {isLoading ? (
-                        <p className="mt-3 text-sm text-slate-600">Loading version history...</p>
+                        <p className="mt-3 text-sm text-slate-600">Loading version history…</p>
                     ) : versions.length === 0 ? (
                         <p className="mt-3 text-sm text-slate-600">No terms versions found.</p>
                     ) : (

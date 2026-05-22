@@ -160,7 +160,7 @@ export const AdminJsonDiffModal: React.FC<AdminJsonDiffModalProps> = ({
             {isLoading ? (
                 <div className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
                     <SpinnerGap size={14} className="animate-spin" />
-                    Loading snapshots...
+                    Loading snapshots…
                 </div>
             ) : (
                 <>

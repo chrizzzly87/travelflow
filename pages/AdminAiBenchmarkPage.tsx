@@ -2051,10 +2051,10 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                 />
                             </label>
 
-                            <label className="space-y-1 text-sm">
+                            <div className="space-y-1 text-sm">
                                 <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Preset</span>
                                 <Select value={selectedPresetId} onValueChange={(value) => void handlePresetSelection(value)}>
-                                    <SelectTrigger>
+                                    <SelectTrigger aria-label="Preset">
                                         <SelectValue placeholder="Choose benchmark preset" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -2068,7 +2068,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                         </SelectItem>
                                     </SelectContent>
                                 </Select>
-                            </label>
+                            </div>
 
                             <div className="rounded-md border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
                                 <div className="flex flex-wrap items-center gap-2">
@@ -2893,13 +2893,13 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                             </label>
 
                             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                <label className="space-y-1 text-sm">
+                                <div className="space-y-1 text-sm">
                                     <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Date mode</span>
                                     <Select
                                         value={presetEditor.scenario.dateInputMode}
                                         onValueChange={(value) => updatePresetDraftScenario('dateInputMode', value as BenchmarkMaskScenario['dateInputMode'])}
                                     >
-                                        <SelectTrigger>
+                                        <SelectTrigger aria-label="Date mode">
                                             <SelectValue placeholder="Date mode" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -2907,7 +2907,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                             <SelectItem value="flex">Flexible window</SelectItem>
                                         </SelectContent>
                                     </Select>
-                                </label>
+                                </div>
 
                                 {presetEditor.scenario.dateInputMode === 'flex' ? (
                                     <label className="space-y-1 text-sm">
@@ -2950,13 +2950,13 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                         />
                                     </label>
                                 ) : (
-                                    <label className="space-y-1 text-sm">
+                                    <div className="space-y-1 text-sm">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Flex window</span>
                                         <Select
                                             value={presetEditor.scenario.flexWindow}
                                             onValueChange={(value) => updatePresetDraftScenario('flexWindow', value as BenchmarkMaskScenario['flexWindow'])}
                                         >
-                                            <SelectTrigger>
+                                            <SelectTrigger aria-label="Flex window">
                                                 <SelectValue placeholder="Preferred time range" />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -2967,16 +2967,16 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                                 <SelectItem value="shoulder">Shoulder</SelectItem>
                                             </SelectContent>
                                         </Select>
-                                    </label>
+                                    </div>
                                 )}
 
-                                <label className="space-y-1 text-sm">
+                                <div className="space-y-1 text-sm">
                                     <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Round trip</span>
                                     <Select
                                         value={presetEditor.scenario.roundTrip ? 'yes' : 'no'}
                                         onValueChange={(value) => updatePresetDraftScenario('roundTrip', value === 'yes')}
                                     >
-                                        <SelectTrigger>
+                                        <SelectTrigger aria-label="Round trip">
                                             <SelectValue placeholder="Round trip" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -2984,14 +2984,14 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                             <SelectItem value="no">No</SelectItem>
                                         </SelectContent>
                                     </Select>
-                                </label>
+                                </div>
                             </div>
 
                             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                <label className="space-y-1 text-sm">
+                                <div className="space-y-1 text-sm">
                                     <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Budget</span>
                                     <Select value={presetEditor.scenario.budget} onValueChange={(value) => updatePresetDraftScenario('budget', value)}>
-                                        <SelectTrigger>
+                                        <SelectTrigger aria-label="Budget">
                                             <SelectValue placeholder="Budget" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -3001,11 +3001,11 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                             <SelectItem value="Luxury">Luxury</SelectItem>
                                         </SelectContent>
                                     </Select>
-                                </label>
-                                <label className="space-y-1 text-sm">
+                                </div>
+                                <div className="space-y-1 text-sm">
                                     <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Pace</span>
                                     <Select value={presetEditor.scenario.pace} onValueChange={(value) => updatePresetDraftScenario('pace', value)}>
-                                        <SelectTrigger>
+                                        <SelectTrigger aria-label="Pace">
                                             <SelectValue placeholder="Pace" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -3014,7 +3014,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                             <SelectItem value="Fast">Fast</SelectItem>
                                         </SelectContent>
                                     </Select>
-                                </label>
+                                </div>
                             </div>
 
                             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -3043,13 +3043,13 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                             </div>
 
                             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                                <label className="space-y-1 text-sm">
+                                <div className="space-y-1 text-sm">
                                     <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Traveler setup</span>
                                     <Select
                                         value={presetEditor.scenario.travelerSetup}
                                         onValueChange={(value) => updatePresetDraftScenario('travelerSetup', value as BenchmarkMaskScenario['travelerSetup'])}
                                     >
-                                        <SelectTrigger>
+                                        <SelectTrigger aria-label="Traveler setup">
                                             <SelectValue placeholder="Traveler setup" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -3059,14 +3059,14 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                             <SelectItem value="family">Family</SelectItem>
                                         </SelectContent>
                                     </Select>
-                                </label>
-                                <label className="space-y-1 text-sm">
+                                </div>
+                                <div className="space-y-1 text-sm">
                                     <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Trip style</span>
                                     <Select
                                         value={presetEditor.scenario.tripStyleMask}
                                         onValueChange={(value) => updatePresetDraftScenario('tripStyleMask', value as BenchmarkMaskScenario['tripStyleMask'])}
                                     >
-                                        <SelectTrigger>
+                                        <SelectTrigger aria-label="Trip style">
                                             <SelectValue placeholder="Trip style" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -3075,14 +3075,14 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                             <SelectItem value="food_focused">Food focused</SelectItem>
                                         </SelectContent>
                                     </Select>
-                                </label>
-                                <label className="space-y-1 text-sm">
+                                </div>
+                                <div className="space-y-1 text-sm">
                                     <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Transport</span>
                                     <Select
                                         value={presetEditor.scenario.transportMask}
                                         onValueChange={(value) => updatePresetDraftScenario('transportMask', value as BenchmarkMaskScenario['transportMask'])}
                                     >
-                                        <SelectTrigger>
+                                        <SelectTrigger aria-label="Transport">
                                             <SelectValue placeholder="Transport" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -3092,7 +3092,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                             <SelectItem value="camper">Camper</SelectItem>
                                         </SelectContent>
                                     </Select>
-                                </label>
+                                </div>
                             </div>
 
                             <label className="space-y-1 text-sm">
@@ -3118,13 +3118,15 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                 </AppModal>
 
                 {promptModal && (
-                    <div
-                        className="fixed inset-0 z-[1990] flex items-center justify-center bg-slate-950/45 p-4"
-                        onClick={() => setPromptModal(null)}
-                    >
+                    <div className="fixed inset-0 z-[1990] flex items-center justify-center bg-slate-950/45 p-4">
+                        <button
+                            type="button"
+                            aria-label="Close generated benchmark prompt"
+                            className="absolute inset-0 cursor-default"
+                            onClick={() => setPromptModal(null)}
+                        />
                         <div
-                            className="w-full max-w-4xl rounded-xl border border-slate-300 bg-white shadow-2xl"
-                            onClick={(event) => event.stopPropagation()}
+                            className="relative z-10 w-full max-w-4xl rounded-xl border border-slate-300 bg-white shadow-2xl"
                         >
                             <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
                                 <div>
@@ -3168,13 +3170,15 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                 )}
 
                 {errorModalRun && (
-                    <div
-                        className="fixed inset-0 z-[2000] flex items-center justify-center bg-slate-950/45 p-4"
-                        onClick={() => setErrorModalRun(null)}
-                    >
+                    <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-slate-950/45 p-4">
+                        <button
+                            type="button"
+                            aria-label="Close run error details"
+                            className="absolute inset-0 cursor-default"
+                            onClick={() => setErrorModalRun(null)}
+                        />
                         <div
-                            className="w-full max-w-3xl rounded-xl border border-slate-700 bg-slate-900 shadow-2xl"
-                            onClick={(event) => event.stopPropagation()}
+                            className="relative z-10 w-full max-w-3xl rounded-xl border border-slate-700 bg-slate-900 shadow-2xl"
                         >
                             <div className="flex items-center justify-between border-b border-slate-700 px-4 py-3">
                                 <div>
@@ -3211,13 +3215,15 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                 )}
 
                 {validationModalRun && (
-                    <div
-                        className="fixed inset-0 z-[1995] flex items-center justify-center bg-slate-950/45 p-4"
-                        onClick={() => setValidationModalRun(null)}
-                    >
+                    <div className="fixed inset-0 z-[1995] flex items-center justify-center bg-slate-950/45 p-4">
+                        <button
+                            type="button"
+                            aria-label="Close validation details"
+                            className="absolute inset-0 cursor-default"
+                            onClick={() => setValidationModalRun(null)}
+                        />
                         <div
-                            className="w-full max-w-3xl rounded-xl border border-slate-700 bg-slate-900 shadow-2xl"
-                            onClick={(event) => event.stopPropagation()}
+                            className="relative z-10 w-full max-w-3xl rounded-xl border border-slate-700 bg-slate-900 shadow-2xl"
                         >
                             <div className="flex items-center justify-between border-b border-slate-700 px-4 py-3">
                                 <div>

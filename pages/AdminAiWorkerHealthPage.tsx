@@ -325,7 +325,7 @@ export const AdminAiWorkerHealthPage: React.FC = () => {
                             />
                         )}
                         value={summary ? <StatusBadge status={summary.overallStatus} /> : '—'}
-                        hint={summary?.statusReason || (loading ? 'Loading worker status...' : 'No worker health rows yet.')}
+                        hint={summary?.statusReason || (loading ? 'Loading worker status…' : 'No worker health rows yet.')}
                     />
                     <SummaryCard
                         label={(
@@ -535,7 +535,7 @@ export const AdminAiWorkerHealthPage: React.FC = () => {
                                 {loading && checks.length === 0 ? (
                                     <TableRow>
                                         <TableCell colSpan={6} className="px-4 py-8 text-center text-sm text-slate-500">
-                                            Loading worker health...
+                                            Loading worker health…
                                         </TableCell>
                                     </TableRow>
                                 ) : null}

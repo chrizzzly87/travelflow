@@ -145,7 +145,7 @@ export const TripHistoryModal: React.FC<TripHistoryModalProps> = ({
                                                     onClick={() => onGo(item)}
                                                     className="rounded-md border border-gray-200 px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-50"
                                                 >
-                                                    Go
+                                                    Open trip
                                                 </button>
                                             </div>
                                         </li>

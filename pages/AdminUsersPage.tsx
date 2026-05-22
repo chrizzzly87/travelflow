@@ -2809,7 +2809,7 @@ export const AdminUsersPage: React.FC = () => {
                 <section className="mb-4 rounded-xl border border-accent-200 bg-accent-50 px-4 py-3 text-sm text-accent-900">
                     <span className="inline-flex items-center gap-2 font-medium">
                         <SpinnerGap size={14} className="animate-spin" />
-                        Processing admin changes. Please wait...
+                        Processing admin changes. Please wait…
                     </span>
                 </section>
             )}
@@ -2817,14 +2817,14 @@ export const AdminUsersPage: React.FC = () => {
             <section className="mb-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                 <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                     <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Total users</p>
-                    <p className="mt-2 text-3xl font-black text-slate-900">
+                    <p className="mt-2 text-3xl font-semibold text-slate-900">
                         <AdminCountUpNumber value={usersSummary.total} />
                     </p>
                     <p className="mt-1 text-xs text-slate-500">Within active table scope</p>
                 </article>
                 <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                     <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Active account ratio</p>
-                    <p className="mt-2 inline-flex items-baseline gap-0.5 text-3xl font-black text-emerald-700">
+                    <p className="mt-2 inline-flex items-baseline gap-0.5 text-3xl font-semibold text-emerald-700">
                         <AdminCountUpNumber value={usersSummary.activeRatioPct} />
                         <span className="text-xl">%</span>
                     </p>
@@ -2834,7 +2834,7 @@ export const AdminUsersPage: React.FC = () => {
                 </article>
                 <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                     <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Pending activation</p>
-                    <p className="mt-2 text-3xl font-black text-amber-700">
+                    <p className="mt-2 text-3xl font-semibold text-amber-700">
                         <AdminCountUpNumber value={usersSummary.pendingActivation} />
                     </p>
                     <p className="mt-1 text-xs text-slate-500">{usersSummary.pendingRatioPct}% of visible users</p>
@@ -3371,7 +3371,7 @@ export const AdminUsersPage: React.FC = () => {
                                     <TableCell className="px-4 py-8 text-center text-sm text-slate-500" colSpan={usersTableColumnCount}>
                                         <span className="inline-flex items-center gap-2 font-medium">
                                             <SpinnerGap size={16} className="animate-spin text-slate-400" />
-                                            Loading users...
+                                            Loading users…
                                         </span>
                                     </TableCell>
                                 </TableRow>
@@ -3410,7 +3410,7 @@ export const AdminUsersPage: React.FC = () => {
                     <div className="absolute inset-0 z-20 flex items-center justify-center rounded-2xl bg-white/45 backdrop-blur-[1px]">
                         <span className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm">
                             <SpinnerGap size={13} className="animate-spin" />
-                            Applying changes...
+                            Applying changes…
                         </span>
                     </div>
                 )}
@@ -3419,7 +3419,7 @@ export const AdminUsersPage: React.FC = () => {
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
                 <DialogContent className="w-[min(96vw,760px)]">
                     <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2 text-base font-black">
+                        <DialogTitle className="flex items-center gap-2 text-base font-semibold">
                             <UserPlus size={16} className="text-accent-700" />
                             Create user
                         </DialogTitle>
@@ -3479,13 +3479,13 @@ export const AdminUsersPage: React.FC = () => {
                                         className="h-9 w-full rounded-lg border border-slate-300 px-3 text-sm"
                                     />
                                 </label>
-                                <label className="space-y-1 sm:col-span-2">
+                                <div className="space-y-1 sm:col-span-2">
                                     <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Starting tier</span>
                                     <Select
                                         value={inviteDraft.tierKey}
                                         onValueChange={(value) => setInviteDraft((current) => ({ ...current, tierKey: value as PlanTierKey }))}
                                     >
-                                        <SelectTrigger className="h-9">
+                                        <SelectTrigger className="h-9" aria-label="Starting tier">
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -3496,7 +3496,7 @@ export const AdminUsersPage: React.FC = () => {
                                             ))}
                                         </SelectContent>
                                     </Select>
-                                </label>
+                                </div>
                                 <div className="sm:col-span-2">
                                     <button
                                         type="button"
@@ -3545,13 +3545,13 @@ export const AdminUsersPage: React.FC = () => {
                                         className="h-9 w-full rounded-lg border border-slate-300 px-3 text-sm"
                                     />
                                 </label>
-                                <label className="space-y-1 sm:col-span-2">
+                                <div className="space-y-1 sm:col-span-2">
                                     <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Starting tier</span>
                                     <Select
                                         value={directDraft.tierKey}
                                         onValueChange={(value) => setDirectDraft((current) => ({ ...current, tierKey: value as PlanTierKey }))}
                                     >
-                                        <SelectTrigger className="h-9">
+                                        <SelectTrigger className="h-9" aria-label="Starting tier">
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -3562,7 +3562,7 @@ export const AdminUsersPage: React.FC = () => {
                                             ))}
                                         </SelectContent>
                                     </Select>
-                                </label>
+                                </div>
                                 <div className="sm:col-span-2">
                                     <button
                                         type="button"
@@ -3621,7 +3621,7 @@ export const AdminUsersPage: React.FC = () => {
                     ) : (
                         <div className="flex h-full flex-col">
                             <div className="border-b border-slate-200 px-5 py-4">
-                                <h2 className="text-base font-black text-slate-900">{getUserDisplayName(selectedUser)}</h2>
+                                <h2 className="text-base font-semibold text-slate-900">{getUserDisplayName(selectedUser)}</h2>
                                 <p className="truncate text-sm text-slate-600">
                                     {selectedUser.email || (
                                         <CopyableUuid
@@ -3710,7 +3710,7 @@ export const AdminUsersPage: React.FC = () => {
                                             Revoke cooldown
                                         </button>
                                     </div>
-                                    <label className="space-y-1">
+                                    <div className="space-y-1">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Gender</span>
                                         <Select
                                             value={profileDraft.gender || GENDER_UNSET_VALUE}
@@ -3721,7 +3721,7 @@ export const AdminUsersPage: React.FC = () => {
                                                 }));
                                             }}
                                         >
-                                            <SelectTrigger className="h-9">
+                                            <SelectTrigger className="h-9" aria-label="Gender">
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -3735,8 +3735,8 @@ export const AdminUsersPage: React.FC = () => {
                                                 ))}
                                             </SelectContent>
                                         </Select>
-                                    </label>
-                                    <label className="space-y-1">
+                                    </div>
+                                    <div className="space-y-1">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Country/Region</span>
                                         <ProfileCountryRegionSelect
                                             value={profileDraft.country}
@@ -3746,7 +3746,7 @@ export const AdminUsersPage: React.FC = () => {
                                             toggleLabel="Toggle country/region options"
                                             onValueChange={(nextCode) => setProfileDraft((current) => ({ ...current, country: nextCode }))}
                                         />
-                                    </label>
+                                    </div>
                                     <label className="space-y-1">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">City</span>
                                         <input
@@ -3763,13 +3763,13 @@ export const AdminUsersPage: React.FC = () => {
                                             className="h-9 w-full rounded-lg border border-slate-300 px-3 text-sm"
                                         />
                                     </label>
-                                    <label className="space-y-1">
+                                    <div className="space-y-1">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Account status</span>
                                         <Select
                                             value={profileDraft.accountStatus}
                                             onValueChange={(value) => setProfileDraft((current) => ({ ...current, accountStatus: value as 'active' | 'disabled' | 'deleted' }))}
                                         >
-                                            <SelectTrigger className="h-9">
+                                            <SelectTrigger className="h-9" aria-label="Account status">
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -3780,14 +3780,14 @@ export const AdminUsersPage: React.FC = () => {
                                                 ))}
                                             </SelectContent>
                                         </Select>
-                                    </label>
-                                    <label className="space-y-1">
+                                    </div>
+                                    <div className="space-y-1">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Role</span>
                                         <Select
                                             value={profileDraft.role}
                                             onValueChange={(value) => setProfileDraft((current) => ({ ...current, role: value as 'admin' | 'user' }))}
                                         >
-                                            <SelectTrigger className="h-9">
+                                            <SelectTrigger className="h-9" aria-label="Role">
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -3795,14 +3795,14 @@ export const AdminUsersPage: React.FC = () => {
                                                 <SelectItem value="admin">Admin</SelectItem>
                                             </SelectContent>
                                         </Select>
-                                    </label>
-                                    <label className="space-y-1">
+                                    </div>
+                                    <div className="space-y-1">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Tier</span>
                                         <Select
                                             value={tierDraft}
                                             onValueChange={(value) => setTierDraft(value as PlanTierKey)}
                                         >
-                                            <SelectTrigger className="h-9">
+                                            <SelectTrigger className="h-9" aria-label="Tier">
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -3813,7 +3813,7 @@ export const AdminUsersPage: React.FC = () => {
                                                 ))}
                                             </SelectContent>
                                         </Select>
-                                    </label>
+                                    </div>
                                 </div>
                                 </section>
 
@@ -3946,7 +3946,7 @@ export const AdminUsersPage: React.FC = () => {
                                 <section className="mt-4 space-y-3 rounded-xl border border-slate-200 p-3">
                                 <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Connected trips</h3>
                                 {isLoadingTrips ? (
-                                    <div className="text-sm text-slate-500">Loading trips...</div>
+                                    <div className="text-sm text-slate-500">Loading trips…</div>
                                 ) : userTrips.length === 0 ? (
                                     <div className="text-sm text-slate-500">No trips owned by this user.</div>
                                 ) : (
@@ -4059,7 +4059,7 @@ export const AdminUsersPage: React.FC = () => {
                                         </div>
                                     )}
                                     {isLoadingUserChangeLogs ? (
-                                        <div className="text-sm text-slate-500">Loading user change log...</div>
+                                        <div className="text-sm text-slate-500">Loading user change log…</div>
                                     ) : selectedUserChangeEntries.length === 0 ? (
                                         <div className="text-sm text-slate-500">No user-originated changes recorded for this account yet.</div>
                                     ) : (
@@ -4069,7 +4069,7 @@ export const AdminUsersPage: React.FC = () => {
                                                     <article key={log.id} className="rounded-lg border border-slate-200 p-3">
                                                         <div className="flex flex-wrap items-center justify-between gap-2">
                                                             <div className="text-[11px] font-semibold text-slate-500">
-                                                                {new Date(log.created_at).toLocaleString()}
+                                                                {formatTimestamp(log.created_at)}
                                                             </div>
                                                             <span className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold ${actionPresentation.className}`}>
                                                                 {actionPresentation.label}

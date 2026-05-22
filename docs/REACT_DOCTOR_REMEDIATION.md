@@ -10,7 +10,7 @@ Improve React Doctor health across the full repository while keeping this PR foc
 
 - Required: zero React Doctor error findings in the diff scan.
 - Required: zero React Doctor error findings in the full scan.
-- Target: keep the PR diff at or above `75 / 100` while moving the full repository score toward `60 / 100` without broad visual churn.
+- Target: keep the PR diff at or above `90 / 100` while moving the full repository score upward without broad visual churn.
 - Guardrail: only change files that React Doctor flagged or repo instructions require.
 
 ## Current Score Snapshot
@@ -21,7 +21,7 @@ React Review status: npm package `react-review@1.0.6` does not expose a CLI bina
 - Initial user baseline: `49 / 100`, `73` errors, `5749` warnings, `356/814` files.
 - After core-page fixes: `51 / 100`, `33` errors, `5752` warnings, `356/821` files.
 - Current full scan: `69 / 100`, `0` errors, `764` warnings, `197/825` files.
-- Current diff scan: `79 / 100`, `0` errors, `417` warnings, `75/192` files.
+- Current diff scan: `90 / 100`, `0` errors, `232` warnings, `59/192` files.
 
 ## Completed Changes
 
@@ -65,6 +65,7 @@ React Review status: npm package `react-review@1.0.6` does not expose a CLI bina
 - [x] Reduced trip resize preset normalization and admin dashboard day-key parsing to single-pass transforms with focused regression coverage.
 - [x] Reduced markdown editor serialization, task-line parsing, model catalog ordering, and admin benchmark/audit selection parsing to single-pass transforms with focused regression coverage.
 - [x] Simplified admin query multi-value parsing to single-pass loops and reduced tested utility iteration debt across provider labels, JSON diff focus, timeline activities, FAQ excerpts, and city lookup parsing.
+- [x] Raised the expanded PR diff scan from `79 / 100` to `90 / 100` by clearing safe state grouping, accessibility, DOM style batching, key stability, hydration-time, formatter allocation, and visual duplicate warnings across scanner-reported files.
 
 ## Validation Log
 
@@ -364,6 +365,28 @@ React Review status: npm package `react-review@1.0.6` does not expose a CLI bina
 - [x] IDE lint diagnostics
   - Result: no linter errors found in edited single-pass parsing batch files.
 
+- [x] Focused React Doctor 90-point regression suite
+  - Command: `pnpm test:run tests/browser/checkoutPage.browser.test.ts tests/browser/pricingPage.browser.test.ts tests/browser/profileSettingsPage.browser.test.ts tests/browser/admin/adminUsersPage.softDeleteToast.browser.test.ts tests/browser/admin/adminAirportsPage.browser.test.ts tests/unit/adminAuditPage.labels.test.ts tests/unit/adminAuditPage.import.test.ts tests/unit/adminAirportsEdge.test.ts`
+  - Result: passed, `67` tests.
+
+- [x] `git diff --check`
+  - Result: passed.
+
+- [x] `pnpm updates:validate`
+  - Result: passed with existing canonical-version warnings for older published update files.
+
+- [x] `pnpm test:core`
+  - Result: passed, `308` test files, `1369` tests, `1` skipped.
+
+- [x] `pnpm build:netlify`
+  - Result: passed after rerunning outside the sandbox because the first sandboxed attempt could not create the `tsx` IPC pipe.
+  - Notes: emitted existing release-version validation warnings, Node deprecation warnings, CSS view-transition warnings, dynamic-import warnings, and Vite chunk-size warnings.
+
+- [x] `npx react-doctor@latest . --verbose --diff`
+  - Result: `90 / 100`, `0` errors, `232` warnings, `59/192` files.
+  - Share: `https://www.react.doctor/share?p=travelflow&s=90&w=232&f=59`
+  - Notes: latest package resolved to `react-doctor v0.2.1`; remaining warnings are mostly large component boundaries, state/effect architecture, and follow-up async cleanup.
+
 ## Prioritized Todo
 
 ### P0: Error Findings
@@ -397,9 +420,9 @@ React Review status: npm package `react-review@1.0.6` does not expose a CLI bina
   - Status: fixed for `TimelineBlock`; timeline scroll containers remain because they need a separate drag/scroll-safe interaction pass.
   - Approach: use semantic controls or keyboard-equivalent handling without disrupting drag/scroll behavior.
 
-- [ ] Admin label associations
+- [x] Admin label associations
   - Findings: `jsx-a11y/label-has-associated-control`.
-  - Approach: add `id`/`htmlFor` pairs or wrap labels around their controls.
+  - Status: fixed for the latest diff scan by replacing non-native select label wrappers with labelled triggers and adding explicit checkbox labels.
 
 - [ ] `react/no-unknown-property`
   - Scope: `PlaneWindowAnimation`.

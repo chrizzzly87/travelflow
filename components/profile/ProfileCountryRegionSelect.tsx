@@ -150,7 +150,6 @@ export const ProfileCountryRegionSelect: React.FC<ProfileCountryRegionSelectProp
                     placeholder={placeholder}
                     autoComplete="off"
                     className={`h-11 w-full rounded-lg border border-slate-300 bg-white ps-11 pe-12 text-sm leading-6 text-slate-900 outline-none transition-colors focus:border-accent-400 focus:ring-2 focus:ring-accent-200 disabled:cursor-not-allowed disabled:opacity-60 ${inputClassName}`.trim()}
-                    role="combobox"
                     aria-expanded={isOpen}
                     aria-controls={listboxId}
                     aria-autocomplete="list"

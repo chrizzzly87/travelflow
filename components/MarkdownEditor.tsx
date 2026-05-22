@@ -488,9 +488,9 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                                 style={{ pointerEvents: 'none' }}
                             />
                         ),
-                        h1: ({node, ...props}) => <h1 {...props} className={MARKDOWN_H1_CLASS} />,
-                        h2: ({node, ...props}) => <h2 {...props} className={MARKDOWN_H2_CLASS} />,
-                        h3: ({node, ...props}) => <h3 {...props} className={MARKDOWN_H3_CLASS} />,
+                        h1: ({node, children, ...props}) => <h1 {...props} className={MARKDOWN_H1_CLASS}>{children}</h1>,
+                        h2: ({node, children, ...props}) => <h2 {...props} className={MARKDOWN_H2_CLASS}>{children}</h2>,
+                        h3: ({node, children, ...props}) => <h3 {...props} className={MARKDOWN_H3_CLASS}>{children}</h3>,
                     }}
                 >
                     {normalizeHeadsUpMarkdownForDisplay(value || 'No description.')}
@@ -580,9 +580,12 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
             <div
                 ref={editorRef}
                 contentEditable={isEditorInteractive}
+                role="textbox"
+                aria-multiline="true"
                 suppressContentEditableWarning
                 onInput={syncMarkdownFromEditor}
                 onBlur={syncMarkdownFromEditor}
+                onKeyUp={syncMarkdownFromEditor}
                 onClick={(event) => {
                     const target = event.target as HTMLElement;
 

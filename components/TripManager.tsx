@@ -244,6 +244,16 @@ const compareByUpdatedDesc = (a: ITrip, b: ITrip): number => {
 const getDaysBetween = (target: Date, base: Date): number =>
   Math.round((startOfDay(target).getTime() - startOfDay(base).getTime()) / (1000 * 60 * 60 * 24));
 
+const relativeTimeFormatterCache = new Map<AppLanguage, Intl.RelativeTimeFormat>();
+
+const getRelativeTimeFormatter = (locale: AppLanguage): Intl.RelativeTimeFormat => {
+  const cached = relativeTimeFormatterCache.get(locale);
+  if (cached) return cached;
+  const formatter = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
+  relativeTimeFormatterCache.set(locale, formatter);
+  return formatter;
+};
+
 const getUpcomingLabel = (trip: ITrip, locale: AppLanguage): string | null => {
   const today = startOfDay(new Date());
   const { start, end } = getTripDateRange(trip);
@@ -261,7 +271,7 @@ const getUpcomingLabel = (trip: ITrip, locale: AppLanguage): string | null => {
   const daysUntilStart = getDaysBetween(startDay, today);
   if (daysUntilStart <= 0) return 'Starting today';
 
-  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
+  const rtf = getRelativeTimeFormatter(locale);
   if (daysUntilStart < 14) {
     return rtf.format(daysUntilStart, 'day');
   }
@@ -282,7 +292,7 @@ const formatUpdatedTimestamp = (updatedAt: number, locale: AppLanguage): string 
   if (diffMs < 0) return 'Updated just now';
 
   const minutes = Math.round(diffMs / (1000 * 60));
-  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
+  const rtf = getRelativeTimeFormatter(locale);
   if (minutes < 60) return `Updated ${rtf.format(-Math.max(1, minutes), 'minute')}`;
 
   const hours = Math.round(minutes / 60);
@@ -506,7 +516,7 @@ const TripRow: React.FC<TripRowProps> = ({
         <button
           type="button"
           onClick={(e) => onDelete(e, trip.id)}
-          className="cursor-pointer p-1.5 rounded-md text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100" aria-label="Archive trip"
+          className="cursor-pointer p-1.5 rounded-md text-rose-400 hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100" aria-label="Archive trip"
         >
           <Trash2 size={14} />
         </button>
@@ -683,7 +693,7 @@ const TripTooltip: React.FC<TripTooltipProps> = ({ trip, position, onHoverStart,
                 )
               ) : (
                 <div className="size-full flex items-center justify-center text-[11px] text-gray-500">
-                  Loading preview...
+                  Loading preview…
                 </div>
               )}
             </div>

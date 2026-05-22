@@ -204,11 +204,11 @@ const createProviderChartTooltip = (
                     <ProviderLabel provider={providerId} providerClassName="text-slate-900" logoSize={12} />
                 </p>
                 <div className="space-y-0.5">
-                    {payload.map((entry, index) => {
+                    {payload.map((entry) => {
                         const metricName = String(entry.name || 'Value');
                         const metricValue = toNumericTooltipValue(entry.value);
                         return (
-                            <p key={`${metricName}-${index}`} className="text-[11px] text-slate-700">
+                            <p key={metricName} className="text-[11px] text-slate-700">
                                 {metricName}: {formatValue(metricName, metricValue)}
                             </p>
                         );

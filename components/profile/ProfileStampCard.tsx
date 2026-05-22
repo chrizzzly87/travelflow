@@ -108,7 +108,7 @@ export const ProfileStampCard: React.FC<ProfileStampCardProps> = ({
         </div>
       </div>
 
-      <div className="mt-3 flex flex-col items-center text-center space-y-0.5">
+      <div className="mt-3 flex flex-col items-center gap-y-0.5 text-center">
         <p className="line-clamp-1 text-xs font-bold text-slate-800">
           {stamp.definition.title}
         </p>

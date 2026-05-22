@@ -79,8 +79,14 @@ export const ExampleTripsCarousel: React.FC = () => {
     const mobileNormalizeTimeoutRef = useRef<number | null>(null);
     const mobilePointerActiveRef = useRef(false);
 
-    const doubledCards = useMemo(() => [...exampleTripCards, ...exampleTripCards], []);
-    const mobileLoopCards = useMemo(() => [...exampleTripCards, ...exampleTripCards, ...exampleTripCards], []);
+    const doubledCards = useMemo(
+        () => ['first', 'second'].flatMap((loopId) => exampleTripCards.map((card) => ({ card, loopId }))),
+        [],
+    );
+    const mobileLoopCards = useMemo(
+        () => ['leading', 'primary', 'trailing'].flatMap((loopId) => exampleTripCards.map((card) => ({ card, loopId }))),
+        [],
+    );
 
     const prewarmTripView = useCallback(() => {
         if (!tripViewPrefetchRef.current) {
@@ -182,8 +188,10 @@ export const ExampleTripsCarousel: React.FC = () => {
             const rightRamp = clamp((progress - DESKTOP_RIGHT_SCALE_START) / (1 - DESKTOP_RIGHT_SCALE_START), 0, 1);
             const scale = 1 - (rightRamp * (1 - DESKTOP_RIGHT_SCALE_MIN));
 
-            cardNode.style.transform = `translate3d(0, 0, 0) scale(${scale.toFixed(3)})`;
-            cardNode.style.zIndex = '1';
+            Object.assign(cardNode.style, {
+                transform: `translate3d(0, 0, 0) scale(${scale.toFixed(3)})`,
+                zIndex: '1',
+            });
         });
     }, []);
 
@@ -440,7 +448,7 @@ export const ExampleTripsCarousel: React.FC = () => {
     return (
         <section id="examples" className="py-16 md:py-24 overflow-x-hidden md:overflow-x-visible">
             <div className="animate-scroll-blur-in">
-                <h2 className="text-3xl font-black tracking-tight text-slate-900 md:text-4xl">
+                <h2 className="text-3xl font-semibold tracking-tight text-slate-900 md:text-4xl">
                     {t('examples.title')}
                 </h2>
                 <p className="mt-3 max-w-xl text-base text-slate-600">
@@ -463,18 +471,18 @@ export const ExampleTripsCarousel: React.FC = () => {
                     }}
                 >
                     <div ref={trackRef} className="flex w-max gap-6 will-change-transform">
-                        {doubledCards.map((card, index) => {
+                        {doubledCards.map(({ card, loopId }, index) => {
                             const miniCalendar = card.templateId
                                 ? getExampleTemplateMiniCalendar(card.templateId)
                                 : null;
-                            const transitionKey = `desktop-${card.templateId || card.id}-${index}`;
+                            const transitionKey = `desktop-${card.templateId || card.id}-${loopId}`;
                             const examplePath = card.templateId
                                 ? `/example/${encodeURIComponent(card.templateId)}`
                                 : undefined;
 
                             return (
                                 <div
-                                    key={`desktop-${card.id}-${index}`}
+                                    key={`desktop-${card.id}-${loopId}`}
                                     ref={(node) => {
                                         motionCardRefs.current[index] = node;
                                     }}
@@ -522,18 +530,18 @@ export const ExampleTripsCarousel: React.FC = () => {
                     }}
                 >
                     <div className="flex items-start gap-5 py-4">
-                        {mobileLoopCards.map((card, index) => {
+                        {mobileLoopCards.map(({ card, loopId }) => {
                             const miniCalendar = card.templateId
                                 ? getExampleTemplateMiniCalendar(card.templateId)
                                 : null;
-                            const transitionKey = `mobile-${card.templateId || card.id}-${index}`;
+                            const transitionKey = `mobile-${card.templateId || card.id}-${loopId}`;
                             const examplePath = card.templateId
                                 ? `/example/${encodeURIComponent(card.templateId)}`
                                 : undefined;
 
                             return (
                                 <div
-                                    key={`mobile-${card.id}-${index}`}
+                                    key={`mobile-${card.id}-${loopId}`}
                                     className="w-[300px] flex-shrink-0 snap-center [scroll-snap-stop:always]"
                                 >
                                     <button

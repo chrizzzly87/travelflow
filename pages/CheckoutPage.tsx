@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { ArrowLeft, ArrowSquareOut, Check, CheckCircle, CreditCard, NotePencil, SpinnerGap, SuitcaseRolling, UserCircle, X } from '@phosphor-icons/react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -63,6 +63,25 @@ interface CheckoutProfileFormState {
     preferredLanguage: AppLanguage;
 }
 
+interface CheckoutProfileState {
+    form: CheckoutProfileFormState;
+    hydrated: boolean;
+}
+
+type CheckoutProfileAction =
+    | { type: 'hydrate'; form: CheckoutProfileFormState }
+    | { type: 'field'; key: keyof CheckoutProfileFormState; value: CheckoutProfileFormState[keyof CheckoutProfileFormState] };
+
+interface CheckoutSubscriptionState {
+    summary: BillingSubscriptionSummary | null;
+    loading: boolean;
+}
+
+type CheckoutSubscriptionAction =
+    | { type: 'reset' }
+    | { type: 'loading' }
+    | { type: 'resolved'; summary: BillingSubscriptionSummary | null };
+
 interface CheckoutStepSectionProps {
     step: number;
     state: CheckoutStepState;
@@ -76,6 +95,55 @@ const EMPTY_FORM: CheckoutProfileFormState = {
     country: '',
     city: '',
     preferredLanguage: 'en',
+};
+
+const checkoutProfileReducer = (
+    state: CheckoutProfileState,
+    action: CheckoutProfileAction,
+): CheckoutProfileState => {
+    switch (action.type) {
+        case 'hydrate':
+            if (
+                state.hydrated
+                && state.form.firstName === action.form.firstName
+                && state.form.lastName === action.form.lastName
+                && state.form.country === action.form.country
+                && state.form.city === action.form.city
+                && state.form.preferredLanguage === action.form.preferredLanguage
+            ) {
+                return state;
+            }
+            return { form: action.form, hydrated: true };
+        case 'field':
+            return {
+                ...state,
+                form: {
+                    ...state.form,
+                    [action.key]: action.value,
+                },
+            };
+        default:
+            return state;
+    }
+};
+
+const checkoutSubscriptionReducer = (
+    state: CheckoutSubscriptionState,
+    action: CheckoutSubscriptionAction,
+): CheckoutSubscriptionState => {
+    switch (action.type) {
+        case 'reset':
+            if (!state.summary && !state.loading) return state;
+            return { summary: null, loading: false };
+        case 'loading':
+            if (state.loading) return state;
+            return { ...state, loading: true };
+        case 'resolved':
+            if (state.summary === action.summary && !state.loading) return state;
+            return { summary: action.summary, loading: false };
+        default:
+            return state;
+    }
 };
 
 const PAID_TIER_ORDER: BillingCheckoutTierKey[] = ['tier_mid', 'tier_premium'];
@@ -195,7 +263,10 @@ export const CheckoutPage: React.FC = () => {
     } = useAuth();
     const accessBilling = access?.billing ?? null;
 
-    const [form, setForm] = useState<CheckoutProfileFormState>(EMPTY_FORM);
+    const [profileState, dispatchProfile] = useReducer(checkoutProfileReducer, {
+        form: EMPTY_FORM,
+        hydrated: false,
+    });
     const [checkoutErrorMessage, setCheckoutErrorMessage] = useState<string | null>(null);
     const [authMode, setAuthMode] = useState<CheckoutAuthMode>('login');
     const [authEmail, setAuthEmail] = useState('');
@@ -209,7 +280,6 @@ export const CheckoutPage: React.FC = () => {
     const [isInlineCheckoutLoading, setIsInlineCheckoutLoading] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isAutoAcceptingSignupTerms, setIsAutoAcceptingSignupTerms] = useState(false);
-    const [hasHydratedForm, setHasHydratedForm] = useState(false);
     const [isTravelerDetailsEditing, setIsTravelerDetailsEditing] = useState(false);
     const [isTravelerDetailsSaving, setIsTravelerDetailsSaving] = useState(false);
     const [checkoutCompleted, setCheckoutCompleted] = useState(false);
@@ -218,8 +288,10 @@ export const CheckoutPage: React.FC = () => {
     const [postPaymentTripId, setPostPaymentTripId] = useState<string | null>(null);
     const [postPaymentClaimState, setPostPaymentClaimState] = useState<'idle' | 'processing' | 'ready' | 'error'>('idle');
     const [postPaymentClaimErrorMessage, setPostPaymentClaimErrorMessage] = useState<string | null>(null);
-    const [subscriptionSummary, setSubscriptionSummary] = useState<BillingSubscriptionSummary | null>(null);
-    const [isSubscriptionSummaryLoading, setIsSubscriptionSummaryLoading] = useState(false);
+    const [subscriptionState, dispatchSubscription] = useReducer(checkoutSubscriptionReducer, {
+        summary: null,
+        loading: false,
+    });
     const [upgradePreview, setUpgradePreview] = useState<BillingUpgradePreview | null>(null);
     const [isUpgradePreviewLoading, setIsUpgradePreviewLoading] = useState(false);
     const [isUpgradeSubmitting, setIsUpgradeSubmitting] = useState(false);
@@ -237,6 +309,8 @@ export const CheckoutPage: React.FC = () => {
     const travelerDetailsInitializedRef = useRef(false);
     const openedInlineTransactionRef = useRef<string | null>(null);
     const billingRepairAttemptedRef = useRef(false);
+    const { form, hydrated: hasHydratedForm } = profileState;
+    const { summary: subscriptionSummary, loading: isSubscriptionSummaryLoading } = subscriptionState;
 
     const activeLocale = useMemo(
         () => normalizeLocale(i18n.resolvedLanguage ?? i18n.language ?? DEFAULT_LOCALE),
@@ -344,14 +418,16 @@ export const CheckoutPage: React.FC = () => {
     }, [disabledLabel, enabledLabel, noExpiryLabel, t, unlimitedLabel]);
 
     useEffect(() => {
-        setForm({
-            firstName: profile?.firstName || '',
-            lastName: profile?.lastName || '',
-            country: profile?.country || '',
-            city: profile?.city || '',
-            preferredLanguage: normalizeLocale(profile?.preferredLanguage || activeLocale),
+        dispatchProfile({
+            type: 'hydrate',
+            form: {
+                firstName: profile?.firstName || '',
+                lastName: profile?.lastName || '',
+                country: profile?.country || '',
+                city: profile?.city || '',
+                preferredLanguage: normalizeLocale(profile?.preferredLanguage || activeLocale),
+            },
         });
-        setHasHydratedForm(true);
     }, [activeLocale, profile]);
 
     useEffect(() => {
@@ -400,14 +476,13 @@ export const CheckoutPage: React.FC = () => {
 
     useEffect(() => {
         if (!isEligibleAccount) {
-            setSubscriptionSummary(null);
-            setIsSubscriptionSummaryLoading(false);
+            dispatchSubscription({ type: 'reset' });
             billingRepairAttemptedRef.current = false;
             return;
         }
 
         let cancelled = false;
-        setIsSubscriptionSummaryLoading(true);
+        dispatchSubscription({ type: 'loading' });
         void (async () => {
             let summary = await loadSubscriptionSummaryWithRetry();
             const shouldAttemptRepair = !billingRepairAttemptedRef.current && (
@@ -428,17 +503,12 @@ export const CheckoutPage: React.FC = () => {
                 }
             }
             if (cancelled) return;
-            setSubscriptionSummary(summary);
+            dispatchSubscription({ type: 'resolved', summary });
         })()
             .catch((error) => {
                 if (cancelled) return;
                 console.warn('Failed to load current subscription summary on checkout.', error);
-                setSubscriptionSummary(null);
-            })
-            .finally(() => {
-                if (!cancelled) {
-                    setIsSubscriptionSummaryLoading(false);
-                }
+                dispatchSubscription({ type: 'reset' });
             });
 
         return () => {
@@ -627,7 +697,7 @@ export const CheckoutPage: React.FC = () => {
                 try {
                     const refreshedSummary = await getCurrentSubscriptionSummary();
                     if (!cancelled) {
-                        setSubscriptionSummary(refreshedSummary);
+                        dispatchSubscription({ type: 'resolved', summary: refreshedSummary });
                     }
                 } catch (error) {
                     if (!cancelled) {
@@ -977,7 +1047,7 @@ export const CheckoutPage: React.FC = () => {
     ) : null;
 
     const setField = <K extends keyof CheckoutProfileFormState>(key: K, value: CheckoutProfileFormState[K]) => {
-        setForm((current) => ({ ...current, [key]: value }));
+        dispatchProfile({ type: 'field', key, value });
         if (checkoutErrorMessage) {
             setCheckoutErrorMessage(null);
         }
@@ -1051,7 +1121,7 @@ export const CheckoutPage: React.FC = () => {
         try {
             const repaired = await refreshCurrentPaddleSubscription();
             if (repaired.summary) {
-                setSubscriptionSummary(repaired.summary);
+                dispatchSubscription({ type: 'resolved', summary: repaired.summary });
             }
         } catch (error) {
             if (!isMissingLinkedSubscriptionError(error)) {
@@ -1074,7 +1144,7 @@ export const CheckoutPage: React.FC = () => {
 
             const refreshedSummary = await loadSubscriptionSummaryWithRetry();
             if (refreshedSummary) {
-                setSubscriptionSummary(refreshedSummary);
+                dispatchSubscription({ type: 'resolved', summary: refreshedSummary });
                 return refreshedSummary;
             }
 
@@ -1491,7 +1561,7 @@ export const CheckoutPage: React.FC = () => {
             await refreshProfile();
             try {
                 const refreshedSummary = await getCurrentSubscriptionSummary();
-                setSubscriptionSummary(refreshedSummary);
+                dispatchSubscription({ type: 'resolved', summary: refreshedSummary });
             } catch (summaryError) {
                 console.warn('Checkout upgrade subscription refresh failed.', summaryError);
             }

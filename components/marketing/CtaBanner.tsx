@@ -13,7 +13,7 @@ export const CtaBanner: React.FC = () => {
                 <div className="pointer-events-none absolute -top-20 -right-20 size-60 rounded-full bg-white/10 blur-[60px]" />
                 <div className="pointer-events-none absolute -bottom-16 -left-16 size-48 rounded-full bg-accent-400/20 blur-[50px]" />
 
-                <h2 className="relative text-3xl font-black tracking-tight text-white md:text-5xl" style={{ fontFamily: 'var(--tf-font-heading)' }}>
+                <h2 className="relative text-3xl font-semibold tracking-tight text-white md:text-5xl" style={{ fontFamily: 'var(--tf-font-heading)' }}>
                     {t('home:cta.title')}
                 </h2>
                 <p className="relative mx-auto mt-4 max-w-xl text-base text-accent-100 md:text-lg">

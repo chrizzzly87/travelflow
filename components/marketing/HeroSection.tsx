@@ -82,7 +82,7 @@ export const HeroSection: React.FC = () => {
                     </div>
 
                     <div className="animate-hero-stagger" style={{ '--stagger': '80ms' } as React.CSSProperties}>
-                        <h1 className="mt-6 text-5xl font-black tracking-tight text-slate-900 md:text-7xl" style={{ fontFamily: 'var(--tf-font-heading)' }}>
+                        <h1 className="mt-6 text-5xl font-semibold tracking-tight text-slate-900 md:text-7xl" style={{ fontFamily: 'var(--tf-font-heading)' }}>
                             {t('hero.titleBefore')} {' '}
                             <span className="relative inline-block">
                                 {t('hero.titleHighlight')}

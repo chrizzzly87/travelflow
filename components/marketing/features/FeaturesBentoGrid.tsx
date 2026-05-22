@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useReducer, useRef } from 'react';
 import { AirplaneTakeoff, LinkSimple, MapTrifold, Printer, ShareNetwork, Sparkle } from '@phosphor-icons/react';
 import type { Icon } from '@phosphor-icons/react';
 import { Card, CardContent } from '../../ui/card';
@@ -28,6 +28,29 @@ interface FeatureCardShellProps {
     children: React.ReactNode;
     hideEyebrow?: boolean;
 }
+
+interface AirportVisibilityState {
+    lookupPrimed: boolean;
+    visualActive: boolean;
+}
+
+type AirportVisibilityAction = 'lookup' | 'visual' | 'all';
+
+const airportVisibilityReducer = (
+    state: AirportVisibilityState,
+    action: AirportVisibilityAction,
+): AirportVisibilityState => {
+    switch (action) {
+        case 'all':
+            return { lookupPrimed: true, visualActive: true };
+        case 'lookup':
+            return { ...state, lookupPrimed: true };
+        case 'visual':
+            return { ...state, visualActive: true };
+        default:
+            return state;
+    }
+};
 
 const layoutClasses: Record<FeatureBentoItem['id'], string> = {
     itinerary: 'md:col-span-3',
@@ -141,12 +164,13 @@ const SharingVisual: React.FC<BentoVisualProps> = ({ item }) => (
             <span>Crew loop</span>
             <span>{item.detail}</span>
         </div>
-        <div className="mt-5 flex -space-x-2">
+        <div className="mt-5 flex">
             {['M', 'J', 'A', 'L'].map((letter, index) => (
                 <div
                     key={letter}
                     className={cn(
                         'flex size-11 items-center justify-center rounded-full border-2 border-white text-sm font-bold text-white shadow-sm',
+                        index > 0 && '-ms-2',
                         index === 0 ? 'bg-accent-600' : index === 1 ? 'bg-slate-500' : index === 2 ? 'bg-slate-400' : 'bg-slate-300',
                     )}
                 >
@@ -243,25 +267,27 @@ const AirportBentoCard: React.FC<{ index: number; item: FeatureBentoItem }> = ({
     item,
 }) => {
     const cardRef = useRef<HTMLDivElement | null>(null);
-    const [isAirportLookupPrimed, setIsAirportLookupPrimed] = useState(false);
-    const [isAirportVisualActive, setIsAirportVisualActive] = useState(false);
+    const [airportVisibility, dispatchAirportVisibility] = useReducer(airportVisibilityReducer, {
+        lookupPrimed: false,
+        visualActive: false,
+    });
+    const { lookupPrimed: isAirportLookupPrimed, visualActive: isAirportVisualActive } = airportVisibility;
 
     useEffect(() => {
         if (isAirportLookupPrimed && isAirportVisualActive) return;
 
         const node = cardRef.current;
         if (!node || typeof window === 'undefined' || typeof window.IntersectionObserver !== 'function') {
-            setIsAirportLookupPrimed(true);
-            setIsAirportVisualActive(true);
+            dispatchAirportVisibility('all');
             return;
         }
 
         const primeLookup = () => {
-            setIsAirportLookupPrimed(true);
+            dispatchAirportVisibility('lookup');
         };
 
         const activateVisual = () => {
-            setIsAirportVisualActive(true);
+            dispatchAirportVisibility('visual');
         };
 
         const isWithinPrefetchWindow = () => {
@@ -363,7 +389,7 @@ const AirportBentoCard: React.FC<{ index: number; item: FeatureBentoItem }> = ({
             >
                 <CardContent className="grid gap-6 p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_minmax(420px,auto)] lg:items-center lg:gap-12 xl:grid-cols-[minmax(0,0.95fr)_minmax(500px,auto)]">
                     <div className="min-w-0">
-                        <h3 className="text-2xl font-black tracking-tight text-slate-950">
+                        <h3 className="text-2xl font-semibold tracking-tight text-slate-950">
                             {item.title}
                         </h3>
                         <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-600 md:text-base">

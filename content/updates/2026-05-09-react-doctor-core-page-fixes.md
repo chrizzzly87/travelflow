@@ -43,3 +43,4 @@ summary: "Cleans up the highest-priority React Doctor findings across core trip 
 - [ ] [Internal] 🛠️ Reduced admin benchmark, audit diff, and user-selection parsing to single-pass transforms.
 - [ ] [Internal] 🔎 Simplified admin query multi-value parsing to single-pass loops.
 - [ ] [Internal] 🧰 Reduced tested utility iteration debt in provider labels, JSON diff focus, timeline activities, FAQ excerpts, and city lookup parsing.
+- [ ] [Internal] 🩺 Raised the latest React Doctor diff score to `90/100` by clearing safe accessibility, hydration-time, state grouping, formatter allocation, and visual duplicate findings.

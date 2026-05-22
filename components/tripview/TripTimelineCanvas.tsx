@@ -74,7 +74,7 @@ export const TripTimelineCanvas: React.FC<TripTimelineCanvasProps> = ({
 
     if (timelineView === 'vertical') {
         return (
-            <Suspense fallback={<div className="size-full flex items-center justify-center text-xs text-gray-500">Loading timeline...</div>}>
+            <Suspense fallback={<div className="size-full flex items-center justify-center text-xs text-gray-500">Loading timeline…</div>}>
                 <VerticalTimeline
                     trip={trip}
                     onUpdateItems={onUpdateItems}

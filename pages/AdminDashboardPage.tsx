@@ -16,7 +16,12 @@ import {
 } from '../components/admin/adminDashboardChartData';
 import { Card, Metric, Text, Flex, Grid, ProgressBar, BarChart, Title } from '@tremor/react';
 
-const formatValue = (value: number): string => new Intl.NumberFormat().format(value);
+const adminDashboardNumberFormatter = new Intl.NumberFormat();
+
+const formatValue = (value: number): string => adminDashboardNumberFormatter.format(value);
+const formatLastVisitDate = (value: string | null | undefined): string => (
+    value ? `Visit ${new Date(value).toLocaleDateString()}` : 'No sign-in yet'
+);
 
 const getUserName = (user: AdminUserRecord): string => {
     const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ').trim();
@@ -235,7 +240,7 @@ export const AdminDashboardPage: React.FC = () => {
 
             <section className="mt-6">
                 <Card>
-                    <div className="flex flex-col space-y-1.5 pb-4">
+                    <div className="flex flex-col gap-y-1.5 pb-4">
                         <h3 className="font-semibold leading-none tracking-tight">Recent Users</h3>
                         <p className="text-sm text-slate-500">Most recently created accounts with identity and sign-in context.</p>
                     </div>
@@ -257,7 +262,7 @@ export const AdminDashboardPage: React.FC = () => {
                                 </div>
                                 <div className="ml-auto flex items-end flex-col gap-1 shrink-0 text-right font-medium">
                                     <span className="text-sm font-medium text-slate-700">{getLoginLabel(user)}</span>
-                                    <span className="text-xs text-slate-500 hidden sm:inline-block">{(user.last_sign_in_at ? `Visit ${new Date(user.last_sign_in_at).toLocaleDateString()}` : 'No sign-in yet')}</span>
+                                    <span className="text-xs text-slate-500 hidden sm:inline-block">{formatLastVisitDate(user.last_sign_in_at)}</span>
                                 </div>
                             </a>
                         ))}

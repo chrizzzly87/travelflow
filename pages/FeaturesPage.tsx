@@ -45,7 +45,7 @@ export const FeaturesPage: React.FC = () => {
                     <div className="max-w-3xl">
                         <div className="animate-hero-stagger" style={{ '--stagger': '0ms' } as React.CSSProperties}>
                             <h1
-                                className="max-w-4xl text-5xl font-black tracking-tight text-slate-950 md:text-7xl"
+                                className="max-w-4xl text-5xl font-semibold tracking-tight text-slate-950 md:text-7xl"
                                 style={{ fontFamily: 'var(--tf-font-heading)' }}
                             >
                                 {t('hero.titleBefore')}{' '}
@@ -93,7 +93,7 @@ export const FeaturesPage: React.FC = () => {
 
             <section className="border-t border-slate-200/80 py-16 md:py-24">
                 <div className="animate-scroll-blur-in max-w-3xl">
-                    <h2 className="text-3xl font-black tracking-tight text-slate-950 md:text-5xl">
+                    <h2 className="text-3xl font-semibold tracking-tight text-slate-950 md:text-5xl">
                         {t('bento.title')}
                     </h2>
                     <p className="mt-4 max-w-2xl text-base leading-relaxed text-slate-600 md:text-lg">
@@ -110,7 +110,7 @@ export const FeaturesPage: React.FC = () => {
                 <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(320px,420px)] lg:items-start">
                     <div>
                         <div className="animate-scroll-blur-in max-w-3xl">
-                            <h2 className="text-3xl font-black tracking-tight text-slate-950 md:text-5xl">
+                            <h2 className="text-3xl font-semibold tracking-tight text-slate-950 md:text-5xl">
                                 {t('workflow.title')}
                             </h2>
                             <p className="mt-4 max-w-2xl text-base leading-relaxed text-slate-600 md:text-lg">
@@ -180,7 +180,7 @@ export const FeaturesPage: React.FC = () => {
             <section className="pb-16 md:pb-24 animate-scroll-scale-in">
                 <div className="relative overflow-hidden rounded-[18px] border border-slate-200 bg-slate-50 px-8 py-14 text-center shadow-sm shadow-slate-200/70 md:px-16 md:py-20">
                     <h2
-                        className="relative text-3xl font-black tracking-tight text-slate-950 md:text-5xl"
+                        className="relative text-3xl font-semibold tracking-tight text-slate-950 md:text-5xl"
                         style={{ fontFamily: 'var(--tf-font-heading)' }}
                     >
                         {t('cta.title')}

@@ -282,14 +282,16 @@ const formatRuntimeLocationTesterLabel = (
     location: RuntimeLocationStoreSnapshot['location'],
 ): string => [location.city, location.countryName].filter(Boolean).join(', ') || 'Runtime location';
 
+const adminAirportDateTimeFormatter = new Intl.DateTimeFormat(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+});
+
 const formatDateTime = (value: string | null | undefined): string => {
     if (!value) return '—';
     const parsed = Date.parse(value);
     if (!Number.isFinite(parsed)) return '—';
-    return new Intl.DateTimeFormat(undefined, {
-        dateStyle: 'medium',
-        timeStyle: 'short',
-    }).format(new Date(parsed));
+    return adminAirportDateTimeFormatter.format(new Date(parsed));
 };
 
 const formatDistance = (value: number): string => `${value.toFixed(value >= 100 ? 0 : 1)} km`;
@@ -759,23 +761,25 @@ const AdminAirportTestMapCanvas: React.FC<{
 
             overlay.onAdd = function onAdd() {
                 markerNode = document.createElement('div');
-                markerNode.style.position = 'absolute';
-                markerNode.style.transform = 'translate(-50%, -100%)';
-                markerNode.style.minWidth = point.isOrigin ? '44px' : '34px';
-                markerNode.style.height = point.isOrigin ? '34px' : '30px';
-                markerNode.style.padding = point.isOrigin ? '0 12px' : '0 8px';
-                markerNode.style.borderRadius = '9999px';
-                markerNode.style.display = 'inline-flex';
-                markerNode.style.alignItems = 'center';
-                markerNode.style.justifyContent = 'center';
-                markerNode.style.whiteSpace = 'nowrap';
-                markerNode.style.fontSize = point.isOrigin ? '11px' : '12px';
-                markerNode.style.fontWeight = '700';
-                markerNode.style.boxShadow = '0 10px 24px rgba(15,23,42,0.18)';
-                markerNode.style.border = point.isOrigin ? '1px solid #0f172a' : '1px solid #cbd5e1';
-                markerNode.style.background = point.isOrigin ? '#0f172a' : '#ffffff';
-                markerNode.style.color = point.isOrigin ? '#ffffff' : '#0f172a';
-                markerNode.style.zIndex = point.isOrigin ? '30' : '20';
+                Object.assign(markerNode.style, {
+                    position: 'absolute',
+                    transform: 'translate(-50%, -100%)',
+                    minWidth: point.isOrigin ? '44px' : '34px',
+                    height: point.isOrigin ? '34px' : '30px',
+                    padding: point.isOrigin ? '0 12px' : '0 8px',
+                    borderRadius: '9999px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    whiteSpace: 'nowrap',
+                    fontSize: point.isOrigin ? '11px' : '12px',
+                    fontWeight: '700',
+                    boxShadow: '0 10px 24px rgba(15,23,42,0.18)',
+                    border: point.isOrigin ? '1px solid #0f172a' : '1px solid #cbd5e1',
+                    background: point.isOrigin ? '#0f172a' : '#ffffff',
+                    color: point.isOrigin ? '#ffffff' : '#0f172a',
+                    zIndex: point.isOrigin ? '30' : '20',
+                });
                 markerNode.textContent = point.isOrigin ? 'Origin' : point.label;
 
                 const panes = overlay.getPanes();
@@ -787,8 +791,10 @@ const AdminAirportTestMapCanvas: React.FC<{
                 const projection = overlay.getProjection();
                 const position = projection?.fromLatLngToDivPixel(new window.google.maps.LatLng(point.lat, point.lng));
                 if (!position) return;
-                markerNode.style.left = `${position.x}px`;
-                markerNode.style.top = `${position.y}px`;
+                Object.assign(markerNode.style, {
+                    left: `${position.x}px`,
+                    top: `${position.y}px`,
+                });
             };
 
             overlay.onRemove = function onRemove() {
@@ -2313,16 +2319,16 @@ export const AdminAirportsPage: React.FC = () => {
             const nextAirports = sortAirports(catalog.airports.map((airport) => updatedByIdent.get(airport.ident) || airport));
             const nextSelectedAirport = resolveSelectedAirport(nextAirports, selectedAirportIdent);
 
-            setCatalog({
-                ...catalog,
+            setCatalog((current) => current ? {
+                ...current,
                 airports: nextAirports,
-                metadata: catalog.metadata
+                metadata: current.metadata
                     ? {
-                        ...catalog.metadata,
+                        ...current.metadata,
                         syncedAt: new Date().toISOString(),
                     }
-                    : catalog.metadata,
-            });
+                    : current.metadata,
+            } : current);
             setSelectedAirportIdent(nextSelectedAirport?.ident || null);
             setEditorDraft(nextSelectedAirport ? airportToDraft(nextSelectedAirport) : null);
             setEditorDirty(false);
@@ -2388,16 +2394,16 @@ export const AdminAirportsPage: React.FC = () => {
             const preferredIdent = selectedAirportIdent && !deletedIdentSet.has(selectedAirportIdent) ? selectedAirportIdent : null;
             const nextSelectedAirport = resolveSelectedAirport(nextAirports, preferredIdent);
 
-            setCatalog({
-                ...catalog,
+            setCatalog((current) => current ? {
+                ...current,
                 airports: nextAirports,
-                metadata: catalog.metadata
+                metadata: current.metadata
                     ? {
-                        ...catalog.metadata,
+                        ...current.metadata,
                         syncedAt: new Date().toISOString(),
                     }
-                    : catalog.metadata,
-            });
+                    : current.metadata,
+            } : current);
             setSelectedAirportIdents(new Set());
             setSelectedAirportIdent(nextSelectedAirport?.ident || null);
             setEditorDraft(nextSelectedAirport ? airportToDraft(nextSelectedAirport) : null);
@@ -2458,16 +2464,16 @@ export const AdminAirportsPage: React.FC = () => {
             const nextAirports = sortAirports(catalog.airports.filter((airport) => !deletedIdentSet.has(airport.ident)));
             const nextSelectedAirport = resolveSelectedAirport(nextAirports, null);
 
-            setCatalog({
-                ...catalog,
+            setCatalog((current) => current ? {
+                ...current,
                 airports: nextAirports,
-                metadata: catalog.metadata
+                metadata: current.metadata
                     ? {
-                        ...catalog.metadata,
+                        ...current.metadata,
                         syncedAt: new Date().toISOString(),
                     }
-                    : catalog.metadata,
-            });
+                    : current.metadata,
+            } : current);
             setSelectedAirportIdents((current) => {
                 const next = new Set(current);
                 deletedIdents.forEach((ident) => next.delete(ident));

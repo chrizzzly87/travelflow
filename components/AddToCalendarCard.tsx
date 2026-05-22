@@ -47,28 +47,35 @@ export const AddToCalendarCard: React.FC<AddToCalendarCardProps> = ({ config, po
                         <p className="mt-0.5 text-xs font-medium text-slate-500">{compatibleHint}</p>
                     </div>
                 </div>
-                <a
-                    href={icsHref || '#'}
-                    download={`${fileName}.ics`}
-                    onClick={(event) => {
-                        if (!icsHref) {
-                            event.preventDefault();
-                            return;
-                        }
-                        trackEvent('blog__calendar_card--download_ics', {
+                {icsHref ? (
+                    <a
+                        href={icsHref}
+                        download={`${fileName}.ics`}
+                        onClick={() => {
+                            trackEvent('blog__calendar_card--download_ics', {
+                                slug: postSlug,
+                                event_count: config.events.length,
+                            });
+                        }}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-accent-200 bg-accent-50 px-3 py-2 text-sm font-semibold text-accent-800 transition-colors hover:border-accent-300 hover:bg-accent-100"
+                        {...getAnalyticsDebugAttributes('blog__calendar_card--download_ics', {
                             slug: postSlug,
                             event_count: config.events.length,
-                        });
-                    }}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-accent-200 bg-accent-50 px-3 py-2 text-sm font-semibold text-accent-800 transition-colors hover:border-accent-300 hover:bg-accent-100"
-                    {...getAnalyticsDebugAttributes('blog__calendar_card--download_ics', {
-                        slug: postSlug,
-                        event_count: config.events.length,
-                    })}
-                >
-                    <DownloadSimple size={14} weight="bold" />
-                    <span>{downloadLabel}</span>
-                </a>
+                        })}
+                    >
+                        <DownloadSimple size={14} weight="bold" />
+                        <span>{downloadLabel}</span>
+                    </a>
+                ) : (
+                    <button
+                        type="button"
+                        disabled
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-accent-200 bg-accent-50 px-3 py-2 text-sm font-semibold text-accent-800 opacity-60"
+                    >
+                        <DownloadSimple size={14} weight="bold" />
+                        <span>{downloadLabel}</span>
+                    </button>
+                )}
             </div>
         </section>
     );

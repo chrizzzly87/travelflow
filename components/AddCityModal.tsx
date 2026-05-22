@@ -261,7 +261,7 @@ export const AddCityModal: React.FC<AddCityModalProps> = ({ isOpen, onClose, onA
                     {(state.isSearchingSuggestions || state.suggestions.length > 0) && (
                         <div className="mt-2 rounded-lg border border-gray-200 bg-white shadow-sm max-h-44 overflow-y-auto">
                             {state.isSearchingSuggestions && (
-                                <div className="px-3 py-2 text-xs text-gray-500">Searching cities...</div>
+                                <div className="px-3 py-2 text-xs text-gray-500">Searching cities…</div>
                             )}
                             {!state.isSearchingSuggestions && state.suggestions.map((suggestion) => (
                                 <button
@@ -278,7 +278,7 @@ export const AddCityModal: React.FC<AddCityModalProps> = ({ isOpen, onClose, onA
                     )}
                     <p className="mt-2 text-xs text-gray-400">
                         {!isLoaded
-                            ? "Loading Map services..."
+                            ? "Loading Map services…"
                             : "Start typing to search and select a city suggestion."}
                     </p>
                 </div>
