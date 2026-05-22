@@ -18,6 +18,12 @@ import { FlagIcon } from './flags/FlagIcon';
 import { NumberInput } from './ui/number-input';
 import { Switch } from './ui/switch';
 import { loadLazyComponentWithRecovery } from '../services/lazyImportRecovery';
+import {
+  getRouteDistanceText,
+  mapSearchByTextPlacesToHotelResults,
+  type HotelSearchResult,
+  type SearchByTextResponseShape,
+} from './detailsPanelUtils';
 
 interface DetailsPanelProps {
   item: ITimelineItem | null;
@@ -43,12 +49,6 @@ interface DetailsPanelProps {
   onExportActivityCalendar?: (itemId: string) => void;
 }
 
-interface RouteDistanceTextInput {
-  routeDistanceLabel: string | null;
-  canRoute: boolean;
-  routeStatus?: 'calculating' | 'ready' | 'failed' | 'idle';
-}
-
 interface PendingCityNotesProposal {
     actionLabel: string;
     addition: string;
@@ -66,20 +66,6 @@ interface CityDraft {
     countryName?: string;
     countryCode?: string;
 }
-
-interface HotelSearchResult {
-    id: string;
-    name: string;
-    address: string;
-}
-
-type SearchByTextResponseShape = {
-    places?: Array<{
-        id?: string;
-        displayName?: string | { text?: string };
-        formattedAddress?: string;
-    }>;
-};
 
 const CITY_NOTES_AI_ACTIONS: MarkdownAiAction[] = [
     {
@@ -117,17 +103,6 @@ const loadAiService = async (): Promise<AiServiceModule> => {
 
 const EMPTY_TRIP_ITEMS: ITimelineItem[] = [];
 
-export const getRouteDistanceText = ({
-    routeDistanceLabel,
-    canRoute,
-    routeStatus,
-}: RouteDistanceTextInput): string => {
-    if (routeDistanceLabel) return routeDistanceLabel;
-    if (!canRoute) return 'N/A';
-    if (routeStatus === 'calculating') return 'Calculating…';
-    return 'N/A';
-};
-
 const appendNotes = (existing: string, addition: string): string => {
     const trimmedExisting = existing.trim();
     const trimmedAddition = addition.trim();
@@ -156,30 +131,6 @@ const getCountryFromText = (text?: string): { countryName?: string; countryCode?
 const getCityNameFromText = (text: string): string => {
     const firstPart = text.split(',')[0]?.trim();
     return firstPart || text.trim();
-};
-
-const resolvePlaceDisplayName = (displayName: unknown): string => {
-    if (typeof displayName === 'string') return displayName.trim();
-    if (displayName && typeof displayName === 'object') {
-        const text = (displayName as { text?: unknown }).text;
-        if (typeof text === 'string') return text.trim();
-    }
-    return '';
-};
-
-export const mapSearchByTextPlacesToHotelResults = (
-    response: SearchByTextResponseShape | null | undefined,
-): HotelSearchResult[] => {
-    const places = Array.isArray(response?.places) ? response.places : [];
-    return places
-        .flatMap((place) => {
-            const name = resolvePlaceDisplayName(place?.displayName) || 'Hotel';
-            const address = (place?.formattedAddress || '').trim();
-            const id = (place?.id || '').trim() || `${name}-${address}`;
-            if (id.length === 0) return [];
-            return [{ id, name, address }];
-        })
-        .slice(0, 5);
 };
 
 export const DetailsPanel: React.FC<DetailsPanelProps> = ({ 

@@ -5,7 +5,7 @@ import {
   persistStoredDebuggerString,
   readStoredDebuggerBoolean,
   readStoredDebuggerString,
-} from '../../components/OnPageDebugger';
+} from '../../components/onPageDebuggerUtils';
 
 const KEY = 'tf_debug_auto_open';
 const TAB_KEY = 'tf_debug_active_tab';

@@ -43,7 +43,7 @@ import {
   resolveSelectionViewportActions,
   shouldSkipRouteFitForSelection,
   shouldDisplayActivityMarkers,
-} from '../../components/ItineraryMap';
+} from '../../components/itineraryMapUtils';
 import { isFiniteLatLngLiteral } from '../../shared/coordinateUtils';
 
 describe('components/ItineraryMap route cache helpers', () => {

@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowSquareOut, DotsThreeVertical, MapPin, SpinnerGap, Trash, X } from '@phosphor-icons/react';
-import { AdminShell, type AdminDateRange } from '../components/admin/AdminShell';
+import { AdminShell } from '../components/admin/AdminShell';
+import type { AdminDateRange } from '../components/admin/adminShellUtils';
 import { isIsoDateInRange } from '../components/admin/adminDateRange';
 import { AI_MODEL_CATALOG, getDefaultCreateTripModel, sortAiModels } from '../config/aiModelCatalog';
 import {
@@ -18,7 +19,7 @@ import {
     buildTransferTargetPromptDialog,
 } from '../services/appDialogPresets';
 import { dbAdminOverrideTripCommit, dbGetTrip, dbUpsertTrip } from '../services/dbService';
-import { getTripCityStops, buildMiniMapUrl } from '../components/TripManager';
+import { getTripCityStops, buildMiniMapUrl } from '../components/profile/tripPreviewUtils';
 import type { ITrip, TripGenerationAttemptSummary, TripGenerationJobSummary, TripGenerationState } from '../types';
 import {
     Select,

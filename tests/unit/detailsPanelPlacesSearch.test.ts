@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-import { mapSearchByTextPlacesToHotelResults } from '../../components/DetailsPanel';
+import { mapSearchByTextPlacesToHotelResults } from '../../components/detailsPanelUtils';
 
 describe('components/DetailsPanel places migration', () => {
   it('maps Place.searchByText results into hotel result rows', () => {

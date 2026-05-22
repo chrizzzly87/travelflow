@@ -1,4 +1,4 @@
-import type { AdminDateRange } from './AdminShell';
+import type { AdminDateRange } from './adminShellUtils';
 import { isIsoDateInRange } from './adminDateRange';
 import type { AdminTripRecord, AdminUserRecord } from '../../services/adminService';
 import type { AdminDashboardUserLevelBreakdownItem } from './adminDashboardUserBreakdown';

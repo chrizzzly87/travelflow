@@ -12,7 +12,8 @@ import { useGoogleMaps, useMapRuntime } from './GoogleMapsLoader';
 import { normalizeTransportMode } from '../shared/transportModes';
 import { ActivityTypeIcon, getActivityTypePaletteParts } from './ActivityTypeVisuals';
 import { getMapSurfaceBackgroundColor, GOOGLE_BASEMAP_HIDDEN_STYLES } from '../services/mapRendererVisualStyleService';
-import { isMapboxStyleReadyForRuntimeMutations, MapboxBasemapSync } from './maps/MapboxBasemapSync';
+import { MapboxBasemapSync } from './maps/MapboxBasemapSync';
+import { isMapboxStyleReadyForRuntimeMutations } from './maps/mapboxBasemapUtils';
 import { buildFlightRouteVisualPaths } from './maps/flightRouteGeometry';
 import { collectTripMapFitBoundsCoordinates } from './maps/tripMapFitBoundsGeometry';
 import { createGoogleMixedSurfaceController, type GoogleMixedSurfaceController } from './maps/googleMixedSurfaceController';
@@ -249,9 +250,9 @@ type OverlayMarkerHandle = {
 };
 
 const ROUTE_CACHE = new Map<string, RouteCacheEntry>();
-export const ROUTE_FAILURE_TTL_MS = 5 * 60 * 1000;
+const ROUTE_FAILURE_TTL_MS = 5 * 60 * 1000;
 const ROUTE_STORAGE_KEY = 'tf_route_cache_v1';
-export const ROUTE_PERSIST_TTL_MS = 24 * 60 * 60 * 1000;
+const ROUTE_PERSIST_TTL_MS = 24 * 60 * 60 * 1000;
 const ROUTE_FAILURE_WARNING_TTL_MS = 2 * 60 * 1000;
 const RECENT_ROUTE_FAILURE_WARNINGS = new Map<string, number>();
 let routeCacheHydrated = false;
@@ -268,16 +269,16 @@ const ACTIVITY_CITY_FALLBACK_MIN_SLOTS = 4;
 const MARKER_COORDINATE_GROUP_PRECISION = 5;
 const MARKER_TIER_ROUTE_REFERENCE_ZOOM = 10;
 const MARKER_GAP_DEDUPE_PRECISION = 6;
-export const MAP_VIEWPORT_READY_MIN_DIMENSION_PX = 80;
-export const MAX_WALK_ROUTE_CHECK_KM = 60;
-export const MAX_BICYCLE_ROUTE_CHECK_KM = 160;
-export const MAX_TRANSIT_ROUTE_CHECK_KM = 1400;
-export const MAX_DRIVING_ROUTE_CHECK_KM = 3000;
-export const TRANSIT_SECOND_PASS_MAX_KM = 320;
-export const TRANSIT_DRIVING_RETRY_MAX_KM = TRANSIT_SECOND_PASS_MAX_KM;
-export const ROUTES_COMPUTE_FIELDS = GOOGLE_ROUTES_COMPUTE_FIELDS;
-export type RouteApiMode = 'DRIVING' | 'WALKING' | 'BICYCLING' | 'TRANSIT';
-export type RouteAttemptPolicy = {
+const MAP_VIEWPORT_READY_MIN_DIMENSION_PX = 80;
+const MAX_WALK_ROUTE_CHECK_KM = 60;
+const MAX_BICYCLE_ROUTE_CHECK_KM = 160;
+const MAX_TRANSIT_ROUTE_CHECK_KM = 1400;
+const MAX_DRIVING_ROUTE_CHECK_KM = 3000;
+const TRANSIT_SECOND_PASS_MAX_KM = 320;
+const TRANSIT_DRIVING_RETRY_MAX_KM = TRANSIT_SECOND_PASS_MAX_KM;
+const ROUTES_COMPUTE_FIELDS = GOOGLE_ROUTES_COMPUTE_FIELDS;
+type RouteApiMode = 'DRIVING' | 'WALKING' | 'BICYCLING' | 'TRANSIT';
+type RouteAttemptPolicy = {
     shouldAttempt: boolean;
     modes: RouteApiMode[];
     reason?: 'unsupported_mode' | 'invalid_distance' | 'distance_cap_exceeded';
@@ -312,7 +313,7 @@ const CITY_MARKER_Z_INDEX = 320;
 const CITY_MARKER_SELECTED_Z_INDEX = 340;
 const ACTIVITY_MARKER_Z_INDEX = 240;
 const ACTIVITY_MARKER_SELECTED_Z_INDEX = 260;
-export const ACTIVITY_MARKERS_MIN_ZOOM = getTripMapProviderTuning('google').markers.activityMinZoom;
+const ACTIVITY_MARKERS_MIN_ZOOM = getTripMapProviderTuning('google').markers.activityMinZoom;
 
 const resolveCityMarkerZIndex = (
     isSelected: boolean,
@@ -349,7 +350,7 @@ type MarkerRenderProfile = {
     routeStrokeScale: number;
 };
 
-export type MarkerRenderTier = 'default' | 'compact' | 'micro';
+type MarkerRenderTier = 'default' | 'compact' | 'micro';
 type CityMarkerRenderProfile = MarkerRenderProfile['city'];
 
 const DOCKED_DEFAULT_MARKER_RENDER_PROFILE: MarkerRenderProfile = {
@@ -456,7 +457,7 @@ const MICRO_MARKER_RENDER_PROFILE: MarkerRenderProfile = {
     routeStrokeScale: 0.64,
 };
 
-export const resolveMarkerRenderProfile = (
+const resolveMarkerRenderProfile = (
     options?: {
         mapDockMode?: 'docked' | 'floating';
         markerTier?: MarkerRenderTier;
@@ -483,7 +484,7 @@ const toWebMercatorPixel = (
     return { x, y };
 };
 
-export const estimateRoutePixelSpan = (
+const estimateRoutePixelSpan = (
     coordinates: google.maps.LatLngLiteral[],
     zoom: number | null,
 ): number => {
@@ -497,7 +498,7 @@ export const estimateRoutePixelSpan = (
     return Math.hypot(width, height);
 };
 
-export const estimateNearestMarkerGapPx = (
+const estimateNearestMarkerGapPx = (
     coordinates: google.maps.LatLngLiteral[],
     zoom: number | null,
 ): number => {
@@ -529,7 +530,7 @@ export const estimateNearestMarkerGapPx = (
     return minDistance;
 };
 
-export const resolveMarkerRenderTier = ({
+const resolveMarkerRenderTier = ({
     provider = 'google',
     viewportWidth,
     viewportHeight,
@@ -569,7 +570,7 @@ export const resolveMarkerRenderTier = ({
     return 'default';
 };
 
-export const resolveZoomEnhancedCityMarkerProfile = ({
+const resolveZoomEnhancedCityMarkerProfile = ({
     provider = 'google',
     baseProfile,
     markerTier,
@@ -640,7 +641,7 @@ export const resolveZoomEnhancedCityMarkerProfile = ({
     };
 };
 
-export const resolveCrowdedCityMarkerProfile = ({
+const resolveCrowdedCityMarkerProfile = ({
     provider = 'google',
     baseProfile,
     markerTier,
@@ -693,7 +694,7 @@ const normalizeRotationDegrees = (value?: number): number => {
     return normalized < 0 ? normalized + 360 : normalized;
 };
 
-export const mapRouteAttemptPolicyReasonToFailureReason = (
+const mapRouteAttemptPolicyReasonToFailureReason = (
     reason?: RouteAttemptPolicy['reason'],
 ): RouteFailureReason => {
     if (reason === 'unsupported_mode') return 'unsupported_mode';
@@ -702,7 +703,7 @@ export const mapRouteAttemptPolicyReasonToFailureReason = (
     return 'request_error';
 };
 
-export const classifyRouteComputationError = (error: unknown): RouteFailureReason => {
+const classifyRouteComputationError = (error: unknown): RouteFailureReason => {
     const message = error instanceof Error
         ? error.message
         : typeof error === 'string'
@@ -725,7 +726,7 @@ export const classifyRouteComputationError = (error: unknown): RouteFailureReaso
     return 'request_error';
 };
 
-export const shouldLogRouteFailureWarning = ({
+const shouldLogRouteFailureWarning = ({
     routeKey,
     mode,
     reason,
@@ -774,7 +775,7 @@ const buildTransportMarkerHtml = (
     `;
 };
 
-export const getRouteOutlineColor = (_style: MapStyle = 'standard'): string => {
+const getRouteOutlineColor = (_style: MapStyle = 'standard'): string => {
     if (_style === 'minimal') return ROUTE_MINIMAL_GAP_COLOR;
     if (_style === 'clean') return ROUTE_CLEAN_GAP_COLOR;
     if (_style === 'standard') return ROUTE_STANDARD_GAP_COLOR;
@@ -783,14 +784,14 @@ export const getRouteOutlineColor = (_style: MapStyle = 'standard'): string => {
     return '#0f172a';
 };
 
-export const getRouteOuterOutlineColor = (_style: MapStyle = 'standard'): string => {
+const getRouteOuterOutlineColor = (_style: MapStyle = 'standard'): string => {
     return ROUTE_OUTER_OUTLINE_COLOR;
 };
 
 const isDarkMapStyle = (style: MapStyle): boolean =>
     style === 'dark' || style === 'cleanDark';
 
-export const estimateGreatCircleDistanceKm = (
+const estimateGreatCircleDistanceKm = (
     start: google.maps.LatLngLiteral,
     end: google.maps.LatLngLiteral,
 ): number => {
@@ -808,7 +809,7 @@ export const estimateGreatCircleDistanceKm = (
     return EARTH_RADIUS_KM * angularDistance;
 };
 
-export const computeMaxPathDeviationMeters = (
+const computeMaxPathDeviationMeters = (
     path: google.maps.LatLngLiteral[],
     start: google.maps.LatLngLiteral,
     end: google.maps.LatLngLiteral,
@@ -846,7 +847,7 @@ export const computeMaxPathDeviationMeters = (
     return maxDeviation;
 };
 
-export const isRoutePathLikelyStraight = (
+const isRoutePathLikelyStraight = (
     path: google.maps.LatLngLiteral[],
     start: google.maps.LatLngLiteral,
     end: google.maps.LatLngLiteral,
@@ -956,7 +957,7 @@ const resolveActivityOwnerCity = (
     return cityItems[0] || null;
 };
 
-export const resolveActivityMarkerPositions = (
+const resolveActivityMarkerPositions = (
     items: ITimelineItem[],
 ): ResolvedActivityMarker[] => {
     const cityItems = items
@@ -1020,7 +1021,7 @@ export const resolveActivityMarkerPositions = (
     });
 };
 
-export const resolveSelectedMapFocusPosition = ({
+const resolveSelectedMapFocusPosition = ({
     provider = 'google',
     selectedActivityId,
     selectedCityId,
@@ -1052,7 +1053,7 @@ export const resolveSelectedMapFocusPosition = ({
     return null;
 };
 
-export const shouldSkipRouteFitForSelection = ({
+const shouldSkipRouteFitForSelection = ({
     respectSelection,
     selectionVersionAtSchedule,
     currentSelectionVersion,
@@ -1072,7 +1073,7 @@ export const shouldSkipRouteFitForSelection = ({
     return Boolean(selectedItemId || selectedActivityId || selectedCityId);
 };
 
-export const resolveSelectionViewportActions = ({
+const resolveSelectionViewportActions = ({
     isTargetVisible,
     isTargetWithinSafeZone,
     currentZoom,
@@ -1089,7 +1090,7 @@ export const resolveSelectionViewportActions = ({
     return { shouldPan, shouldZoom };
 };
 
-export const resolveMapViewportPadding = ({
+const resolveMapViewportPadding = ({
     provider = 'google',
     mapDockMode,
     mapViewportSize,
@@ -1105,7 +1106,7 @@ export const resolveMapViewportPadding = ({
     });
 };
 
-export const isCoordinateWithinSafeBounds = ({
+const isCoordinateWithinSafeBounds = ({
     bounds,
     point,
     insetRatio = 0.22,
@@ -1131,7 +1132,7 @@ export const isCoordinateWithinSafeBounds = ({
         && point.lng <= northEast.lng() - lngInset;
 };
 
-export const shouldDisplayActivityMarkers = ({
+const shouldDisplayActivityMarkers = ({
     provider = 'google',
     isEnabled,
     zoom,
@@ -1145,23 +1146,16 @@ export const shouldDisplayActivityMarkers = ({
     return Number(zoom) >= getTripMapProviderTuning(provider).markers.activityMinZoom;
 };
 
-export const isMapViewportReady = (rect: { width: number; height: number } | null | undefined): boolean => {
+const isMapViewportReady = (rect: { width: number; height: number } | null | undefined): boolean => {
     if (!rect) return false;
     return rect.width >= MAP_VIEWPORT_READY_MIN_DIMENSION_PX && rect.height >= MAP_VIEWPORT_READY_MIN_DIMENSION_PX;
 };
 
-export {
-    buildOverlappingMarkerPosition,
-    getMapLabelCityName,
-    offsetLatLngByMeters,
-    resolveTripMapCityLabelName,
-};
+type CityLabelAnchor = TripMapCityLabelAnchor;
+const resolveCityLabelPlacement = resolveTripMapCityLabelPlacement;
+const resolveCityLabelTheme = resolveTripMapCityLabelTheme;
 
-export type CityLabelAnchor = TripMapCityLabelAnchor;
-export const resolveCityLabelPlacement = resolveTripMapCityLabelPlacement;
-export const resolveCityLabelTheme = resolveTripMapCityLabelTheme;
-
-export const resolveCityLabelAnchor = (
+const resolveCityLabelAnchor = (
     _city: google.maps.LatLngLiteral,
     _previous?: google.maps.LatLngLiteral | null,
     _next?: google.maps.LatLngLiteral | null,
@@ -1169,7 +1163,7 @@ export const resolveCityLabelAnchor = (
     return 'above';
 };
 
-export const buildRouteAttemptPolicy = (
+const buildRouteAttemptPolicy = (
     mode: string,
     straightDistanceKm: number,
 ): RouteAttemptPolicy => {
@@ -1206,7 +1200,7 @@ export const buildRouteAttemptPolicy = (
     }
 };
 
-export const buildRoutePolylinePairOptions = (
+const buildRoutePolylinePairOptions = (
     options: google.maps.PolylineOptions,
     style: MapStyle = 'standard',
 ): {
@@ -1255,7 +1249,7 @@ export const buildRoutePolylinePairOptions = (
     return { outerOutlineOptions, outlineOptions, mainOptions };
 };
 
-export const buildMapboxRouteLayerConfigs = ({
+const buildMapboxRouteLayerConfigs = ({
     routeId,
     options,
     style,
@@ -1324,7 +1318,7 @@ export const buildMapboxRouteLayerConfigs = ({
     ].filter((layer): layer is MapboxLineLayerConfig => Boolean(layer));
 };
 
-export const filterHydratedRouteCacheEntries = (
+const filterHydratedRouteCacheEntries = (
     parsed: unknown,
     now: number,
 ): Array<[string, RouteCacheEntry]> => {
@@ -1338,7 +1332,7 @@ export const filterHydratedRouteCacheEntries = (
     });
 };
 
-export const buildPersistedRouteCachePayload = (
+const buildPersistedRouteCachePayload = (
     routeCache: Map<string, RouteCacheEntry>,
     now: number,
 ): Record<string, RouteCacheEntry> => {

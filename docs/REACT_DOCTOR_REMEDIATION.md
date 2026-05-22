@@ -15,13 +15,13 @@ Improve React Doctor health across the full repository while keeping this PR foc
 
 ## Current Score Snapshot
 
-Latest scanner used: `react-doctor v0.2.1`, resolved through `npx react-doctor@latest`.
+Latest scanner used: `react-doctor v0.2.2`, resolved through `npx react-doctor@latest`.
 React Review status: npm package `react-review@1.0.6` does not expose a CLI binary; React Doctor now points to React Review as the GitHub App for PR comments and score tracking.
 
 - Initial user baseline: `49 / 100`, `73` errors, `5749` warnings, `356/814` files.
 - After core-page fixes: `51 / 100`, `33` errors, `5752` warnings, `356/821` files.
 - Current full scan: `69 / 100`, `0` errors, `764` warnings, `197/825` files.
-- Current diff scan: `90 / 100`, `0` errors, `232` warnings, `59/192` files.
+- Current diff scan: `73 / 100`, `0` errors, `986` warnings, `71/204` files.
 
 ## Completed Changes
 
@@ -66,6 +66,7 @@ React Review status: npm package `react-review@1.0.6` does not expose a CLI bina
 - [x] Reduced markdown editor serialization, task-line parsing, model catalog ordering, and admin benchmark/audit selection parsing to single-pass transforms with focused regression coverage.
 - [x] Simplified admin query multi-value parsing to single-pass loops and reduced tested utility iteration debt across provider labels, JSON diff focus, timeline activities, FAQ excerpts, and city lookup parsing.
 - [x] Raised the expanded PR diff scan from `79 / 100` to `90 / 100` by clearing safe state grouping, accessibility, DOM style batching, key stability, hydration-time, formatter allocation, and visual duplicate warnings across scanner-reported files.
+- [x] Cleared the `react-doctor v0.2.2` Fast Refresh errors by moving tested non-component exports out of component modules for trip manager, details, admin shell, floating map, Mapbox basemap, on-page debugger, and itinerary map helpers.
 
 ## Validation Log
 
@@ -217,6 +218,22 @@ React Review status: npm package `react-review@1.0.6` does not expose a CLI bina
 
 - [x] IDE lint diagnostics
   - Result: no linter errors found in edited `components/` and `pages/` files.
+
+- [x] Focused Fast Refresh utility extraction suite
+  - Command: `pnpm test:run tests/browser/admin/AdminShell.storage.browser.test.ts tests/browser/tripManagerCountryCache.browser.test.ts tests/browser/tripview/TripFloatingMapPreview.browser.test.ts tests/unit/detailsPanelPlacesSearch.test.ts tests/unit/detailsPanelRouteDistanceText.test.ts tests/browser/mapboxBasemapSync.browser.test.ts tests/browser/onPageDebuggerStorage.browser.test.ts test/components/OnPageDebuggerMapRuntime.test.tsx tests/browser/itineraryMapRouteCache.browser.test.ts tests/unit/itineraryMapMapboxRouteLayers.test.ts`
+  - Result: passed, `86` tests.
+
+- [x] `npx -y react-doctor@latest . --verbose --diff`
+  - Result: `73 / 100`, `0` errors, `986` warnings, `71/204` files.
+  - Share: `https://www.react.doctor/share?p=travelflow&s=73&w=986&f=71`
+  - Notes: latest package resolved to `react-doctor v0.2.2`; the new error gate is clear again, and the next score work is reducing `no-event-handler`, `control-has-associated-label`, `no-derived-state`, and `no-initialize-state` warning clusters.
+
+- [x] `pnpm build:netlify`
+  - Result: passed through validators, sitemap generation, and Vite production build.
+  - Notes: emitted existing release-version validation warnings, CSS/view-transition warnings, dynamic-import warnings, and chunk-size warnings.
+
+- [x] `pnpm test:core`
+  - Result: passed, `308` test files, `1369` tests, `1` skipped.
 
 - [x] `npx react-doctor@latest . --verbose --diff`
   - Result: `78 / 100`, `0` errors, `435` warnings, `73/165` files.

@@ -331,7 +331,7 @@ interface TripMetaSummary {
     summaryLine: string;
 }
 
-export interface TripTravelerWarningSummary {
+interface TripTravelerWarningSummary {
     cityName: string;
     notes: string[];
 }
@@ -376,7 +376,7 @@ const buildTripMetaSummary = (trip: ITrip): TripMetaSummary => {
 
 const HEADS_UP_SECTION_REGEX = /### Heads Up\s*([\s\S]*?)(?=\n###\s|\s*$)/i;
 
-export const extractTripTravelerWarnings = (items: ITimelineItem[]): TripTravelerWarningSummary[] => (
+const extractTripTravelerWarnings = (items: ITimelineItem[]): TripTravelerWarningSummary[] => (
     items.reduce<TripTravelerWarningSummary[]>((warnings, item) => {
         if (item.type !== 'city') return warnings;
         const description = typeof item.description === 'string' ? item.description.trim() : '';

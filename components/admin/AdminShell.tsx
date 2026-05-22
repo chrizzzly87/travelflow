@@ -20,11 +20,6 @@ import {
 } from '@phosphor-icons/react';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import {
-    readLocalStorageItem,
-    readSessionStorageItem,
-    writeLocalStorageItem,
-} from '../../services/browserStorageService';
-import {
     SIMULATED_LOGIN_DEBUG_EVENT,
     SIMULATED_LOGIN_STORAGE_KEY,
     isSimulatedLoggedIn,
@@ -35,8 +30,12 @@ import { AccountMenu } from '../navigation/AccountMenu';
 import { useAuth } from '../../hooks/useAuth';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { AppBrand } from '../navigation/AppBrand';
-
-export type AdminDateRange = '7d' | '30d' | '90d' | 'all';
+import {
+    type AdminDateRange,
+    getStoredSidebarCollapseState,
+    isDevAdminBypassDisabled,
+    persistSidebarCollapseState,
+} from './adminShellUtils';
 
 interface AdminShellProps {
     title: string;
@@ -50,21 +49,6 @@ interface AdminShellProps {
     showGlobalSearch?: boolean;
     showDateRange?: boolean;
 }
-
-const SIDEBAR_COLLAPSE_PERSIST_KEY = 'tf_admin_sidebar_collapsed_v1';
-const DEV_ADMIN_BYPASS_DISABLED_SESSION_KEY = 'tf_dev_admin_bypass_disabled';
-
-export const getStoredSidebarCollapseState = (): boolean => {
-    return readLocalStorageItem(SIDEBAR_COLLAPSE_PERSIST_KEY) === '1';
-};
-
-export const persistSidebarCollapseState = (next: boolean): void => {
-    writeLocalStorageItem(SIDEBAR_COLLAPSE_PERSIST_KEY, next ? '1' : '0');
-};
-
-export const isDevAdminBypassDisabled = (): boolean => {
-    return readSessionStorageItem(DEV_ADMIN_BYPASS_DISABLED_SESSION_KEY) === '1';
-};
 
 const itemIcon = (icon: (typeof ADMIN_NAV_ITEMS)[number]['icon']) => {
     if (icon === 'overview') return <ChartPieSlice size={16} weight="duotone" />;

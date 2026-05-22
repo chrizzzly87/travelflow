@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { getRouteDistanceText } from '../../components/DetailsPanel';
+import { getRouteDistanceText } from '../../components/detailsPanelUtils';
 
 describe('components/DetailsPanel route distance text', () => {
   it('returns the distance label when available', () => {

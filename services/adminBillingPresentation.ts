@@ -1,5 +1,5 @@
 import { isIsoDateInRange } from '../components/admin/adminDateRange';
-import type { AdminDateRange } from '../components/admin/AdminShell';
+import type { AdminDateRange } from '../components/admin/adminShellUtils';
 import type {
     AdminBillingDashboardMetricRow,
     AdminBillingDashboardRecord,

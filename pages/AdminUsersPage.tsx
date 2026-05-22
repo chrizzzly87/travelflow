@@ -24,7 +24,8 @@ import { PLAN_CATALOG, PLAN_ORDER } from '../config/planCatalog';
 import { PROFILE_ACCOUNT_STATUS_OPTIONS, PROFILE_GENDER_OPTIONS } from '../config/profileFields';
 import { buildPath } from '../config/routes';
 import { useAuth } from '../hooks/useAuth';
-import { AdminShell, type AdminDateRange } from '../components/admin/AdminShell';
+import { AdminShell } from '../components/admin/AdminShell';
+import type { AdminDateRange } from '../components/admin/adminShellUtils';
 import { isIsoDateInRange } from '../components/admin/adminDateRange';
 import {
     adminCreateUserDirect,

@@ -2,7 +2,6 @@ import React from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { AppLanguage, ITrip, ITimelineItem } from '../types';
 import { X, Trash2, Star, Search, ChevronDown, ChevronRight, MapPin, CalendarDays, History } from 'lucide-react';
-import { readLocalStorageItem, writeLocalStorageItem } from '../services/browserStorageService';
 import { getAllTrips, deleteTrip, saveTrip } from '../services/storageService';
 import { COUNTRIES, DEFAULT_APP_LANGUAGE, DEFAULT_DISTANCE_UNIT, formatDistance, getGoogleMapsApiKey, getTripDistanceKm } from '../utils';
 import { DB_ENABLED, dbArchiveTrip, dbUpsertTrip, syncTripsFromDb } from '../services/dbService';
@@ -24,8 +23,12 @@ import {
   getTripCityStops,
   getTripDateRange,
 } from './profile/tripPreviewUtils';
-
-export { buildMiniMapUrl, getTripCityStops } from './profile/tripPreviewUtils';
+import {
+  type CountryCacheStore,
+  readTripManagerCountryCache,
+  shouldAttemptTripManagerReverseGeocode,
+  writeTripManagerCountryCache,
+} from './tripManagerUtils';
 
 interface TripManagerProps {
   isOpen: boolean;
@@ -56,42 +59,8 @@ interface CountryMatch {
   name: string;
 }
 
-type CountryCacheStore = Record<string, { countryCode: string; countryName: string }>;
-
-const COUNTRY_CACHE_KEY = 'travelflow_country_cache_v1';
 const TRIP_SKELETON_ROWS = [0, 1, 2, 3, 4, 5];
 const MAX_GEOCODE_LOOKUPS_PER_PASS = 24;
-
-export const shouldAttemptTripManagerReverseGeocode = (
-  item: Pick<ITimelineItem, 'coordinates'>,
-  hasStoredOrParsedCountry: boolean,
-  remainingLookups: number
-): boolean => {
-  if (hasStoredOrParsedCountry) return false;
-  if (remainingLookups <= 0) return false;
-  if (!item.coordinates) return false;
-  return Number.isFinite(item.coordinates.lat) && Number.isFinite(item.coordinates.lng);
-};
-
-export const readTripManagerCountryCache = (): CountryCacheStore => {
-  const raw = readLocalStorageItem(COUNTRY_CACHE_KEY);
-  if (!raw) return {};
-  try {
-    const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed !== 'object') return {};
-    return parsed as CountryCacheStore;
-  } catch {
-    return {};
-  }
-};
-
-export const writeTripManagerCountryCache = (cache: CountryCacheStore): void => {
-  try {
-    writeLocalStorageItem(COUNTRY_CACHE_KEY, JSON.stringify(cache));
-  } catch {
-    // ignore cache persistence failures
-  }
-};
 
 const TOOLTIP_WIDTH = 620;
 const TOOLTIP_MIN_HEIGHT = 270;

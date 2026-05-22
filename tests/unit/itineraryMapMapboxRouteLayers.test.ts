@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildMapboxRouteLayerConfigs } from '../../components/ItineraryMap';
+import { buildMapboxRouteLayerConfigs } from '../../components/itineraryMapUtils';
 
 describe('components/ItineraryMap Mapbox dark route layers', () => {
   it('keeps vivid colored route lines in dark Mapbox styles', () => {

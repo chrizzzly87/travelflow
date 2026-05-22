@@ -9,6 +9,7 @@ import {
     readFloatingMapPreviewState,
     writeFloatingMapPreviewState,
 } from './floatingMapPreviewState';
+import { resolveFloatingMapPresetWidths } from './tripFloatingMapPreviewUtils';
 
 interface TripFloatingMapPreviewProps {
     mapDockMode: 'docked' | 'floating';
@@ -24,8 +25,6 @@ const FLOATING_MAP_MARGIN = 24;
 const FLOATING_MAP_MIN_WIDTH = 180;
 const FLOATING_MAP_MAX_WIDTH = 420;
 const FLOATING_MAP_VIEWPORT_RATIO = 0.26;
-const FLOATING_MAP_SMALL_SIZE_RATIO = 0.62;
-const FLOATING_MAP_MIN_SIZE_DELTA = 90;
 const FLOATING_MAP_DRAG_THRESHOLD = 4;
 const FLOATING_MAP_MAX_ROTATION = 11;
 const FLOATING_MAP_ROTATION_VELOCITY_FACTOR = 0.015;
@@ -42,27 +41,6 @@ const FLOATING_MAP_ORIENTATION_SWAP_FACTOR = 1 / FLOATING_MAP_ASPECT_RATIO.portr
 const FLOATING_MAP_INTERACTION_SCALE = 1.01;
 const clampValue = (value: number, min: number, max: number): number => Math.max(min, Math.min(max, value));
 const noopCleanup = () => {};
-
-export const resolveFloatingMapPresetWidths = (baseWidth: number): Record<FloatingMapSizePreset, number> => {
-    const clampedBase = clampValue(baseWidth, FLOATING_MAP_MIN_WIDTH, FLOATING_MAP_MAX_WIDTH);
-    const largeWidth = Math.round(clampedBase);
-    const compactMaxWidth = Math.max(
-        FLOATING_MAP_MIN_WIDTH,
-        largeWidth - FLOATING_MAP_MIN_SIZE_DELTA,
-    );
-    const compactWidth = Math.round(clampValue(
-        largeWidth * FLOATING_MAP_SMALL_SIZE_RATIO,
-        FLOATING_MAP_MIN_WIDTH,
-        compactMaxWidth,
-    ));
-    const middleWidth = Math.round((compactWidth + largeWidth) / 2);
-
-    return {
-        sm: compactWidth,
-        md: middleWidth,
-        lg: largeWidth,
-    };
-};
 
 const resolveWidthForPreset = (baseWidth: number, preset: FloatingMapSizePreset): number =>
     resolveFloatingMapPresetWidths(baseWidth)[preset];
