@@ -72,7 +72,7 @@ export const AdminOgToolsPage: React.FC = () => {
         excludePaths: parseCsvListInput(excludePathsInput),
         excludePrefixes: parseCsvListInput(excludePrefixesInput),
     }), [excludePathsInput, excludePrefixesInput, includePathsInput, includePrefixesInput, localesInput]);
-    const playgroundSrc = useMemo(() => `${OG_PLAYGROUND_PATH}?mode=${playgroundMode}`, [playgroundMode]);
+    const playgroundSrc = `${OG_PLAYGROUND_PATH}?mode=${playgroundMode}`;
 
     const copyText = async (key: string, value: string): Promise<void> => {
         try {

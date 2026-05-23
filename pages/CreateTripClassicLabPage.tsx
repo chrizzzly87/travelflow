@@ -114,7 +114,17 @@ import {
     getAiModelById,
     getCreateTripModelOptions,
 } from '../config/aiModelCatalog';
-import type { CreateTripPrefillDraft } from '../shared/createTripPreferences';
+import {
+    type CreateTripPrefillDraft,
+    isCreateTripCoupleOccasion,
+    isCreateTripDateInputMode,
+    isCreateTripFlexWindow,
+    isCreateTripFriendsEnergy,
+    isCreateTripTransportPreference,
+    isCreateTripTravelerComfort,
+    isCreateTripTravelerGender,
+    isCreateTripTravelerType,
+} from '../shared/createTripPreferences';
 
 interface CreateTripClassicLabPageProps {
     onOpenManager: () => void;
@@ -333,6 +343,218 @@ const getErrorMessage = (error: unknown, fallback: string): string => {
 
 const clampNumber = (value: number, min: number, max: number): number => Math.max(min, Math.min(value, max));
 
+type CreateTripClassicInitialState = {
+    destinations: string[];
+    startDestination: string;
+    dateInputMode: DateInputMode;
+    startDate: string;
+    endDate: string;
+    flexWeeks: number;
+    flexWindow: FlexWindow;
+    budget: BudgetType;
+    pace: PaceType;
+    roundTrip: boolean;
+    routeLock: boolean;
+    travelerType: TravelerType;
+    selectedStyles: string[];
+    transportModes: TransportMode[];
+    hasTransportOverride: boolean;
+    soloGender: TravelerGender;
+    soloAge: string;
+    soloComfort: TravelerComfort;
+    coupleTravelerA: TravelerGender;
+    coupleTravelerB: TravelerGender;
+    coupleOccasion: CoupleOccasion;
+    friendsCount: number;
+    friendsEnergy: FriendsEnergy;
+    familyAdults: number;
+    familyChildren: number;
+    familyBabies: number;
+    notes: string;
+    prefillMeta: TripPrefillData['meta'] | null;
+};
+
+const buildCreateTripClassicInitialState = (
+    searchParams: URLSearchParams,
+    initialRange: ReturnType<typeof getInitialDateRange>
+): CreateTripClassicInitialState => {
+    const initialState: CreateTripClassicInitialState = {
+        destinations: [],
+        startDestination: '',
+        dateInputMode: 'exact',
+        startDate: initialRange.startDate,
+        endDate: initialRange.endDate,
+        flexWeeks: 2,
+        flexWindow: 'shoulder',
+        budget: 'Medium',
+        pace: 'Balanced',
+        roundTrip: true,
+        routeLock: false,
+        travelerType: DEFAULT_EFFECTIVE_TRAVELER,
+        selectedStyles: DEFAULT_EFFECTIVE_STYLE_IDS,
+        transportModes: [DEFAULT_EFFECTIVE_TRANSPORT],
+        hasTransportOverride: false,
+        soloGender: '',
+        soloAge: '',
+        soloComfort: 'balanced',
+        coupleTravelerA: '',
+        coupleTravelerB: '',
+        coupleOccasion: 'none',
+        friendsCount: 4,
+        friendsEnergy: 'mixed',
+        familyAdults: 2,
+        familyChildren: 1,
+        familyBabies: 0,
+        notes: '',
+        prefillMeta: null,
+    };
+
+    const raw = searchParams.get('prefill');
+    if (!raw) return initialState;
+
+    const data = decodeTripPrefill(raw);
+    if (!data) return initialState;
+
+    if (data.countries && data.countries.length > 0) {
+        initialState.destinations = data.countries;
+        initialState.startDestination = data.countries[0];
+    }
+    if (data.startDate) initialState.startDate = data.startDate;
+    if (data.endDate) initialState.endDate = data.endDate;
+    if (data.budget) initialState.budget = data.budget as BudgetType;
+    if (data.pace) initialState.pace = data.pace as PaceType;
+    if (typeof data.roundTrip === 'boolean') initialState.roundTrip = data.roundTrip;
+    if (typeof data.notes === 'string') initialState.notes = data.notes;
+    if (Array.isArray(data.styles) && data.styles.length > 0) {
+        const knownStyleIds = new Set(STYLE_CHOICES.map((entry) => entry.id));
+        const filteredStyles = data.styles.filter((styleId) => knownStyleIds.has(styleId));
+        if (filteredStyles.length > 0) initialState.selectedStyles = filteredStyles;
+    }
+
+    const rawMeta = data.meta;
+    const safeMeta = rawMeta && typeof rawMeta === 'object' && !Array.isArray(rawMeta)
+        ? rawMeta as Record<string, unknown>
+        : null;
+
+    if (!safeMeta) return initialState;
+
+    const label = typeof safeMeta.label === 'string' ? safeMeta.label : undefined;
+    const source = typeof safeMeta.source === 'string' ? safeMeta.source : undefined;
+    const author = typeof safeMeta.author === 'string' ? safeMeta.author : undefined;
+    if (label || source || author) {
+        initialState.prefillMeta = { label, source, author };
+    }
+
+    const rawDraft = safeMeta.draft;
+    const draft = rawDraft && typeof rawDraft === 'object' && !Array.isArray(rawDraft)
+        ? rawDraft as Partial<CreateTripPrefillDraft & {
+            transportModes?: TransportMode[];
+            soloGender?: TravelerGender;
+            soloAge?: string;
+            soloComfort?: TravelerComfort;
+            coupleTravelerA?: TravelerGender;
+            coupleTravelerB?: TravelerGender;
+            coupleOccasion?: CoupleOccasion;
+            friendsCount?: number;
+            friendsEnergy?: FriendsEnergy;
+            familyAdults?: number;
+            familyChildren?: number;
+            familyBabies?: number;
+        }>
+        : null;
+
+    if (!draft) return initialState;
+
+    const travelerDetails = (
+        draft.travelerDetails && typeof draft.travelerDetails === 'object' && !Array.isArray(draft.travelerDetails)
+            ? draft.travelerDetails
+            : {}
+    ) as NonNullable<CreateTripPrefillDraft['travelerDetails']>;
+
+    if (isCreateTripDateInputMode(draft.dateInputMode)) {
+        initialState.dateInputMode = draft.dateInputMode;
+    }
+    if (typeof draft.flexWeeks === 'number' && Number.isFinite(draft.flexWeeks)) {
+        initialState.flexWeeks = clampNumber(Math.round(draft.flexWeeks), 1, 12);
+    }
+    if (isCreateTripFlexWindow(draft.flexWindow)) {
+        initialState.flexWindow = draft.flexWindow;
+    }
+    if (typeof draft.startDestination === 'string') {
+        initialState.startDestination = draft.startDestination;
+    }
+    if (typeof draft.routeLock === 'boolean') {
+        initialState.routeLock = draft.routeLock;
+    }
+    if (isCreateTripTravelerType(draft.travelerType)) {
+        initialState.travelerType = draft.travelerType;
+    }
+    if (Array.isArray(draft.tripStyleTags)) {
+        const knownStyleIds = new Set(STYLE_CHOICES.map((entry) => entry.id));
+        const validStyleTags = draft.tripStyleTags.filter(
+            (styleId): styleId is string => typeof styleId === 'string' && knownStyleIds.has(styleId)
+        );
+        if (validStyleTags.length > 0) initialState.selectedStyles = validStyleTags;
+    }
+
+    const preferredTransportModes = Array.isArray(draft.transportPreferences)
+        ? draft.transportPreferences
+        : draft.transportModes;
+    if (Array.isArray(preferredTransportModes)) {
+        const validModes = preferredTransportModes.filter(isCreateTripTransportPreference);
+        if (validModes.length > 0) initialState.transportModes = validModes;
+    }
+    if (typeof draft.hasTransportOverride === 'boolean') {
+        initialState.hasTransportOverride = draft.hasTransportOverride;
+    }
+
+    const soloGenderValue = travelerDetails.soloGender ?? draft.soloGender;
+    if (isCreateTripTravelerGender(soloGenderValue)) initialState.soloGender = soloGenderValue;
+    const soloAgeValue = travelerDetails.soloAge ?? draft.soloAge;
+    if (typeof soloAgeValue === 'string') initialState.soloAge = soloAgeValue;
+    const soloComfortValue = travelerDetails.soloComfort ?? draft.soloComfort;
+    if (isCreateTripTravelerComfort(soloComfortValue)) initialState.soloComfort = soloComfortValue;
+
+    const coupleTravelerAValue = travelerDetails.coupleTravelerA ?? draft.coupleTravelerA;
+    if (isCreateTripTravelerGender(coupleTravelerAValue)) initialState.coupleTravelerA = coupleTravelerAValue;
+    const coupleTravelerBValue = travelerDetails.coupleTravelerB ?? draft.coupleTravelerB;
+    if (isCreateTripTravelerGender(coupleTravelerBValue)) initialState.coupleTravelerB = coupleTravelerBValue;
+    const coupleOccasionValue = travelerDetails.coupleOccasion ?? draft.coupleOccasion;
+    if (isCreateTripCoupleOccasion(coupleOccasionValue)) initialState.coupleOccasion = coupleOccasionValue;
+
+    const friendsCountValue = travelerDetails.friendsCount ?? draft.friendsCount;
+    if (typeof friendsCountValue === 'number' && Number.isFinite(friendsCountValue)) {
+        initialState.friendsCount = clampNumber(Math.round(friendsCountValue), 2, 12);
+    }
+    const friendsEnergyValue = travelerDetails.friendsEnergy ?? draft.friendsEnergy;
+    if (isCreateTripFriendsEnergy(friendsEnergyValue)) initialState.friendsEnergy = friendsEnergyValue;
+
+    const familyAdultsValue = travelerDetails.familyAdults ?? draft.familyAdults;
+    if (typeof familyAdultsValue === 'number' && Number.isFinite(familyAdultsValue)) {
+        initialState.familyAdults = clampNumber(Math.round(familyAdultsValue), 1, 8);
+    }
+    const familyChildrenValue = travelerDetails.familyChildren ?? draft.familyChildren;
+    if (typeof familyChildrenValue === 'number' && Number.isFinite(familyChildrenValue)) {
+        initialState.familyChildren = clampNumber(Math.round(familyChildrenValue), 0, 8);
+    }
+    const familyBabiesValue = travelerDetails.familyBabies ?? draft.familyBabies;
+    if (typeof familyBabiesValue === 'number' && Number.isFinite(familyBabiesValue)) {
+        initialState.familyBabies = clampNumber(Math.round(familyBabiesValue), 0, 4);
+    }
+
+    if (initialState.destinations.length === 0) {
+        initialState.startDestination = '';
+        initialState.routeLock = false;
+    } else if (!initialState.startDestination || !initialState.destinations.includes(initialState.startDestination)) {
+        initialState.startDestination = initialState.destinations[0];
+    }
+    if (initialState.destinations.length <= 1) {
+        initialState.routeLock = false;
+    }
+
+    return initialState;
+};
+
 const NumberStepper: React.FC<{
     label: string;
     value: number;
@@ -382,40 +604,41 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
     useDbSync(onLanguageLoaded);
 
     const initialRange = useMemo(() => getInitialDateRange(), []);
+    const [initialPrefillState] = useState(() => buildCreateTripClassicInitialState(searchParams, initialRange));
 
     const [query, setQuery] = useState('');
-    const [destinations, setDestinations] = useState<string[]>([]);
-    const [startDestination, setStartDestination] = useState<string>('');
+    const [destinations, setDestinations] = useState<string[]>(initialPrefillState.destinations);
+    const [startDestination, setStartDestination] = useState<string>(initialPrefillState.startDestination);
     const [dragIndex, setDragIndex] = useState<number | null>(null);
     const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
-    const [dateInputMode, setDateInputMode] = useState<DateInputMode>('exact');
-    const [startDate, setStartDate] = useState(initialRange.startDate);
-    const [endDate, setEndDate] = useState(initialRange.endDate);
-    const [flexWeeks, setFlexWeeks] = useState(2);
-    const [flexWindow, setFlexWindow] = useState<FlexWindow>('shoulder');
+    const [dateInputMode, setDateInputMode] = useState<DateInputMode>(initialPrefillState.dateInputMode);
+    const [startDate, setStartDate] = useState(initialPrefillState.startDate);
+    const [endDate, setEndDate] = useState(initialPrefillState.endDate);
+    const [flexWeeks, setFlexWeeks] = useState(initialPrefillState.flexWeeks);
+    const [flexWindow, setFlexWindow] = useState<FlexWindow>(initialPrefillState.flexWindow);
 
-    const [budget, setBudget] = useState<BudgetType>('Medium');
-    const [pace, setPace] = useState<PaceType>('Balanced');
-    const [roundTrip, setRoundTrip] = useState(true);
-    const [routeLock, setRouteLock] = useState(false);
+    const [budget, setBudget] = useState<BudgetType>(initialPrefillState.budget);
+    const [pace, setPace] = useState<PaceType>(initialPrefillState.pace);
+    const [roundTrip, setRoundTrip] = useState(initialPrefillState.roundTrip);
+    const [routeLock, setRouteLock] = useState(initialPrefillState.routeLock);
 
-    const [travelerType, setTravelerType] = useState<TravelerType>(DEFAULT_EFFECTIVE_TRAVELER);
-    const [selectedStyles, setSelectedStyles] = useState<string[]>(DEFAULT_EFFECTIVE_STYLE_IDS);
-    const [transportModes, setTransportModes] = useState<TransportMode[]>([DEFAULT_EFFECTIVE_TRANSPORT]);
-    const [hasTransportOverride, setHasTransportOverride] = useState(false);
+    const [travelerType, setTravelerType] = useState<TravelerType>(initialPrefillState.travelerType);
+    const [selectedStyles, setSelectedStyles] = useState<string[]>(initialPrefillState.selectedStyles);
+    const [transportModes, setTransportModes] = useState<TransportMode[]>(initialPrefillState.transportModes);
+    const hasTransportOverrideRef = useRef(initialPrefillState.hasTransportOverride);
 
-    const [soloGender, setSoloGender] = useState<TravelerGender>('');
-    const [soloAge, setSoloAge] = useState('');
-    const [soloComfort, setSoloComfort] = useState<TravelerComfort>('balanced');
-    const [coupleTravelerA, setCoupleTravelerA] = useState<TravelerGender>('');
-    const [coupleTravelerB, setCoupleTravelerB] = useState<TravelerGender>('');
-    const [coupleOccasion, setCoupleOccasion] = useState<CoupleOccasion>('none');
-    const [friendsCount, setFriendsCount] = useState(4);
-    const [friendsEnergy, setFriendsEnergy] = useState<FriendsEnergy>('mixed');
-    const [familyAdults, setFamilyAdults] = useState(2);
-    const [familyChildren, setFamilyChildren] = useState(1);
-    const [familyBabies, setFamilyBabies] = useState(0);
+    const [soloGender, setSoloGender] = useState<TravelerGender>(initialPrefillState.soloGender);
+    const [soloAge, setSoloAge] = useState(initialPrefillState.soloAge);
+    const [soloComfort, setSoloComfort] = useState<TravelerComfort>(initialPrefillState.soloComfort);
+    const [coupleTravelerA, setCoupleTravelerA] = useState<TravelerGender>(initialPrefillState.coupleTravelerA);
+    const [coupleTravelerB, setCoupleTravelerB] = useState<TravelerGender>(initialPrefillState.coupleTravelerB);
+    const [coupleOccasion, setCoupleOccasion] = useState<CoupleOccasion>(initialPrefillState.coupleOccasion);
+    const [friendsCount, setFriendsCount] = useState(initialPrefillState.friendsCount);
+    const [friendsEnergy, setFriendsEnergy] = useState<FriendsEnergy>(initialPrefillState.friendsEnergy);
+    const [familyAdults, setFamilyAdults] = useState(initialPrefillState.familyAdults);
+    const [familyChildren, setFamilyChildren] = useState(initialPrefillState.familyChildren);
+    const [familyBabies, setFamilyBabies] = useState(initialPrefillState.familyBabies);
     const [travelerSettingsOpen, setTravelerSettingsOpen] = useState(false);
     const [settingsTraveler, setSettingsTraveler] = useState<TravelerType>(DEFAULT_EFFECTIVE_TRAVELER);
     const [isDesktopSettings, setIsDesktopSettings] = useState(() => {
@@ -423,9 +646,9 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
         return window.matchMedia('(min-width: 768px)').matches;
     });
 
-    const [notes, setNotes] = useState('');
-    const [prefillMeta, setPrefillMeta] = useState<TripPrefillData['meta'] | null>(null);
-    const [prefillHydrated, setPrefillHydrated] = useState(false);
+    const [notes, setNotes] = useState(initialPrefillState.notes);
+    const [prefillMeta] = useState<TripPrefillData['meta'] | null>(initialPrefillState.prefillMeta);
+    const prefillHydrated = true;
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
     const [selectedModelId, setSelectedModelId] = useState<string>(DEFAULT_CREATE_TRIP_MODEL_ID);
@@ -757,14 +980,6 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
     }, []);
 
     useEffect(() => {
-        if (!canLockRoute) {
-            setRouteLock(false);
-            setDragIndex(null);
-            setDragOverIndex(null);
-        }
-    }, [canLockRoute]);
-
-    useEffect(() => {
         const updateMobileSnapshotOffset = () => {
             const footer = document.querySelector('footer');
             if (!footer) {
@@ -786,17 +1001,6 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
     }, []);
 
     useEffect(() => {
-        if (destinations.length === 0) {
-            setStartDestination('');
-            return;
-        }
-
-        if (!startDestination || !destinations.includes(startDestination)) {
-            setStartDestination(destinations[0]);
-        }
-    }, [destinations, startDestination]);
-
-    useEffect(() => {
         if (typeof window === 'undefined') return;
         const mediaQuery = window.matchMedia('(min-width: 768px)');
         const onChange = () => setIsDesktopSettings(mediaQuery.matches);
@@ -811,159 +1015,6 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
         return () => mediaQuery.removeListener(onChange);
     }, []);
 
-    useEffect(() => {
-        const raw = searchParams.get('prefill');
-        if (!raw) {
-            setPrefillHydrated(true);
-            return;
-        }
-
-        const data = decodeTripPrefill(raw);
-        if (!data) {
-            setPrefillHydrated(true);
-            return;
-        }
-
-        if (data.countries && data.countries.length > 0) {
-            setDestinations(data.countries);
-            setStartDestination(data.countries[0]);
-        }
-        if (data.startDate) setStartDate(data.startDate);
-        if (data.endDate) setEndDate(data.endDate);
-        if (data.budget) setBudget(data.budget as BudgetType);
-        if (data.pace) setPace(data.pace as PaceType);
-        if (typeof data.roundTrip === 'boolean') setRoundTrip(data.roundTrip);
-        if (typeof data.notes === 'string') setNotes(data.notes);
-        if (Array.isArray(data.styles) && data.styles.length > 0) {
-            const knownStyleIds = new Set(STYLE_CHOICES.map((entry) => entry.id));
-            const filteredStyles = data.styles.filter((styleId) => knownStyleIds.has(styleId));
-            if (filteredStyles.length > 0) setSelectedStyles(filteredStyles);
-        }
-
-        const rawMeta = data.meta;
-        const safeMeta = rawMeta && typeof rawMeta === 'object' && !Array.isArray(rawMeta)
-            ? rawMeta as Record<string, unknown>
-            : null;
-
-        if (safeMeta) {
-            const label = typeof safeMeta.label === 'string' ? safeMeta.label : undefined;
-            const source = typeof safeMeta.source === 'string' ? safeMeta.source : undefined;
-            const author = typeof safeMeta.author === 'string' ? safeMeta.author : undefined;
-            if (label || source || author) {
-                setPrefillMeta({ label, source, author });
-            }
-
-            const rawDraft = safeMeta.draft;
-            const draft = rawDraft && typeof rawDraft === 'object' && !Array.isArray(rawDraft)
-                ? rawDraft as Partial<CreateTripPrefillDraft & {
-                    transportModes?: TransportMode[];
-                    soloGender?: TravelerGender;
-                    soloAge?: string;
-                    soloComfort?: TravelerComfort;
-                    coupleTravelerA?: TravelerGender;
-                    coupleTravelerB?: TravelerGender;
-                    coupleOccasion?: CoupleOccasion;
-                    friendsCount?: number;
-                    friendsEnergy?: FriendsEnergy;
-                    familyAdults?: number;
-                    familyChildren?: number;
-                    familyBabies?: number;
-                }>
-                : null;
-
-            if (draft) {
-                const travelerDetails = (
-                    draft.travelerDetails && typeof draft.travelerDetails === 'object' && !Array.isArray(draft.travelerDetails)
-                        ? draft.travelerDetails
-                        : {}
-                ) as NonNullable<CreateTripPrefillDraft['travelerDetails']>;
-
-                if (draft.dateInputMode === 'exact' || draft.dateInputMode === 'flex') {
-                    setDateInputMode(draft.dateInputMode);
-                }
-                if (typeof draft.flexWeeks === 'number' && Number.isFinite(draft.flexWeeks)) {
-                    setFlexWeeks(clampNumber(Math.round(draft.flexWeeks), 1, 12));
-                }
-                if (draft.flexWindow && FLEX_WINDOW_OPTIONS.some((entry) => entry.id === draft.flexWindow)) {
-                    setFlexWindow(draft.flexWindow);
-                }
-                if (typeof draft.startDestination === 'string') {
-                    setStartDestination(draft.startDestination);
-                }
-                if (typeof draft.routeLock === 'boolean') {
-                    setRouteLock(draft.routeLock);
-                }
-                if (draft.travelerType && TRAVELER_OPTIONS.some((entry) => entry.id === draft.travelerType)) {
-                    setTravelerType(draft.travelerType);
-                }
-                if (Array.isArray(draft.tripStyleTags)) {
-                    const knownStyleIds = new Set(STYLE_CHOICES.map((entry) => entry.id));
-                    const validStyleTags = draft.tripStyleTags.filter(
-                        (styleId): styleId is string => typeof styleId === 'string' && knownStyleIds.has(styleId)
-                    );
-                    if (validStyleTags.length > 0) setSelectedStyles(validStyleTags);
-                }
-                const preferredTransportModes = Array.isArray(draft.transportPreferences)
-                    ? draft.transportPreferences
-                    : draft.transportModes;
-                if (Array.isArray(preferredTransportModes)) {
-                    const allowedTransportModes = new Set<TransportMode>(TRANSPORT_OPTIONS.map((entry) => entry.id));
-                    const validModes = preferredTransportModes.filter(
-                        (mode): mode is TransportMode => typeof mode === 'string' && allowedTransportModes.has(mode as TransportMode)
-                    );
-                    if (validModes.length > 0) setTransportModes(validModes);
-                }
-                if (typeof draft.hasTransportOverride === 'boolean') {
-                    setHasTransportOverride(draft.hasTransportOverride);
-                }
-                const soloGenderValue = travelerDetails.soloGender ?? draft.soloGender;
-                if (soloGenderValue === '' || soloGenderValue === 'female' || soloGenderValue === 'male' || soloGenderValue === 'non-binary' || soloGenderValue === 'prefer-not') {
-                    setSoloGender(soloGenderValue);
-                }
-                if (typeof (travelerDetails.soloAge ?? draft.soloAge) === 'string') setSoloAge((travelerDetails.soloAge ?? draft.soloAge) as string);
-                const soloComfortValue = travelerDetails.soloComfort ?? draft.soloComfort;
-                if (soloComfortValue === 'social' || soloComfortValue === 'balanced' || soloComfortValue === 'private') {
-                    setSoloComfort(soloComfortValue);
-                }
-                const coupleTravelerAValue = travelerDetails.coupleTravelerA ?? draft.coupleTravelerA;
-                if (coupleTravelerAValue === '' || coupleTravelerAValue === 'female' || coupleTravelerAValue === 'male' || coupleTravelerAValue === 'non-binary' || coupleTravelerAValue === 'prefer-not') {
-                    setCoupleTravelerA(coupleTravelerAValue);
-                }
-                const coupleTravelerBValue = travelerDetails.coupleTravelerB ?? draft.coupleTravelerB;
-                if (coupleTravelerBValue === '' || coupleTravelerBValue === 'female' || coupleTravelerBValue === 'male' || coupleTravelerBValue === 'non-binary' || coupleTravelerBValue === 'prefer-not') {
-                    setCoupleTravelerB(coupleTravelerBValue);
-                }
-                const coupleOccasionValue = travelerDetails.coupleOccasion ?? draft.coupleOccasion;
-                if (coupleOccasionValue === 'none' || coupleOccasionValue === 'honeymoon' || coupleOccasionValue === 'anniversary' || coupleOccasionValue === 'city-break') {
-                    setCoupleOccasion(coupleOccasionValue);
-                }
-                const friendsCountValue = travelerDetails.friendsCount ?? draft.friendsCount;
-                if (typeof friendsCountValue === 'number' && Number.isFinite(friendsCountValue)) {
-                    setFriendsCount(clampNumber(Math.round(friendsCountValue), 2, 12));
-                }
-                const friendsEnergyValue = travelerDetails.friendsEnergy ?? draft.friendsEnergy;
-                if (friendsEnergyValue === 'chill' || friendsEnergyValue === 'mixed' || friendsEnergyValue === 'full-send') {
-                    setFriendsEnergy(friendsEnergyValue);
-                }
-                const familyAdultsValue = travelerDetails.familyAdults ?? draft.familyAdults;
-                if (typeof familyAdultsValue === 'number' && Number.isFinite(familyAdultsValue)) {
-                    setFamilyAdults(clampNumber(Math.round(familyAdultsValue), 1, 8));
-                }
-                const familyChildrenValue = travelerDetails.familyChildren ?? draft.familyChildren;
-                if (typeof familyChildrenValue === 'number' && Number.isFinite(familyChildrenValue)) {
-                    setFamilyChildren(clampNumber(Math.round(familyChildrenValue), 0, 8));
-                }
-                const familyBabiesValue = travelerDetails.familyBabies ?? draft.familyBabies;
-                if (typeof familyBabiesValue === 'number' && Number.isFinite(familyBabiesValue)) {
-                    setFamilyBabies(clampNumber(Math.round(familyBabiesValue), 0, 4));
-                }
-            }
-        }
-
-        setPrefillHydrated(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-
     const draftMeta = useMemo<CreateTripPrefillDraft>(() => ({
         version: 2,
         dateInputMode,
@@ -973,7 +1024,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
         routeLock,
         travelerType,
         transportPreferences: transportModes,
-        hasTransportOverride,
+        hasTransportOverride: hasTransportOverrideRef.current,
         tripStyleTags: selectedStyles,
         destinationOrder: orderedDestinations,
         travelerDetails: {
@@ -1001,7 +1052,6 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
         flexWindow,
         friendsCount,
         friendsEnergy,
-        hasTransportOverride,
         orderedDestinations,
         routeLock,
         selectedStyles,
@@ -1026,7 +1076,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
             || familyChildren !== 1
             || familyBabies !== 0;
 
-        const hasTransportOverrides = hasTransportOverride
+        const hasTransportOverrides = hasTransportOverrideRef.current
             || transportModes.length !== 1
             || transportModes[0] !== DEFAULT_EFFECTIVE_TRANSPORT;
 
@@ -1060,7 +1110,6 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
         flexWindow,
         friendsCount,
         friendsEnergy,
-        hasTransportOverride,
         initialRange.endDate,
         initialRange.startDate,
         notes,
@@ -1198,12 +1247,25 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
         if (alreadySelected) return;
 
         setDestinations((previous) => [...previous, normalized]);
+        if (destinations.length === 0) {
+            setStartDestination(normalized);
+        }
         setQuery('');
         setSearchOpen(false);
     };
 
     const removeDestination = (name: string) => {
-        setDestinations((previous) => previous.filter((entry) => entry !== name));
+        const nextDestinations = destinations.filter((entry) => entry !== name);
+        setDestinations(nextDestinations);
+        setStartDestination((current) => {
+            if (nextDestinations.length === 0) return '';
+            return current && nextDestinations.includes(current) ? current : nextDestinations[0];
+        });
+        if (nextDestinations.length <= 1) {
+            setRouteLock(false);
+            setDragIndex(null);
+            setDragOverIndex(null);
+        }
     };
 
     const handleDestinationDragStart = (index: number) => {
@@ -1253,7 +1315,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
     };
 
     const toggleTransportMode = (mode: TransportMode) => {
-        setHasTransportOverride(true);
+        hasTransportOverrideRef.current = true;
         setTransportModes((previous) => {
             if (mode === 'auto') return ['auto'];
 
@@ -1708,7 +1770,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
             travelerDetails,
             tripStyleTags: selectedStyles,
             transportPreferences: transportModes,
-            hasTransportOverride,
+            hasTransportOverride: hasTransportOverrideRef.current,
             notes: notes.trim() || undefined,
             aiTarget: {
                 provider: selectedAiModel.provider,

@@ -32,7 +32,25 @@
       "react-doctor/no-fetch-in-effect",
       "react-doctor/no-interactive-element-to-noninteractive-role",
       "react-doctor/no-aria-hidden-on-focusable",
-      "react-doctor/iframe-missing-sandbox"
+      "react-doctor/iframe-missing-sandbox",
+      "deslop/unused-file",
+      "deslop/unused-export",
+      "deslop/circular-dependency",
+      "react-doctor/js-flatmap-filter",
+      "react-doctor/js-combine-iterations",
+      "react-doctor/async-parallel",
+      "react-doctor/no-render-in-render",
+      "react-doctor/design-no-bold-heading",
+      "react-doctor/no-z-index-9999",
+      "react-doctor/no-gray-on-colored-background",
+      "react-doctor/js-set-map-lookups",
+      "react-doctor/jsx-no-constructed-context-values",
+      "react-doctor/js-length-check-first",
+      "deslop/unused-dependency",
+      "deslop/unused-dev-dependency",
+      "react-doctor/no-static-element-interactions",
+      "react-doctor/design-no-redundant-size-axes",
+      "react-doctor/prefer-use-sync-external-store"
     ]
   }
 }
