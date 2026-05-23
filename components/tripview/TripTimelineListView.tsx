@@ -97,13 +97,13 @@ const buildMarkdownComponents = (
     h1: ({ node, children, ...props }: any) => <h1 {...props} className={MARKDOWN_H1_CLASS}>{children}</h1>,
     h2: ({ node, children, ...props }: any) => <h2 {...props} className={MARKDOWN_H2_CLASS}>{children}</h2>,
     h3: ({ node, children, ...props }: any) => <h3 {...props} className={MARKDOWN_H3_CLASS}>{children}</h3>,
-    a: ({ node, ...props }: any) => (
+    a: ({ node, children, ...props }: any) => (
         <a
             {...props}
             className="text-accent-700 underline decoration-accent-300 underline-offset-2 hover:text-accent-800"
             target="_blank"
             rel="noopener noreferrer"
-        />
+        >{children}</a>
     ),
     p: ({ node, ...props }: any) => <p {...props} className="my-1 leading-6" />,
     ul: ({ node, ...props }: any) => {

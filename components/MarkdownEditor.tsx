@@ -473,8 +473,8 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                 <ReactMarkdown
                     remarkPlugins={[remarkGfm]}
                     components={{
-                        a: ({node, ...props}) => (
-                            <a {...props} className="text-accent-600 hover:underline" target="_blank" rel="noopener noreferrer" />
+                        a: ({node, children, ...props}) => (
+                            <a {...props} className="text-accent-600 hover:underline" target="_blank" rel="noopener noreferrer">{children}</a>
                         ),
                         blockquote: ({node, ...props}) => (
                             <blockquote {...props} className={MARKDOWN_HEADS_UP_BANNER_CLASS} />

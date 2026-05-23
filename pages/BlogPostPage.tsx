@@ -426,6 +426,7 @@ const BlogMapCanvas: React.FC<BlogMapCanvasProps> = ({
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
                 className="size-full border-0"
+                sandbox="allow-scripts allow-same-origin allow-popups"
                 allowFullScreen
             />
         );

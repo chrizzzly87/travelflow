@@ -1671,7 +1671,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                                 </div>
                                 {hotel.address && (
                                     <div className="rounded-lg overflow-hidden h-32 w-full bg-gray-200 border border-gray-300 relative">
-                                        <iframe width="100%" height="100%" frameBorder="0" style={{ border: 0 }} src={`https://maps.google.com/maps?q=${encodeURIComponent(hotel.address)}&t=&z=13&ie=UTF8&iwloc=&output=embed&hl=${encodeURIComponent(mapLanguage)}`} title="Hotel"></iframe>
+                                        <iframe width="100%" height="100%" frameBorder="0" style={{ border: 0 }} src={`https://maps.google.com/maps?q=${encodeURIComponent(hotel.address)}&t=&z=13&ie=UTF8&iwloc=&output=embed&hl=${encodeURIComponent(mapLanguage)}`} sandbox="allow-scripts allow-same-origin allow-popups" title="Hotel"></iframe>
                                     </div>
                                 )}
                             </div>

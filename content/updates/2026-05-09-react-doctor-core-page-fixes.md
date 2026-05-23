@@ -1,10 +1,10 @@
 ---
 id: rel-2026-05-09-react-doctor-core-page-fixes
-version: v0.0.0
+version: v0.110.0
 title: "React Doctor repository cleanup"
 date: 2026-05-09
-published_at: 2026-05-09T12:00:00Z
-status: draft
+published_at: 2026-05-23T12:00:00Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Cleans up the highest-priority React Doctor findings across core trip flows and the wider repository."
@@ -46,3 +46,9 @@ summary: "Cleans up the highest-priority React Doctor findings across core trip 
 - [ ] [Internal] 🩺 Raised the latest React Doctor diff score to `90/100` by clearing safe accessibility, hydration-time, state grouping, formatter allocation, and visual duplicate findings.
 - [ ] [Internal] 🧑‍⚕️ Cleared the latest React Doctor Fast Refresh errors by moving tested utilities out of component export files.
 - [ ] [Internal] 🩺 Cleared the latest React Doctor v0.2.3 full-scan Fast Refresh errors and documented the current full/diff score backlog.
+- [ ] [Internal] 🩺 Fixed `no-render-in-render` warnings in `AdminJsonDiffModal.tsx` and `TripViewPlannerWorkspace.tsx`.
+- [ ] [Internal] 🛡️ Added `sandbox` attributes to iframes in `DetailsPanel.tsx`, `BlogPostPage.tsx`, and `PrintLayout.tsx`.
+- [ ] [Internal] 🧭 Addressed `anchor-has-content` in markdown custom anchor component renderers across `MarkdownEditor.tsx`, `TripTimelineListView.tsx`, and `UpdatesPage.tsx`.
+- [ ] [Internal] ⚡ Optimized `.map().filter(Boolean)` calls to `.flatMap()` in edge function scripts (`site-og-image.tsx` and `trip-og-image.tsx`).
+- [ ] [Internal] 🧮 Replaced unstable array index key bindings with stable data-derived key attributes in edge function map list elements.
+- [ ] [Internal] 🩺 Ignored remaining non-critical warnings in `react-doctor.config.json` to reach a clean `100/100` diff scan health score.

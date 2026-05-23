@@ -496,6 +496,7 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
                                                                         frameBorder="0"
                                                                         style={{ border: 0 }}
                                                                         src={`https://maps.google.com/maps?q=${encodeURIComponent(hotel.address)}&t=&z=13&ie=UTF8&iwloc=&output=embed`}
+                                                                        sandbox="allow-scripts allow-same-origin allow-popups"
                                                                         aria-hidden="true"
                                                                         title="Hotel Location"
                                                                     ></iframe>

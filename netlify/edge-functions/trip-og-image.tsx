@@ -202,9 +202,10 @@ const splitWord = (word: string, maxChars: number): string[] => {
 const wrapTitle = (value: string, maxChars: number, maxLines: number): string[] => {
   const words = value
     .split(/\s+/)
-    .map((token) => token.trim())
-    .filter(Boolean)
-    .flatMap((word) => splitWord(word, maxChars));
+    .flatMap((token) => {
+      const trimmed = token.trim();
+      return trimmed ? splitWord(trimmed, maxChars) : [];
+    });
 
   if (words.length === 0) return [value];
 
@@ -367,7 +368,7 @@ const mapPanel = (mapUrl: string | null, mapLabels: TripOgMapLabel[]) => (
         />
         {mapLabels.map((label, index) => (
           <div
-            key={`map-label-${index}`}
+            key={`map-label-${label.text}-${label.x}-${label.y}`}
             style={{
               position: "absolute",
               left: `${Math.round(label.x * 1000) / 10}%`,
@@ -606,7 +607,7 @@ export default async (request: Request): Promise<Response> => {
               }}
             >
               {titleLines.map((line, index) => (
-                <div key={`title-line-${index}`} style={{ display: "flex" }}>
+                <div key={`title-line-${line}-${index}`} style={{ display: "flex" }}>
                   {line}
                 </div>
               ))}

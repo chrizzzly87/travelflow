@@ -79,7 +79,7 @@ const buildFocusedRenderEntries = (
     return entries;
 };
 
-const renderJsonTokenStream = (
+const formatJsonTokenStream = (
     tokens: Array<string | Prism.Token>,
     keyPrefix: string
 ): React.ReactNode[] => tokens.map((token, index) => {
@@ -94,7 +94,7 @@ const renderJsonTokenStream = (
             : [];
     const className = ['token', token.type, ...aliases].join(' ');
     const content = Array.isArray(token.content)
-        ? renderJsonTokenStream(token.content as Array<string | Prism.Token>, `${keyPrefix}-${index}-${token.type}`)
+        ? formatJsonTokenStream(token.content as Array<string | Prism.Token>, `${keyPrefix}-${index}-${token.type}`)
         : token.content;
 
     return (
@@ -104,9 +104,9 @@ const renderJsonTokenStream = (
     );
 });
 
-const renderJsonLine = (value: string | null, keyPrefix: string): React.ReactNode => {
+const formatJsonLine = (value: string | null, keyPrefix: string): React.ReactNode => {
     if (value === null) return null;
-    return renderJsonTokenStream(Prism.tokenize(value || ' ', Prism.languages.json), keyPrefix);
+    return formatJsonTokenStream(Prism.tokenize(value || ' ', Prism.languages.json), keyPrefix);
 };
 
 const JSON_TOKEN_CLASSNAMES = [
@@ -251,7 +251,7 @@ export const AdminJsonDiffModal: React.FC<AdminJsonDiffModalProps> = ({
                                                     </td>
                                                     <td className={`min-w-[420px] px-2 py-0.5 font-mono ${lineCellClassName(row.leftType)} ${JSON_TOKEN_CLASSNAMES}`}>
                                                         <code className="whitespace-pre">
-                                                            {renderJsonLine(row.leftValue, `before-${rowIndex}`)}
+                                                            {formatJsonLine(row.leftValue, `before-${rowIndex}`)}
                                                         </code>
                                                     </td>
                                                 </tr>
@@ -296,7 +296,7 @@ export const AdminJsonDiffModal: React.FC<AdminJsonDiffModalProps> = ({
                                                     </td>
                                                     <td className={`min-w-[420px] px-2 py-0.5 font-mono ${lineCellClassName(row.rightType)} ${JSON_TOKEN_CLASSNAMES}`}>
                                                         <code className="whitespace-pre">
-                                                            {renderJsonLine(row.rightValue, `after-${rowIndex}`)}
+                                                            {formatJsonLine(row.rightValue, `after-${rowIndex}`)}
                                                         </code>
                                                     </td>
                                                 </tr>

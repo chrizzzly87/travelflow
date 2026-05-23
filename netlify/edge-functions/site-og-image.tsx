@@ -279,9 +279,10 @@ const splitWord = (word: string, maxChars: number): string[] => {
 const wrapTitle = (value: string, maxChars: number, maxLines: number): string[] => {
   const words = value
     .split(/\s+/)
-    .map((token) => token.trim())
-    .filter(Boolean)
-    .flatMap((word) => splitWord(word, maxChars));
+    .flatMap((token) => {
+      const trimmed = token.trim();
+      return trimmed ? splitWord(trimmed, maxChars) : [];
+    });
 
   if (words.length === 0) return [value];
 
@@ -469,7 +470,7 @@ export default async (request: Request): Promise<Response> => {
               }}
             >
               {titleLines.map((line, i) => (
-                <div key={`title-${i}`} style={{ display: "flex", justifyContent: isRtl ? "flex-end" : "flex-start" }}>
+                <div key={`title-${line}-${i}`} style={{ display: "flex", justifyContent: isRtl ? "flex-end" : "flex-start" }}>
                   {line}
                 </div>
               ))}
