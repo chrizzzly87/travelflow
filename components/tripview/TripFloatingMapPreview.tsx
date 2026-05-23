@@ -263,7 +263,7 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
     const [isFloatingMapDragging, setIsFloatingMapDragging] = useState(false);
     const [isFloatingMapSettling, setIsFloatingMapSettling] = useState(false);
     const [isHandlePressed, setIsHandlePressed] = useState(false);
-    const hasResolvedInitialGeometryRef = useRef(false);
+    const [hasResolvedInitialGeometry, setHasResolvedInitialGeometry] = useState(false);
     const dragSettleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const viewportResizeRafRef = useRef<number | null>(null);
     const floatingResizePersistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -490,13 +490,13 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
     useEffect(() => {
         const modeChanged = previousMapDockModeRef.current !== mapDockMode;
 
-        if (!hasResolvedInitialGeometryRef.current) {
+        if (!hasResolvedInitialGeometry) {
             if (mapDockMode === 'docked') {
                 scheduleDockedGeometrySync(false);
             } else {
                 syncSurfaceGeometry(false);
             }
-            hasResolvedInitialGeometryRef.current = true;
+            setHasResolvedInitialGeometry(true);
             previousMapDockModeRef.current = mapDockMode;
             return;
         }
@@ -509,7 +509,7 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
 
         syncSurfaceGeometry(modeChanged);
         previousMapDockModeRef.current = mapDockMode;
-    }, [mapDockMode, scheduleDockedGeometrySync, syncSurfaceGeometry]);
+    }, [hasResolvedInitialGeometry, mapDockMode, scheduleDockedGeometrySync, syncSurfaceGeometry]);
 
     useEffect(() => {
         if (mapDockMode !== 'docked' || typeof window === 'undefined') return;

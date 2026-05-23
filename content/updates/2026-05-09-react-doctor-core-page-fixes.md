@@ -1,6 +1,6 @@
 ---
 id: rel-2026-05-09-react-doctor-core-page-fixes
-version: v0.110.0
+version: v0.115.0
 title: "React Doctor repository cleanup"
 date: 2026-05-09
 published_at: 2026-05-23T12:00:00Z
