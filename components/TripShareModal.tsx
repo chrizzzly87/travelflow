@@ -58,6 +58,7 @@ export const TripShareModal: React.FC<TripShareModalProps> = ({
                     type="radio"
                     name="share-mode"
                     className="mt-1"
+                    aria-label="View only"
                     checked={shareMode === 'view'}
                     onChange={() => onShareModeChange('view')}
                 />
@@ -71,6 +72,7 @@ export const TripShareModal: React.FC<TripShareModalProps> = ({
                     type="radio"
                     name="share-mode"
                     className="mt-1"
+                    aria-label="Allow editing"
                     checked={shareMode === 'edit'}
                     onChange={() => onShareModeChange('edit')}
                 />

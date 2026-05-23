@@ -307,6 +307,7 @@ export const AdminOgToolsPage: React.FC = () => {
                                 <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Locales (CSV)</span>
                                 <input
                                     id="og-locales-input"
+                                    aria-label="Locales (CSV)"
                                     value={localesInput}
                                     onChange={(event) => setLocalesInput(event.target.value)}
                                     placeholder="en,de,fr,fa,ur"
@@ -317,6 +318,7 @@ export const AdminOgToolsPage: React.FC = () => {
                                 <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Include paths (CSV)</span>
                                 <input
                                     id="og-include-paths-input"
+                                    aria-label="Include paths (CSV)"
                                     value={includePathsInput}
                                     onChange={(event) => setIncludePathsInput(event.target.value)}
                                     placeholder="/,/blog,/de/blog"
@@ -327,6 +329,7 @@ export const AdminOgToolsPage: React.FC = () => {
                                 <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Include prefixes (CSV)</span>
                                 <input
                                     id="og-include-prefixes-input"
+                                    aria-label="Include prefixes (CSV)"
                                     value={includePrefixesInput}
                                     onChange={(event) => setIncludePrefixesInput(event.target.value)}
                                     placeholder="/blog,/inspirations,/de/blog"
@@ -337,6 +340,7 @@ export const AdminOgToolsPage: React.FC = () => {
                                 <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Exclude paths (CSV)</span>
                                 <input
                                     id="og-exclude-paths-input"
+                                    aria-label="Exclude paths (CSV)"
                                     value={excludePathsInput}
                                     onChange={(event) => setExcludePathsInput(event.target.value)}
                                     placeholder="/blog/draft-slug"
@@ -347,6 +351,7 @@ export const AdminOgToolsPage: React.FC = () => {
                                 <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Exclude prefixes (CSV)</span>
                                 <input
                                     id="og-exclude-prefixes-input"
+                                    aria-label="Exclude prefixes (CSV)"
                                     value={excludePrefixesInput}
                                     onChange={(event) => setExcludePrefixesInput(event.target.value)}
                                     placeholder="/example,/ko/blog"
