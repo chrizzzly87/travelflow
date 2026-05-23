@@ -1,3 +1,4 @@
+/* eslint-disable react-doctor/only-export-components */
 import React from "https://esm.sh/react@18.3.1";
 import { ImageResponse } from "https://deno.land/x/og_edge/mod.ts";
 import { APP_NAME } from "../../config/appGlobals.ts";

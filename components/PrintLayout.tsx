@@ -142,7 +142,7 @@ const CalendarView: React.FC<{ trip: ITrip; onScrollTo: (id: string) => void }> 
 
                          return (
                              <button
-                                key={city.id} 
+                                key={city.id}
                                 type="button"
                                 className="flex items-center gap-2 text-xs cursor-pointer hover:bg-gray-50 p-1 rounded transition-colors"
                                 onClick={() => onScrollTo(city.id)}
@@ -292,7 +292,7 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
   return (
     <div className="fixed inset-0 z-[9999] bg-white text-gray-900 font-sans size-full overflow-y-auto no-scrollbar print:static print:h-auto print:overflow-visible">
         <div className="p-8 max-w-[1400px] mx-auto print:p-0 print:max-w-none print:w-full print:h-auto print:overflow-visible">
-            
+
             {/* Navigation Bar (Hidden on Print) */}
             <div className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 shadow-sm flex items-center justify-between px-8 print:hidden z-50">
                 <h1 className="font-semibold text-lg text-gray-700">Trip List View</h1>
@@ -336,14 +336,16 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
                     >
                         Download everything (.ics)
                     </button>
-                    <button 
-                        onClick={onClose} 
+	                    <button
+	                        type="button"
+	                        onClick={onClose}
                         className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg text-sm font-medium"
                     >
                         Close
                     </button>
-                    <button 
-                        onClick={() => window.print()} 
+	                    <button
+	                        type="button"
+	                        onClick={() => window.print()}
                         className="px-4 py-2 bg-accent-600 text-white hover:bg-accent-700 rounded-lg text-sm font-medium shadow-sm flex items-center gap-2"
                     >
                         <ArrowRight size={16} /> Print List
@@ -373,7 +375,7 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
 
                     {/* Content Grid */}
                     <div className="flex-1 min-h-0 grid grid-cols-12 gap-8 w-full print:block">
-                        
+
                         {/* LEFT: Info & Calendar */}
                         <div className="col-span-7 flex flex-col min-h-0 print:w-full print:mb-8">
                              {/* Country Info */}
@@ -382,7 +384,7 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
                                     <CountryInfo info={trip.countryInfo} />
                                 </div>
                             )}
-                            
+
                             {/* Calendar View restored */}
                             <div className="flex-1 overflow-y-auto no-scrollbar print:overflow-visible print:h-auto">
                                 <CalendarView trip={trip} onScrollTo={handleScrollTo} />
@@ -405,17 +407,17 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
                         });
                         const cityStart = citySpan.startDate;
                         const cityEnd = citySpan.endDate;
-                        
+
                         // Find travel TO this city
-                        const arrivalTransport = trip.items.find(i => 
-                            (i.type === 'travel' || i.type === 'travel-empty') && 
+                        const arrivalTransport = trip.items.find(i =>
+                            (i.type === 'travel' || i.type === 'travel-empty') &&
                             Math.abs((i.startDateOffset + i.duration) - city.startDateOffset) < 0.2
                         );
-                        
+
                         // Find activities
-                        const cityActivities = trip.items.filter(i => 
-                            i.type === 'activity' && 
-                            i.startDateOffset >= city.startDateOffset && 
+                        const cityActivities = trip.items.filter(i =>
+                            i.type === 'activity' &&
+                            i.startDateOffset >= city.startDateOffset &&
                             i.startDateOffset < (city.startDateOffset + city.duration)
                         ).sort((a,b) => a.startDateOffset - b.startDateOffset);
 
@@ -423,8 +425,8 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
                         const days = [];
                         for (let i = 0; i < city.duration; i++) {
                             const dayDate = addDays(cityStart, i);
-                            const dayActs = cityActivities.filter(act => 
-                                act.startDateOffset >= (city.startDateOffset + i) && 
+                            const dayActs = cityActivities.filter(act =>
+                                act.startDateOffset >= (city.startDateOffset + i) &&
                                 act.startDateOffset < (city.startDateOffset + i + 1)
                             );
                             days.push({ date: dayDate, activities: dayActs });
@@ -433,8 +435,8 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
                         const cityColor = getHexFromColorClass(city.color || '');
 
                         return (
-                            <article 
-                                key={city.id} 
+                            <article
+                                key={city.id}
                                 id={`city-detail-${city.id}`}
                                 className="break-inside-avoid pb-8 border-b border-gray-100 last:border-0 scroll-mt-24"
                             >
@@ -527,14 +529,14 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
                                     <div className="md:col-span-2 space-y-6">
                                         {days.map((day, dIdx) => {
                                             const globalDayIndex = Math.round((day.date.getTime() - tripStartDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-                                            
+
                                             return (
                                                 <div key={dIdx} className="relative pl-6 border-l-2 border-gray-100 pb-2 last:pb-0">
                                                     <div className="absolute -left-[5px] top-0 size-2.5 rounded-full bg-gray-300 ring-4 ring-white" />
                                                     <h4 className="font-semibold text-gray-900 text-sm mb-3">
                                                         Day {globalDayIndex} <span className="text-gray-400 font-normal mx-1">•</span> {day.date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
                                                     </h4>
-                                                    
+
                                                     {day.activities.length > 0 ? (
                                                         <div className="space-y-3">
                                                             {day.activities.map(act => (
@@ -564,7 +566,7 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({
                         );
                     })}
                 </div>
-                
+
                 <footer className="mt-12 pt-8 border-t border-gray-200 text-center text-xs text-gray-400 break-before-page">
                     Created with TravelFlow
                 </footer>

@@ -1686,9 +1686,10 @@ export const CheckoutPage: React.FC = () => {
                                             <label className="block">
                                                 <span className={checkoutFieldLabelClassName}>{t('labels.email', { ns: 'auth' })}</span>
                                                 <input
-                                                    name="email"
-                                                    type="email"
-                                                    autoComplete={authMode === 'login' ? 'username' : 'email'}
+	                                                    name="email"
+	                                                    type="email"
+	                                                    aria-label={t('labels.email', { ns: 'auth' })}
+	                                                    autoComplete={authMode === 'login' ? 'username' : 'email'}
                                                     inputMode="email"
                                                     autoCapitalize="none"
                                                     autoCorrect="off"
@@ -1702,9 +1703,10 @@ export const CheckoutPage: React.FC = () => {
                                             <label className="block">
                                                 <span className={checkoutFieldLabelClassName}>{t('labels.password', { ns: 'auth' })}</span>
                                                 <input
-                                                    name="password"
-                                                    type="password"
-                                                    autoComplete={authMode === 'login' ? 'current-password' : 'new-password'}
+	                                                    name="password"
+	                                                    type="password"
+	                                                    aria-label={t('labels.password', { ns: 'auth' })}
+	                                                    autoComplete={authMode === 'login' ? 'current-password' : 'new-password'}
                                                     value={authPassword}
                                                     onChange={(event) => setAuthPassword(event.target.value)}
                                                     required
@@ -1822,8 +1824,9 @@ export const CheckoutPage: React.FC = () => {
                                     <div className="grid gap-4 sm:grid-cols-2">
                                         <label className="block">
                                             <span className={checkoutFieldLabelClassName}>{t('settings.fields.firstName', { ns: 'profile' })}</span>
-                                            <input
-                                                value={form.firstName}
+	                                            <input
+	                                                aria-label={t('settings.fields.firstName', { ns: 'profile' })}
+	                                                value={form.firstName}
                                                 onChange={(event) => setField('firstName', event.target.value)}
                                                 autoComplete="given-name"
                                                 disabled={travelerDetailsLocked || isTravelerDetailsSaving}
@@ -1832,8 +1835,9 @@ export const CheckoutPage: React.FC = () => {
                                         </label>
                                         <label className="block">
                                             <span className={checkoutFieldLabelClassName}>{t('settings.fields.lastName', { ns: 'profile' })}</span>
-                                            <input
-                                                value={form.lastName}
+	                                            <input
+	                                                aria-label={t('settings.fields.lastName', { ns: 'profile' })}
+	                                                value={form.lastName}
                                                 onChange={(event) => setField('lastName', event.target.value)}
                                                 autoComplete="family-name"
                                                 disabled={travelerDetailsLocked || isTravelerDetailsSaving}
@@ -1858,8 +1862,9 @@ export const CheckoutPage: React.FC = () => {
                                         </div>
                                         <label className="block">
                                             <span className={checkoutFieldLabelClassName}>{t('settings.fields.city', { ns: 'profile' })}</span>
-                                            <input
-                                                value={form.city}
+	                                            <input
+	                                                aria-label={t('settings.fields.city', { ns: 'profile' })}
+	                                                value={form.city}
                                                 onChange={(event) => setField('city', event.target.value)}
                                                 autoComplete="address-level2"
                                                 disabled={travelerDetailsLocked || isTravelerDetailsSaving}
@@ -2170,9 +2175,10 @@ export const CheckoutPage: React.FC = () => {
                                                 </div>
                                             ) : (
                                                 <div className="flex gap-3">
-                                                    <input
-                                                        type="text"
-                                                        value={discountInput}
+	                                                    <input
+	                                                        type="text"
+	                                                        aria-label={t('voucher.placeholder', { ns: 'pricing' })}
+	                                                        value={discountInput}
                                                         onChange={(event) => handleDiscountInputChange(event.target.value)}
                                                         placeholder={t('voucher.placeholder', { ns: 'pricing' })}
                                                         autoCapitalize="characters"

@@ -13,12 +13,14 @@ import { showAppToast } from '../components/ui/appToast';
 import { Checkbox } from '../components/ui/checkbox';
 import {
     AdminSortHeaderButton,
+} from '../components/admin/AdminDataTable';
+import {
     ADMIN_TABLE_ROW_SURFACE_CLASS,
     ADMIN_TABLE_SORTED_CELL_CLASS,
     ADMIN_TABLE_SORTED_HEADER_CLASS,
     getAdminStickyBodyCellClass,
     getAdminStickyHeaderCellClass,
-} from '../components/admin/AdminDataTable';
+} from '../components/admin/AdminDataTableUtils';
 import {
     Dialog,
     DialogContent,
@@ -719,8 +721,9 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
                     </div>
                     <label className="space-y-1 lg:col-span-2">
                         <span className={subtleHeadingClassName}>Textarea</span>
-                        <textarea
-                            rows={3}
+	                        <textarea
+	                            aria-label="Textarea"
+	                            rows={3}
                             defaultValue="This sample keeps the same spacing, border, and focus style used in profile/admin forms."
                             className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
                         />

@@ -343,9 +343,10 @@ export const BlogPage: React.FC = () => {
                 <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                     <div className="relative w-full md:max-w-xl">
                         <MagnifyingGlass size={18} weight="duotone" className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                        <input
-                            type="text"
-                            value={search}
+	                        <input
+	                            type="text"
+	                            aria-label={t('index.searchPlaceholder')}
+	                            value={search}
                             onChange={(event) => setSearch(event.target.value)}
                             placeholder={t('index.searchPlaceholder')}
                             className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-10 pr-4 text-sm text-slate-800 shadow-sm placeholder:text-slate-400 focus:border-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-200 transition-shadow"
@@ -393,7 +394,7 @@ export const BlogPage: React.FC = () => {
                 style={{ '--stagger': '160ms' } as React.CSSProperties}
             >
                 <div className="flex flex-wrap gap-2">
-                    <button
+                    <button type="button"
                         onClick={() => setSelectedTag(null)}
                         className={`rounded-full px-3.5 py-1.5 text-sm font-medium shadow-sm transition-all ${
                             selectedTag === null
@@ -404,7 +405,7 @@ export const BlogPage: React.FC = () => {
                         {t('common:buttons.all')}
                     </button>
                     {allTags.map((tag) => (
-                        <button
+                        <button type="button"
                             key={tag}
                             onClick={() => setSelectedTag(tag === selectedTag ? null : tag)}
                             className={`inline-flex items-center gap-1 rounded-full px-3.5 py-1.5 text-sm font-medium shadow-sm transition-all ${

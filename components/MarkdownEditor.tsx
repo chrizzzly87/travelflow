@@ -506,7 +506,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
 
                 {hasAiButton && (
                     <div className="relative" ref={aiPopoverRef}>
-                        <button
+                        <button type="button"
                             onClick={handleAiButtonClick}
                             disabled={isGenerating}
                             className="flex items-center gap-1.5 px-2 py-1 text-xs font-medium text-accent-600 hover:bg-accent-50 rounded-md transition-colors disabled:opacity-50"
@@ -523,7 +523,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                                 </div>
                                 <div className="p-2 space-y-1">
                                     {(aiActions || []).map((action) => (
-                                        <button
+                                        <button type="button"
                                             key={action.id}
                                             onClick={() => {
                                                 onAiActionSelect?.(action.id);
@@ -581,7 +581,9 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                 ref={editorRef}
                 contentEditable={isEditorInteractive}
                 role="textbox"
+                aria-label="Markdown editor"
                 aria-multiline="true"
+                tabIndex={isEditorInteractive ? 0 : -1}
                 suppressContentEditableWarning
                 onInput={syncMarkdownFromEditor}
                 onBlur={syncMarkdownFromEditor}

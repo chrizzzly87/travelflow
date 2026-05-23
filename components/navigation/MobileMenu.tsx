@@ -245,7 +245,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
                         <div className="flex min-h-full flex-col">
                             <div className="space-y-2">
                                 {onMyTripsClick && hasTrips ? (
-                                    <button
+                                    <button type="button"
                                         onClick={() => {
                                             handleNavClick('my_trips');
                                             onMyTripsClick();

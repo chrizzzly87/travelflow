@@ -375,10 +375,11 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                                 {showGlobalSearch && (
                                     <div className="flex-1 w-full sm:w-auto lg:flex-none">
                                         <label className="sr-only" htmlFor="admin-global-search">Search</label>
-                                        <input
-                                            id="admin-global-search"
-                                            type="search"
-                                            value={searchValue}
+	                                        <input
+	                                            id="admin-global-search"
+	                                            type="search"
+	                                            aria-label="Search"
+	                                            value={searchValue}
                                             onChange={(event) => onSearchValueChange?.(event.target.value)}
                                             placeholder="Search"
                                             disabled={!onSearchValueChange}

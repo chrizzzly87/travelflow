@@ -917,9 +917,10 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                     </label>
                                     <label className="space-y-1">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.fields.firstName')}</span>
-                                        <input
-                                            ref={firstNameInputRef}
-                                            value={form.firstName}
+	                                        <input
+	                                            ref={firstNameInputRef}
+	                                            aria-label={t('settings.fields.firstName')}
+	                                            value={form.firstName}
                                             onChange={(event) => updateField('firstName', event.target.value)}
                                             aria-invalid={requiredFieldErrors.firstName}
                                             className={`h-10 w-full rounded-lg border px-3 text-sm outline-none focus:ring-2 ${
@@ -931,9 +932,10 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                     </label>
                                     <label className="space-y-1">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.fields.lastName')}</span>
-                                        <input
-                                            ref={lastNameInputRef}
-                                            value={form.lastName}
+	                                        <input
+	                                            ref={lastNameInputRef}
+	                                            aria-label={t('settings.fields.lastName')}
+	                                            value={form.lastName}
                                             onChange={(event) => updateField('lastName', event.target.value)}
                                             aria-invalid={requiredFieldErrors.lastName}
                                             className={`h-10 w-full rounded-lg border px-3 text-sm outline-none focus:ring-2 ${
@@ -1037,8 +1039,9 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
 
                                 <label className="space-y-1">
                                     <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.fields.bio')}</span>
-                                    <textarea
-                                        value={form.bio}
+	                                    <textarea
+	                                        aria-label={t('settings.fields.bio')}
+	                                        value={form.bio}
                                         onChange={(event) => updateField('bio', clampBio(event.target.value))}
                                         rows={3}
                                         className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
@@ -1070,9 +1073,10 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                     </div>
                                     <label className="space-y-1">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.fields.city')}</span>
-                                        <input
-                                            ref={cityInputRef}
-                                            value={form.city}
+	                                        <input
+	                                            ref={cityInputRef}
+	                                            aria-label={t('settings.fields.city')}
+	                                            value={form.city}
                                             onChange={(event) => updateField('city', event.target.value)}
                                             aria-invalid={requiredFieldErrors.city}
                                             className={`h-9 w-full rounded-md border px-2.5 text-xs outline-none focus:ring-2 ${

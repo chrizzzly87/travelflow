@@ -259,9 +259,10 @@ export const AdminLegalTermsPage: React.FC = () => {
                             <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
                                 <label className="space-y-1 text-xs font-semibold text-slate-700">
                                     Version date prefix
-                                    <input
-                                        type="text"
-                                        value={draft.versionDate}
+	                                    <input
+	                                        type="text"
+	                                        aria-label="Version date prefix"
+	                                        value={draft.versionDate}
                                         readOnly
                                         className="h-10 w-full rounded-lg border border-slate-300 bg-slate-50 px-3 text-sm text-slate-700"
                                     />
@@ -274,9 +275,10 @@ export const AdminLegalTermsPage: React.FC = () => {
                                 </label>
                                 <label className="space-y-1 text-xs font-semibold text-slate-700">
                                     Revision suffix
-                                    <input
-                                        type="number"
-                                        min={0}
+	                                    <input
+	                                        type="number"
+	                                        aria-label="Revision suffix"
+	                                        min={0}
                                         step={1}
                                         value={draft.versionRevision}
                                         onChange={(event) => {
@@ -297,9 +299,10 @@ export const AdminLegalTermsPage: React.FC = () => {
                                 </label>
                                 <label className="space-y-1 text-xs font-semibold text-slate-700">
                                     Last updated
-                                    <input
-                                        type="date"
-                                        value={normalizeDateInput(draft.lastUpdated)}
+	                                    <input
+	                                        type="date"
+	                                        aria-label="Last updated"
+	                                        value={normalizeDateInput(draft.lastUpdated)}
                                         onChange={(event) => {
                                             const nextDate = normalizeDateInput(event.target.value);
                                             const nextRevision = getNextTermsRevision(nextDate, versions.map((row) => row.version));
@@ -318,9 +321,10 @@ export const AdminLegalTermsPage: React.FC = () => {
                                 </label>
                                 <label className="space-y-1 text-xs font-semibold text-slate-700 md:col-span-2 lg:col-span-2">
                                     Title
-                                    <input
-                                        type="text"
-                                        value={draft.title}
+	                                    <input
+	                                        type="text"
+	                                        aria-label="Title"
+	                                        value={draft.title}
                                         onChange={(event) => handleDraftField('title', event.target.value)}
                                         className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm text-slate-900 outline-none ring-accent-200 focus:ring"
                                         placeholder="Terms of Service / AGB"
@@ -330,8 +334,9 @@ export const AdminLegalTermsPage: React.FC = () => {
 
                             <label className="space-y-1 text-xs font-semibold text-slate-700">
                                 Summary (internal/admin)
-                                <textarea
-                                    value={draft.summary}
+	                                <textarea
+	                                    aria-label="Summary"
+	                                    value={draft.summary}
                                     onChange={(event) => handleDraftField('summary', event.target.value)}
                                     className="min-h-[72px] w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none ring-accent-200 focus:ring"
                                     placeholder="What changed in this version?"
@@ -340,9 +345,10 @@ export const AdminLegalTermsPage: React.FC = () => {
 
                             <div className="inline-flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800">
                                 <input
-                                    id="legal-terms-requires-reaccept"
-                                    type="checkbox"
-                                    className="mt-0.5 size-4 rounded border-slate-300 text-accent-600 focus:ring-accent-500"
+	                                    id="legal-terms-requires-reaccept"
+	                                    type="checkbox"
+	                                    aria-label="Force re-acceptance"
+	                                    className="mt-0.5 size-4 rounded border-slate-300 text-accent-600 focus:ring-accent-500"
                                     checked={draft.requiresReaccept}
                                     onChange={(event) => handleDraftField('requiresReaccept', event.target.checked)}
                                 />
@@ -357,16 +363,18 @@ export const AdminLegalTermsPage: React.FC = () => {
                             <div className="grid gap-3 lg:grid-cols-2">
                                 <label className="space-y-1 text-xs font-semibold text-slate-700">
                                     German binding text (Markdown)
-                                    <textarea
-                                        value={draft.contentDe}
+	                                <textarea
+	                                    aria-label="German binding text"
+	                                    value={draft.contentDe}
                                         onChange={(event) => handleDraftField('contentDe', event.target.value)}
                                         className="min-h-[320px] w-full rounded-lg border border-slate-300 px-3 py-2 text-xs leading-5 text-slate-900 outline-none ring-accent-200 focus:ring"
                                     />
                                 </label>
                                 <label className="space-y-1 text-xs font-semibold text-slate-700">
                                     English helper text (Markdown)
-                                    <textarea
-                                        value={draft.contentEn}
+	                                <textarea
+	                                    aria-label="English helper text"
+	                                    value={draft.contentEn}
                                         onChange={(event) => handleDraftField('contentEn', event.target.value)}
                                         className="min-h-[320px] w-full rounded-lg border border-slate-300 px-3 py-2 text-xs leading-5 text-slate-900 outline-none ring-accent-200 focus:ring"
                                     />

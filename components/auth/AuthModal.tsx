@@ -680,9 +680,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                                     </label>
                                     <input
                                         id={emailInputId}
-                                        name="email"
-                                        type="email"
-                                        autoComplete={mode === 'login' ? 'username' : 'email'}
+	                                        name="email"
+	                                        type="email"
+	                                        aria-label={t('labels.email')}
+	                                        autoComplete={mode === 'login' ? 'username' : 'email'}
                                         inputMode="email"
                                         autoCapitalize="none"
                                         autoCorrect="off"
@@ -703,9 +704,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                                     </label>
                                     <input
                                         id={secondaryInputId}
-                                        name="password"
-                                        type="password"
-                                        autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+	                                        name="password"
+	                                        type="password"
+	                                        aria-label={t('labels.password')}
+	                                        autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
                                         value={password}
                                         onChange={(event) => setPassword(event.target.value)}
                                         disabled={isSubmitting || isRestoreBlocked}

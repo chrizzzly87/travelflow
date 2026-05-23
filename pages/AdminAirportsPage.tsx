@@ -18,7 +18,7 @@ import { GoogleMapsLoader, useGoogleMaps } from '../components/GoogleMapsLoader'
 import { ProfileCountryRegionSelect } from '../components/profile/ProfileCountryRegionSelect';
 import { AdminReloadButton } from '../components/admin/AdminReloadButton';
 import { AdminShell } from '../components/admin/AdminShell';
-import { ADMIN_TABLE_ROW_SURFACE_CLASS } from '../components/admin/AdminDataTable';
+import { ADMIN_TABLE_ROW_SURFACE_CLASS } from '../components/admin/AdminDataTableUtils';
 import { AdminSurfaceCard } from '../components/admin/AdminSurfaceCard';
 import { Checkbox } from '../components/ui/checkbox';
 import { Input } from '../components/ui/input';
@@ -1084,9 +1084,10 @@ const AdminAirportTester: React.FC<{
                     <div className="space-y-2">
                         <label htmlFor="admin-airports-city-search" className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">City Search</label>
                         <div className="relative">
-                            <Input
-                                id="admin-airports-city-search"
-                                value={filters.cityQuery}
+	                            <Input
+	                                id="admin-airports-city-search"
+	                                aria-label="City Search"
+	                                value={filters.cityQuery}
                                 onChange={(event) => {
                                     onFiltersChange({
                                         cityQuery: event.target.value,
@@ -1140,9 +1141,10 @@ const AdminAirportTester: React.FC<{
                     <div className="grid gap-3 sm:grid-cols-2">
                         <div className="space-y-2">
                             <label htmlFor="admin-airports-latitude" className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Latitude</label>
-                            <Input
-                                id="admin-airports-latitude"
-                                type="number"
+	                            <Input
+	                                id="admin-airports-latitude"
+	                                type="number"
+	                                aria-label="Latitude"
                                 step="0.000001"
                                 value={filters.latitudeInput}
                                 onChange={(event) => onFiltersChange({ latitudeInput: event.target.value })}
@@ -1151,9 +1153,10 @@ const AdminAirportTester: React.FC<{
                         </div>
                         <div className="space-y-2">
                             <label htmlFor="admin-airports-longitude" className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Longitude</label>
-                            <Input
-                                id="admin-airports-longitude"
-                                type="number"
+	                            <Input
+	                                id="admin-airports-longitude"
+	                                type="number"
+	                                aria-label="Longitude"
                                 step="0.000001"
                                 value={filters.longitudeInput}
                                 onChange={(event) => onFiltersChange({ longitudeInput: event.target.value })}
@@ -1183,9 +1186,10 @@ const AdminAirportTester: React.FC<{
                         </div>
                         <div className="space-y-2">
                             <label htmlFor="admin-airports-result-limit" className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Result Limit</label>
-                            <Input
-                                id="admin-airports-result-limit"
-                                type="number"
+	                            <Input
+	                                id="admin-airports-result-limit"
+	                                type="number"
+	                                aria-label="Result Limit"
                                 min={1}
                                 max={10}
                                 value={filters.limitInput}
@@ -1498,9 +1502,10 @@ const AdminAirportBulkEditor: React.FC<{
             {bulkTimezoneMode === 'set' && (
                 <div className="space-y-2">
                     <label htmlFor="admin-airports-bulk-timezone-value" className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Timezone Value</label>
-                    <Input
-                        id="admin-airports-bulk-timezone-value"
-                        value={bulkTimezoneValue}
+	                    <Input
+	                        id="admin-airports-bulk-timezone-value"
+	                        aria-label="Timezone Value"
+	                        value={bulkTimezoneValue}
                         onChange={(event) => setBulkTimezoneValue(event.target.value)}
                         placeholder="Europe/Berlin"
                     />
@@ -1675,19 +1680,21 @@ const AdminAirportTicketLab: React.FC<{
                         <div className="grid gap-3 md:grid-cols-2">
                             <div className="space-y-2">
                                 <label htmlFor="admin-airports-ticket-passenger" className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Passenger Name</label>
-                                <Input
-                                    id="admin-airports-ticket-passenger"
-                                    value={passengerName}
+	                                <Input
+	                                    id="admin-airports-ticket-passenger"
+	                                    aria-label="Passenger Name"
+	                                    value={passengerName}
                                     onChange={(event) => setPassengerName(event.target.value)}
                                     placeholder="Alex Morgan"
                                 />
                             </div>
                             <div className="space-y-2">
                                 <label htmlFor="admin-airports-ticket-date" className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Departure Date</label>
-                                <Input
-                                    id="admin-airports-ticket-date"
-                                    type="date"
-                                    value={departureDate}
+	                                <Input
+	                                    id="admin-airports-ticket-date"
+	                                    type="date"
+	                                    aria-label="Departure Date"
+	                                    value={departureDate}
                                     onChange={(event) => setDepartureDate(event.target.value)}
                                 />
                             </div>
@@ -2906,9 +2913,10 @@ export const AdminAirportsPage: React.FC = () => {
                                 <div className="grid gap-3 md:grid-cols-2">
                                     <div className="space-y-2">
                                         <label htmlFor="admin-airports-editor-ident" className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Ident</label>
-                                        <Input
-                                            id="admin-airports-editor-ident"
-                                            value={editorDraft.ident}
+	                                        <Input
+	                                            id="admin-airports-editor-ident"
+	                                            aria-label="Ident"
+	                                            value={editorDraft.ident}
                                             disabled={editorMode !== 'create'}
                                             onChange={(event) => {
                                                 setEditorDraft((current) => current ? { ...current, ident: event.target.value.toUpperCase() } : current);
@@ -2945,14 +2953,14 @@ export const AdminAirportsPage: React.FC = () => {
                                 <div className="grid gap-3 md:grid-cols-2">
                                     <div className="space-y-2">
                                         <label htmlFor="admin-airports-editor-iata" className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">IATA code</label>
-                                        <Input id="admin-airports-editor-iata" value={editorDraft.iataCode} onChange={(event) => {
+	                                        <Input id="admin-airports-editor-iata" aria-label="IATA code" value={editorDraft.iataCode} onChange={(event) => {
                                             setEditorDraft((current) => current ? { ...current, iataCode: event.target.value.toUpperCase() } : current);
                                             setEditorDirty(true);
                                         }} />
                                     </div>
                                     <div className="space-y-2">
                                         <label htmlFor="admin-airports-editor-icao" className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">ICAO code</label>
-                                        <Input id="admin-airports-editor-icao" value={editorDraft.icaoCode} onChange={(event) => {
+	                                        <Input id="admin-airports-editor-icao" aria-label="ICAO code" value={editorDraft.icaoCode} onChange={(event) => {
                                             setEditorDraft((current) => current ? { ...current, icaoCode: event.target.value.toUpperCase() } : current);
                                             setEditorDirty(true);
                                         }} />
@@ -2961,7 +2969,7 @@ export const AdminAirportsPage: React.FC = () => {
 
                                 <div className="space-y-2">
                                     <label htmlFor="admin-airports-editor-name" className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Airport name</label>
-                                    <Input id="admin-airports-editor-name" value={editorDraft.name} onChange={(event) => {
+	                                    <Input id="admin-airports-editor-name" aria-label="Airport name" value={editorDraft.name} onChange={(event) => {
                                         setEditorDraft((current) => current ? { ...current, name: event.target.value } : current);
                                         setEditorDirty(true);
                                     }} />
@@ -2970,14 +2978,14 @@ export const AdminAirportsPage: React.FC = () => {
                                 <div className="grid gap-3 md:grid-cols-2">
                                     <div className="space-y-2">
                                         <label htmlFor="admin-airports-editor-municipality" className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Municipality</label>
-                                        <Input id="admin-airports-editor-municipality" value={editorDraft.municipality} onChange={(event) => {
+	                                        <Input id="admin-airports-editor-municipality" aria-label="Municipality" value={editorDraft.municipality} onChange={(event) => {
                                             setEditorDraft((current) => current ? { ...current, municipality: event.target.value } : current);
                                             setEditorDirty(true);
                                         }} />
                                     </div>
                                     <div className="space-y-2">
                                         <label htmlFor="admin-airports-editor-subdivision" className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Subdivision name</label>
-                                        <Input id="admin-airports-editor-subdivision" value={editorDraft.subdivisionName} onChange={(event) => {
+	                                        <Input id="admin-airports-editor-subdivision" aria-label="Subdivision name" value={editorDraft.subdivisionName} onChange={(event) => {
                                             setEditorDraft((current) => current ? { ...current, subdivisionName: event.target.value } : current);
                                             setEditorDirty(true);
                                         }} />
@@ -2987,14 +2995,14 @@ export const AdminAirportsPage: React.FC = () => {
                                 <div className="grid gap-3 md:grid-cols-2">
                                     <div className="space-y-2">
                                         <label htmlFor="admin-airports-editor-region" className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Region code</label>
-                                        <Input id="admin-airports-editor-region" value={editorDraft.regionCode} onChange={(event) => {
+	                                        <Input id="admin-airports-editor-region" aria-label="Region code" value={editorDraft.regionCode} onChange={(event) => {
                                             setEditorDraft((current) => current ? { ...current, regionCode: event.target.value.toUpperCase() } : current);
                                             setEditorDirty(true);
                                         }} />
                                     </div>
                                     <div className="space-y-2">
                                         <label htmlFor="admin-airports-editor-timezone" className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Timezone</label>
-                                        <Input id="admin-airports-editor-timezone" value={editorDraft.timezone} onChange={(event) => {
+	                                        <Input id="admin-airports-editor-timezone" aria-label="Timezone" value={editorDraft.timezone} onChange={(event) => {
                                             setEditorDraft((current) => current ? { ...current, timezone: event.target.value } : current);
                                             setEditorDirty(true);
                                         }} />
@@ -3018,9 +3026,10 @@ export const AdminAirportsPage: React.FC = () => {
                                     </div>
                                     <div className="space-y-2">
                                         <label htmlFor="admin-airports-editor-country-name" className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Country name</label>
-                                        <Input
-                                            id="admin-airports-editor-country-name"
-                                            value={editorDraft.countryName}
+	                                        <Input
+	                                            id="admin-airports-editor-country-name"
+	                                            aria-label="Country name"
+	                                            value={editorDraft.countryName}
                                             readOnly
                                             className="bg-slate-50 text-slate-600"
                                         />
@@ -3030,14 +3039,14 @@ export const AdminAirportsPage: React.FC = () => {
                                 <div className="grid gap-3 md:grid-cols-2">
                                     <div className="space-y-2">
                                         <label htmlFor="admin-airports-editor-latitude" className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Latitude</label>
-                                        <Input id="admin-airports-editor-latitude" type="number" step="0.000001" value={editorDraft.latitude} onChange={(event) => {
+	                                        <Input id="admin-airports-editor-latitude" aria-label="Latitude" type="number" step="0.000001" value={editorDraft.latitude} onChange={(event) => {
                                             setEditorDraft((current) => current ? { ...current, latitude: event.target.value } : current);
                                             setEditorDirty(true);
                                         }} />
                                     </div>
                                     <div className="space-y-2">
                                         <label htmlFor="admin-airports-editor-longitude" className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Longitude</label>
-                                        <Input id="admin-airports-editor-longitude" type="number" step="0.000001" value={editorDraft.longitude} onChange={(event) => {
+	                                        <Input id="admin-airports-editor-longitude" aria-label="Longitude" type="number" step="0.000001" value={editorDraft.longitude} onChange={(event) => {
                                             setEditorDraft((current) => current ? { ...current, longitude: event.target.value } : current);
                                             setEditorDirty(true);
                                         }} />

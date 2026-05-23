@@ -15,13 +15,13 @@ Improve React Doctor health across the full repository while keeping this PR foc
 
 ## Current Score Snapshot
 
-Latest scanner used: `react-doctor v0.2.2`, resolved through `npx react-doctor@latest`.
-React Review status: npm package `react-review@1.0.6` does not expose a CLI binary; React Doctor now points to React Review as the GitHub App for PR comments and score tracking.
+Latest scanner used: `react-doctor v0.2.3`, resolved through `npx react-doctor@latest`.
+React Review status: React Doctor now points to React Review as the GitHub App for PR comments and score tracking; no separate local React Review CLI is required for this PR.
 
 - Initial user baseline: `49 / 100`, `73` errors, `5749` warnings, `356/814` files.
 - After core-page fixes: `51 / 100`, `33` errors, `5752` warnings, `356/821` files.
-- Current full scan: `69 / 100`, `0` errors, `764` warnings, `197/825` files.
-- Current diff scan: `73 / 100`, `0` errors, `986` warnings, `71/204` files.
+- Current full scan: `58 / 100`, `0` errors, `1191` warnings, `223/834` files.
+- Current diff scan: `73 / 100`, `0` errors, `774` warnings, `68/218` files.
 
 ## Completed Changes
 
@@ -67,6 +67,10 @@ React Review status: npm package `react-review@1.0.6` does not expose a CLI bina
 - [x] Simplified admin query multi-value parsing to single-pass loops and reduced tested utility iteration debt across provider labels, JSON diff focus, timeline activities, FAQ excerpts, and city lookup parsing.
 - [x] Raised the expanded PR diff scan from `79 / 100` to `90 / 100` by clearing safe state grouping, accessibility, DOM style batching, key stability, hydration-time, formatter allocation, and visual duplicate warnings across scanner-reported files.
 - [x] Cleared the `react-doctor v0.2.2` Fast Refresh errors by moving tested non-component exports out of component modules for trip manager, details, admin shell, floating map, Mapbox basemap, on-page debugger, and itinerary map helpers.
+- [x] Cleared the `react-doctor v0.2.3` full-scan Fast Refresh errors by moving admin table and activity-type helper exports out of component files, keeping tab variants private, and narrowly suppressing the rule for Netlify OG edge handlers where Fast Refresh does not apply.
+- [x] Cleared broad accessible-name and explicit-button-type warnings in scanner-reported UI files.
+- [x] Removed unsafe JSON highlighting HTML injection in admin JSON diff and AI benchmark surfaces.
+- [x] Moved create-trip V3 URL prefill hydration into initial state construction to reduce mount-time effect state churn.
 
 ## Validation Log
 
@@ -258,6 +262,53 @@ React Review status: npm package `react-review@1.0.6` does not expose a CLI bina
 - [x] `npx react-doctor@latest . --verbose`
   - Result: `68 / 100`, `0` errors, `821` warnings, `210/822` files.
   - Share: `https://www.react.doctor/share?p=travelflow&s=68&w=821&f=210`
+
+- [x] Focused create-trip/admin/accessibility regression suite
+  - Command: `pnpm test:run tests/browser/createTripWizard.browser.test.ts tests/browser/createTripClassicLabPage.browser.test.ts tests/browser/admin/adminJsonDiffModal.browser.test.ts tests/browser/MarkdownEditor.browser.test.ts tests/browser/countrySelect.browser.test.ts tests/unit/detailsPanelPlacesSearch.test.ts tests/unit/detailsPanelRouteDistanceText.test.ts tests/browser/tripManagerArchive.browser.test.ts tests/browser/tripManagerEnrichment.browser.test.ts`
+  - Result: passed, `20` tests.
+
+- [x] `pnpm build:netlify`
+  - Result: passed through validators, sitemap generation, and Vite production build.
+  - Notes: emitted existing Vite chunk-size warnings.
+
+- [x] `npx -y react-doctor@latest . --verbose`
+  - Result: `57 / 100`, `10` errors, `1191` warnings, `226/832` files.
+  - Share: `https://www.react.doctor/share?p=travelflow&s=57&e=10&w=1191&f=226`
+  - Notes: latest package resolved to `react-doctor v0.2.3`; this exposed full-scan Fast Refresh errors in admin table, activity-type, tabs, and Netlify OG edge files.
+
+- [x] Focused admin table utility regression suite
+  - Command: `pnpm test:run tests/unit/adminDataTable.test.ts`
+  - Result: passed, `3` tests.
+
+- [x] `npx -y react-doctor@latest . --verbose`
+  - Result: `58 / 100`, `0` errors, `1191` warnings, `223/834` files.
+  - Share: `https://www.react.doctor/share?p=travelflow&s=58&w=1191&f=223`
+
+- [x] `npx -y react-doctor@latest . --verbose --diff`
+  - Result: `73 / 100`, `0` errors, `774` warnings, `68/218` files.
+  - Share: `https://www.react.doctor/share?p=travelflow&s=73&w=774&f=68`
+
+- [x] `git diff --check`
+  - Result: passed.
+
+- [x] `pnpm updates:validate`
+  - Result: passed with existing canonical-version warnings for older published update files.
+
+- [x] `pnpm build:netlify`
+  - Result: passed through validators, sitemap generation, and Vite production build.
+  - Notes: emitted existing release-version validation warnings, CSS/view-transition warnings, dynamic-import warnings, and chunk-size warnings.
+
+- [x] `pnpm test:core`
+  - Result: passed, `308` test files, `1369` tests, `1` skipped.
+
+## Open High-Impact TODOs
+
+- [ ] Reduce the `no-event-handler` warning cluster, starting with repeated admin page URL/cache synchronization and create-trip prefill effects.
+- [ ] Move `CreateTripClassicLabPage` prefill hydration to initial state, mirroring the safer `CreateTripV3Page` pattern.
+- [ ] Remove remaining derived-state and prop-change adjustment effects in `DetailsPanel`, `TripManager`, `TripInfoModal`, and selected admin surfaces.
+- [ ] Fix remaining `exhaustive-deps` warnings where dependencies can be made stable or effects can be removed.
+- [ ] Tackle lower-count accessibility and semantic warnings: empty anchors, missing iframe sandbox values, role/tag mismatches, invalid aria props, and index keys.
+- [ ] Review unused exports/dependencies separately before removal because several may be consumed by tests, scripts, or edge/runtime entrypoints outside the scanner's graph.
 
 - [x] Focused network status reducer regression suite
   - Command: `pnpm test:run tests/browser/useNetworkStatus.browser.test.ts`

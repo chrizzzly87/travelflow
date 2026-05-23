@@ -308,6 +308,220 @@ const inferWizardBranch = (params: {
     return 'need_inspiration';
 };
 
+type CreateTripV3InitialState = {
+    wizardBranch: CreateTripWizardBranch | null;
+    selectedCountries: string[];
+    startDestination: string;
+    dateInputMode: 'exact' | 'flex';
+    startDate: string;
+    endDate: string;
+    flexWeeks: number;
+    flexWindow: FlexWindow;
+    isRoundTrip: boolean;
+    routeLock: boolean;
+    travelerType: TravelerType;
+    soloGender: TravelerGender;
+    soloAge: string;
+    soloComfort: TravelerComfort;
+    coupleTravelerA: TravelerGender;
+    coupleTravelerB: TravelerGender;
+    coupleOccasion: CoupleOccasion;
+    friendsCount: number;
+    friendsEnergy: FriendsEnergy;
+    familyAdults: number;
+    familyChildren: number;
+    familyBabies: number;
+    selectedStyles: string[];
+    selectedVibes: string[];
+    transportModes: TransportMode[];
+    hasTransportOverride: boolean;
+    budget: BudgetType;
+    pace: PaceType;
+    specificCities: string;
+    notes: string;
+    prefillMeta: TripPrefillData['meta'] | null;
+};
+
+const buildCreateTripV3InitialState = (
+    searchParams: URLSearchParams,
+    defaultDates: ReturnType<typeof getDefaultTripDates>
+): CreateTripV3InitialState => {
+    const initialState: CreateTripV3InitialState = {
+        wizardBranch: null,
+        selectedCountries: [],
+        startDestination: '',
+        dateInputMode: 'exact',
+        startDate: defaultDates.startDate,
+        endDate: defaultDates.endDate,
+        flexWeeks: 2,
+        flexWindow: 'shoulder',
+        isRoundTrip: true,
+        routeLock: false,
+        travelerType: 'solo',
+        soloGender: '',
+        soloAge: '',
+        soloComfort: 'balanced',
+        coupleTravelerA: '',
+        coupleTravelerB: '',
+        coupleOccasion: 'none',
+        friendsCount: 4,
+        friendsEnergy: 'mixed',
+        familyAdults: 2,
+        familyChildren: 1,
+        familyBabies: 0,
+        selectedStyles: [],
+        selectedVibes: [],
+        transportModes: ['auto'],
+        hasTransportOverride: false,
+        budget: 'Medium',
+        pace: 'Balanced',
+        specificCities: '',
+        notes: '',
+        prefillMeta: null,
+    };
+
+    const raw = searchParams.get('prefill');
+    if (!raw) return initialState;
+
+    const data = decodeTripPrefill(raw);
+    if (!data) return initialState;
+
+    if (data.countries?.length) initialState.selectedCountries = data.countries;
+    if (data.startDate) initialState.startDate = data.startDate;
+    if (data.endDate) initialState.endDate = data.endDate;
+    if (data.budget) initialState.budget = data.budget as BudgetType;
+    if (data.pace) initialState.pace = data.pace as PaceType;
+    if (data.cities) initialState.specificCities = data.cities;
+    if (data.notes) initialState.notes = data.notes;
+    if (typeof data.roundTrip === 'boolean') initialState.isRoundTrip = data.roundTrip;
+    if (Array.isArray(data.styles)) {
+        const knownStyles = new Set(STYLE_CHOICES.map((entry) => entry.id));
+        initialState.selectedStyles = data.styles.filter((styleId) => knownStyles.has(styleId));
+    }
+    if (Array.isArray(data.vibes)) {
+        const knownVibes = new Set(VIBE_CHOICES.map((entry) => entry.id));
+        initialState.selectedVibes = data.vibes.filter((vibeId) => knownVibes.has(vibeId));
+    }
+
+    const safeMeta = data.meta && typeof data.meta === 'object' && !Array.isArray(data.meta)
+        ? data.meta as Record<string, unknown>
+        : null;
+    const rawDraft = safeMeta?.draft;
+    const draft = rawDraft && typeof rawDraft === 'object' && !Array.isArray(rawDraft)
+        ? rawDraft as Partial<CreateTripPrefillDraft & {
+            transportModes?: TransportMode[];
+            soloGender?: TravelerGender;
+            soloAge?: string;
+            soloComfort?: TravelerComfort;
+            coupleTravelerA?: TravelerGender;
+            coupleTravelerB?: TravelerGender;
+            coupleOccasion?: CoupleOccasion;
+            friendsCount?: number;
+            friendsEnergy?: FriendsEnergy;
+            familyAdults?: number;
+            familyChildren?: number;
+            familyBabies?: number;
+        }>
+        : null;
+
+    if (safeMeta) {
+        const label = typeof safeMeta.label === 'string' ? safeMeta.label : undefined;
+        const source = typeof safeMeta.source === 'string' ? safeMeta.source : undefined;
+        const author = typeof safeMeta.author === 'string' ? safeMeta.author : undefined;
+        if (label || source || author) {
+            initialState.prefillMeta = { label, source, author };
+        }
+    }
+
+    let resolvedDateMode: 'exact' | 'flex' = 'exact';
+    if (draft?.dateInputMode && isCreateTripDateInputMode(draft.dateInputMode)) {
+        resolvedDateMode = draft.dateInputMode;
+        initialState.dateInputMode = draft.dateInputMode;
+    }
+    if (draft && typeof draft.flexWeeks === 'number' && Number.isFinite(draft.flexWeeks)) {
+        initialState.flexWeeks = clampNumber(Math.round(draft.flexWeeks), 1, 8);
+    }
+    if (draft?.flexWindow && isCreateTripFlexWindow(draft.flexWindow)) {
+        initialState.flexWindow = draft.flexWindow;
+    }
+    if (draft && typeof draft.startDestination === 'string') {
+        initialState.startDestination = draft.startDestination;
+    }
+    if (draft && typeof draft.routeLock === 'boolean') {
+        initialState.routeLock = draft.routeLock;
+    }
+    if (draft?.travelerType && isCreateTripTravelerType(draft.travelerType)) {
+        initialState.travelerType = draft.travelerType;
+    }
+    if (Array.isArray(draft?.tripStyleTags)) {
+        const knownStyles = new Set(STYLE_CHOICES.map((entry) => entry.id));
+        initialState.selectedStyles = draft.tripStyleTags.filter((styleId) => knownStyles.has(styleId));
+    }
+    if (Array.isArray(draft?.tripVibeTags)) {
+        const knownVibes = new Set(VIBE_CHOICES.map((entry) => entry.id));
+        initialState.selectedVibes = draft.tripVibeTags.filter((vibeId) => knownVibes.has(vibeId));
+    }
+    const preferredTransportModes = Array.isArray(draft?.transportPreferences)
+        ? draft.transportPreferences
+        : draft?.transportModes;
+    if (Array.isArray(preferredTransportModes)) {
+        const validModes = preferredTransportModes.filter(isCreateTripTransportPreference);
+        if (validModes.length > 0) initialState.transportModes = validModes;
+    }
+    if (draft && typeof draft.hasTransportOverride === 'boolean') {
+        initialState.hasTransportOverride = draft.hasTransportOverride;
+    }
+
+    const travelerDraft = draft?.travelerDetails && typeof draft.travelerDetails === 'object' && !Array.isArray(draft.travelerDetails)
+        ? draft.travelerDetails
+        : {};
+
+    const soloGenderValue = travelerDraft?.soloGender ?? draft?.soloGender;
+    if (isCreateTripTravelerGender(soloGenderValue)) initialState.soloGender = soloGenderValue;
+    if (typeof (travelerDraft?.soloAge ?? draft?.soloAge) === 'string') initialState.soloAge = (travelerDraft?.soloAge ?? draft?.soloAge) as string;
+    const soloComfortValue = travelerDraft?.soloComfort ?? draft?.soloComfort;
+    if (isCreateTripTravelerComfort(soloComfortValue)) initialState.soloComfort = soloComfortValue;
+
+    const coupleTravelerAValue = travelerDraft?.coupleTravelerA ?? draft?.coupleTravelerA;
+    if (isCreateTripTravelerGender(coupleTravelerAValue)) initialState.coupleTravelerA = coupleTravelerAValue;
+    const coupleTravelerBValue = travelerDraft?.coupleTravelerB ?? draft?.coupleTravelerB;
+    if (isCreateTripTravelerGender(coupleTravelerBValue)) initialState.coupleTravelerB = coupleTravelerBValue;
+    const coupleOccasionValue = travelerDraft?.coupleOccasion ?? draft?.coupleOccasion;
+    if (isCreateTripCoupleOccasion(coupleOccasionValue)) initialState.coupleOccasion = coupleOccasionValue;
+
+    const friendsCountValue = travelerDraft?.friendsCount ?? draft?.friendsCount;
+    if (typeof friendsCountValue === 'number' && Number.isFinite(friendsCountValue)) {
+        initialState.friendsCount = clampNumber(Math.round(friendsCountValue), 2, 12);
+    }
+    const friendsEnergyValue = travelerDraft?.friendsEnergy ?? draft?.friendsEnergy;
+    if (isCreateTripFriendsEnergy(friendsEnergyValue)) initialState.friendsEnergy = friendsEnergyValue;
+
+    const familyAdultsValue = travelerDraft?.familyAdults ?? draft?.familyAdults;
+    if (typeof familyAdultsValue === 'number' && Number.isFinite(familyAdultsValue)) {
+        initialState.familyAdults = clampNumber(Math.round(familyAdultsValue), 1, 8);
+    }
+    const familyChildrenValue = travelerDraft?.familyChildren ?? draft?.familyChildren;
+    if (typeof familyChildrenValue === 'number' && Number.isFinite(familyChildrenValue)) {
+        initialState.familyChildren = clampNumber(Math.round(familyChildrenValue), 0, 8);
+    }
+    const familyBabiesValue = travelerDraft?.familyBabies ?? draft?.familyBabies;
+    if (typeof familyBabiesValue === 'number' && Number.isFinite(familyBabiesValue)) {
+        initialState.familyBabies = clampNumber(Math.round(familyBabiesValue), 0, 4);
+    }
+
+    if (draft?.wizardBranch && isCreateTripWizardBranch(draft.wizardBranch)) {
+        initialState.wizardBranch = draft.wizardBranch;
+    } else {
+        initialState.wizardBranch = inferWizardBranch({
+            countries: data.countries || [],
+            dateInputMode: resolvedDateMode,
+            hasDateRange: Boolean(data.startDate && data.endDate),
+        });
+    }
+
+    return initialState;
+};
+
 const buildPreviewTrip = (params: {
     destination: string;
     startDate: string;
@@ -428,46 +642,47 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
     const { isAuthenticated } = useAuth();
     const [searchParams] = useSearchParams();
     const defaultDates = getDefaultTripDates();
+    const [initialPrefillState] = useState(() => buildCreateTripV3InitialState(searchParams, defaultDates));
 
-    const [wizardBranch, setWizardBranch] = useState<CreateTripWizardBranch | null>(null);
+    const [wizardBranch, setWizardBranch] = useState<CreateTripWizardBranch | null>(initialPrefillState.wizardBranch);
     const [currentStepIndex, setCurrentStepIndex] = useState(0);
 
-    const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
-    const [startDestination, setStartDestination] = useState('');
-    const [dateInputMode, setDateInputMode] = useState<'exact' | 'flex'>('exact');
-    const [startDate, setStartDate] = useState(defaultDates.startDate);
-    const [endDate, setEndDate] = useState(defaultDates.endDate);
-    const [flexWeeks, setFlexWeeks] = useState(2);
-    const [flexWindow, setFlexWindow] = useState<FlexWindow>('shoulder');
-    const [isRoundTrip, setIsRoundTrip] = useState(true);
-    const [routeLock, setRouteLock] = useState(false);
+    const [selectedCountries, setSelectedCountries] = useState<string[]>(initialPrefillState.selectedCountries);
+    const [startDestination, setStartDestination] = useState(initialPrefillState.startDestination);
+    const [dateInputMode, setDateInputMode] = useState<'exact' | 'flex'>(initialPrefillState.dateInputMode);
+    const [startDate, setStartDate] = useState(initialPrefillState.startDate);
+    const [endDate, setEndDate] = useState(initialPrefillState.endDate);
+    const [flexWeeks, setFlexWeeks] = useState(initialPrefillState.flexWeeks);
+    const [flexWindow, setFlexWindow] = useState<FlexWindow>(initialPrefillState.flexWindow);
+    const [isRoundTrip, setIsRoundTrip] = useState(initialPrefillState.isRoundTrip);
+    const [routeLock, setRouteLock] = useState(initialPrefillState.routeLock);
 
-    const [travelerType, setTravelerType] = useState<TravelerType>('solo');
-    const [soloGender, setSoloGender] = useState<TravelerGender>('');
-    const [soloAge, setSoloAge] = useState('');
-    const [soloComfort, setSoloComfort] = useState<TravelerComfort>('balanced');
-    const [coupleTravelerA, setCoupleTravelerA] = useState<TravelerGender>('');
-    const [coupleTravelerB, setCoupleTravelerB] = useState<TravelerGender>('');
-    const [coupleOccasion, setCoupleOccasion] = useState<CoupleOccasion>('none');
-    const [friendsCount, setFriendsCount] = useState(4);
-    const [friendsEnergy, setFriendsEnergy] = useState<FriendsEnergy>('mixed');
-    const [familyAdults, setFamilyAdults] = useState(2);
-    const [familyChildren, setFamilyChildren] = useState(1);
-    const [familyBabies, setFamilyBabies] = useState(0);
+    const [travelerType, setTravelerType] = useState<TravelerType>(initialPrefillState.travelerType);
+    const [soloGender, setSoloGender] = useState<TravelerGender>(initialPrefillState.soloGender);
+    const [soloAge, setSoloAge] = useState(initialPrefillState.soloAge);
+    const [soloComfort, setSoloComfort] = useState<TravelerComfort>(initialPrefillState.soloComfort);
+    const [coupleTravelerA, setCoupleTravelerA] = useState<TravelerGender>(initialPrefillState.coupleTravelerA);
+    const [coupleTravelerB, setCoupleTravelerB] = useState<TravelerGender>(initialPrefillState.coupleTravelerB);
+    const [coupleOccasion, setCoupleOccasion] = useState<CoupleOccasion>(initialPrefillState.coupleOccasion);
+    const [friendsCount, setFriendsCount] = useState(initialPrefillState.friendsCount);
+    const [friendsEnergy, setFriendsEnergy] = useState<FriendsEnergy>(initialPrefillState.friendsEnergy);
+    const [familyAdults, setFamilyAdults] = useState(initialPrefillState.familyAdults);
+    const [familyChildren, setFamilyChildren] = useState(initialPrefillState.familyChildren);
+    const [familyBabies, setFamilyBabies] = useState(initialPrefillState.familyBabies);
 
-    const [selectedStyles, setSelectedStyles] = useState<string[]>([]);
-    const [selectedVibes, setSelectedVibes] = useState<string[]>([]);
-    const [transportModes, setTransportModes] = useState<TransportMode[]>(['auto']);
-    const [hasTransportOverride, setHasTransportOverride] = useState(false);
+    const [selectedStyles, setSelectedStyles] = useState<string[]>(initialPrefillState.selectedStyles);
+    const [selectedVibes, setSelectedVibes] = useState<string[]>(initialPrefillState.selectedVibes);
+    const [transportModes, setTransportModes] = useState<TransportMode[]>(initialPrefillState.transportModes);
+    const [hasTransportOverride, setHasTransportOverride] = useState(initialPrefillState.hasTransportOverride);
 
-    const [budget, setBudget] = useState<BudgetType>('Medium');
-    const [pace, setPace] = useState<PaceType>('Balanced');
-    const [specificCities, setSpecificCities] = useState('');
-    const [notes, setNotes] = useState('');
+    const [budget, setBudget] = useState<BudgetType>(initialPrefillState.budget);
+    const [pace, setPace] = useState<PaceType>(initialPrefillState.pace);
+    const [specificCities, setSpecificCities] = useState(initialPrefillState.specificCities);
+    const [notes, setNotes] = useState(initialPrefillState.notes);
     const [enforceIslandOnly, setEnforceIslandOnly] = useState(true);
 
-    const [prefillMeta, setPrefillMeta] = useState<TripPrefillData['meta'] | null>(null);
-    const [prefillHydrated, setPrefillHydrated] = useState(false);
+    const [prefillMeta] = useState<TripPrefillData['meta'] | null>(initialPrefillState.prefillMeta);
+    const prefillHydrated = true;
 
     const [isGenerating, setIsGenerating] = useState(false);
     const [generationError, setGenerationError] = useState<string | null>(null);
@@ -864,156 +1079,6 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
         if (currentStepIndex <= steps.length - 1) return;
         setCurrentStepIndex(steps.length - 1);
     }, [currentStepIndex, steps.length]);
-
-    useEffect(() => {
-        const raw = searchParams.get('prefill');
-        if (!raw) {
-            setPrefillHydrated(true);
-            return;
-        }
-
-        const data = decodeTripPrefill(raw);
-        if (!data) {
-            setPrefillHydrated(true);
-            return;
-        }
-
-        if (data.countries?.length) setSelectedCountries(data.countries);
-        if (data.startDate) setStartDate(data.startDate);
-        if (data.endDate) setEndDate(data.endDate);
-        if (data.budget) setBudget(data.budget as BudgetType);
-        if (data.pace) setPace(data.pace as PaceType);
-        if (data.cities) setSpecificCities(data.cities);
-        if (data.notes) setNotes(data.notes);
-        if (typeof data.roundTrip === 'boolean') setIsRoundTrip(data.roundTrip);
-        if (Array.isArray(data.styles)) {
-            const knownStyles = new Set(STYLE_CHOICES.map((entry) => entry.id));
-            setSelectedStyles(data.styles.filter((styleId) => knownStyles.has(styleId)));
-        }
-        if (Array.isArray(data.vibes)) {
-            const knownVibes = new Set(VIBE_CHOICES.map((entry) => entry.id));
-            setSelectedVibes(data.vibes.filter((vibeId) => knownVibes.has(vibeId)));
-        }
-
-        const safeMeta = data.meta && typeof data.meta === 'object' && !Array.isArray(data.meta)
-            ? data.meta as Record<string, unknown>
-            : null;
-        const rawDraft = safeMeta?.draft;
-        const draft = rawDraft && typeof rawDraft === 'object' && !Array.isArray(rawDraft)
-            ? rawDraft as Partial<CreateTripPrefillDraft & {
-                transportModes?: TransportMode[];
-                soloGender?: TravelerGender;
-                soloAge?: string;
-                soloComfort?: TravelerComfort;
-                coupleTravelerA?: TravelerGender;
-                coupleTravelerB?: TravelerGender;
-                coupleOccasion?: CoupleOccasion;
-                friendsCount?: number;
-                friendsEnergy?: FriendsEnergy;
-                familyAdults?: number;
-                familyChildren?: number;
-                familyBabies?: number;
-            }>
-            : null;
-
-        if (safeMeta) {
-            const label = typeof safeMeta.label === 'string' ? safeMeta.label : undefined;
-            const source = typeof safeMeta.source === 'string' ? safeMeta.source : undefined;
-            const author = typeof safeMeta.author === 'string' ? safeMeta.author : undefined;
-            if (label || source || author) {
-                setPrefillMeta({ label, source, author });
-            }
-        }
-
-        let resolvedDateMode: 'exact' | 'flex' = 'exact';
-        if (draft?.dateInputMode && isCreateTripDateInputMode(draft.dateInputMode)) {
-            resolvedDateMode = draft.dateInputMode;
-            setDateInputMode(draft.dateInputMode);
-        }
-        if (draft && typeof draft.flexWeeks === 'number' && Number.isFinite(draft.flexWeeks)) {
-            setFlexWeeks(clampNumber(Math.round(draft.flexWeeks), 1, 8));
-        }
-        if (draft?.flexWindow && isCreateTripFlexWindow(draft.flexWindow)) {
-            setFlexWindow(draft.flexWindow);
-        }
-        if (draft && typeof draft.startDestination === 'string') {
-            setStartDestination(draft.startDestination);
-        }
-        if (draft && typeof draft.routeLock === 'boolean') {
-            setRouteLock(draft.routeLock);
-        }
-        if (draft?.travelerType && isCreateTripTravelerType(draft.travelerType)) {
-            setTravelerType(draft.travelerType);
-        }
-        if (Array.isArray(draft?.tripStyleTags)) {
-            const knownStyles = new Set(STYLE_CHOICES.map((entry) => entry.id));
-            setSelectedStyles(draft.tripStyleTags.filter((styleId) => knownStyles.has(styleId)));
-        }
-        if (Array.isArray(draft?.tripVibeTags)) {
-            const knownVibes = new Set(VIBE_CHOICES.map((entry) => entry.id));
-            setSelectedVibes(draft.tripVibeTags.filter((vibeId) => knownVibes.has(vibeId)));
-        }
-        const preferredTransportModes = Array.isArray(draft?.transportPreferences)
-            ? draft.transportPreferences
-            : draft?.transportModes;
-        if (Array.isArray(preferredTransportModes)) {
-            const validModes = preferredTransportModes.filter(isCreateTripTransportPreference);
-            if (validModes.length > 0) setTransportModes(validModes);
-        }
-        if (draft && typeof draft.hasTransportOverride === 'boolean') {
-            setHasTransportOverride(draft.hasTransportOverride);
-        }
-
-        const travelerDraft = draft?.travelerDetails && typeof draft.travelerDetails === 'object' && !Array.isArray(draft.travelerDetails)
-            ? draft.travelerDetails
-            : {};
-
-        const soloGenderValue = travelerDraft?.soloGender ?? draft?.soloGender;
-        if (isCreateTripTravelerGender(soloGenderValue)) setSoloGender(soloGenderValue);
-        if (typeof (travelerDraft?.soloAge ?? draft?.soloAge) === 'string') setSoloAge((travelerDraft?.soloAge ?? draft?.soloAge) as string);
-        const soloComfortValue = travelerDraft?.soloComfort ?? draft?.soloComfort;
-        if (isCreateTripTravelerComfort(soloComfortValue)) setSoloComfort(soloComfortValue);
-
-        const coupleTravelerAValue = travelerDraft?.coupleTravelerA ?? draft?.coupleTravelerA;
-        if (isCreateTripTravelerGender(coupleTravelerAValue)) setCoupleTravelerA(coupleTravelerAValue);
-        const coupleTravelerBValue = travelerDraft?.coupleTravelerB ?? draft?.coupleTravelerB;
-        if (isCreateTripTravelerGender(coupleTravelerBValue)) setCoupleTravelerB(coupleTravelerBValue);
-        const coupleOccasionValue = travelerDraft?.coupleOccasion ?? draft?.coupleOccasion;
-        if (isCreateTripCoupleOccasion(coupleOccasionValue)) setCoupleOccasion(coupleOccasionValue);
-
-        const friendsCountValue = travelerDraft?.friendsCount ?? draft?.friendsCount;
-        if (typeof friendsCountValue === 'number' && Number.isFinite(friendsCountValue)) {
-            setFriendsCount(clampNumber(Math.round(friendsCountValue), 2, 12));
-        }
-        const friendsEnergyValue = travelerDraft?.friendsEnergy ?? draft?.friendsEnergy;
-        if (isCreateTripFriendsEnergy(friendsEnergyValue)) setFriendsEnergy(friendsEnergyValue);
-
-        const familyAdultsValue = travelerDraft?.familyAdults ?? draft?.familyAdults;
-        if (typeof familyAdultsValue === 'number' && Number.isFinite(familyAdultsValue)) {
-            setFamilyAdults(clampNumber(Math.round(familyAdultsValue), 1, 8));
-        }
-        const familyChildrenValue = travelerDraft?.familyChildren ?? draft?.familyChildren;
-        if (typeof familyChildrenValue === 'number' && Number.isFinite(familyChildrenValue)) {
-            setFamilyChildren(clampNumber(Math.round(familyChildrenValue), 0, 8));
-        }
-        const familyBabiesValue = travelerDraft?.familyBabies ?? draft?.familyBabies;
-        if (typeof familyBabiesValue === 'number' && Number.isFinite(familyBabiesValue)) {
-            setFamilyBabies(clampNumber(Math.round(familyBabiesValue), 0, 4));
-        }
-
-        if (draft?.wizardBranch && isCreateTripWizardBranch(draft.wizardBranch)) {
-            setWizardBranch(draft.wizardBranch);
-        } else {
-            setWizardBranch(inferWizardBranch({
-                countries: data.countries || [],
-                dateInputMode: resolvedDateMode,
-                hasDateRange: Boolean(data.startDate && data.endDate),
-            }));
-        }
-
-        setPrefillHydrated(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
@@ -1480,9 +1545,10 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                     </div>
                     <div className="space-y-2">
                         <label className="text-xs font-semibold uppercase tracking-[0.11em] text-slate-500">{t('traveler.settings.age')}</label>
-                        <input
-                            type="text"
-                            value={soloAge}
+	                        <input
+	                            type="text"
+	                            aria-label={t('traveler.settings.age')}
+	                            value={soloAge}
                             onChange={(event) => setSoloAge(event.target.value)}
                             placeholder={t('traveler.settings.agePlaceholder')}
                             className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
@@ -2016,9 +2082,10 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
 
                     <div className="space-y-2">
                         <label className="text-xs font-semibold uppercase tracking-[0.11em] text-slate-500">{t('wizard.details.specificCitiesLabel')}</label>
-                        <input
-                            type="text"
-                            value={specificCities}
+	                        <input
+	                            type="text"
+	                            aria-label={t('wizard.details.specificCitiesLabel')}
+	                            value={specificCities}
                             onChange={(event) => setSpecificCities(event.target.value)}
                             placeholder={t('wizard.details.specificCitiesPlaceholder')}
                             className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
@@ -2027,8 +2094,9 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
 
                     <div className="space-y-2">
                         <label className="text-xs font-semibold uppercase tracking-[0.11em] text-slate-500">{t('wizard.details.notesLabel')}</label>
-                        <textarea
-                            value={notes}
+	                        <textarea
+	                            aria-label={t('wizard.details.notesLabel')}
+	                            value={notes}
                             onChange={(event) => setNotes(event.target.value)}
                             rows={4}
                             placeholder={t('wizard.details.notesPlaceholder')}

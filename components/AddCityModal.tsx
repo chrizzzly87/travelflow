@@ -234,6 +234,7 @@ export const AddCityModal: React.FC<AddCityModalProps> = ({ isOpen, onClose, onA
                             id={cityInputId}
                             ref={inputRef}
                             type="text" 
+                            aria-label={state.isManualMode ? "City Name" : "Search City"}
                             value={state.inputValue}
                             onChange={e => {
                                 manualResolveRequestIdRef.current += 1;

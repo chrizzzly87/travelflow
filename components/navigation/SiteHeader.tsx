@@ -253,7 +253,7 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
                                 {t('nav.createTrip')}
                             </NavLink>
                         )}
-                        <button
+                        <button type="button"
                             onClick={() => setIsMobileMenuOpen(true)}
                             className={burgerClass}
                             aria-label={t('nav.openMenu')}

@@ -24,7 +24,7 @@ import {
 import { buildDecisionConfirmDialog } from '../services/appDialogPresets';
 import { AdminReloadButton } from '../components/admin/AdminReloadButton';
 import { AdminFilterMenu, type AdminFilterMenuOption } from '../components/admin/AdminFilterMenu';
-import { ADMIN_TABLE_ROW_SURFACE_CLASS } from '../components/admin/AdminDataTable';
+import { ADMIN_TABLE_ROW_SURFACE_CLASS } from '../components/admin/AdminDataTableUtils';
 import { readAdminCache, writeAdminCache } from '../components/admin/adminLocalCache';
 import { CopyableUuid } from '../components/admin/CopyableUuid';
 import { Drawer, DrawerContent } from '../components/ui/drawer';

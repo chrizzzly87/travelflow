@@ -45,3 +45,4 @@ summary: "Cleans up the highest-priority React Doctor findings across core trip 
 - [ ] [Internal] 🧰 Reduced tested utility iteration debt in provider labels, JSON diff focus, timeline activities, FAQ excerpts, and city lookup parsing.
 - [ ] [Internal] 🩺 Raised the latest React Doctor diff score to `90/100` by clearing safe accessibility, hydration-time, state grouping, formatter allocation, and visual duplicate findings.
 - [ ] [Internal] 🧑‍⚕️ Cleared the latest React Doctor Fast Refresh errors by moving tested utilities out of component export files.
+- [ ] [Internal] 🩺 Cleared the latest React Doctor v0.2.3 full-scan Fast Refresh errors and documented the current full/diff score backlog.

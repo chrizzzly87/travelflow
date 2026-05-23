@@ -578,6 +578,7 @@ export const ContactPage: React.FC = () => {
                                 Do not fill this field if you are human:
                                 <input
                                     name="bot-field"
+                                    aria-label="Do not fill this field if you are human"
                                     value={formState.botField}
                                     onChange={(event) => setFormState((current) => ({ ...current, botField: event.target.value }))}
                                 />
@@ -596,6 +597,7 @@ export const ContactPage: React.FC = () => {
                             >
                                 <SelectTrigger
                                     id="contact-reason-trigger"
+                                    aria-label={t('contact.form.reasonLabel')}
                                     aria-required="true"
                                     className="h-11 w-full rounded-lg border-slate-300 text-sm focus:border-accent-400 focus:ring-accent-200"
                                 >
@@ -623,7 +625,7 @@ export const ContactPage: React.FC = () => {
                                     onOpenChange={setIsSubReasonSelectOpen}
                                     onValueChange={handleSubReasonChange}
                                 >
-                                    <SelectTrigger id="contact-subreason-trigger" className="h-11 w-full rounded-lg border-slate-300 text-sm focus:border-accent-400 focus:ring-accent-200">
+                                    <SelectTrigger id="contact-subreason-trigger" aria-label={t('contact.form.subReasonLabel')} className="h-11 w-full rounded-lg border-slate-300 text-sm focus:border-accent-400 focus:ring-accent-200">
                                         <SelectValue placeholder={t('contact.form.subReasonPlaceholder')} />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -649,6 +651,7 @@ export const ContactPage: React.FC = () => {
                                     id="contact-name"
                                     name="name"
                                     type="text"
+                                    aria-label={t('contact.form.nameLabel')}
                                     value={formState.name}
                                     onChange={handleNameChange}
                                     autoComplete="name"
@@ -666,6 +669,7 @@ export const ContactPage: React.FC = () => {
                                     id="contact-email"
                                     name="email"
                                     type="email"
+                                    aria-label={t('contact.form.emailLabel')}
                                     value={formState.email}
                                     onChange={handleEmailChange}
                                     autoComplete="email"
@@ -684,6 +688,7 @@ export const ContactPage: React.FC = () => {
                             <textarea
                                 id="contact-message"
                                 name="message"
+                                aria-label={t('contact.form.messageLabel')}
                                 value={formState.message}
                                 onChange={handleMessageChange}
                                 required

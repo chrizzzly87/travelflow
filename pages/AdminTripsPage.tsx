@@ -42,12 +42,14 @@ import { useAppDialog } from '../components/AppDialogProvider';
 import { showAppToast } from '../components/ui/appToast';
 import {
     AdminSortHeaderButton,
+} from '../components/admin/AdminDataTable';
+import {
     ADMIN_TABLE_ROW_SURFACE_CLASS,
     ADMIN_TABLE_SORTED_CELL_CLASS,
     ADMIN_TABLE_SORTED_HEADER_CLASS,
     getAdminStickyBodyCellClass,
     getAdminStickyHeaderCellClass,
-} from '../components/admin/AdminDataTable';
+} from '../components/admin/AdminDataTableUtils';
 import {
     Table,
     TableBody,
@@ -2410,10 +2412,11 @@ export const AdminTripsPage: React.FC = () => {
                                             </div>
                                             <label htmlFor="trip-lifecycle-expiration" className="flex flex-col gap-1">
                                                 <span className="text-xs font-semibold text-slate-500">Expiration timestamp</span>
-                                                <input
-                                                    id="trip-lifecycle-expiration"
-                                                    type="datetime-local"
-                                                    value={drawerExpirationDraft}
+	                                                <input
+	                                                    id="trip-lifecycle-expiration"
+	                                                    type="datetime-local"
+	                                                    aria-label="Expiration timestamp"
+	                                                    value={drawerExpirationDraft}
                                                     onChange={(event) => {
                                                         setDrawerExpirationDraft(event.target.value);
                                                     }}

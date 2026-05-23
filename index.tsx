@@ -37,7 +37,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
           <pre className="bg-gray-100 p-4 rounded text-left text-sm overflow-auto max-w-2xl mx-auto">
             {this.state.error?.toString()}
           </pre>
-          <button
+          <button type="button"
             onClick={() => window.location.reload()}
             className="mt-6 px-4 py-2 bg-accent-600 text-white rounded hover:bg-accent-700"
           >

@@ -1293,9 +1293,10 @@ export const TripManager: React.FC<TripManagerProps> = ({
         <div className="px-3 py-2 border-b border-gray-100">
           <div className="relative">
             <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              value={searchQuery}
+              <input
+                type="text"
+                aria-label="Search trips or cities"
+                value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={hideHoverNow}
               placeholder="Search trips or cities..."

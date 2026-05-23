@@ -7,10 +7,12 @@ import { AdminSurfaceCard } from '../components/admin/AdminSurfaceCard';
 import { AdminFilterMenu, type AdminFilterMenuOption } from '../components/admin/AdminFilterMenu';
 import {
     AdminSortHeaderButton,
+} from '../components/admin/AdminDataTable';
+import {
     ADMIN_TABLE_ROW_SURFACE_CLASS,
     ADMIN_TABLE_SORTED_CELL_CLASS,
     ADMIN_TABLE_SORTED_HEADER_CLASS,
-} from '../components/admin/AdminDataTable';
+} from '../components/admin/AdminDataTableUtils';
 import {
     Table,
     TableBody,

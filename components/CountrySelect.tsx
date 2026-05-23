@@ -127,6 +127,7 @@ export const CountrySelect: React.FC<CountrySelectProps> = ({
                         id={searchInputId}
                         ref={searchInputRef}
                         type="text"
+                        aria-label={labels?.fieldLabel || 'Destination(s)'}
                         value={search}
                         onChange={(e) => {
                             setSearch(e.target.value);

@@ -353,13 +353,13 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
                     
                     {/* Header */}
                     <div className="flex items-center justify-between mb-4">
-                        <button onClick={() => changeMonth(-1)} className="p-1 hover:bg-gray-100 rounded-full text-gray-500" aria-label={text.previousMonth}>
+                        <button type="button" onClick={() => changeMonth(-1)} className="p-1 hover:bg-gray-100 rounded-full text-gray-500" aria-label={text.previousMonth}>
                             <ChevronLeft size={20} />
                         </button>
                         <span className="font-bold text-gray-800">
                             {viewDate.toLocaleDateString(locale, { month: 'long', year: 'numeric' })}
                         </span>
-                        <button onClick={() => changeMonth(1)} className="p-1 hover:bg-gray-100 rounded-full text-gray-500" aria-label={text.nextMonth}>
+                        <button type="button" onClick={() => changeMonth(1)} className="p-1 hover:bg-gray-100 rounded-full text-gray-500" aria-label={text.nextMonth}>
                             <ChevronRight size={20} />
                         </button>
                     </div>

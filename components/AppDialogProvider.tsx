@@ -257,10 +257,11 @@ export const AppDialogProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                                             {activeRequest.options.label}
                                         </label>
                                     )}
-                                    <input
-                                        ref={promptInputRef}
-                                        type={activeRequest.options.inputType || 'text'}
-                                        value={promptValue}
+	                                    <input
+	                                        ref={promptInputRef}
+	                                        type={activeRequest.options.inputType || 'text'}
+	                                        aria-label={activeRequest.options.label || activeRequest.options.placeholder || title}
+	                                        value={promptValue}
                                         onChange={(event) => {
                                             setPromptValue(event.target.value);
                                             if (promptError) setPromptError(null);

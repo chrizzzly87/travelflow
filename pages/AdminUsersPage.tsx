@@ -66,12 +66,14 @@ import { AdminReloadButton } from '../components/admin/AdminReloadButton';
 import { AdminFilterMenu, type AdminFilterMenuOption } from '../components/admin/AdminFilterMenu';
 import {
     AdminSortHeaderButton,
+} from '../components/admin/AdminDataTable';
+import {
     ADMIN_TABLE_ROW_SURFACE_CLASS,
     ADMIN_TABLE_SORTED_CELL_CLASS,
     ADMIN_TABLE_SORTED_HEADER_CLASS,
     getAdminStickyBodyCellClass,
     getAdminStickyHeaderCellClass,
-} from '../components/admin/AdminDataTable';
+} from '../components/admin/AdminDataTableUtils';
 import { AdminCountUpNumber } from '../components/admin/AdminCountUpNumber';
 import { AdminJsonDiffModal } from '../components/admin/AdminJsonDiffModal';
 import { CopyableUuid } from '../components/admin/CopyableUuid';
@@ -3457,8 +3459,9 @@ export const AdminUsersPage: React.FC = () => {
                             <div className="grid gap-3 sm:grid-cols-2">
                                 <label className="space-y-1 sm:col-span-2">
                                     <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Email</span>
-                                    <input
-                                        value={inviteDraft.email}
+	                                    <input
+	                                        aria-label="Email"
+	                                        value={inviteDraft.email}
                                         onChange={(event) => setInviteDraft((current) => ({ ...current, email: event.target.value }))}
                                         placeholder="name@example.com"
                                         className="h-9 w-full rounded-lg border border-slate-300 px-3 text-sm"
@@ -3466,16 +3469,18 @@ export const AdminUsersPage: React.FC = () => {
                                 </label>
                                 <label className="space-y-1">
                                     <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">First name</span>
-                                    <input
-                                        value={inviteDraft.firstName}
+	                                    <input
+	                                        aria-label="First name"
+	                                        value={inviteDraft.firstName}
                                         onChange={(event) => setInviteDraft((current) => ({ ...current, firstName: event.target.value }))}
                                         className="h-9 w-full rounded-lg border border-slate-300 px-3 text-sm"
                                     />
                                 </label>
                                 <label className="space-y-1">
                                     <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Last name</span>
-                                    <input
-                                        value={inviteDraft.lastName}
+	                                    <input
+	                                        aria-label="Last name"
+	                                        value={inviteDraft.lastName}
                                         onChange={(event) => setInviteDraft((current) => ({ ...current, lastName: event.target.value }))}
                                         className="h-9 w-full rounded-lg border border-slate-300 px-3 text-sm"
                                     />
@@ -3513,8 +3518,9 @@ export const AdminUsersPage: React.FC = () => {
                             <div className="grid gap-3 sm:grid-cols-2">
                                 <label className="space-y-1 sm:col-span-2">
                                     <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Email</span>
-                                    <input
-                                        value={directDraft.email}
+	                                    <input
+	                                        aria-label="Email"
+	                                        value={directDraft.email}
                                         onChange={(event) => setDirectDraft((current) => ({ ...current, email: event.target.value }))}
                                         placeholder="name@example.com"
                                         className="h-9 w-full rounded-lg border border-slate-300 px-3 text-sm"
@@ -3522,24 +3528,27 @@ export const AdminUsersPage: React.FC = () => {
                                 </label>
                                 <label className="space-y-1">
                                     <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">First name</span>
-                                    <input
-                                        value={directDraft.firstName}
+	                                    <input
+	                                        aria-label="First name"
+	                                        value={directDraft.firstName}
                                         onChange={(event) => setDirectDraft((current) => ({ ...current, firstName: event.target.value }))}
                                         className="h-9 w-full rounded-lg border border-slate-300 px-3 text-sm"
                                     />
                                 </label>
                                 <label className="space-y-1">
                                     <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Last name</span>
-                                    <input
-                                        value={directDraft.lastName}
+	                                    <input
+	                                        aria-label="Last name"
+	                                        value={directDraft.lastName}
                                         onChange={(event) => setDirectDraft((current) => ({ ...current, lastName: event.target.value }))}
                                         className="h-9 w-full rounded-lg border border-slate-300 px-3 text-sm"
                                     />
                                 </label>
                                 <label className="space-y-1 sm:col-span-2">
                                     <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Initial password</span>
-                                    <input
-                                        value={directDraft.password}
+	                                    <input
+	                                        aria-label="Initial password"
+	                                        value={directDraft.password}
                                         onChange={(event) => setDirectDraft((current) => ({ ...current, password: event.target.value }))}
                                         type="password"
                                         placeholder="Minimum 8 characters"
@@ -3671,24 +3680,27 @@ export const AdminUsersPage: React.FC = () => {
                                 <div className="grid gap-3 sm:grid-cols-2">
                                     <label className="space-y-1">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">First name</span>
-                                        <input
-                                            value={profileDraft.firstName}
+	                                        <input
+	                                            aria-label="First name"
+	                                            value={profileDraft.firstName}
                                             onChange={(event) => setProfileDraft((current) => ({ ...current, firstName: event.target.value }))}
                                             className="h-9 w-full rounded-lg border border-slate-300 px-3 text-sm"
                                         />
                                     </label>
                                     <label className="space-y-1">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Last name</span>
-                                        <input
-                                            value={profileDraft.lastName}
+	                                        <input
+	                                            aria-label="Last name"
+	                                            value={profileDraft.lastName}
                                             onChange={(event) => setProfileDraft((current) => ({ ...current, lastName: event.target.value }))}
                                             className="h-9 w-full rounded-lg border border-slate-300 px-3 text-sm"
                                         />
                                     </label>
                                     <label className="space-y-1">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Username</span>
-                                        <input
-                                            value={profileDraft.username}
+	                                        <input
+	                                            aria-label="Username"
+	                                            value={profileDraft.username}
                                             onChange={(event) => setProfileDraft((current) => ({ ...current, username: event.target.value }))}
                                             className="h-9 w-full rounded-lg border border-slate-300 px-3 text-sm"
                                         />
@@ -3750,16 +3762,18 @@ export const AdminUsersPage: React.FC = () => {
                                     </div>
                                     <label className="space-y-1">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">City</span>
-                                        <input
-                                            value={profileDraft.city}
+	                                        <input
+	                                            aria-label="City"
+	                                            value={profileDraft.city}
                                             onChange={(event) => setProfileDraft((current) => ({ ...current, city: event.target.value }))}
                                             className="h-9 w-full rounded-lg border border-slate-300 px-3 text-sm"
                                         />
                                     </label>
                                     <label className="space-y-1">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Preferred language</span>
-                                        <input
-                                            value={profileDraft.preferredLanguage}
+	                                        <input
+	                                            aria-label="Preferred language"
+	                                            value={profileDraft.preferredLanguage}
                                             onChange={(event) => setProfileDraft((current) => ({ ...current, preferredLanguage: event.target.value }))}
                                             className="h-9 w-full rounded-lg border border-slate-300 px-3 text-sm"
                                         />
@@ -3895,8 +3909,9 @@ export const AdminUsersPage: React.FC = () => {
                                 <p className="text-xs text-slate-500">
                                     Optional JSON object. Leave this field empty to inherit all limits from the selected tier.
                                 </p>
-                                <textarea
-                                    value={overrideDraft}
+	                                <textarea
+	                                    aria-label="Entitlement overrides"
+	                                    value={overrideDraft}
                                     onChange={(event) => setOverrideDraft(event.target.value)}
                                     placeholder={`{\n  "maxActiveTrips": 15\n}`}
                                     className="min-h-[140px] w-full rounded-lg border border-slate-300 px-3 py-2 font-mono text-xs"
@@ -3976,10 +3991,11 @@ export const AdminUsersPage: React.FC = () => {
                                                         </div>
                                                     </div>
                                                     <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
-                                                        <input
-                                                            key={`${trip.trip_id}-${trip.updated_at}`}
-                                                            type="datetime-local"
-                                                            defaultValue={toDateTimeInputValue(trip.trip_expires_at)}
+	                                                        <input
+	                                                            key={`${trip.trip_id}-${trip.updated_at}`}
+	                                                            type="datetime-local"
+	                                                            aria-label={`Trip expiration for ${trip.title || trip.trip_id}`}
+	                                                            defaultValue={toDateTimeInputValue(trip.trip_expires_at)}
                                                             onBlur={(event) => {
                                                                 void handleTripPatch(trip, { tripExpiresAt: fromDateTimeInputValue(event.target.value) });
                                                             }}

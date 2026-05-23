@@ -1356,9 +1356,10 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                         </div>
                         <div>
                             <label className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('traveler.settings.age')}</label>
-                            <input
-                                type="number"
-                                min={18}
+	                            <input
+	                                type="number"
+	                                aria-label={t('traveler.settings.age')}
+	                                min={18}
                                 max={100}
                                 value={soloAge}
                                 onChange={(event) => setSoloAge(event.target.value)}
@@ -2008,8 +2009,9 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                         className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
                                     />
                                     <div className="tf-ios-zoom-safe-shell rounded-xl">
-                                        <input
-                                            value={query}
+	                                        <input
+	                                            aria-label={t('destination.searchPlaceholder')}
+	                                            value={query}
                                             onChange={(event) => {
                                                 setQuery(event.target.value);
                                                 openSearch();
@@ -2273,9 +2275,10 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                                 >
                                                     <Minus size={13} />
                                                 </button>
-                                                <input
-                                                    type="number"
-                                                    min={1}
+	                                                <input
+	                                                    type="number"
+	                                                    aria-label={t('dates.flexWindow.weeksLabel')}
+	                                                    min={1}
                                                     max={8}
                                                     value={flexWeeks}
                                                     onChange={(event) => {
@@ -2330,8 +2333,9 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                     {t('notes.title')}
                                 </div>
                                 <p className="mb-2 text-xs text-slate-500">{t('notes.hint')}</p>
-                                <textarea
-                                    value={notes}
+	                                <textarea
+	                                    aria-label={t('notes.title')}
+	                                    value={notes}
                                     onChange={(event) => setNotes(event.target.value)}
                                     rows={4}
                                     placeholder={t('notes.placeholder')}

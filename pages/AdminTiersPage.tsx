@@ -61,6 +61,7 @@ const EntitlementCard: React.FC<{
     if (isError) {
         return (
             <textarea
+                aria-label="Tier limits JSON editor"
                 value={draft}
                 onChange={(e) => onChange(e.target.value)}
                 className="mt-3 min-h-[220px] w-full rounded-lg border border-red-300 bg-red-50 text-red-900 px-3 py-2 font-mono text-xs"
@@ -87,9 +88,10 @@ const EntitlementCard: React.FC<{
                 {limits.map((l) => (
                     <div key={l.key} className="flex flex-col gap-1">
                         <label className="text-[11px] font-semibold uppercase text-slate-500">{l.label}</label>
-                        <input
-                            type="number"
-                            value={parsed[l.key] === null ? '' : parsed[l.key] ?? ''}
+	                        <input
+	                            type="number"
+	                            aria-label={l.label}
+	                            value={parsed[l.key] === null ? '' : parsed[l.key] ?? ''}
                             onChange={(e) => {
                                 const val = e.target.value === '' ? null : Number(e.target.value);
                                 updateField(l.key, val);
@@ -106,9 +108,10 @@ const EntitlementCard: React.FC<{
             <div className="grid grid-cols-2 gap-3">
                 {permissions.map((p) => (
                     <label key={p.key} className="flex cursor-pointer items-center gap-2">
-                        <input
-                            type="checkbox"
-                            checked={Boolean(parsed[p.key])}
+	                        <input
+	                            type="checkbox"
+	                            aria-label={p.label}
+	                            checked={Boolean(parsed[p.key])}
                             onChange={(e) => updateField(p.key, e.target.checked)}
                             className="size-4 rounded border-slate-300 text-accent-600 focus:ring-accent-600"
                         />

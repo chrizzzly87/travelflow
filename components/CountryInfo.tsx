@@ -102,7 +102,7 @@ export const CountryInfo: React.FC<CountryInfoProps> = ({ info }) => {
                                 format={{ maximumFractionDigits: 2 }}
                             />
                         </div>
-                        <button 
+                        <button type="button"
                             onClick={() => setDirection(direction === 'eurToLocal' ? 'localToEur' : 'eurToLocal')}
                             disabled={!converterEnabled}
                             className={`p-1.5 bg-white shadow-sm border border-gray-200 rounded-full flex-shrink-0 ${converterEnabled ? 'hover:bg-gray-100 text-accent-600' : 'text-gray-400 cursor-not-allowed'}`} aria-label="Swap conversion direction"

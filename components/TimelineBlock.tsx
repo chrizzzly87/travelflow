@@ -67,14 +67,14 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
   const normalizedTransportMode = isTravel ? normalizeTransportMode(item.transportMode) : 'na';
   const isUnsetTravelMode = isTravel && normalizedTransportMode === 'na';
   const isLoadingItem = !!item.loading;
-  
+
   // Drag detection refs
   const dragStartPos = useRef<{x: number, y: number} | null>(null);
-  
+
   // Visual Dimensions
   const visualSpan = getTimelineVisualSpan(item, { vertical });
   const dimensionCheck = visualSpan.duration * pixelsPerDay;
-  const size = Math.max(dimensionCheck, (isTravel || isEmptyTravel) ? 40 : 20); 
+  const size = Math.max(dimensionCheck, (isTravel || isEmptyTravel) ? 40 : 20);
   const position = (visualSpan.startOffset - timelineStartOffset) * pixelsPerDay;
 
   // Buffer calculations (Minutes -> Days -> Pixels)
@@ -350,7 +350,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
     <div
       className={`absolute transition-all group flex flex-col justify-center select-none timeline-block-item
         ${isLoadingItem ? 'bg-slate-100 border-slate-200 text-slate-400 animate-pulse' : resolvedColorClass}
-        ${isCity ? 'rounded-md border-2 cursor-pointer backdrop-blur-[1px]' : 'rounded-lg border shadow-sm'} 
+        ${isCity ? 'rounded-md border-2 cursor-pointer backdrop-blur-[1px]' : 'rounded-lg border shadow-sm'}
         ${isSelected ? 'z-30 opacity-100' : 'z-10'}
         ${(isTravel || isEmptyTravel) ? 'z-20' : 'overflow-hidden'}
         ${isInactiveActivity ? 'border-dashed shadow-none' : ''}
@@ -374,7 +374,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
       {isTravel && (
         <>
             {bufferBeforePx > 0 && (
-                <div 
+                <div
                     className="absolute top-1/2 -translate-y-1/2 h-[80%] border-t-2 border-b-2 border-l-2 border-gray-300 border-dashed rounded-l-lg bg-gray-100/40 pointer-events-none"
                     style={{ right: '100%', width: `${bufferBeforePx}px` }}
                     title={`Buffer before: ${item.bufferBefore}m`}
@@ -385,7 +385,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
                 </div>
             )}
             {bufferAfterPx > 0 && (
-                <div 
+                <div
                     className="absolute top-1/2 -translate-y-1/2 h-[80%] border-t-2 border-b-2 border-r-2 border-gray-300 border-dashed rounded-r-lg bg-gray-100/40 pointer-events-none"
                     style={{ left: '100%', width: `${bufferAfterPx}px` }}
                     title={`Buffer after: ${item.bufferAfter}m`}
@@ -446,7 +446,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
         </div>
       ) : (
       <div className={`flex items-center px-1.5 relative size-full pointer-events-none overflow-hidden
-          ${vertical 
+          ${vertical
              ? (
                 isCompactVerticalActivity
                   ? 'justify-center text-center'
@@ -458,7 +458,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
                   : 'justify-start gap-2 flex-col text-center pt-3 pb-2'
                )}
       `}>
-        
+
         {isTravel && (
             <div className={`flex items-center gap-1 ${vertical && item.duration * pixelsPerDay >= 60 ? 'mb-1' : ''}`}>
                 {!isUnsetTravelMode && (
@@ -481,15 +481,15 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
 
         {!isEmptyTravel && !shouldRotateVerticalCityLabel && (
             <span
-                className={`font-semibold select-none leading-tight 
+                className={`font-semibold select-none leading-tight
                     ${isCompactVerticalActivity
                         ? 'w-full truncate whitespace-nowrap text-center'
                         : `${isCompactHorizontalActivity
                             ? 'inline-flex max-w-full items-center justify-center overflow-hidden text-ellipsis whitespace-nowrap text-center font-semibold'
                             : (isTravel ? 'text-xs w-full whitespace-normal line-clamp-2' : (isCity ? 'text-[12px] md:text-[14px] w-full whitespace-normal line-clamp-2' : 'text-[15px] whitespace-normal'))}
                            ${!isTravel && !isCompactHorizontalActivity ? 'line-clamp-2' : ''}
-                           ${vertical 
-                               ? (item.duration * pixelsPerDay < 60 ? 'w-full truncate whitespace-nowrap text-center' : 'w-full break-words text-center') 
+                           ${vertical
+                               ? (item.duration * pixelsPerDay < 60 ? 'w-full truncate whitespace-nowrap text-center' : 'w-full break-words text-center')
                                : (isCompactHorizontalActivity ? '' : 'truncate')}`
                     }
                 `}
@@ -538,8 +538,8 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
 
         {/* Duration Display */}
         {!isCity && !isTravel && !isEmptyTravel && !isCompactHorizontalActivity && (
-            <span className={`text-[10px] opacity-80 select-none 
-                ${vertical 
+            <span className={`text-[10px] opacity-80 select-none
+                ${vertical
                     ? (item.duration * pixelsPerDay < 60 ? 'hidden' : 'mt-0.5 block')
                     : 'hidden sm:block'}
             `}>
@@ -555,12 +555,12 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
              {item.duration === 1 ? '1 Day' : `${Number(item.duration.toFixed(1))} Days`}
         </span>
       )}
-      
+
       {/* City quick actions */}
       {isCity && !isLoadingItem && ((onForceFill && (forceFillMode || hasGapOrOverlap)) || (onSwapSelectedCities && showSwapSelectedButton)) && (
           <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-auto flex items-center gap-1">
              {onSwapSelectedCities && showSwapSelectedButton && (
-                <button
+                <button type="button"
                     onClick={(e) => { e.stopPropagation(); if (!canEdit) return; onSwapSelectedCities(); }}
                     disabled={!canEdit}
                     className={`bg-white text-accent-600 shadow-md border border-gray-200 p-1 rounded-full transition-transform ${canEdit ? 'hover:bg-accent-50 hover:scale-110' : 'cursor-not-allowed opacity-60'}`}
@@ -570,7 +570,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
                 </button>
              )}
              {onForceFill && (forceFillMode || hasGapOrOverlap) && (
-                <button 
+                <button type="button"
                     onClick={(e) => { e.stopPropagation(); if (!canEdit) return; onForceFill(item.id); }}
                     disabled={!canEdit}
                     className={`bg-white text-accent-600 shadow-md border border-gray-200 p-1 rounded-full transition-transform ${canEdit ? 'hover:bg-accent-50 hover:scale-110' : 'cursor-not-allowed opacity-60'}`}
@@ -586,8 +586,8 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
       {isCity && !isLoadingItem && (
         <div
             className={`absolute z-40 pointer-events-auto flex items-center justify-center group/handle
-                ${vertical 
-                    ? `top-0 left-0 right-0 h-4 ${canEdit ? 'cursor-row-resize' : 'cursor-not-allowed'}` 
+                ${vertical
+                    ? `top-0 left-0 right-0 h-4 ${canEdit ? 'cursor-row-resize' : 'cursor-not-allowed'}`
                     : `-left-1 top-0 bottom-0 w-6 ${canEdit ? 'cursor-col-resize' : 'cursor-not-allowed'}`
                 }
                 ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}
@@ -611,8 +611,8 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
       {isCity && !isLoadingItem && (
         <div
             className={`absolute z-40 pointer-events-auto flex items-center justify-center group/handle
-                ${vertical 
-                    ? `bottom-0 left-0 right-0 h-4 ${canEdit ? 'cursor-row-resize' : 'cursor-not-allowed'}` 
+                ${vertical
+                    ? `bottom-0 left-0 right-0 h-4 ${canEdit ? 'cursor-row-resize' : 'cursor-not-allowed'}`
                     : `-right-1 top-0 bottom-0 w-6 ${canEdit ? 'cursor-col-resize' : 'cursor-not-allowed'}`
                 }
                 ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}

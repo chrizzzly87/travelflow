@@ -18,7 +18,6 @@ import {
     ToggleLeft,
     ToggleRight,
 } from '@phosphor-icons/react';
-import Prism from 'prismjs';
 import 'prismjs/components/prism-json';
 import {
     AI_MODEL_CATALOG,
@@ -1892,15 +1891,14 @@ export const AdminAiBenchmarkPage: React.FC = () => {
         return parseRunError(errorModalRun.error_message);
     }, [errorModalRun]);
 
-    const highlightedErrorJson = useMemo(() => {
+    const errorJsonSource = useMemo(() => {
         if (!errorModalRun) return '';
         const parsed = parseRunError(errorModalRun.error_message);
         const payload = hydrateStringifiedJson(parsed.details ?? { error: errorModalRun.error_message || 'Unknown error' });
-        const jsonSource = JSON.stringify(payload, null, 2);
-        return Prism.highlight(jsonSource, Prism.languages.json, 'json');
+        return JSON.stringify(payload, null, 2);
     }, [errorModalRun]);
 
-    const highlightedValidationJson = useMemo(() => {
+    const validationJsonSource = useMemo(() => {
         if (!validationModalRun) return '';
         const warnings = getValidationWarnings(validationModalRun.validation_checks);
         const payload = {
@@ -1909,8 +1907,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
             errors: validationModalRun.validation_errors || [],
             warnings,
         };
-        const jsonSource = JSON.stringify(payload, null, 2);
-        return Prism.highlight(jsonSource, Prism.languages.json, 'json');
+        return JSON.stringify(payload, null, 2);
     }, [validationModalRun]);
 
     const validationModalWarnings = useMemo(() => {
@@ -2044,8 +2041,9 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                         <div className="mt-3 space-y-3">
                             <label className="space-y-1 text-sm">
                                 <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Session name</span>
-                                <input
-                                    value={sessionName}
+	                                <input
+	                                    aria-label="Session name"
+	                                    value={sessionName}
                                     onChange={(event) => setSessionName(event.target.value)}
                                     className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
                                 />
@@ -2102,8 +2100,9 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                     <p className="text-[11px] text-slate-600">
                                         Paste a trip generation payload or a benchmark scenario JSON. Apply it to prefill the benchmark mask.
                                     </p>
-                                    <textarea
-                                        value={customScenarioJsonDraft}
+	                                    <textarea
+	                                        aria-label="Custom JSON import"
+	                                        value={customScenarioJsonDraft}
                                         onChange={(event) => {
                                             setCustomScenarioJsonDraft(event.target.value);
                                             setCustomScenarioMeta((current) => current || {
@@ -2229,9 +2228,10 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                         <div className="mt-2 grid gap-2 sm:grid-cols-2">
                             <label className="space-y-1 text-xs">
                                 <span className="font-semibold uppercase tracking-wide text-slate-500">Timeout (seconds)</span>
-                                <input
-                                    type="number"
-                                    min={BENCHMARK_TIMEOUT_MIN_SECONDS}
+	                                <input
+	                                    type="number"
+	                                    aria-label="Timeout seconds"
+	                                    min={BENCHMARK_TIMEOUT_MIN_SECONDS}
                                     max={BENCHMARK_TIMEOUT_MAX_SECONDS}
                                     step={5}
                                     value={benchmarkTimeoutSeconds}
@@ -2250,9 +2250,10 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                             </label>
 
                             <label className="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs font-medium text-slate-700">
-                                <input
-                                    type="checkbox"
-                                    checked={compactBenchmarkOutput}
+	                                <input
+	                                    type="checkbox"
+	                                    aria-label="Compact output"
+	                                    checked={compactBenchmarkOutput}
                                     onChange={(event) => setCompactBenchmarkOutput(event.target.checked)}
                                 />
                                 Compact output (faster + more reliable JSON)
@@ -2419,25 +2420,28 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                 </SelectContent>
                             </Select>
                             <label className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs font-medium text-slate-700">
-                                <input
-                                    type="checkbox"
-                                    checked={hideFailedRuns}
+	                                <input
+	                                    type="checkbox"
+	                                    aria-label="Hide failed"
+	                                    checked={hideFailedRuns}
                                     onChange={(event) => setHideFailedRuns(event.target.checked)}
                                 />
                                 Hide failed
                             </label>
                             <label className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs font-medium text-slate-700">
-                                <input
-                                    type="checkbox"
-                                    checked={onlyWarningRuns}
+	                                <input
+	                                    type="checkbox"
+	                                    aria-label="Only warnings"
+	                                    checked={onlyWarningRuns}
                                     onChange={(event) => setOnlyWarningRuns(event.target.checked)}
                                 />
                                 Only warnings
                             </label>
                             <label className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs font-medium text-slate-700">
-                                <input
-                                    type="checkbox"
-                                    checked={onlyUnratedRuns}
+	                                <input
+	                                    type="checkbox"
+	                                    aria-label="Only unrated"
+	                                    checked={onlyUnratedRuns}
                                     onChange={(event) => setOnlyUnratedRuns(event.target.checked)}
                                 />
                                 Only unrated
@@ -2633,8 +2637,9 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                             </td>
                                             <td className="px-3 py-2">
                                                 <div className="w-[250px] space-y-1.5">
-                                                    <textarea
-                                                        value={commentDraft}
+	                                                    <textarea
+	                                                        aria-label={`Comment for run ${run.id}`}
+	                                                        value={commentDraft}
                                                         onChange={(event) => {
                                                             const nextValue = event.target.value;
                                                             setRunCommentDrafts((current) => ({
@@ -2786,8 +2791,9 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                     )}
                 >
                     <div className="space-y-3">
-                        <input
-                            value={modelFilter}
+	                        <input
+	                            aria-label="Search provider, label, or model id"
+	                            value={modelFilter}
                             onChange={(event) => setModelFilter(event.target.value)}
                             placeholder="Search provider, label, or model id"
                             className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
@@ -2867,8 +2873,9 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                         <div className="grid grid-cols-1 gap-3">
                             <label className="space-y-1 text-sm">
                                 <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Name</span>
-                                <input
-                                    value={presetEditor.name}
+	                                <input
+	                                    aria-label="Name"
+	                                    value={presetEditor.name}
                                     onChange={(event) => setPresetEditor((current) => current ? { ...current, name: event.target.value } : current)}
                                     className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
                                 />
@@ -2876,8 +2883,9 @@ export const AdminAiBenchmarkPage: React.FC = () => {
 
                             <label className="space-y-1 text-sm">
                                 <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Description</span>
-                                <input
-                                    value={presetEditor.description}
+	                                <input
+	                                    aria-label="Description"
+	                                    value={presetEditor.description}
                                     onChange={(event) => setPresetEditor((current) => current ? { ...current, description: event.target.value } : current)}
                                     className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
                                 />
@@ -2885,8 +2893,9 @@ export const AdminAiBenchmarkPage: React.FC = () => {
 
                             <label className="space-y-1 text-sm">
                                 <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Destinations</span>
-                                <input
-                                    value={presetEditor.scenario.destinations}
+	                                <input
+	                                    aria-label="Destinations"
+	                                    value={presetEditor.scenario.destinations}
                                     onChange={(event) => updatePresetDraftScenario('destinations', event.target.value)}
                                     className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
                                 />
@@ -2912,9 +2921,10 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                 {presetEditor.scenario.dateInputMode === 'flex' ? (
                                     <label className="space-y-1 text-sm">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Flex weeks</span>
-                                        <input
-                                            type="number"
-                                            min={1}
+	                                        <input
+	                                            type="number"
+	                                            aria-label="Flex weeks"
+	                                            min={1}
                                             max={12}
                                             value={presetEditor.scenario.flexWeeks}
                                             onChange={(event) => {
@@ -2928,9 +2938,10 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                 ) : (
                                     <label className="space-y-1 text-sm">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Start date</span>
-                                        <input
-                                            type="date"
-                                            value={presetEditor.scenario.startDate || defaultDates.startDate}
+	                                        <input
+	                                            type="date"
+	                                            aria-label="Start date"
+	                                            value={presetEditor.scenario.startDate || defaultDates.startDate}
                                             onChange={(event) => updatePresetDraftScenario('startDate', event.target.value)}
                                             className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
                                         />
@@ -2942,9 +2953,10 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                 {presetEditor.scenario.dateInputMode === 'exact' ? (
                                     <label className="space-y-1 text-sm">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">End date</span>
-                                        <input
-                                            type="date"
-                                            value={presetEditor.scenario.endDate || defaultDates.endDate}
+	                                        <input
+	                                            type="date"
+	                                            aria-label="End date"
+	                                            value={presetEditor.scenario.endDate || defaultDates.endDate}
                                             onChange={(event) => updatePresetDraftScenario('endDate', event.target.value)}
                                             className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
                                         />
@@ -3020,17 +3032,19 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                 <label className="space-y-1 text-sm">
                                     <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Specific cities</span>
-                                    <input
-                                        value={presetEditor.scenario.specificCities}
+	                                    <input
+	                                        aria-label="Specific cities"
+	                                        value={presetEditor.scenario.specificCities}
                                         onChange={(event) => updatePresetDraftScenario('specificCities', event.target.value)}
                                         className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
                                     />
                                 </label>
                                 <label className="space-y-1 text-sm">
                                     <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Stops</span>
-                                    <input
-                                        type="number"
-                                        min={1}
+	                                    <input
+	                                        type="number"
+	                                        aria-label="Stops"
+	                                        min={1}
                                         max={20}
                                         value={presetEditor.scenario.numCities ?? ''}
                                         onChange={(event) => {
@@ -3097,8 +3111,9 @@ export const AdminAiBenchmarkPage: React.FC = () => {
 
                             <label className="space-y-1 text-sm">
                                 <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Notes/interests</span>
-                                <textarea
-                                    rows={3}
+	                                <textarea
+	                                    aria-label="Notes/interests"
+	                                    rows={3}
                                     value={presetEditor.scenario.notes}
                                     onChange={(event) => updatePresetDraftScenario('notes', event.target.value)}
                                     className="w-full resize-y rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
@@ -3106,9 +3121,10 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                             </label>
 
                             <label className="inline-flex items-center gap-2 text-sm text-slate-700">
-                                <input
-                                    type="checkbox"
-                                    checked={presetEditor.scenario.routeLock}
+	                                <input
+	                                    type="checkbox"
+	                                    aria-label="Route lock"
+	                                    checked={presetEditor.scenario.routeLock}
                                     onChange={(event) => updatePresetDraftScenario('routeLock', event.target.checked)}
                                 />
                                 Route lock (metadata only)
@@ -3158,8 +3174,9 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                 </div>
                             </div>
                             <div className="p-4">
-                                <textarea
-                                    value={promptModal.prompt}
+	                                <textarea
+	                                    aria-label="Prompt"
+	                                    value={promptModal.prompt}
                                     readOnly
                                     rows={18}
                                     className="w-full rounded-md border border-slate-300 bg-slate-50 px-3 py-2 font-mono text-xs text-slate-800 outline-none"
@@ -3207,7 +3224,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                     {errorModalParsed?.shortMessage || 'Detailed provider error'}
                                 </div>
                                 <pre className="max-h-[56vh] overflow-auto rounded-lg bg-[#1f2937] p-3 text-xs leading-relaxed">
-                                    <code className="language-json" dangerouslySetInnerHTML={{ __html: highlightedErrorJson }} />
+                                    <code className="language-json">{errorJsonSource}</code>
                                 </pre>
                             </div>
                         </div>
@@ -3256,7 +3273,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                         : 'Validation failed'}
                                 </div>
                                 <pre className="max-h-[56vh] overflow-auto rounded-lg bg-[#1f2937] p-3 text-xs leading-relaxed">
-                                    <code className="language-json" dangerouslySetInnerHTML={{ __html: highlightedValidationJson }} />
+                                    <code className="language-json">{validationJsonSource}</code>
                                 </pre>
                             </div>
                         </div>

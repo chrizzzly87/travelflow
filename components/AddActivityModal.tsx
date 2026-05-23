@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ActivityType, ITimelineItem, ITrip } from '../types';
 import { Sparkles, Check } from 'lucide-react';
 import { ALL_ACTIVITY_TYPES, getActivityColorByTypes, normalizeActivityTypes } from '../utils';
-import { ActivityTypeIcon, formatActivityTypeLabel, getActivityTypeButtonClass, getActivityTypePaletteClass } from './ActivityTypeVisuals';
+import { ActivityTypeIcon } from './ActivityTypeVisuals';
+import { formatActivityTypeLabel, getActivityTypeButtonClass, getActivityTypePaletteClass } from './ActivityTypeVisualsUtils';
 import { AppModal } from './ui/app-modal';
 
 interface AddActivityModalProps {
@@ -193,6 +194,7 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
                                     id={titleInputId}
                                     ref={manualTitleInputRef}
                                     type="text" 
+                                    aria-label="Title"
                                     value={title}
                                     onChange={e => setTitle(e.target.value)}
                                     className="w-full p-2 bg-white text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-500 outline-none"
@@ -220,6 +222,7 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
                                 <label htmlFor={descriptionInputId} className="block text-xs font-bold text-gray-500 uppercase mb-1">Description</label>
                                 <textarea 
                                     id={descriptionInputId}
+                                    aria-label="Description"
                                     value={description}
                                     onChange={e => setDescription(e.target.value)}
                                     className="w-full p-2 bg-white text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-500 outline-none h-24 resize-none"
@@ -243,6 +246,7 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
                                     <input 
                                         id={promptInputId}
                                         type="text" 
+                                        aria-label="What are you looking for?"
                                         value={prompt}
                                         onChange={e => setPrompt(e.target.value)}
                                         className="flex-1 p-2 bg-white text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-500 outline-none"

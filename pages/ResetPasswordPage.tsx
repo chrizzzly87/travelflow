@@ -162,9 +162,10 @@ export const ResetPasswordPage: React.FC = () => {
                     <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
                         <label className="block">
                             <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('labels.newPassword')}</span>
-                            <input
-                                type="password"
-                                autoComplete="new-password"
+	                            <input
+	                                type="password"
+	                                aria-label={t('labels.newPassword')}
+	                                autoComplete="new-password"
                                 value={password}
                                 onChange={(event) => dispatchFormState({
                                     type: 'patch',
@@ -178,9 +179,10 @@ export const ResetPasswordPage: React.FC = () => {
 
                         <label className="block">
                             <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('labels.confirmPassword')}</span>
-                            <input
-                                type="password"
-                                autoComplete="new-password"
+	                            <input
+	                                type="password"
+	                                aria-label={t('labels.confirmPassword')}
+	                                autoComplete="new-password"
                                 value={confirmPassword}
                                 onChange={(event) => dispatchFormState({
                                     type: 'patch',

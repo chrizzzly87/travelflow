@@ -484,6 +484,7 @@ export const LoginPage: React.FC = () => {
                                 id={LOGIN_PAGE_EMAIL_INPUT_ID}
                                 name="email"
                                 type="email"
+                                aria-label={t('labels.email')}
                                 autoComplete={mode === 'login' ? 'username' : 'email'}
                                 inputMode="email"
                                 autoCapitalize="none"
@@ -506,6 +507,7 @@ export const LoginPage: React.FC = () => {
                                 id={LOGIN_PAGE_SECONDARY_INPUT_ID}
                                 name="password"
                                 type="password"
+                                aria-label={t('labels.password')}
                                 autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
                                 value={password}
                                 onChange={(event) => setPassword(event.target.value)}

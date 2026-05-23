@@ -435,9 +435,10 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
                                         enabled: adminOverrideEnabled,
                                     })}
                                 >
-                                    <input
-                                        type="checkbox"
-                                        className="sr-only"
+	                                    <input
+	                                        type="checkbox"
+	                                        aria-label="Enable admin override"
+	                                        className="sr-only"
                                         checked={adminOverrideEnabled}
                                         disabled={!canEnableAdminOverride}
                                         onChange={(event) => {

@@ -5,7 +5,8 @@ import { Hotel, MapPin } from 'lucide-react';
 
 import { TransportModeIcon } from '../TransportModeIcon';
 import { AnimatedNumber, AnimatedNumberGroup } from '../ui/animated-number';
-import { ActivityTypeIcon, formatActivityTypeLabel, getActivityTypePaletteClass } from '../ActivityTypeVisuals';
+import { ActivityTypeIcon } from '../ActivityTypeVisuals';
+import { formatActivityTypeLabel, getActivityTypePaletteClass } from '../ActivityTypeVisualsUtils';
 import { Checkbox } from '../ui/checkbox';
 import type { ITrip } from '../../types';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';

@@ -10,7 +10,8 @@ import { buildRouteCacheKey, DEFAULT_MAP_COLOR_MODE, findTravelBetweenCities, ge
 import { getAnalyticsDebugAttributes } from '../services/analyticsService';
 import { useGoogleMaps, useMapRuntime } from './GoogleMapsLoader';
 import { normalizeTransportMode } from '../shared/transportModes';
-import { ActivityTypeIcon, getActivityTypePaletteParts } from './ActivityTypeVisuals';
+import { ActivityTypeIcon } from './ActivityTypeVisuals';
+import { getActivityTypePaletteParts } from './ActivityTypeVisualsUtils';
 import { getMapSurfaceBackgroundColor, GOOGLE_BASEMAP_HIDDEN_STYLES } from '../services/mapRendererVisualStyleService';
 import { isMapboxStyleReadyForRuntimeMutations } from './maps/mapboxBasemapUtils';
 import { buildFlightRouteVisualPaths } from './maps/flightRouteGeometry';

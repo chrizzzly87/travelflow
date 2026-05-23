@@ -79,9 +79,34 @@ const buildFocusedRenderEntries = (
     return entries;
 };
 
-const highlightJsonLine = (value: string | null): string => {
-    if (value === null) return '';
-    return Prism.highlight(value || ' ', Prism.languages.json, 'json');
+const renderJsonTokenStream = (
+    tokens: Array<string | Prism.Token>,
+    keyPrefix: string
+): React.ReactNode[] => tokens.map((token, index) => {
+    if (typeof token === 'string') {
+        return <React.Fragment key={`${keyPrefix}-text-${index}-${token.length}`}>{token}</React.Fragment>;
+    }
+
+    const aliases = Array.isArray(token.alias)
+        ? token.alias
+        : token.alias
+            ? [token.alias]
+            : [];
+    const className = ['token', token.type, ...aliases].join(' ');
+    const content = Array.isArray(token.content)
+        ? renderJsonTokenStream(token.content as Array<string | Prism.Token>, `${keyPrefix}-${index}-${token.type}`)
+        : token.content;
+
+    return (
+        <span key={`${keyPrefix}-${index}-${token.type}`} className={className}>
+            {content}
+        </span>
+    );
+});
+
+const renderJsonLine = (value: string | null, keyPrefix: string): React.ReactNode => {
+    if (value === null) return null;
+    return renderJsonTokenStream(Prism.tokenize(value || ' ', Prism.languages.json), keyPrefix);
 };
 
 const JSON_TOKEN_CLASSNAMES = [
@@ -225,10 +250,9 @@ export const AdminJsonDiffModal: React.FC<AdminJsonDiffModalProps> = ({
                                                         {row.leftLineNumber ?? ''}
                                                     </td>
                                                     <td className={`min-w-[420px] px-2 py-0.5 font-mono ${lineCellClassName(row.leftType)} ${JSON_TOKEN_CLASSNAMES}`}>
-                                                        <code
-                                                            className="whitespace-pre"
-                                                            dangerouslySetInnerHTML={{ __html: highlightJsonLine(row.leftValue) }}
-                                                        />
+                                                        <code className="whitespace-pre">
+                                                            {renderJsonLine(row.leftValue, `before-${rowIndex}`)}
+                                                        </code>
                                                     </td>
                                                 </tr>
                                             );
@@ -271,10 +295,9 @@ export const AdminJsonDiffModal: React.FC<AdminJsonDiffModalProps> = ({
                                                         {row.rightLineNumber ?? ''}
                                                     </td>
                                                     <td className={`min-w-[420px] px-2 py-0.5 font-mono ${lineCellClassName(row.rightType)} ${JSON_TOKEN_CLASSNAMES}`}>
-                                                        <code
-                                                            className="whitespace-pre"
-                                                            dangerouslySetInnerHTML={{ __html: highlightJsonLine(row.rightValue) }}
-                                                        />
+                                                        <code className="whitespace-pre">
+                                                            {renderJsonLine(row.rightValue, `after-${rowIndex}`)}
+                                                        </code>
                                                     </td>
                                                 </tr>
                                             );
