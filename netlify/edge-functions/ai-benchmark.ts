@@ -154,6 +154,7 @@ const BENCHMARK_PROVIDER_TIMEOUT_MS = resolveTimeoutMs(
   BENCHMARK_PROVIDER_TIMEOUT_MAX_MS,
 );
 const BENCHMARK_TIMEOUT_60S_MAX_OUTPUT_TOKENS = 3_072;
+const BENCHMARK_OPENROUTER_GEMINI_35_MAX_OUTPUT_TOKENS = 8_192;
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const SATISFACTION_RATINGS = new Set(["good", "medium", "bad"]);
 const TELEMETRY_COMMENT_QUERY_LIMIT = 2000;
@@ -200,6 +201,20 @@ const ACTIVE_BENCHMARK_MODEL_ID_SET = new Set(
     .filter((model) => model.availability === "active")
     .map((model) => model.id),
 );
+
+export const resolveBenchmarkMaxOutputTokens = (
+  provider: string,
+  model: string,
+  providerTimeoutMs: number,
+): number | undefined => {
+  if (providerTimeoutMs > 60_000) return undefined;
+  const normalizedProvider = provider.trim().toLowerCase();
+  const normalizedModel = model.trim().toLowerCase();
+  if (normalizedProvider === "openrouter" && normalizedModel === "google/gemini-3.5-flash") {
+    return BENCHMARK_OPENROUTER_GEMINI_35_MAX_OUTPUT_TOKENS;
+  }
+  return BENCHMARK_TIMEOUT_60S_MAX_OUTPUT_TOKENS;
+};
 
 const readEnv = (name: string): string => {
   try {
@@ -999,7 +1014,7 @@ const runGeneration = async (
       provider: run.provider,
       model: run.model,
       timeoutMs: providerTimeoutMs,
-      maxOutputTokens: providerTimeoutMs <= 60_000 ? BENCHMARK_TIMEOUT_60S_MAX_OUTPUT_TOKENS : undefined,
+      maxOutputTokens: resolveBenchmarkMaxOutputTokens(run.provider, run.model, providerTimeoutMs),
       jsonSchema: TRIP_ITINERARY_STRUCTURED_OUTPUT_SCHEMA,
     });
     const latencyMs = Date.now() - startedMs;
@@ -1625,7 +1640,7 @@ const handleTelemetry = async (
 
 const normalizeBenchmarkPreferencesForStorage = (
   value: unknown,
-  options: { defaultStartDate: string; defaultEndDate: string },
+  options: { defaultStartDate: string; defaultEndDate: string; mergeFallbackModelIds?: boolean },
 ): BenchmarkPreferencesPayload => {
   const fallbackPresets = createSystemBenchmarkPresets(options.defaultStartDate, options.defaultEndDate);
   return normalizeBenchmarkPreferencesPayload(value, {
@@ -1634,6 +1649,7 @@ const normalizeBenchmarkPreferencesForStorage = (
     defaultStartDate: options.defaultStartDate,
     defaultEndDate: options.defaultEndDate,
     allowedModelIds: ACTIVE_BENCHMARK_MODEL_ID_SET,
+    mergeFallbackModelIds: options.mergeFallbackModelIds,
   });
 };
 
@@ -1792,6 +1808,7 @@ const handlePreferences = async (
     }, {
       defaultStartDate: startDate,
       defaultEndDate: endDate,
+      mergeFallbackModelIds: true,
     });
 
     // Ensure first access has a persisted row in DB instead of local storage only.

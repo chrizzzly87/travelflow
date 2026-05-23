@@ -271,15 +271,21 @@ const ProviderLabel: React.FC<{
     logoSize = 14,
 }) => {
     const metadata = getAiProviderMetadata(provider);
+    const catalogModel = model
+        ? AI_MODEL_CATALOG.find((item) => item.provider === provider && item.model === model)
+        : null;
+    const providerLabel = catalogModel?.providerLabel || metadata.label;
+    const providerShortName = catalogModel?.providerShortName || metadata.shortName;
+    const modelLabel = catalogModel?.label || model;
     return (
         <span className="inline-flex min-w-0 items-center gap-1.5">
             <AiProviderLogo provider={provider} model={model} size={logoSize} />
-            <span className={providerClassName || 'font-semibold text-slate-800'} title={`${metadata.label} (${provider})`}>
-                {metadata.shortName}
+            <span className={providerClassName || 'font-semibold text-slate-800'} title={`${providerLabel} (${provider})`}>
+                {providerShortName}
             </span>
-            {model && showModel ? (
+            {modelLabel && showModel ? (
                 <span className={modelClassName || 'truncate text-slate-600'}>
-                    / {model}
+                    / {modelLabel}
                 </span>
             ) : null}
         </span>
@@ -912,13 +918,17 @@ export const AdminAiBenchmarkPage: React.FC = () => {
         setMessage(`Custom JSON applied to benchmark mask (${customScenarioDraftParse.flow}).`);
     }, [applyMaskScenario, customScenarioDraftParse.error, customScenarioDraftParse.flow, customScenarioDraftParse.scenario]);
 
-    const normalizePreferencesForClient = useCallback((value: unknown): BenchmarkPreferencesPayload => {
+    const normalizePreferencesForClient = useCallback((
+        value: unknown,
+        options?: { mergeFallbackModelIds?: boolean },
+    ): BenchmarkPreferencesPayload => {
         return normalizeBenchmarkPreferencesPayload(value, {
             fallbackPresets: defaultPresets,
             defaultStartDate: defaultDates.startDate,
             defaultEndDate: defaultDates.endDate,
             fallbackModelIds: defaultModelTargetIds,
             allowedModelIds: activeModelIdSet,
+            mergeFallbackModelIds: options?.mergeFallbackModelIds,
         });
     }, [activeModelIdSet, defaultDates.endDate, defaultDates.startDate, defaultModelTargetIds, defaultPresets]);
 
@@ -1073,7 +1083,9 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                 method: 'GET',
             }) as BenchmarkPreferencesApiResponse;
 
-            const normalized = normalizePreferencesForClient(payload.preferences || {});
+            const normalized = normalizePreferencesForClient(payload.preferences || {}, {
+                mergeFallbackModelIds: true,
+            });
             setModelTargetIds(normalized.modelTargets);
             setPresetConfigs(normalized.presets);
             setSelectedPresetId(normalized.selectedPresetId);
@@ -2326,6 +2338,11 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                                 logoSize={12}
                                             />
                                             <span className={`font-semibold ${isActive ? '' : 'line-through'}`}>{model.label}</span>
+                                            {model.isCurrentRuntime && (
+                                                <span className="rounded-full border border-indigo-200 bg-indigo-50 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-700">
+                                                    Frontend current
+                                                </span>
+                                            )}
                                             <button
                                                 type="button"
                                                 onClick={() => toggleModelTargetActive(model.id)}
@@ -2802,13 +2819,8 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                             {Object.entries(groupedModels).map(([providerLabel, models]) => (
                                 <div key={providerLabel} className="space-y-1">
                                     <div className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                                        <AiProviderLogo provider={models[0]?.provider || providerLabel} size={12} />
+                                        <AiProviderLogo provider={models[0]?.provider || providerLabel} model={models[0]?.model} size={12} />
                                         <span>{providerLabel}</span>
-                                        {models[0]?.provider ? (
-                                            <span className="rounded-full border border-slate-300 bg-white px-1.5 py-0 text-[10px] text-slate-500 normal-case">
-                                                {getAiProviderMetadata(models[0].provider).shortName}
-                                            </span>
-                                        ) : null}
                                     </div>
                                     <div className="space-y-1">
                                         {models.map((model) => {
@@ -2829,9 +2841,14 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                                     ].join(' ')}
                                                 >
                                                     <span className="inline-flex min-w-0 items-center gap-1.5">
-                                        <AiProviderLogo provider={model.provider} model={model.model} size={12} />
-                                        <span className="min-w-0 truncate font-semibold">{model.label}</span>
-                                    </span>
+                                                        <AiProviderLogo provider={model.provider} model={model.model} size={12} />
+                                                        <span className="min-w-0 truncate font-semibold">{model.label}</span>
+                                                        {model.isCurrentRuntime && (
+                                                            <span className="shrink-0 rounded-full border border-indigo-200 bg-indigo-50 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-700">
+                                                                Frontend current
+                                                            </span>
+                                                        )}
+                                                    </span>
                                                     <span className="ml-2 shrink-0 text-[10px] text-slate-500">{model.estimatedCostPerQueryLabel}</span>
                                                 </button>
                                             );

@@ -40,6 +40,21 @@ export interface BenchmarkPreferencesPayload {
 
 export const BENCHMARK_DEFAULT_MODEL_IDS = [
     'openai:gpt-5.4',
+    'openrouter:openai/gpt-5.5',
+    'openrouter:google/gemini-3.5-flash',
+    'openrouter:google/gemini-3.1-flash-lite',
+    'openrouter:x-ai/grok-4.3',
+    'gemini:gemini-3.1-pro-preview',
+    'gemini:gemini-3-pro-preview',
+    'openai:gpt-5.2-pro',
+    'anthropic:claude-sonnet-4.6',
+    'perplexity:perplexity/sonar',
+    'openrouter:qwen/qwen3.5-plus-20260420',
+    'qwen:qwen/qwen3.5-plus-02-15',
+];
+
+const BENCHMARK_PREVIOUS_DEFAULT_MODEL_IDS = [
+    'openai:gpt-5.4',
     'gemini:gemini-3.1-pro-preview',
     'gemini:gemini-3-pro-preview',
     'openai:gpt-5.2-pro',
@@ -203,6 +218,7 @@ export const normalizeModelTargetIds = (
     options?: {
         allowedModelIds?: Set<string>;
         fallbackModelIds?: string[];
+        mergeFallbackModelIds?: boolean;
     },
 ): string[] => {
     const list = Array.isArray(value) ? value : [];
@@ -215,10 +231,29 @@ export const normalizeModelTargetIds = (
         ? deduped.filter((entry) => options.allowedModelIds?.has(entry))
         : deduped;
 
-    if (filtered.length > 0) return filtered;
     const fallback = options?.fallbackModelIds?.filter(Boolean) || BENCHMARK_DEFAULT_MODEL_IDS;
+    const allowedFallback = options?.allowedModelIds
+        ? fallback.filter((entry) => options.allowedModelIds?.has(entry))
+        : fallback;
+
+    if (filtered.length > 0) {
+        if (!options?.mergeFallbackModelIds) return filtered;
+
+        const legacyDefaults = options?.allowedModelIds
+            ? BENCHMARK_PREVIOUS_DEFAULT_MODEL_IDS.filter((entry) => options.allowedModelIds?.has(entry))
+            : BENCHMARK_PREVIOUS_DEFAULT_MODEL_IDS;
+        const isLegacyDefaultSelection = (
+            legacyDefaults.length > 0
+            && filtered.length === legacyDefaults.length
+            && legacyDefaults.every((entry, index) => filtered[index] === entry)
+        );
+
+        if (!isLegacyDefaultSelection) return filtered;
+
+        return allowedFallback.length > 0 ? allowedFallback : filtered;
+    }
+
     if (options?.allowedModelIds) {
-        const allowedFallback = fallback.filter((entry) => options.allowedModelIds?.has(entry));
         if (allowedFallback.length > 0) return allowedFallback;
     }
     return fallback.length > 0 ? fallback : [...BENCHMARK_DEFAULT_MODEL_IDS];
@@ -299,6 +334,7 @@ export const normalizeBenchmarkPreferencesPayload = (
         defaultStartDate?: string | null;
         defaultEndDate?: string | null;
         allowedModelIds?: Set<string>;
+        mergeFallbackModelIds?: boolean;
     },
 ): BenchmarkPreferencesPayload => {
     const typed = isRecord(value) ? value : {};
@@ -312,6 +348,7 @@ export const normalizeBenchmarkPreferencesPayload = (
     const modelTargets = normalizeModelTargetIds(typed.modelTargets, {
         allowedModelIds: options?.allowedModelIds,
         fallbackModelIds,
+        mergeFallbackModelIds: options?.mergeFallbackModelIds,
     });
     const selectedPresetIdRaw = normalizeText(typed.selectedPresetId);
     const selectedPresetId = presets.some((preset) => preset.id === selectedPresetIdRaw)

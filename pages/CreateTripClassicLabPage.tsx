@@ -110,6 +110,7 @@ import {
 import { decodeTripPrefill } from '../services/tripPrefillDecoder';
 import {
     AI_MODEL_CATALOG,
+    CREATE_TRIP_PREFERRED_MODEL_IDS,
     DEFAULT_CREATE_TRIP_MODEL_ID,
     getAiModelById,
     getCreateTripModelOptions,
@@ -242,7 +243,7 @@ const MODEL_PREFERENCE_NOTE_KEY_BY_ID: Record<string, string> = {
     'perplexity:perplexity/sonar-pro': 'modelPicker.badges.veryFast',
     [DEFAULT_CREATE_TRIP_MODEL_ID]: 'modelPicker.badges.default',
 };
-const CREATE_TRIP_PREFERRED_MODEL_ID_SET = new Set(Object.keys(MODEL_PREFERENCE_NOTE_KEY_BY_ID));
+const CREATE_TRIP_PREFERRED_MODEL_ID_SET = new Set<string>(CREATE_TRIP_PREFERRED_MODEL_IDS);
 const CREATE_TRIP_MODELS = getCreateTripModelOptions(AI_MODEL_CATALOG);
 const IS_DEV = Boolean((import.meta as any)?.env?.DEV);
 

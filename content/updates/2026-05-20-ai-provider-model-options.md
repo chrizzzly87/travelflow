@@ -1,10 +1,10 @@
 ---
-id: rel-2026-03-06-ai-provider-model-options
-version: v0.0.0
+id: rel-2026-05-20-ai-provider-model-options
+version: v0.110.0
 title: "Expanded AI model options for planning and benchmark runs"
-date: 2026-03-06
-published_at: 2026-03-06T10:00:00Z
-status: draft
+date: 2026-05-20
+published_at: 2026-05-20T14:27:20Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Expanded trip planning and benchmark model coverage with more OpenRouter options and updated execution allowlists."
@@ -13,6 +13,7 @@ summary: "Expanded trip planning and benchmark model coverage with more OpenRout
 ## Changes
 - [x] [Improved] 🤖 Added three new AI model choices for trip planning: Gemini 3.1 Flash Lite Preview, GPT-5.4, and GPT-5.4 Pro.
 - [x] [Improved] 🧠 Added three more OpenRouter model choices across trip creation and benchmark testing: Nemotron 3 Super Free, Grok 4.20 Beta, and Qwen3.5-9B.
+- [x] [Improved] 🧪 Added newer OpenRouter model choices to benchmark defaults and model selection, including Gemini 3.5 Flash, Gemini 3.1 Flash Lite, Grok 4.3, GPT-5.5, and Qwen3.5 Plus.
 - [x] [Fixed] 🧾 Admin trip details now show richer generation failure context, including raw attempt metadata, queue timing, and latest worker payload details for faster timeout diagnosis.
 - [ ] [Internal] 💵 Added benchmark estimate coverage and runtime allowlist support for the new models.
 - [ ] [Internal] ⏱️ Raised the default async AI worker timeout to 120 seconds and aligned stale-attempt recovery heuristics so slower GPT-5.4 runs are less likely to fail prematurely.

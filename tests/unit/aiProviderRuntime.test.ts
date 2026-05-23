@@ -57,10 +57,15 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
     expect(ensureModelAllowed('openrouter', 'openrouter/free')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'openai/gpt-5.4-nano')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'openai/gpt-5.4-mini')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'openai/gpt-5.5')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'google/gemini-3.5-flash')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'google/gemini-3.1-flash-lite')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'nvidia/nemotron-3-super-120b-a12b:free')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'z-ai/glm-5')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'x-ai/grok-4.3')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'x-ai/grok-4.20-beta')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'qwen/qwen3.5-9b')).toBeNull();
+    expect(ensureModelAllowed('openrouter', 'qwen/qwen3.5-plus-20260420')).toBeNull();
     expect(ensureModelAllowed('openai', 'gpt-5.4')).toBeNull();
     expect(ensureModelAllowed('anthropic', 'claude-sonnet-4.6')).toBeNull();
     expect(ensureModelAllowed('perplexity', 'perplexity/sonar')).toBeNull();
@@ -183,7 +188,8 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
     const retryInit = (fetchMock.mock.calls[1] as [string, RequestInit])[1];
     const retryBody = JSON.parse(String(retryInit.body));
     expect(retryBody.contents?.[0]?.parts?.[0]?.text).toContain('TRUNCATION RECOVERY MODE');
-    expect(retryBody.contents?.[0]?.parts?.[0]?.text).toContain('Use at most 8 cities and at most 16 activities');
+    expect(retryBody.contents?.[0]?.parts?.[0]?.text).toContain('Use at most 6 cities');
+    expect(retryBody.contents?.[0]?.parts?.[0]?.text).toContain('Use at most 1 activity per city');
 
     expect(result.ok).toBe(false);
     if (!('status' in result)) return;
@@ -750,11 +756,12 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
     const perplexityRequest = (fetchMock.mock.calls[0] as [string, RequestInit])[1];
     const perplexityBody = JSON.parse(String(perplexityRequest.body));
     expect(perplexityBody.model).toBe('perplexity/sonar');
-    expect(perplexityBody.response_format?.type).toBe('text');
+    expect(perplexityBody.response_format?.type).toBe('json_object');
     const qwenRequest = (fetchMock.mock.calls[1] as [string, RequestInit])[1];
     const qwenBody = JSON.parse(String(qwenRequest.body));
     expect(qwenBody.model).toBe('qwen/qwen3.5-plus-02-15');
-    expect(qwenBody.response_format?.type).toBe('text');
+    expect(qwenBody.response_format?.type).toBe('json_object');
+    expect(qwenBody.temperature).toBe(0);
 
     expect(perplexityResult.ok).toBe(true);
     if (perplexityResult.ok) {
@@ -767,6 +774,35 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
       expect(qwenResult.value.meta.provider).toBe('qwen');
       expect(qwenResult.value.meta.model).toBe('qwen/qwen3.5-plus-02-15');
     }
+  });
+
+  it('requests OpenRouter Gemini models in JSON mode for itinerary payloads', async () => {
+    stubDenoEnv({
+      OPENROUTER_API_KEY: 'test-key',
+    });
+
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({
+        model: 'google/gemini-3.5-flash',
+        choices: [{ message: { content: '{"title":"Gemini json mode"}' } }],
+        usage: { prompt_tokens: 1, completion_tokens: 2, total_tokens: 3 },
+      }),
+    );
+
+    const result = await generateProviderItinerary({
+      prompt: '{"request":"gemini-openrouter"}',
+      provider: 'openrouter',
+      model: 'google/gemini-3.5-flash',
+      timeoutMs: 30_000,
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const init = (fetchMock.mock.calls[0] as [string, RequestInit])[1];
+    const body = JSON.parse(String(init.body));
+    expect(body.model).toBe('google/gemini-3.5-flash');
+    expect(body.response_format).toEqual({ type: 'json_object' });
+    expect(body.temperature).toBe(0);
+    expect(result.ok).toBe(true);
   });
 
   it('passes maxOutputTokens override through to provider requests', async () => {
@@ -902,6 +938,60 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.value.data.title).toBe('Recovered after parse retry');
+  });
+
+  it('escalates openrouter parse retries to ultra-compact JSON after truncated content', async () => {
+    stubDenoEnv({
+      OPENROUTER_API_KEY: 'test-key',
+    });
+
+    fetchMock
+      .mockResolvedValueOnce(
+        jsonResponse({
+          model: 'google/gemini-3.5-flash',
+          choices: [{ message: { content: 'not-json' } }],
+          usage: {},
+        }),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({
+          model: 'google/gemini-3.5-flash',
+          choices: [
+            {
+              finish_reason: 'length',
+              message: {
+                content: '{"tripTitle":"Indochina Explorer","countryInfo":{"visaInfoUrl":"https://www.auswaertiges-amt.de/de/service/laender/thailand-node/thailandsicherheit',
+              },
+            },
+          ],
+          usage: { prompt_tokens: 30, completion_tokens: 8192, total_tokens: 8222 },
+        }),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({
+          model: 'google/gemini-3.5-flash',
+          choices: [{ message: { content: '{"tripTitle":"Recovered compact JSON"}' } }],
+          usage: { prompt_tokens: 31, completion_tokens: 40, total_tokens: 71 },
+        }),
+      );
+
+    const result = await generateProviderItinerary({
+      prompt: '{"request":"gemini-openrouter"}',
+      provider: 'openrouter',
+      model: 'google/gemini-3.5-flash',
+      timeoutMs: 60_000,
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    const thirdBody = JSON.parse(String((fetchMock.mock.calls[2] as [string, RequestInit])[1].body));
+    expect(thirdBody.messages[0].content).toContain('Return exactly one minified JSON object');
+    expect(thirdBody.messages[1].content).toMatch(/^IMPORTANT RETRY INSTRUCTIONS:/);
+    expect(thirdBody.messages[1].content).toContain('TRUNCATION RECOVERY MODE');
+    expect(thirdBody.messages[1].content).toContain('Use at most 6 cities');
+    expect(thirdBody.messages[1].content).toContain('Use at most 1 activity per city');
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.data.tripTitle).toBe('Recovered compact JSON');
   });
 
   it('returns parse failure when openrouter content is not valid json object', async () => {
