@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { LazyMotion, animate, domMax, m, useDragControls, useMotionValue, useSpring, type PanInfo } from 'framer-motion';
 import { ArrowsInSimple, ArrowsOutSimple, DeviceRotate } from '@phosphor-icons/react';
 
@@ -871,26 +871,6 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
     }, [clearFloatingMapSettleTimer, floatingMapRotation, floatingMapX, floatingMapY, persistFloatingMapState, reservedRightInset, surfaceHeight, surfaceWidth]);
 
     const shouldPromoteMapLayer = mapDockMode === 'floating' && (isFloatingMapDragging || isFloatingMapSettling || isHandlePressed);
-    const floatingMapStyle = useMemo(() => ({
-        top: 0,
-        left: 0,
-        x: floatingMapX,
-        y: floatingMapY,
-        width: surfaceWidth,
-        height: surfaceHeight,
-        rotate: floatingMapVisualRotation,
-        transformOrigin: '50% 0%',
-        borderRadius: mapDockMode === 'floating' ? FLOATING_MAP_BORDER_RADIUS : '0px',
-        ...(shouldPromoteMapLayer ? { willChange: 'transform,width,height' } : {}),
-    }), [
-        floatingMapVisualRotation,
-        floatingMapX,
-        floatingMapY,
-        mapDockMode,
-        shouldPromoteMapLayer,
-        surfaceHeight,
-        surfaceWidth,
-    ]);
 
     return (
         <LazyMotion features={domMax}>
@@ -923,7 +903,18 @@ export const TripFloatingMapPreview: React.FC<TripFloatingMapPreviewProps> = ({
                         }`
                         : 'z-[20] border-0 shadow-none'
                 }`}
-                style={floatingMapStyle}
+                style={{
+                    top: 0,
+                    left: 0,
+                    x: floatingMapX,
+                    y: floatingMapY,
+                    width: surfaceWidth,
+                    height: surfaceHeight,
+                    rotate: floatingMapVisualRotation,
+                    transformOrigin: '50% 0%',
+                    borderRadius: mapDockMode === 'floating' ? FLOATING_MAP_BORDER_RADIUS : '0px',
+                    ...(shouldPromoteMapLayer ? { willChange: 'transform,width,height' } : {}),
+                }}
             >
                 {mapDockMode === 'floating' && (
                     <div className="pointer-events-none absolute top-0 inset-x-0 z-[90] flex justify-center">
