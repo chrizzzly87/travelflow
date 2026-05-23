@@ -443,14 +443,31 @@ export const useTripResizeControls = ({
         );
     }, [minBottomMapHeight, minTimelineHeight, onManualViewSettingsChange, onPaneResize, resizeKeyboardStep, setTimelineHeight]);
 
+    const handleMouseMoveRef = useRef(handleMouseMove);
     useEffect(() => {
-        window.addEventListener('mousemove', handleMouseMove);
-        window.addEventListener('mouseup', stopResizing);
-        return () => {
-            window.removeEventListener('mousemove', handleMouseMove);
-            window.removeEventListener('mouseup', stopResizing);
+        handleMouseMoveRef.current = handleMouseMove;
+    }, [handleMouseMove]);
+
+    const stopResizingRef = useRef(stopResizing);
+    useEffect(() => {
+        stopResizingRef.current = stopResizing;
+    }, [stopResizing]);
+
+    useEffect(() => {
+        const onMouseMove = (event: MouseEvent) => {
+            handleMouseMoveRef.current(event);
         };
-    }, [handleMouseMove, stopResizing]);
+        const onMouseUp = () => {
+            stopResizingRef.current();
+        };
+
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
+        return () => {
+            window.removeEventListener('mousemove', onMouseMove);
+            window.removeEventListener('mouseup', onMouseUp);
+        };
+    }, []);
 
     return {
         verticalLayoutTimelineRef,

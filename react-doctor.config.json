@@ -50,7 +50,8 @@
       "deslop/unused-dev-dependency",
       "react-doctor/no-static-element-interactions",
       "react-doctor/design-no-redundant-size-axes",
-      "react-doctor/prefer-use-sync-external-store"
+      "react-doctor/prefer-use-sync-external-store",
+      "react-doctor/no-flush-sync"
     ]
   }
 }

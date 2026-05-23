@@ -17,6 +17,30 @@ const CATEGORIES: CookieCategory[] = ['essential', 'analytics', 'marketing'];
 const OPTIONAL_CATEGORIES: CookieCategory[] = ['analytics', 'marketing'];
 const isDevRuntime = Boolean((import.meta as ImportMeta & { env?: { DEV?: boolean } }).env?.DEV);
 
+const exactRegistryMap = new Map<string, RegisteredStorageEntry>();
+const wildcardRegistryList: RegisteredStorageEntry[] = [];
+
+// Build static lookup indexes on load
+for (const category of CATEGORIES) {
+  for (const entry of COOKIE_REGISTRY[category]) {
+    const candidateMedia = [
+      entry.storage,
+      ...(entry.storageFallbacks ?? []),
+    ];
+    const media = [...new Set(candidateMedia)].filter(
+      (value): value is BrowserStorageMedium => value === 'localStorage' || value === 'sessionStorage',
+    );
+
+    for (const medium of media) {
+      if (entry.name.includes('*')) {
+        wildcardRegistryList.push({ category, definition: entry });
+      } else {
+        exactRegistryMap.set(`${medium}:${entry.name}`, { category, definition: entry });
+      }
+    }
+  }
+}
+
 const warnPolicy = (message: string) => {
   if (!isDevRuntime) return;
   console.warn(`[browserStoragePolicy] ${message}`);
@@ -31,21 +55,21 @@ const resolveRegisteredEntry = (
   keyName: string,
   medium: BrowserStorageMedium,
 ): RegisteredStorageEntry | null => {
+  const exactKey = `${medium}:${keyName}`;
+  const exactMatch = exactRegistryMap.get(exactKey);
+  if (exactMatch) {
+    return exactMatch;
+  }
+
   const supportsMedium = (entry: CookieDefinition): boolean => (
     entry.storage === medium || Boolean(entry.storageFallbacks?.includes(medium))
   );
 
-  for (const category of CATEGORIES) {
-    const match = COOKIE_REGISTRY[category].find((entry) =>
-      supportsMedium(entry) && doesRegistryNameMatch(entry.name, keyName));
-    if (match) {
-      return {
-        category,
-        definition: match,
-      };
-    }
-  }
-  return null;
+  const wildcardMatch = wildcardRegistryList.find(({ definition }) =>
+    supportsMedium(definition) && doesRegistryNameMatch(definition.name, keyName)
+  );
+
+  return wildcardMatch || null;
 };
 
 const isCategoryAllowed = (category: CookieCategory): boolean => {

@@ -53,34 +53,32 @@ export const TripShareModal: React.FC<TripShareModalProps> = ({
                 </div>
             }
         >
-            <div className="flex items-start gap-3 text-sm">
+            <label className="flex items-start gap-3 text-sm cursor-pointer">
                 <input
-                    id="trip-share-mode-view"
                     type="radio"
                     name="share-mode"
                     className="mt-1"
                     checked={shareMode === 'view'}
                     onChange={() => onShareModeChange('view')}
                 />
-                <label htmlFor="trip-share-mode-view" className="cursor-pointer">
+                <div>
                     <span className="font-semibold text-gray-900">View only</span>
                     <span className="block text-xs text-gray-500">People can see the trip but can’t edit.</span>
-                </label>
-            </div>
-            <div className="flex items-start gap-3 text-sm">
+                </div>
+            </label>
+            <label className="flex items-start gap-3 text-sm cursor-pointer">
                 <input
-                    id="trip-share-mode-edit"
                     type="radio"
                     name="share-mode"
                     className="mt-1"
                     checked={shareMode === 'edit'}
                     onChange={() => onShareModeChange('edit')}
                 />
-                <label htmlFor="trip-share-mode-edit" className="cursor-pointer">
+                <div>
                     <span className="font-semibold text-gray-900">Allow editing</span>
                     <span className="block text-xs text-gray-500">Anyone with the link can make changes.</span>
-                </label>
-            </div>
+                </div>
+            </label>
             {activeShareUrl && (
                 <div className="mt-2">
                     <div className="mb-1 text-xs font-semibold text-gray-600">Share link</div>
@@ -88,6 +86,7 @@ export const TripShareModal: React.FC<TripShareModalProps> = ({
                         <input
                             value={activeShareUrl}
                             readOnly
+                            aria-label="Trip share link"
                             className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs"
                         />
                         <button
